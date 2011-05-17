@@ -1,479 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab1EQM0i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 08:26:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42998 "EHLO
+	id S1754548Ab1EQM07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 08:26:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43002 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754137Ab1EQM0g convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1754052Ab1EQM05 convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 08:26:36 -0400
+	Tue, 17 May 2011 08:26:57 -0400
 From: Ben Hutchings <ben@decadent.org.uk>
 To: David Woodhouse <dwmw2@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Shiang Tu <shiang_tu@ralinktech.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
 In-Reply-To: <1305635052.19966.142.camel@localhost>
 References: <1305635052.19966.142.camel@localhost>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 17 May 2011 13:26:26 +0100
-Message-ID: <1305635186.19966.143.camel@localhost>
+Date: Tue, 17 May 2011 13:26:53 +0100
+Message-ID: <1305635213.19966.144.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: [PATCH linux-firmware 1/3] Add source and copyright notice for CIS
- files from pcmcia-cs
+Subject: [PATCH firmware 2/3] rt2860sta: Use latest firmware for RT3090
 X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
 X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CIS files mostly come from pcmcia-cs releases, in which the source
-files were named etc/cis/*.cis and the binaries were named
-etc/cis/*.dat.  However, the current drivers request the *binaries* as
-cis/*.cis.  It's too late to fix that, so put the sources in a
-subdirectory here.
+Ralink's original drivers for RT2800P/RT2800E-family chips used
+multiple different versions of the firmware for different chips.  The
+rt2860sta driver in staging was briefly converted to load different
+files for different chips.  However, the current rt2860.bin is
+supposed to work on all of them, so replace rt3090.bin with a symlink.
 
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- WHENCE                |   25 +++++++++++++++++++++----
- cis/src/3CCFEM556.cis |   22 ++++++++++++++++++++++
- cis/src/3CXEM556.cis  |   22 ++++++++++++++++++++++
- cis/src/COMpad2.cis   |   20 ++++++++++++++++++++
- cis/src/COMpad4.cis   |   14 ++++++++++++++
- cis/src/DP83903.cis   |   24 ++++++++++++++++++++++++
- cis/src/LA-PCM.cis    |   44 ++++++++++++++++++++++++++++++++++++++++++++
- cis/src/MT5634ZLX.cis |   18 ++++++++++++++++++
- cis/src/NE2K.cis      |   10 ++++++++++
- cis/src/PCMLM28.cis   |   37 +++++++++++++++++++++++++++++++++++++
- cis/src/PE-200.cis    |   11 +++++++++++
- cis/src/PE520.cis     |   11 +++++++++++
- cis/src/RS-COM-2P.cis |   14 ++++++++++++++
- cis/src/tamarack.cis  |   17 +++++++++++++++++
- 14 files changed, 285 insertions(+), 4 deletions(-)
- create mode 100644 cis/src/3CCFEM556.cis
- create mode 100644 cis/src/3CXEM556.cis
- create mode 100644 cis/src/COMpad2.cis
- create mode 100644 cis/src/COMpad4.cis
- create mode 100644 cis/src/DP83903.cis
- create mode 100644 cis/src/LA-PCM.cis
- create mode 100644 cis/src/MT5634ZLX.cis
- create mode 100644 cis/src/NE2K.cis
- create mode 100644 cis/src/PCMLM28.cis
- create mode 100644 cis/src/PE-200.cis
- create mode 100644 cis/src/PE520.cis
- create mode 100644 cis/src/RS-COM-2P.cis
- create mode 100644 cis/src/tamarack.cis
+ WHENCE     |    2 +-
+ rt3090.bin |  Bin 8192 -> 10 bytes
+ 2 files changed, 1 insertions(+), 1 deletions(-)
+ mode change 100644 => 120000 rt3090.bin
 
 diff --git a/WHENCE b/WHENCE
-index a1cd744..d1e5fba 100644
+index d1e5fba..e28b0cc 100644
 --- a/WHENCE
 +++ b/WHENCE
-@@ -837,30 +837,42 @@ File: cis/NE2K.cis
- File: cis/tamarack.cis
- File: cis/PE-200.cis
- File: cis/PE520.cis
-+Source: cis/src/LA-PCM.cis
-+Source: cis/src/PCMLM28.cis
-+Source: cis/src/DP83903.cis
-+Source: cis/src/NE2K.cis
-+Source: cis/src/tamarack.cis
-+Source: cis/src/PE-200.cis
-+Source: cis/src/PE520.cis
+@@ -1113,7 +1113,7 @@ File: rt3090.bin
  
--Licence: GPL
-+Licence: Dual GPLv2/MPL
+ Licence: Redistributable. See LICENCE.ralink-firmware.txt for details
  
- Originally developed by the pcmcia-cs project
-+Copyright (C) 1998, 1999, 2000 David A. Hinds
+-Found in hex form in kernel source.
++This is a link to rt2860.bin for compatibility.
  
  --------------------------------------------------------------------------
  
- Driver: 3c589_cs - 3Com PCMCIA adapter
- 
- File: cis/3CXEM556.cis
-+Source: cis/src/3CXEM556.cis
- 
--Licence: GPL
-+Licence: Dual GPLv2/MPL
- 
- Originally developed by the pcmcia-cs project
-+Copyright (C) 1998, 1999, 2000 David A. Hinds
- 
- --------------------------------------------------------------------------
- 
- Driver: 3c574_cs - 3Com PCMCIA adapter
- 
- File: cis/3CCFEM556.cis
-+Source: cis/src/3CCFEM556.cis
- 
--Licence: GPL
-+Licence: Dual GPLv2/MPL
- 
- Originally developed by the pcmcia-cs project
-+Copyright (C) 1998, 1999, 2000 David A. Hinds
- 
- --------------------------------------------------------------------------
- 
-@@ -870,10 +882,15 @@ File: cis/MT5634ZLX.cis
- File: cis/RS-COM-2P.cis
- File: cis/COMpad2.cis
- File: cis/COMpad4.cis
-+Source: cis/src/MT5634ZLX.cis
-+Source: cis/src/RS-COM-2P.cis
-+Source: cis/src/COMpad2.cis
-+Source: cis/src/COMpad4.cis
- 
--Licence: GPL
-+Licence: Dual GPLv2/MPL
- 
- Originally developed by the pcmcia-cs project
-+Copyright (C) 1998, 1999, 2000 David A. Hinds
- 
- --------------------------------------------------------------------------
- 
-diff --git a/cis/src/3CCFEM556.cis b/cis/src/3CCFEM556.cis
-new file mode 100644
-index 0000000..be627d0
+diff --git a/rt3090.bin b/rt3090.bin
+deleted file mode 100644
+index d8f0925f30a707b76e347455e9f609f3718451b9..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 8192
+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
+
+diff --git a/rt3090.bin b/rt3090.bin
+new file mode 120000
+index 0000000..c5a9ab0
 --- /dev/null
-+++ b/cis/src/3CCFEM556.cis
-@@ -0,0 +1,22 @@
-+#
-+# This card is MFC-compliant, but identifies itself as single function
-+#
-+vers_1 5.0, "3Com", "Megahertz 3CCFEM556", "LAN + 56k Modem"
-+manfid 0x0101, 0x0556
-+funcid 0
-+
-+mfc {
-+  funcid network_adapter
-+  config base 0x1000 mask 0x267 last_index 0x07
-+  cftable_entry 0x07
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x000f [8bit] [16bit]
-+}, {
-+  funcid serial_port
-+  config base 0x1100 mask 0x277 last_index 0x27
-+  cftable_entry 0x27
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x0007 [8bit]
-+}
-diff --git a/cis/src/3CXEM556.cis b/cis/src/3CXEM556.cis
-new file mode 100644
-index 0000000..819f08f
---- /dev/null
-+++ b/cis/src/3CXEM556.cis
-@@ -0,0 +1,22 @@
-+#
-+# This card is MFC-compliant, but identifies itself as single function
-+#
-+vers_1 5.0, "3Com", "Megahertz 3CXEM556", "LAN + 56k Modem"
-+manfid 0x0101, 0x0035
-+funcid 0
-+
-+mfc {
-+  funcid network_adapter
-+  config base 0x0800 mask 0x63 last_index 0x07
-+  cftable_entry 0x07
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x000f [8bit] [16bit]
-+}, {
-+  funcid serial_port
-+  config base 0x900 mask 0x63 last_index 0x27
-+  cftable_entry 0x27
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x0007 [8bit]
-+}
-diff --git a/cis/src/COMpad2.cis b/cis/src/COMpad2.cis
-new file mode 100644
-index 0000000..bfc2374
---- /dev/null
-+++ b/cis/src/COMpad2.cis
-@@ -0,0 +1,20 @@
-+#
-+# Replacement CIS for Advantech COMpad-32/85
-+#
-+dev_info
-+  NULL 0ns, 512b
-+vers_1 4.1, "ADVANTECH", "COMpad-32/85", "1.0"
-+funcid serial_port [post]
-+config base 0x0100 mask 0x0003 last_index 0x05
-+cftable_entry 0x01 [default]
-+  [mwait]
-+  io 0x02e8-0x02ef, 0x03e8-0x03ef [lines=10] [8bit] [range]
-+  irq mask 0x9eb8 [level]
-+cftable_entry 0x02
-+  io 0x0330-0x033f [lines=10] [8bit] [range]
-+cftable_entry 0x03
-+  io 0x0340-0x034f [lines=10] [8bit] [range]
-+cftable_entry 0x04
-+  io 0x0350-0x035f [lines=10] [8bit] [range]
-+cftable_entry 0x05
-+  io 0x0360-0x036f [lines=10] [8bit] [range]
-diff --git a/cis/src/COMpad4.cis b/cis/src/COMpad4.cis
-new file mode 100644
-index 0000000..325991c
---- /dev/null
-+++ b/cis/src/COMpad4.cis
-@@ -0,0 +1,14 @@
-+#
-+# Replacement CIS for Advantech COMpad-32/85B-4
-+#
-+dev_info
-+  NULL 0ns, 512b
-+vers_1 4.1, "ADVANTECH", "COMpad-32/85B-4"
-+funcid serial_port [post]
-+config base 0x0100 mask 0x0001 last_index 0x02
-+cftable_entry 0x01 [default]
-+  [mwait]
-+  io 0x0240-0x025f [lines=10] [8bit] [range]
-+  irq mask 0x9eb8 [level]
-+cftable_entry 0x02
-+  io 0x0340-0x035f [lines=10] [8bit] [range]
-diff --git a/cis/src/DP83903.cis b/cis/src/DP83903.cis
-new file mode 100644
-index 0000000..ce86f45
---- /dev/null
-+++ b/cis/src/DP83903.cis
-@@ -0,0 +1,24 @@
-+#
-+# This CIS is for cards based on the National Semiconductor
-+# DP83903 Multiple Function Interface Chip
-+#
-+vers_1 4.1, "Multifunction Card", "", "", "NSC MF LAN/Modem"
-+manfid 0x0175, 0x0000
-+funcid 0
-+
-+mfc {
-+  funcid network_adapter
-+  config base 0x1020 mask 0x277 last_index 0x17
-+  cftable_entry 0x17
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x001f [8bit] [16bit]
-+    memory 0x0000-0x3fff @ 0x0000
-+}, {
-+  funcid serial_port
-+  config base 0x1040 mask 0x0277 last_index 0x07
-+  cftable_entry 0x07
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x0007 [8bit]
-+}
-diff --git a/cis/src/LA-PCM.cis b/cis/src/LA-PCM.cis
-new file mode 100644
-index 0000000..5c427bd
---- /dev/null
-+++ b/cis/src/LA-PCM.cis
-@@ -0,0 +1,44 @@
-+#
-+# Replacement CIS for Allied Telesis LA-PCM
-+#
-+dev_info
-+  fn_specific 100ns, 64kb
-+  FLASH 150ns, 60kb
-+attr_dev_info
-+  FLASH 150ns, 4kb
-+manfid 0xc00f, 0x0002
-+funcid network_adapter [post] [rom]
-+vers_1 4.1, "Allied Telesis,K.K", "Ethernet LAN Card", "CentreCOM", "LA-PCM"
-+config base 0x20000 mask 0x000b last_index 0x10
-+cftable_entry 0x01
-+  io 0x0200-0x021f [8bit] [16bit]
-+cftable_entry 0x02
-+  io 0x0220-0x023f [8bit] [16bit]
-+cftable_entry 0x03
-+  io 0x0240-0x025f [8bit] [16bit]
-+cftable_entry 0x04
-+  io 0x0260-0x027f [8bit] [16bit]
-+cftable_entry 0x05
-+  io 0x0280-0x029f [8bit] [16bit]
-+cftable_entry 0x06
-+  io 0x02a0-0x02bf [8bit] [16bit]
-+cftable_entry 0x07
-+  io 0x02c0-0x02df [8bit] [16bit]
-+cftable_entry 0x08
-+  io 0x02e0-0x02ff [8bit] [16bit]
-+cftable_entry 0x09
-+  io 0x0300-0x031f [8bit] [16bit]
-+cftable_entry 0x0a
-+  io 0x0320-0x033f [8bit] [16bit]
-+cftable_entry 0x0b
-+  io 0x0340-0x035f [8bit] [16bit]
-+cftable_entry 0x0c
-+  io 0x0360-0x037f [8bit] [16bit]
-+cftable_entry 0x0d
-+  io 0x0380-0x039f [8bit] [16bit]
-+cftable_entry 0x0e
-+  io 0x03a0-0x03bf [8bit] [16bit]
-+cftable_entry 0x0f
-+  io 0x03c0-0x03df [8bit] [16bit]
-+cftable_entry 0x10
-+  io 0x03e0-0x03ff [8bit] [16bit]
-diff --git a/cis/src/MT5634ZLX.cis b/cis/src/MT5634ZLX.cis
-new file mode 100644
-index 0000000..52249b3
---- /dev/null
-+++ b/cis/src/MT5634ZLX.cis
-@@ -0,0 +1,18 @@
-+#
-+# Replacement CIS for Multitech MT5634ZLX modems
-+#
-+dev_info no_info
-+vers_1 4.1, "MultiTech", "PCMCIA 56K DataFax"
-+manfid 0x0200, 0x0001
-+funcid serial_port
-+config base 0xff80 mask 0x0067 last_index 0x27
-+cftable_entry 0x0f [default]
-+  [rdybsy] [audio] [pwrdown]
-+  Vcc Vnom 5V Vpp1 Vnom 5V Vpp2 Vnom 5V
-+  io 0x03f8-0x03ff [lines=10] [8bit]
-+cftable_entry 0x17
-+  io 0x02f8-0x02ff [lines=10] [8bit]
-+cftable_entry 0x1f
-+  io 0x03e8-0x03ef [lines=10] [8bit]
-+cftable_entry 0x27
-+  io 0x02e8-0x02ef [lines=10] [8bit]
-diff --git a/cis/src/NE2K.cis b/cis/src/NE2K.cis
-new file mode 100644
-index 0000000..d1d47f3
---- /dev/null
-+++ b/cis/src/NE2K.cis
-@@ -0,0 +1,10 @@
-+#
-+# Replacement CIS for various busted NE2000-compatible cards
-+#
-+vers_1 4.1, "PCMCIA", "Ethernet"
-+funcid network_adapter
-+config base 0x03f8 mask 0x03 last_index 0x20
-+cftable_entry 0x20 [default]
-+  Vcc Vnom 5V
-+  irq mask 0xffff [level]
-+  io 0x0000-0x001f [8bit] [16bit]
-diff --git a/cis/src/PCMLM28.cis b/cis/src/PCMLM28.cis
-new file mode 100644
-index 0000000..39c6d16
---- /dev/null
-+++ b/cis/src/PCMLM28.cis
-@@ -0,0 +1,37 @@
-+#
-+# The on-card CIS says it is MFC-compliant, but it is not
-+#
-+vers_1 4.1, "LINKSYS", "PCMLM28"
-+manfid 0x0143, 0xc0ab
-+funcid 0
-+config base 0x03f8 mask 0x03 last_index 0x2f
-+
-+cftable_entry 0x24 [default]
-+  Vcc Vnom 5V
-+  irq mask 0xffff [level]
-+  io 0x0300-0x031f, 0x02f8-0x02ff [8bit] [16bit]
-+
-+cftable_entry 0x25
-+  io 0x0320-0x033f, 0x02f8-0x02ff [8bit] [16bit]
-+cftable_entry 0x26
-+  io 0x0340-0x035f, 0x02f8-0x02ff [8bit] [16bit]
-+cftable_entry 0x27
-+  io 0x0360-0x037f, 0x02f8-0x02ff [8bit] [16bit]
-+
-+cftable_entry 0x28
-+  io 0x0300-0x031f, 0x03e8-0x03ef [8bit] [16bit]
-+cftable_entry 0x29
-+  io 0x0320-0x033f, 0x03e8-0x03ef [8bit] [16bit]
-+cftable_entry 0x2a
-+  io 0x0340-0x035f, 0x03e8-0x03ef [8bit] [16bit]
-+cftable_entry 0x2b
-+  io 0x0360-0x037f, 0x03e8-0x03ef [8bit] [16bit]
-+
-+cftable_entry 0x2c
-+  io 0x0300-0x031f, 0x02e8-0x02ef [8bit] [16bit]
-+cftable_entry 0x2d
-+  io 0x0320-0x033f, 0x02e8-0x02ef [8bit] [16bit]
-+cftable_entry 0x2e
-+  io 0x0340-0x035f, 0x02e8-0x02ef [8bit] [16bit]
-+cftable_entry 0x2f
-+  io 0x0360-0x037f, 0x02e8-0x02ef [8bit] [16bit]
-diff --git a/cis/src/PE-200.cis b/cis/src/PE-200.cis
-new file mode 100644
-index 0000000..7db7494
---- /dev/null
-+++ b/cis/src/PE-200.cis
-@@ -0,0 +1,11 @@
-+#
-+# Replacement CIS for PE-200 ethernet card
-+#
-+vers_1 4.1, "PMX   ", "PE-200", "ETHERNET", "R01"
-+funcid network_adapter [post] [rom]
-+config base 0x0100 mask 0x0001 last_index 0x01
-+cftable_entry 0x1 [default]
-+  [mwait]
-+  Vcc Vnom 5V
-+  irq mask 0xffff [level]
-+  io 0x0000-0x000f, 0x0010-0x001f [8bit] [16bit]
-diff --git a/cis/src/PE520.cis b/cis/src/PE520.cis
-new file mode 100644
-index 0000000..fb411ab
---- /dev/null
-+++ b/cis/src/PE520.cis
-@@ -0,0 +1,11 @@
-+#
-+# Replacement CIS for LanPro EP-4000A ethernet card
-+#
-+vers_1 4.1, "KTI", "PE520 PLUS", "PCMCIA Ethernet"
-+manfid 0x0161, 0x0010
-+funcid network_adapter
-+config base 0x0fd0 mask 0x0b last_index 0x01
-+cftable_entry 0x01 [default]
-+  Vcc Vnom 5V
-+  irq mask 0xffff [level]
-+  io 0x0000-0x001f [8bit] [16bit]
-diff --git a/cis/src/RS-COM-2P.cis b/cis/src/RS-COM-2P.cis
-new file mode 100644
-index 0000000..2e385cb
---- /dev/null
-+++ b/cis/src/RS-COM-2P.cis
-@@ -0,0 +1,14 @@
-+#
-+# Replacement CIS for dual-serial-port IO card
-+#
-+vers_1 4.1, "PCMCIA", "RS-COM 2P"
-+funcid serial_port [post]
-+config base 0x0100 mask 0x0001 last_index 0x03
-+cftable_entry 0x01 [default]
-+  [mwait]
-+  io 0x03e8-0x03ef, 0x02e8-0x02ef [lines=10] [8bit] [range]
-+  irq mask 0x9eb8 [level]
-+cftable_entry 0x02
-+  io 0x0250-0x0257, 0x0258-0x025f [lines=10] [8bit] [range]
-+cftable_entry 0x03
-+  io 0x0260-0x0267, 0x0268-0x026f [lines=10] [8bit] [range]
-diff --git a/cis/src/tamarack.cis b/cis/src/tamarack.cis
-new file mode 100644
-index 0000000..8802694
---- /dev/null
-+++ b/cis/src/tamarack.cis
-@@ -0,0 +1,17 @@
-+#
-+# Replacement CIS for Surecom, Tamarack NE2000 cards
-+#
-+dev_info
-+  fn_specific 100ns, 512b
-+attr_dev_info
-+  EEPROM 250ns, 512b
-+vers_1 4.1, "TAMARACK", "Ethernet", "A", "004743118001"
-+funcid network_adapter
-+config base 0x03f8 mask 0x0003 last_index 0x20
-+cftable_entry 0x20 [default]
-+  [mwait]
-+  Vcc Vnom 5V Vmin 4500mV Vmax 5500mV Istatic 100mA
-+    Iavg 170mA Ipeak 200mA
-+  timing wait 15us
-+  io 0x0000-0x000f, 0x0010-0x001f [lines=5] [8bit] [16bit]
-+  irq mask 0xffff [level]
++++ b/rt3090.bin
+@@ -0,0 +1 @@
++rt2860.bin
+\ No newline at end of file
 -- 
 1.7.5.1
 
