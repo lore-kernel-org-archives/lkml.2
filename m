@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab1EQSut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 14:50:49 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:54718 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756372Ab1EQSur (ORCPT
+	id S1756522Ab1EQSyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 14:54:03 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:42526 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756375Ab1EQSyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 14:50:47 -0400
-Date: Tue, 17 May 2011 13:50:32 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Nick Kossifidis <mickflemm@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
-        ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: ath5k regression associating with APs in 2.6.38
-Message-ID: <20110517185032.GC9258@thinkpad-t410>
-Mail-Followup-To: Nick Kossifidis <mickflemm@gmail.com>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	Jiri Slaby <jirislaby@gmail.com>,
-	"Luis R. Rodriguez" <lrodriguez@atheros.com>,
-	Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
-	ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20110504153819.GA4551@thinkpad-t410>
- <20110504172716.GC18541@tuxdriver.com>
- <20110504192639.GB4551@thinkpad-t410>
- <BANLkTimEmBRyxbZgffJMrH4TTc4f6peuTg@mail.gmail.com>
- <20110505135207.GA13727@thinkpad-t410>
- <BANLkTinkiTQU2k7vBEc0JPGa01AUVCvp2Q@mail.gmail.com>
- <20110509070230.GA20458@thinkpad-t410>
- <20110517165720.GB9258@thinkpad-t410>
- <BANLkTi=8ZRUVWn3FLAMtPh=4yY1F0k6i9w@mail.gmail.com>
+	Tue, 17 May 2011 14:54:00 -0400
+X-Sasl-enc: UpspdN14Ny8LXurwbbdC0OaYkqCIdM/wb8g3KGi7viMY 1305658439
+Date: Tue, 17 May 2011 11:51:33 -0700
+From: Greg KH <greg@kroah.com>
+To: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
+        alan@linux.intel.com
+Subject: Re: [PATCHv2 1/2] amba pl011: workaround for uart registers lockup
+Message-ID: <20110517185133.GB9105@kroah.com>
+References: <20110516172958.GA13011@kroah.com>
+ <1305609617-9524-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+ <20110517182356.GA17703@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=8ZRUVWn3FLAMtPh=4yY1F0k6i9w@mail.gmail.com>
+In-Reply-To: <20110517182356.GA17703@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 08:14:34PM +0300, Nick Kossifidis wrote:
-> 2011/5/17 Seth Forshee <seth.forshee@canonical.com>:
-> > On Mon, May 09, 2011 at 09:02:30AM +0200, Seth Forshee wrote:
-> >> On Thu, May 05, 2011 at 05:30:42PM +0300, Nick Kossifidis wrote:
-> >> > Hmm I don't see any errors from reset/phy code, can you disable
-> >> > Network Manager/wpa-supplicant and test connection on an open network
-> >> > using iw ? It 'll give us a better picture...
-> >> >
-> >> > If iw doesn't return any scan results we are probably hitting a PHY/RF
-> >> > error specific to your device (not all vendors follow the reference
-> >> > design). Maybe we should follow a blacklist/whitelist approach for
-> >> > this feature.
-> >>
-> >> I got the results back from my tester. He was able to get scan results,
-> >> but it took multiple tries and the direct probe failures appear in the
-> >> log. He didn't enable ATH5K_DEBUG_RESET this time; let me know if you
-> >> need that and I'll request he retest with the extra debug logs enabled.
-> >
-> > I got some more feedback. Most of the time iw does not get scan results,
-> > but even when it does connecting to the AP isn't always successful. The
-> > tester did note that he doesn't seem to have any trouble if his machine
-> > is within a few feet of his AP. Let me know if you'd like something else
-> > tested.
-> >
-> > I noticed that bugzilla #31922 (ath5k: Decreased throughput in IBSS or
-> > 802.11n mode) is also fixed by reverting 8aec7af9. It seems like the
-> > synth-only channel changes are resulting in poor connection quality.
-> > Maybe that patch needs to be reverted?
-> >
-> > Thanks,
-> > Seth
-> >
-> >
+On Tue, May 17, 2011 at 11:23:56AM -0700, Greg KH wrote:
+> On Tue, May 17, 2011 at 10:50:17AM +0530, Shreshtha Kumar SAHU wrote:
+> > From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+> > 
+> > This workaround aims to break the deadlock situation
+> > which raises during continuous transfer of data for long
+> > duration over uart with hardware flow control. It is
+> > observed that CTS interrupt cannot be cleared in uart
+> > interrupt register (ICR). Hence further transfer over
+> > uart gets blocked.
+> > 
+> > It is seen that during such deadlock condition ICR
+> > don't get cleared even on multiple write. This leads
+> > pass_counter to decrease and finally reach zero. This
+> > can be taken as trigger point to run this UART_BT_WA.
+> > 
+> > Workaround backups the register configuration, does soft
+> > reset of UART using BIT-0 of PRCC_K_SOFTRST_SET/CLEAR
+> > registers and restores the registers.
+> > 
+> > This patch also provides support for uart init and exit
+> > function calls if present.
 > 
-> http://www.kernel.org/pub/linux/kernel/people/mickflemm/01-fast-chan-switch-modparm
+> Why?  You don't use these callbacks in this driver, so why add them?
 
-That looks like it should do the trick. I'll request some testing with
-it and let you know how it goes. Thanks!
+Ok, I see them in the 2/2 patch now, thanks.
 
+Do you still want me to take this patch through the serial tree, or will
+both be going through some ARM tree?
+
+greg k-h
