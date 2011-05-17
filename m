@@ -1,149 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab1EQGfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 02:35:52 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37867 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab1EQGfv convert rfc822-to-8bit (ORCPT
+	id S1752839Ab1EQGgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 02:36:23 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:16570 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab1EQGgV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 02:35:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xYpx7kv2FfOGdA7hUV7SPFwKCnrN8yUX/dqY7BePG+LYEGyYpO4LOh8oLiZl0GW8Q8
-         cJ+dyiC/d5PNW6nXxtlkBB+NbAM1YyoFfOqzE3KLLPxTP4K9DVd3Fc2CehETxfANchyt
-         XHAJQqVOy7UbxoWBJWfcN3ph4h4xCRr8cG6oQ=
+	Tue, 17 May 2011 02:36:21 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <20110517060001.GC24069@localhost>
-References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
-	<20110512054631.GI6008@one.firstfloor.org>
-	<BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
-	<BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
-	<20110514165346.GV6008@one.firstfloor.org>
-	<BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
-	<20110514174333.GW6008@one.firstfloor.org>
-	<BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
-	<20110515152747.GA25905@localhost>
-	<BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
-	<20110517060001.GC24069@localhost>
-Date: Tue, 17 May 2011 15:35:50 +0900
-Message-ID: <BANLkTin9hDuY1qyyz3p=M_r5RpHupu7Y2w@mail.gmail.com>
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Lutomirski <luto@mit.edu>, Andi Kleen <andi@firstfloor.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI) support
+Date: Tue, 17 May 2011 14:35:59 +0800
+Message-ID: <4C79549CB6F772498162A641D92D532801B80C20@penmb01.corp.atmel.com>
+In-Reply-To: <20110512114530.GE18952@game.jcrosoft.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI) support
+Thread-Index: AcwQm6IcCN4BxHaWS52To49x3I0fqwDv+hbg
+References: <1305186138-5656-1-git-send-email-josh.wu@atmel.com> <20110512114530.GE18952@game.jcrosoft.org>
+From: "Wu, Josh" <Josh.wu@atmel.com>
+To: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
+Cc: <mchehab@redhat.com>, <linux-media@vger.kernel.org>,
+        "Haring, Lars" <Lars.Haring@atmel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <g.liakhovetski@gmx.de>
+X-OriginalArrivalTime: 17 May 2011 06:36:05.0657 (UTC) FILETIME=[B2D23890:01CC145C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 3:00 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> On Sun, May 15, 2011 at 12:12:36PM -0400, Andrew Lutomirski wrote:
->> On Sun, May 15, 2011 at 11:27 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
->> > On Sun, May 15, 2011 at 09:37:58AM +0800, Minchan Kim wrote:
->> >> On Sun, May 15, 2011 at 2:43 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> >> > Copying back linux-mm.
->> >> >
->> >> >> Recently, we added following patch.
->> >> >> https://lkml.org/lkml/2011/4/26/129
->> >> >> If it's a culprit, the patch should solve the problem.
->> >> >
->> >> > It would be probably better to not do the allocations at all under
->> >> > memory pressure.  Even if the RA allocation doesn't go into reclaim
->> >>
->> >> Fair enough.
->> >> I think we can do it easily now.
->> >> If page_cache_alloc_readahead(ie, GFP_NORETRY) is fail, we can adjust
->> >> RA window size or turn off a while. The point is that we can use the
->> >> fail of __do_page_cache_readahead as sign of memory pressure.
->> >> Wu, What do you think?
->> >
->> > No, disabling readahead can hardly help.
->> >
->> > The sequential readahead memory consumption can be estimated by
->> >
->> >                2 * (number of concurrent read streams) * (readahead window size)
->> >
->> > And you can double that when there are two level of readaheads.
->> >
->> > Since there are hardly any concurrent read streams in Andy's case,
->> > the readahead memory consumption will be ignorable.
->> >
->> > Typically readahead thrashing will happen long before excessive
->> > GFP_NORETRY failures, so the reasonable solutions are to
->> >
->> > - shrink readahead window on readahead thrashing
->> >  (current readahead heuristic can somehow do this, and I have patches
->> >  to further improve it)
->> >
->> > - prevent abnormal GFP_NORETRY failures
->> >  (when there are many reclaimable pages)
->> >
->> >
->> > Andy's OOM memory dump (incorrect_oom_kill.txt.xz) shows that there are
->> >
->> > - 8MB   active+inactive file pages
->> > - 160MB active+inactive anon pages
->> > - 1GB   shmem pages
->> > - 1.4GB unevictable pages
->> >
->> > Hmm, why are there so many unevictable pages?  How come the shmem
->> > pages become unevictable when there are plenty of swap space?
->>
->> That was probably because one of my testcases creates a 1.4GB file on
->> ramfs.  (I can provoke the problem without doing evil things like
->> that, but the test script is rather reliable at killing my system and
->> it works fine on my other machines.)
->
-> Ah I didn't read your first email.. I'm now running
->
-> ./test_mempressure.sh 1500 1400 1
->
-> with mem=2G and no swap, but cannot reproduce OOM.
->
-> What's your kconfig?
->
->> If you want, I can try to generate a trace that isn't polluted with
->> the evil ramfs file.
->
-> No, thanks. However it would be valuable if you can retry with this
-> patch _alone_ (without the "if (need_resched()) return false;" change,
-> as I don't see how it helps your case).
+Hi, JC
 
-Yes. I was curious about that. The experiment would be very valuable.
+>> +struct atmel_isi;
+> do we really this here?
+Not really. I'll remove this.
 
-In case of James, he met the problem again without need_resched.
-https://lkml.org/lkml/2011/5/12/547.
+>> +
+>> [snip]
+>>  
+>>  if VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2
+>> +config VIDEO_ATMEL_ISI
+>> +	tristate "ATMEL Image Sensor Interface (ISI) support"
+>> +	depends on VIDEO_DEV && SOC_CAMERA
+> depends on AT91 if the drivers is at91 specific or avr32 otherwise
+I'll add that. I think now it is only supported AT91. I am not sure for the AVR32 part
 
-But I am not sure what's exact meaning of 'livelock' he mentioned.
-I expect he met softlockup, again.
+>> +	select VIDEOBUF2_DMA_CONTIG
+>> +	default n
+> it's n by default  please remove
+I'll change that.
 
-Still I think the possibility that skip cond_resched spared in
-vmscan.c is _very_ low. How come such softlockup happens?
-So I am really curious about what's going on under my sight.
+>> [snip]
+>> +
+>> +/* Frame buffer descriptor
+>> + *  Used by the ISI module as a linked list for the DMA controller.
+>> + */
+>> +struct fbd {
+>> +	/* Physical address of the frame buffer */
+>> +	u32 fb_address;
+>> +#if defined(CONFIG_ARCH_AT91SAM9G45) ||\
+>> +	defined(CONFIG_ARCH_AT91SAM9X5)
+>> +	/* DMA Control Register(only in HISI2) */
+>> +	u32 dma_ctrl;
+>> +#endif
+> no ifdef in the struct
+I'll remove this #if. I think for the non-HISI2 version, like AT91SAM9263, we should define another FBD structure which not includes dma_ctrl.
 
->
-> @@ -2286,7 +2290,7 @@ static bool sleeping_prematurely(pg_data_t
-> *pgdat, int order, long remaining,
->        * must be balanced
->        */
->       if (order)
-> -               return pgdat_balanced(pgdat, balanced, classzone_idx);
-> +               return !pgdat_balanced(pgdat, balanced, classzone_idx);
->       else
->               return !all_zones_ok;
->  }
->
-> Thanks,
-> Fengguang
->
+>> +	/* Physical address of the next fbd */
+>> +	u32 next_fbd_address;
+>> +};
+>> +
+>> +#if defined(CONFIG_ARCH_AT91SAM9G45) ||\
+>> +	defined(CONFIG_ARCH_AT91SAM9X5)
+>> +static void set_dma_ctrl(struct fbd *fb_desc, u32 ctrl) {
+>> +	fb_desc->dma_ctrl = ctrl;
+>> +}
+>> +#else
+>> +static void set_dma_ctrl(struct fbd *fb_desc, u32 ctrl) { } #endif
+> no ifdef here also as we want to have multi soc support
+I'll remove this #if also.
 
+>> [snip]
+>> +	/* State of the ISI module in capturing mode */
+>> +	int				state;
+>> +
+>> +	/* Capture/streaming wait queue for waiting for SOF */
+>> +	wait_queue_head_t		capture_wq;
+>> +
+>> +	struct v4l2_device		v4l2_dev;
+>> +
+>> +	struct vb2_alloc_ctx		*alloc_ctx;
+>> +
+>> +	struct clk			*pclk;
+>> +	struct platform_device		*pdev;
+> do you really need to store the pdev?
+I'll remove this. It is no use.
 
+>> +	unsigned int			irq;
+>> +
+>> +	struct isi_platform_data	*pdata;
+>> +	unsigned long			platform_flags;
+>> +
+>> +	struct list_head		video_buffer_list;
+>> +	struct frame_buffer		*active;
+>> +
+>> +	struct soc_camera_device	*icd;
+>> +	struct soc_camera_host		soc_host;
+>> +};
+>> +
+>> +static int configure_geometry(struct atmel_isi *isi, u32 width,
+>> +			u32 height, enum v4l2_mbus_pixelcode code) {
+>> +	u32 cfg2, cr, ctrl;
+>> +
+>> +	cr = 0;
+> please move this in default
+I'll remove this cr line. Seems it is not needed. cr will be initialized by the following code.
 
--- 
-Kind regards,
-Minchan Kim
+>> [snip]
+>> +
+>> +	size = bytes_per_line * icd->user_height;
+>> +
+>> +	if (0 == *nbuffers)
+> please invert the test
+I'll fix it.
+
+>> +		*nbuffers = MAX_BUFFER_NUMS;
+>> +	if (*nbuffers > MAX_BUFFER_NUMS)
+>> +		*nbuffers = MAX_BUFFER_NUMS;
+>> +
+>> +	while (size * *nbuffers > vid_limit * 1024 * 1024)
+>> +		(*nbuffers)--;
+>> +
+>> +	*nplanes = 1;
+>> +	sizes[0] = size;
+>> +	alloc_ctxs[0] = dev->alloc_ctx;
+>> +
+>> +	dev->sequence = 0;
+>> +	dev->active = NULL;
+>> +
+>> +	dev_dbg(icd->dev.parent, "%s, count=%d, size=%ld\n", __func__,
+>> +		*nbuffers, size);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +
+>> +static void start_dma(struct atmel_isi *isi, struct frame_buffer 
+>> +*buffer) {
+>> +	u32 ctrl, cfg1;
+> please add ine ligne here
+OK. I'll change that.
+
+>> +	ctrl = isi_readl(isi, V2_CTRL);
+>> +	cfg1 = isi_readl(isi, V2_CFG1);
+>> +	/* Enable irq: cxfr for the codec path, pxfr for the preview path */
+>> +	isi_writel(isi, V2_INTEN,
+>> +			ISI_BIT(V2_CXFR_DONE) | ISI_BIT(V2_PXFR_DONE));
+>> +
+>> +	/* Enable codec path */
+>> +	ctrl |= ISI_BIT(V2_CDC);
+>> +	/* Check if already in a frame */
+>> +	while (isi_readl(isi, V2_STATUS) & ISI_BIT(V2_CDC))
+>> +		cpu_relax();
+> no timeout?
+I'll add time out code and test it.
+
+>> +
+>> +	/* Write the address of the first frame buffer in the C_ADDR reg
+>> +	* write the address of the first descriptor(link list of buffer)
+>> +	* in the C_DSCR reg, and enable dma channel.
+>> +	*/
+>> +	isi_writel(isi, V2_DMA_C_DSCR, (__pa(&(buffer->fb_desc))));
+>> +	isi_writel(isi, V2_DMA_C_CTRL,
+>> +			ISI_BIT(V2_DMA_FETCH) | ISI_BIT(V2_DMA_DONE));
+>> +	isi_writel(isi, V2_DMA_CHER, ISI_BIT(V2_DMA_C_CH_EN));
+>> +
+>> +	/* Enable linked list */
+>> +	cfg1 |= ISI_BF(V2_FRATE, isi->pdata->frate) | ISI_BIT(V2_DISCR);
+>> +
+>> +	/* Enable ISI module*/
+>> +	ctrl |= ISI_BIT(V2_ENABLE);
+>> +	isi_writel(isi, V2_CTRL, ctrl);
+>> +	isi_writel(isi, V2_CFG1, cfg1);
+>> +}
+>> +
+>> +
+>> +/* abort streaming and wait for last buffer */ static int 
+>> +stop_streaming(struct vb2_queue *vq) {
+>> +	struct soc_camera_device *icd = soc_camera_from_vb2q(vq);
+>> +	struct soc_camera_host *ici = to_soc_camera_host(icd->dev.parent);
+>> +	struct atmel_isi *isi = ici->priv;
+>> +
+>> +	spin_lock_irq(&isi->lock);
+>> +	isi->still_capture = 0;
+>> +	isi->active = NULL;
+>> +
+>> +	while (isi_readl(isi, V2_STATUS) & ISI_BIT(V2_CDC))
+>> +		cpu_relax();
+> ditto
+I'll fix it too.
+
+>> +
+>> +	/* Disble codec path */
+>> +	isi_writel(isi, V2_CTRL, isi_readl(isi, V2_CTRL) & (~ISI_BIT(V2_CDC)));
+>> +	/* Disable interrupts */
+>> +	isi_writel(isi, V2_INTDIS,
+>> +			ISI_BIT(V2_CXFR_DONE) | ISI_BIT(V2_PXFR_DONE));
+>> +	/* Disable ISI module*/
+>> +	isi_writel(isi, V2_CTRL, isi_readl(isi, V2_CTRL) | ISI_BIT(V2_DIS));
+>> +
+
+>> +
+>> +static int __init atmel_isi_probe(struct platform_device *pdev) {
+>> +	unsigned int irq;
+>> +	struct atmel_isi *isi;
+>> +	struct clk *pclk;
+>> +	struct resource *regs;
+>> +	int ret;
+>> +	struct device *dev = &pdev->dev;
+>> +	struct isi_platform_data *pdata;
+>> +	struct soc_camera_host *soc_host;
+>> +
+>> +	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	if (!regs)
+>> +		return -ENXIO;
+>> +
+>> +	pclk = clk_get(&pdev->dev, "isi_clk");
+>> +	if (IS_ERR(pclk))
+>> +		return PTR_ERR(pclk);
+>> +
+>> +	clk_enable(pclk);
+> do we really need to always enable the clock?
+> normally we need to enable it just when we use the device and disable asap
+Yes, you are right. I will move such code to the camera_add_device/camera_remove_device functions
+
+> do you plane toadd the pm?
+You mean the power resume/suspend function for ISI, right? Not planned yet. But if I have time I will try this.
+
+Thank you for the comments. I will fix it in V2 patch.
+
+Best Regards,
+Josh Wu
