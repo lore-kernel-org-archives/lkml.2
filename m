@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab1EQIJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 04:09:23 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18452 "EHLO mga11.intel.com"
+	id S1753406Ab1EQIKY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 04:10:24 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54839 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752227Ab1EQIJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 04:09:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,224,1304319600"; 
-   d="scan'208";a="2661723"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH 9/9] ACPI, APEI, ERST, Prevent erst_dbg from loading if ERST is disabled
-Date: Tue, 17 May 2011 16:08:39 +0800
-Message-Id: <1305619719-7480-10-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
-References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
+	id S1753148Ab1EQIKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 04:10:17 -0400
+Date: Tue, 17 May 2011 10:09:39 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: paulmck@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: Re: linux-next: manual merge of the tip tree with the wireless tree
+Message-ID: <20110517080939.GD22093@elte.hu>
+References: <20110517131417.731cf095.sfr@canb.auug.org.au>
+ <20110517070558.GP2573@linux.vnet.ibm.com>
+ <20110517172103.a196fbe1.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110517172103.a196fbe1.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-erst_dbg module can not work with ERST is disabled.  So disable module
-loading to provide clearer information to user.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/acpi/apei/erst-dbg.c |    4 ++++
- 1 file changed, 4 insertions(+)
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
---- a/drivers/acpi/apei/erst-dbg.c
-+++ b/drivers/acpi/apei/erst-dbg.c
-@@ -213,6 +213,10 @@ static struct miscdevice erst_dbg_dev =
- 
- static __init int erst_dbg_init(void)
- {
-+	if (erst_disable) {
-+		pr_info(ERST_DBG_PFX "ERST support is disabled.\n");
-+		return -ENODEV;
-+	}
- 	return misc_register(&erst_dbg_dev);
- }
- 
+> Hi Paul,
+> 
+> On Tue, 17 May 2011 00:05:58 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > One of these is mine in -tip (0744371aeb).  Please let me know what
+> > I should be doing about it.
+> 
+> In this case, I would say absolutely nothing (assuming I did the
+> resolution correctly) :-)  If I can figure it out, Linus can as well and
+> will do so when these trees hit his in a week or so.
+
+Yeah. The two trees are doing different things, and both commits are within 
+their own scopes - so this conflict is a natural (and as it seems, mostly 
+contextual) conflict, not a workflow messup.
+
+If such conflicts become too numerous then it would make sense to first push 
+rcu_kfree() interface upstream and propagate all the fixlets via the individual 
+maintainer trees.
+
+I don't think that's necessary: so far the fallout appears to be limited, but 
+Stephen will (or should :-) tell us if a conflicts become too painful for him.
+
+Thanks,
+
+	Ingo
