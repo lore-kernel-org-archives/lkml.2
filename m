@@ -1,95 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab1EQU61 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 16:58:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43003 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756624Ab1EQU60 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 16:58:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=CwbvUmRFKfJgq/uZbf3qPur5vtcIvMW1y1I7i6NIn8LMVil2DVe0yPpJIhSw0+CoOh
-         iZdo0o66ViYRMuzW22C18/6It/2BreHDzIUjhiHd3ppun/RAQIi8t8rtvmSfUHVQwshL
-         XfxxuwDI9mBL5vz8J/coLvVDup3P7Fulttt/o=
-Message-ID: <4DD2E16D.1030001@gmail.com>
-Date: Tue, 17 May 2011 22:58:21 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S932344Ab1EQU6e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 16:58:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40520 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932297Ab1EQU6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 16:58:32 -0400
+Date: Tue, 17 May 2011 23:58:27 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
+Message-ID: <20110517205827.GB7589@redhat.com>
+References: <1305574484.3456.30.camel@localhost.localdomain>
+ <20110516204540.GD18148@redhat.com>
+ <1305579414.3456.49.camel@localhost.localdomain>
+ <20110516212401.GF18148@redhat.com>
+ <1305606683.10756.3.camel@localhost.localdomain>
+ <20110517055503.GA26989@redhat.com>
+ <1305645734.10756.14.camel@localhost.localdomain>
+ <20110517152840.GA2389@redhat.com>
+ <1305646444.10756.16.camel@localhost.localdomain>
+ <1305665419.10756.33.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andy Whitcroft <apw@canonical.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] checkpatch.pl: Add check for task comm references
-References: <1305665263-20933-1-git-send-email-john.stultz@linaro.org> <1305665263-20933-4-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1305665263-20933-4-git-send-email-john.stultz@linaro.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305665419.10756.33.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2011 10:47 PM, John Stultz wrote:
-> Now that accessing current->comm needs to be protected,
-> avoid new current->comm or other task->comm usage by adding
-> a warning to checkpatch.pl.
-> 
-> Fair warning: I know zero perl, so this was written in the
-> style of "monkey see, monkey do". It does appear to work
-> in my testing though.
-> 
-> Thanks to Jiri Slaby, Michal Nazarewicz and Joe Perches
-> for help improving the regex!
-> 
-> Close review and feedback would be appreciated.
-> 
-> CC: Joe Perches <joe@perches.com>
-> CC: Michal Nazarewicz <mina86@mina86.com>
-> CC: Andy Whitcroft <apw@canonical.com>
-> CC: Jiri Slaby <jirislaby@gmail.com>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: David Rientjes <rientjes@google.com>
-> CC: Dave Hansen <dave@linux.vnet.ibm.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: linux-mm@kvack.org
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
+On Tue, May 17, 2011 at 01:50:19PM -0700, Shirley Ma wrote:
+> Resubmit the patch with most update. This patch passed some
+> live-migration test against RHEL6.2. I will run more stress test w/i
+> live migration.
+
+What changed from the last version?
+
+> Signed-off-by: Shirley Ma <xma@us.ibm.com>
 > ---
->  scripts/checkpatch.pl |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
 > 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index d867081..a67ea69 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2868,6 +2868,13 @@ sub process {
->  			WARN("usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc\n" . $herecurr);
->  		}
+>  drivers/vhost/net.c   |   37 +++++++++++++++++++++++++++++++-
+>  drivers/vhost/vhost.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++-
+>  drivers/vhost/vhost.h |   12 ++++++++++
+>  3 files changed, 101 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 2f7c76a..6bd6e28 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -32,6 +32,9 @@
+>   * Using this limit prevents one virtqueue from starving others. */
+>  #define VHOST_NET_WEIGHT 0x80000
 >  
-> +# check for current->comm usage
-> +		our $common_comm_vars = qr{(?x:
-> +		        current|tsk|p|task|curr|chip|t|object|me
-
-Hrm, chip->comm looks like a total bullshit.
-object->comm refers to kmemleak object, so this would trigger false
-alarms too.
-
-> +		)};
-> +		if ($line =~ /\b($common_comm_vars)\s*->\s*comm\b/) {
-> +			WARN("comm access needs to be protected. Use get_task_comm, or printk's \%ptc formatting.\n" . $herecurr);
+> +/* MAX number of TX used buffers for outstanding zerocopy */
+> +#define VHOST_MAX_ZEROCOPY_PEND 128 
+> +
+>  enum {
+>  	VHOST_NET_VQ_RX = 0,
+>  	VHOST_NET_VQ_TX = 1,
+> @@ -129,6 +132,7 @@ static void handle_tx(struct vhost_net *net)
+>  	int err, wmem;
+>  	size_t hdr_size;
+>  	struct socket *sock;
+> +	struct skb_ubuf_info pend;
+>  
+>  	/* TODO: check that we are running from vhost_worker? */
+>  	sock = rcu_dereference_check(vq->private_data, 1);
+> @@ -151,6 +155,10 @@ static void handle_tx(struct vhost_net *net)
+>  	hdr_size = vq->vhost_hlen;
+>  
+>  	for (;;) {
+> +		/* Release DMAs done buffers first */
+> +		if (atomic_read(&vq->refcnt) > VHOST_MAX_ZEROCOPY_PEND)
+> +			vhost_zerocopy_signal_used(vq, false);
+> +
+>  		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+>  					 ARRAY_SIZE(vq->iov),
+>  					 &out, &in,
+> @@ -166,6 +174,13 @@ static void handle_tx(struct vhost_net *net)
+>  				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+>  				break;
+>  			}
+> +			/* If more outstanding DMAs, queue the work */
+> +			if (sock_flag(sock->sk, SOCK_ZEROCOPY) &&
+> +			    (atomic_read(&vq->refcnt) > VHOST_MAX_ZEROCOPY_PEND)) {
+> +				tx_poll_start(net, sock);
+> +				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+> +				break;
+> +			}
+>  			if (unlikely(vhost_enable_notify(vq))) {
+>  				vhost_disable_notify(vq);
+>  				continue;
+> @@ -188,17 +203,35 @@ static void handle_tx(struct vhost_net *net)
+>  			       iov_length(vq->hdr, s), hdr_size);
+>  			break;
+>  		}
+> +		/* use msg_control to pass vhost zerocopy ubuf info to skb */
+> +		if (sock_flag(sock->sk, SOCK_ZEROCOPY)) {
+> +			vq->heads[vq->upend_idx].id = head;
+> +			if (len <= 128)
+> +				vq->heads[vq->upend_idx].len = VHOST_DMA_DONE_LEN;
+> +			else {
+> +				vq->heads[vq->upend_idx].len = len;
+> +				pend.callback = vhost_zerocopy_callback;
+> +				pend.arg = vq;
+> +				pend.desc = vq->upend_idx;
+> +				msg.msg_control = &pend;
+> +				msg.msg_controllen = sizeof(pend);
+> +			}
+> +			atomic_inc(&vq->refcnt);
+> +			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
 > +		}
->  # check for %L{u,d,i} in strings
->  		my $string;
->  		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
-
-thanks,
--- 
-js
+>  		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+>  		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+>  		if (unlikely(err < 0)) {
+> -			vhost_discard_vq_desc(vq, 1);
+> +			if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
+> +				vhost_discard_vq_desc(vq, 1);
+>  			tx_poll_start(net, sock);
+>  			break;
+>  		}
+>  		if (err != len)
+>  			pr_debug("Truncated TX packet: "
+>  				 " len %d != %zd\n", err, len);
+> -		vhost_add_used_and_signal(&net->dev, vq, head, 0);
+> +		if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
+> +			vhost_add_used_and_signal(&net->dev, vq, head, 0);
+>  		total_len += len;
+>  		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+>  			vhost_poll_queue(&vq->poll);
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index 2ab2912..ce799d6 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -174,6 +174,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+>  	vq->call_ctx = NULL;
+>  	vq->call = NULL;
+>  	vq->log_ctx = NULL;
+> +	vq->upend_idx = 0;
+> +	vq->done_idx = 0;
+> +	atomic_set(&vq->refcnt, 0);
+>  }
+>  
+>  static int vhost_worker(void *data)
+> @@ -230,7 +233,7 @@ static long vhost_dev_alloc_iovecs(struct vhost_dev *dev)
+>  					       UIO_MAXIOV, GFP_KERNEL);
+>  		dev->vqs[i].log = kmalloc(sizeof *dev->vqs[i].log * UIO_MAXIOV,
+>  					  GFP_KERNEL);
+> -		dev->vqs[i].heads = kmalloc(sizeof *dev->vqs[i].heads *
+> +		dev->vqs[i].heads = kzalloc(sizeof *dev->vqs[i].heads *
+>  					    UIO_MAXIOV, GFP_KERNEL);
+>  
+>  		if (!dev->vqs[i].indirect || !dev->vqs[i].log ||
+> @@ -385,6 +388,38 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+>  	return 0;
+>  }
+>  
+> +/* 
+> +	comments
+> +*/
+> +void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq, bool shutdown)
+> +{
+> +	int i, j = 0;
+> +
+> +	i = vq->done_idx;
+> +	while (i != vq->upend_idx) {
+> +		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN) || shutdown) {
+> +			/* reset len = 0 */
+> +			vq->heads[i].len = 0;
+> +			i = (i + 1) % UIO_MAXIOV;
+> +			++j;
+> +		} else
+> +			break;
+> +	}
+> +	if (j) {
+> +		/* comments */
+> +		if (i > vq->done_idx)
+> +			vhost_add_used_n(vq, &vq->heads[vq->done_idx], j);
+> +		else {
+> +			vhost_add_used_n(vq, &vq->heads[vq->done_idx],
+> +					 UIO_MAXIOV - vq->done_idx);
+> +			vhost_add_used_n(vq, vq->heads, i);
+> +		}
+> +		vq->done_idx = i;
+> +		vhost_signal(vq->dev, vq);
+> +		atomic_sub(j, &vq->refcnt);
+> +	}
+> +}
+> +
+>  /* Caller should have device mutex */
+>  void vhost_dev_cleanup(struct vhost_dev *dev)
+>  {
+> @@ -395,6 +430,11 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+>  			vhost_poll_stop(&dev->vqs[i].poll);
+>  			vhost_poll_flush(&dev->vqs[i].poll);
+>  		}
+> +		/* wait for all lower device DMAs done, then notify guest */
+> +		if (atomic_read(&dev->vqs[i].refcnt)) {
+> +			msleep(1000);
+> +			vhost_zerocopy_signal_used(&dev->vqs[i], true);
+> +		}
+>  		if (dev->vqs[i].error_ctx)
+>  			eventfd_ctx_put(dev->vqs[i].error_ctx);
+>  		if (dev->vqs[i].error)
+> @@ -603,6 +643,10 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+>  
+>  	mutex_lock(&vq->mutex);
+>  
+> +	/* force all lower device DMAs done */
+> +	if (atomic_read(&vq->refcnt)) 
+> +		vhost_zerocopy_signal_used(vq, true);
+> +
+>  	switch (ioctl) {
+>  	case VHOST_SET_VRING_NUM:
+>  		/* Resizing ring with an active backend?
+> @@ -1416,3 +1460,12 @@ void vhost_disable_notify(struct vhost_virtqueue *vq)
+>  		vq_err(vq, "Failed to enable notification at %p: %d\n",
+>  		       &vq->used->flags, r);
+>  }
+> +
+> +void vhost_zerocopy_callback(struct sk_buff *skb)
+> +{
+> +	int idx = skb_shinfo(skb)->ubuf.desc;
+> +	struct vhost_virtqueue *vq = skb_shinfo(skb)->ubuf.arg;
+> +
+> +	/* set len = 1 to mark this desc buffers done DMA */
+> +	vq->heads[idx].len = VHOST_DMA_DONE_LEN;
+> +}
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index b3363ae..8e3ecc7 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -13,6 +13,10 @@
+>  #include <linux/virtio_ring.h>
+>  #include <asm/atomic.h>
+>  
+> +/* This is for zerocopy, used buffer len is set to 1 when lower device DMA
+> + * done */
+> +#define VHOST_DMA_DONE_LEN	1
+> +
+>  struct vhost_device;
+>  
+>  struct vhost_work;
+> @@ -108,6 +112,12 @@ struct vhost_virtqueue {
+>  	/* Log write descriptors */
+>  	void __user *log_base;
+>  	struct vhost_log *log;
+> +	/* vhost zerocopy support */
+> +	atomic_t refcnt; /* num of outstanding zerocopy DMAs */
+> +	/* copy of avail idx to monitor outstanding DMA zerocopy buffers */
+> +	int upend_idx;
+> +	/* copy of used idx to monintor DMA done zerocopy buffers */
+> +	int done_idx;
+>  };
+>  
+>  struct vhost_dev {
+> @@ -154,6 +164,8 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
+>  
+>  int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+>  		    unsigned int log_num, u64 len);
+> +void vhost_zerocopy_callback(struct sk_buff *skb);
+> +void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq, bool shutdown);
+>  
+>  #define vq_err(vq, fmt, ...) do {                                  \
+>  		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+> 
