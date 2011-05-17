@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab1EQLM4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 07:12:56 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54557 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753149Ab1EQLMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 07:12:54 -0400
-Date: Tue, 17 May 2011 21:12:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: linux-next: manual merge of the xen tree with Linus tree
-Message-Id: <20110517211234.472e32f4.sfr@canb.auug.org.au>
-In-Reply-To: <20110115120544.98a1f091.sfr@canb.auug.org.au>
-References: <20110115120544.98a1f091.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1753911Ab1EQLTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 07:19:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49942 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab1EQLTO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 07:19:14 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=UZYI7n2t75YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VIZvPYwb1djQpyPiT6cA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Fix powerTOP regression with 2.6.39-rc5
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Michael Rubin <mrubin@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <BANLkTikRX2gNwyUSWLNBcpc727Ww7Ya6Ow@mail.gmail.com>
+References: <1304713252.25414.2532.camel@gandalf.stny.rr.com>
+	 <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
+	 <20110507065803.GA23414@elte.hu>
+	 <1304765110.25414.2564.camel@gandalf.stny.rr.com>
+	 <20110507144402.GC2859@elte.hu> <1304788829.11129.57.camel@frodo>
+	 <20110507190033.GA11465@elte.hu> <1304996847.2969.151.camel@frodo>
+	 <20110510084158.GC27426@elte.hu> <1305032797.2943.34.camel@frodo>
+	 <20110511215111.GA16355@elte.hu>
+	 <BANLkTikRX2gNwyUSWLNBcpc727Ww7Ya6Ow@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 17 May 2011 07:19:12 -0400
+Message-ID: <1305631152.5456.665.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__17_May_2011_21_12_34_+1000_WW=NwSEmwnG5MbzO"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_May_2011_21_12_34_+1000_WW=NwSEmwnG5MbzO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-05-17 at 00:15 -0700, Michael Rubin wrote:
 
-Hi Jeremy,
+> What is the plan for customers going forward? Is it going to involve
+> removing ftrace in favor for perf? Removing perf in favor for ftrace?
+> We love perf and don't want to see it go away either.  We tend to use
+> the two systems differently. Do customers basically have to wait a few
+> years to see not only which system wins but which ones stays on top?
 
-On Sat, 15 Jan 2011 12:05:44 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Today's linux-next merge of the xen tree got a conflict in
-> drivers/xen/Kconfig, drivers/xen/gntdev.c and include/xen/gntdev.h
-> between various commits Linus' tree and various commits from the xen tree.
->=20
-> As previously discussed, I have dropped the xen tree for today (as it
-> contains an older version of the changes that were merged into Linus'
-> tree).
+My plan is:
 
-Just wondering if the xen tree is ever going to make a reappearance in
-linux-next?
+1) get libperf.so out for user tools to use.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+2) Start hacking on code again :)
 
---Signature=_Tue__17_May_2011_21_12_34_+1000_WW=NwSEmwnG5MbzO
-Content-Type: application/pgp-signature
+But I'll make sure that this will not be a burden on Google. There's no
+reason that Google should be punished for using something that is
+mainline, and using the proper ABIs. The code in ftrace is very flexible
+and tools that use ftrace should still work even if we make internal
+changes.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I'll work closely with you to make sure that Google's tools will always
+work with future kernels.
 
-iQEcBAEBAgAGBQJN0lgiAAoJEDMEi1NhKgbsWocH/27UodpEsWOZbpUz8FzjXHl/
-71YtN6seVERwFXpM2HYuEv5w9Wo4FOZ22zZKwDKA700U37bLJt01AZLtZGgAIr02
-IWNI0fMB15qNsFRuRmTQ1OXUnB6ig+ZGPccIzU6DKY1/Y/Bb2b+i1phdxUEzF/QT
-pwe+C7HTVd6ucCev/CHVm0hF4A1XBhrJnlkY7GVDjixoMUEC3HLLVsMkddUuD3zi
-swPJIT678uyyafBiTBKsYen+lAEvpSRCAXCtLAxT2HJ0HJ1S0si4f1eWXN1fEK/R
-VA5hdyPo6iZvbETVbe7qniEJfNKW3Cz/frFW5Fz52WqTn69xrwCzrtT+eweIp5E=
-=Muaa
------END PGP SIGNATURE-----
+> 
+> I apologize if this is obvious to others but I am confused.
 
---Signature=_Tue__17_May_2011_21_12_34_+1000_WW=NwSEmwnG5MbzO--
+No need to apologize, it's a very confusing situation.
+
+-- Steve
+
+
