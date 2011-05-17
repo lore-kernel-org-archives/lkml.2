@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932606Ab1EQXHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 19:07:51 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57139 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932566Ab1EQXHu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 19:07:50 -0400
-Date: Tue, 17 May 2011 19:07:47 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Dave Jones <davej@redhat.com>
-cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 10/10] mach-ux500: update and move cpufreq driver
-In-Reply-To: <20110517211223.GA1909@redhat.com>
-Message-ID: <alpine.LFD.2.00.1105171905150.14430@xanadu.home>
-References: <1304687191-23814-1-git-send-email-linus.walleij@stericsson.com> <201105061522.33179.arnd@arndb.de> <20110510055926.GA2747@redhat.com> <BANLkTimh2Xaz73v-2c0GmcS9wD4+JFWzrw@mail.gmail.com> <20110517211223.GA1909@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932593Ab1EQXH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 19:07:28 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33508 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932553Ab1EQXH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 19:07:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: markgross@thegnar.org
+Subject: Re: [linux-pm] pm loss development
+Date: Wed, 18 May 2011 01:07:57 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Raffaele Recalcati <lamiaposta71@gmail.com>,
+        linux-pm@lists.linux-foundation.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org
+References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com> <201105131854.57854.rjw@sisk.pl> <20110514163513.GB8292@gvim.org>
+In-Reply-To: <20110514163513.GB8292@gvim.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105180107.58078.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 May 2011, Dave Jones wrote:
-
-> On Mon, May 16, 2011 at 11:02:14AM +0200, Linus Walleij wrote:
->  > Can you please look into this and ACK the patches if they
->  > seem OK?
+On Saturday, May 14, 2011, mark gross wrote:
+> On Fri, May 13, 2011 at 06:54:57PM +0200, Rafael J. Wysocki wrote:
+> > On Friday, May 13, 2011, Raffaele Recalcati wrote:
+> > > Hi Rafael,
+> > > 
+> > > 2011/5/12 Rafael J. Wysocki <rjw@sisk.pl>:
+> > > > On Thursday, May 12, 2011, Raffaele Recalcati wrote:
+> > > >> What happen normally in runtime pm implementation is that every devices
+> > > >> are switched off and are enabled only when needed.
+> > > >> In our case instead we have a completely functional embedded system and,
+> > > >> when an asyncrhonous event appear, we have only some tens milliseconds
+> > > >> before the actual power failure takes place.
+> > > >> This patchset add a support in order to switch off not vital part of the system,
+> > > >> in order to allow the board to survive longer.
+> > > >> This allow the possibility to save important data.
+> > > >
+> > > > OK, so first, who decides what parts of the system are vital and what aren't?
+> > > 
+> > > Take a quick look at Documentation/power/loss.txt  paragrpah "2.4
+> > > Power loss policies".
+> > > You can decide what can be powered off.
+> > 
+> > I read the patches.  My question was about the general idea of who should
+> > be responsible of making these decisions.
 > 
-> The patch that moves the driver over looked ok to me, so feel free
-> to add my acked-by to it.
+> I would expect the system integrator would based on the application the
+> device is getting deployed into.
 > 
-> From the look of things, the Kconfig is staying under arch/arm for now ?
+> A generic opportunistic policy for peripherals that are stateless and can
+> be trivially power gated off/on from an ISR could be a default but, for
+> peripherals that need to do some processing (like waiting on an eMMC DMA
+> to complete) can take time to power down into a safe state.
 
-I think this would be better if the Kconfig entry moved along with the 
-code, adding the appropriate dependencies as needed.
+What do you mean by safe state?
 
-
-Nicolas
+Rafael
