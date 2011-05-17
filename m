@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab1EQIon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 04:44:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35131 "EHLO mga09.intel.com"
+	id S1753153Ab1EQIoY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 04:44:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33964 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752084Ab1EQIoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 04:44:22 -0400
+	id S1752142Ab1EQIoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 04:44:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,224,1304319600"; 
-   d="scan'208";a="643685559"
-Message-Id: <20110517084117.572970726@sli10-conroe.sh.intel.com>
+   d="scan'208";a="748364297"
+Message-Id: <20110517084419.440768845@sli10-conroe.sh.intel.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 17 May 2011 16:41:17 +0800
+Date: Tue, 17 May 2011 16:41:18 +0800
 From: Shaohua Li <shaohua.li@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, tj@kernel.org, eric.dumazet@gmail.com,
-        cl@linux.com
-Subject: [patch v3 0/3] percpu_counter: bug fix and enhancement
+        cl@linux.com, Shaohua Li <shaohua.li@intel.com>
+Subject: [patch v3 1/3] percpu_counter: fix code for 32bit systems for UP
+References: <20110517084117.572970726@sli10-conroe.sh.intel.com>
+Content-Disposition: inline; filename=percpu-counter-32bits.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch sets do two things.
-1. fix bug for 32-bit system. percpu_counter uses s64 counter. Without any
-locking reading s64 in 32-bit system isn't safe and can cause bad side effect.
-2. improve scalability for __percpu_counter_add. In some cases, _add could
-cause heavy lock contention (see patch 2 for detailed infomation and data).
-The patches will remove the contention and speed up it a bit. Last post
-(http://marc.info/?l=linux-kernel&m=130259547913607&w=2) simpliy uses
-atomic64 for percpu_counter, but Tejun pointed out this could cause
-deviation in __percpu_counter_sum.
+percpu_counter.counter is a 's64'. Accessing it in 32-bit system is racing.
+we need some locking to protect it otherwise some very wrong value could be
+accessed.
 
-In this impelmentation, we track _sum and _add state. When _sum starts, _add
-will wait _sum to finish. This sounds scaring, since _add is fast path. But
-since _sum is called rare, at most time _add doesn't need wait.
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+---
+ include/linux/percpu_counter.h |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
-patch 1 fix s64 read bug for 32-bit system for UP
-patch 2,3 fix s64 read bug for 32-bit system for MP. And it also improve the
-scalability for __percpu_counter_add.
+Index: linux/include/linux/percpu_counter.h
+===================================================================
+--- linux.orig/include/linux/percpu_counter.h	2011-05-05 10:33:12.000000000 +0800
++++ linux/include/linux/percpu_counter.h	2011-05-06 11:19:26.000000000 +0800
+@@ -101,14 +101,34 @@ static inline void percpu_counter_destro
+ 
+ static inline void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
+ {
++#if BITS_PER_LONG == 32
++	preempt_disable();
++	fbc->count = amount;
++	preempt_enable();
++#else
+ 	fbc->count = amount;
++#endif
++}
++
++static inline s64 percpu_counter_read(struct percpu_counter *fbc)
++{
++#if BITS_PER_LONG == 32
++	s64 count;
++	preempt_disable();
++	count = fbc->count;
++	preempt_enable();
++	return count;
++#else
++	return fbc->count;
++#endif
+ }
+ 
+ static inline int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs)
+ {
+-	if (fbc->count > rhs)
++	s64 count = percpu_counter_read(fbc);
++	if (count > rhs)
+ 		return 1;
+-	else if (fbc->count < rhs)
++	else if (count < rhs)
+ 		return -1;
+ 	else
+ 		return 0;
+@@ -128,18 +148,13 @@ __percpu_counter_add(struct percpu_count
+ 	percpu_counter_add(fbc, amount);
+ }
+ 
+-static inline s64 percpu_counter_read(struct percpu_counter *fbc)
+-{
+-	return fbc->count;
+-}
+-
+ /*
+  * percpu_counter is intended to track positive number. In UP case, the number
+  * should never be negative.
+  */
+ static inline s64 percpu_counter_read_positive(struct percpu_counter *fbc)
+ {
+-	return fbc->count;
++	return percpu_counter_read(fbc);
+ }
+ 
+ static inline s64 percpu_counter_sum_positive(struct percpu_counter *fbc)
 
-I did some benchmarks with the patches applied:
-Test1:
-24 CPUs do:
-while {
-mmap(32M);
-munmap(32M);
-}
-Each CPU is about 7x faster to do the loop.
-
-Test2:
-One CPU does:
-while {
-__percpu_counter_add(+count)
-__percpu_counter_add(-count)
-}
-the loop do 10000000 times.
-in _add fast path (no locking hold):
-before my patch:
-real    0m0.133s
-user    0m0.000s
-sys     0m0.124s
-after:
-real    0m0.129s
-user    0m0.000s
-sys     0m0.120s
-the difference is variation
-
-in _add slow path (locking hold):
-before my patch:
-real    0m0.374s
-user    0m0.000s
-sys     0m0.372s
-after:
-real    0m0.245s
-user    0m0.000s
-sys     0m0.020s
-
-Test3:
-One CPU runs percpu_counter_sum, 23 CPUs run percpu_counter_add. In _add
-fast path (don't hold) lock, _sum runs a little slow (about 20% slower).
-In _add slow path (hold lock), _sum runs much faster (about 9x faster)
-
-So overall my patches make percpu_counter API faster. The only exception
-is _sum has a little slower in one case, but _sum is called rare, the 20%
-slower doesn't matter.
-
-Thanks,
-Shaohua
