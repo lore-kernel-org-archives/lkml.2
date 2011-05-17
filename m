@@ -1,86 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab1EQMUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 08:20:31 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64457 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316Ab1EQMU2 (ORCPT
+	id S1754312Ab1EQMYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 08:24:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42978 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753713Ab1EQMYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 08:20:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=L8vD4Yd8zXk2n6Q+yG9qsFoF1eH+NDmZlXf+pRLQRN/P3vm9qwFJR0g2UPVKUUXBax
-         tExn4zo6nhyGi72S66Y1WNiL0GHc6+NrvOTS8uyW6kpaHfVhaLJr8UGft+6EW6nh+a+t
-         2R+47f2aUQ0lNa6u0Rf/DICQSPoZYGnW32tt4=
-Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: Benoit Sigoure <tsunanet@gmail.com>, davem@davemloft.net,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <e6b52d895fca947b4cce2896d593619b@localhost>
-References: <1305618020-72535-1-git-send-email-tsunanet@gmail.com>
-	 <1305618020-72535-2-git-send-email-tsunanet@gmail.com>
-	 <1305619677.2850.11.camel@edumazet-laptop>
-	 <e6b52d895fca947b4cce2896d593619b@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 14:20:23 +0200
-Message-ID: <1305634823.2850.90.camel@edumazet-laptop>
+	Tue, 17 May 2011 08:24:19 -0400
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Shiang Tu <shiang_tu@ralinktech.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-+K7cNoLCi2IAWvUsMdIv"
+Date: Tue, 17 May 2011 13:24:12 +0100
+Message-ID: <1305635052.19966.142.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.32.3 
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: [GIT PULL linux-firmware.git] CIS source, Ralink firmware
+ consolidation
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 17 mai 2011 à 13:02 +0200, Hagen Paul Pfeifer a écrit :
-> On Tue, 17 May 2011 10:07:57 +0200, Eric Dumazet wrote:
-> 
-> > I wont discuss if introducing a new sysctl is welcomed, only on patch
-> > issues. I believe some work in IETF is done to reduce the 3sec value to
-> > 1sec anyway.
-> 
-> Why not? 
 
-Just because I let this point to David and others. I personally dont
-care that much.
+--=-+K7cNoLCi2IAWvUsMdIv
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> I though all new knobs in this area should be done on a per route
-> metric so it can be controlled on a per path basis. RTO should be
-> adjustable on a per path basis, because it depends on the path.
-> 
+The following changes since commit 82273130ddc0af5599b1138b07ebe6ceaabecb72=
+:
 
-Adding many knobs to each clone had a huge cost on previous kernels.
-(Think some machines have millions entries in IP route cache), this used
-quite a lot of memory.
+  linux-firmware: bnx2: Update firmware and version (2011-05-11 00:27:11 +0=
+100)
 
-With latest David work, we'll consume less ram, because we can now share
-settings, instead of copying them on each dst entry.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/bwh/linux-firmware.git mast=
+er
 
+Ben Hutchings (3):
+      Add source and copyright notice for CIS files from pcmcia-cs
+      rt2860sta: Use latest firmware for RT3090
+      rt2870sta: Use latest firmware for RT3070 and RT3071
 
+ WHENCE                |   39 +++++++++++++++++++++++++++++++++------
+ cis/src/3CCFEM556.cis |   22 ++++++++++++++++++++++
+ cis/src/3CXEM556.cis  |   22 ++++++++++++++++++++++
+ cis/src/COMpad2.cis   |   20 ++++++++++++++++++++
+ cis/src/COMpad4.cis   |   14 ++++++++++++++
+ cis/src/DP83903.cis   |   24 ++++++++++++++++++++++++
+ cis/src/LA-PCM.cis    |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ cis/src/MT5634ZLX.cis |   18 ++++++++++++++++++
+ cis/src/NE2K.cis      |   10 ++++++++++
+ cis/src/PCMLM28.cis   |   37 +++++++++++++++++++++++++++++++++++++
+ cis/src/PE-200.cis    |   11 +++++++++++
+ cis/src/PE520.cis     |   11 +++++++++++
+ cis/src/RS-COM-2P.cis |   14 ++++++++++++++
+ cis/src/tamarack.cis  |   17 +++++++++++++++++
+ rt3070.bin            |  Bin 4096 -> 10 bytes
+ rt3071.bin            |  Bin 4096 -> 4096 bytes
+ rt3090.bin            |  Bin 8192 -> 10 bytes
+ 17 files changed, 297 insertions(+), 6 deletions(-)
+ create mode 100644 cis/src/3CCFEM556.cis
+ create mode 100644 cis/src/3CXEM556.cis
+ create mode 100644 cis/src/COMpad2.cis
+ create mode 100644 cis/src/COMpad4.cis
+ create mode 100644 cis/src/DP83903.cis
+ create mode 100644 cis/src/LA-PCM.cis
+ create mode 100644 cis/src/MT5634ZLX.cis
+ create mode 100644 cis/src/NE2K.cis
+ create mode 100644 cis/src/PCMLM28.cis
+ create mode 100644 cis/src/PE-200.cis
+ create mode 100644 cis/src/PE520.cis
+ create mode 100644 cis/src/RS-COM-2P.cis
+ create mode 100644 cis/src/tamarack.cis
+ mode change 100644 =3D> 120000 rt3070.bin
+ mode change 100644 =3D> 120000 rt3090.bin
 
-> Some months back [1] I posted a patch to enable/disable TCP quick ack
-> mode, which has nothing to do with network paths, just with a local server
-> policy. But David rejected the patch with the argument that I should use a
-> per path knob (this is a little bit inapprehensible for me, but David has
-> the last word).
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
 
-Well, if nobody speaks after David, he has the last word indeed.
+--=-+K7cNoLCi2IAWvUsMdIv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-BTW, I remember Stephen actually asked the per route thing, not David.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-http://kerneltrap.org/mailarchive/linux-netdev/2010/8/23/6283641
+iQIVAwUATdJo7Oe/yOyVhhEJAQo0bA//Y6k5fg0bVIDw3gBusdYgMCk2Unlrv20e
+jRDq7SKlpVeXQ8LVGgsMogVTB/yRbUq5BAsWkWSy3KalpU9t/sVSieoTtJL9OyS5
+DM9a1jDGDOIXmurA2IUQ/GAMDNdfD9esJ/tExhR9bRRMkCpVrA0H2JRQ0yq3GyF1
+qoq9aCpCl30EgIMtCd1JfCxRQ85fYSqGaEhKZiNhrd37GgHBVbh65aT5lNjsKISB
+pJCqzCx1zGfC8G1yuCxk+OyNo9ZspaaDKW9ZqSCxKQDHl/iiW0yiYBYg3RU+/1Xs
+cQunjxbwBADI1eEBiiHnBilj5wfhnxLNS59ocSkTjCXnGMTuxG4WFlENrU8Szj58
+kX/UHr+8VTvTA5e9dsXYabFokxoxNnwR02WyDY7WIRITWe023Itb9zdfeoq8cxrm
+JglmaLud2VJ8hLyD/8HqhnA2E/uHnSuMzJaNjdzDIYlXhJwKOg+bli4ybLkDDFnb
+QYpnpMxA/IlrMyMvmGUgz3jPErcEs3GRLmKMnqZnz5bGBZ+8JP6IA6srexuJQfcR
+BkG20HcqhCYFS2ivMDO6Ps9JLW5JS/p93PWTDkJqVmkgFE1tG85uTGgsP+vBjx5z
+1UBLhDV+acgjjZIQOapuNHcB4MdHNEO70pgV79fZg8nT4zuIUWCAW+WFk5wVEbiQ
+r2q20TlooZg=
+=YdTx
+-----END PGP SIGNATURE-----
 
-Then David also stated it :
-
-http://kerneltrap.org/mailarchive/linux-netdev/2010/8/23/6283678
-
-If you really want tcp_quickack thing you really should do it as
-requested by both Stephen & David ;)
-
-Unfortunately, I dont know if its really needed or worthwhile.
-
-
+--=-+K7cNoLCi2IAWvUsMdIv--
