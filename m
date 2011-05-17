@@ -1,130 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab1EQGlo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 02:41:44 -0400
-Received: from nm13-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.160]:43804
-	"HELO nm13-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752687Ab1EQGlZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 02:41:25 -0400
-X-Yahoo-Newman-Id: 228698.8110.bm@omp1013.access.mail.sp2.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: DnaLLL0VM1kFBldE6M_HncR4WdMnzFY7DbHd0EcF.Vn51UX
- mr28YgrEv8dLoNM3W8YexA0fTKTvXrHGpexVRfUaZomAIGXwIh8QQmCKGX1.
- H9nuXXXUc4OOuCupReWSn6eVqXUw2cUvC8tNLBNoEOTTedLhChxd7P.oAPUm
- q8dk2xz31L3GP0VtJ60PPaak.Ec6skohSIJSZ7f1Gu..A07Og7_gFzXr6ky7
- UGDSG6aAigiORFTR05k7wLO7OIz1qPUqg_P0ARpzc3XJRy_hAECrulcHzEXu
- _KkLrwaIYqoMAIoCi64eB7rw23xZh8C4bVGB79QP.7A9vK3DF8f09hNMC7Io
- wOfTm9SvzIH1a2qa3NUoMJ_AEWwUDZhKWauoLISdAgmvteusDzflRfirIsyl
- XRqrThE4tptWjN9AGUOhBIk2y
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Martin Svec <martin.svec@zoner.cz>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v4 14/14] iscsi-target: Add Makefile/Kconfig and update TCM top level
-Date: Mon, 16 May 2011 23:39:34 -0700
-Message-Id: <1305614374-17953-15-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1305614374-17953-1-git-send-email-nab@linux-iscsi.org>
-References: <1305614374-17953-1-git-send-email-nab@linux-iscsi.org>
+	id S1753811Ab1EQGl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 02:41:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23896 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752424Ab1EQGl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 02:41:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,223,1304319600"; 
+   d="scan'208";a="643641517"
+Message-ID: <4DD218B1.7080601@intel.com>
+Date: Tue, 17 May 2011 14:41:53 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Iceowl/1.0b2 Icedove/3.1.9
+MIME-Version: 1.0
+To: Don Zickus <dzickus@redhat.com>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [RFC] ACPI, APEI, Generic Hardware Error Source (GHES) injecting
+ support
+References: <1304996921-24881-1-git-send-email-ying.huang@intel.com> <20110516193301.GF29881@redhat.com>
+In-Reply-To: <20110516193301.GF29881@redhat.com>
+Content-Type: multipart/mixed;
+ boundary="------------080605000002000107090809"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+This is a multi-part message in MIME format.
+--------------080605000002000107090809
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Add Makefile/Kconfig and update drivers/target/[Makefile,Kconfig]
-to include the fabric module.
+On 05/17/2011 03:33 AM, Don Zickus wrote:
+> On Tue, May 10, 2011 at 11:08:41AM +0800, Huang Ying wrote:
+>> The testing of Generic Hardware Error Source (GHES) is quite
+>> difficult, because special hardware is needed to trigger the hardware
+>> error. So a software based hardware error injector for GHES is
+>> implemented.
+>>
+>> Error notification is not provided in this patch.  So you still need
+>> some NMI/SCI/IRQ injecting support to make it work.
+> 
+> Should we add that to this patch, otherwise it seems like the injection
+> isn't very useful or intuitive from the end-user perspective that they
+> have to provide their own notification source (ie NMI/SCI/MCE/IRQ).
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+We can provide the NMI/SCI/IRQ injecting in another patch.  What do you
+think about the NMI injecting patch attached?
+
+BTW: MCE will not be processed by GHES.
+
+Best Regards,
+Huang Ying
+
+--------------080605000002000107090809
+Content-Type: text/x-patch;
+ name="nmi_inject.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="nmi_inject.patch"
+
+Subject: [RFC] x86, NMI, NMI injecting support
+
+This patch implements trigger NMI on specified CPUs. At the same time,
+the NMI reason (contents of port 0x61) can be faked too. This can be
+used to debug and test the NMI handler.
+
+Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- drivers/target/Kconfig        |    1 +
- drivers/target/Makefile       |    1 +
- drivers/target/iscsi/Kconfig  |   18 ++++++++++++++++++
- drivers/target/iscsi/Makefile |   20 ++++++++++++++++++++
- 4 files changed, 40 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/iscsi/Kconfig
- create mode 100644 drivers/target/iscsi/Makefile
+ arch/x86/Kconfig.debug            |   10 +++
+ arch/x86/include/asm/mach_traps.h |    9 ++
+ arch/x86/kernel/Makefile          |    1 
+ arch/x86/kernel/nmi_inject.c      |  117 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/traps.c           |   34 ++++++++++-
+ 5 files changed, 167 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/target/Kconfig b/drivers/target/Kconfig
-index 9ef2dbb..e0619cd 100644
---- a/drivers/target/Kconfig
-+++ b/drivers/target/Kconfig
-@@ -30,5 +30,6 @@ config TCM_PSCSI
- 	passthrough access to Linux/SCSI device
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -304,4 +304,14 @@ config DEBUG_STRICT_USER_COPY_CHECKS
  
- source "drivers/target/loopback/Kconfig"
-+source "drivers/target/iscsi/Kconfig"
+ 	  If unsure, or if you run an older (pre 4.4) gcc, say N.
  
- endif
-diff --git a/drivers/target/Makefile b/drivers/target/Makefile
-index 1178bbf..2fbc20e 100644
---- a/drivers/target/Makefile
-+++ b/drivers/target/Makefile
-@@ -24,3 +24,4 @@ obj-$(CONFIG_TCM_PSCSI)		+= target_core_pscsi.o
++config NMI_INJECT
++	tristate "NMI injecting support"
++	depends on DEBUG_KERNEL
++	---help---
++	  This can be used to trigger NMI on specified CPUs. And the
++	  reason of NMI (contents of port 0x61) can be faked
++	  too. This can be used to debug and test the NMI handler.
++
++	  If unsure, say N.
++
+ endmenu
+--- a/arch/x86/include/asm/mach_traps.h
++++ b/arch/x86/include/asm/mach_traps.h
+@@ -17,7 +17,7 @@
+ #define NMI_REASON_CLEAR_IOCHK	0x08
+ #define NMI_REASON_CLEAR_MASK	0x0f
  
- # Fabric modules
- obj-$(CONFIG_LOOPBACK_TARGET)	+= loopback/
-+obj-$(CONFIG_ISCSI_TARGET)	+= iscsi/
-diff --git a/drivers/target/iscsi/Kconfig b/drivers/target/iscsi/Kconfig
-new file mode 100644
-index 0000000..abdb8f9
+-static inline unsigned char get_nmi_reason(void)
++static inline unsigned char __get_nmi_reason(void)
+ {
+ 	return inb(NMI_REASON_PORT);
+ }
+@@ -40,4 +40,11 @@ static inline void reassert_nmi(void)
+ 		unlock_cmos();
+ }
+ 
++struct nmi_reason_inject_data {
++	unsigned char reason;
++	unsigned char valid : 1;
++};
++
++extern struct nmi_reason_inject_data nmi_reason_inject_data;
++
+ #endif /* _ASM_X86_MACH_DEFAULT_MACH_TRAPS_H */
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -113,6 +113,7 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+ obj-$(CONFIG_OF)			+= devicetree.o
+ 
+ obj-y					+= hwerr.o
++obj-$(CONFIG_NMI_INJECT)		+= nmi_inject.o
+ 
+ ###
+ # 64 bit specific files
 --- /dev/null
-+++ b/drivers/target/iscsi/Kconfig
-@@ -0,0 +1,18 @@
-+config ISCSI_TARGET
-+	tristate "Linux-iSCSI.org iSCSI Target Mode Stack"
-+	depends on m
-+	select CRYPTO
-+	select CRYPTO_CRC32C
-+	select CRYPTO_CRC32C_INTEL if X86
-+	help
-+	Say M here to enable the ConfigFS enabled Linux-iSCSI.org iSCSI
-+	Target Mode Stack.
++++ b/arch/x86/kernel/nmi_inject.c
+@@ -0,0 +1,117 @@
++/*
++ * NMI injector, for NMI handler testing
++ *
++ * Copyright 2010 Intel Corp.
++ *   Author: Huang Ying <ying.huang@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
 +
-+if ISCSI_TARGET
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/debugfs.h>
++#include <linux/cpu.h>
++#include <asm/mach_traps.h>
++#include <asm/apic.h>
 +
-+config ISCSI_TARGET_DEBUG
-+	bool "LIO-Target iscsi_debug.h ring buffer messages"
-+	help
-+	Say Y here to enable the legacy DEBUG_ISCSI macros in iscsi_debug.h
++static int nmi_reason_inject_get(void *data, u64 *val)
++{
++	if (nmi_reason_inject_data.valid)
++		*val = nmi_reason_inject_data.reason;
++	else
++		*val = ~0ULL;
++	return 0;
++}
 +
-+endif
-diff --git a/drivers/target/iscsi/Makefile b/drivers/target/iscsi/Makefile
-new file mode 100644
-index 0000000..5b9a2cf
---- /dev/null
-+++ b/drivers/target/iscsi/Makefile
-@@ -0,0 +1,20 @@
-+iscsi_target_mod-y +=		iscsi_target_parameters.o \
-+				iscsi_target_seq_pdu_list.o \
-+				iscsi_target_tq.o \
-+				iscsi_target_auth.o \
-+				iscsi_target_datain_values.o \
-+				iscsi_target_device.o \
-+				iscsi_target_erl0.o \
-+				iscsi_target_erl1.o \
-+				iscsi_target_erl2.o \
-+				iscsi_target_login.o \
-+				iscsi_target_nego.o \
-+				iscsi_target_nodeattrib.o \
-+				iscsi_target_tmr.o \
-+				iscsi_target_tpg.o \
-+				iscsi_target_util.o \
-+				iscsi_target.o \
-+				iscsi_target_configfs.o \
-+				iscsi_target_stat.o
++static int nmi_reason_inject_set(void *data, u64 val)
++{
++	nmi_reason_inject_data.reason = val;
++	nmi_reason_inject_data.valid = 1;
++	return 0;
++}
 +
-+obj-$(CONFIG_ISCSI_TARGET)	+= iscsi_target_mod.o
--- 
-1.7.5.1
++DEFINE_SIMPLE_ATTRIBUTE(nmi_reason_inject_fops, nmi_reason_inject_get,
++			nmi_reason_inject_set, "0x%llx\n");
++
++static int nmi_reason_uninject_set(void *data, u64 val)
++{
++	nmi_reason_inject_data.valid = 0;
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(nmi_reason_uninject_fops, NULL,
++			nmi_reason_uninject_set, "%llu\n");
++
++static int nmi_inject_set(void *data, u64 val)
++{
++	int cpu;
++	cpumask_var_t cpu_mask;
++
++	alloc_cpumask_var(&cpu_mask, GFP_KERNEL);
++	cpumask_clear(cpu_mask);
++	for_each_online_cpu(cpu) {
++		if (cpu >= sizeof(val))
++			continue;
++		if (val & (1ULL << cpu))
++			cpumask_set_cpu(cpu, cpu_mask);
++	}
++	if (!cpumask_empty(cpu_mask))
++		apic->send_IPI_mask(cpu_mask, NMI_VECTOR);
++	free_cpumask_var(cpu_mask);
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(nmi_inject_fops, NULL, nmi_inject_set, "0x%llx\n");
++
++static struct dentry *nmi_debug_dir;
++
++static int __init nmi_inject_init(void)
++{
++	int rc;
++	struct dentry *de;
++
++	rc = -ENOMEM;
++	nmi_debug_dir = debugfs_create_dir("nmi", NULL);
++	if (!nmi_debug_dir)
++		return rc;
++	de = debugfs_create_file("inject", S_IWUSR, nmi_debug_dir,
++				 NULL, &nmi_inject_fops);
++	if (!de)
++		goto err;
++	de = debugfs_create_file("reason_inject", S_IRUSR | S_IWUSR,
++				 nmi_debug_dir, NULL, &nmi_reason_inject_fops);
++	if (!de)
++		goto err;
++	de = debugfs_create_file("reason_uninject", S_IWUSR,
++				 nmi_debug_dir, NULL, &nmi_reason_uninject_fops);
++	if (!de)
++		goto err;
++
++	return 0;
++err:
++	debugfs_remove_recursive(nmi_debug_dir);
++	return rc;
++}
++
++static void __exit nmi_inject_exit(void)
++{
++	debugfs_remove_recursive(nmi_debug_dir);
++}
++
++module_init(nmi_inject_init);
++module_exit(nmi_inject_exit);
++
++MODULE_AUTHOR("Huang Ying");
++MODULE_DESCRIPTION("NMI injecting support");
++MODULE_LICENSE("GPL");
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -316,6 +316,34 @@ static int __init setup_unknown_nmi_pani
+ }
+ __setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+ 
++struct nmi_reason_inject_data nmi_reason_inject_data;
++EXPORT_SYMBOL_GPL(nmi_reason_inject_data);
++
++static inline unsigned char get_nmi_reason(void)
++{
++	if (nmi_reason_inject_data.valid)
++		return nmi_reason_inject_data.reason;
++	else
++		return __get_nmi_reason();
++}
++
++static inline void outb_nmi_reason(unsigned char reason)
++{
++	static unsigned char prev_reason;
++
++	if (nmi_reason_inject_data.valid) {
++		if (reason & NMI_REASON_CLEAR_SERR)
++			nmi_reason_inject_data.reason &= ~NMI_REASON_SERR;
++		if (prev_reason == (reason | NMI_REASON_CLEAR_IOCHK) &&
++		    !(reason & NMI_REASON_CLEAR_IOCHK))
++			nmi_reason_inject_data.reason &= ~NMI_REASON_IOCHK;
++		if (!nmi_reason_inject_data.reason)
++			nmi_reason_inject_data.valid = 0;
++		prev_reason = reason;
++	} else
++		outb(reason, NMI_REASON_PORT);
++}
++
+ static notrace __kprobes void
+ pci_serr_error(unsigned char reason, struct pt_regs *regs)
+ {
+@@ -340,7 +368,7 @@ pci_serr_error(unsigned char reason, str
+ 
+ 	/* Clear and disable the PCI SERR error line. */
+ 	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
+-	outb(reason, NMI_REASON_PORT);
++	outb_nmi_reason(reason);
+ }
+ 
+ static notrace __kprobes void
+@@ -358,7 +386,7 @@ io_check_error(unsigned char reason, str
+ 
+ 	/* Re-enable the IOCK line, wait for a few seconds */
+ 	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_IOCHK;
+-	outb(reason, NMI_REASON_PORT);
++	outb_nmi_reason(reason);
+ 
+ 	i = 20000;
+ 	while (--i) {
+@@ -367,7 +395,7 @@ io_check_error(unsigned char reason, str
+ 	}
+ 
+ 	reason &= ~NMI_REASON_CLEAR_IOCHK;
+-	outb(reason, NMI_REASON_PORT);
++	outb_nmi_reason(reason);
+ }
+ 
+ void set_unknown_nmi_as_hwerr(void)
 
+--------------080605000002000107090809--
