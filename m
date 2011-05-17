@@ -1,134 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab1EQTSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 15:18:20 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51235 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756397Ab1EQTSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 15:18:17 -0400
-Date: Tue, 17 May 2011 21:18:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [RFC] ACPI, APEI, Generic Hardware Error Source (GHES) injecting
- support
-Message-ID: <20110517191803.GC29574@elte.hu>
-References: <1304996921-24881-1-git-send-email-ying.huang@intel.com>
- <20110516193301.GF29881@redhat.com>
- <4DD218B1.7080601@intel.com>
- <20110517135027.GJ31888@redhat.com>
+	id S1756534Ab1EQTSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 15:18:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44038 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756493Ab1EQTSs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 15:18:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Mq+f/x5YKA0tpPfpWtHj3JogBRuIQWxlwTQ2XMkW6GqV89bF+P2xnJaEXfjZvnB9Al
+         hw9iAledIlHnZWJtE2vip7WRjmFwO+ahxKEDecwnoGYazFO4M9jIcgLE8GAbwHJ0HT0e
+         JDY11OVWYe3YGJUGHEkTrrDLhu7+YZImFgBYY=
+Message-ID: <4DD2CA02.9040707@googlemail.com>
+Date: Tue, 17 May 2011 21:18:26 +0200
+From: Dirk Behme <dirk.behme@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110517135027.GJ31888@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.3.1
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Alessio Igor Bogani <abogani@kernel.org>,
+        Anders Kaseorg <andersk@ksplice.com>, Tim Abbott <tabbott@ksplice.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH] module: Use binary search in lookup_symbol()
+References: <BANLkTi=2jW5PHB6QCaddHeZH0P=9PKWosw@mail.gmail.com> <1305577420-3685-1-git-send-email-abogani@kernel.org> <878vu6nftw.fsf@rustcorp.com.au>
+In-Reply-To: <878vu6nftw.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 17.05.2011 05:52, Rusty Russell wrote:
+> On Mon, 16 May 2011 22:23:40 +0200, Alessio Igor Bogani<abogani@kernel.org>  wrote:
+>> This work was supported by a hardware donation from the CE Linux Forum.
+>>
+>> Signed-off-by: Alessio Igor Bogani<abogani@kernel.org>
+>> ---
+>>   kernel/module.c |    6 ++----
+>>   1 files changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/kernel/module.c b/kernel/module.c
+>> index 6a34337..54355c5 100644
+>> --- a/kernel/module.c
+>> +++ b/kernel/module.c
+>> @@ -2055,10 +2055,8 @@ static const struct kernel_symbol *lookup_symbol(const char *name,
+>>   	const struct kernel_symbol *stop)
+>>   {
+>>   	const struct kernel_symbol *ks = start;
+>> -	for (; ks<  stop; ks++)
+>> -		if (strcmp(ks->name, name) == 0)
+>> -			return ks;
+>> -	return NULL;
+>> +	return bsearch(name, start, stop - start,
+>> +			sizeof(struct kernel_symbol), cmp_name);
+>>   }
+>>
+>>   static int is_exported(const char *name, unsigned long value,
+>
+> Applied.
 
-* Don Zickus <dzickus@redhat.com> wrote:
+Sorry, but where have you applied it?
 
-> On Tue, May 17, 2011 at 02:41:53PM +0800, Huang Ying wrote:
-> > On 05/17/2011 03:33 AM, Don Zickus wrote:
-> > > On Tue, May 10, 2011 at 11:08:41AM +0800, Huang Ying wrote:
-> > >> The testing of Generic Hardware Error Source (GHES) is quite
-> > >> difficult, because special hardware is needed to trigger the hardware
-> > >> error. So a software based hardware error injector for GHES is
-> > >> implemented.
-> > >>
-> > >> Error notification is not provided in this patch.  So you still need
-> > >> some NMI/SCI/IRQ injecting support to make it work.
-> > > 
-> > > Should we add that to this patch, otherwise it seems like the injection
-> > > isn't very useful or intuitive from the end-user perspective that they
-> > > have to provide their own notification source (ie NMI/SCI/MCE/IRQ).
-> > 
-> > We can provide the NMI/SCI/IRQ injecting in another patch.  What do you
-> > think about the NMI injecting patch attached?
-> 
-> I understand what the patch is doing and I like the various injection
-> points, but looking at your other injection modules I start to wonder if
-> there is a smarter and easier way to do all this.  I believe the software
-> injection is definitely useful but it does add bloat to the kernel.
-> 
-> I am starting to like Ingo's event filtering idea for stuff like this I
-> think (though I am still wrapping my head around it).  The beauty of
-> kprobes and tracepoints and even jump labels was that they were not very
-> intrusive, they did their work on the side.  It would be nice if we could
-> figure out a framework for the injection stuff that did something similar.
-> 
-> Perhaps Ingo has some ideas?
+With the version above we should get a warning
 
-Boris has injection in the EDAC code as well and wants it for RAS purposes and 
-i recently outlined to him how event injection could possible look like in the 
-not so far future:
+kernel/module.c: In function 'lookup_symbol':
+kernel/module.c:1809: warning: unused variable 'ks'
 
----------------->
+?
 
-I think the model we want is to inject actual perf events at the *kernel* 
-level, and to add the ability for some events (MCE events here) to also run a 
-(optional) callback once user-space does that injection.
+Best regards
 
-So for example [sufficienty privileged] user-space could inject *any* perf 
-event - for example a PERF_COUNT_HW_CACHE_MISSES event (for test purposes) and 
-any tooling that runs could not tell apart this injected event from a real 
-event.
-
-Once we have that, adding a injection callback to MCE events is just another 
-step: such a callback could propagate the injected event to the real hardware 
-for example, if that is possible. (it would validate, etc. as well)
-
-In the generic case the event just gets injected into the perf event stream.
-
-The ABI for injection could be some obvious extension, either another ioctl 
-variant to the perf fd itself, we already have various ways to access it:
-
- #define PERF_EVENT_IOC_ENABLE           _IO ('$', 0)
- #define PERF_EVENT_IOC_DISABLE          _IO ('$', 1)
- #define PERF_EVENT_IOC_REFRESH          _IO ('$', 2)
- #define PERF_EVENT_IOC_RESET            _IO ('$', 3)
- #define PERF_EVENT_IOC_PERIOD           _IOW('$', 4, __u64)
- #define PERF_EVENT_IOC_SET_OUTPUT       _IO ('$', 5)
- #define PERF_EVENT_IOC_SET_FILTER       _IOW('$', 6, char *)
-
-Or sys_write() access to the perf event fd. The sys_write() one looks like the
-conceptually nicest solution to me, because we can read() the fd as well to get
-event (counts..) out of it.
-
-I think this model would give us a *lot* of testing power, and we could utilize
-arbitrary hardware-injection capabilities as well.
-
-<----------------
-
-That way what would remain in mm/memory-failure.c file is all the useful (and 
-interesting!) MM specific knowledge: the method of getting to a list of 
-affected tasks for policy action, to collect the tasks that are affected by an 
-anonymous page going bad, or by a pagecache page going bad, etc.
-
-These would be offered as filter action functionality, and could be triggered 
-from filters straight in the kernel, without having to touch a user-space 
-daemon.
-
-The whole boring transport, filtering, enumeration and configuration that is 
-duplicated here would go away and would be replaced by EVENT() definitions in 
-the places that generate events and callbacks to filter action in 
-mm/memory-inject.c.
-
-Now what is somewhat unfortunate as a practical matter is that some of this 
-functionality has already been exposed in semi-ABI ways in an ad-hoc fashion, 
-so some of the design may be hardcoded. That does not keep me from pointing out 
-when i see the mess growing ... :-)
-
-Thanks,
-
-	Ingo
+Dirk
