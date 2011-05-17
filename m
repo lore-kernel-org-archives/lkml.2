@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab1EQQyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 12:54:01 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58294 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755277Ab1EQQx7 (ORCPT
+	id S1755914Ab1EQQ5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 12:57:39 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:46112 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755604Ab1EQQ5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 12:53:59 -0400
-Date: Tue, 17 May 2011 18:53:18 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: =?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>
-Cc: Borislav Petkov <bp@amd64.org>, Nick Bowler <nbowler@elliptictech.com>,
-        "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        "Rosenfeld, Hans" <Hans.Rosenfeld@amd.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] AMD ARAT fixes
-Message-ID: <20110517165318.GH30053@aftab>
-References: <1305636919-31165-1-git-send-email-bp@amd64.org>
- <4DD2A496.8000407@web.de>
+	Tue, 17 May 2011 12:57:37 -0400
+Date: Tue, 17 May 2011 11:57:20 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Nick Kossifidis <mickflemm@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: ath5k regression associating with APs in 2.6.38
+Message-ID: <20110517165720.GB9258@thinkpad-t410>
+Mail-Followup-To: Nick Kossifidis <mickflemm@gmail.com>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	Jiri Slaby <jirislaby@gmail.com>,
+	"Luis R. Rodriguez" <lrodriguez@atheros.com>,
+	Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
+	ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20110504153819.GA4551@thinkpad-t410>
+ <20110504172716.GC18541@tuxdriver.com>
+ <20110504192639.GB4551@thinkpad-t410>
+ <BANLkTimEmBRyxbZgffJMrH4TTc4f6peuTg@mail.gmail.com>
+ <20110505135207.GA13727@thinkpad-t410>
+ <BANLkTinkiTQU2k7vBEc0JPGa01AUVCvp2Q@mail.gmail.com>
+ <20110509070230.GA20458@thinkpad-t410>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DD2A496.8000407@web.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110509070230.GA20458@thinkpad-t410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 12:38:46PM -0400, Jörg-Volker Peetz wrote:
-> A kernel version 2.6.38.6 patched with your two patches modifying only
-> arch/x86/kernel/cpu/amd.c starts and runs without problems on the affected
-> system with a AMD Turion 64 processor. The system is pure x86_64 (Debian
-> Release: wheezy/sid) with gcc version 4.6.1 20110428 (prerelease) (Debian
-> 4.6.0-6) and GNU C Library (Debian EGLIBC 2.13-4) stable release version 2.13.
+On Mon, May 09, 2011 at 09:02:30AM +0200, Seth Forshee wrote:
+> On Thu, May 05, 2011 at 05:30:42PM +0300, Nick Kossifidis wrote:
+> > Hmm I don't see any errors from reset/phy code, can you disable
+> > Network Manager/wpa-supplicant and test connection on an open network
+> > using iw ? It 'll give us a better picture...
+> > 
+> > If iw doesn't return any scan results we are probably hitting a PHY/RF
+> > error specific to your device (not all vendors follow the reference
+> > design). Maybe we should follow a blacklist/whitelist approach for
+> > this feature.
+> 
+> I got the results back from my tester. He was able to get scan results,
+> but it took multiple tries and the direct probe failures appear in the
+> log. He didn't enable ATH5K_DEBUG_RESET this time; let me know if you
+> need that and I'll request he retest with the extra debug logs enabled.
 
-Thanks for testing!
+I got some more feedback. Most of the time iw does not get scan results,
+but even when it does connecting to the AP isn't always successful. The
+tester did note that he doesn't seem to have any trouble if his machine
+is within a few feet of his AP. Let me know if you'd like something else
+tested.
 
-> The only obvious difference I see is the message "using C1E aware idle routine"
-> in dmesg.
+I noticed that bugzilla #31922 (ath5k: Decreased throughput in IBSS or
+802.11n mode) is also fixed by reverting 8aec7af9. It seems like the
+synth-only channel changes are resulting in poor connection quality.
+Maybe that patch needs to be reverted?
 
-That was your CPU, right:
+Thanks,
+Seth
 
-vendor_id       : AuthenticAMD
-cpu family      : 15
-model           : 36
-model name      : AMD Turion(tm) 64 Mobile Technology MT-40
-stepping        : 2
-
-?
-
-If so, then the C1E idle line above shouldn't appear. Can you check that
-around line 698 in <arch/x86/kernel/cpu/amd.c> you have the following:
-
- const int amd_erratum_400[] =
-       AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
-                           AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
-
-On your machine, you should be using the default_idle routine instead,
-since you don't have C1E.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
