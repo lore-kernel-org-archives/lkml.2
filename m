@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab1EQCGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 22:06:08 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:12904 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752074Ab1EQCGH (ORCPT
+	id S1752386Ab1EQCKq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 22:10:46 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45380 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab1EQCKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 22:06:07 -0400
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>
-Cc: <linux-kernel@vger.kernel.org>, <toshiharu-linux@dsn.okisemi.com>
-References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com> <4DB2A6A2.90803@metafoo.de> <614E530848124206BD1A074548078FA8@hacdom.okisemi.com> <FF5A4B77828A4F1AA77531640E8B37FF@hacdom.okisemi.com> <4DCAE163.2050602@metafoo.de> <CCD653B68482426EA47A12055C9E19E5@hacdom.okisemi.com> <4DCC384B.1020202@metafoo.de> <CA2B589B92704A439D8DF3E2EAD9750D@hacdom.okisemi.com> <4DCCA317.2030302@metafoo.de> <A3F1E9CB89D548289E8FC5BE11CB67C7@hacdom.okisemi.com>
-Subject: RE: Question: GPIO driver how to get irq_base
-Date: Tue, 17 May 2011 11:06:03 +0900
-Message-ID: <45BB52C84795411599D19C7A7BA924E7@hacdom.okisemi.com>
+	Mon, 16 May 2011 22:10:45 -0400
+Date: Tue, 17 May 2011 03:10:06 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/4] x86, head_32/64.S: Enable SMEP
+Message-ID: <20110517021006.GA6732@srcf.ucam.org>
+References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com>
+ <1305581685-5144-4-git-send-email-fenghua.yu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <A3F1E9CB89D548289E8FC5BE11CB67C7@hacdom.okisemi.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-Thread-Index: AcwRHItBN20Rb4i8QSKgUhat4UZQ/gClEkQgACFVSyA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305581685-5144-4-git-send-email-fenghua.yu@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, May 16, 2011 at 02:34:44PM -0700, Fenghua Yu wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> 
+> Enable newly documented SMEP (Supervisor Mode Execution Protection) CPU
+> feature in kernel.
+> 
+> SMEP prevents the CPU in kernel-mode to jump to an executable page that does
+> not have the kernel/system flag set in the pte. This prevents the kernel
+> from executing user-space code accidentally or maliciously, so it for example
+> prevents kernel exploits from jumping to specially prepared user-mode shell
+> code. The violation will cause page fault #PF and will have error code
+> identical to XD violation.
 
-Modifying parameter of poll ( ) like below, poll ( ) becomes blocked correctly.
-    pfd.events = POLLPRI | POLLERR
-And I can confirm when GPIO driver detects edge changing,
-the blocked poll  ( ) is released correctly. 
+Are EFI runtime service pages currently set up appropriately?
 
-Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org 
-> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of 
-> Tomoya MORINAGA
-> Sent: Monday, May 16, 2011 7:39 PM
-> To: 'Lars-Peter Clausen'; 'Grant Likely'
-> Cc: linux-kernel@vger.kernel.org; toshiharu-linux@dsn.okisemi.com
-> Subject: RE: Question: GPIO driver how to get irq_base
-> 
-> Hi,
-> 
-> Pch_gpio driver can become detecting falling/rising edge.
-> I attached the latest GPIO driver, usermode TP and the result.
-> 
-> However, "poll( )" of gpio_tp behavior is different than I 
-> anticipated. 
-> The "poll" is not blocked. (The returned value looks good)
-> 
-> My anticipated behavior is
->   Execute gpio_tp (blocked at poll( ))
->   (Detect edge)
->   Interrupt handler of pch_gpio is called
->   Blocked poll( ) becomes released.
-> 
-> Let me know your opinion.
-> 
-> With Best Regards,
-> -----------------------------------------
-> Tomoya MORINAGA
-> OKI SEMICONDUCTOR CO., LTD.
-> 
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
