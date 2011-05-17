@@ -1,64 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab1EQPev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 11:34:51 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:38723 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755252Ab1EQPet (ORCPT
+	id S1755662Ab1EQPe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 11:34:27 -0400
+Received: from 64-198-47-7.ip.mcleodusa.net ([64.198.47.7]:15604 "EHLO
+	mail02.indesign-llc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab1EQPe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 11:34:49 -0400
-Subject: Re: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110517152840.GA2389@redhat.com>
-References: <1305574484.3456.30.camel@localhost.localdomain>
-	 <20110516204540.GD18148@redhat.com>
-	 <1305579414.3456.49.camel@localhost.localdomain>
-	 <20110516212401.GF18148@redhat.com>
-	 <1305606683.10756.3.camel@localhost.localdomain>
-	 <20110517055503.GA26989@redhat.com>
-	 <1305645734.10756.14.camel@localhost.localdomain>
-	 <20110517152840.GA2389@redhat.com>
+	Tue, 17 May 2011 11:34:26 -0400
+Message-ID: <4DD29578.4020807@indesign-llc.com>
+Date: Tue, 17 May 2011 11:34:16 -0400
+From: Clifton Barnes <cabarnes@indesign-llc.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: <ryan@bluewatersys.com>
+CC: <akpm@linux-foundation.org>, <haojian.zhuang@marvell.com>,
+        <johnpol@2ka.mipt.ru>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] w1: Add Maxim/Dallas DS2780 Stand-Alone Fuel Gauge
+ IC support.
+References: <4DCACAA1.902@indesign-llc.com>
+In-Reply-To: <4DCACAA1.902@indesign-llc.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 08:34:04 -0700
-Message-ID: <1305646444.10756.16.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 18:28 +0300, Michael S. Tsirkin wrote:
-> Which is the order the descriptors are put on avail ring.
-> By design, guest should not depend on used ring entries
-> being in order with avail ring (and btw with virtio block,
-> they aren't). If it does, it's a bug I think.
+On Wednesday, May 11, 2011 Ryan Mallon wrote:
 
-Ok, I thought, the order should be maintained.
+The encoding seems to have messed up on LKML so I'm resending in case
+it is messed up for anyone else.
 
-> > The original code has no problem, because it gets one head and pass
-> that
-> > head to vhost_add_used one by one once done the copy. So it's in
-> > sequence.
-> > 
-> > This issue can easily recreate without zerocopy patch by simply
-> changing
-> > the order from "head return vhost_get_vq_desc" when passing to
-> > vhost_add_used.
-> > 
-> > Thanks
-> > Shirley
+> > +	if ((new_setting != 0) && (new_setting != 1)) {
+
+> Don't need the inner parens.
+
+Unless it's a common convention, I'd rather leave them because I think
+it helps readability.
+
+> > +	ret = kstrtou8(buf, 10, &new_setting);
+
+> Might be worth allowing people to write register values in hex also.
+
+If I'm reading the code correctly, I change the base to 0 to achieve
+this, correct?
+
+> > +static ssize_t ds2780_get_user_eeprom(struct device *dev,
+> > +	struct device_attribute *attr,
+> > +	char *buf)
+> > +{
+> > +	int ret;
+> > +	struct power_supply *psy = to_power_supply(dev);
+> > +	struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
+> > +
+> > +	ret = w1_ds2780_read(dev_info->w1_dev, buf, DS2780_EEPROM_BLOCK0_START,
+> > +				DS2780_USER_EEPROM_SIZE);
+> > +	if (ret < 0)
+> > +		return ret;
+
+> Not sure that this is really obeying the rules of sysfs which state that
+> files should only contain a single value. There is the firmware
+> subsystem, but I'm not sure that is really what you want either. Perhaps
+> somebody else can suggest an alternative.
+
+It looks like other EEPROMs use bin_attribute. I'll change it to use that
+unless there's a better approach.
+
+> > +config W1_SLAVE_DS2780
+> > +	tristate "Dallas 2780 battery monitor chip"
+> > +	depends on W1
+> > +	help
+> > +	  If you enable this you will have the DS2780 battery monitor
+> > +	  chip support.
+> > +
+> > +	  The battery monitor chip is used in many batteries/devices
+> > +	  as the one who is responsible for charging/discharging/monitoring
+> > +	  Li+ batteries.
+> > +
+> > +	  If you are unsure, say N.
+> > +
+
+> This should just be:
 > 
-> Ah, did you try that? Could you post this patch pls?
-> This seems to imply a bug in guest virtio. 
+> 	config W1_SLAVE_DS2780:
+> 	tristate
+>
+> since CONFIG_BATTERY_DS2780 selects this there is never any need for it
+> to be a visible config option.
 
-I am creating the patch against net-next for you to test today.
+I did this the same way as the DS2760.  Should this be different?
 
-Thanks
-Shirley
+> > +static ssize_t w1_ds2780_read_bin(struct file *filp, struct kobject *kobj,
+> > +				  struct bin_attribute *bin_attr,
+> > +				  char *buf, loff_t off, size_t count)
+> > +{
+> > +	struct device *dev = container_of(kobj, struct device, kobj);
+> > +	return w1_ds2780_read(dev, buf, off, count);
+> > +}
+
+> What is this for?
+
+It reads raw registers from the device.  It was implemented in the w1_ds2760.c 
+file so I kept it.  I suppose you could use this driver without the battery
+interface and read the registers that way.
+
+> > +static int new_bat_id(void)
+> > +{
+> > +	int ret;
+> > +
+> > +	while (1) {
+> > +		int id;
+> > +
+> > +		ret = idr_pre_get(&bat_idr, GFP_KERNEL);
+> > +		if (ret == 0)
+> > +			return -ENOMEM;
+> > +
+> > +		mutex_lock(&bat_idr_lock);
+> > +		ret = idr_get_new(&bat_idr, NULL, &id);
+> > +		mutex_unlock(&bat_idr_lock);
+> > +
+> > +		if (ret == 0) {
+> > +			ret = id & MAX_ID_MASK;
+> > +			break;
+> > +		} else if (ret == -EAGAIN) {
+> > +			continue;
+> > +		} else {
+> > +			break;
+> > +		}
+> > +	}
+
+> Is it common to do this in a while loop? In my experience if the
+> idr_get_new fails an error should be returned.
+
+Again, this came from the w1_ds2760.c driver.  If it's more common to
+error out, I can change it.
+
+I'm in the process of making the other changes that were suggested.
+How should I submit the changes?  A new patch v3 or a patch to v2?
+If a patch to v2, how should that be indicated?
+
+-Clif
+
 
