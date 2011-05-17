@@ -1,107 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab1EQQZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 12:25:47 -0400
-Received: from s15407518.onlinehome-server.info ([82.165.136.167]:50716 "EHLO
-	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755856Ab1EQQZq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 12:25:46 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: i80 (Intel 8080-like) command interface to LCDs - how to implement
-Date: Tue, 17 May 2011 18:25:42 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37-2-686; KDE/4.4.5; i686; ; )
-Cc: linux-fbdev@vger.kernel.org, linux-i2c@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net
-References: <201105171359.43658.heiko@sntech.de>
-In-Reply-To: <201105171359.43658.heiko@sntech.de>
+	id S1755876Ab1EQQ1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 12:27:33 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48482 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755511Ab1EQQ1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 12:27:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Tjufivp9/I0RhUigPAB0jHbhfEt7wnmStQQzONxW0munmqP+N2LpZTSR2VIxRbjNMf
+         Bzzg8f2Og31SGgRYIerEK7MN8X2enl8keL9juHkW37xzEq5hNduATPcJQQL62vy/fz36
+         cJDR1BAjroJKa4gPsbN/Rc8LeELnokSbfnQXk=
+Date: Tue, 17 May 2011 18:27:26 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 01/10] signal: remove three noop tracehooks
+Message-ID: <20110517162726.GT20624@htj.dyndns.org>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org>
+ <1305569849-10448-2-git-send-email-tj@kernel.org>
+ <20110517162224.GA13675@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105171825.43506.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110517162224.GA13675@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag 17 Mai 2011, 13:59:40 schrieb Heiko Stübner:
-> I'm trying to find the best way on implementing an i80 interface
-> (especially the command mode) between a s3c2416 and an AUO-K1900 (epaper
-> controller).
-> 
-> On the host side it is usable at least in all Samsung SoCs following the
-> S3C2443 and on the device side I've found, apart from the K1900, for
-> example the ili9320 and STM32F10xxx displays controllers using this
-> interface.
-> 
-> It looks a bit like a cross between SPI and I2C but fits neither category -
-> at least for my understanding.
-after some more thoughts while cycling home, would it be sane to implement it 
-as spi devices like:
+Hello,
 
-lcd-ctrl <->i80_device (spi_device) <->spi-layer <-> i80_spi_master
+On Tue, May 17, 2011 at 12:22:24PM -0400, Christoph Hellwig wrote:
+> On Mon, May 16, 2011 at 08:17:20PM +0200, Tejun Heo wrote:
+> > Remove the following three noop tracehooks in signals.c.
+> > 
+> > * tracehook_force_sigpending()
+> > * tracehook_get_signal()
+> > * tracehook_finish_jctl()
+> > 
+> > The code area is about to be updated and these hooks don't do anything
+> > other than obfuscating the logic.
+> 
+> Btw, I think we should kill that stupid <linux/tracehook.h> layer
+> entirely.  It consists of a few relatively useful function which should
+> just be renamed to ptrace_* and moved to ptrace.c, and a lot of entirely
+> pointless wrappers which generally have only a single user, and often
+> tons of arguments that aren't actually used.
 
-i80_device would implement the message logic as described below
-i80_spi_master would control the registers 
+Yeap, agreed.  It's on the todo list.
 
-the write-enable/read-enable bit settings can be determined by the direction 
-of the transfer, but how do I determine the value to set for RS?
+Thanks.
 
-The idea I had was to set bits_per_word to n+1, i.e. the register has 18 data 
-bits and I would use the 19th bit do transmit the required RS setting.
-
-Does this look at least halfway plausible?
-
-Thanks
-Heiko
-
-[rest of this mail included as I have just added spi-devel to the recipients]
-> pins/pins consist of:
-> CS ... chip-select
-> RS ... control or data register select
-> WE ... write enable
-> RE ... read enable
-> D0-Dn ... data 0-n for variing values of n
-> (I've seen up to 18 data bits)
-> 
-> 
-> commands can look like:
-> (* set command mode)
-> * set chip-select
-> 
-> * set RS to control (mostly low)
-> * set WE to high
-> * write command to D
-> * unset WE
-> * set RS to data
-> 
-> * set WE
-> * write data to D
-> * unset WE
-> * set WE
-> * write data to D
-> * unset WE
-> ...
-> * set RE
-> * read data from D
-> * unset RE
-> ...
-> * unset chip-select
-> (* unset command mode)
-> 
-> the fourth possible state (read-control) is also used by the ili9320.
-> 
-> looks a lot like an i2c-transfer, i.e. something like
-> {
->   { WC, 6001 }, //for write-control
->   { WD, 576 }, //for write-data
->   { WD, 12 }, //for write-data
->   { RD, *buf } //for read-data
-> }
-> could represent the above command-sequence.
-> 
-> 
-> So, is this a new bus type or does it fit somehow into spi or i2c or some
-> other bus-type I don't know yet? Or, does code for i80 exist somewhere I
-> haven't looked yet?
+-- 
+tejun
