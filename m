@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab1EQNEM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 09:04:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32717 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754379Ab1EQNEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 09:04:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,225,1304319600"; 
-   d="scan'208";a="748474897"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Mihai Moldovan <ionic@ionic.de>
-Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH] drm/i915/sdvo: Reorder i2c initialisation before ddc proxy
-Date: Tue, 17 May 2011 14:03:50 +0100
-Message-Id: <1305637430-16026-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <4DD2648C.6020309@ionic.de>
-References: <4DD2648C.6020309@ionic.de>
+	id S1754919Ab1EQNEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 09:04:21 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50677 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754487Ab1EQNET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 09:04:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PXKCjtdkOJeWEAeaNNVG2aHr5Y41qrbR2t2UCHxdp1ntU5p+0FUe9NPhqUDbFvFUx1
+         AnYBZE+ribxVajpZhcykEDXo5GlRMCwBdztZ8OAKahcx+fgEjXtTsOlZ1dZ7U4YE71LY
+         Rqjl2lCda2PtH2UhkrtP4rDEKtxYU8dN2ilMo=
+Date: Tue, 17 May 2011 15:04:14 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Shaohua Li <shaohua.li@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
+Subject: Re: [patch V3] percpu_counter: scalability works
+Message-ID: <20110517130414.GO20624@htj.dyndns.org>
+References: <1305593751.2375.69.camel@sli10-conroe>
+ <1305608212.9466.45.camel@edumazet-laptop>
+ <1305609768.2375.84.camel@sli10-conroe>
+ <1305622861.2850.21.camel@edumazet-laptop>
+ <20110517091102.GE20624@htj.dyndns.org>
+ <1305625541.2850.29.camel@edumazet-laptop>
+ <20110517095001.GF20624@htj.dyndns.org>
+ <1305634807.2850.89.camel@edumazet-laptop>
+ <20110517124528.GN20624@htj.dyndns.org>
+ <1305637223.2850.95.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305637223.2850.95.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ddc proxy depends upon the underlying i2c bus being selected. Under
-certain configurations, the i2c-adapter functionality is queried during
-initialisation and so may trigger an OOPS during boot. Hence, we need to
-reorder the initialisation of the ddc proxy until after we hook up the i2c
-adapter for the SDVO device.
+Hello,
 
-Reported-by: Mihai Moldovan <ionic@ionic.de>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
----
- drivers/gpu/drm/i915/intel_sdvo.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+On Tue, May 17, 2011 at 03:00:23PM +0200, Eric Dumazet wrote:
+> Absolutely not. Its slow path yes, but not super-slow.
 
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index 4324f33..754086f 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -2544,21 +2544,19 @@ bool intel_sdvo_init(struct drm_device *dev, int sdvo_reg)
- 	if (!intel_sdvo)
- 		return false;
- 
-+	intel_sdvo->sdvo_reg = sdvo_reg;
-+	intel_sdvo->slave_addr = intel_sdvo_get_slave_addr(dev, sdvo_reg) >> 1;
-+	intel_sdvo_select_i2c_bus(dev_priv, intel_sdvo, sdvo_reg);
- 	if (!intel_sdvo_init_ddc_proxy(intel_sdvo, dev)) {
- 		kfree(intel_sdvo);
- 		return false;
- 	}
- 
--	intel_sdvo->sdvo_reg = sdvo_reg;
--
-+	/* encoder type will be decided later */
- 	intel_encoder = &intel_sdvo->base;
- 	intel_encoder->type = INTEL_OUTPUT_SDVO;
--	/* encoder type will be decided later */
- 	drm_encoder_init(dev, &intel_encoder->base, &intel_sdvo_enc_funcs, 0);
- 
--	intel_sdvo->slave_addr = intel_sdvo_get_slave_addr(dev, sdvo_reg) >> 1;
--	intel_sdvo_select_i2c_bus(dev_priv, intel_sdvo, sdvo_reg);
--
- 	/* Read the regs to test if we can talk to the device */
- 	for (i = 0; i < 0x40; i++) {
- 		u8 byte;
+I was speaking in relative terms.  We're talking about local only fast
+path vs. something which hits every percpu counter likely causing
+cache misses in many of them.  It's bound to be multiple orders of
+magnitude heavier than fast path.
+
+Thanks.
+
 -- 
-1.7.5.1
-
+tejun
