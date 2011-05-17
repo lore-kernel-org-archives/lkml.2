@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab1EQDOj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 23:14:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36892 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752084Ab1EQDOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 23:14:37 -0400
-Date: Tue, 17 May 2011 13:14:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Hellstrom <daniel@gaisler.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: linux-next: manual merge of the tip tree with the sparc tree
-Message-Id: <20110517131435.aceca54e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__17_May_2011_13_14_35_+1000_MrVcW=sTA_dQC=2x"
+	id S1752201Ab1EQDaq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 23:30:46 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:56589 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab1EQDan (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 23:30:43 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: djwong@us.ibm.com
+Cc: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback for various fses
+References: <87hb924s2x.fsf@devron.myhome.or.jp>
+	<20110510132953.GE4402@quack.suse.cz>
+	<878vue4qjb.fsf@devron.myhome.or.jp>
+	<87zkmu3b2i.fsf@devron.myhome.or.jp>
+	<20110510145421.GJ4402@quack.suse.cz>
+	<87zkmupmaq.fsf@devron.myhome.or.jp>
+	<20110510162237.GM4402@quack.suse.cz>
+	<87vcxipljj.fsf@devron.myhome.or.jp>
+	<20110516184736.GL20579@tux1.beaverton.ibm.com>
+	<87oc3230iu.fsf@devron.myhome.or.jp>
+	<20110517012307.GQ20579@tux1.beaverton.ibm.com>
+Date: Tue, 17 May 2011 12:30:33 +0900
+In-Reply-To: <20110517012307.GQ20579@tux1.beaverton.ibm.com> (Darrick
+	J. Wong's message of "Mon, 16 May 2011 18:23:07 -0700")
+Message-ID: <87hb8u2ecm.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_May_2011_13_14_35_+1000_MrVcW=sTA_dQC=2x
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+"Darrick J. Wong" <djwong@us.ibm.com> writes:
 
-Hi all,
+>> > With the new stable-page-writes patchset, the garbage write/disk
+>> > error symptoms
+>> > go away since the processes block instead of creating this window where it's
+>> > not clear whether the disk's copy of the data is consistent.  I
+>> > could turn the
+>> > wait_on_page_writeback calls into some sort of page migration if the
+>> > performance turns out to be terrible, though I'm still working on
+>> > quantifying
+>> > the impact.  Some people pointed out that sqlite tends to write
+>> > the same blocks
+>> > frequently, though I wonder if sqlite actually tries to write memory pages
+>> > while syncing them?
+>> >
+>> > One use case where I could see a serious performance hit happening
+>> > is the case
+>> > where some app writes a bunch of memory pages, calls sync to force the dirty
+>> > pages to disk, and /must/ resume writing those memory pages before the sync
+>> > completes.  The page migration would of course help there, provided a memory
+>> > page can be found in less time than an I/O operation.
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/sparc/kernel/smp_32.c between commit d6d048192b1d ("sparc32:
-implement SMP IPIs using the generic functions") from the sparc tree and
-commit 184748cc50b2 ("sched: Provide scheduler_ipi() callback in response
-to smp_send_reschedule()") from the tip tree.
+[...]
 
-I fixed it up (I am pretty sure that the sparc tree patch supercedes the
-tip tree one) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>> I'm not thinking data page is special operation for doing this (at least
+>> logically). In other word, if you are talking about only data page, you
+>> shouldn't send patches for metadata with it.
+>
+> Patch 7, which is the only patch that touches code under fs/fat/, only fixes
+> the case where the filesystem tries to modify its own metadata while writing
+> out the same metadata.
+>
+> Patches 2 and 3, which affect only files mm/ and fs/, prevent data pages from
+> being modified while the same data pages are being written out.  It is not
+> necessary to modify any fs/fat/ code to fix the data page case, fortunately.
+>
+> That said, the intent of the patch set is to prevent writes to any memory page,
+> regardless of type (data or metadata), while the same page is being written out.
 
---Signature=_Tue__17_May_2011_13_14_35_+1000_MrVcW=sTA_dQC=2x
-Content-Type: application/pgp-signature
+Yes. I understand it though, performance analysis (and looks like
+approach) can be quite difference with data page. The metadata depends
+on FS, and it can be much more hit depends on FS state, not simple like
+data page.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+And if you changed only overwrite case, I already mentioned though,
+which one makes sure to prevent reallocated metadata case for FAT?
 
-iQEcBAEBAgAGBQJN0egbAAoJEDMEi1NhKgbs8LoH/0fn7q0ZF+Gj1KgQ6juioznc
-qIrZO8UWTW4VFCw22eq5PKg3gX3ym5uRx2J2offbUkIGdvRrbYbQZx8zn1wKe+P0
-l2DwB1/Q7LfTAERaD5VnjXTquE3zjiBn2swo7iy1IdH6kOdkVbnNY4s9hdaNhlZG
-weGEg+HWPUEQPmd6v9IgYNCuvtvDOhKblTbNJ4V+e7r11dONQdgdcAZIOwSoVAmP
-qlnLXLJV8BrPskLv7EWlXgKCWYibMuxvohwgyYLSU6S/h047c0xLbls9WhdODFnA
-3K0wH/5cLEFmTfhqudEM0wn7tCEVZgeLKGmEvgY+6tl0So6x04hNLVK59B7A61w=
-=AIMO
------END PGP SIGNATURE-----
+What about metadata operations performance impact? Even if FS was low
+free blocks state, performance impact is small? And read can be the
+cause of atime update, don't matter (now relatime is default though)?
+Although FAT specific, what about fragmented case (i.e. modify multiple
+FAT table blocks even if sequential write)?
 
---Signature=_Tue__17_May_2011_13_14_35_+1000_MrVcW=sTA_dQC=2x--
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
