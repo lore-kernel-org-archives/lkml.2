@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178Ab1EQSRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 14:17:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44968 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab1EQSRh (ORCPT
+	id S1756234Ab1EQSRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 14:17:41 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:37961 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab1EQSRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 14:17:37 -0400
-Date: Tue, 17 May 2011 14:17:16 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "yinghai@kernel.org" <yinghai@kernel.org>,
-        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: Xen MMU's requirement to pin pages RO and initial_memory_mapping.
-Message-ID: <20110517181716.GA4490@dumpdata.com>
-References: <20110513153010.GB16519@dumpdata.com>
- <alpine.DEB.2.00.1105131650550.8972@kaball-desktop>
- <20110516154132.GA12486@dumpdata.com>
- <alpine.DEB.2.00.1105171745300.12963@kaball-desktop>
- <20110517180520.GC13706@dumpdata.com>
+	Tue, 17 May 2011 14:17:40 -0400
+Date: Tue, 17 May 2011 19:17:33 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davej@redhat.com" <davej@redhat.com>,
+        "Langsdorf, Mark" <mark.langsdorf@amd.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 1/5] acpi-cpufreq: Add support for modern AMD CPUs
+Message-ID: <20110517181733.GA26018@srcf.ucam.org>
+References: <1305651819-25660-1-git-send-email-mjg@redhat.com>
+ <20110517173536.GI30053@aftab>
+ <20110517174233.GA25111@srcf.ucam.org>
+ <20110517181353.GC26422@gere.osrc.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110517180520.GC13706@dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4DD2BBB9.00EC:SCFMA922111,ss=1,fgs=0
+In-Reply-To: <20110517181353.GC26422@gere.osrc.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > xen_alloc_pte_init and xen_alloc_pmd_init are the ones that mark the
-> > pagetable pages RO and pin them, calling make_lowmem_page_readonly and
-> > pin_pagetable_pfn.
-> > 
-> > alloc_pte/pmd are called right before hooking them into the pagetable;
-> > unfortunately that means that they fail at marking the pagetable pages
-> > RO: make_lowmem_page_readonly uses lookup_address to find the pte
-> > corresponding to a page, however at this point the pagetable pages are
-> > not mapped yet (usually they are not hooked but when they are hooked, the
-> > upper level pagetable page is not hooked), so lookup_address fails.
-> 
-> Right. We don't have to walk the hooked pagetable, I think. We are passed
-> in the PMD/PGD of the PFN and we could look at the content of that PFN.
+On Tue, May 17, 2011 at 08:13:53PM +0200, Borislav Petkov wrote:
 
-err, got that backwards. "passed in the PFN of the PMD/PGD".
+> Right, but I don't think that would be different on Intel and
+> static_cpu_has is faster with the alternatives mechanism anyway.
+
+>From a neatness perspective it might be reasonable to add it like this 
+and then just fix both up in one go, but the same argument applies to 
+fixing the intel case first and then applying this patchset. So I'm 
+happy enough changing that.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
