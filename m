@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab1EQOAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 10:00:41 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:53419 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754730Ab1EQOAk (ORCPT
+	id S1755036Ab1EQOCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 10:02:20 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:52576 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754184Ab1EQOCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 10:00:40 -0400
-Message-ID: <4DD27F7D.2070305@ti.com>
-Date: Tue, 17 May 2011 19:30:29 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Tue, 17 May 2011 10:02:19 -0400
+Date: Tue, 17 May 2011 10:01:50 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+ writeback for various fses
+Message-ID: <20110517140150.GA7030@infradead.org>
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+ <20110516190427.GN20579@tux1.beaverton.ibm.com>
+ <20110516202710.GA32630@infradead.org>
+ <20110516205535.GP20579@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: linux-arm-kernel@lists-infradead.org, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robherring2@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: smp_twd: Reconfigure clockevents after cpufreq change
-References: <1305588114-23728-1-git-send-email-ccross@android.com>
-In-Reply-To: <1305588114-23728-1-git-send-email-ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516205535.GP20579@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Colin,
+On Mon, May 16, 2011 at 01:55:35PM -0700, Darrick J. Wong wrote:
+> As for Al Viro, he's still listed as the VFS maintainer; isn't he resting?
+> I guess he did nominate you for the holding off of morons (like me). :)
 
-On 5/17/2011 4:51 AM, Colin Cross wrote:
-> The localtimer's clock changes with the cpu clock.  After a
-> cpufreq transition, update the clockevent's frequency and
-> reprogram the next clock event.
->
-> Adds a clock called "smp_twd" that is used to determine the
-> twd frequency, which can also be used at init time to
-> avoid calibrating the twd frequency.
->
-> Signed-off-by: Colin Cross<ccross@android.com>
-> Cc: Thomas Gleixner<tglx@linutronix.de>
-> Cc: Russell King<linux@arm.linux.org.uk>
-> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
-> Cc: Rob Herring<robherring2@gmail.com>
-> ---
->   arch/arm/kernel/smp_twd.c |   69 +++++++++++++++++++++++++++++++++++++++++++--
->   1 files changed, 66 insertions(+), 3 deletions(-)
->
-> This patch depends on Thomas Gleixner's patch to add clockevents_reconfigure
-> See: https://lkml.org/lkml/2011/5/13/122
->
-> This patch adds a clock that can be used to skip calibration as well
-> as update the frequency.  A later patch (or a later version of this patch)
-> will drop twd_calibrate_rate once all platforms provide the necessary
-> smp_twd clock.
->
-
-Since the "smp_twd" clock node will not have a clk_set_rate()
-associated with it, will the clk_get_rate() gives you real
-rate. May be we can associate this node as a child of
-CPU clock node and use the fixed divider based on peripheral
-ratio. Is that the idea here to realize it ?
-
-Regards,
-Santosh
+Al is back in action.  Anyway, the point stands, this is VFS material
+and you should formally submit the bits to the maintainer.  Note that
+there is very little fs specific material left, with Hirofumi beeing
+at least not overly exited by fat patches for now, and the only real
+ext4 patch going away with Jan's series to make it use the generic
+page_mkwrite code.
 
