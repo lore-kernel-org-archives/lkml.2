@@ -1,142 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab1EQB5N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 21:57:13 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56246 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab1EQB5M convert rfc822-to-8bit (ORCPT
+	id S1753053Ab1EQCAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 22:00:15 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:41684 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab1EQCAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 21:57:12 -0400
+	Mon, 16 May 2011 22:00:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=D5aoM/P+Y/oTNy7Vjd1HxDXvQ2yrMkR9iMOWWDWwGjrI+vGeMdIK+UX+uwt+dNm0/y
-         CwwOpiLDyMCxuCWoMpB/76gB4pGZEW0VNEkiR9ThmuDd8CU8oLd47DypqW8ks7nFH7Ol
-         A+DxAif6SN/M6JprLsso21vhIBQMNlKHbUl8I=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mFyL9FtzYJn09IT5kNNJt/PhrDoEaw7XTx7U3lFrQ7RJUsjGiwcoNLK1I10GCI3lEh
+         IwU5EM24cO7VEx/zQ1UqKWWpqMef3XCpCI0HeFdNGYAX38vOBkyumXhtfhYSIn5KHHXK
+         bmd3Gbqc2bML+Ex2ajAjs9BFyl6WqbcW/cJXQ=
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=O_mZEqMhOS_Fz0vAYCQ-XpyG4UA@mail.gmail.com>
-References: <1304363768-30338-1-git-send-email-linus.walleij@stericsson.com>
-	<20110503172712.GE6538@lunn.ch>
-	<BANLkTi=ncV3M1q5SXNdUaXmtfkZ8Wn9dmw@mail.gmail.com>
-	<20110515133312.GM4071@lunn.ch>
-	<BANLkTi=O_mZEqMhOS_Fz0vAYCQ-XpyG4UA@mail.gmail.com>
-Date: Tue, 17 May 2011 10:57:11 +0900
-X-Google-Sender-Auth: MxrQdaYomcL1KGo8qrAxU-Nyp0w
-Message-ID: <BANLkTi=TDiAziQU0fYBiK_Npk0x50av7tA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Pinmux subsystem
-From: Kyungmin Park <kmpark@infradead.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Martin Persson <martin.persson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4DD0F614.2040408@gmail.com>
+References: <4DD0F614.2040408@gmail.com>
+Date: Tue, 17 May 2011 10:00:12 +0800
+Message-ID: <BANLkTikjbggOatoiv1pcXq+5n+HzWz7Wiw@mail.gmail.com>
+Subject: Re: [PATCH] Documentation: statistics about nested locks
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4H20LOM027695
 
-Hi,
+On Mon, May 16, 2011 at 6:01 PM, Juri Lelli <juri.lelli@gmail.com> wrote:
+> Hi all,
+> just a little patch to the Documentation. I had some trouble understanding
+> the trailing "/1" on some lock class names of lock_stat output, so I added
+> something on this inside lockstat documentation.
+>
+> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+>
+> ---
+> ¬†Documentation/lockstat.txt | ¬† 36 ++++++++++++++++++++++++++++++++++--
+> ¬†1 files changed, 34 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/lockstat.txt b/Documentation/lockstat.txt
+> index 65f4c79..75eeb65 100644
+> --- a/Documentation/lockstat.txt
+> +++ b/Documentation/lockstat.txt
+> @@ -12,8 +12,9 @@ Because things like lock contention can severely impact
+> performance.
+> ¬†- HOW
+>
+> ¬†Lockdep already has hooks in the lock functions and maps lock instances to
+> -lock classes. We build on that. The graph below shows the relation between
+> -the lock functions and the various hooks therein.
+> +lock classes. We build on that (see Documentation/lockdep-design.txt).
+> +The graph below shows the relation between the lock functions and the
+> various
+> +hooks therein.
+>
+> ¬† ¬† ¬† ¬† __acquire
+> ¬† ¬† ¬† ¬† ¬† ¬† |
+> @@ -128,6 +129,37 @@ points are the points we're contending with.
+>
+> ¬†The integer part of the time values is in us.
+>
+> +Dealing with nested locks, subclasses may appear:
+> +
+> +32...............................................................................................................................................................................................
+> +33
+> +34 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock: ¬† ¬† ¬† ¬† 13128 13128
+> 0.43 ¬† ¬† ¬† ¬† 190.53 ¬† ¬† ¬†103881.26 ¬† ¬† ¬† ¬† ¬†97454 ¬†3453404 ¬† ¬† ¬† ¬† ¬† 0.00
+> ¬† ¬† ¬† 401.11 ¬† ¬†13224683.11
+> +35 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ---------
+> +36 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock ¬† ¬† ¬† ¬† ¬† ¬†645
+> [<ffffffff8103bfc4>] task_rq_lock+0x43/0x75
+> +37 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock ¬† ¬† ¬† ¬† ¬† ¬†297
+> [<ffffffff8104ba65>] try_to_wake_up+0x127/0x25a
+> +38 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock ¬† ¬† ¬† ¬† ¬† ¬†360
+> [<ffffffff8103c4c5>] select_task_rq_fair+0x1f0/0x74a
+> +39 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock ¬† ¬† ¬† ¬† ¬† ¬†428
+> [<ffffffff81045f98>] scheduler_tick+0x46/0x1fb
+> +40 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ---------
+> +41 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock ¬† ¬† ¬† ¬† ¬† ¬† 77
+> [<ffffffff8103bfc4>] task_rq_lock+0x43/0x75
+> +42 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock ¬† ¬† ¬† ¬† ¬† ¬†174
+> [<ffffffff8104ba65>] try_to_wake_up+0x127/0x25a
+> +43 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock ¬† ¬† ¬† ¬† ¬† 4715
+> [<ffffffff8103ed4b>] double_rq_lock+0x42/0x54
+> +44 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock ¬† ¬† ¬† ¬† ¬† ¬†893
+> [<ffffffff81340524>] schedule+0x157/0x7b8
+> +45
+> +46...............................................................................................................................................................................................
+> +47
+> +48 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock/1: ¬† ¬† ¬† ¬† 11526 11488
+> 0.33 ¬† ¬† ¬† ¬† 388.73 ¬† ¬† ¬†136294.31 ¬† ¬† ¬† ¬† ¬†21461 ¬† ¬†38404 ¬† ¬† ¬† ¬† ¬† 0.00
+> ¬† ¬† ¬† ¬†37.93 ¬† ¬† ¬†109388.53
+> +49 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† -----------
+> +50 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock/1 ¬† ¬† ¬† ¬† ¬†11526
+> [<ffffffff8103ed58>] double_rq_lock+0x4f/0x54
+> +51 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† -----------
+> +52 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock/1 ¬† ¬† ¬† ¬† ¬† 5645
+> [<ffffffff8103ed4b>] double_rq_lock+0x42/0x54
+> +53 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock/1 ¬† ¬† ¬† ¬† ¬† 1224
+> [<ffffffff81340524>] schedule+0x157/0x7b8
+> +54 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock/1 ¬† ¬† ¬† ¬† ¬† 4336
+> [<ffffffff8103ed58>] double_rq_lock+0x4f/0x54
+> +55 ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† &rq->lock/1 ¬† ¬† ¬† ¬† ¬† ¬†181
+> [<ffffffff8104ba65>] try_to_wake_up+0x127/0x25a
+> +
+> +Line 48 shows statistics for the first subclass (/1) of &rq->lock class,
 
-In real scenario, we can set the full pins at once, but sometimes it
-needs to set the function only one,
+Actually it's the second subclass because subclass starts from 0.
 
-e.g.,
+Thanks,
+Yong
 
-static void __init goni_radio_init(void)
-{
-        int gpio;
-
-        gpio = S5PV210_GPJ2(4);                 /* XMSMDATA_4 */
-        gpio_request(gpio, "FM_INT");
-        s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
-        i2c1_devs[0].irq = gpio_to_irq(gpio);
-
-        gpio = S5PV210_GPJ2(5);                 /* XMSMDATA_5 */
-        gpio_request(gpio, "FM_RST");
-        gpio_direction_output(gpio, 1);
-}
-
-In this case we only need to set the function at interrupt by like
-s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
-So pinmux function provides this feature also.
-
-How do you think?
-
-Thank you,
-Kyungmin Park
-
-
-On Mon, May 16, 2011 at 2:50 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> 2011/5/15 Andrew Lunn <andrew@lunn.ch>:
+> since
+> +in this case, as line 50 suggests, double_rq_lock actually acquires a
+> nested
+> +lock of two spinlocks.
+> +
+> ¬†View the top contending locks:
 >
->> With a bit of scripting, came to the following results. Each line is
->> on pinmux function description what would be needed in the driver. The
->> number at the front says how many boards would use it. In total there
->> are 33 descriptions needed. Of these, 18 are used only once. This to
->> me suggests the board needs to be able to specify a pin description
->> when there is no reuse with other boards.
->
-> As indicated elsewhere in this thread, a pinmux driver can pass in
-> platform/package/board/system data just like any other platform
-> driver in the kernel tree can.
->
-> You will have to specify it somehow in a custom header file, just
-> like with any other platform driver.
->
-> Example from:
-> arch/arm/mach-orion5x/ls-chl-setup.c:
->
-> static struct gpio_led lschl_led_pins[] = {
-> † † † †{
-> † † † † † † † †.name = "alarm:red",
-> † † † † † † † †.gpio = LSCHL_GPIO_LED_ALARM,
-> † † † † † † † †.active_low = 1,
-> † † † †}, {
-> † † † † † † † †.name = "info:amber",
-> † † † † † † † †.gpio = LSCHL_GPIO_LED_INFO,
-> † † † † † † † †.active_low = 1,
-> † † † †}, {
-> † † † † † † † †.name = "func:blue:top",
-> † † † † † † † †.gpio = LSCHL_GPIO_LED_FUNC,
-> † † † † † † † †.active_low = 1,
-> † † † †}, {
-> † † † † † † † †.name = "power:blue:bottom",
-> † † † † † † † †.gpio = LSCHL_GPIO_LED_PWR,
-> † † † †},
-> };
->
-> static struct gpio_led_platform_data lschl_led_data = {
-> † † † †.leds = lschl_led_pins,
-> † † † †.num_leds = ARRAY_SIZE(lschl_led_pins),
-> };
->
-> static struct platform_device lschl_leds = {
-> † † † †.name = "leds-gpio",
-> † † † †.id = -1,
-> † † † †.dev = {
-> † † † † † † † †.platform_data = &lschl_led_data,
-> † † † †},
-> };
->
-> Still, the driver for these LEDs is in
-> drivers/leds/leds-gpio.c and the above structure is
-> described in include/linux/leds.h
->
-> There is no difference between this and letting
-> drivers/pinmux/pinmux-orion.c have a header file in
-> include/linux/pinmux/orion.h and pass in necessary board
-> data that way.
->
-> Are we now in agreement that this will work just fine?
->
-> Yours,
-> Linus Walleij
+> ¬†# grep : /proc/lock_stat | head
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at †http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at †http://www.tux.org/lkml/
+> 1.7.4.1
 >
+
+
+
+-- 
+Only stand for myself
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
