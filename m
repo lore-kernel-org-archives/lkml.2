@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483Ab1EQVwd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 17:52:33 -0400
-Received: from mail.perches.com ([173.55.12.10]:1741 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751984Ab1EQVwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 17:52:32 -0400
-Subject: Re: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
-From: Joe Perches <joe@perches.com>
-To: Jiri Slaby <jirislaby@gmail.com>
+	id S1756665Ab1EQVzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 17:55:11 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:43205 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab1EQVzJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 17:55:09 -0400
+Subject: Re: [PATCH 1/3] comm: Introduce comm_lock spinlock to protect
+ task->comm access
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
 Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andy Whitcroft <apw@canonical.com>,
+        Joe Perches <joe@perches.com>, Michal Nazarewicz <mina86@mina86.com>,
+        Andy Whitcroft <apw@canonical.com>, Jiri Slaby <jirislaby@gmail.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         David Rientjes <rientjes@google.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-In-Reply-To: <4DD2EBAB.5080004@gmail.com>
+In-Reply-To: <20110517212734.GB28054@elte.hu>
 References: <1305665263-20933-1-git-send-email-john.stultz@linaro.org>
-	 <1305665263-20933-3-git-send-email-john.stultz@linaro.org>
-	 <4DD2EBAB.5080004@gmail.com>
+	 <1305665263-20933-2-git-send-email-john.stultz@linaro.org>
+	 <20110517212734.GB28054@elte.hu>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 14:52:30 -0700
-Message-ID: <1305669150.1722.83.camel@Joe-Laptop>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 17 May 2011 23:54:16 +0200
+Message-ID: <1305669256.2466.6286.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 23:42 +0200, Jiri Slaby wrote:
-> On 05/17/2011 10:47 PM, John Stultz wrote:
-> > Accessing task->comm requires proper locking. However in the past
-> > access to current->comm could be done without locking. This
-> > is no longer the case, so all comm access needs to be done
-> > while holding the comm_lock.
-> > +static noinline_for_stack
-> I still fail to see why this should be slowed down by noinlining it.
-> Care to explain?
+On Tue, 2011-05-17 at 23:27 +0200, Ingo Molnar wrote:
+> * John Stultz <john.stultz@linaro.org> wrote:
+> 
+> > The implicit rules for current->comm access being safe without locking are no 
+> > longer true. Accessing current->comm without holding the task lock may result 
+> > in null or incomplete strings (however, access won't run off the end of the 
+> > string).
+> 
+> This is rather unfortunate - task->comm is used in a number of performance 
+> critical codepaths such as tracing.
+> 
+> Why does this matter so much? A NULL string is not a big deal.
+> 
+> Note, since task->comm is 16 bytes there's the CMPXCHG16B instruction on x86 
+> which could be used to update it atomically, should atomicity really be 
+> desired.
 
-Any vsprintf is slow.
+The changelog also fails to mention _WHY_ this is no longer true. Nor
+does it treat why making it true again isn't an option.
 
-> With my setup, the code below inlined will use 32 bytes of stack. The
-> same as %pK case. Uninlined it obviously eats "only" 8 bytes for IP.
-
-The idea is to avoid excess stack consumption for things like:
-
-	struct va_format vaf;
-
-	const char *fmt = "some format with %ptc";
-
-	vaf.fmt = fmt;
-	vaf.va = &va_list;
-
-	printk("some format with %pV\n", &vaf);
-
-> > +char *task_comm_string(char *buf, char *end, void *addr,
-> > +			 struct printf_spec spec, const char *fmt)
-> > +{
-> > +	struct task_struct *tsk = addr;
-> > +	char *ret;
-> > +	unsigned long flags;
-> > +
-> > +	spin_lock_irqsave(&tsk->comm_lock, flags);
-> > +	ret = string(buf, end, tsk->comm, spec);
-> > +	spin_unlock_irqrestore(&tsk->comm_lock, flags);
-> > +
-> > +	return ret;
-> > +}
-
-I think it was more of a problem when "4k stacks" was the default
-than today, but I think it is still "good form". 
-
+Who is changing another task's comm? That's just silly.
