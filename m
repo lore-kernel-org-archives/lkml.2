@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab1EQJcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 05:32:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13600 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753661Ab1EQJcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 05:32:52 -0400
-Message-ID: <4DD2409F.4030800@redhat.com>
-Date: Tue, 17 May 2011 12:32:15 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1753712Ab1EQJcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 05:32:22 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:55835 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753623Ab1EQJcV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 05:32:21 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4DD24131.2030009@cam.ac.uk>
+Date: Tue, 17 May 2011 10:34:41 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 0/4] Enable SMEP CPU Feature
-References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com> <4DD19C81.8000902@zytor.com> <20110517070527.GD22305@elte.hu> <4DD23CB6.3050503@redhat.com> <20110517092903.GJ22093@elte.hu>
-In-Reply-To: <20110517092903.GJ22093@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+CC: fabien.marteau@armadeus.com, Guenter Roeck <guenter.roeck@ericsson.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: Driver for as1531, Austria-Microsystem Analog
+ to Digital Converter.
+References: <fabien.marteau@armadeus.com> <1305553154-18195-2-git-send-email-fabien.marteau@armadeus.com> <20110516153900.GA31255@ericsson.com> <4DD21E5E.9000605@armadeus.com> <4DD23EED.4010201@cam.ac.uk>
+In-Reply-To: <4DD23EED.4010201@cam.ac.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2011 12:29 PM, Ingo Molnar wrote:
-> * Avi Kivity<avi@redhat.com>  wrote:
->
-> >  >  Some programmable configurability seems necessary on the KVM side, as KVM
-> >  >  has no control over how sane the guest kernel is.
-> >
-> >  We should simply expose the cpuid bit and cr4.smep.  If the guest kernel
-> >  feels it is up to it, it can enable smep itself.
->
-> Well, given that there's lots of legacy installations around it would be a neat
-> KVM feature if it was possible to enable SMEP even if the guest kernel does not
-> enable it. As an additional (optional) layer of security.
->
-> For example legacy Linux guests will work just fine, even if they do not enable
-> SMEP themselves.
+On 05/17/11 10:25, Jonathan Cameron wrote:
+> On 05/17/11 08:06, Fabien Marteau wrote:
+>> Hi Guenter,
+>>
+>> Thanks for the review.
+>>
+>> On 16/05/2011 17:39, Guenter Roeck wrote:
+>>> On Mon, May 16, 2011 at 09:39:14AM -0400, fabien.marteau@armadeus.com wrote:
+>>>> From: Fabien Marteau <fabien.marteau@armadeus.com>
+>>>>
+>>>>
+>>> Some description, such as "Dhis driver adds support for xxx" would be nice.
+>>>
+>>> Also, I wonder if this driver belongs into hwmon in the first place. It is
+>>> a generic ADC chip with high conversion rate. iio would probably be more
+>>> appropriate and also much better in supporting high speed readings.
+>> I provided this driver "as is" because it's a driver that work well on
+>> our platform. I thought that iio was not stable enough driver framework
+>> to be used.
+>> I can rewrite it under iio framework but I have no time for this moment
+>> to do that. You think it's better to wait for an iio driver or to
+>> continue commiting this ?
+> I'd say that if you primary use is hwmon, put it there for now and we can think
+> about moving it at a later date depending on how people are actually using it.
+> Guenter, would that be ok for you?
+Having actually taken a look at the code, it's straight forward, so if you
+are using it as a general purpose adc then I'm happy to port to IIO
+sometimes soonish...  Will need some testing at somepoint though.
 
-It's certainly possible (set CR4.SMEP transparently and hide it from the 
-guest).  But there's no way to tell if it doesn't break something 
-wierd.  The host might not even know if the guest is Linux or something 
-else.
-
-We could support it as a non-default feature, but that reduces its utility.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Jonathan
