@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab1EQJps (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 05:45:48 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60998 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833Ab1EQJpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 05:45:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=b0a2Y2NhMcDzkgO31yQsl1Kc/Z39l8CM5sX83Bib+NgMWKrYQGuEloXpdlq+sPrl25
-         UKoofMoQzAG0v8vPFcjTh8GM5qIkmaFdzI+XZbwwq65u3WVSgQxS099K2TrGP+UNgiQy
-         QERm+128NfaVz8aK+NygXHP9ViZdEXjASVelw=
-Subject: Re: [patch V3] percpu_counter: scalability works
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Shaohua Li <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
-In-Reply-To: <20110517091102.GE20624@htj.dyndns.org>
-References: <1305528912.3120.213.camel@edumazet-laptop>
-	 <1305530143.2375.42.camel@sli10-conroe>
-	 <1305531877.3120.230.camel@edumazet-laptop>
-	 <1305534857.2375.55.camel@sli10-conroe>
-	 <1305538504.2898.33.camel@edumazet-laptop>
-	 <1305555736.2898.46.camel@edumazet-laptop>
-	 <1305593751.2375.69.camel@sli10-conroe>
-	 <1305608212.9466.45.camel@edumazet-laptop>
-	 <1305609768.2375.84.camel@sli10-conroe>
-	 <1305622861.2850.21.camel@edumazet-laptop>
-	 <20110517091102.GE20624@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 11:45:41 +0200
-Message-ID: <1305625541.2850.29.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1753936Ab1EQJsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 05:48:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58247 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753846Ab1EQJsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 05:48:51 -0400
+Date: Tue, 17 May 2011 10:48:45 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+Message-ID: <20110517094845.GK5279@suse.de>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+ <1305127773-10570-4-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1105111314310.9346@chino.kir.corp.google.com>
+ <20110512173628.GJ11579@random.random>
+ <alpine.DEB.2.00.1105161356140.4353@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1105161356140.4353@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 17 mai 2011 à 11:11 +0200, Tejun Heo a écrit :
+On Mon, May 16, 2011 at 02:03:33PM -0700, David Rientjes wrote:
+> On Thu, 12 May 2011, Andrea Arcangeli wrote:
+> 
+> > On Wed, May 11, 2011 at 01:38:47PM -0700, David Rientjes wrote:
+> > > kswapd and doing compaction for the higher order allocs before falling 
+> > 
+> > Note that patch 2 disabled compaction by clearing __GFP_WAIT.
+> > 
+> > What you describe here would be patch 2 without the ~__GFP_WAIT
+> > addition (so keeping only ~GFP_NOFAIL).
+> > 
+> 
+> It's out of context, my sentence was:
+> 
+> "With the previous changes in this patchset, specifically avoiding waking 
+> kswapd and doing compaction for the higher order allocs before falling 
+> back to the min order..."
+> 
+> meaning this patchset avoids waking kswapd and avoids doing compaction.
+> 
 
-> I'm completely fine with #1.  I'm not that crazy but I don't really
-> want to take #2 - that makes the whole _sum() interface almost
-> pointless.  
+Ok.
 
-Hi Tejun
+> > Not clearing __GFP_WAIT when compaction is enabled is possible and
+> > shouldn't result in bad behavior (if compaction is not enabled with
+> > current SLUB it's hard to imagine how it could perform decently if
+> > there's fragmentation). You should try to benchmark to see if it's
+> > worth it on the large NUMA systems with heavy network traffic (for
+> > normal systems I doubt compaction is worth it but I'm not against
+> > trying to keep it enabled just in case).
+> > 
+> 
+> The fragmentation isn't the only issue with the netperf TCP_RR benchmark, 
+> the problem is that the slub slowpath is being used >95% of the time on 
+> every allocation and free for the very large number of kmalloc-256 and 
+> kmalloc-2K caches. 
 
-_sum() is a bit more precise than percpu_counter_read(), but to make it
-really precise, we means we have to stop concurrent activities, and we
-never did in previous/current implementation.
+Ok, that makes sense as I'd full expect that benchmark to exhaust
+the per-cpu page (high order or otherwise) of slab objects routinely
+during default and I'd also expect the freeing on the other side to
+be releasing slabs frequently to the partial or empty lists.
 
-We could add this (as Shaohua and myself tried in various patches)
-later, if needed, but nowhere in kernel we currently need that.
+> Those caches are order 1 and 3, respectively, on my 
+> system by default, but the page allocator seldomly gets invoked for such a 
+> benchmark after the partial lists are populated: the overhead is from the 
+> per-node locking required in the slowpath to traverse the partial lists.  
+> See the data I presented two years ago: http://lkml.org/lkml/2009/3/30/15.
 
-Even /proc/meminfo doesnt call _sum(&vm_committed_as) but the lazy
-percpu_counter_read_positive() function...
+Ok, I can see how this patch would indeed make the situation worse. I
+vaguely recall that there were other patches that would increase the
+per-cpu lists of objects but have no recollection as to what happened
+them.
 
-Reammy _sum() gives a good approximation of the counter, more precise
-because of the percpu s32 folding, but no guarantee of deviation.
+Maybe Christoph remembers but one way or the other, it's out of scope
+for James' and Colin's bug.
 
-
-
+-- 
+Mel Gorman
+SUSE Labs
