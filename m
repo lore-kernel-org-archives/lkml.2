@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab1EQQ2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 12:28:36 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59824 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665Ab1EQQ2f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 12:28:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=cziWW7ND+SdscPcZtJ96cEHzJhMGObg0NbCPN72MYSEz/pdCLfZ9JhKTmDIfhQSafB
-         ZpzZDy/X5IDvJpK1HHWX27+kbydE1iOIU7kqTv8TQDulkNTxfhqhcJm4+10t2FT0IEay
-         jQEJwDZ8t+MY/O0Ti+S2sdZQGgvRh3KhpFZbA=
-Date: Tue, 17 May 2011 18:28:27 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: benh@kernel.crashing.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: powerpc: mpc85xx regression since 2.6.39-rc2, one cpu core lame
-Message-ID: <20110517162827.GA16918@riccoc20.at.omicron.at>
+	id S1755754Ab1EQQ3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 12:29:34 -0400
+Received: from sycorax.lbl.gov ([128.3.11.121]:59532 "EHLO sycorax.lbl.gov"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752687Ab1EQQ3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 12:29:33 -0400
+From: Alex Romosan <romosan@sycorax.lbl.gov>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: system hangs 2.6.39-rc7 xfs related
+References: <87ei3y7aei.fsf@sycorax.lbl.gov>
+	<20110517155018.GB17735@infradead.org>
+Date: Tue, 17 May 2011 09:29:22 -0700
+In-Reply-To: <20110517155018.GB17735@infradead.org> (message from Christoph
+	Hellwig on Tue, 17 May 2011 11:50:19 -0400)
+Message-ID: <87r57xl28t.fsf@sycorax.lbl.gov>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben,
+Christoph Hellwig <hch@infradead.org> writes:
 
-Recent 2.6.39-rc kernels behave strangely on the Freescale dual core
-mpc8572 and p2020. There is a long pause (like 2 seconds) in the boot
-sequence after "mpic: requesting IPIs..."
+> On Mon, May 16, 2011 at 11:44:37AM -0700, Alex Romosan wrote:
+>> my system just sort of locked up and everything that's trying to write
+>> to disk is stuck. dmesg gives me this:
+>
+> This looks quite similar to a few other XFS issues in the .39 cycle.
+> Can you upgrade to latest Linus HEAD which has fixes for these similar
+> issues and see if that fixes your issues?
 
-When the system comes up, only one core shows in /proc/cpuinfo. Later
-on, lots of messages appear like the following:
+i'll give it a try, but it might take some time before i can figure out
+if the fixes work as i still haven't figured out a way to reproduce
+this consistently (having a lot of processes write to disk at the same
+time increases the likelihood of it happening but doesn't guarantee it).
 
-   INFO: task ksoftirqd/1:9 blocked for more than 120 seconds.
+--alex--
 
-I bisected [1] the problem to:
-
-   commit c56e58537d504706954a06570b4034c04e5b7500
-   Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-   Date:   Tue Mar 8 14:40:04 2011 +1100
-
-       powerpc/smp: Create idle threads on demand and properly reset them
-
-I don't see from that commit what had gone wrong. Perhaps you can
-help resolve this?
-
-Thanks,
-Richard
-
-
-1. I had to patch commit e5462d16 by hand when bisecting, which is a
-   fixup for commit fa3f82c8 and not yet merged in c56e5853.
+-- 
+| I believe the moment is at hand when, by a paranoiac and active |
+|  advance of the mind, it will be possible (simultaneously with  |
+|  automatism and other passive states) to systematize confusion  |
+|  and thus to help to discredit completely the world of reality. |
