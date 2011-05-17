@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab1EQPa3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 11:30:29 -0400
-Received: from gretna.indigovision.com ([62.7.85.227]:25553 "EHLO
-	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849Ab1EQPa1 convert rfc822-to-8bit (ORCPT
+	id S1755710Ab1EQPcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 11:32:14 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:21098 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab1EQPcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 11:30:27 -0400
-From: Bruce Stenning <b.stenning@indigovision.com>
-To: Tejun Heo <htejun@gmail.com>
-CC: Mark Lord <kernel@teksavvy.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Date: Tue, 17 May 2011 16:30:20 +0100
-Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Index: AcwHPxHxRDZFLB3BRD+AB79Eq+ch2gNZjy0A
-Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com>
-References: <4DA45CA7.9040102@teksavvy.com> <4DA467FB.6020905@teksavvy.com>
- <20110423005610.GC1576@mtj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com>
- <20110425162242.GB30828@mtj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com>
- <20110426135027.GI878@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com>
- <20110426155229.GM878@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com>
- <20110430140109.GJ29280@htj.dyndns.org>
-In-Reply-To: <20110430140109.GJ29280@htj.dyndns.org>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 May 2011 11:32:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Do4wZj2iIWC+uh0wKxUB/DJrDsvzfeXJ3Nhlu37ZDusM3aArazdcMrMp3IsVUENysP
+         OZ5srHyRhhYstmb/z0zw==
+Date: Tue, 17 May 2011 17:32:07 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, peterz@infradead.org, mingo@elte.hu
+Subject: [PATCH] perf: make annotate more readable
+Message-ID: <20110517153207.GA9834@quad>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
 
-> So, here's the patch which should fix the problem you're seeing and
-> doesn't break the controllers which generate spurious hotplug events
-> during reset.  Please test this when you come back and let me know the
-> result.
+This patch adds two new options to perf annotate:
+	- -R, --no-asm-raw : do not display raw instruction encodings
+	- -S, --no-source  : do not interleave source code with assembly code
 
-I have tested this patch out a fair amount, and it seemed to make things
-much more reliable, but I have managed to lock up the port again this
-afternoon. Below is some tracing showing ata4 being frozen and not thawed:
+We believe those options make the output of annotate more readable.
+Systematically displaying source can make it hard to follow code and
+especially optimized code.
 
-__ata_port_freeze: ata4 port frozen
-ata4: hard resetting link
-sata_link_hardreset: ENTER
-ata4: COMRESET failed (errno=-32)
-sata_link_hardreset: EXIT, rc=-32
-ata4: reset failed (errno=-32), retrying in 33 secs
-__ata_port_freeze: ata4 port frozen
-ata4: hard resetting link
-sata_link_hardreset: ENTER
-ata4: COMRESET failed (errno=-32)
-sata_link_hardreset: EXIT, rc=-32
-ata4: reset failed, giving up
-ata_eh_recover: EXIT, rc=-32
-ata4.00: disabled
-ata4: EH complete
-ata_scsi_error: EXIT
+Raw encodings are not useful in most cases.
 
-The IRQ for that port is masked off afterwards.
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
-
-Bruce.
-
-
-Latest News at: http://www.indigovision.com/index.php/en/news.html
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index 6f5a498..cf59fdd 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -66,6 +66,15 @@ OPTIONS
+ 	used. This interfaces starts by centering on the line with more
+ 	samples, TAB/UNTAB cycles through the lines with more samples.
+ 
++-R::
++--no-asm-raw::
++	Do not show raw instruction encoding of assembly instructions. They
++	are displayed by default
++
++-S
++--no-source::
++	Do not interleave source code with assembly code.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-report[1]
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index e18eb7e..976f5d8 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -254,6 +254,10 @@ static const struct option options[] = {
+ 		    "print matching source lines (may be slow)"),
+ 	OPT_BOOLEAN('P', "full-paths", &full_paths,
+ 		    "Don't shorten the displayed pathnames"),
++		OPT_BOOLEAN('S', "no-source", &symbol_conf.annotate_no_src,
++		    "do not interleave source code with assembly code"),
++		OPT_BOOLEAN('R', "no-asm-raw", &symbol_conf.asm_no_raw,
++		    "do not display raw encoding of assembly instructions"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 532e4a6..5ccb32b 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -324,9 +324,12 @@ fallback:
+ 
+ 	snprintf(command, sizeof(command),
+ 		 "objdump --start-address=0x%016" PRIx64
+-		 " --stop-address=0x%016" PRIx64 " -dS -C %s|grep -v %s|expand",
++		 " --stop-address=0x%016" PRIx64
++		 " -d %s %s -C %s|grep -v %s|expand",
+ 		 map__rip_2objdump(map, sym->start),
+ 		 map__rip_2objdump(map, sym->end),
++		 symbol_conf.asm_no_raw ? "--no-show-raw" : "",
++		 symbol_conf.annotate_no_src ? "" : "-S",
+ 		 symfs_filename, filename);
+ 
+ 	pr_debug("Executing: %s\n", command);
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index c1736e5..bd75365 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -75,7 +75,9 @@ struct symbol_conf {
+ 			use_callchain,
+ 			exclude_other,
+ 			show_cpu_utilization,
+-			initialized;
++			initialized,
++			asm_no_raw,
++			annotate_no_src;
+ 	const char	*vmlinux_name,
+ 			*kallsyms_name,
+ 			*source_prefix,
