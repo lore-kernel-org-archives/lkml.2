@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab1EQEbe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 00:31:34 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:41378 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab1EQEba (ORCPT
+	id S1751730Ab1EQEme (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 00:42:34 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:13174 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab1EQEmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 00:31:30 -0400
-Subject: Re: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110516212401.GF18148@redhat.com>
-References: <1305574484.3456.30.camel@localhost.localdomain>
-	 <20110516204540.GD18148@redhat.com>
-	 <1305579414.3456.49.camel@localhost.localdomain>
-	 <20110516212401.GF18148@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 21:31:23 -0700
-Message-ID: <1305606683.10756.3.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	Tue, 17 May 2011 00:42:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6348"; a="91547098"
+Message-ID: <4DD1FCB3.8040700@codeaurora.org>
+Date: Tue, 17 May 2011 10:12:27 +0530
+From: Mohan Pallaka <mpallaka@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.intradead.org,
+        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 1/2] pwm: Add __weak attributed functions for pwm	operations
+References: <1305290602-29859-1-git-send-email-mpallaka@codeaurora.org> <1305290602-29859-2-git-send-email-mpallaka@codeaurora.org> <20110515080031.GA12911@core.coreip.homeip.net> <20110515105850.GH30539@n2100.arm.linux.org.uk>
+In-Reply-To: <20110515105850.GH30539@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 00:24 +0300, Michael S. Tsirkin wrote:
-> On Mon, May 16, 2011 at 01:56:54PM -0700, Shirley Ma wrote:
-> > On Mon, 2011-05-16 at 23:45 +0300, Michael S. Tsirkin wrote:
-> > > > +/* Since we need to keep the order of used_idx as avail_idx,
-> it's
-> > > possible that
-> > > > + * DMA done not in order in lower device driver for some
-> reason. To
-> > > prevent
-> > > > + * used_idx out of order, upend_idx is used to track avail_idx
-> > > order, done_idx
-> > > > + * is used to track used_idx order. Once lower device DMA done,
-> > > then upend_idx
-> > > > + * can move to done_idx.
-> > > 
-> > > Could you clarify this please? virtio explicitly allows out of
-> order
-> > > completion of requests. Does it simplify code that we try to keep
-> > > used index updates in-order? Because if not, this is not
-> > > really a requirement.
-> > 
-> > Hello Mike,
-> > 
-> > Based on my testing, vhost_add_used() must be in order from
-> > vhost_get_vq_desc(). Otherwise, virtio_net ring seems get double
-> > freed.
-> 
-> Double-freed or you get NULL below?
+  On 5/15/2011 4:28 PM, Russell King - ARM Linux wrote:
+> On Sun, May 15, 2011 at 01:00:31AM -0700, Dmitry Torokhov wrote:
+>> On Fri, May 13, 2011 at 06:13:21PM +0530, Mohan Pallaka wrote:
+>>> For chip drivers that support both pwm and non-pwm modes
+>>> would encounter compilation errors if the platform doesn't
+>>> have support for pwm though the chip is programmed to work
+>>> in non-pwm mode. Add __weak attributed pwm functions to avoid
+>>> compilation issues in these scenarios.
+>>>
+>> Russell,
+>>
+>> You seem to have authored pwm.h, do you have any objections to this
+>> change?
+> This seems to be a recipe for an oops.  Have a look at how
+> linux/regulator/consumer.h deals with this kind of problem, and notice
+> that we have CONFIG_HAVE_PWM to indicate whether this interface is
+> supported or not.
+Thanks for the suggestion. I'll upload a new patch.
 
-More likely is NULL.
-
-> > I didn't spend time on debugging this.
-> > 
-> > in virtqueue_get_buf
-> > 
-> >         if (unlikely(!vq->data[i])) {
-> >                 BAD_RING(vq, "id %u is not a head!\n", i);
-> >                 return NULL;
-> >         }
-> 
-> Yes but i used here is the head that we read from the
-> ring, not the ring index itself.
->         i = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].id
-> we must complete any id only once, but in any order.
-
-It is in any order of ring id, but must be in the order of "head"
-returns  from  vhost_get_vq_desc(), any clue?
-
-
-Thanks
-Shirley
-
+--Mohan.
