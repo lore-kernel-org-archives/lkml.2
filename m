@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab1EQVzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 17:55:11 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43205 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab1EQVzJ convert rfc822-to-8bit (ORCPT
+	id S932445Ab1EQV7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 17:59:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37181 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932392Ab1EQV7b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 17:55:09 -0400
-Subject: Re: [PATCH 1/3] comm: Introduce comm_lock spinlock to protect
- task->comm access
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, Michal Nazarewicz <mina86@mina86.com>,
-        Andy Whitcroft <apw@canonical.com>, Jiri Slaby <jirislaby@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-In-Reply-To: <20110517212734.GB28054@elte.hu>
-References: <1305665263-20933-1-git-send-email-john.stultz@linaro.org>
-	 <1305665263-20933-2-git-send-email-john.stultz@linaro.org>
-	 <20110517212734.GB28054@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 17 May 2011 17:59:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=h619zTub5xKTtHQptULnTbro05zW6EMKF+SCnolQLhzPECgEJrE48Ov9U0ktqPfQHl
+         zg0AIc2a6mzYziVmtrZUWgXV8357sG8h5K2xzpG74pIusDDGC1ZFNxaJCC4X+bB115nI
+         H5M2l9uGfLN+y6KWnex1xsjAt73GpD2YEUVL4=
+MIME-Version: 1.0
+In-Reply-To: <20110517212122.GA13484@kroah.com>
+References: <cover.1305369175.git.mfm@muteddisk.com>
+	<5f759d070b6bf0f72d92c632e94e6fe5d9943a96.1305369176.git.mfm@muteddisk.com>
+	<20110517202300.GA7981@kroah.com>
+	<BANLkTimCEFEVmdQM9J1=0QRE2NFcim6fAw@mail.gmail.com>
+	<20110517212122.GA13484@kroah.com>
+Date: Tue, 17 May 2011 14:59:29 -0700
+Message-ID: <BANLkTimZ8gvVaRz3HPqdJnOwAz2K6iuJSA@mail.gmail.com>
+Subject: Re: [PATCH 14/14] package: Makefile: add USB/IP userspace utilities
+From: matt mooney <mfmooney@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 17 May 2011 23:54:16 +0200
-Message-ID: <1305669256.2466.6286.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 23:27 +0200, Ingo Molnar wrote:
-> * John Stultz <john.stultz@linaro.org> wrote:
-> 
-> > The implicit rules for current->comm access being safe without locking are no 
-> > longer true. Accessing current->comm without holding the task lock may result 
-> > in null or incomplete strings (however, access won't run off the end of the 
-> > string).
-> 
-> This is rather unfortunate - task->comm is used in a number of performance 
-> critical codepaths such as tracing.
-> 
-> Why does this matter so much? A NULL string is not a big deal.
-> 
-> Note, since task->comm is 16 bytes there's the CMPXCHG16B instruction on x86 
-> which could be used to update it atomically, should atomicity really be 
-> desired.
+On Tue, May 17, 2011 at 2:21 PM, Greg KH <greg@kroah.com> wrote:
+> On Tue, May 17, 2011 at 02:13:01PM -0700, matt mooney wrote:
+>> On Tue, May 17, 2011 at 1:23 PM, Greg KH <greg@kroah.com> wrote:
+>> > On Sat, May 14, 2011 at 03:55:20AM -0700, matt mooney wrote:
+>> >> From: matt mooney <mfm@muteddisk.com>
+>> >>
+>> >> Add usbip-src-pkg target to generate a tarball of the userspace source.
+>> >>
+>> >> Signed-off-by: matt mooney <mfm@muteddisk.com>
+>> >> ---
+>> >>  scripts/package/Makefile |   15 ++++++++++++++-
+>> >
+>> > Is this really needed at this point in time?  I'd prefer to wait on it
+>> > before we get this code cleaned up a bit better if you don't mind.
+>>
+>> Oh yeah, of course. I only added it because I thought you wanted me to
+>> add it now.
+>
+> For some reason I thought it would be more, but there really isn't a way
+> to build the userspace code from the main root of the kernel tree is
+> there?
 
-The changelog also fails to mention _WHY_ this is no longer true. Nor
-does it treat why making it true again isn't an option.
+I do not believe there is. Since `make ...' starts the Kbuild system,
+Kbuild would have to support this otherwise we would have to
+circumvent the build system. And the closest thing to some kind of
+support I could find was in scripts/Makefile.host, but it says it is
+for binaries used during the kernel compilation process. I think this
+set of userspace utilities is further complicated by its use of
+autotools.
 
-Who is changing another task's comm? That's just silly.
+My use of "circumvent the build system" may be a bit harsh. I don't
+think there is anything wrong with running a parameterized instance of
+make within a target, but the short answer would be that this problem
+does not seem to have been generalized in Kbuild yet.
+
+-matt
+
+-- 
+GPG-Key: 9AFE00EA
