@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab1EQX6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 19:58:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:1417 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932286Ab1EQX6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 19:58:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,228,1304319600"; 
-   d="scan'208";a="437911002"
-Date: Wed, 18 May 2011 00:44:20 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: NULL pointer deref in tty port / uart
-Message-ID: <20110518004420.2b8f5da9@bob.linux.org.uk>
-In-Reply-To: <20110517231229.GB1776@nowhere>
-References: <20110517231229.GB1776@nowhere>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
+	id S932314Ab1EQXok (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 19:44:40 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:41978 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932193Ab1EQXoj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 19:44:39 -0400
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
+ netdevice
+From: Shirley Ma <mashirle@us.ibm.com>
+To: =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirqus@gmail.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTik6aqP5BVrQNFKrnU3v=KA9ip1RoA@mail.gmail.com>
+References: <1305574128.3456.23.camel@localhost.localdomain>
+	 <1305574518.2885.25.camel@bwh-desktop>
+	 <1305574680.3456.33.camel@localhost.localdomain>
+	 <1305575253.2885.28.camel@bwh-desktop> <20110516211459.GE18148@redhat.com>
+	 <1305588738.3456.65.camel@localhost.localdomain>
+	 <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
+	 <1305671318.10756.49.camel@localhost.localdomain>
+	 <BANLkTik6aqP5BVrQNFKrnU3v=KA9ip1RoA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 May 2011 16:44:25 -0700
+Message-ID: <1305675865.10756.63.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 	echo 1 > /dev/ttyS4 # which blocks
+On Wed, 2011-05-18 at 00:58 +0200, Michał Mirosław wrote:
+> W dniu 18 maja 2011 00:28 użytkownik Shirley Ma <mashirle@us.ibm.com>
+> napisał:
+> > On Tue, 2011-05-17 at 23:48 +0200, Michał Mirosław wrote:
+> >> 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
+> >> > Looks like to use a new flag requires more time/work. I am
+> thinking
+> >> > whether we can just use HIGHDMA flag to enable zero-copy in
+> macvtap
+> >> to
+> >> > avoid the new flag for now since mavctap uses real NICs as lower
+> >> device?
+> >>
+> >> Is there any other restriction besides requiring driver to not
+> recycle
+> >> the skb? Are there any drivers that recycle TX skbs?
+> > Not more other restrictions, skb clone is OK. pskb_expand_head()
+> looks
+> > OK to me from code review.
 > 
-> And on another console:
+> > Currently there is no drivers recycle TX skbs.
 > 
-> 	cat /dev/ttyS4 # which blocks
-> 
-> Then Ctrl + C the echo in the first console. This produces the
-> following trace:
+> So why do you require the target device to have some flags at all?
 
-First cat is in tty_port_block_til_ready, second cat joins it there. ^C
-causes one to close, which wakes the second which goes around the loop
-again, tries to raise the carrier and explodes, it seems because
-someone trashed memory it is using.
+We could use macvtap to check lower device HIGHDMA to enable zero-copy,
+but I am not sure whether it is sufficient. If it's sufficient then we
+don't need to use a new flag here. To be safe, it's better to use a new
+flag to enable each device who can pass zero-copy test.
 
-Not quite sure why at this point
+> Do I understand correctly, that this zero-copy feature is about
+> packets received from VMs?
 
-On the first exit of the open path port->count is 1 which is as we want
-it. Close takes it down to zero which triggers the port shutdown path
-which is as we want. We clean up port->tty and shut down the port.
-Seeing the second pending open we wake it which is when it goes kaboom
+Yes, packets sent from VMs, and received in local host for TX zero-copy
+here.
 
-Nothing obvious strikes me from reading the code.
+Thanks
+Shirley
+
+
+
