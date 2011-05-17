@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab1EQBXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 21:23:20 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:55692 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751535Ab1EQBXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 21:23:18 -0400
-Date: Mon, 16 May 2011 18:23:07 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
+	id S1753098Ab1EQBr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 21:47:59 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:43722 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab1EQBr6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 21:47:58 -0400
+Subject: Re: [PATCH 1/3] comm: Introduce comm_lock seqlock to protect
+ task->comm access
+From: John Stultz <john.stultz@linaro.org>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
-	writeback for various fses
-Message-ID: <20110517012307.GQ20579@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <87hb924s2x.fsf@devron.myhome.or.jp> <20110510132953.GE4402@quack.suse.cz> <878vue4qjb.fsf@devron.myhome.or.jp> <87zkmu3b2i.fsf@devron.myhome.or.jp> <20110510145421.GJ4402@quack.suse.cz> <87zkmupmaq.fsf@devron.myhome.or.jp> <20110510162237.GM4402@quack.suse.cz> <87vcxipljj.fsf@devron.myhome.or.jp> <20110516184736.GL20579@tux1.beaverton.ibm.com> <87oc3230iu.fsf@devron.myhome.or.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87oc3230iu.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+In-Reply-To: <4DD19EB5.7060900@gmail.com>
+References: <1305580757-13175-1-git-send-email-john.stultz@linaro.org>
+	 <1305580757-13175-2-git-send-email-john.stultz@linaro.org>
+	 <4DD19EB5.7060900@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 18:47:47 -0700
+Message-ID: <1305596867.2915.109.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 04:31:37AM +0900, OGAWA Hirofumi wrote:
-> "Darrick J. Wong" <djwong@us.ibm.com> writes:
+On Tue, 2011-05-17 at 00:01 +0200, Jiri Slaby wrote:
+> On 05/16/2011 11:19 PM, John Stultz wrote:
+> > diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+> > index caa151f..b69d94b 100644
+> > --- a/include/linux/init_task.h
+> > +++ b/include/linux/init_task.h
+> > @@ -161,6 +161,7 @@ extern struct cred init_cred;
+> >  	.group_leader	= &tsk,						\
+> >  	RCU_INIT_POINTER(.real_cred, &init_cred),			\
+> >  	RCU_INIT_POINTER(.cred, &init_cred),				\
+> > +	.comm_lock	= __SPIN_LOCK_UNLOCKED(tsk.comm_lock),		\
 > 
-> >> OK. E.g. usual workload on desktop, but FS like ext2/fat.
-> >
-> > In the frequent rewrite case, here's what you get:
-> >
-> > Regular disk: (possibly garbage) write, followed by a second write to make the
-> > disk reflect memory contents.
-> >
-> > RAID w/ shadow pages: two writes, both consistent.  Higher memory consumption.
-> >
-> > T10 DIF disk: disk error any time the CPU modifies a page that the disk
-> > controller is DMA'ing out of memory.  I suppose one could simply retry the
-> > operation if the page is dirty, but supposing memory writes are happening fast
-> > enough that the retries also produce disk errors, _nothing_ ever gets written.
-> >
-> > With the new stable-page-writes patchset, the garbage write/disk error symptoms
-> > go away since the processes block instead of creating this window where it's
-> > not clear whether the disk's copy of the data is consistent.  I could turn the
-> > wait_on_page_writeback calls into some sort of page migration if the
-> > performance turns out to be terrible, though I'm still working on quantifying
-> > the impact.  Some people pointed out that sqlite tends to write the same blocks
-> > frequently, though I wonder if sqlite actually tries to write memory pages
-> > while syncing them?
-> >
-> > One use case where I could see a serious performance hit happening is the case
-> > where some app writes a bunch of memory pages, calls sync to force the dirty
-> > pages to disk, and /must/ resume writing those memory pages before the sync
-> > completes.  The page migration would of course help there, provided a memory
-> > page can be found in less time than an I/O operation.
-> >
-> > Someone commented on the LWN article about this topic, claiming that he had a
-> > program that couldn't afford to block on writes to mlock()'d memory.  I'm not
-> > sure how to fix that program, because if memory writes never coordinate with
-> > disk writes and the other threads are always writing memory, I wonder how the
-> > copy on disk isn't always indeterminate.
-> 
-> I'm not thinking data page is special operation for doing this (at least
-> logically). In other word, if you are talking about only data page, you
-> shouldn't send patches for metadata with it.
+> Hmm, you should also init the spinlock somewhere in copy_process.
+> Otherwise when a process is forked in the middle of [gs]et_task_comm
+> called on it on another cpu, you have two locked locks and only the
+> parent's will be unlocked, right?
 
-Patch 7, which is the only patch that touches code under fs/fat/, only fixes
-the case where the filesystem tries to modify its own metadata while writing
-out the same metadata.
+Ah, yep. Fixed for the next version.
 
-Patches 2 and 3, which affect only files mm/ and fs/, prevent data pages from
-being modified while the same data pages are being written out.  It is not
-necessary to modify any fs/fat/ code to fix the data page case, fortunately.
+thanks!
+-john
 
-That said, the intent of the patch set is to prevent writes to any memory page,
-regardless of type (data or metadata), while the same page is being written out.
-
---D
