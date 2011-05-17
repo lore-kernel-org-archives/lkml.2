@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab1EQBr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 21:47:59 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:43722 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab1EQBr6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 21:47:58 -0400
-Subject: Re: [PATCH 1/3] comm: Introduce comm_lock seqlock to protect
- task->comm access
-From: John Stultz <john.stultz@linaro.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-In-Reply-To: <4DD19EB5.7060900@gmail.com>
-References: <1305580757-13175-1-git-send-email-john.stultz@linaro.org>
-	 <1305580757-13175-2-git-send-email-john.stultz@linaro.org>
-	 <4DD19EB5.7060900@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 18:47:47 -0700
-Message-ID: <1305596867.2915.109.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1753776Ab1EQB5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 21:57:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35990 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752624Ab1EQB5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 21:57:39 -0400
+Message-ID: <4DD1D5EB.3070602@zytor.com>
+Date: Mon, 16 May 2011 18:56:59 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Fenghua Yu <fenghua.yu@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/4] x86, cpu: Add CPU flags for SMEP
+References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com> <1305581685-5144-2-git-send-email-fenghua.yu@intel.com>
+In-Reply-To: <1305581685-5144-2-git-send-email-fenghua.yu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 00:01 +0200, Jiri Slaby wrote:
-> On 05/16/2011 11:19 PM, John Stultz wrote:
-> > diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-> > index caa151f..b69d94b 100644
-> > --- a/include/linux/init_task.h
-> > +++ b/include/linux/init_task.h
-> > @@ -161,6 +161,7 @@ extern struct cred init_cred;
-> >  	.group_leader	= &tsk,						\
-> >  	RCU_INIT_POINTER(.real_cred, &init_cred),			\
-> >  	RCU_INIT_POINTER(.cred, &init_cred),				\
-> > +	.comm_lock	= __SPIN_LOCK_UNLOCKED(tsk.comm_lock),		\
+On 05/16/2011 02:34 PM, Fenghua Yu wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
 > 
-> Hmm, you should also init the spinlock somewhere in copy_process.
-> Otherwise when a process is forked in the middle of [gs]et_task_comm
-> called on it on another cpu, you have two locked locks and only the
-> parent's will be unlocked, right?
+> Add support for newly documented SMEP (Supervisor Mode Execution Protection) CPU
+> feature flags.
+> 
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  arch/x86/include/asm/cpufeature.h |    1 +
+>  arch/x86/kernel/cpu/scattered.c   |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+> index 50c0d30..e773f13 100644
+> --- a/arch/x86/include/asm/cpufeature.h
+> +++ b/arch/x86/include/asm/cpufeature.h
+> @@ -174,6 +174,7 @@
+>  #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
+>  #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
+>  #define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
+> +#define X86_FEATURE_SMEP	(7*32+ 8) /* Supervisor Mode Execution Protection*/
+>  
+>  /* Virtualization flags: Linux defined, word 8 */
+>  #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
+> diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
+> index c7f64e6..2de3aea 100644
+> --- a/arch/x86/kernel/cpu/scattered.c
+> +++ b/arch/x86/kernel/cpu/scattered.c
+> @@ -38,6 +38,7 @@ void __cpuinit init_scattered_cpuid_features(struct cpuinfo_x86 *c)
+>  		{ X86_FEATURE_PTS,		CR_EAX, 6, 0x00000006, 0 },
+>  		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006, 0 },
+>  		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
+> +		{ X86_FEATURE_SMEP,		CR_EBX, 7, 0x00000007, 0 },
+>  		{ X86_FEATURE_XSAVEOPT,		CR_EAX,	0, 0x0000000d, 1 },
+>  		{ X86_FEATURE_CPB,		CR_EDX, 9, 0x80000007, 0 },
+>  		{ X86_FEATURE_NPT,		CR_EDX, 0, 0x8000000a, 0 },
 
-Ah, yep. Fixed for the next version.
+The level 7 flags are not considered "scattered"; they have their own
+word; please use it.
 
-thanks!
--john
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
