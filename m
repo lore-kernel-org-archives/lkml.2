@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab1EQVqL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 17:46:11 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:47128 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932435Ab1EQVqK (ORCPT
+	id S932472Ab1EQVso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 17:48:44 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:49392 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932375Ab1EQVsm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 17:46:10 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -21.39
-Message-ID: <4DD2EC98.5080901@tremplin-utc.net>
-Date: Tue, 17 May 2011 23:46:00 +0200
-From: =?ISO-8859-1?Q?=C9ric_Piel?= <Eric.Piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Mandriva/3.1.10-1 (2011.0) Thunderbird/3.1.10
+	Tue, 17 May 2011 17:48:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=NqOD9DlcTw2f88pycDHq4MwA9BuTc/qAzhiYe7jyiJ0f9+3zI8vOJcQd8FagK4/PeQ
+         G9FMj7l2lefLphbVCKMbMJ66/VFVPeRXOymGNxK/d9N1CHLyXGQkdcGS3JZDuAB/Hse1
+         a/FILQbyReNMA5OICN+MfFtzGQhmIJ8Tz839E=
 MIME-Version: 1.0
-To: Christian Lamparter <chunkeey@googlemail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC v2] lis3lv02d: avoid divide by zero due to unchecked register
- read
-References: <201105160046.31019.chunkeey@googlemail.com> <4DD1079E.6000209@tremplin-utc.net> <201105162336.05306.chunkeey@googlemail.com>
-In-Reply-To: <201105162336.05306.chunkeey@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1305588738.3456.65.camel@localhost.localdomain>
+References: <1305574128.3456.23.camel@localhost.localdomain>
+ <1305574518.2885.25.camel@bwh-desktop> <1305574680.3456.33.camel@localhost.localdomain>
+ <1305575253.2885.28.camel@bwh-desktop> <20110516211459.GE18148@redhat.com> <1305588738.3456.65.camel@localhost.localdomain>
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+Date: Tue, 17 May 2011 23:48:21 +0200
+Message-ID: <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in netdevice
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 16-05-11 23:36, Christian Lamparter schreef:
-> On Monday 16 May 2011 13:16:46 Éric Piel wrote:
->> Op 16-05-11 00:46, Christian Lamparter schreef:
->>>  From my POV, it looks like the hardware is not working as expected
->>> and returns a bogus data rate. The driver doesn't check the result
->>> and directly uses it as some sort of divisor in some places:
->>>
->>> msleep(lis3->pwron_delay / lis3lv02d_get_odr());
->>>
->>> Under this circumstances, this could very well cause the
->>> "divide by zero" exception from above.
->>>
->> However, I'd fix it a bit differently: let lis3lv02d_get_odr() return
->> the raw data, and create a special function
->> lis3lv02d_get_pwron_delay_ms() which does the "lis3->pwron_delay /
->> lis3lv02d_get_odr()" with special handling for 0 (returning a large
->> value and also sending a printk_once() ).
-> Do you know how "volatile" this data rate is? If it never changes
-> [at least it doesn't here?] then why not read it once in init_device
-> and store it in the device context?
-It is not normally changing, normally it is set just at init/unsuspend 
-(where the bios can also interfere sometimes) and when the user changes 
-it. So definitely within the same function it's not going to suddenly 
-change. We could avoid calculating/checking it twice in 
-lis3lv02d_selftest(). Care to do a third version with this little clean up?
-
+2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
+> Hello Michael,
 >
-> Anyway, I updated the code... But instead of returning a "large value"
-> I went for the -ENXIO to bail-out early, so now we won't continue if
-> something went bad [after resume for instance?].
-Sounds even better than using a conservative value!
+> Looks like to use a new flag requires more time/work. I am thinking
+> whether we can just use HIGHDMA flag to enable zero-copy in macvtap to
+> avoid the new flag for now since mavctap uses real NICs as lower device?
 
->
->> As you have noted, we might want to check other parts of the driver to
->> validate the data from the device. So far, all the code considers that
->> the device is flawless :-S
-> well:
->    CHECK   drivers/misc/lis3lv02d/lis3lv02d.c
-> drivers/misc/lis3lv02d/lis3lv02d.c:170:52: warning: cast to restricted __le16
-This is not introduced by your patch, right? So it's fine for now :-)
+Is there any other restriction besides requiring driver to not recycle
+the skb? Are there any drivers that recycle TX skbs?
 
-Thanks,
-Eric
+Best Regards,
+Micha³ Miros³aw
