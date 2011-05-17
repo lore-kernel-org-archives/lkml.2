@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab1EQVMf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 17:12:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26119 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932296Ab1EQVMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 17:12:34 -0400
-Date: Tue, 17 May 2011 17:12:23 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 10/10] mach-ux500: update and move cpufreq driver
-Message-ID: <20110517211223.GA1909@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Linus Walleij <linus.walleij@stericsson.com>,
-	Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-	Lee Jones <lee.jones@linaro.org>
-References: <1304687191-23814-1-git-send-email-linus.walleij@stericsson.com>
- <201105061522.33179.arnd@arndb.de>
- <20110510055926.GA2747@redhat.com>
- <BANLkTimh2Xaz73v-2c0GmcS9wD4+JFWzrw@mail.gmail.com>
+	id S932363Ab1EQVNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 17:13:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42931 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932296Ab1EQVNC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 17:13:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YBbqRaj8mR3o4LIfyMNbpleqtToQj6/dFCi331oO3J7cTak4H58YhOjqXnoBlh3i8c
+         MLfQlqmITZIsfs6eCLfWU14/XWaLPFyyiBq7Pq172ENr3BcFeSeDEJP7Lt6j6vttSB78
+         nzY686PXka/YYPdpS8IYgtDfWg0NcqoTA+W44=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimh2Xaz73v-2c0GmcS9wD4+JFWzrw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110517202300.GA7981@kroah.com>
+References: <cover.1305369175.git.mfm@muteddisk.com>
+	<5f759d070b6bf0f72d92c632e94e6fe5d9943a96.1305369176.git.mfm@muteddisk.com>
+	<20110517202300.GA7981@kroah.com>
+Date: Tue, 17 May 2011 14:13:01 -0700
+Message-ID: <BANLkTimCEFEVmdQM9J1=0QRE2NFcim6fAw@mail.gmail.com>
+Subject: Re: [PATCH 14/14] package: Makefile: add USB/IP userspace utilities
+From: matt mooney <mfmooney@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 11:02:14AM +0200, Linus Walleij wrote:
- > 2011/5/10 Dave Jones <davej@redhat.com>:
- > 
- > > Haven't had chance to really read much patches the last few days
- > > (travelling until the 16th).  Due to the patch collisions we'll keep
- > > seeing on kconfig/Makefiles, should these go via the cpufreq tree,
- > > or do people want to still push them through their respective arch trees ?
- > 
- > I pushed a patch series yesterday that basically deactivates the
- > cpufreq driver in the mach-ux500, moves it over to drivers/cpufreq,
- > updates it, then reactivates it in the new place with a patch to
- > the Makefile.
+On Tue, May 17, 2011 at 1:23 PM, Greg KH <greg@kroah.com> wrote:
+> On Sat, May 14, 2011 at 03:55:20AM -0700, matt mooney wrote:
+>> From: matt mooney <mfm@muteddisk.com>
+>>
+>> Add usbip-src-pkg target to generate a tarball of the userspace source.
+>>
+>> Signed-off-by: matt mooney <mfm@muteddisk.com>
+>> ---
+>>  scripts/package/Makefile |   15 ++++++++++++++-
+>
+> Is this really needed at this point in time?  I'd prefer to wait on it
+> before we get this code cleaned up a bit better if you don't mind.
 
-Just got back from travelling, so I'm buried under mail backlog right now.
-The only one that jumped out was the one I was cc'd on
-([PATCH 10/10] mach-ux500: update and move cpufreq driver).
+Oh yeah, of course. I only added it because I thought you wanted me to
+add it now.
 
- > Of these changes only the last patch will collide with your tree,
- > so I pushed all of them except that one to linux-next.
- > 
- > The last patch I plan to submit to Torvalds directly after both
- > trees have gone into the merge window.
- > 
- > Can you please look into this and ACK the patches if they
- > seem OK?
-
-The patch that moves the driver over looked ok to me, so feel free
-to add my acked-by to it.
-
->From the look of things, the Kconfig is staying under arch/arm for now ?
-
-thanks,
-
-	Dave
-
+-- 
+GPG-Key: 9AFE00EA
