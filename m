@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677Ab1EQETP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 00:19:15 -0400
-Received: from ozlabs.org ([203.10.76.45]:55988 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab1EQETM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 00:19:12 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Anders Kaseorg <andersk@ksplice.com>, Tim Abbott <tabbott@ksplice.com>,
-        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Dirk Behme <dirk.behme@googlemail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>
-Subject: Re: [PATCH] module: Use binary search in lookup_symbol()
-In-Reply-To: <1305577420-3685-1-git-send-email-abogani@kernel.org>
-References: <BANLkTi=2jW5PHB6QCaddHeZH0P=9PKWosw@mail.gmail.com> <1305577420-3685-1-git-send-email-abogani@kernel.org>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Tue, 17 May 2011 13:22:59 +0930
-Message-ID: <878vu6nftw.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752282Ab1EQD4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 23:56:19 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55321 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751730Ab1EQD4R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 23:56:17 -0400
+Subject: Re: [GIT PULL] isci merge candidate
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jiang <dave.jiang@intel.com>, David Milburn <dmilburn@redhat.com>,
+        Ed Ciechanowski <ed.ciechanowski@intel.com>,
+        Ed Nadolski <edmund.nadolski@intel.com>,
+        Jacek Danecki <jacek.danecki@intel.com>,
+        Jeff Skirvin <jeffrey.d.skirvin@intel.com>,
+        Jeff Garzik <jeff@garzik.org>
+In-Reply-To: <20110514084949.GA23984@lst.de>
+References: <1305317680.21099.83.camel@dwillia2-linux>
+	 <20110514084949.GA23984@lst.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 May 2011 07:56:07 +0400
+Message-ID: <1305604567.6008.5.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 May 2011 22:23:40 +0200, Alessio Igor Bogani <abogani@kernel.org> wrote:
-> This work was supported by a hardware donation from the CE Linux Forum.
+On Sat, 2011-05-14 at 10:49 +0200, Christoph Hellwig wrote:
+> On Fri, May 13, 2011 at 01:14:40PM -0700, Dan Williams wrote:
+> > The isci driver team has now completed the major rework items addressed
+> > in the review on linux-scsi (including removal of state handlers,
+> > merging lldd and 'core', cleaning up the source code layout).
 > 
-> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
-> ---
->  kernel/module.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
+> I've looked over the driver a bit and I'm quite impressed with what
+> you're archived in the short time since taking over the driver from
+> whoever came up with the mess that it was initially.
+
+Yes, me too, thanks for doing this.
+
+> I don't think you're quite done yet with the todo list that was given
+> to you yet.  One thing that springs to mind is wrappers in timers.c,
+> which are not just ugly, but in case of isci_task_execute_tmf is plain
+> wrong as the implementation assumes all timers have the same lifetime
+> rules as the isci_host.  You'll need to at least replace that last usage
+> with a direct wait_for_completion_timeout, and even better get rid
+> of it entirely.
 > 
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 6a34337..54355c5 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2055,10 +2055,8 @@ static const struct kernel_symbol *lookup_symbol(const char *name,
->  	const struct kernel_symbol *stop)
->  {
->  	const struct kernel_symbol *ks = start;
-> -	for (; ks < stop; ks++)
-> -		if (strcmp(ks->name, name) == 0)
-> -			return ks;
-> -	return NULL;
-> +	return bsearch(name, start, stop - start,
-> +			sizeof(struct kernel_symbol), cmp_name);
->  }
->  
->  static int is_exported(const char *name, unsigned long value,
+> Also not quite done yet, although I'm happy with postponing that for now
+> is the unification of the various data structures from the different
+> layers of the original driver, e.g. isci_phy vs scic_sds_phy,
+> isci_port vs scic_sds_port, isci_remote_device vs scic_sds_remote_device
+> and isci_request vs scic_sds_request.
 
-Applied.
+Give me a feel for this: If we put the driver in now, all cleanups
+effectively get postponed until .41 (because they're no longer really
+-rc candidates).  If the driver gets included in a .40-rc, we have a
+couple more months to get the basic cleanups done.
 
-Thanks!
-Rusty.
+Dan, where's the hardware release at ... as in how urgent is 39-rc last
+vs .40 rc?
+
+> And of course there's a lot of room for additional further cleanups
+> that should be able to shave off another couple thousands of lines, but
+> these never were on the plate for the initial merge anyway.
+
+Right ... I'm happy with the basic progress so far.
+
+James
+
+
