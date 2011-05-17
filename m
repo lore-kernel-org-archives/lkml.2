@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab1EQWam (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 18:30:42 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:42865 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756647Ab1EQWam (ORCPT
+	id S1756769Ab1EQWcI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 18:32:08 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:45880 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756695Ab1EQWcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 18:30:42 -0400
-Date: Tue, 17 May 2011 18:30:22 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: =?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 0/2] AMD ARAT fixes
-Message-ID: <20110517223022.GA21342@elliptictech.com>
-References: <1305636919-31165-1-git-send-email-bp@amd64.org>
+	Tue, 17 May 2011 18:32:06 -0400
+X-Sasl-enc: Txe6oeOPN/PccTjebmyGh0mJUtqMI3emGBDKiXt0i/3g 1305671525
+Date: Tue, 17 May 2011 15:31:55 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Subject: Re: [PATCH 2/2] Connector: Correctly set the error code in case of
+ success when dispatching receive callbacks
+Message-ID: <20110517223155.GC15741@kroah.com>
+References: <1305671138-19443-1-git-send-email-kys@microsoft.com>
+ <1305671138-19443-2-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1305636919-31165-1-git-send-email-bp@amd64.org>
-Organization: Elliptic Technologies Inc.
+In-Reply-To: <1305671138-19443-2-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-17 14:55 +0200, Borislav Petkov wrote:
-> Although the patches look almost trivial, I'd like to ask Nick and
-> Jörg-Volker to test them, please, so that we can have a confirmation,
-> just in case.
+On Tue, May 17, 2011 at 03:25:38PM -0700, K. Y. Srinivasan wrote:
+> The recent changes to the connector code introduced this bug where even
+> when a callback was invoked, we would return an error resulting in
+> double freeing of the skb. This patch fixes this bug.
 
-Works as advertised, both patches applied on top of 2.6.38.6.
+By "recent" what do you mean?  Is this something that is in the .39
+kernel?  Do you have a git commit id that caused this?
 
-Thanks,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Or is this due to changes that are queued up for the .40 merge window?
+
+thanks,
+
+greg k-h
