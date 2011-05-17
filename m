@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504Ab1EQWqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 18:46:09 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:48031 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932419Ab1EQWqH (ORCPT
+	id S932541Ab1EQWui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 18:50:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48351 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932464Ab1EQWuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 18:46:07 -0400
-X-Sasl-enc: yTZFmkX6vT6A1XlX42MCnpRY0odza33Q7R2PZWESMtY1 1305672366
-Date: Tue, 17 May 2011 15:45:25 -0700
-From: Greg KH <greg@kroah.com>
-To: matt mooney <mfmooney@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/14] package: Makefile: add USB/IP userspace utilities
-Message-ID: <20110517224525.GA16275@kroah.com>
-References: <cover.1305369175.git.mfm@muteddisk.com>
- <5f759d070b6bf0f72d92c632e94e6fe5d9943a96.1305369176.git.mfm@muteddisk.com>
- <20110517202300.GA7981@kroah.com>
- <BANLkTimCEFEVmdQM9J1=0QRE2NFcim6fAw@mail.gmail.com>
- <20110517212122.GA13484@kroah.com>
- <BANLkTimZ8gvVaRz3HPqdJnOwAz2K6iuJSA@mail.gmail.com>
+	Tue, 17 May 2011 18:50:37 -0400
+Date: Tue, 17 May 2011 23:50:20 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH] ftrace: recordmcount: avoid STT_FUNC symbols as base
+	on ARM
+Message-ID: <20110517225020.GD2266@n2100.arm.linux.org.uk>
+References: <1305134631-31617-1-git-send-email-rabin@rab.in> <1305648629.5456.744.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimZ8gvVaRz3HPqdJnOwAz2K6iuJSA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1305648629.5456.744.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 02:59:29PM -0700, matt mooney wrote:
-> On Tue, May 17, 2011 at 2:21 PM, Greg KH <greg@kroah.com> wrote:
-> > On Tue, May 17, 2011 at 02:13:01PM -0700, matt mooney wrote:
-> >> On Tue, May 17, 2011 at 1:23 PM, Greg KH <greg@kroah.com> wrote:
-> >> > On Sat, May 14, 2011 at 03:55:20AM -0700, matt mooney wrote:
-> >> >> From: matt mooney <mfm@muteddisk.com>
-> >> >>
-> >> >> Add usbip-src-pkg target to generate a tarball of the userspace source.
-> >> >>
-> >> >> Signed-off-by: matt mooney <mfm@muteddisk.com>
-> >> >> ---
-> >> >>  scripts/package/Makefile |   15 ++++++++++++++-
-> >> >
-> >> > Is this really needed at this point in time?  I'd prefer to wait on it
-> >> > before we get this code cleaned up a bit better if you don't mind.
-> >>
-> >> Oh yeah, of course. I only added it because I thought you wanted me to
-> >> add it now.
-> >
-> > For some reason I thought it would be more, but there really isn't a way
-> > to build the userspace code from the main root of the kernel tree is
-> > there?
+On Tue, May 17, 2011 at 12:10:29PM -0400, Steven Rostedt wrote:
+> On Wed, 2011-05-11 at 22:53 +0530, Rabin Vincent wrote:
+> > While find_secsym_ndx often finds the unamed local STT_SECTION, if a
+> > section has only one function in it, the ARM toolchain generates the
+> > STT_FUNC symbol before the STT_SECTION, and recordmcount finds this
+> > instead.
+> > 
+> > This is problematic on ARM because in ARM ELFs, "if a [STT_FUNC] symbol
+> > addresses a Thumb instruction, its value is the address of the
+> > instruction with bit zero set (in a relocatable object, the section
+> > offset with bit zero set)".  This leads to incorrect mcount addresses
+> > being recorded.
+> > 
+> > Fix this by not using STT_FUNC symbols as the base on ARM.
 > 
-> I do not believe there is. Since `make ...' starts the Kbuild system,
-> Kbuild would have to support this otherwise we would have to
-> circumvent the build system. And the closest thing to some kind of
-> support I could find was in scripts/Makefile.host, but it says it is
-> for binaries used during the kernel compilation process. I think this
-> set of userspace utilities is further complicated by its use of
-> autotools.
+> Hi Russell,
 > 
-> My use of "circumvent the build system" may be a bit harsh. I don't
-> think there is anything wrong with running a parameterized instance of
-> make within a target, but the short answer would be that this problem
-> does not seem to have been generalized in Kbuild yet.
+> Can you give me an Acked-by on this patch?
 
-Ok, that's fine, I originally thought that tools like perf were somehow
-hooked up to the main Makefile, when it seems they really aren't.  So
-your other patches are fine, and are now applied.
-
-We can wait on the tarball extract when the code moves into the "real"
-part of the kernel.
-
-thanks,
-
-greg k-h
+It would be better for someone who knows the ELF format for ARM and
+its weirdnesses to ack this patch.  I'm afraid my ARM ELF format
+knowledge was been superseded when EABI came along and introduced
+all sorts of new stuff.
