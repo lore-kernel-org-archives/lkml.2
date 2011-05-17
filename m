@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab1EQOtD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 10:49:03 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:36516 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225Ab1EQOtA convert rfc822-to-8bit (ORCPT
+	id S1755476Ab1EQOxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 10:53:25 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47378 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab1EQOxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 10:49:00 -0400
+	Tue, 17 May 2011 10:53:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=wLXCcZMBC1pJqKZdBng7d5wNNfZd5UYnUa59pvKnzQYDAQd7VxJrbPAoSmFxPQnLpX
-         jLadFo0RiOhIfrOebT3g==
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Q3zVru9KABuGTMXSUx6FalUDVtzgp92Awxoyc3GxLhrrIQKDbVWmoGR0VJ1tvLM62b
+         /7wEdCxHfKzBlXXZzClphHAhMGsL20jXEiTMazOyAHj6joZ9euO4bYCY/77X71XXcmFU
+         VMD0PUGxFJ3T9DDFgPB7mct8VhD70UrO37dd4=
 MIME-Version: 1.0
-In-Reply-To: <334319B2EBE0B144BAE1402B79D82DC5CE13B056@srvpegasus>
-References: <334319B2EBE0B144BAE1402B79D82DC5CE13B056@srvpegasus>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 17 May 2011 08:48:38 -0600
-Message-ID: <BANLkTimNSe5JjM2+_-XzS7D8XPeZrPL0oA@mail.gmail.com>
-Subject: Re: Kernel > 2.6.30: PCI issue causes Kernel freeze at booting
-To: "Hornung, Michael" <mhornung@init-ka.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+In-Reply-To: <BANLkTim=di8pbt1CzHjHYSC0SbtgJzbmkw@mail.gmail.com>
+References: <BANLkTikqKnQgyLr0OmL86iEHE95xB4Z50Q@mail.gmail.com>
+	<BANLkTim=di8pbt1CzHjHYSC0SbtgJzbmkw@mail.gmail.com>
+Date: Tue, 17 May 2011 22:53:22 +0800
+Message-ID: <BANLkTimgmam0_yg+5a58T3R_NYM6RQLakQ@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix priority leakage in pick_next_highest_task_rt()
+From: Hillf Danton <dhillf@gmail.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[added linux-pci]
-
-On Tue, May 17, 2011 at 1:01 AM, Hornung, Michael <mhornung@init-ka.de> wrote:
-> the system from which I'm talking about is a Menlow XL (Intel Atom Z510PT and SCH US15WPT) platform with 512 megabyte RAM.
-> There is one PCIe-switch (PI7C9X20404SL) attached to each of both PCIe-ports of the US15WPT (see attached 2.6.30-lspci.txt for details).
-
-I think you forgot to attach the lspci.
-
-> With both switches enabled, all Kernel versions (vanilla) above 2.6.30 refuse to boot. With only one switch active
-> (the other one with no supply voltage ), all Kernel versions boot properly. It does not matter which switch is removed, it
-> is sufficient just to remove one of the two.
+On Tue, May 17, 2011 at 10:28 AM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> On Mon, May 16, 2011 at 8:55 PM, Hillf Danton <dhillf@gmail.com> wrote:
+>> When picking the second highest RT task for a given runqueue, if no
+>> task found after scanning the queue of priority == idx, the next idx
+>> should also be checked even in case that next is already existing, or
+>> the window of priority leakage could be opened.
 >
-> There is an UART (FPGA IP Core) in that system located at address 1900h using interrupt 3. In order to get Kernel messages at boot time,
-> I changed file arch/x86/include/asm/serial.h as follows:
+> I don't see what kind of problem you patch will fix.
+> And mind explaining how priority leakage could happen?
 >
-> -        { 0, BASE_BAUD, 0x3F8, 4, STD_COM_FLAGS },      /* ttyS0 */     \
-> +        { 0, BASE_BAUD, 0x1900, 3, STD_COM_FLAGS },     /* ttyS0 */    \
->
-> that is the only change I made to the kernel sources.
+Hi Yong
 
-Is this UART connected via PCI?  I don't think so, because I don't see
-any I/O BARs that include 0x1900.  However, I don't see any ACPI
-devices that mention that address either (none of the "pnp 00:xx"
-devices include that range).
+If no task is found after scanning the list at array->queue + idx,
+what should we operate on next?
+And why is the list scanned?
 
-Since there's no PCI-enumerable device that uses 0x1900, and ACPI
-doesn't mention it, we think it's available, and I notice the 2.6.38.6
-kernel does assign the [io  0x1000-0x1fff] range to the 00:1c.1 bridge
-I/O window.  Now we probably have two devices claiming accesses to
-0x1900 (the bridge and the UART).  I don't know whether this is
-causing the problem, but it can't be good.
-
-I think the best way to fix this would be to change your BIOS to
-include a PNP0501 ACPI device with the appropriate _CRS to tell us
-what resources it uses (then you could drop your serial.h change,
-too).
-
-If changing the BIOS is impossible, you could at least find out if
-this is the problem by adding a quirk in drivers/pnp/quirks.c to
-reserve the 0x1900 region by adding an I/O resource to the PNP0c02
-device.
-
-Bjorn
+thanks
+           Hillf
