@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab1EQNA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 09:00:28 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44381 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489Ab1EQNA1 (ORCPT
+	id S1754743Ab1EQNCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 09:02:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40604 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379Ab1EQNCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 09:00:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=QUKb/Q/JrA7uz+8fHFdmax2WfxaMie8YM/RACHTghwiE4kEBcQ1jfYF4NPxNeNYt3p
-         uXd4JmOELZ3ylJU1WzXNgq9lfim9JGWE1O3R4Rg9kQbM9XSw4Hv1a454izk0pCAF4rY3
-         Ajx+sace5S0QNLkbmnwcH0CvdgtBnXNTivmKc=
-Subject: Re: [patch V3] percpu_counter: scalability works
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Shaohua Li <shaohua.li@intel.com>,
+	Tue, 17 May 2011 09:02:50 -0400
+Date: Tue, 17 May 2011 15:02:32 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Suresh Siddha <suresh.b.siddha@intel.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "steiner@sgi.com" <steiner@sgi.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
-In-Reply-To: <20110517124528.GN20624@htj.dyndns.org>
-References: <1305538504.2898.33.camel@edumazet-laptop>
-	 <1305555736.2898.46.camel@edumazet-laptop>
-	 <1305593751.2375.69.camel@sli10-conroe>
-	 <1305608212.9466.45.camel@edumazet-laptop>
-	 <1305609768.2375.84.camel@sli10-conroe>
-	 <1305622861.2850.21.camel@edumazet-laptop>
-	 <20110517091102.GE20624@htj.dyndns.org>
-	 <1305625541.2850.29.camel@edumazet-laptop>
-	 <20110517095001.GF20624@htj.dyndns.org>
-	 <1305634807.2850.89.camel@edumazet-laptop>
-	 <20110517124528.GN20624@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 15:00:23 +0200
-Message-ID: <1305637223.2850.95.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        "gorcunov@openvz.org" <gorcunov@openvz.org>
+Subject: Re: [patch 1/5] x84_64, apic: Use probe routines to simplify apic
+ selection
+In-Reply-To: <20110517122836.GA14758@elte.hu>
+Message-ID: <alpine.LFD.2.02.1105171502190.3078@ionos>
+References: <20110513180449.562138524@sbsiddha-MOBL3.sc.intel.com> <20110513181008.859892593@sbsiddha-MOBL3.sc.intel.com> <20110516080844.GC27635@elte.hu> <1305589908.13584.3.camel@sbsiddha-MOBL3.sc.intel.com> <20110517122836.GA14758@elte.hu>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 17 mai 2011 à 14:45 +0200, Tejun Heo a écrit :
+On Tue, 17 May 2011, Ingo Molnar wrote:
+> 
+> * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+> 
+> > On Mon, 2011-05-16 at 01:08 -0700, Ingo Molnar wrote:
+> > > Ok, looks like a step forward in the right direction.
+> > > 
+> > > Wouldnt it be more self-contained if the probe function returned an apic driver 
+> > > pointer?
+> > > 
+> > > We could add an __apicdriver section trick to 'know' about all APIC probing 
+> > > functions - and we'd call them one by one and use the first one that returns a 
+> > > non-NULL result.
+> > > 
+> > > Then we'd have the generic fallback APIC drivers as well - not marked 
+> > > __apicdriver but used by the probe function directly.
+> > > 
+> > > Or we could have them as __apicdriver as well, but then the .o link ordering 
+> > > matters to probing order.
+> > > 
+> > 
+> > So how does something like the appended look? There are multiple apic
+> > driver routines and apic name string that is being looked at by the
+> > generic code. So I exported the struct apic * using the section trick.
+> > 
+> > Untested for now. If you are ok, then I will post with a better
+> > changelog.
+> 
+> Yeah, this looks very nice to me.
 
-> Given that _sum() is super-slow path and we have a lot of latitude
-> there, 
-
-Absolutely not. Its slow path yes, but not super-slow.
-
-Dont change rules now ;)
-
-Take a look at include/net/tcp.h and commit ad1af0fedba14f82b
-(tcp: Combat per-cpu skew in orphan tests.)
-
-If you guys make percpu_counter much slower, we'll just remove its use
-in network stack, and there will be not a lot of users left.
-
-
-
+Ditto.
