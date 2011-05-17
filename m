@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab1EQUno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 16:43:44 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50007
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932259Ab1EQUnn (ORCPT
+	id S932290Ab1EQUpW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 16:45:22 -0400
+Received: from outmail003.snc4.facebook.com ([66.220.144.135]:47974 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932259Ab1EQUpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 16:43:43 -0400
-Date: Tue, 17 May 2011 13:43:12 -0700 (PDT)
-Message-Id: <20110517.134312.226762699.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: sparclinux@vger.kernel.org, grant.likely@secretlab.ca,
+	Tue, 17 May 2011 16:45:21 -0400
+Date: Tue, 17 May 2011 13:45:20 -0700
+From: Arun Sharma <asharma@fb.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Arun Sharma <asharma@fb.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: SBus devices sometimes detected, sometimes not
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.SOC.1.00.1105021259220.6200@math.ut.ee>
-References: <alpine.SOC.1.00.1105021259220.6200@math.ut.ee>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 1/6] kbuild: Integrate with new-kernel-pkg
+Message-ID: <20110517204520.GA21201@dev1756.snc6.facebook.com>
+References: <1305653779-3445-1-git-send-email-asharma@fb.com>
+ <4DD2D0B3.4070208@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DD2D0B3.4070208@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Meelis Roos <mroos@linux.ee>
-Date: Mon, 2 May 2011 13:39:46 +0300 (EEST)
-
-> This is 2.6.39-rc3..rc5 on Sun Ultra 1 with SBus hme card.
-> On about 50% of boots, hme is found fine and works. On other half boots 
-> (not strictly in any order) SBus hme is not detected with this error:
+On Tue, May 17, 2011 at 09:46:59PM +0200, Michal Marek wrote:
+> On 17.5.2011 19:36, Arun Sharma wrote:
+> > Handles mkinitrd, updating the bootloader among other things.
 > 
-> hme: probe of f006be34 failed with error -22
-> 
-> grepping the logs, I sometimes also find similar errors about qlogicpti:
-> 
-> qpti: probe of f00798c4 failed with error -22
-> 
-> The node addresses are always the same for the device.
-> 
-> 2.6.38 did not have this problem.
+> This is a Fedora/RHEL specific script, please keep the mkspec script
+> work on any rpm distribution.
 
-Grant, I'm trying to diagnose this bug report which is a 2.6.39-rcX regression
-and I think it's a side-effect of your changes to move away from
-of_platform_{,un}register_driver().
+One alternative is to surround it with:
 
-Somehow an OF device driver's ->probe() is being called with a NULL
-"->of_match", that's why the probe returns -22 (-EINVAL) since in
-your transformations that is the first thing you check.
+if [ -x /sbin/new-kernel-pkg ]; then
+ ...
+fi
 
-There are only a few ways this can happen that I can tell, firstly
-the of_driver_match_device() call has to fail.
+and have similar stanzas for other popular rpm based distros.
 
-It could then happen if pdrv->id_table is non-NULL, but in these two
-cases (drivers/net/sunhme.c:hme_sbus_driver and
-drivers/scsi/qlogicpti.c:qpti_sbus_driver) no id_table is assigned.
-
-The next possibility would be if pdrv->name matches the device's
-name, but in these two cases ("SUNW,hme" vs. "hme" and "QLGC,pti"
-vs. "qpti") that should not be the case either.
-
-There is only one more way this could happen, and that is if the
-device bus pointer is NULL.  Because in that situation the
-match function doesn't get called and all devices can match.
-
-This is also very unlikely, because platform_device_add() always
-assigns pdev->dev.bus to &platform_bus_type before the device_add()
-call.
-
-The fact that this failure happens only on some boots for Meelis leads
-me to belive that some datastructure is corrupted.  Perhaps there is
-an incorrect __init or __devinit somewhere, or we reference freed up
-data some other way.
-
-Any ideas?
+ -Arun
