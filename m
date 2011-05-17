@@ -1,261 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab1EQKoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 06:44:19 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:53209 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752232Ab1EQKoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 06:44:18 -0400
-Date: Tue, 17 May 2011 06:44:14 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip ] [BUGFIX]tracing/kprobes: Fix kprobe-tracer to
-	support stack trace
-Message-ID: <20110517104414.GA961@Krystal>
-References: <20110512102255.2540.88867.stgit@ltc-x64-VirtualBox> <4DD23590.4020200@hitachi.com>
+	id S1753416Ab1EQKrY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 06:47:24 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40289 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752907Ab1EQKrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 06:47:23 -0400
+Date: Tue, 17 May 2011 12:46:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 0/4] Enable SMEP CPU Feature
+Message-ID: <20110517104654.GN22093@elte.hu>
+References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com>
+ <4DD19C81.8000902@zytor.com>
+ <20110517070527.GD22305@elte.hu>
+ <4DD23CB6.3050503@redhat.com>
+ <20110517092903.GJ22093@elte.hu>
+ <4DD2409F.4030800@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DD23590.4020200@hitachi.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 06:40:19 up 174 days, 15:43,  1 user,  load average: 1.02, 1.03,
-	0.67
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4DD2409F.4030800@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Masami Hiramatsu (masami.hiramatsu.pt@hitachi.com) wrote:
-> (2011/05/12 19:22), Masami Hiramatsu wrote:
-> > Fix to support kernel stack trace correctly on kprobe-tracer.
-> > Since the execution path of kprobe-based dynamic events is different
-> > from other tracepoint-based events, normal ftrace_trace_stack() doesn't
-> > work correctly. To fix that, this introduces ftrace_trace_stack_regs()
-> > which traces stack via pt_regs instead of current stack register.
+
+* Avi Kivity <avi@redhat.com> wrote:
+
+> On 05/17/2011 12:29 PM, Ingo Molnar wrote:
+> >* Avi Kivity<avi@redhat.com>  wrote:
+> >
+> >>  >  Some programmable configurability seems necessary on the KVM side, as KVM
+> >>  >  has no control over how sane the guest kernel is.
+> >>
+> >>  We should simply expose the cpuid bit and cr4.smep.  If the guest kernel
+> >>  feels it is up to it, it can enable smep itself.
+> >
+> > Well, given that there's lots of legacy installations around it would be a 
+> > neat KVM feature if it was possible to enable SMEP even if the guest kernel 
+> > does not enable it. As an additional (optional) layer of security.
+> >
+> > For example legacy Linux guests will work just fine, even if they do not 
+> > enable SMEP themselves.
 > 
-> Hmm, any comments?
-
-What you are adding makes sense. I'm not saying that I agree on the
-general approach taken by the existing code to save the stack trace in a
-record that is separate from the actual event that the tracer claims it
-belongs to: it leads to situations where an interrupt handler can come
-in and you get two events followed by two stack traces (in reversed
-order), but this code was already there to start with, so you are just
-making it work with kprobes, which is a sensible thing to do.
-
-Thanks!
-
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
+> It's certainly possible (set CR4.SMEP transparently and hide it from the 
+> guest).  But there's no way to tell if it doesn't break something wierd.  The 
+> host might not even know if the guest is Linux or something else.
 > 
-> > 
-> > e.g.
-> > 
-> >  # echo p schedule > /sys/kernel/debug/tracing/kprobe_events
-> >  # echo 1 > /sys/kernel/debug/tracing/options/stacktrace
-> >  # echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
-> >  # head -n 20 /sys/kernel/debug/tracing/trace
-> > # tracer: nop
-> > #
-> > #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-> > #              | |       |          |         |
-> >             sshd-1549  [001]   857.326335: p_schedule_0: (schedule+0x0/0x900)
-> >             sshd-1549  [001]   857.326337: <stack trace>
-> >  => schedule_hrtimeout_range
-> >  => poll_schedule_timeout
-> >  => do_select
-> >  => core_sys_select
-> >  => sys_select
-> >  => system_call_fastpath
-> >              tee-1751  [000]   857.326394: p_schedule_0: (schedule+0x0/0x900)
-> >              tee-1751  [000]   857.326395: <stack trace>
-> >  => do_group_exit
-> >  => sys_exit_group
-> >  => system_call_fastpath
-> >           <idle>-0     [001]   857.326406: p_schedule_0: (schedule+0x0/0x900)
-> >           <idle>-0     [001]   857.326407: <stack trace>
-> >  => start_secondary
-> > 
-> > Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@redhat.com>
-> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  include/linux/ftrace_event.h |    4 ++++
-> >  kernel/trace/trace.c         |   35 ++++++++++++++++++++++++++++++-----
-> >  kernel/trace/trace.h         |    9 +++++++++
-> >  kernel/trace/trace_kprobe.c  |    6 ++++--
-> >  4 files changed, 47 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> > index b5a550a..bca2499 100644
-> > --- a/include/linux/ftrace_event.h
-> > +++ b/include/linux/ftrace_event.h
-> > @@ -117,6 +117,10 @@ void trace_current_buffer_unlock_commit(struct ring_buffer *buffer,
-> >  void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
-> >  				       struct ring_buffer_event *event,
-> >  					unsigned long flags, int pc);
-> > +void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
-> > +					    struct ring_buffer_event *event,
-> > +					    unsigned long flags, int pc,
-> > +					    struct pt_regs *regs);
-> >  void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
-> >  					 struct ring_buffer_event *event);
-> >  
-> > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> > index ee9c921..bf12209 100644
-> > --- a/kernel/trace/trace.c
-> > +++ b/kernel/trace/trace.c
-> > @@ -1191,6 +1191,18 @@ void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
-> >  }
-> >  EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit);
-> >  
-> > +void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
-> > +					    struct ring_buffer_event *event,
-> > +					    unsigned long flags, int pc,
-> > +					    struct pt_regs *regs)
-> > +{
-> > +	ring_buffer_unlock_commit(buffer, event);
-> > +
-> > +	ftrace_trace_stack_regs(buffer, flags, 0, pc, regs);
-> > +	ftrace_trace_userstack(buffer, flags, pc);
-> > +}
-> > +EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit_regs);
-> > +
-> >  void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
-> >  					 struct ring_buffer_event *event)
-> >  {
-> > @@ -1236,7 +1248,7 @@ ftrace(struct trace_array *tr, struct trace_array_cpu *data,
-> >  #ifdef CONFIG_STACKTRACE
-> >  static void __ftrace_trace_stack(struct ring_buffer *buffer,
-> >  				 unsigned long flags,
-> > -				 int skip, int pc)
-> > +				 int skip, int pc, struct pt_regs *regs)
-> >  {
-> >  	struct ftrace_event_call *call = &event_kernel_stack;
-> >  	struct ring_buffer_event *event;
-> > @@ -1255,24 +1267,36 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
-> >  	trace.skip		= skip;
-> >  	trace.entries		= entry->caller;
-> >  
-> > -	save_stack_trace(&trace);
-> > +	if (regs)
-> > +		save_stack_trace_regs(&trace, regs);
-> > +	else
-> > +		save_stack_trace(&trace);
-> >  	if (!filter_check_discard(call, entry, buffer, event))
-> >  		ring_buffer_unlock_commit(buffer, event);
-> >  }
-> >  
-> > +void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
-> > +			     int skip, int pc, struct pt_regs *regs)
-> > +{
-> > +	if (!(trace_flags & TRACE_ITER_STACKTRACE))
-> > +		return;
-> > +
-> > +	__ftrace_trace_stack(buffer, flags, skip, pc, regs);
-> > +}
-> > +
-> >  void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
-> >  			int skip, int pc)
-> >  {
-> >  	if (!(trace_flags & TRACE_ITER_STACKTRACE))
-> >  		return;
-> >  
-> > -	__ftrace_trace_stack(buffer, flags, skip, pc);
-> > +	__ftrace_trace_stack(buffer, flags, skip, pc, NULL);
-> >  }
-> >  
-> >  void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
-> >  		   int pc)
-> >  {
-> > -	__ftrace_trace_stack(tr->buffer, flags, skip, pc);
-> > +	__ftrace_trace_stack(tr->buffer, flags, skip, pc, NULL);
-> >  }
-> >  
-> >  /**
-> > @@ -1288,7 +1312,8 @@ void trace_dump_stack(void)
-> >  	local_save_flags(flags);
-> >  
-> >  	/* skipping 3 traces, seems to get us at the caller of this function */
-> > -	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
-> > +	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count(),
-> > +			     NULL);
-> >  }
-> >  
-> >  static DEFINE_PER_CPU(int, user_stack_count);
-> > diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> > index 5e9dfc6..cbce5e4 100644
-> > --- a/kernel/trace/trace.h
-> > +++ b/kernel/trace/trace.h
-> > @@ -389,6 +389,9 @@ void update_max_tr_single(struct trace_array *tr,
-> >  void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
-> >  			int skip, int pc);
-> >  
-> > +void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
-> > +			     int skip, int pc, struct pt_regs *regs);
-> > +
-> >  void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
-> >  			    int pc);
-> >  
-> > @@ -400,6 +403,12 @@ static inline void ftrace_trace_stack(struct ring_buffer *buffer,
-> >  {
-> >  }
-> >  
-> > +static inline void ftrace_trace_stack_regs(struct ring_buffer *buffer,
-> > +					   unsigned long flags, int skip,
-> > +					   int pc, struct pt_regs *regs)
-> > +{
-> > +}
-> > +
-> >  static inline void ftrace_trace_userstack(struct ring_buffer *buffer,
-> >  					  unsigned long flags, int pc)
-> >  {
-> > diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> > index f925c45..7053ef3 100644
-> > --- a/kernel/trace/trace_kprobe.c
-> > +++ b/kernel/trace/trace_kprobe.c
-> > @@ -1397,7 +1397,8 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
-> >  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-> >  
-> >  	if (!filter_current_check_discard(buffer, call, entry, event))
-> > -		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
-> > +		trace_nowake_buffer_unlock_commit_regs(buffer, event,
-> > +						       irq_flags, pc, regs);
-> >  }
-> >  
-> >  /* Kretprobe handler */
-> > @@ -1429,7 +1430,8 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
-> >  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-> >  
-> >  	if (!filter_current_check_discard(buffer, call, entry, event))
-> > -		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
-> > +		trace_nowake_buffer_unlock_commit_regs(buffer, event,
-> > +						       irq_flags, pc, regs);
-> >  }
-> >  
-> >  /* Event entry printers */
-> > 
-> 
-> 
-> -- 
-> Masami HIRAMATSU
-> Software Platform Research Dept. Linux Technology Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
+> We could support it as a non-default feature, but that reduces its utility.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+It would be a nice touch for tools/kvm/: we would use KVM_GET_SREGS and 
+KVM_GET_SREGS to twiddle CR4.SMEP, even without the guest explicitly doing it.
+
+A quick glance suggests that it could be done straight away in 
+tools/kvm/kvm-cpu.c::kvm_cpu__setup_sregs() during vcpu setup, and hopefully 
+that cr4 value survives boot and ends up in the guest kernel's mmu_cr4_features 
+mask shadow register.
+
+Thanks,
+
+	Ingo
