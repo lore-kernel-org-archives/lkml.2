@@ -1,73 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452Ab1EQWAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 18:00:11 -0400
-Received: from home.keithp.com ([63.227.221.253]:43917 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932389Ab1EQWAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 18:00:09 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PULL] drm-intel-next
-In-Reply-To: <yunr57z3b58.fsf@aiko.keithp.com>
-References: <yunr57z3b58.fsf@aiko.keithp.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Tue, 17 May 2011 15:00:01 -0700
-Message-ID: <yunfwodyom6.fsf@aiko.keithp.com>
+	id S932427Ab1EQWBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 18:01:40 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15488 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932367Ab1EQWBi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 18:01:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 17 May 2011 15:01:37 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Martin Persson <martin.persson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>
+Date: Tue, 17 May 2011 15:01:33 -0700
+Subject: RE: [PATCH] drivers: create a pinmux subsystem v2
+Thread-Topic: [PATCH] drivers: create a pinmux subsystem v2
+Thread-Index: AcwPa5pjsFbKtgdiQf+cS5JvZLh2pQFcQ2Fg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF0498A478E6@HQMAIL01.nvidia.com>
+References: <1305070783-23193-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1305070783-23193-1-git-send-email-linus.walleij@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Linus Walleij wrote at Tuesday, May 10, 2011 5:40 PM:
+> This creates a subsystem for handling of pinmux devices. These are
+> devices that enable and disable groups of pins on primarily PGA and
+> BGA type of chip packages and common in embedded systems.
 
+> +struct foo_pmx_func {
+> +	char *name;
+> +	const unsigned int *pins;
+> +	const unsigned num_pins;
+> +};
+> +
+> +static unsigned int spi0_0_pins[] = { 0, 8, 16, 24 };
+> +static unsigned int i2c0_pins[] = { 24, 25 };
+> +static unsigned int spi0_1_pins[] = { 38, 46, 54, 62 };
+> +
+> +static struct foo_pmx_func myfuncs[] = {
+> +	{
+> +		.name = "spi0-0",
+> +		.pins = spi0_0_pins,
+> +		.num_pins = ARRAY_SIZE(spi0_1_pins),
+> +	},
+> +	{
+> +		.name = "i2c0",
+> +		.pins = i2c0_pins,
+> +		.num_pins = ARRAY_SIZE(i2c0_pins),
+> +	},
+> +	{
+> +		.name = "spi0-1",
+> +		.pins = spi0_1_pins,
+> +		.num_pins = ARRAY_SIZE(spi0_1_pins),
+> +	},
+> +};
 
-I've pushed four more patches to this branch for your merging pleasure.
+Rather than defining a custom type (foo_pmx_func) for this array inside
+each driver, and then having to implement _list, _get_fname, _get_pins
+below, how about:
 
->  * Disabling FBC on Ironlake to enable RC6 instead
+* pinmux core defines a basic structure containing all the information
+  that the core needs from the specific implementation.
 
-Two patches for this are included.
+* This structure would need a field to point at the implementation-
+  specific data.
 
-The following changes since commit 645c62a5e95a5f9a8e0d0627446bbda4ee042024:
+* We could get rid of _list, _get_fname, _get_pins completely from
+  pinmux_ops.
 
-  drm/i915: split PCH clock gating init (2011-05-13 18:12:53 -0700)
+pinmux.h:
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6.git drm=
--intel-next
+struct pinmux_function {
+	char *name;
+	const unsigned int *pins;
+	const unsigned num_pins;
+      void *driver_data;
+};
 
-Feng, Boqun (2):
-      drm/i915: fix user irq miss in BSD ring on g4x
-      drm/i915: clean up unused ring_get_irq/ring_put_irq functions
+driver source:
 
-Jesse Barnes (2):
-      drm/i915: add fbc enable flag, but disable by default
-      drm/i915: enable rc6 by default
+struct foo_pmx_func {
+	int register;
+	int mask;
+	int value;
+};
 
- drivers/gpu/drm/i915/i915_debugfs.c     |    3 ++
- drivers/gpu/drm/i915/i915_drv.c         |    7 +++-
- drivers/gpu/drm/i915/i915_drv.h         |    2 +
- drivers/gpu/drm/i915/intel_display.c    |    5 +++
- drivers/gpu/drm/i915/intel_ringbuffer.c |   50 ++++++++++++++-------------=
----
- 5 files changed, 38 insertions(+), 29 deletions(-)
+static struct foo_pmx_func spi0_0_func = {
+	FOO_REG_PMX_A,
+	0x30,
+	0x10,
+};
+...
+static struct pinmux_function myfuncs[] = {
+	{
+		.name = "spi0-0",
+		.pins = spi0_0_pins,
+		.num_pins = ARRAY_SIZE(spi0_1_pins),
+		.driver_data = &spi0_0_func,
+	},
+	{
+		.name = "i2c0",
+		.pins = i2c0_pins,
+		.num_pins = ARRAY_SIZE(i2c0_pins),
+		.driver_data = &i2c0_func,
+	},
+	{
+		.name = "spi0-1",
+		.pins = spi0_1_pins,
+		.num_pins = ARRAY_SIZE(spi0_1_pins),
+		.driver_data = &spi0_1_func,
+	},
+};
 
-=2D-=20
-keith.packard@intel.com
+This would remove some boiler-plate code from the SoC drivers,
+although it might be considered a bad breaking of abstraction barriers?
 
---=-=-=
-Content-Type: application/pgp-signature
+-- 
+nvpublic
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFN0u/hQp8BWwlsTdMRAoVKAJ9L3eTfYGKPfce2rDGb5PxyLY7xYwCgzeG2
-BAZ3b8xhljFGFBTnosOLZAE=
-=x9by
------END PGP SIGNATURE-----
---=-=-=--
