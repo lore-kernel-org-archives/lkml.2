@@ -1,171 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab1EQMiH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 08:38:07 -0400
-Received: from powered.by.root24.eu ([91.121.20.142]:34754 "EHLO Root24.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754236Ab1EQMiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 08:38:06 -0400
-Message-ID: <4DD26C17.4@ionic.de>
-Date: Tue, 17 May 2011 14:37:43 +0200
-From: Mihai Moldovan <ionic@ionic.de>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1754578Ab1EQMnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 08:43:55 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:39958 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754343Ab1EQMny (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 08:43:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SS4n3Mi39KFYFFreUmDH3ZYdB5n229yP0aHiKi3whZ4/Clwh9xnIGaVHeWtvTvS90A
+         qEmdzrRiYZGZI1jWVgz4STeK0iC9KQPvCIhgzT1OKDWEZyIQEd2kzFNhhzP2XQHb3XGD
+         jeGS0M1Lkr06NCwCGdtFVHjWrCLIjalgz94Tg=
+Date: Tue, 17 May 2011 14:43:48 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+Message-ID: <20110517124341.GA1776@nowhere>
+References: <20110513141431.GV2258@linux.vnet.ibm.com>
+ <20110513150744.GE32688@elte.hu>
+ <20110513162646.GW2258@linux.vnet.ibm.com>
+ <20110516070808.GC24836@elte.hu>
+ <20110516074822.GE2573@linux.vnet.ibm.com>
+ <20110516115148.GA2421@elte.hu>
+ <20110516122329.GA29356@elte.hu>
+ <20110516212449.GJ2573@linux.vnet.ibm.com>
+ <20110517024000.GA5026@nowhere>
+ <20110517075349.GQ2573@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: Kernel BUG with i915 in intel_sdvo_ddc_proxy_func
-References: <4DD2648C.6020309@ionic.de>
-In-Reply-To: <4DD2648C.6020309@ionic.de>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms030009050809020402070304"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110517075349.GQ2573@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Tue, May 17, 2011 at 12:53:49AM -0700, Paul E. McKenney wrote:
+> On Tue, May 17, 2011 at 04:40:03AM +0200, Frederic Weisbecker wrote:
+> > On Mon, May 16, 2011 at 02:24:49PM -0700, Paul E. McKenney wrote:
+> > > On Mon, May 16, 2011 at 02:23:29PM +0200, Ingo Molnar wrote:
+> > > > 
+> > > > * Ingo Molnar <mingo@elte.hu> wrote:
+> > > > 
+> > > > > > In the meantime, would you be willing to try out the patch at 
+> > > > > > https://lkml.org/lkml/2011/5/14/89?  This patch helped out Yinghai in 
+> > > > > > several configurations.
+> > > > > 
+> > > > > Wasn't this the one i tested - or is it a new iteration?
+> > > > > 
+> > > > > I'll try it in any case.
+> > > > 
+> > > > oh, this was a new iteration, mea culpa!
+> > > > 
+> > > > And yes, it solves all problems for me as well. Mind pushing it as a fix? :-)
+> > > 
+> > > ;-)
+> > > 
+> > > Unfortunately, the only reason I can see that it works is (1) there
+> > > is some obscure bug in my code or (2) someone somewhere is failing to
+> > > call irq_exit() on some interrupt-exit path.  Much as I might be tempted
+> > > to paper this one over, I believe that we do need to find whatever the
+> > > underlying bug is.
+> > > 
+> > > Oh, yes, there is option (3) as well: maybe if an interrupt deschedules
+> > > a process, the final irq_exit() is omitted in favor of rcu_enter_nohz()?
+> > > But I couldn't see any evidence of this in my admittedly cursory scan
+> > > of the x86 interrupt-handling code.
+> > > 
+> > > So until I learn differently, I am assuming that each and every
+> > > irq_enter() has a matching call to irq_exit(), and that rcu_enter_nohz()
+> > > is called after the final irq_exit() of a given burst of interrupts.
+> > > 
+> > > If my assumptions are mistaken, please do let me know!
+> > 
+> > So it would be nice to have a trace of the calls to rcu_irq_*() / rcu_*_nohz()
+> > before the unpairing happened.
+> > 
+> > I have tried to reproduce it but couldn't trigger anything.
+> > 
+> > So it would be nice if Yinghai can test the patch below, since he was able
+> > to trigger the warning.
+> > 
+> > This is essentially Paul's patch but with stacktrace of the calls recorded.
+> > Then the whole trace is dumped on the console when one of the WARN_ON_ONCE
+> > sanity check is positive. Beware as the trace will be dumped everytime
+> > WARN_ON_ONCE() is positive. So the first dump is enough, you can ignore the
+> > rest.
+> > 
+> > This requires CONFIG_TRACING. May be a good thing to boot with
+> > "ftrace=nop" parameter, so that ftrace will set up a long enough buffer
+> > to have an interesting trace.
+> 
+> Very cool, thank you!!!  I was going to do something like this next,
+> but given my lack of familiarity with tracing, your patch looks much
+> nicer than mine would have been.
+> 
+> It applies fine on top of tip/core/rcu and builds OK.  I cannot reproduce
+> the problem, either, so I am hoping that either Yinghai or Ingo can
+> run this, and hopefully doing so will provide some enlightenment.
+> 
+> I have pushed this as:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git diag.2011.05.16b
+> 
+> I also #ifdefed out the bodies of rcu_nmi_enter() and rcu_nmi_exit()
+> to match the earlier patches.
+> 
+> > PS: the first check in rcu_nmi_enter() doesn't seem to make sense.
+> 
+> Here is what it is doing:
+> 
+> o	rdtp->dynticks_nmi_nesting == 0:
+> 
+> 	Is this is the first-level NMI?  In theory this should always
+> 	be true, but I don't trust NMIs to mask each other.  I have seen
+> 	many systems where NMIs could interrupt other NMIs.
+> 
+> 	The idea is that if we already recorded one level of NMI, we
+> 	had better record them all so we can figure out when we exit
+> 	the last level of NMI handler.
+> 
+> o	atomic_read(&rdtp->dynticks) & 0x1):
+> 
+> 	Did the NMI interrupt a non-dyntick code segment?  If we did,
+> 	then there is no need to tell RCU anything -- RCU is already
+> 	paying attention to this CPU anyway due to the fact that the
+> 	interrupted code segment was not in dyntick mode.
 
---------------ms030009050809020402070304
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: quoted-printable
+In fact I was rather referring to your last added check:
 
-* On 17.05.2011 02:05 PM, Mihai Moldovan wrote:
-> PCI:IDs for those devices:
-> 00:00.0 0600: 8086:2e10 (rev 03)
-> Subsystem: 8086:1003
->
-> 00:02.0 0300: 8086:2e12 (rev 03) (prog-if 00 [VGA controller])
-> Subsystem: 8086:1003
->
-> 00:02.1 0380: 8086:2e13 (rev 03)
-> Subsystem: 8086:1003
+	if (rdtp->dynticks_nmi_nesting == 0 &&
+-	    (atomic_read(&rdtp->dynticks) & 0x1))
++	    (atomic_read(&rdtp->dynticks) & 0x1)) {
++		WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
+ 		return;
++	}
 
-I forgot to add: this is the integrated GPU on an Intel DQ45CB board.
+> Again, thank you for adding the tracing!
 
-Also, I'm CCing the Intel DRM maintainer, I hope that's OK?
-
-Best regards,
-
-
-Mihai
-
-
---------------ms030009050809020402070304
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIT1DCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGyjCCBbKgAwIBAgICBnIwDQYJKoZIhvcNAQEF
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMDAzMjMxNjI2NTZa
-Fw0xMjAzMjQwNTQ2MjJaMIHHMSAwHgYDVQQNExcxNjg2MTctOUo5elVlMUVuNHg5b3ZiTzEL
-MAkGA1UEBhMCREUxGzAZBgNVBAgTEkJhZGVuLVd1ZXJ0dGVtYmVyZzESMBAGA1UEBxMJS2Fy
-bHNydWhlMS0wKwYDVQQLEyRTdGFydENvbSBWZXJpZmllZCBDZXJ0aWZpY2F0ZSBNZW1iZXIx
-FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
-ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMssU6wPYwJJAxY07er/P6ANPXgz
-yCczuA+7q/eql1St56r91yQ534A4oeXEqRZvpMsDuvczNG1Yz80nLpM+lO3Wg8csxaGReewe
-RBIS3abf40HCIBVlOl7oTcmzZuzqz2KE70CHZ7p3k0WAEUfUb7AS8qrqxuoj0dtUkrdMwjoD
-rPWs3zJ+vHo5FU3sTvj2ksiStjG3NMERBT+1Gzf2pVx2cKJRBmqACbKZfwE9QufRqrZT8bWY
-i5DCV34RL7eVLnejLL+MvtarZv2K8Acojq9t7zO9Z+0rnlr6o46c2egVB+s/ol28q3DEce6f
-p1KrCiujqRqQwVQ8O/2ogg4l5h0CAwEAAaOCAvcwggLzMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU3JbCyOa+BBzV
-nBAKycZGQAzit2wwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
-EIEOaW9uaWNAaW9uaWMuZGUwggFCBgNVHSAEggE5MIIBNTCCATEGCysGAQQBgbU3AQIBMIIB
-IDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
-BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCBtwYI
-KwYBBQUHAgIwgaowFBYNU3RhcnRDb20gTHRkLjADAgEBGoGRTGltaXRlZCBMaWFiaWxpdHks
-IHNlZSBzZWN0aW9uICpMZWdhbCBMaW1pdGF0aW9ucyogb2YgdGhlIFN0YXJ0Q29tIENlcnRp
-ZmljYXRpb24gQXV0aG9yaXR5IFBvbGljeSBhdmFpbGFibGUgYXQgaHR0cDovL3d3dy5zdGFy
-dHNzbC5jb20vcG9saWN5LnBkZjBjBgNVHR8EXDBaMCugKaAnhiVodHRwOi8vd3d3LnN0YXJ0
-c3NsLmNvbS9jcnR1Mi1jcmwuY3JsMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9j
-cnR1Mi1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2Nz
-cC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMi9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczIuY2xpZW50LmNhLmNydDAjBgNV
-HRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBACle
-v1JwhVI4Pu8GzKRJzJdcYdsT7fJ9R5OzNnec4CADsb9Xu7HDyRa5qABBXihHvmo+fxGVe6Hy
-8TxPvZYCGaeUi2t6aodIFOTQDWcdEP9o7SynBOXHqsN2lZ08Q4MBuoGfquJi0XjpCNnLY9KS
-OZTHTwAIqGVH7lf99egY1Atfl+y/Lc0e6Sw/0qvcnaQSzwCZ/OkqVWSTGDZXwCDFuy6Cbwjy
-Kn9qshZzeMqvSKHmHPihzJQ6eVXImZgrgWk5FrBpO8d59xoqO32PbSyM0cZhqvkbG/nlWPbz
-Xn13+cgG7ajAGCg8XueMeh3m03sIIHinvgaeHOAqeO3TvVVv6WQwggbKMIIFsqADAgECAgIG
-cjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNV
-BAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4X
-DTEwMDMyMzE2MjY1NloXDTEyMDMyNDA1NDYyMlowgccxIDAeBgNVBA0TFzE2ODYxNy05Sjl6
-VWUxRW40eDlvdmJPMQswCQYDVQQGEwJERTEbMBkGA1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJn
-MRIwEAYDVQQHEwlLYXJsc3J1aGUxLTArBgNVBAsTJFN0YXJ0Q29tIFZlcmlmaWVkIENlcnRp
-ZmljYXRlIE1lbWJlcjEXMBUGA1UEAxMOTWloYWkgTW9sZG92YW4xHTAbBgkqhkiG9w0BCQEW
-DmlvbmljQGlvbmljLmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyyxTrA9j
-AkkDFjTt6v8/oA09eDPIJzO4D7ur96qXVK3nqv3XJDnfgDih5cSpFm+kywO69zM0bVjPzScu
-kz6U7daDxyzFoZF57B5EEhLdpt/jQcIgFWU6XuhNybNm7OrPYoTvQIdnuneTRYARR9RvsBLy
-qurG6iPR21SSt0zCOgOs9azfMn68ejkVTexO+PaSyJK2Mbc0wREFP7UbN/alXHZwolEGaoAJ
-spl/AT1C59GqtlPxtZiLkMJXfhEvt5Uud6Msv4y+1qtm/YrwByiOr23vM71n7SueWvqjjpzZ
-6BUH6z+iXbyrcMRx7p+nUqsKK6OpGpDBVDw7/aiCDiXmHQIDAQABo4IC9zCCAvMwCQYDVR0T
-BAIwADALBgNVHQ8EBAMCBLAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1Ud
-DgQWBBTclsLI5r4EHNWcEArJxkZADOK3bDAfBgNVHSMEGDAWgBSuVYNv7DHKufcd+q9rMfPI
-HeOsuzAZBgNVHREEEjAQgQ5pb25pY0Bpb25pYy5kZTCCAUIGA1UdIASCATkwggE1MIIBMQYL
-KwYBBAGBtTcBAgEwggEgMC4GCCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9w
-b2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9pbnRlcm1l
-ZGlhdGUucGRmMIG3BggrBgEFBQcCAjCBqjAUFg1TdGFydENvbSBMdGQuMAMCAQEagZFMaW1p
-dGVkIExpYWJpbGl0eSwgc2VlIHNlY3Rpb24gKkxlZ2FsIExpbWl0YXRpb25zKiBvZiB0aGUg
-U3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkgUG9saWN5IGF2YWlsYWJsZSBhdCBo
-dHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMGMGA1UdHwRcMFowK6ApoCeGJWh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwK6ApoCeGJWh0dHA6Ly9jcmwu
-c3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUH
-MAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBCBggr
-BgEFBQcwAoY2aHR0cDovL3d3dy5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5jbGll
-bnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG
-9w0BAQUFAAOCAQEAKV6/UnCFUjg+7wbMpEnMl1xh2xPt8n1Hk7M2d5zgIAOxv1e7scPJFrmo
-AEFeKEe+aj5/EZV7ofLxPE+9lgIZp5SLa3pqh0gU5NANZx0Q/2jtLKcE5ceqw3aVnTxDgwG6
-gZ+q4mLReOkI2ctj0pI5lMdPAAioZUfuV/316BjUC1+X7L8tzR7pLD/Sq9ydpBLPAJn86SpV
-ZJMYNlfAIMW7LoJvCPIqf2qyFnN4yq9IoeYc+KHMlDp5VciZmCuBaTkWsGk7x3n3Gio7fY9t
-LIzRxmGq+Rsb+eVY9vNefXf5yAbtqMAYKDxe54x6HebTewggeKe+Bp4c4Cp47dO9VW/pZDGC
-A80wggPJAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
-MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMv
-U3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAgZyMAkG
-BSsOAwIaBQCgggIOMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
-DTExMDUxNzEyMzc0M1owIwYJKoZIhvcNAQkEMRYEFG6nF/LfqRgKDYZXiXBLckOtEIr2MF8G
-CSqGSIb3DQEJDzFSMFAwCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIA
-gDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBpAYJKwYBBAGCNxAE
-MYGWMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UE
-CxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRD
-b20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAgZyMIGmBgsqhkiG
-9w0BCRACCzGBlqCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
-KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgIGcjAN
-BgkqhkiG9w0BAQEFAASCAQAanfYcvfmSOKCIV36zoXu3yS2btXt/ZS1/Jn4EV5zfHB5jmOM7
-LXJ2ayyZgMdMStUBfyxN9PWSRtIkh9IahfQHhIzjwi8/037YDBfDZBZsrfIP6FrS7cew+src
-lZyQo+TOqLd2n0vbNGMFBkSNAb030OETNyleYe3ORejReJIMEKJ33PqZrse9k+vSKRLVxfj3
-CPWyn2gFvp88wzr7vaCQsYyoLs2q5SQtGqlGsD66ifXM5RsxQpCiBm70okad3LUz/Ou8Ei9x
-x8D3BbP4egulDuxmZ1lul9tUiTJo8EenmUY94P2sgL/+pqpgNHgNovte6FYi1+3rCfI67sJ/
-7bk5AAAAAAAA
---------------ms030009050809020402070304--
+No problem, I hope it will work as I couldn't test it myself.
