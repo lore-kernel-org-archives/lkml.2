@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab1EQJos (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 05:44:48 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44216 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab1EQJor (ORCPT
+	id S1753893Ab1EQJps (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 05:45:48 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60998 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab1EQJpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 05:44:47 -0400
+	Tue, 17 May 2011 05:45:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=eHcOPf51XqiYMhB/nebeEhsNwdkDMlUV3LAovI2+pqInWJcRnc9u4mevYlCf3fajOa
-         UE/XEzRN+J0aYXziaeKbTuh+ZbXK3MvYSV02aSZo9jd5m3vHTPvqXTxLlX0iaQnIzZGP
-         0aJXA5OTAkjZbZHPFiuEirasRafq1/nOeShYg=
-From: Sasha Levin <levinsasha928@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, a.p.zijlstra@chello.nl,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH V2] Documentation: Update augmented rbtree documentation
-Date: Tue, 17 May 2011 12:43:43 +0300
-Message-Id: <1305625423-17908-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.5.rc3
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=b0a2Y2NhMcDzkgO31yQsl1Kc/Z39l8CM5sX83Bib+NgMWKrYQGuEloXpdlq+sPrl25
+         UKoofMoQzAG0v8vPFcjTh8GM5qIkmaFdzI+XZbwwq65u3WVSgQxS099K2TrGP+UNgiQy
+         QERm+128NfaVz8aK+NygXHP9ViZdEXjASVelw=
+Subject: Re: [patch V3] percpu_counter: scalability works
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Shaohua Li <shaohua.li@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
+In-Reply-To: <20110517091102.GE20624@htj.dyndns.org>
+References: <1305528912.3120.213.camel@edumazet-laptop>
+	 <1305530143.2375.42.camel@sli10-conroe>
+	 <1305531877.3120.230.camel@edumazet-laptop>
+	 <1305534857.2375.55.camel@sli10-conroe>
+	 <1305538504.2898.33.camel@edumazet-laptop>
+	 <1305555736.2898.46.camel@edumazet-laptop>
+	 <1305593751.2375.69.camel@sli10-conroe>
+	 <1305608212.9466.45.camel@edumazet-laptop>
+	 <1305609768.2375.84.camel@sli10-conroe>
+	 <1305622861.2850.21.camel@edumazet-laptop>
+	 <20110517091102.GE20624@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 May 2011 11:45:41 +0200
+Message-ID: <1305625541.2850.29.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current documentation referred to the old method
-of handling augmented trees. Update documentation
-to correspond with the changes done in commit
-b945d6b2554d550fe95caadc61e521c0ad71fb9c.
+Le mardi 17 mai 2011 à 11:11 +0200, Tejun Heo a écrit :
 
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Woodhouse <David.Woodhouse@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: Ingo Molnar <mingo@elte.hu>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- Documentation/rbtree.txt |   23 ++++++++++++++---------
- 1 files changed, 14 insertions(+), 9 deletions(-)
+> I'm completely fine with #1.  I'm not that crazy but I don't really
+> want to take #2 - that makes the whole _sum() interface almost
+> pointless.  
 
-diff --git a/Documentation/rbtree.txt b/Documentation/rbtree.txt
-index 19f8278..8d32d85 100644
---- a/Documentation/rbtree.txt
-+++ b/Documentation/rbtree.txt
-@@ -196,15 +196,20 @@ Support for Augmented rbtrees
- Augmented rbtree is an rbtree with "some" additional data stored in each node.
- This data can be used to augment some new functionality to rbtree.
- Augmented rbtree is an optional feature built on top of basic rbtree
--infrastructure. rbtree user who wants this feature will have an augment
--callback function in rb_root initialized.
--
--This callback function will be called from rbtree core routines whenever
--a node has a change in one or both of its children. It is the responsibility
--of the callback function to recalculate the additional data that is in the
--rb node using new children information. Note that if this new additional
--data affects the parent node's additional data, then callback function has
--to handle it and do the recursive updates.
-+infrastructure. An rbtree user who wants this feature will have to call the
-+augmentation functions with the user provided augmentation callback
-+when inserting and erasing nodes.
-+
-+On insertion, the user must call rb_augment_insert() once the new node is in
-+place. This will cause the augmentation function callback to be called for
-+each node between the new node and the root which has been affected by the
-+insertion.
-+
-+When erasing a node, the user must call rb_augment_erase_begin() first to
-+retrieve the deepest node on the rebalance path. Then, after erasing the
-+original node, the user must call rb_augment_erase_end() with the deepest
-+node found earlier. This will cause the augmentation function to be called
-+for each affected node between the deepest node and the root.
- 
- 
- Interval tree is an example of augmented rb tree. Reference -
--- 
-1.7.5.rc3
+Hi Tejun
+
+_sum() is a bit more precise than percpu_counter_read(), but to make it
+really precise, we means we have to stop concurrent activities, and we
+never did in previous/current implementation.
+
+We could add this (as Shaohua and myself tried in various patches)
+later, if needed, but nowhere in kernel we currently need that.
+
+Even /proc/meminfo doesnt call _sum(&vm_committed_as) but the lazy
+percpu_counter_read_positive() function...
+
+Reammy _sum() gives a good approximation of the counter, more precise
+because of the percpu s32 folding, but no guarantee of deviation.
+
+
 
