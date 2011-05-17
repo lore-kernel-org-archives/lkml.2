@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab1EQNzh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 09:55:37 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:39190 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754697Ab1EQNzg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 09:55:36 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: R1m6J4oVM1n8ibXH1DcgM6Z6dvgN78rkgVrdktSzgPYz7Io
- rI2mcqz9jduN5.aCla_gYT8QvL23hsOviU8F7yHcEvaTDT3LuBqyqBF8BunG
- tGEQC43m3JY6Sk9JV__sqvchWvh53_mIgyTMz4EJTFuzPfYo5oY3G_UxxWcI
- eHgjQjgeKog53DLPfHXgLLPHuiq0DgChZWwWs2wm.YY_bI2X4d1NQbnqXRYE
- MRL2py_szyRgsFAVqjU3kvujK6lKnDTcSGAv169iZKum.EOP2sj1UxkPKXzd
- G928f4axJDav030h9tUoIri8OopIS8YMLm9kMgBMh8yrs0DbW
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 17 May 2011 08:55:33 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, Shaohua Li <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>
-Subject: Re: [patch V3] percpu_counter: scalability works
-In-Reply-To: <20110517130414.GO20624@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.00.1105170853520.11187@router.home>
-References: <1305593751.2375.69.camel@sli10-conroe> <1305608212.9466.45.camel@edumazet-laptop> <1305609768.2375.84.camel@sli10-conroe> <1305622861.2850.21.camel@edumazet-laptop> <20110517091102.GE20624@htj.dyndns.org> <1305625541.2850.29.camel@edumazet-laptop>
- <20110517095001.GF20624@htj.dyndns.org> <1305634807.2850.89.camel@edumazet-laptop> <20110517124528.GN20624@htj.dyndns.org> <1305637223.2850.95.camel@edumazet-laptop> <20110517130414.GO20624@htj.dyndns.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755027Ab1EQN4I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 09:56:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6610 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754786Ab1EQN4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 09:56:06 -0400
+Message-ID: <4DD27E62.50806@redhat.com>
+Date: Tue, 17 May 2011 09:55:46 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Ying Han <yinghan@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [rfc patch 4/6] memcg: reclaim statistics
+References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org> <1305212038-15445-5-git-send-email-hannes@cmpxchg.org> <BANLkTi=yCyAsOc_uTQLp1kWp5w0i9gomxg@mail.gmail.com> <20110516231028.GV16531@cmpxchg.org> <BANLkTimLNZfc-jcA3yBG5D3k2u=0_JnrhQ@mail.gmail.com> <20110517074230.GY16531@cmpxchg.org>
+In-Reply-To: <20110517074230.GY16531@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 May 2011, Tejun Heo wrote:
+On 05/17/2011 03:42 AM, Johannes Weiner wrote:
 
-> Hello,
+> It does hierarchical soft limit reclaim once triggered, but I meant
+> that soft limits themselves have no hierarchical meaning.  Say you
+> have the following hierarchy:
 >
-> On Tue, May 17, 2011 at 03:00:23PM +0200, Eric Dumazet wrote:
-> > Absolutely not. Its slow path yes, but not super-slow.
+>                  root_mem_cgroup
 >
-> I was speaking in relative terms.  We're talking about local only fast
-> path vs. something which hits every percpu counter likely causing
-> cache misses in many of them.  It's bound to be multiple orders of
-> magnitude heavier than fast path.
+>               aaa               bbb
+>
+>             a1  a2             b1  b2
+>
+>          a1-1
+>
+> Consider aaa and a1 had a soft limit.  If global memory arose, aaa and
+> all its children would be pushed back with the current scheme, the one
+> you are proposing, and the one I am proposing.
+>
+> But now consider aaa hitting its hard limit.  Regular target reclaim
+> will be triggered, and a1, a2, and a1-1 will be scanned equally from
+> hierarchical reclaim.  That a1 is in excess of its soft limit is not
+> considered at all.
+>
+> With what I am proposing, a1 and a1-1 would be pushed back more
+> aggressively than a2, because a1 is in excess of its soft limit and
+> a1-1 is contributing to that.
 
-Well lets just adopt the system that vm statistics use. Bound the error by
-time and batch and allow the user to change the batch if more accuracy is
-desired.
+Ying, I think Johannes has a good point.  I do not see
+a way to enforce the limits properly with the scheme we
+came up with at LSF, in the hierarchical scenario above.
 
-The _sum function is optional and should it should be explained that the
-result *could* be better but dont count on it.
+There may be a way, but until we think of it, I suspect
+it will be better to go with Johannes's scheme for now.
 
+-- 
+All rights reversed
