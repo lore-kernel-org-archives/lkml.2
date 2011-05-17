@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab1EQTft (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 15:35:49 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:54417 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127Ab1EQTfr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 15:35:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Y+zfRhCJeaKY7Kjjj8QrVXwTrLB8b3PNtvkNtnkgtyDkGRmTOHTuTg2ABoR2qhbFEM
-         2poQ7aG2Lc4Nd+uUBUqg==
-Date: Tue, 17 May 2011 12:35:32 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/4] mm: slub: Do not take expensive steps for SLUBs
- speculative high-order allocations
-In-Reply-To: <alpine.DEB.2.00.1105171251450.15604@router.home>
-Message-ID: <alpine.DEB.2.00.1105171233150.5438@chino.kir.corp.google.com>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de> <1305295404-12129-4-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1105161411440.4353@chino.kir.corp.google.com> <20110517084227.GI5279@suse.de> <alpine.DEB.2.00.1105170847550.11187@router.home>
- <20110517162256.GO5279@suse.de> <alpine.DEB.2.00.1105171251450.15604@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S932203Ab1EQTlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 15:41:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35701 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932087Ab1EQTlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 15:41:18 -0400
+Subject: Re: [PATCH] pci, dmar: flush IOTLB before exit domain
+From: Alex Williamson <alex.williamson@redhat.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Yinghai Lu <yinghai.lu@oracle.com>, Kalle Valo <kvalo@adurom.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <1305558798.3146.48.camel@x201>
+References: <4DC34B21.9040203@oracle.com>
+	 <1304952530.30435.16.camel@i7.infradead.org>
+	 <1305558798.3146.48.camel@x201>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 May 2011 13:41:02 -0600
+Message-ID: <1305661262.29268.27.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 May 2011, Christoph Lameter wrote:
-
-> > In this particular patch, the success rate for high order allocations
-> > would likely decrease in low memory conditions albeit the latency when
-> > calling the page allocator will be lower and the disruption to the
-> > system will be less (no copying or reclaim of pages). My expectation
-> > would be that it's cheaper for SLUB to fall back than compact memory
-> > or reclaim pages even if this means a slab page is smaller until more
-> > memory is free. However, if the "goodness" criteria is high order
-> > allocation success rate, the patch shouldn't be merged.
+On Mon, 2011-05-16 at 09:13 -0600, Alex Williamson wrote:
+> On Mon, 2011-05-09 at 15:48 +0100, David Woodhouse wrote:
+> > On Thu, 2011-05-05 at 18:13 -0700, Yinghai Lu wrote:
+> > > @@ -3252,6 +3252,9 @@ static int device_notifier(struct notifi
+> > >                 return 0;
+> > >  
+> > >         if (action == BUS_NOTIFY_UNBOUND_DRIVER && !iommu_pass_through) {
+> > > +               /* before we remove dev with domain, flush IOTLB */
+> > > +               flush_unmaps();
+> > > +
+> > >                 domain_remove_one_dev_info(domain, pdev);
+> > >  
+> > >                 if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) && 
+> > 
+> > That calls flush_unmaps() without the async_umap_flush_lock held,
+> > doesn't it? A few days ago I asked someone else to test this candidate
+> > patch for a similar issue:
+> > 
+> > http://david.woodhou.se/flush-unmaps-on-unbind.patch
 > 
-> The criteria is certainly overall system performance and not a high order
-> allocation rate.
+> Copying here:
 > 
+> > diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+> > index d552d2c..7e606d6 100644
+> > --- a/drivers/pci/intel-iommu.c
+> > +++ b/drivers/pci/intel-iommu.c
+> > @@ -3256,8 +3259,10 @@ static int device_notifier(struct notifier_block *nb,
+> >  
+> >  		if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
+> >  		    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY) &&
+> > -		    list_empty(&domain->devices))
+> > +		    list_empty(&domain->devices)) {
+> > +			flush_unmaps_timeout(0);
+> >  			domain_exit(domain);
+> > +		}
+> >  	}
+> >  
+> >  	return 0;
+> > @@ -3587,6 +3592,7 @@ static void intel_iommu_domain_destroy(struct iommu_domain *domain)
+> >  	struct dmar_domain *dmar_domain = domain->priv;
+> >  
+> >  	domain->priv = NULL;
+> > +	flush_unmaps_timeout(0);
+> >  	vm_domain_exit(dmar_domain);
+> > }
+> 
+> David, would it be worthwhile to push the unmaps into the
+> {vm_}domain_exit() functions to avoid races like this in the future?  I
+> can verify the above resolves a panic after unbinding a device from
+> snd_hda_intel that I hit recently.  Do you plan to push this for .39?
 
-SLUB definitely depends on these higher order allocations being successful 
-for performance, dropping back to the min order is a last resort as 
-opposed to failing the kmalloc().  If it's the last resort, then it makes 
-sense that we'd want to try both compaction and reclaim while we're 
-already in the page allocator as we go down the slub slowpath.  Why not 
-try just a little harder (compaction and/or reclaim) to alloc the cache's 
-preferred order?
+BTW, is this second chunk really needed?  VM iommu mappings don't seem
+to use the lazy unmap path.  Thanks,
+
+Alex
+
+
