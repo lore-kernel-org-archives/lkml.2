@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab1EQJcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 05:32:22 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:55835 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab1EQJcV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 05:32:21 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DD24131.2030009@cam.ac.uk>
-Date: Tue, 17 May 2011 10:34:41 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1753852Ab1EQJlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 05:41:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37886 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753663Ab1EQJlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 05:41:15 -0400
+Date: Tue, 17 May 2011 10:41:11 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, stable@kernel.org
+Subject: [PATCH] mm: tracing: Add missing GFP flags to tracing
+Message-ID: <20110517094111.GJ5279@suse.de>
+References: <20110510100954.GC4146@suse.de>
+ <20110510145446.1f8e77e3.akpm@linux-foundation.org>
 MIME-Version: 1.0
-CC: fabien.marteau@armadeus.com, Guenter Roeck <guenter.roeck@ericsson.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: Driver for as1531, Austria-Microsystem Analog
- to Digital Converter.
-References: <fabien.marteau@armadeus.com> <1305553154-18195-2-git-send-email-fabien.marteau@armadeus.com> <20110516153900.GA31255@ericsson.com> <4DD21E5E.9000605@armadeus.com> <4DD23EED.4010201@cam.ac.uk>
-In-Reply-To: <4DD23EED.4010201@cam.ac.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110510145446.1f8e77e3.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/11 10:25, Jonathan Cameron wrote:
-> On 05/17/11 08:06, Fabien Marteau wrote:
->> Hi Guenter,
->>
->> Thanks for the review.
->>
->> On 16/05/2011 17:39, Guenter Roeck wrote:
->>> On Mon, May 16, 2011 at 09:39:14AM -0400, fabien.marteau@armadeus.com wrote:
->>>> From: Fabien Marteau <fabien.marteau@armadeus.com>
->>>>
->>>>
->>> Some description, such as "Dhis driver adds support for xxx" would be nice.
->>>
->>> Also, I wonder if this driver belongs into hwmon in the first place. It is
->>> a generic ADC chip with high conversion rate. iio would probably be more
->>> appropriate and also much better in supporting high speed readings.
->> I provided this driver "as is" because it's a driver that work well on
->> our platform. I thought that iio was not stable enough driver framework
->> to be used.
->> I can rewrite it under iio framework but I have no time for this moment
->> to do that. You think it's better to wait for an iio driver or to
->> continue commiting this ?
-> I'd say that if you primary use is hwmon, put it there for now and we can think
-> about moving it at a later date depending on how people are actually using it.
-> Guenter, would that be ok for you?
-Having actually taken a look at the code, it's straight forward, so if you
-are using it as a general purpose adc then I'm happy to port to IIO
-sometimes soonish...  Will need some testing at somepoint though.
+(For 2.6.38-stable)
 
-Jonathan
+include/linux/gfp.h and include/trace/events/gfpflags.h is out of
+sync. When tracing is enabled, certain flags are not recognised and
+the text output is less useful as a result.  Add the missing flags.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/trace/events/gfpflags.h |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
+index e3615c0..5cb8c1b 100644
+--- a/include/trace/events/gfpflags.h
++++ b/include/trace/events/gfpflags.h
+@@ -10,6 +10,7 @@
+  */
+ #define show_gfp_flags(flags)						\
+ 	(flags) ? __print_flags(flags, "|",				\
++	{(unsigned long)GFP_TRANSHUGE,		"GFP_TRANSHUGE"},	\
+ 	{(unsigned long)GFP_HIGHUSER_MOVABLE,	"GFP_HIGHUSER_MOVABLE"}, \
+ 	{(unsigned long)GFP_HIGHUSER,		"GFP_HIGHUSER"},	\
+ 	{(unsigned long)GFP_USER,		"GFP_USER"},		\
+@@ -32,6 +33,8 @@
+ 	{(unsigned long)__GFP_HARDWALL,		"GFP_HARDWALL"},	\
+ 	{(unsigned long)__GFP_THISNODE,		"GFP_THISNODE"},	\
+ 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
+-	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"}		\
++	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
++	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
++	{(unsigned long)__GFP_NO_KSWAPD,	"GFP_NO_KSWAPD"}	\
+ 	) : "GFP_NOWAIT"
+ 
