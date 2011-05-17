@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab1EQOj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 10:39:28 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:44136 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192Ab1EQOjY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 10:39:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=S6idVvMJ4Lv1ezCG0SNZmKOqk4RpKZUFFBTnYhxgTjfTOz8lfwcWKNrGOfC8vBoFYk
-         bcRXb+mm1ATdS7GzCT8o5Kmz37kg2XO93UWNtAvY+cG86IJpyxqqYuX1xdaUScs83C/p
-         orqlAAazv9Sa10cSEePC0uWZpcStzuPX9NX/A=
+	id S1755304Ab1EQOmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 10:42:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50267 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754769Ab1EQOmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 10:42:18 -0400
+Message-ID: <4DD28948.1020900@suse.cz>
+Date: Tue, 17 May 2011 16:42:16 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Date: Tue, 17 May 2011 09:39:23 -0500
-Message-ID: <BANLkTikn3OawHFO8y20sLuK_4LxOw7nQBg@mail.gmail.com>
-Subject: Reconsider including phc-linux patch to control voltages
-From: Arthur Machlas <arthur.machlas@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 2/2] ftrace/kbuild: Add recordmcount files to force
+ full build
+References: <20110517021027.390391519@goodmis.org>	 <20110517021423.661004726@goodmis.org>	 <20110517133646.GP13293@sepie.suse.cz>	 <1305640042.5456.727.camel@gandalf.stny.rr.com> <1305642010.5456.730.camel@gandalf.stny.rr.com>
+In-Reply-To: <1305642010.5456.730.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, please cc me on any replies.
+On 17.5.2011 16:20, Steven Rostedt wrote:
+> On Tue, 2011-05-17 at 09:47 -0400, Steven Rostedt wrote:
+>> On Tue, 2011-05-17 at 15:36 +0200, Michal Marek wrote:
+>>
+>>> We could add recordmcount.c as a dependency in scripts/Makefile.build
+>>> directly, without playing with fixdep, like this (untested):
+>>
+>> I actually tried this first, and it didn't seem to work. I'll go ahead
+>> and give it another try (maybe I did something wrong). But I do prefer
+>> this over my fixdep change.
+>>
+>> Thanks, I'll let you know the outcome.
+>
+> Awesome! This worked.
 
-Five years ago a request was made[1] to include some patches from the
-phc-linux project. This request was rejected for reasons of stability,
-wasting dev time chasing bugs, and general discomfort. Mildly
-supportive suggestions were made to make it either a separate driver
-(it patches acpi-cpufreq) or call some 'tainted' flags.
+Great.
 
-It is currently included in the zen kernel, and now supports out of
-tree building making it somewhat unecessary to include, however, the
-dev's seem unable to keep up with newer kernels and releases are
-becoming infrequent. Users now seem to be modifying the patch to make
-sure it cleanly applies to newer kernels. Gentoo seems to be doing
-this at the distro level [2].
 
-Just wondering if any circumstances have changed that would merit
-reconsidering the decision to not include the patches.
+> I wonder what screw up I did to keep mine from
+> working? Anyway, I made a single change to your patch:
+>
+> -recordmcount_source := $(srctree)/scripts/recordmcount.c
+> +recordmcount_source := $(srctree)/scripts/recordmcount.c \
+> +                   $(srctree)/scripts/recordmcount.h
+>
+>
+> Could you send me your Signed-off-by, and I'll add this to the beginning
+> of my patch queue.
 
-Many thanks,
-Arthur
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-[1] http://lkml.org/lkml/2007/9/2/119
-[2] http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/sys-power/phc-intel/files/phc-intel-0.3.2.12.1-2.6.38.patch?view=markup
+Michal
