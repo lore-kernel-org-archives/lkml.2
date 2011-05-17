@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab1EQUW3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 16:22:29 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56861 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756492Ab1EQUW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 16:22:27 -0400
-Date: Tue, 17 May 2011 22:22:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>, Meelis Roos <mroos@linux.ee>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED 2/3 v2.6.39-rc7] block: make
- disk_block_events() properly wait for work cancellation
-Message-ID: <20110517202224.GA371@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Sitsofe Wheeler <sitsofe@yahoo.com>, Meelis Roos <mroos@linux.ee>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-References: <20110517102713.GJ20624@htj.dyndns.org>
- <20110517102824.GK20624@htj.dyndns.org>
- <20110517102853.GL20624@htj.dyndns.org>
- <20110517154748.GS20624@htj.dyndns.org>
- <4DD2CDE2.60604@kernel.dk>
+	id S1756595Ab1EQU1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 16:27:32 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:49315 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750902Ab1EQU1a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 16:27:30 -0400
+X-Sasl-enc: NM7zWqQoSMyZQ0Iunu1V8J9AQ07KSQqLdiCT1yJYNpJm 1305664049
+Date: Tue, 17 May 2011 13:23:00 -0700
+From: Greg KH <greg@kroah.com>
+To: matt mooney <mfmooney@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 14/14] package: Makefile: add USB/IP userspace utilities
+Message-ID: <20110517202300.GA7981@kroah.com>
+References: <cover.1305369175.git.mfm@muteddisk.com>
+ <5f759d070b6bf0f72d92c632e94e6fe5d9943a96.1305369176.git.mfm@muteddisk.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DD2CDE2.60604@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5f759d070b6bf0f72d92c632e94e6fe5d9943a96.1305369176.git.mfm@muteddisk.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 09:34:58PM +0200, Jens Axboe wrote:
-> BTW, this is patch 3/3, not 2/3. Had me confused for a while, the
-> numbering on the initial series was off as well.
+On Sat, May 14, 2011 at 03:55:20AM -0700, matt mooney wrote:
+> From: matt mooney <mfm@muteddisk.com>
+> 
+> Add usbip-src-pkg target to generate a tarball of the userspace source.
+> 
+> Signed-off-by: matt mooney <mfm@muteddisk.com>
+> ---
+>  scripts/package/Makefile |   15 ++++++++++++++-
 
-Same here, they don't apply cleanly for some reason on latest Linus
-tree. I'm testing your #for-linus branch now, instead.
+Is this really needed at this point in time?  I'd prefer to wait on it
+before we get this code cleaned up a bit better if you don't mind.
 
-Thanks.
+thanks,
 
--- 
-Regards/Gruss,
-    Boris.
+greg k-h
