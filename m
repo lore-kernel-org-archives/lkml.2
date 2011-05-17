@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab1EQOiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 10:38:25 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:35592 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755161Ab1EQOiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 10:38:24 -0400
-Date: Tue, 17 May 2011 16:38:20 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
-        maciej.rutecki@gmail.com, rjw@sisk.pl, sedat.dilek@gmail.com,
-        "# .34+" <stable@kernel.org>
-Subject: Re: [PATCH 2/2 v2] x86, ioapic: move acpi_get_override_irq to
- acpi.c
-Message-ID: <20110517163820.4b039cfe@schatten.dmk.lab>
-In-Reply-To: <20110415101938.GC28007@elte.hu>
-References: <20110412215350.50fb5cfa@schatten.dmk.lab>
-	<1302638465-1030-1-git-send-email-florian@mickler.org>
-	<1302638465-1030-2-git-send-email-florian@mickler.org>
-	<20110415101938.GC28007@elte.hu>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755355Ab1EQOjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 10:39:01 -0400
+Received: from services116.cs.uwaterloo.ca ([129.97.152.169]:40850 "EHLO
+	services116.cs.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755161Ab1EQOjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 10:39:00 -0400
+Message-ID: <4DD28873.8050706@uwaterloo.ca>
+Date: Tue, 17 May 2011 10:38:43 -0400
+From: Sarah Nadi <snadi@uwaterloo.ca>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: jkosina@suse.cz
+CC: starvik@axis.com, linux-kernel@vger.kernel.org
+Subject: [Patch 1/1]: cris: typo in mach-fs Makefile
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Miltered: at mailchk-m03 with ID 4DD2887B.000 by Joe's j-chkmail (http://j-chkmail.ensmp.fr)!
+X-UUID: 23b5b068-a219-4b56-9133-3855fc7927a3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Sarah Nadi<snadi@uwaterloo.ca>
 
-On Fri, 15 Apr 2011 12:19:38 +0200
-Ingo Molnar <mingo@elte.hu> wrote:
-
-> >  arch/x86/include/asm/io_apic.h |    8 +++++++-
-> >  arch/x86/kernel/apic/io_apic.c |   40 ++++++++++++----------------------------
-> >  arch/x86/pci/acpi.c            |   24 ++++++++++++++++++++++++
-> >  include/linux/acpi.h           |    6 ++++++
-> >  4 files changed, 49 insertions(+), 29 deletions(-)
-> 
-> Len, is this change fine to you?
-> 
-> Thanks,
-> 
-> 	Ingo
+There is a possible typo in arch/cris/arch-v32/mach-fs/Makefile. Check diff below
 
 
-sorry if I missed something... what's the status of these 2 patches?
+--- linux-2.6.38/arch/cris/arch-v32/mach-fs/Makefile.orig    2011-03-14 
+21:20:32.000000000 -0400
++++ linux-2.6.38/arch/cris/arch-v32/mach-fs/Makefile    2011-05-16 
+11:24:21.627239213 -0400
+@@ -4,7 +4,7 @@
+  #
 
-(fixing https://bugzilla.kernel.org/show_bug.cgi?id=17772 )
+  obj-y   := dma.o pinmux.o io.o arbiter.o
+-bj-$(CONFIG_ETRAX_VCS_SIM) += vcs_hook.o
++obj-$(CONFIG_ETRAX_VCS_SIM) += vcs_hook.o
+  obj-$(CONFIG_CPU_FREQ)   += cpufreq.o
 
-Regards,
-Flo
+  clean:
+
+
+
+Signed-off-by: Sarah Nadi <snadi@uwaterloo.ca>
