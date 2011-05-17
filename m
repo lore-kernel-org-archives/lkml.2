@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab1EQQ1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 12:27:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48482 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755511Ab1EQQ1c (ORCPT
+	id S1755993Ab1EQQ2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 12:28:36 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59824 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755665Ab1EQQ2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 12:27:32 -0400
+	Tue, 17 May 2011 12:28:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Tjufivp9/I0RhUigPAB0jHbhfEt7wnmStQQzONxW0munmqP+N2LpZTSR2VIxRbjNMf
-         Bzzg8f2Og31SGgRYIerEK7MN8X2enl8keL9juHkW37xzEq5hNduATPcJQQL62vy/fz36
-         cJDR1BAjroJKa4gPsbN/Rc8LeELnokSbfnQXk=
-Date: Tue, 17 May 2011 18:27:26 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 01/10] signal: remove three noop tracehooks
-Message-ID: <20110517162726.GT20624@htj.dyndns.org>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org>
- <1305569849-10448-2-git-send-email-tj@kernel.org>
- <20110517162224.GA13675@infradead.org>
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=cziWW7ND+SdscPcZtJ96cEHzJhMGObg0NbCPN72MYSEz/pdCLfZ9JhKTmDIfhQSafB
+         ZpzZDy/X5IDvJpK1HHWX27+kbydE1iOIU7kqTv8TQDulkNTxfhqhcJm4+10t2FT0IEay
+         jQEJwDZ8t+MY/O0Ti+S2sdZQGgvRh3KhpFZbA=
+Date: Tue, 17 May 2011 18:28:27 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: benh@kernel.crashing.org
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: powerpc: mpc85xx regression since 2.6.39-rc2, one cpu core lame
+Message-ID: <20110517162827.GA16918@riccoc20.at.omicron.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110517162224.GA13675@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Ben,
 
-On Tue, May 17, 2011 at 12:22:24PM -0400, Christoph Hellwig wrote:
-> On Mon, May 16, 2011 at 08:17:20PM +0200, Tejun Heo wrote:
-> > Remove the following three noop tracehooks in signals.c.
-> > 
-> > * tracehook_force_sigpending()
-> > * tracehook_get_signal()
-> > * tracehook_finish_jctl()
-> > 
-> > The code area is about to be updated and these hooks don't do anything
-> > other than obfuscating the logic.
-> 
-> Btw, I think we should kill that stupid <linux/tracehook.h> layer
-> entirely.  It consists of a few relatively useful function which should
-> just be renamed to ptrace_* and moved to ptrace.c, and a lot of entirely
-> pointless wrappers which generally have only a single user, and often
-> tons of arguments that aren't actually used.
+Recent 2.6.39-rc kernels behave strangely on the Freescale dual core
+mpc8572 and p2020. There is a long pause (like 2 seconds) in the boot
+sequence after "mpic: requesting IPIs..."
 
-Yeap, agreed.  It's on the todo list.
+When the system comes up, only one core shows in /proc/cpuinfo. Later
+on, lots of messages appear like the following:
 
-Thanks.
+   INFO: task ksoftirqd/1:9 blocked for more than 120 seconds.
 
--- 
-tejun
+I bisected [1] the problem to:
+
+   commit c56e58537d504706954a06570b4034c04e5b7500
+   Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+   Date:   Tue Mar 8 14:40:04 2011 +1100
+
+       powerpc/smp: Create idle threads on demand and properly reset them
+
+I don't see from that commit what had gone wrong. Perhaps you can
+help resolve this?
+
+Thanks,
+Richard
+
+
+1. I had to patch commit e5462d16 by hand when bisecting, which is a
+   fixup for commit fa3f82c8 and not yet merged in c56e5853.
