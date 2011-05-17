@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab1EQIqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 04:46:45 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44464 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142Ab1EQIqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 04:46:43 -0400
-Date: Tue, 17 May 2011 10:46:22 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
-Message-ID: <20110517084622.GE22093@elte.hu>
-References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
- <1305619719-7480-6-git-send-email-ying.huang@intel.com>
+	id S1752859Ab1EQIr5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 04:47:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49840 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab1EQIr4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 04:47:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wS5fQtmXfQWM9hIA0opj1VkhEBzUzYzcc1gYnSDOfOUn9XZ0Hk6lCcDBhgYij4LMS6
+         1pUiUd0CRx504lNIw9W7LOtm9RMLPLbToYxYYsGFZay+ZX+zkuYA+1A1J6DB+XrHVrZP
+         UMhPQJ61Vs+5HhA5hMc24ch/kjTPXzrZ8EdHA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305619719-7480-6-git-send-email-ying.huang@intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4DD23456.6060400@gmail.com>
+References: <4DD0F614.2040408@gmail.com>
+	<1305540776.2466.4094.camel@twins>
+	<20110516103559.GA19837@elte.hu>
+	<4DD23456.6060400@gmail.com>
+Date: Tue, 17 May 2011 16:47:55 +0800
+Message-ID: <BANLkTikrLqmkDpOs4V46RCTd+5-GZhtZDA@mail.gmail.com>
+Subject: Re: [PATCH] Documentation: statistics about nested locks
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 17, 2011 at 4:39 PM, Juri Lelli <juri.lelli@gmail.com> wrote:
+> Sorry for my mistake with the email client and thanks for the hint!
+> May I resend a (I hope) corrected version of this small patch with the revision
+> made by Yong?
 
-* Huang Ying <ying.huang@intel.com> wrote:
-
-> memory_failure() is the entry point for HWPoison memory error
-> recovery.  It must be called in process context.  But commonly
-> hardware memory errors are notified via MCE or NMI, so some delayed
-> execution mechanism must be used.  In MCE handler, a work queue + ring
-> buffer mechanism is used.
-> 
-> In addition to MCE, now APEI (ACPI Platform Error Interface) GHES
-> (Generic Hardware Error Source) can be used to report memory errors
-> too.  To add support to APEI GHES memory recovery, a mechanism similar
-> to that of MCE is implemented.  memory_failure_queue() is the new
-> entry point that can be called in IRQ context.  The next step is to
-> make MCE handler uses this interface too.
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  include/linux/mm.h  |    1 
->  mm/memory-failure.c |   92 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 93 insertions(+)
-
-I have to say i disagree with how this is designed and how this is exposed to 
-user-space - and i pointed this out before.
-
-It's up to Len whether you muck up drivers/acpi/ but here you are patching mm/ 
-again ...
-
-I just had a quick look into the current affairs of mm/memory-inject.c and it 
-has become an *even* nastier collection of hacks since the last time i 
-commented on its uglies.
-
-Special hack upon special hack, totally disorganized code, special-purpose, 
-partly ioctl driven opaque information extraction to user-space using the 
-erst-dbg device interface. We have all the maintenance overhead and little of 
-the gains from hw error event features...
-
-In this patch you add:
-
-+struct memory_failure_entry {
-+       unsigned long pfn;
-+       int trapno;
-+       int flags;
-+};
-
-Instead of exposing this event to other users who might be interested in these 
-events - such as the RAS daemon under development by Boris.
-
-We have a proper framework (ring-buffer, NMI execution, etc.) for reporting 
-events, why are you not using (and extending) it instead of creating this nasty 
-looking, isolated, ACPI specific low level feature?
+No problem on my side :)
 
 Thanks,
+Yong
 
-	Ingo
+>
+> On 05/16/2011 12:35 PM, Ingo Molnar wrote:
+>>
+>> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>>
+>>> On Mon, 2011-05-16 at 12:01 +0200, Juri Lelli wrote:
+>>>> +The graph below shows the relation between the lock functions and the
+>>>> various
+>>>> +hooks therein.
+>>>
+>>> That smells like the patch has whitespace damage..
+>>
+>> Yeah, Documentation/email-clients.txt might help there.
+>>
+>> Thanks,
+>>
+>>       Ingo
+>
+> Thanks,
+>
+>        Juri
+>
+
+
+
+-- 
+Only stand for myself
