@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418Ab1EQGAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 02:00:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56015 "EHLO mga14.intel.com"
+	id S1752505Ab1EQGB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 02:01:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6909 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752067Ab1EQGAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 02:00:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,223,1304319600"; 
-   d="scan'208";a="437291494"
-Date: Tue, 17 May 2011 14:00:01 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
- vmlinux)
-Message-ID: <20110517060001.GC24069@localhost>
-References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
- <20110512054631.GI6008@one.firstfloor.org>
- <BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
- <BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
- <20110514165346.GV6008@one.firstfloor.org>
- <BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
- <20110514174333.GW6008@one.firstfloor.org>
- <BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
- <20110515152747.GA25905@localhost>
- <BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
+	id S1752030Ab1EQGB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 02:01:27 -0400
+Date: Tue, 17 May 2011 09:00:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCH 06/18] virtio_ring: avail event index interface
+Message-ID: <20110517060052.GB26989@redhat.com>
+References: <cover.1304541918.git.mst@redhat.com>
+ <b00ef5d572ec9bc3b884c496025512abc1f14349.1304541919.git.mst@redhat.com>
+ <87aaewh5pg.fsf@rustcorp.com.au>
+ <20110515124727.GA24932@redhat.com>
+ <87k4drduzs.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87k4drduzs.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 15, 2011 at 12:12:36PM -0400, Andrew Lutomirski wrote:
-> On Sun, May 15, 2011 at 11:27 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > On Sun, May 15, 2011 at 09:37:58AM +0800, Minchan Kim wrote:
-> >> On Sun, May 15, 2011 at 2:43 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> >> > Copying back linux-mm.
-> >> >
-> >> >> Recently, we added following patch.
-> >> >> https://lkml.org/lkml/2011/4/26/129
-> >> >> If it's a culprit, the patch should solve the problem.
-> >> >
-> >> > It would be probably better to not do the allocations at all under
-> >> > memory pressure.  Even if the RA allocation doesn't go into reclaim
-> >>
-> >> Fair enough.
-> >> I think we can do it easily now.
-> >> If page_cache_alloc_readahead(ie, GFP_NORETRY) is fail, we can adjust
-> >> RA window size or turn off a while. The point is that we can use the
-> >> fail of __do_page_cache_readahead as sign of memory pressure.
-> >> Wu, What do you think?
-> >
-> > No, disabling readahead can hardly help.
-> >
-> > The sequential readahead memory consumption can be estimated by
-> >
-> >                2 * (number of concurrent read streams) * (readahead window size)
-> >
-> > And you can double that when there are two level of readaheads.
-> >
-> > Since there are hardly any concurrent read streams in Andy's case,
-> > the readahead memory consumption will be ignorable.
-> >
-> > Typically readahead thrashing will happen long before excessive
-> > GFP_NORETRY failures, so the reasonable solutions are to
-> >
-> > - shrink readahead window on readahead thrashing
-> >  (current readahead heuristic can somehow do this, and I have patches
-> >  to further improve it)
-> >
-> > - prevent abnormal GFP_NORETRY failures
-> >  (when there are many reclaimable pages)
-> >
-> >
-> > Andy's OOM memory dump (incorrect_oom_kill.txt.xz) shows that there are
-> >
-> > - 8MB   active+inactive file pages
-> > - 160MB active+inactive anon pages
-> > - 1GB   shmem pages
-> > - 1.4GB unevictable pages
-> >
-> > Hmm, why are there so many unevictable pages?  How come the shmem
-> > pages become unevictable when there are plenty of swap space?
+On Mon, May 16, 2011 at 03:53:19PM +0930, Rusty Russell wrote:
+> On Sun, 15 May 2011 15:47:27 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > On Mon, May 09, 2011 at 01:43:15PM +0930, Rusty Russell wrote:
+> > > On Wed, 4 May 2011 23:51:19 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > >  #define VIRTIO_RING_F_USED_EVENT_IDX	29
+> > > > +/* The Host publishes the avail index for which it expects a kick
+> > > > + * at the end of the used ring. Guest should ignore the used->flags field. */
+> > > > +#define VIRTIO_RING_F_AVAIL_EVENT_IDX	32
+> > > 
+> > > Are you really sure we want to separate the two?  Seems a little simpler
+> > > to have one bit to mean "we're publishing our threshold".  For someone
+> > > implementing this from scratch, it's a little simpler.
+> > > 
+> > > Or are there cases where the old style makes more sense?
+> > > 
+> > > Thanks,
+> > > Rusty.
+> > 
+> > Hmm, it makes debugging easier as each side can disable
+> > publishing separately - I used it all the time when I saw
+> > e.g. networking stuck to guess whether I need to investigate the
+> > interrupt or the exit handling.
+> > 
+> > But I'm not hung up on this.
+> > 
+> > Let me know pls.
 > 
-> That was probably because one of my testcases creates a 1.4GB file on
-> ramfs.  (I can provoke the problem without doing evil things like
-> that, but the test script is rather reliable at killing my system and
-> it works fine on my other machines.)
+> If we combine them into one, then these patches no longer depend on
+> the feature bit expansion, which is worthwhile (though I'll take both).
+> 
+> Thanks,
+> Rusty.
 
-Ah I didn't read your first email.. I'm now running
+Yes, I know. But if we do expand feature bits anyway, for debugging
+and profiling if nothing else it's useful to have them separate ...
+If you take both why does the order matter?
 
-./test_mempressure.sh 1500 1400 1
-
-with mem=2G and no swap, but cannot reproduce OOM.
-
-What's your kconfig?
-
-> If you want, I can try to generate a trace that isn't polluted with
-> the evil ramfs file.
-
-No, thanks. However it would be valuable if you can retry with this
-patch _alone_ (without the "if (need_resched()) return false;" change,
-as I don't see how it helps your case).
-
-@@ -2286,7 +2290,7 @@ static bool sleeping_prematurely(pg_data_t
-*pgdat, int order, long remaining,
-        * must be balanced
-        */
-       if (order)
--               return pgdat_balanced(pgdat, balanced, classzone_idx);
-+               return !pgdat_balanced(pgdat, balanced, classzone_idx);
-       else
-               return !all_zones_ok;
- }
-
-Thanks,
-Fengguang
+-- 
+MST
