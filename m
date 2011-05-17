@@ -1,80 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab1EQOjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 10:39:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38727 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755267Ab1EQOjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 10:39:01 -0400
-Date: Tue, 17 May 2011 16:37:56 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: David Stevens <dlstevens@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, jmorris@namei.org, kaber@trash.net,
-        kuznet@ms2.inr.ac.ru, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mmarek@suse.cz, netdev@vger.kernel.org,
-        pekkas@netcore.fi, yoshfuji@linux-ipv6.org
-Subject: [PATCH v3 1/1] igmp: call ip_mc_clear_src() only when we have no
- users of ip_mc_list
-Message-ID: <20110517143756.GE30366@darkmag.usersys.redhat.com>
-References: <20110515165945.GA20024@darkmag.usersys.redhat.com>
- <20110516.140359.111037536766782557.davem@davemloft.net>
- <OF948388D5.90B3F5A7-ON88257892.006C3228-88257892.0071B9D5@us.ibm.com>
- <20110517133801.GC30366@darkmag.usersys.redhat.com>
+	id S1755286Ab1EQOiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 10:38:06 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:26565 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755161Ab1EQOiF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 10:38:05 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Q2ZuNicVM1nP_Zpk9yOYJUbioZTBU4UKmPKALZRt0udxlB5
+ sSQTOe80LDBoupgmD9LkYP3lJ3CyPWXGlvYJvybLsdmXe0P3O7QPj6ntVEXx
+ RwJcSqrVec1Hao5i215hzzHU3QC8H04O5KN6KvXf1ftecRsFNreXRrlVO2uR
+ 8h6UWcAvYnKBMH5V3FpCbKkmxQHt6cPlGNOaVF5ES7d3RwSTCUDlohCXCrIu
+ ECfIYijfxanA7t2Xu_Yef3HwfARoM0QIKMKuiLSY3_LIUbMuQro7PyeF8E47
+ MN1e4Z8NCq1_maKWsU3kJdszdIHPxk6Fj19KQwbMB07rU3USoJnAah.QsZdB
+ O9PU1xXHKvvd.4E4Ydv1lezh0
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 17 May 2011 09:38:02 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, Shaohua Li <shaohua.li@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "npiggin@kernel.dk" <npiggin@kernel.dk>
+Subject: Re: [patch V3] percpu_counter: scalability works
+In-Reply-To: <20110517140233.GP20624@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.00.1105170936440.11187@router.home>
+References: <1305609768.2375.84.camel@sli10-conroe> <1305622861.2850.21.camel@edumazet-laptop> <20110517091102.GE20624@htj.dyndns.org> <1305625541.2850.29.camel@edumazet-laptop> <20110517095001.GF20624@htj.dyndns.org> <1305634807.2850.89.camel@edumazet-laptop>
+ <20110517124528.GN20624@htj.dyndns.org> <1305637223.2850.95.camel@edumazet-laptop> <20110517130414.GO20624@htj.dyndns.org> <alpine.DEB.2.00.1105170853520.11187@router.home> <20110517140233.GP20624@htj.dyndns.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110517133801.GC30366@darkmag.usersys.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In igmp_group_dropped() we call ip_mc_clear_src(), which resets the number
-of source filters per mulitcast. However, igmp_group_dropped() is also
-called on NETDEV_DOWN, NETDEV_PRE_TYPE_CHANGE and NETDEV_UNREGISTER, which
-means that the group might get added back on NETDEV_UP, NETDEV_REGISTER and
-NETDEV_POST_TYPE_CHANGE respectively, leaving us with broken source
-filters.
+On Tue, 17 May 2011, Tejun Heo wrote:
 
-To fix that, we must clear the source filters only when there are no users
-in the ip_mc_list, i.e. in ip_mc_dec_group().
+> We can implement force-flush for dire situations, similar to expedited
+> RCU flush thing.
 
-Correct version of the patch.
+I would suggest that if the user wants accurate results then another
+external form of synchronization needs to be provided. Maybe the counter
+is always incremented when another lock has been taken.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
----
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index 1fd3d9c..142ca0d 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -1169,20 +1169,18 @@ static void igmp_group_dropped(struct ip_mc_list *im)
- 
- 	if (!in_dev->dead) {
- 		if (IGMP_V1_SEEN(in_dev))
--			goto done;
-+			return;
- 		if (IGMP_V2_SEEN(in_dev)) {
- 			if (reporter)
- 				igmp_send_report(in_dev, im, IGMP_HOST_LEAVE_MESSAGE);
--			goto done;
-+			return;
- 		}
- 		/* IGMPv3 */
- 		igmpv3_add_delrec(in_dev, im);
- 
- 		igmp_ifc_event(in_dev);
- 	}
--done:
- #endif
--	ip_mc_clear_src(im);
- }
- 
- static void igmp_group_added(struct ip_mc_list *im)
-@@ -1319,6 +1317,7 @@ void ip_mc_dec_group(struct in_device *in_dev, __be32 addr)
- 				*ip = i->next_rcu;
- 				in_dev->mc_count--;
- 				igmp_group_dropped(i);
-+				ip_mc_clear_src(i);
- 
- 				if (!in_dev->dead)
- 					ip_rt_multicast_event(in_dev);
