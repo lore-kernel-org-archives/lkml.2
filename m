@@ -1,42 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab1EQSps (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 14:45:48 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49401 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211Ab1EQSpr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 14:45:47 -0400
-Date: Tue, 17 May 2011 19:45:27 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, alan@linux.intel.com
-Subject: Re: [PATCHv2 1/2] amba pl011: workaround for uart registers lockup
-Message-ID: <20110517184527.GC15422@flint.arm.linux.org.uk>
-References: <20110516172958.GA13011@kroah.com> <1305609617-9524-1-git-send-email-shreshthakumar.sahu@stericsson.com> <20110517182356.GA17703@kroah.com> <20110517183015.GA15422@flint.arm.linux.org.uk> <20110517184019.GA31727@kroah.com>
+	id S1756256Ab1EQSry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 14:47:54 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50753 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756067Ab1EQSrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 14:47:53 -0400
+Date: Tue, 17 May 2011 20:47:41 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 4/4] watchdog: configure nmi watchdog period based on
+ watchdog_thresh
+Message-ID: <20110517184741.GA29574@elte.hu>
+References: <1305588901-8141-1-git-send-email-msb@chromium.org>
+ <1305588901-8141-4-git-send-email-msb@chromium.org>
+ <20110517071642.GF22305@elte.hu>
+ <20110517140334.GK31888@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110517184019.GA31727@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110517140334.GK31888@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 11:40:19AM -0700, Greg KH wrote:
-> On Tue, May 17, 2011 at 07:30:15PM +0100, Russell King wrote:
-> > On Tue, May 17, 2011 at 11:23:56AM -0700, Greg KH wrote:
-> > > Why?  You don't use these callbacks in this driver, so why add them?
+
+* Don Zickus <dzickus@redhat.com> wrote:
+
+> On Tue, May 17, 2011 at 09:16:42AM +0200, Ingo Molnar wrote:
+> > Hm, our tolerance for the two thresholds is not just human but technical: hard 
+> > lockup warnings should indeed be triggered after just a few seconds, soft 
+> > lockups can have false positives under extreme conditions.
 > > 
-> > Did you look at the second patch?
+> > So we generally want a higher threshold for soft lockups than for hard lockups.
+> > 
+> > So how about we couple the thresholds with a factor: we make the soft threshold 
+> > twice the amount of time the hard threshold is? Then we could change the 
+> > upstream default as well i think: lets change the NMI timeout to 10 seconds 
+> > (and thus have the soft threshold at 20 seconds). Is 20 seconds short enough 
+> > for most users to not hit reset?
 > 
-> The second patch was not sent to me, so I couldn't have seen it :(
+> Making softlockup twice as long as hardlockup seems to make sense.
+> Setting the hardlockup to 10 seconds can be ok, but then you get into
+> power savings issues.  For example, I have the timers setup to trigger 5
+> times a period (I know it probably should be 2 times), so at 10 seconds
+> that means the timers are firing every 2 seconds.  That shows up on
+> powertop :-(.  Though I was flirting with the idea of trying to slow down
+> or stop the timer when the cpu goes into deeper c-states.  But that is a
+> different problem.
+> 
+> > 
+> > We might want to change another aspect of the NMI watchdog: right now it tries 
+> > to abort the offending task - which is really nasty if there was a spuriously 
+> > long irqs-off section somewhere in the kernel. How about we just print a 
+> > warning instead?
+> 
+> I dont understand this.  IIRC NMI watchdog will either printk or panic on
+> a hardlockup.  What do you mean by 'aborting' the task?
 
-Ok, I've just forwarded you the second patch.
+Oh, simple dementia on my side. We used to attempt a do_exit() in some long 
+gone version of that code :-)
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Thanks,
+
+	Ingo
