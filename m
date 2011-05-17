@@ -1,182 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab1EQPHh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 11:07:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37945 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab1EQPHg (ORCPT
+	id S1755431Ab1EQPLO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 11:11:14 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46046 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755161Ab1EQPLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 11:07:36 -0400
-Date: Tue, 17 May 2011 16:07:30 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: linux@arm.linux.org.uk, open list <linux-kernel@vger.kernel.org>,
-        "open list:ARM PORT" <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: Add unwinding support for division functions
-Message-ID: <20110517150730.GB27656@arm.com>
-References: <1305249893-3427-1-git-send-email-lauraa@codeaurora.org>
+	Tue, 17 May 2011 11:11:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Aqp+TYn8txB772SXzE+eLihP0k2oachyx1SUw1VzPObIGnCATpdwL4klSiWDwJFJqL
+         sx9K8a0U5gUgcBZMiAPhKSfyDhhA08UlIX5icfBrpRg25fDNieS4rtMp6XTMbCYjGylY
+         soYGvQh3X5KUOrF+imPlFwxCTJgys2GYiA7lE=
+Date: Tue, 17 May 2011 17:11:07 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Borislav Petkov <bp@alien8.de>, Meelis Roos <mroos@linux.ee>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 2/3 v2.6.39-rc7] block: make disk_block_events()
+ properly wait for work cancellation
+Message-ID: <20110517151107.GQ20624@htj.dyndns.org>
+References: <20110517102713.GJ20624@htj.dyndns.org>
+ <20110517102824.GK20624@htj.dyndns.org>
+ <20110517102853.GL20624@htj.dyndns.org>
+ <BANLkTimj2guK6kw7QSijYZyvoRY+JKgbTg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305249893-3427-1-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTimj2guK6kw7QSijYZyvoRY+JKgbTg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 06:24:53PM -0700, Laura Abbott wrote:
-> The software division functions never had unwinding annotations
-> added. Currently, when a division by zero occurs the backtrace shown
-> will stop at Ldiv0 or some completely unrelated function. Add
-> unwinding annotations in hopes of getting a more useful backtrace
-> when a division by zero occurs.
+Hello, Linus.
 
-Definitely a good idea.
-
+On Tue, May 17, 2011 at 07:46:25AM -0700, Linus Torvalds wrote:
+> This is pretty disgusting.
 > 
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-> ---
->  arch/arm/lib/lib1funcs.S |   27 +++++++++++++++++++++------
->  1 files changed, 21 insertions(+), 6 deletions(-)
+> You're not using a real lock, and to compensate for that you use a
+> bloccking bit-lock hack. And to make that hack extra ugly, you define
+> the bit as a bitmask, and use the ilog2() macro to turn it into a bit
+> pos.
 > 
-> diff --git a/arch/arm/lib/lib1funcs.S b/arch/arm/lib/lib1funcs.S
-> index 6dc0648..63b75df 100644
-> --- a/arch/arm/lib/lib1funcs.S
-> +++ b/arch/arm/lib/lib1funcs.S
-> @@ -35,7 +35,7 @@ Boston, MA 02111-1307, USA.  */
->  
->  #include <linux/linkage.h>
->  #include <asm/assembler.h>
-> -
-> +#include <asm/unwind.h>
->  
->  .macro ARM_DIV_BODY dividend, divisor, result, curbit
->  
-> @@ -207,6 +207,7 @@ Boston, MA 02111-1307, USA.  */
->  
->  ENTRY(__udivsi3)
->  ENTRY(__aeabi_uidiv)
-> +UNWIND(.fnstart)
->  
->  	subs	r2, r1, #1
->  	moveq	pc, lr
-> @@ -230,10 +231,12 @@ ENTRY(__aeabi_uidiv)
->  	mov	r0, r0, lsr r2
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__udivsi3)
->  ENDPROC(__aeabi_uidiv)
->  
->  ENTRY(__umodsi3)
-> +UNWIND(.fnstart)
->  
->  	subs	r2, r1, #1			@ compare divisor with 1
->  	bcc	Ldiv0
-> @@ -247,10 +250,12 @@ ENTRY(__umodsi3)
->  
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__umodsi3)
->  
->  ENTRY(__divsi3)
->  ENTRY(__aeabi_idiv)
-> +UNWIND(.fnstart)
->  
->  	cmp	r1, #0
->  	eor	ip, r0, r1			@ save the sign of the result.
-> @@ -287,10 +292,12 @@ ENTRY(__aeabi_idiv)
->  	rsbmi	r0, r0, #0
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__divsi3)
->  ENDPROC(__aeabi_idiv)
->  
->  ENTRY(__modsi3)
-> +UNWIND(.fnstart)
->  
->  	cmp	r1, #0
->  	beq	Ldiv0
-> @@ -310,11 +317,14 @@ ENTRY(__modsi3)
->  	rsbmi	r0, r0, #0
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__modsi3)
->  
->  #ifdef CONFIG_AEABI
->  
->  ENTRY(__aeabi_uidivmod)
-> +UNWIND(.fnstart)
-> +UNWIND(.save {r0, r1, ip, lr}	)
->  
->  	stmfd	sp!, {r0, r1, ip, lr}
->  	bl	__aeabi_uidiv
-> @@ -323,10 +333,12 @@ ENTRY(__aeabi_uidivmod)
->  	sub	r1, r1, r3
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__aeabi_uidivmod)
->  
->  ENTRY(__aeabi_idivmod)
-> -
-> +UNWIND(.fnstart)
-> +UNWIND(.save {r0, r1, ip, lr}	)
->  	stmfd	sp!, {r0, r1, ip, lr}
->  	bl	__aeabi_idiv
->  	ldmfd	sp!, {r1, r2, ip, lr}
-> @@ -334,15 +346,18 @@ ENTRY(__aeabi_idivmod)
->  	sub	r1, r1, r3
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__aeabi_idivmod)
->  
->  #endif
->  
-> -Ldiv0:
-> -
-> +ENTRY(Ldiv0)
+> Horrid. Horrid.
 
-There's no reason to make Ldiv0 global and pollute the global namespace.
-I suggest you remove ENTRY() here, but keep the ENDPROC() so that the
-symbol type and size information is correct.
+Heh, okay.  It's not a lock tho.  It's multiple waiter waiting for a
+single event - so either explicit waitqueue or completion.  I was
+doing a waitqueue but bit waitqueue didn't seem to add too much
+complexity, so...
 
-If CONFIG_KALLSYMS is enabled, local symbols are included in the 
-kallsyms table, so you still get a sensibly-named backtrace entry without
-needing to make the symbol global.
+> Is there some fundamental reason why you cannot just turn the ev->lock
+> into a real semaphore (allowing blocking), and then doing the dwork
+> cancel under the semaphore - avoiding all the crazy bit-lock crud.
 
-> +UNWIND(.fnstart)
-> +UNWIND(.pad #4)
-> +UNWIND(.save {lr})
->  	str	lr, [sp, #-8]!
->  	bl	__div0
->  	mov	r0, #0			@ About as wrong as it could be.
->  	ldr	pc, [sp], #8
-> -
-> -
-> +UNWIND(.fnend)
-> +ENDPROC(Ldiv0)
-> -- 
-> 1.7.3.3
+disk_check_events() can be called from non-sleepable context so we
+need a spinlock protecting block count.
 
-Otherwise, the patch looks sound to me.
+> Or just _add_ a semaphore to the 'struct disk_events', for chrissake.
 
-With it, I get plausible backtraces, e.g.:
-[ 1376.909088] Division by zero in kernel.
-[ 1376.909149] [<c0073551>] (unwind_backtrace+0x1/0xa0) from [<c02b83a3>] (Ldiv0+0x9/0x12)
-[ 1376.909149] [<c02b83a3>] (Ldiv0+0x9/0x12) from [<bf88c033>] (init+0x32/0x6f [div0])
-[ 1376.909179] [<bf88c033>] (init+0x32/0x6f [div0]) from [<c006951b>] (do_one_initcall+0x2b/0x11c)
-[ 1376.909210] [<c006951b>] (do_one_initcall+0x2b/0x11c) from [<c00c8c4b>] (sys_init_module+0xc7/0x144c)
-[ 1376.909240] [<c00c8c4b>] (sys_init_module+0xc7/0x144c) from [<c006df81>] (ret_fast_syscall+0x1/0x44)
+Alright, a completion then.
 
-(Tested using a trivial test module which just calls a function which
-divides by zero from its init function.)
+> This is just too ugly to survive. And even if you fixed the ilog()
+> (hint: just define the bit, and then use (1u<<BIT) to define the
+> mask), it would be too ugly.
 
-Tested-by: Dave Martin <dave.martin@linaro.org>
+In many cases there are more C bitops than atomic or wait_bit() type
+operations which take bit position rather than mask.  I find it less
+painful to define constants as bit masks and using ilog2() on those
+ops than doing lots of 1 << BIT.
 
-Cheers
----Dave
+I don't know, this is constantly painful.  More are defined as bit
+masks but some prominent ones use bit positions and some even define
+both.  Given that the C bitops are there by default, I wish the
+explicit bitops also took bitmask and just did ilog2() internally, but
+well it's too late and we're stuck with the mixed situation.
+
+Thanks.
+
+-- 
+tejun
