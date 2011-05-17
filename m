@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab1EQTlK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 15:41:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55393 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab1EQTlI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 15:41:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=RlS/SXRkXKkQ+yjvg/ive4JkyymwmvDrcwAk5NixbTPULqtsvVRj68+Rpdjxiv/FMm
-         1mByeevcug84xkEJUYavwCtcOEirQiZx4apJw05+H2FvLl6+doMIzpwAE2Mluic+SZqs
-         a7q9s2m+gPtDDYcirOIdVRS40EGoqmZY3KUi0=
+	id S932228Ab1EQTla (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 15:41:30 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56770 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932169Ab1EQTl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 15:41:27 -0400
+Date: Tue, 17 May 2011 21:41:17 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 5/5] KVM: Expose a version 1 architectural PMU to
+ guests
+Message-ID: <20110517194117.GA26184@elte.hu>
+References: <1305129333-7456-1-git-send-email-avi@redhat.com>
+ <1305129333-7456-6-git-send-email-avi@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4DD2CA02.9040707@googlemail.com>
-References: <BANLkTi=2jW5PHB6QCaddHeZH0P=9PKWosw@mail.gmail.com>
-	<1305577420-3685-1-git-send-email-abogani@kernel.org>
-	<878vu6nftw.fsf@rustcorp.com.au>
-	<4DD2CA02.9040707@googlemail.com>
-Date: Tue, 17 May 2011 21:41:06 +0200
-X-Google-Sender-Auth: gG31pWncg5C7bsWLJRRuLfuM8Ok
-Message-ID: <BANLkTinPG100vbVAN1RZWb3h9Xuu6SKJ0Q@mail.gmail.com>
-Subject: Re: [PATCH] module: Use binary search in lookup_symbol()
-From: Alessio Igor Bogani <abogani@kernel.org>
-To: Dirk Behme <dirk.behme@googlemail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Anders Kaseorg <andersk@ksplice.com>, Tim Abbott <tabbott@ksplice.com>,
-        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305129333-7456-6-git-send-email-avi@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mr. Behme,
 
-2011/5/17 Dirk Behme <dirk.behme@googlemail.com>:
-[...]
-> With the version above we should get a warning
->
-> kernel/module.c: In function 'lookup_symbol':
-> kernel/module.c:1809: warning: unused variable 'ks'
+* Avi Kivity <avi@redhat.com> wrote:
 
-Sorry It's my fault. I'll provide a right version in few hours.
+> Caveats:
+> - counters that have PMI (interrupt) enabled stop counting after the
+>   interrupt is signalled.  This is because we need one-shot samples
+>   that keep counting, which perf doesn't support yet
 
-Ciao,
-Alessio
+Hm, do you need more than perf_event::event_limit, or something special?
+
+> - some combinations of INV and CMASK are not supported
+
+Could you please describe this better, where does this limit come from?
+If perf then this needs fixing.
+
+> - counters keep on counting in the host as well as the guest
+
+I suspect fixing this either needs a hw filter feature, or the ability to 
+disable/enable these events across VM exits/entries.
+
+I would imagine the disable/enable to be rather expensive so hw help would be 
+preferred ...
+
+I didnt see anything objectionable in your patches, but i'd like to have 
+Peter's Acked-by as well before we go forward. I think that in the long run 
+having a virtio-perf gateway would allow us a lot more tricks than just 
+arch-perfmon emulation:
+
+ - we could do things like propagate guest side traces over to the host
+
+ - we could control from the host which events we measure on the guest side
+
+ - etc.
+
+How would you like to handle the flow of patches - should we merge #1,#2,#3 in 
+perf/core and you'd then merge #4,#5 via the KVM tree once the first bits hit 
+upstream?
+
+We could also set up a separate branch for these three commits, which you could 
+pull - this would allow all this to still hit .40.
+
+Thanks,
+
+	Ingo
