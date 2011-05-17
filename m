@@ -1,177 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab1EQVjn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 17:39:43 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:47720 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932319Ab1EQVjm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 17:39:42 -0400
-Date: Tue, 17 May 2011 23:38:58 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
-        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH V3 2/2] mm: Extend memory hotplug API to allow memory hotplug in virtual machines
-Message-ID: <20110517213858.GC30232@router-fw-old.local.net-space.pl>
+	id S932418Ab1EQVke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 17:40:34 -0400
+Received: from gate.crashing.org ([63.228.1.57]:41465 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932334Ab1EQVkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 17:40:33 -0400
+Subject: Re: powerpc: mpc85xx regression since 2.6.39-rc2, one cpu core lame
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Richard Cochran <richardcochran@gmail.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110517162827.GA16918@riccoc20.at.omicron.at>
+References: <20110517162827.GA16918@riccoc20.at.omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 May 2011 07:40:16 +1000
+Message-ID: <1305668416.2781.23.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains online_page_callback and apropriate functions for
-setting/restoring online page callbacks. It allows to do some machine
-specific tasks during online page stage which is required to implement
-memory hotplug in virtual machines. Additionally, __online_page_set_limits(),
-__online_page_increment_counters() and __online_page_free() function
-was added to ease generic hotplug operation.
+On Tue, 2011-05-17 at 18:28 +0200, Richard Cochran wrote:
+> Ben,
+> 
+> Recent 2.6.39-rc kernels behave strangely on the Freescale dual core
+> mpc8572 and p2020. There is a long pause (like 2 seconds) in the boot
+> sequence after "mpic: requesting IPIs..."
+> 
+> When the system comes up, only one core shows in /proc/cpuinfo. Later
+> on, lots of messages appear like the following:
+> 
+>    INFO: task ksoftirqd/1:9 blocked for more than 120 seconds.
+> 
+> I bisected [1] the problem to:
+> 
+>    commit c56e58537d504706954a06570b4034c04e5b7500
+>    Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>    Date:   Tue Mar 8 14:40:04 2011 +1100
+> 
+>        powerpc/smp: Create idle threads on demand and properly reset them
+> 
+> I don't see from that commit what had gone wrong. Perhaps you can
+> help resolve this?
 
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- include/linux/memory_hotplug.h |   11 +++++-
- mm/memory_hotplug.c            |   68 ++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 74 insertions(+), 5 deletions(-)
+Hrm, odd. Kumar, care to have a look ? That's what happens when you
+don't get me HW to test with :-)
 
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 8122018..0b8e2a7 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -68,12 +68,19 @@ static inline void zone_seqlock_init(struct zone *zone)
- extern int zone_grow_free_lists(struct zone *zone, unsigned long new_nr_pages);
- extern int zone_grow_waitqueues(struct zone *zone, unsigned long nr_pages);
- extern int add_one_highpage(struct page *page, int pfn, int bad_ppro);
--/* need some defines for these for archs that don't support it */
--extern void online_page(struct page *page);
- /* VM interface that may be used by firmware interface */
- extern int online_pages(unsigned long, unsigned long);
- extern void __offline_isolated_pages(unsigned long, unsigned long);
- 
-+typedef void (*online_page_callback_t)(struct page *page);
-+
-+extern int set_online_page_callback(online_page_callback_t callback);
-+extern int restore_online_page_callback(online_page_callback_t callback);
-+
-+extern void __online_page_set_limits(struct page *page);
-+extern void __online_page_increment_counters(struct page *page);
-+extern void __online_page_free(struct page *page);
-+
- #ifdef CONFIG_MEMORY_HOTREMOVE
- extern bool is_pageblock_removable_nolock(struct page *page);
- #endif /* CONFIG_MEMORY_HOTREMOVE */
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index a807ccb..9d47c39 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -34,6 +34,17 @@
- 
- #include "internal.h"
- 
-+/*
-+ * online_page_callback contains pointer to current page onlining function.
-+ * Initially it is generic_online_page(). If it is required it could be
-+ * changed by calling set_online_page_callback() for callback registration
-+ * and restore_online_page_callback() for generic callback restore.
-+ */
-+
-+static void generic_online_page(struct page *page);
-+
-+static online_page_callback_t online_page_callback = generic_online_page;
-+
- DEFINE_MUTEX(mem_hotplug_mutex);
- 
- void lock_memory_hotplug(void)
-@@ -361,23 +372,74 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
- }
- EXPORT_SYMBOL_GPL(__remove_pages);
- 
--void online_page(struct page *page)
-+int set_online_page_callback(online_page_callback_t callback)
-+{
-+	int rc = -EINVAL;
-+
-+	lock_memory_hotplug();
-+
-+	if (online_page_callback == generic_online_page) {
-+		online_page_callback = callback;
-+		rc = 0;
-+	}
-+
-+	unlock_memory_hotplug();
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(set_online_page_callback);
-+
-+int restore_online_page_callback(online_page_callback_t callback)
-+{
-+	int rc = -EINVAL;
-+
-+	lock_memory_hotplug();
-+
-+	if (online_page_callback == callback) {
-+		online_page_callback = generic_online_page;
-+		rc = 0;
-+	}
-+
-+	unlock_memory_hotplug();
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(restore_online_page_callback);
-+
-+void __online_page_set_limits(struct page *page)
- {
- 	unsigned long pfn = page_to_pfn(page);
- 
--	totalram_pages++;
- 	if (pfn >= num_physpages)
- 		num_physpages = pfn + 1;
-+}
-+EXPORT_SYMBOL_GPL(__online_page_set_limits);
-+
-+void __online_page_increment_counters(struct page *page)
-+{
-+	totalram_pages++;
- 
- #ifdef CONFIG_HIGHMEM
- 	if (PageHighMem(page))
- 		totalhigh_pages++;
- #endif
-+}
-+EXPORT_SYMBOL_GPL(__online_page_increment_counters);
- 
-+void __online_page_free(struct page *page)
-+{
- 	ClearPageReserved(page);
- 	init_page_count(page);
- 	__free_page(page);
- }
-+EXPORT_SYMBOL_GPL(__online_page_free);
-+
-+static void generic_online_page(struct page *page)
-+{
-+	__online_page_set_limits(page);
-+	__online_page_increment_counters(page);
-+	__online_page_free(page);
-+}
- 
- static int online_pages_range(unsigned long start_pfn, unsigned long nr_pages,
- 			void *arg)
-@@ -388,7 +450,7 @@ static int online_pages_range(unsigned long start_pfn, unsigned long nr_pages,
- 	if (PageReserved(pfn_to_page(start_pfn)))
- 		for (i = 0; i < nr_pages; i++) {
- 			page = pfn_to_page(start_pfn + i);
--			online_page(page);
-+			online_page_callback(page);
- 			onlined_pages++;
- 		}
- 	*(unsigned long *)arg = onlined_pages;
--- 
-1.5.6.5
+Cheers,
+Ben.
+
+> Thanks,
+> Richard
+> 
+> 
+> 1. I had to patch commit e5462d16 by hand when bisecting, which is a
+>    fixup for commit fa3f82c8 and not yet merged in c56e5853.
+
+
