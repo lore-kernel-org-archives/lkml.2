@@ -1,105 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab1EQFwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 01:52:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:12397 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751841Ab1EQFwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 01:52:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,223,1304319600"; 
-   d="scan'208";a="3161184"
-Date: Tue, 17 May 2011 13:52:04 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Lutomirski <luto@mit.edu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
- vmlinux)
-Message-ID: <20110517055204.GB24069@localhost>
-References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
- <20110512054631.GI6008@one.firstfloor.org>
- <BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
- <BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
- <20110514165346.GV6008@one.firstfloor.org>
- <BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
- <20110514174333.GW6008@one.firstfloor.org>
- <BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
- <20110515152747.GA25905@localhost>
- <BANLkTinv=_38E3Eyu88Ra4-x5vPEq7CDkw@mail.gmail.com>
+	id S1752297Ab1EQFyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 01:54:39 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:58904 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751625Ab1EQFyg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 01:54:36 -0400
+Message-ID: <4DD20D89.9020402@st.com>
+Date: Tue, 17 May 2011 11:24:17 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinv=_38E3Eyu88Ra4-x5vPEq7CDkw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Koul, Vinod" <vinod.koul@intel.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dw_dmac: Replace subsys_init() with arch_initcall()
+References: <f06f05e982c6182565a7fee1f7d6396cae895133.1305521318.git.viresh.kumar@st.com>	 <1305561993.28926.73.camel@vkoul-udesk3>  <4DD1F443.1040205@st.com> <1305603818.28926.82.camel@vkoul-udesk3>
+In-Reply-To: <1305603818.28926.82.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 07:40:42AM +0900, Minchan Kim wrote:
-> On Mon, May 16, 2011 at 12:27 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > On Sun, May 15, 2011 at 09:37:58AM +0800, Minchan Kim wrote:
-> >> On Sun, May 15, 2011 at 2:43 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> >> > Copying back linux-mm.
-> >> >
-> >> >> Recently, we added following patch.
-> >> >> https://lkml.org/lkml/2011/4/26/129
-> >> >> If it's a culprit, the patch should solve the problem.
-> >> >
-> >> > It would be probably better to not do the allocations at all under
-> >> > memory pressure.  Even if the RA allocation doesn't go into reclaim
-> >>
-> >> Fair enough.
-> >> I think we can do it easily now.
-> >> If page_cache_alloc_readahead(ie, GFP_NORETRY) is fail, we can adjust
-> >> RA window size or turn off a while. The point is that we can use the
-> >> fail of __do_page_cache_readahead as sign of memory pressure.
-> >> Wu, What do you think?
-> >
-> > No, disabling readahead can hardly help.
+On 05/17/2011 09:13 AM, Koul, Vinod wrote:
+> On Tue, 2011-05-17 at 09:36 +0530, viresh kumar wrote:
+>> On 05/16/2011 09:36 PM, Koul, Vinod wrote:
+>>> On Mon, 2011-05-16 at 10:20 +0530, Viresh Kumar wrote:
+>>>> In some cases users of dw_dmac, amba-pl022, are initialized before dw_dmac, and
+>>>> if they try to use dw_dmac, they simply fail. So its better we register init()
+>>>> routine of driver using arch_initcall() instead of subsys_init(), so that dma
+>>>> driver is available at the earliest possible.
+>>>>
+>>>> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+>>>> ---
+>>>>  drivers/dma/dw_dmac.c |    2 +-
+>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+>>>> index 54d72a8..4b580e7 100644
+>>>> --- a/drivers/dma/dw_dmac.c
+>>>> +++ b/drivers/dma/dw_dmac.c
+>>>> @@ -1566,7 +1566,7 @@ static int __init dw_init(void)
+>>>>  {
+>>>>  	return platform_driver_probe(&dw_driver, dw_probe);
+>>>>  }
+>>>> -subsys_initcall(dw_init);
+>>>> +arch_initcall(dw_init);
+>>> arch_init is usually kept for subystem initialization.
+>>> Why cant you move the amba-pl022 init to module_init, that should take
+>>> care of this.
+>>>
+>>
+>> Actually, amba-pl022 init was moved to subsys_initcall earlier with
+>> following patch:
+>>
+>> And so i moved dma's init to arch_initcall. Also the similar approach is
+>> taken by drivers/dma/ste_dma40.c
+>>
+>> Also, maybe it makes more sense for dma to be up at the earliest.
+>> Isn't it?
 > 
-> I don't mean we have to disable RA.
-> As I said, the point is that we can use __GFP_NORETRY alloc fail as
-> _sign_ of memory pressure.
-
-I see.
-
-> >
-> > The sequential readahead memory consumption can be estimated by
-> >
-> >                2 * (number of concurrent read streams) * (readahead window size)
-> >
-> > And you can double that when there are two level of readaheads.
-> >
-> > Since there are hardly any concurrent read streams in Andy's case,
-> > the readahead memory consumption will be ignorable.
-> >
-> > Typically readahead thrashing will happen long before excessive
-> > GFP_NORETRY failures, so the reasonable solutions are to
+> As I said before arch init is supposed to used for initialization of the
+> subsystems not for a driver init.
+> You need to ensure that with given init levels and makefile order your
+> dependencies are properly resolved, rather than this approach.
 > 
-> If it is, RA thrashing could be better sign than failure of __GFP_NORETRY.
-> If we can do it easily, I don't object it. :)
-
-Yeah, the RA thrashing is much better sign because it not only happens
-long before normal __GFP_NORETRY failures, but also offers hint on how
-tight memory pressure it is. We can then shrink the readahead window
-adaptively to the available page cache memory :)
-
-> >
-> > - shrink readahead window on readahead thrashing
-> >  (current readahead heuristic can somehow do this, and I have patches
-> >  to further improve it)
+> Like move whatever dependent on amba to late_init and amba to module
+> init, that would be advisable approach rather than above.
 > 
-> Good to hear. :)
-> I don't want RA steals high order page in memory pressure.
 
-More often than not it won't be RA's fault :)  When you see RA page
-allocations stealing high order pages, it may actually be reflecting
-some more general order-0 steal order-N problem..
+As i said earlier, with following patch from Linus:
 
-> My patch and shrinking RA window helps this case.
+commit 25c8e03bdb769dfe2381f8b7942f05b0eb4bdf31
+Author: Linus Walleij <linus.walleij@stericsson.com>
+Date:   Mon Sep 6 11:02:12 2010 +0200
 
-Thanks,
-Fengguang
+    spi/pl022: move probe call to subsys_initcall()
+    
+    The PL022 SPI bus is sometimes used for early stuff like
+    regulators that need to be present at module_init() time, so
+    we move this to a subsys_initcall().
+    
+    Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+    Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ drivers/spi/amba-pl022.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+SPI bus is required for regulators and so probably he can't have
+module_init() for amba-pl022. And so, DMA has nothing more than
+arch_initcall().
+
+@Linus: What do you say? Can we get back to module_init() for amba-pl022?
+And subsys_initcall() for DMA.
+
+-- 
+viresh
