@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab1EQODF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 10:03:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57327 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754793Ab1EQODD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 10:03:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nvDSZd2VN3XVXEvPe7RDDThQnAerIjh4sC281/zyZga6vsYJXDzk0OaeHFJih1VEJa
-         fAo6MAJag9cGNT+VTsaVL9cgH+vuWt9Ik4+NRLPrqCjsBZc9Izl3M7eIbbQeFEEeuT//
-         PHQyDOjF3tLRyO9V8i9Ua/n9cc4bsfwWZX7UM=
-Date: Tue, 17 May 2011 16:02:33 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Shaohua Li <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>
-Subject: Re: [patch V3] percpu_counter: scalability works
-Message-ID: <20110517140233.GP20624@htj.dyndns.org>
-References: <1305609768.2375.84.camel@sli10-conroe>
- <1305622861.2850.21.camel@edumazet-laptop>
- <20110517091102.GE20624@htj.dyndns.org>
- <1305625541.2850.29.camel@edumazet-laptop>
- <20110517095001.GF20624@htj.dyndns.org>
- <1305634807.2850.89.camel@edumazet-laptop>
- <20110517124528.GN20624@htj.dyndns.org>
- <1305637223.2850.95.camel@edumazet-laptop>
- <20110517130414.GO20624@htj.dyndns.org>
- <alpine.DEB.2.00.1105170853520.11187@router.home>
+	id S1755020Ab1EQOE0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 10:04:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61237 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754697Ab1EQOEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 10:04:24 -0400
+Date: Tue, 17 May 2011 10:03:34 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 4/4] watchdog: configure nmi watchdog period based on
+ watchdog_thresh
+Message-ID: <20110517140334.GK31888@redhat.com>
+References: <1305588901-8141-1-git-send-email-msb@chromium.org>
+ <1305588901-8141-4-git-send-email-msb@chromium.org>
+ <20110517071642.GF22305@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105170853520.11187@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110517071642.GF22305@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Tue, May 17, 2011 at 09:16:42AM +0200, Ingo Molnar wrote:
+> Hm, our tolerance for the two thresholds is not just human but technical: hard 
+> lockup warnings should indeed be triggered after just a few seconds, soft 
+> lockups can have false positives under extreme conditions.
+> 
+> So we generally want a higher threshold for soft lockups than for hard lockups.
+> 
+> So how about we couple the thresholds with a factor: we make the soft threshold 
+> twice the amount of time the hard threshold is? Then we could change the 
+> upstream default as well i think: lets change the NMI timeout to 10 seconds 
+> (and thus have the soft threshold at 20 seconds). Is 20 seconds short enough 
+> for most users to not hit reset?
 
-On Tue, May 17, 2011 at 08:55:33AM -0500, Christoph Lameter wrote:
-> Well lets just adopt the system that vm statistics use. Bound the error by
-> time and batch and allow the user to change the batch if more accuracy is
-> desired.
+Making softlockup twice as long as hardlockup seems to make sense.
+Setting the hardlockup to 10 seconds can be ok, but then you get into
+power savings issues.  For example, I have the timers setup to trigger 5
+times a period (I know it probably should be 2 times), so at 10 seconds
+that means the timers are firing every 2 seconds.  That shows up on
+powertop :-(.  Though I was flirting with the idea of trying to slow down
+or stop the timer when the cpu goes into deeper c-states.  But that is a
+different problem.
 
-Yeah, that would be the better long term solution.
+> 
+> We might want to change another aspect of the NMI watchdog: right now it tries 
+> to abort the offending task - which is really nasty if there was a spuriously 
+> long irqs-off section somewhere in the kernel. How about we just print a 
+> warning instead?
 
-> The _sum function is optional and should it should be explained that the
-> result *could* be better but dont count on it.
+I dont understand this.  IIRC NMI watchdog will either printk or panic on
+a hardlockup.  What do you mean by 'aborting' the task?
 
-We can implement force-flush for dire situations, similar to expedited
-RCU flush thing.
+Cheers,
+Don
 
-Thanks.
-
--- 
-tejun
+> 
+> Thanks,
+> 
+> 	Ingo
