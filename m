@@ -1,115 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab1EQNbe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 09:31:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44003 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab1EQNbd convert rfc822-to-8bit (ORCPT
+	id S1754566Ab1EQNg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 09:36:27 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:11972 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab1EQNg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 09:31:33 -0400
-Subject: Re: [patch 10/15] sched: allow for positional tg_tree walks
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-In-Reply-To: <20110503092905.340562757@google.com>
-References: <20110503092846.022272244@google.com>
-	 <20110503092905.340562757@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 17 May 2011 15:31:02 +0200
-Message-ID: <1305639062.2466.5749.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 17 May 2011 09:36:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Huqh69MAeNNUrCdTvgnYd2P59+WM0vbdCF++hYDUbRzq4G2zR4DKBiH2zq/LxGeqKW
+         0JgLHPYep2AUrxPM06yA==
+Date: Tue, 17 May 2011 15:36:19 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, acme@redhat.com, peterz@infradead.org, fweisbec@gmail.com
+Subject: [PATCH] perf: fix multi-event parsing bug
+Message-ID: <20110517133619.GA6999@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-03 at 02:28 -0700, Paul Turner wrote:
-> plain text document attachment (sched-bwc-refactor-walk_tg_tree.patch)
-> Extend walk_tg_tree to accept a positional argument
-> 
-> static int walk_tg_tree_from(struct task_group *from,
-> 			     tg_visitor down, tg_visitor up, void *data)
-> 
-> Existing semantics are preserved, caller must hold rcu_lock() or sufficient
-> analogue.
-> 
-> Signed-off-by: Paul Turner <pjt@google.com>
-> ---
->  kernel/sched.c |   34 +++++++++++++++++++++++-----------
->  1 file changed, 23 insertions(+), 11 deletions(-)
-> 
-> Index: tip/kernel/sched.c
-> ===================================================================
-> --- tip.orig/kernel/sched.c
-> +++ tip/kernel/sched.c
-> @@ -1430,21 +1430,19 @@ static inline void dec_cpu_load(struct r
->  #if (defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)) || defined(CONFIG_RT_GROUP_SCHED)
->  typedef int (*tg_visitor)(struct task_group *, void *);
->  
-> -/*
-> - * Iterate the full tree, calling @down when first entering a node and @up when
-> - * leaving it for the final time.
-> - */
-> -static int walk_tg_tree(tg_visitor down, tg_visitor up, void *data)
-> +/* Iterate task_group tree rooted at *from */
-> +static int walk_tg_tree_from(struct task_group *from,
-> +			     tg_visitor down, tg_visitor up, void *data)
->  {
->  	struct task_group *parent, *child;
->  	int ret;
->  
-> -	rcu_read_lock();
-> -	parent = &root_task_group;
-> +	parent = from;
-> +
->  down:
->  	ret = (*down)(parent, data);
->  	if (ret)
-> -		goto out_unlock;
-> +		goto out;
->  	list_for_each_entry_rcu(child, &parent->children, siblings) {
->  		parent = child;
->  		goto down;
-> @@ -1453,14 +1451,28 @@ up:
->  		continue;
->  	}
->  	ret = (*up)(parent, data);
-> -	if (ret)
-> -		goto out_unlock;
-> +	if (ret || parent == from)
-> +		goto out;
->  
->  	child = parent;
->  	parent = parent->parent;
->  	if (parent)
->  		goto up;
-> -out_unlock:
-> +out:
-> +	return ret;
-> +}
-> +
-> +/*
-> + * Iterate the full tree, calling @down when first entering a node and @up when
-> + * leaving it for the final time.
-> + */
-> +
-> +static inline int walk_tg_tree(tg_visitor down, tg_visitor up, void *data)
-> +{
-> +	int ret;
-> +
-> +	rcu_read_lock();
-> +	ret = walk_tg_tree_from(&root_task_group, down, up, data);
->  	rcu_read_unlock();
->  
->  	return ret;
 
-I don't much like the different locking rules for these two functions. I
-don't much care which you pick, but please make them consistent.
+This patch fixes an issue with event parsing.
+The following commit appears to have broken the
+ability to specify a comma separated list of events:
 
+   commit ceb53fbf6dbb1df26d38379a262c6981fe73dd36
+   Author: Ingo Molnar <mingo@elte.hu>
+   Date:   Wed Apr 27 04:06:33 2011 +0200
+
+       perf stat: Fail more clearly when an invalid modifier is specified
+
+This patch fixes this while preserving the desired effect:
+
+$ perf stat -e instructions:u,instructions:k ls /dev/null
+/dev/null
+
+ Performance counter stats for 'ls /dev/null':
+
+            365956 instructions:u           #    0.00  insns per cycle        
+            731806 instructions:k           #    0.00  insns per cycle        
+
+        0.001108862  seconds time elapsed
+
+$ perf stat -e task-clock-msecs true
+invalid event modifier: '-msecs'
+Run 'perf list' for a list of valid events and modifiers
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+
+---
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index ffa493a..41982c3 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -734,6 +734,9 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
+ 	if (!*str)
+ 		return 0;
+ 
++	if (*str == ',')
++		return 0;
++
+ 	if (*str++ != ':')
+ 		return -1;
+ 
