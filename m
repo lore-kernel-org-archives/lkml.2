@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab1EQRVg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 13:21:36 -0400
-Received: from lo.gmane.org ([80.91.229.12]:47713 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754365Ab1EQRVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 13:21:35 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: =?ISO-8859-1?Q?J=F6rg-Volker_Peetz?= <jvpeetz@web.de>
-Subject: Re: [PATCH 0/2] AMD ARAT fixes
-Date: Tue, 17 May 2011 19:21:43 +0200
-Message-ID: <4DD2AEA7.4000108@web.de>
-References: <1305636919-31165-1-git-send-email-bp@amd64.org> <4DD2A496.8000407@web.de> <20110517165318.GH30053@aftab>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: Nick Bowler <nbowler@elliptictech.com>,
-        "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        "Rosenfeld, Hans" <Hans.Rosenfeld@amd.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-X-Gmane-NNTP-Posting-Host: p5b3729aa.dip.t-dialin.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
-In-Reply-To: <20110517165318.GH30053@aftab>
+	id S1755733Ab1EQRZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 13:25:06 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56638 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754810Ab1EQRZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 13:25:04 -0400
+Date: Tue, 17 May 2011 22:54:50 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>, kexec@lists.infradead.org,
+        Andi Kleen <andi@firstfloor.org>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC] Kdump and memory error handling
+Message-ID: <20110517172450.GC24131@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20110504193509.GA5342@in.ibm.com>
+ <m1hb8zmudn.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1hb8zmudn.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov wrote, on 05/17/11 18:53:
-> On Tue, May 17, 2011 at 12:38:46PM -0400, Jörg-Volker Peetz wrote:
->> A kernel version 2.6.38.6 patched with your two patches modifying only
->> arch/x86/kernel/cpu/amd.c starts and runs without problems on the affected
->> system with a AMD Turion 64 processor. The system is pure x86_64 (Debian
->> Release: wheezy/sid) with gcc version 4.6.1 20110428 (prerelease) (Debian
->> 4.6.0-6) and GNU C Library (Debian EGLIBC 2.13-4) stable release version 2.13.
+On Thu, May 12, 2011 at 03:22:44PM -0700, Eric W. Biederman wrote:
+> "K.Prasad" <prasad@linux.vnet.ibm.com> writes:
 > 
-> Thanks for testing!
+> > Hi All,
+> >         We've been trying to study and improve the kdump behaviour when
+> > a panic is triggered due to an unrecoverable memory error causing a
+> > machine check exception (MCE) followed by a kernel panic.
+> >
+> > In this context we foresee a few issues in capturing kdump and would
+> > like to receive comments about the ways to handle them.
+> >
+> > Probable Issues when capturing coredump through kdump following a memory
+> > error
+> > ---------------------------
+> > - First, a coredump of the memory from the crashing kernel isn't really
+> >   helpful in debugging the crash that was caused due to a faulty memory.
+> >   Collecting the same has some of the problems illustrated below. It should
+> >   therefore suffice to let the user know the reason of the crash
+> >   rather than provide a complete dump of the memory.
+> >
+> >   For this, a 'slim' yet crash-tool readable coredump containing:
+> >   - message about the cause (such as crash due to unrecoverable memory error)
+> >     in the coredump's elf-note section.
+> >   - and no data from the memory of the 'crashing' kernel (their elf
+> >     sections can be reduced to zero length).
+> >   may be suitable.
+> >
+> > - Alternatively, if the kdump kernel decides to capture the coredump,
+> >   its attempts to read the faulty memory location may lead to subsequent 
+> >   faults in the context of kdump kernel with fatal consequences. This
+> >   may either be avoided by:
+> >
+> >   a) Pass the address of the corrupt memory location to the kdump kernel
+> >   and skip reading that location while creating the vmcore. This needs
+> >   an instance of 'struct mce' (from the 'crashing' kernel), which
+> >   already contains the faulty memory address (in the physical address
+> >   form, which should be confirmed using the IA32_MCi_MISC[8:6] bits stored
+> >   in 'misc' field of 'struct mce') to be populated inside the elf
+> >   (-notes?) section.
+> >
+> >   b) Use modified copy applications (such as a modified 'cp' command)
+> >   that can map the /dev/oldmem into user-space and then initiate the
+> >   creation of vmcore. In this method, the user-space process performing
+> >   the copy will receive a SIGBUS while consuming the faulty memory (through
+> >   INT18 -> do_machine_check) but it must be modified to be resilient to the
+> >   signal, while intelligently skipping to the subsequent memory location
+> >   for further copying. Meanwhile the data for the faulty memory location
+> >   can be represented using 'zero-ed' data and the vmcore enhanced to
+> >   indicate the cause of the crash as one resulting from a fatal MCE.
+> >
+> > Any thoughts/suggestions?
 > 
->> The only obvious difference I see is the message "using C1E aware idle routine"
->> in dmesg.
+> In practice this all works for me.
 > 
-> That was your CPU, right:
+> I have received several crash dumps where there was an mce error.
 > 
-> vendor_id       : AuthenticAMD
-> cpu family      : 15
-> model           : 36
-> model name      : AMD Turion(tm) 64 Mobile Technology MT-40
-> stepping        : 2
+> I admit I have my userspace configured to just grab the dmesg from the
+> kernel log and not do a full crash dump.  So in that sense I am already
+> a slim crash dump.
 > 
-> ?
-Yes, exactly.
+> But in practice with real hardware errors it is working today without
+> kernel changes.
+>
 
-> 
-> If so, then the C1E idle line above shouldn't appear. Can you check that
-> around line 698 in <arch/x86/kernel/cpu/amd.c> you have the following:
-> 
->  const int amd_erratum_400[] =
->        AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
->                            AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
-> 
-The lines 683--685 in this file on my affected system are equal to the three
-lines above (except for formatting).
+The problem with the existing kernel code is that it allows for the old
+kernel's memory regions to be read (through read_vmcore function),
+although intelligent userspace tools may avoid such a possibility (like
+the one you mentioned).
 
-> On your machine, you should be using the default_idle routine instead,
-> since you don't have C1E.
+Given that the system can experience recursive MCE faults while reading
+the corrupt memory region, a 'slim' vmcore region presented by the kernel
+to the user-space would be a safe option. We could also use such a dump to
+include more relevant information such as address of corrupt memory,
+type of memory error, etc.
 
-?
-
-> 
-> Thanks.
-> 
-
+Thanks,
+K.Prasad
 
