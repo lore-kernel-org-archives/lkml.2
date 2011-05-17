@@ -1,321 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab1EQNuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 09:50:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13276 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753888Ab1EQNuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 09:50:39 -0400
-Date: Tue, 17 May 2011 09:50:27 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        mingo@elte.hu
-Subject: Re: [RFC] ACPI, APEI, Generic Hardware Error Source (GHES) injecting
- support
-Message-ID: <20110517135027.GJ31888@redhat.com>
-References: <1304996921-24881-1-git-send-email-ying.huang@intel.com>
- <20110516193301.GF29881@redhat.com>
- <4DD218B1.7080601@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD218B1.7080601@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754935Ab1EQNvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 09:51:00 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:38559 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888Ab1EQNu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 09:50:58 -0400
+Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+From: Colin Ian King <colin.king@canonical.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        akpm@linux-foundation.org, raghu.prabhu13@gmail.com, jack@suse.cz,
+        chris.mason@oracle.com, cl@linux.com, penberg@kernel.org,
+        riel@redhat.com, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+In-Reply-To: <20110517103840.GL5279@suse.de>
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+	 <1305295404-12129-5-git-send-email-mgorman@suse.de>
+	 <4DCFAA80.7040109@jp.fujitsu.com> <1305519711.4806.7.camel@mulgrave.site>
+	 <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
+	 <20110516084558.GE5279@suse.de>
+	 <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
+	 <20110516102753.GF5279@suse.de>
+	 <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
+	 <20110517103840.GL5279@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 May 2011 14:50:39 +0100
+Message-ID: <1305640239.2046.27.camel@lenovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 02:41:53PM +0800, Huang Ying wrote:
-> On 05/17/2011 03:33 AM, Don Zickus wrote:
-> > On Tue, May 10, 2011 at 11:08:41AM +0800, Huang Ying wrote:
-> >> The testing of Generic Hardware Error Source (GHES) is quite
-> >> difficult, because special hardware is needed to trigger the hardware
-> >> error. So a software based hardware error injector for GHES is
-> >> implemented.
-> >>
-> >> Error notification is not provided in this patch.  So you still need
-> >> some NMI/SCI/IRQ injecting support to make it work.
+On Tue, 2011-05-17 at 11:38 +0100, Mel Gorman wrote:
+> On Tue, May 17, 2011 at 08:50:44AM +0900, Minchan Kim wrote:
+> > On Mon, May 16, 2011 at 7:27 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > > On Mon, May 16, 2011 at 05:58:59PM +0900, Minchan Kim wrote:
+> > >> On Mon, May 16, 2011 at 5:45 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > >> > On Mon, May 16, 2011 at 02:04:00PM +0900, Minchan Kim wrote:
+> > >> >> On Mon, May 16, 2011 at 1:21 PM, James Bottomley
+> > >> >> <James.Bottomley@hansenpartnership.com> wrote:
+> > >> >> > On Sun, 2011-05-15 at 19:27 +0900, KOSAKI Motohiro wrote:
+> > >> >> >> (2011/05/13 23:03), Mel Gorman wrote:
+> > >> >> >> > Under constant allocation pressure, kswapd can be in the situation where
+> > >> >> >> > sleeping_prematurely() will always return true even if kswapd has been
+> > >> >> >> > running a long time. Check if kswapd needs to be scheduled.
+> > >> >> >> >
+> > >> >> >> > Signed-off-by: Mel Gorman<mgorman@suse.de>
+> > >> >> >> > ---
+> > >> >> >> >   mm/vmscan.c |    4 ++++
+> > >> >> >> >   1 files changed, 4 insertions(+), 0 deletions(-)
+> > >> >> >> >
+> > >> >> >> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > >> >> >> > index af24d1e..4d24828 100644
+> > >> >> >> > --- a/mm/vmscan.c
+> > >> >> >> > +++ b/mm/vmscan.c
+> > >> >> >> > @@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+> > >> >> >> >     unsigned long balanced = 0;
+> > >> >> >> >     bool all_zones_ok = true;
+> > >> >> >> >
+> > >> >> >> > +   /* If kswapd has been running too long, just sleep */
+> > >> >> >> > +   if (need_resched())
+> > >> >> >> > +           return false;
+> > >> >> >> > +
+> > >> >> >>
+> > >> >> >> Hmm... I don't like this patch so much. because this code does
+> > >> >> >>
+> > >> >> >> - don't sleep if kswapd got context switch at shrink_inactive_list
+> > >> >> >
+> > >> >> > This isn't entirely true:  need_resched() will be false, so we'll follow
+> > >> >> > the normal path for determining whether to sleep or not, in effect
+> > >> >> > leaving the current behaviour unchanged.
+> > >> >> >
+> > >> >> >> - sleep if kswapd didn't
+> > >> >> >
+> > >> >> > This also isn't entirely true: whether need_resched() is true at this
+> > >> >> > point depends on a whole lot more that whether we did a context switch
+> > >> >> > in shrink_inactive. It mostly depends on how long we've been running
+> > >> >> > without giving up the CPU.  Generally that will mean we've been round
+> > >> >> > the shrinker loop hundreds to thousands of times without sleeping.
+> > >> >> >
+> > >> >> >> It seems to be semi random behavior.
+> > >> >> >
+> > >> >> > Well, we have to do something.  Chris Mason first suspected the hang was
+> > >> >> > a kswapd rescheduling problem a while ago.  We tried putting
+> > >> >> > cond_rescheds() in several places in the vmscan code, but to no avail.
+> > >> >>
+> > >> >> Is it a result of  test with patch of Hannes(ie, !pgdat_balanced)?
+> > >> >>
+> > >> >> If it isn't, it would be nop regardless of putting cond_reshed at vmscan.c.
+> > >> >> Because, although we complete zone balancing, kswapd doesn't sleep as
+> > >> >> pgdat_balance returns wrong result. And at last VM calls
+> > >> >> balance_pgdat. In this case, balance_pgdat returns without any work as
+> > >> >> kswap couldn't find zones which have not enough free pages and goto
+> > >> >> out. kswapd could repeat this work infinitely. So you don't have a
+> > >> >> chance to call cond_resched.
+> > >> >>
+> > >> >> But if your test was with Hanne's patch, I am very curious how come
+> > >> >> kswapd consumes CPU a lot.
+> > >> >>
+> > >> >> > The need_resched() in sleeping_prematurely() seems to be about the best
+> > >> >> > option.  The other option might be just to put a cond_resched() in
+> > >> >> > kswapd_try_to_sleep(), but that will really have about the same effect.
+> > >> >>
+> > >> >> I don't oppose it but before that, I think we have to know why kswapd
+> > >> >> consumes CPU a lot although we applied Hannes' patch.
+> > >> >>
+> > >> >
+> > >> > Because it's still possible for processes to allocate pages at the same
+> > >> > rate kswapd is freeing them leading to a situation where kswapd does not
+> > >> > consider the zone balanced for prolonged periods of time.
+> > >>
+> > >> We have cond_resched in shrink_page_list, shrink_slab and balance_pgdat.
+> > >> So I think kswapd can be scheduled out although it's scheduled in
+> > >> after a short time as task scheduled also need page reclaim. Although
+> > >> all task in system need reclaim, kswapd cpu 99% consumption is a
+> > >> natural result, I think.
+> > >> Do I miss something?
+> > >>
+> > >
+> > > Lets see;
+> > >
+> > > shrink_page_list() only applies if inactive pages were isolated
+> > >        which in turn may not happen if all_unreclaimable is set in
+> > >        shrink_zones(). If for whatver reason, all_unreclaimable is
+> > >        set on all zones, we can miss calling cond_resched().
+> > >
+> > > shrink_slab only applies if we are reclaiming slab pages. If the first
+> > >        shrinker returns -1, we do not call cond_resched(). If that
+> > >        first shrinker is dcache and __GFP_FS is not set, direct
+> > >        reclaimers will not shrink at all. However, if there are
+> > >        enough of them running or if one of the other shrinkers
+> > >        is running for a very long time, kswapd could be starved
+> > >        acquiring the shrinker_rwsem and never reaching the
+> > >        cond_resched().
 > > 
-> > Should we add that to this patch, otherwise it seems like the injection
-> > isn't very useful or intuitive from the end-user perspective that they
-> > have to provide their own notification source (ie NMI/SCI/MCE/IRQ).
+> > Don't we have to move cond_resched?
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 292582c..633e761 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -231,8 +231,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+> >         if (scanned == 0)
+> >                 scanned = SWAP_CLUSTER_MAX;
+> > 
+> > -       if (!down_read_trylock(&shrinker_rwsem))
+> > -               return 1;       /* Assume we'll be able to shrink next time */
+> > +       if (!down_read_trylock(&shrinker_rwsem)) {
+> > +               ret = 1;
+> > +               goto out; /* Assume we'll be able to shrink next time */
+> > +       }
+> > 
+> >         list_for_each_entry(shrinker, &shrinker_list, list) {
+> >                 unsigned long long delta;
+> > @@ -280,12 +282,14 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+> >                         count_vm_events(SLABS_SCANNED, this_scan);
+> >                         total_scan -= this_scan;
+> > 
+> > -                       cond_resched();
+> >                 }
+> > 
+> >                 shrinker->nr += total_scan;
+> > +               cond_resched();
+> >         }
+> >         up_read(&shrinker_rwsem);
+> > +out:
+> > +       cond_resched();
+> >         return ret;
+> >  }
+> > 
 > 
-> We can provide the NMI/SCI/IRQ injecting in another patch.  What do you
-> think about the NMI injecting patch attached?
+> This makes some sense for the exit path but if one or more of the
+> shrinkers takes a very long time without sleeping (extremely long
+> list searches for example) then kswapd will not call cond_resched()
+> between shrinkers and still consume a lot of CPU.
+> 
+> > >
+> > > balance_pgdat() only calls cond_resched if the zones are not
+> > >        balanced. For a high-order allocation that is balanced, it
+> > >        checks order-0 again. During that window, order-0 might have
+> > >        become unbalanced so it loops again for order-0 and returns
+> > >        that was reclaiming for order-0 to kswapd(). It can then find
+> > >        that a caller has rewoken kswapd for a high-order and re-enters
+> > >        balance_pgdat() without ever have called cond_resched().
+> > 
+> > If kswapd reclaims order-o followed by high order, it would have a
+> > chance to call cond_resched in shrink_page_list. But if all zones are
+> > all_unreclaimable is set, balance_pgdat could return any work. Okay.
+> > It does make sense.
+> > By your scenario, someone wakes up kswapd with higher order, again.
+> > So re-enters balance_pgdat without ever have called cond_resched.
+> > But if someone wakes up higher order again, we can't have a chance to
+> > call kswapd_try_to_sleep. So your patch effect would be nop, too.
+> > 
+> > It would be better to put cond_resched after balance_pgdat?
+> > 
+> 
+> Which will leave kswapd runnable instead of going to sleep but
+> guarantees a scheduling point. Lets see if the problem is that
+> cond_resched is being missed although if this was the case then patch
+> 4 would truly be a no-op but Colin has already reported that patch 1 on
+> its own didn't fix his problem. If the problem is sandybridge-specific
+> where kswapd remains runnable and consuming large amounts of CPU in
+> turbo mode then we know that there are other cond_resched() decisions
+> that will need to be revisited.
+> 
+> Colin or James, would you be willing to test with patch 1 from this
+> series and Minchan's patch below? Thanks.
 
-I understand what the patch is doing and I like the various injection
-points, but looking at your other injection modules I start to wonder if
-there is a smarter and easier way to do all this.  I believe the software
-injection is definitely useful but it does add bloat to the kernel.
-
-I am starting to like Ingo's event filtering idea for stuff like this I
-think (though I am still wrapping my head around it).  The beauty of
-kprobes and tracepoints and even jump labels was that they were not very
-intrusive, they did their work on the side.  It would be nice if we could
-figure out a framework for the injection stuff that did something similar.
-
-Perhaps Ingo has some ideas?
-
-Cheers,
-Don
+This works OK fine.  Ran 250 test cycles for about 2 hours.
 
 > 
-> BTW: MCE will not be processed by GHES.
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 292582c..61c45d0 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2753,6 +2753,7 @@ static int kswapd(void *p)
+> >                 if (!ret) {
+> >                         trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
+> >                         order = balance_pgdat(pgdat, order, &classzone_idx);
+> > +                       cond_resched();
+> >                 }
+> >         }
+> >         return 0;
+> > 
+> > >
+> > > While it appears unlikely, there are bad conditions which can result
+> > > in cond_resched() being avoided.
+> > 
+> > >
+> > > --
+> > > Mel Gorman
+> > > SUSE Labs
+> > >
+> > 
+> > 
+> > 
+> > -- 
+> > Kind regards,
+> > Minchan Kim
 > 
-> Best Regards,
-> Huang Ying
 
-> Subject: [RFC] x86, NMI, NMI injecting support
-> 
-> This patch implements trigger NMI on specified CPUs. At the same time,
-> the NMI reason (contents of port 0x61) can be faked too. This can be
-> used to debug and test the NMI handler.
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> ---
->  arch/x86/Kconfig.debug            |   10 +++
->  arch/x86/include/asm/mach_traps.h |    9 ++
->  arch/x86/kernel/Makefile          |    1 
->  arch/x86/kernel/nmi_inject.c      |  117 ++++++++++++++++++++++++++++++++++++++
->  arch/x86/kernel/traps.c           |   34 ++++++++++-
->  5 files changed, 167 insertions(+), 4 deletions(-)
-> 
-> --- a/arch/x86/Kconfig.debug
-> +++ b/arch/x86/Kconfig.debug
-> @@ -304,4 +304,14 @@ config DEBUG_STRICT_USER_COPY_CHECKS
->  
->  	  If unsure, or if you run an older (pre 4.4) gcc, say N.
->  
-> +config NMI_INJECT
-> +	tristate "NMI injecting support"
-> +	depends on DEBUG_KERNEL
-> +	---help---
-> +	  This can be used to trigger NMI on specified CPUs. And the
-> +	  reason of NMI (contents of port 0x61) can be faked
-> +	  too. This can be used to debug and test the NMI handler.
-> +
-> +	  If unsure, say N.
-> +
->  endmenu
-> --- a/arch/x86/include/asm/mach_traps.h
-> +++ b/arch/x86/include/asm/mach_traps.h
-> @@ -17,7 +17,7 @@
->  #define NMI_REASON_CLEAR_IOCHK	0x08
->  #define NMI_REASON_CLEAR_MASK	0x0f
->  
-> -static inline unsigned char get_nmi_reason(void)
-> +static inline unsigned char __get_nmi_reason(void)
->  {
->  	return inb(NMI_REASON_PORT);
->  }
-> @@ -40,4 +40,11 @@ static inline void reassert_nmi(void)
->  		unlock_cmos();
->  }
->  
-> +struct nmi_reason_inject_data {
-> +	unsigned char reason;
-> +	unsigned char valid : 1;
-> +};
-> +
-> +extern struct nmi_reason_inject_data nmi_reason_inject_data;
-> +
->  #endif /* _ASM_X86_MACH_DEFAULT_MACH_TRAPS_H */
-> --- a/arch/x86/kernel/Makefile
-> +++ b/arch/x86/kernel/Makefile
-> @@ -113,6 +113,7 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
->  obj-$(CONFIG_OF)			+= devicetree.o
->  
->  obj-y					+= hwerr.o
-> +obj-$(CONFIG_NMI_INJECT)		+= nmi_inject.o
->  
->  ###
->  # 64 bit specific files
-> --- /dev/null
-> +++ b/arch/x86/kernel/nmi_inject.c
-> @@ -0,0 +1,117 @@
-> +/*
-> + * NMI injector, for NMI handler testing
-> + *
-> + * Copyright 2010 Intel Corp.
-> + *   Author: Huang Ying <ying.huang@intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version
-> + * 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/debugfs.h>
-> +#include <linux/cpu.h>
-> +#include <asm/mach_traps.h>
-> +#include <asm/apic.h>
-> +
-> +static int nmi_reason_inject_get(void *data, u64 *val)
-> +{
-> +	if (nmi_reason_inject_data.valid)
-> +		*val = nmi_reason_inject_data.reason;
-> +	else
-> +		*val = ~0ULL;
-> +	return 0;
-> +}
-> +
-> +static int nmi_reason_inject_set(void *data, u64 val)
-> +{
-> +	nmi_reason_inject_data.reason = val;
-> +	nmi_reason_inject_data.valid = 1;
-> +	return 0;
-> +}
-> +
-> +DEFINE_SIMPLE_ATTRIBUTE(nmi_reason_inject_fops, nmi_reason_inject_get,
-> +			nmi_reason_inject_set, "0x%llx\n");
-> +
-> +static int nmi_reason_uninject_set(void *data, u64 val)
-> +{
-> +	nmi_reason_inject_data.valid = 0;
-> +	return 0;
-> +}
-> +
-> +DEFINE_SIMPLE_ATTRIBUTE(nmi_reason_uninject_fops, NULL,
-> +			nmi_reason_uninject_set, "%llu\n");
-> +
-> +static int nmi_inject_set(void *data, u64 val)
-> +{
-> +	int cpu;
-> +	cpumask_var_t cpu_mask;
-> +
-> +	alloc_cpumask_var(&cpu_mask, GFP_KERNEL);
-> +	cpumask_clear(cpu_mask);
-> +	for_each_online_cpu(cpu) {
-> +		if (cpu >= sizeof(val))
-> +			continue;
-> +		if (val & (1ULL << cpu))
-> +			cpumask_set_cpu(cpu, cpu_mask);
-> +	}
-> +	if (!cpumask_empty(cpu_mask))
-> +		apic->send_IPI_mask(cpu_mask, NMI_VECTOR);
-> +	free_cpumask_var(cpu_mask);
-> +	return 0;
-> +}
-> +
-> +DEFINE_SIMPLE_ATTRIBUTE(nmi_inject_fops, NULL, nmi_inject_set, "0x%llx\n");
-> +
-> +static struct dentry *nmi_debug_dir;
-> +
-> +static int __init nmi_inject_init(void)
-> +{
-> +	int rc;
-> +	struct dentry *de;
-> +
-> +	rc = -ENOMEM;
-> +	nmi_debug_dir = debugfs_create_dir("nmi", NULL);
-> +	if (!nmi_debug_dir)
-> +		return rc;
-> +	de = debugfs_create_file("inject", S_IWUSR, nmi_debug_dir,
-> +				 NULL, &nmi_inject_fops);
-> +	if (!de)
-> +		goto err;
-> +	de = debugfs_create_file("reason_inject", S_IRUSR | S_IWUSR,
-> +				 nmi_debug_dir, NULL, &nmi_reason_inject_fops);
-> +	if (!de)
-> +		goto err;
-> +	de = debugfs_create_file("reason_uninject", S_IWUSR,
-> +				 nmi_debug_dir, NULL, &nmi_reason_uninject_fops);
-> +	if (!de)
-> +		goto err;
-> +
-> +	return 0;
-> +err:
-> +	debugfs_remove_recursive(nmi_debug_dir);
-> +	return rc;
-> +}
-> +
-> +static void __exit nmi_inject_exit(void)
-> +{
-> +	debugfs_remove_recursive(nmi_debug_dir);
-> +}
-> +
-> +module_init(nmi_inject_init);
-> +module_exit(nmi_inject_exit);
-> +
-> +MODULE_AUTHOR("Huang Ying");
-> +MODULE_DESCRIPTION("NMI injecting support");
-> +MODULE_LICENSE("GPL");
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -316,6 +316,34 @@ static int __init setup_unknown_nmi_pani
->  }
->  __setup("unknown_nmi_panic", setup_unknown_nmi_panic);
->  
-> +struct nmi_reason_inject_data nmi_reason_inject_data;
-> +EXPORT_SYMBOL_GPL(nmi_reason_inject_data);
-> +
-> +static inline unsigned char get_nmi_reason(void)
-> +{
-> +	if (nmi_reason_inject_data.valid)
-> +		return nmi_reason_inject_data.reason;
-> +	else
-> +		return __get_nmi_reason();
-> +}
-> +
-> +static inline void outb_nmi_reason(unsigned char reason)
-> +{
-> +	static unsigned char prev_reason;
-> +
-> +	if (nmi_reason_inject_data.valid) {
-> +		if (reason & NMI_REASON_CLEAR_SERR)
-> +			nmi_reason_inject_data.reason &= ~NMI_REASON_SERR;
-> +		if (prev_reason == (reason | NMI_REASON_CLEAR_IOCHK) &&
-> +		    !(reason & NMI_REASON_CLEAR_IOCHK))
-> +			nmi_reason_inject_data.reason &= ~NMI_REASON_IOCHK;
-> +		if (!nmi_reason_inject_data.reason)
-> +			nmi_reason_inject_data.valid = 0;
-> +		prev_reason = reason;
-> +	} else
-> +		outb(reason, NMI_REASON_PORT);
-> +}
-> +
->  static notrace __kprobes void
->  pci_serr_error(unsigned char reason, struct pt_regs *regs)
->  {
-> @@ -340,7 +368,7 @@ pci_serr_error(unsigned char reason, str
->  
->  	/* Clear and disable the PCI SERR error line. */
->  	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
-> -	outb(reason, NMI_REASON_PORT);
-> +	outb_nmi_reason(reason);
->  }
->  
->  static notrace __kprobes void
-> @@ -358,7 +386,7 @@ io_check_error(unsigned char reason, str
->  
->  	/* Re-enable the IOCK line, wait for a few seconds */
->  	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_IOCHK;
-> -	outb(reason, NMI_REASON_PORT);
-> +	outb_nmi_reason(reason);
->  
->  	i = 20000;
->  	while (--i) {
-> @@ -367,7 +395,7 @@ io_check_error(unsigned char reason, str
->  	}
->  
->  	reason &= ~NMI_REASON_CLEAR_IOCHK;
-> -	outb(reason, NMI_REASON_PORT);
-> +	outb_nmi_reason(reason);
->  }
->  
->  void set_unknown_nmi_as_hwerr(void)
 
