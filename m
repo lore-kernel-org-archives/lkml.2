@@ -1,138 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab1EQHm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 03:42:57 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:45232 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752968Ab1EQHmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 03:42:55 -0400
-Date: Tue, 17 May 2011 09:42:30 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch 4/6] memcg: reclaim statistics
-Message-ID: <20110517074230.GY16531@cmpxchg.org>
-References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
- <1305212038-15445-5-git-send-email-hannes@cmpxchg.org>
- <BANLkTi=yCyAsOc_uTQLp1kWp5w0i9gomxg@mail.gmail.com>
- <20110516231028.GV16531@cmpxchg.org>
- <BANLkTimLNZfc-jcA3yBG5D3k2u=0_JnrhQ@mail.gmail.com>
+	id S1753356Ab1EQIJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 04:09:33 -0400
+Received: from mailgate.ruralwales.net ([212.219.229.8]:52277 "EHLO
+	ruralwales.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752206Ab1EQIJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 04:09:30 -0400
+X-Greylist: delayed 1069 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 May 2011 04:09:30 EDT
+From: <helen.muir@powys.gov.uk>
+Message-ID: <f5d65a03510df.4dd2360d@powys.gov.uk>
+Date: Tue, 17 May 2011 08:47:09 +0100
+X-Mailer: Sun Java(tm) System Messenger Express 6.2-8.04 (built Feb 28
+ 2007)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Language: en
+Subject: =?iso-8859-1?Q?Winner_Of_=A3500=2C000=2E00_in_our_7up_2011_prom?=
+ =?iso-8859-1?Q?o_send_your?=
+X-Accept-Language: en
 Content-Disposition: inline
-In-Reply-To: <BANLkTimLNZfc-jcA3yBG5D3k2u=0_JnrhQ@mail.gmail.com>
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="us-ascii"
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 05:20:31PM -0700, Ying Han wrote:
-> On Mon, May 16, 2011 at 4:10 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > On Thu, May 12, 2011 at 12:33:50PM -0700, Ying Han wrote:
-> > > The stats for soft_limit reclaim from global ttfp have been merged in
-> > > mmotm i believe as the following:
-> > >
-> > > "soft_direct_steal"
-> > > "soft_direct_scan"
-> > >
-> > > I wonder we might want to separate that out from the other case where the
-> > > reclaim is from the parent triggers its limit.
-> >
-> > The way I implemented soft limits in 6/6 is to increase pressure on
-> > exceeding children whenever hierarchical reclaim is taking place.
-> >
-> > This changes soft limit from
-> >
-> >        Global memory pressure: reclaim from exceeding memcg(s) first
-> >
-> > to
-> >
-> >        Memory pressure on a memcg: reclaim from all its children,
-> >        with increased pressure on those exceeding their soft limit
-> >        (where global memory pressure means root_mem_cgroup and all
-> >        existing memcgs are considered its children)
-> >
-> > which makes the soft limit much more generic and more powerful, as it
-> > allows the admin to prioritize reclaim throughout the hierarchy, not
-> > only for global memory pressure.  Consider one memcg with two
-> > subgroups.  You can now prioritize reclaim to prefer one subgroup over
-> > another through soft limiting.
-> >
-> > This is one reason why I think that the approach of maintaining a
-> > global list of memcgs that exceed their soft limits is an inferior
-> > approach; it does not take the hierarchy into account at all.
-> >
-> > This scheme would not provide a natural way of counting pages that
-> > were reclaimed because of the soft limit, and thus I still oppose the
-> > merging of soft limit counters.
-> 
-> The proposal we discussed during LSF ( implemented in the patch " memcg:
-> revisit soft_limit reclaim on contention") takes consideration
-> of hierarchical reclaim. The memcg is linked in the list if it exceeds the
-> soft_limit, and the soft_limit reclaim per-memcg is calling
-> mem_cgroup_hierarchical_reclaim().
+Name..    
+Sex..     
+Home Address..
+-----------------------------------------
+Cyngor Sir Powys County Council
+www.powys.gov.uk
 
-It does hierarchical soft limit reclaim once triggered, but I meant
-that soft limits themselves have no hierarchical meaning.  Say you
-have the following hierarchy:
+Mae'r e bost hwn ac unrhyw atodiad iddo yn gyfrinachol ac fe'i
+bwriedir ar gyfer y sawl a enwir arno yn unig. Gall gynnwys
+gwybodaeth freintiedig. Os yw wedi eich cyrraedd trwy gamgymeriad
+ni ellwch ei gopio, ei ddosbarthu na'i ddangos i unrhyw un arall a
+dylech gysylltu gyda Cyngor Sir Powys ar unwaith.
 
-                root_mem_cgroup
+Mae unrhyw gynnwys nad yw'n ymwneud gyda busnes swyddogol Cyngor
+Sir Powys yn bersonol i'r awdur ac nid yw'n awdurdodedig gan y
+Cyngor.
 
-             aaa               bbb
+This e mail and any attachments are confidential and intended for
+the named recipient only. The content may contain privileged
+information. If it has reached you by mistake, you should not copy,
+distribute or show the content to anyone but should contact Powys
+County Council at once.
 
-           a1  a2             b1  b2
-
-        a1-1
-
-Consider aaa and a1 had a soft limit.  If global memory arose, aaa and
-all its children would be pushed back with the current scheme, the one
-you are proposing, and the one I am proposing.
-
-But now consider aaa hitting its hard limit.  Regular target reclaim
-will be triggered, and a1, a2, and a1-1 will be scanned equally from
-hierarchical reclaim.  That a1 is in excess of its soft limit is not
-considered at all.
-
-With what I am proposing, a1 and a1-1 would be pushed back more
-aggressively than a2, because a1 is in excess of its soft limit and
-a1-1 is contributing to that.
-
-It would mean that given a group of siblings, you distribute the
-pressure weighted by the soft limit configuration, independent of the
-kind of hierarchical/external pressure (global memory scarcity or
-parent hit the hard limit).
-
-It's much easier to understand if you think of global memory pressure
-to mean that root_mem_cgroup hit its hard limit, and that all existing
-memcgs are hierarchically below the root_mem_cgroup.  Altough it is
-technically not implemented that way, that would be the consistent
-model.
-
-My proposal is a generic and native way of enforcing soft limits: a
-memcg hit its hard limit, reclaim from the hierarchy below it, prefer
-those in excess of their soft limit.
-
-While yours is special-cased to immediate descendants of the
-root_mem_cgroup.
-
-> The current "soft_steal" and "soft_scan" is counting pages being steal/scan
->  inside mem_cgroup_hierarchical_reclaim() w check_soft checking, which then
-> counts pages being reclaimed because of soft_limit and also counting the
-> hierarchical reclaim.
-
-Yeah, I understand that.  What I am saying is that in my code,
-everytime a hierarchy of memcgs is scanned (global memory reclaim,
-target reclaim, kswapd or direct, it's all the same), a memcg that is
-in excess of its soft limit is put more pressure on compared to its
-siblings.
-
-There is no stand-alone 'now, go reclaim soft limits' cycle anymore.
-As such, it would be impossible to maintain that counter.
+Any content that is not pertinent to Powys County Council business
+is personal to the author, and is not necessarily the view of the
+Council.
