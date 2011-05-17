@@ -1,208 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab1EQIoX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 04:44:23 -0400
+	id S1753320Ab1EQIom (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 04:44:42 -0400
 Received: from mga01.intel.com ([192.55.52.88]:65454 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751848Ab1EQIoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 04:44:21 -0400
+	id S1752303Ab1EQIoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 04:44:22 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,224,1304319600"; 
-   d="scan'208";a="3222834"
-Message-Id: <20110517084419.602635499@sli10-conroe.sh.intel.com>
+   d="scan'208";a="2672228"
+Message-Id: <20110517084419.775071525@sli10-conroe.sh.intel.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 17 May 2011 16:41:19 +0800
+Date: Tue, 17 May 2011 16:41:20 +0800
 From: Shaohua Li <shaohua.li@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, tj@kernel.org, eric.dumazet@gmail.com,
         cl@linux.com, Shaohua Li <shaohua.li@intel.com>
-Subject: [patch v3 2/3] percpu_counter: use atomic64 for counter in SMP
+Subject: [patch v3 3/3] percpu_counter: use percpu data to track add start
 References: <20110517084117.572970726@sli10-conroe.sh.intel.com>
-Content-Disposition: inline; filename=percpu-counter-atomic.patch
+Content-Disposition: inline; filename=percpu-counter-percpustart.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uses atomic64 for percpu_counter, because it is cheaper than spinlock.
-This doesn't slow fast path (percpu_counter_read). atomic64_read
-equals to read fbc->count for 64-bit system, or equals to
-spin_lock-read-spin_unlock for 32-bit system. Note, originally
-the percpu_counter_read for 32-bit system doesn't hold spin_lock,
-but that is buggy and might cause very wrong value accessed. This
-patch fixes the issue.
+add_start causes a lot of cache bouncing because it's updated by all
+cpus. We can actually make it a percpu variable. This will completely
+reduce the cache bouncing.
+With the patch and last patch, I get about 7x faster running the
+workload that last patch described. Only with last patch, the workload
+is only about 4x faster.
+This doesn't slow down _sum because we removed lock for _sum. I did
+a stress test. 23 CPU run _add, one cpu runs _sum. In _add fast path
+(don't hold) lock, _sum runs a little slow (about 20% slower). In
+_add slow path (hold lock), _sum runs much faster (about 9x faster);
 
-We use sum_start and add_start to make sure _sum doesn't see deviation
-when _add slow path is running. When _sum is running, _add will wait
-_sum finish. This is scaring that _add is slow down, but actually not,
-because _sum is called very rare. We could make _sum waits _add finish,
-but since _add is called frequently, this will make _sum run very slow.
-
-This can also improve some workloads with percpu_counter->lock heavily
-contented. For example, vm_committed_as sometimes causes the contention.
-We should tune the batch count, but if we can make percpu_counter better,
-why not? In a 24 CPUs system and 24 processes, each runs:
-while (1) {
-	mmap(128M);
-	munmap(128M);
-}
-we then measure how many loops each process can take:
-The atomic method gives 4x faster.
+V2: uses one percpu data as Eric suggested.
 
 Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 ---
- include/linux/percpu_counter.h |   19 ++++-------------
- lib/percpu_counter.c           |   45 +++++++++++++++++++++++------------------
- 2 files changed, 31 insertions(+), 33 deletions(-)
+ include/linux/percpu_counter.h |   11 ++++++--
+ lib/percpu_counter.c           |   51 ++++++++++++++++++++---------------------
+ 2 files changed, 33 insertions(+), 29 deletions(-)
 
 Index: linux/include/linux/percpu_counter.h
 ===================================================================
---- linux.orig/include/linux/percpu_counter.h	2011-05-13 11:13:25.000000000 +0800
-+++ linux/include/linux/percpu_counter.h	2011-05-16 10:46:14.000000000 +0800
-@@ -16,8 +16,8 @@
+--- linux.orig/include/linux/percpu_counter.h	2011-05-16 10:46:14.000000000 +0800
++++ linux/include/linux/percpu_counter.h	2011-05-17 14:06:23.000000000 +0800
+@@ -15,13 +15,18 @@
+ 
  #ifdef CONFIG_SMP
  
++struct percpu_counter_data {
++	s32 counter;
++	char add_start;
++};
++
  struct percpu_counter {
--	spinlock_t lock;
--	s64 count;
-+	atomic_t sum_start, add_start;
-+	atomic64_t count;
+-	atomic_t sum_start, add_start;
++	atomic_t sum_start;
+ 	atomic64_t count;
  #ifdef CONFIG_HOTPLUG_CPU
  	struct list_head list;	/* All percpu_counters are on a list */
  #endif
-@@ -26,16 +26,7 @@ struct percpu_counter {
+-	s32 __percpu *counters;
++	struct percpu_counter_data __percpu *cpu_data;
+ };
  
  extern int percpu_counter_batch;
+@@ -71,7 +76,7 @@ static inline s64 percpu_counter_read_po
  
--int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
--			  struct lock_class_key *key);
--
--#define percpu_counter_init(fbc, value)					\
--	({								\
--		static struct lock_class_key __key;			\
--									\
--		__percpu_counter_init(fbc, value, &__key);		\
--	})
--
-+int percpu_counter_init(struct percpu_counter *fbc, s64 amount);
- void percpu_counter_destroy(struct percpu_counter *fbc);
- void percpu_counter_set(struct percpu_counter *fbc, s64 amount);
- void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch);
-@@ -60,7 +51,7 @@ static inline s64 percpu_counter_sum(str
- 
- static inline s64 percpu_counter_read(struct percpu_counter *fbc)
+ static inline int percpu_counter_initialized(struct percpu_counter *fbc)
  {
--	return fbc->count;
-+	return atomic64_read(&fbc->count);
+-	return (fbc->counters != NULL);
++	return (fbc->cpu_data != NULL);
  }
  
- /*
-@@ -70,7 +61,7 @@ static inline s64 percpu_counter_read(st
-  */
- static inline s64 percpu_counter_read_positive(struct percpu_counter *fbc)
- {
--	s64 ret = fbc->count;
-+	s64 ret = percpu_counter_read(fbc);
- 
- 	barrier();		/* Prevent reloads of fbc->count */
- 	if (ret >= 0)
+ #else
 Index: linux/lib/percpu_counter.c
 ===================================================================
---- linux.orig/lib/percpu_counter.c	2011-05-13 10:29:04.000000000 +0800
-+++ linux/lib/percpu_counter.c	2011-05-16 10:46:14.000000000 +0800
-@@ -59,13 +59,11 @@ void percpu_counter_set(struct percpu_co
+--- linux.orig/lib/percpu_counter.c	2011-05-16 10:46:14.000000000 +0800
++++ linux/lib/percpu_counter.c	2011-05-17 14:11:04.000000000 +0800
+@@ -59,10 +59,8 @@ void percpu_counter_set(struct percpu_co
  {
  	int cpu;
  
--	spin_lock(&fbc->lock);
- 	for_each_possible_cpu(cpu) {
- 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
- 		*pcount = 0;
- 	}
--	fbc->count = amount;
--	spin_unlock(&fbc->lock);
-+	atomic64_set(&fbc->count, amount);
+-	for_each_possible_cpu(cpu) {
+-		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
+-		*pcount = 0;
+-	}
++	for_each_possible_cpu(cpu)
++		per_cpu_ptr(fbc->cpu_data, cpu)->counter = 0;
+ 	atomic64_set(&fbc->count, amount);
  }
  EXPORT_SYMBOL(percpu_counter_set);
+@@ -72,23 +70,25 @@ void __percpu_counter_add(struct percpu_
+ 	s64 count;
  
-@@ -76,10 +74,19 @@ void __percpu_counter_add(struct percpu_
  	preempt_disable();
- 	count = __this_cpu_read(*fbc->counters) + amount;
+-	count = __this_cpu_read(*fbc->counters) + amount;
++	count = __this_cpu_ptr(fbc->cpu_data)->counter + amount;
  	if (count >= batch || count <= -batch) {
--		spin_lock(&fbc->lock);
--		fbc->count += count;
-+		while (1) {
-+			atomic_inc_return(&fbc->add_start);
-+			if (atomic_read(&fbc->sum_start) == 0)
-+				break;
-+			atomic_dec(&fbc->add_start);
-+			while (atomic_read(&fbc->sum_start) != 0)
-+				cpu_relax();
-+		}
-+
-+		atomic64_add(count, &fbc->count);
- 		__this_cpu_write(*fbc->counters, 0);
--		spin_unlock(&fbc->lock);
-+
-+		atomic_dec(&fbc->add_start);
+ 		while (1) {
+-			atomic_inc_return(&fbc->add_start);
++			__this_cpu_ptr(fbc->cpu_data)->add_start = 1;
++			/* Guarantee add_starts is seen by _sum */
++			smp_wmb();
+ 			if (atomic_read(&fbc->sum_start) == 0)
+ 				break;
+-			atomic_dec(&fbc->add_start);
++			__this_cpu_ptr(fbc->cpu_data)->add_start = 0;
+ 			while (atomic_read(&fbc->sum_start) != 0)
+ 				cpu_relax();
+ 		}
+ 
+ 		atomic64_add(count, &fbc->count);
+-		__this_cpu_write(*fbc->counters, 0);
++		__this_cpu_ptr(fbc->cpu_data)->counter = 0;
+ 
+-		atomic_dec(&fbc->add_start);
++		__this_cpu_ptr(fbc->cpu_data)->add_start = 0;
  	} else {
- 		__this_cpu_write(*fbc->counters, count);
+-		__this_cpu_write(*fbc->counters, count);
++		__this_cpu_ptr(fbc->cpu_data)->counter = count;
  	}
-@@ -96,23 +103,26 @@ s64 __percpu_counter_sum(struct percpu_c
- 	s64 ret;
+ 	preempt_enable();
+ }
+@@ -104,15 +104,15 @@ s64 __percpu_counter_sum(struct percpu_c
  	int cpu;
  
--	spin_lock(&fbc->lock);
--	ret = fbc->count;
-+	atomic_inc_return(&fbc->sum_start);
-+	while (atomic_read(&fbc->add_start) != 0)
-+		cpu_relax();
-+
-+	ret = atomic64_read(&fbc->count);
+ 	atomic_inc_return(&fbc->sum_start);
+-	while (atomic_read(&fbc->add_start) != 0)
+-		cpu_relax();
+-
+-	ret = atomic64_read(&fbc->count);
  	for_each_online_cpu(cpu) {
- 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
- 		ret += *pcount;
+-		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
+-		ret += *pcount;
++		while (per_cpu_ptr(fbc->cpu_data, cpu)->add_start != 0)
++			cpu_relax();
  	}
--	spin_unlock(&fbc->lock);
+ 
++	ret = atomic64_read(&fbc->count);
++	for_each_online_cpu(cpu)
++		ret += __this_cpu_ptr(fbc->cpu_data)->counter;
 +
-+	atomic_dec(&fbc->sum_start);
+ 	atomic_dec(&fbc->sum_start);
  	return ret;
  }
- EXPORT_SYMBOL(__percpu_counter_sum);
- 
--int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
--			  struct lock_class_key *key)
-+int percpu_counter_init(struct percpu_counter *fbc, s64 amount)
+@@ -122,9 +122,8 @@ int percpu_counter_init(struct percpu_co
  {
--	spin_lock_init(&fbc->lock);
--	lockdep_set_class(&fbc->lock, key);
--	fbc->count = amount;
-+	atomic64_set(&fbc->count, amount);
-+	atomic_set(&fbc->sum_start, 0);
-+	atomic_set(&fbc->add_start, 0);
- 	fbc->counters = alloc_percpu(s32);
- 	if (!fbc->counters)
+ 	atomic64_set(&fbc->count, amount);
+ 	atomic_set(&fbc->sum_start, 0);
+-	atomic_set(&fbc->add_start, 0);
+-	fbc->counters = alloc_percpu(s32);
+-	if (!fbc->counters)
++	fbc->cpu_data = alloc_percpu(struct percpu_counter_data);
++	if (!fbc->cpu_data)
  		return -ENOMEM;
-@@ -127,7 +137,7 @@ int __percpu_counter_init(struct percpu_
- #endif
- 	return 0;
- }
--EXPORT_SYMBOL(__percpu_counter_init);
-+EXPORT_SYMBOL(percpu_counter_init);
+ 
+ 	debug_percpu_counter_activate(fbc);
+@@ -141,7 +140,7 @@ EXPORT_SYMBOL(percpu_counter_init);
  
  void percpu_counter_destroy(struct percpu_counter *fbc)
  {
-@@ -171,13 +181,10 @@ static int __cpuinit percpu_counter_hotc
+-	if (!fbc->counters)
++	if (!fbc->cpu_data)
+ 		return;
+ 
+ 	debug_percpu_counter_deactivate(fbc);
+@@ -151,8 +150,8 @@ void percpu_counter_destroy(struct percp
+ 	list_del(&fbc->list);
+ 	mutex_unlock(&percpu_counters_lock);
+ #endif
+-	free_percpu(fbc->counters);
+-	fbc->counters = NULL;
++	free_percpu(fbc->cpu_data);
++	fbc->cpu_data = NULL;
+ }
+ EXPORT_SYMBOL(percpu_counter_destroy);
+ 
+@@ -180,11 +179,11 @@ static int __cpuinit percpu_counter_hotc
+ 	cpu = (unsigned long)hcpu;
  	mutex_lock(&percpu_counters_lock);
  	list_for_each_entry(fbc, &percpu_counters, list) {
- 		s32 *pcount;
--		unsigned long flags;
+-		s32 *pcount;
++		struct percpu_counter_data *data =
++			per_cpu_ptr(fbc->cpu_data, cpu);
  
--		spin_lock_irqsave(&fbc->lock, flags);
- 		pcount = per_cpu_ptr(fbc->counters, cpu);
--		fbc->count += *pcount;
-+		atomic64_add(*pcount, &fbc->count);
- 		*pcount = 0;
--		spin_unlock_irqrestore(&fbc->lock, flags);
+-		pcount = per_cpu_ptr(fbc->counters, cpu);
+-		atomic64_add(*pcount, &fbc->count);
+-		*pcount = 0;
++		atomic64_add(data->counter, &fbc->count);
++		data->counter = 0;
  	}
  	mutex_unlock(&percpu_counters_lock);
  #endif
