@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab1EQO3N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 10:29:13 -0400
-Received: from home.keithp.com ([63.227.221.253]:34360 "EHLO keithp.com"
+	id S1751572Ab1EQE0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 00:26:49 -0400
+Received: from smtp2.mail.ru ([94.100.176.130]:37860 "EHLO smtp2.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754697Ab1EQO3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 10:29:12 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] [BUG][2.6.39-rc7]
-In-Reply-To: <4DD1AAF2.7030502@t-online.de>
-References: <4DD0D4CC.9070401@t-online.de> <yunei3y1g9u.fsf@aiko.keithp.com> <4DD1AAF2.7030502@t-online.de>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Mon, 16 May 2011 21:18:26 -0700
-Message-ID: <yun62pa0xkd.fsf@aiko.keithp.com>
+	id S1751007Ab1EQE0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 00:26:48 -0400
+Date: Tue, 17 May 2011 08:26:44 +0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
+        Eric Miao <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
+        Harald Welte <laforge@gnumonks.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Paul Parsons <lost.distance@yahoo.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH v2 1/3] ASoC: Asahi Kasei AK4641 codec driver
+Message-ID: <20110517042644.GA19254@rainbow>
+References: <1305579805-15617-1-git-send-email-mad_soft@inbox.ru>
+ <1305579805-15617-2-git-send-email-mad_soft@inbox.ru>
+ <20110516212533.GA2570@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516212533.GA2570@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On 22:25 Mon 16 May     , Mark Brown wrote:
+> On Tue, May 17, 2011 at 01:03:23AM +0400, Dmitry Artamonow wrote:
+> > A driver for the AK4641 codec used in iPAQ hx4700 and Glofiish M800
+> > among others.
+> 
+> This looks pretty good - a few small issues realting to the use of old
+> APIs and coding standards below but nothing serious.
+> 
 
-On Tue, 17 May 2011 00:53:38 +0200, Knut Petersen <Knut_Petersen@t-online.d=
-e> wrote:
+Hi, Mark! Thanks for review - your comments are really valuable.
+It seems that ASoC APIs change faster than I adapt this driver to them, but
+I hope that preparing v3 will take less time than v1->v2 took :)
 
-> Nice to know that .39 will have the feature to lock screen and all input =
-devices
-> on exotic hardware like i915GM.
+-- 
+Best regards,
+Dmitry "MAD" Artamonow
 
-The alternative is to try to include a patch which has seen limited
-testing and insufficient review into code which is shipping in a matter
-of days. Yes, leaving your machine broken isn't ideal, but the risk of
-breaking many (many) other machines which currently work OK is not good
-either.
-
-We'll get the patch tested, reviewed and merged shortly, at which point
-it will be included in a stable .39.x release, which Linux distributions
-are generally happy to pick up.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFN0fcSQp8BWwlsTdMRAqNzAKDgcO1sbmd0x8R3BF9CifZwNTgPLgCgront
-OHywd+KSSw/9blrL9I7CYiw=
-=nW7M
------END PGP SIGNATURE-----
---=-=-=--
