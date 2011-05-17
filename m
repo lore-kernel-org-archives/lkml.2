@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab1EQUHd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 16:07:33 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:22037 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217Ab1EQUHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 16:07:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=JW3XOVyMvGGOENax1qUF9NKyHeGIT3MBkYDgCBQcndbLSdhVea6VUrrdqmfmO5TadT
-         B/seP7nRrzz32okvJrCw==
+	id S932258Ab1EQUN5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 16:13:57 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52286 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932217Ab1EQUNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 16:13:55 -0400
+Message-ID: <4DD2D703.4030908@suse.cz>
+Date: Tue, 17 May 2011 22:13:55 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <1305655283.5456.753.camel@gandalf.stny.rr.com>
-References: <1304467520-31530-1-git-send-email-vnagarnaik@google.com>
- <1305059241-7629-1-git-send-email-vnagarnaik@google.com> <1305655283.5456.753.camel@gandalf.stny.rr.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Tue, 17 May 2011 13:06:59 -0700
-Message-ID: <BANLkTi=dXC=e6v7Zm5K9Gb=155XHDZpxyw@mail.gmail.com>
-Subject: Re: [PATCH v2] trace: Schedule a delayed work to call wakeup()
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] kbuild: Append RPM release to $KERNELRELEASE
+References: <1305653779-3445-1-git-send-email-asharma@fb.com> <1305653779-3445-5-git-send-email-asharma@fb.com>
+In-Reply-To: <1305653779-3445-5-git-send-email-asharma@fb.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 11:01 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2011-05-10 at 13:27 -0700, Vaibhav Nagarnaik wrote:
->> The patch schedules a delayed work after 2 ms once an event commit calls
->> to wake up the trace wait_queue. This removes the delay caused by
->> contention on spin lock in wakeup() and amortizes the wakeup() calls
->> scheduled over the 2 ms period.
->>
->> In the following example, the script enables the sys_enter_getuid and
->> sys_exit_getuid tracepoints and runs the getuid_microbench in parallel
->> with the given number of processes. The output clearly shows the latency
->> increase caused by contentions.
->>
->
-> Have you taken a look at irq_work() instead of delayed work? This would
-> probably allow us to call the wakeup version for all events.
->
-> See kernel/perf_events.c for details.
->
-> -- Steve
->
+On 17.5.2011 19:36, Arun Sharma wrote:
+> Provide the same consistency as distributor kernels.
+> uname -r matches RPM name (includes the release)
+> 
+> Glossary:
+> 
+> KERNELRELEASE = what users see
+> ___KERNELRELEASE = KERNELRELEASE without RPM release
+> __KERNELRELEASE = ___KERNELRELEASE with s/-/_/g
+> 
+> Signed-off-by: Arun Sharma <asharma@fb.com>
+> ---
+>  Makefile                 |    9 ++++++---
+>  scripts/package/Makefile |    2 +-
+>  scripts/package/mkspec   |    2 +-
+>  3 files changed, 8 insertions(+), 5 deletions(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index 28820f7..90d45f4 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -367,11 +367,14 @@ KBUILD_AFLAGS_MODULE  := -DMODULE
+>  KBUILD_CFLAGS_MODULE  := -DMODULE
+>  KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
+>  
+> -# Read KERNELRELEASE from include/config/kernel.release (if it exists)
+> -KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
+> +# Read ___KERNELRELEASE from include/config/kernel.release (if it exists)
+> +___KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
+> +# Append the release version only once. 
+> +# Note: .version could change during the build.
+> +KERNELRELEASE ?= $(___KERNELRELEASE)-$(shell /bin/sh scripts/mkversion)
 
-I looked at irq_work() as used in perf_event.c and changed the ftrace
-wakeup logic to that. I found that the latencies are still bad and don't
-scale very well. Mostly because the contention moved to irq_work_queue
-and in the irq work handler.
+Please stop decorating the kernel release string for the sake of make
+rpm, thanks. If you really want the kernel release string match rpm's
+%{version}-%{release}, how about this: Let the user set
+CONFIG_LOCALVERSION=-<number> and check in make rpm if $KERNELRELEASE
+ends with -<number>. If so, use <number> in the Release: field and the
+rest in Version:, otherwise use the same scheme as before. That way, you
+won't force a new kernel release numbering scheme on anyone.
 
-The reason to have delayed work is to have the wakeups amortize over
-different calls and it is easier because all the events have a common
-wakeup logic.
-
-Also, when you talk about having a wakeup version for events, do you see
-different wakeup handlers depending on the event? I can see that perf
-has struct irq_work as part of the event structure, but every event has
-the same wakeup handler.
-
-
-Vaibhav Nagarnaik
+Michal
