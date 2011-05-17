@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab1EQJlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 05:41:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37886 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753663Ab1EQJlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 05:41:15 -0400
-Date: Tue, 17 May 2011 10:41:11 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@kernel.org
-Subject: [PATCH] mm: tracing: Add missing GFP flags to tracing
-Message-ID: <20110517094111.GJ5279@suse.de>
-References: <20110510100954.GC4146@suse.de>
- <20110510145446.1f8e77e3.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110510145446.1f8e77e3.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753869Ab1EQJos (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 05:44:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44216 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab1EQJor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 05:44:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=eHcOPf51XqiYMhB/nebeEhsNwdkDMlUV3LAovI2+pqInWJcRnc9u4mevYlCf3fajOa
+         UE/XEzRN+J0aYXziaeKbTuh+ZbXK3MvYSV02aSZo9jd5m3vHTPvqXTxLlX0iaQnIzZGP
+         0aJXA5OTAkjZbZHPFiuEirasRafq1/nOeShYg=
+From: Sasha Levin <levinsasha928@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH V2] Documentation: Update augmented rbtree documentation
+Date: Tue, 17 May 2011 12:43:43 +0300
+Message-Id: <1305625423-17908-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.5.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(For 2.6.38-stable)
+Current documentation referred to the old method
+of handling augmented trees. Update documentation
+to correspond with the changes done in commit
+b945d6b2554d550fe95caadc61e521c0ad71fb9c.
 
-include/linux/gfp.h and include/trace/events/gfpflags.h is out of
-sync. When tracing is enabled, certain flags are not recognised and
-the text output is less useful as a result.  Add the missing flags.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Woodhouse <David.Woodhouse@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Acked-by: Ingo Molnar <mingo@elte.hu>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- include/trace/events/gfpflags.h |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ Documentation/rbtree.txt |   23 ++++++++++++++---------
+ 1 files changed, 14 insertions(+), 9 deletions(-)
 
-diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
-index e3615c0..5cb8c1b 100644
---- a/include/trace/events/gfpflags.h
-+++ b/include/trace/events/gfpflags.h
-@@ -10,6 +10,7 @@
-  */
- #define show_gfp_flags(flags)						\
- 	(flags) ? __print_flags(flags, "|",				\
-+	{(unsigned long)GFP_TRANSHUGE,		"GFP_TRANSHUGE"},	\
- 	{(unsigned long)GFP_HIGHUSER_MOVABLE,	"GFP_HIGHUSER_MOVABLE"}, \
- 	{(unsigned long)GFP_HIGHUSER,		"GFP_HIGHUSER"},	\
- 	{(unsigned long)GFP_USER,		"GFP_USER"},		\
-@@ -32,6 +33,8 @@
- 	{(unsigned long)__GFP_HARDWALL,		"GFP_HARDWALL"},	\
- 	{(unsigned long)__GFP_THISNODE,		"GFP_THISNODE"},	\
- 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
--	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"}		\
-+	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
-+	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
-+	{(unsigned long)__GFP_NO_KSWAPD,	"GFP_NO_KSWAPD"}	\
- 	) : "GFP_NOWAIT"
+diff --git a/Documentation/rbtree.txt b/Documentation/rbtree.txt
+index 19f8278..8d32d85 100644
+--- a/Documentation/rbtree.txt
++++ b/Documentation/rbtree.txt
+@@ -196,15 +196,20 @@ Support for Augmented rbtrees
+ Augmented rbtree is an rbtree with "some" additional data stored in each node.
+ This data can be used to augment some new functionality to rbtree.
+ Augmented rbtree is an optional feature built on top of basic rbtree
+-infrastructure. rbtree user who wants this feature will have an augment
+-callback function in rb_root initialized.
+-
+-This callback function will be called from rbtree core routines whenever
+-a node has a change in one or both of its children. It is the responsibility
+-of the callback function to recalculate the additional data that is in the
+-rb node using new children information. Note that if this new additional
+-data affects the parent node's additional data, then callback function has
+-to handle it and do the recursive updates.
++infrastructure. An rbtree user who wants this feature will have to call the
++augmentation functions with the user provided augmentation callback
++when inserting and erasing nodes.
++
++On insertion, the user must call rb_augment_insert() once the new node is in
++place. This will cause the augmentation function callback to be called for
++each node between the new node and the root which has been affected by the
++insertion.
++
++When erasing a node, the user must call rb_augment_erase_begin() first to
++retrieve the deepest node on the rebalance path. Then, after erasing the
++original node, the user must call rb_augment_erase_end() with the deepest
++node found earlier. This will cause the augmentation function to be called
++for each affected node between the deepest node and the root.
  
+ 
+ Interval tree is an example of augmented rb tree. Reference -
+-- 
+1.7.5.rc3
+
