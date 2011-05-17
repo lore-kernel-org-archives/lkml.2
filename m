@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab1EQJCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 05:02:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35309 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab1EQJCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 05:02:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=qNwgpbcVTAN/ILHY9GuRP0tBJLbzE2o7APfUAH6ClT8TcfilKX5zL0GRSwQGFzOin+
-         86bai0/UcOM4nWOymRBsZbqheUNCUgsF3qLVL9RueR0aKxef0damveF6UdIJfwXAMty5
-         vwo5SE7UJ8LI7Sq+YYyCkRfaip0bBE96fWbzY=
-Subject: Re: [patch v3 2/3] percpu_counter: use atomic64 for counter in SMP
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, tj@kernel.org,
-        cl@linux.com
-In-Reply-To: <20110517084419.602635499@sli10-conroe.sh.intel.com>
-References: <20110517084117.572970726@sli10-conroe.sh.intel.com>
-	 <20110517084419.602635499@sli10-conroe.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 11:02:32 +0200
-Message-ID: <1305622952.2850.23.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1753084Ab1EQJIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 05:08:46 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:44116 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752303Ab1EQJIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 05:08:44 -0400
+Date: Tue, 17 May 2011 11:08:38 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: tglx@linutronix.de, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        daniel.blueman@gmail.com
+Subject: Re: [patch 4/4] x86, ioapic: remove duplicate code for
+ saving/restoring RTEs
+Message-ID: <20110517090838.GH22093@elte.hu>
+References: <20110516185646.282418545@sbsiddha-MOBL3.sc.intel.com>
+ <20110516185646.559690403@sbsiddha-MOBL3.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516185646.559690403@sbsiddha-MOBL3.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 17 mai 2011 à 16:41 +0800, Shaohua Li a écrit :
-> pièce jointe document texte brut (percpu-counter-atomic.patch)
-> Uses atomic64 for percpu_counter, because it is cheaper than spinlock.
-> This doesn't slow fast path (percpu_counter_read). atomic64_read
-> equals to read fbc->count for 64-bit system, or equals to
-> spin_lock-read-spin_unlock for 32-bit system. Note, originally
-> the percpu_counter_read for 32-bit system doesn't hold spin_lock,
-> but that is buggy and might cause very wrong value accessed. This
-> patch fixes the issue.
-> 
-> We use sum_start and add_start to make sure _sum doesn't see deviation
-> when _add slow path is running. When _sum is running, _add will wait
-> _sum finish. This is scaring that _add is slow down, but actually not,
-> because _sum is called very rare. We could make _sum waits _add finish,
-> but since _add is called frequently, this will make _sum run very slow.
-> 
-> This can also improve some workloads with percpu_counter->lock heavily
-> contented. For example, vm_committed_as sometimes causes the contention.
-> We should tune the batch count, but if we can make percpu_counter better,
-> why not? In a 24 CPUs system and 24 processes, each runs:
-> while (1) {
-> 	mmap(128M);
-> 	munmap(128M);
-> }
-> we then measure how many loops each process can take:
-> The atomic method gives 4x faster.
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> --
 
-I NACK this patch, its not necessary, since percpu_counter doesnt
-provide a precise count api anyway.
+ok, this series looks better, but as this bug has demonstrated it we need to do 
+better to keep the ioapic code clean.
 
-Please resubmit your original patches, without the bloat.
+Firstly, please introduce a 'struct ioapic' structure that starts out with a 
+nr_registers field, and add an ioapics[] array and consolidate 
+nr_ioapic_registers into this.
 
-Thanks
+The consolidate other ioapic driver state as well:
 
+ - add a *saved_registers field and consolidate ioapic_saved_data into it
 
+ - add a 'struct mpc_ioapic mp_config' entry and consolidate mp_ioapics[]
+
+ - add a 'struct mp_ioapic_gsi gsi_config' entry and consolidate mp_gsi_routing[]
+
+ - add a 'int pin_programmed' field and consolidate mp_ioapic_routing[] into it
+
+ioapics[] itself should be static to io_apic.c.
+
+Please create a separate patch for each change: that way it's bisectable and 
+reviewable.
+
+These changes alone will make the IO-APIC code a *lot* more readable, more 
+extensible - and hopefully much less prone to suspend/resume bugs as well.
+
+Feel free to do this on top of your current queue to keep your patch-shuffling 
+overhead low.
+
+Thanks,
+
+	Ingo
