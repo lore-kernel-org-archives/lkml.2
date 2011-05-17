@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1EQHQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 03:16:55 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40822 "EHLO mx2.mail.elte.hu"
+	id S1752835Ab1EQHUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 03:20:39 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:39717 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab1EQHQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 03:16:54 -0400
-Date: Tue, 17 May 2011 09:16:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 4/4] watchdog: configure nmi watchdog period based on
- watchdog_thresh
-Message-ID: <20110517071642.GF22305@elte.hu>
-References: <1305588901-8141-1-git-send-email-msb@chromium.org>
- <1305588901-8141-4-git-send-email-msb@chromium.org>
+	id S1752551Ab1EQHUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 03:20:35 -0400
+X-ASG-Debug-ID: 1305616833-01de28096b40fd0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DD221BE.3040406@fusionio.com>
+Date: Tue, 17 May 2011 09:20:30 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305588901-8141-4-git-send-email-msb@chromium.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: "Alex,Shi" <alex.shi@intel.com>
+CC: "Li, Shaohua" <shaohua.li@intel.com>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Perfromance drop on SCSI hard disk
+References: <1305009600.21534.587.camel@debian>	 <4DCC4340.6000407@fusionio.com>  <1305247704.2373.32.camel@sli10-conroe>	 <1305255717.2373.38.camel@sli10-conroe>	 <1305533054.2375.45.camel@sli10-conroe>	 <1305535071.21534.2122.camel@debian> <1305612565.21534.2177.camel@debian>
+X-ASG-Orig-Subj: Re: Perfromance drop on SCSI hard disk
+In-Reply-To: <1305612565.21534.2177.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1305616833
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.63976
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2011-05-17 08:09, Alex,Shi wrote:
+> On Mon, 2011-05-16 at 16:37 +0800, Alex,Shi wrote:
+>>>> what I mean is current sdev (other devices too) can still be added into
+>>>> starved list, so only does async execute for current q isn't enough,
+>>>> we'd better put whole __scsi_run_queue into workqueue. something like
+>>>> below on top of yours, untested. Not sure if there are other recursive
+>>>> cases.
+>>> verified the regression can be fully fixed by your patch (with my
+>>> suggested fix to avoid race). Can we put a formal patch upstream?
+>>
+>> Yes, we tested Jens patch alone and plus Shaohua's patch too. Both of
+>> them recovered SAS disk performance too. Now I am testing them on SSD
+>> disk with kbuild and fio cases, In theory, they will both work. 
+>>
+> 
+> As expected, both patches has no effect on SSD disks in JBD. 
 
-* Mandeep Singh Baines <msb@chromium.org> wrote:
+I will queue up the combined patch, it looks fine from here as well.
 
-> Before the conversion of the NMI watchdog to perf event, the watchdog
-> timeout was 5 seconds. Now it is 60 seconds. For my particular application,
-> netbooks, 5 seconds was a better timeout. With a short timeout, we
-> catch faults earlier and are able to send back a panic. With a 60 second
-> timeout, the user is unlikely to wait and will instead hit the power
-> button, causing us to lose the panic info.
+-- 
+Jens Axboe
 
-That's an interesting observation. Have you been able to measure/observe this 
-effect somehow, or do you presume that users find 60 seconds too long?
-
-This would be a concern for upstream as well i guess.
-
-> This change configures the NMI period based on the watchdog_thresh.
-
-Hm, our tolerance for the two thresholds is not just human but technical: hard 
-lockup warnings should indeed be triggered after just a few seconds, soft 
-lockups can have false positives under extreme conditions.
-
-So we generally want a higher threshold for soft lockups than for hard lockups.
-
-So how about we couple the thresholds with a factor: we make the soft threshold 
-twice the amount of time the hard threshold is? Then we could change the 
-upstream default as well i think: lets change the NMI timeout to 10 seconds 
-(and thus have the soft threshold at 20 seconds). Is 20 seconds short enough 
-for most users to not hit reset?
-
-We might want to change another aspect of the NMI watchdog: right now it tries 
-to abort the offending task - which is really nasty if there was a spuriously 
-long irqs-off section somewhere in the kernel. How about we just print a 
-warning instead?
-
-Thanks,
-
-	Ingo
