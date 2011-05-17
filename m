@@ -1,75 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab1EQXVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 19:21:23 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:49204 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756618Ab1EQXVW (ORCPT
+	id S932623Ab1EQXWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 19:22:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38371 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756618Ab1EQXWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 19:21:22 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Dima Zavin <dima@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [RFC][PATCH] sched: Fix min_vruntime calculation in dequeue_entity
-Date: Tue, 17 May 2011 16:21:10 -0700
-Message-Id: <1305674470-23727-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
+	Tue, 17 May 2011 19:22:43 -0400
+Date: Tue, 17 May 2011 16:22:26 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Mel Gorman <mgorman@suse.de>, Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, stable <stable@kernel.org>
+Subject: Re: [PATCH 2/2] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+Message-Id: <20110517162226.96974d89.akpm@linux-foundation.org>
+In-Reply-To: <1305614225.6008.19.camel@mulgrave.site>
+References: <1305558417-24354-1-git-send-email-mgorman@suse.de>
+	<1305558417-24354-3-git-send-email-mgorman@suse.de>
+	<20110516141654.2728f05a.akpm@linux-foundation.org>
+	<1305614225.6008.19.camel@mulgrave.site>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+On Tue, 17 May 2011 10:37:04 +0400
+James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
 
-Peter had sent this patch out in response to a patch from Dima Zavin
-<dima@android.com> which tried to address the following issue:
+> On Mon, 2011-05-16 at 14:16 -0700, Andrew Morton wrote:
+> > On Mon, 16 May 2011 16:06:57 +0100
+> > Mel Gorman <mgorman@suse.de> wrote:
+> > 
+> > > Under constant allocation pressure, kswapd can be in the situation where
+> > > sleeping_prematurely() will always return true even if kswapd has been
+> > > running a long time. Check if kswapd needs to be scheduled.
+> > > 
+> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > Acked-by: Rik van Riel <riel@redhat.com>
+> > > ---
+> > >  mm/vmscan.c |    4 ++++
+> > >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index af24d1e..4d24828 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+> > >  	unsigned long balanced = 0;
+> > >  	bool all_zones_ok = true;
+> > >  
+> > > +	/* If kswapd has been running too long, just sleep */
+> > > +	if (need_resched())
+> > > +		return false;
+> > > +
+> > >  	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
+> > >  	if (remaining)
+> > >  		return true;
+> > 
+> > I'm a bit worried by this one.
+> > 
+> > Do we really fully understand why kswapd is continuously running like
+> > this?  The changelog makes me think "no" ;)
+> > 
+> > Given that the page-allocating process is madly reclaiming pages in
+> > direct reclaim (yes?) and that kswapd is madly reclaiming pages on a
+> > different CPU, we should pretty promptly get into a situation where
+> > kswapd can suspend itself.  But that obviously isn't happening.  So
+> > what *is* going on?
+> 
+> The triggering workload is a massive untar using a file on the same
+> filesystem, so that's a continuous stream of pages read into the cache
+> for the input and a stream of dirty pages out for the writes.  We
+> thought it might have been out of control shrinkers, so we already
+> debugged that and found it wasn't.  It just seems to be an imbalance in
+> the zones that the shrinkers can't fix which causes
+> sleeping_prematurely() to return true almost indefinitely.
 
-"After pulling the thread off the run-queue during a cgroup change,
-the cfs_rq.min_vruntime gets recalculated. The dequeued thread's vruntime
-then gets normalized to this new value. This can then lead to the thread
-getting an unfair boost in the new group if the vruntime of the next
-task in the old run-queue was way further ahead."
+Is the untar disk-bound?  The untar has presumably hit the writeback
+dirty_ratio?  So its rate of page allocation is approximately equal to
+the write speed of the disks?
 
-Peter suggested the following fix instead.
+If so, the VM is consuming 100% of a CPU to reclaim pages at a mere
+tens-of-megabytes-per-second.  If so, there's something seriously wrong
+here - under favorable conditions one would expect reclaim to free up
+100,000 pages/sec, maybe more.
 
-The full thread can be found here:
-https://lkml.org/lkml/2010/11/20/34
+If the untar is not disk-bound and the required page reclaim rate is
+equal to the rate at which a CPU can read, decompress and write to
+pagecache then, err, maybe possible.  But it still smells of
+inefficient reclaim.
 
-While Dima never replied publicly, I bugged him a few weeks ago
-and he said that this fix should address his original issue.
+> > Secondly, taking an up-to-100ms sleep in response to a need_resched()
+> > seems pretty savage and I suspect it risks undesirable side-effects.  A
+> > plain old cond_resched() would be more cautious.  But presumably
+> > kswapd() is already running cond_resched() pretty frequently, so why
+> > didn't that work?
+> 
+> So the specific problem with cond_resched() is that kswapd is still
+> runnable, so even if there's other work the system can be getting on
+> with, it quickly comes back to looping madly in kswapd.  If we return
+> false from sleeping_prematurely(), we stop kswapd until its woken up to
+> do more work.  This manifests, even on non sandybridge systems that
+> don't hang as a lot of time burned in kswapd.
+> 
+> I think the sandybridge bug I see on the laptop is that cond_resched()
+> is somehow ineffective:  kswapd is usually hogging one CPU and there are
+> runnable processes but they seem to cluster on other CPUs, leaving
+> kswapd to spin at close to 100% system time.
+> 
+> When the problem was first described, we tried sprinkling more
+> cond_rescheds() in the shrinker loop and it didn't work.
 
-I just wanted to resend this patch out so the fix was not missed.
+Seems to me that kswapd for some reason is doing too much work.  Or,
+more specifically is doing its work very inefficiently.  Making kswapd
+take arbitrary naps when it's misbehaving didn't fix that misbehaviour!
 
-CC: Dima Zavin <dima@android.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- kernel/sched_fair.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+It would be interesting to watch kswapd's page reclaim inefficiency
+when this is happening: /proc/vmstat:pgscan_kswapd_* versus
+/proc/vmstat:kswapd_steal.  If that ration is high then kswapd is
+scanning many pages and not reclaiming them.
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 6fa833a..fb321dc 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1072,8 +1072,6 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	se->on_rq = 0;
- 	update_cfs_load(cfs_rq, 0);
- 	account_entity_dequeue(cfs_rq, se);
--	update_min_vruntime(cfs_rq);
--	update_cfs_shares(cfs_rq);
- 
- 	/*
- 	 * Normalize the entity after updating the min_vruntime because the
-@@ -1082,6 +1080,9 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	 */
- 	if (!(flags & DEQUEUE_SLEEP))
- 		se->vruntime -= cfs_rq->min_vruntime;
-+
-+	update_min_vruntime(cfs_rq);
-+	update_cfs_shares(cfs_rq);
- }
- 
- /*
--- 
-1.7.3.2.146.gca209
+But given the prominence of shrink_slab in the traces, perhaps that
+isn't happening.
 
