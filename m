@@ -1,176 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab1EQNtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 09:49:15 -0400
-Received: from powered.by.root24.eu ([91.121.20.142]:44804 "EHLO Root24.de"
+	id S1754772Ab1EQNuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 09:50:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13276 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753427Ab1EQNtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 09:49:14 -0400
-Message-ID: <4DD27CD8.9040905@ionic.de>
-Date: Tue, 17 May 2011 15:49:12 +0200
-From: Mihai Moldovan <ionic@ionic.de>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1753888Ab1EQNuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 09:50:39 -0400
+Date: Tue, 17 May 2011 09:50:27 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        mingo@elte.hu
+Subject: Re: [RFC] ACPI, APEI, Generic Hardware Error Source (GHES) injecting
+ support
+Message-ID: <20110517135027.GJ31888@redhat.com>
+References: <1304996921-24881-1-git-send-email-ying.huang@intel.com>
+ <20110516193301.GF29881@redhat.com>
+ <4DD218B1.7080601@intel.com>
 MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drm/i915/sdvo: Reorder i2c initialisation before ddc
- proxy
-References: <4DD2648C.6020309@ionic.de> <1305637430-16026-1-git-send-email-chris@chris-wilson.co.uk>
-In-Reply-To: <1305637430-16026-1-git-send-email-chris@chris-wilson.co.uk>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms090702000105090105090801"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DD218B1.7080601@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Tue, May 17, 2011 at 02:41:53PM +0800, Huang Ying wrote:
+> On 05/17/2011 03:33 AM, Don Zickus wrote:
+> > On Tue, May 10, 2011 at 11:08:41AM +0800, Huang Ying wrote:
+> >> The testing of Generic Hardware Error Source (GHES) is quite
+> >> difficult, because special hardware is needed to trigger the hardware
+> >> error. So a software based hardware error injector for GHES is
+> >> implemented.
+> >>
+> >> Error notification is not provided in this patch.  So you still need
+> >> some NMI/SCI/IRQ injecting support to make it work.
+> > 
+> > Should we add that to this patch, otherwise it seems like the injection
+> > isn't very useful or intuitive from the end-user perspective that they
+> > have to provide their own notification source (ie NMI/SCI/MCE/IRQ).
+> 
+> We can provide the NMI/SCI/IRQ injecting in another patch.  What do you
+> think about the NMI injecting patch attached?
 
---------------ms090702000105090105090801
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: quoted-printable
+I understand what the patch is doing and I like the various injection
+points, but looking at your other injection modules I start to wonder if
+there is a smarter and easier way to do all this.  I believe the software
+injection is definitely useful but it does add bloat to the kernel.
 
-* On 17.05.2011 03:03 PM, Chris Wilson wrote:
-> The ddc proxy depends upon the underlying i2c bus being selected. Under=
+I am starting to like Ingo's event filtering idea for stuff like this I
+think (though I am still wrapping my head around it).  The beauty of
+kprobes and tracepoints and even jump labels was that they were not very
+intrusive, they did their work on the side.  It would be nice if we could
+figure out a framework for the injection stuff that did something similar.
 
-> certain configurations, the i2c-adapter functionality is queried during=
+Perhaps Ingo has some ideas?
 
-> initialisation and so may trigger an OOPS during boot. Hence, we need t=
-o
-> reorder the initialisation of the ddc proxy until after we hook up the =
-i2c
-> adapter for the SDVO device.
->
-> Reported-by: Mihai Moldovan<ionic@ionic.de>
-> Signed-off-by: Chris Wilson<chris@chris-wilson.co.uk>
+Cheers,
+Don
 
-Wow, my machine is booting fine again, thanks!
+> 
+> BTW: MCE will not be processed by GHES.
+> 
+> Best Regards,
+> Huang Ying
 
-Hope to see it included in 2.6.39. :)
+> Subject: [RFC] x86, NMI, NMI injecting support
+> 
+> This patch implements trigger NMI on specified CPUs. At the same time,
+> the NMI reason (contents of port 0x61) can be faked too. This can be
+> used to debug and test the NMI handler.
+> 
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> ---
+>  arch/x86/Kconfig.debug            |   10 +++
+>  arch/x86/include/asm/mach_traps.h |    9 ++
+>  arch/x86/kernel/Makefile          |    1 
+>  arch/x86/kernel/nmi_inject.c      |  117 ++++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/traps.c           |   34 ++++++++++-
+>  5 files changed, 167 insertions(+), 4 deletions(-)
+> 
+> --- a/arch/x86/Kconfig.debug
+> +++ b/arch/x86/Kconfig.debug
+> @@ -304,4 +304,14 @@ config DEBUG_STRICT_USER_COPY_CHECKS
+>  
+>  	  If unsure, or if you run an older (pre 4.4) gcc, say N.
+>  
+> +config NMI_INJECT
+> +	tristate "NMI injecting support"
+> +	depends on DEBUG_KERNEL
+> +	---help---
+> +	  This can be used to trigger NMI on specified CPUs. And the
+> +	  reason of NMI (contents of port 0x61) can be faked
+> +	  too. This can be used to debug and test the NMI handler.
+> +
+> +	  If unsure, say N.
+> +
+>  endmenu
+> --- a/arch/x86/include/asm/mach_traps.h
+> +++ b/arch/x86/include/asm/mach_traps.h
+> @@ -17,7 +17,7 @@
+>  #define NMI_REASON_CLEAR_IOCHK	0x08
+>  #define NMI_REASON_CLEAR_MASK	0x0f
+>  
+> -static inline unsigned char get_nmi_reason(void)
+> +static inline unsigned char __get_nmi_reason(void)
+>  {
+>  	return inb(NMI_REASON_PORT);
+>  }
+> @@ -40,4 +40,11 @@ static inline void reassert_nmi(void)
+>  		unlock_cmos();
+>  }
+>  
+> +struct nmi_reason_inject_data {
+> +	unsigned char reason;
+> +	unsigned char valid : 1;
+> +};
+> +
+> +extern struct nmi_reason_inject_data nmi_reason_inject_data;
+> +
+>  #endif /* _ASM_X86_MACH_DEFAULT_MACH_TRAPS_H */
+> --- a/arch/x86/kernel/Makefile
+> +++ b/arch/x86/kernel/Makefile
+> @@ -113,6 +113,7 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+>  obj-$(CONFIG_OF)			+= devicetree.o
+>  
+>  obj-y					+= hwerr.o
+> +obj-$(CONFIG_NMI_INJECT)		+= nmi_inject.o
+>  
+>  ###
+>  # 64 bit specific files
+> --- /dev/null
+> +++ b/arch/x86/kernel/nmi_inject.c
+> @@ -0,0 +1,117 @@
+> +/*
+> + * NMI injector, for NMI handler testing
+> + *
+> + * Copyright 2010 Intel Corp.
+> + *   Author: Huang Ying <ying.huang@intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version
+> + * 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/debugfs.h>
+> +#include <linux/cpu.h>
+> +#include <asm/mach_traps.h>
+> +#include <asm/apic.h>
+> +
+> +static int nmi_reason_inject_get(void *data, u64 *val)
+> +{
+> +	if (nmi_reason_inject_data.valid)
+> +		*val = nmi_reason_inject_data.reason;
+> +	else
+> +		*val = ~0ULL;
+> +	return 0;
+> +}
+> +
+> +static int nmi_reason_inject_set(void *data, u64 val)
+> +{
+> +	nmi_reason_inject_data.reason = val;
+> +	nmi_reason_inject_data.valid = 1;
+> +	return 0;
+> +}
+> +
+> +DEFINE_SIMPLE_ATTRIBUTE(nmi_reason_inject_fops, nmi_reason_inject_get,
+> +			nmi_reason_inject_set, "0x%llx\n");
+> +
+> +static int nmi_reason_uninject_set(void *data, u64 val)
+> +{
+> +	nmi_reason_inject_data.valid = 0;
+> +	return 0;
+> +}
+> +
+> +DEFINE_SIMPLE_ATTRIBUTE(nmi_reason_uninject_fops, NULL,
+> +			nmi_reason_uninject_set, "%llu\n");
+> +
+> +static int nmi_inject_set(void *data, u64 val)
+> +{
+> +	int cpu;
+> +	cpumask_var_t cpu_mask;
+> +
+> +	alloc_cpumask_var(&cpu_mask, GFP_KERNEL);
+> +	cpumask_clear(cpu_mask);
+> +	for_each_online_cpu(cpu) {
+> +		if (cpu >= sizeof(val))
+> +			continue;
+> +		if (val & (1ULL << cpu))
+> +			cpumask_set_cpu(cpu, cpu_mask);
+> +	}
+> +	if (!cpumask_empty(cpu_mask))
+> +		apic->send_IPI_mask(cpu_mask, NMI_VECTOR);
+> +	free_cpumask_var(cpu_mask);
+> +	return 0;
+> +}
+> +
+> +DEFINE_SIMPLE_ATTRIBUTE(nmi_inject_fops, NULL, nmi_inject_set, "0x%llx\n");
+> +
+> +static struct dentry *nmi_debug_dir;
+> +
+> +static int __init nmi_inject_init(void)
+> +{
+> +	int rc;
+> +	struct dentry *de;
+> +
+> +	rc = -ENOMEM;
+> +	nmi_debug_dir = debugfs_create_dir("nmi", NULL);
+> +	if (!nmi_debug_dir)
+> +		return rc;
+> +	de = debugfs_create_file("inject", S_IWUSR, nmi_debug_dir,
+> +				 NULL, &nmi_inject_fops);
+> +	if (!de)
+> +		goto err;
+> +	de = debugfs_create_file("reason_inject", S_IRUSR | S_IWUSR,
+> +				 nmi_debug_dir, NULL, &nmi_reason_inject_fops);
+> +	if (!de)
+> +		goto err;
+> +	de = debugfs_create_file("reason_uninject", S_IWUSR,
+> +				 nmi_debug_dir, NULL, &nmi_reason_uninject_fops);
+> +	if (!de)
+> +		goto err;
+> +
+> +	return 0;
+> +err:
+> +	debugfs_remove_recursive(nmi_debug_dir);
+> +	return rc;
+> +}
+> +
+> +static void __exit nmi_inject_exit(void)
+> +{
+> +	debugfs_remove_recursive(nmi_debug_dir);
+> +}
+> +
+> +module_init(nmi_inject_init);
+> +module_exit(nmi_inject_exit);
+> +
+> +MODULE_AUTHOR("Huang Ying");
+> +MODULE_DESCRIPTION("NMI injecting support");
+> +MODULE_LICENSE("GPL");
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -316,6 +316,34 @@ static int __init setup_unknown_nmi_pani
+>  }
+>  __setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+>  
+> +struct nmi_reason_inject_data nmi_reason_inject_data;
+> +EXPORT_SYMBOL_GPL(nmi_reason_inject_data);
+> +
+> +static inline unsigned char get_nmi_reason(void)
+> +{
+> +	if (nmi_reason_inject_data.valid)
+> +		return nmi_reason_inject_data.reason;
+> +	else
+> +		return __get_nmi_reason();
+> +}
+> +
+> +static inline void outb_nmi_reason(unsigned char reason)
+> +{
+> +	static unsigned char prev_reason;
+> +
+> +	if (nmi_reason_inject_data.valid) {
+> +		if (reason & NMI_REASON_CLEAR_SERR)
+> +			nmi_reason_inject_data.reason &= ~NMI_REASON_SERR;
+> +		if (prev_reason == (reason | NMI_REASON_CLEAR_IOCHK) &&
+> +		    !(reason & NMI_REASON_CLEAR_IOCHK))
+> +			nmi_reason_inject_data.reason &= ~NMI_REASON_IOCHK;
+> +		if (!nmi_reason_inject_data.reason)
+> +			nmi_reason_inject_data.valid = 0;
+> +		prev_reason = reason;
+> +	} else
+> +		outb(reason, NMI_REASON_PORT);
+> +}
+> +
+>  static notrace __kprobes void
+>  pci_serr_error(unsigned char reason, struct pt_regs *regs)
+>  {
+> @@ -340,7 +368,7 @@ pci_serr_error(unsigned char reason, str
+>  
+>  	/* Clear and disable the PCI SERR error line. */
+>  	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
+> -	outb(reason, NMI_REASON_PORT);
+> +	outb_nmi_reason(reason);
+>  }
+>  
+>  static notrace __kprobes void
+> @@ -358,7 +386,7 @@ io_check_error(unsigned char reason, str
+>  
+>  	/* Re-enable the IOCK line, wait for a few seconds */
+>  	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_IOCHK;
+> -	outb(reason, NMI_REASON_PORT);
+> +	outb_nmi_reason(reason);
+>  
+>  	i = 20000;
+>  	while (--i) {
+> @@ -367,7 +395,7 @@ io_check_error(unsigned char reason, str
+>  	}
+>  
+>  	reason &= ~NMI_REASON_CLEAR_IOCHK;
+> -	outb(reason, NMI_REASON_PORT);
+> +	outb_nmi_reason(reason);
+>  }
+>  
+>  void set_unknown_nmi_as_hwerr(void)
 
-Best regards,
-
-
-Mihai
-
-
-
---------------ms090702000105090105090801
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIT1DCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGyjCCBbKgAwIBAgICBnIwDQYJKoZIhvcNAQEF
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMDAzMjMxNjI2NTZa
-Fw0xMjAzMjQwNTQ2MjJaMIHHMSAwHgYDVQQNExcxNjg2MTctOUo5elVlMUVuNHg5b3ZiTzEL
-MAkGA1UEBhMCREUxGzAZBgNVBAgTEkJhZGVuLVd1ZXJ0dGVtYmVyZzESMBAGA1UEBxMJS2Fy
-bHNydWhlMS0wKwYDVQQLEyRTdGFydENvbSBWZXJpZmllZCBDZXJ0aWZpY2F0ZSBNZW1iZXIx
-FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
-ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMssU6wPYwJJAxY07er/P6ANPXgz
-yCczuA+7q/eql1St56r91yQ534A4oeXEqRZvpMsDuvczNG1Yz80nLpM+lO3Wg8csxaGReewe
-RBIS3abf40HCIBVlOl7oTcmzZuzqz2KE70CHZ7p3k0WAEUfUb7AS8qrqxuoj0dtUkrdMwjoD
-rPWs3zJ+vHo5FU3sTvj2ksiStjG3NMERBT+1Gzf2pVx2cKJRBmqACbKZfwE9QufRqrZT8bWY
-i5DCV34RL7eVLnejLL+MvtarZv2K8Acojq9t7zO9Z+0rnlr6o46c2egVB+s/ol28q3DEce6f
-p1KrCiujqRqQwVQ8O/2ogg4l5h0CAwEAAaOCAvcwggLzMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU3JbCyOa+BBzV
-nBAKycZGQAzit2wwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
-EIEOaW9uaWNAaW9uaWMuZGUwggFCBgNVHSAEggE5MIIBNTCCATEGCysGAQQBgbU3AQIBMIIB
-IDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
-BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCBtwYI
-KwYBBQUHAgIwgaowFBYNU3RhcnRDb20gTHRkLjADAgEBGoGRTGltaXRlZCBMaWFiaWxpdHks
-IHNlZSBzZWN0aW9uICpMZWdhbCBMaW1pdGF0aW9ucyogb2YgdGhlIFN0YXJ0Q29tIENlcnRp
-ZmljYXRpb24gQXV0aG9yaXR5IFBvbGljeSBhdmFpbGFibGUgYXQgaHR0cDovL3d3dy5zdGFy
-dHNzbC5jb20vcG9saWN5LnBkZjBjBgNVHR8EXDBaMCugKaAnhiVodHRwOi8vd3d3LnN0YXJ0
-c3NsLmNvbS9jcnR1Mi1jcmwuY3JsMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9j
-cnR1Mi1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2Nz
-cC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMi9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczIuY2xpZW50LmNhLmNydDAjBgNV
-HRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBACle
-v1JwhVI4Pu8GzKRJzJdcYdsT7fJ9R5OzNnec4CADsb9Xu7HDyRa5qABBXihHvmo+fxGVe6Hy
-8TxPvZYCGaeUi2t6aodIFOTQDWcdEP9o7SynBOXHqsN2lZ08Q4MBuoGfquJi0XjpCNnLY9KS
-OZTHTwAIqGVH7lf99egY1Atfl+y/Lc0e6Sw/0qvcnaQSzwCZ/OkqVWSTGDZXwCDFuy6Cbwjy
-Kn9qshZzeMqvSKHmHPihzJQ6eVXImZgrgWk5FrBpO8d59xoqO32PbSyM0cZhqvkbG/nlWPbz
-Xn13+cgG7ajAGCg8XueMeh3m03sIIHinvgaeHOAqeO3TvVVv6WQwggbKMIIFsqADAgECAgIG
-cjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNV
-BAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4X
-DTEwMDMyMzE2MjY1NloXDTEyMDMyNDA1NDYyMlowgccxIDAeBgNVBA0TFzE2ODYxNy05Sjl6
-VWUxRW40eDlvdmJPMQswCQYDVQQGEwJERTEbMBkGA1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJn
-MRIwEAYDVQQHEwlLYXJsc3J1aGUxLTArBgNVBAsTJFN0YXJ0Q29tIFZlcmlmaWVkIENlcnRp
-ZmljYXRlIE1lbWJlcjEXMBUGA1UEAxMOTWloYWkgTW9sZG92YW4xHTAbBgkqhkiG9w0BCQEW
-DmlvbmljQGlvbmljLmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyyxTrA9j
-AkkDFjTt6v8/oA09eDPIJzO4D7ur96qXVK3nqv3XJDnfgDih5cSpFm+kywO69zM0bVjPzScu
-kz6U7daDxyzFoZF57B5EEhLdpt/jQcIgFWU6XuhNybNm7OrPYoTvQIdnuneTRYARR9RvsBLy
-qurG6iPR21SSt0zCOgOs9azfMn68ejkVTexO+PaSyJK2Mbc0wREFP7UbN/alXHZwolEGaoAJ
-spl/AT1C59GqtlPxtZiLkMJXfhEvt5Uud6Msv4y+1qtm/YrwByiOr23vM71n7SueWvqjjpzZ
-6BUH6z+iXbyrcMRx7p+nUqsKK6OpGpDBVDw7/aiCDiXmHQIDAQABo4IC9zCCAvMwCQYDVR0T
-BAIwADALBgNVHQ8EBAMCBLAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1Ud
-DgQWBBTclsLI5r4EHNWcEArJxkZADOK3bDAfBgNVHSMEGDAWgBSuVYNv7DHKufcd+q9rMfPI
-HeOsuzAZBgNVHREEEjAQgQ5pb25pY0Bpb25pYy5kZTCCAUIGA1UdIASCATkwggE1MIIBMQYL
-KwYBBAGBtTcBAgEwggEgMC4GCCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9w
-b2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9pbnRlcm1l
-ZGlhdGUucGRmMIG3BggrBgEFBQcCAjCBqjAUFg1TdGFydENvbSBMdGQuMAMCAQEagZFMaW1p
-dGVkIExpYWJpbGl0eSwgc2VlIHNlY3Rpb24gKkxlZ2FsIExpbWl0YXRpb25zKiBvZiB0aGUg
-U3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkgUG9saWN5IGF2YWlsYWJsZSBhdCBo
-dHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMGMGA1UdHwRcMFowK6ApoCeGJWh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwK6ApoCeGJWh0dHA6Ly9jcmwu
-c3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUH
-MAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBCBggr
-BgEFBQcwAoY2aHR0cDovL3d3dy5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5jbGll
-bnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG
-9w0BAQUFAAOCAQEAKV6/UnCFUjg+7wbMpEnMl1xh2xPt8n1Hk7M2d5zgIAOxv1e7scPJFrmo
-AEFeKEe+aj5/EZV7ofLxPE+9lgIZp5SLa3pqh0gU5NANZx0Q/2jtLKcE5ceqw3aVnTxDgwG6
-gZ+q4mLReOkI2ctj0pI5lMdPAAioZUfuV/316BjUC1+X7L8tzR7pLD/Sq9ydpBLPAJn86SpV
-ZJMYNlfAIMW7LoJvCPIqf2qyFnN4yq9IoeYc+KHMlDp5VciZmCuBaTkWsGk7x3n3Gio7fY9t
-LIzRxmGq+Rsb+eVY9vNefXf5yAbtqMAYKDxe54x6HebTewggeKe+Bp4c4Cp47dO9VW/pZDGC
-A80wggPJAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
-MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMv
-U3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAgZyMAkG
-BSsOAwIaBQCgggIOMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
-DTExMDUxNzEzNDkxMlowIwYJKoZIhvcNAQkEMRYEFPmjUyNvyvo4bjRTiPxdPbvntjqBMF8G
-CSqGSIb3DQEJDzFSMFAwCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIA
-gDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBpAYJKwYBBAGCNxAE
-MYGWMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UE
-CxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRD
-b20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAgZyMIGmBgsqhkiG
-9w0BCRACCzGBlqCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
-KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgIGcjAN
-BgkqhkiG9w0BAQEFAASCAQAiICjLZ/giOipRfHR6wCjZf4FJc9DWAOvmly4bWdc2al6yERFp
-XSJ4IgQoFXeAInSN6+bfq15Od5HRJOBsqBBL30TZspBRyrmdIUHMUhWRGcDrfBiIueu6oViJ
-lICrDzWZTVnRmz5F8xKREhoBPTme6N725AcJiI06TlFfmkzUHcqZApq4yJmAqTkGrLgZjLJU
-rcvxBQ5EyDDcVXX17xR0fSA8LBzRuXcVqMbbmu27cWT4r1sIBGXHi7ytTi06TPKObHErP9nP
-3qJTCo7EiKTJoSA4QF2DljuXrFXLXAQOLE+EIfIPa0xucTrUbCdTQUmevYJHfIiQPanokbWm
-qbcnAAAAAAAA
---------------ms090702000105090105090801--
