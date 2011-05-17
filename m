@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab1EQSyD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 14:54:03 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:42526 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756375Ab1EQSyA (ORCPT
+	id S1756508Ab1EQSxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 14:53:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41913 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756467Ab1EQSxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 14:54:00 -0400
-X-Sasl-enc: UpspdN14Ny8LXurwbbdC0OaYkqCIdM/wb8g3KGi7viMY 1305658439
-Date: Tue, 17 May 2011 11:51:33 -0700
-From: Greg KH <greg@kroah.com>
-To: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
-        alan@linux.intel.com
-Subject: Re: [PATCHv2 1/2] amba pl011: workaround for uart registers lockup
-Message-ID: <20110517185133.GB9105@kroah.com>
-References: <20110516172958.GA13011@kroah.com>
- <1305609617-9524-1-git-send-email-shreshthakumar.sahu@stericsson.com>
- <20110517182356.GA17703@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110517182356.GA17703@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 May 2011 14:53:10 -0400
+Date: Tue, 17 May 2011 11:52:45 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, davem@davemloft.net,
+        Huang Ying <ying.huang@intel.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: [PATCH -next] crypto: fix aesni build on i386
+Message-Id: <20110517115245.5544a0d0.randy.dunlap@oracle.com>
+In-Reply-To: <20110517142749.8927b65b.sfr@canb.auug.org.au>
+References: <20110517142749.8927b65b.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090205.4DD2C409.0076:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 11:23:56AM -0700, Greg KH wrote:
-> On Tue, May 17, 2011 at 10:50:17AM +0530, Shreshtha Kumar SAHU wrote:
-> > From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-> > 
-> > This workaround aims to break the deadlock situation
-> > which raises during continuous transfer of data for long
-> > duration over uart with hardware flow control. It is
-> > observed that CTS interrupt cannot be cleared in uart
-> > interrupt register (ICR). Hence further transfer over
-> > uart gets blocked.
-> > 
-> > It is seen that during such deadlock condition ICR
-> > don't get cleared even on multiple write. This leads
-> > pass_counter to decrease and finally reach zero. This
-> > can be taken as trigger point to run this UART_BT_WA.
-> > 
-> > Workaround backups the register configuration, does soft
-> > reset of UART using BIT-0 of PRCC_K_SOFTRST_SET/CLEAR
-> > registers and restores the registers.
-> > 
-> > This patch also provides support for uart init and exit
-> > function calls if present.
-> 
-> Why?  You don't use these callbacks in this driver, so why add them?
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Ok, I see them in the 2/2 patch now, thanks.
+Fix build error on i386 by moving function prototypes:
 
-Do you still want me to take this patch through the serial tree, or will
-both be going through some ARM tree?
+arch/x86/crypto/aesni-intel_glue.c: In function 'aesni_init':
+arch/x86/crypto/aesni-intel_glue.c:1263: error: implicit declaration of function 'crypto_fpu_init'
+arch/x86/crypto/aesni-intel_glue.c: In function 'aesni_exit':
+arch/x86/crypto/aesni-intel_glue.c:1373: error: implicit declaration of function 'crypto_fpu_exit'
 
-greg k-h
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ arch/x86/crypto/aesni-intel_glue.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+These function prototypes should preferably be in a header file somewhere.
+
+--- linux-next-20110517.orig/arch/x86/crypto/aesni-intel_glue.c
++++ linux-next-20110517/arch/x86/crypto/aesni-intel_glue.c
+@@ -94,6 +94,10 @@ asmlinkage void aesni_cbc_enc(struct cry
+ 			      const u8 *in, unsigned int len, u8 *iv);
+ asmlinkage void aesni_cbc_dec(struct crypto_aes_ctx *ctx, u8 *out,
+ 			      const u8 *in, unsigned int len, u8 *iv);
++
++int crypto_fpu_init(void);
++void crypto_fpu_exit(void);
++
+ #ifdef CONFIG_X86_64
+ asmlinkage void aesni_ctr_enc(struct crypto_aes_ctx *ctx, u8 *out,
+ 			      const u8 *in, unsigned int len, u8 *iv);
+@@ -140,9 +144,6 @@ asmlinkage void aesni_gcm_dec(void *ctx,
+ 			u8 *hash_subkey, const u8 *aad, unsigned long aad_len,
+ 			u8 *auth_tag, unsigned long auth_tag_len);
+ 
+-int crypto_fpu_init(void);
+-void crypto_fpu_exit(void);
+-
+ static inline struct
+ aesni_rfc4106_gcm_ctx *aesni_rfc4106_gcm_ctx_get(struct crypto_aead *tfm)
+ {
