@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab1EQM07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 08:26:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43002 "EHLO
+	id S1754507Ab1EQM1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 08:27:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40684 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754052Ab1EQM05 convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1753713Ab1EQM1a convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 08:26:57 -0400
+	Tue, 17 May 2011 08:27:30 -0400
 From: Ben Hutchings <ben@decadent.org.uk>
 To: David Woodhouse <dwmw2@infradead.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Shiang Tu <shiang_tu@ralinktech.com>,
@@ -15,120 +15,161 @@ In-Reply-To: <1305635052.19966.142.camel@localhost>
 References: <1305635052.19966.142.camel@localhost>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 17 May 2011 13:26:53 +0100
-Message-ID: <1305635213.19966.144.camel@localhost>
+Date: Tue, 17 May 2011 13:27:24 +0100
+Message-ID: <1305635244.19966.145.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: [PATCH firmware 2/3] rt2860sta: Use latest firmware for RT3090
+Subject: [PATCH firmware 3/3] rt2870sta: Use latest firmware for RT3070 and
+ RT3071
 X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
 X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ralink's original drivers for RT2800P/RT2800E-family chips used
-multiple different versions of the firmware for different chips.  The
-rt2860sta driver in staging was briefly converted to load different
-files for different chips.  However, the current rt2860.bin is
-supposed to work on all of them, so replace rt3090.bin with a symlink.
+Ralink's original drivers for RT2800U-family chips used multiple
+different versions of the firmware for different chips.  The rt2870sta
+driver in staging was briefly converted to load different files for
+different chips.  However, the current rt2870.bin provides 2 images
+that are supposed to cover all of them, so:
+
+- Replace rt3070.bin with a symlink.  The driver will use the first
+  image and ignore the second.
+- Replace rt3071.bin with a copy of the second image in the current
+  rt2870.bin.
 
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- WHENCE     |    2 +-
- rt3090.bin |  Bin 8192 -> 10 bytes
- 2 files changed, 1 insertions(+), 1 deletions(-)
- mode change 100644 => 120000 rt3090.bin
+ WHENCE     |   12 +++++++++++-
+ rt3070.bin |  Bin 4096 -> 10 bytes
+ rt3071.bin |  Bin 4096 -> 4096 bytes
+ 3 files changed, 11 insertions(+), 1 deletions(-)
+ mode change 100644 => 120000 rt3070.bin
 
 diff --git a/WHENCE b/WHENCE
-index d1e5fba..e28b0cc 100644
+index e28b0cc..f005c0f 100644
 --- a/WHENCE
 +++ b/WHENCE
-@@ -1113,7 +1113,7 @@ File: rt3090.bin
+@@ -1120,12 +1120,22 @@ This is a link to rt2860.bin for compatibility.
+ Driver: rt2800usb - Ralink RT2870, RT3070, RT3071, RT3072, RT5370 wireless MACs
+ 
+ File: rt2870.bin
++
++Licence: Redistributable. See LICENCE.ralink-firmware.txt for details
++
++Binary file supplied by Shiang Tu <shiang_tu@ralinktech.com>. Firmware Version 29
++
++--------------------------------------------------------------------------
++
++Driver: rt2870sta - Ralink RT2870, RT3070, RT3071 wireless MACs
++
+ File: rt3070.bin
+ File: rt3071.bin
  
  Licence: Redistributable. See LICENCE.ralink-firmware.txt for details
  
--Found in hex form in kernel source.
-+This is a link to rt2860.bin for compatibility.
+-Binary file supplied by Shiang Tu <shiang_tu@ralinktech.com>. Firmware Version 29
++rt3070.bin is a link to rt2870.bin for compatibility.
++rt3071.bin is a copy of bytes 4096-8191 of rt2870.bin for compatibility.
  
  --------------------------------------------------------------------------
  
-diff --git a/rt3090.bin b/rt3090.bin
+diff --git a/rt3070.bin b/rt3070.bin
 deleted file mode 100644
-index d8f0925f30a707b76e347455e9f609f3718451b9..0000000000000000000000000000000000000000
+index cd49e9601489592323d63bfe309dc8c0d18564b7..0000000000000000000000000000000000000000
 GIT binary patch
 literal 0
 HcmV?d00001
 
-literal 8192
-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
+literal 4096
+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
 
-diff --git a/rt3090.bin b/rt3090.bin
+diff --git a/rt3070.bin b/rt3070.bin
 new file mode 120000
-index 0000000..c5a9ab0
+index 0000000..d233a1d
 --- /dev/null
-+++ b/rt3090.bin
++++ b/rt3070.bin
 @@ -0,0 +1 @@
-+rt2860.bin
++rt2870.bin
 \ No newline at end of file
+diff --git a/rt3071.bin b/rt3071.bin
+index 6db66b3bc3ba367bee086e09adf314982abba71d..b1f44e0207aef4728ec0d401a499512f048a0b7b 100644
+GIT binary patch
+delta 1625
+zcmb7EU2GIp6yCWrv)%s5?Cj52wm<8pEv3co&=!fYT@kkyp@z~9J1Z?_Vj5qJ$$+~w
+zC^F+#UW|#i9Ryws*o}!Xnm$P6!5EXp7$1xpjETNo=w2U4v^Ua8j7rxtyMU!n`f|^A
+zzx$n^d*;lw<90k%sZ@~EgQNi@y@n!#C^Cei9E$qoC`zE%KGgamQr<z)?^V$sZ|3E;
+zi3H}}BI-(<W>q3BJUaGtWB{8oaWhyDh}`h0baSWl?IXd^L~#G1;M8PrYAQIT1<xK1
+zu4LpVX62Vm`NA>ztK*?lFNfaCg)i9Q&v2M6_<WIph0hf+GJqm|3qQBt0e=^2z?tXf
+zMB!T4?snF>?yWSlX7Z@2#im5u-uwukPj!^t<RTvl+&yx-Q1>183ABBtCYOA~)yr<y
+zeHKeRx!fb>vz$F##VTNAt5rM*Sg<>*cvlma5V?FDsDK@;Q4Lkf;qzGu8gbn@j~*U2
+zhjKevG1tvX(Xu<^9&x9!sj?z-drJxy!a19ju^D2Uitnr}I_297*Q3_G0<pA%VJVs0
+z!>}17n&s+5v#~h<TZvSt{=>yRd$Bo4^%?<?0CkL1Ktm2<(Z^_3+hPcoVk0YvMQ#<!
+z;#iJn6}kC4PabCWmzyG7wJuI1|3?U+8UpJ1Z%Lu=cduo!^6lk}-1y;!rX;ZG{DIo7
+zleXzy5}FeA?(WWftZ$G)Kj{%xq|>ZiYj3riM%sSN6N8gd9fza$IjKqr|C^m?%+*Ja
+z-uo0r9X7j2nq!FsO^sS3MgvVnQf5PB#P-*w3g{67rtJpp^(N~^?owCMEtH4G-FafX
+zVx5+wS5~$4G`j7<cWKh{b&>VePM=%IJ(F54;PDSwaTN;AxVmM57zpxbk#y;9;pVQ4
+zJHN_Ao$4kMGgr^<uxaKjx96u?)HGj<xglejiAkEg9N=Nroj9*sYSbt#V@ZIi#;AvA
+zqN~%HS<ZZj>cFbRPqe?7Es(UpsIK1FDNfUAvrjx?Z-Xs~(HT&g8${LfMmVqYf`Zqz
+z<ph>mfA#KA%r(GVwh}jsrFIg(ek*~;r8bXmyq{mrCQ1iN<1`KLLG*W@VhhTtfHET~
+z{<zX@D7!EDd`jWWz9-M@-+N~KIXX7$hXyMJ=Og}oF&2`QD^5mmol|1Wc|nXiKY~3k
+zrkn#{nHWm9kl6tvymV}FZpmCcLHk1??QyriG<WTUsx(jaGul6T6n-CO`(dT9hxq20
+z*By0?uh?j<^7b~T)35G`HPdZt6$EB%w$9iBYrv?7wH~V3`syZ!<NnhfRb^9E(+HZF
+zyh*d}FQL|hPN}ZTilw~%X}4JZ5C<HcF#Y-Gc|ch95sf!xD=vcuEfMVt(4d+I1p6^6
+z67?5APhnv<nN64{G52QfG{f9EhGoI~2B98;&8=X!gN=dh1DmMw8e>J6aqqB?Xy3p~
+zpss}I@EQ*F8Y0wV2c6dgqo}Rb`8v>%YHOvFVWUZa%e1xRC%OD#9t#{vKj6I}4;t-|
+rg+MlVXJTNt!<QBTCjj>`h_oJP;nkI>(@{SN5kJxDe?xrR8>N2$&U}#)
+
+delta 653
+zcmXYt!A}!G6vlVoPRlN|usgG`)P`kk1hENPHE2i#O~pWj17JZ&j4lR`BrCKLi7AbS
+zi}5gI)DSNkt4B!;gqvvi12~`_^x`DA9z5tqs22})3LNHp-@NzxCX-ii3QlLaTn4=j
+z^i!bE0%-=~067n&2a^j4u$G~53(PJcv#C(ni7GhuBthjzJhdHP?C$L%HuW$sjZ%a-
+zu3po>oYdc)F<{W>95T|wM*518&KM6yjIB}J;^D#DI6sX)&)~lWNh0>*rWGPK5Nq+L
+zy>D1lzJK5z%Xg5nWhR&ot#X1*LF>U_369x&DXL4nbd~DBOJhY|8u!OmJ=-5&O|d4W
+zosB^hx&4JSyQefEH(5B$mXO1ep&GUw8tq7I^luFKJ>tvcnPj#h^N4C9oh&<K(<R?t
+zNRpXc=)1UZIlVA&-S3?Yy9$^|hN@nNth?B}!IrB^tX+$<b+v&N)j0dDcC$~S_GyH<
+zT787-C;a0<CFymt=UU3PX8fbOWe}xzvdXO!s=As`O}yOjhyBy?wR^LO8y4LfZ;mZh
+zZ$RT3yH?XOZ@r>A;+dTwHzbRmKj?*XHx=P1mUu?-@VtWs121{zy<lLU5x`ptMV|U0
+z+#8C{^2vlZN9Bjvd_d)=0mUd=9f++>*Nd%n=-+8b3W`}(9687;!Mu#4eU!BEcqRyn
+zTu22o{d2o+SX_4sCM8LBC~^s66Ko>VY{e%0Vbj%+H<cTfb0Z2xGViGk*m@+Uu1+^p
+b(gyn)IW72=y67)h`4H`@NM2TqTOa=egDlvf
+
 -- 
 1.7.5.1
-
 
 
