@@ -1,77 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab1EQQXE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 12:23:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53540 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755715Ab1EQQXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 12:23:02 -0400
-Date: Tue, 17 May 2011 17:22:56 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/4] mm: slub: Do not take expensive steps for SLUBs
- speculative high-order allocations
-Message-ID: <20110517162256.GO5279@suse.de>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
- <1305295404-12129-4-git-send-email-mgorman@suse.de>
- <alpine.DEB.2.00.1105161411440.4353@chino.kir.corp.google.com>
- <20110517084227.GI5279@suse.de>
- <alpine.DEB.2.00.1105170847550.11187@router.home>
+	id S1755997Ab1EQQ14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 12:27:56 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:56675 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755722Ab1EQQ1y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 12:27:54 -0400
+From: Tom Lendacky <tahm@linux.vnet.ibm.com>
+Organization: IBM Linux Performance
+To: Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 09/18] virtio: use avail_event index
+Date: Tue, 17 May 2011 11:23:32 -0500
+User-Agent: KMail/1.13.7 (Linux/2.6.35.13-91.fc14.i686.PAE; KDE/4.6.2; i686; ; )
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+References: <cover.1304541918.git.mst@redhat.com> <20110515135541.GF24932@redhat.com> <87ei3zdsq2.fsf@rustcorp.com.au>
+In-Reply-To: <87ei3zdsq2.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105170847550.11187@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105171123.34706.tahm@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 08:51:47AM -0500, Christoph Lameter wrote:
-> On Tue, 17 May 2011, Mel Gorman wrote:
-> 
-> > entirely. Christoph wants to maintain historic behaviour of SLUB to
-> > maximise the number of high-order pages it uses and at the end of the
-> > day, which option performs better depends entirely on the workload
-> > and machine configuration.
-> 
-> That is not what I meant. I would like more higher order allocations to
-> succeed. That does not mean that slubs allocation methods and flags passed
-> have to stay the same. You can change the slub behavior if it helps.
-> 
 
-In this particular patch, the success rate for high order allocations
-would likely decrease in low memory conditions albeit the latency when
-calling the page allocator will be lower and the disruption to the
-system will be less (no copying or reclaim of pages). My expectation
-would be that it's cheaper for SLUB to fall back than compact memory
-or reclaim pages even if this means a slab page is smaller until more
-memory is free. However, if the "goodness" criteria is high order
-allocation success rate, the patch shouldn't be merged.
-
-> I am just suspicious of compaction. If these mods are needed to reduce the
-> amount of higher order pages then compaction does not have the
-> beneficial effect that it should have. It does not actually
-> increase the available higher order pages. Fix that first.
+On Monday, May 16, 2011 02:12:21 AM Rusty Russell wrote:
+> On Sun, 15 May 2011 16:55:41 +0300, "Michael S. Tsirkin" <mst@redhat.com> 
+wrote:
+> > On Mon, May 09, 2011 at 02:03:26PM +0930, Rusty Russell wrote:
+> > > On Wed, 4 May 2011 23:51:47 +0300, "Michael S. Tsirkin" <mst@redhat.com> 
+wrote:
+> > > > Use the new avail_event feature to reduce the number
+> > > > of exits from the guest.
+> > > 
+> > > Figures here would be nice :)
+> > 
+> > You mean ASCII art in comments?
 > 
+> I mean benchmarks of some kind.
 
-The problem being addressed was the machine being hung at worst and in
-other cases having kswapd pinned at 99-100% CPU. It's now been shown
-that modifying SLUB is not necessary to fix this because the bug was
-in page reclaim. The high-order allocation success rate didn't come
-into it.
+I'm working on getting some benchmark results for the patches.  I should 
+hopefully have something in the next day or two.
 
--- 
-Mel Gorman
-SUSE Labs
+Tom
+> 
+> > > > @@ -228,6 +237,12 @@ add_head:
+> > > >  	 * new available array entries. */
+> > > >  	
+> > > >  	virtio_wmb();
+> > > >  	vq->vring.avail->idx++;
+> > > > 
+> > > > +	/* If the driver never bothers to kick in a very long while,
+> > > > +	 * avail index might wrap around. If that happens, invalidate
+> > > > +	 * kicked_avail index we stored. TODO: make sure all drivers
+> > > > +	 * kick at least once in 2^16 and remove this. */
+> > > > +	if (unlikely(vq->vring.avail->idx == vq->kicked_avail))
+> > > > +		vq->kicked_avail_valid = true;
+> > > 
+> > > If they don't, they're already buggy.  Simply do:
+> > >         WARN_ON(vq->vring.avail->idx == vq->kicked_avail);
+> > 
+> > Hmm, but does it say that somewhere?
+> 
+> AFAICT it's a corollary of:
+> 1) You have a finite ring of size <= 2^16.
+> 2) You need to kick the other side once you've done some work.
+> 
+> > > > @@ -482,6 +517,8 @@ void vring_transport_features(struct
+> > > > virtio_device *vdev)
+> > > > 
+> > > >  			break;
+> > > >  		
+> > > >  		case VIRTIO_RING_F_USED_EVENT_IDX:
+> > > >  			break;
+> > > > 
+> > > > +		case VIRTIO_RING_F_AVAIL_EVENT_IDX:
+> > > > +			break;
+> > > > 
+> > > >  		default:
+> > > >  			/* We don't understand this bit. */
+> > > >  			clear_bit(i, vdev->features);
+> > > 
+> > > Does this belong in a prior patch?
+> > > 
+> > > Thanks,
+> > > Rusty.
+> > 
+> > Well if we don't support the feature in the ring we should not
+> > ack the feature, right?
+> 
+> Ah, you're right.
+> 
+> Thanks,
+> Rusty.
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
