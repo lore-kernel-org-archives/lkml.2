@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab1EQKrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 06:47:24 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40289 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752907Ab1EQKrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 06:47:23 -0400
-Date: Tue, 17 May 2011 12:46:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 0/4] Enable SMEP CPU Feature
-Message-ID: <20110517104654.GN22093@elte.hu>
-References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com>
- <4DD19C81.8000902@zytor.com>
- <20110517070527.GD22305@elte.hu>
- <4DD23CB6.3050503@redhat.com>
- <20110517092903.GJ22093@elte.hu>
- <4DD2409F.4030800@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD2409F.4030800@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753422Ab1EQKu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 06:50:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47687 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab1EQKu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 06:50:28 -0400
+X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=Tf6TZck48twA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=oBVUQWJ9soygs489iVoA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH -tip ] [BUGFIX]tracing/kprobes: Fix kprobe-tracer to
+ support stack trace
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        yrl.pp-manager.tt@hitachi.com
+In-Reply-To: <4DD23590.4020200@hitachi.com>
+References: <20110512102255.2540.88867.stgit@ltc-x64-VirtualBox>
+	 <4DD23590.4020200@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 17 May 2011 06:50:25 -0400
+Message-ID: <1305629425.5456.610.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Avi Kivity <avi@redhat.com> wrote:
-
-> On 05/17/2011 12:29 PM, Ingo Molnar wrote:
-> >* Avi Kivity<avi@redhat.com>  wrote:
-> >
-> >>  >  Some programmable configurability seems necessary on the KVM side, as KVM
-> >>  >  has no control over how sane the guest kernel is.
-> >>
-> >>  We should simply expose the cpuid bit and cr4.smep.  If the guest kernel
-> >>  feels it is up to it, it can enable smep itself.
-> >
-> > Well, given that there's lots of legacy installations around it would be a 
-> > neat KVM feature if it was possible to enable SMEP even if the guest kernel 
-> > does not enable it. As an additional (optional) layer of security.
-> >
-> > For example legacy Linux guests will work just fine, even if they do not 
-> > enable SMEP themselves.
+On Tue, 2011-05-17 at 17:45 +0900, Masami Hiramatsu wrote:
+> (2011/05/12 19:22), Masami Hiramatsu wrote:
+> > Fix to support kernel stack trace correctly on kprobe-tracer.
+> > Since the execution path of kprobe-based dynamic events is different
+> > from other tracepoint-based events, normal ftrace_trace_stack() doesn't
+> > work correctly. To fix that, this introduces ftrace_trace_stack_regs()
+> > which traces stack via pt_regs instead of current stack register.
 > 
-> It's certainly possible (set CR4.SMEP transparently and hide it from the 
-> guest).  But there's no way to tell if it doesn't break something wierd.  The 
-> host might not even know if the guest is Linux or something else.
+> Hmm, any comments?
 > 
-> We could support it as a non-default feature, but that reduces its utility.
 
-It would be a nice touch for tools/kvm/: we would use KVM_GET_SREGS and 
-KVM_GET_SREGS to twiddle CR4.SMEP, even without the guest explicitly doing it.
+Hi Masami,
 
-A quick glance suggests that it could be done straight away in 
-tools/kvm/kvm-cpu.c::kvm_cpu__setup_sregs() during vcpu setup, and hopefully 
-that cr4 value survives boot and ends up in the guest kernel's mmu_cr4_features 
-mask shadow register.
+I've been traveling, and I'm way behind in my email. I'll take a look at
+this later today.
 
 Thanks,
 
-	Ingo
+-- Steve
+
+
