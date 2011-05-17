@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab1EQW4t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 18:56:49 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:51609 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932511Ab1EQW4s (ORCPT
+	id S932572Ab1EQW6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 18:58:22 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:50371 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932485Ab1EQW6V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 18:56:48 -0400
+	Tue, 17 May 2011 18:58:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=F7enrZ40KrgeeHfB/+V8UwEwrmLPzecEIXmn9FlZd1pr4uk9VvVoPfuGIavyE3SFyX
-         EKpIaUye/HJKgK457mMw==
-Date: Tue, 17 May 2011 15:56:24 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Ingo Molnar <mingo@elte.hu>, John Stultz <john.stultz@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andy Whitcroft <apw@canonical.com>, Jiri Slaby <jirislaby@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] comm: Introduce comm_lock spinlock to protect
- task->comm access
-In-Reply-To: <1305669256.2466.6286.camel@twins>
-Message-ID: <alpine.DEB.2.00.1105171551450.10386@chino.kir.corp.google.com>
-References: <1305665263-20933-1-git-send-email-john.stultz@linaro.org> <1305665263-20933-2-git-send-email-john.stultz@linaro.org> <20110517212734.GB28054@elte.hu> <1305669256.2466.6286.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=QtHW4sXgj6cDWMcawkzBxA0EUHUkaiJJOExJVPMJeYMOZdVidAGQajmWAiBNlvtdd7
+         WNGkkl+1gEAez+OeFOkSGieGgGR2b5SgzQavIy/4FXHQmzs+ddI6CzGm0vhY7E92b2D5
+         UftXCX7pvLfLLetRoMpUewsy8EBQPvgDvrOXU=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <1305671318.10756.49.camel@localhost.localdomain>
+References: <1305574128.3456.23.camel@localhost.localdomain>
+ <1305574518.2885.25.camel@bwh-desktop> <1305574680.3456.33.camel@localhost.localdomain>
+ <1305575253.2885.28.camel@bwh-desktop> <20110516211459.GE18148@redhat.com>
+ <1305588738.3456.65.camel@localhost.localdomain> <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
+ <1305671318.10756.49.camel@localhost.localdomain>
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+Date: Wed, 18 May 2011 00:58:00 +0200
+Message-ID: <BANLkTik6aqP5BVrQNFKrnU3v=KA9ip1RoA@mail.gmail.com>
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in netdevice
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 May 2011, Peter Zijlstra wrote:
+W dniu 18 maja 2011 00:28 u¿ytkownik Shirley Ma <mashirle@us.ibm.com> napisa³:
+> On Tue, 2011-05-17 at 23:48 +0200, Micha³ Miros³aw wrote:
+>> 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
+>> > Looks like to use a new flag requires more time/work. I am thinking
+>> > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
+>> to
+>> > avoid the new flag for now since mavctap uses real NICs as lower
+>> device?
+>>
+>> Is there any other restriction besides requiring driver to not recycle
+>> the skb? Are there any drivers that recycle TX skbs?
+> Not more other restrictions, skb clone is OK. pskb_expand_head() looks
+> OK to me from code review.
 
-> The changelog also fails to mention _WHY_ this is no longer true. Nor
-> does it treat why making it true again isn't an option.
-> 
+> Currently there is no drivers recycle TX skbs.
 
-It's been true since:
+So why do you require the target device to have some flags at all?
 
-	4614a696bd1c3a9af3a08f0e5874830a85b889d4
-	Author: john stultz <johnstul@us.ibm.com>
-	Date:   Mon Dec 14 18:00:05 2009 -0800
+Do I understand correctly, that this zero-copy feature is about
+packets received from VMs?
 
-	    procfs: allow threads to rename siblings via /proc/pid/tasks/tid/comm
-
-Although at the time it appears that nobody was concerned about races so 
-proper syncronization was never implemented.  We always had the 
-prctl(PR_SET_NAME) so the majority of comm reads, those to current, 
-required no locking, but this commit changed that.  The remainder of comm 
-dereferences always required task_lock() and the helper get_task_comm() to 
-read the string into a (usually stack-allocated) buffer.
-
-> Who is changing another task's comm? That's just silly.
-> 
-
-I agree, and I suggested taking write privileges away from /proc/pid/comm, 
-but others find that it is useful to be able to differentiate between 
-threads in the same thread group without using the prctl() for debugging?
+Best Regards,
+Micha³ Miros³aw
