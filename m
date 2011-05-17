@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab1EQTes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 15:34:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37433 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab1EQTer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 15:34:47 -0400
-Date: Tue, 17 May 2011 12:34:20 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linville@tuxdriver.com
-Subject: [PATCH -next] wireless: improve airo when PROC_FS is disabled
-Message-Id: <20110517123420.68f4288d.randy.dunlap@oracle.com>
-In-Reply-To: <20110517142749.8927b65b.sfr@canb.auug.org.au>
-References: <20110517142749.8927b65b.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932187Ab1EQTfC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 15:35:02 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51259 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932086Ab1EQTfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 15:35:00 -0400
+Message-ID: <4DD2CDE2.60604@kernel.dk>
+Date: Tue, 17 May 2011 21:34:58 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>, Borislav Petkov <bp@alien8.de>,
+        Meelis Roos <mroos@linux.ee>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH UPDATED 2/3 v2.6.39-rc7] block: make disk_block_events()
+  properly wait for work cancellation
+References: <20110517102713.GJ20624@htj.dyndns.org> <20110517102824.GK20624@htj.dyndns.org> <20110517102853.GL20624@htj.dyndns.org> <20110517154748.GS20624@htj.dyndns.org>
+In-Reply-To: <20110517154748.GS20624@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090208.4DD2CDCA.00CB:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On 2011-05-17 17:47, Tejun Heo wrote:
+> disk_block_events() should guarantee that the event work is not in
+> flight on return and once blocked it shouldn't issue further
+> cancellations.
+> 
+> Because there was no synchronization between the first blocker doing
+> cancel_delayed_work_sync() and the following blockers, the following
+> blockers could finish before cancellation was complete, which broke
+> both guarantees - event work could be in flight and cancellation could
+> happen after return.
+> 
+> This bug triggered WARN_ON_ONCE() in disk_clear_events() reported in
+> bug#34662.
+> 
+>   https://bugzilla.kernel.org/show_bug.cgi?id=34662
+> 
+> Fix it by adding an outer mutex which protects both block count
+> manipulation and work cancellation.
+> 
+> -v2: Use outer mutex instead of bit waitqueue per Linus.
 
-Skip all of the procfs-related calls when PROC_FS is not enabled.
+Thanks, much cleaner indeed. I've rebased for-linus. BTW, this is patch
+3/3, not 2/3. Had me confused for a while, the numbering on the initial
+series was off as well.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/net/wireless/airo.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+I'll let this simmer until tomorrow, then send out the pull request.
 
---- linux-next-20110517.orig/drivers/net/wireless/airo.c
-+++ linux-next-20110517/drivers/net/wireless/airo.c
-@@ -4496,6 +4496,7 @@ struct proc_data {
- 	void (*on_close) (struct inode *, struct file *);
- };
- 
-+#ifdef CONFIG_PROC_FS
- static int setup_proc_entry( struct net_device *dev,
- 			     struct airo_info *apriv ) {
- 	struct proc_dir_entry *entry;
-@@ -4593,6 +4594,12 @@ fail_stats_delta:
- fail:
- 	return -ENOMEM;
- }
-+#else
-+static int setup_proc_entry( struct net_device *dev,
-+			     struct airo_info *apriv ) {
-+	return 0;
-+}
-+#endif
- 
- static int takedown_proc_entry( struct net_device *dev,
- 				struct airo_info *apriv ) {
+-- 
+Jens Axboe
+
