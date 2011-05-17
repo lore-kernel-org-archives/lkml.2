@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab1EQTlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 15:41:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35701 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932087Ab1EQTlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 15:41:18 -0400
-Subject: Re: [PATCH] pci, dmar: flush IOTLB before exit domain
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Yinghai Lu <yinghai.lu@oracle.com>, Kalle Valo <kvalo@adurom.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-In-Reply-To: <1305558798.3146.48.camel@x201>
-References: <4DC34B21.9040203@oracle.com>
-	 <1304952530.30435.16.camel@i7.infradead.org>
-	 <1305558798.3146.48.camel@x201>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 13:41:02 -0600
-Message-ID: <1305661262.29268.27.camel@x201>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932182Ab1EQTlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 15:41:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55393 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932087Ab1EQTlI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 15:41:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=RlS/SXRkXKkQ+yjvg/ive4JkyymwmvDrcwAk5NixbTPULqtsvVRj68+Rpdjxiv/FMm
+         1mByeevcug84xkEJUYavwCtcOEirQiZx4apJw05+H2FvLl6+doMIzpwAE2Mluic+SZqs
+         a7q9s2m+gPtDDYcirOIdVRS40EGoqmZY3KUi0=
+MIME-Version: 1.0
+In-Reply-To: <4DD2CA02.9040707@googlemail.com>
+References: <BANLkTi=2jW5PHB6QCaddHeZH0P=9PKWosw@mail.gmail.com>
+	<1305577420-3685-1-git-send-email-abogani@kernel.org>
+	<878vu6nftw.fsf@rustcorp.com.au>
+	<4DD2CA02.9040707@googlemail.com>
+Date: Tue, 17 May 2011 21:41:06 +0200
+X-Google-Sender-Auth: gG31pWncg5C7bsWLJRRuLfuM8Ok
+Message-ID: <BANLkTinPG100vbVAN1RZWb3h9Xuu6SKJ0Q@mail.gmail.com>
+Subject: Re: [PATCH] module: Use binary search in lookup_symbol()
+From: Alessio Igor Bogani <abogani@kernel.org>
+To: Dirk Behme <dirk.behme@googlemail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Anders Kaseorg <andersk@ksplice.com>, Tim Abbott <tabbott@ksplice.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-16 at 09:13 -0600, Alex Williamson wrote:
-> On Mon, 2011-05-09 at 15:48 +0100, David Woodhouse wrote:
-> > On Thu, 2011-05-05 at 18:13 -0700, Yinghai Lu wrote:
-> > > @@ -3252,6 +3252,9 @@ static int device_notifier(struct notifi
-> > >                 return 0;
-> > >  
-> > >         if (action == BUS_NOTIFY_UNBOUND_DRIVER && !iommu_pass_through) {
-> > > +               /* before we remove dev with domain, flush IOTLB */
-> > > +               flush_unmaps();
-> > > +
-> > >                 domain_remove_one_dev_info(domain, pdev);
-> > >  
-> > >                 if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) && 
-> > 
-> > That calls flush_unmaps() without the async_umap_flush_lock held,
-> > doesn't it? A few days ago I asked someone else to test this candidate
-> > patch for a similar issue:
-> > 
-> > http://david.woodhou.se/flush-unmaps-on-unbind.patch
-> 
-> Copying here:
-> 
-> > diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-> > index d552d2c..7e606d6 100644
-> > --- a/drivers/pci/intel-iommu.c
-> > +++ b/drivers/pci/intel-iommu.c
-> > @@ -3256,8 +3259,10 @@ static int device_notifier(struct notifier_block *nb,
-> >  
-> >  		if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
-> >  		    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY) &&
-> > -		    list_empty(&domain->devices))
-> > +		    list_empty(&domain->devices)) {
-> > +			flush_unmaps_timeout(0);
-> >  			domain_exit(domain);
-> > +		}
-> >  	}
-> >  
-> >  	return 0;
-> > @@ -3587,6 +3592,7 @@ static void intel_iommu_domain_destroy(struct iommu_domain *domain)
-> >  	struct dmar_domain *dmar_domain = domain->priv;
-> >  
-> >  	domain->priv = NULL;
-> > +	flush_unmaps_timeout(0);
-> >  	vm_domain_exit(dmar_domain);
-> > }
-> 
-> David, would it be worthwhile to push the unmaps into the
-> {vm_}domain_exit() functions to avoid races like this in the future?  I
-> can verify the above resolves a panic after unbinding a device from
-> snd_hda_intel that I hit recently.  Do you plan to push this for .39?
+Dear Mr. Behme,
 
-BTW, is this second chunk really needed?  VM iommu mappings don't seem
-to use the lazy unmap path.  Thanks,
+2011/5/17 Dirk Behme <dirk.behme@googlemail.com>:
+[...]
+> With the version above we should get a warning
+>
+> kernel/module.c: In function 'lookup_symbol':
+> kernel/module.c:1809: warning: unused variable 'ks'
 
-Alex
+Sorry It's my fault. I'll provide a right version in few hours.
 
-
+Ciao,
+Alessio
