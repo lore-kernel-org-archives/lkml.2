@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab1EQLfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 07:35:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26122 "EHLO mx1.redhat.com"
+	id S1754131Ab1EQLhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 07:37:00 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39955 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753272Ab1EQLfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 07:35:14 -0400
-Message-ID: <4DD25D29.9040008@redhat.com>
-Date: Tue, 17 May 2011 14:34:01 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
+	id S1753272Ab1EQLg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 07:36:59 -0400
+Date: Tue, 17 May 2011 13:36:34 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 0/4] Enable SMEP CPU Feature
-References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com> <4DD19C81.8000902@zytor.com> <20110517070527.GD22305@elte.hu> <4DD23CB6.3050503@redhat.com> <20110517092903.GJ22093@elte.hu> <4DD2409F.4030800@redhat.com> <20110517104654.GN22093@elte.hu>
-In-Reply-To: <20110517104654.GN22093@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH v4 0/6] Micro-optimize vclock_gettime
+Message-ID: <20110517113634.GC13475@elte.hu>
+References: <20110516160943.GC25898@one.firstfloor.org>
+ <alpine.LFD.2.02.1105161817120.3078@ionos>
+ <20110516164939.GD25898@one.firstfloor.org>
+ <BANLkTintkmnkN3kW06oa+TjT7W0Q1yQQGA@mail.gmail.com>
+ <m2fwoeo0pf.fsf@firstfloor.org>
+ <alpine.LFD.2.02.1105162345110.3078@ionos>
+ <BANLkTinVnr1ZM2wOxuH-rHZGh+_SBWT-+g@mail.gmail.com>
+ <alpine.LFD.2.02.1105170022430.3078@ionos>
+ <20110517080029.GB22093@elte.hu>
+ <BANLkTimpEfb3P9FWgrCDwSSVr6RA8nXb5w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimpEfb3P9FWgrCDwSSVr6RA8nXb5w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2011 01:46 PM, Ingo Molnar wrote:
+
+* Andrew Lutomirski <luto@mit.edu> wrote:
+
+> > Well, how does that differ from having the real syscall instruction there? 
+> > How are we going to filter real (old-)glibc calls from exploits?
+> 
+> Because there are only four vsyscalls: vgettimeofday, vtime, vgetcpu, and 
+> venosys.  None of them have side-effects, so they only allow an attacker to 
+> write something to user memory somewhere.  The implementation of 
+> vgettimeofday needs a syscall instruction internally for its fallback, which 
+> means that an attack could jump there instead of to the start of the vsyscall 
+> implementation.
+
+So for this to work securely the emulation code would also have to filter the 
+syscall numbers, to make sure that only these benign syscalls are used.
+
+It should perhaps also warn if it notices something weird going on.
+
+> > If it can be filtered in a meaningful way then we should just do that and 
+> > perhaps offer a (default enabled) .config COMPAT_VDSO_EMU=y switch to turn 
+> > the emulation off.
 > >
-> >  We could support it as a non-default feature, but that reduces its utility.
->
-> It would be a nice touch for tools/kvm/: we would use KVM_GET_SREGS and
-> KVM_GET_SREGS to twiddle CR4.SMEP, even without the guest explicitly doing it.
->
-> A quick glance suggests that it could be done straight away in
-> tools/kvm/kvm-cpu.c::kvm_cpu__setup_sregs() during vcpu setup, and hopefully
-> that cr4 value survives boot and ends up in the guest kernel's mmu_cr4_features
-> mask shadow register.
+> > That way we keep the ABI and also have a way out for users who *really* 
+> > need this to work in a performant way.
+> 
+> Yeah, that probably makes more sense.  It'll make for an uglier diffstat, 
+> though -- there's a lot of ugly duplicate code around to make vgettimeofday 
+> and vgetcpu work.
 
-Depends if the guest uses a read-modify-write pattern or not.  We could 
-do it transparently in kvm.ko, since the real cr4 need not corresponds 
-to the guest notion (for example, we often set cr0.wp or cr0.ts even 
-though the guest wants them clear).
+Lets try the pure emulation thing first, ok? Complications is not really what 
+we need in this area ...
 
--- 
-error compiling committee.c: too many arguments to function
+Thanks,
 
+	Ingo
