@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab1EQLhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 07:37:13 -0400
-Received: from spaceboyz.net ([87.106.131.203]:47967 "EHLO spaceboyz.net"
+	id S1753855Ab1EQLM4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 07:12:56 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54557 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754137Ab1EQLhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 07:37:10 -0400
-X-Greylist: delayed 1509 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 May 2011 07:37:09 EDT
-Date: Tue, 17 May 2011 13:11:48 +0200
-From: David Lamparter <equinox@diac24.net>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Alex Bligh <alex@alex.org.uk>, linux-arch@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/7] Network namespace manipulation with file descriptors
-Message-ID: <20110517111148.GA3762520@jupiter.n2.diac24.net>
-References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
- <3A54AB469A0294933EAC2257@nimrod.local>
- <m1fwoqoapn.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1fwoqoapn.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753149Ab1EQLMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 07:12:54 -0400
+Date: Tue, 17 May 2011 21:12:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: manual merge of the xen tree with Linus tree
+Message-Id: <20110517211234.472e32f4.sfr@canb.auug.org.au>
+In-Reply-To: <20110115120544.98a1f091.sfr@canb.auug.org.au>
+References: <20110115120544.98a1f091.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__17_May_2011_21_12_34_+1000_WW=NwSEmwnG5MbzO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 07, 2011 at 07:18:44AM -0700, Eric W. Biederman wrote:
-> You can read the processes network namespace by opening
-> /proc/<pid>/ns/net.  Unfortunately comparing the network
-> namespaces for identity is another matter.  You will probably
-> be better off simply forcing the routing daemon to start
-> in the desired network namespace in it's initscript.
-> 
-> For purposes of clarity please have a look at my work in
-> progress patch for iproute2.  This demonstrates how I expect
-> userspace to work in a multi-network namespace world.
-> 
-[...]
-> Subject: [PATCH] iproute2:  Add processless netnwork namespace support.
-[...]
-> Configuration specific to a network namespace that
-> would ordinarily be stored under /etc/ is stored under
-> /etc/netns/<name>.  For example if the dns server
-> configuration is different for your vpn you would
-> create a file /etc/netns/myvpn/resolv.conf.
-> 
-> File descriptors that can be used to manipulate a
-> network namespace can be created by opening
-> /var/run/netns/<NAME>.
-> 
-> This adds the following commands to iproute.
-> ip netns add NAME
-> ip netns delete NAME
-> ip netns monitor
-> ip netns list
-> ip netns exec NAME cmd ....
-> ip link set DEV netns NAME
+--Signature=_Tue__17_May_2011_21_12_34_+1000_WW=NwSEmwnG5MbzO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-funny, this is almost exactly what my code does - though you're probably
-doing it better and have more features ;)
-http://git.spaceboyz.net/equinox/vrf-tools.git/
-git://spaceboyz.net/equinox/vrf-tools.git
+Hi Jeremy,
 
-It currently forks off a daemon to keep the namespace open; attaching is
-not possible yet, but opening a socket in a different namespace is.
+On Sat, 15 Jan 2011 12:05:44 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Today's linux-next merge of the xen tree got a conflict in
+> drivers/xen/Kconfig, drivers/xen/gntdev.c and include/xen/gntdev.h
+> between various commits Linus' tree and various commits from the xen tree.
+>=20
+> As previously discussed, I have dropped the xen tree for today (as it
+> contains an older version of the changes that were merged into Linus'
+> tree).
 
-Most of the actual management (mounting things & co.) I offloaded to
-some shell scripts; I use it together with GNU screen (which makes it
-very nice to grab one of the namespaces and start/stop/manage/...
-things).
+Just wondering if the xen tree is ever going to make a reappearance in
+linux-next?
 
-I also have patches for OpenVPN and pptpd floating around that make it
-possible to 'cross' namespace boundaries, i.e. the VPN servers listen in
-one namespace and have their devices in another.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__17_May_2011_21_12_34_+1000_WW=NwSEmwnG5MbzO
+Content-Type: application/pgp-signature
 
--David
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJN0lgiAAoJEDMEi1NhKgbsWocH/27UodpEsWOZbpUz8FzjXHl/
+71YtN6seVERwFXpM2HYuEv5w9Wo4FOZ22zZKwDKA700U37bLJt01AZLtZGgAIr02
+IWNI0fMB15qNsFRuRmTQ1OXUnB6ig+ZGPccIzU6DKY1/Y/Bb2b+i1phdxUEzF/QT
+pwe+C7HTVd6ucCev/CHVm0hF4A1XBhrJnlkY7GVDjixoMUEC3HLLVsMkddUuD3zi
+swPJIT678uyyafBiTBKsYen+lAEvpSRCAXCtLAxT2HJ0HJ1S0si4f1eWXN1fEK/R
+VA5hdyPo6iZvbETVbe7qniEJfNKW3Cz/frFW5Fz52WqTn69xrwCzrtT+eweIp5E=
+=Muaa
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__17_May_2011_21_12_34_+1000_WW=NwSEmwnG5MbzO--
