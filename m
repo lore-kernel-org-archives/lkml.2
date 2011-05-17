@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab1EQWL1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 18:11:27 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51968 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932415Ab1EQWL0 convert rfc822-to-8bit (ORCPT
+	id S1756676Ab1EQWPn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 18:15:43 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41722 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab1EQWPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 18:11:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=MPlBC8TCJmt4BBaWQphOMRYK5WOHd3epdh9b6YWvRBGwHWpAvHghd8C93knKNyYdIb
-         QGw8O+YHDj6BM00haQafRTXb/ZGhj0d2adhBGlp7Wrr6y6Wqkq8wN09Gfh/gSH2MAWZz
-         iFI8rbAc6aGgCwyUps4QI819dd992mC4YpdAs=
-MIME-Version: 1.0
-In-Reply-To: <1305604567.6008.5.camel@mulgrave.site>
-References: <1305317680.21099.83.camel@dwillia2-linux>
-	<20110514084949.GA23984@lst.de>
-	<1305604567.6008.5.camel@mulgrave.site>
-Date: Tue, 17 May 2011 15:11:24 -0700
-X-Google-Sender-Auth: niLGdCiL7BLbNLJdUKyG5vHrYwc
-Message-ID: <BANLkTikt2JgRt0aCcN8NskNEaFXRB_pm8A@mail.gmail.com>
-Subject: Re: [GIT PULL] isci merge candidate
-From: Dan Williams <dan.j.williams@intel.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Christoph Hellwig <hch@lst.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jiang <dave.jiang@intel.com>, David Milburn <dmilburn@redhat.com>,
-        Ed Ciechanowski <ed.ciechanowski@intel.com>,
-        Ed Nadolski <edmund.nadolski@intel.com>,
-        Jacek Danecki <jacek.danecki@intel.com>,
-        Jeff Skirvin <jeffrey.d.skirvin@intel.com>,
-        Jeff Garzik <jeff@garzik.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 May 2011 18:15:42 -0400
+Date: Tue, 17 May 2011 15:15:19 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, mcgrof@gmail.com,
+        Joe Perches <joe@perches.com>, Naveen Singh <nsingh@atheros.com>
+Subject: [PATCH -next] staging: fix ath6kl build when CFG80211 is not
+ enabled
+Message-Id: <20110517151519.e9238e33.randy.dunlap@oracle.com>
+In-Reply-To: <20110517142749.8927b65b.sfr@canb.auug.org.au>
+References: <20110517142749.8927b65b.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DD2F383.0054:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 8:56 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote
-> Give me a feel for this: If we put the driver in now, all cleanups
-> effectively get postponed until .41 (because they're no longer really
-> -rc candidates).  If the driver gets included in a .40-rc, we have a
-> couple more months to get the basic cleanups done.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-...all cleanups and the features like atapi support that were deferred
-to get this initial cleanup done would be delayed until .41.
+Fix build errors when CONFIG_CFG80211 is not enabled:
 
-> Dan, where's the hardware release at ... as in how urgent is 39-rc last
-> vs .40 rc?
+drivers/built-in.o: In function `ar6k_cfg80211_deinit':
+(.text+0x189b71): undefined reference to `cfg80211_scan_done'
+drivers/built-in.o: In function `ar6k_cfg80211_deinit':
+(.text+0x189b86): undefined reference to `wiphy_unregister'
+drivers/built-in.o: In function `ar6k_cfg80211_deinit':
+(.text+0x189b8d): undefined reference to `wiphy_free'
+drivers/built-in.o: In function `ar6k_cfg80211_init':
+(.text+0x18add7): undefined reference to `wiphy_new'
+drivers/built-in.o: In function `ar6k_cfg80211_init':
+(.text+0x18ae48): undefined reference to `wiphy_register'
+drivers/built-in.o: In function `ar6k_cfg80211_tkip_micerr_event':
+(.text+0x18ae95): undefined reference to `cfg80211_michael_mic_failure'
+drivers/built-in.o: In function `ar6k_cfg80211_scan_node':
+(.text+0x18afb5): undefined reference to `__ieee80211_get_channel'
+drivers/built-in.o: In function `ar6k_cfg80211_scan_node':
+(.text+0x18afd2): undefined reference to `cfg80211_inform_bss_frame'
+drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
+(.text+0x18b046): undefined reference to `cfg80211_ibss_joined'
+drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
+(.text+0x18b176): undefined reference to `cfg80211_connect_result'
+drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
+(.text+0x18b190): undefined reference to `cfg80211_disconnected'
+drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
+(.text+0x18b291): undefined reference to `cfg80211_get_bss'
+drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
+(.text+0x18b457): undefined reference to `cfg80211_put_bss'
+drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
+(.text+0x18b4fa): undefined reference to `cfg80211_roamed'
 
-Re-reviewed this internally with the latest hardware schedule and it
-seems a .40-rc merge is workable.  Especially in light of the caveats
-that would be specified for the .39 and .40 version of the driver if
-we merged now.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Luis R. Rodriguez <mcgrof@gmail.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Naveen Singh <nsingh@atheros.com>
+---
+ drivers/staging/ath6kl/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
->> And of course there's a lot of room for additional further cleanups
->> that should be able to shave off another couple thousands of lines, but
->> these never were on the plate for the initial merge anyway.
->
-> Right ... I'm happy with the basic progress so far.
-
-Which achieves the goal of demonstrating that the driver is on a solid
-upstream trajectory.  Just need to take the opportunity to get things
-finalized properly in .40-rc.
-
---
-Dan
+--- linux-next-20110517.orig/drivers/staging/ath6kl/Kconfig
++++ linux-next-20110517/drivers/staging/ath6kl/Kconfig
+@@ -1,6 +1,7 @@
+ config ATH6K_LEGACY
+ 	tristate "Atheros AR6003 support (non mac80211)"
+         depends on MMC && WLAN
++	depends on CFG80211
+         select WIRELESS_EXT
+         select WEXT_PRIV
+ 	help
