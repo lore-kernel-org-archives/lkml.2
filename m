@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab1EQTdd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 15:33:33 -0400
-Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:3027 "EHLO
-	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086Ab1EQTdc (ORCPT
+	id S932177Ab1EQTes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 15:34:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37433 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932087Ab1EQTer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 15:33:32 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Ondrej Zary <linux@rainbow-software.org>
-Subject: Re: [PATCH RFC v2] radio-sf16fmr2: convert to generic TEA575x interface
-Date: Tue, 17 May 2011 21:33:14 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38-tschai; KDE/4.6.1; x86_64; ; )
-Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
-References: <201105140017.26968.linux@rainbow-software.org> <201105152218.24041.linux@rainbow-software.org> <201105152326.33925.hverkuil@xs4all.nl>
-In-Reply-To: <201105152326.33925.hverkuil@xs4all.nl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Tue, 17 May 2011 15:34:47 -0400
+Date: Tue, 17 May 2011 12:34:20 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linville@tuxdriver.com
+Subject: [PATCH -next] wireless: improve airo when PROC_FS is disabled
+Message-Id: <20110517123420.68f4288d.randy.dunlap@oracle.com>
+In-Reply-To: <20110517142749.8927b65b.sfr@canb.auug.org.au>
+References: <20110517142749.8927b65b.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105172133.14835.hverkuil@xs4all.nl>
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090208.4DD2CDCA.00CB:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ondrej!
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-On Sunday, May 15, 2011 23:26:33 Hans Verkuil wrote:
-> On Sunday, May 15, 2011 22:18:21 Ondrej Zary wrote:
-> > Thanks, it's much simpler with the new control framework.
-> > Do the negative volume control values make sense? The TC9154A chip can
-> > attenuate the volume from 0 to -68dB in 2dB steps.
-> 
-> It does make sense, but I think I would offset the values so they start at 0.
-> Mostly because there might be some old apps that set the volume to 0 when they
-> want to mute, which in this case is full volume.
-> 
-> I am not aware of any driver where a volume of 0 isn't the same as the lowest
-> volume possible, so in this particular case I would apply an offset.
-> 
-> I will have to do a closer review tomorrow or the day after. I think there are
-> a few subtleties that I need to look at. Ping me if you haven't heard from me
-> by Wednesday. I would really like to get these drivers up to spec now that I
-> have someone who can test them, and once that's done I hope that I never have
-> to look at them again :-) (Unlikely, but one can dream...)
+Skip all of the procfs-related calls when PROC_FS is not enabled.
 
-OK, I looked at it a bit more and it needs to be changed a little bit. The
-problem is that the VOLUME control is added after snd_tea575x_init, i.e.
-after the video_register_device call. The video_register_device call should
-be the last thing done before the init sequence returns. There may be applications
-(dbus/hal) that open devices as soon as they appear, so doing more initialization
-after the video node is registered is not a good idea (many older V4L drivers
-make this mistake).
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/net/wireless/airo.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Perhaps creating a snd_tea575x_register function doing just the registration
-may be a good idea. Or a callback before doing the video_register_device.
-
-Another thing: the tea->mute field shouldn't be needed anymore. And the
-'mute on init' bit in snd_tea575x_init can be removed as well since that
-is automatically performed by v4l2_ctrl_handler_setup.
-
-In addition, the .ioctl field in tea575x_fops can be replaced by .unlocked_ioctl.
-The whole exclusive open stuff and the in_use field can be removed. The only
-thing needed is a struct mutex in struct snd_tea575x, initialize it and set
-tea575x_radio_inst->lock to the mutex. This will serialize all access safely.
-
-To do this really right you should add struct v4l2_device to struct snd_tea575x
-(the radio-sf16fmr2 driver has one, so you can use that as an example). With
-that in place you can also add support for 'priority' handling. I'd say see
-what you can do, and if it takes too much time then mail me the tea575x code
-and the radio-sf16frm2 code and I'll finish it.
-
-Regards,
-
-	Hans
+--- linux-next-20110517.orig/drivers/net/wireless/airo.c
++++ linux-next-20110517/drivers/net/wireless/airo.c
+@@ -4496,6 +4496,7 @@ struct proc_data {
+ 	void (*on_close) (struct inode *, struct file *);
+ };
+ 
++#ifdef CONFIG_PROC_FS
+ static int setup_proc_entry( struct net_device *dev,
+ 			     struct airo_info *apriv ) {
+ 	struct proc_dir_entry *entry;
+@@ -4593,6 +4594,12 @@ fail_stats_delta:
+ fail:
+ 	return -ENOMEM;
+ }
++#else
++static int setup_proc_entry( struct net_device *dev,
++			     struct airo_info *apriv ) {
++	return 0;
++}
++#endif
+ 
+ static int takedown_proc_entry( struct net_device *dev,
+ 				struct airo_info *apriv ) {
