@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab1EQOjB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 10:39:01 -0400
-Received: from services116.cs.uwaterloo.ca ([129.97.152.169]:40850 "EHLO
-	services116.cs.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755161Ab1EQOjA (ORCPT
+	id S1755492Ab1EQOj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 10:39:28 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:44136 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab1EQOjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 10:39:00 -0400
-Message-ID: <4DD28873.8050706@uwaterloo.ca>
-Date: Tue, 17 May 2011 10:38:43 -0400
-From: Sarah Nadi <snadi@uwaterloo.ca>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Tue, 17 May 2011 10:39:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=S6idVvMJ4Lv1ezCG0SNZmKOqk4RpKZUFFBTnYhxgTjfTOz8lfwcWKNrGOfC8vBoFYk
+         bcRXb+mm1ATdS7GzCT8o5Kmz37kg2XO93UWNtAvY+cG86IJpyxqqYuX1xdaUScs83C/p
+         orqlAAazv9Sa10cSEePC0uWZpcStzuPX9NX/A=
 MIME-Version: 1.0
-To: jkosina@suse.cz
-CC: starvik@axis.com, linux-kernel@vger.kernel.org
-Subject: [Patch 1/1]: cris: typo in mach-fs Makefile
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Miltered: at mailchk-m03 with ID 4DD2887B.000 by Joe's j-chkmail (http://j-chkmail.ensmp.fr)!
-X-UUID: 23b5b068-a219-4b56-9133-3855fc7927a3
+Date: Tue, 17 May 2011 09:39:23 -0500
+Message-ID: <BANLkTikn3OawHFO8y20sLuK_4LxOw7nQBg@mail.gmail.com>
+Subject: Reconsider including phc-linux patch to control voltages
+From: Arthur Machlas <arthur.machlas@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sarah Nadi<snadi@uwaterloo.ca>
+Hi, please cc me on any replies.
 
-There is a possible typo in arch/cris/arch-v32/mach-fs/Makefile. Check diff below
+Five years ago a request was made[1] to include some patches from the
+phc-linux project. This request was rejected for reasons of stability,
+wasting dev time chasing bugs, and general discomfort. Mildly
+supportive suggestions were made to make it either a separate driver
+(it patches acpi-cpufreq) or call some 'tainted' flags.
 
+It is currently included in the zen kernel, and now supports out of
+tree building making it somewhat unecessary to include, however, the
+dev's seem unable to keep up with newer kernels and releases are
+becoming infrequent. Users now seem to be modifying the patch to make
+sure it cleanly applies to newer kernels. Gentoo seems to be doing
+this at the distro level [2].
 
---- linux-2.6.38/arch/cris/arch-v32/mach-fs/Makefile.orig    2011-03-14 
-21:20:32.000000000 -0400
-+++ linux-2.6.38/arch/cris/arch-v32/mach-fs/Makefile    2011-05-16 
-11:24:21.627239213 -0400
-@@ -4,7 +4,7 @@
-  #
+Just wondering if any circumstances have changed that would merit
+reconsidering the decision to not include the patches.
 
-  obj-y   := dma.o pinmux.o io.o arbiter.o
--bj-$(CONFIG_ETRAX_VCS_SIM) += vcs_hook.o
-+obj-$(CONFIG_ETRAX_VCS_SIM) += vcs_hook.o
-  obj-$(CONFIG_CPU_FREQ)   += cpufreq.o
+Many thanks,
+Arthur
 
-  clean:
-
-
-
-Signed-off-by: Sarah Nadi <snadi@uwaterloo.ca>
+[1] http://lkml.org/lkml/2007/9/2/119
+[2] http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/sys-power/phc-intel/files/phc-intel-0.3.2.12.1-2.6.38.patch?view=markup
