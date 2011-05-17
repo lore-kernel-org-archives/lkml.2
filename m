@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab1EQGlX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 02:41:23 -0400
-Received: from nm4-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.110]:31768
-	"HELO nm4-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752687Ab1EQGlR (ORCPT
+	id S1753567Ab1EQGl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 02:41:28 -0400
+Received: from nm13-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.160]:43763
+	"HELO nm13-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753153Ab1EQGlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 02:41:17 -0400
-X-Yahoo-Newman-Id: 382023.76557.bm@omp1028.access.mail.sp2.yahoo.com
+	Tue, 17 May 2011 02:41:23 -0400
+X-Yahoo-Newman-Id: 655756.86250.bm@omp1003.access.mail.sp2.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: bLhim5oVM1kUnnISTnqXOy_ByMZg9pKWzG7XMiV_DfuNi.V
- OAzB36oHtNiVJN6XV25FHxF.9WLB22grAYoUxZrHkWIv2.D7zsqSGmvgSED8
- xwkblrovscdAkymD7J_z4VLbd5Nm0B7G4mMkaq5m0cg4VQ6WGCvdmMZw3dc7
- VPBcVX3H1NhxsNSG6ae58DizhSiTAxcg11tdIsKZkIC6NcEkmlFlTEbi9S3D
- GuwfSyFpECVeX_cZZN3yUN2HLAehYoiV8B1ohgdAU3qzBxpw359_bAOhpvpc
- HvKsueVmvjp2hoM39RKSoZ8oidV40lrcSuLeVFLV4iON3amHU5HmLR8ZBmcX
- tRPEu63X9PGu6jdzI5G2vY1w-
+X-YMail-OSG: 4Mj7TloVM1lKmuWnjbVtZyDZAIcUQv8eA.rdrYRqadd4mtC
+ NkwFstdpbHP0_nGLr_Uov3YcqndVoVMPHp6iQIqtj_fro3WeJ.K2D18GzHIB
+ 8duLnp15uZYOyU9WpBzkJhwNr2dPi8ZvdkoKKjpoAFBzUpxOogHksjnHSEm6
+ zu9X_Pfp5fFwehRsJjNjgvg0wl1lUDU7dmzhGcK1Oz_Vu6i_me2iUk4VcCm7
+ yGWEU8WJ37f9xgv8LU.cXX2fhZ8u6FyEAuTb9MXVUibQCGGr8IWRBKEI_Vdv
+ xQai6QoAack0Y9YQ0QAtg3Eskxif7mAb0CjzHLeLoQNtaarUI8Z8zbnDLkRM
+ vAFmZBcS0cLG8ggs7oo_g6ARtA6dhEsq8B93rwEkVTdD5NBCjLytd4gsekj8
+ _noktcD3NHDGu74mCfSS9V2cuocjZLunQlIA4.zoVPw12807Ad2OX8hFR0Gc
+ KSWbyNeIgI2OznVsYzxXsC4TSw14eMnJ.A4VdYVdYesn9L.c.QhuNuI8IE_x
+ NJdMQ0ZRGQ830PCfV1G5Sbkal4Hg1CBEiz_f5ogiDcNzZgL.Lm7F853NMdnf
+ GB4T2YfvN8fyOyMIG3okb1.Qn0prqStpUjY0rB7Rx
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-kernel <linux-kernel@vger.kernel.org>,
@@ -29,9 +33,9 @@ Cc: Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Martin Svec <martin.svec@zoner.cz>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v4 12/14] iscsi-target: Add support for task management operations
-Date: Mon, 16 May 2011 23:39:32 -0700
-Message-Id: <1305614374-17953-13-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH-v4 13/14] iscsi-target: Add misc utility and debug logic
+Date: Mon, 16 May 2011 23:39:33 -0700
+Message-Id: <1305614374-17953-14-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1305614374-17953-1-git-send-email-nab@linux-iscsi.org>
 References: <1305614374-17953-1-git-send-email-nab@linux-iscsi.org>
@@ -41,27 +45,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds support for iSCSI task management operations called
-directly from iscsi_target.c TMR request/response PDU logic, and
-interfaces struct se_lun -> struct se_device for assoication
-of TMRs to TCM backend devices.
+This file adds iscsi_target_util.[c,h] code containing a number
+of miscellaneous utility functions for iscsi_target_mod.
+
+It also contains iscsi_debug.h macros for CONFIG_ISCSI_TARGET_DEBUG
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/iscsi/iscsi_target_tmr.c |  850 +++++++++++++++++++++++++++++++
- drivers/target/iscsi/iscsi_target_tmr.h |   14 +
- 2 files changed, 864 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/iscsi/iscsi_target_tmr.c
- create mode 100644 drivers/target/iscsi/iscsi_target_tmr.h
+ drivers/target/iscsi/iscsi_target_debug.h |  113 ++
+ drivers/target/iscsi/iscsi_target_util.c  | 1868 +++++++++++++++++++++++++++++
+ drivers/target/iscsi/iscsi_target_util.h  |   98 ++
+ 3 files changed, 2079 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/target/iscsi/iscsi_target_debug.h
+ create mode 100644 drivers/target/iscsi/iscsi_target_util.c
+ create mode 100644 drivers/target/iscsi/iscsi_target_util.h
 
-diff --git a/drivers/target/iscsi/iscsi_target_tmr.c b/drivers/target/iscsi/iscsi_target_tmr.c
+diff --git a/drivers/target/iscsi/iscsi_target_debug.h b/drivers/target/iscsi/iscsi_target_debug.h
 new file mode 100644
-index 0000000..32a9c97
+index 0000000..1356146
 --- /dev/null
-+++ b/drivers/target/iscsi/iscsi_target_tmr.c
-@@ -0,0 +1,850 @@
++++ b/drivers/target/iscsi/iscsi_target_debug.h
+@@ -0,0 +1,113 @@
++#ifndef ISCSI_DEBUG_H
++#define ISCSI_DEBUG_H
++
++/*
++ * Debugging Support
++ */
++
++#define TRACE_DEBUG	0x00000001	/* Verbose debugging */
++#define TRACE_SCSI	0x00000002	/* Stuff related to SCSI Mid-layer */
++#define TRACE_ISCSI	0x00000004	/* Stuff related to iSCSI */
++#define TRACE_NET	0x00000008	/* Stuff related to network code */
++#define TRACE_BUFF	0x00000010	/* For dumping raw data */
++#define TRACE_FILE	0x00000020	/* Used for __FILE__ */
++#define TRACE_LINE	0x00000040	/* Used for __LINE__ */
++#define TRACE_FUNCTION	0x00000080	/* Used for __FUNCTION__ */
++#define TRACE_SEM	0x00000100	/* Stuff related to semaphores */
++#define TRACE_ENTER_LEAVE 0x00000200	/* For entering/leaving functions */
++#define TRACE_DIGEST	0x00000400	/* For Header/Data Digests */
++#define TRACE_PARAM	0x00000800	/* For parameters in parameters.c */
++#define TRACE_LOGIN	0x00001000	/* For login related code */
++#define TRACE_STATE	0x00002000	/* For conn/sess/cleanup states */
++#define TRACE_ERL0	0x00004000	/* For ErrorRecoveryLevel=0 */
++#define TRACE_ERL1	0x00008000	/* For ErrorRecoveryLevel=1 */
++#define TRACE_ERL2	0x00010000	/* For ErrorRecoveryLevel=2 */
++#define TRACE_TIMER	0x00020000	/* For various ERL timers */
++#define TRACE_R2T	0x00040000	/* For R2T callers */
++#define TRACE_SPINDLE	0x00080000	/* For Spindle callers */
++#define TRACE_SSLR	0x00100000	/* For SyncNSteering RX */
++#define TRACE_SSLT	0x00200000	/* For SyncNSteering TX */
++#define TRACE_CHANNEL	0x00400000	/* For SCSI Channels */
++#define TRACE_CMDSN	0x00800000	/* For Out of Order CmdSN execution */
++#define TRACE_NODEATTRIB 0x01000000	/* For Initiator Nodes */
++
++#define TRACE_VANITY		0x80000000	/* For all Vanity Noise */
++#define TRACE_ALL		0xffffffff	/* Turn on all flags */
++#define TRACE_ENDING		0x00000000	/* foo */
++
++#ifdef CONFIG_ISCSI_TARGET_DEBUG
++/*
++ * TRACE_VANITY, is always last!
++ */
++static unsigned int iscsi_trace =
++/*		TRACE_DEBUG | */
++/*		TRACE_SCSI | */
++/*		TRACE_ISCSI | */
++/*		TRACE_NET | */
++/*		TRACE_BUFF | */
++/*		TRACE_FILE | */
++/*		TRACE_LINE | */
++/*		TRACE_FUNCTION | */
++/*		TRACE_SEM | */
++
++/*		TRACE_DIGEST | */
++/*		TRACE_PARAM | */
++/*		TRACE_LOGIN | */
++/*		TRACE_STATE | */
++		TRACE_ERL0 |
++		TRACE_ERL1 |
++		TRACE_ERL2 |
++/*		TRACE_TIMER | */
++/*		TRACE_R2T | */
++/*		TRACE_SPINDLE | */
++/*		TRACE_SSLR | */
++/*		TRACE_SSLT | */
++/*		TRACE_CHANNEL | */
++/*		TRACE_CMDSN | */
++/*		TRACE_NODEATTRIB | */
++		TRACE_VANITY |
++		TRACE_ENDING;
++
++#define TRACE(trace, args...)					\
++{								\
++static char iscsi_trace_buff[256];				\
++								\
++if (iscsi_trace & trace) {					\
++	sprintf(iscsi_trace_buff, args);			\
++	if (iscsi_trace & TRACE_FUNCTION) {			\
++		printk(KERN_INFO "%s:%d: %s",  __func__, __LINE__, \
++			iscsi_trace_buff);			\
++	} else if (iscsi_trace&TRACE_FILE) {			\
++		printk(KERN_INFO "%s::%d: %s", __FILE__, __LINE__, \
++			iscsi_trace_buff);			\
++	} else if (iscsi_trace & TRACE_LINE) {			\
++		printk(KERN_INFO "%d: %s", __LINE__, iscsi_trace_buff);	\
++	} else {						\
++		printk(KERN_INFO "%s", iscsi_trace_buff);	\
++	}							\
++}								\
++}
++
++#define PRINT_BUFF(buff, len)					\
++if (iscsi_trace & TRACE_BUFF) {					\
++	int zzz;						\
++								\
++	printk(KERN_INFO "%d:\n", __LINE__);			\
++	for (zzz = 0; zzz < len; zzz++) {			\
++		if (zzz % 16 == 0) {				\
++			if (zzz)				\
++				printk(KERN_INFO "\n");		\
++			printk(KERN_INFO "%4i: ", zzz);		\
++		}						\
++		printk(KERN_INFO "%02x ", (unsigned char) (buff)[zzz]);	\
++	}							\
++	if ((len + 1) % 16)					\
++		printk(KERN_INFO "\n");				\
++}
++
++#else /* !CONFIG_ISCSI_TARGET_DEBUG */
++#define TRACE(trace, args...)
++#define PRINT_BUFF(buff, len)
++#endif /* CONFIG_ISCSI_TARGET_DEBUG */
++
++#endif   /*** ISCSI_DEBUG_H ***/
+diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
+new file mode 100644
+index 0000000..90c8756
+--- /dev/null
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -0,0 +1,1868 @@
 +/*******************************************************************************
-+ * This file contains the iSCSI Target specific Task Management functions.
++ * This file contains the iSCSI Target specific utility functions.
 + *
 + * © Copyright 2007-2011 RisingTide Systems LLC.
 + *
@@ -80,856 +205,1958 @@ index 0000000..32a9c97
 + * GNU General Public License for more details.
 + ******************************************************************************/
 +
-+#include <asm/unaligned.h>
++#include <linux/list.h>
++#include <scsi/libsas.h> /* For TASK_ATTR_* */
 +#include <scsi/iscsi_proto.h>
 +#include <target/target_core_base.h>
 +#include <target/target_core_transport.h>
++#include <target/target_core_tmr.h>
++#include <target/target_core_fabric_ops.h>
++#include <target/target_core_configfs.h>
 +
 +#include "iscsi_target_debug.h"
 +#include "iscsi_target_core.h"
++#include "iscsi_target_parameters.h"
 +#include "iscsi_target_seq_pdu_list.h"
 +#include "iscsi_target_datain_values.h"
-+#include "iscsi_target_device.h"
 +#include "iscsi_target_erl0.h"
 +#include "iscsi_target_erl1.h"
 +#include "iscsi_target_erl2.h"
-+#include "iscsi_target_tmr.h"
 +#include "iscsi_target_tpg.h"
++#include "iscsi_target_tq.h"
 +#include "iscsi_target_util.h"
 +#include "iscsi_target.h"
 +
-+u8 iscsit_tmr_abort_task(
-+	struct iscsi_cmd *cmd,
-+	unsigned char *buf)
-+{
-+	struct iscsi_cmd *ref_cmd;
-+	struct iscsi_conn *conn = cmd->conn;
-+	struct iscsi_tmr_req *tmr_req = cmd->tmr_req;
-+	struct se_tmr_req *se_tmr = SE_CMD(cmd)->se_tmr_req;
-+	struct iscsi_tm *hdr = (struct iscsi_tm *) buf;
-+
-+	ref_cmd = iscsit_find_cmd_from_itt(conn, hdr->rtt);
-+	if (!ref_cmd) {
-+		printk(KERN_ERR "Unable to locate RefTaskTag: 0x%08x on CID:"
-+			" %hu.\n", hdr->rtt, conn->cid);
-+		return ((hdr->refcmdsn >= conn->sess->exp_cmd_sn) &&
-+			(hdr->refcmdsn <= conn->sess->max_cmd_sn)) ?
-+			ISCSI_TMF_RSP_COMPLETE : ISCSI_TMF_RSP_NO_TASK;
-+	}
-+	if (ref_cmd->cmd_sn != hdr->refcmdsn) {
-+		printk(KERN_ERR "RefCmdSN 0x%08x does not equal"
-+			" task's CmdSN 0x%08x. Rejecting ABORT_TASK.\n",
-+			hdr->refcmdsn, ref_cmd->cmd_sn);
-+		return ISCSI_TMF_RSP_REJECTED;
-+	}
-+
-+	se_tmr->ref_task_tag		= hdr->rtt;
-+	se_tmr->ref_cmd			= &ref_cmd->se_cmd;
-+	tmr_req->ref_cmd_sn		= hdr->refcmdsn;
-+	tmr_req->exp_data_sn		= hdr->exp_datasn;
-+
-+	return ISCSI_TMF_RSP_COMPLETE;
-+}
++extern struct list_head g_tiqn_list;
++extern spinlock_t tiqn_lock;
 +
 +/*
-+ *	Called from iscsit_handle_task_mgt_cmd().
++ *	Called with cmd->r2t_lock held.
 + */
-+int iscsit_tmr_task_warm_reset(
-+	struct iscsi_conn *conn,
-+	struct iscsi_tmr_req *tmr_req,
-+	unsigned char *buf)
-+{
-+	struct iscsi_session *sess = conn->sess;
-+	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
-+#if 0
-+	struct iscsi_init_task_mgt_cmnd *hdr =
-+		(struct iscsi_init_task_mgt_cmnd *) buf;
-+#endif
-+	if (!na->tmr_warm_reset) {
-+		printk(KERN_ERR "TMR Opcode TARGET_WARM_RESET authorization"
-+			" failed for Initiator Node: %s\n",
-+			sess->se_sess->se_node_acl->initiatorname);
-+		 return -1;
-+	}
-+	/*
-+	 * Do the real work in transport_generic_do_tmr().
-+	 */
-+	return 0;
-+}
-+
-+int iscsit_tmr_task_cold_reset(
-+	struct iscsi_conn *conn,
-+	struct iscsi_tmr_req *tmr_req,
-+	unsigned char *buf)
-+{
-+	struct iscsi_session *sess = conn->sess;
-+	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
-+
-+	if (!na->tmr_cold_reset) {
-+		printk(KERN_ERR "TMR Opcode TARGET_COLD_RESET authorization"
-+			" failed for Initiator Node: %s\n",
-+			sess->se_sess->se_node_acl->initiatorname);
-+		return -1;
-+	}
-+	/*
-+	 * Do the real work in transport_generic_do_tmr().
-+	 */
-+	return 0;
-+}
-+
-+u8 iscsit_tmr_task_reassign(
++int iscsit_add_r2t_to_list(
 +	struct iscsi_cmd *cmd,
-+	unsigned char *buf)
++	u32 offset,
++	u32 xfer_len,
++	int recovery,
++	u32 r2t_sn)
 +{
-+	struct iscsi_cmd *ref_cmd = NULL;
-+	struct iscsi_conn *conn = cmd->conn;
-+	struct iscsi_conn_recovery *cr = NULL;
-+	struct iscsi_tmr_req *tmr_req = cmd->tmr_req;
-+	struct se_tmr_req *se_tmr = SE_CMD(cmd)->se_tmr_req;
-+	struct iscsi_tm *hdr = (struct iscsi_tm *) buf;
-+	int ret;
++	struct iscsi_r2t *r2t;
 +
-+	TRACE(TRACE_ERL2, "Got TASK_REASSIGN TMR ITT: 0x%08x,"
-+		" RefTaskTag: 0x%08x, ExpDataSN: 0x%08x, CID: %hu\n",
-+		hdr->itt, hdr->rtt, hdr->exp_datasn, conn->cid);
-+
-+	if (conn->sess->sess_ops->ErrorRecoveryLevel != 2) {
-+		printk(KERN_ERR "TMR TASK_REASSIGN not supported in ERL<2,"
-+				" ignoring request.\n");
-+		return ISCSI_TMF_RSP_NOT_SUPPORTED;
-+	}
-+
-+	ret = iscsit_find_cmd_for_recovery(conn->sess, &ref_cmd, &cr, hdr->rtt);
-+	if (ret == -2) {
-+		printk(KERN_ERR "Command ITT: 0x%08x is still alligent to CID:"
-+			" %hu\n", ref_cmd->init_task_tag, cr->cid);
-+		return ISCSI_TMF_RSP_TASK_ALLEGIANT;
-+	} else if (ret == -1) {
-+		printk(KERN_ERR "Unable to locate RefTaskTag: 0x%08x in"
-+			" connection recovery command list.\n", hdr->rtt);
-+		return ISCSI_TMF_RSP_NO_TASK;
-+	}
-+	/*
-+	 * Temporary check to prevent connection recovery for
-+	 * connections with a differing MaxRecvDataSegmentLength.
-+	 */
-+	if (cr->maxrecvdatasegmentlength !=
-+	    conn->conn_ops->MaxRecvDataSegmentLength) {
-+		printk(KERN_ERR "Unable to perform connection recovery for"
-+			" differing MaxRecvDataSegmentLength, rejecting"
-+			" TMR TASK_REASSIGN.\n");
-+		return ISCSI_TMF_RSP_REJECTED;
-+	}
-+
-+	se_tmr->ref_task_tag		= hdr->rtt;
-+	se_tmr->ref_cmd			= &ref_cmd->se_cmd;
-+	se_tmr->ref_task_lun		= get_unaligned_le64(&hdr->lun[0]);
-+	tmr_req->ref_cmd_sn		= hdr->refcmdsn;
-+	tmr_req->exp_data_sn		= hdr->exp_datasn;
-+	tmr_req->conn_recovery		= cr;
-+	tmr_req->task_reassign		= 1;
-+	/*
-+	 * Command can now be reassigned to a new connection.
-+	 * The task management response must be sent before the
-+	 * reassignment actually happens.  See iscsi_tmr_post_handler().
-+	 */
-+	return ISCSI_TMF_RSP_COMPLETE;
-+}
-+
-+static void iscsit_task_reassign_remove_cmd(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_conn_recovery *cr,
-+	struct iscsi_session *sess)
-+{
-+	int ret;
-+
-+	spin_lock(&cr->conn_recovery_cmd_lock);
-+	ret = iscsit_remove_cmd_from_connection_recovery(cmd, sess);
-+	spin_unlock(&cr->conn_recovery_cmd_lock);
-+	if (!ret) {
-+		printk(KERN_INFO "iSCSI connection recovery successful for CID:"
-+			" %hu on SID: %u\n", cr->cid, sess->sid);
-+		iscsit_remove_active_connection_recovery_entry(cr, sess);
-+	}
-+}
-+
-+static int iscsit_task_reassign_complete_nop_out(
-+	struct iscsi_tmr_req *tmr_req,
-+	struct iscsi_conn *conn)
-+{
-+	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
-+	struct se_cmd *se_cmd = se_tmr->ref_cmd;
-+	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
-+	struct iscsi_conn_recovery *cr;
-+
-+	if (!cmd->cr) {
-+		printk(KERN_ERR "struct iscsi_conn_recovery pointer for ITT: 0x%08x"
-+			" is NULL!\n", cmd->init_task_tag);
++	r2t = kmem_cache_zalloc(lio_r2t_cache, GFP_ATOMIC);
++	if (!r2t) {
++		printk(KERN_ERR "Unable to allocate memory for struct iscsi_r2t.\n");
 +		return -1;
 +	}
-+	cr = cmd->cr;
++	INIT_LIST_HEAD(&r2t->r2t_list);
 +
-+	/*
-+	 * Reset the StatSN so a new one for this commands new connection
-+	 * will be assigned.
-+	 * Reset the ExpStatSN as well so we may receive Status SNACKs.
-+	 */
-+	cmd->stat_sn = cmd->exp_stat_sn = 0;
++	r2t->recovery_r2t = recovery;
++	r2t->r2t_sn = (!r2t_sn) ? cmd->r2t_sn++ : r2t_sn;
++	r2t->offset = offset;
++	r2t->xfer_len = xfer_len;
++	list_add_tail(&r2t->r2t_list, &cmd->cmd_r2t_list);
++	spin_unlock_bh(&cmd->r2t_lock);
 +
-+	iscsit_task_reassign_remove_cmd(cmd, cr, conn->sess);
++	iscsit_add_cmd_to_immediate_queue(cmd, cmd->conn, ISTATE_SEND_R2T);
 +
-+	spin_lock_bh(&conn->cmd_lock);
-+	list_add_tail(&cmd->i_list, &conn->conn_cmd_list);
-+	spin_unlock_bh(&conn->cmd_lock);
-+
-+	cmd->i_state = ISTATE_SEND_NOPIN;
-+	iscsit_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
-+	return 0;
-+}
-+
-+static int iscsit_task_reassign_complete_write(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_tmr_req *tmr_req)
-+{
-+	int no_build_r2ts = 0;
-+	u32 length = 0, offset = 0;
-+	struct iscsi_conn *conn = cmd->conn;
-+	struct se_cmd *se_cmd = SE_CMD(cmd);
-+	/*
-+	 * The Initiator must not send a R2T SNACK with a Begrun less than
-+	 * the TMR TASK_REASSIGN's ExpDataSN.
-+	 */
-+	if (!tmr_req->exp_data_sn) {
-+		cmd->cmd_flags &= ~ICF_GOT_DATACK_SNACK;
-+		cmd->acked_data_sn = 0;
-+	} else {
-+		cmd->cmd_flags |= ICF_GOT_DATACK_SNACK;
-+		cmd->acked_data_sn = (tmr_req->exp_data_sn - 1);
-+	}
-+
-+	/*
-+	 * The TMR TASK_REASSIGN's ExpDataSN contains the next R2TSN the
-+	 * Initiator is expecting.  The Target controls all WRITE operations
-+	 * so if we have received all DataOUT we can safety ignore Initiator.
-+	 */
-+	if (cmd->cmd_flags & ICF_GOT_LAST_DATAOUT) {
-+		if (!atomic_read(&cmd->transport_sent)) {
-+			TRACE(TRACE_ERL2, "WRITE ITT: 0x%08x: t_state: %d"
-+				" never sent to transport\n",
-+				cmd->init_task_tag, cmd->se_cmd.t_state);
-+			return transport_generic_handle_data(se_cmd);
-+		}
-+
-+		cmd->i_state = ISTATE_SEND_STATUS;
-+		iscsit_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
-+		return 0;
-+	}
-+
-+	/*
-+	 * Special case to deal with DataSequenceInOrder=No and Non-Immeidate
-+	 * Unsolicited DataOut.
-+	 */
-+	if (cmd->unsolicited_data) {
-+		cmd->unsolicited_data = 0;
-+
-+		offset = cmd->next_burst_len = cmd->write_data_done;
-+
-+		if ((conn->sess->sess_ops->FirstBurstLength - offset) >=
-+		     cmd->data_length) {
-+			no_build_r2ts = 1;
-+			length = (cmd->data_length - offset);
-+		} else
-+			length = (conn->sess->sess_ops->FirstBurstLength - offset);
-+
-+		spin_lock_bh(&cmd->r2t_lock);
-+		if (iscsit_add_r2t_to_list(cmd, offset, length, 0, 0) < 0) {
-+			spin_unlock_bh(&cmd->r2t_lock);
-+			return -1;
-+		}
-+		cmd->outstanding_r2ts++;
-+		spin_unlock_bh(&cmd->r2t_lock);
-+
-+		if (no_build_r2ts)
-+			return 0;
-+	}
-+	/*
-+	 * iscsit_build_r2ts_for_cmd() can handle the rest from here.
-+	 */
-+	return iscsit_build_r2ts_for_cmd(cmd, conn, 2);
-+}
-+
-+static int iscsit_task_reassign_complete_read(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_tmr_req *tmr_req)
-+{
-+	struct iscsi_conn *conn = cmd->conn;
-+	struct iscsi_datain_req *dr;
-+	struct se_cmd *se_cmd = SE_CMD(cmd);
-+	/*
-+	 * The Initiator must not send a Data SNACK with a BegRun less than
-+	 * the TMR TASK_REASSIGN's ExpDataSN.
-+	 */
-+	if (!tmr_req->exp_data_sn) {
-+		cmd->cmd_flags &= ~ICF_GOT_DATACK_SNACK;
-+		cmd->acked_data_sn = 0;
-+	} else {
-+		cmd->cmd_flags |= ICF_GOT_DATACK_SNACK;
-+		cmd->acked_data_sn = (tmr_req->exp_data_sn - 1);
-+	}
-+
-+	if (!atomic_read(&cmd->transport_sent)) {
-+		printk(KERN_INFO "READ ITT: 0x%08x: t_state: %d never sent to"
-+			" transport\n", cmd->init_task_tag,
-+			SE_CMD(cmd)->t_state);
-+		transport_generic_handle_cdb(se_cmd);
-+		return 0;
-+	}
-+
-+	if (!atomic_read(&se_cmd->t_task->t_transport_complete)) {
-+		printk(KERN_ERR "READ ITT: 0x%08x: t_state: %d, never returned"
-+			" from transport\n", cmd->init_task_tag,
-+			SE_CMD(cmd)->t_state);
-+		return -1;
-+	}
-+
-+	dr = iscsit_allocate_datain_req();
-+	if (!dr)
-+		return -1;
-+	/*
-+	 * The TMR TASK_REASSIGN's ExpDataSN contains the next DataSN the
-+	 * Initiator is expecting.
-+	 */
-+	dr->data_sn = dr->begrun = tmr_req->exp_data_sn;
-+	dr->runlength = 0;
-+	dr->generate_recovery_values = 1;
-+	dr->recovery = DATAIN_CONNECTION_RECOVERY;
-+
-+	iscsit_attach_datain_req(cmd, dr);
-+
-+	cmd->i_state = ISTATE_SEND_DATAIN;
-+	iscsit_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
-+	return 0;
-+}
-+
-+static int iscsit_task_reassign_complete_none(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_tmr_req *tmr_req)
-+{
-+	struct iscsi_conn *conn = cmd->conn;
-+
-+	cmd->i_state = ISTATE_SEND_STATUS;
-+	iscsit_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
-+	return 0;
-+}
-+
-+static int iscsit_task_reassign_complete_scsi_cmnd(
-+	struct iscsi_tmr_req *tmr_req,
-+	struct iscsi_conn *conn)
-+{
-+	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
-+	struct se_cmd *se_cmd = se_tmr->ref_cmd;
-+	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
-+	struct iscsi_conn_recovery *cr;
-+
-+	if (!cmd->cr) {
-+		printk(KERN_ERR "struct iscsi_conn_recovery pointer for ITT: 0x%08x"
-+			" is NULL!\n", cmd->init_task_tag);
-+		return -1;
-+	}
-+	cr = cmd->cr;
-+
-+	/*
-+	 * Reset the StatSN so a new one for this commands new connection
-+	 * will be assigned.
-+	 * Reset the ExpStatSN as well so we may receive Status SNACKs.
-+	 */
-+	cmd->stat_sn = cmd->exp_stat_sn = 0;
-+
-+	iscsit_task_reassign_remove_cmd(cmd, cr, conn->sess);
-+
-+	spin_lock_bh(&conn->cmd_lock);
-+	list_add_tail(&cmd->i_list, &conn->conn_cmd_list);
-+	spin_unlock_bh(&conn->cmd_lock);
-+
-+	if (se_cmd->se_cmd_flags & SCF_SENT_CHECK_CONDITION) {
-+		cmd->i_state = ISTATE_SEND_STATUS;
-+		iscsit_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
-+		return 0;
-+	}
-+
-+	switch (cmd->data_direction) {
-+	case DMA_TO_DEVICE:
-+		return iscsit_task_reassign_complete_write(cmd, tmr_req);
-+	case DMA_FROM_DEVICE:
-+		return iscsit_task_reassign_complete_read(cmd, tmr_req);
-+	case DMA_NONE:
-+		return iscsit_task_reassign_complete_none(cmd, tmr_req);
-+	default:
-+		printk(KERN_ERR "Unknown cmd->data_direction: 0x%02x\n",
-+				cmd->data_direction);
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int iscsit_task_reassign_complete(
-+	struct iscsi_tmr_req *tmr_req,
-+	struct iscsi_conn *conn)
-+{
-+	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
-+	struct se_cmd *se_cmd;
-+	struct iscsi_cmd *cmd;
-+	int ret = 0;
-+
-+	if (!se_tmr->ref_cmd) {
-+		printk(KERN_ERR "TMR Request is missing a RefCmd struct iscsi_cmd.\n");
-+		return -1;
-+	}
-+	se_cmd = se_tmr->ref_cmd;
-+	cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
-+
-+	cmd->conn = conn;
-+
-+	switch (cmd->iscsi_opcode) {
-+	case ISCSI_OP_NOOP_OUT:
-+		ret = iscsit_task_reassign_complete_nop_out(tmr_req, conn);
-+		break;
-+	case ISCSI_OP_SCSI_CMD:
-+		ret = iscsit_task_reassign_complete_scsi_cmnd(tmr_req, conn);
-+		break;
-+	default:
-+		 printk(KERN_ERR "Illegal iSCSI Opcode 0x%02x during"
-+			" command realligence\n", cmd->iscsi_opcode);
-+		return -1;
-+	}
-+
-+	if (ret != 0)
-+		return ret;
-+
-+	TRACE(TRACE_ERL2, "Completed connection realligence for Opcode: 0x%02x,"
-+		" ITT: 0x%08x to CID: %hu.\n", cmd->iscsi_opcode,
-+			cmd->init_task_tag, conn->cid);
-+
-+	return 0;
-+}
-+
-+/*
-+ *	Handles special after-the-fact actions related to TMRs.
-+ *	Right now the only one that its really needed for is
-+ *	connection recovery releated TASK_REASSIGN.
-+ */
-+extern int iscsit_tmr_post_handler(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
-+{
-+	struct iscsi_tmr_req *tmr_req = cmd->tmr_req;
-+	struct se_tmr_req *se_tmr = SE_CMD(cmd)->se_tmr_req;
-+
-+	if (tmr_req->task_reassign &&
-+	   (se_tmr->response == ISCSI_TMF_RSP_COMPLETE))
-+		return iscsit_task_reassign_complete(tmr_req, conn);
-+
-+	return 0;
-+}
-+
-+/*
-+ *	Nothing to do here, but leave it for good measure. :-)
-+ */
-+int iscsit_task_reassign_prepare_read(
-+	struct iscsi_tmr_req *tmr_req,
-+	struct iscsi_conn *conn)
-+{
-+	return 0;
-+}
-+
-+static void iscsit_task_reassign_prepare_unsolicited_dataout(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_conn *conn)
-+{
-+	int i, j;
-+	struct iscsi_pdu *pdu = NULL;
-+	struct iscsi_seq *seq = NULL;
-+
-+	if (conn->sess->sess_ops->DataSequenceInOrder) {
-+		cmd->data_sn = 0;
-+
-+		if (cmd->immediate_data)
-+			cmd->r2t_offset += (cmd->first_burst_len -
-+				cmd->seq_start_offset);
-+
-+		if (conn->sess->sess_ops->DataPDUInOrder) {
-+			cmd->write_data_done -= (cmd->immediate_data) ?
-+						(cmd->first_burst_len -
-+						 cmd->seq_start_offset) :
-+						 cmd->first_burst_len;
-+			cmd->first_burst_len = 0;
-+			return;
-+		}
-+
-+		for (i = 0; i < cmd->pdu_count; i++) {
-+			pdu = &cmd->pdu_list[i];
-+
-+			if (pdu->status != ISCSI_PDU_RECEIVED_OK)
-+				continue;
-+
-+			if ((pdu->offset >= cmd->seq_start_offset) &&
-+			   ((pdu->offset + pdu->length) <=
-+			     cmd->seq_end_offset)) {
-+				cmd->first_burst_len -= pdu->length;
-+				cmd->write_data_done -= pdu->length;
-+				pdu->status = ISCSI_PDU_NOT_RECEIVED;
-+			}
-+		}
-+	} else {
-+		for (i = 0; i < cmd->seq_count; i++) {
-+			seq = &cmd->seq_list[i];
-+
-+			if (seq->type != SEQTYPE_UNSOLICITED)
-+				continue;
-+
-+			cmd->write_data_done -=
-+					(seq->offset - seq->orig_offset);
-+			cmd->first_burst_len = 0;
-+			seq->data_sn = 0;
-+			seq->offset = seq->orig_offset;
-+			seq->next_burst_len = 0;
-+			seq->status = DATAOUT_SEQUENCE_WITHIN_COMMAND_RECOVERY;
-+
-+			if (conn->sess->sess_ops->DataPDUInOrder)
-+				continue;
-+
-+			for (j = 0; j < seq->pdu_count; j++) {
-+				pdu = &cmd->pdu_list[j+seq->pdu_start];
-+
-+				if (pdu->status != ISCSI_PDU_RECEIVED_OK)
-+					continue;
-+
-+				pdu->status = ISCSI_PDU_NOT_RECEIVED;
-+			}
-+		}
-+	}
-+}
-+
-+int iscsit_task_reassign_prepare_write(
-+	struct iscsi_tmr_req *tmr_req,
-+	struct iscsi_conn *conn)
-+{
-+	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
-+	struct se_cmd *se_cmd = se_tmr->ref_cmd;
-+	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
-+	struct iscsi_pdu *pdu = NULL;
-+	struct iscsi_r2t *r2t = NULL, *r2t_tmp;
-+	int first_incomplete_r2t = 1, i = 0;
-+
-+	/*
-+	 * The command was in the process of receiving Unsolicited DataOUT when
-+	 * the connection failed.
-+	 */
-+	if (cmd->unsolicited_data)
-+		iscsit_task_reassign_prepare_unsolicited_dataout(cmd, conn);
-+
-+	/*
-+	 * The Initiator is requesting R2Ts starting from zero,  skip
-+	 * checking acknowledged R2Ts and start checking struct iscsi_r2ts
-+	 * greater than zero.
-+	 */
-+	if (!tmr_req->exp_data_sn)
-+		goto drop_unacknowledged_r2ts;
-+
-+	/*
-+	 * We now check that the PDUs in DataOUT sequences below
-+	 * the TMR TASK_REASSIGN ExpDataSN (R2TSN the Initiator is
-+	 * expecting next) have all the DataOUT they require to complete
-+	 * the DataOUT sequence.  First scan from R2TSN 0 to TMR
-+	 * TASK_REASSIGN ExpDataSN-1.
-+	 *
-+	 * If we have not received all DataOUT in question,  we must
-+	 * make sure to make the appropriate changes to values in
-+	 * struct iscsi_cmd (and elsewhere depending on session parameters)
-+	 * so iscsit_build_r2ts_for_cmd() in iscsit_task_reassign_complete_write()
-+	 * will resend a new R2T for the DataOUT sequences in question.
-+	 */
 +	spin_lock_bh(&cmd->r2t_lock);
-+	if (list_empty(&cmd->cmd_r2t_list)) {
-+		spin_unlock_bh(&cmd->r2t_lock);
-+		return -1;
-+	}
++	return 0;
++}
 +
++struct iscsi_r2t *iscsit_get_r2t_for_eos(
++	struct iscsi_cmd *cmd,
++	u32 offset,
++	u32 length)
++{
++	struct iscsi_r2t *r2t;
++
++	spin_lock_bh(&cmd->r2t_lock);
 +	list_for_each_entry(r2t, &cmd->cmd_r2t_list, r2t_list) {
-+
-+		if (r2t->r2t_sn >= tmr_req->exp_data_sn)
-+			continue;
-+		/*
-+		 * Safely ignore Recovery R2Ts and R2Ts that have completed
-+		 * DataOUT sequences.
-+		 */
-+		if (r2t->seq_complete)
-+			continue;
-+
-+		if (r2t->recovery_r2t)
-+			continue;
-+
-+		/*
-+		 *                 DataSequenceInOrder=Yes:
-+		 *
-+		 * Taking into account the iSCSI implementation requirement of
-+		 * MaxOutstandingR2T=1 while ErrorRecoveryLevel>0 and
-+		 * DataSequenceInOrder=Yes, we must take into consideration
-+		 * the following:
-+		 *
-+		 *                  DataSequenceInOrder=No:
-+		 *
-+		 * Taking into account that the Initiator controls the (possibly
-+		 * random) PDU Order in (possibly random) Sequence Order of
-+		 * DataOUT the target requests with R2Ts,  we must take into
-+		 * consideration the following:
-+		 *
-+		 *      DataPDUInOrder=Yes for DataSequenceInOrder=[Yes,No]:
-+		 *
-+		 * While processing non-complete R2T DataOUT sequence requests
-+		 * the Target will re-request only the total sequence length
-+		 * minus current received offset.  This is because we must
-+		 * assume the initiator will continue sending DataOUT from the
-+		 * last PDU before the connection failed.
-+		 *
-+		 *      DataPDUInOrder=No for DataSequenceInOrder=[Yes,No]:
-+		 *
-+		 * While processing non-complete R2T DataOUT sequence requests
-+		 * the Target will re-request the entire DataOUT sequence if
-+		 * any single PDU is missing from the sequence.  This is because
-+		 * we have no logical method to determine the next PDU offset,
-+		 * and we must assume the Initiator will be sending any random
-+		 * PDU offset in the current sequence after TASK_REASSIGN
-+		 * has completed.
-+		 */
-+		if (conn->sess->sess_ops->DataSequenceInOrder) {
-+			if (!first_incomplete_r2t) {
-+				cmd->r2t_offset -= r2t->xfer_len;
-+				goto next;
-+			}
-+
-+			if (conn->sess->sess_ops->DataPDUInOrder) {
-+				cmd->data_sn = 0;
-+				cmd->r2t_offset -= (r2t->xfer_len -
-+					cmd->next_burst_len);
-+				first_incomplete_r2t = 0;
-+				goto next;
-+			}
-+
-+			cmd->data_sn = 0;
-+			cmd->r2t_offset -= r2t->xfer_len;
-+
-+			for (i = 0; i < cmd->pdu_count; i++) {
-+				pdu = &cmd->pdu_list[i];
-+
-+				if (pdu->status != ISCSI_PDU_RECEIVED_OK)
-+					continue;
-+
-+				if ((pdu->offset >= r2t->offset) &&
-+				    (pdu->offset < (r2t->offset +
-+						r2t->xfer_len))) {
-+					cmd->next_burst_len -= pdu->length;
-+					cmd->write_data_done -= pdu->length;
-+					pdu->status = ISCSI_PDU_NOT_RECEIVED;
-+				}
-+			}
-+
-+			first_incomplete_r2t = 0;
-+		} else {
-+			struct iscsi_seq *seq;
-+
-+			seq = iscsit_get_seq_holder(cmd, r2t->offset,
-+					r2t->xfer_len);
-+			if (!seq) {
-+				spin_unlock_bh(&cmd->r2t_lock);
-+				return -1;
-+			}
-+
-+			cmd->write_data_done -=
-+					(seq->offset - seq->orig_offset);
-+			seq->data_sn = 0;
-+			seq->offset = seq->orig_offset;
-+			seq->next_burst_len = 0;
-+			seq->status = DATAOUT_SEQUENCE_WITHIN_COMMAND_RECOVERY;
-+
-+			cmd->seq_send_order--;
-+
-+			if (conn->sess->sess_ops->DataPDUInOrder)
-+				goto next;
-+
-+			for (i = 0; i < seq->pdu_count; i++) {
-+				pdu = &cmd->pdu_list[i+seq->pdu_start];
-+
-+				if (pdu->status != ISCSI_PDU_RECEIVED_OK)
-+					continue;
-+
-+				pdu->status = ISCSI_PDU_NOT_RECEIVED;
-+			}
++		if ((r2t->offset <= offset) &&
++		    (r2t->offset + r2t->xfer_len) >= (offset + length)) {
++			spin_unlock_bh(&cmd->r2t_lock);
++			return r2t;
 +		}
-+
-+next:
-+		cmd->outstanding_r2ts--;
 +	}
 +	spin_unlock_bh(&cmd->r2t_lock);
 +
-+	/*
-+	 * We now drop all unacknowledged R2Ts, ie: ExpDataSN from TMR
-+	 * TASK_REASSIGN to the last R2T in the list..  We are also careful
-+	 * to check that the Initiator is not requesting R2Ts for DataOUT
-+	 * sequences it has already completed.
-+	 *
-+	 * Free each R2T in question and adjust values in struct iscsi_cmd
-+	 * accordingly so iscsit_build_r2ts_for_cmd() do the rest of
-+	 * the work after the TMR TASK_REASSIGN Response is sent.
-+	 */
-+drop_unacknowledged_r2ts:
++	printk(KERN_ERR "Unable to locate R2T for Offset: %u, Length:"
++			" %u\n", offset, length);
++	return NULL;
++}
 +
-+	cmd->cmd_flags &= ~ICF_SENT_LAST_R2T;
-+	cmd->r2t_sn = tmr_req->exp_data_sn;
++struct iscsi_r2t *iscsit_get_r2t_from_list(struct iscsi_cmd *cmd)
++{
++	struct iscsi_r2t *r2t;
 +
 +	spin_lock_bh(&cmd->r2t_lock);
-+	list_for_each_entry_safe(r2t, r2t_tmp, &cmd->cmd_r2t_list, r2t_list) {
-+		/*
-+		 * Skip up to the R2T Sequence number provided by the
-+		 * iSCSI TASK_REASSIGN TMR
-+		 */
-+		if (r2t->r2t_sn < tmr_req->exp_data_sn)
-+			continue;
-+
-+		if (r2t->seq_complete) {
-+			printk(KERN_ERR "Initiator is requesting R2Ts from"
-+				" R2TSN: 0x%08x, but R2TSN: 0x%08x, Offset: %u,"
-+				" Length: %u is already complete."
-+				"   BAD INITIATOR ERL=2 IMPLEMENTATION!\n",
-+				tmr_req->exp_data_sn, r2t->r2t_sn,
-+				r2t->offset, r2t->xfer_len);
++	list_for_each_entry(r2t, &cmd->cmd_r2t_list, r2t_list) {
++		if (!r2t->sent_r2t) {
 +			spin_unlock_bh(&cmd->r2t_lock);
-+			return -1;
++			return r2t;
 +		}
-+
-+		if (r2t->recovery_r2t) {
-+			iscsit_free_r2t(r2t, cmd);
-+			continue;
-+		}
-+
-+		/*		   DataSequenceInOrder=Yes:
-+		 *
-+		 * Taking into account the iSCSI implementation requirement of
-+		 * MaxOutstandingR2T=1 while ErrorRecoveryLevel>0 and
-+		 * DataSequenceInOrder=Yes, it's safe to subtract the R2Ts
-+		 * entire transfer length from the commands R2T offset marker.
-+		 *
-+		 *		   DataSequenceInOrder=No:
-+		 *
-+		 * We subtract the difference from struct iscsi_seq between the
-+		 * current offset and original offset from cmd->write_data_done
-+		 * for account for DataOUT PDUs already received.  Then reset
-+		 * the current offset to the original and zero out the current
-+		 * burst length,  to make sure we re-request the entire DataOUT
-+		 * sequence.
-+		 */
-+		if (conn->sess->sess_ops->DataSequenceInOrder)
-+			cmd->r2t_offset -= r2t->xfer_len;
-+		else
-+			cmd->seq_send_order--;
-+
-+		cmd->outstanding_r2ts--;
-+		iscsit_free_r2t(r2t, cmd);
 +	}
 +	spin_unlock_bh(&cmd->r2t_lock);
 +
-+	return 0;
++	printk(KERN_ERR "Unable to locate next R2T to send for ITT:"
++			" 0x%08x.\n", cmd->init_task_tag);
++	return NULL;
 +}
 +
 +/*
-+ *	Performs sanity checks TMR TASK_REASSIGN's ExpDataSN for
-+ *	a given struct iscsi_cmd.
++ *	Called with cmd->r2t_lock held.
 + */
-+int iscsit_check_task_reassign_expdatasn(
-+	struct iscsi_tmr_req *tmr_req,
-+	struct iscsi_conn *conn)
++void iscsit_free_r2t(struct iscsi_r2t *r2t, struct iscsi_cmd *cmd)
 +{
-+	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
-+	struct se_cmd *se_cmd = se_tmr->ref_cmd;
-+	struct iscsi_cmd *ref_cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++	list_del(&r2t->r2t_list);
++	kmem_cache_free(lio_r2t_cache, r2t);
++}
 +
-+	if (ref_cmd->iscsi_opcode != ISCSI_OP_SCSI_CMD)
-+		return 0;
++void iscsit_free_r2ts_from_list(struct iscsi_cmd *cmd)
++{
++	struct iscsi_r2t *r2t, *r2t_tmp;
 +
-+	if (se_cmd->se_cmd_flags & SCF_SENT_CHECK_CONDITION)
-+		return 0;
++	spin_lock_bh(&cmd->r2t_lock);
++	list_for_each_entry_safe(r2t, r2t_tmp, &cmd->cmd_r2t_list, r2t_list)
++		iscsit_free_r2t(r2t, cmd);
++	spin_unlock_bh(&cmd->r2t_lock);
++}
 +
-+	if (ref_cmd->data_direction == DMA_NONE)
-+		return 0;
++/*
++ * May be called from software interrupt (timer) context for allocating
++ * iSCSI NopINs.
++ */
++struct iscsi_cmd *iscsit_allocate_cmd(struct iscsi_conn *conn, gfp_t gfp_mask)
++{
++	struct iscsi_cmd *cmd;
 +
-+	/*
-+	 * For READs the TMR TASK_REASSIGNs ExpDataSN contains the next DataSN
-+	 * of DataIN the Initiator is expecting.
-+	 *
-+	 * Also check that the Initiator is not re-requesting DataIN that has
-+	 * already been acknowledged with a DataAck SNACK.
-+	 */
-+	if (ref_cmd->data_direction == DMA_FROM_DEVICE) {
-+		if (tmr_req->exp_data_sn > ref_cmd->data_sn) {
-+			printk(KERN_ERR "Received ExpDataSN: 0x%08x for READ"
-+				" in TMR TASK_REASSIGN greater than command's"
-+				" DataSN: 0x%08x.\n", tmr_req->exp_data_sn,
-+				ref_cmd->data_sn);
-+			return -1;
-+		}
-+		if ((ref_cmd->cmd_flags & ICF_GOT_DATACK_SNACK) &&
-+		    (tmr_req->exp_data_sn <= ref_cmd->acked_data_sn)) {
-+			printk(KERN_ERR "Received ExpDataSN: 0x%08x for READ"
-+				" in TMR TASK_REASSIGN for previously"
-+				" acknowledged DataIN: 0x%08x,"
-+				" protocol error\n", tmr_req->exp_data_sn,
-+				ref_cmd->acked_data_sn);
-+			return -1;
-+		}
-+		return iscsit_task_reassign_prepare_read(tmr_req, conn);
++	cmd = kmem_cache_zalloc(lio_cmd_cache, gfp_mask);
++	if (!cmd) {
++		printk(KERN_ERR "Unable to allocate memory for struct iscsi_cmd.\n");
++		return NULL;
 +	}
 +
++	cmd->conn	= conn;
++	INIT_LIST_HEAD(&cmd->i_list);
++	INIT_LIST_HEAD(&cmd->datain_list);
++	INIT_LIST_HEAD(&cmd->cmd_r2t_list);
++	init_completion(&cmd->reject_comp);
++	init_completion(&cmd->unsolicited_data_comp);
++	spin_lock_init(&cmd->datain_lock);
++	spin_lock_init(&cmd->dataout_timeout_lock);
++	spin_lock_init(&cmd->istate_lock);
++	spin_lock_init(&cmd->error_lock);
++	spin_lock_init(&cmd->r2t_lock);
++
++	return cmd;
++}
++
++/*
++ * Called from iscsi_handle_scsi_cmd()
++ */
++struct iscsi_cmd *iscsit_allocate_se_cmd(
++	struct iscsi_conn *conn,
++	u32 data_length,
++	int data_direction,
++	int iscsi_task_attr)
++{
++	struct iscsi_cmd *cmd;
++	struct se_cmd *se_cmd;
++	int sam_task_attr;
++
++	cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
++	if (!cmd)
++		return NULL;
++
++	cmd->data_direction = data_direction;
++	cmd->data_length = data_length;
 +	/*
-+	 * For WRITEs the TMR TASK_REASSIGNs ExpDataSN contains the next R2TSN
-+	 * for R2Ts the Initiator is expecting.
-+	 *
-+	 * Do the magic in iscsit_task_reassign_prepare_write().
++	 * Figure out the SAM Task Attribute for the incoming SCSI CDB
 +	 */
-+	if (ref_cmd->data_direction == DMA_TO_DEVICE) {
-+		if (tmr_req->exp_data_sn > ref_cmd->r2t_sn) {
-+			printk(KERN_ERR "Received ExpDataSN: 0x%08x for WRITE"
-+				" in TMR TASK_REASSIGN greater than command's"
-+				" R2TSN: 0x%08x.\n", tmr_req->exp_data_sn,
-+					ref_cmd->r2t_sn);
-+			return -1;
-+		}
-+		return iscsit_task_reassign_prepare_write(tmr_req, conn);
++	if ((iscsi_task_attr == ISCSI_ATTR_UNTAGGED) ||
++	    (iscsi_task_attr == ISCSI_ATTR_SIMPLE))
++		sam_task_attr = TASK_ATTR_SIMPLE;
++	else if (iscsi_task_attr == ISCSI_ATTR_ORDERED)
++		sam_task_attr = TASK_ATTR_ORDERED;
++	else if (iscsi_task_attr == ISCSI_ATTR_HEAD_OF_QUEUE)
++		sam_task_attr = TASK_ATTR_HOQ;
++	else if (iscsi_task_attr == ISCSI_ATTR_ACA)
++		sam_task_attr = TASK_ATTR_ACA;
++	else {
++		printk(KERN_INFO "Unknown iSCSI Task Attribute: 0x%02x, using"
++			" TASK_ATTR_SIMPLE\n", iscsi_task_attr);
++		sam_task_attr = TASK_ATTR_SIMPLE;
 +	}
 +
-+	printk(KERN_ERR "Unknown iSCSI data_direction: 0x%02x\n",
-+			ref_cmd->data_direction);
++	se_cmd = &cmd->se_cmd;
++	/*
++	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
++	 */
++	transport_init_se_cmd(se_cmd, &lio_target_fabric_configfs->tf_ops,
++			conn->sess->se_sess, data_length, data_direction,
++			sam_task_attr, &cmd->sense_buffer[0]);
++	return cmd;
++}
++
++struct iscsi_cmd *iscsit_allocate_se_cmd_for_tmr(
++	struct iscsi_conn *conn,
++	u8 function)
++{
++	struct iscsi_cmd *cmd;
++	struct se_cmd *se_cmd;
++	u8 tcm_function;
++
++	cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
++	if (!cmd)
++		return NULL;
++
++	cmd->data_direction = DMA_NONE;
++
++	cmd->tmr_req = kzalloc(sizeof(struct iscsi_tmr_req), GFP_KERNEL);
++	if (!cmd->tmr_req) {
++		printk(KERN_ERR "Unable to allocate memory for"
++			" Task Management command!\n");
++		return NULL;
++	}
++	/*
++	 * TASK_REASSIGN for ERL=2 / connection stays inside of
++	 * LIO-Target $FABRIC_MOD
++	 */
++	if (function == ISCSI_TM_FUNC_TASK_REASSIGN)
++		return cmd;
++
++	se_cmd = &cmd->se_cmd;
++	/*
++	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
++	 */
++	transport_init_se_cmd(se_cmd, &lio_target_fabric_configfs->tf_ops,
++				conn->sess->se_sess, 0, DMA_NONE,
++				TASK_ATTR_SIMPLE, &cmd->sense_buffer[0]);
++
++	switch (function) {
++	case ISCSI_TM_FUNC_ABORT_TASK:
++		tcm_function = TMR_ABORT_TASK;
++		break;
++	case ISCSI_TM_FUNC_ABORT_TASK_SET:
++		tcm_function = TMR_ABORT_TASK_SET;
++		break;
++	case ISCSI_TM_FUNC_CLEAR_ACA:
++		tcm_function = TMR_CLEAR_ACA;
++		break;
++	case ISCSI_TM_FUNC_CLEAR_TASK_SET:
++		tcm_function = TMR_CLEAR_TASK_SET;
++		break;
++	case ISCSI_TM_FUNC_LOGICAL_UNIT_RESET:
++		tcm_function = TMR_LUN_RESET;
++		break;
++	case ISCSI_TM_FUNC_TARGET_WARM_RESET:
++		tcm_function = TMR_TARGET_WARM_RESET;
++		break;
++	case ISCSI_TM_FUNC_TARGET_COLD_RESET:
++		tcm_function = TMR_TARGET_COLD_RESET;
++		break;
++	default:
++		printk(KERN_ERR "Unknown iSCSI TMR Function:"
++			" 0x%02x\n", function);
++		goto out;
++	}
++
++	se_cmd->se_tmr_req = core_tmr_alloc_req(se_cmd,
++				(void *)cmd->tmr_req, tcm_function);
++	if (!se_cmd->se_tmr_req)
++		goto out;
++
++	cmd->tmr_req->se_tmr_req = se_cmd->se_tmr_req;
++
++	return cmd;
++out:
++	iscsit_release_cmd(cmd);
++	if (se_cmd)
++		transport_free_se_cmd(se_cmd);
++	return NULL;
++}
++
++int iscsit_decide_list_to_build(
++	struct iscsi_cmd *cmd,
++	u32 immediate_data_length)
++{
++	struct iscsi_build_list bl;
++	struct iscsi_conn *conn = cmd->conn;
++	struct iscsi_session *sess = conn->sess;
++	struct iscsi_node_attrib *na;
++
++	if (sess->sess_ops->DataSequenceInOrder &&
++	    sess->sess_ops->DataPDUInOrder)
++		return 0;
++
++	if (cmd->data_direction == DMA_NONE)
++		return 0;
++
++	na = iscsit_tpg_get_node_attrib(sess);
++	memset(&bl, 0, sizeof(struct iscsi_build_list));
++
++	if (cmd->data_direction == DMA_FROM_DEVICE) {
++		bl.data_direction = ISCSI_PDU_READ;
++		bl.type = PDULIST_NORMAL;
++		if (na->random_datain_pdu_offsets)
++			bl.randomize |= RANDOM_DATAIN_PDU_OFFSETS;
++		if (na->random_datain_seq_offsets)
++			bl.randomize |= RANDOM_DATAIN_SEQ_OFFSETS;
++	} else {
++		bl.data_direction = ISCSI_PDU_WRITE;
++		bl.immediate_data_length = immediate_data_length;
++		if (na->random_r2t_offsets)
++			bl.randomize |= RANDOM_R2T_OFFSETS;
++
++		if (!cmd->immediate_data && !cmd->unsolicited_data)
++			bl.type = PDULIST_NORMAL;
++		else if (cmd->immediate_data && !cmd->unsolicited_data)
++			bl.type = PDULIST_IMMEDIATE;
++		else if (!cmd->immediate_data && cmd->unsolicited_data)
++			bl.type = PDULIST_UNSOLICITED;
++		else if (cmd->immediate_data && cmd->unsolicited_data)
++			bl.type = PDULIST_IMMEDIATE_AND_UNSOLICITED;
++	}
++
++	return iscsit_do_build_list(cmd, &bl);
++}
++
++struct iscsi_seq *iscsit_get_seq_holder_for_datain(
++	struct iscsi_cmd *cmd,
++	u32 seq_send_order)
++{
++	u32 i;
++
++	for (i = 0; i < cmd->seq_count; i++)
++		if (cmd->seq_list[i].seq_send_order == seq_send_order)
++			return &cmd->seq_list[i];
++
++	return NULL;
++}
++
++struct iscsi_seq *iscsit_get_seq_holder_for_r2t(struct iscsi_cmd *cmd)
++{
++	u32 i;
++
++	if (!cmd->seq_list) {
++		printk(KERN_ERR "struct iscsi_cmd->seq_list is NULL!\n");
++		return NULL;
++	}
++
++	for (i = 0; i < cmd->seq_count; i++) {
++		if (cmd->seq_list[i].type != SEQTYPE_NORMAL)
++			continue;
++		if (cmd->seq_list[i].seq_send_order == cmd->seq_send_order) {
++			cmd->seq_send_order++;
++			return &cmd->seq_list[i];
++		}
++	}
++
++	return NULL;
++}
++
++struct iscsi_r2t *iscsit_get_holder_for_r2tsn(
++	struct iscsi_cmd *cmd,
++	u32 r2t_sn)
++{
++	struct iscsi_r2t *r2t;
++
++	spin_lock_bh(&cmd->r2t_lock);
++	list_for_each_entry(r2t, &cmd->cmd_r2t_list, r2t_list) {
++		if (r2t->r2t_sn == r2t_sn) {
++			spin_unlock_bh(&cmd->r2t_lock);
++			return r2t;
++		}
++	}
++	spin_unlock_bh(&cmd->r2t_lock);
++
++	return NULL;
++}
++
++inline int iscsit_check_received_cmdsn(
++	struct iscsi_conn *conn,
++	struct iscsi_cmd *cmd,
++	u32 cmdsn)
++{
++	int ret;
++	/*
++	 * This is the proper method of checking received CmdSN against
++	 * ExpCmdSN and MaxCmdSN values, as well as accounting for out
++	 * or order CmdSNs due to multiple connection sessions and/or
++	 * CRC failures.
++	 */
++	spin_lock(&conn->sess->cmdsn_lock);
++	if (iscsi_sna_gt(cmdsn, conn->sess->max_cmd_sn)) {
++		printk(KERN_ERR "Received CmdSN: 0x%08x is greater than"
++			" MaxCmdSN: 0x%08x, protocol error.\n", cmdsn,
++				conn->sess->max_cmd_sn);
++		spin_unlock(&conn->sess->cmdsn_lock);
++		return CMDSN_ERROR_CANNOT_RECOVER;
++	}
++
++	if (!conn->sess->cmdsn_outoforder) {
++		if (cmdsn == conn->sess->exp_cmd_sn) {
++			conn->sess->exp_cmd_sn++;
++			TRACE(TRACE_CMDSN, "Received CmdSN matches ExpCmdSN,"
++				" incremented ExpCmdSN to: 0x%08x\n",
++					conn->sess->exp_cmd_sn);
++			ret = iscsit_execute_cmd(cmd, 0);
++			spin_unlock(&conn->sess->cmdsn_lock);
++
++			return (!ret) ? CMDSN_NORMAL_OPERATION :
++					CMDSN_ERROR_CANNOT_RECOVER;
++		} else if (iscsi_sna_gt(cmdsn, conn->sess->exp_cmd_sn)) {
++			TRACE(TRACE_CMDSN, "Received CmdSN: 0x%08x is greater"
++				" than ExpCmdSN: 0x%08x, not acknowledging.\n",
++				cmdsn, conn->sess->exp_cmd_sn);
++			goto ooo_cmdsn;
++		} else {
++			printk(KERN_ERR "Received CmdSN: 0x%08x is less than"
++				" ExpCmdSN: 0x%08x, ignoring.\n", cmdsn,
++					conn->sess->exp_cmd_sn);
++			spin_unlock(&conn->sess->cmdsn_lock);
++			return CMDSN_LOWER_THAN_EXP;
++		}
++	} else {
++		int counter = 0;
++		u32 old_expcmdsn = 0;
++		if (cmdsn == conn->sess->exp_cmd_sn) {
++			old_expcmdsn = conn->sess->exp_cmd_sn++;
++			TRACE(TRACE_CMDSN, "Got missing CmdSN: 0x%08x matches"
++				" ExpCmdSN, incremented ExpCmdSN to 0x%08x.\n",
++					cmdsn, conn->sess->exp_cmd_sn);
++
++			if (iscsit_execute_cmd(cmd, 0) < 0) {
++				spin_unlock(&conn->sess->cmdsn_lock);
++				return CMDSN_ERROR_CANNOT_RECOVER;
++			}
++		} else if (iscsi_sna_gt(cmdsn, conn->sess->exp_cmd_sn)) {
++			TRACE(TRACE_CMDSN, "CmdSN: 0x%08x greater than"
++				" ExpCmdSN: 0x%08x, not acknowledging.\n",
++				cmdsn, conn->sess->exp_cmd_sn);
++			goto ooo_cmdsn;
++		} else {
++			printk(KERN_ERR "CmdSN: 0x%08x less than ExpCmdSN:"
++				" 0x%08x, ignoring.\n", cmdsn,
++				conn->sess->exp_cmd_sn);
++			spin_unlock(&conn->sess->cmdsn_lock);
++			return CMDSN_LOWER_THAN_EXP;
++		}
++
++		counter = iscsit_execute_ooo_cmdsns(conn->sess);
++		if (counter < 0) {
++			spin_unlock(&conn->sess->cmdsn_lock);
++			return CMDSN_ERROR_CANNOT_RECOVER;
++		}
++
++		if (counter == conn->sess->ooo_cmdsn_count) {
++			if (conn->sess->ooo_cmdsn_count == 1) {
++				TRACE(TRACE_CMDSN, "Received final missing"
++					" CmdSN: 0x%08x.\n", old_expcmdsn);
++			} else {
++				TRACE(TRACE_CMDSN, "Received final missing"
++					" CmdSNs: 0x%08x->0x%08x.\n",
++				old_expcmdsn, (conn->sess->exp_cmd_sn - 1));
++			}
++
++			conn->sess->ooo_cmdsn_count = 0;
++			conn->sess->cmdsn_outoforder = 0;
++		} else {
++			conn->sess->ooo_cmdsn_count -= counter;
++			TRACE(TRACE_CMDSN, "Still missing %hu CmdSN(s),"
++				" continuing out of order operation.\n",
++				conn->sess->ooo_cmdsn_count);
++		}
++		spin_unlock(&conn->sess->cmdsn_lock);
++		return CMDSN_NORMAL_OPERATION;
++	}
++
++ooo_cmdsn:
++	ret = iscsit_handle_ooo_cmdsn(conn->sess, cmd, cmdsn);
++	spin_unlock(&conn->sess->cmdsn_lock);
++	return ret;
++}
++
++int iscsit_check_unsolicited_dataout(struct iscsi_cmd *cmd, unsigned char *buf)
++{
++	struct iscsi_conn *conn = cmd->conn;
++	struct se_cmd *se_cmd = SE_CMD(cmd);
++	struct iscsi_data *hdr = (struct iscsi_data *) buf;
++	u32 payload_length = ntoh24(hdr->dlength);
++
++	if (conn->sess->sess_ops->InitialR2T) {
++		printk(KERN_ERR "Received unexpected unsolicited data"
++			" while InitialR2T=Yes, protocol error.\n");
++		transport_send_check_condition_and_sense(se_cmd,
++				TCM_UNEXPECTED_UNSOLICITED_DATA, 0);
++		return -1;
++	}
++
++	if ((cmd->first_burst_len + payload_length) >
++	     conn->sess->sess_ops->FirstBurstLength) {
++		printk(KERN_ERR "Total %u bytes exceeds FirstBurstLength: %u"
++			" for this Unsolicited DataOut Burst.\n",
++			(cmd->first_burst_len + payload_length),
++				conn->sess->sess_ops->FirstBurstLength);
++		transport_send_check_condition_and_sense(se_cmd,
++				TCM_INCORRECT_AMOUNT_OF_DATA, 0);
++		return -1;
++	}
++
++	if (!(hdr->flags & ISCSI_FLAG_CMD_FINAL))
++		return 0;
++
++	if (((cmd->first_burst_len + payload_length) != cmd->data_length) &&
++	    ((cmd->first_burst_len + payload_length) !=
++	      conn->sess->sess_ops->FirstBurstLength)) {
++		printk(KERN_ERR "Unsolicited non-immediate data received %u"
++			" does not equal FirstBurstLength: %u, and does"
++			" not equal ExpXferLen %u.\n",
++			(cmd->first_burst_len + payload_length),
++			conn->sess->sess_ops->FirstBurstLength, cmd->data_length);
++		transport_send_check_condition_and_sense(se_cmd,
++				TCM_INCORRECT_AMOUNT_OF_DATA, 0);
++		return -1;
++	}
++	return 0;
++}
++
++struct iscsi_cmd *iscsit_find_cmd_from_itt(
++	struct iscsi_conn *conn,
++	u32 init_task_tag)
++{
++	struct iscsi_cmd *cmd;
++
++	spin_lock_bh(&conn->cmd_lock);
++	list_for_each_entry(cmd, &conn->conn_cmd_list, i_list) {
++		if (cmd->init_task_tag == init_task_tag) {
++			spin_unlock_bh(&conn->cmd_lock);
++			return cmd;
++		}
++	}
++	spin_unlock_bh(&conn->cmd_lock);
++
++	printk(KERN_ERR "Unable to locate ITT: 0x%08x on CID: %hu",
++			init_task_tag, conn->cid);
++	return NULL;
++}
++
++struct iscsi_cmd *iscsit_find_cmd_from_itt_or_dump(
++	struct iscsi_conn *conn,
++	u32 init_task_tag,
++	u32 length)
++{
++	struct iscsi_cmd *cmd;
++
++	spin_lock_bh(&conn->cmd_lock);
++	list_for_each_entry(cmd, &conn->conn_cmd_list, i_list) {
++		if (cmd->init_task_tag == init_task_tag) {
++			spin_unlock_bh(&conn->cmd_lock);
++			return cmd;
++		}
++	}
++	spin_unlock_bh(&conn->cmd_lock);
++
++	printk(KERN_ERR "Unable to locate ITT: 0x%08x on CID: %hu,"
++			" dumping payload\n", init_task_tag, conn->cid);
++	if (length)
++		iscsit_dump_data_payload(conn, length, 1);
++
++	return NULL;
++}
++
++struct iscsi_cmd *iscsit_find_cmd_from_ttt(
++	struct iscsi_conn *conn,
++	u32 targ_xfer_tag)
++{
++	struct iscsi_cmd *cmd = NULL;
++
++	spin_lock_bh(&conn->cmd_lock);
++	list_for_each_entry(cmd, &conn->conn_cmd_list, i_list) {
++		if (cmd->targ_xfer_tag == targ_xfer_tag) {
++			spin_unlock_bh(&conn->cmd_lock);
++			return cmd;
++		}
++	}
++	spin_unlock_bh(&conn->cmd_lock);
++
++	printk(KERN_ERR "Unable to locate TTT: 0x%08x on CID: %hu\n",
++			targ_xfer_tag, conn->cid);
++	return NULL;
++}
++
++int iscsit_find_cmd_for_recovery(
++	struct iscsi_session *sess,
++	struct iscsi_cmd **cmd_ptr,
++	struct iscsi_conn_recovery **cr_ptr,
++	u32 init_task_tag)
++{
++	struct iscsi_cmd *cmd = NULL;
++	struct iscsi_conn_recovery *cr;
++	/*
++	 * Scan through the inactive connection recovery list's command list.
++	 * If init_task_tag matches the command is still alligent.
++	 */
++	spin_lock(&sess->cr_i_lock);
++	list_for_each_entry(cr, &sess->cr_inactive_list, cr_list) {
++		spin_lock(&cr->conn_recovery_cmd_lock);
++		list_for_each_entry(cmd, &cr->conn_recovery_cmd_list, i_list) {
++			if (cmd->init_task_tag == init_task_tag) {
++				spin_unlock(&cr->conn_recovery_cmd_lock);
++				spin_unlock(&sess->cr_i_lock);
++
++				*cr_ptr = cr;
++				*cmd_ptr = cmd;
++				return -2;
++			}
++		}
++		spin_unlock(&cr->conn_recovery_cmd_lock);
++	}
++	spin_unlock(&sess->cr_i_lock);
++	/*
++	 * Scan through the active connection recovery list's command list.
++	 * If init_task_tag matches the command is ready to be reassigned.
++	 */
++	spin_lock(&sess->cr_a_lock);
++	list_for_each_entry(cr, &sess->cr_active_list, cr_list) {
++		spin_lock(&cr->conn_recovery_cmd_lock);
++		list_for_each_entry(cmd, &cr->conn_recovery_cmd_list, i_list) {
++			if (cmd->init_task_tag == init_task_tag) {
++				spin_unlock(&cr->conn_recovery_cmd_lock);
++				spin_unlock(&sess->cr_a_lock);
++
++				*cr_ptr = cr;
++				*cmd_ptr = cmd;
++				return 0;
++			}
++		}
++		spin_unlock(&cr->conn_recovery_cmd_lock);
++	}
++	spin_unlock(&sess->cr_a_lock);
 +
 +	return -1;
 +}
-diff --git a/drivers/target/iscsi/iscsi_target_tmr.h b/drivers/target/iscsi/iscsi_target_tmr.h
++
++void iscsit_add_cmd_to_immediate_queue(
++	struct iscsi_cmd *cmd,
++	struct iscsi_conn *conn,
++	u8 state)
++{
++	struct iscsi_queue_req *qr;
++
++	qr = kmem_cache_zalloc(lio_qr_cache, GFP_ATOMIC);
++	if (!qr) {
++		printk(KERN_ERR "Unable to allocate memory for"
++				" struct iscsi_queue_req\n");
++		return;
++	}
++	INIT_LIST_HEAD(&qr->qr_list);
++	qr->cmd = cmd;
++	qr->state = state;
++
++	spin_lock_bh(&conn->immed_queue_lock);
++	list_add_tail(&qr->qr_list, &conn->immed_queue_list);
++	atomic_inc(&cmd->immed_queue_count);
++	atomic_set(&conn->check_immediate_queue, 1);
++	spin_unlock_bh(&conn->immed_queue_lock);
++
++	wake_up_process(conn->thread_set->tx_thread);
++}
++
++struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_conn *conn)
++{
++	struct iscsi_queue_req *qr;
++
++	spin_lock_bh(&conn->immed_queue_lock);
++	if (list_empty(&conn->immed_queue_list)) {
++		spin_unlock_bh(&conn->immed_queue_lock);
++		return NULL;
++	}
++	list_for_each_entry(qr, &conn->immed_queue_list, qr_list)
++		break;
++
++	list_del(&qr->qr_list);
++	if (qr->cmd)
++		atomic_dec(&qr->cmd->immed_queue_count);
++	spin_unlock_bh(&conn->immed_queue_lock);
++
++	return qr;
++}
++
++static void iscsit_remove_cmd_from_immediate_queue(
++	struct iscsi_cmd *cmd,
++	struct iscsi_conn *conn)
++{
++	struct iscsi_queue_req *qr, *qr_tmp;
++
++	spin_lock_bh(&conn->immed_queue_lock);
++	if (!atomic_read(&cmd->immed_queue_count)) {
++		spin_unlock_bh(&conn->immed_queue_lock);
++		return;
++	}
++
++	list_for_each_entry_safe(qr, qr_tmp, &conn->immed_queue_list, qr_list) {
++		if (qr->cmd != cmd)
++			continue;
++
++		atomic_dec(&qr->cmd->immed_queue_count);
++		list_del(&qr->qr_list);
++		kmem_cache_free(lio_qr_cache, qr);
++	}
++	spin_unlock_bh(&conn->immed_queue_lock);
++
++	if (atomic_read(&cmd->immed_queue_count)) {
++		printk(KERN_ERR "ITT: 0x%08x immed_queue_count: %d\n",
++			cmd->init_task_tag,
++			atomic_read(&cmd->immed_queue_count));
++	}
++}
++
++void iscsit_add_cmd_to_response_queue(
++	struct iscsi_cmd *cmd,
++	struct iscsi_conn *conn,
++	u8 state)
++{
++	struct iscsi_queue_req *qr;
++
++	qr = kmem_cache_zalloc(lio_qr_cache, GFP_ATOMIC);
++	if (!qr) {
++		printk(KERN_ERR "Unable to allocate memory for"
++			" struct iscsi_queue_req\n");
++		return;
++	}
++	INIT_LIST_HEAD(&qr->qr_list);
++	qr->cmd = cmd;
++	qr->state = state;
++
++	spin_lock_bh(&conn->response_queue_lock);
++	list_add_tail(&qr->qr_list, &conn->response_queue_list);
++	atomic_inc(&cmd->response_queue_count);
++	spin_unlock_bh(&conn->response_queue_lock);
++
++	wake_up_process(conn->thread_set->tx_thread);
++}
++
++struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *conn)
++{
++	struct iscsi_queue_req *qr;
++
++	spin_lock_bh(&conn->response_queue_lock);
++	if (list_empty(&conn->response_queue_list)) {
++		spin_unlock_bh(&conn->response_queue_lock);
++		return NULL;
++	}
++
++	list_for_each_entry(qr, &conn->response_queue_list, qr_list)
++		break;
++
++	list_del(&qr->qr_list);
++	if (qr->cmd)
++		atomic_dec(&qr->cmd->response_queue_count);
++	spin_unlock_bh(&conn->response_queue_lock);
++
++	return qr;
++}
++
++static void iscsit_remove_cmd_from_response_queue(
++	struct iscsi_cmd *cmd,
++	struct iscsi_conn *conn)
++{
++	struct iscsi_queue_req *qr, *qr_tmp;
++
++	spin_lock_bh(&conn->response_queue_lock);
++	if (!(atomic_read(&cmd->response_queue_count))) {
++		spin_unlock_bh(&conn->response_queue_lock);
++		return;
++	}
++
++	list_for_each_entry_safe(qr, qr_tmp, &conn->response_queue_list,
++				qr_list) {
++		if (qr->cmd != cmd)
++			continue;
++
++		atomic_dec(&qr->cmd->response_queue_count);
++		list_del(&qr->qr_list);
++		kmem_cache_free(lio_qr_cache, qr);
++	}
++	spin_unlock_bh(&conn->response_queue_lock);
++
++	if (atomic_read(&cmd->response_queue_count)) {
++		printk(KERN_ERR "ITT: 0x%08x response_queue_count: %d\n",
++			cmd->init_task_tag,
++			atomic_read(&cmd->response_queue_count));
++	}
++}
++
++void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *conn)
++{
++	struct iscsi_queue_req *qr, *qr_tmp;
++
++	spin_lock_bh(&conn->immed_queue_lock);
++	list_for_each_entry_safe(qr, qr_tmp, &conn->immed_queue_list, qr_list) {
++		list_del(&qr->qr_list);
++		if (qr->cmd)
++			atomic_dec(&qr->cmd->immed_queue_count);
++
++		kmem_cache_free(lio_qr_cache, qr);
++	}
++	spin_unlock_bh(&conn->immed_queue_lock);
++
++	spin_lock_bh(&conn->response_queue_lock);
++	list_for_each_entry_safe(qr, qr_tmp, &conn->response_queue_list,
++			qr_list) {
++		list_del(&qr->qr_list);
++		if (qr->cmd)
++			atomic_dec(&qr->cmd->response_queue_count);
++
++		kmem_cache_free(lio_qr_cache, qr);
++	}
++	spin_unlock_bh(&conn->response_queue_lock);
++}
++
++void iscsit_release_cmd(struct iscsi_cmd *cmd)
++{
++	struct iscsi_conn *conn = cmd->conn;
++
++	iscsit_free_r2ts_from_list(cmd);
++	iscsit_free_all_datain_reqs(cmd);
++
++	kfree(cmd->buf_ptr);
++	kfree(cmd->pdu_list);
++	kfree(cmd->seq_list);
++	kfree(cmd->tmr_req);
++	kfree(cmd->iov_data);
++
++	if (conn) {
++		iscsit_remove_cmd_from_immediate_queue(cmd, conn);
++		iscsit_remove_cmd_from_response_queue(cmd, conn);
++	}
++
++	kmem_cache_free(lio_cmd_cache, cmd);
++}
++
++int iscsit_check_session_usage_count(struct iscsi_session *sess)
++{
++	spin_lock_bh(&sess->session_usage_lock);
++	if (sess->session_usage_count != 0) {
++		sess->session_waiting_on_uc = 1;
++		spin_unlock_bh(&sess->session_usage_lock);
++		if (in_interrupt())
++			return 2;
++
++		wait_for_completion(&sess->session_waiting_on_uc_comp);
++		return 1;
++	}
++	spin_unlock_bh(&sess->session_usage_lock);
++
++	return 0;
++}
++
++void iscsit_dec_session_usage_count(struct iscsi_session *sess)
++{
++	spin_lock_bh(&sess->session_usage_lock);
++	sess->session_usage_count--;
++
++	if (!sess->session_usage_count && sess->session_waiting_on_uc)
++		complete(&sess->session_waiting_on_uc_comp);
++
++	spin_unlock_bh(&sess->session_usage_lock);
++}
++
++void iscsit_inc_session_usage_count(struct iscsi_session *sess)
++{
++	spin_lock_bh(&sess->session_usage_lock);
++	sess->session_usage_count++;
++	spin_unlock_bh(&sess->session_usage_lock);
++}
++
++/*
++ *	Used before iscsi_do[rx,tx]_data() to determine iov and [rx,tx]_marker
++ *	array counts needed for sync and steering.
++ */
++static int iscsit_determine_sync_and_steering_counts(
++	struct iscsi_conn *conn,
++	struct iscsi_data_count *count)
++{
++	u32 length = count->data_length;
++	u32 marker, markint;
++
++	count->sync_and_steering = 1;
++
++	marker = (count->type == ISCSI_RX_DATA) ?
++			conn->of_marker : conn->if_marker;
++	markint = (count->type == ISCSI_RX_DATA) ?
++			(conn->conn_ops->OFMarkInt * 4) :
++			(conn->conn_ops->IFMarkInt * 4);
++	count->ss_iov_count = count->iov_count;
++
++	while (length > 0) {
++		if (length >= marker) {
++			count->ss_iov_count += 3;
++			count->ss_marker_count += 2;
++
++			length -= marker;
++			marker = markint;
++		} else
++			length = 0;
++	}
++
++	return 0;
++}
++
++/*
++ *	Setup conn->if_marker and conn->of_marker values based upon
++ *	the initial marker-less interval. (see iSCSI v19 A.2)
++ */
++int iscsit_set_sync_and_steering_values(struct iscsi_conn *conn)
++{
++	int login_ifmarker_count = 0, login_ofmarker_count = 0, next_marker = 0;
++	/*
++	 * IFMarkInt and OFMarkInt are negotiated as 32-bit words.
++	 */
++	u32 IFMarkInt = (conn->conn_ops->IFMarkInt * 4);
++	u32 OFMarkInt = (conn->conn_ops->OFMarkInt * 4);
++
++	if (conn->conn_ops->OFMarker) {
++		/*
++		 * Account for the first Login Command received not
++		 * via iscsi_recv_msg().
++		 */
++		conn->of_marker += ISCSI_HDR_LEN;
++		if (conn->of_marker <= OFMarkInt) {
++			conn->of_marker = (OFMarkInt - conn->of_marker);
++		} else {
++			login_ofmarker_count = (conn->of_marker / OFMarkInt);
++			next_marker = (OFMarkInt * (login_ofmarker_count + 1)) +
++					(login_ofmarker_count * MARKER_SIZE);
++			conn->of_marker = (next_marker - conn->of_marker);
++		}
++		conn->of_marker_offset = 0;
++		printk(KERN_INFO "Setting OFMarker value to %u based on Initial"
++			" Markerless Interval.\n", conn->of_marker);
++	}
++
++	if (conn->conn_ops->IFMarker) {
++		if (conn->if_marker <= IFMarkInt) {
++			conn->if_marker = (IFMarkInt - conn->if_marker);
++		} else {
++			login_ifmarker_count = (conn->if_marker / IFMarkInt);
++			next_marker = (IFMarkInt * (login_ifmarker_count + 1)) +
++					(login_ifmarker_count * MARKER_SIZE);
++			conn->if_marker = (next_marker - conn->if_marker);
++		}
++		printk(KERN_INFO "Setting IFMarker value to %u based on Initial"
++			" Markerless Interval.\n", conn->if_marker);
++	}
++
++	return 0;
++}
++
++struct iscsi_conn *iscsit_get_conn_from_cid(struct iscsi_session *sess, u16 cid)
++{
++	struct iscsi_conn *conn;
++
++	spin_lock_bh(&sess->conn_lock);
++	list_for_each_entry(conn, &sess->sess_conn_list, conn_list) {
++		if ((conn->cid == cid) &&
++		    (conn->conn_state == TARG_CONN_STATE_LOGGED_IN)) {
++			iscsit_inc_conn_usage_count(conn);
++			spin_unlock_bh(&sess->conn_lock);
++			return conn;
++		}
++	}
++	spin_unlock_bh(&sess->conn_lock);
++
++	return NULL;
++}
++
++struct iscsi_conn *iscsit_get_conn_from_cid_rcfr(struct iscsi_session *sess, u16 cid)
++{
++	struct iscsi_conn *conn;
++
++	spin_lock_bh(&sess->conn_lock);
++	list_for_each_entry(conn, &sess->sess_conn_list, conn_list) {
++		if (conn->cid == cid) {
++			iscsit_inc_conn_usage_count(conn);
++			spin_lock(&conn->state_lock);
++			atomic_set(&conn->connection_wait_rcfr, 1);
++			spin_unlock(&conn->state_lock);
++			spin_unlock_bh(&sess->conn_lock);
++			return conn;
++		}
++	}
++	spin_unlock_bh(&sess->conn_lock);
++
++	return NULL;
++}
++
++void iscsit_check_conn_usage_count(struct iscsi_conn *conn)
++{
++	spin_lock_bh(&conn->conn_usage_lock);
++	if (conn->conn_usage_count != 0) {
++		conn->conn_waiting_on_uc = 1;
++		spin_unlock_bh(&conn->conn_usage_lock);
++
++		wait_for_completion(&conn->conn_waiting_on_uc_comp);
++		return;
++	}
++	spin_unlock_bh(&conn->conn_usage_lock);
++}
++
++void iscsit_dec_conn_usage_count(struct iscsi_conn *conn)
++{
++	spin_lock_bh(&conn->conn_usage_lock);
++	conn->conn_usage_count--;
++
++	if (!conn->conn_usage_count && conn->conn_waiting_on_uc)
++		complete(&conn->conn_waiting_on_uc_comp);
++
++	spin_unlock_bh(&conn->conn_usage_lock);
++}
++
++void iscsit_inc_conn_usage_count(struct iscsi_conn *conn)
++{
++	spin_lock_bh(&conn->conn_usage_lock);
++	conn->conn_usage_count++;
++	spin_unlock_bh(&conn->conn_usage_lock);
++}
++
++static int iscsit_add_nopin(struct iscsi_conn *conn, int want_response)
++{
++	u8 state;
++	struct iscsi_cmd *cmd;
++
++	cmd = iscsit_allocate_cmd(conn, GFP_ATOMIC);
++	if (!cmd)
++		return -1;
++
++	cmd->iscsi_opcode = ISCSI_OP_NOOP_IN;
++	state = (want_response) ? ISTATE_SEND_NOPIN_WANT_RESPONSE :
++				ISTATE_SEND_NOPIN_NO_RESPONSE;
++	cmd->init_task_tag = 0xFFFFFFFF;
++	spin_lock_bh(&conn->sess->ttt_lock);
++	cmd->targ_xfer_tag = (want_response) ? conn->sess->targ_xfer_tag++ :
++			0xFFFFFFFF;
++	if (want_response && (cmd->targ_xfer_tag == 0xFFFFFFFF))
++		cmd->targ_xfer_tag = conn->sess->targ_xfer_tag++;
++	spin_unlock_bh(&conn->sess->ttt_lock);
++
++	spin_lock_bh(&conn->cmd_lock);
++	list_add_tail(&cmd->i_list, &conn->conn_cmd_list);
++	spin_unlock_bh(&conn->cmd_lock);
++
++	if (want_response)
++		iscsit_start_nopin_response_timer(conn);
++	iscsit_add_cmd_to_immediate_queue(cmd, conn, state);
++
++	return 0;
++}
++
++static void iscsit_handle_nopin_response_timeout(unsigned long data)
++{
++	struct iscsi_conn *conn = (struct iscsi_conn *) data;
++
++	iscsit_inc_conn_usage_count(conn);
++
++	spin_lock_bh(&conn->nopin_timer_lock);
++	if (conn->nopin_response_timer_flags & ISCSI_TF_STOP) {
++		spin_unlock_bh(&conn->nopin_timer_lock);
++		iscsit_dec_conn_usage_count(conn);
++		return;
++	}
++
++	TRACE(TRACE_TIMER, "Did not receive response to NOPIN on CID: %hu on"
++		" SID: %u, failing connection.\n", conn->cid,
++			conn->sess->sid);
++	conn->nopin_response_timer_flags &= ~ISCSI_TF_RUNNING;
++	spin_unlock_bh(&conn->nopin_timer_lock);
++
++	{
++	struct iscsi_portal_group *tpg = conn->sess->tpg;
++	struct iscsi_tiqn *tiqn = tpg->tpg_tiqn;
++
++	if (tiqn) {
++		spin_lock_bh(&tiqn->sess_err_stats.lock);
++		strcpy(tiqn->sess_err_stats.last_sess_fail_rem_name,
++				(void *)conn->sess->sess_ops->InitiatorName);
++		tiqn->sess_err_stats.last_sess_failure_type =
++				ISCSI_SESS_ERR_CXN_TIMEOUT;
++		tiqn->sess_err_stats.cxn_timeout_errors++;
++		conn->sess->conn_timeout_errors++;
++		spin_unlock_bh(&tiqn->sess_err_stats.lock);
++	}
++	}
++
++	iscsit_cause_connection_reinstatement(conn, 0);
++	iscsit_dec_conn_usage_count(conn);
++}
++
++void iscsit_mod_nopin_response_timer(struct iscsi_conn *conn)
++{
++	struct iscsi_session *sess = conn->sess;
++	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
++
++	spin_lock_bh(&conn->nopin_timer_lock);
++	if (!(conn->nopin_response_timer_flags & ISCSI_TF_RUNNING)) {
++		spin_unlock_bh(&conn->nopin_timer_lock);
++		return;
++	}
++
++	mod_timer(&conn->nopin_response_timer,
++		(get_jiffies_64() + na->nopin_response_timeout * HZ));
++	spin_unlock_bh(&conn->nopin_timer_lock);
++}
++
++/*
++ *	Called with conn->nopin_timer_lock held.
++ */
++void iscsit_start_nopin_response_timer(struct iscsi_conn *conn)
++{
++	struct iscsi_session *sess = conn->sess;
++	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
++
++	spin_lock_bh(&conn->nopin_timer_lock);
++	if (conn->nopin_response_timer_flags & ISCSI_TF_RUNNING) {
++		spin_unlock_bh(&conn->nopin_timer_lock);
++		return;
++	}
++
++	init_timer(&conn->nopin_response_timer);
++	conn->nopin_response_timer.expires =
++		(get_jiffies_64() + na->nopin_response_timeout * HZ);
++	conn->nopin_response_timer.data = (unsigned long)conn;
++	conn->nopin_response_timer.function = iscsit_handle_nopin_response_timeout;
++	conn->nopin_response_timer_flags &= ~ISCSI_TF_STOP;
++	conn->nopin_response_timer_flags |= ISCSI_TF_RUNNING;
++	add_timer(&conn->nopin_response_timer);
++
++	TRACE(TRACE_TIMER, "Started NOPIN Response Timer on CID: %d to %u"
++		" seconds\n", conn->cid, na->nopin_response_timeout);
++	spin_unlock_bh(&conn->nopin_timer_lock);
++}
++
++void iscsit_stop_nopin_response_timer(struct iscsi_conn *conn)
++{
++	spin_lock_bh(&conn->nopin_timer_lock);
++	if (!(conn->nopin_response_timer_flags & ISCSI_TF_RUNNING)) {
++		spin_unlock_bh(&conn->nopin_timer_lock);
++		return;
++	}
++	conn->nopin_response_timer_flags |= ISCSI_TF_STOP;
++	spin_unlock_bh(&conn->nopin_timer_lock);
++
++	del_timer_sync(&conn->nopin_response_timer);
++
++	spin_lock_bh(&conn->nopin_timer_lock);
++	conn->nopin_response_timer_flags &= ~ISCSI_TF_RUNNING;
++	spin_unlock_bh(&conn->nopin_timer_lock);
++}
++
++static void iscsit_handle_nopin_timeout(unsigned long data)
++{
++	struct iscsi_conn *conn = (struct iscsi_conn *) data;
++
++	iscsit_inc_conn_usage_count(conn);
++
++	spin_lock_bh(&conn->nopin_timer_lock);
++	if (conn->nopin_timer_flags & ISCSI_TF_STOP) {
++		spin_unlock_bh(&conn->nopin_timer_lock);
++		iscsit_dec_conn_usage_count(conn);
++		return;
++	}
++	conn->nopin_timer_flags &= ~ISCSI_TF_RUNNING;
++	spin_unlock_bh(&conn->nopin_timer_lock);
++
++	iscsit_add_nopin(conn, 1);
++	iscsit_dec_conn_usage_count(conn);
++}
++
++/*
++ * Called with conn->nopin_timer_lock held.
++ */
++void __iscsit_start_nopin_timer(struct iscsi_conn *conn)
++{
++	struct iscsi_session *sess = conn->sess;
++	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
++	/*
++	* NOPIN timeout is disabled.
++	 */
++	if (!na->nopin_timeout)
++		return;
++
++	if (conn->nopin_timer_flags & ISCSI_TF_RUNNING)
++		return;
++
++	init_timer(&conn->nopin_timer);
++	conn->nopin_timer.expires = (get_jiffies_64() + na->nopin_timeout * HZ);
++	conn->nopin_timer.data = (unsigned long)conn;
++	conn->nopin_timer.function = iscsit_handle_nopin_timeout;
++	conn->nopin_timer_flags &= ~ISCSI_TF_STOP;
++	conn->nopin_timer_flags |= ISCSI_TF_RUNNING;
++	add_timer(&conn->nopin_timer);
++
++	TRACE(TRACE_TIMER, "Started NOPIN Timer on CID: %d at %u second"
++		" interval\n", conn->cid, na->nopin_timeout);
++}
++
++void iscsit_start_nopin_timer(struct iscsi_conn *conn)
++{
++	struct iscsi_session *sess = conn->sess;
++	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
++	/*
++	 * NOPIN timeout is disabled..
++	 */
++	if (!na->nopin_timeout)
++		return;
++
++	spin_lock_bh(&conn->nopin_timer_lock);
++	if (conn->nopin_timer_flags & ISCSI_TF_RUNNING) {
++		spin_unlock_bh(&conn->nopin_timer_lock);
++		return;
++	}
++
++	init_timer(&conn->nopin_timer);
++	conn->nopin_timer.expires = (get_jiffies_64() + na->nopin_timeout * HZ);
++	conn->nopin_timer.data = (unsigned long)conn;
++	conn->nopin_timer.function = iscsit_handle_nopin_timeout;
++	conn->nopin_timer_flags &= ~ISCSI_TF_STOP;
++	conn->nopin_timer_flags |= ISCSI_TF_RUNNING;
++	add_timer(&conn->nopin_timer);
++
++	TRACE(TRACE_TIMER, "Started NOPIN Timer on CID: %d at %u second"
++			" interval\n", conn->cid, na->nopin_timeout);
++	spin_unlock_bh(&conn->nopin_timer_lock);
++}
++
++void iscsit_stop_nopin_timer(struct iscsi_conn *conn)
++{
++	spin_lock_bh(&conn->nopin_timer_lock);
++	if (!(conn->nopin_timer_flags & ISCSI_TF_RUNNING)) {
++		spin_unlock_bh(&conn->nopin_timer_lock);
++		return;
++	}
++	conn->nopin_timer_flags |= ISCSI_TF_STOP;
++	spin_unlock_bh(&conn->nopin_timer_lock);
++
++	del_timer_sync(&conn->nopin_timer);
++
++	spin_lock_bh(&conn->nopin_timer_lock);
++	conn->nopin_timer_flags &= ~ISCSI_TF_RUNNING;
++	spin_unlock_bh(&conn->nopin_timer_lock);
++}
++
++int iscsit_send_tx_data(
++	struct iscsi_cmd *cmd,
++	struct iscsi_conn *conn,
++	int use_misc)
++{
++	int tx_sent, tx_size;
++	u32 iov_count;
++	struct kvec *iov;
++
++send_data:
++	tx_size = cmd->tx_size;
++
++	if (!use_misc) {
++		iov = &cmd->iov_data[0];
++		iov_count = cmd->iov_data_count;
++	} else {
++		iov = &cmd->iov_misc[0];
++		iov_count = cmd->iov_misc_count;
++	}
++
++	tx_sent = tx_data(conn, &iov[0], iov_count, tx_size);
++	if (tx_size != tx_sent) {
++		if (tx_sent == -EAGAIN) {
++			printk(KERN_ERR "tx_data() returned -EAGAIN\n");
++			goto send_data;
++		} else
++			return -1;
++	}
++	cmd->tx_size = 0;
++
++	return 0;
++}
++
++int iscsit_fe_sendpage_sg(
++	struct se_unmap_sg *u_sg,
++	struct iscsi_conn *conn)
++{
++	int tx_sent;
++	struct iscsi_cmd *cmd = (struct iscsi_cmd *)u_sg->fabric_cmd;
++	struct se_cmd *se_cmd = SE_CMD(cmd);
++	u32 len = cmd->tx_size, pg_len, se_len, se_off, tx_size;
++	struct kvec *iov = &cmd->iov_data[0];
++	struct page *page;
++	struct se_mem *se_mem = u_sg->cur_se_mem;
++
++send_hdr:
++	tx_size = (conn->conn_ops->HeaderDigest) ? ISCSI_HDR_LEN + ISCSI_CRC_LEN :
++			ISCSI_HDR_LEN;
++	tx_sent = tx_data(conn, iov, 1, tx_size);
++	if (tx_size != tx_sent) {
++		if (tx_sent == -EAGAIN) {
++			printk(KERN_ERR "tx_data() returned -EAGAIN\n");
++			goto send_hdr;
++		}
++		return -1;
++	}
++
++	len -= tx_size;
++	len -= u_sg->padding;
++	if (conn->conn_ops->DataDigest)
++		len -= ISCSI_CRC_LEN;
++	/*
++	 * Start calculating from the first page of current struct se_mem.
++	 */
++	page = se_mem->se_page;
++	pg_len = (PAGE_SIZE - se_mem->se_off);
++	se_len = se_mem->se_len;
++	if (se_len < pg_len)
++		pg_len = se_len;
++	se_off = se_mem->se_off;
++	/*
++	 * Calucate new se_len and se_off based upon u_sg->t_offset into
++	 * the current struct se_mem and possibily a different page.
++	 */
++	while (u_sg->t_offset) {
++		if (u_sg->t_offset >= pg_len) {
++			u_sg->t_offset -= pg_len;
++			se_len -= pg_len;
++			se_off = 0;
++			pg_len = PAGE_SIZE;
++			page++;
++		} else {
++			se_off += u_sg->t_offset;
++			se_len -= u_sg->t_offset;
++			u_sg->t_offset = 0;
++		}
++	}
++	/*
++	 * Perform sendpage() for each page in the struct se_mem
++	 */
++	while (len) {
++		if (se_len > len)
++			se_len = len;
++send_pg:
++		tx_sent = conn->sock->ops->sendpage(conn->sock,
++				page, se_off, se_len, 0);
++		if (tx_sent != se_len) {
++			if (tx_sent == -EAGAIN) {
++				printk(KERN_ERR "tcp_sendpage() returned"
++						" -EAGAIN\n");
++				goto send_pg;
++			}
++
++			printk(KERN_ERR "tcp_sendpage() failure: %d\n",
++					tx_sent);
++			return -1;
++		}
++
++		len -= se_len;
++		if (!(len))
++			break;
++
++		se_len -= tx_sent;
++		if (!(se_len)) {
++			list_for_each_entry_continue(se_mem,
++					se_cmd->t_task->t_mem_list, se_list)
++				break;
++
++			if (!se_mem) {
++				printk(KERN_ERR "Unable to locate next struct se_mem\n");
++				return -1;
++			}
++
++			se_len = se_mem->se_len;
++			se_off = se_mem->se_off;
++			page = se_mem->se_page;
++		} else {
++			se_len = PAGE_SIZE;
++			se_off = 0;
++			page++;
++		}
++	}
++
++send_padding:
++	if (u_sg->padding) {
++		struct kvec *iov_p =
++			&cmd->iov_data[cmd->iov_data_count-2];
++
++		tx_sent = tx_data(conn, iov_p, 1, u_sg->padding);
++		if (u_sg->padding != tx_sent) {
++			if (tx_sent == -EAGAIN) {
++				printk(KERN_ERR "tx_data() returned -EAGAIN\n");
++				goto send_padding;
++			}
++			return -1;
++		}
++	}
++
++send_datacrc:
++	if (conn->conn_ops->DataDigest) {
++		struct kvec *iov_d =
++			&cmd->iov_data[cmd->iov_data_count-1];
++
++		tx_sent = tx_data(conn, iov_d, 1, ISCSI_CRC_LEN);
++		if (ISCSI_CRC_LEN != tx_sent) {
++			if (tx_sent == -EAGAIN) {
++				printk(KERN_ERR "tx_data() returned -EAGAIN\n");
++				goto send_datacrc;
++			}
++			return -1;
++		}
++	}
++
++	return 0;
++}
++
++/*
++ *      This function is used for mainly sending a ISCSI_TARG_LOGIN_RSP PDU
++ *      back to the Initiator when an expection condition occurs with the
++ *      errors set in status_class and status_detail.
++ *
++ *      Parameters:     iSCSI Connection, Status Class, Status Detail.
++ *      Returns:        0 on success, -1 on error.
++ */
++int iscsit_tx_login_rsp(struct iscsi_conn *conn, u8 status_class, u8 status_detail)
++{
++	u8 iscsi_hdr[ISCSI_HDR_LEN];
++	int err;
++	struct kvec iov;
++	struct iscsi_login_rsp *hdr;
++
++	iscsit_collect_login_stats(conn, status_class, status_detail);
++
++	memset(&iov, 0, sizeof(struct kvec));
++	memset(&iscsi_hdr, 0x0, ISCSI_HDR_LEN);
++
++	hdr	= (struct iscsi_login_rsp *)&iscsi_hdr;
++	hdr->opcode		= ISCSI_OP_LOGIN_RSP;
++	hdr->status_class	= status_class;
++	hdr->status_detail	= status_detail;
++	hdr->itt		= cpu_to_be32(conn->login_itt);
++
++	iov.iov_base		= &iscsi_hdr;
++	iov.iov_len		= ISCSI_HDR_LEN;
++
++	PRINT_BUFF(iscsi_hdr, ISCSI_HDR_LEN);
++
++	err = tx_data(conn, &iov, 1, ISCSI_HDR_LEN);
++	if (err != ISCSI_HDR_LEN) {
++		printk(KERN_ERR "tx_data returned less than expected\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++void iscsit_print_session_params(struct iscsi_session *sess)
++{
++	struct iscsi_conn *conn;
++
++	printk(KERN_INFO "-----------------------------[Session Params for"
++		" SID: %u]-----------------------------\n", sess->sid);
++	spin_lock_bh(&sess->conn_lock);
++	list_for_each_entry(conn, &sess->sess_conn_list, conn_list)
++		iscsi_dump_conn_ops(conn->conn_ops);
++	spin_unlock_bh(&sess->conn_lock);
++
++	iscsi_dump_sess_ops(sess->sess_ops);
++}
++
++static int iscsit_do_rx_data(
++	struct iscsi_conn *conn,
++	struct iscsi_data_count *count)
++{
++	int data = count->data_length, rx_loop = 0, total_rx = 0, iov_len;
++	u32 rx_marker_val[count->ss_marker_count], rx_marker_iov = 0;
++	struct kvec iov[count->ss_iov_count], *iov_p;
++	struct msghdr msg;
++
++	if (!conn || !conn->sock || !conn->conn_ops)
++		return -1;
++
++	memset(&msg, 0, sizeof(struct msghdr));
++
++	if (count->sync_and_steering) {
++		int size = 0;
++		u32 i, orig_iov_count = 0;
++		u32 orig_iov_len = 0, orig_iov_loc = 0;
++		u32 iov_count = 0, per_iov_bytes = 0;
++		u32 *rx_marker, old_rx_marker = 0;
++		struct kvec *iov_record;
++
++		memset(&rx_marker_val, 0,
++				count->ss_marker_count * sizeof(u32));
++		memset(&iov, 0, count->ss_iov_count * sizeof(struct kvec));
++
++		iov_record = count->iov;
++		orig_iov_count = count->iov_count;
++		rx_marker = &conn->of_marker;
++
++		i = 0;
++		size = data;
++		orig_iov_len = iov_record[orig_iov_loc].iov_len;
++		while (size > 0) {
++			TRACE(TRACE_SSLR, "rx_data: #1 orig_iov_len %u,"
++			" orig_iov_loc %u\n", orig_iov_len, orig_iov_loc);
++			TRACE(TRACE_SSLR, "rx_data: #2 rx_marker %u, size"
++				" %u\n", *rx_marker, size);
++
++			if (orig_iov_len >= *rx_marker) {
++				iov[iov_count].iov_len = *rx_marker;
++				iov[iov_count++].iov_base =
++					(iov_record[orig_iov_loc].iov_base +
++						per_iov_bytes);
++
++				iov[iov_count].iov_len = (MARKER_SIZE / 2);
++				iov[iov_count++].iov_base =
++					&rx_marker_val[rx_marker_iov++];
++				iov[iov_count].iov_len = (MARKER_SIZE / 2);
++				iov[iov_count++].iov_base =
++					&rx_marker_val[rx_marker_iov++];
++				old_rx_marker = *rx_marker;
++
++				/*
++				 * OFMarkInt is in 32-bit words.
++				 */
++				*rx_marker = (conn->conn_ops->OFMarkInt * 4);
++				size -= old_rx_marker;
++				orig_iov_len -= old_rx_marker;
++				per_iov_bytes += old_rx_marker;
++
++				TRACE(TRACE_SSLR, "rx_data: #3 new_rx_marker"
++					" %u, size %u\n", *rx_marker, size);
++			} else {
++				iov[iov_count].iov_len = orig_iov_len;
++				iov[iov_count++].iov_base =
++					(iov_record[orig_iov_loc].iov_base +
++						per_iov_bytes);
++
++				per_iov_bytes = 0;
++				*rx_marker -= orig_iov_len;
++				size -= orig_iov_len;
++
++				if (size)
++					orig_iov_len =
++					iov_record[++orig_iov_loc].iov_len;
++
++				TRACE(TRACE_SSLR, "rx_data: #4 new_rx_marker"
++					" %u, size %u\n", *rx_marker, size);
++			}
++		}
++		data += (rx_marker_iov * (MARKER_SIZE / 2));
++
++		iov_p	= &iov[0];
++		iov_len	= iov_count;
++
++		if (iov_count > count->ss_iov_count) {
++			printk(KERN_ERR "iov_count: %d, count->ss_iov_count:"
++				" %d\n", iov_count, count->ss_iov_count);
++			return -1;
++		}
++		if (rx_marker_iov > count->ss_marker_count) {
++			printk(KERN_ERR "rx_marker_iov: %d, count->ss_marker"
++				"_count: %d\n", rx_marker_iov,
++				count->ss_marker_count);
++			return -1;
++		}
++	} else {
++		iov_p = count->iov;
++		iov_len	= count->iov_count;
++	}
++
++	while (total_rx < data) {
++		rx_loop = kernel_recvmsg(conn->sock, &msg, iov_p, iov_len,
++					(data - total_rx), MSG_WAITALL);
++		if (rx_loop <= 0) {
++			TRACE(TRACE_NET, "rx_loop: %d total_rx: %d\n",
++				rx_loop, total_rx);
++			return rx_loop;
++		}
++		total_rx += rx_loop;
++		TRACE(TRACE_NET, "rx_loop: %d, total_rx: %d, data: %d\n",
++				rx_loop, total_rx, data);
++	}
++
++	if (count->sync_and_steering) {
++		int j;
++		for (j = 0; j < rx_marker_iov; j++) {
++			TRACE(TRACE_SSLR, "rx_data: #5 j: %d, offset: %d\n",
++				j, rx_marker_val[j]);
++			conn->of_marker_offset = rx_marker_val[j];
++		}
++		total_rx -= (rx_marker_iov * (MARKER_SIZE / 2));
++	}
++
++	return total_rx;
++}
++
++static int iscsit_do_tx_data(
++	struct iscsi_conn *conn,
++	struct iscsi_data_count *count)
++{
++	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
++	u32 tx_marker_val[count->ss_marker_count], tx_marker_iov = 0;
++	struct kvec iov[count->ss_iov_count], *iov_p;
++	struct msghdr msg;
++
++	if (!conn || !conn->sock || !conn->conn_ops)
++		return -1;
++
++	if (data <= 0) {
++		printk(KERN_ERR "Data length is: %d\n", data);
++		return -1;
++	}
++
++	memset(&msg, 0, sizeof(struct msghdr));
++
++	if (count->sync_and_steering) {
++		int size = 0;
++		u32 i, orig_iov_count = 0;
++		u32 orig_iov_len = 0, orig_iov_loc = 0;
++		u32 iov_count = 0, per_iov_bytes = 0;
++		u32 *tx_marker, old_tx_marker = 0;
++		struct kvec *iov_record;
++
++		memset(&tx_marker_val, 0,
++			count->ss_marker_count * sizeof(u32));
++		memset(&iov, 0, count->ss_iov_count * sizeof(struct kvec));
++
++		iov_record = count->iov;
++		orig_iov_count = count->iov_count;
++		tx_marker = &conn->if_marker;
++
++		i = 0;
++		size = data;
++		orig_iov_len = iov_record[orig_iov_loc].iov_len;
++		while (size > 0) {
++			TRACE(TRACE_SSLT, "tx_data: #1 orig_iov_len %u,"
++			" orig_iov_loc %u\n", orig_iov_len, orig_iov_loc);
++			TRACE(TRACE_SSLT, "tx_data: #2 tx_marker %u, size"
++				" %u\n", *tx_marker, size);
++
++			if (orig_iov_len >= *tx_marker) {
++				iov[iov_count].iov_len = *tx_marker;
++				iov[iov_count++].iov_base =
++					(iov_record[orig_iov_loc].iov_base +
++						per_iov_bytes);
++
++				tx_marker_val[tx_marker_iov] =
++						(size - *tx_marker);
++				iov[iov_count].iov_len = (MARKER_SIZE / 2);
++				iov[iov_count++].iov_base =
++					&tx_marker_val[tx_marker_iov++];
++				iov[iov_count].iov_len = (MARKER_SIZE / 2);
++				iov[iov_count++].iov_base =
++					&tx_marker_val[tx_marker_iov++];
++				old_tx_marker = *tx_marker;
++
++				/*
++				 * IFMarkInt is in 32-bit words.
++				 */
++				*tx_marker = (conn->conn_ops->IFMarkInt * 4);
++				size -= old_tx_marker;
++				orig_iov_len -= old_tx_marker;
++				per_iov_bytes += old_tx_marker;
++
++				TRACE(TRACE_SSLT, "tx_data: #3 new_tx_marker"
++					" %u, size %u\n", *tx_marker, size);
++				TRACE(TRACE_SSLT, "tx_data: #4 offset %u\n",
++					tx_marker_val[tx_marker_iov-1]);
++			} else {
++				iov[iov_count].iov_len = orig_iov_len;
++				iov[iov_count++].iov_base
++					= (iov_record[orig_iov_loc].iov_base +
++						per_iov_bytes);
++
++				per_iov_bytes = 0;
++				*tx_marker -= orig_iov_len;
++				size -= orig_iov_len;
++
++				if (size)
++					orig_iov_len =
++					iov_record[++orig_iov_loc].iov_len;
++
++				TRACE(TRACE_SSLT, "tx_data: #5 new_tx_marker"
++					" %u, size %u\n", *tx_marker, size);
++			}
++		}
++
++		data += (tx_marker_iov * (MARKER_SIZE / 2));
++
++		iov_p = &iov[0];
++		iov_len = iov_count;
++
++		if (iov_count > count->ss_iov_count) {
++			printk(KERN_ERR "iov_count: %d, count->ss_iov_count:"
++				" %d\n", iov_count, count->ss_iov_count);
++			return -1;
++		}
++		if (tx_marker_iov > count->ss_marker_count) {
++			printk(KERN_ERR "tx_marker_iov: %d, count->ss_marker"
++				"_count: %d\n", tx_marker_iov,
++				count->ss_marker_count);
++			return -1;
++		}
++	} else {
++		iov_p = count->iov;
++		iov_len = count->iov_count;
++	}
++
++	while (total_tx < data) {
++		tx_loop = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
++					(data - total_tx));
++		if (tx_loop <= 0) {
++			TRACE(TRACE_NET, "tx_loop: %d total_tx %d\n",
++				tx_loop, total_tx);
++			return tx_loop;
++		}
++		total_tx += tx_loop;
++		TRACE(TRACE_NET, "tx_loop: %d, total_tx: %d, data: %d\n",
++					tx_loop, total_tx, data);
++	}
++
++	if (count->sync_and_steering)
++		total_tx -= (tx_marker_iov * (MARKER_SIZE / 2));
++
++	return total_tx;
++}
++
++int rx_data(
++	struct iscsi_conn *conn,
++	struct kvec *iov,
++	int iov_count,
++	int data)
++{
++	struct iscsi_data_count c;
++
++	if (!conn || !conn->sock || !conn->conn_ops)
++		return -1;
++
++	memset(&c, 0, sizeof(struct iscsi_data_count));
++	c.iov = iov;
++	c.iov_count = iov_count;
++	c.data_length = data;
++	c.type = ISCSI_RX_DATA;
++
++	if (conn->conn_ops->OFMarker &&
++	   (conn->conn_state >= TARG_CONN_STATE_LOGGED_IN)) {
++		if (iscsit_determine_sync_and_steering_counts(conn, &c) < 0)
++			return -1;
++	}
++
++	return iscsit_do_rx_data(conn, &c);
++}
++
++int tx_data(
++	struct iscsi_conn *conn,
++	struct kvec *iov,
++	int iov_count,
++	int data)
++{
++	struct iscsi_data_count c;
++
++	if (!conn || !conn->sock || !conn->conn_ops)
++		return -1;
++
++	memset(&c, 0, sizeof(struct iscsi_data_count));
++	c.iov = iov;
++	c.iov_count = iov_count;
++	c.data_length = data;
++	c.type = ISCSI_TX_DATA;
++
++	if (conn->conn_ops->IFMarker &&
++	   (conn->conn_state >= TARG_CONN_STATE_LOGGED_IN)) {
++		if (iscsit_determine_sync_and_steering_counts(conn, &c) < 0)
++			return -1;
++	}
++
++	return iscsit_do_tx_data(conn, &c);
++}
++
++void iscsit_collect_login_stats(
++	struct iscsi_conn *conn,
++	u8 status_class,
++	u8 status_detail)
++{
++	struct iscsi_param *intrname = NULL;
++	struct iscsi_tiqn *tiqn;
++	struct iscsi_login_stats *ls;
++
++	tiqn = iscsit_snmp_get_tiqn(conn);
++	if (!(tiqn))
++		return;
++
++	ls = &tiqn->login_stats;
++
++	spin_lock(&ls->lock);
++	if (!strcmp(conn->login_ip, ls->last_intr_fail_ip_addr) &&
++	    ((get_jiffies_64() - ls->last_fail_time) < 10)) {
++		/* We already have the failure info for this login */
++		spin_unlock(&ls->lock);
++		return;
++	}
++
++	if (status_class == ISCSI_STATUS_CLS_SUCCESS)
++		ls->accepts++;
++	else if (status_class == ISCSI_STATUS_CLS_REDIRECT) {
++		ls->redirects++;
++		ls->last_fail_type = ISCSI_LOGIN_FAIL_REDIRECT;
++	} else if ((status_class == ISCSI_STATUS_CLS_INITIATOR_ERR)  &&
++		 (status_detail == ISCSI_LOGIN_STATUS_AUTH_FAILED)) {
++		ls->authenticate_fails++;
++		ls->last_fail_type =  ISCSI_LOGIN_FAIL_AUTHENTICATE;
++	} else if ((status_class == ISCSI_STATUS_CLS_INITIATOR_ERR)  &&
++		 (status_detail == ISCSI_LOGIN_STATUS_TGT_FORBIDDEN)) {
++		ls->authorize_fails++;
++		ls->last_fail_type = ISCSI_LOGIN_FAIL_AUTHORIZE;
++	} else if ((status_class == ISCSI_STATUS_CLS_INITIATOR_ERR) &&
++		 (status_detail == ISCSI_LOGIN_STATUS_INIT_ERR)) {
++		ls->negotiate_fails++;
++		ls->last_fail_type = ISCSI_LOGIN_FAIL_NEGOTIATE;
++	} else {
++		ls->other_fails++;
++		ls->last_fail_type = ISCSI_LOGIN_FAIL_OTHER;
++	}
++
++	/* Save initiator name, ip address and time, if it is a failed login */
++	if (status_class != ISCSI_STATUS_CLS_SUCCESS) {
++		if (conn->param_list)
++			intrname = iscsi_find_param_from_key(INITIATORNAME,
++							     conn->param_list);
++		strcpy(ls->last_intr_fail_name,
++		       (intrname ? intrname->value : "Unknown"));
++
++		ls->last_intr_fail_ip_family = conn->sock->sk->sk_family;
++		snprintf(ls->last_intr_fail_ip_addr, IPV6_ADDRESS_SPACE,
++				"%s", conn->login_ip);
++		ls->last_fail_time = get_jiffies_64();
++	}
++
++	spin_unlock(&ls->lock);
++}
++
++struct iscsi_tiqn *iscsit_snmp_get_tiqn(struct iscsi_conn *conn)
++{
++	struct iscsi_portal_group *tpg;
++
++	if (!conn || !conn->sess)
++		return NULL;
++
++	tpg = conn->sess->tpg;
++	if (!tpg)
++		return NULL;
++
++	if (!tpg->tpg_tiqn)
++		return NULL;
++
++	return tpg->tpg_tiqn;
++}
+diff --git a/drivers/target/iscsi/iscsi_target_util.h b/drivers/target/iscsi/iscsi_target_util.h
 new file mode 100644
-index 0000000..142e992
+index 0000000..5015ceb
 --- /dev/null
-+++ b/drivers/target/iscsi/iscsi_target_tmr.h
-@@ -0,0 +1,14 @@
-+#ifndef ISCSI_TARGET_TMR_H
-+#define ISCSI_TARGET_TMR_H
++++ b/drivers/target/iscsi/iscsi_target_util.h
+@@ -0,0 +1,98 @@
++#ifndef ISCSI_TARGET_UTIL_H
++#define ISCSI_TARGET_UTIL_H
 +
-+extern u8 iscsit_tmr_abort_task(struct iscsi_cmd *, unsigned char *);
-+extern int iscsit_tmr_task_warm_reset(struct iscsi_conn *, struct iscsi_tmr_req *,
-+			unsigned char *);
-+extern int iscsit_tmr_task_cold_reset(struct iscsi_conn *, struct iscsi_tmr_req *,
-+			unsigned char *);
-+extern u8 iscsit_tmr_task_reassign(struct iscsi_cmd *, unsigned char *);
-+extern int iscsit_tmr_post_handler(struct iscsi_cmd *, struct iscsi_conn *);
-+extern int iscsit_check_task_reassign_expdatasn(struct iscsi_tmr_req *,
-+			struct iscsi_conn *);
++#define MARKER_SIZE	8
 +
-+#endif /* ISCSI_TARGET_TMR_H */
++struct se_cmd;
++
++struct se_offset_map {
++	int                     map_reset;
++	u32                     iovec_length;
++	u32                     iscsi_offset;
++	u32                     current_offset;
++	u32                     orig_offset;
++	u32                     sg_count;
++	u32                     sg_current;
++	u32                     sg_length;
++	struct page		*sg_page;
++	struct se_mem		*map_se_mem;
++	struct se_mem		*map_orig_se_mem;
++	void			*iovec_base;
++};
++
++struct se_map_sg {
++	int			sg_kmap_active:1;
++	u32			data_length;
++	u32			data_offset;
++	void			*fabric_cmd;
++	struct se_cmd		*se_cmd;
++	struct kvec		*iov;
++};
++
++struct se_unmap_sg {
++	u32			data_length;
++	u32			sg_count;
++	u32			sg_offset;
++	u32			padding;
++	u32			t_offset;
++	void			*fabric_cmd;
++	struct se_cmd		*se_cmd;
++	struct se_offset_map	lmap;
++	struct se_mem		*cur_se_mem;
++};
++
++extern int iscsit_add_r2t_to_list(struct iscsi_cmd *, u32, u32, int, u32);
++extern struct iscsi_r2t *iscsit_get_r2t_for_eos(struct iscsi_cmd *, u32, u32);
++extern struct iscsi_r2t *iscsit_get_r2t_from_list(struct iscsi_cmd *);
++extern void iscsit_free_r2t(struct iscsi_r2t *, struct iscsi_cmd *);
++extern void iscsit_free_r2ts_from_list(struct iscsi_cmd *);
++extern struct iscsi_cmd *iscsit_allocate_cmd(struct iscsi_conn *, gfp_t);
++extern struct iscsi_cmd *iscsit_allocate_se_cmd(struct iscsi_conn *, u32, int, int);
++extern struct iscsi_cmd *iscsit_allocate_se_cmd_for_tmr(struct iscsi_conn *, u8);
++extern int iscsit_decide_list_to_build(struct iscsi_cmd *, u32);
++extern struct iscsi_seq *iscsit_get_seq_holder_for_datain(struct iscsi_cmd *, u32);
++extern struct iscsi_seq *iscsit_get_seq_holder_for_r2t(struct iscsi_cmd *);
++extern struct iscsi_r2t *iscsit_get_holder_for_r2tsn(struct iscsi_cmd *, u32);
++extern int iscsit_check_received_cmdsn(struct iscsi_conn *, struct iscsi_cmd *, u32);
++extern int iscsit_check_unsolicited_dataout(struct iscsi_cmd *, unsigned char *);
++extern struct iscsi_cmd *iscsit_find_cmd_from_itt(struct iscsi_conn *, u32);
++extern struct iscsi_cmd *iscsit_find_cmd_from_itt_or_dump(struct iscsi_conn *,
++			u32, u32);
++extern struct iscsi_cmd *iscsit_find_cmd_from_ttt(struct iscsi_conn *, u32);
++extern int iscsit_find_cmd_for_recovery(struct iscsi_session *, struct iscsi_cmd **,
++			struct iscsi_conn_recovery **, u32);
++extern void iscsit_add_cmd_to_immediate_queue(struct iscsi_cmd *, struct iscsi_conn *, u8);
++extern struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_conn *);
++extern void iscsit_add_cmd_to_response_queue(struct iscsi_cmd *, struct iscsi_conn *, u8);
++extern struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *);
++extern void iscsit_remove_cmd_from_tx_queues(struct iscsi_cmd *, struct iscsi_conn *);
++extern void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *);
++extern void iscsit_release_cmd(struct iscsi_cmd *);
++extern int iscsit_check_session_usage_count(struct iscsi_session *);
++extern void iscsit_dec_session_usage_count(struct iscsi_session *);
++extern void iscsit_inc_session_usage_count(struct iscsi_session *);
++extern int iscsit_set_sync_and_steering_values(struct iscsi_conn *);
++extern struct iscsi_conn *iscsit_get_conn_from_cid(struct iscsi_session *, u16);
++extern struct iscsi_conn *iscsit_get_conn_from_cid_rcfr(struct iscsi_session *, u16);
++extern void iscsit_check_conn_usage_count(struct iscsi_conn *);
++extern void iscsit_dec_conn_usage_count(struct iscsi_conn *);
++extern void iscsit_inc_conn_usage_count(struct iscsi_conn *);
++extern void iscsit_mod_nopin_response_timer(struct iscsi_conn *);
++extern void iscsit_start_nopin_response_timer(struct iscsi_conn *);
++extern void iscsit_stop_nopin_response_timer(struct iscsi_conn *);
++extern void __iscsit_start_nopin_timer(struct iscsi_conn *);
++extern void iscsit_start_nopin_timer(struct iscsi_conn *);
++extern void iscsit_stop_nopin_timer(struct iscsi_conn *);
++extern int iscsit_send_tx_data(struct iscsi_cmd *, struct iscsi_conn *, int);
++extern int iscsit_fe_sendpage_sg(struct se_unmap_sg *, struct iscsi_conn *);
++extern int iscsit_tx_login_rsp(struct iscsi_conn *, u8, u8);
++extern void iscsit_print_session_params(struct iscsi_session *);
++extern int iscsit_print_dev_to_proc(char *, char **, off_t, int);
++extern int iscsit_print_sessions_to_proc(char *, char **, off_t, int);
++extern int iscsit_print_tpg_to_proc(char *, char **, off_t, int);
++extern int rx_data(struct iscsi_conn *, struct kvec *, int, int);
++extern int tx_data(struct iscsi_conn *, struct kvec *, int, int);
++extern void iscsit_collect_login_stats(struct iscsi_conn *, u8, u8);
++extern struct iscsi_tiqn *iscsit_snmp_get_tiqn(struct iscsi_conn *);
++
++#endif /*** ISCSI_TARGET_UTIL_H ***/
 -- 
 1.7.5.1
 
