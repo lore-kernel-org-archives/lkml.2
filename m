@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab1EQROh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 13:14:37 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:44315 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755945Ab1EQROf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 13:14:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=tFw0RX7RAt0K5a1pazTX6QOvhRiSs7uVpMExeJV6FKQNjIgssv92geUSrUaAJeu4Me
-         +X/jxqdDpYa+YCgB6jbl6MV3iP8qsJ7Ack1UfC3hiPMF+vURHSkW7Bz6QoW2ET+NHgLi
-         RjpWpxGGEC3Ry/Pj4A68z+oPh7derO3KezjbA=
-MIME-Version: 1.0
-In-Reply-To: <20110517165720.GB9258@thinkpad-t410>
-References: <20110504153819.GA4551@thinkpad-t410>
-	<20110504172716.GC18541@tuxdriver.com>
-	<20110504192639.GB4551@thinkpad-t410>
-	<BANLkTimEmBRyxbZgffJMrH4TTc4f6peuTg@mail.gmail.com>
-	<20110505135207.GA13727@thinkpad-t410>
-	<BANLkTinkiTQU2k7vBEc0JPGa01AUVCvp2Q@mail.gmail.com>
-	<20110509070230.GA20458@thinkpad-t410>
-	<20110517165720.GB9258@thinkpad-t410>
-Date: Tue, 17 May 2011 20:14:34 +0300
-Message-ID: <BANLkTi=8ZRUVWn3FLAMtPh=4yY1F0k6i9w@mail.gmail.com>
-Subject: Re: ath5k regression associating with APs in 2.6.38
-From: Nick Kossifidis <mickflemm@gmail.com>
-To: Nick Kossifidis <mickflemm@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
-        ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1755811Ab1EQRVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 13:21:36 -0400
+Received: from lo.gmane.org ([80.91.229.12]:47713 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754365Ab1EQRVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 13:21:35 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: =?ISO-8859-1?Q?J=F6rg-Volker_Peetz?= <jvpeetz@web.de>
+Subject: Re: [PATCH 0/2] AMD ARAT fixes
+Date: Tue, 17 May 2011 19:21:43 +0200
+Message-ID: <4DD2AEA7.4000108@web.de>
+References: <1305636919-31165-1-git-send-email-bp@amd64.org> <4DD2A496.8000407@web.de> <20110517165318.GH30053@aftab>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        "Rosenfeld, Hans" <Hans.Rosenfeld@amd.com>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+X-Gmane-NNTP-Posting-Host: p5b3729aa.dip.t-dialin.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
+In-Reply-To: <20110517165318.GH30053@aftab>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/17 Seth Forshee <seth.forshee@canonical.com>:
-> On Mon, May 09, 2011 at 09:02:30AM +0200, Seth Forshee wrote:
->> On Thu, May 05, 2011 at 05:30:42PM +0300, Nick Kossifidis wrote:
->> > Hmm I don't see any errors from reset/phy code, can you disable
->> > Network Manager/wpa-supplicant and test connection on an open network
->> > using iw ? It 'll give us a better picture...
->> >
->> > If iw doesn't return any scan results we are probably hitting a PHY/RF
->> > error specific to your device (not all vendors follow the reference
->> > design). Maybe we should follow a blacklist/whitelist approach for
->> > this feature.
->>
->> I got the results back from my tester. He was able to get scan results,
->> but it took multiple tries and the direct probe failures appear in the
->> log. He didn't enable ATH5K_DEBUG_RESET this time; let me know if you
->> need that and I'll request he retest with the extra debug logs enabled.
->
-> I got some more feedback. Most of the time iw does not get scan results,
-> but even when it does connecting to the AP isn't always successful. The
-> tester did note that he doesn't seem to have any trouble if his machine
-> is within a few feet of his AP. Let me know if you'd like something else
-> tested.
->
-> I noticed that bugzilla #31922 (ath5k: Decreased throughput in IBSS or
-> 802.11n mode) is also fixed by reverting 8aec7af9. It seems like the
-> synth-only channel changes are resulting in poor connection quality.
-> Maybe that patch needs to be reverted?
->
-> Thanks,
-> Seth
->
->
+Borislav Petkov wrote, on 05/17/11 18:53:
+> On Tue, May 17, 2011 at 12:38:46PM -0400, Jörg-Volker Peetz wrote:
+>> A kernel version 2.6.38.6 patched with your two patches modifying only
+>> arch/x86/kernel/cpu/amd.c starts and runs without problems on the affected
+>> system with a AMD Turion 64 processor. The system is pure x86_64 (Debian
+>> Release: wheezy/sid) with gcc version 4.6.1 20110428 (prerelease) (Debian
+>> 4.6.0-6) and GNU C Library (Debian EGLIBC 2.13-4) stable release version 2.13.
+> 
+> Thanks for testing!
+> 
+>> The only obvious difference I see is the message "using C1E aware idle routine"
+>> in dmesg.
+> 
+> That was your CPU, right:
+> 
+> vendor_id       : AuthenticAMD
+> cpu family      : 15
+> model           : 36
+> model name      : AMD Turion(tm) 64 Mobile Technology MT-40
+> stepping        : 2
+> 
+> ?
+Yes, exactly.
 
-http://www.kernel.org/pub/linux/kernel/people/mickflemm/01-fast-chan-switch-modparm
+> 
+> If so, then the C1E idle line above shouldn't appear. Can you check that
+> around line 698 in <arch/x86/kernel/cpu/amd.c> you have the following:
+> 
+>  const int amd_erratum_400[] =
+>        AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
+>                            AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
+> 
+The lines 683--685 in this file on my affected system are equal to the three
+lines above (except for formatting).
 
--- 
-GPG ID: 0xD21DB2DB
-As you read this post global entropy rises. Have Fun ;-)
-Nick
+> On your machine, you should be using the default_idle routine instead,
+> since you don't have C1E.
+
+?
+
+> 
+> Thanks.
+> 
+
+
