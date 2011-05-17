@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab1EQK2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 06:28:30 -0400
+	id S1753669Ab1EQK26 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 06:28:58 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:62029 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535Ab1EQK23 (ORCPT
+	with ESMTP id S1752836Ab1EQK24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 06:28:29 -0400
+	Tue, 17 May 2011 06:28:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=OmOynlCgkDcv3cQv2/uG0qW9nonFEdpkdAU0P5ecE29fdxyum5MX1J33kri4wdWHEc
-         I/bkmZ3f13e/NJMLd/qfGIfpfZe4mUL0/cKFmoyJHleKiNV9cjl+ZR4peDWGTDm94sic
-         2nPvcpHn7bRZmnQND+gV1WdfLKfmiYgyaSH3w=
-Date: Tue, 17 May 2011 12:28:24 +0200
+        b=aEFd7PKy8wstC9d5j+EycMBB5VSztPPb8ZCUNEEELcVh67EV35Z0mlRBIADive4wTt
+         pFp4zPvlmCin5ZdCGA6W07kodL74V/1IXWzJ73OZNm96sM6J3s882d2Whw5dB23+lP2q
+         heAc0n79tXh94Leix3qOb8psoNIaM61A2+CLc=
+Date: Tue, 17 May 2011 12:28:53 +0200
 From: Tejun Heo <tj@kernel.org>
 To: Jens Axboe <axboe@kernel.dk>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -22,130 +22,121 @@ Cc: Sitsofe Wheeler <sitsofe@yahoo.com>, Borislav Petkov <bp@alien8.de>,
         Meelis Roos <mroos@linux.ee>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND 2/3 v2.6.39-rc7] block: remove non-syncing
- __disk_block_events() and fold it into disk_block_events()
-Message-ID: <20110517102824.GK20624@htj.dyndns.org>
+Subject: [PATCH RESEND 2/3 v2.6.39-rc7] block: make disk_block_events()
+ properly wait for work cancellation
+Message-ID: <20110517102853.GL20624@htj.dyndns.org>
 References: <20110517102713.GJ20624@htj.dyndns.org>
+ <20110517102824.GK20624@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110517102713.GJ20624@htj.dyndns.org>
+In-Reply-To: <20110517102824.GK20624@htj.dyndns.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the previous update to disk_check_events(), nobody is using
-non-syncing __disk_block_events().  Remove @sync and, as this makes
-__disk_block_events() virtually identical to disk_block_events(),
-remove the underscore prefixed version.
+disk_block_events() should guarantee that the event work is not in
+flight on return and once blocked it shouldn't issue further
+cancellations.
+
+Because there was no synchronization between the first blocker doing
+cancel_delayed_work_sync() and the following blockers, the following
+blockers could finish before cancellation was complete, which broke
+both guarantees - event work could be in flight and cancellation could
+happen after return.
+
+This bug triggered WARN_ON_ONCE() in disk_clear_events() reported in
+bug#34662.
+
+  https://bugzilla.kernel.org/show_bug.cgi?id=34662
+
+Fix it by introducing DISK_EVENT_CANCELING bit which is set by the
+first blocker while cancellation is in progress.  Further blockers
+wait until the bit is cleared by the first blocker.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Reported-by: Borislav Petkov <bp@alien8.de>
+Reported-by: Meelis Roos <mroos@linux.ee>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
 ---
- block/genhd.c |   55 ++++++++++++++++++++++++-------------------------------
- 1 file changed, 24 insertions(+), 31 deletions(-)
+ block/genhd.c |   36 +++++++++++++++++++++++++++++++++---
+ 1 file changed, 33 insertions(+), 3 deletions(-)
 
 Index: work/block/genhd.c
 ===================================================================
 --- work.orig/block/genhd.c
 +++ work/block/genhd.c
-@@ -1414,22 +1414,36 @@ static unsigned long disk_events_poll_ji
+@@ -1371,7 +1371,7 @@ struct disk_events {
+ 	struct gendisk		*disk;		/* the associated disk */
+ 	spinlock_t		lock;
+ 
+-	int			block;		/* event blocking depth */
++	unsigned int		block;		/* event blocking depth */
+ 	unsigned int		pending;	/* events already sent out */
+ 	unsigned int		clearing;	/* events being cleared */
+ 
+@@ -1379,6 +1379,8 @@ struct disk_events {
+ 	struct delayed_work	dwork;
+ };
+ 
++#define DISK_EVENT_CANCELING			0x80000000U
++
+ static const char *disk_events_strs[] = {
+ 	[ilog2(DISK_EVENT_MEDIA_CHANGE)]	= "media_change",
+ 	[ilog2(DISK_EVENT_EJECT_REQUEST)]	= "eject_request",
+@@ -1414,6 +1416,12 @@ static unsigned long disk_events_poll_ji
  	return msecs_to_jiffies(intv_msecs);
  }
  
--static void __disk_block_events(struct gendisk *disk, bool sync)
-+/**
-+ * disk_block_events - block and flush disk event checking
-+ * @disk: disk to block events for
-+ *
-+ * On return from this function, it is guaranteed that event checking
-+ * isn't in progress and won't happen until unblocked by
-+ * disk_unblock_events().  Events blocking is counted and the actual
-+ * unblocking happens after the matching number of unblocks are done.
-+ *
-+ * Note that this intentionally does not block event checking from
-+ * disk_clear_events().
-+ *
-+ * CONTEXT:
-+ * Might sleep.
-+ */
-+void disk_block_events(struct gendisk *disk)
- {
- 	struct disk_events *ev = disk->ev;
- 	unsigned long flags;
- 	bool cancel;
- 
-+	if (!ev)
-+		return;
++static int disk_block_wait_canceling(void *word)
++{
++	schedule();
++	return 0;
++}
 +
+ /**
+  * disk_block_events - block and flush disk event checking
+  * @disk: disk to block events for
+@@ -1438,12 +1446,34 @@ void disk_block_events(struct gendisk *d
+ 	if (!ev)
+ 		return;
+ 
++	/*
++	 * Bump block count and set CANCELLING if we're the first blocker
++	 * and have to cancel the event work.
++	 */
  	spin_lock_irqsave(&ev->lock, flags);
- 	cancel = !ev->block++;
+-	cancel = !ev->block++;
++	if ((cancel = !ev->block++))
++		ev->block |= DISK_EVENT_CANCELING;
  	spin_unlock_irqrestore(&ev->lock, flags);
  
--	if (cancel) {
--		if (sync)
--			cancel_delayed_work_sync(&disk->ev->dwork);
--		else
--			cancel_delayed_work(&disk->ev->dwork);
--	}
-+	if (cancel)
-+		cancel_delayed_work_sync(&disk->ev->dwork);
+-	if (cancel)
++	if (cancel) {
++		/*
++		 * Cancel the event work, clear CANCELING and wake up
++		 * waiters.
++		 */
+ 		cancel_delayed_work_sync(&disk->ev->dwork);
++
++		spin_lock_irqsave(&ev->lock, flags);
++		ev->block &= ~DISK_EVENT_CANCELING;
++		spin_unlock_irqrestore(&ev->lock, flags);
++		wake_up_bit(&ev->block, ilog2(DISK_EVENT_CANCELING));
++	} else {
++		/*
++		 * The first blocker might not have finished canceling the
++		 * event work.  Wait for CANCELING to clear.
++		 */
++		wait_on_bit(&ev->block, ilog2(DISK_EVENT_CANCELING),
++			    disk_block_wait_canceling, TASK_UNINTERRUPTIBLE);
++	}
  }
  
  static void __disk_unblock_events(struct gendisk *disk, bool check_now)
-@@ -1461,27 +1475,6 @@ out_unlock:
- }
- 
- /**
-- * disk_block_events - block and flush disk event checking
-- * @disk: disk to block events for
-- *
-- * On return from this function, it is guaranteed that event checking
-- * isn't in progress and won't happen until unblocked by
-- * disk_unblock_events().  Events blocking is counted and the actual
-- * unblocking happens after the matching number of unblocks are done.
-- *
-- * Note that this intentionally does not block event checking from
-- * disk_clear_events().
-- *
-- * CONTEXT:
-- * Might sleep.
-- */
--void disk_block_events(struct gendisk *disk)
--{
--	if (disk->ev)
--		__disk_block_events(disk, true);
--}
--
--/**
-  * disk_unblock_events - unblock disk event checking
-  * @disk: disk to unblock events for
-  *
-@@ -1554,7 +1547,7 @@ unsigned int disk_clear_events(struct ge
- 	spin_unlock_irq(&ev->lock);
- 
- 	/* uncondtionally schedule event check and wait for it to finish */
--	__disk_block_events(disk, true);
-+	disk_block_events(disk);
- 	queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
- 	flush_delayed_work(&ev->dwork);
- 	__disk_unblock_events(disk, false);
-@@ -1672,7 +1665,7 @@ static ssize_t disk_events_poll_msecs_st
- 	if (intv < 0 && intv != -1)
- 		return -EINVAL;
- 
--	__disk_block_events(disk, true);
-+	disk_block_events(disk);
- 	disk->ev->poll_msecs = intv;
- 	__disk_unblock_events(disk, true);
- 
-@@ -1778,7 +1771,7 @@ static void disk_del_events(struct gendi
- 	if (!disk->ev)
- 		return;
- 
--	__disk_block_events(disk, true);
-+	disk_block_events(disk);
- 
- 	mutex_lock(&disk_events_mutex);
- 	list_del_init(&disk->ev->node);
