@@ -1,124 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab1EQOYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 10:24:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22284 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754697Ab1EQOYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 10:24:47 -0400
-Date: Tue, 17 May 2011 10:24:27 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-Message-ID: <20110517142427.GL31888@redhat.com>
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
- <4DCD4B85.3040702@gmail.com>
- <BANLkTin7LNo0dDLs-Rz6WqCQ9RvS=MLXcw@mail.gmail.com>
- <4DCE3493.4090404@gmail.com>
- <BANLkTin1pvdnXtw53MhwfCsEQpsu0TUUmg@mail.gmail.com>
- <4DCF7413.4070704@gmail.com>
- <4DD07959.4030608@intel.com>
- <20110516190310.GH31888@redhat.com>
- <4DD20A2F.604@intel.com>
+	id S1755265Ab1EQO3T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 10:29:19 -0400
+Received: from fall-pradero.atl.sa.earthlink.net ([207.69.195.104]:60488 "EHLO
+	fall-pradero.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755201Ab1EQO3R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 10:29:17 -0400
+thread-index: AcwUnkUpNkHvXiuiSDuMgWqb3yVd8w==
+Thread-Topic: I thought you would enjoy this page on villasitalia.com!
+From: <niceprofit@ymail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: I thought you would enjoy this page on villasitalia.com!
+Date: Tue, 17 May 2011 10:25:28 -0400
+Message-ID: <DF687ECE1B404B05A557C7A68EE8E887@g27.win.smewh.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD20A2F.604@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4657
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 01:39:59PM +0800, Huang Ying wrote:
-> On 05/17/2011 03:03 AM, Don Zickus wrote:
-> > On Mon, May 16, 2011 at 09:09:45AM +0800, Huang Ying wrote:
-> >>>   Ying, the concern is rather related to the code scheme in general. Since
-> >>> we have notifiers I think the better way to be consistent here and use
-> >>> hwerr notifier too. But it's IMHO ;)
-> >>
-> >> As for go notifiers or not.  IMHO, a rule can be:
-> >>
-> >> - If it is something like a driver, than it should go notifier
-> >> - If it is architectural/PC defacto standard, it can sit outside of
-> >> notifier.
-> > 
-> > Hmm, then what do you do about perf?  That is architectural and a defacto
-> > standard, but I am not sure hardcoding that would be appropriate.
-> 
-> Yes.  perf is architectural, so its source is not put into drivers
-> directory.  And I think it is a good idea to put perf NMI handler call
-> directly into system NMI handler instead of a notifier chain.  Unknown
-> NMI as HW error is far more smaller than perf.  So it can be put into
-> system NMI handler directly.
-> 
-> >> I think that seeing unknown NMI as hardware error should be part of PC
-> >> defacto standard.  Do you think so?
-> > 
-> > Well after thinking about it, I would say no.  And my reason is, if
-> > vendors are really serious about using NMIs as an indicator for hardware
-> > errors, shouldn't they be setting a bit in the memory controller/north
-> > bridge or south bridge/IOHC for an NMI handler to read?  I mean hardware
-> > devices don't just get wired directly to the NMI pin on the cpu, right?
-> > They generally have to go through some hub that acts as a multiplexer.
-> > 
-> > In those cases, why can't those hubs set a bit saying it detected an error
-> > (don't PCIe bridges already do that?) and let the NMI handler read it to
-> > confirm.  This way we can leave 'unknown NMIs' as a way to say an
-> > unclaimed NMI entered the system and we can have users set policy about
-> > what to do, panic, printk, whatever.
-> > 
-> > But for the HEST stuff, it should be smart enough by now to trap any
-> > hardware error, no?  How does a machine that supports HEST let a hardware
-> > error get through without detecting it?  Isn't that the point?  Detect a
-> > hardware error, grab as much info about it as possible, save the error
-> > record and then panic?
-> > 
-> > Otherwise if you just panic, then you have no idea why the machine errored
-> > in the first place.  It might be the safe thing to do in some
-> > circumstances, but then you have to wonder why the fancy HEST enabled
-> > server didn't catch it.  Isn't that what people are spending extra money
-> > for those Intel servers with RAS features?
-> 
-> All you said is possible in theory.  But as far as I know, Windows
-> thinks unknown NMI is for hardware error and displays blue scrren for
-
-Right, because as I was told, Windows don't use NMI for anything else.
-Linux uses it for perf, hw breakpoints, kdump, watchdog, etc.
-
-> it.  So some hardware OEMs use unknown NMI to report hardware error.
-
-Yes, I know one of those OEMs and had to restructure the NMI code to
-accomodate them.
-
-> Even on machines with HEST, there may be no GHES record (just unknown
-> NMI) if Windows does not tell BIOS that it has support for GHES.
-
-Ok, that's fine, but doesn't Linux tell the BIOS it supports GHES?  Also
-what would be the point of implementing HEST in your firmware if all it
-does is just pass the error along to the NMI?
-
-Ok, so I am naive and am just learning that the ACPI spec is just
-'guidelines' for how stuff should work (and people rarely follow it), but
-I find it hard to believe that OEMs would implement HEST as just an error
-pass-through.  Isn't the point of HEST trying to _determine_ what the error is?
-Otherwise why bother.
-
-Can we agree on this, that if an OEM implemented HEST properly such that a
-hardware error happens it will generate a GHES record.  The subsequent NMI
-that follows will find that GHES record and properly panic.
-
-If the OEM can't implement HEST properly and instead just sends the NMI
-with no GHES record, how much should we care?
-
-Cheers,
-Don
+"niceprofit@ymail.com" <niceprofit@ymail.com> has recommended that you visit this page:
 
 
-Cheers,
-Don
+
+
+
+
+
+
+Hi Friend,
+
+Make Money With This Proven Method To Generate Cash Online...
+
+"Watch & Learn How A Successful Marketer Went To Earn $545.725 In Less Than 30 Days...
+
+Don't waste another minute, this is your one chance to realize that your 
+dream will come true. You just have to act NOW!
+
+Congratulation: Get your $700 Guaranted Commissions Now!!!
+
+It Doesn't Matter If You've Never Even Earned A Single Cent Online Before...
+If A Total Beginner Can Make $700 In His First Month Then Anyone Can Do This...
+
+Imagine waking up at 10 in the morning.. doing your short workout routine.. opening 
+your computer..and finding out you made up to $700 or more - while you were a sleep!
+
+I have to be honest with you.This is a Business proposal that you might get interested.
+Believe , this is totally different from what you have heard or tried already.
+
+We Start putting 28 Members in your team for MAY 11 to 18/2011 WEEKLY Commission Cycle.
+YOU ALREADY HAVE 8,898 Pre-Enrollee\'s and 24 PAID Member\'s today in your TEAM.
+AND IT IS STILL GROWING! Only 8 Spot\'s remaining before Commission Cycle Ends.
+
+IMPORTANT: ORDER NOW or Before MAY 18,2011 is the Cut-Off Date!To lock in your 
+Commission!Be sure to\"Order Now\"only $25 Lifetime Membership.To secure your 
+$700 Commission \"ORDER NOW\" Hurry Grab it Now!You Get-Paid on June 20,2011
+direct to your Paypal Account At the Time & Transfer Online To Your ATM Account ...
+
+Be Sure to Copy the link below & Paste into your browser
+and press enter: To Secure your $700 commission!
+
+This program is hands free, once you have it setup you never need to touch
+it again. Just wait for the $700 commissions to come every month and enjoy!
+
+After Your One Time Personal Payment Of $25 You will access your Commission in any ATM  ...
+
+https://www.plimus.com/jsp/redirect.jsp?contractId=2964584&referrer=dollarhere=%3E
+
+TYPE ===== Date & Time = New PAID Members ===== Country
+
+M MAY.15  @ 04:40  PM  = Arman Thopkins   =====  United States
+M MAY.15  @ 04:40  PM  ==  George Middles  =====  Germany
+M MAY.15  @ 11:19  PM  ===  Ronald Whitsel  =====  United States
+M MAY.15  @ 06:23  PM  ====  James Allen     =====  Canada
+M MAY.15  @ 12:39  AM  =====  Sheryl Mchaud   =====  United States
+M MAY.15  @ 08:26  AM  ======  Renee Jenkins   =====  Australia
+P MAY.15  @ 02:31  PM  =======  Elizabeth Rios  =====  Portugal
+M MAY.15  @ 02:37  PM  ========  Karen Schiller  =====  United Kingdom
+M MAY.14  @ 04:21  PM  =========  Mark Raines     =====  Denmark
+P MAY.14  @ 09:38  PM  ==========  David Grogan    =====  Sri Lanka
+P MAY.14  @ 10:45  PM  ===========  Josh Dalton     =====  United States
+M MAY.14  @ 10:19  AM  ============  Victor Chavar   =====  Italy
+P MAY.14  @ 08:32  PM  ============  Gaynell Bailey  =====  South Africa
+M MAY.13  @ 09:40  PM  ===========  Barb Thorn      =====  Netherlands
+P MAY.13  @ 10:21  AM  ==========  James Williams  =====  North Carolina
+P MAY.13  @ 11:08  PM  =========  David Baxter    =====  United States
+M MAY.12  @ 12:39  AM  ========  Carolyn Smith   =====  Singapore
+M MAY.12  @ 02:30  AM  =======  Andrew Scott    =====  New Zealand
+P MAY.12  @ 02:42  AM  ======  Matthew Evan    =====  Portugal
+M MAY.12  @ 08:18  AM  =====  Steven Hopkins  =====  United States
+P MAY.11  @ 2:38   AM  ====  Jenny Regan     =====  United States
+P MAY.11  @ 2:53   AM  ===  Andy McLarry    =====  United Kingdom
+P MAY.11  @ 2:56   AM  == Jeffrey Segail   =====  Germany
+M MAY.11  @ 4:19   AM  = Mayeth Thompson  =====  United States
+
+28= Paid Members join are Waiting each Coming Commissions....
+
+Therefore, you have a GUARANTEED $700 Commission 
+every month from now on!. Earn $25 Per Process!
+
+Each $25 x 28 = $700 Commission  will be yours...!
+
+Be Sure to Copy the link below & Paste into your browser
+and press enter: To Secure your $700 commission!
+
+Don't delay another second, Buy No Sales System and start 
+making the money that would put a huge smile on your face...
+ 
+Click Below!! And Join Now  
+
+https://www.plimus.com/jsp/redirect.jsp?contractId=2964584&referrer=dollarhere=%3E
+
+Please do realize that if you don\'t ORDER NOW, ALL Commission that
+are currently is yours to take. As soon as I receive the confirmation
+of your ORDER, I will be in touch with you to help you get started.
+
+I personally recommend it and endorse it 100%, with all my reputation.
+
+(Hurry, Price May Increase Without Notice!)
+
+Here's To Your Success,
+
+ 
+Daniel Owens (Authorised Marketer) 
+
+PPS. Remember, you shouldn't have to worry about losing your money. 
+If there is any problem whatsoever, I'll give you a FULL REFUND. 
+No questions asked, no problem too small.I want you to know that  
+I'm fully invested in helping you succeed. Any questions,any problems, 
+I'm here for you. I'm here to help you make money online. You've got 
+two full months to test everything out. Make sure you are doing all  
+you can to make the money that you so richly deserve.
+ 
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Site privacy policy: This page was sent using the villasitalia.com send-to-a-friend link. Your email has not been added to any list and has not been recorded at our site.
