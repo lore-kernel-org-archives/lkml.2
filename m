@@ -1,105 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1EQHlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 03:41:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56144 "EHLO mga11.intel.com"
+	id S1753174Ab1EQHm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 03:42:57 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:45232 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753072Ab1EQHlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 03:41:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,224,1304319600"; 
-   d="scan'208";a="2651869"
-Message-ID: <4DD22692.7050209@intel.com>
-Date: Tue, 17 May 2011 15:41:06 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Iceowl/1.0b2 Icedove/3.1.9
+	id S1752968Ab1EQHmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 03:42:55 -0400
+Date: Tue, 17 May 2011 09:42:30 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [rfc patch 4/6] memcg: reclaim statistics
+Message-ID: <20110517074230.GY16531@cmpxchg.org>
+References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
+ <1305212038-15445-5-git-send-email-hannes@cmpxchg.org>
+ <BANLkTi=yCyAsOc_uTQLp1kWp5w0i9gomxg@mail.gmail.com>
+ <20110516231028.GV16531@cmpxchg.org>
+ <BANLkTimLNZfc-jcA3yBG5D3k2u=0_JnrhQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Don Zickus <dzickus@redhat.com>, huang ying <huang.ying.caritas@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com> <20110513124523.GM13984@redhat.com> <20110513130011.GA6474@elte.hu> <BANLkTi=Z_3MZVs2CQyk82NfvZj-KdSw5kw@mail.gmail.com> <20110513152033.GB3854@elte.hu> <20110513160029.GD31888@redhat.com> <20110516112934.GE19837@elte.hu>
-In-Reply-To: <20110516112934.GE19837@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimLNZfc-jcA3yBG5D3k2u=0_JnrhQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2011 07:29 PM, Ingo Molnar wrote:
+On Mon, May 16, 2011 at 05:20:31PM -0700, Ying Han wrote:
+> On Mon, May 16, 2011 at 4:10 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
 > 
-> * Don Zickus <dzickus@redhat.com> wrote:
+> > On Thu, May 12, 2011 at 12:33:50PM -0700, Ying Han wrote:
+> > > The stats for soft_limit reclaim from global ttfp have been merged in
+> > > mmotm i believe as the following:
+> > >
+> > > "soft_direct_steal"
+> > > "soft_direct_scan"
+> > >
+> > > I wonder we might want to separate that out from the other case where the
+> > > reclaim is from the parent triggers its limit.
+> >
+> > The way I implemented soft limits in 6/6 is to increase pressure on
+> > exceeding children whenever hierarchical reclaim is taking place.
+> >
+> > This changes soft limit from
+> >
+> >        Global memory pressure: reclaim from exceeding memcg(s) first
+> >
+> > to
+> >
+> >        Memory pressure on a memcg: reclaim from all its children,
+> >        with increased pressure on those exceeding their soft limit
+> >        (where global memory pressure means root_mem_cgroup and all
+> >        existing memcgs are considered its children)
+> >
+> > which makes the soft limit much more generic and more powerful, as it
+> > allows the admin to prioritize reclaim throughout the hierarchy, not
+> > only for global memory pressure.  Consider one memcg with two
+> > subgroups.  You can now prioritize reclaim to prefer one subgroup over
+> > another through soft limiting.
+> >
+> > This is one reason why I think that the approach of maintaining a
+> > global list of memcgs that exceed their soft limits is an inferior
+> > approach; it does not take the hierarchy into account at all.
+> >
+> > This scheme would not provide a natural way of counting pages that
+> > were reclaimed because of the soft limit, and thus I still oppose the
+> > merging of soft limit counters.
 > 
->> On Fri, May 13, 2011 at 05:20:33PM +0200, Ingo Molnar wrote:
->>>
->>> * huang ying <huang.ying.caritas@gmail.com> wrote:
->>>
->>>>> What should be done instead is to add an event for unknown NMIs, which can 
->>>>> then be processed by the RAS daemon to implement policy.
->>>>>
->>>>> By using 'active' event filters it could even be set on a system to panic 
->>>>> the box by default.
->>>>
->>>> If there is real fatal hardware error, maybe we have no luxury to go from NMI 
->>>> handler to user space RAS daemon to determine what to do. System may explode, 
->>>> bad data may go to disk before that.
->>>
->>> That is why i suggested:
->>>
->>>   > > By using 'active' event filters it could even be set on a system to panic 
->>>   > > the box by default.
->>>
->>> event filters are evaluated in the kernel, so the panic could be instantaneous, 
->>> without the event having to reach user-space.
->>
->> Interesting.  Question though, what do you mean by 'event filtering'.  Is 
->> that different then setting 'unknown_nmi_panic' panic on the commandline or 
->> procfs?
->>
->> Or are you suggesting something like registering another callback on the 
->> die_chain that looks for DIE_NMIUNKNOWN as the event, swallows them and 
->> implements the policy?  That way only on HEST related platforms would 
->> register them while others would keep the default of 'Dazed and confused' 
->> messages?
-> 
-> The idea is that "event filters", which are an existing upstream feature and 
-> which can be used in rather flexible ways:
-> 
->   http://lkml.org/lkml/2011/4/27/660
-> 
-> Could be used to trigger non-standard policy action as well - such as to panic 
-> the box.
-> 
-> This would replace various very limited /debugfs and /sys event filtering hacks 
-> (and hardcoded policies) such as arch/x86/kernel/cpu/mcheck/mce-severity.c, and 
-> it would allow nonstandard behavior like 'panic the box on unknown NMIs' as 
-> well.
-> 
-> This could be set by the RAS daemon, and it could be propagated to the kernel 
-> boot line as well, where event filter syntax would look like this:
-> 
->   events=nmi::unknown"if (reason == 0) panic();"
-> 
-> (Where the 'reason' field of the NMI event is the current legacy 'reason' value 
-> there.)
-> 
-> The filter code would have to be modified to be able to recognize the panic() 
-> bit, but that's desirable anyway and it is a one-time effort.
-> 
-> This:
-> 
->   events=nmi::unknown:"if (reason == 0) ignore();"
-> 
-> would be a possible outcome as well, on certain boxes - to skip certain events.
+> The proposal we discussed during LSF ( implemented in the patch " memcg:
+> revisit soft_limit reclaim on contention") takes consideration
+> of hierarchical reclaim. The memcg is linked in the list if it exceeds the
+> soft_limit, and the soft_limit reclaim per-memcg is calling
+> mem_cgroup_hierarchical_reclaim().
 
-We can determine whether NMI is unknown in kernel now.  If you want to
-push all unknown NMI logic into user space (although I don't think that
-is the best solution), is it not sufficient that just check system in
-user space (via PCI ID or DMI ID, etc) and set existing
-"unknown_nmi_panic" accordingly?
+It does hierarchical soft limit reclaim once triggered, but I meant
+that soft limits themselves have no hierarchical meaning.  Say you
+have the following hierarchy:
 
-Best Regards,
-Huang Ying
+                root_mem_cgroup
+
+             aaa               bbb
+
+           a1  a2             b1  b2
+
+        a1-1
+
+Consider aaa and a1 had a soft limit.  If global memory arose, aaa and
+all its children would be pushed back with the current scheme, the one
+you are proposing, and the one I am proposing.
+
+But now consider aaa hitting its hard limit.  Regular target reclaim
+will be triggered, and a1, a2, and a1-1 will be scanned equally from
+hierarchical reclaim.  That a1 is in excess of its soft limit is not
+considered at all.
+
+With what I am proposing, a1 and a1-1 would be pushed back more
+aggressively than a2, because a1 is in excess of its soft limit and
+a1-1 is contributing to that.
+
+It would mean that given a group of siblings, you distribute the
+pressure weighted by the soft limit configuration, independent of the
+kind of hierarchical/external pressure (global memory scarcity or
+parent hit the hard limit).
+
+It's much easier to understand if you think of global memory pressure
+to mean that root_mem_cgroup hit its hard limit, and that all existing
+memcgs are hierarchically below the root_mem_cgroup.  Altough it is
+technically not implemented that way, that would be the consistent
+model.
+
+My proposal is a generic and native way of enforcing soft limits: a
+memcg hit its hard limit, reclaim from the hierarchy below it, prefer
+those in excess of their soft limit.
+
+While yours is special-cased to immediate descendants of the
+root_mem_cgroup.
+
+> The current "soft_steal" and "soft_scan" is counting pages being steal/scan
+>  inside mem_cgroup_hierarchical_reclaim() w check_soft checking, which then
+> counts pages being reclaimed because of soft_limit and also counting the
+> hierarchical reclaim.
+
+Yeah, I understand that.  What I am saying is that in my code,
+everytime a hierarchy of memcgs is scanned (global memory reclaim,
+target reclaim, kswapd or direct, it's all the same), a memcg that is
+in excess of its soft limit is put more pressure on compared to its
+siblings.
+
+There is no stand-alone 'now, go reclaim soft limits' cycle anymore.
+As such, it would be impossible to maintain that counter.
