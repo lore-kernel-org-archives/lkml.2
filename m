@@ -1,42 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab1EQRIl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 13:08:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44449 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755529Ab1EQRIk (ORCPT
+	id S1756046Ab1EQROh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 13:14:37 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:44315 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755945Ab1EQROf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 13:08:40 -0400
-Date: Tue, 17 May 2011 10:08:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Clifton Barnes <cabarnes@indesign-llc.com>
-Cc: <ryan@bluewatersys.com>, <haojian.zhuang@marvell.com>,
-        <johnpol@2ka.mipt.ru>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] w1: Add Maxim/Dallas DS2780 Stand-Alone Fuel Gauge
- IC support.
-Message-Id: <20110517100846.bcb3adbc.akpm@linux-foundation.org>
-In-Reply-To: <4DD29578.4020807@indesign-llc.com>
-References: <4DCACAA1.902@indesign-llc.com>
-	<4DD29578.4020807@indesign-llc.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 17 May 2011 13:14:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=tFw0RX7RAt0K5a1pazTX6QOvhRiSs7uVpMExeJV6FKQNjIgssv92geUSrUaAJeu4Me
+         +X/jxqdDpYa+YCgB6jbl6MV3iP8qsJ7Ack1UfC3hiPMF+vURHSkW7Bz6QoW2ET+NHgLi
+         RjpWpxGGEC3Ry/Pj4A68z+oPh7derO3KezjbA=
+MIME-Version: 1.0
+In-Reply-To: <20110517165720.GB9258@thinkpad-t410>
+References: <20110504153819.GA4551@thinkpad-t410>
+	<20110504172716.GC18541@tuxdriver.com>
+	<20110504192639.GB4551@thinkpad-t410>
+	<BANLkTimEmBRyxbZgffJMrH4TTc4f6peuTg@mail.gmail.com>
+	<20110505135207.GA13727@thinkpad-t410>
+	<BANLkTinkiTQU2k7vBEc0JPGa01AUVCvp2Q@mail.gmail.com>
+	<20110509070230.GA20458@thinkpad-t410>
+	<20110517165720.GB9258@thinkpad-t410>
+Date: Tue, 17 May 2011 20:14:34 +0300
+Message-ID: <BANLkTi=8ZRUVWn3FLAMtPh=4yY1F0k6i9w@mail.gmail.com>
+Subject: Re: ath5k regression associating with APs in 2.6.38
+From: Nick Kossifidis <mickflemm@gmail.com>
+To: Nick Kossifidis <mickflemm@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 May 2011 11:34:16 -0400 Clifton Barnes <cabarnes@indesign-llc.com> wrote:
+2011/5/17 Seth Forshee <seth.forshee@canonical.com>:
+> On Mon, May 09, 2011 at 09:02:30AM +0200, Seth Forshee wrote:
+>> On Thu, May 05, 2011 at 05:30:42PM +0300, Nick Kossifidis wrote:
+>> > Hmm I don't see any errors from reset/phy code, can you disable
+>> > Network Manager/wpa-supplicant and test connection on an open network
+>> > using iw ? It 'll give us a better picture...
+>> >
+>> > If iw doesn't return any scan results we are probably hitting a PHY/RF
+>> > error specific to your device (not all vendors follow the reference
+>> > design). Maybe we should follow a blacklist/whitelist approach for
+>> > this feature.
+>>
+>> I got the results back from my tester. He was able to get scan results,
+>> but it took multiple tries and the direct probe failures appear in the
+>> log. He didn't enable ATH5K_DEBUG_RESET this time; let me know if you
+>> need that and I'll request he retest with the extra debug logs enabled.
+>
+> I got some more feedback. Most of the time iw does not get scan results,
+> but even when it does connecting to the AP isn't always successful. The
+> tester did note that he doesn't seem to have any trouble if his machine
+> is within a few feet of his AP. Let me know if you'd like something else
+> tested.
+>
+> I noticed that bugzilla #31922 (ath5k: Decreased throughput in IBSS or
+> 802.11n mode) is also fixed by reverting 8aec7af9. It seems like the
+> synth-only channel changes are resulting in poor connection quality.
+> Maybe that patch needs to be reverted?
+>
+> Thanks,
+> Seth
+>
+>
 
-> I'm in the process of making the other changes that were suggested.
-> How should I submit the changes?  A new patch v3 or a patch to v2?
-> If a patch to v2, how should that be indicated?
+http://www.kernel.org/pub/linux/kernel/people/mickflemm/01-fast-chan-switch-modparm
 
-Either a v3 patch against current mainline or a smaller patch against
-mainline+v2.  The former is better for new reviewers and the latter is
-better for people who have already reviewed the code.  Either is OK for
-me.  When someone sends me a v3 I'll always turn it into the v2->v3
-delta anyway, so I can see what changed.
-
-
-
+-- 
+GPG ID: 0xD21DB2DB
+As you read this post global entropy rises. Have Fun ;-)
+Nick
