@@ -1,47 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab1EQWLo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 18:11:44 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:60361
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932465Ab1EQWLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 18:11:42 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/2] Connector: Correctly set the error code in case of success when dispatching receive callbacks
-Date: Tue, 17 May 2011 15:25:38 -0700
-Message-Id: <1305671138-19443-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1305671138-19443-1-git-send-email-kys@microsoft.com>
-References: <1305671138-19443-1-git-send-email-kys@microsoft.com>
+	id S1756735Ab1EQW1H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 18:27:07 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:11000 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756632Ab1EQW1E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 18:27:04 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=eSxqCwcqQncq1eOs9CT24PPhlD41mbTEJcUHvJ1UiRkjZjGId4NYhWZr6f4/xnwRh
+	f4ltG+MFLmyB5ERZKqX4w==
+From: Vivek Haldar <haldar@google.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vivek Haldar <haldar@google.com>
+Subject: [PATCH] ext4: count hits/misses of extent cache and expose in sysfs.
+Date: Tue, 17 May 2011 15:26:53 -0700
+Message-Id: <1305671213-7624-1-git-send-email-haldar@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent changes to the connector code introduced this bug where even
-when a callback was invoked, we would return an error resulting in
-double freeing of the skb. This patch fixes this bug.
+The number of hits and misses for each filesystem is exposed in
+/sys/fs/ext4/<dev>/extent_cache_{hits, misses}.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Tested: fsstress, manual checks.
+Signed-off-by: Vivek Haldar <haldar@google.com>
 ---
- drivers/connector/connector.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/ext4/ext4.h    |    3 +++
+ fs/ext4/extents.c |    7 ++++++-
+ fs/ext4/super.c   |   16 ++++++++++++++++
+ 3 files changed, 25 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/connector/connector.c b/drivers/connector/connector.c
-index d770058..c36fbe1 100644
---- a/drivers/connector/connector.c
-+++ b/drivers/connector/connector.c
-@@ -139,6 +139,7 @@ static int cn_call_callback(struct sk_buff *skb)
- 	spin_unlock_bh(&dev->cbdev->queue_lock);
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 47986ae..9625b19 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1144,6 +1144,9 @@ struct ext4_sb_info {
+ 	unsigned long s_ext_blocks;
+ 	unsigned long s_ext_extents;
+ #endif
++	/* ext4 extent cache stats */
++	unsigned long extent_cache_hits;
++	unsigned long extent_cache_misses;
  
- 	if (cbq != NULL) {
-+		err = 0;
- 		cbq->callback(msg, nsp);
- 		kfree_skb(skb);
- 		cn_queue_release_callback(cbq);
+ 	/* for buddy allocator */
+ 	struct ext4_group_info ***s_group_info;
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index e363f21..1ea440a 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2035,6 +2035,7 @@ ext4_ext_in_cache(struct inode *inode, ext4_lblk_t block,
+ 			struct ext4_extent *ex)
+ {
+ 	struct ext4_ext_cache *cex;
++	struct ext4_sb_info *sbi;
+ 	int ret = 0;
+ 
+ 	/*
+@@ -2042,6 +2043,7 @@ ext4_ext_in_cache(struct inode *inode, ext4_lblk_t block,
+ 	 */
+ 	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
+ 	cex = &EXT4_I(inode)->i_cached_extent;
++	sbi = EXT4_SB(inode->i_sb);
+ 
+ 	/* has cache valid data? */
+ 	if (cex->ec_len == 0)
+@@ -2057,6 +2059,10 @@ ext4_ext_in_cache(struct inode *inode, ext4_lblk_t block,
+ 		ret = 1;
+ 	}
+ errout:
++	if (!ret)
++		sbi->extent_cache_misses++;
++	else
++		sbi->extent_cache_hits++;
+ 	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
+ 	return ret;
+ }
+@@ -3900,4 +3906,3 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+ 
+ 	return error;
+ }
+-
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index fc827bb..20cc98f 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2439,6 +2439,18 @@ static ssize_t lifetime_write_kbytes_show(struct ext4_attr *a,
+ 			  EXT4_SB(sb)->s_sectors_written_start) >> 1)));
+ }
+ 
++static ssize_t extent_cache_hits_show(struct ext4_attr *a,
++				      struct ext4_sb_info *sbi, char *buf)
++{
++	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_hits);
++}
++
++static ssize_t extent_cache_misses_show(struct ext4_attr *a,
++					struct ext4_sb_info *sbi, char *buf)
++{
++	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_misses);
++}
++
+ static ssize_t inode_readahead_blks_store(struct ext4_attr *a,
+ 					  struct ext4_sb_info *sbi,
+ 					  const char *buf, size_t count)
+@@ -2496,6 +2508,8 @@ static struct ext4_attr ext4_attr_##name = __ATTR(name, mode, show, store)
+ EXT4_RO_ATTR(delayed_allocation_blocks);
+ EXT4_RO_ATTR(session_write_kbytes);
+ EXT4_RO_ATTR(lifetime_write_kbytes);
++EXT4_RO_ATTR(extent_cache_hits);
++EXT4_RO_ATTR(extent_cache_misses);
+ EXT4_ATTR_OFFSET(inode_readahead_blks, 0644, sbi_ui_show,
+ 		 inode_readahead_blks_store, s_inode_readahead_blks);
+ EXT4_RW_ATTR_SBI_UI(inode_goal, s_inode_goal);
+@@ -2511,6 +2525,8 @@ static struct attribute *ext4_attrs[] = {
+ 	ATTR_LIST(delayed_allocation_blocks),
+ 	ATTR_LIST(session_write_kbytes),
+ 	ATTR_LIST(lifetime_write_kbytes),
++	ATTR_LIST(extent_cache_hits),
++	ATTR_LIST(extent_cache_misses),
+ 	ATTR_LIST(inode_readahead_blks),
+ 	ATTR_LIST(inode_goal),
+ 	ATTR_LIST(mb_stats),
 -- 
-1.7.4.1
+1.7.3.1
 
