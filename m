@@ -1,269 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab1EQUub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 16:50:31 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:53616 "EHLO e8.ny.us.ibm.com"
+	id S932302Ab1EQUwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 16:52:06 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33170 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756546Ab1EQUu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 16:50:29 -0400
-Subject: Re: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1305646444.10756.16.camel@localhost.localdomain>
-References: <1305574484.3456.30.camel@localhost.localdomain>
-	 <20110516204540.GD18148@redhat.com>
-	 <1305579414.3456.49.camel@localhost.localdomain>
-	 <20110516212401.GF18148@redhat.com>
-	 <1305606683.10756.3.camel@localhost.localdomain>
-	 <20110517055503.GA26989@redhat.com>
-	 <1305645734.10756.14.camel@localhost.localdomain>
-	 <20110517152840.GA2389@redhat.com>
-	 <1305646444.10756.16.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 13:50:19 -0700
-Message-ID: <1305665419.10756.33.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S932248Ab1EQUwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 16:52:04 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v4 2/2] PM / Core: partial resume/suspend API for suspend_again users.
+Date: Tue, 17 May 2011 22:52:31 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+References: <20110512061928.GB2460@localhost.ucw.cz> <1305608346-23800-1-git-send-email-myungjoo.ham@samsung.com> <1305608346-23800-2-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <1305608346-23800-2-git-send-email-myungjoo.ham@samsung.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105172252.32135.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resubmit the patch with most update. This patch passed some
-live-migration test against RHEL6.2. I will run more stress test w/i
-live migration.
+On Tuesday, May 17, 2011, MyungJoo Ham wrote:
+> The API, suspend_again, is supposed to be used by platforms when the
+> platforms want to execute some code while suspended (wakeup by an alarm
+> or periodic ticks, run code, suspend again). Because suspend_again is
+> not called when every device is resumed, but is called right after
+> suspend_enter() is called, the suspend_again callback should include
+> device resume and suspend features.
+> 
+> This patch provides two APIs: dpm_partial_resume and
+> dpm_partial_suspend. They are supposed to be used in suspend_again to
+> actiavte required devices.
+> 
+> A usage example is:
+> 
+> /* Devices required to run "monitor_something()". */
+> static device *devs[] = {
+> 	&console_serial,
+> 	&device_x,
+> 	&device_y,
+> 	...
+> };
+> 
+> bool example_suspend_again(void)
+> {
+> 	int error, monitor_result;
+> 
+> 	if (!wakeup_reason_is_polling())
+> 		return false;
+> 
+> 	dpm_partial_resume(PMSG_RESUME, devs, ARRAY_SIZE(devs));
 
-Signed-off-by: Shirley Ma <xma@us.ibm.com>
----
+I'm not sure you need the first argument here.  Also, if the array is
+NULL terminated, you won't need the third one.
 
- drivers/vhost/net.c   |   37 +++++++++++++++++++++++++++++++-
- drivers/vhost/vhost.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++-
- drivers/vhost/vhost.h |   12 ++++++++++
- 3 files changed, 101 insertions(+), 3 deletions(-)
+> 	resume_console();
+> 
+> 	monitor_result = monitor_something();
+> 
+> 	suspend_console();
+> 	error = dpm_partial_suspend(PMSG_SUSPEND, devs, ARRAY_SIZE(devs));
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 2f7c76a..6bd6e28 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -32,6 +32,9 @@
-  * Using this limit prevents one virtqueue from starving others. */
- #define VHOST_NET_WEIGHT 0x80000
- 
-+/* MAX number of TX used buffers for outstanding zerocopy */
-+#define VHOST_MAX_ZEROCOPY_PEND 128 
-+
- enum {
- 	VHOST_NET_VQ_RX = 0,
- 	VHOST_NET_VQ_TX = 1,
-@@ -129,6 +132,7 @@ static void handle_tx(struct vhost_net *net)
- 	int err, wmem;
- 	size_t hdr_size;
- 	struct socket *sock;
-+	struct skb_ubuf_info pend;
- 
- 	/* TODO: check that we are running from vhost_worker? */
- 	sock = rcu_dereference_check(vq->private_data, 1);
-@@ -151,6 +155,10 @@ static void handle_tx(struct vhost_net *net)
- 	hdr_size = vq->vhost_hlen;
- 
- 	for (;;) {
-+		/* Release DMAs done buffers first */
-+		if (atomic_read(&vq->refcnt) > VHOST_MAX_ZEROCOPY_PEND)
-+			vhost_zerocopy_signal_used(vq, false);
-+
- 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
- 					 ARRAY_SIZE(vq->iov),
- 					 &out, &in,
-@@ -166,6 +174,13 @@ static void handle_tx(struct vhost_net *net)
- 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
- 				break;
- 			}
-+			/* If more outstanding DMAs, queue the work */
-+			if (sock_flag(sock->sk, SOCK_ZEROCOPY) &&
-+			    (atomic_read(&vq->refcnt) > VHOST_MAX_ZEROCOPY_PEND)) {
-+				tx_poll_start(net, sock);
-+				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
-+				break;
-+			}
- 			if (unlikely(vhost_enable_notify(vq))) {
- 				vhost_disable_notify(vq);
- 				continue;
-@@ -188,17 +203,35 @@ static void handle_tx(struct vhost_net *net)
- 			       iov_length(vq->hdr, s), hdr_size);
- 			break;
- 		}
-+		/* use msg_control to pass vhost zerocopy ubuf info to skb */
-+		if (sock_flag(sock->sk, SOCK_ZEROCOPY)) {
-+			vq->heads[vq->upend_idx].id = head;
-+			if (len <= 128)
-+				vq->heads[vq->upend_idx].len = VHOST_DMA_DONE_LEN;
-+			else {
-+				vq->heads[vq->upend_idx].len = len;
-+				pend.callback = vhost_zerocopy_callback;
-+				pend.arg = vq;
-+				pend.desc = vq->upend_idx;
-+				msg.msg_control = &pend;
-+				msg.msg_controllen = sizeof(pend);
-+			}
-+			atomic_inc(&vq->refcnt);
-+			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
-+		}
- 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
- 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
- 		if (unlikely(err < 0)) {
--			vhost_discard_vq_desc(vq, 1);
-+			if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
-+				vhost_discard_vq_desc(vq, 1);
- 			tx_poll_start(net, sock);
- 			break;
- 		}
- 		if (err != len)
- 			pr_debug("Truncated TX packet: "
- 				 " len %d != %zd\n", err, len);
--		vhost_add_used_and_signal(&net->dev, vq, head, 0);
-+		if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
-+			vhost_add_used_and_signal(&net->dev, vq, head, 0);
- 		total_len += len;
- 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
- 			vhost_poll_queue(&vq->poll);
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 2ab2912..ce799d6 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -174,6 +174,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
- 	vq->call_ctx = NULL;
- 	vq->call = NULL;
- 	vq->log_ctx = NULL;
-+	vq->upend_idx = 0;
-+	vq->done_idx = 0;
-+	atomic_set(&vq->refcnt, 0);
- }
- 
- static int vhost_worker(void *data)
-@@ -230,7 +233,7 @@ static long vhost_dev_alloc_iovecs(struct vhost_dev *dev)
- 					       UIO_MAXIOV, GFP_KERNEL);
- 		dev->vqs[i].log = kmalloc(sizeof *dev->vqs[i].log * UIO_MAXIOV,
- 					  GFP_KERNEL);
--		dev->vqs[i].heads = kmalloc(sizeof *dev->vqs[i].heads *
-+		dev->vqs[i].heads = kzalloc(sizeof *dev->vqs[i].heads *
- 					    UIO_MAXIOV, GFP_KERNEL);
- 
- 		if (!dev->vqs[i].indirect || !dev->vqs[i].log ||
-@@ -385,6 +388,38 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
- 	return 0;
- }
- 
-+/* 
-+	comments
-+*/
-+void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq, bool shutdown)
-+{
-+	int i, j = 0;
-+
-+	i = vq->done_idx;
-+	while (i != vq->upend_idx) {
-+		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN) || shutdown) {
-+			/* reset len = 0 */
-+			vq->heads[i].len = 0;
-+			i = (i + 1) % UIO_MAXIOV;
-+			++j;
-+		} else
-+			break;
-+	}
-+	if (j) {
-+		/* comments */
-+		if (i > vq->done_idx)
-+			vhost_add_used_n(vq, &vq->heads[vq->done_idx], j);
-+		else {
-+			vhost_add_used_n(vq, &vq->heads[vq->done_idx],
-+					 UIO_MAXIOV - vq->done_idx);
-+			vhost_add_used_n(vq, vq->heads, i);
-+		}
-+		vq->done_idx = i;
-+		vhost_signal(vq->dev, vq);
-+		atomic_sub(j, &vq->refcnt);
-+	}
-+}
-+
- /* Caller should have device mutex */
- void vhost_dev_cleanup(struct vhost_dev *dev)
- {
-@@ -395,6 +430,11 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
- 			vhost_poll_stop(&dev->vqs[i].poll);
- 			vhost_poll_flush(&dev->vqs[i].poll);
- 		}
-+		/* wait for all lower device DMAs done, then notify guest */
-+		if (atomic_read(&dev->vqs[i].refcnt)) {
-+			msleep(1000);
-+			vhost_zerocopy_signal_used(&dev->vqs[i], true);
-+		}
- 		if (dev->vqs[i].error_ctx)
- 			eventfd_ctx_put(dev->vqs[i].error_ctx);
- 		if (dev->vqs[i].error)
-@@ -603,6 +643,10 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
- 
- 	mutex_lock(&vq->mutex);
- 
-+	/* force all lower device DMAs done */
-+	if (atomic_read(&vq->refcnt)) 
-+		vhost_zerocopy_signal_used(vq, true);
-+
- 	switch (ioctl) {
- 	case VHOST_SET_VRING_NUM:
- 		/* Resizing ring with an active backend?
-@@ -1416,3 +1460,12 @@ void vhost_disable_notify(struct vhost_virtqueue *vq)
- 		vq_err(vq, "Failed to enable notification at %p: %d\n",
- 		       &vq->used->flags, r);
- }
-+
-+void vhost_zerocopy_callback(struct sk_buff *skb)
-+{
-+	int idx = skb_shinfo(skb)->ubuf.desc;
-+	struct vhost_virtqueue *vq = skb_shinfo(skb)->ubuf.arg;
-+
-+	/* set len = 1 to mark this desc buffers done DMA */
-+	vq->heads[idx].len = VHOST_DMA_DONE_LEN;
-+}
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index b3363ae..8e3ecc7 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -13,6 +13,10 @@
- #include <linux/virtio_ring.h>
- #include <asm/atomic.h>
- 
-+/* This is for zerocopy, used buffer len is set to 1 when lower device DMA
-+ * done */
-+#define VHOST_DMA_DONE_LEN	1
-+
- struct vhost_device;
- 
- struct vhost_work;
-@@ -108,6 +112,12 @@ struct vhost_virtqueue {
- 	/* Log write descriptors */
- 	void __user *log_base;
- 	struct vhost_log *log;
-+	/* vhost zerocopy support */
-+	atomic_t refcnt; /* num of outstanding zerocopy DMAs */
-+	/* copy of avail idx to monitor outstanding DMA zerocopy buffers */
-+	int upend_idx;
-+	/* copy of used idx to monintor DMA done zerocopy buffers */
-+	int done_idx;
- };
- 
- struct vhost_dev {
-@@ -154,6 +164,8 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
- 
- int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
- 		    unsigned int log_num, u64 len);
-+void vhost_zerocopy_callback(struct sk_buff *skb);
-+void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq, bool shutdown);
- 
- #define vq_err(vq, fmt, ...) do {                                  \
- 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+Same here.
 
+> 	if (error || monitor_result == ERROR)
+> 		return false;
+> 
+> 	return true;
+> }
+
+That said, I don't like this patch.  The reason is that you call
+suspend_enter() is a loop and it calls the _noirq() callbacks for
+_all_ devices and now you're going to only call .resume() and
+.suspend() for several selected devices.  This is not too consistent.
+
+I wonder if those devices needed for .suspend_again() to work on
+your platform could be resumed and suspended by their drivers'
+_noirq() callbacks?
+
+Rafael
+
+
+> Tested at Exynos4-NURI.
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> --
+> No changes from v3.
+> ---
+>  drivers/base/power/main.c |  154 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pm.h        |    4 +
+>  2 files changed, 158 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> index 052dc53..71dc693 100644
+> --- a/drivers/base/power/main.c
+> +++ b/drivers/base/power/main.c
+> @@ -1082,3 +1082,157 @@ int device_pm_wait_for_dev(struct device *subordinate, struct device *dev)
+>  	return async_error;
+>  }
+>  EXPORT_SYMBOL_GPL(device_pm_wait_for_dev);
+> +
+> +/**
+> + * __dpm_partial_resume - Execute "resume" callbacks for the listed devices.
+> + * @state: PM transition being carried out.
+> + * @devs: Array of pointers for the devices being resumed
+> + * @size: The size of devs array.
+> + */
+> +static void __dpm_partial_resume(pm_message_t state, struct device **devs,
+> +				 int size)
+> +{
+> +	int i;
+> +	struct device *dev;
+> +
+> +	for (i = 0; i < size; i++) {
+> +		int error;
+> +
+> +		dev = devs[i];
+> +		get_device(dev);
+> +
+> +		error = device_resume(dev, state, false);
+> +		if (error)
+> +			pm_dev_err(dev, state, "", error);
+> +
+> +		put_device(dev);
+> +	}
+> +}
+> +
+> +/**
+> + * __dpm_partial_complete - Complete a PM transition for the listed devices.
+> + * @state: PM transition being carried out.
+> + * @devs: Array of pointers for the devices being resumed
+> + * @size: The size of devs array.
+> + */
+> +static void __dpm_partial_complete(pm_message_t state, struct device **devs,
+> +				   int size)
+> +{
+> +	int i;
+> +	struct device *dev;
+> +
+> +	for (i = 0; i < size; i++) {
+> +		dev = devs[i];
+> +
+> +		get_device(dev);
+> +		dev->power.in_suspend = false;
+> +
+> +		device_complete(dev, state);
+> +
+> +		put_device(dev);
+> +	}
+> +}
+> +
+> +/**
+> + * dpm_partial_resume - Execute "resume" callbacks and complete system
+> + *			transaction for the chosen devices only.
+> + * @state: PM transition being carried out.
+> + * @devs: Array of pointers for the devices being resumed
+> + * @size: The size of devs array.
+> + *
+> + * Execute "resume" callbacks for the listed devices and complete the PM
+> + * transition of them.
+> + *
+> + * Because the only a part of devices will be resumed, asynchronous resume
+> + * is dropped.
+> + */
+> +void dpm_partial_resume(pm_message_t state, struct device **devs, int size)
+> +{
+> +	/* Partial dpm_resume */
+> +	__dpm_partial_resume(state, devs, size);
+> +
+> +	/* Partial dpm_complete */
+> +	__dpm_partial_complete(state, devs, size);
+> +}
+> +EXPORT_SYMBOL_GPL(dpm_partial_resume);
+> +
+> +/**
+> + * dpm_partial_suspend - Prepare the given devices for PM transition and
+> + *			suspend them.
+> + * @state: PM transition being carried out.
+> + * @devs: Array of pointers for the devices being suspended
+> + * @size: The size of devs array.
+> + *
+> + * Prepare the given devices for system PM transition and execute "suspend"
+> + * callbacks for them.
+> + *
+> + * The devs array is iterated in the reversed order to use the same devs
+> + * array with dpm_partial_resume().
+> + */
+> +int dpm_partial_suspend(pm_message_t state, struct device **devs, int size)
+> +{
+> +	int error = 0, i;
+> +	struct device *dev;
+> +
+> +	/* Partial dpm_prepare */
+> +	for (i = size - 1; i >= 0; i--) {
+> +		dev = devs[i];
+> +
+> +		get_device(dev);
+> +
+> +		pm_runtime_get_noresume(dev);
+> +		if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
+> +			pm_wakeup_event(dev, 0);
+> +
+> +		pm_runtime_put_sync(dev);
+> +		error = pm_wakeup_pending() ?
+> +				-EBUSY : device_prepare(dev, state);
+> +
+> +		if (error) {
+> +			if (error == -EAGAIN) {
+> +				put_device(dev);
+> +				error = 0;
+> +				i++; /* Try Again */
+> +				continue;
+> +			}
+> +			printk(KERN_INFO "PM: Device %s not prepared "
+> +				"for power transition: code %d\n",
+> +				dev_name(dev), error);
+> +			put_device(dev);
+> +			break;
+> +		}
+> +		dev->power.in_suspend = true;
+> +		put_device(dev);
+> +	}
+> +
+> +	if (error)
+> +		goto err_prepare;
+> +
+> +	/* Partial dpm_suspend */
+> +	for (i = size - 1; i >= 0; i--) {
+> +		dev = devs[i];
+> +
+> +		get_device(dev);
+> +
+> +		/* Synchronous suspend. The list shouldn't be long */
+> +		error = __device_suspend(dev, pm_transition, false);
+> +
+> +		if (error) {
+> +			pm_dev_err(dev, state, "", error);
+> +			put_device(dev);
+> +			break;
+> +		}
+> +		put_device(dev);
+> +	}
+> +
+> +	if (!error)
+> +		return 0;
+> +
+> +	__dpm_partial_resume(PMSG_RESUME, devs + i + 1, size - i - 1);
+> +	i = -1;
+> +err_prepare:
+> +	__dpm_partial_complete(PMSG_RESUME, devs + i + 1, size - i - 1);
+> +
+> +	return error;
+> +}
+> +EXPORT_SYMBOL_GPL(dpm_partial_suspend);
+> diff --git a/include/linux/pm.h b/include/linux/pm.h
+> index 512e091..b407762 100644
+> --- a/include/linux/pm.h
+> +++ b/include/linux/pm.h
+> @@ -540,10 +540,14 @@ static inline int sysdev_resume(void) { return 0; }
+>  extern void device_pm_lock(void);
+>  extern void dpm_resume_noirq(pm_message_t state);
+>  extern void dpm_resume_end(pm_message_t state);
+> +extern void dpm_partial_resume(pm_message_t state, struct device **devs,
+> +			       int size);
+>  
+>  extern void device_pm_unlock(void);
+>  extern int dpm_suspend_noirq(pm_message_t state);
+>  extern int dpm_suspend_start(pm_message_t state);
+> +extern int dpm_partial_suspend(pm_message_t state, struct device **devs,
+> +			       int size);
+>  
+>  extern void __suspend_report_result(const char *function, void *fn, int ret);
+>  
+> 
 
