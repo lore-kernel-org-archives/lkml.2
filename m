@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab1EQW2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 18:28:49 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:34305 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647Ab1EQW2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 18:28:48 -0400
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-From: Shirley Ma <mashirle@us.ibm.com>
-To: =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirqus@gmail.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
-References: <1305574128.3456.23.camel@localhost.localdomain>
-	 <1305574518.2885.25.camel@bwh-desktop>
-	 <1305574680.3456.33.camel@localhost.localdomain>
-	 <1305575253.2885.28.camel@bwh-desktop> <20110516211459.GE18148@redhat.com>
-	 <1305588738.3456.65.camel@localhost.localdomain>
-	 <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 15:28:38 -0700
-Message-ID: <1305671318.10756.49.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
+	id S1756826Ab1EQWmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 18:42:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7744 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756701Ab1EQWmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 18:42:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,227,1304319600"; 
+   d="scan'208";a="3050251"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "H Peter Anvin" <hpa@zytor.com>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Avi Kivity" <avi@redhat.com>,
+        "Arjan van de Ven" <arjan@infradead.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Andi Kleen" <andi@firstfloor.org>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH 0/9] Optimize string operations by enhanced REP MOVSB/STOSB
+Date: Tue, 17 May 2011 15:29:09 -0700
+Message-Id: <1305671358-14478-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 23:48 +0200, Michał Mirosław wrote:
-> 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
-> > Hello Michael,
-> >
-> > Looks like to use a new flag requires more time/work. I am thinking
-> > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
-> to
-> > avoid the new flag for now since mavctap uses real NICs as lower
-> device?
-> 
-> Is there any other restriction besides requiring driver to not recycle
-> the skb? Are there any drivers that recycle TX skbs? 
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Not more other restrictions, skb clone is OK. pskb_expand_head() looks
-OK to me from code review.
+Intel processors are adding enhancements to REP MOVSB/STOSB and the use of
+REP MOVSB/STOSB for optimal memcpy/memset or similar functions is recommended.
+Enhancement availability is indicated by CPUID.7.0.EBX[9] (Enhanced REP MOVSB/STOSB).
 
-Currently there is no drivers recycle TX skbs.
+Intel 64 and IA-32 SDM and performance optimization guide may include more model
+specific information and how the feature can be used. The documents will be
+published soon.
 
-Thanks
-Shirley
+Fenghua Yu (9):
+  x86, cpu: Enable enhanced REP MOVSB/STOSB feature
+  x86/kernel/cpu/intel.c: Initialize Enhanced REP MOVSB/STOSBenhanced
+  x86/kernel/alternative.c: Add comment for applying alternatives order
+  x86, alternative-asm.h: Add altinstruction_entry macro
+  x86/lib/clear_page_64.S: Support clear_page() with enhanced REP
+    MOVSB/STOSB
+  x86/lib/copy_user_64.S: Support copy_to_user/copy_from_user by
+    enhanced REP MOVSB/STOSB
+  x86/lib/memcpy_64.S: Optimize memcpy by enhanced REP MOVSB/STOSB
+  x86/lib/memmove_64.S: Optimize memmove by enhanced REP MOVSB/STOSB
+  x86/lib/memset_64.S: Optimize memset by enhanced REP MOVSB/STOSB
+
+ arch/x86/include/asm/alternative-asm.h |    9 ++++
+ arch/x86/include/asm/cpufeature.h      |    1 +
+ arch/x86/kernel/alternative.c          |    9 ++++
+ arch/x86/kernel/cpu/intel.c            |   19 +++++++--
+ arch/x86/lib/clear_page_64.S           |   33 ++++++++++++----
+ arch/x86/lib/copy_user_64.S            |   65 +++++++++++++++++++++++++++-----
+ arch/x86/lib/memcpy_64.S               |   45 ++++++++++++++++------
+ arch/x86/lib/memmove_64.S              |   29 ++++++++++++++-
+ arch/x86/lib/memset_64.S               |   54 ++++++++++++++++++++------
+ 9 files changed, 215 insertions(+), 49 deletions(-)
+
+-- 
+1.7.2
 
