@@ -1,188 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab1EQO3T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 10:29:19 -0400
-Received: from fall-pradero.atl.sa.earthlink.net ([207.69.195.104]:60488 "EHLO
-	fall-pradero.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755201Ab1EQO3R (ORCPT
+	id S1755189Ab1EQOZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 10:25:57 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49782 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab1EQOZ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 10:29:17 -0400
-thread-index: AcwUnkUpNkHvXiuiSDuMgWqb3yVd8w==
-Thread-Topic: I thought you would enjoy this page on villasitalia.com!
-From: <niceprofit@ymail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: I thought you would enjoy this page on villasitalia.com!
-Date: Tue, 17 May 2011 10:25:28 -0400
-Message-ID: <DF687ECE1B404B05A557C7A68EE8E887@g27.win.smewh.net>
+	Tue, 17 May 2011 10:25:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pc9fi5yEu2uzY9JbNlCc0g4tNWhbz3Joeo/nidtc3ToHgkhW5Wfq/jrXX9OQvOiQZc
+         KbLdSDr/ICnc1NxJUXcisLlEdeCV28/zImTmxjHMNhC8JuGAL3PcIALsUWn/emgsHj3Z
+         y5K9LvbpBw97O7ZX+KBC48RV0G6oEfY4nai4M=
 MIME-Version: 1.0
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft CDO for Windows 2000
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4657
+In-Reply-To: <1305555077.12285.63.camel@marge.simson.net>
+References: <BANLkTi=_gfo4bZjkoBsxspLxxWSPy=7J+Q@mail.gmail.com>
+	<1305441316.7460.40.camel@marge.simson.net>
+	<BANLkTino730kar=fEDJGCy8bCSVUe52aOw@mail.gmail.com>
+	<1305555077.12285.63.camel@marge.simson.net>
+Date: Tue, 17 May 2011 22:25:54 +0800
+Message-ID: <BANLkTi=0pe8U6TZsQcXssV3iK_5Y+jRWCA@mail.gmail.com>
+Subject: Re: [PATCH] sched: avoid overpull when pulling RT task
+From: Hillf Danton <dhillf@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"niceprofit@ymail.com" <niceprofit@ymail.com> has recommended that you visit this page:
-
-
-
-
-
-
-
-
-Hi Friend,
-
-Make Money With This Proven Method To Generate Cash Online...
-
-"Watch & Learn How A Successful Marketer Went To Earn $545.725 In Less Than 30 Days...
-
-Don't waste another minute, this is your one chance to realize that your 
-dream will come true. You just have to act NOW!
-
-Congratulation: Get your $700 Guaranted Commissions Now!!!
-
-It Doesn't Matter If You've Never Even Earned A Single Cent Online Before...
-If A Total Beginner Can Make $700 In His First Month Then Anyone Can Do This...
-
-Imagine waking up at 10 in the morning.. doing your short workout routine.. opening 
-your computer..and finding out you made up to $700 or more - while you were a sleep!
-
-I have to be honest with you.This is a Business proposal that you might get interested.
-Believe , this is totally different from what you have heard or tried already.
-
-We Start putting 28 Members in your team for MAY 11 to 18/2011 WEEKLY Commission Cycle.
-YOU ALREADY HAVE 8,898 Pre-Enrollee\'s and 24 PAID Member\'s today in your TEAM.
-AND IT IS STILL GROWING! Only 8 Spot\'s remaining before Commission Cycle Ends.
-
-IMPORTANT: ORDER NOW or Before MAY 18,2011 is the Cut-Off Date!To lock in your 
-Commission!Be sure to\"Order Now\"only $25 Lifetime Membership.To secure your 
-$700 Commission \"ORDER NOW\" Hurry Grab it Now!You Get-Paid on June 20,2011
-direct to your Paypal Account At the Time & Transfer Online To Your ATM Account ...
-
-Be Sure to Copy the link below & Paste into your browser
-and press enter: To Secure your $700 commission!
-
-This program is hands free, once you have it setup you never need to touch
-it again. Just wait for the $700 commissions to come every month and enjoy!
-
-After Your One Time Personal Payment Of $25 You will access your Commission in any ATM  ...
-
-https://www.plimus.com/jsp/redirect.jsp?contractId=2964584&referrer=dollarhere=%3E
-
-TYPE ===== Date & Time = New PAID Members ===== Country
-
-M MAY.15  @ 04:40  PM  = Arman Thopkins   =====  United States
-M MAY.15  @ 04:40  PM  ==  George Middles  =====  Germany
-M MAY.15  @ 11:19  PM  ===  Ronald Whitsel  =====  United States
-M MAY.15  @ 06:23  PM  ====  James Allen     =====  Canada
-M MAY.15  @ 12:39  AM  =====  Sheryl Mchaud   =====  United States
-M MAY.15  @ 08:26  AM  ======  Renee Jenkins   =====  Australia
-P MAY.15  @ 02:31  PM  =======  Elizabeth Rios  =====  Portugal
-M MAY.15  @ 02:37  PM  ========  Karen Schiller  =====  United Kingdom
-M MAY.14  @ 04:21  PM  =========  Mark Raines     =====  Denmark
-P MAY.14  @ 09:38  PM  ==========  David Grogan    =====  Sri Lanka
-P MAY.14  @ 10:45  PM  ===========  Josh Dalton     =====  United States
-M MAY.14  @ 10:19  AM  ============  Victor Chavar   =====  Italy
-P MAY.14  @ 08:32  PM  ============  Gaynell Bailey  =====  South Africa
-M MAY.13  @ 09:40  PM  ===========  Barb Thorn      =====  Netherlands
-P MAY.13  @ 10:21  AM  ==========  James Williams  =====  North Carolina
-P MAY.13  @ 11:08  PM  =========  David Baxter    =====  United States
-M MAY.12  @ 12:39  AM  ========  Carolyn Smith   =====  Singapore
-M MAY.12  @ 02:30  AM  =======  Andrew Scott    =====  New Zealand
-P MAY.12  @ 02:42  AM  ======  Matthew Evan    =====  Portugal
-M MAY.12  @ 08:18  AM  =====  Steven Hopkins  =====  United States
-P MAY.11  @ 2:38   AM  ====  Jenny Regan     =====  United States
-P MAY.11  @ 2:53   AM  ===  Andy McLarry    =====  United Kingdom
-P MAY.11  @ 2:56   AM  == Jeffrey Segail   =====  Germany
-M MAY.11  @ 4:19   AM  = Mayeth Thompson  =====  United States
-
-28= Paid Members join are Waiting each Coming Commissions....
-
-Therefore, you have a GUARANTEED $700 Commission 
-every month from now on!. Earn $25 Per Process!
-
-Each $25 x 28 = $700 Commission  will be yours...!
-
-Be Sure to Copy the link below & Paste into your browser
-and press enter: To Secure your $700 commission!
-
-Don't delay another second, Buy No Sales System and start 
-making the money that would put a huge smile on your face...
- 
-Click Below!! And Join Now  
-
-https://www.plimus.com/jsp/redirect.jsp?contractId=2964584&referrer=dollarhere=%3E
-
-Please do realize that if you don\'t ORDER NOW, ALL Commission that
-are currently is yours to take. As soon as I receive the confirmation
-of your ORDER, I will be in touch with you to help you get started.
-
-I personally recommend it and endorse it 100%, with all my reputation.
-
-(Hurry, Price May Increase Without Notice!)
-
-Here's To Your Success,
-
- 
-Daniel Owens (Authorised Marketer) 
-
-PPS. Remember, you shouldn't have to worry about losing your money. 
-If there is any problem whatsoever, I'll give you a FULL REFUND. 
-No questions asked, no problem too small.I want you to know that  
-I'm fully invested in helping you succeed. Any questions,any problems, 
-I'm here for you. I'm here to help you make money online. You've got 
-two full months to test everything out. Make sure you are doing all  
-you can to make the money that you so richly deserve.
- 
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Site privacy policy: This page was sent using the villasitalia.com send-to-a-friend link. Your email has not been added to any list and has not been recorded at our site.
+On Mon, May 16, 2011 at 10:11 PM, Mike Galbraith <efault@gmx.de> wrote:
+> On Mon, 2011-05-16 at 21:14 +0800, Hillf Danton wrote:
+>
+>> In the following patch, pulling is played in two rounds. In the first round,
+>> the highest priority task is determined with no pull operation. Pulling is
+>> carried out in the second round, and if the highest priority task is pulled,
+>> pulling could be stopped when overload detected, to relieve overpull.
+>>
+>> Please review again, thanks.
+>
+> Traversing runqueues twice to avoid some potential task bouncing during
+> overload situation seems like a really bad trade.  Not to mention that
+> between pass one and pass two, the world turns under your feet.
+>
+> You could do it in one pass by leaving the victim's runqueue locked
+> unless you find a better victim I suppose.  Dunno, guess it all depends
+> on how much benefit the is to pulling only highest, which I can't answer
+> (my gut says "none, only more pain to be had here").
+>
+Hi Mike
+
+Efforts are put on the puller's side, but bad result is reached:(
+
+Another patch is prepared, in which pusher is asked to do the hard works,
+say pushees and tasks are selected.
+
+Unlike puller who only concerns one runqueue that accepts the pulled tasks,
+pusher delivers tasks to more runqueues, so the overpull could get bigger.
+
+Please review again, thanks.
+
+Hillf
+---
+
+--- a/kernel/sched_rt.c	2011-04-27 11:48:50.000000000 +0800
++++ b/kernel/sched_rt.c	2011-05-17 22:18:20.000000000 +0800
+@@ -51,11 +51,6 @@ static inline struct rt_rq *rt_rq_of_se(
+
+ #ifdef CONFIG_SMP
+
+-static inline int rt_overloaded(struct rq *rq)
+-{
+-	return atomic_read(&rq->rd->rto_count);
+-}
+-
+ static inline void rt_set_overload(struct rq *rq)
+ {
+ 	if (!rq->online)
+@@ -1420,83 +1415,14 @@ static void push_rt_tasks(struct rq *rq)
+ 		;
+ }
+
+-static int pull_rt_task(struct rq *this_rq)
++static void pull_rt_task(struct rq *this_rq)
+ {
+-	int this_cpu = this_rq->cpu, ret = 0, cpu;
+-	struct task_struct *p;
+-	struct rq *src_rq;
+-
+-	if (likely(!rt_overloaded(this_rq)))
+-		return 0;
++	int this_cpu = this_rq->cpu, cpu;
+
+ 	for_each_cpu(cpu, this_rq->rd->rto_mask) {
+-		if (this_cpu == cpu)
+-			continue;
+-
+-		src_rq = cpu_rq(cpu);
+-
+-		/*
+-		 * Don't bother taking the src_rq->lock if the next highest
+-		 * task is known to be lower-priority than our current task.
+-		 * This may look racy, but if this value is about to go
+-		 * logically higher, the src_rq will push this task away.
+-		 * And if its going logically lower, we do not care
+-		 */
+-		if (src_rq->rt.highest_prio.next >=
+-		    this_rq->rt.highest_prio.curr)
+-			continue;
+-
+-		/*
+-		 * We can potentially drop this_rq's lock in
+-		 * double_lock_balance, and another CPU could
+-		 * alter this_rq
+-		 */
+-		double_lock_balance(this_rq, src_rq);
+-
+-		/*
+-		 * Are there still pullable RT tasks?
+-		 */
+-		if (src_rq->rt.rt_nr_running <= 1)
+-			goto skip;
+-
+-		p = pick_next_highest_task_rt(src_rq, this_cpu);
+-
+-		/*
+-		 * Do we have an RT task that preempts
+-		 * the to-be-scheduled task?
+-		 */
+-		if (p && (p->prio < this_rq->rt.highest_prio.curr)) {
+-			WARN_ON(p == src_rq->curr);
+-			WARN_ON(!p->se.on_rq);
+-
+-			/*
+-			 * There's a chance that p is higher in priority
+-			 * than what's currently running on its cpu.
+-			 * This is just that p is wakeing up and hasn't
+-			 * had a chance to schedule. We only pull
+-			 * p if it is lower in priority than the
+-			 * current task on the run queue
+-			 */
+-			if (p->prio < src_rq->curr->prio)
+-				goto skip;
+-
+-			ret = 1;
+-
+-			deactivate_task(src_rq, p, 0);
+-			set_task_cpu(p, this_cpu);
+-			activate_task(this_rq, p, 0);
+-			/*
+-			 * We continue with the search, just in
+-			 * case there's an even higher prio task
+-			 * in another runqueue. (low likelihood
+-			 * but possible)
+-			 */
+-		}
+-skip:
+-		double_unlock_balance(this_rq, src_rq);
++		if (cpu != this_cpu)
++			push_rt_tasks(cpu_rq(cpu));
+ 	}
+-
+-	return ret;
+ }
+
+ static void pre_schedule_rt(struct rq *rq, struct task_struct *prev)
