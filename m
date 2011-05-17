@@ -1,108 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab1EQQPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 12:15:16 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45900 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754053Ab1EQQPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 12:15:14 -0400
-Date: Tue, 17 May 2011 17:15:08 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: akpm@linux-foundation.org
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Colin Ian King <colin.king@canonical.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        akpm@linux-foundation.org, raghu.prabhu13@gmail.com, jack@suse.cz,
-        chris.mason@oracle.com, cl@linux.com, penberg@kernel.org,
-        riel@redhat.com, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: [PATCH] mm: vmscan: Correctly check if reclaimer should schedule
- during shrink_slab
-Message-ID: <20110517161508.GN5279@suse.de>
-References: <1305295404-12129-5-git-send-email-mgorman@suse.de>
- <4DCFAA80.7040109@jp.fujitsu.com>
- <1305519711.4806.7.camel@mulgrave.site>
- <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
- <20110516084558.GE5279@suse.de>
- <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
- <20110516102753.GF5279@suse.de>
- <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
- <20110517103840.GL5279@suse.de>
- <1305640239.2046.27.camel@lenovo>
+	id S1755806Ab1EQQW2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 12:22:28 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34465 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab1EQQW1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 12:22:27 -0400
+Date: Tue, 17 May 2011 12:22:24 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 01/10] signal: remove three noop tracehooks
+Message-ID: <20110517162224.GA13675@infradead.org>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org>
+ <1305569849-10448-2-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305640239.2046.27.camel@lenovo>
+In-Reply-To: <1305569849-10448-2-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has been reported on some laptops that kswapd is consuming large
-amounts of CPU and not being scheduled when SLUB is enabled during
-large amounts of file copying. It is expected that this is due to
-kswapd missing every cond_resched() point because;
+On Mon, May 16, 2011 at 08:17:20PM +0200, Tejun Heo wrote:
+> Remove the following three noop tracehooks in signals.c.
+> 
+> * tracehook_force_sigpending()
+> * tracehook_get_signal()
+> * tracehook_finish_jctl()
+> 
+> The code area is about to be updated and these hooks don't do anything
+> other than obfuscating the logic.
 
-shrink_page_list() calls cond_resched() if inactive pages were isolated
-        which in turn may not happen if all_unreclaimable is set in
-        shrink_zones(). If for whatver reason, all_unreclaimable is
-        set on all zones, we can miss calling cond_resched().
+Btw, I think we should kill that stupid <linux/tracehook.h> layer
+entirely.  It consists of a few relatively useful function which should
+just be renamed to ptrace_* and moved to ptrace.c, and a lot of entirely
+pointless wrappers which generally have only a single user, and often
+tons of arguments that aren't actually used.
 
-balance_pgdat() only calls cond_resched if the zones are not
-        balanced. For a high-order allocation that is balanced, it
-        checks order-0 again. During that window, order-0 might have
-        become unbalanced so it loops again for order-0 and returns
-        that it was reclaiming for order-0 to kswapd(). It can then
-        find that a caller has rewoken kswapd for a high-order and
-        re-enters balance_pgdat() without ever calling cond_resched().
-
-shrink_slab only calls cond_resched() if we are reclaiming slab
-	pages. If there are a large number of direct reclaimers, the
-	shrinker_rwsem can be contended and prevent kswapd calling
-	cond_resched().
-
-This patch modifies the shrink_slab() case. If the semaphore is
-contended, the caller will still check cond_resched(). After each
-successful call into a shrinker, the check for cond_resched() is
-still necessary in case one shrinker call is particularly slow.
-
-This patch replaces
-mm-vmscan-if-kswapd-has-been-running-too-long-allow-it-to-sleep.patch
-in -mm.
-
-[mgorman@suse.de: Preserve call to cond_resched after each call into shrinker]
-From: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/vmscan.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index af24d1e..0bed248 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -230,8 +230,11 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
- 	if (scanned == 0)
- 		scanned = SWAP_CLUSTER_MAX;
- 
--	if (!down_read_trylock(&shrinker_rwsem))
--		return 1;	/* Assume we'll be able to shrink next time */
-+	if (!down_read_trylock(&shrinker_rwsem)) {
-+		/* Assume we'll be able to shrink next time */
-+		ret = 1;
-+		goto out;
-+	}
- 
- 	list_for_each_entry(shrinker, &shrinker_list, list) {
- 		unsigned long long delta;
-@@ -282,6 +285,8 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
- 		shrinker->nr += total_scan;
- 	}
- 	up_read(&shrinker_rwsem);
-+out:
-+	cond_resched();
- 	return ret;
- }
- 
