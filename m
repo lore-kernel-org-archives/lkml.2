@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab1EQILX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 04:11:23 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:54797 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751255Ab1EQILR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 04:11:17 -0400
-Date: Tue, 17 May 2011 10:11:00 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch 0/6] mm: memcg naturalization
-Message-ID: <20110517081100.GZ16531@cmpxchg.org>
-References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
- <BANLkTikHhK8S-fMpe=KOYCF0kmXotHKCOQ@mail.gmail.com>
- <20110513072043.GE18610@cmpxchg.org>
- <BANLkTiky6=xwqb_ML1wg=8Gg=BO0nmeUog@mail.gmail.com>
+	id S1752885Ab1EQI0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 04:26:40 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13476 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab1EQI0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 04:26:37 -0400
+Date: Tue, 17 May 2011 10:19:20 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: =?ISO-8859-15?Q?Jonathan_Neusch=E4fer?= <j.neuschaefer@gmx.net>
+cc: linux-kernel@vger.kernel.org, Jiri Kosina <trivial@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH trivial] timers-howto: fix a typo ("unsgined")
+In-Reply-To: <1305573335-28361-1-git-send-email-j.neuschaefer@gmx.net>
+Message-ID: <alpine.LNX.2.00.1105171018270.15079@swampdragon.chaosbits.net>
+References: <1305573335-28361-1-git-send-email-j.neuschaefer@gmx.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTiky6=xwqb_ML1wg=8Gg=BO0nmeUog@mail.gmail.com>
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-179759578-1305620360=:15079"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 05:53:04PM -0700, Ying Han wrote:
-> On Fri, May 13, 2011 at 12:20 AM, Johannes Weiner <hannes@cmpxchg.org>wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-179759578-1305620360=:15079
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 16 May 2011, Jonathan Neuschäfer wrote:
+
+> Signed-off-by: Jonathan Neuschäfer <j.neuschaefer@gmx.net>
+> ---
+>  Documentation/timers/timers-howto.txt |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> > On Thu, May 12, 2011 at 11:53:37AM -0700, Ying Han wrote:
-> > > On Thu, May 12, 2011 at 7:53 AM, Johannes Weiner <hannes@cmpxchg.org>
-> > wrote:
-> > >
-> > > > Hi!
-> > > >
-> > > > Here is a patch series that is a result of the memcg discussions on
-> > > > LSF (memcg-aware global reclaim, global lru removal, struct
-> > > > page_cgroup reduction, soft limit implementation) and the recent
-> > > > feature discussions on linux-mm.
-> > > >
-> > > > The long-term idea is to have memcgs no longer bolted to the side of
-> > > > the mm code, but integrate it as much as possible such that there is a
-> > > > native understanding of containers, and that the traditional !memcg
-> > > > setup is just a singular group.  This series is an approach in that
-> > > > direction.
-> >
-> 
-> This sounds like a good long term plan. Now I would wonder should we take it
-> step by step by doing:
->
-> 1. improving the existing soft_limit reclaim from RB-tree based to link-list
-> based, also in a round_robin fashion.
-> We can keep the existing APIs but only changing the underlying
-> implementation of  mem_cgroup_soft_limit_reclaim()
-> 
-> 2. remove the global lru list after the first one being proved to be
-> efficient.
-> 
-> 3. then have better integration of memcg reclaim to the mm code.
+> diff --git a/Documentation/timers/timers-howto.txt b/Documentation/timers/timers-howto.txt
+> index c9ef29d..038f8c7 100644
+> --- a/Documentation/timers/timers-howto.txt
+> +++ b/Documentation/timers/timers-howto.txt
+> @@ -24,7 +24,7 @@ ATOMIC CONTEXT:
+>  
+>  	ndelay(unsigned long nsecs)
+>  	udelay(unsigned long usecs)
+> -	mdelay(unsgined long msecs)
+> +	mdelay(unsigned long msecs)
+>  
+>  	udelay is the generally preferred API; ndelay-level
+>  	precision may not actually exist on many non-PC devices.
 
-I chose to go the other because it did not seem more complex to me and
-fixed many things we had planned anyway.  Deeper integration, better
-soft limit implementation (including better pressure distribution,
-enforcement also from direct reclaim, not just kswapd), global lru
-removal etc.
+Looks good to me.
 
-That ground work was a bit unwieldy and I think quite some confusion
-ensued, but I am currently reorganizing, cleaning up, and documenting.
-I expect the next version to be much easier to understand.
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
-The three steps are still this:
 
-1. make traditional reclaim memcg-aware.
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-2. improve soft limit based on 1.
-
-3. remove global lru based on 1.
-
-But 1. already effectively disables the global LRU for memcg-enabled
-kernels, so 3. can be deferred until we are comfortable with 1.
-
-	Hannes
+--8323328-179759578-1305620360=:15079--
