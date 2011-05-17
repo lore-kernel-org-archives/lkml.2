@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab1EQIAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 04:00:52 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39477 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752525Ab1EQIAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 04:00:51 -0400
-Date: Tue, 17 May 2011 10:00:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Lutomirski <luto@mit.edu>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH v4 0/6] Micro-optimize vclock_gettime
-Message-ID: <20110517080029.GB22093@elte.hu>
-References: <cover.1305560561.git.luto@mit.edu>
- <20110516160943.GC25898@one.firstfloor.org>
- <alpine.LFD.2.02.1105161817120.3078@ionos>
- <20110516164939.GD25898@one.firstfloor.org>
- <BANLkTintkmnkN3kW06oa+TjT7W0Q1yQQGA@mail.gmail.com>
- <m2fwoeo0pf.fsf@firstfloor.org>
- <alpine.LFD.2.02.1105162345110.3078@ionos>
- <BANLkTinVnr1ZM2wOxuH-rHZGh+_SBWT-+g@mail.gmail.com>
- <alpine.LFD.2.02.1105170022430.3078@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1105170022430.3078@ionos>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753112Ab1EQIbi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 04:31:38 -0400
+Received: from mta-1.ms.rz.RWTH-Aachen.DE ([134.130.7.72]:50040 "EHLO
+	mta-1.ms.rz.rwth-aachen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752232Ab1EQIbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 04:31:36 -0400
+X-Greylist: delayed 1801 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 May 2011 04:31:36 EDT
+MIME-version: 1.0
+X-IronPort-AV: E=Sophos;i="4.65,224,1304287200"; d="sig'?scan'208";a="55000476"
+Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
+Content-type: multipart/signed; protocol="application/pgp-signature";
+ micalg=pgp-sha1; boundary=Apple-Mail-1-894577629
+From: Alexander Zimmermann <alexander.zimmermann@comsys.rwth-aachen.de>
+In-reply-to: <1305618020-72535-2-git-send-email-tsunanet@gmail.com>
+Date: Tue, 17 May 2011 10:01:31 +0200
+Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-transfer-encoding: 7bit
+Message-id: <E5F8880D-72DF-488B-9515-60453D3EC240@comsys.rwth-aachen.de>
+References: <1305618020-72535-1-git-send-email-tsunanet@gmail.com>
+ <1305618020-72535-2-git-send-email-tsunanet@gmail.com>
+To: Benoit Sigoure <tsunanet@gmail.com>
+X-Pgp-Agent: GPGMail 1.3.3
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--Apple-Mail-1-894577629
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+Hi Benoit,
 
-> > see if I can persuade Uli to take accept a glibc patch to stop calling it 
-> > in future static glibc versions.
+Am 17.05.2011 um 09:40 schrieb Benoit Sigoure:
+
+> Instead of hardcoding the initial RTO to 3s and requiring
+> the kernel to be recompiled to change it, expose it as a
+> sysctl that can be tuned at runtime.  Leave the default
+> value unchanged.
 > 
-> How wide spread is this in reality on 64bit systems ?
-> 
-> IOW, what's the damage if we take a trap and emulate it in the most painful 
-> way we can come up with ?
 
-Well, how does that differ from having the real syscall instruction there? How 
-are we going to filter real (old-)glibc calls from exploits?
+regardless of netdev will accept this patch or not, the
+upcoming initRTO is 1s. See
+http://tools.ietf.org/id/draft-paxson-tcpm-rfc2988bis-02.txt
 
-If it can be filtered in a meaningful way then we should just do that and 
-perhaps offer a (default enabled) .config COMPAT_VDSO_EMU=y switch to turn the 
-emulation off.
+The draft is IESG approved and will become an RFC soon.
 
-That way we keep the ABI and also have a way out for users who *really* need 
-this to work in a performant way.
+Alex
 
-Thanks,
+//
+// Dipl.-Inform. Alexander Zimmermann
+// Department of Computer Science, Informatik 4
+// RWTH Aachen University
+// Ahornstr. 55, 52056 Aachen, Germany
+// phone: (49-241) 80-21422, fax: (49-241) 80-22222
+// email: zimmermann@cs.rwth-aachen.de
+// web: http://www.umic-mesh.net
+//
 
-	Ingo
+
+--Apple-Mail-1-894577629
+content-type: application/pgp-signature; x-mac-type=70674453;
+	name=PGP.sig
+content-description: Signierter Teil der Nachricht
+content-disposition: inline; filename=PGP.sig
+content-transfer-encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.17 (Darwin)
+Comment: GPGTools - http://gpgtools.org
+
+iEYEARECAAYFAk3SK1wACgkQdyiq39b9uS73UACfQn3YrE8XnWhfHD2+/K1q3lsJ
+sfYAoISLXJEz5i0xMXGVAd+TMz8Hn6eT
+=pW+T
+-----END PGP SIGNATURE-----
+
+--Apple-Mail-1-894577629--
