@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab1EQN4I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 09:56:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6610 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786Ab1EQN4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 09:56:06 -0400
-Message-ID: <4DD27E62.50806@redhat.com>
-Date: Tue, 17 May 2011 09:55:46 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1754965Ab1EQOAl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 10:00:41 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:53419 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754730Ab1EQOAk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 10:00:40 -0400
+Message-ID: <4DD27F7D.2070305@ti.com>
+Date: Tue, 17 May 2011 19:30:29 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Ying Han <yinghan@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch 4/6] memcg: reclaim statistics
-References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org> <1305212038-15445-5-git-send-email-hannes@cmpxchg.org> <BANLkTi=yCyAsOc_uTQLp1kWp5w0i9gomxg@mail.gmail.com> <20110516231028.GV16531@cmpxchg.org> <BANLkTimLNZfc-jcA3yBG5D3k2u=0_JnrhQ@mail.gmail.com> <20110517074230.GY16531@cmpxchg.org>
-In-Reply-To: <20110517074230.GY16531@cmpxchg.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Colin Cross <ccross@android.com>
+CC: linux-arm-kernel@lists-infradead.org, Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robherring2@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: smp_twd: Reconfigure clockevents after cpufreq change
+References: <1305588114-23728-1-git-send-email-ccross@android.com>
+In-Reply-To: <1305588114-23728-1-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2011 03:42 AM, Johannes Weiner wrote:
+Colin,
 
-> It does hierarchical soft limit reclaim once triggered, but I meant
-> that soft limits themselves have no hierarchical meaning.  Say you
-> have the following hierarchy:
+On 5/17/2011 4:51 AM, Colin Cross wrote:
+> The localtimer's clock changes with the cpu clock.  After a
+> cpufreq transition, update the clockevent's frequency and
+> reprogram the next clock event.
 >
->                  root_mem_cgroup
+> Adds a clock called "smp_twd" that is used to determine the
+> twd frequency, which can also be used at init time to
+> avoid calibrating the twd frequency.
 >
->               aaa               bbb
+> Signed-off-by: Colin Cross<ccross@android.com>
+> Cc: Thomas Gleixner<tglx@linutronix.de>
+> Cc: Russell King<linux@arm.linux.org.uk>
+> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+> Cc: Rob Herring<robherring2@gmail.com>
+> ---
+>   arch/arm/kernel/smp_twd.c |   69 +++++++++++++++++++++++++++++++++++++++++++--
+>   1 files changed, 66 insertions(+), 3 deletions(-)
 >
->             a1  a2             b1  b2
+> This patch depends on Thomas Gleixner's patch to add clockevents_reconfigure
+> See: https://lkml.org/lkml/2011/5/13/122
 >
->          a1-1
+> This patch adds a clock that can be used to skip calibration as well
+> as update the frequency.  A later patch (or a later version of this patch)
+> will drop twd_calibrate_rate once all platforms provide the necessary
+> smp_twd clock.
 >
-> Consider aaa and a1 had a soft limit.  If global memory arose, aaa and
-> all its children would be pushed back with the current scheme, the one
-> you are proposing, and the one I am proposing.
->
-> But now consider aaa hitting its hard limit.  Regular target reclaim
-> will be triggered, and a1, a2, and a1-1 will be scanned equally from
-> hierarchical reclaim.  That a1 is in excess of its soft limit is not
-> considered at all.
->
-> With what I am proposing, a1 and a1-1 would be pushed back more
-> aggressively than a2, because a1 is in excess of its soft limit and
-> a1-1 is contributing to that.
 
-Ying, I think Johannes has a good point.  I do not see
-a way to enforce the limits properly with the scheme we
-came up with at LSF, in the hierarchical scenario above.
+Since the "smp_twd" clock node will not have a clk_set_rate()
+associated with it, will the clk_get_rate() gives you real
+rate. May be we can associate this node as a child of
+CPU clock node and use the fixed divider based on peripheral
+ratio. Is that the idea here to realize it ?
 
-There may be a way, but until we think of it, I suspect
-it will be better to go with Johannes's scheme for now.
+Regards,
+Santosh
 
--- 
-All rights reversed
