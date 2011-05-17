@@ -1,111 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab1EQImf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 04:42:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35735 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752303Ab1EQImc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 04:42:32 -0400
-Date: Tue, 17 May 2011 09:42:27 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/4] mm: slub: Do not take expensive steps for SLUBs
- speculative high-order allocations
-Message-ID: <20110517084227.GI5279@suse.de>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
- <1305295404-12129-4-git-send-email-mgorman@suse.de>
- <alpine.DEB.2.00.1105161411440.4353@chino.kir.corp.google.com>
+	id S1752850Ab1EQIpN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 04:45:13 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:36606 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab1EQIpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 04:45:10 -0400
+X-AuditID: b753bd60-a50d2ba000006295-3f-4dd23593c5dc
+X-AuditID: b753bd60-a50d2ba000006295-3f-4dd23593c5dc
+Message-ID: <4DD23590.4020200@hitachi.com>
+Date: Tue, 17 May 2011 17:45:04 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105161411440.4353@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip ] [BUGFIX]tracing/kprobes: Fix kprobe-tracer to support
+ stack trace
+References: <20110512102255.2540.88867.stgit@ltc-x64-VirtualBox>
+In-Reply-To: <20110512102255.2540.88867.stgit@ltc-x64-VirtualBox>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 02:16:46PM -0700, David Rientjes wrote:
-> On Fri, 13 May 2011, Mel Gorman wrote:
+(2011/05/12 19:22), Masami Hiramatsu wrote:
+> Fix to support kernel stack trace correctly on kprobe-tracer.
+> Since the execution path of kprobe-based dynamic events is different
+> from other tracepoint-based events, normal ftrace_trace_stack() doesn't
+> work correctly. To fix that, this introduces ftrace_trace_stack_regs()
+> which traces stack via pt_regs instead of current stack register.
+
+Hmm, any comments?
+
 > 
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index 9f8a97b..057f1e2 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -1972,6 +1972,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
-> >  {
-> >  	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
-> >  	const gfp_t wait = gfp_mask & __GFP_WAIT;
-> > +	const gfp_t can_wake_kswapd = !(gfp_mask & __GFP_NO_KSWAPD);
-> >  
-> >  	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
-> >  	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
-> > @@ -1984,7 +1985,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
-> >  	 */
-> >  	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
-> >  
-> > -	if (!wait) {
-> > +	if (!wait && can_wake_kswapd) {
-> >  		/*
-> >  		 * Not worth trying to allocate harder for
-> >  		 * __GFP_NOMEMALLOC even if it can't schedule.
-> > diff --git a/mm/slub.c b/mm/slub.c
-> > index 98c358d..c5797ab 100644
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -1170,7 +1170,8 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
-> >  	 * Let the initial higher-order allocation fail under memory pressure
-> >  	 * so we fall-back to the minimum order allocation.
-> >  	 */
-> > -	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_NOFAIL;
-> > +	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NO_KSWAPD) &
-> > +			~(__GFP_NOFAIL | __GFP_WAIT | __GFP_REPEAT);
-> >  
-> >  	page = alloc_slab_page(alloc_gfp, node, oo);
-> >  	if (unlikely(!page)) {
+> e.g.
 > 
-> It's unnecessary to clear __GFP_REPEAT, these !__GFP_NOFAIL allocations 
-> will immediately fail.
+>  # echo p schedule > /sys/kernel/debug/tracing/kprobe_events
+>  # echo 1 > /sys/kernel/debug/tracing/options/stacktrace
+>  # echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
+>  # head -n 20 /sys/kernel/debug/tracing/trace
+> # tracer: nop
+> #
+> #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+> #              | |       |          |         |
+>             sshd-1549  [001]   857.326335: p_schedule_0: (schedule+0x0/0x900)
+>             sshd-1549  [001]   857.326337: <stack trace>
+>  => schedule_hrtimeout_range
+>  => poll_schedule_timeout
+>  => do_select
+>  => core_sys_select
+>  => sys_select
+>  => system_call_fastpath
+>              tee-1751  [000]   857.326394: p_schedule_0: (schedule+0x0/0x900)
+>              tee-1751  [000]   857.326395: <stack trace>
+>  => do_group_exit
+>  => sys_exit_group
+>  => system_call_fastpath
+>           <idle>-0     [001]   857.326406: p_schedule_0: (schedule+0x0/0x900)
+>           <idle>-0     [001]   857.326407: <stack trace>
+>  => start_secondary
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  include/linux/ftrace_event.h |    4 ++++
+>  kernel/trace/trace.c         |   35 ++++++++++++++++++++++++++++++-----
+>  kernel/trace/trace.h         |    9 +++++++++
+>  kernel/trace/trace_kprobe.c  |    6 ++++--
+>  4 files changed, 47 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index b5a550a..bca2499 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -117,6 +117,10 @@ void trace_current_buffer_unlock_commit(struct ring_buffer *buffer,
+>  void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
+>  				       struct ring_buffer_event *event,
+>  					unsigned long flags, int pc);
+> +void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
+> +					    struct ring_buffer_event *event,
+> +					    unsigned long flags, int pc,
+> +					    struct pt_regs *regs);
+>  void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
+>  					 struct ring_buffer_event *event);
+>  
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index ee9c921..bf12209 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -1191,6 +1191,18 @@ void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
+>  }
+>  EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit);
+>  
+> +void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
+> +					    struct ring_buffer_event *event,
+> +					    unsigned long flags, int pc,
+> +					    struct pt_regs *regs)
+> +{
+> +	ring_buffer_unlock_commit(buffer, event);
+> +
+> +	ftrace_trace_stack_regs(buffer, flags, 0, pc, regs);
+> +	ftrace_trace_userstack(buffer, flags, pc);
+> +}
+> +EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit_regs);
+> +
+>  void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
+>  					 struct ring_buffer_event *event)
+>  {
+> @@ -1236,7 +1248,7 @@ ftrace(struct trace_array *tr, struct trace_array_cpu *data,
+>  #ifdef CONFIG_STACKTRACE
+>  static void __ftrace_trace_stack(struct ring_buffer *buffer,
+>  				 unsigned long flags,
+> -				 int skip, int pc)
+> +				 int skip, int pc, struct pt_regs *regs)
+>  {
+>  	struct ftrace_event_call *call = &event_kernel_stack;
+>  	struct ring_buffer_event *event;
+> @@ -1255,24 +1267,36 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
+>  	trace.skip		= skip;
+>  	trace.entries		= entry->caller;
+>  
+> -	save_stack_trace(&trace);
+> +	if (regs)
+> +		save_stack_trace_regs(&trace, regs);
+> +	else
+> +		save_stack_trace(&trace);
+>  	if (!filter_check_discard(call, entry, buffer, event))
+>  		ring_buffer_unlock_commit(buffer, event);
+>  }
+>  
+> +void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
+> +			     int skip, int pc, struct pt_regs *regs)
+> +{
+> +	if (!(trace_flags & TRACE_ITER_STACKTRACE))
+> +		return;
+> +
+> +	__ftrace_trace_stack(buffer, flags, skip, pc, regs);
+> +}
+> +
+>  void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
+>  			int skip, int pc)
+>  {
+>  	if (!(trace_flags & TRACE_ITER_STACKTRACE))
+>  		return;
+>  
+> -	__ftrace_trace_stack(buffer, flags, skip, pc);
+> +	__ftrace_trace_stack(buffer, flags, skip, pc, NULL);
+>  }
+>  
+>  void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
+>  		   int pc)
+>  {
+> -	__ftrace_trace_stack(tr->buffer, flags, skip, pc);
+> +	__ftrace_trace_stack(tr->buffer, flags, skip, pc, NULL);
+>  }
+>  
+>  /**
+> @@ -1288,7 +1312,8 @@ void trace_dump_stack(void)
+>  	local_save_flags(flags);
+>  
+>  	/* skipping 3 traces, seems to get us at the caller of this function */
+> -	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
+> +	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count(),
+> +			     NULL);
+>  }
+>  
+>  static DEFINE_PER_CPU(int, user_stack_count);
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 5e9dfc6..cbce5e4 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -389,6 +389,9 @@ void update_max_tr_single(struct trace_array *tr,
+>  void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
+>  			int skip, int pc);
+>  
+> +void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
+> +			     int skip, int pc, struct pt_regs *regs);
+> +
+>  void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
+>  			    int pc);
+>  
+> @@ -400,6 +403,12 @@ static inline void ftrace_trace_stack(struct ring_buffer *buffer,
+>  {
+>  }
+>  
+> +static inline void ftrace_trace_stack_regs(struct ring_buffer *buffer,
+> +					   unsigned long flags, int skip,
+> +					   int pc, struct pt_regs *regs)
+> +{
+> +}
+> +
+>  static inline void ftrace_trace_userstack(struct ring_buffer *buffer,
+>  					  unsigned long flags, int pc)
+>  {
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index f925c45..7053ef3 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -1397,7 +1397,8 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
+>  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+>  
+>  	if (!filter_current_check_discard(buffer, call, entry, event))
+> -		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
+> +		trace_nowake_buffer_unlock_commit_regs(buffer, event,
+> +						       irq_flags, pc, regs);
+>  }
+>  
+>  /* Kretprobe handler */
+> @@ -1429,7 +1430,8 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
+>  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+>  
+>  	if (!filter_current_check_discard(buffer, call, entry, event))
+> -		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
+> +		trace_nowake_buffer_unlock_commit_regs(buffer, event,
+> +						       irq_flags, pc, regs);
+>  }
+>  
+>  /* Event entry printers */
 > 
 
-We can enter enter direct compaction or direct reclaim
-at least once. If compaction is enabled and we enter
-reclaim/compaction, the presense of __GFP_REPEAT makes a difference
-in should_continue_reclaim().  With compaction disabled, the presense
-of the flag is relevant in should_alloc_retry() with it being possible
-to loop in the allocator instead of failing the SLUB allocation and
-dropping back.
-
-Maybe you meant !__GFP_WAIT instead of !__GFP_NOFAIL which makes
-more sense. In that case, we clear both flags because
-__GFP_REPEAT && !_GFP_WAIT is a senseless combination of flags.
-If for whatever reason the __GFP_WAIT was re-added, the presense of
-__GFP_REPEAT could cause problems in reclaim that would be hard to
-spot again.
-
-> alloc_gfp would probably benefit from having a comment about why 
-> __GFP_WAIT should be masked off here: that we don't want to do compaction 
-> or direct reclaim or retry the allocation more than once (so both 
-> __GFP_NORETRY and __GFP_REPEAT are no-ops).
-
-That would have been helpful all right. I should have caught that
-and explained it properly. In the event there is a new version of
-the patch, I'll add one. For the moment, I'm dropping this patch
-entirely. Christoph wants to maintain historic behaviour of SLUB to
-maximise the number of high-order pages it uses and at the end of the
-day, which option performs better depends entirely on the workload
-and machine configuration.
 
 -- 
-Mel Gorman
-SUSE Labs
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
