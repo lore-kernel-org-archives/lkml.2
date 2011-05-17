@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab1EQK7o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 06:59:44 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56852 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753474Ab1EQK7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 06:59:43 -0400
-Date: Tue, 17 May 2011 12:59:12 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Steve Munroe <sjmunroe@us.ibm.com>, Andi Kleen <andi@firstfloor.org>,
-        libc-alpha@sourceware.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@MIT.EDU>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 4/5] Add a sysconf syscall
-Message-ID: <20110517105912.GR22093@elte.hu>
-References: <1305329059-2017-1-git-send-email-andi@firstfloor.org>
- <1305329059-2017-5-git-send-email-andi@firstfloor.org>
- <20110514065752.GA8827@elte.hu>
- <20110514163424.GU6008@one.firstfloor.org>
- <4DD14814.8080305@mit.edu>
- <20110516160810.GB25898@one.firstfloor.org>
- <OFCC4C610A.F152D00D-ON86257892.005E11F4-86257892.005E22BA@us.ibm.com>
- <4DD15E9B.2090809@linux.intel.com>
+	id S1753763Ab1EQLCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 07:02:49 -0400
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:55403 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753432Ab1EQLCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 07:02:48 -0400
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD15E9B.2090809@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Tue, 17 May 2011 13:02:47 +0200
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: Benoit Sigoure <tsunanet@gmail.com>, <davem@davemloft.net>,
+        <kuznet@ms2.inr.ac.ru>, <pekkas@netcore.fi>, <jmorris@namei.org>,
+        <yoshfuji@linux-ipv6.org>, <kaber@trash.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <1305619677.2850.11.camel@edumazet-laptop>
+References: <1305618020-72535-1-git-send-email-tsunanet@gmail.com>
+ <1305618020-72535-2-git-send-email-tsunanet@gmail.com>
+ <1305619677.2850.11.camel@edumazet-laptop>
+Message-ID: <e6b52d895fca947b4cce2896d593619b@localhost>
+User-Agent: RoundCube Webmail/0.1-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Andi Kleen <ak@linux.intel.com> wrote:
+On Tue, 17 May 2011 10:07:57 +0200, Eric Dumazet wrote:
 
-> > Auxv is simpler yet.
-> >
-> 
-> Yes simple and doesn't work.
+> I wont discuss if introducing a new sysctl is welcomed, only on patch
+> issues. I believe some work in IETF is done to reduce the 3sec value to
+> 1sec anyway.
 
-And i've noticed one bug and three uncleanlinesses in your series.
+Why not? I though all new knobs in this area should be done on a per route
+metric so it can be controlled on a per path basis. RTO should be
+adjustable on a per path basis, because it depends on the path.
 
-See how destructive obstructionist comments that intentionally cut down on 
-essential detail (which you do to gain a discussion advantage) are to the 
-healthy flow of a discussion? Yet you are doing it all the time on lkml.
+Some months back [1] I posted a patch to enable/disable TCP quick ack
+mode, which has nothing to do with network paths, just with a local server
+policy. But David rejected the patch with the argument that I should use a
+per path knob (this is a little bit inapprehensible for me, but David has
+the last word).
 
-Why are you doing that, do you really enjoy inefficient discussions where you 
-regularly throw in cryptic, ambiguous half-references to disrupt contrary 
-opinion?
+Hagen
 
-Please try to be more constructive in discussions.
 
-Thanks,
-
-	Ingo
+[1] http://kerneltrap.org/mailarchive/linux-netdev/2010/8/23/6283640
