@@ -1,101 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab1EQIux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 04:50:53 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49024 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751790Ab1EQIuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 04:50:52 -0400
-Date: Tue, 17 May 2011 10:50:33 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Don Zickus <dzickus@redhat.com>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-Message-ID: <20110517085033.GF22093@elte.hu>
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
- <20110513124523.GM13984@redhat.com>
- <20110513130011.GA6474@elte.hu>
- <BANLkTi=Z_3MZVs2CQyk82NfvZj-KdSw5kw@mail.gmail.com>
- <20110513152033.GB3854@elte.hu>
- <20110513160029.GD31888@redhat.com>
- <20110516112934.GE19837@elte.hu>
- <20110516191951.GI31888@redhat.com>
+	id S1753148Ab1EQIqQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 04:46:16 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:42036 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab1EQIqO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 04:46:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:date:user-agent:cc:references:in-reply-to
+         :organization:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=lOUOx3bxY7y633kOJ/jLkUL/kVcLo0qAw+Km1kyyWkz2zsHeTglVx6zmTSfljkbphH
+         v2NxOIucTNq+e8OhvlN3+rqJQ55mbWh7M5mxJ2kBrWk3a1WkGGE9Pesr1zMTh3Xc9bHe
+         rTRPzbf1nucfnAssSppgAPAFOhYOEALDiY7pg=
+From: Florian Fainelli <florian@openwrt.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [PATCH 00/11] RFC: KBUS messaging subsystem
+Date: Tue, 17 May 2011 10:50:38 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-server; KDE/4.6.2; x86_64; ; )
+Cc: Tony Ibbs <tibs@tonyibbs.co.uk>, Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Linux-embedded" <linux-embedded@vger.kernel.org>,
+        Tibs at Kynesim <tibs@kynesim.co.uk>,
+        Richard Watts <rrw@kynesim.co.uk>
+References: <cover.1300450604.git.tibs@tonyibbs.co.uk> <20110322133640.5d5c88e4@bike.lwn.net>
+In-Reply-To: <20110322133640.5d5c88e4@bike.lwn.net>
+Organization: OpenWrt
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516191951.GI31888@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105171050.38903.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Don Zickus <dzickus@redhat.com> wrote:
+Sorry for this late answer.
 
-> On Mon, May 16, 2011 at 01:29:34PM +0200, Ingo Molnar wrote:
-> > > Interesting.  Question though, what do you mean by 'event filtering'.  Is 
-> > > that different then setting 'unknown_nmi_panic' panic on the commandline or 
-> > > procfs?
-> > > 
-> > > Or are you suggesting something like registering another callback on the 
-> > > die_chain that looks for DIE_NMIUNKNOWN as the event, swallows them and 
-> > > implements the policy?  That way only on HEST related platforms would 
-> > > register them while others would keep the default of 'Dazed and confused' 
-> > > messages?
-> > 
-> > The idea is that "event filters", which are an existing upstream feature and 
-> > which can be used in rather flexible ways:
-> > 
-> >   http://lkml.org/lkml/2011/4/27/660
-> > 
-> > Could be used to trigger non-standard policy action as well - such as to panic 
-> > the box.
-> > 
-> > This would replace various very limited /debugfs and /sys event filtering hacks 
-> > (and hardcoded policies) such as arch/x86/kernel/cpu/mcheck/mce-severity.c, and 
-> > it would allow nonstandard behavior like 'panic the box on unknown NMIs' as 
-> > well.
-> > 
-> > This could be set by the RAS daemon, and it could be propagated to the kernel 
-> > boot line as well, where event filter syntax would look like this:
-> > 
-> >   events=nmi::unknown"if (reason == 0) panic();"
+On Tuesday 22 March 2011 20:36:40 Jonathan Corbet wrote:
+> On Fri, 18 Mar 2011 17:21:09 +0000
 > 
-> Wow. ok.  I believe that is the most complicated kernel boot param I have
-> ever seen. :-)  Powerful, no doubt.
+> Tony Ibbs <tibs@tonyibbs.co.uk> wrote:
+> > KBUS is a lightweight, Linux kernel mediated messaging system,
+> > particularly intended for use in embedded environments.
+> 
+> I've spent a bit of time looking at this code...this isn't a detailed
+> review by any stretch, more like a few impressions.
+> 
+> - Why kbus over, say, a user-space daemon and unix-domain sockets?  I'm
+>   not sure I see the advantage that comes with putting this into kernel
+>   space.
 
-It would not have to be typed normally - the defaults would still be sane.
+I also fail to see why this would be required. In my opininon you are trading 
+the reliability over complexity by putting this in the kernel.
 
-> So this would sorta be a meta-notifier?  I guess you are saying platforms 
-> that implement something like HEST could setup an event like that to trigger 
-> the behaviour they want on a per-platform basis?
+Most implementations (if not all) involving system-wide message delivery for 
+other daemons are running in user-space. Having a daemon for message delivery 
+to other kbus clients/servers does not not seem less reliable to me. If you 
+had in mind that this daemon might be killed under OOM conditions, then maybe 
+your whole system has an issue, issue which could be circumvented by making 
+sure the messaging process gets respawned when possible (upstart like 
+mechanism or such).
 
-Yeah - or if they dislike the default they could tweak the policy action in a 
-rather flexible way.
+> 
+> - The interface is ... creative.  If you have to do this in kernel space,
+>   it would be nice to do away with the split write()/ioctl() API for
+>   reading or writing messages.  It seems like either a write(), OR an
+>   ioctl() with a message data pointer would suffice; that would cut the
+>   number of syscalls the applications need to make too.
+> 
+>   Even better might be to just use the socket API.
 
-> My only argument against it would be sorta of what Ying complains about is 
-> that you start to lose track of who is hooked into the NMI.  It is one thing 
-> to search for all the users in the die_notifier to track down who is 
-> swallowing NMIs.  But to look for event users, is going to be harder. Unless 
-> the events processing has a switch to turn on logging? :-)
+Indeed, I would also suggest having a look at what generic netlink already 
+provides like messages per application PID, multicasting and marshaling. If 
+you intend to keep a part of it in the kernel, you should have a look at this, 
+because from my experience with generic netlink, most of the hard job you are 
+re-doing here, has already been done in a generic manner.
 
-Yeah, all such types of filters should be printed during bootup, to make it 
-really clear what is happening.
-
-We also want all the current state visible readily under /sys/events or 
-/events.
-
-Thanks,
-
-	Ingo
+> 
+> - Does anything bound the size of a message fed into the kernel with
+>   write()?  I couldn't find it.  It seems like an application could
+>   consume arbitrary amounts of kernel memory.
+> 
+> - It would be good to use the kernel's dynamic debugging and tracing
+>   facilities rather than rolling your own.
+> 
+> - There's lots of kmalloc()/memset() pairs that could be kzalloc().
+> 
+> That's as far as I could get for now.
+> 
+> Thanks,
+> 
+> jon
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-embedded"
+> in the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
