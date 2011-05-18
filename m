@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab1ERKgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 06:36:45 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:50068 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756860Ab1ERKgo (ORCPT
+	id S1756910Ab1ERKgT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 06:36:19 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43477 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756882Ab1ERKgS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 06:36:44 -0400
-Date: Wed, 18 May 2011 12:35:43 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Vasiliy G Tolstov <v.tolstov@selfip.ru>
-Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Daniel Kiper <dkiper@net-space.pl>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "andi.kleen@intel.com" <andi.kleen@intel.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        "pasik@iki.fi" <pasik@iki.fi>,
-        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        "wdauchy@gmail.com" <wdauchy@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH V3] xen/balloon: Memory hotplug support for Xen balloon driver
-Message-ID: <20110518103543.GA5066@router-fw-old.local.net-space.pl>
-References: <20110517214421.GD30232@router-fw-old.local.net-space.pl> <1305701868.28175.1.camel@vase> <1305703309.7738.23.camel@dagon.hellion.org.uk> <1305703494.28175.2.camel@vase>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305703494.28175.2.camel@vase>
-User-Agent: Mutt/1.3.28i
+	Wed, 18 May 2011 06:36:18 -0400
+MIME-Version: 1.0
+Date: Wed, 18 May 2011 12:36:17 +0200
+Message-ID: <BANLkTikAzjmVoNK20RHRkhHkn3YgSra6dA@mail.gmail.com>
+Subject: Smartcard/SIM card subsystem, LDO regulator and signal modelling
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Bibek BASU <bibek.basu@stericsson.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Juergen Beisert <jbe@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 11:24:54AM +0400, Vasiliy G Tolstov wrote:
-> On Wed, 2011-05-18 at 08:21 +0100, Ian Campbell wrote:
-> > On Wed, 2011-05-18 at 07:57 +0100, Vasiliy G Tolstov wrote:
-> > > On Tue, 2011-05-17 at 23:44 +0200, Daniel Kiper wrote:
-> > > > +	  Memory could be hotplugged in following steps:
-> > > > +
-> > > > +	    1) dom0: xl mem-max <domU> <maxmem>
-> > > > +	       where <maxmem> is >= requested memory size,
-> > > > +
-> > > > +	    2) dom0: xl mem-set <domU> <memory>
-> > > > +	       where <memory> is requested memory size; alternatively memory
-> > > > +	       could be added by writing proper value to
-> > > > +	       /sys/devices/system/xen_memory/xen_memory0/target or
-> > > > +	       /sys/devices/system/xen_memory/xen_memory0/target_kb on dumU,
-> > > > +
-> > > > +	    3) domU: for i in /sys/devices/system/memory/memory*/state; do \
-> > > > +	               [ "`cat "$i"`" = offline ] && echo online > "$i"; done
-> >
-> > > Very good. Is that possible to eliminate step 3 ? And do it automatic if
-> > > domU runs with specific xen balloon param?
-> >
-> > When we faced the same question WRT VCPU hotplug we ended up using a
-> > udev rule. Presumably the same could be done here. In the VCPU case the
-> > rule is:
-> >
-> > ACTION=="add", SUBSYSTEM=="cpu", RUN+="/bin/sh -c '[ ! -e /sys$devpath/online ] || echo 1 > /sys$devpath/online'"
-> >
-> > Presumably the memory one will be broadly similar.
+Hi folks,
 
-Here is proper udev rule:
+I have this special regulator in the AB5500 which we will attempt to
+submit for mainline inclusion soon:
 
-SUBSYSTEM=="memory", ACTION=="add", RUN+="/bin/sh -c '[ -f /sys$devpath/state ] && echo online > /sys$devpath/state'"
+It's basically an LDO for powering a SIM card (which in turn is basically
+a smartcard), but apart from plain regulation also expose some other
+electrical properties of the interface to software:
 
-Konrad, could you add it to git comment and Kconfig help ???
+- Select pull-up resistance on some I/O lines
+- Select weak pull-down on some data lines
+- Select load capacitance limits on the data lines
+- Select whether to run in low impedance or transmission gate mode
 
-Daniel
+I think these will be mostly similar so what other SIM card controllers
+will need to have. All the stuff needs to have userspace interfaces
+since the stuff is usually controlled on behalf of another CPU
+running the modem (and also performing the actual traffic on
+the SIM data lines).
+
+My first naïve idea was that this could be some plain regulator,
+then add a few sysfs files for the custom stuff and have these
+in the regulator driver.
+
+However now I think we might even need to create a misc device
+or a new drivers/smartcard/* subsystem, just that it will include
+spawning a regulator for the LDO part. If drivers/smartcard/*
+was created we'd easily fold into that, but since we're not
+needing the generics of actually talking to the card we end
+up in a strange place where we'd go implementing a
+framework that we don't use and cannot test :-/
+
+Maybe we should indeed create drivers/smartcard/*
+and only add a tentative API for power & regulator
+such as <linux/smartcard/power.h> or so?
+
+Any thoughts on this, have you seen this before etc?
+
+Also CC:ing some people with SoC systems that include a
+SIM/smartcard reader ... RealView and Freescale comes to
+mind.
+
+Yours,
+Linus Walleij
