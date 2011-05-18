@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441Ab1ERSRn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 14:17:43 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:33063 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932709Ab1ERSRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 14:17:39 -0400
-Date: Wed, 18 May 2011 14:17:11 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [5/7] ext4: Wait for writeback to complete while making pages
- writable
-Message-ID: <20110518181711.GB13693@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Darrick J. Wong" <djwong@us.ibm.com>, Jan Kara <jack@suse.cz>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-	Jens Axboe <axboe@kernel.dk>,
-	"Martin K. Petersen" <martin.petersen@oracle.com>,
-	Jeff Layton <jlayton@redhat.com>,
-	Dave Chinner <david@fromorbit.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Dave Hansen <dave@linux.vnet.ibm.com>,
-	Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-	Chris Mason <chris.mason@oracle.com>,
-	Joel Becker <jlbec@evilplan.org>,
-	linux-scsi <linux-scsi@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-References: <20110509230356.19566.48351.stgit@elm3c44.beaverton.ibm.com>
+	id S933426Ab1ERSTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 14:19:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54382 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932709Ab1ERSTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 14:19:53 -0400
+Date: Wed, 18 May 2011 20:17:56 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+Message-ID: <20110518181756.GA30250@redhat.com>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-4-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110509230356.19566.48351.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1305569849-10448-4-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 01:03:56PM -0000, Darrick J. Wong wrote:
-> In order to stabilize pages during disk writes, ext4_page_mkwrite must wait for
-> writeback operations to complete before making a page writable.  Furthermore,
-> the function must return locked pages, and recheck the writeback status if the
-> page lock is ever dropped.  The "someone could wander in" part of this patch
-> was suggested by Chris Mason.
-> 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> 
-> ---
-> fs/ext4/inode.c |   24 +++++++++++++++++++-----
->  1 files changed, 19 insertions(+), 5 deletions(-)
+On 05/16, Tejun Heo wrote:
+>
+> @@ -315,6 +338,9 @@ static int ptrace_attach(struct task_struct *task)
+>  	if (task_is_stopped(task)) {
+>  		task->jobctl |= JOBCTL_TRAP_STOP | JOBCTL_TRAPPING;
+>  		signal_wake_up(task, 1);
+> +	} else if (seize) {
+> +		task->jobctl |= JOBCTL_TRAP_STOP;
 
-Added to the ext4 tree, thanks.
+So, this can race with do_signal_stop(), it can clear TRAP_STOP and
+JOBCTL_STOP_PENDING can guarantee the tracee will trap later.
 
-					- Ted
+> +	 * When PT_SEIZED, it's used for both group stop and explicit
+> +	 * SEIZE/INTERRUPT traps.  Both generate PTRACE_EVENT_STOP trap
+> +	 * with accompanying siginfo.
+> +	 *
+> +	 * When !PT_SEIZED, it's used only for group stop trap with
+> +	 * CLD_STOPPED as exit_code and no siginfo.
+>  	 */
+>  	if (unlikely(current->jobctl & JOBCTL_TRAP_MASK)) {
+> -		signr = current->jobctl & JOBCTL_STOP_SIGMASK;
+> -		WARN_ON_ONCE(!signr);
+> -		ptrace_stop(signr, CLD_STOPPED, 0, NULL);
+> -		current->exit_code = 0;
+> +		if (current->ptrace & PT_SEIZED) {
+> +			ptrace_do_notify(SIGTRAP | PTRACE_EVENT_STOP << 8,
+> +					 CLD_STOPPED);
+
+So. When PT_SEIZED, we always report PTRACE_EVENT_STOP and PTRACE_GET_SIGINFO
+always works.
+
+Personally I agree, this looks more clean and natural.
+
+Oleg.
+
