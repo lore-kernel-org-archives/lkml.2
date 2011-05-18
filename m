@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab1ERPrd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 11:47:33 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48975 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756941Ab1ERPrb convert rfc822-to-8bit (ORCPT
+	id S1756930Ab1ERPr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 11:47:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36823 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756882Ab1ERPr0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 11:47:31 -0400
+	Wed, 18 May 2011 11:47:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=sMtDOsJMw4knrU/2sWUhpYJO0a5M7W7S9CFsOVCRsCVJQT+259OinW+PpjubcRRXUM
+         Q6DA+c5/TSqGsFguz9vKP4X6btiBDi49yJ5jphImQCBhy7C69RAbZin/dnyt1MN8qyCl
+         ZxozGJSHGZNfXzou5A/QGMxtEBQdK7I6Vmiqw=
+From: Christian Lamparter <chunkeey@googlemail.com>
+To: =?iso-8859-1?q?=C9ric_Piel?= <Eric.Piel@tremplin-utc.net>
+Subject: Re: [RFC v2] lis3lv02d: avoid divide by zero due to unchecked register read
+Date: Wed, 18 May 2011 17:47:12 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc7-wl+; KDE/4.4.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201105160046.31019.chunkeey@googlemail.com> <201105162336.05306.chunkeey@googlemail.com> <4DD2EC98.5080901@tremplin-utc.net>
+In-Reply-To: <4DD2EC98.5080901@tremplin-utc.net>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimV0Xm7-C2yRh7bcyaQzdgET+0vmg@mail.gmail.com>
-References: <BANLkTikhKqcpdadpM3RQdYvDrPn46_v6_Q@mail.gmail.com>
- <20110517.134312.226762699.davem@davemloft.net> <alpine.SOC.1.00.1105021259220.6200@math.ut.ee>
- <1305732459_6563@mail4.comsite.net> <BANLkTimV0Xm7-C2yRh7bcyaQzdgET+0vmg@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 18 May 2011 09:47:10 -0600
-X-Google-Sender-Auth: zmkfP4E_2q0shl0p2NmSMIdZHUM
-Message-ID: <BANLkTik0d8+E94-KjH9wFGDyGjUM7hVkug@mail.gmail.com>
-Subject: Re: [PATCH] of: fix race when matching drivers
-To: Milton Miller <miltonm@bga.com>
-Cc: David Miller <davem@davemloft.net>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201105181747.12356.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc'ing Linus: This is fix for a 2.6.39 regression, so just a heads up
-that I'll be sending you a pull req ASAP (later this morning)]
+On Tuesday 17 May 2011 23:46:00 Éric Piel wrote:
+> Op 16-05-11 23:36, Christian Lamparter schreef:
+> > On Monday 16 May 2011 13:16:46 Éric Piel wrote:
+> >> Op 16-05-11 00:46, Christian Lamparter schreef:
+> >>>  From my POV, it looks like the hardware is not working as expected
+> >>> and returns a bogus data rate. The driver doesn't check the result
+> >>> and directly uses it as some sort of divisor in some places:
+> >>>
+> >>> msleep(lis3->pwron_delay / lis3lv02d_get_odr());
+> >>>
+> >>> Under this circumstances, this could very well cause the
+> >>> "divide by zero" exception from above.
+> >>>
+> >> However, I'd fix it a bit differently: let lis3lv02d_get_odr() return
+> >> the raw data, and create a special function
+> >> lis3lv02d_get_pwron_delay_ms() which does the "lis3->pwron_delay /
+> >> lis3lv02d_get_odr()" with special handling for 0 (returning a large
+> >> value and also sending a printk_once() ).
+> > Do you know how "volatile" this data rate is? If it never changes
+> > [at least it doesn't here?] then why not read it once in init_device
+> > and store it in the device context?
+> It is not normally changing, normally it is set just at init/unsuspend 
+> (where the bios can also interfere sometimes) and when the user changes 
+> it.
+Uh, "bios can also interfere"... this sounds very bad. At least for
+my x41t the bios doesn't care about hdaps once the OS is running.
 
-On Wed, May 18, 2011 at 9:41 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Wed, May 18, 2011 at 9:27 AM, Milton Miller <miltonm@bga.com> wrote:
->> If two drivers are probing devices at the same time, both will write
->> their match table result to the dev->of_match cache at the same time.
->>
->> Only write the result if the device matches.
->>
->> In a thread titled "SBus devices sometimes detected, sometimes not",
->> Meelis reported his SBus hme was not detected about 50% of the time.
->> From the debug suggested by Grant it was obvious another driver matched
->> some devices between the call to match the hme and the hme discovery
->> failling.
->>
->> Reported-by: Meelis Roos <mroos@linux.ee>
->> Signed-off-by: Milton Miller <miltonm@bga.com>
->> ---
->>
->> Grant, I really think this of_match cache in the device node is bad a
->> bad tradeoff, and am willing to submit patches to remove it for 2.6.40.
->> It is only used by about 26 drivers and all use it once during probe
->> to fill out their driver data.  It comes at the cost of a long for
->> every struct device in every system.
->
-> Ah, bugger.  I had /thought/ that matching and probing were kept
-> together with a mutex.  So, yes, this is bad and the of_match needs to
-> be removed.  Thanks for volunteering to submit the patch.  It should
-> be backported to 2.6.39 too.
->
->> I'll even offer to throw in a patch to cache the parsing of the
->> compatible property to speed up of_device_is_compatible if needed.
->
-> That would be useful.  :-)
->
-> I'll pick up your patch right now and fire it off to Linus.
+> So definitely within the same function it's not going to suddenly 
+> change.
+a SMM can happen at any time and if a faulty BIOS [likely, since I got
+a new laptop] is what caused the crash, I wouldn't bet on "const within
+a function context".
 
-... it's not perfect since it will break some theoretical drivers
-unbind/rebind use-cases, but I cannot think of any actual examples,
-and it is far safer than the current code.  Regardless, the removal of
-of_match will definitely need to go into stable when it is ready.
+> We could avoid calculating/checking it twice in 
+> lis3lv02d_selftest(). Care to do a third version with this little clean up?
+I have my doubts, but ok if you say so... Just one thing: need to do some Q&A
+on the code above, I haven't tested it extensively yet.
 
-g.
+Regards,
+	Chr
