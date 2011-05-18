@@ -1,143 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab1ERNR4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 09:17:56 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:58889 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756328Ab1ERNRz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 09:17:55 -0400
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: devel@driverdev.osuosl.org
-Cc: Olaf Hartmann <o.hartmann@telovital.com>, linux-kernel@vger.kernel.org
-Subject: [RFC/RFT PATCH] Staging: et131x: add suspend/resume support
-Date: Wed, 18 May 2011 10:17:47 -0300
-Message-Id: <1305724667-2980-1-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1757204Ab1ERNTQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 09:19:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4331 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756930Ab1ERNTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 09:19:15 -0400
+Date: Wed, 18 May 2011 16:19:01 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>
+Cc: Shirley Ma <mashirle@us.ibm.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
+ netdevice
+Message-ID: <20110518131901.GA19695@redhat.com>
+References: <20110516211459.GE18148@redhat.com>
+ <1305588738.3456.65.camel@localhost.localdomain>
+ <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
+ <1305671318.10756.49.camel@localhost.localdomain>
+ <20110518103819.GL7589@redhat.com>
+ <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
+ <20110518111734.GO7589@redhat.com>
+ <BANLkTim9RQ94MT4L0QHx-yzZT5nXdbi0aQ@mail.gmail.com>
+ <20110518115602.GT7589@redhat.com>
+ <BANLkTikOsR9RUJboG1P=oG8ofr5BLbgQ4Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikOsR9RUJboG1P=oG8ofr5BLbgQ4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/staging/et131x/README           |    2 +-
- drivers/staging/et131x/et131x.h         |    2 +
- drivers/staging/et131x/et131x_initpci.c |   61 ++++++++++++++++++++++++++++---
- drivers/staging/et131x/et131x_netdev.c  |    2 -
- 4 files changed, 58 insertions(+), 9 deletions(-)
+On Wed, May 18, 2011 at 02:48:24PM +0200, Michał Mirosław wrote:
+> W dniu 18 maja 2011 13:56 użytkownik Michael S. Tsirkin
+> <mst@redhat.com> napisał:
+> > On Wed, May 18, 2011 at 01:47:33PM +0200, Michał Mirosław wrote:
+> >> W dniu 18 maja 2011 13:17 użytkownik Michael S. Tsirkin
+> >> <mst@redhat.com> napisał:
+> >> > On Wed, May 18, 2011 at 01:10:50PM +0200, Michał Mirosław wrote:
+> >> >> 2011/5/18 Michael S. Tsirkin <mst@redhat.com>:
+> >> >> > On Tue, May 17, 2011 at 03:28:38PM -0700, Shirley Ma wrote:
+> >> >> >> On Tue, 2011-05-17 at 23:48 +0200, Michał Mirosław wrote:
+> >> >> >> > 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
+> >> >> >> > > Hello Michael,
+> >> >> >> > >
+> >> >> >> > > Looks like to use a new flag requires more time/work. I am thinking
+> >> >> >> > > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
+> >> >> >> > to
+> >> >> >> > > avoid the new flag for now since mavctap uses real NICs as lower
+> >> >> >> > device?
+> >> >> >> >
+> >> >> >> > Is there any other restriction besides requiring driver to not recycle
+> >> >> >> > the skb? Are there any drivers that recycle TX skbs?
+> >> >> > Not just recycling skbs, keeping reference to any of the pages in the
+> >> >> > skb. Another requirement is to invoke the callback
+> >> >> > in a timely fashion.  For example virtio-net doesn't limit the time until
+> >> >> > that happens (skbs are only freed when some other packet is
+> >> >> > transmitted), so we need to avoid zcopy for such (nested-virt)
+> >> >> > scenarious, right?
+> >> >> Hmm. But every hardware driver supporting SG will keep reference to
+> >> >> the pages until the packet is sent (or DMA'd to the device). This can
+> >> >> take a long time if hardware queue happens to stall for some reason.
+> >> > That's a fundamental property of zero copy transmit.
+> >> > You can't let the application/guest reuse the memory until
+> >> > no one looks at it anymore.
+> >>
+> >> One more question: is userspace (or whatever is sending those packets)
+> >> denied from modifying passed pages? I assume it is, but just want to
+> >> be sure.
+> >>
+> >> Best Regards,
+> >> Michał Mirosław
+> >
+> > Good point.
+> >
+> > It's not denied in the sense that it still can modify them if it's
+> > buggy (the pages might not be read-only).
+> > But well-behaved userspace won't modify them until the callback
+> > is invoked.
+> >
+> > That would be a problem if the underlying device is
+> > a bridge where we might try to e.g. filter these packets -
+> > data can get modified after the filter. We'd have to copy
+> > whatever the filter accesses and use the copy - it's rarely
+> > the data itself.
+> >
+> > That's not normally a problem for macvtap connected to a physical NIC,
+> > as that already bypasses any and all filtering.
+> >
+> > But that's another limitation we should note in the comment,
+> > and another reason to limit to specific devices.
+> 
+> It looks like this feature can be used only in very strict circumstances.
 
-diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
-index 28752a5..4dca010 100644
---- a/drivers/staging/et131x/README
-+++ b/drivers/staging/et131x/README
-@@ -14,7 +14,7 @@ TODO:
- 	- kill useless typecasts (e.g. in et1310_phy.c)
- 	- alloc_etherdev is initializing memory with zero?!?
- 	- add_timer call in et131x_netdev.c is correct?
--	- Add power saving functionality (suspend, sleep, resume)
-+	- Add power saving functionality (sleep)
- 	- Implement a few more kernel Parameter (set mac )
- 
- Please send patches to:
-diff --git a/drivers/staging/et131x/et131x.h b/drivers/staging/et131x/et131x.h
-index 8aa3365..1daf53c 100644
---- a/drivers/staging/et131x/et131x.h
-+++ b/drivers/staging/et131x/et131x.h
-@@ -84,6 +84,8 @@ void SetupDeviceForUnicast(struct et131x_adapter *adapter);
- 
- /* et131x_netdev.c */
- struct net_device *et131x_device_alloc(void);
-+int et131x_open(struct net_device *netdev);
-+int et131x_close(struct net_device *netdev);
- 
- /* et131x_pm.c */
- void EnablePhyComa(struct et131x_adapter *adapter);
-diff --git a/drivers/staging/et131x/et131x_initpci.c b/drivers/staging/et131x/et131x_initpci.c
-index 50237ac..1b39141 100644
---- a/drivers/staging/et131x/et131x_initpci.c
-+++ b/drivers/staging/et131x/et131x_initpci.c
-@@ -806,13 +806,62 @@ static struct pci_device_id et131x_pci_table[] __devinitdata = {
- 
- MODULE_DEVICE_TABLE(pci, et131x_pci_table);
- 
-+static int et131x_stop(struct device *dev)
-+{
-+	struct pci_dev *pcidev = to_pci_dev(dev);
-+	struct net_device *netdev = pci_get_drvdata(pcidev);
-+	struct et131x_adapter *adapter = netdev_priv(netdev);
-+
-+	if (netif_running(netdev))
-+		et131x_close(netdev);
-+
-+	et131x_adapter_memory_free(adapter);
-+
-+	return 0;
-+}
-+
-+static int et131x_start(struct device *dev)
-+{
-+	int result;
-+	struct pci_dev *pcidev = to_pci_dev(dev);
-+	struct net_device *netdev = pci_get_drvdata(pcidev);
-+	struct et131x_adapter *adapter = netdev_priv(netdev);
-+
-+	/* If Phy COMA mode was enabled when we went down, disable it here. */
-+	writel(ET_PMCSR_INIT,  &adapter->regs->global.pm_csr);
-+
-+	et131x_soft_reset(adapter);
-+
-+	result = et131x_adapter_memory_alloc(adapter);
-+	if (result != 0) {
-+		dev_warn(&adapter->pdev->dev,
-+			 "Resume failed; couldn't re-alloc DMA memory\n");
-+		return result;
-+	}
-+
-+	et131x_init_send(adapter);
-+	et131x_adapter_setup(adapter);
-+
-+	if (netif_running(netdev))
-+		result = et131x_open(netdev);
-+	return result;
-+}
-+
-+static const struct dev_pm_ops et131x_pm = {
-+	.freeze = et131x_stop,
-+	.poweroff = et131x_stop,
-+	.suspend = et131x_stop,
-+	.restore = et131x_start,
-+	.resume = et131x_start,
-+	.thaw = et131x_start,
-+};
-+
- static struct pci_driver et131x_driver = {
--      .name	= DRIVER_NAME,
--      .id_table	= et131x_pci_table,
--      .probe	= et131x_pci_setup,
--      .remove	= __devexit_p(et131x_pci_remove),
--      .suspend	= NULL,		/* et131x_pci_suspend */
--      .resume	= NULL,		/* et131x_pci_resume */
-+	.name		= DRIVER_NAME,
-+	.id_table	= et131x_pci_table,
-+	.probe		= et131x_pci_setup,
-+	.remove		= __devexit_p(et131x_pci_remove),
-+	.driver.pm	= &et131x_pm,
- };
- 
- 
-diff --git a/drivers/staging/et131x/et131x_netdev.c b/drivers/staging/et131x/et131x_netdev.c
-index b25bae2..8643cd6 100644
---- a/drivers/staging/et131x/et131x_netdev.c
-+++ b/drivers/staging/et131x/et131x_netdev.c
-@@ -89,8 +89,6 @@
- #include "et131x.h"
- 
- struct net_device_stats *et131x_stats(struct net_device *netdev);
--int et131x_open(struct net_device *netdev);
--int et131x_close(struct net_device *netdev);
- int et131x_ioctl(struct net_device *netdev, struct ifreq *reqbuf, int cmd);
- void et131x_multicast(struct net_device *netdev);
- int et131x_tx(struct sk_buff *skb, struct net_device *netdev);
+True. I think it's reasonable to try and start with something
+restricted and then add features though - past attempts to solve the problem
+generally right away did not bear fruit.
+
+> What about tcpdump listening on the device or lowerdev? This path
+> might clone the skb for any device.
+> 
+> Best Regards,
+> Michał Mirosław
+
+Thanks for bringing this up: taps do need to be fixed as they can hang
+on to a page for unlimited time. Further, as a malicious guest can
+change the packet at any time, data that taps get wouldn't be correct.
+We can either linearize the problematic skbs or disable
+zero copy if there are any taps for the given device.
+
 -- 
-1.7.4.1
-
+MST
