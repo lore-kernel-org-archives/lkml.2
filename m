@@ -1,127 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab1ERQEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 12:04:22 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54644 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757146Ab1ERQEV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 12:04:21 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH] ARM: sparsemem: allow pfn_valid to be overridden when using SPARSEMEM
-Date: Wed, 18 May 2011 17:03:59 +0100
-Message-Id: <1305734639-6561-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
+	id S1757275Ab1ERQHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 12:07:46 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:38195 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757222Ab1ERQHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 12:07:43 -0400
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
+ netdevice
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirqus@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110518154746.GA21378@redhat.com>
+References: <1305575253.2885.28.camel@bwh-desktop>
+	 <20110516211459.GE18148@redhat.com>
+	 <1305588738.3456.65.camel@localhost.localdomain>
+	 <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
+	 <1305671318.10756.49.camel@localhost.localdomain>
+	 <20110518103819.GL7589@redhat.com>
+	 <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
+	 <20110518111734.GO7589@redhat.com>
+	 <BANLkTi=g_PFfS5653K8ZoQ2Jhp8DhCV1hg@mail.gmail.com>
+	 <1305729507.32080.6.camel@localhost.localdomain>
+	 <20110518154746.GA21378@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 May 2011 09:07:37 -0700
+Message-ID: <1305734857.32080.53.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit eb33575c ("[ARM] Double check memmap is actually valid with a
-memmap has unexpected holes V2"), a new function, memmap_valid_within,
-was introduced to mmzone.h so that holes in the memmap which pass
-pfn_valid in SPARSEMEM configurations can be detected and avoided.
+On Wed, 2011-05-18 at 18:47 +0300, Michael S. Tsirkin wrote:
+> On Wed, May 18, 2011 at 07:38:27AM -0700, Shirley Ma wrote:
+> > On Wed, 2011-05-18 at 13:40 +0200, Michał Mirosław wrote:
+> > > >> >> Not more other restrictions, skb clone is OK.
+> pskb_expand_head()
+> > > looks
+> > > >> >> OK to me from code review.
+> > > >> > Hmm. pskb_expand_head calls skb_release_data while keeping
+> > > >> > references to pages. How is that ok? What do I miss?
+> > > >> It's making copy of the skb_shinfo earlier, so the pages
+> refcount
+> > > >> stays the same.
+> > > > Exactly. But the callback is invoked so the guest thinks it's ok
+> to
+> > > > change this memory. If it does a corrupted packet will be sent
+> out.
+> > > 
+> > > Hmm. I tool a quick look at skb_clone(), and it looks like this
+> > > sequence will break this scheme:
+> > > 
+> > > skb2 = skb_clone(skb...);
+> > > kfree_skb(skb) or pskb_expand_head(skb);  /* callback called */
+> > > [use skb2, pages still referenced]
+> > > kfree_skb(skb); /* callback called again */
+> > > 
+> > > This sequence is common in bridge, might be in other places.
+> > > 
+> > > Maybe this ubuf thing should just track clones? This will make it
+> work
+> > > on all devices then.
+> > 
+> > The callback was only invoked when last reference of skb was gone.
+> > skb_clone does increase skb refcnt. I tested tcpdump on lower
+> device, it
+> > worked.
+> 
+> Right, it will normally work, but two issues I think you miss:
+> 1. malicious guest can change the memory between when it is sent out
+> by
+>    device and consumed by tcpdump, so you will see different things
+>    (not sure how important this is).
+> 2. if tcpdump stops consuming stuff from the packet socket (it's
+>    userspace, can't be trusted) then we won't get a callback for
+>    page potentially forever, guest networking will get blocked etc.
+> > For the sequence of:
+> > 
+> > skb_clone  -> last refcnt + 1
+> > kfree_skb() or pskb_expand_head -> callback not called
+> > kfree_skb() -> callback called
+> > 
+> > I will check page refcount to see whether it's balanced.
+> > 
+> > Thanks
+> > shirley
+> 
+> 
+> pskb_expand_head is a problem anyway I think as it
+> can hang on to pages after it calls release_data.
+> Then guest will modify these pages and you get trash there. 
 
-The fix to this problem checks that the pfn <-> page linkages are
-correct by calculating the page for the pfn and then checking that
-page_to_pfn on that page returns the original pfn. Unfortunately, in
-SPARSEMEM configurations, this results in reading from the page flags to
-determine the correct section. Since the memmap here has been freed,
-junk is read from memory and the check is no longer robust.
+This can be avoid by allowing pskb_expand_head in fastpath only, I
+think. But not sure whether tcpdump can still work with this.
 
-In the best case, reading from /proc/pagetypeinfo will give you the
-wrong answer. In the worst case, you get SEGVs, Kernel OOPses and hung
-CPUs.
-
-This patch allows architectures to provide their own pfn_valid function
-instead of using the default implementation used by sparsemem. The
-architecture-specific version is aware of the memmap state and will
-return false when passed a pfn for a freed page within a valid section.
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Mel Gorman <mgorman@suse.de>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- arch/arm/Kconfig            |    3 +++
- arch/arm/include/asm/page.h |    2 +-
- arch/arm/mm/init.c          |    4 +++-
- include/linux/mmzone.h      |    2 ++
- 4 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 377a7a5..d6cfc9c 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1520,6 +1520,9 @@ config ARCH_SPARSEMEM_DEFAULT
- config ARCH_SELECT_MEMORY_MODEL
- 	def_bool ARCH_SPARSEMEM_ENABLE
- 
-+config ARCH_PROVIDES_PFN_VALID
-+	def_bool ARCH_HAS_HOLES_MEMORYMODEL || !SPARSEMEM
-+
- config HIGHMEM
- 	bool "High Memory Support (EXPERIMENTAL)"
- 	depends on MMU && EXPERIMENTAL
-diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
-index f51a695..8702233 100644
---- a/arch/arm/include/asm/page.h
-+++ b/arch/arm/include/asm/page.h
-@@ -197,7 +197,7 @@ typedef unsigned long pgprot_t;
- 
- typedef struct page *pgtable_t;
- 
--#ifndef CONFIG_SPARSEMEM
-+#ifdef CONFIG_ARCH_PROVIDES_PFN_VALID
- extern int pfn_valid(unsigned long);
- #endif
- 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index e591513..d425b36 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -252,13 +252,15 @@ static void __init arm_bootmem_free(unsigned long min, unsigned long max_low,
- 	free_area_init_node(0, zone_size, min, zhole_size);
- }
- 
--#ifndef CONFIG_SPARSEMEM
-+#ifdef CONFIG_ARCH_PROVIDES_PFN_VALID
- int pfn_valid(unsigned long pfn)
- {
- 	return memblock_is_memory(pfn << PAGE_SHIFT);
- }
- EXPORT_SYMBOL(pfn_valid);
-+#endif
- 
-+#ifndef CONFIG_SPARSEMEM
- static void arm_memory_present(void)
- {
- }
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index e56f835..72225dd 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -1053,12 +1053,14 @@ static inline struct mem_section *__pfn_to_section(unsigned long pfn)
- 	return __nr_to_section(pfn_to_section_nr(pfn));
- }
- 
-+#ifndef CONFIG_ARCH_PROVIDES_PFN_VALID
- static inline int pfn_valid(unsigned long pfn)
- {
- 	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
- 		return 0;
- 	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
- }
-+#endif
- 
- static inline int pfn_present(unsigned long pfn)
- {
--- 
-1.7.0.4
+Thanks
+Shirley
 
