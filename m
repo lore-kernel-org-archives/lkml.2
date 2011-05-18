@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab1ERFoA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 01:44:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45227 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752592Ab1ERFn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 01:43:58 -0400
-Date: Wed, 18 May 2011 08:43:40 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCH 09/18] virtio: use avail_event index
-Message-ID: <20110518054340.GE7589@redhat.com>
-References: <cover.1304541918.git.mst@redhat.com>
- <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com>
- <874o54h4rt.fsf@rustcorp.com.au>
- <20110515135541.GF24932@redhat.com>
- <87ei3zdsq2.fsf@rustcorp.com.au>
- <20110517061031.GC26989@redhat.com>
- <87tycsn9lt.fsf@rustcorp.com.au>
+	id S1755277Ab1ERFov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 01:44:51 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39158 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786Ab1ERFot convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 01:44:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=q1MF4TTrHOiePryDAmdkUYfATbH8X+QZY3/L1oC4l7UbXr9i+fBYmw2tViZOAgFsB7
+         u5CeoSUq5MvuiRT1n6gx2YxCzfNoMxixRRb5z9fdiQKmLYeUOHMAIXvG61cDiH6Kqpb3
+         CQT4dGG455u6tFz7HcGMLRb7J8Wvzipdsvq7c=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87tycsn9lt.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DD31B6E.8040502@jp.fujitsu.com>
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+	<1305295404-12129-5-git-send-email-mgorman@suse.de>
+	<4DCFAA80.7040109@jp.fujitsu.com>
+	<1305519711.4806.7.camel@mulgrave.site>
+	<BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
+	<20110516084558.GE5279@suse.de>
+	<BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
+	<20110516102753.GF5279@suse.de>
+	<BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
+	<4DD31B6E.8040502@jp.fujitsu.com>
+Date: Wed, 18 May 2011 14:44:48 +0900
+Message-ID: <BANLkTikLuWPEt7MitUYdJtzqyBSOkz2zxg@mail.gmail.com>
+Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: mgorman@suse.de, James.Bottomley@hansenpartnership.com,
+        akpm@linux-foundation.org, colin.king@canonical.com,
+        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
+        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 09:49:42AM +0930, Rusty Russell wrote:
-> On Tue, 17 May 2011 09:10:31 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > Well one can imagine a driver doing:
-> > 
-> > 	while (virtqueue_get_buf()) {
-> > 		virtqueue_add_buf()
-> > 	}
-> > 	virtqueue_kick()
-> > 
-> > which looks sensible (batch kicks) but might
-> > process any number of bufs between kicks.
-> 
-> No, we currently only expose the buffers in the kick, so it can only
-> fill the ring doing that.
-> 
-> We could change that (and maybe that's worth looking at)...
+On Wed, May 18, 2011 at 10:05 AM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> It would be better to put cond_resched after balance_pgdat?
+>>
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index 292582c..61c45d0 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -2753,6 +2753,7 @@ static int kswapd(void *p)
+>>                 if (!ret) {
+>>                         trace_mm_vmscan_kswapd_wake(pgdat->node_id,
+>> order);
+>>                         order = balance_pgdat(pgdat,
+>> order,&classzone_idx);
+>> +                       cond_resched();
+>>                 }
+>>         }
+>>         return 0;
+>>
+>>>>> While it appears unlikely, there are bad conditions which can result
+>>>
+>>> in cond_resched() being avoided.
+>
+> Every reclaim priority decreasing or every shrink_zone() calling makes more
+> fine grained preemption. I think.
 
-Yes, I think we should - this way host and guest can process
-data in parallel without a kick.
+It could be.
+But in direct reclaim case, I have a concern about losing pages
+reclaimed to other tasks by preemption.
 
-My patchset included that simply because it's one index
-less to be confused about.
+Hmm,, anyway, we also needs test.
+Hmm,, how long should we bother them(Colins and James)?
+First of all, Let's fix one just between us and ask test to them and
+send the last patch to akpm.
 
+1. shrink_slab
+2. right after balance_pgdat
+3. shrink_zone
+4. reclaim priority decreasing routine.
 
-> > If we look at drivers closely enough, I think none
-> > of them do the equivalent of the above, but not 100% sure.
-> 
-> I'm pretty sure we don't have this kind of 'echo' driver yet.  Drivers
-> tend to take OS requests and queue them.  The only one which does
-> anything even partially sophisticated is the net driver...
-> 
-> Thanks,
-> Rusty.
+Now, I vote 1) and 2).
+
+Mel, KOSAKI?
+-- 
+Kind regards,
+Minchan Kim
