@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab1ERVUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:20:04 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:34640 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463Ab1ERVUC (ORCPT
+	id S1754759Ab1ERVUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:20:46 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:55413 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936Ab1ERVUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:20:02 -0400
-Date: Wed, 18 May 2011 16:19:53 -0500
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: David <david@unsolicited.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Latest kernel fails to build multi-threaded on ecryptfs home
-Message-ID: <20110518211952.GC21127@boyd.l.tihix.com>
-References: <4DD41613.4040102@unsolicited.net>
- <4DD41CA6.8060808@unsolicited.net>
+	Wed, 18 May 2011 17:20:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=sO7CHbJMshh6Uq6leDTKECFVQrG5RWJ98Y59qQ3nTXuVEa6wQp0MA77ph5gsp9xft+
+         SE49tWwFqRCN5Dj03neQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD41CA6.8060808@unsolicited.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110518.171416.1780927258138770742.davem@davemloft.net>
+References: <1305752945-14843-1-git-send-email-decot@google.com>
+ <1305752945-14843-2-git-send-email-decot@google.com> <20110518.171416.1780927258138770742.davem@davemloft.net>
+From: David Decotigny <decot@google.com>
+Date: Wed, 18 May 2011 14:20:21 -0700
+Message-ID: <BANLkTimNvuB5HtOKfAc7rf5wF2QeC3xdXw@mail.gmail.com>
+Subject: Re: [PATCH] forcedeth: new ethtool stat "tx_timeout" to account for tx_timeouts
+To: David Miller <davem@davemloft.net>
+Cc: Joe Perches <joe@perches.com>, szymon@janc.net.pl, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-net-upstream@google.com,
+        snanda@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed May 18, 2011 at 08:23:18PM +0100, David <david@unsolicited.net> wrote:
-> On 18/05/11 19:55, David wrote:
-> > I'm seeing some unpleasant things when building multithreaded when running the latest kernels. The compiler complains of truncated files and implausible characters. Single threaded builds seem fine.
-> 
-> My impromptu bisection currently shows
-> 
->     2.6.38 OK
->     2.6.39rc2 Affected
-> 
-> so it looks like this problem first appears early in the .39 series.
+Hi David,
 
-Thanks for the bisection David. I'm looking into this now.
+They should be independent and applicable in any order, except for the
+two 'PATCH x/2' which have to go together.
 
-Tyler
+FYI, here is the order in which I'm applying them:
+1/ forcedeth: Improve stats counters
+2/ forcedeth: new ethtool stat "tx_timeout" to account for tx_timeouts
+3/ [PATCH 1/2] forcedeth: make module parameters readable in /sys/module
+4/ [PATCH 2/2] forcedeth: allow to silence tx_timeout debug messages
+5/ forcedeth: Acknowledge only interrupts that are being processed
+6/ forcedeth: Add messages to indicate using MSI or MSI-X
+7/ forcedeth: Fix a race during rmmod of forcedeth
 
-> 
-> Cheers
-> David
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Sorry for that.
+Regards,
+
+--
+David Decotigny
+
+
+
+On Wed, May 18, 2011 at 2:14 PM, David Miller <davem@davemloft.net> wrote:
+>
+> When submitting multiple patches in a patch set, NUMBER THEM.
+>
+> Otherwise there is no unambiguous way to figure out what order
+> I should apply these patches.
+>
