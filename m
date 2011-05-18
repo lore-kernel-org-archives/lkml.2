@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab1ERQui (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 12:50:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10220 "EHLO mx1.redhat.com"
+	id S933143Ab1ERQvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 12:51:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52963 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932859Ab1ERQuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 12:50:37 -0400
-Date: Wed, 18 May 2011 19:50:21 +0300
+	id S932859Ab1ERQvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 12:51:36 -0400
+Date: Wed, 18 May 2011 19:51:38 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>
-Cc: Shirley Ma <mashirle@us.ibm.com>,
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
         Ben Hutchings <bhutchings@solarflare.com>,
         David Miller <davem@davemloft.net>,
         Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
@@ -17,96 +17,118 @@ Cc: Shirley Ma <mashirle@us.ibm.com>,
         kvm@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
  netdevice
-Message-ID: <20110518165021.GC22001@redhat.com>
-References: <1305574680.3456.33.camel@localhost.localdomain>
- <1305575253.2885.28.camel@bwh-desktop>
- <20110516211459.GE18148@redhat.com>
- <1305588738.3456.65.camel@localhost.localdomain>
- <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
- <1305671318.10756.49.camel@localhost.localdomain>
+Message-ID: <20110518165138.GD22001@redhat.com>
+References: <1305671318.10756.49.camel@localhost.localdomain>
  <20110518103819.GL7589@redhat.com>
  <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
  <20110518111734.GO7589@redhat.com>
  <BANLkTi=g_PFfS5653K8ZoQ2Jhp8DhCV1hg@mail.gmail.com>
+ <1305729507.32080.6.camel@localhost.localdomain>
+ <20110518154746.GA21378@redhat.com>
+ <1305734857.32080.53.camel@localhost.localdomain>
+ <20110518163633.GB22001@redhat.com>
+ <1305737140.32080.59.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=g_PFfS5653K8ZoQ2Jhp8DhCV1hg@mail.gmail.com>
+In-Reply-To: <1305737140.32080.59.camel@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 01:40:29PM +0200, Michał Mirosław wrote:
-> W dniu 18 maja 2011 13:17 użytkownik Michael S. Tsirkin
-> <mst@redhat.com> napisał:
-> > On Wed, May 18, 2011 at 01:10:50PM +0200, Michał Mirosław wrote:
-> >> 2011/5/18 Michael S. Tsirkin <mst@redhat.com>:
-> >> > On Tue, May 17, 2011 at 03:28:38PM -0700, Shirley Ma wrote:
-> >> >> On Tue, 2011-05-17 at 23:48 +0200, Michał Mirosław wrote:
-> >> >> > 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
-> >> >> > > Hello Michael,
-> >> >> > >
-> >> >> > > Looks like to use a new flag requires more time/work. I am thinking
-> >> >> > > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
-> >> >> > to
-> >> >> > > avoid the new flag for now since mavctap uses real NICs as lower
-> >> >> > device?
-> >> >> >
-> >> >> > Is there any other restriction besides requiring driver to not recycle
-> >> >> > the skb? Are there any drivers that recycle TX skbs?
-> >> >
-> >> > Not just recycling skbs, keeping reference to any of the pages in the
-> >> > skb. Another requirement is to invoke the callback
-> >> > in a timely fashion.  For example virtio-net doesn't limit the time until
-> >> > that happens (skbs are only freed when some other packet is
-> >> > transmitted), so we need to avoid zcopy for such (nested-virt)
-> >> > scenarious, right?
-> >>
-> >> Hmm. But every hardware driver supporting SG will keep reference to
-> >> the pages until the packet is sent (or DMA'd to the device). This can
-> >> take a long time if hardware queue happens to stall for some reason.
-> >
-> > That's a fundamental property of zero copy transmit.
-> > You can't let the application/guest reuse the memory until
-> > no one looks at it anymore.
-> >
-> >> Is it that you mean keeping a reference after all skbs pointing to the
-> >> pages are released?
-> > No one should reference the pages after the callback is invoked, yes.
+On Wed, May 18, 2011 at 09:45:40AM -0700, Shirley Ma wrote:
+> On Wed, 2011-05-18 at 19:36 +0300, Michael S. Tsirkin wrote:
+> > On Wed, May 18, 2011 at 09:07:37AM -0700, Shirley Ma wrote:
+> > > On Wed, 2011-05-18 at 18:47 +0300, Michael S. Tsirkin wrote:
+> > > > On Wed, May 18, 2011 at 07:38:27AM -0700, Shirley Ma wrote:
+> > > > > On Wed, 2011-05-18 at 13:40 +0200, Michał Mirosław wrote:
+> > > > > > >> >> Not more other restrictions, skb clone is OK.
+> > > > pskb_expand_head()
+> > > > > > looks
+> > > > > > >> >> OK to me from code review.
+> > > > > > >> > Hmm. pskb_expand_head calls skb_release_data while
+> > keeping
+> > > > > > >> > references to pages. How is that ok? What do I miss?
+> > > > > > >> It's making copy of the skb_shinfo earlier, so the pages
+> > > > refcount
+> > > > > > >> stays the same.
+> > > > > > > Exactly. But the callback is invoked so the guest thinks
+> > it's ok
+> > > > to
+> > > > > > > change this memory. If it does a corrupted packet will be
+> > sent
+> > > > out.
+> > > > > > 
+> > > > > > Hmm. I tool a quick look at skb_clone(), and it looks like
+> > this
+> > > > > > sequence will break this scheme:
+> > > > > > 
+> > > > > > skb2 = skb_clone(skb...);
+> > > > > > kfree_skb(skb) or pskb_expand_head(skb);  /* callback called
+> > */
+> > > > > > [use skb2, pages still referenced]
+> > > > > > kfree_skb(skb); /* callback called again */
+> > > > > > 
+> > > > > > This sequence is common in bridge, might be in other places.
+> > > > > > 
+> > > > > > Maybe this ubuf thing should just track clones? This will make
+> > it
+> > > > work
+> > > > > > on all devices then.
+> > > > > 
+> > > > > The callback was only invoked when last reference of skb was
+> > gone.
+> > > > > skb_clone does increase skb refcnt. I tested tcpdump on lower
+> > > > device, it
+> > > > > worked.
+> > > > 
+> > > > Right, it will normally work, but two issues I think you miss:
+> > > > 1. malicious guest can change the memory between when it is sent
+> > out
+> > > > by
+> > > >    device and consumed by tcpdump, so you will see different
+> > things
+> > > >    (not sure how important this is).
+> > > > 2. if tcpdump stops consuming stuff from the packet socket (it's
+> > > >    userspace, can't be trusted) then we won't get a callback for
+> > > >    page potentially forever, guest networking will get blocked
+> > etc.
+> > > > > For the sequence of:
+> > > > > 
+> > > > > skb_clone  -> last refcnt + 1
+> > > > > kfree_skb() or pskb_expand_head -> callback not called
+> > > > > kfree_skb() -> callback called
+> > > > > 
+> > > > > I will check page refcount to see whether it's balanced.
+> > > > > 
+> > > > > Thanks
+> > > > > shirley
+> > > > 
+> > > > 
+> > > > pskb_expand_head is a problem anyway I think as it
+> > > > can hang on to pages after it calls release_data.
+> > > > Then guest will modify these pages and you get trash there. 
+> > > 
+> > > This can be avoid by allowing pskb_expand_head in fastpath only, I
+> > > think. But not sure whether tcpdump can still work with this.
+> > > 
+> > > Thanks
+> > > Shirley
+> > 
+> > Yes, I agree.  I think for tcpdump, we really need to copy the data
+> > anyway, to avoid guest changing it in between.  So we do that and then
+> > use the copy everywhere, release the old one. Hmm? 
 > 
-> >> >> Not more other restrictions, skb clone is OK. pskb_expand_head() looks
-> >> >> OK to me from code review.
-> >> > Hmm. pskb_expand_head calls skb_release_data while keeping
-> >> > references to pages. How is that ok? What do I miss?
-> >> It's making copy of the skb_shinfo earlier, so the pages refcount
-> >> stays the same.
-> > Exactly. But the callback is invoked so the guest thinks it's ok to
-> > change this memory. If it does a corrupted packet will be sent out.
+> Yes. Old one use zerocopy, new one use copy data.
 > 
-> Hmm. I tool a quick look at skb_clone(), and it looks like this
-> sequence will break this scheme:
-> 
-> skb2 = skb_clone(skb...);
-> kfree_skb(skb) or pskb_expand_head(skb);  /* callback called */
-> [use skb2, pages still referenced]
-> kfree_skb(skb); /* callback called again */
-> This sequence is common in bridge, might be in other places.
-> 
-> Maybe this ubuf thing should just track clones? This will make it work
-> on all devices then.
-> 
-> Best Regards,
-> Michał Mirosław
+> Thanks
+> Shirley
 
-Well bridge has the problem that packet might get anywhere and it's
-really hard to track. Same for tun - it can get queued forever.
-veth, loopback are all a problem I think.
-
-IOW we really want to limit this to real physical NICs
-which mostly all DTRT. Whitelisting them with a new flag
-is likely the most concervative approach, no?
+No, that's wrong, as they might become different with a
+malicious guest. As long as we copied already, lets realease
+the data and have everyone use the copy.
 
 -- 
 MST
