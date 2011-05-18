@@ -1,112 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933601Ab1ERSxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 14:53:21 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:53866 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933567Ab1ERSxR convert rfc822-to-8bit (ORCPT
+	id S933613Ab1ERSxe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 14:53:34 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2845 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933562Ab1ERSxd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 14:53:17 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-131.messagelabs.com!1305744789!3395970!22
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.72]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Will Deacon <will.deacon@arm.com>,
+	Wed, 18 May 2011 14:53:33 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+From: "Sukesh Srikakula" <sukeshs@broadcom.com>
+To: "Stephen Rothwell" <sfr@canb.auug.org.au>, "Greg KH" <greg@kroah.com>
+cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Russell King <linux@arm.linux.org.uk>, Mel Gorman <mgorman@suse.de>
-Date: Wed, 18 May 2011 13:53:08 -0500
-Subject: RE: [PATCH] ARM: sparsemem: allow pfn_valid to be overridden when
- using	SPARSEMEM
-Thread-Topic: [PATCH] ARM: sparsemem: allow pfn_valid to be overridden when
- using	SPARSEMEM
-Thread-Index: AcwVdWikNrfrVB19QhepAjpMfpiRkAAFbxxg
-Message-ID: <0D753D10438DA54287A00B027084269764D2F73AC4@AUSP01VMBX24.collaborationhost.net>
-References: <1305734639-6561-1-git-send-email-will.deacon@arm.com>
-In-Reply-To: <1305734639-6561-1-git-send-email-will.deacon@arm.com>
+        "Jouni Malinen" <jouni.malinen@atheros.com>,
+        "Arend Van Spriel" <arend@broadcom.com>
+Date: Wed, 18 May 2011 11:53:22 -0700
+Subject: RE: linux-next: manual merge of the staging tree with the
+ wireless tree
+Thread-Topic: linux-next: manual merge of the staging tree with the
+ wireless tree
+Thread-Index: AcwVBzuAG2Lh66i5Q1iM2tgRMRnJAQAhVwqg
+Message-ID: <400C43189542CE41BC0A5B252FC901369670F0AD03@SJEXCHCCR02.corp.ad.broadcom.com>
+References: <20110518125633.0164cb32.sfr@canb.auug.org.au>
+In-Reply-To: <20110518125633.0164cb32.sfr@canb.auug.org.au>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-WSS-ID: 61CAC9093IC2832121-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 18, 2011 9:04 AM, Will Deacon wrote:
->
-> In commit eb33575c ("[ARM] Double check memmap is actually valid with a
-> memmap has unexpected holes V2"), a new function, memmap_valid_within,
-> was introduced to mmzone.h so that holes in the memmap which pass
-> pfn_valid in SPARSEMEM configurations can be detected and avoided.
->
-> The fix to this problem checks that the pfn <-> page linkages are
-> correct by calculating the page for the pfn and then checking that
-> page_to_pfn on that page returns the original pfn. Unfortunately, in
-> SPARSEMEM configurations, this results in reading from the page flags to
-> determine the correct section. Since the memmap here has been freed,
-> junk is read from memory and the check is no longer robust.
->
-> In the best case, reading from /proc/pagetypeinfo will give you the
-> wrong answer. In the worst case, you get SEGVs, Kernel OOPses and hung
-> CPUs.
->
-> This patch allows architectures to provide their own pfn_valid function
-> instead of using the default implementation used by sparsemem. The
-> architecture-specific version is aware of the memmap state and will
-> return false when passed a pfn for a freed page within a valid section.
->
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
+Hi Stephen,
 
-I tested this on an EP93xx based system which uses ARCH_HAS_HOLES_MEMORYMODEL.
-The EP9307A has 64MB of memory that appears as two 32MB blocks at addresses
-0xc0000000 and 0xc4000000.  Currently the EP93xx uses a Flat Memory model and
-the hole used to cause a Kernel OOPs before commit e80d6a24 ("[ARM] Skip memory
-holes in FLATMEM when reading /proc/pagetypeinfo"), which is where I think this
-all started.
+Thanks for merging. 
+Merge looks to be fine.
 
-Without your patch I get this when reading /proc/pagetypeinfo:
+Regards,
+Sukesh.
 
-# cat /proc/pagetypeinfo
-Page block order: 10
-Pages per block:  1024
+-----Original Message-----
+From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
+Sent: Tuesday, May 17, 2011 7:57 PM
+To: Greg KH
+Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Jouni Malinen; Sukesh Srikakula; Arend Van Spriel
+Subject: linux-next: manual merge of the staging tree with the wireless tree
 
-Free pages count per migrate type at order       0      1      2      3      4      5      6      7      8      9     10
-Node    0, zone   Normal, type    Unmovable      3      4      3      0      2      2      4      5      2      2      3
-Node    0, zone   Normal, type  Reclaimable      2      0      0      0      1      0      0      1      0      1      0
-Node    0, zone   Normal, type      Movable      0      3      4      1      1      1      0      1      0      2      4
-Node    0, zone   Normal, type      Reserve      1      1      1      2      0      0      0      0      0      0      0
-Node    0, zone   Normal, type      Isolate      0      0      0      0      0      0      0      0      0      0      0
+Hi Greg,
 
-Number of blocks type     Unmovable  Reclaimable      Movable      Reserve      Isolate
-Node 0, zone   Normal            8            1            6            1            0
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c between commit
+5a083c0aba95 ("cfg80211: Use consistent BSS matching between scan and
+sme") from the wireless tree and commit e494632efcd9 ("staging:
+brcm80211: Fixed bss (re)connect/disconnect issues in brcmfmac driver")
+from the staging tree.
 
-After your patch I get this:
+I fixed it up (see below) anc can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-# cat /proc/pagetypeinfo
-Page block order: 10
-Pages per block:  1024
+diff --cc drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
+index 7aaf99c,e3b409b..0000000
+--- a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
+@@@ -2627,17 -2863,20 +2863,19 @@@ wl_bss_roaming_done(struct wl_priv *wl
+  	struct wl_connect_info *conn_info = wl_to_conn(wl);
+  	s32 err = 0;
+  
++ 	WL_TRACE("Enter\n");
++ 
+  	wl_get_assoc_ies(wl);
+- 	memcpy(&wl->bssid, &e->addr, ETH_ALEN);
++ 	wl_update_prof(wl, NULL, &e->addr, WL_PROF_BSSID);
+  	wl_update_bss_info(wl);
+ -
+ -	cfg80211_roamed(ndev,
+ +	cfg80211_roamed(ndev, NULL,
+- 			(u8 *)&wl->bssid,
++ 			(u8 *)wl_read_prof(wl, WL_PROF_BSSID),
+  			conn_info->req_ie, conn_info->req_ie_len,
+  			conn_info->resp_ie, conn_info->resp_ie_len, GFP_KERNEL);
+- 	WL_DBG("Report roaming result\n");
++ 	WL_CONN("Report roaming result\n");
+  
+  	set_bit(WL_STATUS_CONNECTED, &wl->status);
+- 
++ 	WL_TRACE("Exit\n");
+  	return err;
+  }
+  
 
-Free pages count per migrate type at order       0      1      2      3      4      5      6      7      8      9     10
-Node    0, zone   Normal, type    Unmovable      1      0      2      0      1      3      4      3      3      2      3
-Node    0, zone   Normal, type  Reclaimable      0      1      0      0      1      0      0      1      0      1      0
-Node    0, zone   Normal, type      Movable      1      1      1      1      0      0      1      1      0      2      4
-Node    0, zone   Normal, type      Reserve      1      1      1      2      0      0      0      0      0      0      0
-Node    0, zone   Normal, type      Isolate      0      0      0      0      0      0      0      0      0      0      0
 
-Number of blocks type     Unmovable  Reclaimable      Movable      Reserve      Isolate
-Node 0, zone   Normal            8            1            6            1            0
-
-I'm not sure what the output "should" be, but the patch does not seem to
-cause any issues.  So feel free to add:
-
-Tested-by: H Hartley Sweeten <hsweeten@visionengravers.com>
