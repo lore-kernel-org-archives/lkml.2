@@ -1,64 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933496Ab1ERScr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 14:32:47 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44716 "EHLO hera.kernel.org"
+	id S933507Ab1ERSdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 14:33:07 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:39659 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933393Ab1ERScn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 14:32:43 -0400
-Date: Wed, 18 May 2011 18:32:26 GMT
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-8abd5724a7f1631ab2276954156c629d4d17149a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, srostedt@redhat.com, jreiser@bitwagon.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, jreiser@bitwagon.com,
-        tglx@linutronix.de
-In-Reply-To: <20110421023737.991485123@goodmis.org>
-References: <20110421023737.991485123@goodmis.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace/recordmcount: Modify only executable sections
-Git-Commit-ID: 8abd5724a7f1631ab2276954156c629d4d17149a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 18 May 2011 18:32:26 +0000 (UTC)
+	id S932709Ab1ERSdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 14:33:02 -0400
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, balbi@ti.com, lrg@slimlogic.co.uk,
+        broonie@opensource.wolfsonmicro.com, linux@slimlogic.co.uk, lrg@ti.com
+Subject: [PATCH v3 0/2] Add support for twl6025 PMIC
+Date: Wed, 18 May 2011 19:32:48 +0100
+Message-Id: <1305743570-12074-1-git-send-email-gg@slimlogic.co.uk>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8abd5724a7f1631ab2276954156c629d4d17149a
-Gitweb:     http://git.kernel.org/tip/8abd5724a7f1631ab2276954156c629d4d17149a
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Wed, 13 Apr 2011 13:31:08 -0400
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 16 May 2011 14:42:56 -0400
+This patch series starts to add support for the twl6025 chip to the
+twl driver. This series contains patches for the MFD device and the
+regulator device to support the twl6025.
 
-ftrace/recordmcount: Modify only executable sections
+Since V2
 
-PROGBITS is not enough to determine if the section should be modified
-or not. Only process sections that are marked as executable.
+MFD patches have been accepted. Review comments have been addressed
+in the regulator driver. twl6025 doesnt use remap so dont define it.
 
-Cc: John Reiser <jreiser@bitwagon.com>
-Link: http://lkml.kernel.org/r/20110421023737.991485123@goodmis.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- scripts/recordmcount.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Since V1
 
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index ac7b330..7f8d5c4 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -360,6 +360,7 @@ __has_rel_mcount(Elf_Shdr const *const relhdr,  /* is SHT_REL or SHT_RELA */
- 		succeed_file();
- 	}
- 	if (w(txthdr->sh_type) != SHT_PROGBITS ||
-+	    !(w(txthdr->sh_flags) & SHF_EXECINSTR) ||
- 	    !is_mcounted_section_name(txtname))
- 		return NULL;
- 	return txtname;
+Series has been altered to pass features via platform data rather
+than via a get function on a global variable.
+Regulator style was change so some ifs were replaced with switch.
+There has been some discussion about regulator definition and naming
+and TI have agreed to take on the cleanup internally.
+
