@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab1ERKiW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 06:38:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3993 "EHLO mx1.redhat.com"
+	id S1756942Ab1ERKjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 06:39:35 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39909 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756755Ab1ERKiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 06:38:20 -0400
-Date: Wed, 18 May 2011 13:38:19 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-Message-ID: <20110518103819.GL7589@redhat.com>
-References: <1305574128.3456.23.camel@localhost.localdomain>
- <1305574518.2885.25.camel@bwh-desktop>
- <1305574680.3456.33.camel@localhost.localdomain>
- <1305575253.2885.28.camel@bwh-desktop>
- <20110516211459.GE18148@redhat.com>
- <1305588738.3456.65.camel@localhost.localdomain>
- <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
- <1305671318.10756.49.camel@localhost.localdomain>
+	id S1756898Ab1ERKje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 06:39:34 -0400
+Date: Wed, 18 May 2011 12:39:19 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] x86, x86_64: Fix checks for userspace address limit
+Message-ID: <20110518103919.GA7411@elte.hu>
+References: <1305210630-7136-1-git-send-email-jolsa@redhat.com>
+ <20110516114254.GI19837@elte.hu>
+ <BANLkTinALOXLa1HYyCQBwYcBo=N0eVcPUg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1305671318.10756.49.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTinALOXLa1HYyCQBwYcBo=N0eVcPUg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 03:28:38PM -0700, Shirley Ma wrote:
-> On Tue, 2011-05-17 at 23:48 +0200, Michał Mirosław wrote:
-> > 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
-> > > Hello Michael,
-> > >
-> > > Looks like to use a new flag requires more time/work. I am thinking
-> > > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
-> > to
-> > > avoid the new flag for now since mavctap uses real NICs as lower
-> > device?
-> > 
-> > Is there any other restriction besides requiring driver to not recycle
-> > the skb? Are there any drivers that recycle TX skbs? 
 
-Not just recycling skbs, keeping reference to any of the pages in the
-skb. Another requirement is to invoke the callback
-in a timely fashion.  For example virtio-net doesn't limit the time until
-that happens (skbs are only freed when some other packet is
-transmitted), so we need to avoid zcopy for such (nested-virt)
-scenarious, right?
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Mon, May 16, 2011 at 4:42 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > Hm, something tickles me about this area that we would reintroduce a security
+> > hole, that we really wanted to treat the last page of user-space as some sort
+> > of guard page but i cannot quite remember it why ...
+> >
+> > IIRC Linus wrote bits of this so i'm Cc:-ing him just in case he remembers.
 > 
-> Not more other restrictions, skb clone is OK. pskb_expand_head() looks
-> OK to me from code review.
-
-Hmm. pskb_expand_head calls skb_release_data while keeping
-references to pages. How is that ok? What do I miss?
-
-> Currently there is no drivers recycle TX skbs.
+> No, I suspect the patch is correct, and it's just a bug. I think it
+> comes from the "get_user_X()" cases that afaik use "jae" because they
+> add one less than the size (and thus avoid it entirely for the
+> single-byte case). See "getuser.S" in the same directory.
 > 
-> Thanks
-> Shirley
+> But right now I think I need to do a 2.6.39 release later today (after
+> I get some sleep), so doing it as a stable patch (presumably going
+> back to pretty much the beginning of time) is probably the right
+> thing.
 
-Well, with e.g. bridge or veth the skb might enter
-the host networking stack. Once that happens, we lose
-track of the pages. Or is there anything that
-prevents such setups?
+Absolutely - we had this for a long time so it's not a regression and there is 
+very little gain from trying to squeeze this fix in so close to v2.6.39 - and 
+there are nonzero risks, considering how widely used assembly code this 
+changes.
 
--- 
-MST
+I've queued it up for v2.6.40 with your Acked-by.
+
+Thanks,
+
+	Ingo
