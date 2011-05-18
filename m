@@ -1,154 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687Ab1ERTNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 15:13:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34057 "EHLO mx1.redhat.com"
+	id S933671Ab1ERTP3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 15:15:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29765 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933630Ab1ERTN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933637Ab1ERTN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 May 2011 15:13:29 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
 Cc: dpshah@google.com, vgoyal@redhat.com
-Subject: [PATCH 05/14] cfq-iosched: Fix a possible race with cfq cgroup removal code
-Date: Wed, 18 May 2011 15:13:17 -0400
-Message-Id: <1305746006-5837-6-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 06/14] blk-cgroup: Allow sleeping while dynamically allocating a group
+Date: Wed, 18 May 2011 15:13:18 -0400
+Message-Id: <1305746006-5837-7-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1305746006-5837-1-git-send-email-vgoyal@redhat.com>
 References: <1305746006-5837-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blkg->key = cfqd is an rcu protected pointer and hence we used to do
-call_rcu(cfqd->rcu_head) to free up cfqd after one rcu grace period.
+Currently, all the cfq_group or throtl_group allocations happen while
+we are holding ->queue_lock and sleeping is not allowed.
 
-The problem here is that even though cfqd is around, there are no
-gurantees that associated request queue (td->queue) or q->queue_lock
-is still around. A driver might have called blk_cleanup_queue() and
-release the lock.
+Soon, we will move to per cpu stats and also need to allocate the
+per group stats. As one can not call alloc_percpu() from atomic
+context as it can sleep, we need to drop ->queue_lock, allocate the
+group, retake the lock and continue processing.
 
-It might happen that after freeing up the lock we call
-blkg->key->queue->queue_ock and crash. This is possible in following
-path.
-
-blkiocg_destroy()
- blkio_unlink_group_fn()
-  cfq_unlink_blkio_group()
-
-Hence, wait for an rcu peirod if there are groups which have not
-been unlinked from blkcg->blkg_list. That way, if there are any groups
-which are taking cfq_unlink_blkio_group() path, can safely take queue
-lock.
-
-This is how we have taken care of race in throttling logic also.
+In throttling code, I check the queue DEAD flag again to make sure
+that driver did not call blk_cleanup_queue() in the mean time.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/cfq-iosched.c |   48 ++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 36 insertions(+), 12 deletions(-)
+ block/blk-core.c     |    3 +-
+ block/blk-throttle.c |  141 ++++++++++++++++++++++++++++++++++++++------------
+ block/cfq-iosched.c  |  128 +++++++++++++++++++++++++++++++++------------
+ 3 files changed, 205 insertions(+), 67 deletions(-)
 
+diff --git a/block/blk-core.c b/block/blk-core.c
+index a2e58ee..c95b3d2 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1548,7 +1548,8 @@ static inline void __generic_make_request(struct bio *bio)
+ 			goto end_io;
+ 		}
+ 
+-		blk_throtl_bio(q, &bio);
++		if (blk_throtl_bio(q, &bio))
++			goto end_io;
+ 
+ 		/*
+ 		 * If bio = NULL, bio has been throttled and will be submitted
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index fa9a900..c201967 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -188,8 +188,40 @@ throtl_add_group_to_td_list(struct throtl_data *td, struct throtl_grp *tg)
+ 	td->nr_undestroyed_grps++;
+ }
+ 
+-static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
+-			struct blkio_cgroup *blkcg)
++static void throtl_init_add_tg_lists(struct throtl_data *td,
++			struct throtl_grp *tg, struct blkio_cgroup *blkcg)
++{
++	struct backing_dev_info *bdi = &td->queue->backing_dev_info;
++	unsigned int major, minor;
++
++	/* Add group onto cgroup list */
++	sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
++	blkiocg_add_blkio_group(blkcg, &tg->blkg, (void *)td,
++				MKDEV(major, minor), BLKIO_POLICY_THROTL);
++
++	tg->bps[READ] = blkcg_get_read_bps(blkcg, tg->blkg.dev);
++	tg->bps[WRITE] = blkcg_get_write_bps(blkcg, tg->blkg.dev);
++	tg->iops[READ] = blkcg_get_read_iops(blkcg, tg->blkg.dev);
++	tg->iops[WRITE] = blkcg_get_write_iops(blkcg, tg->blkg.dev);
++
++	throtl_add_group_to_td_list(td, tg);
++}
++
++/* Should be called without queue lock and outside of rcu period */
++static struct throtl_grp *throtl_alloc_tg(struct throtl_data *td)
++{
++	struct throtl_grp *tg = NULL;
++
++	tg = kzalloc_node(sizeof(*tg), GFP_ATOMIC, td->queue->node);
++	if (!tg)
++		return NULL;
++
++	throtl_init_group(tg);
++	return tg;
++}
++
++static struct
++throtl_grp *throtl_find_tg(struct throtl_data *td, struct blkio_cgroup *blkcg)
+ {
+ 	struct throtl_grp *tg = NULL;
+ 	void *key = td;
+@@ -197,12 +229,6 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
+ 	unsigned int major, minor;
+ 
+ 	/*
+-	 * TODO: Speed up blkiocg_lookup_group() by maintaining a radix
+-	 * tree of blkg (instead of traversing through hash list all
+-	 * the time.
+-	 */
+-
+-	/*
+ 	 * This is the common case when there are no blkio cgroups.
+  	 * Avoid lookup in this case
+  	 */
+@@ -215,43 +241,83 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
+ 	if (tg && !tg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
+ 		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+ 		tg->blkg.dev = MKDEV(major, minor);
+-		goto done;
+ 	}
+ 
+-	if (tg)
+-		goto done;
+-
+-	tg = kzalloc_node(sizeof(*tg), GFP_ATOMIC, td->queue->node);
+-	if (!tg)
+-		goto done;
+-
+-	throtl_init_group(tg);
+-
+-	/* Add group onto cgroup list */
+-	sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+-	blkiocg_add_blkio_group(blkcg, &tg->blkg, (void *)td,
+-				MKDEV(major, minor), BLKIO_POLICY_THROTL);
+-
+-	tg->bps[READ] = blkcg_get_read_bps(blkcg, tg->blkg.dev);
+-	tg->bps[WRITE] = blkcg_get_write_bps(blkcg, tg->blkg.dev);
+-	tg->iops[READ] = blkcg_get_read_iops(blkcg, tg->blkg.dev);
+-	tg->iops[WRITE] = blkcg_get_write_iops(blkcg, tg->blkg.dev);
+-
+-	throtl_add_group_to_td_list(td, tg);
+-done:
+ 	return tg;
+ }
+ 
++/*
++ * This function returns with queue lock unlocked in case of error, like
++ * request queue is no more
++ */
+ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+ {
+-	struct throtl_grp *tg = NULL;
++	struct throtl_grp *tg = NULL, *__tg = NULL;
+ 	struct blkio_cgroup *blkcg;
++	struct request_queue *q = td->queue;
+ 
+ 	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
+-	tg = throtl_find_alloc_tg(td, blkcg);
+-	if (!tg)
++	tg = throtl_find_tg(td, blkcg);
++	if (tg) {
++		rcu_read_unlock();
++		return tg;
++	}
++
++	/*
++	 * Need to allocate a group. Allocation of group also needs allocation
++	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
++	 * we need to drop rcu lock and queue_lock before we call alloc
++	 *
++	 * Take the request queue reference to make sure queue does not
++	 * go away once we return from allocation.
++	 */
++	blk_get_queue(q);
++	rcu_read_unlock();
++	spin_unlock_irq(q->queue_lock);
++
++	tg = throtl_alloc_tg(td);
++	/*
++	 * We might have slept in group allocation. Make sure queue is not
++	 * dead
++	 */
++	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
++		blk_put_queue(q);
++		if (tg)
++			kfree(tg);
++
++		return ERR_PTR(-ENODEV);
++	}
++	blk_put_queue(q);
++
++	/* Group allocated and queue is still alive. take the lock */
++	spin_lock_irq(q->queue_lock);
++
++	/*
++	 * Initialize the new group. After sleeping, read the blkcg again.
++	 */
++	rcu_read_lock();
++	blkcg = task_blkio_cgroup(current);
++
++	/*
++	 * If some other thread already allocated the group while we were
++	 * not holding queue lock, free up the group
++	 */
++	__tg = throtl_find_tg(td, blkcg);
++
++	if (__tg) {
++		kfree(tg);
++		rcu_read_unlock();
++		return __tg;
++	}
++
++	/* Group allocation failed. Account the IO to root group */
++	if (!tg) {
+ 		tg = &td->root_tg;
++		return tg;
++	}
++
++	throtl_init_add_tg_lists(td, tg, blkcg);
+ 	rcu_read_unlock();
+ 	return tg;
+ }
+@@ -1014,6 +1080,15 @@ int blk_throtl_bio(struct request_queue *q, struct bio **biop)
+ 	spin_lock_irq(q->queue_lock);
+ 	tg = throtl_get_tg(td);
+ 
++	if (IS_ERR(tg)) {
++		if (PTR_ERR(tg)	== -ENODEV) {
++			/*
++			 * Queue is gone. No queue lock held here.
++			 */
++			return -ENODEV;
++		}
++	}
++
+ 	if (tg->nr_queued[rw]) {
+ 		/*
+ 		 * There is already another bio queued in same dir. No
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index a905b55..e2e6719 100644
+index e2e6719..606020f 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -300,7 +300,9 @@ struct cfq_data {
- 
- 	/* List of cfq groups being managed on this device*/
- 	struct hlist_head cfqg_list;
--	struct rcu_head rcu;
-+
-+	/* Number of groups which are on blkcg->blkg_list */
-+	unsigned int nr_blkcg_linked_grps;
- };
- 
- static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
-@@ -1063,6 +1065,7 @@ static struct cfq_group * cfq_find_alloc_cfqg(struct cfq_data *cfqd,
- 		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
- 					0);
- 
-+	cfqd->nr_blkcg_linked_grps++;
- 	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
- 
- 	/* Add group on cfqd list */
-@@ -3815,15 +3818,11 @@ static void cfq_put_async_queues(struct cfq_data *cfqd)
- 		cfq_put_queue(cfqd->async_idle_cfqq);
+@@ -1016,28 +1016,47 @@ void cfq_update_blkio_group_weight(void *key, struct blkio_group *blkg,
+ 	cfqg->needs_update = true;
  }
  
--static void cfq_cfqd_free(struct rcu_head *head)
--{
--	kfree(container_of(head, struct cfq_data, rcu));
--}
--
- static void cfq_exit_queue(struct elevator_queue *e)
+-static struct cfq_group * cfq_find_alloc_cfqg(struct cfq_data *cfqd,
+-		struct blkio_cgroup *blkcg)
++static void cfq_init_add_cfqg_lists(struct cfq_data *cfqd,
++			struct cfq_group *cfqg, struct blkio_cgroup *blkcg)
  {
- 	struct cfq_data *cfqd = e->elevator_data;
- 	struct request_queue *q = cfqd->queue;
-+	bool wait = false;
+-	struct cfq_group *cfqg = NULL;
+-	void *key = cfqd;
+-	int i, j;
+-	struct cfq_rb_root *st;
+ 	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
+ 	unsigned int major, minor;
  
- 	cfq_shutdown_timer_wq(cfqd);
- 
-@@ -3842,7 +3841,13 @@ static void cfq_exit_queue(struct elevator_queue *e)
- 
- 	cfq_put_async_queues(cfqd);
- 	cfq_release_cfq_groups(cfqd);
--	cfq_blkiocg_del_blkio_group(&cfqd->root_group.blkg);
+-	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
+-	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
++	/*
++	 * Add group onto cgroup list. It might happen that bdi->dev is
++	 * not initialized yet. Initialize this new group without major
++	 * and minor info and this info will be filled in once a new thread
++	 * comes for IO.
++	 */
++	if (bdi->dev) {
+ 		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+-		cfqg->blkg.dev = MKDEV(major, minor);
+-		goto done;
+-	}
+-	if (cfqg)
+-		goto done;
++		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg,
++					(void *)cfqd, MKDEV(major, minor));
++	} else
++		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg,
++					(void *)cfqd, 0);
 +
-+	/*
-+	 * If there are groups which we could not unlink from blkcg list,
-+	 * wait for a rcu period for them to be freed.
-+	 */
-+	if (cfqd->nr_blkcg_linked_grps)
-+		wait = true;
++	cfqd->nr_blkcg_linked_grps++;
++	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
++
++	/* Add group on cfqd list */
++	hlist_add_head(&cfqg->cfqd_node, &cfqd->cfqg_list);
++}
++
++/*
++ * Should be called from sleepable context. No request queue lock as per
++ * cpu stats are allocated dynamically and alloc_percpu needs to be called
++ * from sleepable context.
++ */
++static struct cfq_group * cfq_alloc_cfqg(struct cfq_data *cfqd)
++{
++	struct cfq_group *cfqg = NULL;
++	int i, j;
++	struct cfq_rb_root *st;
  
- 	spin_unlock_irq(q->queue_lock);
+ 	cfqg = kzalloc_node(sizeof(*cfqg), GFP_ATOMIC, cfqd->queue->node);
+ 	if (!cfqg)
+-		goto done;
++		return NULL;
  
-@@ -3852,8 +3857,20 @@ static void cfq_exit_queue(struct elevator_queue *e)
- 	ida_remove(&cic_index_ida, cfqd->cic_index);
- 	spin_unlock(&cic_index_lock);
+ 	for_each_cfqg_st(cfqg, i, j, st)
+ 		*st = CFQ_RB_ROOT;
+@@ -1050,28 +1069,31 @@ static struct cfq_group * cfq_find_alloc_cfqg(struct cfq_data *cfqd,
+ 	 * or cgroup deletion path depending on who is exiting first.
+ 	 */
+ 	cfqg->ref = 1;
++	return cfqg;
++}
++
++static struct cfq_group *
++cfq_find_cfqg(struct cfq_data *cfqd, struct blkio_cgroup *blkcg)
++{
++	struct cfq_group *cfqg = NULL;
++	void *key = cfqd;
++	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
++	unsigned int major, minor;
  
--	/* Wait for cfqg->blkg->key accessors to exit their grace periods. */
--	call_rcu(&cfqd->rcu, cfq_cfqd_free);
-+	/*
-+	 * Wait for cfqg->blkg->key accessors to exit their grace periods.
-+	 * Do this wait only if there are other unlinked groups out
-+	 * there. This can happen if cgroup deletion path claimed the
-+	 * responsibility of cleaning up a group before queue cleanup code
-+	 * get to the group.
-+	 *
-+	 * Do not call synchronize_rcu() unconditionally as there are drivers
-+	 * which create/delete request queue hundreds of times during scan/boot
-+	 * and synchronize_rcu() can take significant time and slow down boot.
-+	 */
-+	if (wait)
-+		synchronize_rcu();
-+	kfree(cfqd);
+ 	/*
+-	 * Add group onto cgroup list. It might happen that bdi->dev is
+-	 * not initialized yet. Initialize this new group without major
+-	 * and minor info and this info will be filled in once a new thread
+-	 * comes for IO. See code above.
++	 * This is the common case when there are no blkio cgroups.
++	 * Avoid lookup in this case
+ 	 */
+-	if (bdi->dev) {
+-		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+-		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
+-					MKDEV(major, minor));
+-	} else
+-		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
+-					0);
+-
+-	cfqd->nr_blkcg_linked_grps++;
+-	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
++	if (blkcg == &blkio_root_cgroup)
++		cfqg = &cfqd->root_group;
++	else
++		cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
+ 
+-	/* Add group on cfqd list */
+-	hlist_add_head(&cfqg->cfqd_node, &cfqd->cfqg_list);
++	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
++		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
++		cfqg->blkg.dev = MKDEV(major, minor);
++	}
+ 
+-done:
+ 	return cfqg;
  }
  
- static int cfq_alloc_cic_index(void)
-@@ -3909,14 +3926,21 @@ static void *cfq_init_queue(struct request_queue *q)
- 
- #ifdef CONFIG_CFQ_GROUP_IOSCHED
- 	/*
--	 * Take a reference to root group which we never drop. This is just
--	 * to make sure that cfq_put_cfqg() does not try to kfree root group
-+	 * Set root group reference to 2. One reference will be dropped when
-+	 * all groups on cfqd->cfqg_list are being deleted during queue exit.
-+	 * Other reference will remain there as we don't want to delete this
-+	 * group as it is statically allocated and gets destroyed when
-+	 * throtl_data goes away.
- 	 */
--	cfqg->ref = 1;
-+	cfqg->ref = 2;
- 	rcu_read_lock();
- 	cfq_blkiocg_add_blkio_group(&blkio_root_cgroup, &cfqg->blkg,
- 					(void *)cfqd, 0);
- 	rcu_read_unlock();
-+	cfqd->nr_blkcg_linked_grps++;
+@@ -1082,13 +1104,53 @@ done:
+ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
+ {
+ 	struct blkio_cgroup *blkcg;
+-	struct cfq_group *cfqg = NULL;
++	struct cfq_group *cfqg = NULL, *__cfqg = NULL;
++	struct request_queue *q = cfqd->queue;
 +
-+	/* Add group on cfqd->cfqg_list */
-+	hlist_add_head(&cfqg->cfqd_node, &cfqd->cfqg_list);
- #endif
- 	/*
- 	 * Not strictly needed (since RB_ROOT just clears the node and we
++	rcu_read_lock();
++	blkcg = task_blkio_cgroup(current);
++	cfqg = cfq_find_cfqg(cfqd, blkcg);
++	if (cfqg) {
++		rcu_read_unlock();
++		return cfqg;
++	}
++
++	/*
++	 * Need to allocate a group. Allocation of group also needs allocation
++	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
++	 * we need to drop rcu lock and queue_lock before we call alloc.
++	 *
++	 * Not taking any queue reference here and assuming that queue is
++	 * around by the time we return. CFQ queue allocation code does
++	 * the same. It might be racy though.
++	 */
++
++	rcu_read_unlock();
++	spin_unlock_irq(q->queue_lock);
++
++	cfqg = cfq_alloc_cfqg(cfqd);
++
++	spin_lock_irq(q->queue_lock);
+ 
+ 	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
+-	cfqg = cfq_find_alloc_cfqg(cfqd, blkcg);
++
++	/*
++	 * If some other thread already allocated the group while we were
++	 * not holding queue lock, free up the group
++	 */
++	__cfqg = cfq_find_cfqg(cfqd, blkcg);
++
++	if (__cfqg) {
++		kfree(cfqg);
++		rcu_read_unlock();
++		return __cfqg;
++	}
++
+ 	if (!cfqg)
+ 		cfqg = &cfqd->root_group;
++
++	cfq_init_add_cfqg_lists(cfqd, cfqg, blkcg);
+ 	rcu_read_unlock();
+ 	return cfqg;
+ }
 -- 
 1.7.1
 
