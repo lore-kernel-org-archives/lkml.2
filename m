@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933242Ab1EROqW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 10:46:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38657 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab1EROqV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 10:46:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=IbwEhCuhAtKkRMSGjoV8bt0iD04jZQESoP3PgpEE26+3s2OvHdQ7m+T6moOeJXQ2hc
-         wmaRZXkHnFN8bG4p9DC0Nqc+nR9+70cDOW7JsDr6Sh1GZKNAvFKZfgYeT1HfbbxEDp7z
-         mEQwXJ2Ml13OfOk5j/0t3KoyfZ5aT685iyZ3o=
-MIME-Version: 1.0
-In-Reply-To: <1305725044.26849.11.camel@gandalf.stny.rr.com>
-References: <BANLkTikkeR_yf1HGhgq7WEO-kEvDGkV_tw@mail.gmail.com>
-	<BANLkTim4n-WA_6nJpg4Nd99yuc3f+VWkcw@mail.gmail.com>
-	<BANLkTikOecxhb8pZfAd19FLrPAPY4zacDQ@mail.gmail.com>
-	<20110512120606.GA3639@zhy>
-	<20110518013842.GD23940@home.goodmis.org>
-	<BANLkTikOW9t6F8jvTJ0uPvyYDy+mpXh-DA@mail.gmail.com>
-	<BANLkTikMdAG4HFmhiB9c3x97FH0N3PnpHA@mail.gmail.com>
-	<1305725044.26849.11.camel@gandalf.stny.rr.com>
-Date: Wed, 18 May 2011 22:46:19 +0800
-Message-ID: <BANLkTinzsjTy6yA7N-ssy5beyJn5NQZX3w@mail.gmail.com>
-Subject: Re: [PATCH] sched: correct how RT task is picked
-From: Hillf Danton <dhillf@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=UTF-8
+	id S933271Ab1ERPEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 11:04:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56014 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933223Ab1ERPEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 11:04:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,231,1304319600"; 
+   d="scan'208";a="411455"
+Date: Wed, 18 May 2011 15:50:33 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: NULL pointer deref in tty port / uart
+Message-ID: <20110518155033.2773b323@bob.linux.org.uk>
+In-Reply-To: <20110518144429.GC2011@jolsa.brq.redhat.com>
+References: <20110517231229.GB1776@nowhere>
+	<20110518004420.2b8f5da9@bob.linux.org.uk>
+	<20110518142631.GB2011@jolsa.brq.redhat.com>
+	<20110518153636.5cdcdd78@lxorguk.ukuu.org.uk>
+	<20110518144429.GC2011@jolsa.brq.redhat.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 9:24 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 2011-05-18 at 21:19 +0800, Hillf Danton wrote:
->
->> Hi all
->>
->> The patch is prepared again, in which tests for both cpu and
->> nr_cpus_allowed are dropped.
->>
->> The reason to drop nr_cpus_allowed is to make sure that the
->> returned value is correct for both case that cpu == rq->cpu and
->> case that cpu != rq->cpu.
->
-> -ENOPARSE
->
-> Why would we pick a task that can't migrate?
->
-Hi Steven
+> I think it's the 
+> 
+> uart_update_termios in uart_dtr_rts (drivers/tty/serial/serial_core.c)
+> 
+> called path:
+> 
+> tty_port_block_til_ready
+> 	tty_port_raise_dtr_rts
+> 		uart_dtr_rts
+> 			uart_update_termios
 
-For migration, it is the case that cpu != rq->cpu, and
-if cpu is allowed by task's affinity, it is bug that task
-could not goto cpu because of nr_cpus_allowed since
-the nr_cpus_allowed is computed based on the cpus_allowed mask.
+Ah that would explain why I can't find and dup it - it isn't found in
+the current -next tree.
 
-Hillf
+
+c7d7abff40c27f82fe78b1091ab3fad69b2546f9 (and thereafter)
+
+Jiri Slaby fixed it in sorting out uart_startup
+
+I guess these should now get tagged for -stable.
+
