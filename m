@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab1ERApZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 20:45:25 -0400
-Received: from ozlabs.org ([203.10.76.45]:35184 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932107Ab1ERApY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 20:45:24 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCH 09/18] virtio: use avail_event index
-In-Reply-To: <20110517061031.GC26989@redhat.com>
-References: <cover.1304541918.git.mst@redhat.com> <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com> <874o54h4rt.fsf@rustcorp.com.au> <20110515135541.GF24932@redhat.com> <87ei3zdsq2.fsf@rustcorp.com.au> <20110517061031.GC26989@redhat.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Wed, 18 May 2011 09:49:42 +0930
-Message-ID: <87tycsn9lt.fsf@rustcorp.com.au>
+	id S932570Ab1ERA0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 20:26:33 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52192 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932512Ab1ERA0b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 20:26:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DD31221.3060205@jp.fujitsu.com>
+Date: Wed, 18 May 2011 09:26:09 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: mgorman@suse.de
+CC: minchan.kim@gmail.com, James.Bottomley@hansenpartnership.com,
+        akpm@linux-foundation.org, colin.king@canonical.com,
+        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
+        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de> <1305295404-12129-5-git-send-email-mgorman@suse.de> <4DCFAA80.7040109@jp.fujitsu.com> <1305519711.4806.7.camel@mulgrave.site> <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com> <20110516084558.GE5279@suse.de> <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com> <20110516102753.GF5279@suse.de>
+In-Reply-To: <20110516102753.GF5279@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 May 2011 09:10:31 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> Well one can imagine a driver doing:
-> 
-> 	while (virtqueue_get_buf()) {
-> 		virtqueue_add_buf()
-> 	}
-> 	virtqueue_kick()
-> 
-> which looks sensible (batch kicks) but might
-> process any number of bufs between kicks.
+> Lets see;
+>
+> shrink_page_list() only applies if inactive pages were isolated
+> 	which in turn may not happen if all_unreclaimable is set in
+> 	shrink_zones(). If for whatver reason, all_unreclaimable is
+> 	set on all zones, we can miss calling cond_resched().
+>
+> shrink_slab only applies if we are reclaiming slab pages. If the first
+> 	shrinker returns -1, we do not call cond_resched(). If that
+> 	first shrinker is dcache and __GFP_FS is not set, direct
+> 	reclaimers will not shrink at all. However, if there are
+> 	enough of them running or if one of the other shrinkers
+> 	is running for a very long time, kswapd could be starved
+> 	acquiring the shrinker_rwsem and never reaching the
+> 	cond_resched().
 
-No, we currently only expose the buffers in the kick, so it can only
-fill the ring doing that.
+OK.
 
-We could change that (and maybe that's worth looking at)...
 
-> If we look at drivers closely enough, I think none
-> of them do the equivalent of the above, but not 100% sure.
+>
+> balance_pgdat() only calls cond_resched if the zones are not
+> 	balanced. For a high-order allocation that is balanced, it
+> 	checks order-0 again. During that window, order-0 might have
+> 	become unbalanced so it loops again for order-0 and returns
+> 	that was reclaiming for order-0 to kswapd(). It can then find
+> 	that a caller has rewoken kswapd for a high-order and re-enters
+> 	balance_pgdat() without ever have called cond_resched().
 
-I'm pretty sure we don't have this kind of 'echo' driver yet.  Drivers
-tend to take OS requests and queue them.  The only one which does
-anything even partially sophisticated is the net driver...
+Then, Shouldn't balance_pgdat() call cond_resched() unconditionally?
+The problem is NOT 100% cpu consumption. if kswapd will sleep, other
+processes need to reclaim old pages. The problem is, kswapd doesn't
+invoke context switch and other tasks hang-up.
 
-Thanks,
-Rusty.
+
+
+
+> While it appears unlikely, there are bad conditions which can result
+> in cond_resched() being avoided.
+>
+
+
