@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932927Ab1ERQ0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 12:26:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55483 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932387Ab1ERQZ6 (ORCPT
+	id S1757035Ab1ERQ3B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 12:29:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54767 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab1ERQ3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 12:25:58 -0400
-Date: Wed, 18 May 2011 09:25:58 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Bibek BASU <bibek.basu@stericsson.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Juergen Beisert <jbe@pengutronix.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: Smartcard/SIM card subsystem, LDO regulator and signal modelling
-Message-ID: <20110518162558.GA16414@opensource.wolfsonmicro.com>
-References: <BANLkTikAzjmVoNK20RHRkhHkn3YgSra6dA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikAzjmVoNK20RHRkhHkn3YgSra6dA@mail.gmail.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 18 May 2011 12:29:00 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=TNYUVI2EnK0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=gu6fZOg2AAAA:8 a=LwH88lsQBqIQ9fhQ6xwA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 00/15] [GIT PULL] ftrace/recordmcount: cleanups and
+ updates for recordmcount processing
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <20110518160809.724215604@goodmis.org>
+References: <20110518160809.724215604@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 18 May 2011 12:28:57 -0400
+Message-ID: <1305736137.11267.13.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 12:36:17PM +0200, Linus Walleij wrote:
+On Wed, 2011-05-18 at 12:08 -0400, Steven Rostedt wrote:
+> Ingo,
+> 
+> Please pull the latest tip/perf/core-2 tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> tip/perf/core-2
+> 
 
-> It's basically an LDO for powering a SIM card (which in turn is basically
-> a smartcard), but apart from plain regulation also expose some other
-> electrical properties of the interface to software:
+Note, this is not based off of my tip/perf/core branch, but is based off
+of tip separately.
 
-> - Select pull-up resistance on some I/O lines
-> - Select weak pull-down on some data lines
-> - Select load capacitance limits on the data lines
-> - Select whether to run in low impedance or transmission gate mode
+I'm not sure why you don't want to pull my tip/perf/core directly yet.
+I'd like to get that infrastructure in and tested before the 40 merge
+window so that we can focus on the perf function tracing in the 41
+window, and not try to figure out where bugs are between the two.
 
-> I think these will be mostly similar so what other SIM card controllers
-> will need to have. All the stuff needs to have userspace interfaces
-> since the stuff is usually controlled on behalf of another CPU
-> running the modem (and also performing the actual traffic on
-> the SIM data lines).
+That pull request is here:
 
-The above also sounds rather like the standard sort of stuff you get
-with pin muxes - the pulls are certainly very common for random GPIO
-or I2C use, for example.  No real idea on the SIM interface itself.
+  http://marc.info/?l=linux-kernel&m=130469692420787
+
+Thanks,
+
+-- Steve
+
+
