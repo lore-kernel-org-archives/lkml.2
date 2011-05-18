@@ -1,116 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933661Ab1ERTO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 15:14:58 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:55053 "EHLO e8.ny.us.ibm.com"
+	id S933628Ab1ERTGb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 15:06:31 -0400
+Received: from mga01.intel.com ([192.55.52.88]:27682 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933451Ab1ERTOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 15:14:54 -0400
-Subject: Re: [PATCH 0/4] v6 Improve task->comm locking situation
-From: John Stultz <john.stultz@linaro.org>
+	id S933500Ab1ERTGa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 15:06:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,232,1304319600"; 
+   d="scan'208";a="4158745"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andy Whitcroft <apw@canonical.com>, Jiri Slaby <jirislaby@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20110518062554.GB2945@elte.hu>
-References: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
-	 <20110518062554.GB2945@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 May 2011 12:03:29 -0700
-Message-ID: <1305745409.2915.178.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+CC: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 18 May 2011 12:04:14 -0700
+Subject: RE: [PATCH 7/9] x86/lib/memcpy_64.S: Optimize memcpy by enhanced
+ REP MOVSB/STOSB
+Thread-Topic: [PATCH 7/9] x86/lib/memcpy_64.S: Optimize memcpy by enhanced
+ REP MOVSB/STOSB
+Thread-Index: AcwVJdbDtM87wlhwRPWah0RMLhhwuwAZFr4Q
+Message-ID: <493994B35A117E4F832F97C4719C4C04011505C846@orsmsx505.amr.corp.intel.com>
+References: <1305671358-14478-1-git-send-email-fenghua.yu@intel.com>
+ <1305671358-14478-8-git-send-email-fenghua.yu@intel.com>
+ <20110518063544.GC2945@elte.hu>
+In-Reply-To: <20110518063544.GC2945@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-18 at 08:25 +0200, Ingo Molnar wrote:
-> * John Stultz <john.stultz@linaro.org> wrote:
-> > Since my commit 4614a696bd1c3a9af3a08f0e5874830a85b889d4, the current->comm 
-> > value could be changed by other threads.
-> > 
-> > This changed the comm locking rules, which previously allowed for unlocked 
-> > current->comm access, since only the thread itself could change its comm.
-> > 
-> > While this was brought up at the time, it was not considered problematic, as 
-> > the comm writing was done in such a way that only null or incomplete comms 
-> > could be read. However, recently folks have made it clear they want to see 
-> > this issue resolved.
+> -----Original Message-----
+> From: Ingo Molnar [mailto:mingo@elte.hu]
+> Sent: Tuesday, May 17, 2011 11:36 PM
+> To: Yu, Fenghua
+> Cc: Thomas Gleixner; H Peter Anvin; Mallick, Asit K; Linus Torvalds;
+> Avi Kivity; Arjan van de Ven; Andrew Morton; Andi Kleen; linux-kernel
+> Subject: Re: [PATCH 7/9] x86/lib/memcpy_64.S: Optimize memcpy by
+> enhanced REP MOVSB/STOSB
 > 
-> The commit is from 2.5 years ago:
->         4614a696bd1c3a9af3a08f0e5874830a85b889d4
->         Author: john stultz <johnstul@us.ibm.com>
->         Date:   Mon Dec 14 18:00:05 2009 -0800
 > 
->             procfs: allow threads to rename siblings via /proc/pid/tasks/tid/comm
+> * Fenghua Yu <fenghua.yu@intel.com> wrote:
 > 
-> So we are *way* beyond the time frame where this could be declared urgent.
-
-Oh yes. I'm not declaring it urgent. I'm just trying to get the
-groundwork in so the "cleanup" can happen over time.
-
-> So is there any actual motivation beyond:
+> > From: Fenghua Yu <fenghua.yu@intel.com>
+> >
+> > Support memcpy() with enhanced rep movsb. On processors supporting
+> enhanced
+> > rep movsb, the alternative memcpy() function using enhanced rep movsb
+> > overrides the original function and the fast string function.
+> >
+> > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> > ---
+> >  arch/x86/lib/memcpy_64.S |   45 ++++++++++++++++++++++++++++++++----
+> ---------
+> >  1 files changed, 32 insertions(+), 13 deletions(-)
 > 
->   " Hey, this looks a bit racy and 'top' very rarely, on rare workloads that 
->     play with ->comm[], might display a weird reading task name for a second, 
->     amongst the many other temporarily nonsensical statistical things it 
->     already prints every now and then. "
+> >  ENDPROC(__memcpy)
+> >
+> >  	/*
+> > -	 * Some CPUs run faster using the string copy instructions.
+> > -	 * It is also a lot simpler. Use this when possible:
+> > -	 */
+> > -
+> > -	.section .altinstructions, "a"
+> > -	.align 8
+> > -	.quad memcpy
+> > -	.quad .Lmemcpy_c
+> > -	.word X86_FEATURE_REP_GOOD
+> > -
+> > -	/*
+> > +	 * Some CPUs are adding enhanced REP MOVSB/STOSB feature
+> > +	 * If the feature is supported, memcpy_c_e() is the first choice.
+> > +	 * If enhanced rep movsb copy is not available, use fast string
+> copy
+> > +	 * memcpy_c() when possible. This is faster and code is simpler
+> than
+> > +	 * original memcpy().
 > 
-> ?
-
-To my knowledge no. Basically folks were grumbling about the issue, and
-so being that I opened the issue up, I figured I'd try to address their
-concerns. While specific examples of the problem were not raised
-(despite asking for them), I figured a good faith attempt at providing a
-path to proper locking for comm was a more productive step then getting
-into "prove its safe" / "no, you prove its unsafe" type debates.
-
-My motivation here is just to try to do the right thing and move on to
-other work, and that is maybe why I seem hurried to get the patches
-queued.
-
-The other reasonable argument in my mind would be: Even if there is no
-existing issue, comm locking rules are subtle and by formalizing them
-we avoid future problems being introduced (probably by folks like me :).
-
-> > So fair enough, as I opened this can of worms, I should work
-> > to resolve it and this patchset is my initial attempt.
+> Please use more obvious names than cryptic and meaningless _c and _c_e
+> postfixes. We do not repeat these many times.
 > 
-> This patch set does not address the many places that deal with ->comm so it 
-> does not even approximate the true scope of the change!
+> Also, did you know about the 'perf bench mem memcpy' tool prototype we
+> have in
+> the kernel tree? It is intended to check and evaluate exactly the
+> patches you
+> are offering here. The code lives in:
 > 
-> I.e. you are doing *another* change without fully seeing/showing the 
-> consequences ...
+>   tools/perf/bench/mem-memcpy-arch.h
+>   tools/perf/bench/mem-memcpy.c
+>   tools/perf/bench/mem-memcpy-x86-64-asm-def.h
+>   tools/perf/bench/mem-memcpy-x86-64-asm.S
+> 
+> Please look into testing (fixing if needed), using and extending it:
+> 
+>  - We want to measure the alternatives variants as well, not just the
+> generic one
+> 
+>  - We want to measure memmove, memclear, etc. operations as well, not
+> just
+>    memcpy
+> 
+>  - We want cache-cold and cache-hot numbers as well, going along
+> multiple sizes
+> 
+> This tool can also useful when developing these changes: they can be
+> tested in
+> user-space and can be iterated very quickly, without having to build
+> and
+> booting the kernel.
+> 
+> We can commit any enhancements/fixes you do to perf bench alongside
+> your memcpy
+> patches. All in one, such measurements will make it much easier for us
+> to apply
+> the patches.
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Well, is requiring all the comm changes in one patch set really
-reasonable? I'm aware its a large scope of changes. It touches
-everything and will take quite a while to in order to get all of the
-changes pushed through the various relevant maintainers. A path for
-gradual "improvement" seems like the only reasonable approach.
+I'll work on the bench tool and will let you know when it's ready.
 
-Or do you have another suggestion in mind?
+Thanks.
 
-But given that I'm providing both locked and unlocked accessors, doesn't
-it seem that by working through the tree converting to those accessors
-would help actually audit the users, so we can address that each call
-site can either deal with the locking or handle incomplete comms?
-Further, if other locking approaches (such as RCU) are to be tried, it
-would greatly ease doing so, since the access is centralized to a few
-functions.
-
-So is such a change not somewhat worthwhile?
-
-But, the net of this is that it seems everyone else is way more
-passionate about this issue then I am, so I'm starting to wonder if it
-would be better for someone who has more of a dog in the fight to be
-pushing these?
-
-thanks
--john
-
+-Fenghua
