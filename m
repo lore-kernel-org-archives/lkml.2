@@ -1,120 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab1ERNTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 09:19:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756930Ab1ERNTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 09:19:15 -0400
-Date: Wed, 18 May 2011 16:19:01 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>
-Cc: Shirley Ma <mashirle@us.ibm.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-Message-ID: <20110518131901.GA19695@redhat.com>
-References: <20110516211459.GE18148@redhat.com>
- <1305588738.3456.65.camel@localhost.localdomain>
- <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
- <1305671318.10756.49.camel@localhost.localdomain>
- <20110518103819.GL7589@redhat.com>
- <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
- <20110518111734.GO7589@redhat.com>
- <BANLkTim9RQ94MT4L0QHx-yzZT5nXdbi0aQ@mail.gmail.com>
- <20110518115602.GT7589@redhat.com>
- <BANLkTikOsR9RUJboG1P=oG8ofr5BLbgQ4Q@mail.gmail.com>
+	id S1757224Ab1ERNTr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 09:19:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61654 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756956Ab1ERNTp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 09:19:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=AlKjqQMJ69J9dYbyk5ozJ0niTUOf+LM1YhHXt7E9Djnr9VMqxutlQEslqUe5OLJAKv
+         ZNN5KWCYxHFy5KieuRM1VQTMS/Vu9BBI2RjRn1/ynqgl7jh7nDA33n9heMm8FG3L9KsQ
+         z4P3OUNm6200PGiE9GGFSKelkyJoWVNuduIEA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikOsR9RUJboG1P=oG8ofr5BLbgQ4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTikOW9t6F8jvTJ0uPvyYDy+mpXh-DA@mail.gmail.com>
+References: <BANLkTikkeR_yf1HGhgq7WEO-kEvDGkV_tw@mail.gmail.com>
+	<BANLkTim4n-WA_6nJpg4Nd99yuc3f+VWkcw@mail.gmail.com>
+	<BANLkTikOecxhb8pZfAd19FLrPAPY4zacDQ@mail.gmail.com>
+	<20110512120606.GA3639@zhy>
+	<20110518013842.GD23940@home.goodmis.org>
+	<BANLkTikOW9t6F8jvTJ0uPvyYDy+mpXh-DA@mail.gmail.com>
+Date: Wed, 18 May 2011 21:19:44 +0800
+Message-ID: <BANLkTikMdAG4HFmhiB9c3x97FH0N3PnpHA@mail.gmail.com>
+Subject: Re: [PATCH] sched: correct how RT task is picked
+From: Hillf Danton <dhillf@gmail.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 02:48:24PM +0200, Michał Mirosław wrote:
-> W dniu 18 maja 2011 13:56 użytkownik Michael S. Tsirkin
-> <mst@redhat.com> napisał:
-> > On Wed, May 18, 2011 at 01:47:33PM +0200, Michał Mirosław wrote:
-> >> W dniu 18 maja 2011 13:17 użytkownik Michael S. Tsirkin
-> >> <mst@redhat.com> napisał:
-> >> > On Wed, May 18, 2011 at 01:10:50PM +0200, Michał Mirosław wrote:
-> >> >> 2011/5/18 Michael S. Tsirkin <mst@redhat.com>:
-> >> >> > On Tue, May 17, 2011 at 03:28:38PM -0700, Shirley Ma wrote:
-> >> >> >> On Tue, 2011-05-17 at 23:48 +0200, Michał Mirosław wrote:
-> >> >> >> > 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
-> >> >> >> > > Hello Michael,
-> >> >> >> > >
-> >> >> >> > > Looks like to use a new flag requires more time/work. I am thinking
-> >> >> >> > > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
-> >> >> >> > to
-> >> >> >> > > avoid the new flag for now since mavctap uses real NICs as lower
-> >> >> >> > device?
-> >> >> >> >
-> >> >> >> > Is there any other restriction besides requiring driver to not recycle
-> >> >> >> > the skb? Are there any drivers that recycle TX skbs?
-> >> >> > Not just recycling skbs, keeping reference to any of the pages in the
-> >> >> > skb. Another requirement is to invoke the callback
-> >> >> > in a timely fashion.  For example virtio-net doesn't limit the time until
-> >> >> > that happens (skbs are only freed when some other packet is
-> >> >> > transmitted), so we need to avoid zcopy for such (nested-virt)
-> >> >> > scenarious, right?
-> >> >> Hmm. But every hardware driver supporting SG will keep reference to
-> >> >> the pages until the packet is sent (or DMA'd to the device). This can
-> >> >> take a long time if hardware queue happens to stall for some reason.
-> >> > That's a fundamental property of zero copy transmit.
-> >> > You can't let the application/guest reuse the memory until
-> >> > no one looks at it anymore.
-> >>
-> >> One more question: is userspace (or whatever is sending those packets)
-> >> denied from modifying passed pages? I assume it is, but just want to
-> >> be sure.
-> >>
-> >> Best Regards,
-> >> Michał Mirosław
-> >
-> > Good point.
-> >
-> > It's not denied in the sense that it still can modify them if it's
-> > buggy (the pages might not be read-only).
-> > But well-behaved userspace won't modify them until the callback
-> > is invoked.
-> >
-> > That would be a problem if the underlying device is
-> > a bridge where we might try to e.g. filter these packets -
-> > data can get modified after the filter. We'd have to copy
-> > whatever the filter accesses and use the copy - it's rarely
-> > the data itself.
-> >
-> > That's not normally a problem for macvtap connected to a physical NIC,
-> > as that already bypasses any and all filtering.
-> >
-> > But that's another limitation we should note in the comment,
-> > and another reason to limit to specific devices.
-> 
-> It looks like this feature can be used only in very strict circumstances.
+On Wed, May 18, 2011 at 10:31 AM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> On Wed, May 18, 2011 at 9:38 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>>> I think you can take a look at next_prio(), it just calculate the
+>>> next highest task on the current cpu; in this case,
+>>> cpumask_test_cpu(cpu, &p->cpus_allowed) will be true for the most
+>>> of time, but maybe that task is bound to this cpu.
+>>
+>> I've been looking at the history here, and I think that '-1' is a relic.
+>>
+>> If you look at sched_rt.c in f65eda4f789168ba5ff3fa75546c29efeed19f58:
+>>
+>> $ git show f65eda4f:kernel/sched_rt.c
+>>
+>> You'll see that push_rt_task calls pick_next_highest_task_rt() with a
+>> -1. That code has long been replaced.
+>
+> Yeah, the condition "cpu < 0" could be removed since we have no
+> that kind of caller.
+>
+>>
+>> I'm a bit nervous about taking Hillf's patch as is. But a little more
+>> reviewing and testing may prove that it is legit.
+>
+> But another point is like I said before:
+> 'cpumask_test_cpu(cpu, &p->cpus_allowed)' doesn't equal to
+> 'p->rt.nr_cpus_allowed > 1' because we could have bounded
+> task.
+> So the condition 'if (cpumask_test_cpu(cpu, &p->cpus_allowed))'
+> in Hillf's patch is not sufficient.
+>
 
-True. I think it's reasonable to try and start with something
-restricted and then add features though - past attempts to solve the problem
-generally right away did not bear fruit.
+Hi all
 
-> What about tcpdump listening on the device or lowerdev? This path
-> might clone the skb for any device.
-> 
-> Best Regards,
-> Michał Mirosław
+The patch is prepared again, in which tests for both cpu and
+nr_cpus_allowed are dropped.
 
-Thanks for bringing this up: taps do need to be fixed as they can hang
-on to a page for unlimited time. Further, as a malicious guest can
-change the packet at any time, data that taps get wouldn't be correct.
-We can either linearize the problematic skbs or disable
-zero copy if there are any taps for the given device.
+The reason to drop nr_cpus_allowed is to make sure that the
+returned value is correct for both case that cpu == rq->cpu and
+case that cpu != rq->cpu.
 
--- 
-MST
+thanks
+
+Hillf
+---
+
+--- a/kernel/sched_rt.c	2011-04-27 11:48:50.000000000 +0800
++++ b/kernel/sched_rt.c	2011-05-18 21:16:22.000000000 +0800
+@@ -1149,9 +1149,7 @@ static void deactivate_task(struct rq *r
+
+ static int pick_rt_task(struct rq *rq, struct task_struct *p, int cpu)
+ {
+-	if (!task_running(rq, p) &&
+-	    (cpu < 0 || cpumask_test_cpu(cpu, &p->cpus_allowed)) &&
+-	    (p->rt.nr_cpus_allowed > 1))
++	if (!task_running(rq, p) && cpumask_test_cpu(cpu, &p->cpus_allowed))
+ 		return 1;
+ 	return 0;
+ }
