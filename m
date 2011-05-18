@@ -1,64 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751133Ab1EREFa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 00:05:30 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44761 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1EREF3 (ORCPT
+	id S1751433Ab1EREJu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 00:09:50 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54705 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751023Ab1EREJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 00:05:29 -0400
-Message-ID: <9317a84b59d0a78a4b8e304ac2da490a.squirrel@www.firstfloor.org>
-In-Reply-To: <493994B35A117E4F832F97C4719C4C04011505C39D@orsmsx505.amr.corp.intel.com>
-References: <1305671358-14478-1-git-send-email-fenghua.yu@intel.com>
-    <1305671358-14478-10-git-send-email-fenghua.yu@intel.com>
-    <08d8c27c0495452cad52b62b362dd1d1.squirrel@www.firstfloor.org>
-    <493994B35A117E4F832F97C4719C4C04011505C39D@orsmsx505.amr.corp.intel.com>
-Date: Wed, 18 May 2011 06:05:26 +0200
-Subject: RE: [PATCH 9/9] x86/lib/memset_64.S: Optimize memset by enhanced REP
- MOVSB/STOSB
-From: "Andi Kleen" <andi@firstfloor.org>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "Andi Kleen" <andi@firstfloor.org>, "Ingo Molnar" <mingo@elte.hu>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Avi Kivity" <avi@redhat.com>,
-        "Arjan van de Ven" <arjan@infradead.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Wed, 18 May 2011 00:09:48 -0400
+Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        akpm@linux-foundation.org, colin.king@canonical.com,
+        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
+        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+In-Reply-To: <20110517103840.GL5279@suse.de>
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+	 <1305295404-12129-5-git-send-email-mgorman@suse.de>
+	 <4DCFAA80.7040109@jp.fujitsu.com> <1305519711.4806.7.camel@mulgrave.site>
+	 <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
+	 <20110516084558.GE5279@suse.de>
+	 <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
+	 <20110516102753.GF5279@suse.de>
+	 <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
+	 <20110517103840.GL5279@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 May 2011 08:09:33 +0400
+Message-ID: <1305691773.2580.1.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-05-17 at 11:38 +0100, Mel Gorman wrote:
+> On Tue, May 17, 2011 at 08:50:44AM +0900, Minchan Kim wrote:
+> > Don't we have to move cond_resched?
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 292582c..633e761 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -231,8 +231,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+> >         if (scanned == 0)
+> >                 scanned = SWAP_CLUSTER_MAX;
+> > 
+> > -       if (!down_read_trylock(&shrinker_rwsem))
+> > -               return 1;       /* Assume we'll be able to shrink next time */
+> > +       if (!down_read_trylock(&shrinker_rwsem)) {
+> > +               ret = 1;
+> > +               goto out; /* Assume we'll be able to shrink next time */
+> > +       }
+> > 
+> >         list_for_each_entry(shrinker, &shrinker_list, list) {
+> >                 unsigned long long delta;
+> > @@ -280,12 +282,14 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+> >                         count_vm_events(SLABS_SCANNED, this_scan);
+> >                         total_scan -= this_scan;
+> > 
+> > -                       cond_resched();
+> >                 }
+> > 
+> >                 shrinker->nr += total_scan;
+> > +               cond_resched();
+> >         }
+> >         up_read(&shrinker_rwsem);
+> > +out:
+> > +       cond_resched();
+> >         return ret;
+> >  }
+> > 
+> 
+> This makes some sense for the exit path but if one or more of the
+> shrinkers takes a very long time without sleeping (extremely long
+> list searches for example) then kswapd will not call cond_resched()
+> between shrinkers and still consume a lot of CPU.
+> 
+> > >
+> > > balance_pgdat() only calls cond_resched if the zones are not
+> > >        balanced. For a high-order allocation that is balanced, it
+> > >        checks order-0 again. During that window, order-0 might have
+> > >        become unbalanced so it loops again for order-0 and returns
+> > >        that was reclaiming for order-0 to kswapd(). It can then find
+> > >        that a caller has rewoken kswapd for a high-order and re-enters
+> > >        balance_pgdat() without ever have called cond_resched().
+> > 
+> > If kswapd reclaims order-o followed by high order, it would have a
+> > chance to call cond_resched in shrink_page_list. But if all zones are
+> > all_unreclaimable is set, balance_pgdat could return any work. Okay.
+> > It does make sense.
+> > By your scenario, someone wakes up kswapd with higher order, again.
+> > So re-enters balance_pgdat without ever have called cond_resched.
+> > But if someone wakes up higher order again, we can't have a chance to
+> > call kswapd_try_to_sleep. So your patch effect would be nop, too.
+> > 
+> > It would be better to put cond_resched after balance_pgdat?
+> > 
+> 
+> Which will leave kswapd runnable instead of going to sleep but
+> guarantees a scheduling point. Lets see if the problem is that
+> cond_resched is being missed although if this was the case then patch
+> 4 would truly be a no-op but Colin has already reported that patch 1 on
+> its own didn't fix his problem. If the problem is sandybridge-specific
+> where kswapd remains runnable and consuming large amounts of CPU in
+> turbo mode then we know that there are other cond_resched() decisions
+> that will need to be revisited.
+> 
+> Colin or James, would you be willing to test with patch 1 from this
+> series and Minchan's patch below? Thanks.
 
->
-> Only memcpy are generated by gcc when gcc version >=4.3. Other functions
-> are defined by kernel lib.
+Yes, but unfortunately I'm on the road at the moment.  I won't get back
+to the laptop showing the problem until late on Tuesday (24th).  If it
+works for Colin, I'd assume it's OK.
 
-Are you sure? AFAIK it supports more.
+James
 
-> I would leave gcc optimization for most memcpy cases instead of forcing
-> memcpy to call the kernel lib memcpy. I hope gcc will catch up and
-> implement a good enhanced rep movsb/stosb solution soon. If turns out gcc
-> can not generate good memcpy, it's easy to switch to the patching kernel
-> lib memcpy.
 
-The problem is that gcc can only do that if you tell it to generate
-code for that. But it has no mechanism to patch in/out different
-variants for the same binary. So it would only work for a specially
-optimized kernel for that CPU.
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 292582c..61c45d0 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2753,6 +2753,7 @@ static int kswapd(void *p)
+> >                 if (!ret) {
+> >                         trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
+> >                         order = balance_pgdat(pgdat, order, &classzone_idx);
+> > +                       cond_resched();
+> >                 }
+> >         }
+> >         return 0;
+> > 
+> > >
+> > > While it appears unlikely, there are bad conditions which can result
+> > > in cond_resched() being avoided.
+> > 
+> > >
+> > > --
+> > > Mel Gorman
+> > > SUSE Labs
+> > >
+> > 
+> > 
+> > 
+> > -- 
+> > Kind regards,
+> > Minchan Kim
+> 
 
-I suspect for smaller copies it won't make too much different anyways
-and gcc's code is probably fine. But gcc won't know that you
-can do better on large copies, so using a macro would be a way
-to tell it that.
-
--Andi
 
