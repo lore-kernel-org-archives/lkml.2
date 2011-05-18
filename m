@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933236Ab1EROkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 10:40:52 -0400
-Received: from home.keithp.com ([63.227.221.253]:39395 "EHLO keithp.com"
+	id S1757315Ab1EROor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 10:44:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6486 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752856Ab1EROkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 10:40:51 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Mihai Moldovan <ionic@ionic.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915/sdvo: Reorder i2c initialisation before ddc proxy
-In-Reply-To: <e0d58a$78jc@orsmga002.jf.intel.com>
-References: <4DD2648C.6020309@ionic.de> <1305637430-16026-1-git-send-email-chris@chris-wilson.co.uk> <yunei3wssyb.fsf@aiko.keithp.com> <e0d58a$78jc@orsmga002.jf.intel.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 18 May 2011 07:40:42 -0700
-Message-ID: <yun8vu42hsl.fsf@aiko.keithp.com>
+	id S1757134Ab1EROoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 10:44:46 -0400
+Date: Wed, 18 May 2011 16:44:29 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: NULL pointer deref in tty port / uart
+Message-ID: <20110518144429.GC2011@jolsa.brq.redhat.com>
+References: <20110517231229.GB1776@nowhere>
+ <20110518004420.2b8f5da9@bob.linux.org.uk>
+ <20110518142631.GB2011@jolsa.brq.redhat.com>
+ <20110518153636.5cdcdd78@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110518153636.5cdcdd78@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 18, 2011 at 03:36:36PM +0100, Alan Cox wrote:
+> > have the same issue.. looks like we should not NULL the port->tty
+> > if there's blocked open, but not sure what's exactly the logic
+> > behind "port's block_open and count" ..
+> 
+> A pending open is not a user of the tty as far as the rest of the stack
+> is concerned. I also don't see why clearing port->tty is causing this
+> crash because nothing on that path should ever be going via port->tty and
+> it isn't safe to do so.
+> 
+> > attached patch fixes it for me
+> 
+> But still breaks on hangup where we can't do that.
+> 
+> Where is port->tty getting misused to cause the crash, that is the bit
+> I'm missing somewhere.
 
-On Wed, 18 May 2011 09:04:11 +0100, Chris Wilson <chris@chris-wilson.co.uk>=
- wrote:
-> On Tue, 17 May 2011 18:22:52 -0700, Keith Packard <keithp@keithp.com> wro=
-te:
-> > On Tue, 17 May 2011 14:03:50 +0100, Chris Wilson <chris@chris-wilson.co=
-.uk> wrote:
-> > > The ddc proxy depends upon the underlying i2c bus being selected. Und=
-er
-> > > certain configurations, the i2c-adapter functionality is queried duri=
-ng
-> > > initialisation and so may trigger an OOPS during boot. Hence, we need=
- to
-> > > reorder the initialisation of the ddc proxy until after we hook up th=
-e i2c
-> > > adapter for the SDVO device.
-> >=20
-> > I'd love more explanation here about how this code ever worked -- what
-> > are these 'certain configurations' of which you speak?
->=20
-> The condition under which it fails is when the i2c_add_adapter calls into
-> i2c_detect which will attempt to probe all valid addresses on the adapter
-> iff there is a pre-existing i2c_driver with the same class as the freshly
-> added i2c_adapter.
+I think it's the 
 
-Lovely.
+uart_update_termios in uart_dtr_rts (drivers/tty/serial/serial_core.c)
 
-> So it appears to depend upon having compiled in (or loaded such a module
-> before i915.ko) an i2c-driver that likes to futz over the i2c_adapters
-> claiming DDC support.
+called path:
 
-Thanks for your additional explanation, as I said, the patch looks sane
-on the face of it (always nice to initialize values before use).
+tty_port_block_til_ready
+	tty_port_raise_dtr_rts
+		uart_dtr_rts
+			uart_update_termios
 
-I've marked this as reviewed, added your additional explanation and
-merged it to drm-intel-next. Seems like it might like a cc to stable?
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFN09pqQp8BWwlsTdMRAlsXAJ9+kTMh6s/zd6IiZG4a2zhWDVm8zACcCuEm
-QBqaTWTHdT5NIbuTIscwckY=
-=sjqQ
------END PGP SIGNATURE-----
---=-=-=--
+jirka
