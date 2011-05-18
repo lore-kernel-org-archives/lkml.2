@@ -1,64 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757163Ab1ERM7K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 08:59:10 -0400
-Received: from investici.nine.ch ([217.150.252.179]:25212 "EHLO
-	confino.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757121Ab1ERM7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 08:59:08 -0400
-X-Greylist: delayed 1230 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 May 2011 08:59:08 EDT
-X-DKIM: Sendmail DKIM Filter v2.8.2 confino.investici.org BD13D8445C
-From: Antonio Quartulli <ordex@autistici.org>
-To: linux-kernel@vger.kernel.org
-Cc: Antonio Quartulli <ordex@autistici.org>
-Subject: [PATCH] net: add seq_before/seq_after functions
-Date: Wed, 18 May 2011 14:38:39 +0200
-Message-Id: <1305722319-8315-1-git-send-email-ordex@autistici.org>
-X-Mailer: git-send-email 1.7.3.4
+	id S933118Ab1ERMnV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 08:43:21 -0400
+Received: from spaceboyz.net ([87.106.131.203]:42044 "EHLO spaceboyz.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933083Ab1ERMnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 08:43:19 -0400
+Date: Wed, 18 May 2011 14:43:07 +0200
+From: David Lamparter <equinox@diac24.net>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linux Containers <containers@lists.osdl.org>,
+        Renato Westphal <renatowestphal@gmail.com>
+Subject: Identifying network namespaces (was: Network namespace manipulation
+ with file descriptors)
+Message-ID: <20110518124307.GD3762520@jupiter.n2.diac24.net>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce two operations to handle comparison between packet sequence
-numbers taking into account overflow/wraparound. Batman-adv uses
-these functions already to check for successor packet even in case of
-overflow.
----
+On Fri, May 06, 2011 at 07:23:29PM -0700, Eric W. Biederman wrote:
+> Today there are something things you can use namespaces to implement but
+> the userspace code is unnecessarily complex and fragile because of
+> limitations of the kernel interfaces.
 
-I added this two functions in net.h because I didn't really know where
-best placement is. I saw several modules that redefine their own functions
-for the same purpose.
+(I hope I'm not duplicating stuff here, maybe this is already taken care
+of...)
 
- include/linux/net.h |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+There still is the unresolved issue of identifying and/or equality
+testing network namespaces. The problems I see are the following:
 
-diff --git a/include/linux/net.h b/include/linux/net.h
-index 94de83c..c7bc9bf 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -295,4 +295,21 @@ extern struct ratelimit_state net_ratelimit_state;
- #endif
+Problems
+========
+
+-   there is no simple list of the existing namespaces
  
- #endif /* __KERNEL__ */
-+
-+/* Returns the smallest signed integer in two's complement with the sizeof x */
-+#define smallest_signed_int(x) (1u << (7u + 8u * (sizeof(x) - 1u)))
-+
-+/* Checks if a sequence number x is a predecessor/successor of y.
-+ * they handle overflows/underflows and can correctly check for a
-+ * predecessor/successor unless the variable sequence number has grown by
-+ * more then 2**(bitwidth(x)-1)-1.
-+ * This means that for a uint8_t with the maximum value 255, it would think:
-+ *  - when adding nothing - it is neither a predecessor nor a successor
-+ *  - before adding more than 127 to the starting value - it is a predecessor,
-+ *  - when adding 128 - it is neither a predecessor nor a successor,
-+ *  - after adding more than 127 to the starting value - it is a successor */
-+#define seq_before(x, y) ({typeof(x) _dummy = (x - y); \
-+			_dummy > smallest_signed_int(_dummy); })
-+#define seq_after(x, y) seq_before(y, x)
-+
- #endif	/* _LINUX_NET_H */
--- 
-1.7.3.4
+  most importantly, network namespaces can be abused very sneakily to
+  provide trojans or other malicious software with a covert
+  communication channel.
+
+  Just create a macvlan device on the local ethernet, shift it into a
+  new namespace, grab an IP - and the admin of the host will be left
+  dumbfounded with his plain old netstat or ss as to where those weird
+  packets are coming from.
+
+  (Granted, this needs root privileges and you can still see everything
+  in /proc/<pid>/net/{tcp,udp,...})
+
+-   processes cannot easily be cross referenced with each other
+
+  in the case of user space stuff running astray - like management
+  software crashing, routing daemons screwing up, etc. - it becomes
+  fairly difficult to shut down a network namespace (or even reaquire
+  physical devices that have been reassigned)
+
+-   namespaces cannot adequately be identified to the user
+
+  for debugging, some kernel messages become useless. most prominently,
+  "unregister_netdevice: waiting for lo to become free. Usage count = 123"
+  could certainly use some clarification, *which* lo is meant...
+
+So, considering this set of premises (feedback welcome) I looked for
+some suitable means of identification. I discarded going for any process
+identifiers since Eric's patches allow for network namespaces without
+any process holding a reference, using bind mounts instead.
+
+Solution?
+=========
+
+I do think I found another identifier suitable for both exporting a full 
+list and providing "getid" functionality: the "lo" interface index.
+I am not fully sure on the rules here, but to my understanding the lo
+interface index should be constant for the lifetime of a network
+namespace, and furthermore the interface index namespace is global to
+the kernel.
+
+This can already be used right now:
+- you can identify the init namespace since its lo index is 1
+- you can use netlink (or SIOCGIFINDEX, ew.) to get your own ID
+- as soon as you have the means to attach to a namespace, you
+  automatically also have the means to get its ID
+
+What might need to be added:
+1) a list of lo indices
+2) a way to get a hold of the namespace using its lo index
+3) maybe dmesg output on creation/destruction for the abuse case above
+4) possibly a file in /proc/<pid>/net that just contains the lo index,
+  for ease of use
+
+3) and 4) should be trivial; 1) and 2) could be solved by having a
+directory in /proc (?) that has all the network namespace "files" with
+their lo indices as names.
+
+
+So, ... Opinions?
+
+
+-David
 
