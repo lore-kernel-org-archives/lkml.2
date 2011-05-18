@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab1ERBlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 21:41:36 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:58071 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932761Ab1ERBlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 21:41:22 -0400
+	id S932789Ab1ERBlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 21:41:24 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:60858 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932728Ab1ERBlX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 21:41:23 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Joe Perches <joe@perches.com>,
@@ -15,9 +16,9 @@ Cc: John Stultz <john.stultz@linaro.org>, Joe Perches <joe@perches.com>,
         David Rientjes <rientjes@google.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: [PATCH 2/4] comm: Add lock-free task->comm accessor
-Date: Tue, 17 May 2011 18:41:03 -0700
-Message-Id: <1305682865-27111-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 3/4] printk: Add %ptc to safely print a task's comm
+Date: Tue, 17 May 2011 18:41:04 -0700
+Message-Id: <1305682865-27111-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
 References: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
@@ -25,10 +26,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds __get_task_comm() which returns the task->comm value
-without taking the comm_lock. This function may return null or
-incomplete comm values, and is only present for performance critical
-paths that can handle these pitfalls.
+Accessing task->comm requires proper locking. However in the past
+access to current->comm could be done without locking. This
+is no longer the case, so all comm access needs to be done
+while holding the comm_lock.
+
+In my attempt to clean up unprotected comm access, I've noticed
+most comm access is done for printk output. To simplify correct
+locking in these cases, I've introduced a new %ptc format,
+which will print the corresponding task's comm.
+
+Example use:
+printk("%ptc: unaligned epc - sending SIGBUS.\n", current);
 
 CC: Joe Perches <joe@perches.com>
 CC: Ingo Molnar <mingo@elte.hu>
@@ -40,48 +49,61 @@ CC: David Rientjes <rientjes@google.com>
 CC: Dave Hansen <dave@linux.vnet.ibm.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: linux-mm@kvack.org
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- fs/exec.c             |   13 +++++++++++++
- include/linux/sched.h |    1 +
- 2 files changed, 14 insertions(+), 0 deletions(-)
+ lib/vsprintf.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 34fa611..7e79c97 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -996,6 +996,19 @@ static void flush_old_files(struct files_struct * files)
- 	spin_unlock(&files->file_lock);
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index bc0ac6b..b7a9953 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -797,6 +797,23 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+ 	return string(buf, end, uuid, spec);
  }
  
-+/**
-+ * __get_task_comm - Unlocked accessor to task comm value
-+ *
-+ * This function returns the task->comm value without
-+ * taking the comm_lock. This method is only for performance
-+ * critical paths, and may return a null or incomplete comm
-+ * value.
-+ */
-+char *__get_task_comm(struct task_struct *tsk)
++static noinline_for_stack
++char *task_comm_string(char *buf, char *end, void *addr,
++			 struct printf_spec spec, const char *fmt)
 +{
-+	return tsk->comm;
++	struct task_struct *tsk = addr;
++	char *ret;
++	unsigned long flags;
++
++	spin_lock_irqsave(&tsk->comm_lock, flags);
++	ret = string(buf, end, tsk->comm, spec);
++	spin_unlock_irqrestore(&tsk->comm_lock, flags);
++
++	return ret;
 +}
 +
- char *get_task_comm(char *buf, struct task_struct *tsk)
- {
- 	unsigned long flags;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f8a7cdf..5e3c25a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2189,6 +2189,7 @@ struct task_struct *fork_idle(int);
++
++
+ int kptr_restrict = 1;
  
- extern void set_task_comm(struct task_struct *tsk, char *from);
- extern char *get_task_comm(char *to, struct task_struct *tsk);
-+extern char *__get_task_comm(struct task_struct *tsk);
+ /*
+@@ -864,6 +881,12 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 	}
  
- #ifdef CONFIG_SMP
- extern unsigned long wait_task_inactive(struct task_struct *, long match_state);
+ 	switch (*fmt) {
++	case 't':
++		switch (fmt[1]) {
++		case 'c':
++			return task_comm_string(buf, end, ptr, spec, fmt);
++		}
++		break;
+ 	case 'F':
+ 	case 'f':
+ 		ptr = dereference_function_descriptor(ptr);
+@@ -1151,6 +1174,7 @@ qualifier:
+  *   http://tools.ietf.org/html/draft-ietf-6man-text-addr-representation-00
+  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
+  *   case.
++ * %ptc outputs the task's comm name
+  * %n is ignored
+  *
+  * The return value is the number of characters which would
 -- 
 1.7.3.2.146.gca209
 
