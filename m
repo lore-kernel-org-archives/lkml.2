@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab1ERBDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 21:03:06 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35113 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082Ab1ERBDE (ORCPT
+	id S932656Ab1ERBEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 21:04:45 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:43457 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082Ab1ERBEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 21:03:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DD31AB4.4050007@jp.fujitsu.com>
-Date: Wed, 18 May 2011 10:02:44 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: john.stultz@linaro.org
-CC: mingo@elte.hu, linux-kernel@vger.kernel.org, joe@perches.com,
-        mina86@mina86.com, apw@canonical.com, jirislaby@gmail.com,
-        rientjes@google.com, dave@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, linux-mm@kvack.org, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 1/3] comm: Introduce comm_lock spinlock to protect task->comm
- access
-References: <1305665263-20933-1-git-send-email-john.stultz@linaro.org>	 <1305665263-20933-2-git-send-email-john.stultz@linaro.org>	 <20110517212734.GB28054@elte.hu> <1305671225.2915.133.camel@work-vm>
-In-Reply-To: <1305671225.2915.133.camel@work-vm>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 17 May 2011 21:04:44 -0400
+From: Taylor Hutt <thutt@chromium.org>
+To: Peter Hsiang <peter.hsiang@maxim-ic.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Taylor Hutt <thutt@chromium.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Max98095: Move existing NULL check before pointer dereference.
+Date: Tue, 17 May 2011 18:03:54 -0700
+Message-Id: <1305680634-10484-1-git-send-email-thutt@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/18 7:27), John Stultz wrote:
-> On Tue, 2011-05-17 at 23:27 +0200, Ingo Molnar wrote:
->> * John Stultz<john.stultz@linaro.org>  wrote:
->>
->>> The implicit rules for current->comm access being safe without locking are no
->>> longer true. Accessing current->comm without holding the task lock may result
->>> in null or incomplete strings (however, access won't run off the end of the
->>> string).
->>
->> This is rather unfortunate - task->comm is used in a number of performance
->> critical codepaths such as tracing.
+Visual inspection shows that max98095_put_eq_enum() and
+max98095_put_bq_enum() each have a possible NULL deref of 'pdata'.
 
-Right.
+This change moves the NULL check above the use.
 
+BUG=none
+TEST=Visual inspection
+Change-Id: Ic53a7e38a958f39225ac4961bcfd3812a95ea1b5
+Signed-off-by: Taylor Hutt <thutt@chromium.org>
+---
+ sound/soc/codecs/max98095.c |   16 ++++++----------
+ 1 files changed, 6 insertions(+), 10 deletions(-)
 
->> Why does this matter so much? A NULL string is not a big deal.
->
-> I'll defer to KOSAKI Motohiro and David on this bit. :)
-
-Heh, I did ask you current locking rule of task->comm after you introduced
-writable /proc/<pid>/comm.
-
-
->> Note, since task->comm is 16 bytes there's the CMPXCHG16B instruction on x86
->> which could be used to update it atomically, should atomicity really be
->> desired.
->
-> Could we use this where cmpxchg16b is available and fall back to locking
-> if not? Or does that put too much of a penalty on arches that don't have
-> cmpxchg16b support?
->
-> Alternatively, we can have locked accessors that are safe in the
-> majority of slow-path warning printks, and provide unlocked accessors
-> for cases where the performance is critical and the code can properly
-> handle possibly incomplete comms.
-
-Probably, this is safer choice.
+diff --git a/sound/soc/codecs/max98095.c b/sound/soc/codecs/max98095.c
+index a6cc94e..e1d282d 100644
+--- a/sound/soc/codecs/max98095.c
++++ b/sound/soc/codecs/max98095.c
+@@ -1872,16 +1872,14 @@ static int max98095_put_eq_enum(struct snd_kcontrol *kcontrol,
+ 
+ 	BUG_ON(channel > 1);
+ 
+-	cdata = &max98095->dai[channel];
++	if (!pdata || !max98095->eq_textcnt)
++		return 0;
+ 
+ 	if (sel >= pdata->eq_cfgcnt)
+ 		return -EINVAL;
+ 
++	cdata = &max98095->dai[channel];
+ 	cdata->eq_sel = sel;
+-
+-	if (!pdata || !max98095->eq_textcnt)
+-		return 0;
+-
+ 	fs = cdata->rate;
+ 
+ 	/* Find the selected configuration with nearest sample rate */
+@@ -2020,16 +2018,14 @@ static int max98095_put_bq_enum(struct snd_kcontrol *kcontrol,
+ 
+ 	BUG_ON(channel > 1);
+ 
+-	cdata = &max98095->dai[channel];
++	if (!pdata || !max98095->bq_textcnt)
++		return 0;
+ 
+ 	if (sel >= pdata->bq_cfgcnt)
+ 		return -EINVAL;
+ 
++	cdata = &max98095->dai[channel];
+ 	cdata->bq_sel = sel;
+-
+-	if (!pdata || !max98095->bq_textcnt)
+-		return 0;
+-
+ 	fs = cdata->rate;
+ 
+ 	/* Find the selected configuration with nearest sample rate */
+-- 
+1.7.3.1
 
