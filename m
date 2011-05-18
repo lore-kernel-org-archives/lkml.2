@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933772Ab1ERTbB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 15:31:01 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54572 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933756Ab1ERTa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 15:30:59 -0400
-Message-ID: <4DD41E71.6080103@kernel.dk>
-Date: Wed, 18 May 2011 21:30:57 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: namhyung@gmail.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, James.Bottomley@suse.de
-Subject: Re: [PATCH 1/3] bsg: fix bsg_poll() to return POLLOUT properly
-References: <1305437513-3914-1-git-send-email-namhyung@gmail.com> <20110519.030933.1568838937885764850.fujita.tomonori@lab.ntt.co.jp@lab.ntt.co.jp>
-In-Reply-To: <20110519.030933.1568838937885764850.fujita.tomonori@lab.ntt.co.jp@lab.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933759Ab1ERTed (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 15:34:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38094 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933632Ab1ERTec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 15:34:32 -0400
+Date: Wed, 18 May 2011 12:33:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Michal Nazarewicz <mina86@mina86.com>,
+        Andy Whitcroft <apw@canonical.com>, Jiri Slaby <jirislaby@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/4] v6 Improve task->comm locking situation
+Message-Id: <20110518123335.62785884.akpm@linux-foundation.org>
+In-Reply-To: <1305745409.2915.178.camel@work-vm>
+References: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
+	<20110518062554.GB2945@elte.hu>
+	<1305745409.2915.178.camel@work-vm>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-18 20:09, FUJITA Tomonori wrote:
-> On Sun, 15 May 2011 14:31:51 +0900
-> Namhyung Kim <namhyung@gmail.com> wrote:
-> 
->> POLLOUT should be returned only if bd->queued_cmds < bd->max_queue
->> so that bsg_alloc_command() can proceed.
->>
->> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
->> ---
->>  block/bsg.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> All the three patches look good.
-> 
-> Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+On Wed, 18 May 2011 12:03:29 -0700
+John Stultz <john.stultz@linaro.org> wrote:
 
-You can add mine, too.
+> But, the net of this is that it seems everyone else is way more
+> passionate about this issue then I am, so I'm starting to wonder if it
+> would be better for someone who has more of a dog in the fight to be
+> pushing these?
 
-Acked-by: Jens Axboe <jaxboe@fusionio.com>
+I like the %p thingy - it's neat and is an overall improvement.  If it
+dies I shall stick another pin in my Ingo doll.
 
--- 
-Jens Axboe
-
+Providing an unlocked accessor for super-special applications which
+know what they're doing seems an adequate compromise.
