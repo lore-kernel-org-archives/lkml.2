@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979Ab1ERVNX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:13:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63540 "EHLO mga01.intel.com"
+	id S1753337Ab1ERVON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:14:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20097 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754455Ab1ERVNW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:13:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,233,1304319600"; 
-   d="scan'208";a="3616582"
-From: "Rao, Nikhil" <nikhil.rao@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH]  x86: Removing unnecessary check in detect_ht
-Thread-Topic: [PATCH]  x86: Removing unnecessary check in detect_ht
-Thread-Index: AQHMFZ+wwMCJ5f57lUKQ3lDQVr7GwpSTFQXQ
-Date: Wed, 18 May 2011 21:13:19 +0000
-Message-ID: <1F668163772FA946975B9466A9DFF729B6A3@ORSMSX101.amr.corp.intel.com>
-References: <43F901BD926A4E43B106BF17856F0755018E1CF482@orsmsx508.amr.corp.intel.com>
- <4FF5AC937153B0459463C1A88EB478F2010DFD3D3F@orsmsx505.amr.corp.intel.com>
- <43F901BD926A4E43B106BF17856F0755018E1CF69D@orsmsx508.amr.corp.intel.com>
- <1305048201.2736.17.camel@sbsiddha-MOBL3.sc.intel.com>
- <1F668163772FA946975B9466A9DFF729B5E5@ORSMSX101.amr.corp.intel.com>
- <1F668163772FA946975B9466A9DFF729B64C@ORSMSX101.amr.corp.intel.com>
- <20110518210754.GA28476@elte.hu>
-In-Reply-To: <20110518210754.GA28476@elte.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.131.214]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751614Ab1ERVOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 17:14:11 -0400
+Date: Thu, 19 May 2011 00:13:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: virtualization@lists.linux-foundation.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, habanero@linux.vnet.ibm.com,
+        Shirley Ma <mashirle@us.ibm.com>, Krishna Kumar2 <krkumar2@in.ibm.com>,
+        kvm@vger.kernel.org, steved@us.ibm.com,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, borntraeger@de.ibm.com,
+        avi@redhat.com
+Subject: [PATCH RFC] vhost: fix enable notify: write out last avail value we
+ saw
+Message-ID: <20110518211339.GA26122@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing apart from what you mention - bootlog message and SMP instead of SMT.
+With RX ring and mergeable buffers, vhost-net sometimes
+enables notifications when ring is not empty - just
+doesn't have enough entries for the incoming packet.
 
-Nikhil
+To get event when entries are added in this case,
+we should always write out the last index value
+we saw into event index field, which is ahead
+of the index we have consumed.
 
-> -----Original Message-----
-> From: Ingo Molnar [mailto:mingo@elte.hu]
-> Sent: Wednesday, May 18, 2011 2:08 PM
-> To: Rao, Nikhil
-> Cc: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
-> x86@kernel.org; Siddha, Suresh B; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] x86: Removing unnecessary check in detect_ht
-> 
-> 
-> * Rao, Nikhil <nikhil.rao@intel.com> wrote:
-> 
-> > This patch removes a check that prevents correct CPU topology setup
-> > when cpuid extensions for topology enumeration are not supported and
-> > the number of processors reported to the OS is smaller than
-> > smp_num_siblings
-> 
-> What bad effect was observed, exactly? An annoying warning in the
-> bootlog and
-> incorrect scheduler domain setup (SMP instead of SMT) - or something
-> else as
-> well?
-> 
-> Thanks,
-> 
-> 	Ingo
+Otherwise we get a kick, see that there are not enough
+entries in the ring, reenable notifications
+but since last used index was not updated
+we don't get any more events.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+
+This bugfix is on top of my patchset, I'm working on addressing
+Rusty's comments for that now.
+
+Will push to my git tree event idx branch for everyone's testing pleasure
+shortly.
+
+
+ drivers/vhost/vhost.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 2aea4cb..1267a3d 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -1438,7 +1438,7 @@ bool vhost_enable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+ 			return false;
+ 		}
+ 	} else {
+-		r = put_user(vq->last_avail_idx, vhost_avail_event(vq));
++		r = put_user(vq->avail_idx, vhost_avail_event(vq));
+ 		if (r) {
+ 			vq_err(vq, "Failed to update avail event index at %p: %d\n",
+ 			       vhost_avail_event(vq), r);
+-- 
+1.7.5.53.gc233e
