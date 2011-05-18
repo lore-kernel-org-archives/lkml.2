@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1ERXcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 19:32:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41524 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756276Ab1ERXb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 19:31:58 -0400
-X-ExtLoop1: 1
-Message-Id: <20110518233158.089978277@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: quilt/0.47-1
-Date: Wed, 18 May 2011 16:31:39 -0700
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, daniel.blueman@gmail.com,
-        suresh.b.siddha@intel.com
-Subject: [patch 9/9] x86, ioapic: consolidate mp_ioapic_routing[] into struct ioapic
-References: <20110518233130.524634928@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=add_pin_programmed.patch
+	id S932268Ab1ERXhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 19:37:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55783 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756170Ab1ERXhW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 19:37:22 -0400
+X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=YGpKOGB3rUAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=yjhGIhWdcR5t9q172RIA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] tracing: Register static events output early
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1305761368-5488-1-git-send-email-fweisbec@gmail.com>
+References: <1305761368-5488-1-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 18 May 2011 19:37:19 -0400
+Message-ID: <1305761839.11267.23.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/kernel/apic/io_apic.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+On Thu, 2011-05-19 at 01:29 +0200, Frederic Weisbecker wrote:
 
-Index: linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-@@ -89,6 +89,7 @@ static struct ioapic {
- 	struct mpc_ioapic mp_config;
- 	/* IO APIC gsi routing info */
- 	struct mp_ioapic_gsi  gsi_config;
-+	DECLARE_BITMAP(pin_programmed, MP_MAX_IOAPIC_PIN + 1);
- } ioapics[MAX_IO_APICS];
- 
- #define mpc_ioapic_ver(id)		ioapics[id].mp_config.apicver
-@@ -1356,10 +1357,6 @@ static void setup_ioapic_irq(int apic_id
- 	ioapic_write_entry(apic_id, pin, entry);
- }
- 
--static struct {
--	DECLARE_BITMAP(pin_programmed, MP_MAX_IOAPIC_PIN + 1);
--} mp_ioapic_routing[MAX_IO_APICS];
--
- static bool __init io_apic_pin_not_connected(int idx, int apic_id, int pin)
- {
- 	if (idx != -1)
-@@ -3540,14 +3537,14 @@ int io_apic_setup_irq_pin_once(unsigned 
- 	int ret;
- 
- 	/* Avoid redundant programming */
--	if (test_bit(pin, mp_ioapic_routing[id].pin_programmed)) {
-+	if (test_bit(pin, ioapics[id].pin_programmed)) {
- 		pr_debug("Pin %d-%d already programmed\n",
- 			 mpc_ioapic_id(id), pin);
- 		return 0;
- 	}
- 	ret = io_apic_setup_irq_pin(irq, node, attr);
- 	if (!ret)
--		set_bit(pin, mp_ioapic_routing[id].pin_programmed);
-+		set_bit(pin, ioapics[id].pin_programmed);
- 	return ret;
- }
- 
+> diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+> index cf535cc..ad92d9c 100644
+> --- a/kernel/trace/trace_output.c
+> +++ b/kernel/trace/trace_output.c
+> @@ -1278,4 +1278,4 @@ __init static int init_events(void)
+>  
+>  	return 0;
+>  }
+> -device_initcall(init_events);
+> +early_initcall(init_events);
+
+Hmm, careful here. The ring buffers are also allocated at early_init().
+
+But you may be OK, as things like trace_printk() don't do anything if
+"tracing_disabled" is set, and it's set on bootup and cleared after we
+allocate the buffers.
+
+-- Steve
 
 
