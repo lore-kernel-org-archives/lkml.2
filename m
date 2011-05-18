@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933732Ab1ERTXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 15:23:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34324 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933632Ab1ERTXv (ORCPT
+	id S933745Ab1ERTas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 15:30:48 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:37926 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757324Ab1ERTaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 15:23:51 -0400
-Date: Wed, 18 May 2011 12:23:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Subject: Re: [PATCHv2 -next] LEDS: LED module of DA9052 PMIC driver
-Message-Id: <20110518122332.94d4fdb9.akpm@linux-foundation.org>
-In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BC621FA@KCINPUNHJCMS01.kpit.com>
-References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BC621FA@KCINPUNHJCMS01.kpit.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 18 May 2011 15:30:46 -0400
+Date: Wed, 18 May 2011 15:26:53 -0400 (EDT)
+Message-Id: <20110518.152653.1486764697527722925.davem@davemloft.net>
+To: tsunanet@gmail.com
+Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1305715384-81716-1-git-send-email-tsunanet@gmail.com>
+References: <1305619677.2850.11.camel@edumazet-laptop>
+	<1305715384-81716-1-git-send-email-tsunanet@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 18 May 2011 12:26:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 May 2011 17:22:28 +0530
-Ashish Jangam <Ashish.Jangam@kpitcummins.com> wrote:
+From: Benoit Sigoure <tsunanet@gmail.com>
+Date: Wed, 18 May 2011 03:43:04 -0700
 
-> LED Driver for Dialog Semiconductor DA9052 PMICs.
+> Instead of hardcoding the initial RTO to 3s and requiring
+> the kernel to be recompiled to change it, expose it as a
+> sysctl that can be tuned at runtime.  Leave the default
+> value unchanged.
 > 
-> Changes made since last submission:
-> . added patches as a merger plan for LED
+> Signed-off-by: Benoit Sigoure <tsunanet@gmail.com>
 
- drivers/input/misc/Kconfig          |    7 
- drivers/input/misc/Makefile         |    1 
- drivers/input/misc/da9052_onkey.c   |  166 +++++++
- drivers/leds/Kconfig                |    8 
- drivers/leds/Makefile               |    1 
- drivers/leds/leds-da9052.c          |  216 +++++++++
- drivers/mfd/Kconfig                 |   25 +
- drivers/mfd/Makefile                |    7 
- drivers/mfd/da9052-core.c           |  487 +++++++++++++++++++++
- drivers/mfd/da9052-i2c.c            |  170 +++++++
- drivers/mfd/da9052-irq.c            |  313 +++++++++++++
- drivers/mfd/da9052-spi.c            |  183 ++++++++
- drivers/video/backlight/Kconfig     |    6 
- drivers/video/backlight/Makefile    |    1 
- drivers/video/backlight/da9052_bl.c |  216 +++++++++
- drivers/watchdog/Kconfig            |    6 
- drivers/watchdog/Makefile           |    1 
- drivers/watchdog/da9052_wdt.c       |  464 ++++++++++++++++++++
- include/linux/mfd/da9052/da9052.h   |   89 +++
- include/linux/mfd/da9052/irq.h      |   86 +++
- include/linux/mfd/da9052/pdata.h    |   46 ++
- include/linux/mfd/da9052/reg.h      |  822 ++++++++++++++++++++++++++++++++++++
- include/linux/mfd/da9052/wdt.h      |   67 ++
- 23 files changed, 3388 insertions(+)
+If you read the ietf draft that reduces the initial RTO down to 1
+second, it states that if we take a timeout during the initial
+connection handshake then we have to revert the RTO back up to 3
+seconds.
 
-This is a huge patch which affects multiple separately-maintained
-subsystems.  I can't take it as-is and it's not compileable in a tree
-which doesn't define CONFIG_PMIC_DA9052.
+This fallback logic conflicts with being able to only change the
+initial RTO via sysctl, I think.  Because there are actually two
+values at stake and they depend upon eachother, the initial RTO and
+the value we fallback to on initial handshake retransmissions.
 
+So I'd rather get a patch that implements the 1 second initial
+RTO with the 3 second fallback on SYN retransmit, than this patch.
 
-A way to proceed with this patchset is to get the core PMIC_DA9052
-support patch merged and to then send the various dependent patches to
-the relevant maintainers.
-
-What _is_ the core patch, btw?  Seems that it's "MFD: MFD module of
-DA9052 PMIC driver".
-
-An alternative way of getting it all merged up is for us to ask Samuel
-to merge _all_ the patches, after receiving suitable acks and reviews
-from suitable people.  Or I can do that.
-
-I think the second way is better.  Sam?
-
+We already have too many knobs.
