@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204Ab1EROfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 10:35:20 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52073 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933044Ab1EROfT (ORCPT
+	id S933209Ab1EROhv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 10:37:51 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35241 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757208Ab1EROhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 10:35:19 -0400
-Date: Wed, 18 May 2011 15:36:36 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Alan Cox <alan@linux.intel.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: NULL pointer deref in tty port / uart
-Message-ID: <20110518153636.5cdcdd78@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110518142631.GB2011@jolsa.brq.redhat.com>
-References: <20110517231229.GB1776@nowhere>
-	<20110518004420.2b8f5da9@bob.linux.org.uk>
-	<20110518142631.GB2011@jolsa.brq.redhat.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 18 May 2011 10:37:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:mime-version:content-type
+         :content-transfer-encoding:message-id;
+        b=WcwwVZv8d7CLB2VWxVY1JBWdDJhEZD5Pv3Kx0m8HNgyJULsbCvWZqRIPS3VhMYRk+q
+         nYM1FwRoDCWjepp2dPqrRDHOYjSunFqe6IFgaHTOBVgw192YfWxw/WVSMr8Gjn7ds+m1
+         xY/mqkz4CGy/h6YkwjjqZ4TcJKpZ9tNnQ6Lr8=
+From: Stevie Trujillo <stevie.trujillo@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: How to get backtrace? modprobe -r iwlagn; modprobe iwlagn kills kernel
+Date: Wed, 18 May 2011 16:37:46 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.4-ck3; KDE/4.6.3; x86_64; ; )
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105181637.46164.stevie.trujillo@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> have the same issue.. looks like we should not NULL the port->tty
-> if there's blocked open, but not sure what's exactly the logic
-> behind "port's block_open and count" ..
+Hello,
 
-A pending open is not a user of the tty as far as the rest of the stack
-is concerned. I also don't see why clearing port->tty is causing this
-crash because nothing on that path should ever be going via port->tty and
-it isn't safe to do so.
+I'm having some problem getting a backtrace. When I do "modprobe -r iwlagn; 
+modprobe iwlagn" (2.6.38.6 with Intel-1030N) the kernel crashes (sometimes I 
+need to try 2 or 3 times, and sometimes the modprobe -r is the one that 
+crashes).
+This spams my monitor with several oops/panics before it finally dies. I can 
+only see bottom of the last one, which probably isn't very meaningful.
+I tried loading netconsole, but I only get one or two lines before it stops 
+sending/printing.
+I then tried kexec+crashkernel, but I only managed to get a backtrace for the 
+last panic (which I think is just a result of memory corruption or something).
+Finally I tried compiling ramoops into my kernel, but it didn't want to load 
+because of "No such device".
 
-> attached patch fixes it for me
-
-But still breaks on hangup where we can't do that.
-
-Where is port->tty getting misused to cause the crash, that is the bit
-I'm missing somewhere.
+--
+Stevie Trujillo
