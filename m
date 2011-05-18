@@ -1,248 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab1ERETk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 00:19:40 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:35407 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab1ERETi convert rfc822-to-8bit (ORCPT
+	id S1751886Ab1ERE3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 00:29:46 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62609 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023Ab1ERE3o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 00:19:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VPiO8SQr7NiLKUQYHiiOBQ3H/duk/XpxdSQuptSy7HYFqyzbOOexLT8TEvqTABK3bd
-         P9cA9XT50vvQv+2RXjd4kBineiuVnn/ZwzkNSOa1ZaHpFoVTFLyT4leohFfb9L+4MMFT
-         KB9k9yqYLPLTGM9UzThmNCJ/8MvTUeuITNH0k=
+	Wed, 18 May 2011 00:29:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <1305640239.2046.27.camel@lenovo>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
-	<1305295404-12129-5-git-send-email-mgorman@suse.de>
-	<4DCFAA80.7040109@jp.fujitsu.com>
-	<1305519711.4806.7.camel@mulgrave.site>
-	<BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
-	<20110516084558.GE5279@suse.de>
-	<BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
-	<20110516102753.GF5279@suse.de>
-	<BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
-	<20110517103840.GL5279@suse.de>
-	<1305640239.2046.27.camel@lenovo>
-Date: Wed, 18 May 2011 13:19:37 +0900
-Message-ID: <BANLkTi=esh86EtfQgRGWkHx6Z3fYV+42tA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Colin Ian King <colin.king@canonical.com>
-Cc: Mel Gorman <mgorman@suse.de>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        akpm@linux-foundation.org, raghu.prabhu13@gmail.com, jack@suse.cz,
-        chris.mason@oracle.com, cl@linux.com, penberg@kernel.org,
-        riel@redhat.com, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110517.134312.226762699.davem@davemloft.net>
+References: <alpine.SOC.1.00.1105021259220.6200@math.ut.ee> <20110517.134312.226762699.davem@davemloft.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 17 May 2011 22:29:23 -0600
+X-Google-Sender-Auth: 6fX-xVovNgVbOiX51u84-JWfY-k
+Message-ID: <BANLkTikhKqcpdadpM3RQdYvDrPn46_v6_Q@mail.gmail.com>
+Subject: Re: SBus devices sometimes detected, sometimes not
+To: David Miller <davem@davemloft.net>
+Cc: mroos@linux.ee, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Colin,
-
-On Tue, May 17, 2011 at 10:50 PM, Colin Ian King
-<colin.king@canonical.com> wrote:
-> On Tue, 2011-05-17 at 11:38 +0100, Mel Gorman wrote:
->> On Tue, May 17, 2011 at 08:50:44AM +0900, Minchan Kim wrote:
->> > On Mon, May 16, 2011 at 7:27 PM, Mel Gorman <mgorman@suse.de> wrote:
->> > > On Mon, May 16, 2011 at 05:58:59PM +0900, Minchan Kim wrote:
->> > >> On Mon, May 16, 2011 at 5:45 PM, Mel Gorman <mgorman@suse.de> wrote:
->> > >> > On Mon, May 16, 2011 at 02:04:00PM +0900, Minchan Kim wrote:
->> > >> >> On Mon, May 16, 2011 at 1:21 PM, James Bottomley
->> > >> >> <James.Bottomley@hansenpartnership.com> wrote:
->> > >> >> > On Sun, 2011-05-15 at 19:27 +0900, KOSAKI Motohiro wrote:
->> > >> >> >> (2011/05/13 23:03), Mel Gorman wrote:
->> > >> >> >> > Under constant allocation pressure, kswapd can be in the situation where
->> > >> >> >> > sleeping_prematurely() will always return true even if kswapd has been
->> > >> >> >> > running a long time. Check if kswapd needs to be scheduled.
->> > >> >> >> >
->> > >> >> >> > Signed-off-by: Mel Gorman<mgorman@suse.de>
->> > >> >> >> > ---
->> > >> >> >> >   mm/vmscan.c |    4 ++++
->> > >> >> >> >   1 files changed, 4 insertions(+), 0 deletions(-)
->> > >> >> >> >
->> > >> >> >> > diff --git a/mm/vmscan.c b/mm/vmscan.c
->> > >> >> >> > index af24d1e..4d24828 100644
->> > >> >> >> > --- a/mm/vmscan.c
->> > >> >> >> > +++ b/mm/vmscan.c
->> > >> >> >> > @@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
->> > >> >> >> >     unsigned long balanced = 0;
->> > >> >> >> >     bool all_zones_ok = true;
->> > >> >> >> >
->> > >> >> >> > +   /* If kswapd has been running too long, just sleep */
->> > >> >> >> > +   if (need_resched())
->> > >> >> >> > +           return false;
->> > >> >> >> > +
->> > >> >> >>
->> > >> >> >> Hmm... I don't like this patch so much. because this code does
->> > >> >> >>
->> > >> >> >> - don't sleep if kswapd got context switch at shrink_inactive_list
->> > >> >> >
->> > >> >> > This isn't entirely true:  need_resched() will be false, so we'll follow
->> > >> >> > the normal path for determining whether to sleep or not, in effect
->> > >> >> > leaving the current behaviour unchanged.
->> > >> >> >
->> > >> >> >> - sleep if kswapd didn't
->> > >> >> >
->> > >> >> > This also isn't entirely true: whether need_resched() is true at this
->> > >> >> > point depends on a whole lot more that whether we did a context switch
->> > >> >> > in shrink_inactive. It mostly depends on how long we've been running
->> > >> >> > without giving up the CPU.  Generally that will mean we've been round
->> > >> >> > the shrinker loop hundreds to thousands of times without sleeping.
->> > >> >> >
->> > >> >> >> It seems to be semi random behavior.
->> > >> >> >
->> > >> >> > Well, we have to do something.  Chris Mason first suspected the hang was
->> > >> >> > a kswapd rescheduling problem a while ago.  We tried putting
->> > >> >> > cond_rescheds() in several places in the vmscan code, but to no avail.
->> > >> >>
->> > >> >> Is it a result of  test with patch of Hannes(ie, !pgdat_balanced)?
->> > >> >>
->> > >> >> If it isn't, it would be nop regardless of putting cond_reshed at vmscan.c.
->> > >> >> Because, although we complete zone balancing, kswapd doesn't sleep as
->> > >> >> pgdat_balance returns wrong result. And at last VM calls
->> > >> >> balance_pgdat. In this case, balance_pgdat returns without any work as
->> > >> >> kswap couldn't find zones which have not enough free pages and goto
->> > >> >> out. kswapd could repeat this work infinitely. So you don't have a
->> > >> >> chance to call cond_resched.
->> > >> >>
->> > >> >> But if your test was with Hanne's patch, I am very curious how come
->> > >> >> kswapd consumes CPU a lot.
->> > >> >>
->> > >> >> > The need_resched() in sleeping_prematurely() seems to be about the best
->> > >> >> > option.  The other option might be just to put a cond_resched() in
->> > >> >> > kswapd_try_to_sleep(), but that will really have about the same effect.
->> > >> >>
->> > >> >> I don't oppose it but before that, I think we have to know why kswapd
->> > >> >> consumes CPU a lot although we applied Hannes' patch.
->> > >> >>
->> > >> >
->> > >> > Because it's still possible for processes to allocate pages at the same
->> > >> > rate kswapd is freeing them leading to a situation where kswapd does not
->> > >> > consider the zone balanced for prolonged periods of time.
->> > >>
->> > >> We have cond_resched in shrink_page_list, shrink_slab and balance_pgdat.
->> > >> So I think kswapd can be scheduled out although it's scheduled in
->> > >> after a short time as task scheduled also need page reclaim. Although
->> > >> all task in system need reclaim, kswapd cpu 99% consumption is a
->> > >> natural result, I think.
->> > >> Do I miss something?
->> > >>
->> > >
->> > > Lets see;
->> > >
->> > > shrink_page_list() only applies if inactive pages were isolated
->> > >        which in turn may not happen if all_unreclaimable is set in
->> > >        shrink_zones(). If for whatver reason, all_unreclaimable is
->> > >        set on all zones, we can miss calling cond_resched().
->> > >
->> > > shrink_slab only applies if we are reclaiming slab pages. If the first
->> > >        shrinker returns -1, we do not call cond_resched(). If that
->> > >        first shrinker is dcache and __GFP_FS is not set, direct
->> > >        reclaimers will not shrink at all. However, if there are
->> > >        enough of them running or if one of the other shrinkers
->> > >        is running for a very long time, kswapd could be starved
->> > >        acquiring the shrinker_rwsem and never reaching the
->> > >        cond_resched().
->> >
->> > Don't we have to move cond_resched?
->> >
->> > diff --git a/mm/vmscan.c b/mm/vmscan.c
->> > index 292582c..633e761 100644
->> > --- a/mm/vmscan.c
->> > +++ b/mm/vmscan.c
->> > @@ -231,8 +231,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->> >         if (scanned == 0)
->> >                 scanned = SWAP_CLUSTER_MAX;
->> >
->> > -       if (!down_read_trylock(&shrinker_rwsem))
->> > -               return 1;       /* Assume we'll be able to shrink next time */
->> > +       if (!down_read_trylock(&shrinker_rwsem)) {
->> > +               ret = 1;
->> > +               goto out; /* Assume we'll be able to shrink next time */
->> > +       }
->> >
->> >         list_for_each_entry(shrinker, &shrinker_list, list) {
->> >                 unsigned long long delta;
->> > @@ -280,12 +282,14 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->> >                         count_vm_events(SLABS_SCANNED, this_scan);
->> >                         total_scan -= this_scan;
->> >
->> > -                       cond_resched();
->> >                 }
->> >
->> >                 shrinker->nr += total_scan;
->> > +               cond_resched();
->> >         }
->> >         up_read(&shrinker_rwsem);
->> > +out:
->> > +       cond_resched();
->> >         return ret;
->> >  }
->> >
->>
->> This makes some sense for the exit path but if one or more of the
->> shrinkers takes a very long time without sleeping (extremely long
->> list searches for example) then kswapd will not call cond_resched()
->> between shrinkers and still consume a lot of CPU.
->>
->> > >
->> > > balance_pgdat() only calls cond_resched if the zones are not
->> > >        balanced. For a high-order allocation that is balanced, it
->> > >        checks order-0 again. During that window, order-0 might have
->> > >        become unbalanced so it loops again for order-0 and returns
->> > >        that was reclaiming for order-0 to kswapd(). It can then find
->> > >        that a caller has rewoken kswapd for a high-order and re-enters
->> > >        balance_pgdat() without ever have called cond_resched().
->> >
->> > If kswapd reclaims order-o followed by high order, it would have a
->> > chance to call cond_resched in shrink_page_list. But if all zones are
->> > all_unreclaimable is set, balance_pgdat could return any work. Okay.
->> > It does make sense.
->> > By your scenario, someone wakes up kswapd with higher order, again.
->> > So re-enters balance_pgdat without ever have called cond_resched.
->> > But if someone wakes up higher order again, we can't have a chance to
->> > call kswapd_try_to_sleep. So your patch effect would be nop, too.
->> >
->> > It would be better to put cond_resched after balance_pgdat?
->> >
->>
->> Which will leave kswapd runnable instead of going to sleep but
->> guarantees a scheduling point. Lets see if the problem is that
->> cond_resched is being missed although if this was the case then patch
->> 4 would truly be a no-op but Colin has already reported that patch 1 on
->> its own didn't fix his problem. If the problem is sandybridge-specific
->> where kswapd remains runnable and consuming large amounts of CPU in
->> turbo mode then we know that there are other cond_resched() decisions
->> that will need to be revisited.
->>
->> Colin or James, would you be willing to test with patch 1 from this
->> series and Minchan's patch below? Thanks.
+On Tue, May 17, 2011 at 2:43 PM, David Miller <davem@davemloft.net> wrote:
+> From: Meelis Roos <mroos@linux.ee>
+> Date: Mon, 2 May 2011 13:39:46 +0300 (EEST)
 >
-> This works OK fine.  Ran 250 test cycles for about 2 hours.
+>> This is 2.6.39-rc3..rc5 on Sun Ultra 1 with SBus hme card.
+>> On about 50% of boots, hme is found fine and works. On other half boots
+>> (not strictly in any order) SBus hme is not detected with this error:
+>>
+>> hme: probe of f006be34 failed with error -22
+>>
+>> grepping the logs, I sometimes also find similar errors about qlogicpti:
+>>
+>> qpti: probe of f00798c4 failed with error -22
+>>
+>> The node addresses are always the same for the device.
+>>
+>> 2.6.38 did not have this problem.
+>
+> Grant, I'm trying to diagnose this bug report which is a 2.6.39-rcX regression
+> and I think it's a side-effect of your changes to move away from
+> of_platform_{,un}register_driver().
+>
+> Somehow an OF device driver's ->probe() is being called with a NULL
+> "->of_match", that's why the probe returns -22 (-EINVAL) since in
+> your transformations that is the first thing you check.
+>
+> There are only a few ways this can happen that I can tell, firstly
+> the of_driver_match_device() call has to fail.
+>
+> It could then happen if pdrv->id_table is non-NULL, but in these two
+> cases (drivers/net/sunhme.c:hme_sbus_driver and
+> drivers/scsi/qlogicpti.c:qpti_sbus_driver) no id_table is assigned.
+>
+> The next possibility would be if pdrv->name matches the device's
+> name, but in these two cases ("SUNW,hme" vs. "hme" and "QLGC,pti"
+> vs. "qpti") that should not be the case either.
 
-Thanks for the testing!.
-I would like to know exact patch for you to apply.
-My modification of inserting cond_resched is two.
+This is the failure case I was most concerned about when merging the
+busses, but as you say the device naming convention is different for
+OF-generated devices and therefore unlikely, and also easy to check
+for.
 
-1) shrink_slab function
-2) kswapd right after balance_pgdat.
+> There is only one more way this could happen, and that is if the
+> device bus pointer is NULL. �Because in that situation the
+> match function doesn't get called and all devices can match.
+>
+> This is also very unlikely, because platform_device_add() always
+> assigns pdev->dev.bus to &platform_bus_type before the device_add()
+> call.
 
-1) or 2) ?
-Or
-Both?
+Actually, platform_device_add() doesn't get called for the of_device
+case; mostly because there are still a couple of things that need to
+be unified before platform_device_add() can replace of_device_add().
+of_device_register() is called instead which doesn't set the bus
+pointer.  However, both versions of scan_one_device() in arch/sparc do
+explicitly set the bus pointer before adding the device, so this still
+doesn't look like the issue, and if it was it doesn't explain the
+intermittent nature of the problem.
 
+> The fact that this failure happens only on some boots for Meelis leads
+> me to belive that some datastructure is corrupted. �Perhaps there is
+> an incorrect __init or __devinit somewhere, or we reference freed up
+> data some other way.
 
-Thanks
+I would agree that that is a likely scenario.
+
+> Any ideas?
+
+It would be good to know the exact failure mode, so we need to know if
+of_driver_match_device() is setting of_match which is subsequently
+getting cleared, or if of_driver_match_device() isn't getting called
+at all.  Meelis, can you add something like the following code to
+include/linux/of_device.h in the of_driver_match_device() function
+between the of_match_device() call and the return statement:
+
+if (dev->of_match)
+        printk("found match; node=%s, driver=%s\n",
+                 dev->of_node->full_name, drv->name);
+
+g.
+
 -- 
-Kind regards,
-Minchan Kim
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
