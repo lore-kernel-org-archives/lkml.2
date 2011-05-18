@@ -1,100 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933613Ab1ERSxe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 14:53:34 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:2845 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933562Ab1ERSxd convert rfc822-to-8bit (ORCPT
+	id S933599Ab1ERSzV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 14:55:21 -0400
+Received: from mx1.unsolicited.net ([173.255.193.191]:53934 "EHLO
+	mx1.unsolicited.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933554Ab1ERSzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 14:53:33 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-From: "Sukesh Srikakula" <sukeshs@broadcom.com>
-To: "Stephen Rothwell" <sfr@canb.auug.org.au>, "Greg KH" <greg@kroah.com>
-cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jouni Malinen" <jouni.malinen@atheros.com>,
-        "Arend Van Spriel" <arend@broadcom.com>
-Date: Wed, 18 May 2011 11:53:22 -0700
-Subject: RE: linux-next: manual merge of the staging tree with the
- wireless tree
-Thread-Topic: linux-next: manual merge of the staging tree with the
- wireless tree
-Thread-Index: AcwVBzuAG2Lh66i5Q1iM2tgRMRnJAQAhVwqg
-Message-ID: <400C43189542CE41BC0A5B252FC901369670F0AD03@SJEXCHCCR02.corp.ad.broadcom.com>
-References: <20110518125633.0164cb32.sfr@canb.auug.org.au>
-In-Reply-To: <20110518125633.0164cb32.sfr@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 18 May 2011 14:55:18 -0400
+Message-ID: <4DD41613.4040102@unsolicited.net>
+Date: Wed, 18 May 2011 19:55:15 +0100
+From: David <david@unsolicited.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-X-WSS-ID: 61CAC9093IC2832121-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Latest kernel fails to build multi-threaded on ecryptfs home
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+I'm seeing some unpleasant things when building multithreaded when running the latest kernels. The compiler complains of truncated files and implausible characters. Single threaded builds seem fine.
+This seems to be connected with the following errors in dmesg :-
 
-Thanks for merging. 
-Merge looks to be fine.
+[ 4421.923887] ecryptfs_decrypt_page: Error attempting to read lower page; rc = [-4]
+[ 4421.923898] ecryptfs_readpage: Error decrypting page; rc = [-4]
+[ 4421.923951] ecryptfs_decrypt_page: Error attempting to read lower page; rc = [-4]
+[ 4421.923957] ecryptfs_readpage: Error decrypting page; rc = [-4]
+[ 4421.923967] ecryptfs_decrypt_page: Error attempting to read lower page; rc = [-4]
+[ 4421.923972] ecryptfs_readpage: Error decrypting page; rc = [-4]
+[ 4421.923989] ecryptfs_decrypt_page: Error attempting to read lower page; rc = [-4]
+[ 4421.923994] ecryptfs_readpage: Error decrypting page; rc = [-4]
+[ 4421.924003] ecryptfs_decrypt_page: Error attempting to read lower page; rc = [-4]
+[ 4421.924008] ecryptfs_readpage: Error decrypting page; rc = [-4]
+[ 4421.924016] ecryptfs_decrypt_page: Error attempting to read lower page; rc = [-4]
+[ 4421.924020] ecryptfs_readpage: Error decrypting page; rc = [-4]
+[ 4421.924028] ecryptfs_decrypt_page: Error attempting to read lower page; rc = [-4]
+[ 4421.924033] ecryptfs_readpage: Error decrypting page; rc = [-4]
+[ 4421.924040] ecryptfs_decrypt_page: Error attempting to read lower page; rc = [-4]
+[ 4421.924045] ecryptfs_readpage: Error decrypting page; rc = [-4]
+[ 4421.924053] ecryptfs_decrypt_page: Error attempting to read lower page; rc = [-4]
+[ 4421.924057] ecryptfs_readpage: Error decrypting page; rc = [-4]
 
-Regards,
-Sukesh.
+I'm (obviously) compiling from an encrypted home directory (Ubuntu 10.04)
 
------Original Message-----
-From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
-Sent: Tuesday, May 17, 2011 7:57 PM
-To: Greg KH
-Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Jouni Malinen; Sukesh Srikakula; Arend Van Spriel
-Subject: linux-next: manual merge of the staging tree with the wireless tree
+david@david:~/src/kernel/linux-2.6.38$ uname -a
+Linux david 2.6.39-rc7-git12 #5 SMP Tue May 17 19:42:44 BST 2011 x86_64 GNU/Linux
 
-Hi Greg,
-
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c between commit
-5a083c0aba95 ("cfg80211: Use consistent BSS matching between scan and
-sme") from the wireless tree and commit e494632efcd9 ("staging:
-brcm80211: Fixed bss (re)connect/disconnect issues in brcmfmac driver")
-from the staging tree.
-
-I fixed it up (see below) anc can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-index 7aaf99c,e3b409b..0000000
---- a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-+++ b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-@@@ -2627,17 -2863,20 +2863,19 @@@ wl_bss_roaming_done(struct wl_priv *wl
-  	struct wl_connect_info *conn_info = wl_to_conn(wl);
-  	s32 err = 0;
-  
-+ 	WL_TRACE("Enter\n");
-+ 
-  	wl_get_assoc_ies(wl);
-- 	memcpy(&wl->bssid, &e->addr, ETH_ALEN);
-+ 	wl_update_prof(wl, NULL, &e->addr, WL_PROF_BSSID);
-  	wl_update_bss_info(wl);
- -
- -	cfg80211_roamed(ndev,
- +	cfg80211_roamed(ndev, NULL,
-- 			(u8 *)&wl->bssid,
-+ 			(u8 *)wl_read_prof(wl, WL_PROF_BSSID),
-  			conn_info->req_ie, conn_info->req_ie_len,
-  			conn_info->resp_ie, conn_info->resp_ie_len, GFP_KERNEL);
-- 	WL_DBG("Report roaming result\n");
-+ 	WL_CONN("Report roaming result\n");
-  
-  	set_bit(WL_STATUS_CONNECTED, &wl->status);
-- 
-+ 	WL_TRACE("Exit\n");
-  	return err;
-  }
-  
-
+david@david:~/src/kernel/linux-2.6.38$ make -j4 > ../test.out
+security/selinux/ss/services.c: In function ‘security_load_policy’:
+security/selinux/ss/services.c:1933: warning: the frame size of 1120 bytes is larger than 1024 bytes
+drivers/mfd/twl6030-irq.c: In function ‘twl6030_init_irq’:
+drivers/mfd/twl6030-irq.c:334: warning: cast to pointer from integer of different size
+drivers/media/video/sn9c102/sn9c102_core.c: In function ‘sn9c102_ioctl_v4l2’:
+drivers/media/video/sn9c102/sn9c102_core.c:3202: warning: the frame size of 1056 bytes is larger than 1024 bytes
+drivers/pci/pcie/portdrv_core.c:17:23: warning: include/linux/aer.h is shorter than expected
+drivers/staging/tm6000/tm6000-video.c: In function ‘tm6000_irq_callback’:
+drivers/staging/tm6000/tm6000-video.c:231: warning: ‘vbuf’ may be used uninitialized in this function
+drivers/staging/tm6000/tm6000-video.c:231: note: ‘vbuf’ was declared here
+drivers/usb/storage/scsiglue.c:57:19: warning: drivers/usb/storage/debug.h is shorter than expected
+drivers/video/efifb.c: In function ‘set_system’:
+drivers/video/efifb.c:247: warning: cast to pointer from integer of different size
+drivers/video/via/via-core.c: In function ‘via_pci_probe’:
+drivers/video/via/via-core.c:684: warning: assignment discards qualifiers from pointer target type
+In file included from arch/x86/boot/cmdline.c:15:
+arch/x86/boot/boot.h:26:22: warning: /home/david/src/kernel/linux-2.6.38/arch/x86/include/asm/boot.h is shorter than expected
+In file included from arch/x86/boot/video-mode.c:20:
+arch/x86/boot/vesa.h:73:1: warning: null character(s) ignored
+In file included from arch/x86/boot/video-mode.c:20:
+arch/x86/boot/vesa.h:73: error: stray ‘\227’ in program
+arch/x86/boot/vesa.h:73: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before numeric constant
+arch/x86/boot/vesa.h:73: error: stray ‘\325’ in program
+arch/x86/boot/vesa.h:73: error: stray ‘\376’ in program
+arch/x86/boot/vesa.h:73: error: stray ‘\23’ in program
+arch/x86/boot/vesa.h:73:2147: warning: missing terminating ' character
+arch/x86/boot/vesa.h:73: error: missing terminating ' character
+In file included from arch/x86/boot/video-mode.c:20:
+arch/x86/boot/vesa.h:74: error: stray ‘\356’ in program
+arch/x86/boot/vesa.h:74: error: stray ‘\330’ in program
+arch/x86/boot/vesa.h:74: error: stray ‘\337’ in program
+arch/x86/boot/vesa.h:78: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘can’
+arch/x86/boot/vesa.h:81: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘version’
+arch/x86/boot/vesa.h:82: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘herein’
+arch/x86/boot/vesa.h:146:1: warning: null character(s) ignored
+In file included from arch/x86/boot/video-mode.c:20:
+arch/x86/boot/vesa.h:146: error: stray ‘\342’ in program
+arch/x86/boot/vesa.h:146: error: stray ‘\202’ in program
+arch/x86/boot/vesa.h:146: error: stray ‘\17’ in program
+arch/x86/boot/vesa.h:146: error: stray ‘\370’ in program
+arch/x86/boot/vesa.h:146: error: stray ‘\210’ in program
+arch/x86/boot/vesa.h:146: error: stray ‘\205’ in program
+arch/x86/boot/vesa.h:146: error: stray ‘\222’ in program
+arch/x86/boot/vesa.h:146: error: stray ‘\323’ in program
+In file included from arch/x86/boot/video-mode.c:20:
+arch/x86/boot/vesa.h:150: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘can’
+arch/x86/boot/vesa.h:153: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘version’
+arch/x86/boot/vesa.h:154: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘herein’
+arch/x86/boot/vesa.h:218:1: warning: null character(s) ignored
+make[1]: *** [arch/x86/boot/video-mode.o] Error 1
+make[1]: *** Waiting for unfinished jobs....
+^Cmake[2]: *** Deleting file `arch/x86/boot/compressed/vmlinux.bin.gz'
+make[1]: *** [__modpost] Interrupt
+make: *** [modules] Interrupt
+make[2]: *** [arch/x86/boot/compressed/vmlinux.bin.gz] Interrupt
+make[1]: *** [arch/x86/boot/compressed/vmlinux] Interrupt
+make: *** [bzImage] Interrupt
 
