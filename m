@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202Ab1ERN7s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 09:59:48 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:54875 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933179Ab1ERN7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 09:59:47 -0400
-Date: Wed, 18 May 2011 16:59:45 +0300 (EEST)
-From: mroos@linux.ee
-To: Grant Likely <grant.likely@secretlab.ca>
-cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: SBus devices sometimes detected, sometimes not
-In-Reply-To: <BANLkTikhKqcpdadpM3RQdYvDrPn46_v6_Q@mail.gmail.com>
-Message-ID: <alpine.SOC.1.00.1105181149290.9877@math.ut.ee>
-References: <alpine.SOC.1.00.1105021259220.6200@math.ut.ee> <20110517.134312.226762699.davem@davemloft.net> <BANLkTikhKqcpdadpM3RQdYvDrPn46_v6_Q@mail.gmail.com>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933206Ab1ERODo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 10:03:44 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:53750 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932856Ab1ERODm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 10:03:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=nanometrics.ca; s=google;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=i7Poes+OSjLZQJ2zNWnDUAgCo/0pGn7cltElGbBewZyysqxV5cpa5vx99//mPAzzk+
+         MMVWGUZzeYPJppFdw0Ig23Jy4jag3ncv/iZoFTlPSFbvC8fJoKJg75FzOo9txRSPOVvr
+         sJ2BY/F0+RYNyCKlejJIYoaSiJY7PRB4xpBgY=
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
+Cc: Jaroslav Kysela <perex@perex.cz>, Clemens Ladisch <clemens@ladisch.de>,
+        linux-kernel@vger.kernel.org,
+        Ben Gardiner <bengardiner@nanometrics.ca>
+Subject: [PATCH] sound, core, pcm_lib: xrun_log: log also in_interrupt
+Date: Wed, 18 May 2011 10:03:34 -0400
+Message-Id: <1305727414-17623-1-git-send-email-bengardiner@nanometrics.ca>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It would be good to know the exact failure mode, so we need to know if
-> of_driver_match_device() is setting of_match which is subsequently
-> getting cleared, or if of_driver_match_device() isn't getting called
-> at all.  Meelis, can you add something like the following code to
-> include/linux/of_device.h in the of_driver_match_device() function
-> between the of_match_device() call and the return statement:
-> 
-> if (dev->of_match)
->         printk("found match; node=%s, driver=%s\n",
->                  dev->of_node->full_name, drv->name);
-> 
+When debugging pcm drivers I found the "period" or "hw" prefix printed
+by either XRUN_DEBUG_PERIODUPDATE or XRUN_DEBUG_PERIODUPDATE events, 
+respectively to be very useful is observing the interplay between
+interrupt-context updates and syscall-context updates.
 
-Tried it with todays 2.6.39-rc7-00211-gc1d10d1. It was harder to 
-reproduce this time, about 1 time out of 10.
+Similarly, when debugging overruns with XRUN_DEBUG_LOG it is useful to
+see the context of the last 10 positions.
 
-In normal operation:
+Add an in_interrupt member to hwptr_log_entry which stores the value of
+the in_interrupt parameter of snd_pcm_update_hw_ptr0 when the log entry
+is created. Print a "[Q]" prefix when dumping the log entries if
+in_interrupt was true.
 
-[   77.794877] found match; node=/sbus@1f,0/SUNW,hme@0,8c00000, driver=hme
-[   77.872379] sunhme.c:v3.10 August 26, 2008 David S. Miller (davem@davemloft.net)
-[   77.962865] eth0: HAPPY MEAL (SBUS) 10/100baseT Ethernet 08:00:20:88:6d:6a
+Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+---
+ sound/core/pcm_lib.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
-In case of error (bpp show only as an example that some things work):
-
-[   70.312166] found match; node=/sbus@1f,0/SUNW,bpp@e,c800000, driver=bpp
-[   70.389649] parport0: sunbpp at 0x1ffec800000
-[   70.477720] found match; node=/sbus@1f,0/SUNW,hme@0,8c00000, driver=hme
-[   70.578023] found match; node=/sbus@1f,0/QLGC,isp@1,10000, driver=qpti
-[   70.915544] hme: probe of f006be34 failed with error -22
-[   70.978825] qpti: probe of f00798c4 failed with error -22
-
+diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
+index 64449cb..c8c8091 100644
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -189,6 +189,7 @@ static void xrun(struct snd_pcm_substream *substream)
+ #define XRUN_LOG_CNT	10
+ 
+ struct hwptr_log_entry {
++	unsigned int in_interrupt;
+ 	unsigned long jiffies;
+ 	snd_pcm_uframes_t pos;
+ 	snd_pcm_uframes_t period_size;
+@@ -204,7 +205,7 @@ struct snd_pcm_hwptr_log {
+ };
+ 
+ static void xrun_log(struct snd_pcm_substream *substream,
+-		     snd_pcm_uframes_t pos)
++		     snd_pcm_uframes_t pos, int in_interrupt)
+ {
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	struct snd_pcm_hwptr_log *log = runtime->hwptr_log;
+@@ -220,6 +221,7 @@ static void xrun_log(struct snd_pcm_substream *substream,
+ 			return;
+ 	}
+ 	entry = &log->entries[log->idx];
++	entry->in_interrupt = in_interrupt;
+ 	entry->jiffies = jiffies;
+ 	entry->pos = pos;
+ 	entry->period_size = runtime->period_size;
+@@ -246,9 +248,11 @@ static void xrun_log_show(struct snd_pcm_substream *substream)
+ 		entry = &log->entries[idx];
+ 		if (entry->period_size == 0)
+ 			break;
+-		snd_printd("hwptr log: %s: j=%lu, pos=%ld/%ld/%ld, "
++		snd_printd("hwptr log: %s: %sj=%lu, pos=%ld/%ld/%ld, "
+ 			   "hwptr=%ld/%ld\n",
+-			   name, entry->jiffies, (unsigned long)entry->pos,
++			   name, entry->in_interrupt ? "[Q] " : "",
++			   entry->jiffies,
++			   (unsigned long)entry->pos,
+ 			   (unsigned long)entry->period_size,
+ 			   (unsigned long)entry->buffer_size,
+ 			   (unsigned long)entry->old_hw_ptr,
+@@ -326,7 +330,7 @@ static int snd_pcm_update_hw_ptr0(struct snd_pcm_substream *substream,
+ 	}
+ 	pos -= pos % runtime->min_align;
+ 	if (xrun_debug(substream, XRUN_DEBUG_LOG))
+-		xrun_log(substream, pos);
++		xrun_log(substream, pos, in_interrupt);
+ 	hw_base = runtime->hw_ptr_base;
+ 	new_hw_ptr = hw_base + pos;
+ 	if (in_interrupt) {
 -- 
-Meelis Roos (mroos@linux.ee)
+1.7.4.1
+
