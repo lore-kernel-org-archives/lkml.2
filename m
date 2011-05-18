@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933224Ab1ERRA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 13:00:56 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:44487 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932962Ab1ERRAy (ORCPT
+	id S933188Ab1ERRCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 13:02:08 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65272 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932962Ab1ERRCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 13:00:54 -0400
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirqus@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110518165138.GD22001@redhat.com>
-References: <1305671318.10756.49.camel@localhost.localdomain>
-	 <20110518103819.GL7589@redhat.com>
-	 <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
-	 <20110518111734.GO7589@redhat.com>
-	 <BANLkTi=g_PFfS5653K8ZoQ2Jhp8DhCV1hg@mail.gmail.com>
-	 <1305729507.32080.6.camel@localhost.localdomain>
-	 <20110518154746.GA21378@redhat.com>
-	 <1305734857.32080.53.camel@localhost.localdomain>
-	 <20110518163633.GB22001@redhat.com>
-	 <1305737140.32080.59.camel@localhost.localdomain>
-	 <20110518165138.GD22001@redhat.com>
+	Wed, 18 May 2011 13:02:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=LM4B+m4Fbis+qPofX6TAXNLl/wyQEUWbcbApW4JoTN6AHyvKlQlBzlLo1aNCvE7txv
+         GkTjyGTfChC/RaBPN8a/vyYAy3JHfJkWICPEamYZxp56hflOzLGDagLu05K0nuZDFgAz
+         qW8oz+aLKTlLaNA1gtXWEIb3/aXZAQVNhw054=
+Subject: [patch 1/3] Staging: sm7xx: removing extra white spaces,redundant
+ code and using macros
+From: anish <anish198519851985@gmail.com>
+To: greg@kroah.com, teddy.wang@siliconmotion.com.cn
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 May 2011 10:00:28 -0700
-Message-ID: <1305738028.32080.66.camel@localhost.localdomain>
+Date: Wed, 18 May 2011 22:31:58 +0530
+Message-ID: <1305738118.1881.69.camel@anish-desktop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-18 at 19:51 +0300, Michael S. Tsirkin wrote:
-> > > Yes, I agree.  I think for tcpdump, we really need to copy the
-> data
-> > > anyway, to avoid guest changing it in between.  So we do that and
-> then
-> > > use the copy everywhere, release the old one. Hmm? 
-> > 
-> > Yes. Old one use zerocopy, new one use copy data.
-> > 
-> > Thanks
-> > Shirley
-> 
-> No, that's wrong, as they might become different with a
-> malicious guest. As long as we copied already, lets realease
-> the data and have everyone use the copy. 
+This patch is to remove extra spaces,redundant code and using
+ ARRAY_SIZE macros.
 
-Ok, I will patch pskb_expand_head to test it out.
+ Signed-off-by: anish kumar <anish198519851985@gmail.com>
 
-Shirley
+---
+ drivers/staging/sm7xx/smtcfb.c |    7 +++----
+ drivers/staging/sm7xx/smtcfb.h |    7 +------
+ 2 files changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/staging/sm7xx/smtcfb.c b/drivers/staging/sm7xx/smtcfb.c
+index 94cb4e8..1aca0cb 100644
+--- a/drivers/staging/sm7xx/smtcfb.c
++++ b/drivers/staging/sm7xx/smtcfb.c
+@@ -128,7 +128,7 @@ u16 smtc_ChipIDs[] = {
+ 	0x720
+ };
+ 
+-#define numSMTCchipIDs (sizeof(smtc_ChipIDs) / sizeof(u16))
++#define numSMTCchipIDs ARRAY_SIZE(smtc_ChipIDs)
+ 
+ static struct fb_var_screeninfo smtcfb_var = {
+ 	.xres           = 1024,
+@@ -842,7 +842,7 @@ static int __init sm712vga_setup(char *options)
+ 	smdbg("\nsm712vga_setup = %s\n", options);
+ 
+ 	for (index = 0;
+-	     index < (sizeof(vesa_mode) / sizeof(struct vesa_mode_table));
++	     index < ARRAY_SIZE(vesa_mode);
+ 	     index++) {
+ 		if (strstr(options, vesa_mode[index].mode_index)) {
+ 			smtc_screen_info.lfb_width = vesa_mode[index].lfb_width;
+@@ -876,7 +876,6 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
+ 	err = pci_enable_device(pdev);	/* enable SMTC chip */
+ 	if (err)
+ 		return err;
+-	err = -ENOMEM;
+ 
+ 	hw.chipID = ent->device;
+ 	sprintf(name, "sm%Xfb", hw.chipID);
+@@ -1006,7 +1005,7 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
+ 
+ 	return 0;
+ 
+- failed:
++failed:
+ 	printk(KERN_INFO "Silicon Motion, Inc.  primary display init fail\n");
+ 
+ 	smtc_unmap_smem(sfb);
+diff --git a/drivers/staging/sm7xx/smtcfb.h b/drivers/staging/sm7xx/smtcfb.h
+index 0c11383..c5e6989 100644
+--- a/drivers/staging/sm7xx/smtcfb.h
++++ b/drivers/staging/sm7xx/smtcfb.h
+@@ -30,11 +30,6 @@
+ #define SCREEN_Y_RES      600
+ #define SCREEN_BPP        16
+ 
+-#ifndef FIELD_OFFSET
+-#define FIELD_OFSFET(type, field) \
+-	((unsigned long) (PUCHAR) & (((type *)0)->field))
+-#endif
+-
+ /*Assume SM712 graphics chip has 4MB VRAM */
+ #define SM712_VIDEOMEMORYSIZE	  0x00400000
+ /*Assume SM722 graphics chip has 8MB VRAM */
+@@ -790,4 +785,4 @@ struct ModeInit VGAMode[] = {
+ 	 },
+ };
+ 
+-#define numVGAModes		(sizeof(VGAMode) / sizeof(struct ModeInit))
++#define numVGAModes		ARRAY_SIZE(VGAMode)
+-- 
+1.7.0.4
+
+
+
+
 
