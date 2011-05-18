@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab1ERGX2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 02:23:28 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52814 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085Ab1ERGX1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 02:23:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lAUssC2VGApZkj/eXLo2e8u9/m58RqYG7Z7fagR9XC7qgK7wN5UnSrVNomGPsn+OhM
-         4FxTLhnVOamXkBooV8NuHYpqb803qzZRfdFeeeeafWUg58OEacNpCDYDFMt6Dsgxspsf
-         EketQEx8Qi5W3ehAUAOGchKa63d6WebT4nk+0=
+	id S1754512Ab1ERG0X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 02:26:23 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41914 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754085Ab1ERG0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 02:26:22 -0400
+Date: Wed, 18 May 2011 08:25:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andy Whitcroft <apw@canonical.com>, Jiri Slaby <jirislaby@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/4] v6 Improve task->comm locking situation
+Message-ID: <20110518062554.GB2945@elte.hu>
+References: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20110517195310.GA17003@merkur.ravnborg.org>
-References: <1305646532-29114-1-git-send-email-mmarek@suse.cz>
-	<20110517195310.GA17003@merkur.ravnborg.org>
-Date: Wed, 18 May 2011 02:23:26 -0400
-Message-ID: <BANLkTikmO7D3kUgU62d4_VC2ZPZCnSEqKA@mail.gmail.com>
-Subject: Re: [PATCH] kconfig: Only generate config_is_xxx for bool and
- tristate options
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Valdis.Kletnieks@vt.edu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-[added Valdis.Kletnieks@vt.edu to CC:]
+* John Stultz <john.stultz@linaro.org> wrote:
 
-On Tue, May 17, 2011 at 3:53 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Tue, May 17, 2011 at 05:35:32PM +0200, Michal Marek wrote:
->> For strings and integers, the config_is_xxx macros are useless and
->> sometimes misleading:
->>
->>   #define CONFIG_INITRAMFS_SOURCE ""
->>   #define config_is_initramfs_source() 1
->
-> I'm late with this comment....
-> Could we introduce "config_is_foo" using a syntax that
-> does not break grepability?
->
-> Maybe a syntax like this?
->
->    #ifdef CONFIG_FOO
->
-> and
->
->    if (KCONFIG_FOO())
->
-> Grepping for the use of a symbol is a very typical thing,
-> so we should try to keep this.
-> And with the suggested syntax above I expect fixdep to
-> catch up both usage types.
->
-Actually, there is already an issue, on a much smaller scale, in the
-current tree with NUMA_BUILD and COMPACTION_BUILD. The real way to fix
-this would be to always defines CONFIG_FOO, its value being 1 or 0
-depending on whether or not the symbol is selected. This is a
-+35k/-35k change.
+> v6 tries to address the latest round of issues. Again, hopefully this is 
+> getting close to something that can be queued for 2.6.40.
 
-Also, I find KCONFIG_FOO() is too specific to be in the kernel source,
-and redundant with CONFIG_FOO.
+We are far away from thinking about upstreaming any of this ...
 
-I've been playing a bit with the preprocessor, and reached that point:
+> Since my commit 4614a696bd1c3a9af3a08f0e5874830a85b889d4, the current->comm 
+> value could be changed by other threads.
+> 
+> This changed the comm locking rules, which previously allowed for unlocked 
+> current->comm access, since only the thread itself could change its comm.
+> 
+> While this was brought up at the time, it was not considered problematic, as 
+> the comm writing was done in such a way that only null or incomplete comms 
+> could be read. However, recently folks have made it clear they want to see 
+> this issue resolved.
 
-#define EXPAND(x)       __ ## x
-#define CONFIGURED(x)   \
-        ({  int __1 __maybe_unused = 1;         \
-            int __ ## x __maybe_unused = 0;     \
-            EXPAND(x); })
+The commit is from 2.5 years ago:
 
-I am not specifically proud of that, use case would be:
+        4614a696bd1c3a9af3a08f0e5874830a85b889d4
+        Author: john stultz <johnstul@us.ibm.com>
+        Date:   Mon Dec 14 18:00:05 2009 -0800
 
-extern func(void);
-int fn()
-{
-        if(CONFIGURED(CONFIG_FOO))
-                func();
-}
+            procfs: allow threads to rename siblings via /proc/pid/tasks/tid/comm
 
-The issue I am seeing is that it adds a dependency to the optimizer,
-as gcc will not optimize the branch away at -O0.
+So we are *way* beyond the time frame where this could be declared urgent.
 
-The advantage is that it is not intrusive at all within kconfig.
+So is there any actual motivation beyond:
 
- - Arnaud
+  " Hey, this looks a bit racy and 'top' very rarely, on rare workloads that 
+    play with ->comm[], might display a weird reading task name for a second, 
+    amongst the many other temporarily nonsensical statistical things it 
+    already prints every now and then. "
+
+?
+
+> So fair enough, as I opened this can of worms, I should work
+> to resolve it and this patchset is my initial attempt.
+
+This patch set does not address the many places that deal with ->comm so it 
+does not even approximate the true scope of the change!
+
+I.e. you are doing *another* change without fully seeing/showing the 
+consequences ...
+
+Thanks,
+
+	Ingo
