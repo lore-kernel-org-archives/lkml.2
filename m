@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab1ERPsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 11:48:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27364 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756876Ab1ERPsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 11:48:03 -0400
-Date: Wed, 18 May 2011 18:47:46 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-Message-ID: <20110518154746.GA21378@redhat.com>
-References: <1305575253.2885.28.camel@bwh-desktop>
- <20110516211459.GE18148@redhat.com>
- <1305588738.3456.65.camel@localhost.localdomain>
- <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
- <1305671318.10756.49.camel@localhost.localdomain>
- <20110518103819.GL7589@redhat.com>
- <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
- <20110518111734.GO7589@redhat.com>
- <BANLkTi=g_PFfS5653K8ZoQ2Jhp8DhCV1hg@mail.gmail.com>
- <1305729507.32080.6.camel@localhost.localdomain>
+	id S1756941Ab1ERPuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 11:50:22 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44257 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755466Ab1ERPuU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 11:50:20 -0400
+Date: Wed, 18 May 2011 17:50:17 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        =?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] AMD ARAT fixes
+Message-ID: <20110518155017.GA14324@gere.osrc.amd.com>
+References: <1305636919-31165-1-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1305729507.32080.6.camel@localhost.localdomain>
+In-Reply-To: <1305636919-31165-1-git-send-email-bp@amd64.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 07:38:27AM -0700, Shirley Ma wrote:
-> On Wed, 2011-05-18 at 13:40 +0200, Michał Mirosław wrote:
-> > >> >> Not more other restrictions, skb clone is OK. pskb_expand_head()
-> > looks
-> > >> >> OK to me from code review.
-> > >> > Hmm. pskb_expand_head calls skb_release_data while keeping
-> > >> > references to pages. How is that ok? What do I miss?
-> > >> It's making copy of the skb_shinfo earlier, so the pages refcount
-> > >> stays the same.
-> > > Exactly. But the callback is invoked so the guest thinks it's ok to
-> > > change this memory. If it does a corrupted packet will be sent out.
-> > 
-> > Hmm. I tool a quick look at skb_clone(), and it looks like this
-> > sequence will break this scheme:
-> > 
-> > skb2 = skb_clone(skb...);
-> > kfree_skb(skb) or pskb_expand_head(skb);  /* callback called */
-> > [use skb2, pages still referenced]
-> > kfree_skb(skb); /* callback called again */
-> > 
-> > This sequence is common in bridge, might be in other places.
-> > 
-> > Maybe this ubuf thing should just track clones? This will make it work
-> > on all devices then.
-> 
-> The callback was only invoked when last reference of skb was gone.
-> skb_clone does increase skb refcnt. I tested tcpdump on lower device, it
-> worked.
+Hi Greg,
 
-Right, it will normally work, but two issues I think you miss:
-1. malicious guest can change the memory between when it is sent out by
-   device and consumed by tcpdump, so you will see different things
-   (not sure how important this is).
-2. if tcpdump stops consuming stuff from the packet socket (it's
-   userspace, can't be trusted) then we won't get a callback for
-   page potentially forever, guest networking will get blocked etc.
+Ingo just confirmed that the following two fixes went upstream. I
+haven't tagged them for stable so I'd appreciate if you could take them
+for the next cycle. AFAICT, the relevant trees should be .38-stable,
+32-longterm and 33-longterm.
 
-> For the sequence of:
-> 
-> skb_clone  -> last refcnt + 1
-> kfree_skb() or pskb_expand_head -> callback not called
-> kfree_skb() -> callback called
-> 
-> I will check page refcount to see whether it's balanced.
-> 
-> Thanks
-> shirley
+There should be no problem cherry-picking them but if there is, please
+let me know and I'll give you rebased versions.
 
+Here the commit ids again, for reference:
 
-pskb_expand_head is a problem anyway I think as it
-can hang on to pages after it calls release_data.
-Then guest will modify these pages and you get trash there.
+http://git.kernel.org/tip/14fb57dccb6e1defe9f89a66f548fcb24c374c1d
+http://git.kernel.org/tip/328935e6348c6a7cb34798a68c326f4b8372e68a
+
+Thanks.
+
+On Tue, May 17, 2011 at 02:55:17PM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> Hi all,
+> 
+> the following 2 patches address the fallout caused by
+> b87cf80af3ba4b4c008b4face3c68d604e1715c6. They enable ARAT only on
+> Fam10h and later, and leaves out K8 due to multiple problems there.
+> 
+> Although the patches look almost trivial, I'd like to ask Nick and
+> J�rg-Volker to test them, please, so that we can have a confirmation,
+> just in case.
+> 
+> Then, if we're lucky and Linus hasn't released .39 yet, we might sneak
+> them in, if we ask people politely :).
+> 
+> Thanks.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-MST
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
