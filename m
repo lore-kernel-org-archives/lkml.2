@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab1ERV0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:26:45 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:49636 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab1ERV0n (ORCPT
+	id S1755529Ab1ERVak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:30:40 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:48796 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755021Ab1ERVah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:26:43 -0400
-Date: Wed, 18 May 2011 17:26:34 -0400 (EDT)
-Message-Id: <20110518.172634.2102201592173243863.davem@davemloft.net>
-To: decot@google.com
-Cc: joe@perches.com, szymon@janc.net.pl, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-net-upstream@google.com,
-        snanda@google.com
-Subject: Re: [PATCH] forcedeth: new ethtool stat "tx_timeout" to account
- for tx_timeouts
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <BANLkTimNvuB5HtOKfAc7rf5wF2QeC3xdXw@mail.gmail.com>
-References: <1305752945-14843-2-git-send-email-decot@google.com>
-	<20110518.171416.1780927258138770742.davem@davemloft.net>
-	<BANLkTimNvuB5HtOKfAc7rf5wF2QeC3xdXw@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 18 May 2011 14:26:37 -0700 (PDT)
+	Wed, 18 May 2011 17:30:37 -0400
+X-Sasl-enc: lpviiaumXftkhvSzkItJeZGXNYwcv0JyDZOZM6IwiPn3 1305754236
+Date: Wed, 18 May 2011 14:29:27 -0700
+From: Greg KH <greg@kroah.com>
+To: Joe Perches <joe@perches.com>
+Cc: Brett Rudley <brudley@broadcom.com>, Henry Ptasinski <henryp@broadcom.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Dowan Kim <dowan@broadcom.com>,
+        Roland Vossen <rvossen@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>, linux-wireless@vger.kernel.org
+Subject: Re: [PATCH] staging: brcm80211: brcmfmac: Add and use dhd_dbg
+Message-ID: <20110518212927.GB13555@kroah.com>
+References: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Decotigny <decot@google.com>
-Date: Wed, 18 May 2011 14:20:21 -0700
-
-> Hi David,
+On Wed, May 18, 2011 at 11:23:21AM -0700, Joe Perches wrote:
+> All uses of DHD_<TYPE> macros are for debugging only.
 > 
-> They should be independent and applicable in any order, except for the
-> two 'PATCH x/2' which have to go together.
+> Change the multiple uses of DHD_<TYPE>((...)) to dhd_dbg(TYPE, ...)
+> for a more consistent style.
 
-That doesn't matter.
+I need an ack from one of the broadcom developers before I can take this
+patch...
 
-When you are sending a set of patches, always number them.
+thanks,
 
-Please resubmit your changes with my feedback incorporated, I'm
-not applying what you sent until everything is fixed up.
-
-Thanks.
+greg k-h
