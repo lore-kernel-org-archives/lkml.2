@@ -1,103 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344Ab1ERXdn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 19:33:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64110 "EHLO mga09.intel.com"
+	id S932236Ab1ERXd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 19:33:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52806 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756124Ab1ERXb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756170Ab1ERXb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 May 2011 19:31:58 -0400
 X-ExtLoop1: 1
-Message-Id: <20110518233157.673130611@sbsiddha-MOBL3.sc.intel.com>
+X-IronPort-AV: E=Sophos;i="4.65,234,1304319600"; 
+   d="scan'208";a="3674367"
+Message-Id: <20110518233157.744315519@sbsiddha-MOBL3.sc.intel.com>
 User-Agent: quilt/0.47-1
-Date: Wed, 18 May 2011 16:31:34 -0700
+Date: Wed, 18 May 2011 16:31:35 -0700
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com
 Cc: linux-kernel@vger.kernel.org, daniel.blueman@gmail.com,
         suresh.b.siddha@intel.com
-Subject: [patch 4/9] x86, ioapic: remove duplicate code for saving/restoring RTEs
+Subject: [patch 5/9] x86, ioapic: add struct ioapic
 References: <20110518233130.524634928@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=use_saved_ioapic_for_suspend.patch
+Content-Disposition: inline; filename=setup_ioapic_struct.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Code flow for enabling interrupt-remapping has its own routines for saving and
-restoring io-apic RTE's. ioapic suspend/resume code flow also has similar
-routines. Remove the duplicate code.
+Introduce struct ioapic with nr_registers field.
 
-Tested-by: Daniel J Blueman <daniel.blueman@gmail.com>
+This will pave way for consolidating different MAX_IO_APICS arrays into it.
+
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
- arch/x86/kernel/apic/io_apic.c |   36 +++++-------------------------------
- 1 file changed, 5 insertions(+), 31 deletions(-)
+ arch/x86/include/asm/io_apic.h |    1 -
+ arch/x86/kernel/apic/io_apic.c |   32 +++++++++++++++++---------------
+ 2 files changed, 17 insertions(+), 16 deletions(-)
 
+Index: linux-2.6-tip/arch/x86/include/asm/io_apic.h
+===================================================================
+--- linux-2.6-tip.orig/arch/x86/include/asm/io_apic.h
++++ linux-2.6-tip/arch/x86/include/asm/io_apic.h
+@@ -105,7 +105,6 @@ struct IR_IO_APIC_route_entry {
+  * # of IO-APICs and # of IRQ routing registers
+  */
+ extern int nr_ioapics;
+-extern int nr_ioapic_registers[MAX_IO_APICS];
+ 
+ #define MP_MAX_IOAPIC_PIN 127
+ 
 Index: linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
 ===================================================================
 --- linux-2.6-tip.orig/arch/x86/kernel/apic/io_apic.c
 +++ linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-@@ -2887,37 +2887,11 @@ static int __init io_apic_bug_finalize(v
+@@ -76,10 +76,12 @@ int sis_apic_bug = -1;
+ static DEFINE_RAW_SPINLOCK(ioapic_lock);
+ static DEFINE_RAW_SPINLOCK(vector_lock);
  
- late_initcall(io_apic_bug_finalize);
+-/*
+- * # of IRQ routing registers
+- */
+-int nr_ioapic_registers[MAX_IO_APICS];
++static struct ioapic {
++	/*
++	 * # of IRQ routing registers
++	 */
++	int nr_registers;
++} ioapics[MAX_IO_APICS];
  
--static void suspend_ioapic(int ioapic_id)
-+static void resume_ioapic_id(int ioapic_id)
- {
--	struct IO_APIC_route_entry *saved_data = ioapic_saved_data[ioapic_id];
--	int i;
--
--	if (!saved_data)
--		return;
--
--	for (i = 0; i < nr_ioapic_registers[ioapic_id]; i++)
--		saved_data[i] = ioapic_read_entry(ioapic_id, i);
--}
--
--static int ioapic_suspend(void)
--{
--	int ioapic_id;
--
--	for (ioapic_id = 0; ioapic_id < nr_ioapics; ioapic_id++)
--		suspend_ioapic(ioapic_id);
--
--	return 0;
--}
--
--static void resume_ioapic(int ioapic_id)
--{
--	struct IO_APIC_route_entry *saved_data = ioapic_saved_data[ioapic_id];
- 	unsigned long flags;
- 	union IO_APIC_reg_00 reg_00;
--	int i;
- 
--	if (!saved_data)
--		return;
- 
- 	raw_spin_lock_irqsave(&ioapic_lock, flags);
- 	reg_00.raw = io_apic_read(ioapic_id, 0);
-@@ -2926,8 +2900,6 @@ static void resume_ioapic(int ioapic_id)
- 		io_apic_write(ioapic_id, 0, reg_00.raw);
+ /* I/O APIC entries */
+ struct mpc_ioapic mp_ioapics[MAX_IO_APICS];
+@@ -187,7 +189,7 @@ int __init arch_early_irq_init(void)
+ 	for (i = 0; i < nr_ioapics; i++) {
+ 		ioapic_saved_data[i] =
+ 			kzalloc(sizeof(struct IO_APIC_route_entry) *
+-				nr_ioapic_registers[i], GFP_KERNEL);
++				ioapics[i].nr_registers, GFP_KERNEL);
+ 		if (!ioapic_saved_data[i])
+ 			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
  	}
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
--	for (i = 0; i < nr_ioapic_registers[ioapic_id]; i++)
--		ioapic_write_entry(ioapic_id, i, saved_data[i]);
+@@ -586,7 +588,7 @@ static void clear_IO_APIC (void)
+ 	int apic, pin;
+ 
+ 	for (apic = 0; apic < nr_ioapics; apic++)
+-		for (pin = 0; pin < nr_ioapic_registers[apic]; pin++)
++		for (pin = 0; pin < ioapics[apic].nr_registers; pin++)
+ 			clear_IO_APIC_pin(apic, pin);
  }
  
- static void ioapic_resume(void)
-@@ -2935,11 +2907,13 @@ static void ioapic_resume(void)
- 	int ioapic_id;
+@@ -642,7 +644,7 @@ int save_ioapic_entries(void)
+ 			continue;
+ 		}
  
- 	for (ioapic_id = nr_ioapics - 1; ioapic_id >= 0; ioapic_id--)
--		resume_ioapic(ioapic_id);
-+		resume_ioapic_id(ioapic_id);
-+
-+	restore_ioapic_entries();
- }
+-		for (pin = 0; pin < nr_ioapic_registers[apic]; pin++)
++		for (pin = 0; pin < ioapics[apic].nr_registers; pin++)
+ 			ioapic_saved_data[apic][pin] =
+ 				ioapic_read_entry(apic, pin);
+ 	}
+@@ -661,7 +663,7 @@ void mask_ioapic_entries(void)
+ 		if (!ioapic_saved_data[apic])
+ 			continue;
  
- static struct syscore_ops ioapic_syscore_ops = {
--	.suspend = ioapic_suspend,
-+	.suspend = save_ioapic_entries,
- 	.resume = ioapic_resume,
- };
+-		for (pin = 0; pin < nr_ioapic_registers[apic]; pin++) {
++		for (pin = 0; pin < ioapics[apic].nr_registers; pin++) {
+ 			struct IO_APIC_route_entry entry;
  
+ 			entry = ioapic_saved_data[apic][pin];
+@@ -684,7 +686,7 @@ int restore_ioapic_entries(void)
+ 		if (!ioapic_saved_data[apic])
+ 			continue;
+ 
+-		for (pin = 0; pin < nr_ioapic_registers[apic]; pin++)
++		for (pin = 0; pin < ioapics[apic].nr_registers; pin++)
+ 			ioapic_write_entry(apic, pin,
+ 					   ioapic_saved_data[apic][pin]);
+ 	}
+@@ -1191,7 +1193,7 @@ static inline int IO_APIC_irq_trigger(in
+ 	int apic, idx, pin;
+ 
+ 	for (apic = 0; apic < nr_ioapics; apic++) {
+-		for (pin = 0; pin < nr_ioapic_registers[apic]; pin++) {
++		for (pin = 0; pin < ioapics[apic].nr_registers; pin++) {
+ 			idx = find_irq_entry(apic, pin, mp_INT);
+ 			if ((idx != -1) && (irq == pin_2_irq(idx, apic, pin)))
+ 				return irq_trigger(idx);
+@@ -1358,7 +1360,7 @@ static void __init __io_apic_setup_irqs(
+ 	struct io_apic_irq_attr attr;
+ 	unsigned int pin, irq;
+ 
+-	for (pin = 0; pin < nr_ioapic_registers[apic_id]; pin++) {
++	for (pin = 0; pin < ioapics[apic_id].nr_registers; pin++) {
+ 		idx = find_irq_entry(apic_id, pin, mp_INT);
+ 		if (io_apic_pin_not_connected(idx, apic_id, pin))
+ 			continue;
+@@ -1480,7 +1482,7 @@ __apicdebuginit(void) print_IO_APIC(void
+ 	printk(KERN_DEBUG "number of MP IRQ sources: %d.\n", mp_irq_entries);
+ 	for (i = 0; i < nr_ioapics; i++)
+ 		printk(KERN_DEBUG "number of IO-APIC #%d registers: %d.\n",
+-		       mp_ioapics[i].apicid, nr_ioapic_registers[i]);
++		       mp_ioapics[i].apicid, ioapics[i].nr_registers);
+ 
+ 	/*
+ 	 * We are a bit conservative about what we expect.  We have to
+@@ -1794,7 +1796,7 @@ void __init enable_IO_APIC(void)
+ 	for(apic = 0; apic < nr_ioapics; apic++) {
+ 		int pin;
+ 		/* See if any of the pins is in ExtINT mode */
+-		for (pin = 0; pin < nr_ioapic_registers[apic]; pin++) {
++		for (pin = 0; pin < ioapics[apic].nr_registers; pin++) {
+ 			struct IO_APIC_route_entry entry;
+ 			entry = ioapic_read_entry(apic, pin);
+ 
+@@ -3754,7 +3756,7 @@ void __init setup_ioapic_dest(void)
+ 		return;
+ 
+ 	for (ioapic = 0; ioapic < nr_ioapics; ioapic++)
+-	for (pin = 0; pin < nr_ioapic_registers[ioapic]; pin++) {
++	for (pin = 0; pin < ioapics[ioapic].nr_registers; pin++) {
+ 		irq_entry = find_irq_entry(ioapic, pin, mp_INT);
+ 		if (irq_entry == -1)
+ 			continue;
+@@ -3948,7 +3950,7 @@ void __init mp_register_ioapic(int id, u
+ 	/*
+ 	 * The number of IO-APIC IRQ registers (== #pins):
+ 	 */
+-	nr_ioapic_registers[idx] = entries;
++	ioapics[idx].nr_registers = entries;
+ 
+ 	if (mp_gsi_routing[idx].gsi_end >= gsi_top)
+ 		gsi_top = mp_gsi_routing[idx].gsi_end + 1;
 
 
