@@ -1,70 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab1ERCbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 22:31:55 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50144 "EHLO
+	id S932793Ab1ERCqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 22:46:04 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56716 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753722Ab1ERCby (ORCPT
+	with ESMTP id S1750975Ab1ERCqD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 22:31:54 -0400
+	Tue, 17 May 2011 22:46:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=tmR6e4CVV2RI6WBeTFchdviLPqYz9US3uLcymJkHU0J9sQJ1e5vV60N69QWgTiF4bS
-         dFLp68el7PBWLqZlDLGd67fKWMxcI7zWy2qMrruDg5o0cJzSXoyCDv09ylJTwrdqIG7f
-         lbEl1kiCsWhizMMOD/1CFtVwb+XaLTxURYEms=
+         :cc:content-type:content-transfer-encoding;
+        b=iwXO3XnNd2mYyTvqFToIoiaChEDTmpojKxCt8WdeFSR1O21bn8AoQ7hS6z4S58on4C
+         SfqC2Q+b8wqib+y/DSxVuv4Myc+Aq+J8suXHe+1+OJqxSRA2gTUn3rxQJBwQXzf4GJx7
+         +6ci1RXcBcviqswAgKR/Slh8NpD+eo7475saI=
 MIME-Version: 1.0
-In-Reply-To: <20110518013842.GD23940@home.goodmis.org>
-References: <BANLkTikkeR_yf1HGhgq7WEO-kEvDGkV_tw@mail.gmail.com>
-	<BANLkTim4n-WA_6nJpg4Nd99yuc3f+VWkcw@mail.gmail.com>
-	<BANLkTikOecxhb8pZfAd19FLrPAPY4zacDQ@mail.gmail.com>
-	<20110512120606.GA3639@zhy>
-	<20110518013842.GD23940@home.goodmis.org>
-Date: Wed, 18 May 2011 10:31:53 +0800
-Message-ID: <BANLkTikOW9t6F8jvTJ0uPvyYDy+mpXh-DA@mail.gmail.com>
-Subject: Re: [PATCH] sched: correct how RT task is picked
+In-Reply-To: <BANLkTimrHFMg9-D-Wx2z4xd+Pcjm_Wta9Q@mail.gmail.com>
+References: <BANLkTi=qPWxRAa6+dT3ohEP6Z=0v+e4EXA@mail.gmail.com>
+	<1305016329.2914.22.camel@laptop>
+	<BANLkTin5iNMt2autv3TJpCvTQUoKsSzhTA@mail.gmail.com>
+	<1305122055.2914.220.camel@laptop>
+	<BANLkTikCF8uTH05gGG_H2bEYvZe0wmtS9A@mail.gmail.com>
+	<20110517092331.GB22019@alberich.amd.com>
+	<BANLkTimrHFMg9-D-Wx2z4xd+Pcjm_Wta9Q@mail.gmail.com>
+Date: Wed, 18 May 2011 10:45:59 +0800
+Message-ID: <BANLkTi=RYSmmQTqG+oH3cVcJ98xV+c1_og@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix constructing the span cpu mask of sched domain
 From: Yong Zhang <yong.zhang0@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 9:38 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> I think you can take a look at next_prio(), it just calculate the
->> next highest task on the current cpu; in this case,
->> cpumask_test_cpu(cpu, &p->cpus_allowed) will be true for the most
->> of time, but maybe that task is bound to this cpu.
+On Tue, May 17, 2011 at 10:36 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> On Tue, May 17, 2011 at 5:23 PM, Andreas Herrmann
+> <andreas.herrmann3@amd.com> wrote:
+>> On Sun, May 15, 2011 at 01:50:42AM -0400, Hillf Danton wrote:
+>>> On Wed, May 11, 2011 at 9:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> > On Wed, 2011-05-11 at 21:26 +0800, Hillf Danton wrote:
+>>> >> Your work for rewriting NUMA support, published at
+>>> >>          http://marc.info/?l=linux-kernel&m=130218515520540
+>>> >> is patched by changing how level is computed and by changing how it is
+>>> >> used to build the mask.
+>>> >>
+>>> >> When computing, some valid levels are lost in your work.
+>>> >>
+>>> >> When building mask, nodes are selected only if they have same distance,
+>>> >> thus nodes of less distance are also masked out since the computation of
+>>> >> level now is tough.
+>>> >>
+>>> >> Without MUNA hardware, I did not test the patch:(
+>>> >
+>>> > I do have a (tiny) NUMA box (2 nodes) but that actually booted with the
+>>> > old code too, Andreas Hermann from AMD (CC'ed) is usually willing to
+>>> > test such patches on somewhat larger systems. Please send a full patch
+>>> > against tip/master for him to apply.
+>>> >
+>>>
+>>> Hi Peter
+>>>
+>>> With the guiding from Ingo on git fetch the tip/master, the work is
+>>> now finished:)
+>>>
+>>> Hopely it is not too late for Andreas.
+>>>
+>>> In the following, the concern is also added for distances not covered by level,
+>>> please review again.
+>>
+>> Sorry, can't test your stuff. What git-tree and branch did you use to
+>> build this patch?
+>>
+>> Your patch seems to be corrupted/broken:
+>>
+>>  # scripts/checkpatch.pl your_patch.diff
+>>  ERROR: patch seems to be corrupt (line wrapped?)
+>>  #175: FILE: kernel/sched.c:6822:
+>>  *(*sched_domain_mask_f)(int cpu);
+>>
+>>  WARNING: line over 80 characters
+>>  #222: FILE: kernel/sched.c:7088:
+>>  +     return per_cpu_ptr(sched_domains_numa_masks[sched_domains_curr_level], cpu);
+>>
+>>  WARNING: printk() should include KERN_ facility level
+>>  #239: FILE: kernel/sched.c:7105:
+>>  +                 printk("distance(0,%d): %d\n", j, distance);
+>>
+>>  ERROR: need consistent spacing around '-' (ctx:WxV)
+>>  #253: FILE: kernel/sched.c:7119:
+>>  +                 for (k = level -1; k >= i; k--)
+>>                               ^
+>>  ...
+>>
+>> (I assume that it wasn't corrupted on my end.)
+>>
+>>
+> Hi Andreas
 >
-> I've been looking at the history here, and I think that '-1' is a relic.
+> First I say sorry to you for the not well prepared patch.
 >
-> If you look at sched_rt.c in f65eda4f789168ba5ff3fa75546c29efeed19f58:
->
-> $ git show f65eda4f:kernel/sched_rt.c
->
-> You'll see that push_rt_task calls pick_next_highest_task_rt() with a
-> -1. That code has long been replaced.
+> Since I am not good at playing git, I am not sure the patch was
+> against the latest tip/master,
+> and I have no idea about the ERROR above.
 
-Yeah, the condition "cpu < 0" could be removed since we have no
-that kind of caller.
-
->
-> I'm a bit nervous about taking Hillf's patch as is. But a little more
-> reviewing and testing may prove that it is legit.
-
-But another point is like I said before:
-'cpumask_test_cpu(cpu, &p->cpus_allowed)' doesn't equal to
-'p->rt.nr_cpus_allowed > 1' because we could have bounded
-task.
-So the condition 'if (cpumask_test_cpu(cpu, &p->cpus_allowed))'
-in Hillf's patch is not sufficient.
+Hint: before sending your patch out, you could run
+kernel-dir/scripts/checkpatch.pl on your patch, then fix the warning/error.
 
 Thanks,
 Yong
+
 
 
 
