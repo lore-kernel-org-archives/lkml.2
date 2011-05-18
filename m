@@ -1,41 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab1ERJGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 05:06:45 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:49102 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756587Ab1ERJGn (ORCPT
+	id S1756751Ab1ERJHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 05:07:52 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49943 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab1ERJHv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 05:06:43 -0400
+	Wed, 18 May 2011 05:07:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=hFSW4vQd3ZhxKFT6M4WL0QTRE23uPUS2cIu3bFYmx+EweZah50delSFDaXDpufF2Nl
-         L2+SRTEXEfnhRXPLzKEs/X9vkSKviO9y8u8n7CfPTZ0ISb+rPetomF+hWzEVRZk3d3aH
-         PRd3EE8SS4xAFbLVY5zb9/jp6m5Ao6lExrN5s=
+        h=mime-version:reply-to:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=bC5sF+5jBRkz/QgmIP8GoGJGeS+tmPOAVWBScLdDFLqMOWhTqIL9xofzdWGvLcMpjI
+         a4Bh5q9RwDFO9M36Bdx1vvZwgxYCV6c11XKDIzjTT0rqcdovGMQFRgfZ6Epdp2y4nkWG
+         /ObXot7gk2maqEdhyaoB9543BJgnh8Uc7rQXE=
 MIME-Version: 1.0
-In-Reply-To: <20110518084535.GA24682@ritirata.org>
-References: <20110518084535.GA24682@ritirata.org>
-Date: Wed, 18 May 2011 12:06:42 +0300
-Message-ID: <BANLkTi=sahmmHj_4bt=QhhFrRUELppjQVg@mail.gmail.com>
-Subject: Re: Suggestion for patch: Comparison between packet sequence numbers
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Antonio Quartulli <ordex@autistici.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <201105172240.46970.rjw@sisk.pl>
+References: <20110512061928.GB2460@localhost.ucw.cz>
+	<1305608346-23800-1-git-send-email-myungjoo.ham@samsung.com>
+	<201105172240.46970.rjw@sisk.pl>
+Date: Wed, 18 May 2011 18:07:50 +0900
+X-Google-Sender-Auth: hc4Eeu3zuLZro6R1918-6f_5hEA
+Message-ID: <BANLkTim6ygf9JN2k1ZnW5kLwvUggDBJyNA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] PM / Core: suspend_again callback for suspend_ops.
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>, kyungmin.park@samsung.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 11:45 AM, Antonio Quartulli <ordex@autistici.org> wrote:
-> I would like to send a patch that introduces a little set of global defines
-> that manages comparison between packet sequence numbers (considering
-> overflow/wraparound). But honestly, I didn't find the right header where to
-> add these defines.
+2011/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Tuesday, May 17, 2011, MyungJoo Ham wrote:
+[]
+>> -static int suspend_enter(suspend_state_t state)
+>> +static int suspend_enter(suspend_state_t state, bool *wakeup_pending)
 >
-> Could someone suggest me something?
+> You don't need to use the wakeup_pending argument at all.  I think you
+> shouldn't use it even, because in theory there may be a wakeup event after
+> you've called pm_wakeup_pending() in suspend_enter() and in that case
+> you should break the loop too.
 
-It depends on where your comparison functions(?) are.
-Add them somewhere, send a patch, what exactly patch does is far
-more important than some define placement you can change at any time.
+In the case where:
+- at the first instance of suspend_enter, pm_wakeup_pending() returns false.
+- after suspend_ops->enter(state), the pm_wakeup_pending() "wants" to
+return true.
+- however, suspend_again forces to loop again.
+- then, at the second instance of suspend_enter, pm_wakeup_pending()
+returns true.
+- the suspend_again's loop breaks.
+
+Although it did not break the loop at the first while, it breaks
+without calling suspend_ops->enter again anyway.
+
+[]
+>
+> So I would simply call pm_wakeup_pending() here again.
+>
+
+Besides, if we simply call pm_wakeup_pending() again at there, the
+loop will NOT break with pm_wakeup_pending() is true at the first call
+inside of suspend_enter(). The function pm_wakeup_pending() clears out
+the pending wakeup at each call; thus, in the following example, the
+loop will not break:
+
+- At the first instance of suspend_enter in the suspend-again loop,
+pm_wakeup_pending() returns true in suspend_enter().
+- suspend_enter() returns without error.
+- pm_wakeup_pending() is called again at the while statement along
+with suspend_ops->suspend_again().
+- pm_wakeup_pending() now returns false because it has already
+returned true before and cleared "events_check_enabled"
+- the loop continues.
+
+Because pm_save_wakeup_count will return true only once for each
+wakeup-preventing-event, the result of pm_wakeup_pending in
+suspend_enter() should be relayed outside to the loop anyway.
+
+>>
+>>   Resume_devices:
+>>       suspend_test_start();
+>>
+>
+> Thanks,
+> Rafael
+>
+
+
+Cheers!
+
+- MyungJoo
+-- 
+MyungJoo Ham (함명주), Ph.D.
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: 82-10-6714-2858
