@@ -1,55 +1,52 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab1E2Psh (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 29 May 2011 11:48:37 -0400
-Received: from 184-106-139-40.static.cloud-ips.com ([184.106.139.40]:40988
-	"EHLO mail.r387-website.co.za" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753754Ab1E2Pse (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 11:48:34 -0400
-To: linux-kernel@vger.kernel.org
-Subject: A Website for only R387
-X-PHP-Originating-Script: 1000:Rmail.php
+        id S933315Ab1ERRZB (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Wed, 18 May 2011 13:25:01 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58871 "EHLO
+        devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S933132Ab1ERRY7 (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Wed, 18 May 2011 13:24:59 -0400
+Message-ID: <4DD3F6F7.5090508@ti.com>
+Date: Wed, 18 May 2011 17:42:31 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-X-Mailer: Rmail <http://www.phpguru.org/>
-From: R387 Website <info@r387-website.co.za>
+To: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+CC: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+        <broonie@opensource.wolfsonmicro.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCHv4 4/6] GPIO: TPS65910: Move driver to drivers/gpio/
+References: <797F9124-08A3-45B9-BA71-284BB3048F1D@slimlogic.co.uk>
+In-Reply-To: <797F9124-08A3-45B9-BA71-284BB3048F1D@slimlogic.co.uk>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-ID: <llyrjy.hkqswk@www.r387-website.co.za>
-Date: Sun, 29 May 2011 15:40:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 
+On 17/05/11 00:35, Jorge Eduardo Candelaria wrote:
+> The GPIO driver should reside in drivers/gpio/ for better
+> organization.
+> 
+> Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+> ---
+>  drivers/gpio/Kconfig         |    7 +++
+>  drivers/gpio/Makefile        |    1 +
+>  drivers/gpio/tps65910-gpio.c |   91 ++++++++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/Kconfig          |    3 +-
+>  drivers/mfd/Makefile         |    2 +-
+>  drivers/mfd/tps65910-gpio.c  |   91 ------------------------------------------
+>  6 files changed, 102 insertions(+), 93 deletions(-)
+>  create mode 100644 drivers/gpio/tps65910-gpio.c
+>  delete mode 100644 drivers/mfd/tps65910-gpio.c
+> 
 
-Good day,
+Grant, if you are happy with this I can this series altogether via regulator.
 
-If you run a small business or have been thinking about starting a business, now is the time to start! For just R387, you can easily build your website today and have it live, on the web, by tomorrow this time!
+Thanks
 
-http://www.r387-website.co.za/
-
-Here's what your R387 buys you:
-
-- A professional co.za domain. (Eg: PaulsPlumbers.co.za or AdamsArchitects.co.za)
-
-- A single web page you can easily edit yourself. Upload your logo, a short description of yourself, your physical address & your contact numbers and you'll already be ahead of 90% of all your competitors! It's as easy as using MS Word or any other word processor! Anyone can do it!
-
-- As many email forwarders as you like. When you sign up, you can have people email you using Your.Name@YourDomain.co.za and it will be forwarded to your existing email account! Any email sent to any address at your new domain will be forwarded to the email address you signed up with.
-
-- 12 months of free hosting. After you've paid your R387, you can edit your page as much as you like, receive as many emails as you like and upload as many images as you like, and you won't pay extra.
-
-- A free fax to email number. Put this number on your web site and on your business cards and every fax you receive will come in via email! No need to worry about toner refills, expensive fax paper or another tied up telephone line!
-
-- No contracts! No debit orders! Once your 12 months is up, it's up to you to let us know that you'd like to continue. We'll send you a reminder but you remain in control of your finances!
-
-- New! For an extra R275, we'll add another 5 pages to your order! (valued at R1,750!)
-
-If you run a small business or have been thinking about starting one, now is the right time!
-
-So place your order today by visiting http://www.r387-website.co.za/
-
-Yours Sincerely,
-  R387 Website
-
-PS.  To never receive emails from us again, please use this link: http://www.r387-website.co.za/remove.php?e=linux-kernel@vger.kernel.org
-
-
+Liam
