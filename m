@@ -1,178 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab1ERVK1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:10:27 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:42411 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab1ERVKX (ORCPT
+	id S1755021Ab1ERVKl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:10:41 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:29675
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754764Ab1ERVKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:10:23 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
-	references:organization;
-	b=XhMNK4/trSx3nc2217NgCCqxU0xkExB7xRlBnefKZAOlZWLUgSL5HRy7CtbDVe+NJ
-	265yEtlgUW0tOJecRcc5Q==
-From: David Decotigny <decot@google.com>
-To: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: kernel-net-upstream@google.com, Sameer Nanda <snanda@google.com>,
-        David Decotigny <decot@google.com>
-Subject: [PATCH 2/2] forcedeth: allow to silence tx_timeout debug messages
-Date: Wed, 18 May 2011 14:10:00 -0700
-Message-Id: <1305753000-14933-2-git-send-email-decot@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1305753000-14933-1-git-send-email-decot@google.com>
-References: <1305753000-14933-1-git-send-email-decot@google.com>
-Organization: Google, Inc.
+	Wed, 18 May 2011 17:10:37 -0400
+X-SpamScore: -27
+X-BigFish: VPS-27(zzbb2dK9371O1432N98dKzz1202hzz8275dh5eeePz2fh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4DD435B7.9090702@am.sony.com>
+Date: Wed, 18 May 2011 14:10:15 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Anders Kaseorg <andersk@ksplice.com>, Tim Abbott <tabbott@ksplice.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Dirk Behme <dirk.behme@googlemail.com>
+Subject: module boot time (was Re: [PATCH] module: Use binary search in lookup_symbol())
+References: <BANLkTinPG100vbVAN1RZWb3h9Xuu6SKJ0Q@mail.gmail.com> <1305665763-3988-1-git-send-email-abogani@kernel.org> <20110517232241.GA19140@kroah.com> <4DD305B3.3000707@am.sony.com> <20110518075428.GA29998@infradead.org> <4DD3FB1C.3040103@am.sony.com> <20110518192110.GB26945@kroah.com>
+In-Reply-To: <20110518192110.GB26945@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sameer Nanda <snanda@google.com>
+On 05/18/2011 12:21 PM, Greg KH wrote:
+> On Wed, May 18, 2011 at 10:00:12AM -0700, Tim Bird wrote:
+>> Carmelo Amoroso reported some good performance gains
+>> in this presentation:
+>> http://elinux.org/images/1/18/C_AMOROSO_Fast_lkm_loader_ELC-E_2009.pdf
+>> (See slide 22).
+>>
+>> He doesn't report the overall time savings, and
+>> he was using a different method (hash tables as opposed to
+>> binary search), but I believe the results are comparable
+>> to what the binary search enhancement provides.
+>>
+>> The biggest offenders in his testing were usbcore,
+>> ehci_hcd and ohci_hcd.
+> 
+> Why those?  The size of them, or something else?  They don't seem to
+> have very many symbols they need to look up compared to anything else
+> that I can tell.
+> 
+> Is something else going on here due to the serialization of the USB
+> drivers themselves?
 
-This change allows to silence most debug messages in case of TX
-timeout. These messages don't provide a signare/noise ratio high
-enough for production systems and, with ~30kB logged each time, they
-tend to add to a cascade effect if the system is already under stress
-(memory pressure, disk, etc.).
+I don't think there's anything wrong with these, compared to
+other kernel modules.  I just think they stood out (probably
+because of size) from the other modules in the small set that
+Carmelo tested.  In his tests, usbcore was the largest module
+by an order of magnitude.
 
-By default, the debug messages are not displayed but this can be
-overriden by setting the debug_tx_timeout module parameter.
+>>> And why do people overly care for the load time?
+>>
+>> To reduce overall boot time.
+> 
+> To reduce it even more, build the modules into the kernel :)
 
+That's what I do most of the time.  For some projects,
+it is useful to build certain things as modules so you can
+defer initializing them until later in the boot sequence.
+You can get some critical user-space tasks running, then
+come back later to initialize USB and other drivers.
+On cameras, it's not uncommon to want to get to user
+space in the first 500 milliseconds.
 
-Signed-off-by: David Decotigny <decot@google.com>
----
- drivers/net/forcedeth.c |   93 ++++++++++++++++++++++++++---------------------
- 1 files changed, 52 insertions(+), 41 deletions(-)
+Sony has some code which allows us to both statically link
+drivers and defer their initialization, but it's kind of
+kludgy and requires modifying the module declarations
+for the code you want to defer.  Let me know if you think
+this is worth doing an RFC about.
+ -- Tim
 
-diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
-index 9566567..2c176ff 100644
---- a/drivers/net/forcedeth.c
-+++ b/drivers/net/forcedeth.c
-@@ -896,6 +896,11 @@ enum {
- static int dma_64bit = NV_DMA_64BIT_ENABLED;
- 
- /*
-+ * Debug output control for tx_timeout
-+ */
-+static bool debug_tx_timeout = false;
-+
-+/*
-  * Crossover Detection
-  * Realtek 8201 phy + some OEM boards do not work properly.
-  */
-@@ -2473,56 +2478,59 @@ static void nv_tx_timeout(struct net_device *dev)
- 	u32 status;
- 	union ring_type put_tx;
- 	int saved_tx_limit;
--	int i;
- 
- 	if (np->msi_flags & NV_MSI_X_ENABLED)
- 		status = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQSTAT_MASK;
- 	else
- 		status = readl(base + NvRegIrqStatus) & NVREG_IRQSTAT_MASK;
- 
--	netdev_info(dev, "Got tx_timeout. irq: %08x\n", status);
-+	if (unlikely(debug_tx_timeout)) {
-+		int i;
- 
--	netdev_info(dev, "Ring at %lx\n", (unsigned long)np->ring_addr);
--	netdev_info(dev, "Dumping tx registers\n");
--	for (i = 0; i <= np->register_size; i += 32) {
--		netdev_info(dev,
--			    "%3x: %08x %08x %08x %08x %08x %08x %08x %08x\n",
--			    i,
--			    readl(base + i + 0), readl(base + i + 4),
--			    readl(base + i + 8), readl(base + i + 12),
--			    readl(base + i + 16), readl(base + i + 20),
--			    readl(base + i + 24), readl(base + i + 28));
--	}
--	netdev_info(dev, "Dumping tx ring\n");
--	for (i = 0; i < np->tx_ring_size; i += 4) {
--		if (!nv_optimized(np)) {
--			netdev_info(dev,
--				    "%03x: %08x %08x // %08x %08x // %08x %08x // %08x %08x\n",
--				    i,
--				    le32_to_cpu(np->tx_ring.orig[i].buf),
--				    le32_to_cpu(np->tx_ring.orig[i].flaglen),
--				    le32_to_cpu(np->tx_ring.orig[i+1].buf),
--				    le32_to_cpu(np->tx_ring.orig[i+1].flaglen),
--				    le32_to_cpu(np->tx_ring.orig[i+2].buf),
--				    le32_to_cpu(np->tx_ring.orig[i+2].flaglen),
--				    le32_to_cpu(np->tx_ring.orig[i+3].buf),
--				    le32_to_cpu(np->tx_ring.orig[i+3].flaglen));
--		} else {
-+		netdev_warn(dev, "Got tx_timeout. irq: %08x\n", status);
-+
-+		netdev_info(dev, "Ring at %lx\n", (unsigned long)np->ring_addr);
-+		netdev_info(dev, "Dumping tx registers\n");
-+		for (i = 0; i <= np->register_size; i += 32) {
- 			netdev_info(dev,
--				    "%03x: %08x %08x %08x // %08x %08x %08x // %08x %08x %08x // %08x %08x %08x\n",
-+				    "%3x: %08x %08x %08x %08x %08x %08x %08x %08x\n",
- 				    i,
--				    le32_to_cpu(np->tx_ring.ex[i].bufhigh),
--				    le32_to_cpu(np->tx_ring.ex[i].buflow),
--				    le32_to_cpu(np->tx_ring.ex[i].flaglen),
--				    le32_to_cpu(np->tx_ring.ex[i+1].bufhigh),
--				    le32_to_cpu(np->tx_ring.ex[i+1].buflow),
--				    le32_to_cpu(np->tx_ring.ex[i+1].flaglen),
--				    le32_to_cpu(np->tx_ring.ex[i+2].bufhigh),
--				    le32_to_cpu(np->tx_ring.ex[i+2].buflow),
--				    le32_to_cpu(np->tx_ring.ex[i+2].flaglen),
--				    le32_to_cpu(np->tx_ring.ex[i+3].bufhigh),
--				    le32_to_cpu(np->tx_ring.ex[i+3].buflow),
--				    le32_to_cpu(np->tx_ring.ex[i+3].flaglen));
-+				    readl(base + i + 0), readl(base + i + 4),
-+				    readl(base + i + 8), readl(base + i + 12),
-+				    readl(base + i + 16), readl(base + i + 20),
-+				    readl(base + i + 24), readl(base + i + 28));
-+		}
-+		netdev_info(dev, "Dumping tx ring\n");
-+		for (i = 0; i < np->tx_ring_size; i += 4) {
-+			if (!nv_optimized(np)) {
-+				netdev_info(dev,
-+					    "%03x: %08x %08x // %08x %08x // %08x %08x // %08x %08x\n",
-+					    i,
-+					    le32_to_cpu(np->tx_ring.orig[i].buf),
-+					    le32_to_cpu(np->tx_ring.orig[i].flaglen),
-+					    le32_to_cpu(np->tx_ring.orig[i+1].buf),
-+					    le32_to_cpu(np->tx_ring.orig[i+1].flaglen),
-+					    le32_to_cpu(np->tx_ring.orig[i+2].buf),
-+					    le32_to_cpu(np->tx_ring.orig[i+2].flaglen),
-+					    le32_to_cpu(np->tx_ring.orig[i+3].buf),
-+					    le32_to_cpu(np->tx_ring.orig[i+3].flaglen));
-+			} else {
-+				netdev_info(dev,
-+					    "%03x: %08x %08x %08x // %08x %08x %08x // %08x %08x %08x // %08x %08x %08x\n",
-+					    i,
-+					    le32_to_cpu(np->tx_ring.ex[i].bufhigh),
-+					    le32_to_cpu(np->tx_ring.ex[i].buflow),
-+					    le32_to_cpu(np->tx_ring.ex[i].flaglen),
-+					    le32_to_cpu(np->tx_ring.ex[i+1].bufhigh),
-+					    le32_to_cpu(np->tx_ring.ex[i+1].buflow),
-+					    le32_to_cpu(np->tx_ring.ex[i+1].flaglen),
-+					    le32_to_cpu(np->tx_ring.ex[i+2].bufhigh),
-+					    le32_to_cpu(np->tx_ring.ex[i+2].buflow),
-+					    le32_to_cpu(np->tx_ring.ex[i+2].flaglen),
-+					    le32_to_cpu(np->tx_ring.ex[i+3].bufhigh),
-+					    le32_to_cpu(np->tx_ring.ex[i+3].buflow),
-+					    le32_to_cpu(np->tx_ring.ex[i+3].flaglen));
-+			}
- 		}
- 	}
- 
-@@ -6006,6 +6014,9 @@ module_param(phy_cross, int, S_IRUGO);
- MODULE_PARM_DESC(phy_cross, "Phy crossover detection for Realtek 8201 phy is enabled by setting to 1 and disabled by setting to 0.");
- module_param(phy_power_down, int, S_IRUGO);
- MODULE_PARM_DESC(phy_power_down, "Power down phy and disable link when interface is down (1), or leave phy powered up (0).");
-+module_param(debug_tx_timeout, bool, S_IRUGO);
-+MODULE_PARM_DESC(debug_tx_timeout,
-+		 "Dump tx related registers and ring when tx_timeout happens");
- 
- MODULE_AUTHOR("Manfred Spraul <manfred@colorfullife.com>");
- MODULE_DESCRIPTION("Reverse Engineered nForce ethernet driver");
--- 
-1.7.3.1
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
