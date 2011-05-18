@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883Ab1ERLHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 07:07:38 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51416 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125Ab1ERLHh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 07:07:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oCUktNyxbEAKSCv5Yjedx3wB77+2+Q/4iourbof1Tk/EXmjaIs0p97tiFzsmne23VC
-         VzB/+jKw/NQKnf1Nr7TTJRdVcoCo39TWAl37vRghq7tg3K4Qc/mp5KvXWJAVH4aq7ZhK
-         /kO9PmpDnhpz94/h/mgJr2NT9WouTYHNY450U=
-Date: Wed, 18 May 2011 13:07:32 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Borislav Petkov <bp@alien8.de>, Meelis Roos <mroos@linux.ee>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 2/3 v2.6.39-rc7] block: make disk_block_events()
- properly wait for work cancellation
-Message-ID: <20110518110732.GW20624@htj.dyndns.org>
-References: <20110517102824.GK20624@htj.dyndns.org>
- <20110517102853.GL20624@htj.dyndns.org>
- <BANLkTimj2guK6kw7QSijYZyvoRY+JKgbTg@mail.gmail.com>
- <20110517151107.GQ20624@htj.dyndns.org>
- <BANLkTikpwk-hJs+TF7TJB38JsvOvHk2UMQ@mail.gmail.com>
- <20110517152742.GR20624@htj.dyndns.org>
- <BANLkTi=-Ak5vhCFxgc2rt2rft0PE9XJiTA@mail.gmail.com>
- <20110518050729.GA16870@mtj.dyndns.org>
- <BANLkTi=0_bv7s6=i2v-iP0vQmHHT3=tm8w@mail.gmail.com>
- <20110518100451.GV20624@htj.dyndns.org>
+	id S932892Ab1ERLIO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 07:08:14 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49112 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932125Ab1ERLIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 07:08:12 -0400
+Date: Wed, 18 May 2011 13:07:59 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 5/5] KVM: Expose a version 1 architectural PMU to
+ guests
+Message-ID: <20110518110759.GB16556@elte.hu>
+References: <1305129333-7456-1-git-send-email-avi@redhat.com>
+ <1305129333-7456-6-git-send-email-avi@redhat.com>
+ <20110517194117.GA26184@elte.hu>
+ <4DD38B57.2070904@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110518100451.GV20624@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DD38B57.2070904@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 12:04:51PM +0200, Tejun Heo wrote:
-> Yeap, the problem was unblock/check being allowed to be called without
-> sleeping context, which isn't used anymore and was broken due to
-> cancellation race.  We can just enclose the whole thing inside per-ev
-> mutex and everything should be simple and fine.  I'll post patches
-> soon.
 
-Oops, spoke too soon.  Converting to mutex creates a circular
-dependency.  disk_block_events() acquires ev->lock and waits for
-ev->dwork to finish, but ev->dwork also needs to acquire ev->lock to
-update event states.  So, no matter how we twist this, we need two
-locks or a lock and a completion.  The mutex approach seems simple
-enough, so I suggest leaving it like that.
+* Avi Kivity <avi@redhat.com> wrote:
 
-Thanks.
+> >>  - some combinations of INV and CMASK are not supported
+> >
+> > Could you please describe this better, where does this limit come from? If 
+> > perf then this needs fixing.
+> 
+> perf_event_attr does not support generic INV and CMASK at all. [...]
 
--- 
-tejun
+It does through raw events - which are indeed model specific.
+
+> [...]  I imagine you can get them through the model-specific hardware 
+> configuration, but that means we have to encode model specific information 
+> into kvm host code, which is (a) hard (b) counter to the spirit of perf.
+> 
+> (INV and CMASK allow you to increment the counter only when > N or <
+> N events occur simultaneously, for example count when 2 or more
+> instructions are retired in a single clock).
+
+Peter, what do you think about adding a inv and cmask attribute that is applied 
+to generic events automatically?
+
+I *think* it should work just out of box: we recognize the fixed-purpose 
+counter events based on their raw value, so if one comes in with inv and cmask 
+set it will just be scheduled on a generic hw counter.
+
+> >  - we could do things like propagate guest side traces over to the host
+> 
+> We support that already via 'perf kvm', no? [...]
+
+Not without usability issues, if you remember that flamewa^W thread! :-)
+
+> [...] This is more about the guest profiling itself without access to the 
+> host (which is the more common scenario, IMO).
+
+Correct - so there would be interactions with virtio-perf. I think the two will 
+just have to be made to mix well, that's all.
+
+> We're still missing tunnelling guest ftrace to the host, but a patch was 
+> recently posted to do that.
+
+If you tunnel guest perf events then ftrace events are included automatically.  
+That's the primary/unified event transport model we are working towards.
+
+Thanks,
+
+	Ingo
