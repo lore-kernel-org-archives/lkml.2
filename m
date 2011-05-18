@@ -1,110 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932800Ab1ERDS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 23:18:29 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62091 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300Ab1ERDS2 convert rfc822-to-8bit (ORCPT
+	id S932825Ab1ERDqr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 23:46:47 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:20195 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932469Ab1ERDqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 23:18:28 -0400
+	Tue, 17 May 2011 23:46:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=N3G5HOiou9hnZGYNWzpufZCzUpl/9zVPVLLY22MYebCLbydd1Gfb80cRDuY8FzXHnl
-         7aOOcWXDfeecVw9k+rZ8fyqF7Pf618/tqe07MeLXi9RwaJTryMHy1fWkDZUlpIuJ0Ikk
-         eFYPLCPWEBBl19JNi4PmVSEkNK6f0W8fJ5+M8=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1105172354040.3078@ionos>
-References: <20110516160943.GC25898@one.firstfloor.org> <alpine.LFD.2.02.1105161817120.3078@ionos>
- <20110516164939.GD25898@one.firstfloor.org> <BANLkTintkmnkN3kW06oa+TjT7W0Q1yQQGA@mail.gmail.com>
- <m2fwoeo0pf.fsf@firstfloor.org> <alpine.LFD.2.02.1105162345110.3078@ionos>
- <BANLkTinVnr1ZM2wOxuH-rHZGh+_SBWT-+g@mail.gmail.com> <alpine.LFD.2.02.1105170022430.3078@ionos>
- <20110517080029.GB22093@elte.hu> <BANLkTimpEfb3P9FWgrCDwSSVr6RA8nXb5w@mail.gmail.com>
- <20110517113634.GC13475@elte.hu> <4DD2BEFB.6070609@mit.edu>
- <m2hb8typxt.fsf@firstfloor.org> <alpine.LFD.2.02.1105172354040.3078@ionos>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 17 May 2011 23:18:08 -0400
-X-Google-Sender-Auth: Cyha37q-66inQWqJiycJhnghW00
-Message-ID: <BANLkTik9+UGLvPCLYO246N4fMxJ5F=vHwA@mail.gmail.com>
-Subject: Re: [PATCH v4 0/6] Micro-optimize vclock_gettime
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        d=google.com; s=beta;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=UiuQfIrLtzBZFFgilvWFSJEYfEIwXVmBt2r8DDzLmLCjzjUiZuOGRCEmH+otuJn3Yr
+         crncXKutRIxCI+6+U2Fw==
+Date: Tue, 17 May 2011 20:36:47 -0700
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Don Zickus <dzickus@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@amd64.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 3/4 v2] watchdog: disable watchdog when thresh is zero
+Message-ID: <20110518033647.GB11023@google.com>
+References: <1305588901-8141-1-git-send-email-msb@chromium.org>
+ <1305588901-8141-3-git-send-email-msb@chromium.org>
+ <20110517071018.GE22305@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110517071018.GE22305@elte.hu>
+X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 6:59 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 17 May 2011, Andi Kleen wrote:
->> Andy Lutomirski <luto@MIT.EDU> writes:
->> >
->> > On KVM on Sandy Bridge, I can emulate a vsyscall that does nothing in 400ns or so.  I'll try to make this code emulate real vsyscalls over the weekend.  This was much easier than I expected.
->>
->> How about the performance of all the statically linked programs? I guess
->
-> _ALL_ the statically linked programs? Point out a single one which
-> matters and _IS_ performance critical.
->
->> you just declared they don't matter? gettimeofday is quite critical
->> and adding a exception into it is just a performance desaster.
->>
->> Also it's always a dangerous assumption to think that all
->> programs on Linux use glibc ("all world is a Vax")
->>
->> In fact more and more of Linux users are using different libcs these
->> days (like Android or embedded systems or languages with special runtime
->> systems) Who knows if all those other libraries use vDSO?
->
-> Which is completely irrelevant to x86_64. Point to a single relevant
-> x86_64 embedded system to which one of the above handwaving applies.
->
->> And then there are of course the old glibcs. A lot of people
->> (including me) use new kernels with old userland.
->
-> And how is your use case performance critical ?
->
-> Furthermore any halfways up to date deployemnt is using VDSO for
-> obvious reasons and the archaic stuff which might be affected is not
-> using a recent kernel at all (except for akpm on his retro laptop, but
-> that "performance penalty" is probably the least of his worries).
+Ingo Molnar (mingo@elte.hu) wrote:
+> This now adds two similar looking blocks of these 4 lines, one in 
+> proc_dowatchdog_enabled(), one in proc_dowatchdog_thresh().
+> 
+> They are not the same though. So what happens if the watchdog is disabled but 
+> the threshold is updated to nonzero - do we enable the watchdog?
+> 
 
-Sadly that's not quite true.  glibc git right now contains this:
+Good point. Fixed in this patch (v2). Also modified the patch to
+disable the watchdog if thresh == 0 or enabled == 0.
 
-ENTRY (__gettimeofday)
-        /* Align stack.  */
-        sub     $0x8, %rsp
-        cfi_adjust_cfa_offset(8)
-#ifdef SHARED
-        movq    __vdso_gettimeofday(%rip), %rax
-        PTR_DEMANGLE (%rax)
-#else
-        movq    $VSYSCALL_ADDR_vgettimeofday, %rax
-#endif
-        callq   *%rax
+I used a #define for proc_dowatchdog instead of an inline to avoid
+duplicating the large parameter list.
 
-And time() and sched_getcpu() call the vsyscall page unconditionally.
-We should either declare CLOCK_REALTIME_COARSE to be acceptable for
-time() or add a new vDSO call.
+---
 
-IMO we should put a note in feature-removal-schedule.txt, add vsyscall
-emulation as a config option for 2.6.41 but leave it turned off by
-default, and turn it on by default (or just remove the old code) in
-2.6.43 or so.  That'll give glibc a chance to stop generating *new*
-static binaries that call it.
+This restores the previous behavior of softlock_thresh.
 
-I'm not volunteering to dig around the libdl stuff to fix it myself.
+Currently, setting watchdog_thresh to zero causes the watchdog
+kthreads to consume a lot of CPU.
 
-klibc doesn't seem to use vsyscalls or the vDSO.  I haven't looked at
-uclibc, and I don't think that Bionic has any released version on
-x86_64.
+In addition, the logic of proc_dowatchdog_thresh and proc_dowatchdog_enabled
+has been factored into __proc_dowatchdog.
 
---Andy
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+LKML-Reference: <20110517071018.GE22305@elte.hu>
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/nmi.h   |    7 +++++--
+ include/linux/sched.h |    1 -
+ kernel/sysctl.c       |    4 +++-
+ kernel/watchdog.c     |   25 +++++++++----------------
+ 4 files changed, 17 insertions(+), 20 deletions(-)
+
+diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+index c536f85..10cbca7 100644
+--- a/include/linux/nmi.h
++++ b/include/linux/nmi.h
+@@ -47,9 +47,12 @@ static inline bool trigger_all_cpu_backtrace(void)
+ int hw_nmi_is_cpu_stuck(struct pt_regs *);
+ u64 hw_nmi_get_sample_period(void);
+ extern int watchdog_enabled;
++extern int watchdog_thresh;
+ struct ctl_table;
+-extern int proc_dowatchdog_enabled(struct ctl_table *, int ,
+-			void __user *, size_t *, loff_t *);
++extern int __proc_dowatchdog(struct ctl_table *, int ,
++			     void __user *, size_t *, loff_t *);
++#define proc_dowatchdog_enabled __proc_dowatchdog
++#define proc_dowatchdog_thresh __proc_dowatchdog
+ #endif
+ 
+ #endif
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 12211e1..d8b2d0b 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -315,7 +315,6 @@ extern int proc_dowatchdog_thresh(struct ctl_table *table, int write,
+ 				  void __user *buffer,
+ 				  size_t *lenp, loff_t *ppos);
+ extern unsigned int  softlockup_panic;
+-extern int softlockup_thresh;
+ void lockup_detector_init(void);
+ #else
+ static inline void touch_softlockup_watchdog(void)
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c0bb324..acb12f4 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -731,10 +731,12 @@ static struct ctl_table kern_table[] = {
+ 		.maxlen         = sizeof (int),
+ 		.mode           = 0644,
+ 		.proc_handler   = proc_dowatchdog_enabled,
++		.extra1		= &zero,
++		.extra2		= &one,
+ 	},
+ 	{
+ 		.procname	= "watchdog_thresh",
+-		.data		= &softlockup_thresh,
++		.data		= &watchdog_thresh,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dowatchdog_thresh,
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index cf0e09f..ea3dfc2 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -28,7 +28,7 @@
+ #include <linux/perf_event.h>
+ 
+ int watchdog_enabled = 1;
+-int __read_mostly softlockup_thresh = 60;
++int __read_mostly watchdog_thresh = 60;
+ 
+ static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
+ static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
+@@ -105,12 +105,12 @@ static unsigned long get_timestamp(int this_cpu)
+ static unsigned long get_sample_period(void)
+ {
+ 	/*
+-	 * convert softlockup_thresh from seconds to ns
++	 * convert watchdog_thresh from seconds to ns
+ 	 * the divide by 5 is to give hrtimer 5 chances to
+ 	 * increment before the hardlockup detector generates
+ 	 * a warning
+ 	 */
+-	return softlockup_thresh * (NSEC_PER_SEC / 5);
++	return watchdog_thresh * (NSEC_PER_SEC / 5);
+ }
+ 
+ /* Commands for resetting the watchdog */
+@@ -182,7 +182,7 @@ static int is_softlockup(unsigned long touch_ts)
+ 	unsigned long now = get_timestamp(smp_processor_id());
+ 
+ 	/* Warn about unreasonable delays: */
+-	if (time_after(now, touch_ts + softlockup_thresh))
++	if (time_after(now, touch_ts + watchdog_thresh))
+ 		return now - touch_ts;
+ 
+ 	return 0;
+@@ -501,19 +501,19 @@ static void watchdog_disable_all_cpus(void)
+ /* sysctl functions */
+ #ifdef CONFIG_SYSCTL
+ /*
+- * proc handler for /proc/sys/kernel/nmi_watchdog
++ * proc handler for /proc/sys/kernel/nmi_watchdog,watchdog_thresh
+  */
+ 
+-int proc_dowatchdog_enabled(struct ctl_table *table, int write,
+-		     void __user *buffer, size_t *length, loff_t *ppos)
++int __proc_dowatchdog(struct ctl_table *table, int write,
++		      void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	int ret;
+ 
+-	ret = proc_dointvec(table, write, buffer, length, ppos);
++	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
+ 	if (ret || !write)
+ 		goto out;
+ 
+-	if (watchdog_enabled)
++	if (watchdog_enabled && watchdog_thresh)
+ 		watchdog_enable_all_cpus();
+ 	else
+ 		watchdog_disable_all_cpus();
+@@ -521,13 +521,6 @@ int proc_dowatchdog_enabled(struct ctl_table *table, int write,
+ out:
+ 	return ret;
+ }
+-
+-int proc_dowatchdog_thresh(struct ctl_table *table, int write,
+-			     void __user *buffer,
+-			     size_t *lenp, loff_t *ppos)
+-{
+-	return proc_dointvec_minmax(table, write, buffer, lenp, ppos);
+-}
+ #endif /* CONFIG_SYSCTL */
+ 
+ 
+-- 
+1.7.3.1
+
