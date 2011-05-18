@@ -1,87 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933775Ab1ERT2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 15:28:05 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:57721 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933698Ab1ERT17 (ORCPT
+	id S933722Ab1ERTXU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 15:23:20 -0400
+Received: from mx1.unsolicited.net ([173.255.193.191]:40468 "EHLO
+	mx1.unsolicited.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933681Ab1ERTXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 15:27:59 -0400
-X-Sasl-enc: NrEz5igCQcbGlTETekITXu1B3Jk5Utd6DXsJSEBSbact 1305746878
-Date: Wed, 18 May 2011 12:22:12 -0700
-From: Greg KH <greg@kroah.com>
-To: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Bird <tim.bird@am.sony.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Anders Kaseorg <andersk@ksplice.com>, Tim Abbott <tabbott@ksplice.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Dirk Behme <dirk.behme@googlemail.com>
-Subject: Re: your mail
-Message-ID: <20110518192212.GC26945@kroah.com>
-References: <4DD305B3.3000707@am.sony.com>
- <1305744925-8162-1-git-send-email-abogani@kernel.org>
+	Wed, 18 May 2011 15:23:19 -0400
+Message-ID: <4DD41CA6.8060808@unsolicited.net>
+Date: Wed, 18 May 2011 20:23:18 +0100
+From: David <david@unsolicited.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305744925-8162-1-git-send-email-abogani@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Latest kernel fails to build multi-threaded on ecryptfs home
+References: <4DD41613.4040102@unsolicited.net>
+In-Reply-To: <4DD41613.4040102@unsolicited.net>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 08:55:25PM +0200, Alessio Igor Bogani wrote:
-> Dear Mr. Bird, Dear Mr. Kroah-Hartman,
-> 
-> Sorry for my very bad English.
-> 
-> 2011/5/18 Tim Bird <tim.bird@am.sony.com>:
-> [...]
-> > Alessio - do you have any timings you can share for the speedup?
-> 
-> You can find a little benchmark using ftrace at end of this email:
-> https://lkml.org/lkml/2011/4/5/341
-> 
-> > On 05/17/2011 04:22 PM, Greg KH wrote:
-> >> On Tue, May 17, 2011 at 10:56:03PM +0200, Alessio Igor Bogani wrote:
-> >>> This work was supported by a hardware donation from the CE Linux Forum.
-> [...]
-> >> Please explain why you make a change, not just who sponsored the change,
-> >> that's not very interesting to developers.
-> 
-> You are right. I apologize.
-> 
-> This patch is a missing piece (not essential it is only a further little
-> optimization) of this little patchset:
-> https://lkml.org/lkml/2011/4/16/48
-> 
-> Unfortunately I forgot to include this patch in the series (my first error)
-> then I avoided explaining the changes because I had thought that those were
-> already enough explained in the cover-letter of the patchset (my second error).
-> 
-> Sorry for my mistakes.
-> 
-> Is this better?
-> 
-> Subject: [PATCH] module: Use binary search in lookup_symbol()
-> 
-> The function is_exported() with its helper function lookup_symbol() are used to
-> verify if a provided symbol is effectively exported by the kernel or by the
-> modules. Now that both have their symbols sorted we can replace a linear search
-> with a binary search which provide a considerably speed-up.
-> 
-> This work was supported by a hardware donation from the CE Linux Forum.
-> 
-> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
+On 18/05/11 19:55, David wrote:
+> I'm seeing some unpleasant things when building multithreaded when running the latest kernels. The compiler complains of truncated files and implausible characters. Single threaded builds seem fine.
 
-Much better, I have no objection to this at all.
+My impromptu bisection currently shows
 
-	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+    2.6.38 OK
+    2.6.39rc2 Affected
 
-Care to resend it without all the stuff above so someone (Rusty I guess)
-can apply it?
+so it looks like this problem first appears early in the .39 series.
 
-thanks,
-
-greg k-h
+Cheers
+David
