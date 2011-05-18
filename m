@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063Ab1ERMVD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 08:21:03 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60882 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932624Ab1ERMVB (ORCPT
+	id S933080Ab1ERMY2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 08:24:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34128 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933012Ab1ERMY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 08:21:01 -0400
+	Wed, 18 May 2011 08:24:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=VsPNEI2iqlwavCmlldcLpSafZuxwi48nrJT5wELUzD45Fl3pEmiTrNciGk8V7LvroZ
-         HDQPvWSpdDkEID8VA2bo8KPYb0OL/c/2YMjYWEN5soiZKrkKClOFQCDJasXHjOYHXpUq
-         DrBv0Vbf8DU6TuxC2l086UQXO8U2CrfY2UNfo=
+         :x-google-sender-auth:message-id:subject:from:to:content-type;
+        b=Q4oSIMeT7EF54RTS3Q+RyXbmozPHA8K5DwlGVkNUY31G12u27te28zbg/62NjQtKEO
+         nnIMZ1PChKlmjR/QxwkD/4e0rJksqKs4z4FqFk/rRp6kFKNNh6YbwZcS5W/E2iWJotm+
+         FQMWGHhEYJgGg9FQNi9CxXOJhl9TJxN5ZwKo0=
 MIME-Version: 1.0
-In-Reply-To: <4DD20D89.9020402@st.com>
-References: <f06f05e982c6182565a7fee1f7d6396cae895133.1305521318.git.viresh.kumar@st.com>
-	<1305561993.28926.73.camel@vkoul-udesk3>
-	<4DD1F443.1040205@st.com>
-	<1305603818.28926.82.camel@vkoul-udesk3>
-	<4DD20D89.9020402@st.com>
-Date: Wed, 18 May 2011 14:21:00 +0200
-X-Google-Sender-Auth: g6CDZikkdGAAhxsBddSUlJs7i1U
-Message-ID: <BANLkTi=zrr4==Uatq3zbdE1K+1_9ELOBZQ@mail.gmail.com>
-Subject: Re: [PATCH] dw_dmac: Replace subsys_init() with arch_initcall()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: viresh kumar <viresh.kumar@st.com>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTin1uWZUS21Ey6chY0E=Nu50MJFCWA@mail.gmail.com>
+References: <BANLkTin1uWZUS21Ey6chY0E=Nu50MJFCWA@mail.gmail.com>
+Date: Wed, 18 May 2011 14:24:26 +0200
+X-Google-Sender-Auth: er8-XGBiCfpnzgDgYgeKmjtG29A
+Message-ID: <BANLkTinXnjvG4p9WqoYc7ttyXZ7gQSBhsQ@mail.gmail.com>
+Subject: Fwd: Six month old regression with dataloss, confirmed but no clue
+From: roucaries bastien <roucaries.bastien+linux@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/17 viresh kumar <viresh.kumar@st.com>:
+Hi,
 
-> SPI bus is required for regulators and so probably he can't have
-> module_init() for amba-pl022.
+I resend an email about https://bugzilla.kernel.org/show_bug.cgi?id=29162
 
-Nope. Regulators have to be at subsystem_init() because lots
-of  drivers called in module_init() == driver_init() will need
-to enable them to even be able to talk to the hardware they
-are regulating.
+This bug was confirmed by Frederic Weisbecker but we have no clue how
+to reproduce quickly. Only run kamil and git for some time and get
+stuck.
 
-e.g. an externally powered I2C device. If you cannot put power
-to it you cannot probe it.
+We are even not sure if it is a reiserfs bug and a core fs bug. It
+seems related to acl is the only clue.
 
-Then you end up in a dependency: we need to have SPI
-to enble the regulators - the SPI device containing the
-regulators is a device that is self-powered.
+Any help is welcome.
 
-So then of course the SPI bus controller has to be
-available, so it has to be subsys_initcall() as well.
-Luckily as it happens it is earlier in the linkfile than
-regulators, so using the same initlevel as regulators
-will work (else we would be in hell).
+Thansk to frederick for trying to reproduce so far
 
-But since the PL022 uses DMA, we have to have DMA
-before SPI, and it is currently linked *after* SPI in the
-Makefile.
+Bastien
 
-> @Linus: What do you say? Can we get back to module_init() for amba-pl022?
-> And subsys_initcall() for DMA.
-
-No, but I sent a patch that will make it possible to have both
-as subsys_init(), check it out, it seems to work for me.
-
-Can you test it? (Sorry forgot to add you on CC, title is
-"[PATCH] dmaengine: move link order".
-
-Yours,
-Linus Walleij
+Ps: sorry for resending typo on lkml
