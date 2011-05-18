@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab1ERA0d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 20:26:33 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52192 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932512Ab1ERA0b (ORCPT
+	id S932591Ab1ERA1T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 20:27:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64807 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932531Ab1ERA1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 20:26:31 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DD31221.3060205@jp.fujitsu.com>
-Date: Wed, 18 May 2011 09:26:09 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: mgorman@suse.de
-CC: minchan.kim@gmail.com, James.Bottomley@hansenpartnership.com,
-        akpm@linux-foundation.org, colin.king@canonical.com,
-        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
-        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de> <1305295404-12129-5-git-send-email-mgorman@suse.de> <4DCFAA80.7040109@jp.fujitsu.com> <1305519711.4806.7.camel@mulgrave.site> <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com> <20110516084558.GE5279@suse.de> <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com> <20110516102753.GF5279@suse.de>
-In-Reply-To: <20110516102753.GF5279@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Tue, 17 May 2011 20:27:18 -0400
+X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=uB6k01T4ArMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=QmAn9pWrrmH5xC_ZU_YA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] ftrace: recordmcount: avoid STT_FUNC symbols as base
+ on ARM
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rabin Vincent <rabin@rab.in>
+In-Reply-To: <20110517225020.GD2266@n2100.arm.linux.org.uk>
+References: <1305134631-31617-1-git-send-email-rabin@rab.in>
+	 <1305648629.5456.744.camel@gandalf.stny.rr.com>
+	 <20110517225020.GD2266@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 17 May 2011 20:27:15 -0400
+Message-ID: <1305678435.26849.0.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Lets see;
->
-> shrink_page_list() only applies if inactive pages were isolated
-> 	which in turn may not happen if all_unreclaimable is set in
-> 	shrink_zones(). If for whatver reason, all_unreclaimable is
-> 	set on all zones, we can miss calling cond_resched().
->
-> shrink_slab only applies if we are reclaiming slab pages. If the first
-> 	shrinker returns -1, we do not call cond_resched(). If that
-> 	first shrinker is dcache and __GFP_FS is not set, direct
-> 	reclaimers will not shrink at all. However, if there are
-> 	enough of them running or if one of the other shrinkers
-> 	is running for a very long time, kswapd could be starved
-> 	acquiring the shrinker_rwsem and never reaching the
-> 	cond_resched().
+On Tue, 2011-05-17 at 23:50 +0100, Russell King - ARM Linux wrote:
+> On Tue, May 17, 2011 at 12:10:29PM -0400, Steven Rostedt wrote:
+> > On Wed, 2011-05-11 at 22:53 +0530, Rabin Vincent wrote:
+> > > While find_secsym_ndx often finds the unamed local STT_SECTION, if a
+> > > section has only one function in it, the ARM toolchain generates the
+> > > STT_FUNC symbol before the STT_SECTION, and recordmcount finds this
+> > > instead.
+> > > 
+> > > This is problematic on ARM because in ARM ELFs, "if a [STT_FUNC] symbol
+> > > addresses a Thumb instruction, its value is the address of the
+> > > instruction with bit zero set (in a relocatable object, the section
+> > > offset with bit zero set)".  This leads to incorrect mcount addresses
+> > > being recorded.
+> > > 
+> > > Fix this by not using STT_FUNC symbols as the base on ARM.
+> > 
+> > Hi Russell,
+> > 
+> > Can you give me an Acked-by on this patch?
+> 
+> It would be better for someone who knows the ELF format for ARM and
+> its weirdnesses to ack this patch.  I'm afraid my ARM ELF format
+> knowledge was been superseded when EABI came along and introduced
+> all sorts of new stuff.
 
-OK.
+OK, in that case, I'll just apply the patch.
 
+Thanks!
 
->
-> balance_pgdat() only calls cond_resched if the zones are not
-> 	balanced. For a high-order allocation that is balanced, it
-> 	checks order-0 again. During that window, order-0 might have
-> 	become unbalanced so it loops again for order-0 and returns
-> 	that was reclaiming for order-0 to kswapd(). It can then find
-> 	that a caller has rewoken kswapd for a high-order and re-enters
-> 	balance_pgdat() without ever have called cond_resched().
-
-Then, Shouldn't balance_pgdat() call cond_resched() unconditionally?
-The problem is NOT 100% cpu consumption. if kswapd will sleep, other
-processes need to reclaim old pages. The problem is, kswapd doesn't
-invoke context switch and other tasks hang-up.
-
-
-
-
-> While it appears unlikely, there are bad conditions which can result
-> in cond_resched() being avoided.
->
+-- Steve
 
 
