@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab1ERVQN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:16:13 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:50894 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634Ab1ERVQL (ORCPT
+	id S1754184Ab1ERVRB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:17:01 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:47692 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149Ab1ERVRA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:16:11 -0400
-Date: Wed, 18 May 2011 17:16:03 -0400 (EDT)
-Message-Id: <20110518.171603.2048423328863525352.davem@davemloft.net>
-To: decot@google.com
-Cc: joe@perches.com, szymon@janc.net.pl, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-net-upstream@google.com,
-        snanda@google.com
-Subject: Re: [PATCH 2/2] forcedeth: allow to silence tx_timeout debug
- messages
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1305753000-14933-2-git-send-email-decot@google.com>
-References: <1305753000-14933-1-git-send-email-decot@google.com>
-	<1305753000-14933-2-git-send-email-decot@google.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 18 May 2011 17:17:00 -0400
+Subject: Re: [PATCH v2] perf, x86: Fix event scheduler for constraints with
+ overlapping counters
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110419102600.GU31407@erda.amd.com>
+References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
+	 <1302913676-14352-5-git-send-email-robert.richter@amd.com>
+	 <20110419102600.GU31407@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 18 May 2011 23:16:38 +0200
+Message-ID: <1305753398.2466.7180.camel@twins>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 18 May 2011 14:16:05 -0700 (PDT)
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Decotigny <decot@google.com>
-Date: Wed, 18 May 2011 14:10:00 -0700
+So I'm mostly ok with this, just a few nits..
 
-> From: Sameer Nanda <snanda@google.com>
-> 
-> This change allows to silence most debug messages in case of TX
-> timeout. These messages don't provide a signare/noise ratio high
-> enough for production systems and, with ~30kB logged each time, they
-> tend to add to a cascade effect if the system is already under stress
-> (memory pressure, disk, etc.).
-> 
-> By default, the debug messages are not displayed but this can be
-> overriden by setting the debug_tx_timeout module parameter.
-> 
-> 
-> Signed-off-by: David Decotigny <decot@google.com>
+On Tue, 2011-04-19 at 12:26 +0200, Robert Richter wrote:
+> @@ -838,25 +877,61 @@ static int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+>         for (w = 1, num = n; num && w <= wmax; w++) {
+>                 /* for each event */
+>                 for (i = 0; num && i < n; i++) {
+> +                       idx = 0;
+> +               redo:
 
-I would rather you make the messages less verbose, instead of
-having it say absolutely nothing when this happens as it is
-a serious problem.
+labels go on column 0.
 
-You can add a knob which when enabled gives the old verbosity
-back for diagnostic purposes.
+>                         c = constraints[i];
+>                         hwc = &cpuc->event_list[i]->hw;
+>  
+>                         if (c->weight != w)
+>                                 continue;
+>  
+> -                       for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
+> -                               if (!test_bit(j, used_mask))
+> +                       /* for each bit in idxmsk starting from idx */
+> +                       while (idx < X86_PMC_IDX_MAX) {
+> +                               idx = find_next_bit(c->idxmsk, X86_PMC_IDX_MAX,
+> +                                                   idx);
+
+I'd be mighty tempted to ignore that 80 column rule here ;-)
+
+> +                               if (idx == X86_PMC_IDX_MAX)
+>                                         break;
+> +                               if (!__test_and_set_bit(idx, used_mask))
+> +                                       break;
+> +                               idx++;
+>                         }
+>  
+> -                       if (j == X86_PMC_IDX_MAX)
+> -                               break;
+> -
+> -                       __set_bit(j, used_mask);
+> +                       if (idx >= X86_PMC_IDX_MAX) {
+> +                               /*
+> +                                * roll back and try to reschedule
+> +                                * events on other counters
+> +                                */
+> +                               if (!state)
+> +                                       /* no events to reschedule */
+> +                                       goto done;
+
+Multi line indents get { } even if not strictly needed, alternatively we
+can place the comment on the same line as the goto.
+
+> +                               state--;
+> +                               /* restore previous state: */
+> +                               i = sched_state[state].i;
+> +                               w = sched_state[state].w;
+> +                               idx = sched_state[state].idx;
+> +                               num = sched_state[state].num;
+> +                               bitmap_copy(used_mask, sched_state[state].used, n);
+> +                               /* try next counter: */
+> +                               clear_bit(idx, used_mask);
+> +                               num++;
+
+Suppose we put the num--; bit below the if (c->redo) block, then we can
+remove this num++;, right?
+
+> +                               idx++;
+> +                               goto redo;
+> +                       }
+>  
+>                         if (assign)
+> -                               assign[i] = j;
+> +                               assign[i] = idx;
+> +
+>                         num--;
+> +
+> +                       if (c->redo && state < SCHED_STATES_MAX) {
+> +                               /* store scheduler state: */
+> +                               sched_state[state].i = i;
+> +                               sched_state[state].w = w;
+> +                               sched_state[state].idx = idx;
+> +                               sched_state[state].num = num;
+> +                               bitmap_copy(sched_state[state].used, used_mask, n);
+> +                               state++;
+> +                       }
+>                 }
+>         } 
