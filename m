@@ -1,110 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933718Ab1ERTPg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 15:15:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47791 "EHLO mx1.redhat.com"
+	id S933679Ab1ERTOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 15:14:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48281 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933634Ab1ERTN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 15:13:29 -0400
+	id S933645Ab1ERTNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 15:13:30 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
 Cc: dpshah@google.com, vgoyal@redhat.com
-Subject: [PATCH 12/14] blk-cgroup: Make 64bit per cpu stats safe on 32bit arch
-Date: Wed, 18 May 2011 15:13:24 -0400
-Message-Id: <1305746006-5837-13-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 13/14] blk-cgroup: Make cgroup stat reset path blkg->lock free for dispatch stats
+Date: Wed, 18 May 2011 15:13:25 -0400
+Message-Id: <1305746006-5837-14-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1305746006-5837-1-git-send-email-vgoyal@redhat.com>
 References: <1305746006-5837-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of the stats are 64bit and updation will be non atomic on 32bit
-architecture. Use sequence counters on 32bit arch to make reading
-of stats safe.
+Now dispatch stats update is lock free. But reset of these stats still
+takes blkg->stats_lock and is dependent on that. As stats are per cpu,
+we should be able to just reset the stats on each cpu without any locks.
+(Atleast for 64bit arch).
+
+On 32bit arch there is a small race where 64bit updates are not atomic.
+The result of this race can be that in the presence of other writers,
+one might not get 0 value after reset of a stat and might see something
+intermediate
+
+One can write more complicated code to cover this race like sending IPI
+to other cpus to reset stats and for offline cpus, reset these directly.
+
+Right not I am not taking that path because reset_update is more of a
+debug feature and it can happen only on 32bit arch and possibility of
+it happening is small. Will fix it if it becomes a real problem. For
+the time being going for code simplicity.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c |   27 ++++++++++++++++++++++-----
- block/blk-cgroup.h |    2 ++
- 2 files changed, 24 insertions(+), 5 deletions(-)
+ block/blk-cgroup.c |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 34bfcef..3622518 100644
+index 3622518..e41cc6f 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -400,14 +400,25 @@ void blkiocg_update_dispatch_stats(struct blkio_group *blkg,
- 				uint64_t bytes, bool direction, bool sync)
- {
- 	struct blkio_group_stats_cpu *stats_cpu;
-+	unsigned long flags;
-+
-+	/*
-+	 * Disabling interrupts to provide mutual exclusion between two
-+	 * writes on same cpu. It probably is not needed for 64bit. Not
-+	 * optimizing that case yet.
-+	 */
-+	local_irq_save(flags);
- 
- 	stats_cpu = this_cpu_ptr(blkg->stats_cpu);
- 
-+	u64_stats_update_begin(&stats_cpu->syncp);
- 	stats_cpu->sectors += bytes >> 9;
- 	blkio_add_stat(stats_cpu->stat_arr_cpu[BLKIO_STAT_CPU_SERVICED],
- 			1, direction, sync);
- 	blkio_add_stat(stats_cpu->stat_arr_cpu[BLKIO_STAT_CPU_SERVICE_BYTES],
- 			bytes, direction, sync);
-+	u64_stats_update_end(&stats_cpu->syncp);
-+	local_irq_restore(flags);
+@@ -537,6 +537,30 @@ struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key)
  }
- EXPORT_SYMBOL_GPL(blkiocg_update_dispatch_stats);
+ EXPORT_SYMBOL_GPL(blkiocg_lookup_group);
  
-@@ -622,15 +633,21 @@ static uint64_t blkio_read_stat_cpu(struct blkio_group *blkg,
- {
- 	int cpu;
- 	struct blkio_group_stats_cpu *stats_cpu;
--	uint64_t val = 0;
-+	u64 val = 0, tval;
- 
- 	for_each_possible_cpu(cpu) {
-+		unsigned int start;
- 		stats_cpu  = per_cpu_ptr(blkg->stats_cpu, cpu);
- 
--		if (type == BLKIO_STAT_CPU_SECTORS)
--			val += stats_cpu->sectors;
--		else
--			val += stats_cpu->stat_arr_cpu[type][sub_type];
-+		do {
-+			start = u64_stats_fetch_begin(&stats_cpu->syncp);
-+			if (type == BLKIO_STAT_CPU_SECTORS)
-+				tval = stats_cpu->sectors;
-+			else
-+				tval = stats_cpu->stat_arr_cpu[type][sub_type];
-+		} while(u64_stats_fetch_retry(&stats_cpu->syncp, start));
++static void blkio_reset_stats_cpu(struct blkio_group *blkg)
++{
++	struct blkio_group_stats_cpu *stats_cpu;
++	int i, j, k;
++	/*
++	 * Note: On 64 bit arch this should not be an issue. This has the
++	 * possibility of returning some inconsistent value on 32bit arch
++	 * as 64bit update on 32bit is non atomic. Taking care of this
++	 * corner case makes code very complicated, like sending IPIs to
++	 * cpus, taking care of stats of offline cpus etc.
++	 *
++	 * reset stats is anyway more of a debug feature and this sounds a
++	 * corner case. So I am not complicating the code yet until and
++	 * unless this becomes a real issue.
++	 */
++	for_each_possible_cpu(i) {
++		stats_cpu = per_cpu_ptr(blkg->stats_cpu, i);
++		stats_cpu->sectors = 0;
++		for(j = 0; j < BLKIO_STAT_CPU_NR; j++)
++			for (k = 0; k < BLKIO_STAT_TOTAL; k++)
++				stats_cpu->stat_arr_cpu[j][k] = 0;
++	}
++}
 +
-+		val += tval;
+ static int
+ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+ {
+@@ -581,7 +605,11 @@ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+ 		}
+ #endif
+ 		spin_unlock(&blkg->stats_lock);
++
++		/* Reset Per cpu stats which don't take blkg->stats_lock */
++		blkio_reset_stats_cpu(blkg);
  	}
- 
- 	return val;
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index fd730a2..2622267 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -14,6 +14,7 @@
-  */
- 
- #include <linux/cgroup.h>
-+#include <linux/u64_stats_sync.h>
- 
- enum blkio_policy_id {
- 	BLKIO_POLICY_PROP = 0,		/* Proportional Bandwidth division */
-@@ -154,6 +155,7 @@ struct blkio_group_stats {
- struct blkio_group_stats_cpu {
- 	uint64_t sectors;
- 	uint64_t stat_arr_cpu[BLKIO_STAT_CPU_NR][BLKIO_STAT_TOTAL];
-+	struct u64_stats_sync syncp;
- };
- 
- struct blkio_group {
++
+ 	spin_unlock_irq(&blkcg->lock);
+ 	return 0;
+ }
 -- 
 1.7.1
 
