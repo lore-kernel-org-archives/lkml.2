@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab1ERBlU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 21:41:20 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:42007 "EHLO e1.ny.us.ibm.com"
+	id S932745Ab1ERB6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 21:58:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10398 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932728Ab1ERBlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 21:41:18 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Joe Perches <joe@perches.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andy Whitcroft <apw@canonical.com>, Jiri Slaby <jirislaby@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: [PATCH 4/4] checkpatch.pl: Add check for task comm references
-Date: Tue, 17 May 2011 18:41:05 -0700
-Message-Id: <1305682865-27111-5-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
-References: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
+	id S932422Ab1ERB5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 21:57:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,228,1304319600"; 
+   d="scan'208";a="437959948"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "H Peter Anvin" <hpa@zytor.com>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Avi Kivity" <avi@redhat.com>,
+        "Arjan van de Ven" <arjan@infradead.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Andi Kleen" <andi@firstfloor.org>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH v3 0/4] Enable SMEP CPU Feature
+Date: Tue, 17 May 2011 18:44:25 -0700
+Message-Id: <1305683069-25394-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that accessing current->comm needs to be protected,
-avoid new current->comm or other task->comm usage by adding
-a warning to checkpatch.pl.
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Fair warning: I know zero perl, so this was written in the
-style of "monkey see, monkey do". It does appear to work
-in my testing though.
+Intel new CPU supports SMEP (Supervisor Mode Execution Protection). SMEP
+prevents kernel from executing code in application. Updated Intel SDM describes
+this CPU feature. The document will be published soon.
 
-Thanks to Jiri Slaby, Michal Nazarewicz and Joe Perches
-for help improving the regex!
+Note: This patch set doesn't enable the SMEP feature in KVM. A seperate patch
+will be pushed for enabling the feature in KVM.
 
-Close review and feedback would be appreciated.
+Fenghua Yu (4):
+  x86, cpu: Add CPU flags for SMEP
+  x86, cpu: Add SMEP CPU feature in CR4
+  x86, head_32/64.S: Enable SMEP
+  x86/kernel/cpu/common.c: Disable SMEP by kernel option nosmep
 
-CC: Joe Perches <joe@perches.com>
-CC: Michal Nazarewicz <mina86@mina86.com>
-CC: Andy Whitcroft <apw@canonical.com>
-CC: Jiri Slaby <jirislaby@gmail.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: David Rientjes <rientjes@google.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- scripts/checkpatch.pl |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ Documentation/kernel-parameters.txt    |    4 ++++
+ arch/x86/include/asm/cpufeature.h      |    1 +
+ arch/x86/include/asm/processor-flags.h |    1 +
+ arch/x86/kernel/cpu/common.c           |   22 ++++++++++++++++++++++
+ arch/x86/kernel/head_32.S              |   17 +++++++++++++----
+ arch/x86/kernel/head_64.S              |   13 +++++++++++--
+ 6 files changed, 52 insertions(+), 6 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d867081..a16ded7 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2868,6 +2868,12 @@ sub process {
- 			WARN("usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc\n" . $herecurr);
- 		}
- 
-+# check for current->comm usage
-+		my $comm_vars = qr/current|tsk|p|task|curr|t|me/;
-+		if ($line =~ /\b$comm_vars\s*->\s*comm\b/) {
-+			WARN("task comm access needs to be protected. Use get_task_comm, or printk's \%ptc formatting.\n" . $herecurr);
-+		}
-+
- # check for %L{u,d,i} in strings
- 		my $string;
- 		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
 -- 
-1.7.3.2.146.gca209
+1.7.2
 
