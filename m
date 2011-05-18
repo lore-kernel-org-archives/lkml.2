@@ -1,93 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab1ERJ7J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 05:59:09 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44803 "EHLO mx1.suse.de"
+	id S1756854Ab1ERKBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 06:01:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41965 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752467Ab1ERJ7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 05:59:07 -0400
-Date: Wed, 18 May 2011 10:58:59 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        James.Bottomley@hansenpartnership.com, akpm@linux-foundation.org,
-        colin.king@canonical.com, raghu.prabhu13@gmail.com, jack@suse.cz,
-        chris.mason@oracle.com, cl@linux.com, penberg@kernel.org,
-        riel@redhat.com, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-Message-ID: <20110518095859.GR5279@suse.de>
-References: <1305295404-12129-5-git-send-email-mgorman@suse.de>
- <4DCFAA80.7040109@jp.fujitsu.com>
- <1305519711.4806.7.camel@mulgrave.site>
- <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
- <20110516084558.GE5279@suse.de>
- <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
- <20110516102753.GF5279@suse.de>
- <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
- <4DD31B6E.8040502@jp.fujitsu.com>
- <BANLkTikLuWPEt7MitUYdJtzqyBSOkz2zxg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikLuWPEt7MitUYdJtzqyBSOkz2zxg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756798Ab1ERKBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 06:01:24 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: WANG Cong <amwang@redhat.com>, Neil Horman <nhorman@redhat.com>,
+        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Ferenc Wagner <wferi@niif.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Ian Campbell <ian.campbell@citrix.com>, netdev@vger.kernel.org
+Subject: [Patch net-next-2.6] netpoll: disable netpoll when enslave a device
+Date: Wed, 18 May 2011 18:00:35 +0800
+Message-Id: <1305712845-11762-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 02:44:48PM +0900, Minchan Kim wrote:
-> On Wed, May 18, 2011 at 10:05 AM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
-> >> It would be better to put cond_resched after balance_pgdat?
-> >>
-> >> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> >> index 292582c..61c45d0 100644
-> >> --- a/mm/vmscan.c
-> >> +++ b/mm/vmscan.c
-> >> @@ -2753,6 +2753,7 @@ static int kswapd(void *p)
-> >>                 if (!ret) {
-> >>                         trace_mm_vmscan_kswapd_wake(pgdat->node_id,
-> >> order);
-> >>                         order = balance_pgdat(pgdat,
-> >> order,&classzone_idx);
-> >> +                       cond_resched();
-> >>                 }
-> >>         }
-> >>         return 0;
-> >>
-> >>>>> While it appears unlikely, there are bad conditions which can result
-> >>>
-> >>> in cond_resched() being avoided.
-> >
-> > Every reclaim priority decreasing or every shrink_zone() calling makes more
-> > fine grained preemption. I think.
-> 
-> It could be.
-> But in direct reclaim case, I have a concern about losing pages
-> reclaimed to other tasks by preemption.
-> 
-> Hmm,, anyway, we also needs test.
-> Hmm,, how long should we bother them(Colins and James)?
-> First of all, Let's fix one just between us and ask test to them and
-> send the last patch to akpm.
-> 
-> 1. shrink_slab
-> 2. right after balance_pgdat
-> 3. shrink_zone
-> 4. reclaim priority decreasing routine.
-> 
-> Now, I vote 1) and 2).
-> 
+Currently we do nothing when we enslave a net device which is running netconsole.
+Neil pointed out that we may get weird results in such case, so let's disable
+netpoll on the device being enslaved. I think it is too harsh to prevent
+the device being ensalved if it is running netconsole.
 
-I've already submitted a pair of patches for option 1. I don't think
-option 2 gains us anything. I think it's more likely we should worry
-about all_unreclaimable being set when shrink_slab is returning 0 and we
-are encountering so many dirty pages that pages_scanned is high enough.
+By the way, this patch also removes the NETDEV_GOING_DOWN from netconsole
+netdev notifier, because netpoll will check if the device is running or not
+and we don't handle NETDEV_PRE_UP neither.
 
--- 
-Mel Gorman
-SUSE Labs
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Neil Horman <nhorman@redhat.com>
+
+---
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 088fd84..b9c70c5 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1640,6 +1640,8 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
+ 		}
+ 	}
+ 
++	netdev_bonding_change(slave_dev, NETDEV_ENSLAVE);
++
+ 	/* If this is the first slave, then we need to set the master's hardware
+ 	 * address to be the same as the slave's. */
+ 	if (is_zero_ether_addr(bond->dev->dev_addr))
+diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+index a83e101..0c3e8de 100644
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -621,7 +621,8 @@ static int netconsole_netdev_event(struct notifier_block *this,
+ 	bool stopped = false;
+ 
+ 	if (!(event == NETDEV_CHANGENAME || event == NETDEV_UNREGISTER ||
+-	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN))
++	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN ||
++	      event == NETDEV_ENSLAVE))
+ 		goto done;
+ 
+ 	spin_lock_irqsave(&target_list_lock, flags);
+@@ -650,8 +651,8 @@ restart:
+ 					goto restart;
+ 				}
+ 				/* Fall through */
+-			case NETDEV_GOING_DOWN:
+ 			case NETDEV_BONDING_DESLAVE:
++			case NETDEV_ENSLAVE:
+ 				nt->enabled = 0;
+ 				stopped = true;
+ 				break;
+@@ -660,10 +661,21 @@ restart:
+ 		netconsole_target_put(nt);
+ 	}
+ 	spin_unlock_irqrestore(&target_list_lock, flags);
+-	if (stopped && (event == NETDEV_UNREGISTER || event == NETDEV_BONDING_DESLAVE))
++	if (stopped) {
+ 		printk(KERN_INFO "netconsole: network logging stopped on "
+-			"interface %s as it %s\n",  dev->name,
+-			event == NETDEV_UNREGISTER ? "unregistered" : "released slaves");
++		       "interface %s as it ", dev->name);
++		switch (event) {
++		case NETDEV_UNREGISTER:
++			printk(KERN_CONT "unregistered\n");
++			break;
++		case NETDEV_BONDING_DESLAVE:
++			printk(KERN_CONT "released slaves\n");
++			break;
++		case NETDEV_ENSLAVE:
++			printk(KERN_CONT "is enslaved\n");
++			break;
++		}
++	}
+ 
+ done:
+ 	return NOTIFY_DONE;
+diff --git a/include/linux/notifier.h b/include/linux/notifier.h
+index 621dfa1..3d82867 100644
+--- a/include/linux/notifier.h
++++ b/include/linux/notifier.h
+@@ -211,6 +211,7 @@ static inline int notifier_to_errno(int ret)
+ #define NETDEV_UNREGISTER_BATCH 0x0011
+ #define NETDEV_BONDING_DESLAVE  0x0012
+ #define NETDEV_NOTIFY_PEERS	0x0013
++#define NETDEV_ENSLAVE		0x0014
+ 
+ #define SYS_DOWN	0x0001	/* Notify of system down */
+ #define SYS_RESTART	SYS_DOWN
