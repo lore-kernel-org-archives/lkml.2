@@ -1,141 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797Ab1ERK5I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 06:57:08 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44080 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932585Ab1ERK5G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 06:57:06 -0400
-Date: Wed, 18 May 2011 06:56:48 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Ferenc Wagner <wferi@niif.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Ian Campbell <ian.campbell@citrix.com>, netdev@vger.kernel.org
-Subject: Re: [Patch net-next-2.6] netpoll: disable netpoll when enslave a
- device
-Message-ID: <20110518105558.GA3203@hmsreliant.think-freely.org>
-References: <1305712845-11762-1-git-send-email-amwang@redhat.com>
+	id S932878Ab1ERLAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 07:00:16 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39118 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932863Ab1ERLAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 07:00:14 -0400
+Date: Wed, 18 May 2011 12:59:56 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC v3 0/8] x86, xsave: rework of extended state handling, LWP
+ support
+Message-ID: <20110518105956.GA16556@elte.hu>
+References: <4D91FA76.1010908@zytor.com>
+ <1302018656-586370-1-git-send-email-hans.rosenfeld@amd.com>
+ <20110407072305.GA20291@elte.hu>
+ <20110516191012.GA575@escobedo.osrc.amd.com>
+ <20110517113020.GA13475@elte.hu>
+ <20110518081653.GA23407@8bytes.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305712845-11762-1-git-send-email-amwang@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.5 (--)
+In-Reply-To: <20110518081653.GA23407@8bytes.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 06:00:35PM +0800, Amerigo Wang wrote:
-> Currently we do nothing when we enslave a net device which is running netconsole.
-> Neil pointed out that we may get weird results in such case, so let's disable
-> netpoll on the device being enslaved. I think it is too harsh to prevent
-> the device being ensalved if it is running netconsole.
+
+* Joerg Roedel <joro@8bytes.org> wrote:
+
+> Hi Ingo,
 > 
-> By the way, this patch also removes the NETDEV_GOING_DOWN from netconsole
-> netdev notifier, because netpoll will check if the device is running or not
-> and we don't handle NETDEV_PRE_UP neither.
+> thanks for your thoughts on this. I have some comments below.
 > 
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> Cc: Neil Horman <nhorman@redhat.com>
+> On Tue, May 17, 2011 at 01:30:20PM +0200, Ingo Molnar wrote:
 > 
-> ---
-> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-> index 088fd84..b9c70c5 100644
-> --- a/drivers/net/bonding/bond_main.c
-> +++ b/drivers/net/bonding/bond_main.c
-> @@ -1640,6 +1640,8 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
->  		}
->  	}
->  
-> +	netdev_bonding_change(slave_dev, NETDEV_ENSLAVE);
-> +
->  	/* If this is the first slave, then we need to set the master's hardware
->  	 * address to be the same as the slave's. */
->  	if (is_zero_ether_addr(bond->dev->dev_addr))
-> diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-> index a83e101..0c3e8de 100644
-> --- a/drivers/net/netconsole.c
-> +++ b/drivers/net/netconsole.c
-> @@ -621,7 +621,8 @@ static int netconsole_netdev_event(struct notifier_block *this,
->  	bool stopped = false;
->  
->  	if (!(event == NETDEV_CHANGENAME || event == NETDEV_UNREGISTER ||
-> -	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN))
-> +	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN ||
-> +	      event == NETDEV_ENSLAVE))
->  		goto done;
->  
->  	spin_lock_irqsave(&target_list_lock, flags);
-> @@ -650,8 +651,8 @@ restart:
->  					goto restart;
->  				}
->  				/* Fall through */
-> -			case NETDEV_GOING_DOWN:
->  			case NETDEV_BONDING_DESLAVE:
-> +			case NETDEV_ENSLAVE:
->  				nt->enabled = 0;
->  				stopped = true;
->  				break;
-This wasn't introduced by this patch, but looking at it made me realize that
-nt->enabled, if it passes through this code path, doesn't properly track weather
-or not netpoll_setup has been called on this interface.  If you look at
-drop_netconsole_target, you'll see we only call netpoll_cleanup_target if
-nt->enabled is set.  We should probably change the nt->enabled check there, and
-in store_enabled to be if (nt->np.dev), like we do in the NETDEV_UNREGISTER case
-in netconsole_netdev_event.
-
-> @@ -660,10 +661,21 @@ restart:
->  		netconsole_target_put(nt);
->  	}
->  	spin_unlock_irqrestore(&target_list_lock, flags);
-> -	if (stopped && (event == NETDEV_UNREGISTER || event == NETDEV_BONDING_DESLAVE))
-> +	if (stopped) {
->  		printk(KERN_INFO "netconsole: network logging stopped on "
-> -			"interface %s as it %s\n",  dev->name,
-> -			event == NETDEV_UNREGISTER ? "unregistered" : "released slaves");
-> +		       "interface %s as it ", dev->name);
-> +		switch (event) {
-> +		case NETDEV_UNREGISTER:
-> +			printk(KERN_CONT "unregistered\n");
-> +			break;
-> +		case NETDEV_BONDING_DESLAVE:
-> +			printk(KERN_CONT "released slaves\n");
-> +			break;
-> +		case NETDEV_ENSLAVE:
-> +			printk(KERN_CONT "is enslaved\n");
-> +			break;
-> +		}
-> +	}
->  
->  done:
->  	return NOTIFY_DONE;
-> diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-> index 621dfa1..3d82867 100644
-> --- a/include/linux/notifier.h
-> +++ b/include/linux/notifier.h
-> @@ -211,6 +211,7 @@ static inline int notifier_to_errno(int ret)
->  #define NETDEV_UNREGISTER_BATCH 0x0011
->  #define NETDEV_BONDING_DESLAVE  0x0012
->  #define NETDEV_NOTIFY_PEERS	0x0013
-> +#define NETDEV_ENSLAVE		0x0014
->  
-Nit:
-Shouldn't this be NETDEV_BONDING_ENSLAVE, to keep it in line with
-NETDEV_BONDING_DESLAVE above?
-
->  #define SYS_DOWN	0x0001	/* Notify of system down */
->  #define SYS_RESTART	SYS_DOWN
+> > - Where is the hardware interrupt that signals the ring-buffer-full condition
+> >   exposed to user-space and how can user-space wait for ring buffer events?
+> >   AFAICS this needs to set the LWP_CFG MSR and needs an irq handler, which 
+> >   needs kernel side support - but that is not included in these patches.
+> > 
+> >   The way we solved this with Intel's BTS (and PEBS) feature is that there's
+> >   a per task hardware buffer that is coupled with the event ring buffer, so
+> >   both setup and 'waiting' for the ring-buffer happens automatically and
+> >   transparently because tools can already wait on the ring-buffer.
+> > 
+> >   Considerable effort went into that model on the Intel side before we merged
+> >   it and i see no reason why an AMD hw-tracing feature should not have this 
+> >   too...
+> > 
+> >   [ If that is implemented we can expose LWP to user-space as well (which can
+> >     choose to utilize it directly and buffer into its own memory area without 
+> >     irqs and using polling, but i'd generally discourage such crude event 
+> >     collection methods). ]
 > 
+> If I understand this correctly you suggest to propagate the lwp-events
+> through perf into user-space. This is certainly good because it provides
+> a unified interface, but it somewhat elimitates the 'lightweight' part
+> of LWP because the samples need to be read by the kernel from user-space
+> memory (the lwp-ring-buffer needs to be in user-space memory), convert
+> it to perf-samples, and copy it back to user-space. The benefit is the
+> unified interface but the 'lightweight' and low-impact part vanishes to
+> some degree.
 
+I have two arguments here.
 
-Other than those two points, this looks good to me
-Thanks!
-Neil
+1) it does not matter much in practice
 
+Say we have a large amount of samples: a hundred thousand samples for a second 
+worth of application execution. This 100 KHz sampling is already 100 times 
+larger than the default we use in tools.
+
+100k samples - the 'lightweight' comes from not having to incur the cost of 
+100,000 PMU interrupts spread out with 1000+ overhead cycles each - but being 
+able to batch it up in groups.
+
+The copying of the 100k samples means the handling of 3.2 MB of data per 
+second. The copying itself is *negligible* - this is from an ancient AMD box:
+
+ phoenix:~> perf bench mem memcpy
+ # Running mem/memcpy benchmark...
+ # Copying 1MB Bytes ...
+
+     727.802038 MB/Sec
+       1.949227 GB/Sec (with prefault)
+
+On modern CPUs it ought to be in the 0.1% overhead range. For usual sampling 
+rates the copying would be in the 0.001% overhead range.
+
+And for that we get a much better abstraction and much better tooling model. 
+The decision is a no-brainer really.
+
+Note that if user-space *really* wants to get rid of even this overhead it can 
+use the instructions in a raw way. I expect that to have the fate of 
+sendfile(): zero-copy was trumpeted to be a big performance thing but in 
+practice it rarely mattered, usability was what kept people on read()/write().
+
+[ and compared to raw LWP instructions the usability disadvantage of sendfile() 
+  is almost non-existent. ]
+
+2) there's no contradiction: lightweight access can be supported in the perf 
+   abstraction as well
+
+While the PEBS buffer is not exposed to user-space, we can expose the buffer in 
+the LWP case and make 'raw collection' possible. As long as the standard 
+facilities are used to *configure* profiling and as long as the standard 
+facilities are used for the threshold irq functionality, etc. this is not 
+something i object to.
+
+And if zero copying matters a lot, then regular tools will use that facility as 
+well.
+
+> Also, LWP is somewhat different from the old-style PMU. LWP is designed
+> for self-monitoring of applications that want to optimize themself at
+> runtime, like JIT compilers (Java, LVMM, ...) or databases. For those
+> applications it would be good to keep LWP as lightweight as possible.
+
+That goal does not contradict the sane resource management and synchronization 
+requirements i outlined.
+
+> The missing support for interupts is certainly a problem here which 
+> significantly limits the usefulness of the feature for now. [...]
+
+Yes, that's the key observation.
+
+> [...] My idea was to expose the interupt-event through perf to user-space so 
+> that the application can wait on that event to read out the LWP ring-buffer.
+
+The (much) better thing (which you seem to realize later in your mail) is to 
+just integrate the buffer and teach the kernel to parse it.
+
+Then *all* tools will be able to utilize this (useful looking) hardware feature 
+straight away, with very little modifications needed - the advantage of 
+standardized kernel interfaces.
+
+If the CPU guys give us a 'measure kernel mode' bit it as well in the future 
+then it will be even more useful all around.
+
+So this is not just about the current first generation hardware, it's also 
+about what LWP could very well turn out to look like in the future, using 
+obvious extensions.
+
+By making it a limited user-space hack just because LWP *can* be used as such a 
+hack we would really risk condemning a very valuable piece of silicon to that 
+stupid role forever. It does not have to be used as such a hack and it does not 
+have to be condemned to that role.
+
+> But to come back to your idea, it probably could be done in a way to
+> enable profiling of other applications using LWP. The kernel needs to
+> allocate the lwp ring-buffer and setup lwp itself. [...]
+
+Yes.
+
+> [...] The problem is that the buffer needs to be user-accessible and where to 
+> map this buffer:
+> 
+> 	a) On the kernel-part of the address space. Problematic because
+> 	   every process can read the buffer of other tasks. So this is
+> 	   a no-go from a security point-of-view.
+
+No, the hardware buffer can (and should) be in user memory. We also want to 
+expose it (see raw decoding above), just like we expose raw events.
+
+> 	b) Change the address space layout in a comatible way to allow
+> 	   the kernel to map it (e.g. make a small part of the
+> 	   kernel-address space per-process). Somewhat intrusive to
+> 	   current x86 code, also not sure this feature is worth it.
+
+There's nothing wrong with allocating user memory on behalf of the task, if it 
+asks for it (or if the parent or some other controlling task wants to profile 
+the task) - we do it in a couple of places in the kernel - the perf subsystem 
+itself does it.
+
+> 	c) Some way to let userspace setup such a buffer and give the
+> 	   address to the kernel, or we mmap it directly into user
+> 	   address space. But that may cause other problems with
+> 	   applications that have strict requirements for their
+> 	   address-space layout.
+
+A buffer has to be allocated no matter who does it.
+
+> Bottom-line is, we need a good and secure way to setup a user-accessible
+> buffer per-process in the kernel. [...]
+
+Correct. It can either be a do_mmap() call, or if we want to handle any aspect 
+of it ourselves then it can be done like arch/x86/vdso/vma.c::init_vdso_vars() 
+sets up the vdso vma.
+
+We also obviously want to mlock this area (within the perf page-locking 
+limits). While the LWP hardware is robust enough to not crash on a not present 
+(paged out or not yet paged in) page, spuriously losing samples is not good.
+
+> [...] If we have that we can use LWP to monitor other applications (unless 
+> the application decides to use LWP of its own).
+
+Yes!
+
+That's not surprising: the hw feature itself looks pretty decently done, except 
+the few things i noted in my first mail which limit its utility needlessly.
+[ They could ask us next time around they add a feature like this. ]
+
+> I like the idea, but we should also make sure that we don't prevent the
+> low-impact self-monitoring use-case for applications that want it.
+
+Yes, while i dont find that a too interesting usecase i see no problem with 
+exposing this 'raw' area to apps that want to parse it directly (in fact the hw 
+forces that, because the area has to be ring 3 writable) - as long as the whole 
+resource infrastructure of creating and managing it is sane.
+
+The kernel is a resource manager and this is a useful CPU resource.
+
+> > - LWP is exposed indiscriminately, without giving user-space a chance to 
+> >   disable it on a per task basis. Security-conscious apps would want to disable
+> >   access to the LWP instructions - which are all ring 3 and unprivileged! We
+> >   already allow this for the TSC for example. Right now sandboxed code like
+> >   seccomp would get access to LWP as well - not good. Some intelligent
+> >   (optional) control is needed, probably using cr0's lwp-enabled bit.
+> 
+> That could certainly be done, but requires an xcr0 write at
+> context-switch. JFI, how can the tsc be disabled for a task from
+> userspace?
+
+See prctl_set_seccomp()'s disable_TSC call. The scheduler notices the TIF_NOTSC 
+flag and twiddles CR4::TSD. TSC disablement is implicit in the seccomp 
+execution model.
+
+Here there should be a TIF_NOLWP, tied into seccomp by default and twiddling 
+xcr0 at context-switch.
+
+This will be zero overhead by default.
+
+Thanks,
+
+	Ingo
