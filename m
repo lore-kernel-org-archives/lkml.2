@@ -1,212 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258Ab1ERPC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 11:02:26 -0400
+	id S933285Ab1ERPCf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 11:02:35 -0400
 Received: from mail-ey0-f174.google.com ([209.85.215.174]:54080 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932974Ab1ERPCZ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932559Ab1ERPCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 11:02:25 -0400
+	Wed, 18 May 2011 11:02:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=googlemail.com; s=gamma;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=wJBnFtodd7Pd/upjAZYnLfu4vKmfw9O+NhOcmx8YwcXsmMBb/hlK2B/trPNcaSLEYx
-         udrZa4N9SBSjx9Bco0eJcFnHFn6rOjqGNjklphbKdAeT2AtBimoZ9J3bwXtlS/AiYstT
-         I0WS8rg2h4pdzYHrPmH7ZB0CMZvab8crvT8sc=
+         :cc:content-type;
+        b=Ddrx7t+yCj0W1VBqsr5HjYAn+Zomh6SrJ8Twediv0BmOTYw5rvaC7Hc7PUwDAqFAyh
+         8w/sNfo7K8xYV5/zfwsU1dxvJhZKbqBFMCqEZF0LmHFgCkKv16u5062GQysx/pWvNs3s
+         Bddi4i4E+oz8o7rRRhYHXnWMM0MaX0EPEAYLI=
 MIME-Version: 1.0
-In-Reply-To: <20110516153122.GA15856@redhat.com>
+In-Reply-To: <20110516165352.GA18727@redhat.com>
 References: <201105152235.32073.vda.linux@googlemail.com> <20110516153122.GA15856@redhat.com>
+ <20110516155253.GA20624@htj.dyndns.org> <20110516165352.GA18727@redhat.com>
 From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Wed, 18 May 2011 17:02:02 +0200
-Message-ID: <BANLkTintE-QVUJhJY-_A5nvgj7viJatZ4Q@mail.gmail.com>
+Date: Wed, 18 May 2011 17:02:11 +0200
+Message-ID: <BANLkTinO59MFbz679ZyvVR4U8KfwnbNYxQ@mail.gmail.com>
 Subject: Re: Ptrace documentation, draft #1
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, indan@nul.nu
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 5:31 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 05/15, Denys Vlasenko wrote:
->>
->>       1.x Death under ptrace.
->>
->> When a (possibly multi-threaded) process receives a killing signal (a
->> signal set to SIG_DFL and whose default action is to kill the process),
->> all threads exit. Tracees report their death to the tracer(s). This is
->> not a ptrace-stop (because tracer can't query tracee status such as
->> register contents, cannot restart tracee etc) but the notification
->> about this event is delivered through waitpid API similarly to
->> ptrace-stop.
+On Mon, May 16, 2011 at 6:53 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> I think resuming from signal delivery trap
+>> should be the only place where @data means signo.
 >
-> Note: currently a killed PT_TRACE_EXIT tracee can stop and report
-> PTRACE_EVENT_EXIT before it actually exits. I'd say this is wrong and
-> should be fixed.
+> Agreed, it would be more clean/simple/understandable.
 
-Yes, I assumed this is normal.
-Or do you mean that *killed* tracee (that is, by signal) also stops there?
+I think ptrace API never promised that it will be possible
+to "create new signal" by passing non-zero data - only
+that the already pending signal can be passed, altered
+or suppressed. If there *are* cases where "create new signal"
+currently works, it's a quirk.
 
-> Another problem: the tracee can silently "disappear" during exec,
-> if it was the group leader and exec is called by its sub-thread.
-> Unfortunately, this is not easy to fix. The new leader inherits
-> the same pid. In fact, the old thread can "disappear", exactly
-> because it changes its pid.
->
-> IOW. If the old leader was traced - it disappears. If the new leader
-> is traced, it continues to be traced but it changes its pid, so it
-> is visible as the old leader to the tracer.
-
-This should be so much fun for ptrace users :)
-I am documenting this.
-
->> Tracer can kill a tracee with ptrace(PTRACE_KILL, pid, 0, 0).
->
-> Oh, no. This is more or less equivalent to PTRACE_CONT(SIGKILL) except
-> PTRACE_KILL doesn't return the error if the tracee is not stopped.
->
-> I'd say: do not use PTRACE_KILL, never. If the tracer wants to kill
-> the tracee - kill or tkill should be used.
-
-Regardless. We need to tell users what to expect after they do PTRACE_KILL.
-Should they expect that every tracee report WIFSIGNALED(status)
-and WTERMSIG(status) = SIGKILL? Can they get stale, buffered waitpid results
-before they get this last one?
-
-
->> When any thread executes exit_group syscall, every tracee reports its
->> death to its tracer.
->>
->> ??? Is it true that *every* thread reports death?
->
-> Yes, if you mean do_wait() as above.
-
-And will PTRACE_EVENT_EXIT happen for *every* tracee (which has it configured)?
-
->> Kernel delivers an extra SIGTRAP to tracee after execve syscall
->> returns. This is an ordinary signal (similar to one generated by kill
->> -TRAP), not a special kind of ptrace-stop. If PTRACE_O_TRACEEXEC option
->> is in effect, a PTRACE_EVENT_EXEC-stop is generated instead.
->>
->> ??? can this SIGTRAP be distinguished from "real" user-generated SIGTRAP
->>     by looking at its siginfo?
->
-> Afaics no. Well, except .si_pid shows that the signal was sent by the
-> tracing process to itself.
-
-What about si_code? Is it set to SI_KERNEL for this signal?
-AFAIR userspace can't create signals with such si_code.
-
-> I'd say it is better to assume nobody sends SIGTRAP to the tracee.
-> Even if the tracer could filter out the "real" signals, SIGTRAP doesn't
-> queue.
-
-Yes, I understand that the race with real SIGTRAPs is not fixable.
-I mostly look for a way for tracer to say "aha, this is that pesky
-SIGTRAP from execve, ignore it". One way is to set PTRACE_O_TRACEEXEC.
-Is GETSIGINFO another?
-
-
->> ??? Are syscalls interrupted by signals which are suppressed by tracer?
->>     If yes, document it here
->
-> Please reiterate, can't understand.
-
-Let's say tracee is in nanosleep. Then some signal arrives,
-but tracer decides to ignore it. In tracer:
-
-waitpid: WIFSTOPPED, WSTOPSIG = some_sig  <===
-ptrace(PTRACE_CONT, pid, 0, 0)  ===>
-
-will this interrupt nanosleep in tracee?
-
-
->> Note that restarting ptrace commands issued in ptrace-stops other than
->> signal-delivery-stop do NOT inject a signal, even if sig is nonzero. No
->> error is reported either. This is a cause of confusion among ptrace
->> users.
->
-> Yes. Except syscall entry/exit. But in this case SET_SIGINFO doesn't work
-> to add more confusion ;)
-
-I rewrote it like this:
-
-Note that restarting ptrace commands issued in ptrace-stops other than
-signal-delivery-stop is not guaranteed to inject a signal, even if sig
-is nonzero.
-No error is reported, nonzero sig may simply be ignored.
-Ptrace users should not try to "create new signal" this way: use
-tgkill(2) instead.
-
-
->> As of kernel 2.6.38, after tracer sees tracee ptrace-stop and until it
->> restarts or kills it, tracee will not run,
->
-> Well, this is not exactly true. Initially the tracee sleeps in TASK_STOPPED
-> and thus it can be woken by SIGCONT. But the first ptrace request changes
-> turns this state into TASK_TRACED.
-
-> This was already changed by the pending patches.
-
-This is an extremely subtle point, and is not really a part of API "as
-designed":
-how tracer can know that it's a group-stop *without* performing GETSIGINFO?
-And after it performed GETSIGINFO, it "destroyed" TASK_STOPPED...
-so knowing that it *was* TASK_STOPPED, which *could have been* woken up
-by SIGCONT does absolutely no good for the poor tracer, it's too late!
-
-It looks insane.
-
-I propose to not document it, as you guys plan to fix this thing for good.
-
-
->> If tracee was restarted by PTRACE_SYSCALL, tracee enters
->> syscall-enter-stop just prior to entering any syscall. If tracer
->> restarts it with PTRACE_SYSCALL, tracee enters syscall-exit-stop when
->> syscall is finished, or if it is interrupted by a signal. (That is,
->> signal-delivery-stop never happens between syscall-enter-stop and
->> syscall-exit-stop, it happens after syscall-exit-stop).
->
-> This is true. But, just in case, please note that PTRACE_EVENT_EXEC
-> or PTRACE_EVENT_{FORK,CLONE,etc} can be reported in between.
-
-Aha, so PTRACE_EVENT-stops happen "within" the syscall?
-Meaning, between syscall-enter-stop and syscall-exit-stop?
-
-> But si_code = (event << 8) | SIGTRAP and depends on reported event.
-
-Aha! I sort-of expected SI_KERNEL there...
-
->>       ptrace(PTRACE_cmd, pid, 0, sig);
->> where cmd is CONT, DETACH, SYSCALL, SINGLESTEP, SYSEMU,
->> SYSEMU_SINGLESTEP. If tracee is in signal-delivery-stop, sig is the
->> signal to be injected. Otherwise, sig is ignored.
->
-> There is another special case. If the tracee single-stepps into the
-> signal handler, it reports SIGTRAP as if it recieved this SIGNAL.
-> But ptrace(PTRACE, ..., sig) doesn't inject after that.
-
-This is part of missing doc about PTRACE_SINGLESTEP.
->From what you are saying it looks like PTRACE_SINGLESTEP
-implies PTRACE_SYSCALL behavior: "report syscall-stops".
-
-
->> As of 2.6.38, the following is believed to work correctly:
->>
->> - exit/death by signal is reported both to tracer and to real parent.
->
-> First to the tracer. Once it does do_wait(), we notify the real parent.
-> And of course, the real parent is not notified about the exiting threads.
->
-> There is additional complication with the group-leader. If it is traced
-> and exits, do_wait(WEXITED) doesn't work (until all threads exit) for
-> the tracer. Should be changed, I think.
-
-Updated this part.
+I changed doc to reflect this. If we tighten it up so that we can state
+that all such attempts will be ignored, we can update docs.
 
 -- 
 vda
