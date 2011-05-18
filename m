@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933703Ab1ERTUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 15:20:50 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:39924 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933641Ab1ERTUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 15:20:48 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: kernel-janitors@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Ramesh Agarwal <ramesh.agarwal@intel.com>,
-        Dan Carpenter <error27@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/staging/cptm1217/clearpad_tm1217.c: Correct call to input_free_device
-Date: Wed, 18 May 2011 21:20:43 +0200
-Message-Id: <1305746443-694-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S933726Ab1ERTVD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 15:21:03 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:51444 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933641Ab1ERTU6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 15:20:58 -0400
+Subject: [git pull][PATCH 0/2] Fix regression caused by addition of 'of_match'
+To: devicetree-discuss@lists.ozlabs.org, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, Milton Miller <miltonm@bga.com>,
+        sparclinux@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, Josip Rodin <joy@entuzijast.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 18 May 2011 13:20:55 -0600
+Message-ID: <20110518185751.28986.69446.stgit@ponder>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+Hi Linus,
 
-This code is in a loop that currently is only executed once.  Because of
-this property, the first block of code is currently actually correct.
-Nevertheless, the comments associated with the code suggest that the loop
-is planned to take more than one iteration in the future, and thus this
-patch is made with that case in mind.
+Here is Milton's patch to fix up the race condition on devicetree
+driver matching observed on SPARC, plus a follow up patch to remove
+the whole of_match thing entirely, which I've tested on my platforms,
+but has not yet been verified by anyone else.
 
-In the first block of code, there is currently an immediate abort from the
-function.  It is changed to jump to the error handling code at fail, to be
-able to unregister and free the resources allocated on previous iterations.
+I'll leave it up to you whether to take both commits, or just the
+first one.  The second does eventually need to be committed to 2.6.39,
+whether by you or in -stable, but it is a much bigger commit and it
+hasn't had any testing beyond what I've done here (a handful of
+powerpc, sparc, x86, and mips defconfigs, plus boot testing on
+powerpc and making sure each driver was compiled in at least one
+config).
 
-In the second block of code, the input_dev for the current iteration has
-been allocated, but has not been registered.  It has also not been stored
-in ts->cp_input_info[i].input.  Thus on jumping to fail, it will not be
-freed.  In this case, we want to free, but not unregister, so the free for
-this most recently allocated resource is put before the jump.
-
-A simplified version of the semantic match that finds this problem is:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@r exists@
-local idexpression struct input_dev * x;
-expression ra,rr;
-position p1,p2;
-@@
-
-x = input_allocate_device@p1(...)
-...  when != x = rr
-     when != input_free_device(x,...)
-     when != if (...) { ... input_free_device(x,...) ...}
-if(...) { ... when != x = ra
-     when forall
-     when != input_free_device(x,...)
- \(return <+...x...+>; \| return@p2...; \) }
-
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-cocci.print_main("input_allocate_device",p1)
-cocci.print_secs("input_free_device",p2)
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
+I've pushed it all out to my git server as show below...
 
 ---
-Only compile tested.
+The following changes since commit 2e9521fd656f05a716b5294a7dbebd37ced05e43:
 
- drivers/staging/cptm1217/clearpad_tm1217.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6 (2011-05-18 03:16:38 -0700)
 
-diff --git a/drivers/staging/cptm1217/clearpad_tm1217.c b/drivers/staging/cptm1217/clearpad_tm1217.c
-index 0fe713e..5456f82 100644
---- a/drivers/staging/cptm1217/clearpad_tm1217.c
-+++ b/drivers/staging/cptm1217/clearpad_tm1217.c
-@@ -462,8 +462,8 @@ static int cp_tm1217_probe(struct i2c_client *client,
- 		if (input_dev == NULL) {
- 			dev_err(ts->dev,
- 				"cp_tm1217:Input Device Struct alloc failed\n");
--			kfree(ts);
--			return -ENOMEM;
-+			retval = -ENOMEM;
-+			goto fail;
- 		}
- 		input_info = &ts->cp_input_info[i];
- 		snprintf(input_info->name, sizeof(input_info->name),
-@@ -486,6 +486,7 @@ static int cp_tm1217_probe(struct i2c_client *client,
- 			dev_err(ts->dev,
- 				"Input dev registration failed for %s\n",
- 					input_dev->name);
-+			input_free_device(input_dev);
- 			goto fail;
- 		}
- 		input_info->input = input_dev;
+are available in the git repository at:
 
+  git://git.secretlab.ca/git/linux-2.6 devicetree/merge
+
+Grant Likely (1):
+      drivercore: revert addition of of_match to struct device
+
+Milton Miller (1):
+      of: fix race when matching drivers
+
+
+ arch/powerpc/platforms/83xx/suspend.c      |    7 +++++--
+ arch/powerpc/sysdev/fsl_msi.c              |    7 +++++--
+ arch/sparc/kernel/pci_sabre.c              |    5 ++++-
+ arch/sparc/kernel/pci_schizo.c             |    8 ++++++--
+ drivers/atm/fore200e.c                     |    7 +++++--
+ drivers/char/hw_random/n2-drv.c            |    7 +++++--
+ drivers/char/ipmi/ipmi_si_intf.c           |    7 +++++--
+ drivers/char/xilinx_hwicap/xilinx_hwicap.c |   14 +++++++++-----
+ drivers/edac/ppc4xx_edac.c                 |    2 +-
+ drivers/i2c/busses/i2c-mpc.c               |    9 ++++++---
+ drivers/mmc/host/sdhci-of-core.c           |    7 +++++--
+ drivers/mtd/maps/physmap_of.c              |    7 +++++--
+ drivers/net/can/mscan/mpc5xxx_can.c        |    7 +++++--
+ drivers/net/fs_enet/fs_enet-main.c         |    9 ++++++---
+ drivers/net/fs_enet/mii-fec.c              |    7 +++++--
+ drivers/net/sunhme.c                       |    7 +++++--
+ drivers/scsi/qlogicpti.c                   |    7 +++++--
+ drivers/tty/serial/of_serial.c             |    7 +++++--
+ drivers/usb/gadget/fsl_qe_udc.c            |    7 +++++--
+ drivers/watchdog/mpc8xxx_wdt.c             |    7 +++++--
+ include/linux/device.h                     |    1 -
+ include/linux/of_device.h                  |    8 ++++++--
+ 22 files changed, 108 insertions(+), 46 deletions(-)
+
+-- 
+Signature
