@@ -1,37 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932893Ab1ERL1D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 07:27:03 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38912 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932826Ab1ERL1B (ORCPT
+	id S932933Ab1ERLaL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 07:30:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35045 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932589Ab1ERLaJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 07:27:01 -0400
-Date: Wed, 18 May 2011 12:26:47 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, lethal@linux-sh.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] trivial: Changed the printk loglevel when not able
-	to allocate memory
-Message-ID: <20110518112647.GA15386@n2100.arm.linux.org.uk>
-References: <1305653342.2182.15.camel@anish-desktop> <BANLkTi=AGbuU-jyhqaSF+yXA3qQuKVLWfA@mail.gmail.com> <BANLkTi=ngJiMyVt4AMqcWUSUM2EVXtjRQQ@mail.gmail.com> <1305713710.11468.39.camel@e102109-lin.cambridge.arm.com> <BANLkTinZ6d1=58Y0SCL72Jh3F6R8yfqE-Q@mail.gmail.com> <20110518112436.GH5913@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110518112436.GH5913@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 18 May 2011 07:30:09 -0400
+Subject: Re: [PATCH v1 5/5] KVM: Expose a version 1 architectural PMU to
+ guests
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+In-Reply-To: <20110518110759.GB16556@elte.hu>
+References: <1305129333-7456-1-git-send-email-avi@redhat.com>
+	 <1305129333-7456-6-git-send-email-avi@redhat.com>
+	 <20110517194117.GA26184@elte.hu> <4DD38B57.2070904@redhat.com>
+	 <20110518110759.GB16556@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 18 May 2011 13:29:48 +0200
+Message-ID: <1305718188.2466.7104.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 12:24:36PM +0100, Russell King - ARM Linux wrote:
-> On Wed, May 18, 2011 at 04:27:47PM +0530, anish singh wrote:
-> > Got it.So should i change both as KERN_WARN and resend?
+On Wed, 2011-05-18 at 13:07 +0200, Ingo Molnar wrote:
 > 
-> Much better would be to change it to pr_warn() or even
-> dev_warn(&dev->dev, ...).
+> Peter, what do you think about adding a inv and cmask attribute that is applied 
+> to generic events automatically? 
 
-Actually, make that pr_err() or dev_err().  Both printks in clcdfb_probe()
-are errors and so should be reported at error severity - they cause things
-to stop working and so they're not just a warning.
+Have you read the PPC, ARM and SPARC64 PMU definition to check if that
+makes sense?
