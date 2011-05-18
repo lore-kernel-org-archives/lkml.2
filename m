@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292Ab1ERPIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 11:08:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44478 "EHLO
+	id S933018Ab1ERPMO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 11:12:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40939 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933251Ab1ERPIK (ORCPT
+	with ESMTP id S932791Ab1ERPMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 11:08:10 -0400
-Date: Wed, 18 May 2011 11:06:30 -0400
+	Wed, 18 May 2011 11:12:13 -0400
+Date: Wed, 18 May 2011 11:11:31 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Daniel Kiper <dkiper@net-space.pl>
-Cc: Vasiliy G Tolstov <v.tolstov@selfip.ru>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "wdauchy@gmail.com" <wdauchy@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "andi.kleen@intel.com" <andi.kleen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
-Subject: Re: [Xen-devel] Re: [PATCH V3] xen/balloon: Memory hotplug support
- for Xen balloon driver
-Message-ID: <20110518150630.GA4709@dumpdata.com>
-References: <20110517214421.GD30232@router-fw-old.local.net-space.pl>
- <1305701868.28175.1.camel@vase>
- <1305703309.7738.23.camel@dagon.hellion.org.uk>
- <1305703494.28175.2.camel@vase>
- <20110518103543.GA5066@router-fw-old.local.net-space.pl>
+Cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
+        dave@linux.vnet.ibm.com, wdauchy@gmail.com, rientjes@google.com,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH V3 0/2] mm: Memory hotplug interface changes
+Message-ID: <20110518151131.GB4709@dumpdata.com>
+References: <20110517213604.GA30232@router-fw-old.local.net-space.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110518103543.GA5066@router-fw-old.local.net-space.pl>
+In-Reply-To: <20110517213604.GA30232@router-fw-old.local.net-space.pl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DD3E088.0063:SCFMA922111,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090205.4DD3E1B4.0146:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Here is proper udev rule:
+On Tue, May 17, 2011 at 11:36:04PM +0200, Daniel Kiper wrote:
+> Hi,
 > 
-> SUBSYSTEM=="memory", ACTION=="add", RUN+="/bin/sh -c '[ -f /sys$devpath/state ] && echo online > /sys$devpath/state'"
+> Full list of futures:
+>   - mm: Add SECTION_ALIGN_UP() and SECTION_ALIGN_DOWN() macro,
+>   - mm: Extend memory hotplug API to allow memory hotplug in virtual
+>     machines.
 > 
-> Konrad, could you add it to git comment and Kconfig help ???
+> Those patches applies to Linus' git tree, v2.6.39-rc7 tag with a few
+> prerequisite patches available at https://lkml.org/lkml/2011/5/2/296.
 
-I am going to be lazy and ask you to resend this patch with that udev rule mentioned in it :-)
+Are they in akpm tree?
+
+Dave and David, you guys Acked them - are they suppose to go through your
+tree(s) or Andrew's?
