@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab1ERKBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 06:01:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41965 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756798Ab1ERKBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 06:01:24 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: WANG Cong <amwang@redhat.com>, Neil Horman <nhorman@redhat.com>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Ferenc Wagner <wferi@niif.hu>,
+	id S1756816Ab1ERKE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 06:04:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36992 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754806Ab1ERKE4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 06:04:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vDH4KiKCh/9X/Jb/HOrMHC3B5n0rYnOHOBr9Ct8iUk35a3Do2oN8Nwbl9EznSACh45
+         09TKgzbpiP9ZFCXmKzXRIgGwh5r3+B5FipX3G1LTGd9kmL5gMiDWtn0pFvxU5NnAKLbN
+         XrkdVNnGOa6wUHLzNmvcMzjBw/IvIIyhnqs5I=
+Date: Wed, 18 May 2011 12:04:51 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Borislav Petkov <bp@alien8.de>, Meelis Roos <mroos@linux.ee>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Ian Campbell <ian.campbell@citrix.com>, netdev@vger.kernel.org
-Subject: [Patch net-next-2.6] netpoll: disable netpoll when enslave a device
-Date: Wed, 18 May 2011 18:00:35 +0800
-Message-Id: <1305712845-11762-1-git-send-email-amwang@redhat.com>
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 2/3 v2.6.39-rc7] block: make disk_block_events()
+ properly wait for work cancellation
+Message-ID: <20110518100451.GV20624@htj.dyndns.org>
+References: <20110517102713.GJ20624@htj.dyndns.org>
+ <20110517102824.GK20624@htj.dyndns.org>
+ <20110517102853.GL20624@htj.dyndns.org>
+ <BANLkTimj2guK6kw7QSijYZyvoRY+JKgbTg@mail.gmail.com>
+ <20110517151107.GQ20624@htj.dyndns.org>
+ <BANLkTikpwk-hJs+TF7TJB38JsvOvHk2UMQ@mail.gmail.com>
+ <20110517152742.GR20624@htj.dyndns.org>
+ <BANLkTi=-Ak5vhCFxgc2rt2rft0PE9XJiTA@mail.gmail.com>
+ <20110518050729.GA16870@mtj.dyndns.org>
+ <BANLkTi=0_bv7s6=i2v-iP0vQmHHT3=tm8w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=0_bv7s6=i2v-iP0vQmHHT3=tm8w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we do nothing when we enslave a net device which is running netconsole.
-Neil pointed out that we may get weird results in such case, so let's disable
-netpoll on the device being enslaved. I think it is too harsh to prevent
-the device being ensalved if it is running netconsole.
+Hello,
 
-By the way, this patch also removes the NETDEV_GOING_DOWN from netconsole
-netdev notifier, because netpoll will check if the device is running or not
-and we don't handle NETDEV_PRE_UP neither.
+On Wed, May 18, 2011 at 02:46:30AM -0700, Linus Torvalds wrote:
+> Quite frankly. right now I think I need to just release 2.6.39, and
+> then for 2.6.40 merge the trivial
+> 
+>   mutex_lock(&ev->mutex);
+>   if (!ev->block++)
+>     cancel_delayed_work_sync(&ev->dwork);
+>   mutex_unlock(&ev->mutex);
+> 
+> with a cc: stable for backporting.
 
-Signed-off-by: WANG Cong <amwang@redhat.com>
-Cc: Neil Horman <nhorman@redhat.com>
+This isn't super-critical and releasing without the fix but later
+backporting via -stable definitely is an option.
 
----
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 088fd84..b9c70c5 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1640,6 +1640,8 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
- 		}
- 	}
- 
-+	netdev_bonding_change(slave_dev, NETDEV_ENSLAVE);
-+
- 	/* If this is the first slave, then we need to set the master's hardware
- 	 * address to be the same as the slave's. */
- 	if (is_zero_ether_addr(bond->dev->dev_addr))
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index a83e101..0c3e8de 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -621,7 +621,8 @@ static int netconsole_netdev_event(struct notifier_block *this,
- 	bool stopped = false;
- 
- 	if (!(event == NETDEV_CHANGENAME || event == NETDEV_UNREGISTER ||
--	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN))
-+	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN ||
-+	      event == NETDEV_ENSLAVE))
- 		goto done;
- 
- 	spin_lock_irqsave(&target_list_lock, flags);
-@@ -650,8 +651,8 @@ restart:
- 					goto restart;
- 				}
- 				/* Fall through */
--			case NETDEV_GOING_DOWN:
- 			case NETDEV_BONDING_DESLAVE:
-+			case NETDEV_ENSLAVE:
- 				nt->enabled = 0;
- 				stopped = true;
- 				break;
-@@ -660,10 +661,21 @@ restart:
- 		netconsole_target_put(nt);
- 	}
- 	spin_unlock_irqrestore(&target_list_lock, flags);
--	if (stopped && (event == NETDEV_UNREGISTER || event == NETDEV_BONDING_DESLAVE))
-+	if (stopped) {
- 		printk(KERN_INFO "netconsole: network logging stopped on "
--			"interface %s as it %s\n",  dev->name,
--			event == NETDEV_UNREGISTER ? "unregistered" : "released slaves");
-+		       "interface %s as it ", dev->name);
-+		switch (event) {
-+		case NETDEV_UNREGISTER:
-+			printk(KERN_CONT "unregistered\n");
-+			break;
-+		case NETDEV_BONDING_DESLAVE:
-+			printk(KERN_CONT "released slaves\n");
-+			break;
-+		case NETDEV_ENSLAVE:
-+			printk(KERN_CONT "is enslaved\n");
-+			break;
-+		}
-+	}
- 
- done:
- 	return NOTIFY_DONE;
-diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index 621dfa1..3d82867 100644
---- a/include/linux/notifier.h
-+++ b/include/linux/notifier.h
-@@ -211,6 +211,7 @@ static inline int notifier_to_errno(int ret)
- #define NETDEV_UNREGISTER_BATCH 0x0011
- #define NETDEV_BONDING_DESLAVE  0x0012
- #define NETDEV_NOTIFY_PEERS	0x0013
-+#define NETDEV_ENSLAVE		0x0014
- 
- #define SYS_DOWN	0x0001	/* Notify of system down */
- #define SYS_RESTART	SYS_DOWN
+> So we can't be in some atomic context inside some other spinlock
+> anyway, afaik. And there can be no lock order issues, since this
+> would always be a new inner lock.
+
+Yeap, the problem was unblock/check being allowed to be called without
+sleeping context, which isn't used anymore and was broken due to
+cancellation race.  We can just enclose the whole thing inside per-ev
+mutex and everything should be simple and fine.  I'll post patches
+soon.
+
+Thanks.
+
+-- 
+tejun
