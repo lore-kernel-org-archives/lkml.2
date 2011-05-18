@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732Ab1ERBip (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 21:38:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:46185 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932677Ab1ERBio (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 21:38:44 -0400
-X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=XYJHFtupD_QA:10 a=nZMiEFGSWTUA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=aDwY-2FZ_ZypQZgIKlIA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Tue, 17 May 2011 21:38:42 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH] sched: correct how RT task is picked
-Message-ID: <20110518013842.GD23940@home.goodmis.org>
-References: <BANLkTikkeR_yf1HGhgq7WEO-kEvDGkV_tw@mail.gmail.com>
- <BANLkTim4n-WA_6nJpg4Nd99yuc3f+VWkcw@mail.gmail.com>
- <BANLkTikOecxhb8pZfAd19FLrPAPY4zacDQ@mail.gmail.com>
- <20110512120606.GA3639@zhy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110512120606.GA3639@zhy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932744Ab1ERBlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 21:41:19 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:35425 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932722Ab1ERBlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 21:41:18 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Joe Perches <joe@perches.com>,
+        Ingo Molnar <mingo@elte.hu>, Michal Nazarewicz <mina86@mina86.com>,
+        Andy Whitcroft <apw@canonical.com>, Jiri Slaby <jirislaby@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: [PATCH 0/4] v6 Improve task->comm locking situation
+Date: Tue, 17 May 2011 18:41:01 -0700
+Message-Id: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 08:06:06PM +0800, Yong Zhang wrote:
-> On Wed, May 11, 2011 at 09:44:04PM +0800, Hillf Danton wrote:
-> > On Wed, May 11, 2011 at 4:43 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> > > On Tue, May 10, 2011 at 9:04 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> > >> When picking RT task for given CPU,
-> > >> [1] if the cpu is invalid for cpumask test, right result could not be
-> > >
-> > > 'cpu is invalid' means weather we care it or not, it's not real 'invalid'
-> > >
-> > If cpu is not cared, how to determine whether it is allowed for task to run?
-> 
-> pick_next_highest_task_rt() can be used to get the next highest pullable
-> task on a certain rq(regradless on which cpu that task could run). but
-> currently we have no such kind of caller.
-> 
-> > 
-> > >> reached even by further checking nr_cpus_allowed,
-> > >> on the other hand, the input cpu is valid in two cases that
-> > >> pick_next_highest_task_rt() is called, thus the invalid input cpu
-> > >> looks over-concern.
-> > >> [2] if the cpu is valid for cpumask test, further checking
-> > >> nr_cpus_allowed looks overwork, since it is computed based on
-> > >> cpus_allowed,
-> > >
-> > > No, cpumask_test_cpu(cpu, &p->cpus_allowed) doesn't mean
-> > > p->rt.nr_cpus_allowed > 1.
-> > >
-> > If cpu is allowed for task to run, then why more cpus are enforced?
-> 
-> I think you can take a look at next_prio(), it just calculate the
-> next highest task on the current cpu; in this case,
-> cpumask_test_cpu(cpu, &p->cpus_allowed) will be true for the most
-> of time, but maybe that task is bound to this cpu.
+v6 tries to address the latest round of issues. Again, hopefully
+this is getting close to something that can be queued for 2.6.40.
 
-I've been looking at the history here, and I think that '-1' is a relic.
+Since my commit 4614a696bd1c3a9af3a08f0e5874830a85b889d4, the
+current->comm value could be changed by other threads.
 
-If you look at sched_rt.c in f65eda4f789168ba5ff3fa75546c29efeed19f58:
+This changed the comm locking rules, which previously allowed for
+unlocked current->comm access, since only the thread itself could
+change its comm.
 
-$ git show f65eda4f:kernel/sched_rt.c 
+While this was brought up at the time, it was not considered
+problematic, as the comm writing was done in such a way that
+only null or incomplete comms could be read. However, recently
+folks have made it clear they want to see this issue resolved.
 
-You'll see that push_rt_task calls pick_next_highest_task_rt() with a
--1. That code has long been replaced.
+So fair enough, as I opened this can of worms, I should work
+to resolve it and this patchset is my initial attempt.
 
-I'm a bit nervous about taking Hillf's patch as is. But a little more
-reviewing and testing may prove that it is legit.
+The proposed solution here is to introduce a new spinlock that
+exclusively protects the comm value. We use it to serialize
+access via get_task_comm() and set_task_comm(). Since some 
+comm access is open-coded using the task lock, we preserve
+the task locking in set_task_comm for now. Once all comm 
+access is converted to using get_task_comm, we can clean that
+up as well.
 
--- Steve
+I've also introduced a printk %ptc accessor, which makes the
+conversion to locked access simpler (as most uses are for printks)
+as well as a checkpatch rule to try to catch any new current->comm
+users from being introduced.
+
+New in this version: More tweaks to the checkpatch regex, and 
+added a unlocked task->comm accessor for performance critical
+code paths that can handle the potential null or incomplete comm.
+
+Hopefully this will allow for a smooth transition, where we can
+slowly fix up the unlocked current->comm access bit by bit,
+reducing the race window with each patch, while not making the
+situation any worse then it was yesterday.
+
+Thanks for the comments and feedback so far. 
+Any additional comments/feedback would still be appreciated.
+
+thanks
+-john
+
+CC: Joe Perches <joe@perches.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Michal Nazarewicz <mina86@mina86.com>
+CC: Andy Whitcroft <apw@canonical.com>
+CC: Jiri Slaby <jirislaby@gmail.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: David Rientjes <rientjes@google.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org
+
+John Stultz (4):
+  comm: Introduce comm_lock spinlock to protect task->comm access
+  comm: Add lock-free task->comm accessor
+  printk: Add %ptc to safely print a task's comm
+  checkpatch.pl: Add check for task comm references
+
+ fs/exec.c                 |   32 +++++++++++++++++++++++++++++---
+ include/linux/init_task.h |    1 +
+ include/linux/sched.h     |    6 +++---
+ kernel/fork.c             |    1 +
+ lib/vsprintf.c            |   24 ++++++++++++++++++++++++
+ scripts/checkpatch.pl     |    6 ++++++
+ 6 files changed, 64 insertions(+), 6 deletions(-)
+
+-- 
+1.7.3.2.146.gca209
 
