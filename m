@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1ERVak (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:30:40 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:48796 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755021Ab1ERVah (ORCPT
+	id S1755472Ab1ERVdm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:33:42 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54544 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab1ERVdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:30:37 -0400
-X-Sasl-enc: lpviiaumXftkhvSzkItJeZGXNYwcv0JyDZOZM6IwiPn3 1305754236
-Date: Wed, 18 May 2011 14:29:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Joe Perches <joe@perches.com>
-Cc: Brett Rudley <brudley@broadcom.com>, Henry Ptasinski <henryp@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Dowan Kim <dowan@broadcom.com>,
-        Roland Vossen <rvossen@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>, linux-wireless@vger.kernel.org
-Subject: Re: [PATCH] staging: brcm80211: brcmfmac: Add and use dhd_dbg
-Message-ID: <20110518212927.GB13555@kroah.com>
-References: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 18 May 2011 17:33:41 -0400
+Message-Id: <20110518205713.947614271@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Wed, 18 May 2011 21:33:39 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: LAK <linux-arm-kernel@lists.infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [patch 0/7] clocksources/clockevents improvements
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 11:23:21AM -0700, Joe Perches wrote:
-> All uses of DHD_<TYPE> macros are for debugging only.
-> 
-> Change the multiple uses of DHD_<TYPE>((...)) to dhd_dbg(TYPE, ...)
-> for a more consistent style.
+The series provides a few improvements to the core code of
+clocksources and clockevents.
 
-I need an ack from one of the broadcom developers before I can take this
-patch...
+1) Better layout and cacheline alignment of the hotpath data in both
+   data structures
 
-thanks,
+2) Get rid of the hardcoded 5 seconds sleep limit in clocksources
 
-greg k-h
+3) Provide a generic configuration and registration interface for
+   clockevents which does all the common math tasks so we can remove
+   copied code all over the place
+
+4) Provide a function to reconfigure an active clock event
+   device. Needed by devices which are affected by frequency scaling.
+
+The last two patches are x86 specific and make use of the new
+config_register() functions.
+
+Thanks,
+
+	tglx
+
