@@ -1,73 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932643Ab1ERAqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 20:46:19 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35139 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932188Ab1ERAqS (ORCPT
+	id S932629Ab1ERAsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 20:48:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36458 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932107Ab1ERAsP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 20:46:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DD316C7.60003@jp.fujitsu.com>
-Date: Wed, 18 May 2011 09:45:59 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 17 May 2011 20:48:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=hwq/JE9WSSU8OZ3WB5ymUvbB0OLOXAgKrQov6SKIJ/0t6RozjsnU+0XsCoqsEsaATh
+         498jBYf7JQT5U3RA28ewaizbRicajBisNS3MZJcGNbrqXSbQgQBygQSk9O4+Da8TCN3D
+         q3BVNoZLZlYau40tql4sMHI6kI+GcM17uAc9k=
 MIME-Version: 1.0
-To: mgorman@suse.de
-CC: akpm@linux-foundation.org, minchan.kim@gmail.com, colin.king@canonical.com,
-        James.Bottomley@hansenpartnership.com, raghu.prabhu13@gmail.com,
-        jack@suse.cz, chris.mason@oracle.com, cl@linux.com, penberg@kernel.org,
-        riel@redhat.com, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] mm: vmscan: Correctly check if reclaimer should schedule
- during shrink_slab
-References: <1305295404-12129-5-git-send-email-mgorman@suse.de> <4DCFAA80.7040109@jp.fujitsu.com> <1305519711.4806.7.camel@mulgrave.site> <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com> <20110516084558.GE5279@suse.de> <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com> <20110516102753.GF5279@suse.de> <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com> <20110517103840.GL5279@suse.de> <1305640239.2046.27.camel@lenovo> <20110517161508.GN5279@suse.de>
-In-Reply-To: <20110517161508.GN5279@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <201105180039.56806.rjw@sisk.pl>
+References: <1305100723-29161-1-git-send-email-myungjoo.ham@samsung.com>
+	<1305100723-29161-2-git-send-email-myungjoo.ham@samsung.com>
+	<201105180039.56806.rjw@sisk.pl>
+Date: Wed, 18 May 2011 09:48:13 +0900
+X-Google-Sender-Auth: 4-sVfoMuLYe2wS9IDD_ByPfQ2oc
+Message-ID: <BANLkTim0DkhcjWw7fM0e-UhyB3=GkQ7nKw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] PM / DEVFREQ: add example governors
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Mark Brown <broonie@sirena.org.uk>, Jiejing Zhang <kzjeef@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, Colin Cross <ccross@google.com>,
+        Nishanth Menon <nm@ti.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <len.brown@intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/18 1:15), Mel Gorman wrote:
-> It has been reported on some laptops that kswapd is consuming large
-> amounts of CPU and not being scheduled when SLUB is enabled during
-> large amounts of file copying. It is expected that this is due to
-> kswapd missing every cond_resched() point because;
+2011/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Wednesday, May 11, 2011, MyungJoo Ham wrote:
+>> Three CPUFREQ-like governors are provided as examples.
+>>
+>> powersave: use the lowest frequency possible. The user (device) should
+>> set the polling_ms as 0 because polling is useless for this governor.
+>>
+>> performance: use the highest freqeuncy possible. The user (device)
+>> should set the polling_ms as 0 because polling is useless for this
+>> governor.
+>>
+>> simple_ondemand: simplified version of CPUFREQ's ONDEMAND governor.
+>>
+>> When a user updates OPP entries (enable/disable/add), OPP framework
+>> automatically notifies DEVFREQ to update operating frequency
+>> accordingly. Thus, DEVFREQ users (device drivers) do not need to update
+>> DEVFREQ manually with OPP entry updates or set polling_ms for powersave
+>> , performance, or any other "static" governors.
 >
-> shrink_page_list() calls cond_resched() if inactive pages were isolated
->          which in turn may not happen if all_unreclaimable is set in
->          shrink_zones(). If for whatver reason, all_unreclaimable is
->          set on all zones, we can miss calling cond_resched().
->
-> balance_pgdat() only calls cond_resched if the zones are not
->          balanced. For a high-order allocation that is balanced, it
->          checks order-0 again. During that window, order-0 might have
->          become unbalanced so it loops again for order-0 and returns
->          that it was reclaiming for order-0 to kswapd(). It can then
->          find that a caller has rewoken kswapd for a high-order and
->          re-enters balance_pgdat() without ever calling cond_resched().
->
-> shrink_slab only calls cond_resched() if we are reclaiming slab
-> 	pages. If there are a large number of direct reclaimers, the
-> 	shrinker_rwsem can be contended and prevent kswapd calling
-> 	cond_resched().
->
-> This patch modifies the shrink_slab() case. If the semaphore is
-> contended, the caller will still check cond_resched(). After each
-> successful call into a shrinker, the check for cond_resched() is
-> still necessary in case one shrinker call is particularly slow.
->
-> This patch replaces
-> mm-vmscan-if-kswapd-has-been-running-too-long-allow-it-to-sleep.patch
-> in -mm.
->
-> [mgorman@suse.de: Preserve call to cond_resched after each call into shrinker]
-> From: Minchan Kim<minchan.kim@gmail.com>
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
+> Well, do you expect anyone to actually use them?  If not, it would make
+> more sense to put them into a doc.
 
-Looks good to me.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+According to our experiences of DVFS(although this "DEVFREQ" is not
+applied to them, yet) in memory-bus and GPU,
+I expect most DEVFREQ users might use "simple_ondemand" and
+expect "powersave" and "performance" will probably mostly used while
+testing and debugging.
+("userspace"-like governor would be also useful for that purpose, but
+I'd add it later)
 
 
+Cheers!
+- MyungJoo
+
+>
+> Thanks,
+> Rafael
+>
+>
+>> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  drivers/base/power/devfreq.c |   69 ++++++++++++++++++++++++++++++++++++++++++
+>>  include/linux/devfreq.h      |    5 +++
+>>  2 files changed, 74 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/base/power/devfreq.c b/drivers/base/power/devfreq.c
+>> index 8e2e45b..251d761 100644
+>> --- a/drivers/base/power/devfreq.c
+>> +++ b/drivers/base/power/devfreq.c
+>> @@ -351,3 +351,72 @@ static int __init devfreq_init(void)
+>>       return 0;
+>>  }
+>>  late_initcall(devfreq_init);
+>> +
+>> +static int devfreq_powersave_func(struct devfreq *df,
+>> +                               unsigned long *freq)
+>> +{
+>> +     *freq = 0; /* devfreq_do will run "ceiling" to 0 */
+>> +     return 0;
+>> +}
+>> +
+>> +struct devfreq_governor devfreq_powersave = {
+>> +     .get_target_freq = devfreq_powersave_func,
+>> +};
+>> +
+>> +static int devfreq_performance_func(struct devfreq *df,
+>> +                                 unsigned long *freq)
+>> +{
+>> +     *freq = UINT_MAX; /* devfreq_do will run "floor" */
+>> +     return 0;
+>> +}
+>> +
+>> +struct devfreq_governor devfreq_performance = {
+>> +     .get_target_freq = devfreq_performance_func,
+>> +};
+>> +
+>> +/* Constants for DevFreq-Simple-Ondemand (DFSO) */
+>> +#define DFSO_UPTHRESHOLD     (90)
+>> +#define DFSO_DOWNDIFFERENCTIAL       (5)
+>> +static int devfreq_simple_ondemand_func(struct devfreq *df,
+>> +                                     unsigned long *freq)
+>> +{
+>> +     struct devfreq_dev_status stat;
+>> +     int err = df->profile->get_dev_status(df->dev, &stat);
+>> +     unsigned long long a, b;
+>> +
+>> +     if (err)
+>> +             return err;
+>> +
+>> +     /* Set MAX if it's busy enough */
+>> +     if (stat.busy_time * 100 >
+>> +         stat.total_time * DFSO_UPTHRESHOLD) {
+>> +             *freq = UINT_MAX;
+>> +             return 0;
+>> +     }
+>> +
+>> +     /* Set MAX if we do not know the initial frequency */
+>> +     if (stat.current_frequency == 0) {
+>> +             *freq = UINT_MAX;
+>> +             return 0;
+>> +     }
+>> +
+>> +     /* Keep the current frequency */
+>> +     if (stat.busy_time * 100 >
+>> +         stat.total_time * (DFSO_UPTHRESHOLD - DFSO_DOWNDIFFERENCTIAL)) {
+>> +             *freq = stat.current_frequency;
+>> +             return 0;
+>> +     }
+>> +
+>> +     /* Set the desired frequency based on the load */
+>> +     a = (unsigned long long) stat.busy_time * stat.current_frequency;
+>> +     b = div_u64(a, stat.total_time);
+>> +     b *= 100;
+>> +     b = div_u64(b, (DFSO_UPTHRESHOLD - DFSO_DOWNDIFFERENCTIAL / 2));
+>> +     *freq = (unsigned long) b;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +struct devfreq_governor devfreq_simple_ondemand = {
+>> +     .get_target_freq = devfreq_simple_ondemand_func,
+>> +};
+>> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+>> index d08e9f5..ec41ba6 100644
+>> --- a/include/linux/devfreq.h
+>> +++ b/include/linux/devfreq.h
+>> @@ -81,6 +81,11 @@ extern int devfreq_add_device(struct device *dev,
+>>  extern int devfreq_remove_device(struct device *dev);
+>>  extern int devfreq_update(struct device *dev, bool may_not_exist);
+>>  extern int devfreq_tickle_device(struct device *dev, unsigned long duration_ms);
+>> +
+>> +extern struct devfreq_governor devfreq_powersave;
+>> +extern struct devfreq_governor devfreq_performance;
+>> +extern struct devfreq_governor devfreq_simple_ondemand;
+>> +
+>>  #else /* !CONFIG_PM_DEVFREQ */
+>>  static int devfreq_add_device(struct device *dev,
+>>                          struct devfreq_dev_profile *profile,
+>>
+>
+>
+
+
+
+-- 
+MyungJoo Ham (함명주), Ph.D.
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: 82-10-6714-2858
