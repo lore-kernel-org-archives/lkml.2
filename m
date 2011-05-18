@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab1ERVL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:11:28 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:32158 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088Ab1ERVLW (ORCPT
+	id S1754979Ab1ERVNX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:13:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63540 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754455Ab1ERVNW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:11:22 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
-	references:organization;
-	b=E/TzUbZ9lvm2A4NZv4+qEwD8c0fRAe+uumXQ6SUVnUETDQ3hvwop6RLdiQa3fCLz1
-	vIXvnQBassCTy5XC7USRg==
-From: David Decotigny <decot@google.com>
-To: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: kernel-net-upstream@google.com, Salman Qazi <sqazi@google.com>,
-        David Decotigny <decot@google.com>
-Subject: [PATCH] forcedeth: Fix a race during rmmod of forcedeth
-Date: Wed, 18 May 2011 14:10:49 -0700
-Message-Id: <1305753049-15025-3-git-send-email-decot@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1305753049-15025-1-git-send-email-decot@google.com>
-References: <1305753049-15025-1-git-send-email-decot@google.com>
-Organization: Google, Inc.
+	Wed, 18 May 2011 17:13:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,233,1304319600"; 
+   d="scan'208";a="3616582"
+From: "Rao, Nikhil" <nikhil.rao@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH]  x86: Removing unnecessary check in detect_ht
+Thread-Topic: [PATCH]  x86: Removing unnecessary check in detect_ht
+Thread-Index: AQHMFZ+wwMCJ5f57lUKQ3lDQVr7GwpSTFQXQ
+Date: Wed, 18 May 2011 21:13:19 +0000
+Message-ID: <1F668163772FA946975B9466A9DFF729B6A3@ORSMSX101.amr.corp.intel.com>
+References: <43F901BD926A4E43B106BF17856F0755018E1CF482@orsmsx508.amr.corp.intel.com>
+ <4FF5AC937153B0459463C1A88EB478F2010DFD3D3F@orsmsx505.amr.corp.intel.com>
+ <43F901BD926A4E43B106BF17856F0755018E1CF69D@orsmsx508.amr.corp.intel.com>
+ <1305048201.2736.17.camel@sbsiddha-MOBL3.sc.intel.com>
+ <1F668163772FA946975B9466A9DFF729B5E5@ORSMSX101.amr.corp.intel.com>
+ <1F668163772FA946975B9466A9DFF729B64C@ORSMSX101.amr.corp.intel.com>
+ <20110518210754.GA28476@elte.hu>
+In-Reply-To: <20110518210754.GA28476@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.131.214]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Salman Qazi <sqazi@google.com>
+Nothing apart from what you mention - bootlog message and SMP instead of SMT.
 
-The race was between del_timer_sync and nv_do_stats_poll called through
-nv_get_ethtool_stats.  To prevent this, we have to introduce mutual
-exclusion between nv_get_ethtool_stats and del_timer_sync.  Notice
-that we don't put the mutual exclusion in nv_do_stats_poll.  That's
-because doing so would result in a deadlock, since it is a timer
-callback and hence already waited for by timer deletion.
+Nikhil
 
-
-Signed-off-by: David Decotigny <decot@google.com>
----
- drivers/net/forcedeth.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
-index e5c5849..3163a2b 100644
---- a/drivers/net/forcedeth.c
-+++ b/drivers/net/forcedeth.c
-@@ -3921,6 +3921,10 @@ static void nv_poll_controller(struct net_device *dev)
- }
- #endif
- 
-+/* No locking is needed as long as this is in the timer
-+ * callback.  However, any other callers must call this
-+ * function with np->lock held.
-+ */
- static void nv_do_stats_poll(unsigned long data)
- {
- 	struct net_device *dev = (struct net_device *) data;
-@@ -4553,12 +4557,17 @@ static int nv_get_sset_count(struct net_device *dev, int sset)
- 
- static void nv_get_ethtool_stats(struct net_device *dev, struct ethtool_stats *estats, u64 *buffer)
- {
-+	unsigned long flags;
- 	struct fe_priv *np = netdev_priv(dev);
- 
-+	spin_lock_irqsave(&np->lock, flags);
-+
- 	/* update stats */
- 	nv_do_stats_poll((unsigned long)dev);
- 
- 	memcpy(buffer, &np->estats, nv_get_sset_count(dev, ETH_SS_STATS)*sizeof(u64));
-+
-+	spin_unlock_irqrestore(&np->lock, flags);
- }
- 
- static int nv_link_test(struct net_device *dev)
-@@ -5176,13 +5185,13 @@ static int nv_close(struct net_device *dev)
- 
- 	spin_lock_irq(&np->lock);
- 	np->in_shutdown = 1;
-+	del_timer_sync(&np->stats_poll);
- 	spin_unlock_irq(&np->lock);
- 	nv_napi_disable(dev);
- 	synchronize_irq(np->pci_dev->irq);
- 
- 	del_timer_sync(&np->oom_kick);
- 	del_timer_sync(&np->nic_poll);
--	del_timer_sync(&np->stats_poll);
- 
- 	netif_stop_queue(dev);
- 	spin_lock_irq(&np->lock);
--- 
-1.7.3.1
-
+> -----Original Message-----
+> From: Ingo Molnar [mailto:mingo@elte.hu]
+> Sent: Wednesday, May 18, 2011 2:08 PM
+> To: Rao, Nikhil
+> Cc: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
+> x86@kernel.org; Siddha, Suresh B; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] x86: Removing unnecessary check in detect_ht
+> 
+> 
+> * Rao, Nikhil <nikhil.rao@intel.com> wrote:
+> 
+> > This patch removes a check that prevents correct CPU topology setup
+> > when cpuid extensions for topology enumeration are not supported and
+> > the number of processors reported to the OS is smaller than
+> > smp_num_siblings
+> 
+> What bad effect was observed, exactly? An annoying warning in the
+> bootlog and
+> incorrect scheduler domain setup (SMP instead of SMT) - or something
+> else as
+> well?
+> 
+> Thanks,
+> 
+> 	Ingo
