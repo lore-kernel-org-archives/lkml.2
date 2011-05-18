@@ -1,174 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab1ERINI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 04:13:08 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37868 "EHLO mx3.mail.elte.hu"
+	id S1755342Ab1ERIQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 04:16:57 -0400
+Received: from 8bytes.org ([88.198.83.132]:55513 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754316Ab1ERINF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 04:13:05 -0400
-Date: Wed, 18 May 2011 10:12:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Brian Gerst <brgerst@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] x86, x86_64: Fix checks for userspace address limit
-Message-ID: <20110518081254.GC14805@elte.hu>
-References: <1305210630-7136-1-git-send-email-jolsa@redhat.com>
- <20110516114254.GI19837@elte.hu>
- <BANLkTik44F2sWkGvN+6oJBszZ0SPfLjbrg@mail.gmail.com>
+	id S1754377Ab1ERIQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 04:16:55 -0400
+Date: Wed, 18 May 2011 10:16:53 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC v3 0/8] x86, xsave: rework of extended state handling,
+	LWP support
+Message-ID: <20110518081653.GA23407@8bytes.org>
+References: <4D91FA76.1010908@zytor.com> <1302018656-586370-1-git-send-email-hans.rosenfeld@amd.com> <20110407072305.GA20291@elte.hu> <20110516191012.GA575@escobedo.osrc.amd.com> <20110517113020.GA13475@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTik44F2sWkGvN+6oJBszZ0SPfLjbrg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110517113020.GA13475@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ingo,
 
-* Brian Gerst <brgerst@gmail.com> wrote:
+thanks for your thoughts on this. I have some comments below.
 
-> On Mon, May 16, 2011 at 7:42 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Jiri Olsa <jolsa@redhat.com> wrote:
-> >
-> >> hi,
-> >> there seems to be bug in the _copy_to_user and _copy_from_user
-> >> functions, not allowing access to the last user page.
-> >>
-> >> Also I tried to decipher the inline assembly in __range_not_ok,
-> >> and it seems to work properly, but the macro comment seems to
-> >> be misleading.
-> >>
-> >> wbr,
-> >> jirka
-> >>
-> >> ---
-> >> As shown in BZ 30352 (https://bugzilla.kernel.org/show_bug.cgi?id=30352)
-> >> there's an issue with reading last allowed page on x86_64.
-> >>
-> >> The _copy_to_user and _copy_from_user functions use following
-> >> check for address limit:
-> >>
-> >> if (buf + size >= limit)
-> >>       fail
-> >>
-> >> while it should be:
-> >>
-> >> if (buf + size > limit)
-> >>       fail
-> >>
-> >> That's because the size represents the number of bytes being
-> >> read/write from/to buf address AND including the buf address.
-> >> So the copy function will actually never touch the limit
-> >> address even if "buf + size == limit".
-> >>
-> >> Following program fails to use the last page as buffer
-> >> due to the wrong limit check.
-> >>
-> >> ---
-> >> #include <sys/mman.h>
-> >> #include <sys/socket.h>
-> >> #include <assert.h>
-> >>
-> >> #define PAGE_SIZE       (4096)
-> >> #define LAST_PAGE       ((void*)(0x7fffffffe000))
-> >>
-> >> int main()
-> >> {
-> >>         int fds[2], err;
-> >>         void * ptr = mmap(LAST_PAGE, PAGE_SIZE, PROT_READ | PROT_WRITE,
-> >>                           MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-> >>         assert(ptr == LAST_PAGE);
-> >>         err = socketpair(AF_LOCAL, SOCK_STREAM, 0, fds);
-> >>         assert(err == 0);
-> >>         err = send(fds[0], ptr, PAGE_SIZE, 0);
-> >>         perror("send");
-> >>         assert(err == PAGE_SIZE);
-> >>         err = recv(fds[1], ptr, PAGE_SIZE, MSG_WAITALL);
-> >>         perror("recv");
-> >>         assert(err == PAGE_SIZE);
-> >>         return 0;
-> >> }
-> >> ---
-> >>
-> >> Other place checking the addr limit is access_ok function,
-> >> which is working properly. There's just misleading comment
-> >> for the __range_not_ok macro.
-> >>
-> >>
-> >> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> >> ---
-> >>  arch/x86/include/asm/uaccess.h |    2 +-
-> >>  arch/x86/lib/copy_user_64.S    |    4 ++--
-> >>  2 files changed, 3 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-> >> index abd3e0e..99f0ad7 100644
-> >> --- a/arch/x86/include/asm/uaccess.h
-> >> +++ b/arch/x86/include/asm/uaccess.h
-> >> @@ -42,7 +42,7 @@
-> >>   * Returns 0 if the range is valid, nonzero otherwise.
-> >>   *
-> >>   * This is equivalent to the following test:
-> >> - * (u33)addr + (u33)size >= (u33)current->addr_limit.seg (u65 for x86_64)
-> >> + * (u33)addr + (u33)size > (u33)current->addr_limit.seg (u65 for x86_64)
-> >>   *
-> >>   * This needs 33-bit (65-bit for x86_64) arithmetic. We have a carry...
-> >>   */
-> >> diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
-> >> index 99e4826..a73397f 100644
-> >> --- a/arch/x86/lib/copy_user_64.S
-> >> +++ b/arch/x86/lib/copy_user_64.S
-> >> @@ -72,7 +72,7 @@ ENTRY(_copy_to_user)
-> >>       addq %rdx,%rcx
-> >>       jc bad_to_user
-> >>       cmpq TI_addr_limit(%rax),%rcx
-> >> -     jae bad_to_user
-> >> +     ja bad_to_user
-> >>       ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
-> >>       CFI_ENDPROC
-> >>  ENDPROC(_copy_to_user)
-> >> @@ -85,7 +85,7 @@ ENTRY(_copy_from_user)
-> >>       addq %rdx,%rcx
-> >>       jc bad_from_user
-> >>       cmpq TI_addr_limit(%rax),%rcx
-> >> -     jae bad_from_user
-> >> +     ja bad_from_user
-> >>       ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
-> >>       CFI_ENDPROC
-> >>  ENDPROC(_copy_from_user)
-> >
-> > Hm, something tickles me about this area that we would reintroduce a security
-> > hole, that we really wanted to treat the last page of user-space as some sort
-> > of guard page but i cannot quite remember it why ...
-> >
-> > IIRC Linus wrote bits of this so i'm Cc:-ing him just in case he remembers.
-> >
-> > Thanks,
-> >
-> >        Ingo
+On Tue, May 17, 2011 at 01:30:20PM +0200, Ingo Molnar wrote:
+
+> - Where is the hardware interrupt that signals the ring-buffer-full condition
+>   exposed to user-space and how can user-space wait for ring buffer events?
+>   AFAICS this needs to set the LWP_CFG MSR and needs an irq handler, which 
+>   needs kernel side support - but that is not included in these patches.
 > 
-> The guard page is apparently due to an erratum on K8 cpus (#121
-> Sequential Execution Across Non-Canonical Boundary
-> Causes Processor Hang).  However, his test code is using the last
-> valid page before the guard page.  The bug is that the last byte
-> before the guard page can't be read because of the off-by-one error.
+>   The way we solved this with Intel's BTS (and PEBS) feature is that there's
+>   a per task hardware buffer that is coupled with the event ring buffer, so
+>   both setup and 'waiting' for the ring-buffer happens automatically and
+>   transparently because tools can already wait on the ring-buffer.
+> 
+>   Considerable effort went into that model on the Intel side before we merged
+>   it and i see no reason why an AMD hw-tracing feature should not have this 
+>   too...
+> 
+>   [ If that is implemented we can expose LWP to user-space as well (which can
+>     choose to utilize it directly and buffer into its own memory area without 
+>     irqs and using polling, but i'd generally discourage such crude event 
+>     collection methods). ]
 
-Ok, so if you otherwise agree with the change then Jiri please update the 
-changelog with this information and Brian's Acked-by.
+If I understand this correctly you suggest to propagate the lwp-events
+through perf into user-space. This is certainly good because it provides
+a unified interface, but it somewhat elimitates the 'lightweight' part
+of LWP because the samples need to be read by the kernel from user-space
+memory (the lwp-ring-buffer needs to be in user-space memory), convert
+it to perf-samples, and copy it back to user-space. The benefit is the
+unified interface but the 'lightweight' and low-impact part vanishes to
+some degree.
 
-Thanks,
+Also, LWP is somewhat different from the old-style PMU. LWP is designed
+for self-monitoring of applications that want to optimize themself at
+runtime, like JIT compilers (Java, LVMM, ...) or databases. For those
+applications it would be good to keep LWP as lightweight as possible.
 
-	Ingo
+The missing support for interupts is certainly a problem here which
+significantly limits the usefulness of the feature for now. My idea was
+to expose the interupt-event through perf to user-space so that the
+application can wait on that event to read out the LWP ring-buffer.
+
+But to come back to your idea, it probably could be done in a way to
+enable profiling of other applications using LWP. The kernel needs to
+allocate the lwp ring-buffer and setup lwp itself. The problem is that
+the buffer needs to be user-accessible and where to map this buffer:
+
+	a) On the kernel-part of the address space. Problematic because
+	   every process can read the buffer of other tasks. So this is
+	   a no-go from a security point-of-view.
+
+	b) Change the address space layout in a comatible way to allow
+	   the kernel to map it (e.g. make a small part of the
+	   kernel-address space per-process). Somewhat intrusive to
+	   current x86 code, also not sure this feature is worth it.
+
+	c) Some way to let userspace setup such a buffer and give the
+	   address to the kernel, or we mmap it directly into user
+	   address space. But that may cause other problems with
+	   applications that have strict requirements for their
+	   address-space layout.
+
+Bottom-line is, we need a good and secure way to setup a user-accessible
+buffer per-process in the kernel. If we have that we can use LWP to
+monitor other applications (unless the application decides to use LWP of
+its own).
+
+I like the idea, but we should also make sure that we don't prevent the
+low-impact self-monitoring use-case for applications that want it.
+
+> - LWP is exposed indiscriminately, without giving user-space a chance to 
+>   disable it on a per task basis. Security-conscious apps would want to disable
+>   access to the LWP instructions - which are all ring 3 and unprivileged! We
+>   already allow this for the TSC for example. Right now sandboxed code like
+>   seccomp would get access to LWP as well - not good. Some intelligent
+>   (optional) control is needed, probably using cr0's lwp-enabled bit.
+
+That could certainly be done, but requires an xcr0 write at
+context-switch. JFI, how can the tsc be disabled for a task from
+userspace?
+
+Regards,
+
+	Joerg
+
