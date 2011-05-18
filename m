@@ -1,179 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab1ERFJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 01:09:52 -0400
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:60521 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751759Ab1ERFJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 01:09:50 -0400
-Date: Wed, 18 May 2011 06:58:27 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Ryan Mallon <ryan@bluewatersys.com>
-Cc: "Wu, Josh" <Josh.wu@atmel.com>, mchehab@redhat.com,
-        linux-kernel@vger.kernel.org, "Haring, Lars" <Lars.Haring@atmel.com>,
-        g.liakhovetski@gmx.de, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)
- support
-Message-ID: <20110518045827.GF18699@game.jcrosoft.org>
-References: <1305186138-5656-1-git-send-email-josh.wu@atmel.com>
- <4DCC5040.6050300@bluewatersys.com>
- <4C79549CB6F772498162A641D92D532801B80D21@penmb01.corp.atmel.com>
- <4DD2E158.7050300@bluewatersys.com>
+	id S1751883Ab1ERFFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 01:05:50 -0400
+Received: from nm7-vm2.bullet.mail.ne1.yahoo.com ([98.138.90.155]:25067 "HELO
+	nm7-vm2.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750918Ab1ERFFt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 01:05:49 -0400
+X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 May 2011 01:05:48 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 302911.50013.bm@omp1033.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=UaYN+84AWH/FrqwTnqLWBGmaDaYp8sw4b1hAzkd+2a1AEmHhiM/M+u/7lv2HNhaN0Ld2+D3ap0ydakPqMXtbmtamL6G/loWaPBrMTO6BWkjT8cydbY7LiVs1BmbxgXv8NtFiopJik6lMKNRD0b2F3WsHeiGHTchigYHvUtxmj/c=;
+Message-ID: <204176.97974.qm@web120507.mail.ne1.yahoo.com>
+X-YMail-OSG: s1pAp7gVM1mrAgZflnMswBwb6oRW92deT65AaY28ToSH7XC
+ ErzPvfGE4xNjj9ZhyLeR7N4p4pYjnDLbn_oNa1l_58vsGt2F0SRpTAnOyrpW
+ sKIEJHcftNgs3z9BVNR9MG7ycJ9LZl422IgT0uvF.2hk9fqFNkpQkz4d84Av
+ fRmR.4XblPiHMnDpqG4UoYRoWij3_iBBEZmjGnt8lJU8UmxBiGVKdWc0TEr7
+ IJEckIT7WV7voD69BX.v3XfJBH3IUYpiGK.N_0vRepy4SfdZgiNwGNr0dx2f
+ yioEj4oZSUvLPPeznGqWcVzxMqs0P.eGFD8XCkG5xrxtnirLAGx93sDktude
+ VOZt.hRw66UCedI92qW6c6aMLyZYyBwogCJ_BzdopbIjB8.ZE1HYofjRU9vf
+ U3zJojaKYMDkJpesxfQ--
+X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.111.303096
+Date: Tue, 17 May 2011 22:00:03 -0700 (PDT)
+From: Dennis Aberilla <denzzzhome@yahoo.com>
+Subject: [PATCH v2] rtc: rtc-ds1390/rtc-ds3234/rtc-m41t94: eliminate compile warning
+To: linux-kernel@vger.kernel.org
+Cc: axel.lin@gmail.com, Mark Jackson <mpfj@mimc.co.uk>,
+        "Kim B. Heino" <Kim.Heino@bluegiga.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD2E158.7050300@bluewatersys.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 6096185046027316146
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08:58 Wed 18 May     , Ryan Mallon wrote:
-> On 05/17/2011 08:59 PM, Wu, Josh wrote:
-> > 
-> > On Friday, May 13, 2011 5:25 AM, Ryan Mallon wrote 
-> > 
-> >> On 05/12/2011 07:42 PM, Josh Wu wrote:
-> >>> This patch is to enable Atmel Image Sensor Interface (ISI) driver support. 
-> >>> - Using soc-camera framework with videobuf2 dma-contig allocator
-> >>> - Supporting video streaming of YUV packed format
-> >>> - Tested on AT91SAM9M10G45-EK with OV2640
-> > 
-> >> Hi Josh,
-> > 
-> >> Thansk for doing this. Overall the patch looks really good. A few
-> >> comments below.
-> > Hi, Ryan
-> > 
-> > Thank you for the comments.
-> > 
-> >>>
-> >>> Signed-off-by: Josh Wu <josh.wu@atmel.com>
-> >>> ---
-> >>> base on branch staging/for_v2.6.40
-> >>>
-> >>>  arch/arm/mach-at91/include/mach/at91_isi.h |  454 ++++++++++++
-> >>>  drivers/media/video/Kconfig                |   10 +
-> >>>  drivers/media/video/Makefile               |    1 +
-> >>>  drivers/media/video/atmel-isi.c            | 1089 ++++++++++++++++++++++++++++
-> >>>  4 files changed, 1554 insertions(+), 0 deletions(-)
-> >>>  create mode 100644 arch/arm/mach-at91/include/mach/at91_isi.h
-> >>>  create mode 100644 drivers/media/video/atmel-isi.c
-> > 
-> >>> [snip]
-> >>> +
-> >>> +/* Bit manipulation macros */
-> >>> +#define ISI_BIT(name)					\
-> >>> +	(1 << ISI_##name##_OFFSET)
-> >>> +#define ISI_BF(name, value)				\
-> >>> +	(((value) & ((1 << ISI_##name##_SIZE) - 1))	\
-> >>> +	 << ISI_##name##_OFFSET)
-> >>> +#define ISI_BFEXT(name, value)				\
-> >>> +	(((value) >> ISI_##name##_OFFSET)		\
-> >>> +	 & ((1 << ISI_##name##_SIZE) - 1))
-> >>> +#define ISI_BFINS(name, value, old)			\
-> >>> +	(((old) & ~(((1 << ISI_##name##_SIZE) - 1)	\
-> >>> +		    << ISI_##name##_OFFSET))\
-> >>> +	 | ISI_BF(name, value))
-> > 
-> >> I really dislike this kind of register access magic. Not sure how others
-> >> feel about it. These macros are really ugly.
-> > I understand this. So I will try to find a better way (static inline function) to solve this. :)
-> 
-> >>> +/* Register access macros */
-> >>> +#define isi_readl(port, reg)				\
-> >>> +	__raw_readl((port)->regs + ISI_##reg)
-> >>> +#define isi_writel(port, reg, value)			\
-> >>> +	__raw_writel((value), (port)->regs + ISI_##reg)
-> 
-> >> If the token pasting stuff gets dropped then these can be static inline
-> >> functions which is preferred.
-> > sure, I'll try.
-> 
-> Something like this is pretty common (should be moved into the .c file):
-> 
-> static inline unsigned atmel_isi_readl(struct atmel_isi *isi,
-> 					 unsigned reg)
-> {
-> 	return readl(isi->regs + reg);
-> }
-> 
-> static inline void atmel_isi_writel(struct atmel_isi *isi,
-> 				 	unsigned reg, unsigned val)
-> {
-> 	writel(val, isi->regs + reg);
-> }
-really do not like it
-and prefer the first implemetation
-NACK for me
-> 
-> Then for single bit values you can just do:
-> 
-> #define ISI_REG_CR		0x0000
-> #define ISI_CR_GRAYSCALE	(1 << 13)
-> 
-> cr = isi_readl(isi, ISI_REG_CR);
-> cr |= ISI_CR_GRAYSCALE;
-> isi_writel(isi, ISI_REG_CR, cr);
-> 
-> For bit-fields you could do something like:
-> 
-> static void atmel_isi_set_bitfield(struct atmel_isi *isi, unsigned reg,
-> 					unsigned offset, unsigned mask,
-> 					unsigned val)
-> {
-> 	unsigned tmp;
-> 
-> 	tmp = atmel_isi_readl(isi, reg);
-> 	tmp &= ~(mask << offset);
-> 	tmp |= (val & mask) << offset;
-> 	atmel_isi_writel(isi, reg, tmp);
-> }
->
-stop to reinvent thinks
-use the bitops of the kernel
-> #define ISI_V2_VCC_SWAP_OFFSET		28
-> #define ISI_V2_VCC_SWAP_MASK		0x3
-> 
-> atmel_isi_set_bitfield(isi, ISI_REG_CR, ISI_V2_VCC_SWAP_OFFSET,
-> 			ISI_V2_SWAP_MASK, 2);
-> 
-> There are only a handful of bit-field accesses in the driver so I don't
-> think this will make the driver much more verbose and it will remove a
-> number of _SIZE definitions for the single bit values.
-> 
-> <snip>
-> 
-> >>> diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
-> >>> index d61414e..eae6005 100644
-> >>> --- a/drivers/media/video/Kconfig
-> >>> +++ b/drivers/media/video/Kconfig
-> >>> @@ -80,6 +80,16 @@ menuconfig VIDEO_CAPTURE_DRIVERS
-> >>>  	  Some of those devices also supports FM radio.
-> >>>  
-> >>>  if VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2
-> >>> +config VIDEO_ATMEL_ISI
-> >>> +	tristate "ATMEL Image Sensor Interface (ISI) support"
-> >>> +	depends on VIDEO_DEV && SOC_CAMERA
-> > 
-> >> Depends on AT91/AVR32?
-> > I think I will use AT91
-> 
-> Somebody else suggested leaving out the AT91 dependency to allow better
-> build coverage. The reason for having the AT91 dependency is so that it
-> doesn't show up in menuconfig for people on other platforms and
-> architectures who cannot use the driver. I've always made SoC drivers
-> depend on their architecture. Not sure what the correct answer is here?
-no if the drivers is soc specific we MUST not enabled it on other soc
-and avoid maintainancne issue
+From: Axel Lin <axel.lin@gmail.com>
 
-Best Regards,
-J.
+These drivers are registered as spi drivers,
+thus use spi_get_drvdata instead of platform_get_drvdata.
+
+This patch eliminates the following compile warning:
+drivers/rtc/rtc-ds1390.c: In function 'ds1390_remove':
+drivers/rtc/rtc-ds1390.c:161: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
+drivers/rtc/rtc-ds3234.c: In function 'ds3234_remove':
+drivers/rtc/rtc-ds3234.c:161: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
+drivers/rtc/rtc-m41t94.c: In function 'm41t94_remove':
+drivers/rtc/rtc-m41t94.c:139: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off by: Dennis Aberilla <denzzzhome@yahoo.com>
+Cc: Mark Jackson <mpfj@mimc.co.uk>
+Cc: Kim B. Heino <Kim.Heino@bluegiga.com>
+
+---
+ drivers/rtc/rtc-ds1390.c |    2 +-
+ drivers/rtc/rtc-ds3234.c |    2 +-
+ drivers/rtc/rtc-m41t94.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/rtc/rtc-ds1390.c b/drivers/rtc/rtc-ds1390.c
+index 26a86d2..b038d2c 100644
+--- a/drivers/rtc/rtc-ds1390.c
++++ b/drivers/rtc/rtc-ds1390.c
+@@ -158,7 +158,7 @@ static int __devinit ds1390_probe(struct spi_device *spi)
+ 
+ static int __devexit ds1390_remove(struct spi_device *spi)
+ {
+-    struct ds1390 *chip = platform_get_drvdata(spi);
++    struct ds1390 *chip = spi_get_drvdata(spi);
+ 
+     rtc_device_unregister(chip->rtc);
+     kfree(chip);
+diff --git a/drivers/rtc/rtc-ds3234.c b/drivers/rtc/rtc-ds3234.c
+index a774ca3..bbd2622 100644
+--- a/drivers/rtc/rtc-ds3234.c
++++ b/drivers/rtc/rtc-ds3234.c
+@@ -158,7 +158,7 @@ static int __devinit ds3234_probe(struct spi_device *spi)
+ 
+ static int __devexit ds3234_remove(struct spi_device *spi)
+ {
+-    struct rtc_device *rtc = platform_get_drvdata(spi);
++    struct rtc_device *rtc = spi_get_drvdata(spi);
+ 
+     rtc_device_unregister(rtc);
+     return 0;
+diff --git a/drivers/rtc/rtc-m41t94.c b/drivers/rtc/rtc-m41t94.c
+index c8c97a4..e259ed7 100644
+--- a/drivers/rtc/rtc-m41t94.c
++++ b/drivers/rtc/rtc-m41t94.c
+@@ -136,7 +136,7 @@ static int __devinit m41t94_probe(struct spi_device *spi)
+ 
+ static int __devexit m41t94_remove(struct spi_device *spi)
+ {
+-    struct rtc_device *rtc = platform_get_drvdata(spi);
++    struct rtc_device *rtc = spi_get_drvdata(spi);
+ 
+     if (rtc)
+         rtc_device_unregister(rtc);
+
+-- 
+
+I'm happy with this. Thanks.
+
+|Dennis
+
+
+
+
