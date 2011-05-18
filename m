@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab1ERNBJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 09:01:09 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:11446 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757108Ab1ERNBH (ORCPT
+	id S933135Ab1ERNCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 09:02:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41892 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757171Ab1ERNCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 09:01:07 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6349"; a="91833473"
-From: Mohan Pallaka <mpallaka@codeaurora.org>
-To: dmitry.torokhov@gmail.com, linux@arm.linux.org.uk,
-        rmk+kernel@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, rmk@dyn-67.arm.linux.org.uk,
-        Mohan Pallaka <mpallaka@codeaurora.org>
-Subject: [PATCH 1/2] pwm: Add stubs for pwm operations
-Date: Wed, 18 May 2011 18:30:52 +0530
-Message-Id: <1305723652-22737-1-git-send-email-mpallaka@codeaurora.org>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 18 May 2011 09:02:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=vHakygHsKKys8MVEu8X2pvCH1+l38A4fYeka43GgRqLbtVVZTODbHCpXnzzpy2nLkb
+         qnEwwSTKTKIK4Gtuc+5c+3Ekgp3ZICZlL8d3/p/6BSWlF4ZNGjeefGBqHYDH6/keJ+b9
+         sUOkIvphO885q2meWteIHo3rdn3HEmsYCcZHo=
+Subject: [RFC][PATCH] regulator: Fix _regulator_get_voltage if get_voltage
+ callback is NULL
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 May 2011 21:01:58 +0800
+Message-ID: <1305723718.6172.6.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chip drivers that support both pwm and non-pwm modes
-would encounter compilation errors if the platform doesn't
-have support for pwm, even though the chip is programmed
-to work in non-pwm mode. Add stubs for pwm functions to
-avoid compilation errors in these scenarios.
+In the case of get_voltage callback is NULL, current implementation in
+_regulator_get_voltage will return -EINVAL.
 
-Change-Id: Iec4c55fce253bda809947672be82a7bd14bcd663
-Signed-off-by: Mohan Pallaka <mpallaka@codeaurora.org>
+Also returns proper error if ret is negative value.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- include/linux/pwm.h |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+hi Mark,
+I just found in commit 6b8e70 "regulator: Convert WM8400 to get_voltage_sel()",
+you added get_voltage_sel callback and remove get_voltage callback.
+I suspect you will hit this bug. Can you check it?
 
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 7c77575..a3cb33f 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -3,6 +3,7 @@
+Thanks,
+Axel
+
+ drivers/regulator/core.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 9493f61..2262474 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1886,13 +1886,15 @@ static int _regulator_get_voltage(struct regulator_dev *rdev)
+ 		if (sel < 0)
+ 			return sel;
+ 		ret = rdev->desc->ops->list_voltage(rdev, sel);
++		goto out;
+ 	}
+ 	if (rdev->desc->ops->get_voltage)
+ 		ret = rdev->desc->ops->get_voltage(rdev);
+ 	else
+ 		return -EINVAL;
  
- struct pwm_device;
+-	return ret - rdev->constraints->uV_offset;
++out:
++	return ret < 0 ? ret : ret - rdev->constraints->uV_offset;
+ }
  
-+#if defined(CONFIG_HAVE_PWM)
- /*
-  * pwm_request - request a PWM device
-  */
-@@ -28,4 +29,27 @@ int pwm_enable(struct pwm_device *pwm);
-  */
- void pwm_disable(struct pwm_device *pwm);
- 
-+#else
-+
-+struct pwm_device *pwm_request(int pwm_id, const char *label)
-+{
-+	return NULL;
-+}
-+
-+void pwm_free(struct pwm_device *pwm) { }
-+
-+int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	return -EINVAL;
-+}
-+
-+int pwm_enable(struct pwm_device *pwm)
-+{
-+	return -EINVAL;
-+}
-+
-+void pwm_disable(struct pwm_device *pwm) { }
-+
-+
-+#endif /* CONFIG_PWM */
- #endif /* __LINUX_PWM_H */
+ /**
 -- 
-1.7.1.1
+1.7.1
+
+
 
