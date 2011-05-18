@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932665Ab1ERFbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 01:31:55 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:63030 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab1ERFby convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 01:31:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=g4XWtgSEwQ31mHBausmUTCIbLvNqepRm1SXkJQAWt63qfyVtzqcx+cEguwUh5BUhw1
-         3WGoPMd7Bwzzvcg26O62w9NK/k+GqS+B/+DAgAF5dJhNqhmNwpiWrPh/aS7mhwMT/BSA
-         pgT5E1Q2S3fhUUQSCrPZkRQmUZ5oAH0mmgVxg=
+	id S1755075Ab1ERFoA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 01:44:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45227 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752592Ab1ERFn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 01:43:58 -0400
+Date: Wed, 18 May 2011 08:43:40 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCH 09/18] virtio: use avail_event index
+Message-ID: <20110518054340.GE7589@redhat.com>
+References: <cover.1304541918.git.mst@redhat.com>
+ <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com>
+ <874o54h4rt.fsf@rustcorp.com.au>
+ <20110515135541.GF24932@redhat.com>
+ <87ei3zdsq2.fsf@rustcorp.com.au>
+ <20110517061031.GC26989@redhat.com>
+ <87tycsn9lt.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <20110516093602.GC17104@pulham.picochip.com>
-References: <1305070783-23193-1-git-send-email-linus.walleij@linaro.org>
-	<20110510235853.GM26703@pulham.picochip.com>
-	<BANLkTim5wurV7aFSm4ae6+HBpGZO1z_=XA@mail.gmail.com>
-	<20110516093602.GC17104@pulham.picochip.com>
-Date: Wed, 18 May 2011 07:31:53 +0200
-X-Google-Sender-Auth: vtPBS_CUEcRPGvIgtbq9kTWwX7g
-Message-ID: <BANLkTikthHQw_6xA2p9EFrAPNZFLVwwETg@mail.gmail.com>
-Subject: Re: [PATCH] drivers: create a pinmux subsystem v2
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Martin Persson <martin.persson@stericsson.com>,
-        Joe Perches <joe@perches.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87tycsn9lt.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/16 Jamie Iles <jamie@jamieiles.com>:
+On Wed, May 18, 2011 at 09:49:42AM +0930, Rusty Russell wrote:
+> On Tue, 17 May 2011 09:10:31 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > Well one can imagine a driver doing:
+> > 
+> > 	while (virtqueue_get_buf()) {
+> > 		virtqueue_add_buf()
+> > 	}
+> > 	virtqueue_kick()
+> > 
+> > which looks sensible (batch kicks) but might
+> > process any number of bufs between kicks.
+> 
+> No, we currently only expose the buffers in the kick, so it can only
+> fill the ring doing that.
+> 
+> We could change that (and maybe that's worth looking at)...
 
-> Yes, I think it probably would.  I'm travelling for a bit now so won't
-> get chance to try this for a week or two but I'll try porting our
-> platform over to this system; it would be great to have a standardized
-> way of handling pin muxing.
+Yes, I think we should - this way host and guest can process
+data in parallel without a kick.
 
-Sounds like an Acked-by, is it? :-)
+My patchset included that simply because it's one index
+less to be confused about.
 
-I would need ACKs to have this merged...
 
-Yours,
-Linus Walleij
+> > If we look at drivers closely enough, I think none
+> > of them do the equivalent of the above, but not 100% sure.
+> 
+> I'm pretty sure we don't have this kind of 'echo' driver yet.  Drivers
+> tend to take OS requests and queue them.  The only one which does
+> anything even partially sophisticated is the net driver...
+> 
+> Thanks,
+> Rusty.
