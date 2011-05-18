@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932901Ab1ERQX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 12:23:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8140 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755868Ab1ERQXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 12:23:25 -0400
-Date: Wed, 18 May 2011 19:23:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-Message-ID: <20110518162311.GA22001@redhat.com>
-References: <20110516211459.GE18148@redhat.com>
- <1305588738.3456.65.camel@localhost.localdomain>
- <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
- <1305671318.10756.49.camel@localhost.localdomain>
- <20110518103819.GL7589@redhat.com>
- <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
- <20110518111734.GO7589@redhat.com>
- <BANLkTi=g_PFfS5653K8ZoQ2Jhp8DhCV1hg@mail.gmail.com>
- <1305729507.32080.6.camel@localhost.localdomain>
- <1305734543.32080.50.camel@localhost.localdomain>
+	id S932947Ab1ERQXq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 12:23:46 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56415 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932877Ab1ERQXp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 12:23:45 -0400
+X-Sasl-enc: rHC+edKi/IP+qyJ/EsLC6ac/94BNH2n+KfHDT+QyKAir 1305735824
+Date: Wed, 18 May 2011 09:23:38 -0700
+From: Greg KH <greg@kroah.com>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Olaf Hartmann <o.hartmann@telovital.com>
+Subject: Re: [RFC/RFT PATCH] Staging: et131x: add suspend/resume support
+Message-ID: <20110518162338.GC23079@kroah.com>
+References: <1305724667-2980-1-git-send-email-herton.krzesinski@canonical.com>
+ <20110518152428.GA8106@kroah.com>
+ <20110518160316.GA3502@herton-IdeaPad-Y430>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1305734543.32080.50.camel@localhost.localdomain>
+In-Reply-To: <20110518160316.GA3502@herton-IdeaPad-Y430>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 09:02:23AM -0700, Shirley Ma wrote:
-> On Wed, 2011-05-18 at 07:38 -0700, Shirley Ma wrote:
-> > On Wed, 2011-05-18 at 13:40 +0200, Michał Mirosław wrote:
-> > > >> >> Not more other restrictions, skb clone is OK.
-> > pskb_expand_head()
-> > > looks
-> > > >> >> OK to me from code review.
-> > > >> > Hmm. pskb_expand_head calls skb_release_data while keeping
-> > > >> > references to pages. How is that ok? What do I miss?
-> > > >> It's making copy of the skb_shinfo earlier, so the pages refcount
-> > > >> stays the same.
-> > > > Exactly. But the callback is invoked so the guest thinks it's ok
-> > to
-> > > > change this memory. If it does a corrupted packet will be sent
-> > out.
-> > > 
-> > > Hmm. I tool a quick look at skb_clone(), and it looks like this
-> > > sequence will break this scheme:
-> > > 
-> > > skb2 = skb_clone(skb...);
-> > > kfree_skb(skb) or pskb_expand_head(skb);  /* callback called */
-> > > [use skb2, pages still referenced]
-> > > kfree_skb(skb); /* callback called again */
-> > > 
-> > > This sequence is common in bridge, might be in other places.
-> > > 
-> > > Maybe this ubuf thing should just track clones? This will make it
-> > work
-> > > on all devices then.
+On Wed, May 18, 2011 at 01:03:17PM -0300, Herton Ronaldo Krzesinski wrote:
+> On Wed, May 18, 2011 at 08:24:28AM -0700, Greg KH wrote:
+> > On Wed, May 18, 2011 at 10:17:47AM -0300, Herton Ronaldo Krzesinski wrote:
+> > > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 > > 
-> > The callback was only invoked when last reference of skb was gone.
-> > skb_clone does increase skb refcnt. I tested tcpdump on lower device,
-> > it
-> > worked.
+> > I think we need a bit more comments here.
 > > 
-> > For the sequence of:
-> > 
-> > skb_clone  -> last refcnt + 1
-> > kfree_skb() or pskb_expand_head -> callback not called
-> > kfree_skb() -> callback called
-> > 
-> > I will check page refcount to see whether it's balanced. 
+> > Like have you tested this to verify that it works?  Anything else?
 > 
-> The page refcounts are balanced too. 
-> 
-> In macvtap/vhost Real NIC zerocopy case, it always goes to fastpath in
-> pskb_expand_head, so I didn't hit any issue.
-> 
-> But rethinking about pskb_expand_head(), it calls skb_release_data() to
-> free old skb head when it's not in the fastpath (pskb_expand_head is not
-> the last reference of this skb); And it's impossible to track which skb
-> head (old one or new one) will be the last one to free. So better to
-> return error for zero-copy skbs when not using fastpath. Does it make
-> sense? 
+> An user complained about lack of suspend/resume support, so I did the
+> patch, it's working accordingly to him from what I could get
+> (unfortunately I can't test myself, don't have the hardware). I want
+> others to test too, before this can be pushed (RFT on subject). The bug
+> report I got: http://bugs.launchpad.net/bugs/766549
+> But good luck in parsing that... I also want others with same
+> hardware testing this, to confirm it is ok.
 
-I'm not sure it does. Look e.g. at tg3 - if expand_head fails
-packet gets dropped. No crash but unlikely to perform well :).
+Ok, then please say so in the patch body itself next time.
 
-> Besides this, any other issue?
-> 
-> 
-> Thanks
-> Shirley
+I'll wait for you to get some testing, and then resend the patch, before
+applying it.
+
+thanks,
+
+greg k-h
