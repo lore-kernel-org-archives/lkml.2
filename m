@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab1ERVJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:09:31 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:41227 "EHLO
+	id S1754846Ab1ERVJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:09:41 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:41243 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab1ERVJ2 (ORCPT
+	with ESMTP id S1754543Ab1ERVJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:09:28 -0400
+	Wed, 18 May 2011 17:09:30 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:organization;
-	b=bHuEAYRDo2MuVmg/PpF/Umot+xtleGohbNn/NcTpczMMCelEVdpB2O4WJxsgP2ylQ
-	40beLV4H4X3KEhtUE4VMQ==
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
+	references:organization;
+	b=eZqeBE//huAZZXntyLeQxKARdRnS6wA555F5hSQMkUVCS7Sg0PFUmn1uKbmuGCJWO
+	pr9jVicbVKTGQuo2nyhxw==
 From: David Decotigny <decot@google.com>
 To: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
         Szymon Janc <szymon@janc.net.pl>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: kernel-net-upstream@google.com, Mandeep Baines <msb@google.com>,
+Cc: kernel-net-upstream@google.com, Sameer Nanda <snanda@google.com>,
         David Decotigny <decot@google.com>
-Subject: [PATCH] forcedeth: Improve stats counters
-Date: Wed, 18 May 2011 14:09:04 -0700
-Message-Id: <1305752945-14843-1-git-send-email-decot@google.com>
+Subject: [PATCH] forcedeth: new ethtool stat "tx_timeout" to account for tx_timeouts
+Date: Wed, 18 May 2011 14:09:05 -0700
+Message-Id: <1305752945-14843-2-git-send-email-decot@google.com>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1305752945-14843-1-git-send-email-decot@google.com>
+References: <1305752945-14843-1-git-send-email-decot@google.com>
 Organization: Google, Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mandeep Baines <msb@google.com>
+From: Sameer Nanda <snanda@google.com>
 
-Rx byte count was off; instead use the hardware's count.  Tx packet
-count was counting pre-TSO packets; instead count on-the-wire packets.
-Report hardware dropped frame count as rx_fifo_errors.
-
-- The count of transmitted packets reported by the forcedeth driver
-  reports pre-TSO (TCP Segmentation Offload) packet counts and not the
-  count of the number of packets sent on the wire. This change fixes
-  the forcedeth driver to report the correct count. Fixed the code by
-  copying the count stored in the NIC H/W to the value reported by the
-  driver.
-
-- Count rx_drop_frame errors as rx_fifo_errors:
-  We see a lot of rx_drop_frame errors if we disable the rx bottom-halves
-  for too long.  Normally, rx_fifo_errors would be counted in this case.
-  The rx_drop_frame error count is private to forcedeth and is not
-  reported by ifconfig or sysfs.  The rx_fifo_errors count is currently
-  unused in the forcedeth driver.  It is reported by ifconfig as overruns.
-  This change reports rx_drop_frame errors as rx_fifo_errors.
+This change publishes a new ethtool stats: tx_timeout that counts the
+number of times the tx_timeout callback was triggered.
 
 
 Signed-off-by: David Decotigny <decot@google.com>
@@ -54,32 +41,34 @@ Signed-off-by: David Decotigny <decot@google.com>
  1 files changed, 4 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
-index d09e8b0..895471d 100644
+index 895471d..112dc0b 100644
 --- a/drivers/net/forcedeth.c
 +++ b/drivers/net/forcedeth.c
-@@ -1684,6 +1684,7 @@ static void nv_get_hw_stats(struct net_device *dev)
- 		np->estats.tx_pause += readl(base + NvRegTxPause);
- 		np->estats.rx_pause += readl(base + NvRegRxPause);
- 		np->estats.rx_drop_frame += readl(base + NvRegRxDropFrame);
-+		np->estats.rx_errors_total += np->estats.rx_drop_frame;
- 	}
+@@ -632,6 +632,7 @@ static const struct nv_ethtool_str nv_estats_str[] = {
+ 	{ "rx_packets" },
+ 	{ "rx_errors_total" },
+ 	{ "tx_errors_total" },
++	{ "tx_timeout" },
  
- 	if (np->driver_data & DEV_HAS_STATISTICS_V3) {
-@@ -1708,11 +1709,14 @@ static struct net_device_stats *nv_get_stats(struct net_device *dev)
- 		nv_get_hw_stats(dev);
+ 	/* version 2 stats */
+ 	{ "tx_deferral" },
+@@ -672,6 +673,7 @@ struct nv_ethtool_stats {
+ 	u64 rx_packets;
+ 	u64 rx_errors_total;
+ 	u64 tx_errors_total;
++	u64 tx_timeout;
  
- 		/* copy to net_device stats */
-+		dev->stats.tx_packets = np->estats.tx_packets;
-+		dev->stats.rx_bytes = np->estats.rx_bytes;
- 		dev->stats.tx_bytes = np->estats.tx_bytes;
- 		dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
- 		dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
- 		dev->stats.rx_crc_errors = np->estats.rx_crc_errors;
- 		dev->stats.rx_over_errors = np->estats.rx_over_errors;
-+		dev->stats.rx_fifo_errors = np->estats.rx_drop_frame;
- 		dev->stats.rx_errors = np->estats.rx_errors_total;
- 		dev->stats.tx_errors = np->estats.tx_errors_total;
- 	}
+ 	/* version 2 stats */
+ 	u64 tx_deferral;
+@@ -2526,6 +2528,8 @@ static void nv_tx_timeout(struct net_device *dev)
+ 
+ 	spin_lock_irq(&np->lock);
+ 
++	np->estats.tx_timeout++;
++
+ 	/* 1) stop tx engine */
+ 	nv_stop_tx(dev);
+ 
 -- 
 1.7.3.1
 
