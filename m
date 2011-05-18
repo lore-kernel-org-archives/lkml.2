@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910Ab1ERKgT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 06:36:19 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43477 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756882Ab1ERKgS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 06:36:18 -0400
+	id S1756929Ab1ERKiW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 06:38:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3993 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756755Ab1ERKiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 06:38:20 -0400
+Date: Wed, 18 May 2011 13:38:19 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
+ netdevice
+Message-ID: <20110518103819.GL7589@redhat.com>
+References: <1305574128.3456.23.camel@localhost.localdomain>
+ <1305574518.2885.25.camel@bwh-desktop>
+ <1305574680.3456.33.camel@localhost.localdomain>
+ <1305575253.2885.28.camel@bwh-desktop>
+ <20110516211459.GE18148@redhat.com>
+ <1305588738.3456.65.camel@localhost.localdomain>
+ <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
+ <1305671318.10756.49.camel@localhost.localdomain>
 MIME-Version: 1.0
-Date: Wed, 18 May 2011 12:36:17 +0200
-Message-ID: <BANLkTikAzjmVoNK20RHRkhHkn3YgSra6dA@mail.gmail.com>
-Subject: Smartcard/SIM card subsystem, LDO regulator and signal modelling
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Bibek BASU <bibek.basu@stericsson.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Juergen Beisert <jbe@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1305671318.10756.49.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+On Tue, May 17, 2011 at 03:28:38PM -0700, Shirley Ma wrote:
+> On Tue, 2011-05-17 at 23:48 +0200, Michał Mirosław wrote:
+> > 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
+> > > Hello Michael,
+> > >
+> > > Looks like to use a new flag requires more time/work. I am thinking
+> > > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
+> > to
+> > > avoid the new flag for now since mavctap uses real NICs as lower
+> > device?
+> > 
+> > Is there any other restriction besides requiring driver to not recycle
+> > the skb? Are there any drivers that recycle TX skbs? 
 
-I have this special regulator in the AB5500 which we will attempt to
-submit for mainline inclusion soon:
+Not just recycling skbs, keeping reference to any of the pages in the
+skb. Another requirement is to invoke the callback
+in a timely fashion.  For example virtio-net doesn't limit the time until
+that happens (skbs are only freed when some other packet is
+transmitted), so we need to avoid zcopy for such (nested-virt)
+scenarious, right?
+> 
+> Not more other restrictions, skb clone is OK. pskb_expand_head() looks
+> OK to me from code review.
 
-It's basically an LDO for powering a SIM card (which in turn is basically
-a smartcard), but apart from plain regulation also expose some other
-electrical properties of the interface to software:
+Hmm. pskb_expand_head calls skb_release_data while keeping
+references to pages. How is that ok? What do I miss?
 
-- Select pull-up resistance on some I/O lines
-- Select weak pull-down on some data lines
-- Select load capacitance limits on the data lines
-- Select whether to run in low impedance or transmission gate mode
+> Currently there is no drivers recycle TX skbs.
+> 
+> Thanks
+> Shirley
 
-I think these will be mostly similar so what other SIM card controllers
-will need to have. All the stuff needs to have userspace interfaces
-since the stuff is usually controlled on behalf of another CPU
-running the modem (and also performing the actual traffic on
-the SIM data lines).
+Well, with e.g. bridge or veth the skb might enter
+the host networking stack. Once that happens, we lose
+track of the pages. Or is there anything that
+prevents such setups?
 
-My first na�ve idea was that this could be some plain regulator,
-then add a few sysfs files for the custom stuff and have these
-in the regulator driver.
-
-However now I think we might even need to create a misc device
-or a new drivers/smartcard/* subsystem, just that it will include
-spawning a regulator for the LDO part. If drivers/smartcard/*
-was created we'd easily fold into that, but since we're not
-needing the generics of actually talking to the card we end
-up in a strange place where we'd go implementing a
-framework that we don't use and cannot test :-/
-
-Maybe we should indeed create drivers/smartcard/*
-and only add a tentative API for power & regulator
-such as <linux/smartcard/power.h> or so?
-
-Any thoughts on this, have you seen this before etc?
-
-Also CC:ing some people with SoC systems that include a
-SIM/smartcard reader ... RealView and Freescale comes to
-mind.
-
-Yours,
-Linus Walleij
+-- 
+MST
