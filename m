@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933800Ab1ERTkj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 15:40:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:27040 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933620Ab1ERTki convert rfc822-to-8bit (ORCPT
+	id S933812Ab1ERTkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 15:40:46 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:52028 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933620Ab1ERTkl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 15:40:38 -0400
+	Wed, 18 May 2011 15:40:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
+        d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=p2zBWMTy2gTd/taJCq61GdnXJbP936bSLf85BD1NZSso15DOyzJr/QjHdlSQIG/TV3
-         i0/yF44Z0j5iMVlf0ctw==
+        b=MfDF4PyhSBwTOv3etde2PoZV6QdQjGhnPYJak5fqhLfS1nT8mh33pot53FAMBlw06s
+         D1PPSOsGAh5b9jR9/bbpYGoKVdgIxYCy9Uy0J74Gw6N35FnLAzbvK5a6Ic1M7nOXkYpt
+         JFU0rb3gaf3mVsPR0CvrQj6Q3lkko3hd3X+tU=
 MIME-Version: 1.0
-In-Reply-To: <20110518182519.GB25881@elte.hu>
-References: <1305738580-9924-1-git-send-email-ncrao@google.com>
- <1305738580-9924-4-git-send-email-ncrao@google.com> <20110518182519.GB25881@elte.hu>
-From: Nikhil Rao <ncrao@google.com>
-Date: Wed, 18 May 2011 12:39:55 -0700
-Message-ID: <BANLkTinHZpgqe0DjBrya--J+xFE=ksv9CQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] sched: increase SCHED_LOAD_SCALE resolution
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-        linux-kernel@vger.kernel.org,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110518.152653.1486764697527722925.davem@davemloft.net>
+References: <1305619677.2850.11.camel@edumazet-laptop> <1305715384-81716-1-git-send-email-tsunanet@gmail.com>
+ <20110518.152653.1486764697527722925.davem@davemloft.net>
+From: tsuna <tsunanet@gmail.com>
+Date: Wed, 18 May 2011 12:40:21 -0700
+Message-ID: <BANLkTik-6wh8=jb6oMEpJvYC8+KTGGsMsw@mail.gmail.com>
+Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
+To: David Miller <davem@davemloft.net>
+Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 11:25 AM, Ingo Molnar <mingo@elte.hu> wrote:
+On Wed, May 18, 2011 at 12:26 PM, David Miller <davem@davemloft.net> wrote:
+> If you read the ietf draft that reduces the initial RTO down to 1
+> second, it states that if we take a timeout during the initial
+> connection handshake then we have to revert the RTO back up to 3
+> seconds.
 >
-> * Nikhil Rao <ncrao@google.com> wrote:
+> This fallback logic conflicts with being able to only change the
+> initial RTO via sysctl, I think. �Because there are actually two
+> values at stake and they depend upon eachother, the initial RTO and
+> the value we fallback to on initial handshake retransmissions.
 >
->> -#define SCHED_LOAD_SHIFT     10
->> +#if BITS_PER_LONG > 32
->> +#define SCHED_LOAD_RESOLUTION        10
->> +#define scale_load(w)                (w << SCHED_LOAD_RESOLUTION)
->> +#define scale_load_down(w)   (w >> SCHED_LOAD_RESOLUTION)
->> +#else
->> +#define SCHED_LOAD_RESOLUTION        0
->> +#define scale_load(w)                w
->> +#define scale_load_down(w)   w
->> +#endif
+> So I'd rather get a patch that implements the 1 second initial
+> RTO with the 3 second fallback on SYN retransmit, than this patch.
 >
-> Please use the:
->
-> #if X
-> # define Y A
-> #else
-> # define Y B
-> #endif
->
-> type of nested CPP branching style.
->
-> Also, the 'w' probably wants to be '(w)', just in case.
+> We already have too many knobs.
 
-Thanks for the review. Will fix the macros.
+I was hoping this knob would be accepted because this is such an
+important issue that it even warrants an IETF draft to attempt to
+change the standard.  I'm not sure how long it will take for this
+draft to be accepted and then implemented, so I thought adding this
+simple knob today would really help in the future.
 
->
->>       if (!lw->inv_weight) {
->> -             if (BITS_PER_LONG > 32 && unlikely(lw->weight >= WMULT_CONST))
->> +             unsigned long w = scale_load_down(lw->weight);
->> +             if (BITS_PER_LONG > 32 && unlikely(w >= WMULT_CONST))
->>                       lw->inv_weight = 1;
->
-> Please separate local variable declarations and the first statement following
-> it by an extra empty line.
->
+Plus, should the draft be accepted, this knob will still be just as
+useful (e.g. to revert back to today's behavior), and people might
+want to consider adding another knob for the fallback initRTO (this is
+debatable).  I don't believe this knob conflicts with the proposed
+change to the standard, it actually goes along with it pretty well and
+helps us prepare better for this upcoming change.
 
-Yes, will do.
+I agree that there are too many knobs, and I hate feature creep too,
+but I've found many of these knobs to be really useful, and the degree
+to which Linux's TCP stack can be tuned is part of what makes it so
+versatile.
 
-> Could you also put all the performance measurement description into the
-> changelog of this third commit - so that people can see (and enjoy) the
-> extensive testing you have done on this topic?
->
-
-Yes, will add the performance changes to the commit description.
-
->>  /*
->> - * Increase resolution of nice-level calculations:
->> + * Increase resolution of nice-level calculations for 64-bit architectures.
->>   */
->> -#define SCHED_LOAD_SHIFT     10
->> +#if BITS_PER_LONG > 32
->> +#define SCHED_LOAD_RESOLUTION        10
->> +#define scale_load(w)                (w << SCHED_LOAD_RESOLUTION)
->> +#define scale_load_down(w)   (w >> SCHED_LOAD_RESOLUTION)
->> +#else
->> +#define SCHED_LOAD_RESOLUTION        0
->> +#define scale_load(w)                w
->> +#define scale_load_down(w)   w
->> +#endif
->
-> Please also be a bit more verbose in the comment above why we treat 64-bit
-> architectures differently - it's not obvious.
-
-Added a more descriptive comment.
-
-
-Thanks for the review. I'll refresh the patch and send it with the fixes.
-
--Thanks,
-Nikhil
+-- 
+Benoit "tsuna" Sigoure
+Software Engineer @ www.StumbleUpon.com
