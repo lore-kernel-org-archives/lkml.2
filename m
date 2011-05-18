@@ -1,41 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab1ERJLk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 05:11:40 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:47703 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573Ab1ERJLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 05:11:39 -0400
-Message-ID: <4DD38D47.9010505@kernel.dk>
-Date: Wed, 18 May 2011 11:11:35 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]block: don't delay blk_run_queue_async
-References: <1305708151.2375.115.camel@sli10-conroe>
-In-Reply-To: <1305708151.2375.115.camel@sli10-conroe>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932343Ab1ERJ3V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 05:29:21 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:39622 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865Ab1ERJ3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 05:29:20 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+From: Jonathan Cameron <jic23@cam.ac.uk>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [PATCH] irq: uninline generic_handle_irq, export handle_simple_irq, irq_modify_status, generic_handle_irq, irq_alloc_descs and irq_free_descs
+Date: Wed, 18 May 2011 10:32:01 +0100
+Message-Id: <1305711121-30428-1-git-send-email-jic23@cam.ac.uk>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-18 10:42, Shaohua Li wrote:
-> Let's check a scenario:
-> 1. blk_delay_queue(q, SCSI_QUEUE_DELAY);
-> 2. blk_run_queue_async();
-> the second one will became a noop, because q->delay_work already has
-> WORK_STRUCT_PENDING_BIT set, so the delayed work will still run after
-> SCSI_QUEUE_DELAY. But blk_run_queue_async actually hopes the delayed
-> work runs immediately.
+V3: stop exporting irq_to_desc and instead take generic_handle_irq out of the header.
+As suggested by Thomas Gleixner.
 
-Good catch. I wonder if it wouldn't be better to "fix"
-queue_delayed_work() instead. If the time passed in is before the
-scheduled event, adjust the timeout.
+Patch was previously:
+irq: export handle_simple_irq, irq_modify_status, irq_to_desc, irq_alloc_descs and irq_free_descs
 
-But as a 2.6.39 fix, this is good, will queue up.
+V2: add irq_alloc_descs and irq_free_descs for dynamic pool allocation.
 
+This is to allow their use in IIO. We have complete control of
+both the irq_chip creation and requesting of irqs so would like
+to be able to build as a module. That requires these exports.
+
+Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+Hi Thomas,
+
+Looking a bit more at possible locations it is clear that CONFIG_GENERIC_HARDIRQS
+only exists as an ifdef in irqdesc.c so I guess that is the least intrusive place
+to move this to.
+
+Lots stacked behind this, so thought I'd keep the ball rolling rather than
+waiting for your reply to my question of where best to put generic_handle_irq.
+
+Thanks,
+
+Jonathan
+
+ include/linux/irqdesc.h |    5 +----
+ kernel/irq/chip.c       |    2 ++
+ kernel/irq/irqdesc.c    |    8 ++++++++
+ 3 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index a082905..27b971d 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -109,10 +109,7 @@ static inline void generic_handle_irq_desc(unsigned int irq, struct irq_desc *de
+ 	desc->handle_irq(irq, desc);
+ }
+ 
+-static inline void generic_handle_irq(unsigned int irq)
+-{
+-	generic_handle_irq_desc(irq, irq_to_desc(irq));
+-}
++void generic_handle_irq(unsigned int irq);
+ 
+ /* Test to see if a driver has successfully requested an irq */
+ static inline int irq_has_action(unsigned int irq)
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 4af1e2b..ad409d3 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -310,6 +310,7 @@ handle_simple_irq(unsigned int irq, struct irq_desc *desc)
+ out_unlock:
+ 	raw_spin_unlock(&desc->lock);
+ }
++EXPORT_SYMBOL_GPL(handle_simple_irq);
+ 
+ /**
+  *	handle_level_irq - Level type irq handler
+@@ -612,6 +613,7 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+ 
+ 	irq_put_desc_unlock(desc, flags);
+ }
++EXPORT_SYMBOL_GPL(irq_modify_status);
+ 
+ /**
+  *	irq_cpu_online - Invoke all irq_cpu_online functions.
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 2c039c9..dbffb95 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -311,6 +311,7 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
+ 	bitmap_clear(allocated_irqs, from, cnt);
+ 	mutex_unlock(&sparse_irq_lock);
+ }
++EXPORT_SYMBOL_GPL(irq_free_descs);
+ 
+ /**
+  * irq_alloc_descs - allocate and initialize a range of irq descriptors
+@@ -351,6 +352,7 @@ err:
+ 	mutex_unlock(&sparse_irq_lock);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(irq_alloc_descs);
+ 
+ /**
+  * irq_reserve_irqs - mark irqs allocated
+@@ -443,4 +445,10 @@ unsigned int kstat_irqs(unsigned int irq)
+ 		sum += *per_cpu_ptr(desc->kstat_irqs, cpu);
+ 	return sum;
+ }
++
++void generic_handle_irq(unsigned int irq)
++{
++	generic_handle_irq_desc(irq, irq_to_desc(irq));
++}
++EXPORT_SYMBOL(generic_handle_irq);
+ #endif /* CONFIG_GENERIC_HARDIRQS */
 -- 
-Jens Axboe
+1.7.3.4
 
