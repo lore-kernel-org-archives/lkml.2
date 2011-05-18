@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206Ab1ERIgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 04:36:07 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52889 "EHLO mx3.mail.elte.hu"
+	id S1756333Ab1ERIju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 04:39:50 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53366 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755887Ab1ERIgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 04:36:05 -0400
-Date: Wed, 18 May 2011 10:35:51 +0200
+	id S1755087Ab1ERIjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 04:39:49 -0400
+Date: Wed, 18 May 2011 10:39:36 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Marcin Slusarz <marcin.slusarz@gmail.com>,
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
         Don Zickus <dzickus@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 3/4 v2] watchdog: disable watchdog when thresh is zero
-Message-ID: <20110518083551.GE14805@elte.hu>
+Subject: Re: [PATCH 4/4 v2] watchdog: configure nmi watchdog period based on
+ watchdog_thresh
+Message-ID: <20110518083936.GF14805@elte.hu>
 References: <1305588901-8141-1-git-send-email-msb@chromium.org>
- <1305588901-8141-3-git-send-email-msb@chromium.org>
- <20110517071018.GE22305@elte.hu>
- <20110518033647.GB11023@google.com>
+ <1305588901-8141-4-git-send-email-msb@chromium.org>
+ <20110517071642.GF22305@elte.hu>
+ <20110518034431.GC11023@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110518033647.GB11023@google.com>
+In-Reply-To: <20110518034431.GC11023@google.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,25 +40,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Mandeep Singh Baines <msb@chromium.org> wrote:
 
-> +extern int watchdog_thresh;
->  struct ctl_table;
-> -extern int proc_dowatchdog_enabled(struct ctl_table *, int ,
-> -			void __user *, size_t *, loff_t *);
-> +extern int __proc_dowatchdog(struct ctl_table *, int ,
-> +			     void __user *, size_t *, loff_t *);
-> +#define proc_dowatchdog_enabled __proc_dowatchdog
-> +#define proc_dowatchdog_thresh __proc_dowatchdog
+> Ingo Molnar (mingo@elte.hu) wrote:
+> > 
+> > * Mandeep Singh Baines <msb@chromium.org> wrote:
+> > 
+> > > Before the conversion of the NMI watchdog to perf event, the watchdog
+> > > timeout was 5 seconds. Now it is 60 seconds. For my particular application,
+> > > netbooks, 5 seconds was a better timeout. With a short timeout, we
+> > > catch faults earlier and are able to send back a panic. With a 60 second
+> > > timeout, the user is unlikely to wait and will instead hit the power
+> > > button, causing us to lose the panic info.
+> > 
+> > That's an interesting observation. Have you been able to measure/observe this 
+> > effect somehow, or do you presume that users find 60 seconds too long?
+> > 
+> 
+> Mostly intuition. There is a threshold beyond which the user will hit
+> the power button. Not sure if its 20 seconds or 20 minutes. My feeling
+> was that the 1 minute was too long.
+> 
+> For a user experience perspective, a quick reboot also seems like a better
+> experience than a one minute hang. Our systems boot in 8 seconds and restore
+> the previous session so a reboot is almost not noticable.
 
-i like the other aspects of your patch but this one is a no-no, we do not use 
-1970's tech to obfuscate nice C code! :-)
+Indeed you definitely want it configurable and have the delay down to 5 or 10 
+seconds, to correlate it with your boot delay.
 
-If the argument list is annoying then introduce a helper structure. But having 
-it longer is no big issue either. Try to shorten the function names if 
-possible.
+Personally i consider any hang over 1 second annoying so you might want to work 
+on that 8 seconds boot time some more, it's too long ;-)
 
-Sidenote, the sysctl code has been misdesigned a bit: it should be possible to 
-add sysctls in .c files and not centralize it all into kernel/sysctl.c 
-forcibly: we could should have a central static array by using a .sysctl_data 
-section or such. Anyone wanna fix/improve that?
+And any kernel code running with more than 1 second irqs off is a bug, plain 
+and simple.
+
+Thanks,
 
 	Ingo
