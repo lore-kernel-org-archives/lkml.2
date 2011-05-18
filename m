@@ -1,106 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab1ERXuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 19:50:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:64782 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932075Ab1ERXuF convert rfc822-to-8bit (ORCPT
+	id S932424Ab1ERXzB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 19:55:01 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48424 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932075Ab1ERXzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 19:50:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,234,1304319600"; 
-   d="scan'208";a="4291791"
-From: "Tian, Kevin" <kevin.tian@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "JBeulich@novell.com" <JBeulich@novell.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Date: Thu, 19 May 2011 07:49:49 +0800
-Subject: RE: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
- them
-Thread-Topic: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
- them
-Thread-Index: AcwORc6McB5lwtD3QfS40WLCK7YIiAAe45OgAbywMYA=
-Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C9BBF8D40@shsmsx502.ccr.corp.intel.com>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
- <alpine.LFD.2.02.1105061149330.3005@ionos>
- <625BA99ED14B2D499DC4E29D8138F1505C8ED7F962@shsmsx502.ccr.corp.intel.com>
- <alpine.DEB.2.00.1105061526120.10886@kaball-desktop>
- <625BA99ED14B2D499DC4E29D8138F1505C8ED7FB9F@shsmsx502.ccr.corp.intel.com>
- <alpine.DEB.2.00.1105091301040.10886@kaball-desktop>
- <alpine.LFD.2.02.1105091435350.2843@ionos>
- <625BA99ED14B2D499DC4E29D8138F1505C8F008B68@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1505C8F008B68@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 May 2011 19:55:00 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DD45C39.5030803@jp.fujitsu.com>
+Date: Thu, 19 May 2011 08:54:33 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
+To: minchan.kim@gmail.com
+CC: mgorman@suse.de, James.Bottomley@hansenpartnership.com,
+        akpm@linux-foundation.org, colin.king@canonical.com,
+        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
+        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+References: <1305295404-12129-5-git-send-email-mgorman@suse.de>	<4DCFAA80.7040109@jp.fujitsu.com>	<1305519711.4806.7.camel@mulgrave.site>	<BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>	<20110516084558.GE5279@suse.de>	<BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>	<20110516102753.GF5279@suse.de>	<BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>	<4DD31B6E.8040502@jp.fujitsu.com>	<BANLkTikLuWPEt7MitUYdJtzqyBSOkz2zxg@mail.gmail.com>	<20110518095859.GR5279@suse.de> <BANLkTin6HJSrxcJYB3Y6XYgs8xuDWaQ15Q@mail.gmail.com>
+In-Reply-To: <BANLkTin6HJSrxcJYB3Y6XYgs8xuDWaQ15Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Tian, Kevin
-> Sent: Tuesday, May 10, 2011 11:24 AM
-> 
-> > From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> > Sent: Monday, May 09, 2011 8:37 PM
-> >
-> > On Mon, 9 May 2011, Stefano Stabellini wrote:
-> >
-> > > On Mon, 9 May 2011, Tian, Kevin wrote:
-> > > > yes, with your patch this issue disappears, since you explicitly
-> > > > make mask/unmask as a nop for xen_percpu_chip, which effectively
-> > > > avoids them from undesired unmask when doing the migration. Though
-> > > > it works, it's not intuitive as to me it's an workaround to make
-> > > > Xen chip
-> > implementation adapting to specific fixup_irqs logic.
-> > >
-> > > I have been tring to follow the example of existing supported drivers.
-> > > The only x86 driver I could find that uses handle_percpu_irq is
-> > > uv_irq that does exatly the same thing.
-> >
-> > Which is a good enough argument to make that change at the common code
-> > level instead of having fancy workarounds here and there.
-> >
-> 
-> So Thomas, what's your suggestion to continue here? Is my original patch to
-> skip percpu irq in common code a good option to go, or you want a cleaner code
-> in other form? Once it's clear I'll discuss with Stefano e.g. possibly merge with
-> his cleanup patch series. :-)
-> 
+>> I've already submitted a pair of patches for option 1. I don't think
+>> option 2 gains us anything. I think it's more likely we should worry
+>> about all_unreclaimable being set when shrink_slab is returning 0 and we
+>> are encountering so many dirty pages that pages_scanned is high enough.
+>
+> Okay.
+>
+> Colin reported he had no problem with patch 1 in this series and
+> mine(ie, just cond_resched right after balance_pgdat call without no
+> patch of shrink_slab).
+>
+> If Colin's test is successful, I don't insist on mine.
+> (I don't want to drag on for days :( )
+> If KOSAKI agree, let's ask the test to Colin and confirm our last test.
+>
+> KOSAKI. Could you post a your opinion?
 
-Hi, Thomas,
+Yeah.
+I also don't have any motivation to ignore Colin's test result.
 
-any response on this? Sorry that you may explain your comments clearly in earlier
-thread, but I may not catch all of them in one place.
-
-I sent out two fixes here:
-[1/2] don't move irq when it's percpu type
-[2/2] don't unmask irq when it's disabled at irqchip level
-
-for [2/2], as you explained it's legitimate to mask/unmask a disabled irq since from
-irqchip level mask/disable actually means same thing. The only possible gain to
-do that is to avoid a potential extra interrupt, which is a different purpose as what
-I originally target. So for [2/2] I think it's not required now.
-
-for [1/2] I think it's still necessary as it's meaningless to migrate a percpu type irq.
-However Stefano has sent out a cleanup patch for Xen percpu irqchip which uses
-nop mask/unmask hack borrowed from uv machine to work around the issue. As
-you suggested it's better to consolidate into the common place instead of scattering
-in different places. My view on this common logic is what [1/2] tries to address, is
-it correct? If yes, would you consider taking this patch? Stefano told me that his
-patches will go in in next merge window. So I think either you can take [1/2] now and
-then I'll do cleanup after Stefano's patch is in, or I can rebase my [1/2] after Stefano's
-patch to clean both xen and uv parts. 
-
-Let me know your thought.
-
-Thanks
-Kevin
