@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab1ERPzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 11:55:04 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:20656 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756584Ab1ERPzB (ORCPT
+	id S1757217Ab1ERQHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 12:07:42 -0400
+Received: from 64.mail-out.ovh.net ([91.121.185.65]:41770 "HELO
+	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756376Ab1ERQHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 11:55:01 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-To: Stevie Trujillo <stevie.trujillo@gmail.com>
-In-Reply-To: <201105181637.46164.stevie.trujillo@gmail.com>
-References: <201105181637.46164.stevie.trujillo@gmail.com>
-From: Milton Miller <miltonm@bga.com>
-Subject: Re: How to get backtrace? modprobe -r iwlagn; modprobe iwlagn kills kernel
-Cc: <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Date: Wed, 18 May 2011 10:55:01 -0500
-X-Originating-IP: 71.22.127.106
-Message-ID: <1305734101_6569@mail4.comsite.net>
+	Wed, 18 May 2011 12:07:41 -0400
+Date: Wed, 18 May 2011 17:56:15 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: [RFC] ARM Subarchitecture group maintainership
+Message-ID: <20110518155615.GJ15292@game.jcrosoft.org>
+References: <201105181047.17309.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105181047.17309.arnd@arndb.de>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 17206565327784946436
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed May 18 2011 about 10:37:54 EST, Stevie Trujillo wrote:
-> I'm having some problem getting a backtrace. When I do "modprobe -r
-> iwlagn; modprobe iwlagn" (2.6.38.6 with Intel-1030N) the kernel crashes
-> (sometimes I need to try 2 or 3 times, and sometimes the modprobe -r
-> is the one that crashes).
+On 10:47 Wed 18 May     , Arnd Bergmann wrote:
+> This is the draft plan for maintaining the ARM subarchitectures in a common
+> tree, as a way to help coordinate the upstream merging of the
+> arch/arm/{plat,mach}-* changes into Linus' tree.
 > 
-> This spams my monitor with several oops/panics before it finally
-> dies. I can only see bottom of the last one, which probably isn't
-> very meaningful.  I tried loading netconsole, but I only get one or
-> two lines before it stops sending/printing.
+> This was discussed in great length at the Linaro Developer Summit in Budapest
+> last week where we worked out an initial plan. We are modeling the maintainance
+> after how the linux-tip tree is used for the x86 architecture, with a set
+> of developers that have commit access to one tree on kernel.org and
+> have mutual trust in one another. Nicolas Pitre and me are funded
+> by Linaro to do the bulk of the work, while Thomas Gleixner will help
+> us part-time with his long time architecture maintainance experience.
+> Despite the funding by Linaro, this is not a Linaro project and all
+> ARM subarchitectures are welcome to go through our tree.
 > 
-> I then tried kexec+crashkernel, but I only managed to get a backtrace
-> for the last panic (which I think is just a result of memory corruption
-> or something).  Finally I tried compiling ramoops into my kernel,
-> but it didn't want to load because of "No such device".
+> Russell King's role as ARM maintainer is of course unchanged by this, but
+> he has the same commit access to the new tree as the other maintainers and
+> is welcome to work in the same tree. We are also open to nominations for
+> further people outside of Linaro to join us as committers. Marc Zyngier from
+> ARM ltd is one of the candidates that has been suggested and I would also
+> like to see someone from Google. We have to find the right balance with the
+> number of committers so we get all the work done without stepping on each
+> other's toes.
+> 
+> Our tree will be strictly organized in topic brances so we can feed them
+> upstream in the bitesized chunks that Linus likes. The master branch
+> is an integration branch that pulls all other branches that are scheduled
+> for the next merge window and itself gets integrated into linux-next.
+> 
+> We will probably not be fully functional during the 2.6.40 merge window,
+> but we are trying our best to be useful. For 2.6.41, my hope is that
+> we can merge the bulk of the ARM subarchitecture changes through this
+> tree. Once Linus is happy with the way that the process works, we can
+> mandate that all ARM subarchitecture changes go through our tree, until
+> then it stays voluntary.
+How do you plan to manage with already sub arch maintainers?
 
-For the kexec+crashkernel, try to retrieve the kernel log buffer:
+In my ming such tree could be good to organise cross arch drivers
+but for real arch specific the current workflow is good
 
-There are some macros available, but basically log_buf is a pointer
-to a buffer of length log_buf_len initialized to __log_buf (but can
-be expanded via the command line or sysctl, in). log_end is the
-end of the buffer.  If you haven't wrapped then just print log_end
-characters.
+If we add a new stage it will be difficult to follow for people
 
-Also consider setting /proc/sys/kernel/panic_on_oops to 1 to
-concentrate on the first one.  It won't help getting the oops to your
-syslog but maybe it will keep it on the screen.
+I'd like to have scenario example where such workflow will give a significant
+advantage compare to the current workflow. And please real example.
 
-Hope this helps,
-milton
+Best Regards,
+J.
