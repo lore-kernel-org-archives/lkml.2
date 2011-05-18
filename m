@@ -1,55 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880Ab1ERQD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 12:03:29 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:43161 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932462Ab1ERQDZ (ORCPT
+	id S1757232Ab1ERQEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 12:04:22 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54644 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757146Ab1ERQEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 12:03:25 -0400
-Date: Wed, 18 May 2011 13:03:17 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Greg KH <greg@kroah.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Olaf Hartmann <o.hartmann@telovital.com>
-Subject: Re: [RFC/RFT PATCH] Staging: et131x: add suspend/resume support
-Message-ID: <20110518160316.GA3502@herton-IdeaPad-Y430>
-References: <1305724667-2980-1-git-send-email-herton.krzesinski@canonical.com>
- <20110518152428.GA8106@kroah.com>
+	Wed, 18 May 2011 12:04:21 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH] ARM: sparsemem: allow pfn_valid to be overridden when using SPARSEMEM
+Date: Wed, 18 May 2011 17:03:59 +0100
+Message-Id: <1305734639-6561-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110518152428.GA8106@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 08:24:28AM -0700, Greg KH wrote:
-> On Wed, May 18, 2011 at 10:17:47AM -0300, Herton Ronaldo Krzesinski wrote:
-> > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> 
-> I think we need a bit more comments here.
-> 
-> Like have you tested this to verify that it works?  Anything else?
+In commit eb33575c ("[ARM] Double check memmap is actually valid with a
+memmap has unexpected holes V2"), a new function, memmap_valid_within,
+was introduced to mmzone.h so that holes in the memmap which pass
+pfn_valid in SPARSEMEM configurations can be detected and avoided.
 
-An user complained about lack of suspend/resume support, so I did the
-patch, it's working accordingly to him from what I could get
-(unfortunately I can't test myself, don't have the hardware). I want
-others to test too, before this can be pushed (RFT on subject). The bug
-report I got: http://bugs.launchpad.net/bugs/766549
-But good luck in parsing that... I also want others with same
-hardware testing this, to confirm it is ok.
+The fix to this problem checks that the pfn <-> page linkages are
+correct by calculating the page for the pfn and then checking that
+page_to_pfn on that page returns the original pfn. Unfortunately, in
+SPARSEMEM configurations, this results in reading from the page flags to
+determine the correct section. Since the memmap here has been freed,
+junk is read from memory and the check is no longer robust.
 
-May be this isn't important at this stage, the driver may need another
-important things done before...
+In the best case, reading from /proc/pagetypeinfo will give you the
+wrong answer. In the worst case, you get SEGVs, Kernel OOPses and hung
+CPUs.
 
-> 
-> thanks,
-> 
-> greg k-h
-> 
+This patch allows architectures to provide their own pfn_valid function
+instead of using the default implementation used by sparsemem. The
+architecture-specific version is aware of the memmap state and will
+return false when passed a pfn for a freed page within a valid section.
 
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Mel Gorman <mgorman@suse.de>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm/Kconfig            |    3 +++
+ arch/arm/include/asm/page.h |    2 +-
+ arch/arm/mm/init.c          |    4 +++-
+ include/linux/mmzone.h      |    2 ++
+ 4 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 377a7a5..d6cfc9c 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1520,6 +1520,9 @@ config ARCH_SPARSEMEM_DEFAULT
+ config ARCH_SELECT_MEMORY_MODEL
+ 	def_bool ARCH_SPARSEMEM_ENABLE
+ 
++config ARCH_PROVIDES_PFN_VALID
++	def_bool ARCH_HAS_HOLES_MEMORYMODEL || !SPARSEMEM
++
+ config HIGHMEM
+ 	bool "High Memory Support (EXPERIMENTAL)"
+ 	depends on MMU && EXPERIMENTAL
+diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
+index f51a695..8702233 100644
+--- a/arch/arm/include/asm/page.h
++++ b/arch/arm/include/asm/page.h
+@@ -197,7 +197,7 @@ typedef unsigned long pgprot_t;
+ 
+ typedef struct page *pgtable_t;
+ 
+-#ifndef CONFIG_SPARSEMEM
++#ifdef CONFIG_ARCH_PROVIDES_PFN_VALID
+ extern int pfn_valid(unsigned long);
+ #endif
+ 
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index e591513..d425b36 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -252,13 +252,15 @@ static void __init arm_bootmem_free(unsigned long min, unsigned long max_low,
+ 	free_area_init_node(0, zone_size, min, zhole_size);
+ }
+ 
+-#ifndef CONFIG_SPARSEMEM
++#ifdef CONFIG_ARCH_PROVIDES_PFN_VALID
+ int pfn_valid(unsigned long pfn)
+ {
+ 	return memblock_is_memory(pfn << PAGE_SHIFT);
+ }
+ EXPORT_SYMBOL(pfn_valid);
++#endif
+ 
++#ifndef CONFIG_SPARSEMEM
+ static void arm_memory_present(void)
+ {
+ }
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index e56f835..72225dd 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -1053,12 +1053,14 @@ static inline struct mem_section *__pfn_to_section(unsigned long pfn)
+ 	return __nr_to_section(pfn_to_section_nr(pfn));
+ }
+ 
++#ifndef CONFIG_ARCH_PROVIDES_PFN_VALID
+ static inline int pfn_valid(unsigned long pfn)
+ {
+ 	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+ 		return 0;
+ 	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
+ }
++#endif
+ 
+ static inline int pfn_present(unsigned long pfn)
+ {
 -- 
-[]'s
-Herton
+1.7.0.4
+
