@@ -1,140 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab1ERQK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 12:10:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:41494 "EHLO
+	id S1757398Ab1ERQKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 12:10:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60966 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757336Ab1ERQJK (ORCPT
+	with ESMTP id S1757324Ab1ERQJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 May 2011 12:09:10 -0400
-X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=oVaVB9Z9H3kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=SyI_GHdlAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=AneZBf28MwWtiNV2IugA:9 a=GtFIwdtD1vAc1vZ-om4A:7 a=jEp0ucaQiEUA:10 a=UQxMgyrMzRwA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=vhdKIqpQuCYA:10 a=KbyTV6LhgPwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=SyI_GHdlAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=C-1pDWcX_W-oYYX42ZsA:9 a=TfPPElEbfr4WmPbgwMMA:7 a=jEp0ucaQiEUA:10 a=UQxMgyrMzRwA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110518160908.909643800@goodmis.org>
+Message-Id: <20110518160909.174141521@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 18 May 2011 12:08:20 -0400
+Date: Wed, 18 May 2011 12:08:21 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         John Reiser <jreiser@bitwagon.com>
-Subject: [PATCH 11/15] ftrace/recordmcount: Remove duplicate code to find mcount symbol
+Subject: [PATCH 12/15] ftrace/recordmcount: Add helper function get_sym_str_and_relp()
 References: <20110518160809.724215604@goodmis.org>
-Content-Disposition: inline; filename=0011-ftrace-recordmcount-Remove-duplicate-code-to-find-mc.patch
+Content-Disposition: inline; filename=0012-ftrace-recordmcount-Add-helper-function-get_sym_str_.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The code in sift_rel_mcount() and nop_mcount() to get the mcount symbol
-number is identical. Replace the two locations with a call to a function
-that does the work.
+The code to get the symbol, string, and relp pointers in the two functions
+sift_rel_mcount() and nop_mcount() are identical and also non-trivial.
+Moving this duplicate code into a single helper function makes the code
+easier to read and more maintainable.
 
 Cc: John Reiser <jreiser@bitwagon.com>
-Link: http://lkml.kernel.org/r/20110421023739.488093407@goodmis.org
+Link: http://lkml.kernel.org/r/20110421023739.723658553@goodmis.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- scripts/recordmcount.h |   51 +++++++++++++++++++++++++----------------------
- 1 files changed, 27 insertions(+), 24 deletions(-)
+ scripts/recordmcount.h |   67 ++++++++++++++++++++++++++---------------------
+ 1 files changed, 37 insertions(+), 30 deletions(-)
 
 diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index 22033d5..deb6a51 100644
+index deb6a51..3c00fab 100644
 --- a/scripts/recordmcount.h
 +++ b/scripts/recordmcount.h
-@@ -28,6 +28,7 @@
- #undef __has_rel_mcount
+@@ -29,6 +29,7 @@
  #undef has_rel_mcount
  #undef tot_relsize
-+#undef get_mcountsym
+ #undef get_mcountsym
++#undef get_sym_str_and_relp
  #undef do_func
  #undef Elf_Addr
  #undef Elf_Ehdr
 @@ -56,6 +57,7 @@
+ # define __has_rel_mcount	__has64_rel_mcount
  # define has_rel_mcount		has64_rel_mcount
  # define tot_relsize		tot64_relsize
++# define get_sym_str_and_relp	get_sym_str_and_relp_64
  # define do_func		do64
-+# define get_mcountsym		get_mcountsym_64
+ # define get_mcountsym		get_mcountsym_64
  # define is_fake_mcount		is_fake_mcount64
- # define fn_is_fake_mcount	fn_is_fake_mcount64
- # define MIPS_is_fake_mcount	MIPS64_is_fake_mcount
-@@ -85,6 +87,7 @@
+@@ -86,6 +88,7 @@
+ # define __has_rel_mcount	__has32_rel_mcount
  # define has_rel_mcount		has32_rel_mcount
  # define tot_relsize		tot32_relsize
++# define get_sym_str_and_relp	get_sym_str_and_relp_32
  # define do_func		do32
-+# define get_mcountsym		get_mcountsym_32
+ # define get_mcountsym		get_mcountsym_32
  # define is_fake_mcount		is_fake_mcount32
- # define fn_is_fake_mcount	fn_is_fake_mcount32
- # define MIPS_is_fake_mcount	MIPS32_is_fake_mcount
-@@ -237,6 +240,26 @@ static void append_func(Elf_Ehdr *const ehdr,
- 	uwrite(fd_map, ehdr, sizeof(*ehdr));
+@@ -260,6 +263,29 @@ static unsigned get_mcountsym(Elf_Sym const *const sym0,
+ 	return mcountsym;
  }
  
-+static unsigned get_mcountsym(Elf_Sym const *const sym0,
-+			      Elf_Rel const *relp,
-+			      char const *const str0)
++static void get_sym_str_and_relp(Elf_Shdr const *const relhdr,
++				 Elf_Ehdr const *const ehdr,
++				 Elf_Sym const **sym0,
++				 char const **str0,
++				 Elf_Rel const **relp)
 +{
-+	unsigned mcountsym = 0;
++	Elf_Shdr *const shdr0 = (Elf_Shdr *)(_w(ehdr->e_shoff)
++		+ (void *)ehdr);
++	unsigned const symsec_sh_link = w(relhdr->sh_link);
++	Elf_Shdr const *const symsec = &shdr0[symsec_sh_link];
++	Elf_Shdr const *const strsec = &shdr0[w(symsec->sh_link)];
++	Elf_Rel const *const rel0 = (Elf_Rel const *)(_w(relhdr->sh_offset)
++		+ (void *)ehdr);
 +
-+	Elf_Sym const *const symp =
-+		&sym0[Elf_r_sym(relp)];
-+	char const *symname = &str0[w(symp->st_name)];
-+	char const *mcount = gpfx == '_' ? "_mcount" : "mcount";
++	*sym0 = (Elf_Sym const *)(_w(symsec->sh_offset)
++				  + (void *)ehdr);
 +
-+	if (symname[0] == '.')
-+		++symname;  /* ppc64 hack */
-+	if (strcmp(mcount, symname) == 0 ||
-+	    (altmcount && strcmp(altmcount, symname) == 0))
-+		mcountsym = Elf_r_sym(relp);
++	*str0 = (char const *)(_w(strsec->sh_offset)
++			       + (void *)ehdr);
 +
-+	return mcountsym;
++	*relp = rel0;
 +}
 +
  /*
   * Look at the relocations in order to find the calls to mcount.
   * Accumulate the section offsets that are found, and their relocation info,
-@@ -274,18 +297,8 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
+@@ -276,26 +302,16 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
+ {
+ 	uint_t *const mloc0 = mlocp;
+ 	Elf_Rel *mrelp = *mrelpp;
+-	Elf_Shdr *const shdr0 = (Elf_Shdr *)(_w(ehdr->e_shoff)
+-		+ (void *)ehdr);
+-	unsigned const symsec_sh_link = w(relhdr->sh_link);
+-	Elf_Shdr const *const symsec = &shdr0[symsec_sh_link];
+-	Elf_Sym const *const sym0 = (Elf_Sym const *)(_w(symsec->sh_offset)
+-		+ (void *)ehdr);
+-
+-	Elf_Shdr const *const strsec = &shdr0[w(symsec->sh_link)];
+-	char const *const str0 = (char const *)(_w(strsec->sh_offset)
+-		+ (void *)ehdr);
+-
+-	Elf_Rel const *const rel0 = (Elf_Rel const *)(_w(relhdr->sh_offset)
+-		+ (void *)ehdr);
++	Elf_Sym const *sym0;
++	char const *str0;
++	Elf_Rel const *relp;
+ 	unsigned rel_entsize = _w(relhdr->sh_entsize);
+ 	unsigned const nrel = _w(relhdr->sh_size) / rel_entsize;
+-	Elf_Rel const *relp = rel0;
+-
+ 	unsigned mcountsym = 0;
  	unsigned t;
  
++	get_sym_str_and_relp(relhdr, ehdr, &sym0, &str0, &relp);
++
  	for (t = nrel; t; --t) {
--		if (!mcountsym) {
--			Elf_Sym const *const symp =
--				&sym0[Elf_r_sym(relp)];
--			char const *symname = &str0[w(symp->st_name)];
--			char const *mcount = gpfx == '_' ? "_mcount" : "mcount";
+ 		if (!mcountsym)
+ 			mcountsym = get_mcountsym(sym0, relp, str0);
+@@ -331,27 +347,18 @@ static void nop_mcount(Elf_Shdr const *const relhdr,
+ {
+ 	Elf_Shdr *const shdr0 = (Elf_Shdr *)(_w(ehdr->e_shoff)
+ 		+ (void *)ehdr);
+-	unsigned const symsec_sh_link = w(relhdr->sh_link);
+-	Elf_Shdr const *const symsec = &shdr0[symsec_sh_link];
+-	Elf_Sym const *const sym0 = (Elf_Sym const *)(_w(symsec->sh_offset)
+-		+ (void *)ehdr);
 -
--			if (symname[0] == '.')
--				++symname;  /* ppc64 hack */
--			if (strcmp(mcount, symname) == 0 ||
--			    (altmcount && strcmp(altmcount, symname) == 0))
--				mcountsym = Elf_r_sym(relp);
--		}
-+		if (!mcountsym)
-+			mcountsym = get_mcountsym(sym0, relp, str0);
+-	Elf_Shdr const *const strsec = &shdr0[w(symsec->sh_link)];
+-	char const *const str0 = (char const *)(_w(strsec->sh_offset)
+-		+ (void *)ehdr);
+-
+-	Elf_Rel const *const rel0 = (Elf_Rel const *)(_w(relhdr->sh_offset)
+-		+ (void *)ehdr);
++	Elf_Sym const *sym0;
++	char const *str0;
++	Elf_Rel const *relp;
++	Elf_Shdr const *const shdr = &shdr0[w(relhdr->sh_info)];
+ 	unsigned rel_entsize = _w(relhdr->sh_entsize);
+ 	unsigned const nrel = _w(relhdr->sh_size) / rel_entsize;
+-	Elf_Rel const *relp = rel0;
+-
+-	Elf_Shdr const *const shdr = &shdr0[w(relhdr->sh_info)];
+-
+ 	unsigned mcountsym = 0;
+ 	unsigned t;
+ 	int once = 0;
  
- 		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp)) {
- 			uint_t const addend = _w(_w(relp->r_offset) - recval);
-@@ -342,18 +355,8 @@ static void nop_mcount(Elf_Shdr const *const relhdr,
++	get_sym_str_and_relp(relhdr, ehdr, &sym0, &str0, &relp);
++
  	for (t = nrel; t; --t) {
  		int ret = -1;
  
--		if (!mcountsym) {
--			Elf_Sym const *const symp =
--				&sym0[Elf_r_sym(relp)];
--			char const *symname = &str0[w(symp->st_name)];
--			char const *mcount = gpfx == '_' ? "_mcount" : "mcount";
--
--			if (symname[0] == '.')
--				++symname;  /* ppc64 hack */
--			if (strcmp(mcount, symname) == 0 ||
--			    (altmcount && strcmp(altmcount, symname) == 0))
--				mcountsym = Elf_r_sym(relp);
--		}
-+		if (!mcountsym)
-+			mcountsym = get_mcountsym(sym0, relp, str0);
- 
- 		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp)) {
- 			if (make_nop)
 -- 
 1.7.4.4
 
