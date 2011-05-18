@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab1ERUfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 16:35:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43620 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab1ERUfc (ORCPT
+	id S1753476Ab1ERUgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 16:36:14 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61856 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149Ab1ERUgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 16:35:32 -0400
+	Wed, 18 May 2011 16:36:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=R5ty4JnMgrcQCyCXJrVD8FIR8KmYyo9A/xWRP+EFOItFOJtoiQ9ABvf5HNh2Cu2VhJ
-         FVzZX+wjK2twRCq3bPRhexQgNbbDR5301gjFTFtjOapdDhVC6cvyfUG17FR9wkSnNi+t
-         UuGuwnW1M8adnzVxT0fZ5qmRcEkkbgsf1o4Ao=
-MIME-Version: 1.0
-In-Reply-To: <20110518192212.GC26945@kroah.com>
-References: <4DD305B3.3000707@am.sony.com>
-	<1305744925-8162-1-git-send-email-abogani@kernel.org>
-	<20110518192212.GC26945@kroah.com>
-Date: Wed, 18 May 2011 22:35:31 +0200
-X-Google-Sender-Auth: f_ueIaKLb0gp87l3fqVDlDuSg44
-Message-ID: <BANLkTim2DBkrFbdR=0a=wGqFPX1O7d+C7g@mail.gmail.com>
-Subject: Re: your mail
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=rtF0QE3N65NW6yO4K6oSMe/33o9psDqkLw6Tcf3kc1XXnx3CzxDe1Ud4RunDAmuPwG
+         W/6CCgx97JgznwfirI6873y7Pko8EnK1SqxgQJi2pSMOk8tmTsd/Gkn1dGNGwLqPEJRm
+         FTHvf0n+mVnICSgsT0uUVf9RJTCVn+hLV2o24=
 From: Alessio Igor Bogani <abogani@kernel.org>
-To: Greg KH <greg@kroah.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Bird <tim.bird@am.sony.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Anders Kaseorg <andersk@ksplice.com>, Tim Abbott <tabbott@ksplice.com>,
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Greg KH <greg@kroah.com>, Anders Kaseorg <andersk@ksplice.com>,
+        Tim Abbott <tabbott@ksplice.com>, Tim Bird <tim.bird@am.sony.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Linux Embedded <linux-embedded@vger.kernel.org>,
         Jason Wessel <jason.wessel@windriver.com>,
-        Dirk Behme <dirk.behme@googlemail.com>
-Content-Type: text/plain; charset=UTF-8
+        Dirk Behme <dirk.behme@googlemail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Alessio Igor Bogani <abogani@kernel.org>
+Subject: [PATCH] module: Use binary search in lookup_symbol()
+Date: Wed, 18 May 2011 22:35:59 +0200
+Message-Id: <1305750959-3018-1-git-send-email-abogani@kernel.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <BANLkTim2DBkrFbdR=0a=wGqFPX1O7d+C7g@mail.gmail.com>
+References: <BANLkTim2DBkrFbdR=0a=wGqFPX1O7d+C7g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mr. Kroah-Hartman,
+The function is_exported() with its helper function lookup_symbol() are used to
+verify if a provided symbol is effectively exported by the kernel or by the
+modules. Now that both have their symbols sorted we can replace a linear search
+with a binary search which provide a considerably speed-up.
 
-2011/5/18 Greg KH <greg@kroah.com>:
-[...]
-> Care to resend it without all the stuff above so someone (Rusty I guess)
-> can apply it?
+This work was supported by a hardware donation from the CE Linux Forum.
 
-Sure! It'll follow in few minutes.
+Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ kernel/module.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-Thank you very much!
+diff --git a/kernel/module.c b/kernel/module.c
+index 1e2b657..795bdc7 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2055,11 +2055,8 @@ static const struct kernel_symbol *lookup_symbol(const char *name,
+ 	const struct kernel_symbol *start,
+ 	const struct kernel_symbol *stop)
+ {
+-	const struct kernel_symbol *ks = start;
+-	for (; ks < stop; ks++)
+-		if (strcmp(ks->name, name) == 0)
+-			return ks;
+-	return NULL;
++	return bsearch(name, start, stop - start,
++			sizeof(struct kernel_symbol), cmp_name);
+ }
+ 
+ static int is_exported(const char *name, unsigned long value,
+-- 
+1.7.4.1
 
-Ciao,
-Alessio
