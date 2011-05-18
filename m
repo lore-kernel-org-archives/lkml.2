@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933649Ab1ERTRN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 15:17:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12324 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933451Ab1ERTRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 15:17:11 -0400
-Date: Wed, 18 May 2011 15:17:06 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Subject: sleeping while atomic warning while modprobing oprofile.
-Message-ID: <20110518191706.GA20475@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Robert Richter <robert.richter@amd.com>
+	id S933669Ab1ERTRp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 15:17:45 -0400
+Received: from na3sys010aog101.obsmtp.com ([74.125.245.70]:45283 "HELO
+	na3sys010aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933451Ab1ERTRn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 15:17:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTimQXU0u5gtRzXsnsB=sCF-bvpY+Ag@mail.gmail.com>
+References: <1305682604-21383-1-git-send-email-nab@linux-iscsi.org>
+ <BANLkTi=e+v7PLcSc8GNov-TOXFF7rurXew@mail.gmail.com> <20110518170556.GB2595@obsidianresearch.com>
+ <BANLkTimQXU0u5gtRzXsnsB=sCF-bvpY+Ag@mail.gmail.com>
+From: Roland Dreier <roland@purestorage.com>
+Date: Wed, 18 May 2011 12:17:21 -0700
+Message-ID: <BANLkTi==bZ0h3o5FNrg8PSJFp6F-zh5hTA@mail.gmail.com>
+Subject: Re: [RFC] ib_srpt: initial .40-rc1 drivers/infiniband/ulp/srpt merge
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-rmda <linux-rdma@vger.kernel.org>, Vu Pham <vu@mellanox.com>,
+        David Dillow <dillowda@ornl.gov>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just saw this when after I did a 'modprobe oprofile' on my amd64 box.
+On Wed, May 18, 2011 at 11:02 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> Thanks for the feedback. I'm still wondering though about the
+> usefulness of disabling / enabling SRPT per HCA port. For the use
+> cases I know about SRP communication over all target ports will be
+> enabled as soon as target configuration has finished and more
+> fine-grained access configuration will occur by allowing/disallowing
+> certain initiators to log in.
 
-	Dave
+I definitely think that allowing the flexibility to configure ports individually
+is required.  It's easy to imagine a case with a separate front-end and
+back-end networks on the two HCA ports (this would be a pretty normal
+ethernet config), where only one port should be a target port.
 
-BUG: sleeping function called from invalid context at mm/slub.c:824
-in_atomic(): 1, irqs_disabled(): 0, pid: 32357, name: modprobe
-INFO: lockdep is turned off.
-Pid: 32357, comm: modprobe Not tainted 2.6.39-rc7+ #14
-Call Trace:
- [<ffffffff8104bdc8>] __might_sleep+0x112/0x117
- [<ffffffff81129693>] kmem_cache_alloc_trace+0x4b/0xe7
- [<ffffffff81278f14>] kzalloc.constprop.0+0x29/0x2b
- [<ffffffff81278f4c>] pci_get_subsys+0x36/0x78
- [<ffffffff81022689>] ? setup_APIC_eilvt+0xfb/0x139
- [<ffffffff81278fa4>] pci_get_device+0x16/0x18
- [<ffffffffa06c8b5d>] op_amd_init+0xd3/0x211 [oprofile]
- [<ffffffffa064d000>] ? 0xffffffffa064cfff
- [<ffffffffa064d298>] op_nmi_init+0x21e/0x26a [oprofile]
- [<ffffffffa064d062>] oprofile_arch_init+0xe/0x26 [oprofile]
- [<ffffffffa064d010>] oprofile_init+0x10/0x42 [oprofile]
- [<ffffffff81002099>] do_one_initcall+0x7f/0x13a
- [<ffffffff81096524>] sys_init_module+0x132/0x281
- [<ffffffff814cc682>] system_call_fastpath+0x16/0x1b
+It may not be how people do things now but it should at least be possible.
 
+ - R.
