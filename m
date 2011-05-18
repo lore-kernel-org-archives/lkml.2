@@ -1,30 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab1ERVXB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:23:01 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38095 "EHLO mx3.mail.elte.hu"
+	id S1754950Ab1ERVYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:24:13 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38169 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752900Ab1ERVXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:23:00 -0400
-Date: Wed, 18 May 2011 23:22:46 +0200
+	id S1750998Ab1ERVYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 17:24:08 -0400
+Date: Wed, 18 May 2011 23:23:51 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Nikhil Rao <ncrao@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-        linux-kernel@vger.kernel.org,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>
-Subject: Re: [PATCH v2 3/3] sched: increase SCHED_LOAD_SCALE resolution
-Message-ID: <20110518212246.GD28476@elte.hu>
-References: <BANLkTinHZpgqe0DjBrya--J+xFE=ksv9CQ@mail.gmail.com>
- <1305747683-16742-1-git-send-email-ncrao@google.com>
- <20110518202646.GA14141@elte.hu>
- <BANLkTikQ4-0pz50T-LGHdduSTzSdZJKwFA@mail.gmail.com>
+To: "Rao, Nikhil" <nikhil.rao@intel.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]  x86: Removing unnecessary check in detect_ht
+Message-ID: <20110518212351.GE28476@elte.hu>
+References: <43F901BD926A4E43B106BF17856F0755018E1CF482@orsmsx508.amr.corp.intel.com>
+ <4FF5AC937153B0459463C1A88EB478F2010DFD3D3F@orsmsx505.amr.corp.intel.com>
+ <43F901BD926A4E43B106BF17856F0755018E1CF69D@orsmsx508.amr.corp.intel.com>
+ <1305048201.2736.17.camel@sbsiddha-MOBL3.sc.intel.com>
+ <1F668163772FA946975B9466A9DFF729B5E5@ORSMSX101.amr.corp.intel.com>
+ <1F668163772FA946975B9466A9DFF729B64C@ORSMSX101.amr.corp.intel.com>
+ <20110518210754.GA28476@elte.hu>
+ <1F668163772FA946975B9466A9DFF729B6A3@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikQ4-0pz50T-LGHdduSTzSdZJKwFA@mail.gmail.com>
+In-Reply-To: <1F668163772FA946975B9466A9DFF729B6A3@ORSMSX101.amr.corp.intel.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -38,102 +41,13 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Nikhil Rao <ncrao@google.com> wrote:
+* Rao, Nikhil <nikhil.rao@intel.com> wrote:
 
-> On Wed, May 18, 2011 at 1:26 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Nikhil Rao <ncrao@google.com> wrote:
-> >
-> >> +#if BITS_PER_LONG > 32
-> >> +# define SCHED_LOAD_RESOLUTION       10
-> >> +# define scale_load(w)               (w << SCHED_LOAD_RESOLUTION)
-> >> +# define scale_load_down(w)  (w >> SCHED_LOAD_RESOLUTION)
-> >> +#else
-> >> +# define SCHED_LOAD_RESOLUTION       0
-> >> +# define scale_load(w)               (w)
-> >> +# define scale_load_down(w)  (w)
-> >> +#endif
-> >
-> > We want (w) in the other definitions as well, to protect potential operators
-> > with lower precedence than <<. (Roughly half of the C operators are such so
-> > it's a real issue, should anyone use these macros with operators.)
-> >
-> >> +#define SCHED_LOAD_SHIFT     (10 + (SCHED_LOAD_RESOLUTION))
-> >
-> > that () is not needed actually, if you look at the definition of
-> > SCHED_LOAD_RESOLUTION.
-> >
-> > So you could move the superfluous () from here up to the two definitions above
-> > and thus no parentheses would be hurt during the making of this patch.
-> >
-> 
-> Ah, thanks for the explanation. Does this look OK?
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index f2f4402..c34a718 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -788,9 +788,28 @@ enum cpu_idle_type {
->  };
-> 
->  /*
-> - * Increase resolution of nice-level calculations:
-> + * Increase resolution of nice-level calculations for 64-bit architectures.
-> + * The extra resolution improves shares distribution and load balancing of
-> + * low-weight task groups (eg. nice +19 on an autogroup), deeper taskgroup
-> + * hierarchies, especially on larger systems. This is not a user-visible change
-> + * and does not change the user-interface for setting shares/weights.
-> + *
-> + * We increase resolution only if we have enough bits to allow this increased
-> + * resolution (i.e. BITS_PER_LONG > 32). The costs for increasing resolution
-> + * when BITS_PER_LONG <= 32 are pretty high and the returns do not justify the
-> + * increased costs.
->   */
-> -#define SCHED_LOAD_SHIFT       10
-> +#if BITS_PER_LONG > 32
-> +# define SCHED_LOAD_RESOLUTION 10
-> +# define scale_load(w)         ((w) << SCHED_LOAD_RESOLUTION)
-> +# define scale_load_down(w)    ((w) >> SCHED_LOAD_RESOLUTION)
-> +#else
-> +# define SCHED_LOAD_RESOLUTION 0
-> +# define scale_load(w)         (w)
-> +# define scale_load_down(w)    (w)
-> +#endif
-> +
-> +#define SCHED_LOAD_SHIFT       (10 + SCHED_LOAD_RESOLUTION)
->  #define SCHED_LOAD_SCALE       (1L << SCHED_LOAD_SHIFT)
-> 
->  /*
-> 
-> 
-> >> +             if (BITS_PER_LONG > 32 && unlikely(w >= WMULT_CONST))
-> >>                       lw->inv_weight = 1;
-> >> +             else if (unlikely(!w))
-> >> +                     lw->inv_weight = WMULT_CONST;
-> >>               else
-> >> +                     lw->inv_weight = WMULT_CONST / w;
-> >
-> > Ok, i just noticed that you made use of BITS_PER_LONG here too.
-> >
-> > It's better to put that into a helper define, something like
-> > SCHED_LOAD_HIGHRES, which could thus be used like this:
-> >
-> >                if (SCHED_LOAD_HIGHRES && unlikely(w >= WMULT_CONST))
-> >
-> > then, should anyone want to tweak the condition for SCHED_LOAD_HIGHRES, it
-> > could be done in a single place. It would also self-document.
-> >
-> 
-> Hmm, that particular use of BITS_PER_LONG was not touched by this
-> patch. This patch only changes lw->weight to use the local variable w.
-> The (BITS_PER_LONG & > WMULT_CONST) check is required on 64-bit
-> systems irrespective of the load-resolution changes.
+> Nothing apart from what you mention - bootlog message and SMP instead of SMT.
 
-my bad, i confused it with the resolution changes.
-
-It's fine as-is then i guess. Mind reposting the full patch again, with all 
-updates included and the subject line changed to make it easy to find this 
-patch in the discussion?
+Mind putting this information into the changelog and repost the patch? It's 
+arguably the kind of practical information that most readers of changelogs are 
+interested in.
 
 Thanks,
 
