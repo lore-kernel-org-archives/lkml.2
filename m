@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842Ab1ERLRf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 07:17:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31576 "EHLO mx1.redhat.com"
+	id S932848Ab1ERLTM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 07:19:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53437 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932168Ab1ERLRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 07:17:33 -0400
-Date: Wed, 18 May 2011 14:17:34 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>
-Cc: Shirley Ma <mashirle@us.ibm.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-Message-ID: <20110518111734.GO7589@redhat.com>
-References: <1305574128.3456.23.camel@localhost.localdomain>
- <1305574518.2885.25.camel@bwh-desktop>
- <1305574680.3456.33.camel@localhost.localdomain>
- <1305575253.2885.28.camel@bwh-desktop>
- <20110516211459.GE18148@redhat.com>
- <1305588738.3456.65.camel@localhost.localdomain>
- <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
- <1305671318.10756.49.camel@localhost.localdomain>
- <20110518103819.GL7589@redhat.com>
- <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
+	id S932202Ab1ERLTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 07:19:11 -0400
+Date: Wed, 18 May 2011 13:19:09 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Sarah Nadi <snadi@uwaterloo.ca>
+Cc: starvik@axis.com, linux-kernel@vger.kernel.org,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Subject: Re: [Patch 1/1]: cris: typo in mach-fs Makefile
+In-Reply-To: <4DD28873.8050706@uwaterloo.ca>
+Message-ID: <alpine.LNX.2.00.1105181318470.28291@pobox.suse.cz>
+References: <4DD28873.8050706@uwaterloo.ca>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 01:10:50PM +0200, Michał Mirosław wrote:
-> 2011/5/18 Michael S. Tsirkin <mst@redhat.com>:
-> > On Tue, May 17, 2011 at 03:28:38PM -0700, Shirley Ma wrote:
-> >> On Tue, 2011-05-17 at 23:48 +0200, Michał Mirosław wrote:
-> >> > 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
-> >> > > Hello Michael,
-> >> > >
-> >> > > Looks like to use a new flag requires more time/work. I am thinking
-> >> > > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
-> >> > to
-> >> > > avoid the new flag for now since mavctap uses real NICs as lower
-> >> > device?
-> >> >
-> >> > Is there any other restriction besides requiring driver to not recycle
-> >> > the skb? Are there any drivers that recycle TX skbs?
-> >
-> > Not just recycling skbs, keeping reference to any of the pages in the
-> > skb. Another requirement is to invoke the callback
-> > in a timely fashion.  For example virtio-net doesn't limit the time until
-> > that happens (skbs are only freed when some other packet is
-> > transmitted), so we need to avoid zcopy for such (nested-virt)
-> > scenarious, right?
+On Tue, 17 May 2011, Sarah Nadi wrote:
+
+> From: Sarah Nadi<snadi@uwaterloo.ca>
 > 
-> Hmm. But every hardware driver supporting SG will keep reference to
-> the pages until the packet is sent (or DMA'd to the device). This can
-> take a long time if hardware queue happens to stall for some reason.
-
-That's a fundamental property of zero copy transmit.
-You can't let the application/guest reuse the memory until
-no one looks at it anymore.
-
-> Is it that you mean keeping a reference after all skbs pointing to the
-> pages are released?
-
-No one should reference the pages after the callback is invoked, yes.
-
-> >> Not more other restrictions, skb clone is OK. pskb_expand_head() looks
-> >> OK to me from code review.
-> > Hmm. pskb_expand_head calls skb_release_data while keeping
-> > references to pages. How is that ok? What do I miss?
+> There is a possible typo in arch/cris/arch-v32/mach-fs/Makefile. Check diff
+> below
 > 
-> It's making copy of the skb_shinfo earlier, so the pages refcount
-> stays the same.
-> 
-> Best Regards,
-> Michał Mirosław
+> Signed-off-by: Sarah Nadi <snadi@uwaterloo.ca>
 
-Exactly. But the callback is invoked so the guest thinks it's ok to
-change this memory. If it does a corrupted packet will be sent out.
+Funny that noone noticed since 2007 when this has been introduced. Makes 
+one wonder how much is this code really used.
+
+Adding Jesper to CC so that he is aware of this.
+
+I will be applying it to my tree, thanks.
+
+> 
+> --- linux-2.6.38/arch/cris/arch-v32/mach-fs/Makefile.orig    2011-03-14
+> 21:20:32.000000000 -0400
+> +++ linux-2.6.38/arch/cris/arch-v32/mach-fs/Makefile    2011-05-16
+> 11:24:21.627239213 -0400
+> @@ -4,7 +4,7 @@
+>  #
+> 
+>  obj-y   := dma.o pinmux.o io.o arbiter.o
+> -bj-$(CONFIG_ETRAX_VCS_SIM) += vcs_hook.o
+> +obj-$(CONFIG_ETRAX_VCS_SIM) += vcs_hook.o
+>  obj-$(CONFIG_CPU_FREQ)   += cpufreq.o
+> 
+>  clean:
+> 
+> 
+> 
+> 
 
 -- 
-MST
+Jiri Kosina
+SUSE Labs
