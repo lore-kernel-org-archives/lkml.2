@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab1ERMY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 08:24:28 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34128 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933012Ab1ERMY1 (ORCPT
+	id S933023Ab1ERMcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 08:32:42 -0400
+Received: from aaar.vm.bytemark.co.uk ([80.68.92.230]:50688 "EHLO
+	aaar.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932738Ab1ERMck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 08:24:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:content-type;
-        b=Q4oSIMeT7EF54RTS3Q+RyXbmozPHA8K5DwlGVkNUY31G12u27te28zbg/62NjQtKEO
-         nnIMZ1PChKlmjR/QxwkD/4e0rJksqKs4z4FqFk/rRp6kFKNNh6YbwZcS5W/E2iWJotm+
-         FQMWGHhEYJgGg9FQNi9CxXOJhl9TJxN5ZwKo0=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTin1uWZUS21Ey6chY0E=Nu50MJFCWA@mail.gmail.com>
-References: <BANLkTin1uWZUS21Ey6chY0E=Nu50MJFCWA@mail.gmail.com>
-Date: Wed, 18 May 2011 14:24:26 +0200
-X-Google-Sender-Auth: er8-XGBiCfpnzgDgYgeKmjtG29A
-Message-ID: <BANLkTinXnjvG4p9WqoYc7ttyXZ7gQSBhsQ@mail.gmail.com>
-Subject: Fwd: Six month old regression with dataloss, confirmed but no clue
-From: roucaries bastien <roucaries.bastien+linux@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 18 May 2011 08:32:40 -0400
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+In-Reply-To: <4DD2C947.9050501@goop.org>
+References: <20110115120544.98a1f091.sfr@canb.auug.org.au>
+	 <20110517211234.472e32f4.sfr@canb.auug.org.au>  <4DD2C947.9050501@goop.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 May 2011 13:32:18 +0100
+Message-ID: <1305721938.20907.132.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 62.200.22.2
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: linux-next: manual merge of the xen tree with Linus tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2011-05-17 at 12:15 -0700, Jeremy Fitzhardinge wrote:
+> On 05/17/2011 04:12 AM, Stephen Rothwell wrote:
+> > Hi Jeremy,
+> >
+> > On Sat, 15 Jan 2011 12:05:44 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >> Today's linux-next merge of the xen tree got a conflict in
+> >> drivers/xen/Kconfig, drivers/xen/gntdev.c and include/xen/gntdev.h
+> >> between various commits Linus' tree and various commits from the xen tree.
+> >>
+> >> As previously discussed, I have dropped the xen tree for today (as it
+> >> contains an older version of the changes that were merged into Linus'
+> >> tree).
+> > Just wondering if the xen tree is ever going to make a reappearance in
+> > linux-next?
+> 
+> Konrad's tree has the bulk of the xen work in it at the moment.  I'm
+> doing to start on a few bits and pieces, but I've not decided if I'll
+> put them into linux-next myself or just push them via Konrad.
+> 
+> So, maybe, but maybe not.
 
-I resend an email about https://bugzilla.kernel.org/show_bug.cgi?id=29162
+Perhaps resetting your branch to some commit on Linus tree in the
+meantime would mean Stephen doesn't have to see it everyday?
 
-This bug was confirmed by Frederic Weisbecker but we have no clue how
-to reproduce quickly. Only run kamil and git for some time and get
-stuck.
+Ian.
+-- 
+Ian Campbell
+Current Noise: Devin Townsend - Away
 
-We are even not sure if it is a reiserfs bug and a core fs bug. It
-seems related to acl is the only clue.
+In an orderly world, there's always a place for the disorderly.
 
-Any help is welcome.
-
-Thansk to frederick for trying to reproduce so far
-
-Bastien
-
-Ps: sorry for resending typo on lkml
