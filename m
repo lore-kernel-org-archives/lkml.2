@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab1ERVHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:07:31 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50866 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab1ERVH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:07:29 -0400
-Date: Wed, 18 May 2011 14:07:19 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ocfs2 and configfs fixes for 2.6.39-rc
-Message-ID: <20110518210719.GE5898@noexit.corp.google.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+	id S1754688Ab1ERVIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:08:07 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52996 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751019Ab1ERVIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 17:08:01 -0400
+Date: Wed, 18 May 2011 23:07:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Rao, Nikhil" <nikhil.rao@intel.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]  x86: Removing unnecessary check in detect_ht
+Message-ID: <20110518210754.GA28476@elte.hu>
+References: <43F901BD926A4E43B106BF17856F0755018E1CF482@orsmsx508.amr.corp.intel.com>
+ <4FF5AC937153B0459463C1A88EB478F2010DFD3D3F@orsmsx505.amr.corp.intel.com>
+ <43F901BD926A4E43B106BF17856F0755018E1CF69D@orsmsx508.amr.corp.intel.com>
+ <1305048201.2736.17.camel@sbsiddha-MOBL3.sc.intel.com>
+ <1F668163772FA946975B9466A9DFF729B5E5@ORSMSX101.amr.corp.intel.com>
+ <1F668163772FA946975B9466A9DFF729B64C@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1F668163772FA946975B9466A9DFF729B64C@ORSMSX101.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus et al,
-	Here are the last ocfs2 and configfs fixes for 2.6.39-rc.
-These include a configfs crash and a compatibility regression in the
-ocfs2 internal DLM.
-	Please pull.
 
+* Rao, Nikhil <nikhil.rao@intel.com> wrote:
 
-The following changes since commit 446cc6345d3de6571bdd0840f48aca441488a28d:
+> This patch removes a check that prevents correct CPU topology setup
+> when cpuid extensions for topology enumeration are not supported and
+> the number of processors reported to the OS is smaller than 
+> smp_num_siblings
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs (2011-05-12 18:00:09 -0700)
+What bad effect was observed, exactly? An annoying warning in the bootlog and 
+incorrect scheduler domain setup (SMP instead of SMT) - or something else as 
+well?
 
-are available in the git repository at:
+Thanks,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git fixes
-
-Joel Becker (2):
-      configfs: Don't try to d_delete() negative dentries.
-      configfs: Fix race between configfs_readdir() and configfs_d_iput()
-
-Marcus Meissner (1):
-      ocfs2: Initialize data_ac (might be used uninitialized)
-
-Sunil Mushran (5):
-      ocfs2/dlm: Use negotiated o2dlm protocol version
-      ocfs2/cluster: Increase the live threshold for global heartbeat
-      ocfs2/cluster: Heartbeat mismatch message improved
-      ocfs2: Skip mount recovery for hard-ro mounts
-      ocfs2/dlm: Target node death during resource migration leads to thread spin
-
-Tristan Ye (1):
-      ocfs2: skip existing hole when removing the last extent_rec in punching-hole codes.
-
- fs/configfs/dir.c            |   39 ++++++++++++++++++++++-----
- fs/ocfs2/cluster/heartbeat.c |   61 +++++++++++++++++++++++++++++------------
- fs/ocfs2/dir.c               |    2 +-
- fs/ocfs2/dlm/dlmdomain.c     |    3 +-
- fs/ocfs2/dlm/dlmmaster.c     |    3 ++
- fs/ocfs2/file.c              |   12 ++++++++
- fs/ocfs2/journal.c           |    3 ++
- 7 files changed, 96 insertions(+), 27 deletions(-)
+	Ingo
