@@ -1,36 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933020Ab1ERQqm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 12:46:42 -0400
-Received: from na3sys010aog108.obsmtp.com ([74.125.245.84]:60453 "HELO
-	na3sys010aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932910Ab1ERQql convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 12:46:41 -0400
+	id S933085Ab1ERQtq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 12:49:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21069 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932859Ab1ERQtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 12:49:45 -0400
+Date: Wed, 18 May 2011 18:48:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 02/10] job control: introduce JOBCTL_TRAP_STOP and use
+	it for group stop trap
+Message-ID: <20110518164814.GA28848@redhat.com>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20110518074716.GA8927@infradead.org>
-References: <1305682604-21383-1-git-send-email-nab@linux-iscsi.org> <20110518074716.GA8927@infradead.org>
-From: Roland Dreier <roland@purestorage.com>
-Date: Wed, 18 May 2011 09:46:20 -0700
-Message-ID: <BANLkTinMpr=srhHim5G9e8NkB9BG2ctNdA@mail.gmail.com>
-Subject: Re: [RFC] ib_srpt: initial .40-rc1 drivers/infiniband/ulp/srpt merge
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-rmda <linux-rdma@vger.kernel.org>,
-        Bart Van Assche <bvanassche@acm.org>, Vu Pham <vu@mellanox.com>,
-        David Dillow <dillowda@ornl.gov>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305569849-10448-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> We really need to stop spreading that include.  Care to submit a patch
-> for .40 to move the TASK_ATTR_* defines to scsi/scsi.h?
+On 05/16, Tejun Heo wrote:
+>
+> This patch adds a new jobctl flag - JOBCTL_TRAP_STOP.  When set, it
+> triggers a trap site, which behaves like group stop trap, in
+> get_signal_to_deliver() before checking for pending signals.  While
+> ptraced, do_signal_stop() doesn't stop itself.  It initiates group
+> stop if requested and schedules JOBCTL_TRAP_STOP and returns, which
+> makes its caller - get_signal_to_deliver() - to relock, check and
+> enter the trap.
 
-Sounds simple enough even for me to do.  I'll send one in a little bit...
+Heh. Starting from this patch, I think I will never understand this
+code in details ;)
 
- - R.
+> Although this adds an unlock-relocking between checking of
+> JOBCTL_STOP_PENDING and actually trapping for STOP, this doesn't
+> affect correctness.
+
+Well, I think it does affect. Although the problem is minor.
+
+> ptrace_stop() already had conditional
+> unlock-relocking
+
+Yes, but ptrace_stop() can't send the CLD_STOPPED notfication before
+the tracee is ready for do_wait(WNOHANG). Contrary, get_signal_to_deliver()
+can if we race with SIGCONT.
+
+> While at it, add proper function comment to do_signal_stop() and make
+> it return bool.
+> ...
+>
+> + * RETURNS:
+> + * %false if group stop is already cancelled and nothing happened.  %true
+> + * if participated in group stop.
+
+Well, the traced task didn't participate yet... Nevermind.
+
+
+
+So far I can't really understand why do we have both JOBCTL_TRAP_STOP and
+and JOBCTL_TRAPPING... Please ignore, I didn't read other patches yet.
+
+
+Hmm. And afaics there is a bug in do_signal_stop(), after
+"[PATCH 6/9] job control: make task_clear_jobctl_pending() clear TRAPPING automatically"
+->jobctl &= ~JOBCTL_STOP_SIGMASK is no longer safe. We can clear _TRAPPING
+without wakeup.
+
+Oleg.
+
