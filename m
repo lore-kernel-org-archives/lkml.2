@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab1ERPr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 11:47:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36823 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756882Ab1ERPr0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 11:47:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=sMtDOsJMw4knrU/2sWUhpYJO0a5M7W7S9CFsOVCRsCVJQT+259OinW+PpjubcRRXUM
-         Q6DA+c5/TSqGsFguz9vKP4X6btiBDi49yJ5jphImQCBhy7C69RAbZin/dnyt1MN8qyCl
-         ZxozGJSHGZNfXzou5A/QGMxtEBQdK7I6Vmiqw=
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: =?iso-8859-1?q?=C9ric_Piel?= <Eric.Piel@tremplin-utc.net>
-Subject: Re: [RFC v2] lis3lv02d: avoid divide by zero due to unchecked register read
-Date: Wed, 18 May 2011 17:47:12 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc7-wl+; KDE/4.4.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201105160046.31019.chunkeey@googlemail.com> <201105162336.05306.chunkeey@googlemail.com> <4DD2EC98.5080901@tremplin-utc.net>
-In-Reply-To: <4DD2EC98.5080901@tremplin-utc.net>
+	id S1757065Ab1ERPsE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 11:48:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756876Ab1ERPsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 11:48:03 -0400
+Date: Wed, 18 May 2011 18:47:46 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
+ netdevice
+Message-ID: <20110518154746.GA21378@redhat.com>
+References: <1305575253.2885.28.camel@bwh-desktop>
+ <20110516211459.GE18148@redhat.com>
+ <1305588738.3456.65.camel@localhost.localdomain>
+ <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
+ <1305671318.10756.49.camel@localhost.localdomain>
+ <20110518103819.GL7589@redhat.com>
+ <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
+ <20110518111734.GO7589@redhat.com>
+ <BANLkTi=g_PFfS5653K8ZoQ2Jhp8DhCV1hg@mail.gmail.com>
+ <1305729507.32080.6.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105181747.12356.chunkeey@googlemail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1305729507.32080.6.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 May 2011 23:46:00 Éric Piel wrote:
-> Op 16-05-11 23:36, Christian Lamparter schreef:
-> > On Monday 16 May 2011 13:16:46 Éric Piel wrote:
-> >> Op 16-05-11 00:46, Christian Lamparter schreef:
-> >>>  From my POV, it looks like the hardware is not working as expected
-> >>> and returns a bogus data rate. The driver doesn't check the result
-> >>> and directly uses it as some sort of divisor in some places:
-> >>>
-> >>> msleep(lis3->pwron_delay / lis3lv02d_get_odr());
-> >>>
-> >>> Under this circumstances, this could very well cause the
-> >>> "divide by zero" exception from above.
-> >>>
-> >> However, I'd fix it a bit differently: let lis3lv02d_get_odr() return
-> >> the raw data, and create a special function
-> >> lis3lv02d_get_pwron_delay_ms() which does the "lis3->pwron_delay /
-> >> lis3lv02d_get_odr()" with special handling for 0 (returning a large
-> >> value and also sending a printk_once() ).
-> > Do you know how "volatile" this data rate is? If it never changes
-> > [at least it doesn't here?] then why not read it once in init_device
-> > and store it in the device context?
-> It is not normally changing, normally it is set just at init/unsuspend 
-> (where the bios can also interfere sometimes) and when the user changes 
-> it.
-Uh, "bios can also interfere"... this sounds very bad. At least for
-my x41t the bios doesn't care about hdaps once the OS is running.
+On Wed, May 18, 2011 at 07:38:27AM -0700, Shirley Ma wrote:
+> On Wed, 2011-05-18 at 13:40 +0200, MichaÅ‚ MirosÅ‚aw wrote:
+> > >> >> Not more other restrictions, skb clone is OK. pskb_expand_head()
+> > looks
+> > >> >> OK to me from code review.
+> > >> > Hmm. pskb_expand_head calls skb_release_data while keeping
+> > >> > references to pages. How is that ok? What do I miss?
+> > >> It's making copy of the skb_shinfo earlier, so the pages refcount
+> > >> stays the same.
+> > > Exactly. But the callback is invoked so the guest thinks it's ok to
+> > > change this memory. If it does a corrupted packet will be sent out.
+> > 
+> > Hmm. I tool a quick look at skb_clone(), and it looks like this
+> > sequence will break this scheme:
+> > 
+> > skb2 = skb_clone(skb...);
+> > kfree_skb(skb) or pskb_expand_head(skb);  /* callback called */
+> > [use skb2, pages still referenced]
+> > kfree_skb(skb); /* callback called again */
+> > 
+> > This sequence is common in bridge, might be in other places.
+> > 
+> > Maybe this ubuf thing should just track clones? This will make it work
+> > on all devices then.
+> 
+> The callback was only invoked when last reference of skb was gone.
+> skb_clone does increase skb refcnt. I tested tcpdump on lower device, it
+> worked.
 
-> So definitely within the same function it's not going to suddenly 
-> change.
-a SMM can happen at any time and if a faulty BIOS [likely, since I got
-a new laptop] is what caused the crash, I wouldn't bet on "const within
-a function context".
+Right, it will normally work, but two issues I think you miss:
+1. malicious guest can change the memory between when it is sent out by
+   device and consumed by tcpdump, so you will see different things
+   (not sure how important this is).
+2. if tcpdump stops consuming stuff from the packet socket (it's
+   userspace, can't be trusted) then we won't get a callback for
+   page potentially forever, guest networking will get blocked etc.
 
-> We could avoid calculating/checking it twice in 
-> lis3lv02d_selftest(). Care to do a third version with this little clean up?
-I have my doubts, but ok if you say so... Just one thing: need to do some Q&A
-on the code above, I haven't tested it extensively yet.
+> For the sequence of:
+> 
+> skb_clone  -> last refcnt + 1
+> kfree_skb() or pskb_expand_head -> callback not called
+> kfree_skb() -> callback called
+> 
+> I will check page refcount to see whether it's balanced.
+> 
+> Thanks
+> shirley
 
-Regards,
-	Chr
+
+pskb_expand_head is a problem anyway I think as it
+can hang on to pages after it calls release_data.
+Then guest will modify these pages and you get trash there.
+
+-- 
+MST
