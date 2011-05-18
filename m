@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933418Ab1ERSRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 14:17:37 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:33057 "EHLO
+	id S933441Ab1ERSRn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 14:17:43 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:33063 "EHLO
 	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932709Ab1ERSRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 14:17:34 -0400
-Date: Wed, 18 May 2011 14:16:57 -0400
+	id S932709Ab1ERSRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 14:17:39 -0400
+Date: Wed, 18 May 2011 14:17:11 -0400
 From: "Ted Ts'o" <tytso@mit.edu>
 To: "Darrick J. Wong" <djwong@us.ibm.com>
 Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
@@ -21,8 +21,9 @@ Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
         linux-scsi <linux-scsi@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [4/7] ext4: Clean up some wait_on_page_writeback calls
-Message-ID: <20110518181657.GA13693@thunk.org>
+Subject: Re: [5/7] ext4: Wait for writeback to complete while making pages
+ writable
+Message-ID: <20110518181711.GB13693@thunk.org>
 Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
 	"Darrick J. Wong" <djwong@us.ibm.com>, Jan Kara <jack@suse.cz>,
 	Alexander Viro <viro@zeniv.linux.org.uk>,
@@ -39,11 +40,11 @@ Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
 	linux-scsi <linux-scsi@vger.kernel.org>,
 	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
 	linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-References: <20110509230349.19566.27020.stgit@elm3c44.beaverton.ibm.com>
+References: <20110509230356.19566.48351.stgit@elm3c44.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110509230349.19566.27020.stgit@elm3c44.beaverton.ibm.com>
+In-Reply-To: <20110509230356.19566.48351.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: tytso@thunk.org
@@ -52,12 +53,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 01:03:49PM -0000, Darrick J. Wong wrote:
-> wait_on_page_writeback already checks the writeback bit, so callers of it
-> needn't do that test.
+On Mon, May 09, 2011 at 01:03:56PM -0000, Darrick J. Wong wrote:
+> In order to stabilize pages during disk writes, ext4_page_mkwrite must wait for
+> writeback operations to complete before making a page writable.  Furthermore,
+> the function must return locked pages, and recheck the writeback status if the
+> page lock is ever dropped.  The "someone could wander in" part of this patch
+> was suggested by Chris Mason.
 > 
 > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> 
+> ---
+> fs/ext4/inode.c |   24 +++++++++++++++++++-----
+>  1 files changed, 19 insertions(+), 5 deletions(-)
 
 Added to the ext4 tree, thanks.
 
-						- Ted
+					- Ted
