@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933054Ab1ERMTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 08:19:34 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:50440 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755576Ab1ERMTd (ORCPT
+	id S933063Ab1ERMVD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 08:21:03 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60882 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932624Ab1ERMVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 08:19:33 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, Dan Williams <dan.j.williams@intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] dmaengine: move link order
-Date: Wed, 18 May 2011 14:18:57 +0200
-Message-ID: <1305721137-11433-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	Wed, 18 May 2011 08:21:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=VsPNEI2iqlwavCmlldcLpSafZuxwi48nrJT5wELUzD45Fl3pEmiTrNciGk8V7LvroZ
+         HDQPvWSpdDkEID8VA2bo8KPYb0OL/c/2YMjYWEN5soiZKrkKClOFQCDJasXHjOYHXpUq
+         DrBv0Vbf8DU6TuxC2l086UQXO8U2CrfY2UNfo=
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <4DD20D89.9020402@st.com>
+References: <f06f05e982c6182565a7fee1f7d6396cae895133.1305521318.git.viresh.kumar@st.com>
+	<1305561993.28926.73.camel@vkoul-udesk3>
+	<4DD1F443.1040205@st.com>
+	<1305603818.28926.82.camel@vkoul-udesk3>
+	<4DD20D89.9020402@st.com>
+Date: Wed, 18 May 2011 14:21:00 +0200
+X-Google-Sender-Auth: g6CDZikkdGAAhxsBddSUlJs7i1U
+Message-ID: <BANLkTi=zrr4==Uatq3zbdE1K+1_9ELOBZQ@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: Replace subsys_init() with arch_initcall()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: viresh kumar <viresh.kumar@st.com>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the dmaengine subsystem up early in the drivers Makefile so
-DMA is made available early to all drivers, just like e.g.
-regulators. Now even regulators can use DMA on the same initlevel.
-As a result we can bump the ste_dma40 and coh901318 dmaengine
-drivers down one initlevel to subsys_init().
+2011/5/17 viresh kumar <viresh.kumar@st.com>:
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/Makefile        |    4 +++-
- drivers/dma/coh901318.c |    2 +-
- drivers/dma/ste_dma40.c |    2 +-
- 3 files changed, 5 insertions(+), 3 deletions(-)
+> SPI bus is required for regulators and so probably he can't have
+> module_init() for amba-pl022.
 
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 3f135b6..e68423d 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -17,6 +17,9 @@ obj-$(CONFIG_SFI)		+= sfi/
- # was used and do nothing if so
- obj-$(CONFIG_PNP)		+= pnp/
- obj-$(CONFIG_ARM_AMBA)		+= amba/
-+# Many drivers will want to use DMA so this has to be made available
-+# really early.
-+obj-$(CONFIG_DMA_ENGINE)	+= dma/
- 
- obj-$(CONFIG_VIRTIO)		+= virtio/
- obj-$(CONFIG_XEN)		+= xen/
-@@ -92,7 +95,6 @@ obj-$(CONFIG_EISA)		+= eisa/
- obj-y				+= lguest/
- obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
- obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
--obj-$(CONFIG_DMA_ENGINE)	+= dma/
- obj-$(CONFIG_MMC)		+= mmc/
- obj-$(CONFIG_MEMSTICK)		+= memstick/
- obj-$(CONFIG_NEW_LEDS)		+= leds/
-diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-index f48e540..af8c0b5 100644
---- a/drivers/dma/coh901318.c
-+++ b/drivers/dma/coh901318.c
-@@ -1610,7 +1610,7 @@ int __init coh901318_init(void)
- {
- 	return platform_driver_probe(&coh901318_driver, coh901318_probe);
- }
--arch_initcall(coh901318_init);
-+subsys_initcall(coh901318_init);
- 
- void __exit coh901318_exit(void)
- {
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 94ee15d..22a6d8b 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -2962,4 +2962,4 @@ static int __init stedma40_init(void)
- {
- 	return platform_driver_probe(&d40_driver, d40_probe);
- }
--arch_initcall(stedma40_init);
-+subsys_initcall(stedma40_init);
--- 
-1.7.3.2
+Nope. Regulators have to be at subsystem_init() because lots
+of  drivers called in module_init() == driver_init() will need
+to enable them to even be able to talk to the hardware they
+are regulating.
 
+e.g. an externally powered I2C device. If you cannot put power
+to it you cannot probe it.
+
+Then you end up in a dependency: we need to have SPI
+to enble the regulators - the SPI device containing the
+regulators is a device that is self-powered.
+
+So then of course the SPI bus controller has to be
+available, so it has to be subsys_initcall() as well.
+Luckily as it happens it is earlier in the linkfile than
+regulators, so using the same initlevel as regulators
+will work (else we would be in hell).
+
+But since the PL022 uses DMA, we have to have DMA
+before SPI, and it is currently linked *after* SPI in the
+Makefile.
+
+> @Linus: What do you say? Can we get back to module_init() for amba-pl022?
+> And subsys_initcall() for DMA.
+
+No, but I sent a patch that will make it possible to have both
+as subsys_init(), check it out, it seems to work for me.
+
+Can you test it? (Sorry forgot to add you on CC, title is
+"[PATCH] dmaengine: move link order".
+
+Yours,
+Linus Walleij
