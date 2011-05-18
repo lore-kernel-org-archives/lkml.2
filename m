@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932676Ab1ERCBr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 22:01:47 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55753 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932532Ab1ERCBq (ORCPT
+	id S932781Ab1ERCOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 22:14:15 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:33367 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932703Ab1ERCON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 22:01:46 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DD3287A.2030808@jp.fujitsu.com>
-Date: Wed, 18 May 2011 11:01:30 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: john.stultz@linaro.org
-CC: linux-kernel@vger.kernel.org, joe@perches.com, mingo@elte.hu,
-        mina86@mina86.com, apw@canonical.com, jirislaby@gmail.com,
-        rientjes@google.com, dave@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/4] comm: Introduce comm_lock spinlock to protect task->comm
- access
-References: <1305682865-27111-1-git-send-email-john.stultz@linaro.org> <1305682865-27111-2-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1305682865-27111-2-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Tue, 17 May 2011 22:14:13 -0400
+Subject: Re: linux-next: build warning after merge of the scsi tree
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kiran Patil <kiran.patil@intel.com>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Yi Zou <yi.zou@intel.com>
+In-Reply-To: <20110518114912.dfdf8835.sfr@canb.auug.org.au>
+References: <20110518114912.dfdf8835.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Date: Tue, 17 May 2011 19:06:02 -0700
+Message-Id: <1305684362.2856.349.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 5e62d26..34fa611 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -998,17 +998,28 @@ static void flush_old_files(struct files_struct * files)
+On Wed, 2011-05-18 at 11:49 +1000, Stephen Rothwell wrote:
+> Hi James,
 > 
->   char *get_task_comm(char *buf, struct task_struct *tsk)
->   {
-> -	/* buf must be at least sizeof(tsk->comm) in size */
-> -	task_lock(tsk);
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&tsk->comm_lock, flags);
->   	strncpy(buf, tsk->comm, sizeof(tsk->comm));
-> -	task_unlock(tsk);
-> +	spin_unlock_irqrestore(&tsk->comm_lock, flags);
->   	return buf;
->   }
+> After merging the scsi tree, today's linux-next build (x86_64 allmodconfig)
+> produced this warning:
 > 
->   void set_task_comm(struct task_struct *tsk, char *buf)
->   {
-> +	unsigned long flags;
-> +
-> +	/*
-> +	 * XXX - Even though comm is protected by comm_lock,
-> +	 * we take the task_lock here to serialize against
-> +	 * current users that directly access comm.
-> +	 * Once those users are removed, we can drop the
-> +	 * task locking&  memsetting.
-> +	 */
+> drivers/target/tcm_fc/tfc_io.c: In function 'ft_queue_data_in':
+> drivers/target/tcm_fc/tfc_io.c:209: warning: format '%x' expects type 'unsigned int', but argument 5 has type 'size_t'
+> 
+> Introduced by commit 3699d92a4d7b ("[SCSI] tcm_fc: Adding FC_FC4 provider
+> (tcm_fc) for FCoE target (TCM - target core) support").
+> 
 
-If we provide __get_task_comm(), we can't remove memset() forever.
+Hi Stephen,
 
+It appears that this warning was fixed in LIO upstream a while back, but
+did not make it into this morning scsi-misc merge.  Please apply.
 
->   	task_lock(tsk);
-> +	spin_lock_irqsave(&tsk->comm_lock, flags);
+Thanks!
 
-This is strange order. task_lock() doesn't disable interrupt.
-And, can you please document why we need interrupt disabling?
+--nab
 
 
->   	/*
->   	 * Threads may access current->comm without holding
->   	 * the task lock, so write the string carefully.
+>From b830de5068d0c3745e83393f81d87f745ef7a4f2 Mon Sep 17 00:00:00 2001
+From: Nicholas Bellinger <nab@linux-iscsi.org>
+Date: Thu, 17 Feb 2011 21:56:16 +0000
+Subject: [PATCH] tcm_fc: Fix conversion spec compile warning in ft_queue_data_in
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch fixes the following compile warning in ft_queue_data_in():
+
+drivers/target/tcm_fc/tfc_io.c: In function ‘ft_queue_data_in’:
+drivers/target/tcm_fc/tfc_io.c:209: warning: format ‘%x’ expects type ‘unsigned int’, but argument 5 has type ‘size_t’
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/tcm_fc/tfc_io.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/target/tcm_fc/tfc_io.c b/drivers/target/tcm_fc/tfc_io.c
+index 4c3c0ef..3936bb1 100644
+--- a/drivers/target/tcm_fc/tfc_io.c
++++ b/drivers/target/tcm_fc/tfc_io.c
+@@ -206,7 +206,8 @@ int ft_queue_data_in(struct se_cmd *se_cmd)
+                                                "xid <0x%x>, remaining <0x%x>, "
+                                                "lso_max <0x%x>\n",
+                                                __func__, fp, ep->xid,
+-                                               remaining, lport->lso_max);
++                                               (unsigned int)remaining,
++                                               lport->lso_max);
+                }
+        }
+        return ft_queue_status(se_cmd);
+-- 
+1.7.5.1
 
 
