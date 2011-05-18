@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab1ERGqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 02:46:01 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46653 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab1ERGp7 (ORCPT
+	id S1754460Ab1ERGwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 02:52:12 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42364 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786Ab1ERGwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 02:45:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GVHaH3mErXGJiEeRmgaJUK2FOaTIecEQOwi/4PBseJtro6eHOM40Q0dl0/Bj82Manq
-         LRyH4Vb73zowMvJCW0Kwo8KVdlILG6YlvdSXv+SoDih+1QSPRsfexlQsMrGpih7kL0Mp
-         Yc7A0rGvuXYiY2odutKjWnLNAWOt6VT7S/hcE=
-Date: Tue, 17 May 2011 23:45:52 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mohan Pallaka <mpallaka@codeaurora.org>
-Cc: linux@arm.linux.org.uk, rmk+kernel@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, rmk@dyn-67.arm.linux.org.uk
-Subject: Re: [PATCH 1/2] pwm: Add stubs for pwm operations
-Message-ID: <20110518064552.GA31801@core.coreip.homeip.net>
-References: <1305695926-25855-1-git-send-email-mpallaka@codeaurora.org>
- <1305695926-25855-2-git-send-email-mpallaka@codeaurora.org>
+	Wed, 18 May 2011 02:52:11 -0400
+Date: Wed, 18 May 2011 08:51:30 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        =?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>,
+        "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        "Rosenfeld, Hans" <Hans.Rosenfeld@amd.com>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] AMD ARAT fixes
+Message-ID: <20110518065130.GA5303@aftab>
+References: <1305636919-31165-1-git-send-email-bp@amd64.org>
+ <20110517223022.GA21342@elliptictech.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1305695926-25855-2-git-send-email-mpallaka@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110517223022.GA21342@elliptictech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 10:48:45AM +0530, Mohan Pallaka wrote:
-> Chip drivers that support both pwm and non-pwm modes
-> would encounter compilation errors if the platform doesn't
-> have support for pwm, even though the chip is programmed
-> to work in non-pwm mode. Add stubs for pwm functions to
-> avoid compilation errors in these scenarios.
+On Tue, May 17, 2011 at 06:30:22PM -0400, Nick Bowler wrote:
+> On 2011-05-17 14:55 +0200, Borislav Petkov wrote:
+> > Although the patches look almost trivial, I'd like to ask Nick and
+> > Jörg-Volker to test them, please, so that we can have a confirmation,
+> > just in case.
 > 
-> Signed-off-by: Mohan Pallaka <mpallaka@codeaurora.org>
-> ---
->  include/linux/pwm.h |   24 ++++++++++++++++++++++++
->  1 files changed, 24 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-> index 7c77575..f0bc51f 100644
-> --- a/include/linux/pwm.h
-> +++ b/include/linux/pwm.h
-> @@ -3,6 +3,7 @@
->  
->  struct pwm_device;
->  
-> +#if defined(CONFIG_PWM)
+> Works as advertised, both patches applied on top of 2.6.38.6.
 
-Shouldn't it be CONFIG_HAVE_PWM?
+Great!
 
-Thanks.
+Thanks for testing them.
 
 -- 
-Dmitry
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
