@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217Ab1ERQHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 12:07:42 -0400
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:41770 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756376Ab1ERQHl (ORCPT
+	id S1757093Ab1ERP4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 11:56:22 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:33534 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756756Ab1ERP4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 12:07:41 -0400
-Date: Wed, 18 May 2011 17:56:15 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>
-Subject: Re: [RFC] ARM Subarchitecture group maintainership
-Message-ID: <20110518155615.GJ15292@game.jcrosoft.org>
-References: <201105181047.17309.arnd@arndb.de>
+	Wed, 18 May 2011 11:56:21 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -22.89
+Message-ID: <4DD3EC22.7060907@tremplin-utc.net>
+Date: Wed, 18 May 2011 17:56:18 +0200
+From: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110517 Mandriva/3.1.10-2 (2011.0) Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105181047.17309.arnd@arndb.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 17206565327784946436
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+To: Christian Lamparter <chunkeey@googlemail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [RFC v2] lis3lv02d: avoid divide by zero due to unchecked register
+ read
+References: <201105160046.31019.chunkeey@googlemail.com> <201105162336.05306.chunkeey@googlemail.com> <4DD2EC98.5080901@tremplin-utc.net> <201105181747.12356.chunkeey@googlemail.com>
+In-Reply-To: <201105181747.12356.chunkeey@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:47 Wed 18 May     , Arnd Bergmann wrote:
-> This is the draft plan for maintaining the ARM subarchitectures in a common
-> tree, as a way to help coordinate the upstream merging of the
-> arch/arm/{plat,mach}-* changes into Linus' tree.
-> 
-> This was discussed in great length at the Linaro Developer Summit in Budapest
-> last week where we worked out an initial plan. We are modeling the maintainance
-> after how the linux-tip tree is used for the x86 architecture, with a set
-> of developers that have commit access to one tree on kernel.org and
-> have mutual trust in one another. Nicolas Pitre and me are funded
-> by Linaro to do the bulk of the work, while Thomas Gleixner will help
-> us part-time with his long time architecture maintainance experience.
-> Despite the funding by Linaro, this is not a Linaro project and all
-> ARM subarchitectures are welcome to go through our tree.
-> 
-> Russell King's role as ARM maintainer is of course unchanged by this, but
-> he has the same commit access to the new tree as the other maintainers and
-> is welcome to work in the same tree. We are also open to nominations for
-> further people outside of Linaro to join us as committers. Marc Zyngier from
-> ARM ltd is one of the candidates that has been suggested and I would also
-> like to see someone from Google. We have to find the right balance with the
-> number of committers so we get all the work done without stepping on each
-> other's toes.
-> 
-> Our tree will be strictly organized in topic brances so we can feed them
-> upstream in the bitesized chunks that Linus likes. The master branch
-> is an integration branch that pulls all other branches that are scheduled
-> for the next merge window and itself gets integrated into linux-next.
-> 
-> We will probably not be fully functional during the 2.6.40 merge window,
-> but we are trying our best to be useful. For 2.6.41, my hope is that
-> we can merge the bulk of the ARM subarchitecture changes through this
-> tree. Once Linus is happy with the way that the process works, we can
-> mandate that all ARM subarchitecture changes go through our tree, until
-> then it stays voluntary.
-How do you plan to manage with already sub arch maintainers?
+Op 18-05-11 17:47, Christian Lamparter schreef:
+> On Tuesday 17 May 2011 23:46:00 Éric Piel wrote:
+>> Op 16-05-11 23:36, Christian Lamparter schreef:
+>>> On Monday 16 May 2011 13:16:46 Éric Piel wrote:
+:
+>>> Do you know how "volatile" this data rate is? If it never changes
+>>> [at least it doesn't here?] then why not read it once in init_device
+>>> and store it in the device context?
+>> It is not normally changing, normally it is set just at init/unsuspend
+>> (where the bios can also interfere sometimes) and when the user changes
+>> it.
+> Uh, "bios can also interfere"... this sounds very bad. At least for
+> my x41t the bios doesn't care about hdaps once the OS is running.
+>
+>> So definitely within the same function it's not going to suddenly
+>> change.
+> a SMM can happen at any time and if a faulty BIOS [likely, since I got
+> a new laptop] is what caused the crash, I wouldn't bet on "const within
+> a function context".
+Yes, at least on the HP laptop I have the bios enjoys re-initialising 
+the hardware at some default value whenever suspend/resume happens.
 
-In my ming such tree could be good to organise cross arch drivers
-but for real arch specific the current workflow is good
 
-If we add a new stage it will be difficult to follow for people
+>> We could avoid calculating/checking it twice in
+>> lis3lv02d_selftest(). Care to do a third version with this little clean up?
+> I have my doubts, but ok if you say so... Just one thing: need to do some Q&A
+> on the code above, I haven't tested it extensively yet.
+I didn't know about the SMM... well, then let's keep the code as is.
 
-I'd like to have scenario example where such workflow will give a significant
-advantage compare to the current workflow. And please real example.
+I'll try to test it on my laptop in the coming days. On which hardware 
+have you tested it?
 
-Best Regards,
-J.
+Éric
