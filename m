@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab1ERAnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 20:43:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36675 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756465Ab1ERAnK convert rfc822-to-8bit (ORCPT
+	id S932643Ab1ERAqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 20:46:19 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35139 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932188Ab1ERAqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 20:43:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mFk8CwLzWOKcQZVAdgPqeoSz59xGcxgJyRYiQCUAhyKMDim2jC6c78LKBAWbC3EU/5
-         6Ct6EYxAX7HOKYSC+FCqdu6Y6pSbvURd+lx8VDn9iDsZ7147BWhEHglabVESGhL21Icq
-         5c8dvaQgN7+r5B9pbATDwYG9F7zTQdm2YnlB8=
+	Tue, 17 May 2011 20:46:18 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DD316C7.60003@jp.fujitsu.com>
+Date: Wed, 18 May 2011 09:45:59 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <201105180041.57723.rjw@sisk.pl>
-References: <1305100723-29161-1-git-send-email-myungjoo.ham@samsung.com>
-	<20110511225540.GA3492@suse.de>
-	<BANLkTik__9G-DuSsT_kAc69d+5g8xcVyFg@mail.gmail.com>
-	<201105180041.57723.rjw@sisk.pl>
-Date: Wed, 18 May 2011 09:43:08 +0900
-Message-ID: <BANLkTin+sJeg20BXbOfe7TyDhuDWZqqMMQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] PM / DEVFREQ: add sysfs interface (including user tickling)
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg KH <gregkh@suse.de>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@sirena.org.uk>,
-        Jiejing Zhang <kzjeef@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Colin Cross <ccross@google.com>, Nishanth Menon <nm@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: mgorman@suse.de
+CC: akpm@linux-foundation.org, minchan.kim@gmail.com, colin.king@canonical.com,
+        James.Bottomley@hansenpartnership.com, raghu.prabhu13@gmail.com,
+        jack@suse.cz, chris.mason@oracle.com, cl@linux.com, penberg@kernel.org,
+        riel@redhat.com, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] mm: vmscan: Correctly check if reclaimer should schedule
+ during shrink_slab
+References: <1305295404-12129-5-git-send-email-mgorman@suse.de> <4DCFAA80.7040109@jp.fujitsu.com> <1305519711.4806.7.camel@mulgrave.site> <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com> <20110516084558.GE5279@suse.de> <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com> <20110516102753.GF5279@suse.de> <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com> <20110517103840.GL5279@suse.de> <1305640239.2046.27.camel@lenovo> <20110517161508.GN5279@suse.de>
+In-Reply-To: <20110517161508.GN5279@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 7:41 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, May 17, 2011, MyungJoo Ham wrote:
->> On Thu, May 12, 2011 at 7:55 AM, Greg KH <gregkh@suse.de> wrote:
->> > On Wed, May 11, 2011 at 04:58:43PM +0900, MyungJoo Ham wrote:
->> >> 1. System-wide sysfs interface
->> >> - tickle_all  R: number of tickle_all execution
->> >>               W: tickle all devfreq devices
->> >> - min_interval        R: devfreq monitoring base interval in ms
->> >> - monitoring  R: shows whether devfreq monitoring is active or
->> >>   not.
->> >>
->> >> 2. Device specific sysfs interface
->> >> - tickle      R: number of tickle execution for the device
->> >>               W: tickle the device
->> >
->> > Any sysfs file change/addition/removal needs to have a
->> > Documentation/ABI/ entry as well.  Please add that to this patch instead
->> > of burying it in the changelog entry, where no one will be able to find
->> > it in the future.
->> >
->> > thanks,
->> >
->> > greg k-h
->> >
->>
->> Sure, I'll add Documentation/ABI/testing/* entries.
->>
->> However, would it be appropriate for "1. System-wide sysfs interface"
->> to be in "sysfs-class-power" and for "2. Device specific sysfs
->> interface" to be in "sysfs-devices-devfreq"?
->>
->> System-wide sysfs interface is in /sys/class/power/devfreq/* and
+(2011/05/18 1:15), Mel Gorman wrote:
+> It has been reported on some laptops that kswapd is consuming large
+> amounts of CPU and not being scheduled when SLUB is enabled during
+> large amounts of file copying. It is expected that this is due to
+> kswapd missing every cond_resched() point because;
 >
-> Hmm.  Why not to use /sys/power/ that's already there?
-
-Ah.. that was my mistake. I'd put it at /sys/power/devfreq/*.
-
-Thank you for cleaning that up.
-
+> shrink_page_list() calls cond_resched() if inactive pages were isolated
+>          which in turn may not happen if all_unreclaimable is set in
+>          shrink_zones(). If for whatver reason, all_unreclaimable is
+>          set on all zones, we can miss calling cond_resched().
 >
->> Device specific sysfs interface is in /sys/...DEVICE.../devfreq/* .
+> balance_pgdat() only calls cond_resched if the zones are not
+>          balanced. For a high-order allocation that is balanced, it
+>          checks order-0 again. During that window, order-0 might have
+>          become unbalanced so it loops again for order-0 and returns
+>          that it was reclaiming for order-0 to kswapd(). It can then
+>          find that a caller has rewoken kswapd for a high-order and
+>          re-enters balance_pgdat() without ever calling cond_resched().
 >
-> Thanks,
-> Rafael
+> shrink_slab only calls cond_resched() if we are reclaiming slab
+> 	pages. If there are a large number of direct reclaimers, the
+> 	shrinker_rwsem can be contended and prevent kswapd calling
+> 	cond_resched().
 >
+> This patch modifies the shrink_slab() case. If the semaphore is
+> contended, the caller will still check cond_resched(). After each
+> successful call into a shrinker, the check for cond_resched() is
+> still necessary in case one shrinker call is particularly slow.
+>
+> This patch replaces
+> mm-vmscan-if-kswapd-has-been-running-too-long-allow-it-to-sleep.patch
+> in -mm.
+>
+> [mgorman@suse.de: Preserve call to cond_resched after each call into shrinker]
+> From: Minchan Kim<minchan.kim@gmail.com>
+> Signed-off-by: Mel Gorman<mgorman@suse.de>
 
-Cheers!
-- MyungJoo
--- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+Looks good to me.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+
