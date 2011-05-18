@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab1ERG0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 02:26:45 -0400
-Received: from smtp-vbr18.xs4all.nl ([194.109.24.38]:1321 "EHLO
-	smtp-vbr18.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085Ab1ERG0o (ORCPT
+	id S1754583Ab1ERG1X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 02:27:23 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38690 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159Ab1ERG1V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 02:26:44 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Ondrej Zary <linux@rainbow-software.org>
-Subject: Re: [PATCH RFC v2] radio-sf16fmr2: convert to generic TEA575x interface
-Date: Wed, 18 May 2011 08:26:19 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38-tschai; KDE/4.6.1; x86_64; ; )
-Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
-References: <201105140017.26968.linux@rainbow-software.org> <201105172133.14835.hverkuil@xs4all.nl> <201105172205.28899.linux@rainbow-software.org>
-In-Reply-To: <201105172205.28899.linux@rainbow-software.org>
+	Wed, 18 May 2011 02:27:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ukSbv45695Wb0a6Xyli8M7rWQcTq4wxnH3Mgoxy1zP070pcMRxo8SemFMqrC38f/uR
+         xAyIE8jBFx7uJAeF/VQjihQRTdRdRnVdtmQJX/4SirpytX/9Rvz69QRlM4n2RJKxuIZS
+         Ebay4xbmZQjFfr+tAROnN76cC7Z/Ztv7wAX28=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105180826.19361.hverkuil@xs4all.nl>
+In-Reply-To: <20110518061919.GA18763@merkur.ravnborg.org>
+References: <1305646532-29114-1-git-send-email-mmarek@suse.cz>
+	<20110517195310.GA17003@merkur.ravnborg.org>
+	<20110518051645.GB15292@game.jcrosoft.org>
+	<20110518061919.GA18763@merkur.ravnborg.org>
+Date: Wed, 18 May 2011 02:27:21 -0400
+Message-ID: <BANLkTikJhjZeALwwRyaozQZp0=k8xcocog@mail.gmail.com>
+Subject: Re: [PATCH] kconfig: Only generate config_is_xxx for bool and
+ tristate options
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 17, 2011 22:05:26 Ondrej Zary wrote:
-> On Tuesday 17 May 2011 21:33:14 Hans Verkuil wrote:
-> > Hi Ondrej!
-> >
-> > On Sunday, May 15, 2011 23:26:33 Hans Verkuil wrote:
-> > > On Sunday, May 15, 2011 22:18:21 Ondrej Zary wrote:
-> > > > Thanks, it's much simpler with the new control framework.
-> > > > Do the negative volume control values make sense? The TC9154A chip can
-> > > > attenuate the volume from 0 to -68dB in 2dB steps.
-> > >
-> > > It does make sense, but I think I would offset the values so they start
-> > > at 0. Mostly because there might be some old apps that set the volume to
-> > > 0 when they want to mute, which in this case is full volume.
-> > >
-> > > I am not aware of any driver where a volume of 0 isn't the same as the
-> > > lowest volume possible, so in this particular case I would apply an
-> > > offset.
-> > >
-> > > I will have to do a closer review tomorrow or the day after. I think
-> > > there are a few subtleties that I need to look at. Ping me if you haven't
-> > > heard from me by Wednesday. I would really like to get these drivers up
-> > > to spec now that I have someone who can test them, and once that's done I
-> > > hope that I never have to look at them again :-) (Unlikely, but one can
-> > > dream...)
-> >
-> > OK, I looked at it a bit more and it needs to be changed a little bit. The
-> > problem is that the VOLUME control is added after snd_tea575x_init, i.e.
-> > after the video_register_device call. The video_register_device call should
-> > be the last thing done before the init sequence returns. There may be
-> > applications (dbus/hal) that open devices as soon as they appear, so doing
-> > more initialization after the video node is registered is not a good idea
-> > (many older V4L drivers make this mistake).
-> >
-> > Perhaps creating a snd_tea575x_register function doing just the
-> > registration may be a good idea. Or a callback before doing the
-> > video_register_device.
-> 
-> OK, I'll reorder the lines in snd_tea575x_init function and add a callback 
-> that radio-sf16fmr2 can use.
-> 
-> Also upgraded my card with TC9154AP chip so I can actually test the volume 
-> control code (and it was broken in my previous patch...). The left and right 
-> channels can be separately controlled - is there a way to provide separate 
-> left and right volume controls? Or do I need to fake up a balance control?
+Hi,
 
-A fake balance control would be the way to go. There are other drivers that
-do it like that.
+On Wed, May 18, 2011 at 2:19 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> On Wed, May 18, 2011 at 07:16:45AM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> On 21:53 Tue 17 May     , Sam Ravnborg wrote:
+>> > On Tue, May 17, 2011 at 05:35:32PM +0200, Michal Marek wrote:
+>> > > For strings and integers, the config_is_xxx macros are useless and
+>> > > sometimes misleading:
+>> > >
+>> > >   #define CONFIG_INITRAMFS_SOURCE ""
+>> > >   #define config_is_initramfs_source() 1
+>> >
+>> > I'm late with this comment....
+>> > Could we introduce "config_is_foo" using a syntax that
+>> > does not break grepability?
+>> >
+>> > Maybe a syntax like this?
+>> >
+>> >     #ifdef CONFIG_FOO
+>> >
+>> > and
+>> >
+>> >     if (KCONFIG_FOO())
+>> >
+>> > Grepping for the use of a symbol is a very typical thing,
+>> > so we should try to keep this.
+>> > And with the suggested syntax above I expect fixdep to
+>> > catch up both usage types.
+>> I'll prefer kconfig_foo()
+>> not uppercase
+>>
+>> but if we use KCONFIG_FOO no need to touch fixdep
+>
+> fixdep is easy to fix - albeit it may cost a bit of processing time.
+> wht I worry much more about is users that miss uses of CONFIG_ symbols, because
+> they do not show up in "git grep CONFIG_FOO".
+>
+agree.
 
-> > Another thing: the tea->mute field shouldn't be needed anymore. And the
-> > 'mute on init' bit in snd_tea575x_init can be removed as well since that
-> > is automatically performed by v4l2_ctrl_handler_setup.
-> 
-> Thought about this too but the snd_tea575x_write() and snd_tea575x_read() 
-> functions need to know the mute status. And these functions are also used to 
-> detect the tuner presence before initializing the controls. I don't see any 
-> elegant solution.
+> Using "if (KCONFIG_FOO()) users are also awre this is a configuration
+> decided condition - which is nice to stand out.
+>
+this will not work if you do $(git -w CONFIG_FOO) to avoid getting all
+kind of noise in your search.
 
-What typically is done is that the mute v4l2_ctrl pointer is stored and
-dereferenced to get the value. But in a simple case like this backing up
-the value works just as well.
-
-Regards,
-
-	Hans
-
-> > In addition, the .ioctl field in tea575x_fops can be replaced by
-> > .unlocked_ioctl. The whole exclusive open stuff and the in_use field can be
-> > removed. The only thing needed is a struct mutex in struct snd_tea575x,
-> > initialize it and set tea575x_radio_inst->lock to the mutex. This will
-> > serialize all access safely.
-> 
-> I'll do this as a separate patch later.
-> 
-> > To do this really right you should add struct v4l2_device to struct
-> > snd_tea575x (the radio-sf16fmr2 driver has one, so you can use that as an
-> > example). With that in place you can also add support for 'priority'
-> > handling. I'd say see what you can do, and if it takes too much time then
-> > mail me the tea575x code and the radio-sf16frm2 code and I'll finish it.
-> >
-> > Regards,
-> >
-> > 	Hans
-> 
-> 
-> 
-> 
+ - Arnaud
