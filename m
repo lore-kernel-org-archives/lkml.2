@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932892Ab1ERLIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 07:08:14 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49112 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932125Ab1ERLIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 07:08:12 -0400
-Date: Wed, 18 May 2011 13:07:59 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH v1 5/5] KVM: Expose a version 1 architectural PMU to
- guests
-Message-ID: <20110518110759.GB16556@elte.hu>
-References: <1305129333-7456-1-git-send-email-avi@redhat.com>
- <1305129333-7456-6-git-send-email-avi@redhat.com>
- <20110517194117.GA26184@elte.hu>
- <4DD38B57.2070904@redhat.com>
+	id S932924Ab1ERLLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 07:11:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58193 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932763Ab1ERLLL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 07:11:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hsBaffc1KHrZoS57piMKc1itUdg1XHRWSeNTdFn78DmclkKZf1JMCT6V6hk1wxK72w
+         GlU2jwv3gn+iIBgN6KmUgl6fe2My/2QeoDeiAnPxx2zzCbTxdoNmMuceEwGbY6zHPFP0
+         9crSQ8O4vIGYHPE8x7Wwa4sHWsdk0wf2ufrFg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD38B57.2070904@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110518103819.GL7589@redhat.com>
+References: <1305574128.3456.23.camel@localhost.localdomain>
+ <1305574518.2885.25.camel@bwh-desktop> <1305574680.3456.33.camel@localhost.localdomain>
+ <1305575253.2885.28.camel@bwh-desktop> <20110516211459.GE18148@redhat.com>
+ <1305588738.3456.65.camel@localhost.localdomain> <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
+ <1305671318.10756.49.camel@localhost.localdomain> <20110518103819.GL7589@redhat.com>
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+Date: Wed, 18 May 2011 13:10:50 +0200
+Message-ID: <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in netdevice
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Shirley Ma <mashirle@us.ibm.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2011/5/18 Michael S. Tsirkin <mst@redhat.com>:
+> On Tue, May 17, 2011 at 03:28:38PM -0700, Shirley Ma wrote:
+>> On Tue, 2011-05-17 at 23:48 +0200, Micha³ Miros³aw wrote:
+>> > 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
+>> > > Hello Michael,
+>> > >
+>> > > Looks like to use a new flag requires more time/work. I am thinking
+>> > > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
+>> > to
+>> > > avoid the new flag for now since mavctap uses real NICs as lower
+>> > device?
+>> >
+>> > Is there any other restriction besides requiring driver to not recycle
+>> > the skb? Are there any drivers that recycle TX skbs?
+>
+> Not just recycling skbs, keeping reference to any of the pages in the
+> skb. Another requirement is to invoke the callback
+> in a timely fashion.  For example virtio-net doesn't limit the time until
+> that happens (skbs are only freed when some other packet is
+> transmitted), so we need to avoid zcopy for such (nested-virt)
+> scenarious, right?
 
-* Avi Kivity <avi@redhat.com> wrote:
+Hmm. But every hardware driver supporting SG will keep reference to
+the pages until the packet is sent (or DMA'd to the device). This can
+take a long time if hardware queue happens to stall for some reason.
 
-> >>  - some combinations of INV and CMASK are not supported
-> >
-> > Could you please describe this better, where does this limit come from? If 
-> > perf then this needs fixing.
-> 
-> perf_event_attr does not support generic INV and CMASK at all. [...]
+Is it that you mean keeping a reference after all skbs pointing to the
+pages are released?
 
-It does through raw events - which are indeed model specific.
+>> Not more other restrictions, skb clone is OK. pskb_expand_head() looks
+>> OK to me from code review.
+> Hmm. pskb_expand_head calls skb_release_data while keeping
+> references to pages. How is that ok? What do I miss?
 
-> [...]  I imagine you can get them through the model-specific hardware 
-> configuration, but that means we have to encode model specific information 
-> into kvm host code, which is (a) hard (b) counter to the spirit of perf.
-> 
-> (INV and CMASK allow you to increment the counter only when > N or <
-> N events occur simultaneously, for example count when 2 or more
-> instructions are retired in a single clock).
+It's making copy of the skb_shinfo earlier, so the pages refcount
+stays the same.
 
-Peter, what do you think about adding a inv and cmask attribute that is applied 
-to generic events automatically?
-
-I *think* it should work just out of box: we recognize the fixed-purpose 
-counter events based on their raw value, so if one comes in with inv and cmask 
-set it will just be scheduled on a generic hw counter.
-
-> >  - we could do things like propagate guest side traces over to the host
-> 
-> We support that already via 'perf kvm', no? [...]
-
-Not without usability issues, if you remember that flamewa^W thread! :-)
-
-> [...] This is more about the guest profiling itself without access to the 
-> host (which is the more common scenario, IMO).
-
-Correct - so there would be interactions with virtio-perf. I think the two will 
-just have to be made to mix well, that's all.
-
-> We're still missing tunnelling guest ftrace to the host, but a patch was 
-> recently posted to do that.
-
-If you tunnel guest perf events then ftrace events are included automatically.  
-That's the primary/unified event transport model we are working towards.
-
-Thanks,
-
-	Ingo
+Best Regards,
+Micha³ Miros³aw
