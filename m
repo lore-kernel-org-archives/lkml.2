@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816Ab1ERDMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 23:12:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:2888 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932775Ab1ERDL7 convert rfc822-to-8bit (ORCPT
+	id S932828Ab1ERDMK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 23:12:10 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50406 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300Ab1ERDMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 23:11:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,228,1304319600"; 
-   d="scan'208";a="3724327"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 17 May 2011 20:09:54 -0700
-Subject: RE: [PATCH 9/9] x86/lib/memset_64.S: Optimize memset by enhanced
- REP MOVSB/STOSB
-Thread-Topic: [PATCH 9/9] x86/lib/memset_64.S: Optimize memset by enhanced
- REP MOVSB/STOSB
-Thread-Index: AcwVB2BoPbExY2jlTXim099G2Svv+QAAE5dg
-Message-ID: <493994B35A117E4F832F97C4719C4C04011505C39D@orsmsx505.amr.corp.intel.com>
-References: <1305671358-14478-1-git-send-email-fenghua.yu@intel.com>
-    <1305671358-14478-10-git-send-email-fenghua.yu@intel.com>
- <08d8c27c0495452cad52b62b362dd1d1.squirrel@www.firstfloor.org>
-In-Reply-To: <08d8c27c0495452cad52b62b362dd1d1.squirrel@www.firstfloor.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 May 2011 23:12:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:reply-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=SO8LA46Hrp+e5oaEgaTnglSlJOni7y4IvcwazFWg0WfnTNY3dijH0HXmc6d+BSF9H0
+         fye3VtgDmjB7VSLm43dhd1RkchIZKV7HvsAgGCErF1039X2yXZIYOHlPPKJUanzsjWfo
+         7MArJm9XaKDmj4s0fioZwzW01L2QDQBLQIBbM=
+Date: Tue, 17 May 2011 20:12:03 -0700
+From: mark gross <markgross@thegnar.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: markgross@thegnar.org, Raffaele Recalcati <lamiaposta71@gmail.com>,
+        linux-pm@lists.linux-foundation.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] pm loss development
+Message-ID: <20110518031203.GA3640@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
+ <201105131854.57854.rjw@sisk.pl>
+ <20110514163513.GB8292@gvim.org>
+ <201105180107.58078.rjw@sisk.pl>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105180107.58078.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Andi Kleen [mailto:andi@firstfloor.org]
-> Sent: Tuesday, May 17, 2011 7:58 PM
-> To: Yu, Fenghua
-> Cc: Ingo Molnar; Thomas Gleixner; H Peter Anvin; Mallick, Asit K; Linus
-> Torvalds; Avi Kivity; Arjan van de Ven; Andrew Morton; Andi Kleen;
-> linux-kernel; Yu, Fenghua
-> Subject: Re: [PATCH 9/9] x86/lib/memset_64.S: Optimize memset by
-> enhanced REP MOVSB/STOSB
+On Wed, May 18, 2011 at 01:07:57AM +0200, Rafael J. Wysocki wrote:
+> On Saturday, May 14, 2011, mark gross wrote:
+> > On Fri, May 13, 2011 at 06:54:57PM +0200, Rafael J. Wysocki wrote:
+> > > On Friday, May 13, 2011, Raffaele Recalcati wrote:
+> > > > Hi Rafael,
+> > > > 
+> > > > 2011/5/12 Rafael J. Wysocki <rjw@sisk.pl>:
+> > > > > On Thursday, May 12, 2011, Raffaele Recalcati wrote:
+> > > > >> What happen normally in runtime pm implementation is that every devices
+> > > > >> are switched off and are enabled only when needed.
+> > > > >> In our case instead we have a completely functional embedded system and,
+> > > > >> when an asyncrhonous event appear, we have only some tens milliseconds
+> > > > >> before the actual power failure takes place.
+> > > > >> This patchset add a support in order to switch off not vital part of the system,
+> > > > >> in order to allow the board to survive longer.
+> > > > >> This allow the possibility to save important data.
+> > > > >
+> > > > > OK, so first, who decides what parts of the system are vital and what aren't?
+> > > > 
+> > > > Take a quick look at Documentation/power/loss.txt  paragrpah "2.4
+> > > > Power loss policies".
+> > > > You can decide what can be powered off.
+> > > 
+> > > I read the patches.  My question was about the general idea of who should
+> > > be responsible of making these decisions.
+> > 
+> > I would expect the system integrator would based on the application the
+> > device is getting deployed into.
+> > 
+> > A generic opportunistic policy for peripherals that are stateless and can
+> > be trivially power gated off/on from an ISR could be a default but, for
+> > peripherals that need to do some processing (like waiting on an eMMC DMA
+> > to complete) can take time to power down into a safe state.
 > 
-> > From: Fenghua Yu <fenghua.yu@intel.com>
-> >
-> > Support memset() with enhanced rep stosb. On processors supporting
-> > enhanced
-> > REP MOVSB/STOSB, the alternative memset_c_e function using enhanced
-> rep
-> > stosb
-> > overrides the fast string alternative memset_c and the original
-> function.
-> 
-> FWIW most memsets and memcpys are generated by modern gccs as inline
-> code,
-> depending on alignment etc., so will never call your new function.
-> Same may be true for memmove (not fully sure)
-> 
-> One way to work around this would be to add suitable logic
-> to the string.h macros and make sure the out of line code is always
-> called for large copies if the count is constant and large enough.
-> 
-> There used to be such logic, but it was removed partly later.
-> 
-> The only problem is that it's hard to decide if the count is variable
-> and where a good threshold is.
-> 
-> Or maybe it would be better to just fix gcc to use the new
-> instructions,
-> but then it would be difficult to patch them in.
+> What do you mean by safe state?
+>
+I need to get more details on this but I assume its a state where the
+meta data of the file system is committed to the emmc before lights go
+off such that when power is reapplied that the damage isn't too big. 
 
-Only memcpy are generated by gcc when gcc version >=4.3. Other functions are defined by kernel lib.
+I've also heard some talk of sim card corruption risks but, I don't have
+first hand info on that.
 
-I would leave gcc optimization for most memcpy cases instead of forcing memcpy to call the kernel lib memcpy. I hope gcc will catch up and implement a good enhanced rep movsb/stosb solution soon. If turns out gcc can not generate good memcpy, it's easy to switch to the patching kernel lib memcpy.
+--mark
 
-Thanks.
-
--Fenghua
