@@ -1,127 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab1ERXcY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 19:32:24 -0400
-Received: from mga14.intel.com ([143.182.124.37]:35438 "EHLO mga14.intel.com"
+	id S932203Ab1ERXcA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 19:32:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64110 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932245Ab1ERXcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 19:32:21 -0400
+	id S1756236Ab1ERXb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 19:31:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,234,1304319600"; 
-   d="scan'208";a="438684302"
-Message-Id: <20110518233157.830697056@sbsiddha-MOBL3.sc.intel.com>
+   d="scan'208";a="652617"
+Message-Id: <20110518233157.909013179@sbsiddha-MOBL3.sc.intel.com>
 User-Agent: quilt/0.47-1
-Date: Wed, 18 May 2011 16:31:36 -0700
+Date: Wed, 18 May 2011 16:31:37 -0700
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com
 Cc: linux-kernel@vger.kernel.org, daniel.blueman@gmail.com,
         suresh.b.siddha@intel.com
-Subject: [patch 6/9] x86, ioapic: conslidate ioapic_saved_data[] into struct ioapic
+Subject: [patch 7/9] x86, ioapic: consolidate mp_ioapics into struct ioapic
 References: <20110518233130.524634928@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=move_saved_data_to_ioapic_struct.patch
+Content-Disposition: inline; filename=add_mpc_ioapic_entry.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
- arch/x86/kernel/apic/io_apic.c |   27 +++++++++++++--------------
- 1 file changed, 13 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/io_apic.h |    6 +-
+ arch/x86/kernel/acpi/boot.c    |    8 +--
+ arch/x86/kernel/apic/io_apic.c |   94 +++++++++++++++++++++++------------------
+ arch/x86/kernel/devicetree.c   |    2 
+ arch/x86/kernel/mpparse.c      |    2 
+ 5 files changed, 62 insertions(+), 50 deletions(-)
 
 Index: linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
 ===================================================================
 --- linux-2.6-tip.orig/arch/x86/kernel/apic/io_apic.c
 +++ linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-@@ -81,6 +81,10 @@ static struct ioapic {
- 	 * # of IRQ routing registers
+@@ -85,10 +85,22 @@ static struct ioapic {
+ 	 * Saved state during suspend/resume, or while enabling intr-remap.
  	 */
- 	int nr_registers;
-+	/*
-+	 * Saved state during suspend/resume, or while enabling intr-remap.
-+	 */
-+	struct IO_APIC_route_entry *saved_registers;
+ 	struct IO_APIC_route_entry *saved_registers;
++	/* I/O APIC config */
++	struct mpc_ioapic mp_config;
  } ioapics[MAX_IO_APICS];
  
- /* I/O APIC entries */
-@@ -102,11 +106,6 @@ int mp_irq_entries;
- /* GSI interrupts */
- static int nr_irqs_gsi = NR_IRQS_LEGACY;
+-/* I/O APIC entries */
+-struct mpc_ioapic mp_ioapics[MAX_IO_APICS];
++#define mpc_ioapic_ver(id)		ioapics[id].mp_config.apicver
++
++int mpc_ioapic_id(int id)
++{
++	return ioapics[id].mp_config.apicid;
++}
++
++unsigned int mpc_ioapic_addr(int id)
++{
++	return ioapics[id].mp_config.apicaddr;
++}
++
+ int nr_ioapics;
  
--/*
-- * Saved I/O APIC state during suspend/resume, or while enabling intr-remap.
--*/
--static struct IO_APIC_route_entry *ioapic_saved_data[MAX_IO_APICS];
--
- #if defined (CONFIG_MCA) || defined (CONFIG_EISA)
- int mp_bus_id_to_type[MAX_MP_BUSSES];
- #endif
-@@ -187,10 +186,10 @@ int __init arch_early_irq_init(void)
+ /* IO APIC gsi routing info */
+@@ -311,7 +323,7 @@ struct io_apic {
+ static __attribute_const__ struct io_apic __iomem *io_apic_base(int idx)
+ {
+ 	return (void __iomem *) __fix_to_virt(FIX_IO_APIC_BASE_0 + idx)
+-		+ (mp_ioapics[idx].apicaddr & ~PAGE_MASK);
++		+ (mpc_ioapic_addr(idx) & ~PAGE_MASK);
+ }
+ 
+ static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
+@@ -701,7 +713,7 @@ static int find_irq_entry(int apic, int 
+ 
+ 	for (i = 0; i < mp_irq_entries; i++)
+ 		if (mp_irqs[i].irqtype == type &&
+-		    (mp_irqs[i].dstapic == mp_ioapics[apic].apicid ||
++		    (mp_irqs[i].dstapic == mpc_ioapic_id(apic) ||
+ 		     mp_irqs[i].dstapic == MP_APIC_ALL) &&
+ 		    mp_irqs[i].dstirq == pin)
+ 			return i;
+@@ -743,7 +755,7 @@ static int __init find_isa_irq_apic(int 
+ 	if (i < mp_irq_entries) {
+ 		int apic;
+ 		for(apic = 0; apic < nr_ioapics; apic++) {
+-			if (mp_ioapics[apic].apicid == mp_irqs[i].dstapic)
++			if (mpc_ioapic_id(apic) == mp_irqs[i].dstapic)
+ 				return apic;
+ 		}
+ 	}
+@@ -973,7 +985,7 @@ int IO_APIC_get_PCI_irq_vector(int bus, 
+ 		int lbus = mp_irqs[i].srcbus;
+ 
+ 		for (apic = 0; apic < nr_ioapics; apic++)
+-			if (mp_ioapics[apic].apicid == mp_irqs[i].dstapic ||
++			if (mpc_ioapic_id(apic) == mp_irqs[i].dstapic ||
+ 			    mp_irqs[i].dstapic == MP_APIC_ALL)
+ 				break;
+ 
+@@ -1320,14 +1332,14 @@ static void setup_ioapic_irq(int apic_id
+ 	apic_printk(APIC_VERBOSE,KERN_DEBUG
+ 		    "IOAPIC[%d]: Set routing entry (%d-%d -> 0x%x -> "
+ 		    "IRQ %d Mode:%i Active:%i)\n",
+-		    apic_id, mp_ioapics[apic_id].apicid, pin, cfg->vector,
++		    apic_id, mpc_ioapic_id(apic_id), pin, cfg->vector,
+ 		    irq, trigger, polarity);
+ 
+ 
+-	if (setup_ioapic_entry(mp_ioapics[apic_id].apicid, irq, &entry,
++	if (setup_ioapic_entry(mpc_ioapic_id(apic_id), irq, &entry,
+ 			       dest, trigger, polarity, cfg->vector, pin)) {
+ 		printk("Failed to setup ioapic entry for ioapic  %d, pin %d\n",
+-		       mp_ioapics[apic_id].apicid, pin);
++		       mpc_ioapic_id(apic_id), pin);
+ 		__clear_irq_vector(irq, cfg);
+ 		return;
+ 	}
+@@ -1349,7 +1361,7 @@ static bool __init io_apic_pin_not_conne
+ 		return false;
+ 
+ 	apic_printk(APIC_VERBOSE, KERN_DEBUG " apic %d pin %d not connected\n",
+-		    mp_ioapics[apic_id].apicid, pin);
++		    mpc_ioapic_id(apic_id), pin);
+ 	return true;
+ }
+ 
+@@ -1481,7 +1493,7 @@ __apicdebuginit(void) print_IO_APIC(void
+ 	printk(KERN_DEBUG "number of MP IRQ sources: %d.\n", mp_irq_entries);
+ 	for (i = 0; i < nr_ioapics; i++)
+ 		printk(KERN_DEBUG "number of IO-APIC #%d registers: %d.\n",
+-		       mp_ioapics[i].apicid, ioapics[i].nr_registers);
++		       mpc_ioapic_id(i), ioapics[i].nr_registers);
+ 
+ 	/*
+ 	 * We are a bit conservative about what we expect.  We have to
+@@ -1501,7 +1513,7 @@ __apicdebuginit(void) print_IO_APIC(void
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 
+ 	printk("\n");
+-	printk(KERN_DEBUG "IO APIC #%d......\n", mp_ioapics[apic].apicid);
++	printk(KERN_DEBUG "IO APIC #%d......\n", mpc_ioapic_id(apic));
+ 	printk(KERN_DEBUG ".... register #00: %08X\n", reg_00.raw);
+ 	printk(KERN_DEBUG ".......    : physical APIC id: %02X\n", reg_00.bits.ID);
+ 	printk(KERN_DEBUG ".......    : Delivery Type: %X\n", reg_00.bits.delivery_type);
+@@ -1919,14 +1931,14 @@ void __init setup_ioapic_ids_from_mpc_no
+ 		reg_00.raw = io_apic_read(apic_id, 0);
+ 		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 
+-		old_id = mp_ioapics[apic_id].apicid;
++		old_id = mpc_ioapic_id(apic_id);
+ 
+-		if (mp_ioapics[apic_id].apicid >= get_physical_broadcast()) {
++		if (mpc_ioapic_id(apic_id) >= get_physical_broadcast()) {
+ 			printk(KERN_ERR "BIOS bug, IO-APIC#%d ID is %d in the MPC table!...\n",
+-				apic_id, mp_ioapics[apic_id].apicid);
++				apic_id, mpc_ioapic_id(apic_id));
+ 			printk(KERN_ERR "... fixing up to %d. (tell your hw vendor)\n",
+ 				reg_00.bits.ID);
+-			mp_ioapics[apic_id].apicid = reg_00.bits.ID;
++			ioapics[apic_id].mp_config.apicid = reg_00.bits.ID;
+ 		}
+ 
+ 		/*
+@@ -1935,9 +1947,9 @@ void __init setup_ioapic_ids_from_mpc_no
+ 		 * 'stuck on smp_invalidate_needed IPI wait' messages.
+ 		 */
+ 		if (apic->check_apicid_used(&phys_id_present_map,
+-					mp_ioapics[apic_id].apicid)) {
++					    mpc_ioapic_id(apic_id))) {
+ 			printk(KERN_ERR "BIOS bug, IO-APIC#%d ID %d is already used!...\n",
+-				apic_id, mp_ioapics[apic_id].apicid);
++				apic_id, mpc_ioapic_id(apic_id));
+ 			for (i = 0; i < get_physical_broadcast(); i++)
+ 				if (!physid_isset(i, phys_id_present_map))
+ 					break;
+@@ -1946,13 +1958,14 @@ void __init setup_ioapic_ids_from_mpc_no
+ 			printk(KERN_ERR "... fixing up to %d. (tell your hw vendor)\n",
+ 				i);
+ 			physid_set(i, phys_id_present_map);
+-			mp_ioapics[apic_id].apicid = i;
++			ioapics[apic_id].mp_config.apicid = i;
+ 		} else {
+ 			physid_mask_t tmp;
+-			apic->apicid_to_cpu_present(mp_ioapics[apic_id].apicid, &tmp);
++			apic->apicid_to_cpu_present(mpc_ioapic_id(apic_id),
++						    &tmp);
+ 			apic_printk(APIC_VERBOSE, "Setting %d in the "
+ 					"phys_id_present_map\n",
+-					mp_ioapics[apic_id].apicid);
++					mpc_ioapic_id(apic_id));
+ 			physids_or(phys_id_present_map, phys_id_present_map, tmp);
+ 		}
+ 
+@@ -1960,24 +1973,24 @@ void __init setup_ioapic_ids_from_mpc_no
+ 		 * We need to adjust the IRQ routing table
+ 		 * if the ID changed.
+ 		 */
+-		if (old_id != mp_ioapics[apic_id].apicid)
++		if (old_id != mpc_ioapic_id(apic_id))
+ 			for (i = 0; i < mp_irq_entries; i++)
+ 				if (mp_irqs[i].dstapic == old_id)
+ 					mp_irqs[i].dstapic
+-						= mp_ioapics[apic_id].apicid;
++						= mpc_ioapic_id(apic_id);
+ 
+ 		/*
+ 		 * Update the ID register according to the right value
+ 		 * from the MPC table if they are different.
+ 		 */
+-		if (mp_ioapics[apic_id].apicid == reg_00.bits.ID)
++		if (mpc_ioapic_id(apic_id) == reg_00.bits.ID)
+ 			continue;
+ 
+ 		apic_printk(APIC_VERBOSE, KERN_INFO
+ 			"...changing IO-APIC physical APIC ID to %d ...",
+-			mp_ioapics[apic_id].apicid);
++			mpc_ioapic_id(apic_id));
+ 
+-		reg_00.bits.ID = mp_ioapics[apic_id].apicid;
++		reg_00.bits.ID = mpc_ioapic_id(apic_id);
+ 		raw_spin_lock_irqsave(&ioapic_lock, flags);
+ 		io_apic_write(apic_id, 0, reg_00.raw);
+ 		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+@@ -1988,7 +2001,7 @@ void __init setup_ioapic_ids_from_mpc_no
+ 		raw_spin_lock_irqsave(&ioapic_lock, flags);
+ 		reg_00.raw = io_apic_read(apic_id, 0);
+ 		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+-		if (reg_00.bits.ID != mp_ioapics[apic_id].apicid)
++		if (reg_00.bits.ID != mpc_ioapic_id(apic_id))
+ 			printk("could not set ID!\n");
+ 		else
+ 			apic_printk(APIC_VERBOSE, " ok.\n");
+@@ -2374,7 +2387,7 @@ static void eoi_ioapic_irq(unsigned int 
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+ 	for_each_irq_pin(entry, cfg->irq_2_pin) {
+-		if (mp_ioapics[entry->apic].apicver >= 0x20) {
++		if (mpc_ioapic_ver(entry->apic) >= 0x20) {
+ 			/*
+ 			 * Intr-remapping uses pin number as the virtual vector
+ 			 * in the RTE. Actual vector is programmed in
+@@ -2896,8 +2909,8 @@ static void resume_ioapic_id(int ioapic_
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+ 	reg_00.raw = io_apic_read(ioapic_id, 0);
+-	if (reg_00.bits.ID != mp_ioapics[ioapic_id].apicid) {
+-		reg_00.bits.ID = mp_ioapics[ioapic_id].apicid;
++	if (reg_00.bits.ID != mpc_ioapic_id(ioapic_id)) {
++		reg_00.bits.ID = mpc_ioapic_id(ioapic_id);
+ 		io_apic_write(ioapic_id, 0, reg_00.raw);
+ 	}
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+@@ -3524,7 +3537,7 @@ int io_apic_setup_irq_pin_once(unsigned 
+ 	/* Avoid redundant programming */
+ 	if (test_bit(pin, mp_ioapic_routing[id].pin_programmed)) {
+ 		pr_debug("Pin %d-%d already programmed\n",
+-			 mp_ioapics[id].apicid, pin);
++			 mpc_ioapic_id(id), pin);
+ 		return 0;
+ 	}
+ 	ret = io_apic_setup_irq_pin(irq, node, attr);
+@@ -3694,8 +3707,7 @@ static u8 __init io_apic_unique_id(u8 id
+ 
+ 	bitmap_zero(used, 256);
+ 	for (i = 0; i < nr_ioapics; i++) {
+-		struct mpc_ioapic *ia = &mp_ioapics[i];
+-		__set_bit(ia->apicid, used);
++		__set_bit(mpc_ioapic_id(i), used);
+ 	}
+ 	if (!test_bit(id, used))
+ 		return id;
+@@ -3826,7 +3838,7 @@ void __init ioapic_and_gsi_init(void)
+ 	ioapic_res = ioapic_setup_resources(nr_ioapics);
+ 	for (i = 0; i < nr_ioapics; i++) {
+ 		if (smp_found_config) {
+-			ioapic_phys = mp_ioapics[i].apicaddr;
++			ioapic_phys = mpc_ioapic_addr(i);
+ #ifdef CONFIG_X86_32
+ 			if (!ioapic_phys) {
+ 				printk(KERN_ERR
+@@ -3930,13 +3942,13 @@ void __init mp_register_ioapic(int id, u
+ 
+ 	idx = nr_ioapics;
+ 
+-	mp_ioapics[idx].type = MP_IOAPIC;
+-	mp_ioapics[idx].flags = MPC_APIC_USABLE;
+-	mp_ioapics[idx].apicaddr = address;
++	ioapics[idx].mp_config.type = MP_IOAPIC;
++	ioapics[idx].mp_config.flags = MPC_APIC_USABLE;
++	ioapics[idx].mp_config.apicaddr = address;
+ 
+ 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
+-	mp_ioapics[idx].apicid = io_apic_unique_id(id);
+-	mp_ioapics[idx].apicver = io_apic_get_version(idx);
++	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
++	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
+ 
+ 	/*
+ 	 * Build basic GSI lookup table to facilitate gsi->io_apic lookups
+@@ -3955,8 +3967,8 @@ void __init mp_register_ioapic(int id, u
+ 		gsi_top = mp_gsi_routing[idx].gsi_end + 1;
+ 
+ 	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
+-	       "GSI %d-%d\n", idx, mp_ioapics[idx].apicid,
+-	       mp_ioapics[idx].apicver, mp_ioapics[idx].apicaddr,
++	       "GSI %d-%d\n", idx, mpc_ioapic_id(idx),
++	       mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
+ 	       mp_gsi_routing[idx].gsi_base, mp_gsi_routing[idx].gsi_end);
+ 
+ 	nr_ioapics++;
+Index: linux-2.6-tip/arch/x86/include/asm/io_apic.h
+===================================================================
+--- linux-2.6-tip.orig/arch/x86/include/asm/io_apic.h
++++ linux-2.6-tip/arch/x86/include/asm/io_apic.h
+@@ -106,10 +106,10 @@ struct IR_IO_APIC_route_entry {
+  */
+ extern int nr_ioapics;
+ 
+-#define MP_MAX_IOAPIC_PIN 127
++extern int mpc_ioapic_id(int ioapic);
++extern unsigned int mpc_ioapic_addr(int ioapic);
+ 
+-/* I/O APIC entries */
+-extern struct mpc_ioapic mp_ioapics[MAX_IO_APICS];
++#define MP_MAX_IOAPIC_PIN 127
+ 
+ /* # of MP IRQ source entries */
+ extern int mp_irq_entries;
+Index: linux-2.6-tip/arch/x86/kernel/acpi/boot.c
+===================================================================
+--- linux-2.6-tip.orig/arch/x86/kernel/acpi/boot.c
++++ linux-2.6-tip/arch/x86/kernel/acpi/boot.c
+@@ -970,7 +970,7 @@ void __init mp_override_legacy_irq(u8 bu
+ 	mp_irq.irqflag = (trigger << 2) | polarity;
+ 	mp_irq.srcbus = MP_ISA_BUS;
+ 	mp_irq.srcbusirq = bus_irq;	/* IRQ */
+-	mp_irq.dstapic = mp_ioapics[ioapic].apicid; /* APIC ID */
++	mp_irq.dstapic = mpc_ioapic_id(ioapic); /* APIC ID */
+ 	mp_irq.dstirq = pin;	/* INTIN# */
+ 
+ 	mp_save_irq(&mp_irq);
+@@ -1021,7 +1021,7 @@ void __init mp_config_acpi_legacy_irqs(v
+ 		if (ioapic < 0)
+ 			continue;
+ 		pin = mp_find_ioapic_pin(ioapic, gsi);
+-		dstapic = mp_ioapics[ioapic].apicid;
++		dstapic = mpc_ioapic_id(ioapic);
+ 
+ 		for (idx = 0; idx < mp_irq_entries; idx++) {
+ 			struct mpc_intsrc *irq = mp_irqs + idx;
+@@ -1082,7 +1082,7 @@ static int mp_config_acpi_gsi(struct dev
+ 	mp_irq.srcbus = number;
+ 	mp_irq.srcbusirq = (((devfn >> 3) & 0x1f) << 2) | ((pin - 1) & 3);
+ 	ioapic = mp_find_ioapic(gsi);
+-	mp_irq.dstapic = mp_ioapics[ioapic].apicid;
++	mp_irq.dstapic = mpc_ioapic_id(ioapic);
+ 	mp_irq.dstirq = mp_find_ioapic_pin(ioapic, gsi);
+ 
+ 	mp_save_irq(&mp_irq);
+@@ -1113,7 +1113,7 @@ int mp_register_gsi(struct device *dev, 
+ 
+ 	if (ioapic_pin > MP_MAX_IOAPIC_PIN) {
+ 		printk(KERN_ERR "Invalid reference to IOAPIC pin "
+-		       "%d-%d\n", mp_ioapics[ioapic].apicid,
++		       "%d-%d\n", mpc_ioapic_id(ioapic),
+ 		       ioapic_pin);
+ 		return gsi;
+ 	}
+Index: linux-2.6-tip/arch/x86/kernel/mpparse.c
+===================================================================
+--- linux-2.6-tip.orig/arch/x86/kernel/mpparse.c
++++ linux-2.6-tip/arch/x86/kernel/mpparse.c
+@@ -285,7 +285,7 @@ static void __init construct_default_ioi
+ 	intsrc.type = MP_INTSRC;
+ 	intsrc.irqflag = 0;	/* conforming */
+ 	intsrc.srcbus = 0;
+-	intsrc.dstapic = mp_ioapics[0].apicid;
++	intsrc.dstapic = mpc_ioapic_id(0);
+ 
+ 	intsrc.irqtype = mp_INT;
+ 
+Index: linux-2.6-tip/arch/x86/kernel/devicetree.c
+===================================================================
+--- linux-2.6-tip.orig/arch/x86/kernel/devicetree.c
++++ linux-2.6-tip/arch/x86/kernel/devicetree.c
+@@ -407,7 +407,7 @@ static void __init ioapic_add_ofnode(str
  	}
  
  	for (i = 0; i < nr_ioapics; i++) {
--		ioapic_saved_data[i] =
-+		ioapics[i].saved_registers =
- 			kzalloc(sizeof(struct IO_APIC_route_entry) *
- 				ioapics[i].nr_registers, GFP_KERNEL);
--		if (!ioapic_saved_data[i])
-+		if (!ioapics[i].saved_registers)
- 			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
- 	}
+-		if (r.start == mp_ioapics[i].apicaddr) {
++		if (r.start == mpc_ioapic_addr(i)) {
+ 			struct irq_domain *id;
  
-@@ -639,13 +638,13 @@ int save_ioapic_entries(void)
- 	int err = 0;
- 
- 	for (apic = 0; apic < nr_ioapics; apic++) {
--		if (!ioapic_saved_data[apic]) {
-+		if (!ioapics[apic].saved_registers) {
- 			err = -ENOMEM;
- 			continue;
- 		}
- 
- 		for (pin = 0; pin < ioapics[apic].nr_registers; pin++)
--			ioapic_saved_data[apic][pin] =
-+			ioapics[apic].saved_registers[pin] =
- 				ioapic_read_entry(apic, pin);
- 	}
- 
-@@ -660,13 +659,13 @@ void mask_ioapic_entries(void)
- 	int apic, pin;
- 
- 	for (apic = 0; apic < nr_ioapics; apic++) {
--		if (!ioapic_saved_data[apic])
-+		if (ioapics[apic].saved_registers)
- 			continue;
- 
- 		for (pin = 0; pin < ioapics[apic].nr_registers; pin++) {
- 			struct IO_APIC_route_entry entry;
- 
--			entry = ioapic_saved_data[apic][pin];
-+			entry = ioapics[apic].saved_registers[pin];
- 			if (!entry.mask) {
- 				entry.mask = 1;
- 				ioapic_write_entry(apic, pin, entry);
-@@ -676,19 +675,19 @@ void mask_ioapic_entries(void)
- }
- 
- /*
-- * Restore IO APIC entries which was saved in ioapic_saved_data
-+ * Restore IO APIC entries which was saved in the ioapic structure.
-  */
- int restore_ioapic_entries(void)
- {
- 	int apic, pin;
- 
- 	for (apic = 0; apic < nr_ioapics; apic++) {
--		if (!ioapic_saved_data[apic])
-+		if (ioapics[apic].saved_registers)
- 			continue;
- 
- 		for (pin = 0; pin < ioapics[apic].nr_registers; pin++)
- 			ioapic_write_entry(apic, pin,
--					   ioapic_saved_data[apic][pin]);
-+					   ioapics[apic].saved_registers[pin]);
- 	}
- 	return 0;
- }
+ 			id = kzalloc(sizeof(*id), GFP_KERNEL);
 
 
