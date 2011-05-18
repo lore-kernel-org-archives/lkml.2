@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666Ab1ERBGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 21:06:12 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58067 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082Ab1ERBGK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 21:06:10 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DD31B6E.8040502@jp.fujitsu.com>
-Date: Wed, 18 May 2011 10:05:50 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1756618Ab1ERXfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 19:35:51 -0400
+Received: from ozlabs.org ([203.10.76.45]:39088 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755849Ab1ERXfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 19:35:50 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Greg KH <greg@kroah.com>, Alessio Igor Bogani <abogani@kernel.org>
+Cc: Anders Kaseorg <andersk@ksplice.com>, Tim Abbott <tabbott@ksplice.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Dirk Behme <dirk.behme@googlemail.com>
+Subject: Re: [PATCH] module: Use binary search in lookup_symbol()
+In-Reply-To: <20110517232241.GA19140@kroah.com>
+References: <BANLkTinPG100vbVAN1RZWb3h9Xuu6SKJ0Q@mail.gmail.com> <1305665763-3988-1-git-send-email-abogani@kernel.org> <20110517232241.GA19140@kroah.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Wed, 18 May 2011 10:37:52 +0930
+Message-ID: <87liy4n7dj.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: minchan.kim@gmail.com
-CC: mgorman@suse.de, James.Bottomley@hansenpartnership.com,
-        akpm@linux-foundation.org, colin.king@canonical.com,
-        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
-        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>	<1305295404-12129-5-git-send-email-mgorman@suse.de>	<4DCFAA80.7040109@jp.fujitsu.com>	<1305519711.4806.7.camel@mulgrave.site>	<BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>	<20110516084558.GE5279@suse.de>	<BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>	<20110516102753.GF5279@suse.de> <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
-In-Reply-To: <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It would be better to put cond_resched after balance_pgdat?
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 292582c..61c45d0 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2753,6 +2753,7 @@ static int kswapd(void *p)
->                  if (!ret) {
->                          trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
->                          order = balance_pgdat(pgdat, order,&classzone_idx);
-> +                       cond_resched();
->                  }
->          }
->          return 0;
->
->>>> While it appears unlikely, there are bad conditions which can result
->> in cond_resched() being avoided.
+On Tue, 17 May 2011 16:22:41 -0700, Greg KH <greg@kroah.com> wrote:
+> On Tue, May 17, 2011 at 10:56:03PM +0200, Alessio Igor Bogani wrote:
+> > This work was supported by a hardware donation from the CE Linux Forum.
+> > 
+> > Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
+> > ---
+> 
+> That's nice, but _why_ do this change?  What does it buy us?
+> 
+> Please explain why you make a change, not just who sponsored the change,
+> that's not very interesting to developers.
 
-Every reclaim priority decreasing or every shrink_zone() calling makes more
-fine grained preemption. I think.
+I was going to let this pass, but since Greg flagged it...
 
+It's sufficient given the context (it's the tail end of a series of
+patches), but it's preferable to allude to the other patches in a case
+like this.  For example:
 
+        Now we have sorted symbols, we can use binary search for
+        kallsyms lookups as well.
+
+(1) "Now we have sorted symbols" indicates to the reader that this has
+    just recently become possible.
+(2) "as well." indicates that this was not the main justification for
+    sorting the symbols.
+ 
+Ideally you would add some numbers, like so:
+
+        On my machine 'cat /proc/kallsyms' only takes 0.02 seconds, but
+        this halves it to 0.01 seconds.
+
+(That's my results under kvm, which is a poor way to do timing, but you
+get the idea).
+
+Thanks,
+Rusty.
