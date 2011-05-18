@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab1ERWRe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 18:17:34 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37540 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab1ERWRd (ORCPT
+	id S1753344Ab1ERWS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 18:18:28 -0400
+Received: from smtp10.hushmail.com ([65.39.178.143]:37248 "EHLO
+	smtp10.hushmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab1ERWS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 18:17:33 -0400
-Date: Wed, 18 May 2011 23:17:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: markgross@thegnar.org, Raffaele Recalcati <lamiaposta71@gmail.com>,
-        linux-pm@lists.linux-foundation.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] pm loss development
-Message-ID: <20110518221726.GC20909@sirena.org.uk>
-References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com> <201105180107.58078.rjw@sisk.pl> <20110518031203.GA3640@gvim.org> <201105182143.13237.rjw@sisk.pl>
+	Wed, 18 May 2011 18:18:27 -0400
+X-Greylist: delayed 864 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 May 2011 18:18:27 EDT
+X-Hush-Verified-Domain: hushmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105182143.13237.rjw@sisk.pl>
-X-Cookie: Forgive and forget.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Date: Thu, 19 May 2011 06:18:27 +0800
+To: linux-kernel@vger.kernel.org
+Subject: Sing-a-pore Citizen Mr. Teo En Ming (Zhang Enming) Invites You to Visit AboveTopSecret.com
+From: "Singapore Citizen Mr. Teo En Ming (Zhang Enming)" 
+	<singaporean_mr_teo_en_ming@hushmail.com>
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Message-Id: <20110518221827.1B79810E2BB@smtp.hushmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 09:43:13PM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, May 18, 2011, mark gross wrote:
+Subject: Sing-a-pore Citizen Mr. Teo En Ming (Zhang Enming) Invites 
+You to Visit AboveTopSecret.com
 
-> > I need to get more details on this but I assume its a state where the
-> > meta data of the file system is committed to the emmc before lights go
-> > off such that when power is reapplied that the damage isn't too big. 
+Link/URL: http://www.abovetopsecret.com/
 
-> I don't think you can guarantee that the metadata won't be damaged
-> without notifying the filesystem of the event (and making it react
-> appropriately).
+Yours sincerely,
 
-I guess with a journalling filesystem you'd hope that you can at any
-point write out what's in flight and have it be safe; if it's a non
-journalling filesystem of course all bets are off.
+Sing-a-pore Citizen Mr. Teo En Ming (Zhang Enming) 
+Dip(Mechatronics) BEng(Hons)(Mechanical Engineering)
+Alma Maters:
+(1) Sing-a-pore Polytechnic (Graduated 1998)
+(2) National University of Sing-a-pore (Graduated 2006)
+Sing-a-pore Identity Card No/NRIC: S78*6*2*H
+Location: Toa Payoh Lorong 5, Sing-a-pore
+Mobile Phone: +65-8369-2618
+Date of Birth: 5th March 1978
+
