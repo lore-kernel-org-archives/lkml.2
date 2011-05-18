@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656Ab1ERBEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 21:04:45 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:43457 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082Ab1ERBEo (ORCPT
+	id S932666Ab1ERBGM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 21:06:12 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58067 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082Ab1ERBGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 21:04:44 -0400
-From: Taylor Hutt <thutt@chromium.org>
-To: Peter Hsiang <peter.hsiang@maxim-ic.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Taylor Hutt <thutt@chromium.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Max98095: Move existing NULL check before pointer dereference.
-Date: Tue, 17 May 2011 18:03:54 -0700
-Message-Id: <1305680634-10484-1-git-send-email-thutt@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	Tue, 17 May 2011 21:06:10 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DD31B6E.8040502@jp.fujitsu.com>
+Date: Wed, 18 May 2011 10:05:50 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: minchan.kim@gmail.com
+CC: mgorman@suse.de, James.Bottomley@hansenpartnership.com,
+        akpm@linux-foundation.org, colin.king@canonical.com,
+        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
+        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de>	<1305295404-12129-5-git-send-email-mgorman@suse.de>	<4DCFAA80.7040109@jp.fujitsu.com>	<1305519711.4806.7.camel@mulgrave.site>	<BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>	<20110516084558.GE5279@suse.de>	<BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>	<20110516102753.GF5279@suse.de> <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
+In-Reply-To: <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Visual inspection shows that max98095_put_eq_enum() and
-max98095_put_bq_enum() each have a possible NULL deref of 'pdata'.
+> It would be better to put cond_resched after balance_pgdat?
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 292582c..61c45d0 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2753,6 +2753,7 @@ static int kswapd(void *p)
+>                  if (!ret) {
+>                          trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
+>                          order = balance_pgdat(pgdat, order,&classzone_idx);
+> +                       cond_resched();
+>                  }
+>          }
+>          return 0;
+>
+>>>> While it appears unlikely, there are bad conditions which can result
+>> in cond_resched() being avoided.
 
-This change moves the NULL check above the use.
+Every reclaim priority decreasing or every shrink_zone() calling makes more
+fine grained preemption. I think.
 
-BUG=none
-TEST=Visual inspection
-Change-Id: Ic53a7e38a958f39225ac4961bcfd3812a95ea1b5
-Signed-off-by: Taylor Hutt <thutt@chromium.org>
----
- sound/soc/codecs/max98095.c |   16 ++++++----------
- 1 files changed, 6 insertions(+), 10 deletions(-)
-
-diff --git a/sound/soc/codecs/max98095.c b/sound/soc/codecs/max98095.c
-index a6cc94e..e1d282d 100644
---- a/sound/soc/codecs/max98095.c
-+++ b/sound/soc/codecs/max98095.c
-@@ -1872,16 +1872,14 @@ static int max98095_put_eq_enum(struct snd_kcontrol *kcontrol,
- 
- 	BUG_ON(channel > 1);
- 
--	cdata = &max98095->dai[channel];
-+	if (!pdata || !max98095->eq_textcnt)
-+		return 0;
- 
- 	if (sel >= pdata->eq_cfgcnt)
- 		return -EINVAL;
- 
-+	cdata = &max98095->dai[channel];
- 	cdata->eq_sel = sel;
--
--	if (!pdata || !max98095->eq_textcnt)
--		return 0;
--
- 	fs = cdata->rate;
- 
- 	/* Find the selected configuration with nearest sample rate */
-@@ -2020,16 +2018,14 @@ static int max98095_put_bq_enum(struct snd_kcontrol *kcontrol,
- 
- 	BUG_ON(channel > 1);
- 
--	cdata = &max98095->dai[channel];
-+	if (!pdata || !max98095->bq_textcnt)
-+		return 0;
- 
- 	if (sel >= pdata->bq_cfgcnt)
- 		return -EINVAL;
- 
-+	cdata = &max98095->dai[channel];
- 	cdata->bq_sel = sel;
--
--	if (!pdata || !max98095->bq_textcnt)
--		return 0;
--
- 	fs = cdata->rate;
- 
- 	/* Find the selected configuration with nearest sample rate */
--- 
-1.7.3.1
 
