@@ -1,242 +1,663 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab1ERViP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 17:38:15 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:5674 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755277Ab1ERViO (ORCPT
+	id S1756046Ab1ERVie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 17:38:34 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:53266 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755953Ab1ERVib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 17:38:14 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=I5FRoCNzlSE9Km7UeSZjAIe/0wODH/Vp/an1P3mwN/YwQpXgUK16kg6S/m+bKjBC4
-	KraBRPql+rzt904eHrVPg==
-From: Nikhil Rao <ncrao@google.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>,
-        Nikhil Rao <ncrao@google.com>
-Subject: [PATCH v3 3/3] sched: increase SCHED_LOAD_SCALE resolution
-Date: Wed, 18 May 2011 14:37:48 -0700
-Message-Id: <1305754668-18792-1-git-send-email-ncrao@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20110518212246.GD28476@elte.hu>
-References: <20110518212246.GD28476@elte.hu>
+	Wed, 18 May 2011 17:38:31 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Subject: [PATCH v4] radio-sf16fmr2: convert to generic TEA575x interface
+Date: Wed, 18 May 2011 23:38:20 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+References: <201105140017.26968.linux@rainbow-software.org> <201105172205.28899.linux@rainbow-software.org> <201105180826.19361.hverkuil@xs4all.nl>
+In-Reply-To: <201105180826.19361.hverkuil@xs4all.nl>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201105182338.23371.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce SCHED_LOAD_RESOLUTION, which scales is added to SCHED_LOAD_SHIFT and
-increases the resolution of SCHED_LOAD_SCALE. This patch sets the value of
-SCHED_LOAD_RESOLUTION to 10, scaling up the weights for all sched entities by
-a factor of 1024. With this extra resolution, we can handle deeper cgroup
-hiearchies and the scheduler can do better shares distribution and load
-load balancing on larger systems (especially for low weight task groups).
+Convert radio-sf16fmr2 to use generic TEA575x implementation. Most of the
+driver code goes away as SF16-FMR2 is basically just a TEA5757 tuner
+connected to ISA bus.
+The card can optionally be equipped with PT2254A volume control (equivalent
+of TC9154AP) - the volume setting is completely reworked (with balance control
+added) and tested.
 
-This does not change the existing user interface, the scaled weights are only
-used internally. We do not modify prio_to_weight values or inverses, but use
-the original weights when calculating the inverse which is used to scale
-execution time delta in calc_delta_mine(). This ensures we do not lose accuracy
-when accounting time to the sched entities. Thanks to Nikunj Dadhania for fixing
-an bug in c_d_m() that broken fairness.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Below is some analysis of the performance costs/improvements of this patch.
-
-1. Micro-arch performance costs:
-
-Experiment was to run Ingo's pipe_test_100k 200 times with the task pinned to
-one cpu. I measured instruction, cycles and stalled-cycles for the runs. See
-http://thread.gmane.org/gmane.linux.kernel/1129232/focus=1129389 for more info.
-
--tip (baseline):
-
- Performance counter stats for '/root/load-scale/pipe-test-100k' (200 runs):
-
-       964,991,769 instructions             #    0.82  insns per cycle
-                                            #    0.33  stalled cycles per insn
-                                            #    ( +-  0.05% )
-     1,171,186,635 cycles                   #    0.000 GHz                      ( +-  0.08% )
-       306,373,664 stalled-cycles-backend   #   26.16% backend  cycles idle     ( +-  0.28% )
-       314,933,621 stalled-cycles-frontend  #   26.89% frontend cycles idle     ( +-  0.34% )
-
-        1.122405684  seconds time elapsed  ( +-  0.05% )
-
--tip+patches:
-
- Performance counter stats for './load-scale/pipe-test-100k' (200 runs):
-
-       963,624,821 instructions             #    0.82  insns per cycle
-                                            #    0.33  stalled cycles per insn
-                                            #    ( +-  0.04% )
-     1,175,215,649 cycles                   #    0.000 GHz                      ( +-  0.08% )
-       315,321,126 stalled-cycles-backend   #   26.83% backend  cycles idle     ( +-  0.28% )
-       316,835,873 stalled-cycles-frontend  #   26.96% frontend cycles idle     ( +-  0.29% )
-
-        1.122238659  seconds time elapsed  ( +-  0.06% )
-
-With this patch, instructions decrease by ~0.10% and cycles increase by 0.27%.
-This doesn't look statistically significant. The number of stalled cycles in
-the backend increased from 26.16% to 26.83%. This can be attributed to the
-shifts we do in c_d_m() and other places. The fraction of stalled cycles in the
-frontend remains about the same, at 26.96% compared to 26.89% in -tip.
-
-2. Balancing low-weight task groups
-
-Test setup: run 50 tasks with random sleep/busy times (biased around 100ms) in
-a low weight container (with cpu.shares = 2). Measure %idle as reported by
-mpstat over a 10s window.
-
--tip (baseline):
-
-06:47:48 PM  CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest   %idle    intr/s
-06:47:49 PM  all   94.32    0.00    0.06    0.00    0.00    0.00    0.00    0.00    5.62  15888.00
-06:47:50 PM  all   94.57    0.00    0.62    0.00    0.00    0.00    0.00    0.00    4.81  16180.00
-06:47:51 PM  all   94.69    0.00    0.06    0.00    0.00    0.00    0.00    0.00    5.25  15966.00
-06:47:52 PM  all   95.81    0.00    0.00    0.00    0.00    0.00    0.00    0.00    4.19  16053.00
-06:47:53 PM  all   94.88    0.06    0.00    0.00    0.00    0.00    0.00    0.00    5.06  15984.00
-06:47:54 PM  all   93.31    0.00    0.00    0.00    0.00    0.00    0.00    0.00    6.69  15806.00
-06:47:55 PM  all   94.19    0.00    0.06    0.00    0.00    0.00    0.00    0.00    5.75  15896.00
-06:47:56 PM  all   92.87    0.00    0.00    0.00    0.00    0.00    0.00    0.00    7.13  15716.00
-06:47:57 PM  all   94.88    0.00    0.00    0.00    0.00    0.00    0.00    0.00    5.12  15982.00
-06:47:58 PM  all   95.44    0.00    0.00    0.00    0.00    0.00    0.00    0.00    4.56  16075.00
-Average:     all   94.49    0.01    0.08    0.00    0.00    0.00    0.00    0.00    5.42  15954.60
-
--tip+patches:
-
-06:47:03 PM  CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest   %idle    intr/s
-06:47:04 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16630.00
-06:47:05 PM  all   99.69    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.31  16580.20
-06:47:06 PM  all   99.69    0.00    0.06    0.00    0.00    0.00    0.00    0.00    0.25  16596.00
-06:47:07 PM  all   99.20    0.00    0.74    0.00    0.00    0.06    0.00    0.00    0.00  17838.61
-06:47:08 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16540.00
-06:47:09 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16575.00
-06:47:10 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16614.00
-06:47:11 PM  all   99.94    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.06  16588.00
-06:47:12 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00    0.00  16593.00
-06:47:13 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00    0.00  16551.00
-Average:     all   99.84    0.00    0.09    0.00    0.00    0.01    0.00    0.00    0.06  16711.58
-
-We see an improvement in idle% on the system (drops from 5.42% on -tip to 0.06%
-with the patches).
-
-Signed-off-by: Nikhil Rao <ncrao@google.com>
----
- include/linux/sched.h |   23 +++++++++++++++++++++--
- kernel/sched.c        |   28 ++++++++++++++++++++--------
- 2 files changed, 41 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f2f4402..c34a718 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -788,9 +788,28 @@ enum cpu_idle_type {
+--- linux-2.6.39-rc2-/sound/pci/Kconfig	2011-05-15 18:50:18.000000000 +0200
++++ linux-2.6.39-rc2/sound/pci/Kconfig	2011-05-17 23:35:30.000000000 +0200
+@@ -565,8 +565,8 @@ config SND_FM801_TEA575X_BOOL
+ 
+ config SND_TEA575X
+ 	tristate
+-	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO
+-	default SND_FM801 || SND_ES1968
++	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO || RADIO_SF16FMR2
++	default SND_FM801 || SND_ES1968 || RADIO_SF16FMR2
+ 
+ source "sound/pci/hda/Kconfig"
+ 
+--- linux-2.6.39-rc2-/drivers/media/radio/radio-sf16fmr2.c	2011-04-06 03:30:43.000000000 +0200
++++ linux-2.6.39-rc2/drivers/media/radio/radio-sf16fmr2.c	2011-05-18 22:41:07.000000000 +0200
+@@ -1,441 +1,204 @@
+-/* SF16FMR2 radio driver for Linux radio support
+- * heavily based on fmi driver...
+- * (c) 2000-2002 Ziglio Frediano, freddy77@angelfire.com
++/* SF16-FMR2 radio driver for Linux
++ * Copyright (c) 2011 Ondrej Zary
+  *
+- * Notes on the hardware
+- *
+- *  Frequency control is done digitally -- ie out(port,encodefreq(95.8));
+- *  No volume control - only mute/unmute - you have to use line volume
+- *
+- *  For read stereo/mono you must wait 0.1 sec after set frequency and
+- *  card unmuted so I set frequency on unmute
+- *  Signal handling seem to work only on autoscanning (not implemented)
+- *
+- *  Converted to V4L2 API by Mauro Carvalho Chehab <mchehab@infradead.org>
++ * Original driver was (c) 2000-2002 Ziglio Frediano, freddy77@angelfire.com
++ * but almost nothing remained here after conversion to generic TEA575x
++ * implementation
+  */
+ 
++#include <linux/delay.h>
+ #include <linux/module.h>	/* Modules 			*/
+ #include <linux/init.h>		/* Initdata			*/
+ #include <linux/ioport.h>	/* request_region		*/
+-#include <linux/delay.h>	/* udelay			*/
+-#include <linux/videodev2.h>	/* kernel radio structs		*/
+-#include <linux/mutex.h>
+-#include <linux/version.h>      /* for KERNEL_VERSION MACRO     */
+ #include <linux/io.h>		/* outb, outb_p			*/
+-#include <media/v4l2-device.h>
+-#include <media/v4l2-ioctl.h>
++#include <sound/tea575x-tuner.h>
+ 
+-MODULE_AUTHOR("Ziglio Frediano, freddy77@angelfire.com");
+-MODULE_DESCRIPTION("A driver for the SF16FMR2 radio.");
++MODULE_AUTHOR("Ondrej Zary");
++MODULE_DESCRIPTION("MediaForte SF16-FMR2 FM radio card driver");
+ MODULE_LICENSE("GPL");
+ 
+-static int io = 0x384;
+-static int radio_nr = -1;
+-
+-module_param(io, int, 0);
+-MODULE_PARM_DESC(io, "I/O address of the SF16FMR2 card (should be 0x384, if do not work try 0x284)");
+-module_param(radio_nr, int, 0);
+-
+-#define RADIO_VERSION KERNEL_VERSION(0,0,2)
+-
+-#define AUD_VOL_INDEX 1
+-
+-#undef DEBUG
+-//#define DEBUG 1
+-
+-#ifdef DEBUG
+-# define  debug_print(s) printk s
+-#else
+-# define  debug_print(s)
+-#endif
+-
+-/* this should be static vars for module size */
+-struct fmr2
+-{
+-	struct v4l2_device v4l2_dev;
+-	struct video_device vdev;
+-	struct mutex lock;
++struct fmr2 {
+ 	int io;
+-	int curvol; /* 0-15 */
+-	int mute;
+-	int stereo; /* card is producing stereo audio */
+-	unsigned long curfreq; /* freq in kHz */
+-	int card_type;
++	struct snd_tea575x tea;
++	struct v4l2_ctrl *volume;
++	struct v4l2_ctrl *balance;
  };
  
- /*
-- * Increase resolution of nice-level calculations:
-+ * Increase resolution of nice-level calculations for 64-bit architectures.
-+ * The extra resolution improves shares distribution and load balancing of
-+ * low-weight task groups (eg. nice +19 on an autogroup), deeper taskgroup
-+ * hierarchies, especially on larger systems. This is not a user-visible change
-+ * and does not change the user-interface for setting shares/weights.
-+ *
-+ * We increase resolution only if we have enough bits to allow this increased
-+ * resolution (i.e. BITS_PER_LONG > 32). The costs for increasing resolution
-+ * when BITS_PER_LONG <= 32 are pretty high and the returns do not justify the
-+ * increased costs.
-  */
--#define SCHED_LOAD_SHIFT	10
-+#if BITS_PER_LONG > 32
-+# define SCHED_LOAD_RESOLUTION	10
-+# define scale_load(w)		((w) << SCHED_LOAD_RESOLUTION)
-+# define scale_load_down(w)	((w) >> SCHED_LOAD_RESOLUTION)
-+#else
-+# define SCHED_LOAD_RESOLUTION	0
-+# define scale_load(w)		(w)
-+# define scale_load_down(w)	(w)
-+#endif
-+
-+#define SCHED_LOAD_SHIFT	(10 + SCHED_LOAD_RESOLUTION)
- #define SCHED_LOAD_SCALE	(1L << SCHED_LOAD_SHIFT)
++/* the port is hardwired so no need to support multiple cards */
++#define FMR2_PORT	0x384
+ static struct fmr2 fmr2_card;
  
- /*
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 375e9c6..bb504e1 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -293,7 +293,7 @@ static DEFINE_SPINLOCK(task_group_lock);
-  *  limitation from this.)
-  */
- #define MIN_SHARES	2
--#define MAX_SHARES	(1UL << 18)
-+#define MAX_SHARES	(1UL << (18 + SCHED_LOAD_RESOLUTION))
+-/* hw precision is 12.5 kHz
+- * It is only useful to give freq in interval of 200 (=0.0125Mhz),
+- * other bits will be truncated
+- */
+-#define RSF16_ENCODE(x)	((x) / 200 + 856)
+-#define RSF16_MINFREQ (87 * 16000)
+-#define RSF16_MAXFREQ (108 * 16000)
+-
+-static inline void wait(int n, int io)
+-{
+-	for (; n; --n)
+-		inb(io);
+-}
+-
+-static void outbits(int bits, unsigned int data, int nWait, int io)
+-{
+-	int bit;
+-
+-	for (; --bits >= 0;) {
+-		bit = (data >> bits) & 1;
+-		outb(bit, io);
+-		wait(nWait, io);
+-		outb(bit | 2, io);
+-		wait(nWait, io);
+-		outb(bit, io);
+-		wait(nWait, io);
+-	}
+-}
+-
+-static inline void fmr2_mute(int io)
+-{
+-	outb(0x00, io);
+-	wait(4, io);
+-}
+-
+-static inline void fmr2_unmute(int io)
+-{
+-	outb(0x04, io);
+-	wait(4, io);
+-}
+-
+-static inline int fmr2_stereo_mode(int io)
+-{
+-	int n = inb(io);
+-
+-	outb(6, io);
+-	inb(io);
+-	n = ((n >> 3) & 1) ^ 1;
+-	debug_print((KERN_DEBUG "stereo: %d\n", n));
+-	return n;
+-}
+-
+-static int fmr2_product_info(struct fmr2 *dev)
+-{
+-	int n = inb(dev->io);
+-
+-	n &= 0xC1;
+-	if (n == 0) {
+-		/* this should support volume set */
+-		dev->card_type = 12;
+-		return 0;
+-	}
+-	/* not volume (mine is 11) */
+-	dev->card_type = (n == 128) ? 11 : 0;
+-	return n;
+-}
+-
+-static inline int fmr2_getsigstr(struct fmr2 *dev)
+-{
+-	/* !!! works only if scanning freq */
+-	int res = 0xffff;
+-
+-	outb(5, dev->io);
+-	wait(4, dev->io);
+-	if (!(inb(dev->io) & 1))
+-		res = 0;
+-	debug_print((KERN_DEBUG "signal: %d\n", res));
+-	return res;
+-}
+-
+-/* set frequency and unmute card */
+-static int fmr2_setfreq(struct fmr2 *dev)
+-{
+-	unsigned long freq = dev->curfreq;
+-
+-	fmr2_mute(dev->io);
+-
+-	/* 0x42 for mono output
+-	 * 0x102 forward scanning
+-	 * 0x182 scansione avanti
+-	 */
+-	outbits(9, 0x2, 3, dev->io);
+-	outbits(16, RSF16_ENCODE(freq), 2, dev->io);
+-
+-	fmr2_unmute(dev->io);
+-
+-	/* wait 0.11 sec */
+-	msleep(110);
+-
+-	/* NOTE if mute this stop radio
+-	   you must set freq on unmute */
+-	dev->stereo = fmr2_stereo_mode(dev->io);
+-	return 0;
+-}
+-
+-/* !!! not tested, in my card this does't work !!! */
+-static int fmr2_setvolume(struct fmr2 *dev)
+-{
+-	int vol[16] = { 0x021, 0x084, 0x090, 0x104,
+-			0x110, 0x204, 0x210, 0x402,
+-			0x404, 0x408, 0x410, 0x801,
+-			0x802, 0x804, 0x808, 0x810 };
+-	int i, a;
+-	int n = vol[dev->curvol & 0x0f];
+-
+-	if (dev->card_type != 11)
+-		return 1;
+-
+-	for (i = 12; --i >= 0; ) {
+-		a = ((n >> i) & 1) << 6; /* if (a==0) a = 0; else a = 0x40; */
+-		outb(a | 4, dev->io);
+-		wait(4, dev->io);
+-		outb(a | 0x24, dev->io);
+-		wait(4, dev->io);
+-		outb(a | 4, dev->io);
+-		wait(4, dev->io);
+-	}
+-	for (i = 6; --i >= 0; ) {
+-		a = ((0x18 >> i) & 1) << 6;
+-		outb(a | 4, dev->io);
+-		wait(4, dev->io);
+-		outb(a | 0x24, dev->io);
+-		wait(4, dev->io);
+-		outb(a | 4, dev->io);
+-		wait(4, dev->io);
+-	}
+-	wait(4, dev->io);
+-	outb(0x14, dev->io);
+-	return 0;
+-}
+-
+-static int vidioc_querycap(struct file *file, void  *priv,
+-					struct v4l2_capability *v)
+-{
+-	strlcpy(v->driver, "radio-sf16fmr2", sizeof(v->driver));
+-	strlcpy(v->card, "SF16-FMR2 radio", sizeof(v->card));
+-	strlcpy(v->bus_info, "ISA", sizeof(v->bus_info));
+-	v->version = RADIO_VERSION;
+-	v->capabilities = V4L2_CAP_TUNER | V4L2_CAP_RADIO;
+-	return 0;
+-}
++/* TEA575x tuner pins */
++#define STR_DATA	(1 << 0)
++#define STR_CLK		(1 << 1)
++#define STR_WREN	(1 << 2)
++#define STR_MOST	(1 << 3)
++/* PT2254A/TC9154A volume control pins */
++#define PT_ST		(1 << 4)
++#define PT_CK		(1 << 5)
++#define PT_DATA		(1 << 6)
++/* volume control presence pin */
++#define FMR2_HASVOL	(1 << 7)
  
- static int root_task_group_load = ROOT_TASK_GROUP_LOAD;
- #endif
-@@ -1330,13 +1330,25 @@ calc_delta_mine(unsigned long delta_exec, unsigned long weight,
+-static int vidioc_g_tuner(struct file *file, void *priv,
+-					struct v4l2_tuner *v)
++static void fmr2_tea575x_set_pins(struct snd_tea575x *tea, u8 pins)
  {
- 	u64 tmp;
+-	struct fmr2 *fmr2 = video_drvdata(file);
++	struct fmr2 *fmr2 = tea->private_data;
++	u8 bits = 0;
  
--	tmp = (u64)delta_exec * weight;
-+	/*
-+	 * weight can be less than 2^SCHED_LOAD_RESOLUTION for task group sched
-+	 * entities since MIN_SHARES = 2. Treat weight as 1 if less than
-+	 * 2^SCHED_LOAD_RESOLUTION.
-+	 */
-+	if (likely(weight > (1UL << SCHED_LOAD_RESOLUTION)))
-+		tmp = (u64)delta_exec * scale_load_down(weight);
-+	else
-+		tmp = (u64)delta_exec;
+-	if (v->index > 0)
+-		return -EINVAL;
+-
+-	strlcpy(v->name, "FM", sizeof(v->name));
+-	v->type = V4L2_TUNER_RADIO;
+-
+-	v->rangelow = RSF16_MINFREQ;
+-	v->rangehigh = RSF16_MAXFREQ;
+-	v->rxsubchans = fmr2->stereo ? V4L2_TUNER_SUB_STEREO :
+-					V4L2_TUNER_SUB_MONO;
+-	v->capability = V4L2_TUNER_CAP_STEREO | V4L2_TUNER_CAP_LOW;
+-	v->audmode = V4L2_TUNER_MODE_STEREO;
+-	mutex_lock(&fmr2->lock);
+-	v->signal = fmr2_getsigstr(fmr2);
+-	mutex_unlock(&fmr2->lock);
+-	return 0;
+-}
++	bits |= (pins & TEA575X_DATA) ? STR_DATA : 0;
++	bits |= (pins & TEA575X_CLK)  ? STR_CLK  : 0;
++	/* WRITE_ENABLE is inverted, DATA must be high during read */
++	bits |= (pins & TEA575X_WREN) ? 0 : STR_WREN | STR_DATA;
  
- 	if (!lw->inv_weight) {
--		if (BITS_PER_LONG > 32 && unlikely(lw->weight >= WMULT_CONST))
-+		unsigned long w = scale_load_down(lw->weight);
+-static int vidioc_s_tuner(struct file *file, void *priv,
+-					struct v4l2_tuner *v)
+-{
+-	return v->index ? -EINVAL : 0;
++	outb(bits, fmr2->io);
+ }
+ 
+-static int vidioc_s_frequency(struct file *file, void *priv,
+-					struct v4l2_frequency *f)
++static u8 fmr2_tea575x_get_pins(struct snd_tea575x *tea)
+ {
+-	struct fmr2 *fmr2 = video_drvdata(file);
++	struct fmr2 *fmr2 = tea->private_data;
++	u8 bits = inb(fmr2->io);
+ 
+-	if (f->tuner != 0 || f->type != V4L2_TUNER_RADIO)
+-		return -EINVAL;
+-	if (f->frequency < RSF16_MINFREQ ||
+-			f->frequency > RSF16_MAXFREQ)
+-		return -EINVAL;
+-	/* rounding in steps of 200 to match the freq
+-	   that will be used */
+-	fmr2->curfreq = (f->frequency / 200) * 200;
+-
+-	/* set card freq (if not muted) */
+-	if (fmr2->curvol && !fmr2->mute) {
+-		mutex_lock(&fmr2->lock);
+-		fmr2_setfreq(fmr2);
+-		mutex_unlock(&fmr2->lock);
+-	}
+-	return 0;
++	return  (bits & STR_DATA) ? TEA575X_DATA : 0 |
++		(bits & STR_MOST) ? TEA575X_MOST : 0;
+ }
+ 
+-static int vidioc_g_frequency(struct file *file, void *priv,
+-					struct v4l2_frequency *f)
++static void fmr2_tea575x_set_direction(struct snd_tea575x *tea, bool output)
+ {
+-	struct fmr2 *fmr2 = video_drvdata(file);
+-
+-	if (f->tuner != 0)
+-		return -EINVAL;
+-	f->type = V4L2_TUNER_RADIO;
+-	f->frequency = fmr2->curfreq;
+-	return 0;
+ }
+ 
+-static int vidioc_queryctrl(struct file *file, void *priv,
+-					struct v4l2_queryctrl *qc)
+-{
+-	struct fmr2 *fmr2 = video_drvdata(file);
++static struct snd_tea575x_ops fmr2_tea_ops = {
++	.set_pins = fmr2_tea575x_set_pins,
++	.get_pins = fmr2_tea575x_get_pins,
++	.set_direction = fmr2_tea575x_set_direction,
++};
+ 
+-	switch (qc->id) {
+-	case V4L2_CID_AUDIO_MUTE:
+-		return v4l2_ctrl_query_fill(qc, 0, 1, 1, 1);
+-	case V4L2_CID_AUDIO_VOLUME:
+-		/* Only card_type == 11 implements volume */
+-		if (fmr2->card_type == 11)
+-			return v4l2_ctrl_query_fill(qc, 0, 15, 1, 0);
+-		return v4l2_ctrl_query_fill(qc, 0, 1, 1, 0);
+-	}
+-	return -EINVAL;
+-}
++/* TC9154A/PT2254A volume control */
+ 
+-static int vidioc_g_ctrl(struct file *file, void *priv,
+-					struct v4l2_control *ctrl)
+-{
+-	struct fmr2 *fmr2 = video_drvdata(file);
++/* 18-bit shift register bit definitions */
++#define TC9154A_ATT_MAJ_0DB	(1 << 0)
++#define TC9154A_ATT_MAJ_10DB	(1 << 1)
++#define TC9154A_ATT_MAJ_20DB	(1 << 2)
++#define TC9154A_ATT_MAJ_30DB	(1 << 3)
++#define TC9154A_ATT_MAJ_40DB	(1 << 4)
++#define TC9154A_ATT_MAJ_50DB	(1 << 5)
++#define TC9154A_ATT_MAJ_60DB	(1 << 6)
 +
-+		if (BITS_PER_LONG > 32 && unlikely(w >= WMULT_CONST))
- 			lw->inv_weight = 1;
-+		else if (unlikely(!w))
-+			lw->inv_weight = WMULT_CONST;
- 		else
--			lw->inv_weight = WMULT_CONST / lw->weight;
-+			lw->inv_weight = WMULT_CONST / w;
++#define TC9154A_ATT_MIN_0DB	(1 << 7)
++#define TC9154A_ATT_MIN_2DB	(1 << 8)
++#define TC9154A_ATT_MIN_4DB	(1 << 9)
++#define TC9154A_ATT_MIN_6DB	(1 << 10)
++#define TC9154A_ATT_MIN_8DB	(1 << 11)
++/* bit 12 is ignored */
++#define TC9154A_CHANNEL_LEFT	(1 << 13)
++#define TC9154A_CHANNEL_RIGHT	(1 << 14)
++/* bits 15, 16, 17 must be 0 */
++
++#define	TC9154A_ATT_MAJ(x)	(1 << x)
++#define TC9154A_ATT_MIN(x)	(1 << (7 + x))
++
++static void tc9154a_set_pins(struct fmr2 *fmr2, u8 pins)
++{
++	if (!fmr2->tea.mute)
++		pins |= STR_WREN;
++
++	outb(pins, fmr2->io);
++}
++
++static void tc9154a_set_attenuation(struct fmr2 *fmr2, int att, u32 channel)
++{
++	int i;
++	u32 reg;
++	u8 bit;
++
++	reg = TC9154A_ATT_MAJ(att / 10) | TC9154A_ATT_MIN((att % 10) / 2);
++	reg |= channel;
++	/* write 18-bit shift register, LSB first */
++	for (i = 0; i < 18; i++) {
++		bit = reg & (1 << i) ? PT_DATA : 0;
++		tc9154a_set_pins(fmr2, bit);
++		udelay(5);
++		tc9154a_set_pins(fmr2, bit | PT_CK);
++		udelay(5);
++		tc9154a_set_pins(fmr2, bit);
++	}
++
++	/* latch register data */
++	udelay(5);
++	tc9154a_set_pins(fmr2, PT_ST);
++	udelay(5);
++	tc9154a_set_pins(fmr2, 0);
++}
++
++static int fmr2_s_ctrl(struct v4l2_ctrl *ctrl)
++{
++	struct snd_tea575x *tea = container_of(ctrl->handler, struct snd_tea575x, ctrl_handler);
++	struct fmr2 *fmr2 = tea->private_data;
++	int volume, balance, left, right;
+ 
+ 	switch (ctrl->id) {
+-	case V4L2_CID_AUDIO_MUTE:
+-		ctrl->value = fmr2->mute;
+-		return 0;
+ 	case V4L2_CID_AUDIO_VOLUME:
+-		ctrl->value = fmr2->curvol;
+-		return 0;
+-	}
+-	return -EINVAL;
+-}
+-
+-static int vidioc_s_ctrl(struct file *file, void *priv,
+-					struct v4l2_control *ctrl)
+-{
+-	struct fmr2 *fmr2 = video_drvdata(file);
+-
+-	switch (ctrl->id) {
+-	case V4L2_CID_AUDIO_MUTE:
+-		fmr2->mute = ctrl->value;
++		volume = ctrl->val;
++		balance = fmr2->balance->cur.val;
+ 		break;
+-	case V4L2_CID_AUDIO_VOLUME:
+-		fmr2->curvol = ctrl->value;
++	case V4L2_CID_AUDIO_BALANCE:
++		balance = ctrl->val;
++		volume = fmr2->volume->cur.val;
+ 		break;
+ 	default:
+ 		return -EINVAL;
  	}
  
- 	/*
-@@ -1785,12 +1797,12 @@ static void set_load_weight(struct task_struct *p)
- 	 * SCHED_IDLE tasks get minimal weight:
- 	 */
- 	if (p->policy == SCHED_IDLE) {
--		load->weight = WEIGHT_IDLEPRIO;
-+		load->weight = scale_load(WEIGHT_IDLEPRIO);
- 		load->inv_weight = WMULT_IDLEPRIO;
- 		return;
+-#ifdef DEBUG
+-	if (fmr2->curvol && !fmr2->mute)
+-		printk(KERN_DEBUG "unmute\n");
+-	else
+-		printk(KERN_DEBUG "mute\n");
+-#endif
+-
+-	mutex_lock(&fmr2->lock);
+-	if (fmr2->curvol && !fmr2->mute) {
+-		fmr2_setvolume(fmr2);
+-		/* Set frequency and unmute card */
+-		fmr2_setfreq(fmr2);
+-	} else
+-		fmr2_mute(fmr2->io);
+-	mutex_unlock(&fmr2->lock);
+-	return 0;
+-}
++	left = right = volume;
++	if (balance < 0)
++		right = max(0, right + balance);
++	if (balance > 0)
++		left = max(0, left - balance);
++
++	tc9154a_set_attenuation(fmr2, abs(left - 68), TC9154A_CHANNEL_LEFT);
++	tc9154a_set_attenuation(fmr2, abs(right - 68), TC9154A_CHANNEL_RIGHT);
+ 
+-static int vidioc_g_input(struct file *filp, void *priv, unsigned int *i)
+-{
+-	*i = 0;
+ 	return 0;
+ }
+ 
+-static int vidioc_s_input(struct file *filp, void *priv, unsigned int i)
+-{
+-	return i ? -EINVAL : 0;
+-}
++static const struct v4l2_ctrl_ops fmr2_ctrl_ops = {
++	.s_ctrl = fmr2_s_ctrl,
++};
+ 
+-static int vidioc_g_audio(struct file *file, void *priv,
+-					struct v4l2_audio *a)
++static void fmr2_tea_ext_init(struct snd_tea575x *tea)
+ {
+-	a->index = 0;
+-	strlcpy(a->name, "Radio", sizeof(a->name));
+-	a->capability = V4L2_AUDCAP_STEREO;
+-	return 0;
+-}
++	struct fmr2 *fmr2 = tea->private_data;
+ 
+-static int vidioc_s_audio(struct file *file, void *priv,
+-					struct v4l2_audio *a)
+-{
+-	return a->index ? -EINVAL : 0;
++	if (inb(fmr2->io) & FMR2_HASVOL) {
++		fmr2->volume = v4l2_ctrl_new_std(&tea->ctrl_handler, &fmr2_ctrl_ops, V4L2_CID_AUDIO_VOLUME, 0, 68, 2, 56);
++		fmr2->balance = v4l2_ctrl_new_std(&tea->ctrl_handler, &fmr2_ctrl_ops, V4L2_CID_AUDIO_BALANCE, -68, 68, 2, 0);
++		v4l2_ctrl_handler_setup(&tea->ctrl_handler);
++	}
+ }
+ 
+-static const struct v4l2_file_operations fmr2_fops = {
+-	.owner          = THIS_MODULE,
+-	.unlocked_ioctl = video_ioctl2,
+-};
+-
+-static const struct v4l2_ioctl_ops fmr2_ioctl_ops = {
+-	.vidioc_querycap    = vidioc_querycap,
+-	.vidioc_g_tuner     = vidioc_g_tuner,
+-	.vidioc_s_tuner     = vidioc_s_tuner,
+-	.vidioc_g_audio     = vidioc_g_audio,
+-	.vidioc_s_audio     = vidioc_s_audio,
+-	.vidioc_g_input     = vidioc_g_input,
+-	.vidioc_s_input     = vidioc_s_input,
+-	.vidioc_g_frequency = vidioc_g_frequency,
+-	.vidioc_s_frequency = vidioc_s_frequency,
+-	.vidioc_queryctrl   = vidioc_queryctrl,
+-	.vidioc_g_ctrl      = vidioc_g_ctrl,
+-	.vidioc_s_ctrl      = vidioc_s_ctrl,
+-};
+-
+ static int __init fmr2_init(void)
+ {
+ 	struct fmr2 *fmr2 = &fmr2_card;
+-	struct v4l2_device *v4l2_dev = &fmr2->v4l2_dev;
+-	int res;
+ 
+-	strlcpy(v4l2_dev->name, "sf16fmr2", sizeof(v4l2_dev->name));
+-	fmr2->io = io;
+-	fmr2->stereo = 1;
+-	mutex_init(&fmr2->lock);
++	fmr2->io = FMR2_PORT;
+ 
+-	if (!request_region(fmr2->io, 2, "sf16fmr2")) {
+-		v4l2_err(v4l2_dev, "request_region failed!\n");
++	if (!request_region(fmr2->io, 2, "SF16-FMR2")) {
++		printk(KERN_ERR "I/O port 0x%x already in use\n", fmr2->io);
+ 		return -EBUSY;
  	}
  
--	load->weight = prio_to_weight[prio];
-+	load->weight = scale_load(prio_to_weight[prio]);
- 	load->inv_weight = prio_to_wmult[prio];
+-	res = v4l2_device_register(NULL, v4l2_dev);
+-	if (res < 0) {
+-		release_region(fmr2->io, 2);
+-		v4l2_err(v4l2_dev, "Could not register v4l2_device\n");
+-		return res;
+-	}
+-
+-	strlcpy(fmr2->vdev.name, v4l2_dev->name, sizeof(fmr2->vdev.name));
+-	fmr2->vdev.v4l2_dev = v4l2_dev;
+-	fmr2->vdev.fops = &fmr2_fops;
+-	fmr2->vdev.ioctl_ops = &fmr2_ioctl_ops;
+-	fmr2->vdev.release = video_device_release_empty;
+-	video_set_drvdata(&fmr2->vdev, fmr2);
+-
+-	/* mute card - prevents noisy bootups */
+-	fmr2_mute(fmr2->io);
+-	fmr2_product_info(fmr2);
++	fmr2->tea.private_data = fmr2;
++	fmr2->tea.ops = &fmr2_tea_ops;
++	fmr2->tea.ext_init = fmr2_tea_ext_init;
++	strlcpy(fmr2->tea.card, "SF16-FMR2", sizeof(fmr2->tea.card));
++	strcpy(fmr2->tea.bus_info, "ISA");
+ 
+-	if (video_register_device(&fmr2->vdev, VFL_TYPE_RADIO, radio_nr) < 0) {
+-		v4l2_device_unregister(v4l2_dev);
++	if (snd_tea575x_init(&fmr2->tea)) {
++		printk(KERN_ERR "Unable to detect TEA575x tuner\n");
+ 		release_region(fmr2->io, 2);
+-		return -EINVAL;
++		return -ENODEV;
+ 	}
+ 
+-	v4l2_info(v4l2_dev, "SF16FMR2 radio card driver at 0x%x.\n", fmr2->io);
+-	debug_print((KERN_DEBUG "card_type %d\n", fmr2->card_type));
++	printk(KERN_INFO "SF16-FMR2 radio card at 0x%x.\n", fmr2->io);
+ 	return 0;
  }
  
-@@ -8809,14 +8821,14 @@ cpu_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
- static int cpu_shares_write_u64(struct cgroup *cgrp, struct cftype *cftype,
- 				u64 shareval)
+@@ -443,22 +206,9 @@ static void __exit fmr2_exit(void)
  {
--	return sched_group_set_shares(cgroup_tg(cgrp), shareval);
-+	return sched_group_set_shares(cgroup_tg(cgrp), scale_load(shareval));
+ 	struct fmr2 *fmr2 = &fmr2_card;
+ 
+-	video_unregister_device(&fmr2->vdev);
+-	v4l2_device_unregister(&fmr2->v4l2_dev);
++	snd_tea575x_exit(&fmr2->tea);
+ 	release_region(fmr2->io, 2);
  }
  
- static u64 cpu_shares_read_u64(struct cgroup *cgrp, struct cftype *cft)
- {
- 	struct task_group *tg = cgroup_tg(cgrp);
- 
--	return (u64) tg->shares;
-+	return (u64) scale_load_down(tg->shares);
- }
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- 
--- 
-1.7.3.1
+ module_init(fmr2_init);
+ module_exit(fmr2_exit);
+-
+-#ifndef MODULE
+-
+-static int __init fmr2_setup_io(char *str)
+-{
+-	get_option(&str, &io);
+-	return 1;
+-}
+-
+-__setup("sf16fmr2=", fmr2_setup_io);
+-
+-#endif
 
+
+-- 
+Ondrej Zary
