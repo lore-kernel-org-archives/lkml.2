@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab1ERUAe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 16:00:34 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36241 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752976Ab1ERUAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 16:00:31 -0400
-Date: Wed, 18 May 2011 12:55:14 -0700
-From: Greg KH <gregkh@suse.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Milton Miller <miltonm@bga.com>, sparclinux@vger.kernel.org,
+	id S1752624Ab1ERT5S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 15:57:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54633 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751527Ab1ERT5Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 15:57:16 -0400
+Date: Wed, 18 May 2011 12:56:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Michal Nazarewicz <mina86@mina86.com>,
+        Andy Whitcroft <apw@canonical.com>, Jiri Slaby <jirislaby@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, Josip Rodin <joy@entuzijast.net>
-Subject: Re: [PATCH 2/2] drivercore: revert addition of of_match to struct
- device
-Message-ID: <20110518195514.GB28653@suse.de>
-References: <20110518185751.28986.69446.stgit@ponder>
- <20110518192105.28986.53198.stgit@ponder>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110518192105.28986.53198.stgit@ponder>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 0/4] v6 Improve task->comm locking situation
+Message-Id: <20110518125616.b57e1881.akpm@linux-foundation.org>
+In-Reply-To: <20110518194811.GD6225@elte.hu>
+References: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
+	<20110518062554.GB2945@elte.hu>
+	<1305745409.2915.178.camel@work-vm>
+	<20110518123335.62785884.akpm@linux-foundation.org>
+	<20110518194811.GD6225@elte.hu>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 01:21:05PM -0600, Grant Likely wrote:
-> Commit b826291c, "drivercore/dt: add a match table pointer to struct
-> device" added an of_match pointer to struct device to cache the
-> of_match_table entry discovered at driver match time.  This was unsafe
-> because matching is not an atomic operation with probing a driver.  If
-> two or more drivers are attempted to be matched to a driver at the
-> same time, then the cached matching entry pointer could get
-> overwritten.
-> 
-> This patch reverts the of_match cache pointer and reworks all users to
-> call of_match_device() directly instead.
-> 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+On Wed, 18 May 2011 21:48:11 +0200
+Ingo Molnar <mingo@elte.hu> wrote:
 
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Dunno, %ptc ties into lowlevel sprintf() and takes a spinlock!
+
+yup, that's a problem.
+
+> Oh, out of morbid curiosity, mind providing a log of bigger past incidents 
+> where you had to stick pins into a doll of me? (In private mail, if the list is 
+> too long ;-)
+
+http://0.tqn.com/d/urbanlegends/1/0/m/B/porcupine2.jpg
