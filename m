@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808Ab1ERKvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 06:51:14 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:48843 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932168Ab1ERKvM (ORCPT
+	id S932834Ab1ERKvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 06:51:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58466 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932756Ab1ERKvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 06:51:12 -0400
-Date: Wed, 18 May 2011 13:51:05 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com
-Subject: Re: [RESEND][PATCH 3/5] arm: omap: usb: device name change for the
- clk names of usbhs
-Message-ID: <20110518105102.GF13908@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1305538681-21062-1-git-send-email-keshava_mgowda@ti.com>
+	Wed, 18 May 2011 06:51:14 -0400
+Date: Wed, 18 May 2011 12:51:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Subject: Re: [PATCH V4] irq: uninline generic_handle_irq, export handle_simple_irq,
+ irq_modify_status, generic_handle_irq, irq_alloc_descs and irq_free_descs
+In-Reply-To: <1305711544-505-1-git-send-email-jic23@cam.ac.uk>
+Message-ID: <alpine.LFD.2.02.1105181249470.3078@ionos>
+References: <1305711544-505-1-git-send-email-jic23@cam.ac.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="b8GWCKCLzrXbuNet"
-Content-Disposition: inline
-In-Reply-To: <1305538681-21062-1-git-send-email-keshava_mgowda@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 18 May 2011, Jonathan Cameron wrote:
+> Hi Thomas,
+> 
+> Looking a bit more at possible locations it is clear that CONFIG_GENERIC_HARDIRQS
+> only exists as an ifdef in irqdesc.c so I guess that is the least intrusive place
+> to move this to.
 
---b8GWCKCLzrXbuNet
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Bah, that ifdef there is completely useless. kernel/irq/ is only built
+when CONFIG_GENERIC_HARDIRQS=y. I fix that.
 
-On Mon, May 16, 2011 at 03:08:01PM +0530, Keshava Munegowda wrote:
-> device name usbhs clocks are changed from
-> usbhs-omap.0 to usbhs_omap; this is because
-> in the hwmod registration the device name is set
-> as usbhs_omap
->=20
-> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+Thanks,
 
-applied, thanks
-
---=20
-balbi
-
---b8GWCKCLzrXbuNet
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN06SWAAoJEAv8Txj19kN1o2kH/jTQWuRT3fObcPSzeeF/8FgA
-tIwwcEdelSnZD7gGn7nJuwFXEsAERWivwBz8MvqJ6J0Qg3OpNKyM7oWDQx6HbF2M
-op2J/LlR8qvGsc2Saw1PYHMbu9qxuqrvQz1FgzRQ95+O4SmL0gGAs5W+mx0niS3H
-KLib7XkoHO2meNyd7v5s7RQXK0Weah/7Rs1wWTUIiMCta7AcvzYTYnuBc/vaGI2E
-xCbpo45nErnfiI5jg8J3HbGg2lV1RUMvMhWxRbOP0PVjPiHusTZrjCJ80tyJrwS9
-9X951X88tsTR7CTbo2qcMEtbYu4BKDESePsPXaAVtvo1H0jSEwfbGOs+RQajmCM=
-=Dj9P
------END PGP SIGNATURE-----
-
---b8GWCKCLzrXbuNet--
+	tglx
