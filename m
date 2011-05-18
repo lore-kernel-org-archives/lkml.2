@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab1ERWS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 18:18:28 -0400
-Received: from smtp10.hushmail.com ([65.39.178.143]:37248 "EHLO
-	smtp10.hushmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab1ERWS1 (ORCPT
+	id S1753784Ab1ERWT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 18:19:58 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33147 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202Ab1ERWT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 18:18:27 -0400
-X-Greylist: delayed 864 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 May 2011 18:18:27 EDT
-X-Hush-Verified-Domain: hushmail.com
+	Wed, 18 May 2011 18:19:57 -0400
+Date: Wed, 18 May 2011 23:19:54 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Bibek BASU <bibek.basu@stericsson.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Juergen Beisert <jbe@pengutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: Smartcard/SIM card subsystem, LDO regulator and signal
+	modelling
+Message-ID: <20110518221951.GD20909@sirena.org.uk>
+References: <BANLkTikAzjmVoNK20RHRkhHkn3YgSra6dA@mail.gmail.com> <20110518162558.GA16414@opensource.wolfsonmicro.com> <BANLkTinc-KXfe3aLgX0DPuSj0_+7gBO0vg@mail.gmail.com>
 MIME-Version: 1.0
-Date: Thu, 19 May 2011 06:18:27 +0800
-To: linux-kernel@vger.kernel.org
-Subject: Sing-a-pore Citizen Mr. Teo En Ming (Zhang Enming) Invites You to Visit AboveTopSecret.com
-From: "Singapore Citizen Mr. Teo En Ming (Zhang Enming)" 
-	<singaporean_mr_teo_en_ming@hushmail.com>
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset="UTF-8"
-Message-Id: <20110518221827.1B79810E2BB@smtp.hushmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinc-KXfe3aLgX0DPuSj0_+7gBO0vg@mail.gmail.com>
+X-Cookie: Forgive and forget.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: Sing-a-pore Citizen Mr. Teo En Ming (Zhang Enming) Invites 
-You to Visit AboveTopSecret.com
+On Wed, May 18, 2011 at 07:03:38PM +0200, Linus Walleij wrote:
 
-Link/URL: http://www.abovetopsecret.com/
+> I am now starting to contemplate if I should rename the pinmux
+> subsystem to "pinctrl" and not only handle muxing but also
+> biasing in that system.
 
-Yours sincerely,
-
-Sing-a-pore Citizen Mr. Teo En Ming (Zhang Enming) 
-Dip(Mechatronics) BEng(Hons)(Mechanical Engineering)
-Alma Maters:
-(1) Sing-a-pore Polytechnic (Graduated 1998)
-(2) National University of Sing-a-pore (Graduated 2006)
-Sing-a-pore Identity Card No/NRIC: S78*6*2*H
-Location: Toa Payoh Lorong 5, Sing-a-pore
-Mobile Phone: +65-8369-2618
-Date of Birth: 5th March 1978
-
+I've not yet had time to look at pinmux but I'd certainly expect that
+sort of feature - many systems rely on the mode configuration to get the
+functions working (eg, I2C might be a function but you also need to put
+the pin into open drain mode for it to function correctly).
