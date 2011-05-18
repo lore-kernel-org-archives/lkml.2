@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933535Ab1ERSgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 14:36:43 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:44224 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933460Ab1ERSgl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 14:36:41 -0400
-Date: Wed, 18 May 2011 20:36:38 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] PM / Hibernate: Add sysfs knob to control size of
- memory for drivers
-Message-ID: <20110518183638.GA8887@elf.ucw.cz>
-References: <201105100059.25372.rjw@sisk.pl>
- <201105150056.55601.rjw@sisk.pl>
- <20110518172717.GA5734@elf.ucw.cz>
- <201105182009.55813.Martin@lichtvoll.de>
+	id S933522Ab1ERSkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 14:40:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7053 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753107Ab1ERSkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 14:40:06 -0400
+Date: Wed, 18 May 2011 20:38:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 04/10] ptrace: implement PTRACE_INTERRUPT
+Message-ID: <20110518183815.GA1064@redhat.com>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201105182009.55813.Martin@lichtvoll.de>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1305569849-10448-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 05/16, Tejun Heo wrote:
+>
+> +	case PTRACE_INTERRUPT:
+> +		/*
+> +		 * Stop tracee without any side-effect on signal or job
+> +		 * control.  At least one trap is guaranteed to happen
+> +		 * after this request.  If @child is already trapped, the
+> +		 * current trap is not disturbed and another trap will
+> +		 * happen after the current trap is ended with PTRACE_CONT.
+> +		 *
+> +		 * The actual trap might not be PTRACE_EVENT_STOP trap but
+> +		 * the pending condition is cleared regardless.
+> +		 */
+> +		if (likely(child->ptrace & PT_SEIZED) &&
+> +		    lock_task_sighand(child, &flags)) {
+> +			child->jobctl |= JOBCTL_TRAP_STOP;
 
-> > > OK, there are no comments, so my understanding is that everyone is
-> > > fine with this patch and I can add it to my linux-next branch.
-> > 
-> > Actually no, I don't like it. Yes, knob might be useful for debugging,
-> > but having it as part of official kernel interface...
-> 
-> Well I and people with similar setups it is actually quite useful. It 
-> makes the difference between does hibernate *every time* versus does not 
-> hibernate sometimes. And I don't see why it can't go again, when the issue 
-> is taken care of elsewise in the future. I think that autotuning / drivers 
-> allocating their memory via whatnot is better, but until such a mechanism 
-> is agreed, developed and included in official kernel I do think that this 
-> knob does help.
+The same race with do_signal_stop() afaics.
 
-Yes, autotuning would be better, and yes, knob is useful for you now.
+Otherwise looks fine to me. Compared to V1, personally I like the new
+behaviour more. PTRACE_INTERRUPT and PTRACE_SEIZE do the same.
 
-I'd say the knob is for debugging and should go to debugfs somewhere.
+Oleg.
 
-> I think missing is some documentation so that the advanced user can figure 
-> out this knob.
-
-...so we can easily delete the knob when it is no longer neccessary.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
