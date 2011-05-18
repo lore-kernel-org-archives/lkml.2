@@ -1,39 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933592Ab1ERSwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 14:52:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60375 "EHLO mx1.redhat.com"
+	id S933579Ab1ERSvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 14:51:53 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3113 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933549Ab1ERSwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 14:52:49 -0400
-Date: Wed, 18 May 2011 20:50:50 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and
-	group stop notification, take#2
-Message-ID: <20110518185050.GC1064@redhat.com>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org>
+	id S933509Ab1ERSvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 14:51:51 -0400
+Message-ID: <4DD41544.2030508@canonical.com>
+Date: Wed, 18 May 2011 12:51:48 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305569849-10448-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Christoph Hellwig <hch@infradead.org>
+CC: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] 2.6.39-rc7+ fs: Fix spinlock recursion in get_active_super()
+References: <20110518163500.5CA99F912D@sepang.rtg.net> <20110518181520.GA17242@infradead.org>
+In-Reply-To: <20110518181520.GA17242@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16, Tejun Heo wrote:
+On 05/18/2011 12:15 PM, Christoph Hellwig wrote:
+> How can you reproduce that recursion?  Given that grab_super drops
+> sb_lock I can't see any way to hit it.
 >
-> This patchset is on top of Oleg's ptrace branch[3] + prep patchset[2]
-> and available in the following git branch.
 
-IIUC 8/9 from prep patchset[2] needs the fix, do_wait()->restart_syscall()
-is not right. Do you agree or I misunderstood the result of our discussion?
+Dang, you're right. Consider it NAKd
 
-I'll continue the reading tomorrow.
-
-Oleg.
-
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
