@@ -1,140 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab1ERPet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 11:34:49 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:35272 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756547Ab1ERPes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 11:34:48 -0400
-Date: Wed, 18 May 2011 10:34:45 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Andrea Arcangeli <aarcange@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Russ Anderson <rja@sgi.com>
-Subject: [PATCH] [BUGFIX] mm: hugepages can cause negative commitlimit
-Message-ID: <20110518153445.GA18127@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1756913Ab1ERPmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 11:42:12 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48806 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756849Ab1ERPmK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 11:42:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1305732459_6563@mail4.comsite.net>
+References: <BANLkTikhKqcpdadpM3RQdYvDrPn46_v6_Q@mail.gmail.com>
+ <20110517.134312.226762699.davem@davemloft.net> <alpine.SOC.1.00.1105021259220.6200@math.ut.ee>
+ <1305732459_6563@mail4.comsite.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 18 May 2011 09:41:49 -0600
+X-Google-Sender-Auth: RH997pxorImBibvbDDws0wJJqqc
+Message-ID: <BANLkTimV0Xm7-C2yRh7bcyaQzdgET+0vmg@mail.gmail.com>
+Subject: Re: [PATCH] of: fix race when matching drivers
+To: Milton Miller <miltonm@bga.com>
+Cc: David Miller <davem@davemloft.net>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the total size of hugepages allocated on a system is
-over half of the total memory size, commitlimit becomes
-a negative number.
+On Wed, May 18, 2011 at 9:27 AM, Milton Miller <miltonm@bga.com> wrote:
+> If two drivers are probing devices at the same time, both will write
+> their match table result to the dev->of_match cache at the same time.
+>
+> Only write the result if the device matches.
+>
+> In a thread titled "SBus devices sometimes detected, sometimes not",
+> Meelis reported his SBus hme was not detected about 50% of the time.
+> From the debug suggested by Grant it was obvious another driver matched
+> some devices between the call to match the hme and the hme discovery
+> failling.
+>
+> Reported-by: Meelis Roos <mroos@linux.ee>
+> Signed-off-by: Milton Miller <miltonm@bga.com>
+> ---
+>
+> Grant, I really think this of_match cache in the device node is bad a
+> bad tradeoff, and am willing to submit patches to remove it for 2.6.40.
+> It is only used by about 26 drivers and all use it once during probe
+> to fill out their driver data.  It comes at the cost of a long for
+> every struct device in every system.
 
-What happens in fs/proc/meminfo.c is this calculation:
+Ah, bugger.  I had /thought/ that matching and probing were kept
+together with a mutex.  So, yes, this is bad and the of_match needs to
+be removed.  Thanks for volunteering to submit the patch.  It should
+be backported to 2.6.39 too.
 
-        allowed = ((totalram_pages - hugetlb_total_pages())
-                * sysctl_overcommit_ratio / 100) + total_swap_pages;
+> I'll even offer to throw in a patch to cache the parsing of the
+> compatible property to speed up of_device_is_compatible if needed.
 
-The problem is that hugetlb_total_pages() is larger than
-totalram_pages resulting in a negative number.  Since
-allowed is an unsigned long the negative shows up as a
-big number.  
+That would be useful.  :-)
 
-A similar calculation occurs in __vm_enough_memory() in mm/mmap.c.
+I'll pick up your patch right now and fire it off to Linus.
 
-A symptom of this problem is that /proc/meminfo prints a
-very large CommitLimit number.
+g.
 
-CommitLimit:    737869762947802600 kB
+>
+>
+>
+> Index: work.git/include/linux/of_device.h
+> ===================================================================
+> --- work.git.orig/include/linux/of_device.h     2011-05-18 09:57:01.014386816 -0500
+> +++ work.git/include/linux/of_device.h  2011-05-18 09:58:27.537431575 -0500
+> @@ -21,8 +21,15 @@ extern void of_device_make_bus_id(struct
+>  static inline int of_driver_match_device(struct device *dev,
+>                                         const struct device_driver *drv)
+>  {
+> -       dev->of_match = of_match_device(drv->of_match_table, dev);
+> -       return dev->of_match != NULL;
+> +       const struct of_device_id *match;
+> +
+> +       match = of_match_device(drv->of_match_table, dev);
+> +       if (match) {
+> +               dev->of_match = of_match_device(drv->of_match_table, dev);
+> +               return 1;
+> +       }
+> +
+> +       return 0;
+>  }
+>
+>  extern struct platform_device *of_dev_get(struct platform_device *dev);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-To reproduce the problem reserve over half of memory as hugepages.
-For example "default_hugepagesz=1G hugepagesz=1G hugepages=64
-Then look at /proc/meminfo "CommitLimit:" to see if it is too big.
 
-The fix is to not subtract hugetlb_total_pages().  When hugepages
-are allocated totalram_pages is decremented so there is no need to
-subtract out hugetlb_total_pages() a second time.
 
-Reported-by: Russ Anderson <rja@sgi.com>
-Signed-off-by: Russ Anderson <rja@sgi.com>
-
----
-
-Example of "CommitLimit:" being too big.
-
-uv1-sys:~ # cat /proc/meminfo
-MemTotal:       32395508 kB
-MemFree:        32029276 kB
-Buffers:            8656 kB
-Cached:            89548 kB
-SwapCached:            0 kB
-Active:            55336 kB
-Inactive:          73916 kB
-Active(anon):      31220 kB
-Inactive(anon):       36 kB
-Active(file):      24116 kB
-Inactive(file):    73880 kB
-Unevictable:           0 kB
-Mlocked:               0 kB                                                                                  
-SwapTotal:             0 kB
-SwapFree:              0 kB
-Dirty:              1692 kB
-Writeback:             0 kB
-AnonPages:         31132 kB
-Mapped:            15668 kB
-Shmem:               152 kB
-Slab:              70256 kB
-SReclaimable:      17148 kB
-SUnreclaim:        53108 kB
-KernelStack:        6536 kB
-PageTables:         3704 kB
-NFS_Unstable:          0 kB
-Bounce:                0 kB
-WritebackTmp:          0 kB
-CommitLimit:    737869762947802600 kB
-Committed_AS:     394044 kB
-VmallocTotal:   34359738367 kB
-VmallocUsed:      713960 kB
-VmallocChunk:   34325764204 kB
-HardwareCorrupted:     0 kB
-HugePages_Total:      32
-HugePages_Free:       32
-HugePages_Rsvd:        0
-HugePages_Surp:        0
-Hugepagesize:    1048576 kB
-DirectMap4k:       16384 kB
-DirectMap2M:     2064384 kB
-DirectMap1G:    65011712 kB
-
- fs/proc/meminfo.c |    2 +-
- mm/mmap.c         |    3 +--
- 2 files changed, 2 insertions(+), 3 deletions(-)
-
-Index: linux/fs/proc/meminfo.c
-===================================================================
---- linux.orig/fs/proc/meminfo.c	2011-05-17 16:03:50.935658801 -0500
-+++ linux/fs/proc/meminfo.c	2011-05-18 08:53:00.568784147 -0500
-@@ -36,7 +36,7 @@ static int meminfo_proc_show(struct seq_
- 	si_meminfo(&i);
- 	si_swapinfo(&i);
- 	committed = percpu_counter_read_positive(&vm_committed_as);
--	allowed = ((totalram_pages - hugetlb_total_pages())
-+	allowed = (totalram_pages
- 		* sysctl_overcommit_ratio / 100) + total_swap_pages;
- 
- 	cached = global_page_state(NR_FILE_PAGES) -
-Index: linux/mm/mmap.c
-===================================================================
---- linux.orig/mm/mmap.c	2011-05-17 16:03:51.727658828 -0500
-+++ linux/mm/mmap.c	2011-05-18 08:54:34.912222405 -0500
-@@ -167,8 +167,7 @@ int __vm_enough_memory(struct mm_struct
- 		goto error;
- 	}
- 
--	allowed = (totalram_pages - hugetlb_total_pages())
--	       	* sysctl_overcommit_ratio / 100;
-+	allowed = totalram_pages * sysctl_overcommit_ratio / 100;
- 	/*
- 	 * Leave the last 3% for root
- 	 */
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
