@@ -1,164 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab1ERBKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 21:10:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57235 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932082Ab1ERBKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 21:10:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,228,1304319600"; 
-   d="scan'208";a="3682824"
-Message-ID: <4DD31C78.6000209@intel.com>
-Date: Wed, 18 May 2011 09:10:16 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Iceowl/1.0b2 Icedove/3.1.9
+	id S932689Ab1ERBOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 21:14:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58321 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082Ab1ERBOP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 21:14:15 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=XYJHFtupD_QA:10 a=3O0Z2-0QvKMA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=uf42mgzF8abT2wY_PNEA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Tue, 17 May 2011 21:14:13 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH] sched: fix priority leakage in
+ pick_next_highest_task_rt()
+Message-ID: <20110518011413.GA23940@home.goodmis.org>
+References: <BANLkTikqKnQgyLr0OmL86iEHE95xB4Z50Q@mail.gmail.com>
+ <BANLkTim=di8pbt1CzHjHYSC0SbtgJzbmkw@mail.gmail.com>
+ <BANLkTimgmam0_yg+5a58T3R_NYM6RQLakQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
-References: <1305619719-7480-1-git-send-email-ying.huang@intel.com> <1305619719-7480-6-git-send-email-ying.huang@intel.com> <20110517084622.GE22093@elte.hu> <4DD23750.3030606@intel.com> <20110517092620.GI22093@elte.hu>
-In-Reply-To: <20110517092620.GI22093@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimgmam0_yg+5a58T3R_NYM6RQLakQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2011 05:26 PM, Ingo Molnar wrote:
+On Tue, May 17, 2011 at 10:53:22PM +0800, Hillf Danton wrote:
+> On Tue, May 17, 2011 at 10:28 AM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> > On Mon, May 16, 2011 at 8:55 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> >> When picking the second highest RT task for a given runqueue, if no
+> >> task found after scanning the queue of priority == idx, the next idx
+> >> should also be checked even in case that next is already existing, or
+> >> the window of priority leakage could be opened.
+> >
+> > I don't see what kind of problem you patch will fix.
+> > And mind explaining how priority leakage could happen?
+> >
+> Hi Yong
 > 
-> * Huang Ying <ying.huang@intel.com> wrote:
+> If no task is found after scanning the list at array->queue + idx,
+> what should we operate on next?
+> And why is the list scanned?
 > 
->> On 05/17/2011 04:46 PM, Ingo Molnar wrote:
->>>
->>> * Huang Ying <ying.huang@intel.com> wrote:
->>>
->>>> memory_failure() is the entry point for HWPoison memory error
->>>> recovery.  It must be called in process context.  But commonly
->>>> hardware memory errors are notified via MCE or NMI, so some delayed
->>>> execution mechanism must be used.  In MCE handler, a work queue + ring
->>>> buffer mechanism is used.
->>>>
->>>> In addition to MCE, now APEI (ACPI Platform Error Interface) GHES
->>>> (Generic Hardware Error Source) can be used to report memory errors
->>>> too.  To add support to APEI GHES memory recovery, a mechanism similar
->>>> to that of MCE is implemented.  memory_failure_queue() is the new
->>>> entry point that can be called in IRQ context.  The next step is to
->>>> make MCE handler uses this interface too.
->>>>
->>>> Signed-off-by: Huang Ying <ying.huang@intel.com>
->>>> Cc: Andi Kleen <ak@linux.intel.com>
->>>> Cc: Wu Fengguang <fengguang.wu@intel.com>
->>>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>>> ---
->>>>  include/linux/mm.h  |    1 
->>>>  mm/memory-failure.c |   92 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>  2 files changed, 93 insertions(+)
->>>
->>> I have to say i disagree with how this is designed and how this is exposed to 
->>> user-space - and i pointed this out before.
->>>
->>> It's up to Len whether you muck up drivers/acpi/ but here you are patching mm/ 
->>> again ...
->>>
->>> I just had a quick look into the current affairs of mm/memory-inject.c and it 
->>> has become an *even* nastier collection of hacks since the last time i 
->>> commented on its uglies.
->>>
->>> Special hack upon special hack, totally disorganized code, special-purpose, 
->>> partly ioctl driven opaque information extraction to user-space using the 
->>> erst-dbg device interface. We have all the maintenance overhead and little of 
->>> the gains from hw error event features...
->>
->> Like the name suggested, erst-dbg is only for debugging. [...]
-> 
-> Great, if printk does everything then can the debugging code be removed so that 
-> tooling does not accidentally make non-debugging use of it? I can write a patch 
-> for that.
 
-The erst-dbg is only used for us to test whether the BIOS ERST
-implementation works.  If you have concerns about its mis-usage, how
-about moving it to debugfs to make it clear that it is not a API, just
-for debugging?
+The patch looks correct.
 
->> [...]  It is not a user space interface.  The user space interface used by 
->> APEI now is printk.
-> 
-> We definitely want printks obviously and primarily - often that is the only 
-> thing the admin sees, and most of the time there's no automatable 'policy 
-> action' anyway: human intervention is still the most common 'action' that is 
-> performed on exceptional system events.
-> 
-> Does all the (unspecified) tooling you are enabling here work based off on 
-> printk only, or does it perhaps make use of the erst-dbg hack? :-)
+The code looks like so:
 
-The only tool makes use of erst-dbg is the debugging tool to test BIOS
-ERST implementation.  There is absolutely NO other tool I am enabling
-uses erst-dbg.
+	for_each_leaf_rt_rq(rt_rq, rq) {
+		array = &rt_rq->active;
+		idx = sched_find_first_bit(array->bitmap);
+next_idx:
+		if (idx >= MAX_RT_PRIO)
+			continue;
+		if (next && next->prio < idx)
+			continue;
+		list_for_each_entry(rt_se, array->queue + idx, run_list) {
+			struct task_struct *p;
 
-> [ Wrt. printks we definitely would like to have a printk free-form-ASCII event 
->   gateway for tooling wants to use printk events in the regular flow of events 
->   that are not available via the syslog - Steve sent a print-string-event patch 
->   for that some time ago and that works well. ]
+			if (!rt_entity_is_task(rt_se))
+				continue;
 
-Thanks for your reminding, I will take a look at it.
+			p = rt_task_of(rt_se);
+			if (pick_rt_task(rq, p, cpu)) {
+				next = p;
+				break;
+			}
+		}
+		if (!next) {
+			idx = find_next_bit(array->bitmap, MAX_RT_PRIO, idx+1);
+			goto next_idx;
+		}
+	}
 
->>> In this patch you add:
->>>
->>> +struct memory_failure_entry {
->>> +       unsigned long pfn;
->>> +       int trapno;
->>> +       int flags;
->>> +};
->>>
->>> Instead of exposing this event to other users who might be interested in these 
->>> events - such as the RAS daemon under development by Boris.
->>>
->>> We have a proper framework (ring-buffer, NMI execution, etc.) for reporting 
->>> events, why are you not using (and extending) it instead of creating this nasty 
->>> looking, isolated, ACPI specific low level feature?
->>
->> This patch has nothing to do with hardware error event reporting.  It is just 
->> about hardware error recovering.
-> 
-> Hardware error event reporting and recovery go hand in hand. First is the 
-> event, the second is the action.
-> 
-> Your structure demonstrates this already: it's called memory_failure_entry. It 
-> does:
-> 
-> + * This function is called by the low level hardware error handler
-> + * when it detects hardware memory corruption of a page. It schedules
-> + * the recovering of error page, including dropping pages, killing
-> + * processes etc.
-> 
-> So based off an error event it does one from a short list of in-kernel policy 
-> actions.
-> 
-> If put into a proper framework this would be a lot more widely useful: we could 
-> for example trigger the killing of tasks (and other policy action) if other 
-> (bad) events are triggered - not just the ones that fit into the narrow ACPI 
-> scheme you have here.
-> 
-> Certain fatal IO errors would be an example, or SLAB memory corruptions or OOM 
-> errors - or any other event we are able to report today.
-> 
-> So why are we not working towards integrating this into our event 
-> reporting/handling framework, as i suggested it from day one on when you 
-> started posting these patches?
+What we are doing is looking for the next highest prio task that we can
+migrate. When we find the next highest priority task that can migrate,
+we pick it. But the issue comes with the cgroups. If we are looping
+through the cgroups, and we pick a task in one cgroup, but when we check
+the next cgroup, if it has a higher priority task, but that task can't
+migrate, but the next one, also of higher priority, can, that "if (!next)"
+wont catch it.
 
-The memory_failure_queue() introduced in this patch is general, that is,
-it can be used not only by ACPI/APEI, but also any other hardware error
-handlers, including your event reporting/handling framework.
+Although, I don't know the cgroup code very well, and I wonder what it
+means to pull a task from a run queue onto another run queue that has
+dropped in priority.
 
-Best Regards,
-Huang Ying
+But, anyway, for the patch:
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
