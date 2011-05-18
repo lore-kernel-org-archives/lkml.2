@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab1ERMLN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 08:11:13 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41183 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754923Ab1ERMLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 08:11:11 -0400
-Date: Wed, 18 May 2011 14:10:13 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH v4 0/6] Micro-optimize vclock_gettime
-Message-ID: <20110518121013.GC6210@elte.hu>
-References: <20110517080029.GB22093@elte.hu>
- <BANLkTimpEfb3P9FWgrCDwSSVr6RA8nXb5w@mail.gmail.com>
- <20110517113634.GC13475@elte.hu>
- <4DD2BEFB.6070609@mit.edu>
- <m2hb8typxt.fsf@firstfloor.org>
- <alpine.LFD.2.02.1105172354040.3078@ionos>
- <BANLkTik9+UGLvPCLYO246N4fMxJ5F=vHwA@mail.gmail.com>
- <alpine.LFD.2.02.1105180839370.3078@ionos>
- <20110518083147.GD14805@elte.hu>
- <BANLkTi=cqjGDD7X8u_7LDGZh7KqFZo6h+w@mail.gmail.com>
+	id S933054Ab1ERMTe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 08:19:34 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:50440 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755576Ab1ERMTd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 08:19:33 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: <linux-kernel@vger.kernel.org>, Dan Williams <dan.j.williams@intel.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] dmaengine: move link order
+Date: Wed, 18 May 2011 14:18:57 +0200
+Message-ID: <1305721137-11433-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=cqjGDD7X8u_7LDGZh7KqFZo6h+w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move the dmaengine subsystem up early in the drivers Makefile so
+DMA is made available early to all drivers, just like e.g.
+regulators. Now even regulators can use DMA on the same initlevel.
+As a result we can bump the ste_dma40 and coh901318 dmaengine
+drivers down one initlevel to subsys_init().
 
-* Andrew Lutomirski <luto@mit.edu> wrote:
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/Makefile        |    4 +++-
+ drivers/dma/coh901318.c |    2 +-
+ drivers/dma/ste_dma40.c |    2 +-
+ 3 files changed, 5 insertions(+), 3 deletions(-)
 
-> Should we add a vDSO vtime for 2.6.40 so that people can start using it?
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 3f135b6..e68423d 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -17,6 +17,9 @@ obj-$(CONFIG_SFI)		+= sfi/
+ # was used and do nothing if so
+ obj-$(CONFIG_PNP)		+= pnp/
+ obj-$(CONFIG_ARM_AMBA)		+= amba/
++# Many drivers will want to use DMA so this has to be made available
++# really early.
++obj-$(CONFIG_DMA_ENGINE)	+= dma/
+ 
+ obj-$(CONFIG_VIRTIO)		+= virtio/
+ obj-$(CONFIG_XEN)		+= xen/
+@@ -92,7 +95,6 @@ obj-$(CONFIG_EISA)		+= eisa/
+ obj-y				+= lguest/
+ obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
+ obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
+-obj-$(CONFIG_DMA_ENGINE)	+= dma/
+ obj-$(CONFIG_MMC)		+= mmc/
+ obj-$(CONFIG_MEMSTICK)		+= memstick/
+ obj-$(CONFIG_NEW_LEDS)		+= leds/
+diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+index f48e540..af8c0b5 100644
+--- a/drivers/dma/coh901318.c
++++ b/drivers/dma/coh901318.c
+@@ -1610,7 +1610,7 @@ int __init coh901318_init(void)
+ {
+ 	return platform_driver_probe(&coh901318_driver, coh901318_probe);
+ }
+-arch_initcall(coh901318_init);
++subsys_initcall(coh901318_init);
+ 
+ void __exit coh901318_exit(void)
+ {
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 94ee15d..22a6d8b 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -2962,4 +2962,4 @@ static int __init stedma40_init(void)
+ {
+ 	return platform_driver_probe(&d40_driver, d40_probe);
+ }
+-arch_initcall(stedma40_init);
++subsys_initcall(stedma40_init);
+-- 
+1.7.3.2
 
-yeah.
-
-Thanks,
-
-	Ingo
