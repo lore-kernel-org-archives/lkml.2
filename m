@@ -1,193 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab1ERAsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 20:48:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36458 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab1ERAsP convert rfc822-to-8bit (ORCPT
+	id S1756521Ab1ERAxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 20:53:37 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37369 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab1ERAxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 20:48:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=hwq/JE9WSSU8OZ3WB5ymUvbB0OLOXAgKrQov6SKIJ/0t6RozjsnU+0XsCoqsEsaATh
-         498jBYf7JQT5U3RA28ewaizbRicajBisNS3MZJcGNbrqXSbQgQBygQSk9O4+Da8TCN3D
-         q3BVNoZLZlYau40tql4sMHI6kI+GcM17uAc9k=
+	Tue, 17 May 2011 20:53:36 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DD3187C.3050408@jp.fujitsu.com>
+Date: Wed, 18 May 2011 09:53:16 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <201105180039.56806.rjw@sisk.pl>
-References: <1305100723-29161-1-git-send-email-myungjoo.ham@samsung.com>
-	<1305100723-29161-2-git-send-email-myungjoo.ham@samsung.com>
-	<201105180039.56806.rjw@sisk.pl>
-Date: Wed, 18 May 2011 09:48:13 +0900
-X-Google-Sender-Auth: 4-sVfoMuLYe2wS9IDD_ByPfQ2oc
-Message-ID: <BANLkTim0DkhcjWw7fM0e-UhyB3=GkQ7nKw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] PM / DEVFREQ: add example governors
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Mark Brown <broonie@sirena.org.uk>, Jiejing Zhang <kzjeef@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>, Colin Cross <ccross@google.com>,
-        Nishanth Menon <nm@ti.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <len.brown@intel.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: a.p.zijlstra@chello.nl
+CC: mingo@elte.hu, john.stultz@linaro.org, linux-kernel@vger.kernel.org,
+        joe@perches.com, mina86@mina86.com, apw@canonical.com,
+        jirislaby@gmail.com, rientjes@google.com, dave@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] comm: Introduce comm_lock spinlock to protect task->comm
+ access
+References: <1305665263-20933-1-git-send-email-john.stultz@linaro.org>	 <1305665263-20933-2-git-send-email-john.stultz@linaro.org>	 <20110517212734.GB28054@elte.hu> <1305669256.2466.6286.camel@twins>
+In-Reply-To: <1305669256.2466.6286.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Wednesday, May 11, 2011, MyungJoo Ham wrote:
->> Three CPUFREQ-like governors are provided as examples.
+(2011/05/18 6:54), Peter Zijlstra wrote:
+> On Tue, 2011-05-17 at 23:27 +0200, Ingo Molnar wrote:
+>> * John Stultz<john.stultz@linaro.org>  wrote:
 >>
->> powersave: use the lowest frequency possible. The user (device) should
->> set the polling_ms as 0 because polling is useless for this governor.
+>>> The implicit rules for current->comm access being safe without locking are no
+>>> longer true. Accessing current->comm without holding the task lock may result
+>>> in null or incomplete strings (however, access won't run off the end of the
+>>> string).
 >>
->> performance: use the highest freqeuncy possible. The user (device)
->> should set the polling_ms as 0 because polling is useless for this
->> governor.
+>> This is rather unfortunate - task->comm is used in a number of performance
+>> critical codepaths such as tracing.
 >>
->> simple_ondemand: simplified version of CPUFREQ's ONDEMAND governor.
+>> Why does this matter so much? A NULL string is not a big deal.
 >>
->> When a user updates OPP entries (enable/disable/add), OPP framework
->> automatically notifies DEVFREQ to update operating frequency
->> accordingly. Thus, DEVFREQ users (device drivers) do not need to update
->> DEVFREQ manually with OPP entry updates or set polling_ms for powersave
->> , performance, or any other "static" governors.
+>> Note, since task->comm is 16 bytes there's the CMPXCHG16B instruction on x86
+>> which could be used to update it atomically, should atomicity really be
+>> desired.
 >
-> Well, do you expect anyone to actually use them?  If not, it would make
-> more sense to put them into a doc.
-
-According to our experiences of DVFS(although this "DEVFREQ" is not
-applied to them, yet) in memory-bus and GPU,
-I expect most DEVFREQ users might use "simple_ondemand" and
-expect "powersave" and "performance" will probably mostly used while
-testing and debugging.
-("userspace"-like governor would be also useful for that purpose, but
-I'd add it later)
-
-
-Cheers!
-- MyungJoo
-
+> The changelog also fails to mention _WHY_ this is no longer true. Nor
+> does it treat why making it true again isn't an option.
 >
-> Thanks,
-> Rafael
->
->
->> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>  drivers/base/power/devfreq.c |   69 ++++++++++++++++++++++++++++++++++++++++++
->>  include/linux/devfreq.h      |    5 +++
->>  2 files changed, 74 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/base/power/devfreq.c b/drivers/base/power/devfreq.c
->> index 8e2e45b..251d761 100644
->> --- a/drivers/base/power/devfreq.c
->> +++ b/drivers/base/power/devfreq.c
->> @@ -351,3 +351,72 @@ static int __init devfreq_init(void)
->>       return 0;
->>  }
->>  late_initcall(devfreq_init);
->> +
->> +static int devfreq_powersave_func(struct devfreq *df,
->> +                               unsigned long *freq)
->> +{
->> +     *freq = 0; /* devfreq_do will run "ceiling" to 0 */
->> +     return 0;
->> +}
->> +
->> +struct devfreq_governor devfreq_powersave = {
->> +     .get_target_freq = devfreq_powersave_func,
->> +};
->> +
->> +static int devfreq_performance_func(struct devfreq *df,
->> +                                 unsigned long *freq)
->> +{
->> +     *freq = UINT_MAX; /* devfreq_do will run "floor" */
->> +     return 0;
->> +}
->> +
->> +struct devfreq_governor devfreq_performance = {
->> +     .get_target_freq = devfreq_performance_func,
->> +};
->> +
->> +/* Constants for DevFreq-Simple-Ondemand (DFSO) */
->> +#define DFSO_UPTHRESHOLD     (90)
->> +#define DFSO_DOWNDIFFERENCTIAL       (5)
->> +static int devfreq_simple_ondemand_func(struct devfreq *df,
->> +                                     unsigned long *freq)
->> +{
->> +     struct devfreq_dev_status stat;
->> +     int err = df->profile->get_dev_status(df->dev, &stat);
->> +     unsigned long long a, b;
->> +
->> +     if (err)
->> +             return err;
->> +
->> +     /* Set MAX if it's busy enough */
->> +     if (stat.busy_time * 100 >
->> +         stat.total_time * DFSO_UPTHRESHOLD) {
->> +             *freq = UINT_MAX;
->> +             return 0;
->> +     }
->> +
->> +     /* Set MAX if we do not know the initial frequency */
->> +     if (stat.current_frequency == 0) {
->> +             *freq = UINT_MAX;
->> +             return 0;
->> +     }
->> +
->> +     /* Keep the current frequency */
->> +     if (stat.busy_time * 100 >
->> +         stat.total_time * (DFSO_UPTHRESHOLD - DFSO_DOWNDIFFERENCTIAL)) {
->> +             *freq = stat.current_frequency;
->> +             return 0;
->> +     }
->> +
->> +     /* Set the desired frequency based on the load */
->> +     a = (unsigned long long) stat.busy_time * stat.current_frequency;
->> +     b = div_u64(a, stat.total_time);
->> +     b *= 100;
->> +     b = div_u64(b, (DFSO_UPTHRESHOLD - DFSO_DOWNDIFFERENCTIAL / 2));
->> +     *freq = (unsigned long) b;
->> +
->> +     return 0;
->> +}
->> +
->> +struct devfreq_governor devfreq_simple_ondemand = {
->> +     .get_target_freq = devfreq_simple_ondemand_func,
->> +};
->> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
->> index d08e9f5..ec41ba6 100644
->> --- a/include/linux/devfreq.h
->> +++ b/include/linux/devfreq.h
->> @@ -81,6 +81,11 @@ extern int devfreq_add_device(struct device *dev,
->>  extern int devfreq_remove_device(struct device *dev);
->>  extern int devfreq_update(struct device *dev, bool may_not_exist);
->>  extern int devfreq_tickle_device(struct device *dev, unsigned long duration_ms);
->> +
->> +extern struct devfreq_governor devfreq_powersave;
->> +extern struct devfreq_governor devfreq_performance;
->> +extern struct devfreq_governor devfreq_simple_ondemand;
->> +
->>  #else /* !CONFIG_PM_DEVFREQ */
->>  static int devfreq_add_device(struct device *dev,
->>                          struct devfreq_dev_profile *profile,
->>
->
->
+> Who is changing another task's comm? That's just silly.
+
+I'm not sure it's silly or not. But the fact is, comm override was introduced
+following patch. Personally I'd like to mark it to "depend on EXPERT". but John
+seems to dislike the idea.
 
 
 
--- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+commit 4614a696bd1c3a9af3a08f0e5874830a85b889d4
+Author: john stultz <johnstul@us.ibm.com>
+Date:   Mon Dec 14 18:00:05 2009 -0800
+
+     procfs: allow threads to rename siblings via /proc/pid/tasks/tid/comm
+
+
