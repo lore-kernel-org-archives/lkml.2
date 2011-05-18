@@ -1,73 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab1ERNDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 09:03:08 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45650 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756907Ab1ERNDF convert rfc822-to-8bit (ORCPT
+	id S933153Ab1ERNG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 09:06:29 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:51057 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933107Ab1ERNG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 09:03:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Tl0zWr7OvZfSYRQUGtW4I5VxcXSDPoovxhOrZarqJy9nWE/61/Ouzp47hNJILVjQQI
-         ojgLPSy57Xsf6J9ftbAVDqYBEtxM5m/g/BKAa++kCLB23/ecY6zCwISIxRqWjeL80MrH
-         slE5RD2r/35oQLgWDsxo0uU6lp81k/+K/CGWU=
+	Wed, 18 May 2011 09:06:28 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4DD3C4F9.2000806@cam.ac.uk>
+Date: Wed, 18 May 2011 14:09:13 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110518124307.GD3762520@jupiter.n2.diac24.net>
-References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
-	<20110518124307.GD3762520@jupiter.n2.diac24.net>
-Date: Wed, 18 May 2011 16:03:03 +0300
-Message-ID: <BANLkTikmrC86hk=W84UBwhJLe_uGAN4w9w@mail.gmail.com>
-Subject: Re: Identifying network namespaces (was: Network namespace
- manipulation with file descriptors)
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: David Lamparter <equinox@diac24.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, jamal <hadi@cyberus.ca>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linux Containers <containers@lists.osdl.org>,
-        Renato Westphal <renatowestphal@gmail.com>
+To: fabien.marteau@armadeus.com
+CC: khali@linux-fr.org, guenter.roeck@ericsson.com,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH] hwmon: Driver for as1531, Austria-Microsystem Analog
+ to Digital Converter.
+References: <fabien.marteau@armadeus.com> <1305553154-18195-2-git-send-email-fabien.marteau@armadeus.com>
+In-Reply-To: <1305553154-18195-2-git-send-email-fabien.marteau@armadeus.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 3:43 PM, David Lamparter <equinox@diac24.net> wrote:
-> -   processes cannot easily be cross referenced with each other
->
->  in the case of user space stuff running astray - like management
->  software crashing, routing daemons screwing up, etc. - it becomes
->  fairly difficult to shut down a network namespace (or even reaquire
->  physical devices that have been reassigned)
+On 05/16/11 14:39, fabien.marteau@armadeus.com wrote:
+> From: Fabien Marteau <fabien.marteau@armadeus.com>
+> 
+Had a few minutes so done a quick port to IIO with minimal code changes.
+Now looking at cleaning things up so actually reading the code rather
+than cut and paste.  The message is somewhat 'novel'. 
 
-It shutdowns itself when last process using netns disappeares,
-so if you kill your routing daemons you should be fine.
-Physical netdevices are moved to init_net.
+...
 
-> -   namespaces cannot adequately be identified to the user
->
->  for debugging, some kernel messages become useless. most prominently,
->  "unregister_netdevice: waiting for lo to become free. Usage count = 123"
->  could certainly use some clarification, *which* lo is meant...
+So we have a spi device that only talks in 1 bit words?
+1) I'm amazed any spi controllers support that.
+2) Doesn't look necessary from the data sheet google furnished me with.
 
-There is no "netns %p" or something, because right now the only unique
-netns identifier is kernel pointer (which better not be exposed to userspace).
-Printing such thing would be quite useless since it's not printed
-at netns creation.
+Looks like it will quite happily work with 8 bit transfers. Suggested replacement code below.
+> +static int as1531_message(struct spi_device *spi, int cmd, int *ret_value)
+> +{
+> +	struct spi_message	message;
+> +	struct spi_transfer	x[1];
+> +	int status, i;
+> +	u8	cmd_send;
+> +	unsigned char buf[64];
+> +	unsigned char buf_read[64];
+> +
+> +	cmd_send = cmd;
+> +
+> +	spi_message_init(&message);
+> +	memset(x, 0, sizeof x);
+> +	memset(buf, 0, sizeof(buf));
+> +	memset(buf_read, 0, sizeof(buf_read));
+> +
+> +	for (i = 0; i < 8; i++) {
+> +		buf[i] = ((cmd_send & 0x80)>>7);
+> +		cmd_send = cmd_send << 1;
+> +	}
+> +
+> +	x[0].tx_buf = buf;
+> +	x[0].len = 24;
+> +	x[0].rx_buf = buf_read;
+> +	x[0].speed_hz = AS1531_SPI_SPEED;
+> +	x[0].bits_per_word = 1;
+> +	spi_message_add_tail(&x[0], &message);
+> +
+> +	status = spi_sync(spi, &message);
+> +	if (status < 0)
+> +		return status;
+> +
+> +	*ret_value = buf_read[11] & 0x01;
+> +	for (i = 12; i < 23 ; i++) {
+> +		*ret_value = *ret_value << 1;
+> +		*ret_value = *ret_value | (buf_read[i]&0x01);
+> +	}
+> +
+> +	return 0;
+> +}
+static int as1531_message(struct spi_device *spi, int cmd, u16 *ret_value)
+{
+	int status;
+	u8 cmd_send = cmd;
+	struct spi_message message;
+	struct spi_transfer x[2] = {
+		{
+			.len = 1,
+			/* this should be default anyway - so could drop */
+			.bits_per_word = 8,
+			/* This should be set in board config really */
+			.speed_hz = AS1531_SPI_SPEED,
+			.rx_buf = &cmd_send,
+		}, {
+			.len = 2,
+			.bits_per_word = 8,
+			.speed_hz = AS1531_SPI_SPEED,
+			.tx_buf = ret_value,
+		}
+	};
 
-> So, considering this set of premises (feedback welcome) I looked for
-> some suitable means of identification. I discarded going for any process
-> identifiers since Eric's patches allow for network namespaces without
-> any process holding a reference, using bind mounts instead.
+	spi_message_init(&message);
+	spi_message_add_tail(&x[0], &message);
+	spi_message_add_tail(&x[1], &message);
 
-If anything it should be netns->id, /proc/*/netns outputting id
-where id is not derived from kernel pointer.
+	status = spi_sync(spi, &message);
+	if (status < 0)
+		return status;
 
-> Solution?
-> =========
+	*ret_value = (be16_to_cpup(ret_value) >> 2) & 0xFFF;
 
-What a hack! :-)
+	return 0;
+}
+
+Obviously also requires changing the type of the element passed
+as ret_value.  Could set the bits_per_word of the second transfer
+to 16 and avoid the endianness conversion, but I'm not sure how
+many spi masters support that.
+
+Jonathan
