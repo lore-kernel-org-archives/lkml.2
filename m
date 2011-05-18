@@ -1,165 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab1EREs2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 00:48:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32812 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861Ab1EREs1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 00:48:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Gg5US71Mh2pFZFw9zF/9n5q1gycmaa2MufbqdA+PUHNwBl/7jCLCSTs5LYp7A3/X/c
-         UN2ursNnZ/ci+yqtqiqlFFCn7odtOBXMfRLVmqikQR9E+z0k6L+55Z0+2lF9o2gzpVgd
-         87LCGgO9mihrCnpcJ/qy1mAjIVn2YUr5kClk8=
-MIME-Version: 1.0
-In-Reply-To: <20110516114254.GI19837@elte.hu>
-References: <1305210630-7136-1-git-send-email-jolsa@redhat.com>
-	<20110516114254.GI19837@elte.hu>
-Date: Wed, 18 May 2011 00:48:25 -0400
-Message-ID: <BANLkTik44F2sWkGvN+6oJBszZ0SPfLjbrg@mail.gmail.com>
-Subject: Re: [PATCH] x86, x86_64: Fix checks for userspace address limit
-From: Brian Gerst <brgerst@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751733Ab1EREyW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 00:54:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60854 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755Ab1EREyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 00:54:21 -0400
+Date: Wed, 18 May 2011 14:54:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for May 18
+Message-Id: <20110518145412.f6cba4ef.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__18_May_2011_14_54_12_+1000_EWSjitPBMEbROJmP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 7:42 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Jiri Olsa <jolsa@redhat.com> wrote:
->
->> hi,
->> there seems to be bug in the _copy_to_user and _copy_from_user
->> functions, not allowing access to the last user page.
->>
->> Also I tried to decipher the inline assembly in __range_not_ok,
->> and it seems to work properly, but the macro comment seems to
->> be misleading.
->>
->> wbr,
->> jirka
->>
->> ---
->> As shown in BZ 30352 (https://bugzilla.kernel.org/show_bug.cgi?id=30352)
->> there's an issue with reading last allowed page on x86_64.
->>
->> The _copy_to_user and _copy_from_user functions use following
->> check for address limit:
->>
->> if (buf + size >= limit)
->>       fail
->>
->> while it should be:
->>
->> if (buf + size > limit)
->>       fail
->>
->> That's because the size represents the number of bytes being
->> read/write from/to buf address AND including the buf address.
->> So the copy function will actually never touch the limit
->> address even if "buf + size == limit".
->>
->> Following program fails to use the last page as buffer
->> due to the wrong limit check.
->>
->> ---
->> #include <sys/mman.h>
->> #include <sys/socket.h>
->> #include <assert.h>
->>
->> #define PAGE_SIZE       (4096)
->> #define LAST_PAGE       ((void*)(0x7fffffffe000))
->>
->> int main()
->> {
->>         int fds[2], err;
->>         void * ptr = mmap(LAST_PAGE, PAGE_SIZE, PROT_READ | PROT_WRITE,
->>                           MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
->>         assert(ptr == LAST_PAGE);
->>         err = socketpair(AF_LOCAL, SOCK_STREAM, 0, fds);
->>         assert(err == 0);
->>         err = send(fds[0], ptr, PAGE_SIZE, 0);
->>         perror("send");
->>         assert(err == PAGE_SIZE);
->>         err = recv(fds[1], ptr, PAGE_SIZE, MSG_WAITALL);
->>         perror("recv");
->>         assert(err == PAGE_SIZE);
->>         return 0;
->> }
->> ---
->>
->> Other place checking the addr limit is access_ok function,
->> which is working properly. There's just misleading comment
->> for the __range_not_ok macro.
->>
->>
->> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
->> ---
->>  arch/x86/include/asm/uaccess.h |    2 +-
->>  arch/x86/lib/copy_user_64.S    |    4 ++--
->>  2 files changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
->> index abd3e0e..99f0ad7 100644
->> --- a/arch/x86/include/asm/uaccess.h
->> +++ b/arch/x86/include/asm/uaccess.h
->> @@ -42,7 +42,7 @@
->>   * Returns 0 if the range is valid, nonzero otherwise.
->>   *
->>   * This is equivalent to the following test:
->> - * (u33)addr + (u33)size >= (u33)current->addr_limit.seg (u65 for x86_64)
->> + * (u33)addr + (u33)size > (u33)current->addr_limit.seg (u65 for x86_64)
->>   *
->>   * This needs 33-bit (65-bit for x86_64) arithmetic. We have a carry...
->>   */
->> diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
->> index 99e4826..a73397f 100644
->> --- a/arch/x86/lib/copy_user_64.S
->> +++ b/arch/x86/lib/copy_user_64.S
->> @@ -72,7 +72,7 @@ ENTRY(_copy_to_user)
->>       addq %rdx,%rcx
->>       jc bad_to_user
->>       cmpq TI_addr_limit(%rax),%rcx
->> -     jae bad_to_user
->> +     ja bad_to_user
->>       ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
->>       CFI_ENDPROC
->>  ENDPROC(_copy_to_user)
->> @@ -85,7 +85,7 @@ ENTRY(_copy_from_user)
->>       addq %rdx,%rcx
->>       jc bad_from_user
->>       cmpq TI_addr_limit(%rax),%rcx
->> -     jae bad_from_user
->> +     ja bad_from_user
->>       ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
->>       CFI_ENDPROC
->>  ENDPROC(_copy_from_user)
->
-> Hm, something tickles me about this area that we would reintroduce a security
-> hole, that we really wanted to treat the last page of user-space as some sort
-> of guard page but i cannot quite remember it why ...
->
-> IIRC Linus wrote bits of this so i'm Cc:-ing him just in case he remembers.
->
-> Thanks,
->
->        Ingo
+--Signature=_Wed__18_May_2011_14_54_12_+1000_EWSjitPBMEbROJmP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The guard page is apparently due to an erratum on K8 cpus (#121
-Sequential Execution Across Non-Canonical Boundary
-Causes Processor Hang).  However, his test code is using the last
-valid page before the guard page.  The bug is that the last byte
-before the guard page can't be read because of the off-by-one error.
+Hi all,
 
---
-Brian Gerst
+Changes since 20110517:
+
+Dropped trees: xen
+
+The net tree lost its conflicts.
+
+The wireless tree lost its conflicts.
+
+The staging tree gained a confict against the wireless tree.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 191 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+CONFLICT (content): Merge conflict in drivers/net/Kconfig
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+CONFLICT (content): Merge conflict in include/linux/pci_ids.h
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging cpufreq-move/move-drivers
+CONFLICT (content): Merge conflict in drivers/cpufreq/cpufreq_stats.c
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (content): Merge conflict in drivers/mmc/host/tmio_mmc_pio.c
+Merging kgdb/kgdb-next
+Merging slab/for-next
+CONFLICT (content): Merge conflict in mm/slub.c
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/twl4030-power.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+CONFLICT (content): Merge conflict in drivers/video/omap2/dss/dsi.c
+CONFLICT (content): Merge conflict in drivers/video/omap2/dss/dss_features.c
+CONFLICT (content): Merge conflict in drivers/video/omap2/dss/dss_features.h
+Merging voltage/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/Kconfig
+CONFLICT (content): Merge conflict in drivers/mfd/Makefile
+Merging security-testing/next
+CONFLICT (content): Merge conflict in include/linux/capability.h
+Merging selinux/master
+CONFLICT (content): Merge conflict in lib/flex_array.c
+CONFLICT (content): Merge conflict in security/selinux/avc.c
+CONFLICT (content): Merge conflict in security/selinux/hooks.c
+CONFLICT (content): Merge conflict in security/selinux/ss/policydb.c
+CONFLICT (content): Merge conflict in security/smack/smack_lsm.c
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+CONFLICT (content): Merge conflict in arch/x86/Kconfig
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in arch/sparc/kernel/smp_32.c
+CONFLICT (content): Merge conflict in net/mac80211/agg-tx.c
+Merging rcu/rcu/next
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+CONFLICT (content): Merge conflict in arch/x86/include/asm/percpu.h
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+CONFLICT (content): Merge conflict in drivers/platform/x86/Kconfig
+CONFLICT (content): Merge conflict in drivers/platform/x86/Makefile
+CONFLICT (content): Merge conflict in drivers/platform/x86/eeepc-laptop.c
+CONFLICT (content): Merge conflict in drivers/platform/x86/sony-laptop.c
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+CONFLICT (content): Merge conflict in arch/alpha/include/asm/unistd.h
+CONFLICT (content): Merge conflict in arch/alpha/kernel/systbls.S
+CONFLICT (content): Merge conflict in arch/m68k/kernel/entry_mm.S
+Merging driver-core/driver-core-next
+CONFLICT (content): Merge conflict in fs/debugfs/file.c
+Merging tty/tty-next
+CONFLICT (content): Merge conflict in drivers/bluetooth/hci_ldisc.c
+CONFLICT (content): Merge conflict in drivers/tty/serial/Makefile
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/mach-nuri.c
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
+_cfg80211.c
+CONFLICT (content): Merge conflict in drivers/staging/intel_sst/intelmid.c
+CONFLICT (delete/modify): drivers/staging/rt2860/common/cmm_data_pci.c dele=
+ted in staging/staging-next and modified in HEAD. Version HEAD of drivers/s=
+taging/rt2860/common/cmm_data_pci.c left in tree.
+CONFLICT (delete/modify): drivers/staging/rt2860/common/cmm_data_usb.c dele=
+ted in staging/staging-next and modified in HEAD. Version HEAD of drivers/s=
+taging/rt2860/common/cmm_data_usb.c left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/usbip/vhci_sysfs.c
+$ git rm -f drivers/staging/rt2860/common/cmm_data_pci.c drivers/staging/rt=
+2860/common/cmm_data_usb.c
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+
+--Signature=_Wed__18_May_2011_14_54_12_+1000_EWSjitPBMEbROJmP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN01D0AAoJEDMEi1NhKgbs1QgIAJvTzcR+Nbb12wXMkqsXGwEm
+4VmQkAbhFgxj9CFlJ9J7PeBz1QSKMD08p0soj/WmE9u13pmmDJNMfIP1P0bL0Lhn
+mX7zD/N5pPqqHKbvLf6DaucfMFOO/tQWlkQGQK2XgAZ/LnOd2D5rWiqmE/5GBpey
+V98Aw9Vzm9WQXcSLe4fFkg+vnYNJJyESyMX/G0g8wpdEWxbsvpGLb6wKfYuY2Snw
+noVpOGqXjkBzqhwfKeBkchSgeQzkc3a8yKf8JMBX9P9+KViwYNM2bP3q6PLWb9PC
+FsoqmpXY6OelHT0qgsYL+3bxC3EzjIOFShqBbzRqc4TAQOiJlzGeuRXrUedEiTQ=
+=toDf
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__18_May_2011_14_54_12_+1000_EWSjitPBMEbROJmP--
