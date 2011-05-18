@@ -1,264 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab1ERQKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 12:10:32 -0400
+	id S932829Ab1ERQLb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 12:11:31 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37219 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757263Ab1ERQJK (ORCPT
+	with ESMTP id S1757311Ab1ERQJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 12:09:10 -0400
-X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=U7PP73S-0fAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=SyI_GHdlAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=8Fnwx4f7fVJa3qSacY4A:9 a=V2d_GcAfyIDD1HzqIt8A:7 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=UQxMgyrMzRwA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Wed, 18 May 2011 12:09:09 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=o_g3m5omOQgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=SyI_GHdlAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=Mk_WYfw7bvVhj5mrVxQA:9 a=zj5rIVUungHVPCNk1d4A:7 a=jEp0ucaQiEUA:10 a=UQxMgyrMzRwA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110518160907.520292196@goodmis.org>
+Message-Id: <20110518160907.836298587@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 18 May 2011 12:08:15 -0400
+Date: Wed, 18 May 2011 12:08:16 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, John Reiser <jreiser@bitwagon.com>
-Subject: [PATCH 06/15] ftrace/recordmcount: Make ignored mcount calls into nops at compile
+        John Reiser <jreiser@bitwagon.com>
+Subject: [PATCH 07/15] ftrace/recordmcount: Add warning logic to warn on mcount not
 References: <20110518160809.724215604@goodmis.org>
-Content-Disposition: inline; filename=0006-ftrace-recordmcount-Make-ignored-mcount-calls-into-n.patch
- time
+Content-Disposition: inline; filename=0007-ftrace-recordmcount-Add-warning-logic-to-warn-on-mco.patch
+ recorded
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-There are sections that are ignored by ftrace for the function tracing because
-the text is in a section that can be removed without notice. The mcount calls
-in these sections are ignored and ftrace never sees them. The downside of this
-is that the functions in these sections still call mcount. Although the mcount
-function is defined in assembly simply as a return, this added overhead is
-unnecessary.
+There's some sections that should not have mcount recorded and should not have
+modifications to the that code. But currently they waste some time by calling
+mcount anyway (which simply returns). As the real answer should be to
+either whitelist the section or have gcc ignore it fully.
 
-The solution is to convert these callers into nops at compile time.
-A better solution is to add 'notrace' to the section markers, but as new sections
-come up all the time, it would be nice that they are delt with when they
-are created.
+This change adds a option to recordmcount to warn when it finds a section
+that is ignored by ftrace but still contains mcount callers. This is not on
+by default as developers may not know if the section should be completely
+ignored or added to the whitelist.
 
-Later patches will deal with finding these sections and doing the proper solution.
-
-Thanks to H. Peter Anvin for giving me the right nops to use for x86.
-
-Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: John Reiser <jreiser@bitwagon.com>
-Link: http://lkml.kernel.org/r/20110421023738.237101176@goodmis.org
+Link: http://lkml.kernel.org/r/20110421023738.476989377@goodmis.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- scripts/recordmcount.c |   40 ++++++++++++++++++++++-
- scripts/recordmcount.h |   82 +++++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 116 insertions(+), 6 deletions(-)
+ scripts/recordmcount.c |   32 ++++++++++++++++++++++++--------
+ scripts/recordmcount.h |   22 +++++++++++++++++-----
+ 2 files changed, 41 insertions(+), 13 deletions(-)
 
 diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
-index 37c5965..78054a4 100644
+index 78054a4..0e18975 100644
 --- a/scripts/recordmcount.c
 +++ b/scripts/recordmcount.c
-@@ -118,6 +118,34 @@ umalloc(size_t size)
- 	return addr;
+@@ -24,6 +24,7 @@
+ #include <sys/types.h>
+ #include <sys/mman.h>
+ #include <sys/stat.h>
++#include <getopt.h>
+ #include <elf.h>
+ #include <fcntl.h>
+ #include <setjmp.h>
+@@ -39,6 +40,7 @@ static char gpfx;	/* prefix for global symbol name (sometimes '_') */
+ static struct stat sb;	/* Remember .st_size, etc. */
+ static jmp_buf jmpenv;	/* setjmp/longjmp per-file error escape */
+ static const char *altmcount;	/* alternate mcount symbol name */
++static int warn_on_notrace_sect; /* warn when section has mcount not being recorded */
+ 
+ /* setjmp() return values */
+ enum {
+@@ -397,19 +399,33 @@ do_file(char const *const fname)
  }
  
-+static unsigned char ideal_nop5_x86_64[5] = { 0x0f, 0x1f, 0x44, 0x00, 0x00 };
-+static unsigned char ideal_nop5_x86_32[5] = { 0x3e, 0x8d, 0x74, 0x26, 0x00 };
-+static unsigned char *ideal_nop;
-+
-+static char rel_type_nop;
-+
-+static int (*make_nop)(void *map, size_t const offset);
-+
-+static int make_nop_x86(void *map, size_t const offset)
-+{
-+	uint32_t *ptr;
-+	unsigned char *op;
-+
-+	/* Confirm we have 0xe8 0x0 0x0 0x0 0x0 */
-+	ptr = map + offset;
-+	if (*ptr != 0)
-+		return -1;
-+
-+	op = map + offset - 1;
-+	if (*op != 0xe8)
-+		return -1;
-+
-+	/* convert to nop */
-+	ulseek(fd_map, offset - 1, SEEK_SET);
-+	uwrite(fd_map, ideal_nop, 5);
-+	return 0;
-+}
-+
- /*
-  * Get the whole file as a programming convenience in order to avoid
-  * malloc+lseek+read+free of many pieces.  If successful, then mmap
-@@ -301,7 +329,11 @@ do_file(char const *const fname)
- 			w2(ehdr->e_machine), fname);
- 		fail_file();
- 		break;
--	case EM_386:	 reltype = R_386_32;                   break;
-+	case EM_386:
-+		reltype = R_386_32;
-+		make_nop = make_nop_x86;
-+		ideal_nop = ideal_nop5_x86_32;
-+		break;
- 	case EM_ARM:	 reltype = R_ARM_ABS32;
- 			 altmcount = "__gnu_mcount_nc";
- 			 break;
-@@ -312,7 +344,11 @@ do_file(char const *const fname)
- 	case EM_S390:    /* reltype: e_class    */ gpfx = '_'; break;
- 	case EM_SH:	 reltype = R_SH_DIR32;                 break;
- 	case EM_SPARCV9: reltype = R_SPARC_64;     gpfx = '_'; break;
--	case EM_X86_64:	 reltype = R_X86_64_64;                break;
-+	case EM_X86_64:
-+		make_nop = make_nop_x86;
-+		ideal_nop = ideal_nop5_x86_64;
-+		reltype = R_X86_64_64;
-+		break;
- 	}  /* end switch */
+ int
+-main(int argc, char const *argv[])
++main(int argc, char *argv[])
+ {
+ 	const char ftrace[] = "/ftrace.o";
+ 	int ftrace_size = sizeof(ftrace) - 1;
+ 	int n_error = 0;  /* gcc-4.3.0 false positive complaint */
++	int c;
++	int i;
  
- 	switch (ehdr->e_ident[EI_CLASS]) {
+-	if (argc <= 1) {
+-		fprintf(stderr, "usage: recordmcount file.o...\n");
++	while ((c = getopt(argc, argv, "w")) >= 0) {
++		switch (c) {
++		case 'w':
++			warn_on_notrace_sect = 1;
++			break;
++		default:
++			fprintf(stderr, "usage: recordmcount [-w] file.o...\n");
++			return 0;
++		}
++	}
++
++	if ((argc - optind) < 1) {
++		fprintf(stderr, "usage: recordmcount [-w] file.o...\n");
+ 		return 0;
+ 	}
+ 
+ 	/* Process each file in turn, allowing deep failure. */
+-	for (--argc, ++argv; argc > 0; --argc, ++argv) {
++	for (i = optind; i < argc; i++) {
++		char *file = argv[i];
+ 		int const sjval = setjmp(jmpenv);
+ 		int len;
+ 
+@@ -418,14 +434,14 @@ main(int argc, char const *argv[])
+ 		 * function but does not call it. Since ftrace.o should
+ 		 * not be traced anyway, we just skip it.
+ 		 */
+-		len = strlen(argv[0]);
++		len = strlen(file);
+ 		if (len >= ftrace_size &&
+-		    strcmp(argv[0] + (len - ftrace_size), ftrace) == 0)
++		    strcmp(file + (len - ftrace_size), ftrace) == 0)
+ 			continue;
+ 
+ 		switch (sjval) {
+ 		default:
+-			fprintf(stderr, "internal error: %s\n", argv[0]);
++			fprintf(stderr, "internal error: %s\n", file);
+ 			exit(1);
+ 			break;
+ 		case SJ_SETJMP:    /* normal sequence */
+@@ -433,7 +449,7 @@ main(int argc, char const *argv[])
+ 			fd_map = -1;
+ 			ehdr_curr = NULL;
+ 			mmap_failed = 1;
+-			do_file(argv[0]);
++			do_file(file);
+ 			break;
+ 		case SJ_FAIL:    /* error in do_file or below */
+ 			++n_error;
 diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index 7f8d5c4..657dbed 100644
+index 657dbed..22033d5 100644
 --- a/scripts/recordmcount.h
 +++ b/scripts/recordmcount.h
-@@ -23,6 +23,7 @@
- #undef fn_is_fake_mcount
- #undef MIPS_is_fake_mcount
- #undef sift_rel_mcount
-+#undef nop_mcount
- #undef find_secsym_ndx
- #undef __has_rel_mcount
- #undef has_rel_mcount
-@@ -49,6 +50,7 @@
- #ifdef RECORD_MCOUNT_64
- # define append_func		append64
- # define sift_rel_mcount	sift64_rel_mcount
-+# define nop_mcount		nop_mcount_64
- # define find_secsym_ndx	find64_secsym_ndx
- # define __has_rel_mcount	__has64_rel_mcount
- # define has_rel_mcount		has64_rel_mcount
-@@ -77,6 +79,7 @@
- #else
- # define append_func		append32
- # define sift_rel_mcount	sift32_rel_mcount
-+# define nop_mcount		nop_mcount_32
- # define find_secsym_ndx	find32_secsym_ndx
- # define __has_rel_mcount	__has32_rel_mcount
- # define has_rel_mcount		has32_rel_mcount
-@@ -304,6 +307,70 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
- 	return mlocp;
- }
- 
-+/*
-+ * Read the relocation table again, but this time its called on sections
-+ * that are not going to be traced. The mcount calls here will be converted
-+ * into nops.
-+ */
-+static void nop_mcount(Elf_Shdr const *const relhdr,
-+		       Elf_Ehdr const *const ehdr)
-+{
-+	Elf_Shdr *const shdr0 = (Elf_Shdr *)(_w(ehdr->e_shoff)
-+		+ (void *)ehdr);
-+	unsigned const symsec_sh_link = w(relhdr->sh_link);
-+	Elf_Shdr const *const symsec = &shdr0[symsec_sh_link];
-+	Elf_Sym const *const sym0 = (Elf_Sym const *)(_w(symsec->sh_offset)
-+		+ (void *)ehdr);
-+
-+	Elf_Shdr const *const strsec = &shdr0[w(symsec->sh_link)];
-+	char const *const str0 = (char const *)(_w(strsec->sh_offset)
-+		+ (void *)ehdr);
-+
-+	Elf_Rel const *const rel0 = (Elf_Rel const *)(_w(relhdr->sh_offset)
-+		+ (void *)ehdr);
-+	unsigned rel_entsize = _w(relhdr->sh_entsize);
-+	unsigned const nrel = _w(relhdr->sh_size) / rel_entsize;
-+	Elf_Rel const *relp = rel0;
-+
-+	Elf_Shdr const *const shdr = &shdr0[w(relhdr->sh_info)];
-+
-+	unsigned mcountsym = 0;
-+	unsigned t;
-+
-+	for (t = nrel; t; --t) {
-+		int ret = -1;
-+
-+		if (!mcountsym) {
-+			Elf_Sym const *const symp =
-+				&sym0[Elf_r_sym(relp)];
-+			char const *symname = &str0[w(symp->st_name)];
-+			char const *mcount = gpfx == '_' ? "_mcount" : "mcount";
-+
-+			if (symname[0] == '.')
-+				++symname;  /* ppc64 hack */
-+			if (strcmp(mcount, symname) == 0 ||
-+			    (altmcount && strcmp(altmcount, symname) == 0))
-+				mcountsym = Elf_r_sym(relp);
-+		}
-+
-+		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp))
-+			ret = make_nop((void *)ehdr, shdr->sh_offset + relp->r_offset);
-+
-+		/*
-+		 * If we successfully removed the mcount, mark the relocation
-+		 * as a nop (don't do anything with it).
-+		 */
-+		if (!ret) {
-+			Elf_Rel rel;
-+			rel = *(Elf_Rel *)relp;
-+			Elf_r_info(&rel, Elf_r_sym(relp), rel_type_nop);
-+			ulseek(fd_map, (void *)relp - (void *)ehdr, SEEK_SET);
-+			uwrite(fd_map, &rel, sizeof(rel));
-+		}
-+		relp = (Elf_Rel const *)(rel_entsize + (void *)relp);
-+	}
-+}
-+
- 
- /*
-  * Find a symbol in the given section, to be used as the base for relocating
-@@ -360,8 +427,7 @@ __has_rel_mcount(Elf_Shdr const *const relhdr,  /* is SHT_REL or SHT_RELA */
- 		succeed_file();
- 	}
- 	if (w(txthdr->sh_type) != SHT_PROGBITS ||
--	    !(w(txthdr->sh_flags) & SHF_EXECINSTR) ||
--	    !is_mcounted_section_name(txtname))
-+	    !(w(txthdr->sh_flags) & SHF_EXECINSTR))
- 		return NULL;
- 	return txtname;
- }
-@@ -384,9 +450,11 @@ static unsigned tot_relsize(Elf_Shdr const *const shdr0,
+@@ -313,7 +313,8 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
+  * into nops.
+  */
+ static void nop_mcount(Elf_Shdr const *const relhdr,
+-		       Elf_Ehdr const *const ehdr)
++		       Elf_Ehdr const *const ehdr,
++		       const char *const txtname)
  {
- 	unsigned totrelsz = 0;
- 	Elf_Shdr const *shdrp = shdr0;
-+	char const *txtname;
+ 	Elf_Shdr *const shdr0 = (Elf_Shdr *)(_w(ehdr->e_shoff)
+ 		+ (void *)ehdr);
+@@ -336,6 +337,7 @@ static void nop_mcount(Elf_Shdr const *const relhdr,
  
- 	for (; nhdr; --nhdr, ++shdrp) {
--		if (has_rel_mcount(shdrp, shdr0, shstrtab, fname))
-+		txtname = has_rel_mcount(shdrp, shdr0, shstrtab, fname);
-+		if (txtname && is_mcounted_section_name(txtname))
- 			totrelsz += _w(shdrp->sh_size);
- 	}
- 	return totrelsz;
-@@ -422,7 +490,7 @@ do_func(Elf_Ehdr *const ehdr, char const *const fname, unsigned const reltype)
- 	for (relhdr = shdr0, k = nhdr; k; --k, ++relhdr) {
- 		char const *const txtname = has_rel_mcount(relhdr, shdr0,
- 			shstrtab, fname);
--		if (txtname) {
-+		if (txtname && is_mcounted_section_name(txtname)) {
- 			uint_t recval = 0;
- 			unsigned const recsym = find_secsym_ndx(
- 				w(relhdr->sh_info), txtname, &recval,
-@@ -433,6 +501,12 @@ do_func(Elf_Ehdr *const ehdr, char const *const fname, unsigned const reltype)
+ 	unsigned mcountsym = 0;
+ 	unsigned t;
++	int once = 0;
+ 
+ 	for (t = nrel; t; --t) {
+ 		int ret = -1;
+@@ -353,8 +355,18 @@ static void nop_mcount(Elf_Shdr const *const relhdr,
+ 				mcountsym = Elf_r_sym(relp);
+ 		}
+ 
+-		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp))
+-			ret = make_nop((void *)ehdr, shdr->sh_offset + relp->r_offset);
++		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp)) {
++			if (make_nop)
++				ret = make_nop((void *)ehdr, shdr->sh_offset + relp->r_offset);
++			if (warn_on_notrace_sect && !once) {
++				printf("Section %s has mcount callers being ignored\n",
++				       txtname);
++				once = 1;
++				/* just warn? */
++				if (!make_nop)
++					return;
++			}
++		}
+ 
+ 		/*
+ 		 * If we successfully removed the mcount, mark the relocation
+@@ -501,12 +513,12 @@ do_func(Elf_Ehdr *const ehdr, char const *const fname, unsigned const reltype)
  			mlocp = sift_rel_mcount(mlocp,
  				(void *)mlocp - (void *)mloc0, &mrelp,
  				relhdr, ehdr, recsym, recval, reltype);
-+		} else if (make_nop && txtname) {
-+			/*
-+			 * This section is ignored by ftrace, but still
-+			 * has mcount calls. Convert them to nops now.
-+			 */
-+			nop_mcount(relhdr, ehdr);
+-		} else if (make_nop && txtname) {
++		} else if (txtname && (warn_on_notrace_sect || make_nop)) {
+ 			/*
+ 			 * This section is ignored by ftrace, but still
+ 			 * has mcount calls. Convert them to nops now.
+ 			 */
+-			nop_mcount(relhdr, ehdr);
++			nop_mcount(relhdr, ehdr, txtname);
  		}
  	}
  	if (mloc0 != mlocp) {
