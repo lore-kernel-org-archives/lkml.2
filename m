@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab1ERWop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 18:44:45 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:62831 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab1ERWoo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 18:44:44 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-131.messagelabs.com!1305758682!9830895!4
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.178]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 18 May 2011 17:44:39 -0500
-Subject: RE: [PATCH 5/7] msm: gpiomux: Move public API to public header
-Thread-Topic: [PATCH 5/7] msm: gpiomux: Move public API to public header
-Thread-Index: AcwVpgo84/0XOcNfSq23YW6syyRjIAABli3Q
-Message-ID: <0D753D10438DA54287A00B027084269764D2F7405A@AUSP01VMBX24.collaborationhost.net>
-References: <1305755453-31112-1-git-send-email-davidb@codeaurora.org>
- <1305755453-31112-6-git-send-email-davidb@codeaurora.org>
-In-Reply-To: <1305755453-31112-6-git-send-email-davidb@codeaurora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755533Ab1ERWqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 18:46:19 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:4659 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754920Ab1ERWqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 18:46:18 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Message-ID: <4DD44C21.1080502@broadcom.com>
+Date: Wed, 18 May 2011 15:45:53 -0700
+From: "Henry Ptasinski" <henryp@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.5)
+ Gecko/20091204 Lightning/1.0b1 Thunderbird/3.0
 MIME-Version: 1.0
+To: "Joe Perches" <joe@perches.com>
+cc: "Brett Rudley" <brudley@broadcom.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "Dowan Kim" <dowan@broadcom.com>,
+        "Roland Vossen" <rvossen@broadcom.com>,
+        "Arend Van Spriel" <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Henry Ptasinski" <henryp@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
+Subject: Re: [PATCH] staging: brcm80211: brcmfmac: Add and use dhd_dbg
+References: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
+In-Reply-To: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
+X-WSS-ID: 61CA929B1IC9114314-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 18, 2011 2:51 PM, David Brown wrote:
+On 05/18/2011 11:23 AM, Joe Perches wrote:
+> All uses of DHD_<TYPE>  macros are for debugging only.
 >
-> The gpiomux.h header contains some SOC ifdefs.  However, the API that
-> is actually used by the GPIO driver only uses two functions that are
-> general.  Move these general definitions into a public header file.
->
-> Signed-off-by: David Brown <davidb@codeaurora.org>
-> ---
->  arch/arm/mach-msm/gpio.c    |    2 +-
->  arch/arm/mach-msm/gpiomux.h |   17 +----------------
->  include/linux/msm_gpiomux.h |   38 ++++++++++++++++++++++++++++++++++++++
->  3 files changed, 40 insertions(+), 17 deletions(-)
->  create mode 100644 include/linux/msm_gpiomux.h
+> Change the multiple uses of DHD_<TYPE>((...)) to dhd_dbg(TYPE, ...)
+> for a more consistent style.
 
-The msm_gpiomux.h header appears to be very "msm" specific, especially
-with the #ifdef CONFIG_MSM_GPIOMUX in it.  Wouldn't it be cleaner to
-just move it to arch/arm/mach-msm/include/mach/msm_gpiomux.h?
+I generally like this approach, but in brcmsmac we've been switching to 
+wiphy_err() and related instead.  Any strong argument for one over the 
+other?
 
-I don't see a reason why this header needs/should be available for
-the general public in /include/linux.
+> -       DHD_TRACE(("%s: Enter\n", __func__));
+> +       dhd_dbg(TRACE, "%s: Enter\n", __func__);
 
-Regards,
-Hartley
+
+I'd propose moving __func__ into the macro definition itself, which 
+would help ensure consistency (and shorten all the debug lines a bit).
+
+Also, perhaps rename to "brcm_dbg()", "bcm_dbg()" or something like that 
+and move it into include/bcmutils.h, so brcmsmac can use it as well.
+
+- Henry
+
