@@ -1,154 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab1EREJu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 00:09:50 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54705 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751023Ab1EREJs (ORCPT
+	id S932814Ab1ERELG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 00:11:06 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37650 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab1ERELF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 00:09:48 -0400
-Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        akpm@linux-foundation.org, colin.king@canonical.com,
-        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
-        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-In-Reply-To: <20110517103840.GL5279@suse.de>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
-	 <1305295404-12129-5-git-send-email-mgorman@suse.de>
-	 <4DCFAA80.7040109@jp.fujitsu.com> <1305519711.4806.7.camel@mulgrave.site>
-	 <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
-	 <20110516084558.GE5279@suse.de>
-	 <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
-	 <20110516102753.GF5279@suse.de>
-	 <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
-	 <20110517103840.GL5279@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 May 2011 08:09:33 +0400
-Message-ID: <1305691773.2580.1.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Wed, 18 May 2011 00:11:05 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DD346C4.5030200@jp.fujitsu.com>
+Date: Wed, 18 May 2011 13:10:44 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: penguin-kernel@I-love.SAKURA.ne.jp
+CC: john.stultz@linaro.org, tytso@mit.edu, mina86@mina86.com,
+        jirislaby@gmail.com, rientjes@google.com, dave@linux.vne,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] v4 Improve task->comm locking situation
+References: <1305580757-13175-1-git-send-email-john.stultz@linaro.org> <201105180316.p4I3G6f2094560@www262.sakura.ne.jp>
+In-Reply-To: <201105180316.p4I3G6f2094560@www262.sakura.ne.jp>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 11:38 +0100, Mel Gorman wrote:
-> On Tue, May 17, 2011 at 08:50:44AM +0900, Minchan Kim wrote:
-> > Don't we have to move cond_resched?
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 292582c..633e761 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -231,8 +231,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
-> >         if (scanned == 0)
-> >                 scanned = SWAP_CLUSTER_MAX;
-> > 
-> > -       if (!down_read_trylock(&shrinker_rwsem))
-> > -               return 1;       /* Assume we'll be able to shrink next time */
-> > +       if (!down_read_trylock(&shrinker_rwsem)) {
-> > +               ret = 1;
-> > +               goto out; /* Assume we'll be able to shrink next time */
-> > +       }
-> > 
-> >         list_for_each_entry(shrinker, &shrinker_list, list) {
-> >                 unsigned long long delta;
-> > @@ -280,12 +282,14 @@ unsigned long shrink_slab(struct shrink_control *shrink,
-> >                         count_vm_events(SLABS_SCANNED, this_scan);
-> >                         total_scan -= this_scan;
-> > 
-> > -                       cond_resched();
-> >                 }
-> > 
-> >                 shrinker->nr += total_scan;
-> > +               cond_resched();
-> >         }
-> >         up_read(&shrinker_rwsem);
-> > +out:
-> > +       cond_resched();
-> >         return ret;
-> >  }
-> > 
+(2011/05/18 12:16), Tetsuo Handa wrote:
+> What about replacing
+> 	char comm[TASK_COMM_LEN];
+> with
+> 	char *rcu_commname;
+> and switching it atomically using RCU?
 > 
-> This makes some sense for the exit path but if one or more of the
-> shrinkers takes a very long time without sleeping (extremely long
-> list searches for example) then kswapd will not call cond_resched()
-> between shrinkers and still consume a lot of CPU.
+> Advantages:
+>    Readers can use RCU read lock rather than spinlock.
+>    Makes task_struct smaller.
 > 
-> > >
-> > > balance_pgdat() only calls cond_resched if the zones are not
-> > >        balanced. For a high-order allocation that is balanced, it
-> > >        checks order-0 again. During that window, order-0 might have
-> > >        become unbalanced so it loops again for order-0 and returns
-> > >        that was reclaiming for order-0 to kswapd(). It can then find
-> > >        that a caller has rewoken kswapd for a high-order and re-enters
-> > >        balance_pgdat() without ever have called cond_resched().
-> > 
-> > If kswapd reclaims order-o followed by high order, it would have a
-> > chance to call cond_resched in shrink_page_list. But if all zones are
-> > all_unreclaimable is set, balance_pgdat could return any work. Okay.
-> > It does make sense.
-> > By your scenario, someone wakes up kswapd with higher order, again.
-> > So re-enters balance_pgdat without ever have called cond_resched.
-> > But if someone wakes up higher order again, we can't have a chance to
-> > call kswapd_try_to_sleep. So your patch effect would be nop, too.
-> > 
-> > It would be better to put cond_resched after balance_pgdat?
-> > 
+> Disadvantages:
+>    Need to allocate TASK_COMM_LEN bytes upon dup_task_struct() and set_task_comm().
+>    Need to rewrite all task_struct.comm readers (steps shown below).
 > 
-> Which will leave kswapd runnable instead of going to sleep but
-> guarantees a scheduling point. Lets see if the problem is that
-> cond_resched is being missed although if this was the case then patch
-> 4 would truly be a no-op but Colin has already reported that patch 1 on
-> its own didn't fix his problem. If the problem is sandybridge-specific
-> where kswapd remains runnable and consuming large amounts of CPU in
-> turbo mode then we know that there are other cond_resched() decisions
-> that will need to be revisited.
+> Steps to rewrite task_struct.comm readers
 > 
-> Colin or James, would you be willing to test with patch 1 from this
-> series and Minchan's patch below? Thanks.
+> (1) Introduce a temporary accessor (say, task_comm).
+> 
+>      #define task_comm(tsk) (tsk)->comm
+> 
+> (2) Rewrite all tsk->comm users to task_comm(tsk).
+> 
+> (3) Replace sizeof(tsk->comm) with TASK_COMM_LEN.
 
-Yes, but unfortunately I'm on the road at the moment.  I won't get back
-to the laptop showing the problem until late on Tuesday (24th).  If it
-works for Colin, I'd assume it's OK.
-
-James
+The problem is, they aren't a few. But if you have a enough brave,
+you can rewrite all. I'm not against it.
 
 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 292582c..61c45d0 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2753,6 +2753,7 @@ static int kswapd(void *p)
-> >                 if (!ret) {
-> >                         trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
-> >                         order = balance_pgdat(pgdat, order, &classzone_idx);
-> > +                       cond_resched();
-> >                 }
-> >         }
-> >         return 0;
-> > 
-> > >
-> > > While it appears unlikely, there are bad conditions which can result
-> > > in cond_resched() being avoided.
-> > 
-> > >
-> > > --
-> > > Mel Gorman
-> > > SUSE Labs
-> > >
-> > 
-> > 
-> > 
-> > -- 
-> > Kind regards,
-> > Minchan Kim
-> 
 
 
