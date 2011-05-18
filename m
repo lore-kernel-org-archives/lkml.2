@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab1ERJ5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 05:57:19 -0400
-Received: from mailgw9.se.ericsson.net ([193.180.251.57]:53172 "EHLO
-	mailgw9.se.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab1ERJ5T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 05:57:19 -0400
-X-AuditID: c1b4fb39-b7ceaae0000076dc-49-4dd397fdedba
-From: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
-To: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Kerstin Jonsson <kerstin.jonsson@ericsson.com>,
-        Paul Mackerras <paulus@samba.org>, Michael Neuling <mikey@neuling.org>,
-        Will Schmidt <will_schmidt@vnet.ibm.com>
-Subject: [PATCH] PPC_47x SMP fix
-Date: Wed, 18 May 2011 11:57:11 +0200
-Message-ID: <1305712631-21690-1-git-send-email-kerstin.jonsson@ericsson.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S932636Ab1ERJ52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 05:57:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51508 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755331Ab1ERJ50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 05:57:26 -0400
+Date: Wed, 18 May 2011 10:57:20 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: minchan.kim@gmail.com, James.Bottomley@hansenpartnership.com,
+        akpm@linux-foundation.org, colin.king@canonical.com,
+        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
+        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+Message-ID: <20110518095720.GQ5279@suse.de>
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+ <1305295404-12129-5-git-send-email-mgorman@suse.de>
+ <4DCFAA80.7040109@jp.fujitsu.com>
+ <1305519711.4806.7.camel@mulgrave.site>
+ <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
+ <20110516084558.GE5279@suse.de>
+ <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
+ <20110516102753.GF5279@suse.de>
+ <4DD31221.3060205@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4DD31221.3060205@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- commit c56e58537d504706954a06570b4034c04e5b7500 breaks SMP support in PPC_47x chip.
- secondary_ti must be set to current thread info before callin kick_cpu or else
- start_secondary_47x will jump into void when trying to return to c-code.
- In the current setup secondary_ti is initialized before the CPU idle task is started
- and only the boot core will start. I am not sure this is the correct solution, but it
- makes SMP possible in my chip.
- Note! The HOTPLUG support probably need some fixing to, There is no trampoline code
- available in head_44x.S - start_secondary_resume?
+On Wed, May 18, 2011 at 09:26:09AM +0900, KOSAKI Motohiro wrote:
+> >Lets see;
+> >
+> >shrink_page_list() only applies if inactive pages were isolated
+> >	which in turn may not happen if all_unreclaimable is set in
+> >	shrink_zones(). If for whatver reason, all_unreclaimable is
+> >	set on all zones, we can miss calling cond_resched().
+> >
+> >shrink_slab only applies if we are reclaiming slab pages. If the first
+> >	shrinker returns -1, we do not call cond_resched(). If that
+> >	first shrinker is dcache and __GFP_FS is not set, direct
+> >	reclaimers will not shrink at all. However, if there are
+> >	enough of them running or if one of the other shrinkers
+> >	is running for a very long time, kswapd could be starved
+> >	acquiring the shrinker_rwsem and never reaching the
+> >	cond_resched().
+> 
+> OK.
+> 
+> 
+> >
+> >balance_pgdat() only calls cond_resched if the zones are not
+> >	balanced. For a high-order allocation that is balanced, it
+> >	checks order-0 again. During that window, order-0 might have
+> >	become unbalanced so it loops again for order-0 and returns
+> >	that was reclaiming for order-0 to kswapd(). It can then find
+> >	that a caller has rewoken kswapd for a high-order and re-enters
+> >	balance_pgdat() without ever have called cond_resched().
+> 
+> Then, Shouldn't balance_pgdat() call cond_resched() unconditionally?
+> The problem is NOT 100% cpu consumption. if kswapd will sleep, other
+> processes need to reclaim old pages. The problem is, kswapd doesn't
+> invoke context switch and other tasks hang-up.
+> 
 
+Which the shrink_slab patch does (either version). What's the gain from
+sprinkling more cond_resched() around? If you think there is, submit
+another pair of patches (include patch 1 from this series) but I'm not
+seeing the advantage myself.
 
-Signed-off-by: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Michael Neuling <mikey@neuling.org>
-Cc: Will Schmidt <will_schmidt@vnet.ibm.com>
----
- arch/powerpc/kernel/smp.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> >While it appears unlikely, there are bad conditions which can result
+> >in cond_resched() being avoided.
+> >
+> 
+> 
 
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index cbdbb14..f2dcab7 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -410,8 +410,6 @@ int __cpuinit __cpu_up(unsigned int cpu)
- {
- 	int rc, c;
- 
--	secondary_ti = current_set[cpu];
--
- 	if (smp_ops == NULL ||
- 	    (smp_ops->cpu_bootable && !smp_ops->cpu_bootable(cpu)))
- 		return -EINVAL;
-@@ -421,6 +419,8 @@ int __cpuinit __cpu_up(unsigned int cpu)
- 	if (rc)
- 		return rc;
- 
-+	secondary_ti = current_set[cpu];
-+
- 	/* Make sure callin-map entry is 0 (can be leftover a CPU
- 	 * hotplug
- 	 */
 -- 
-1.7.2.3
-
+Mel Gorman
+SUSE Labs
