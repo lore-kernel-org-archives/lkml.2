@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083Ab1ERKsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 06:48:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56548 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757004Ab1ERKsE (ORCPT
+	id S1757131Ab1ERKsT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 06:48:19 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:53342 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757101Ab1ERKsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 06:48:04 -0400
-Message-ID: <4DD3A3DE.40501@linutronix.de>
-Date: Wed, 18 May 2011 12:47:58 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Wed, 18 May 2011 06:48:16 -0400
+Date: Wed, 18 May 2011 13:48:09 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com
+Subject: Re: [RESEND][PATCH 4/5] arm: omap: usb: Runtime PM support
+Message-ID: <20110518104806.GB13908@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1305538732-21087-1-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org, sodaville@linutronix.de,
-        Torben Hohn <torbenh@linutronix.de>,
-        Florian Fainelli <florian@openwrt.org>
-Subject: Re: [PATCH 1/2] x86/dtb: make irq host list accessible
-References: <20110427143423.GB15211@linutronix.de> <20110429222600.GJ7497@ponder.secretlab.ca> <20110430090218.GA24750@linutronix.de> <20110502215936.GG10097@ponder.secretlab.ca>
-In-Reply-To: <20110502215936.GG10097@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="R3G7APHDIzY6R/pk"
+Content-Disposition: inline
+In-Reply-To: <1305538732-21087-1-git-send-email-keshava_mgowda@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
->> This patch should be obsolete with of_irq_domain beeing generic now.
->> Could you please take look at the gpio driver? If there is nothing
->> obvious wrong I would rework it to work with of_irq_domain() and
->> repost.
-> 
-> okay, will do.
 
-Ping :)
+--R3G7APHDIzY6R/pk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> g.
+On Mon, May 16, 2011 at 03:08:52PM +0530, Keshava Munegowda wrote:
+> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+>=20
+> The usbhs core driver does not enable/disable the intefrace and
+> fucntional clocks; These clocks are handled by hwmod and runtime pm,
+> hence insted of the clock enable/disable, the runtime pm APIS are
+> used. however,the port clocks and tll clocks are handled
+> by the usbhs core.
+>=20
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
 
-Sebastian
+Samuel how do we solve this series ? I can take the arch/arm/*omap*/
+patches through Tony's tree, can you take the drivers/mfd/* via you
+tree ?
+
+--=20
+balbi
+
+--R3G7APHDIzY6R/pk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN06PmAAoJEAv8Txj19kN1gZUH/jVzKJ6ekhJ+hYSTgRRcQ+bo
+hRzW+WkjEQgibIJfO5lB7tRo+LdT5sAq6h8eDmBozu68M501BTatdEGjQrKxpCaJ
+q+x1crAzum5m37rFunkIgYd9UBcdQo/yteQBhPKjED+eO5aSWIBCJUlJJ03OGBC+
+mlr4LYenorZyvM4o1HENA8QrEbdgbEUegUgDn8cWqccbeFIIz7frBjh2e/O81FuZ
+wd2+Ryv2znJtEsYTMKP7G6ndrAF7epfd23CItHzGSqUh/ghyPNAxUt6oiNxBzPpa
+qewlDkoNjqXZ+x4OCHqqwUEkXFLyMQnc1ayhbQrmkhbnM+l+h1n3aZGKFnk4XRw=
+=JI2p
+-----END PGP SIGNATURE-----
+
+--R3G7APHDIzY6R/pk--
