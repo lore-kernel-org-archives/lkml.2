@@ -1,96 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757045Ab1ERKpW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 06:45:22 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:44820 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756958Ab1ERKpU (ORCPT
+	id S1757083Ab1ERKsG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 06:48:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56548 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757004Ab1ERKsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 06:45:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=YIx4Vjl3+7521WxtPokh+KV90mZRefnRWZoVsSIC08BRbD9N1HG395JTjKpegGdBry
-         Bt/0T5B2slmiwe6/yT2McvquMktDFLPuihQPL5F3NhCKpuIc76IzjLiXHTm0SYvF8zyQ
-         OHXMYG5WniA0yv+UcegZltLchR1DOSBfAxE0o=
+	Wed, 18 May 2011 06:48:04 -0400
+Message-ID: <4DD3A3DE.40501@linutronix.de>
+Date: Wed, 18 May 2011 12:47:58 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-In-Reply-To: <20110518095539.GU20624@htj.dyndns.org>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org>
- <1305569849-10448-4-git-send-email-tj@kernel.org> <201105180240.56754.vda.linux@googlemail.com>
- <20110518095539.GU20624@htj.dyndns.org>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Wed, 18 May 2011 12:44:58 +0200
-Message-ID: <BANLkTi=Yq6BRG7CFfXaKNP1rTb-4hhftmg@mail.gmail.com>
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-To: Tejun Heo <tj@kernel.org>
-Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
-        bdonlan@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, sodaville@linutronix.de,
+        Torben Hohn <torbenh@linutronix.de>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: Re: [PATCH 1/2] x86/dtb: make irq host list accessible
+References: <20110427143423.GB15211@linutronix.de> <20110429222600.GJ7497@ponder.secretlab.ca> <20110430090218.GA24750@linutronix.de> <20110502215936.GG10097@ponder.secretlab.ca>
+In-Reply-To: <20110502215936.GG10097@ponder.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 11:55 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Denys.
->
-> On Wed, May 18, 2011 at 02:40:56AM +0200, Denys Vlasenko wrote:
->> This makes PTRACE_EVENT_STOP similar to other PTRACE_EVENTs.
->> The only difference is that it can't be set by PTRACE_SETOPTIONS
->> as other events do, but activated implicitly by PTRACE_SEIZE.
->
-> Also by PTRACE_INTERRUPT and group stop.
+Grant Likely wrote:
+>> This patch should be obsolete with of_irq_domain beeing generic now.
+>> Could you please take look at the gpio driver? If there is nothing
+>> obvious wrong I would rework it to work with of_irq_domain() and
+>> repost.
+> 
+> okay, will do.
 
-"Activating" meaning "enabling", not "causing". Only PTRACE_SEIZE
-enables PTRACE_EVENT_STOP.
+Ping :)
 
->> This made me thinking.
->>
->> How about making API even more similar to existing one?
->>
->> Create PTRACE_O_TRACESTOP, make it settable by PTRACE_SETOPTIONS too.
->>
->> Make PTRACE_SEIZE take the mask of PTRACE_O_xyz flags
->> as data argument.
->> If PTRACE_O_TRACESTOP is set, it works as you described above.
->> If PTRACE_O_TRACESTOP is not set, then it works as good old PTRACE_ATTACH.
->> In both cases, immediately at attach it sets opts a-la PTRACE_SETOPTIONS.
->>
->> We can even avoid introducing PTRACE_SEIZE at all, because
->> currently PTRACE_ATTACH ignores its data argument.
->>
->> I know, I know, "this changes API", but did we ever promise
->> that PTRACE_ATTACH with nonzero data arg is a valid usage?
->> Also, I perused first 10 pages of google code search results
->> and I see that everybody passes 0 or NULL.
->
-> But as SEIZE introduces behavior differences throughout ptrace
-> operation,
->
-> Similar issue with PTRACE_O_TRACESTOP.  It won't only enable TRACESTOP
-> it will change other behaviors too
+> g.
 
-All these differences revolve around making handling of stops
-and SIGCONT better. It seems fitting to the option name.
-
-PTRACE_SEIZE sets a flag somewhere "please convert
-group-stops into PTRACE_EVENT_STOPs".
-
-But, we *already have* ptrace op which performs this action
-of modifying (or adding) stops - it's PTRACE_SETOPTIONS.
-With PTRACE_O_TRACESYSGOOD it modifies syscall-stops.
-With PTRACE_O_TRACEEXEC - post-execve stop.
-With PTRACE_O_TRACEFORK it adds a stop after fork.
-
-Since we have this API, why not use it for the very similar
-concept of modifying group-stops too?
-
-> I think it's actually beneficial to use a distinctively new
-> request.  It's not like it costs anything or we're short on request
-> number space.
-
-"Entities must not be multiplied beyond necessity"?
-
--- 
-vda
+Sebastian
