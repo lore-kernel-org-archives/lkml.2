@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab1ERG1X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 02:27:23 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38690 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159Ab1ERG1V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 02:27:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ukSbv45695Wb0a6Xyli8M7rWQcTq4wxnH3Mgoxy1zP070pcMRxo8SemFMqrC38f/uR
-         xAyIE8jBFx7uJAeF/VQjihQRTdRdRnVdtmQJX/4SirpytX/9Rvz69QRlM4n2RJKxuIZS
-         Ebay4xbmZQjFfr+tAROnN76cC7Z/Ztv7wAX28=
+	id S1754595Ab1ERGgB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 02:36:01 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60829 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754375Ab1ERGgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 02:36:00 -0400
+Date: Wed, 18 May 2011 08:35:44 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/9] x86/lib/memcpy_64.S: Optimize memcpy by enhanced REP
+ MOVSB/STOSB
+Message-ID: <20110518063544.GC2945@elte.hu>
+References: <1305671358-14478-1-git-send-email-fenghua.yu@intel.com>
+ <1305671358-14478-8-git-send-email-fenghua.yu@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20110518061919.GA18763@merkur.ravnborg.org>
-References: <1305646532-29114-1-git-send-email-mmarek@suse.cz>
-	<20110517195310.GA17003@merkur.ravnborg.org>
-	<20110518051645.GB15292@game.jcrosoft.org>
-	<20110518061919.GA18763@merkur.ravnborg.org>
-Date: Wed, 18 May 2011 02:27:21 -0400
-Message-ID: <BANLkTikJhjZeALwwRyaozQZp0=k8xcocog@mail.gmail.com>
-Subject: Re: [PATCH] kconfig: Only generate config_is_xxx for bool and
- tristate options
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305671358-14478-8-git-send-email-fenghua.yu@intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Wed, May 18, 2011 at 2:19 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Wed, May 18, 2011 at 07:16:45AM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
->> On 21:53 Tue 17 May     , Sam Ravnborg wrote:
->> > On Tue, May 17, 2011 at 05:35:32PM +0200, Michal Marek wrote:
->> > > For strings and integers, the config_is_xxx macros are useless and
->> > > sometimes misleading:
->> > >
->> > >   #define CONFIG_INITRAMFS_SOURCE ""
->> > >   #define config_is_initramfs_source() 1
->> >
->> > I'm late with this comment....
->> > Could we introduce "config_is_foo" using a syntax that
->> > does not break grepability?
->> >
->> > Maybe a syntax like this?
->> >
->> >     #ifdef CONFIG_FOO
->> >
->> > and
->> >
->> >     if (KCONFIG_FOO())
->> >
->> > Grepping for the use of a symbol is a very typical thing,
->> > so we should try to keep this.
->> > And with the suggested syntax above I expect fixdep to
->> > catch up both usage types.
->> I'll prefer kconfig_foo()
->> not uppercase
->>
->> but if we use KCONFIG_FOO no need to touch fixdep
->
-> fixdep is easy to fix - albeit it may cost a bit of processing time.
-> wht I worry much more about is users that miss uses of CONFIG_ symbols, because
-> they do not show up in "git grep CONFIG_FOO".
->
-agree.
+* Fenghua Yu <fenghua.yu@intel.com> wrote:
 
-> Using "if (KCONFIG_FOO()) users are also awre this is a configuration
-> decided condition - which is nice to stand out.
->
-this will not work if you do $(git -w CONFIG_FOO) to avoid getting all
-kind of noise in your search.
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> 
+> Support memcpy() with enhanced rep movsb. On processors supporting enhanced 
+> rep movsb, the alternative memcpy() function using enhanced rep movsb 
+> overrides the original function and the fast string function.
+> 
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  arch/x86/lib/memcpy_64.S |   45 ++++++++++++++++++++++++++++++++-------------
+>  1 files changed, 32 insertions(+), 13 deletions(-)
 
- - Arnaud
+>  ENDPROC(__memcpy)
+>  
+>  	/*
+> -	 * Some CPUs run faster using the string copy instructions.
+> -	 * It is also a lot simpler. Use this when possible:
+> -	 */
+> -
+> -	.section .altinstructions, "a"
+> -	.align 8
+> -	.quad memcpy
+> -	.quad .Lmemcpy_c
+> -	.word X86_FEATURE_REP_GOOD
+> -
+> -	/*
+> +	 * Some CPUs are adding enhanced REP MOVSB/STOSB feature
+> +	 * If the feature is supported, memcpy_c_e() is the first choice.
+> +	 * If enhanced rep movsb copy is not available, use fast string copy
+> +	 * memcpy_c() when possible. This is faster and code is simpler than
+> +	 * original memcpy().
+
+Please use more obvious names than cryptic and meaningless _c and _c_e 
+postfixes. We do not repeat these many times.
+
+Also, did you know about the 'perf bench mem memcpy' tool prototype we have in 
+the kernel tree? It is intended to check and evaluate exactly the patches you 
+are offering here. The code lives in:
+
+  tools/perf/bench/mem-memcpy-arch.h
+  tools/perf/bench/mem-memcpy.c
+  tools/perf/bench/mem-memcpy-x86-64-asm-def.h
+  tools/perf/bench/mem-memcpy-x86-64-asm.S
+
+Please look into testing (fixing if needed), using and extending it:
+
+ - We want to measure the alternatives variants as well, not just the generic one
+
+ - We want to measure memmove, memclear, etc. operations as well, not just 
+   memcpy
+
+ - We want cache-cold and cache-hot numbers as well, going along multiple sizes
+
+This tool can also useful when developing these changes: they can be tested in 
+user-space and can be iterated very quickly, without having to build and 
+booting the kernel.
+
+We can commit any enhancements/fixes you do to perf bench alongside your memcpy 
+patches. All in one, such measurements will make it much easier for us to apply 
+the patches.
+
+Thanks,
+
+	Ingo
