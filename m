@@ -1,126 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab1ERJ3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 05:29:21 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:39622 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865Ab1ERJ3U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 05:29:20 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-From: Jonathan Cameron <jic23@cam.ac.uk>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH] irq: uninline generic_handle_irq, export handle_simple_irq, irq_modify_status, generic_handle_irq, irq_alloc_descs and irq_free_descs
-Date: Wed, 18 May 2011 10:32:01 +0100
-Message-Id: <1305711121-30428-1-git-send-email-jic23@cam.ac.uk>
-X-Mailer: git-send-email 1.7.3.4
+	id S932616Ab1ERJc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 05:32:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46854 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932138Ab1ERJcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 05:32:55 -0400
+Message-ID: <4DD39237.5040905@ti.com>
+Date: Wed, 18 May 2011 10:32:39 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
+CC: Taylor Hutt <thutt@chromium.org>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] Max98095: Move existing NULL check before
+ pointer dereference.
+References: <1305680634-10484-1-git-send-email-thutt@chromium.org> <B2150E1E4418E1438554A300EA5040E40DDDA179DA@ITSVLEX06.it.maxim-ic.internal>
+In-Reply-To: <B2150E1E4418E1438554A300EA5040E40DDDA179DA@ITSVLEX06.it.maxim-ic.internal>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V3: stop exporting irq_to_desc and instead take generic_handle_irq out of the header.
-As suggested by Thomas Gleixner.
+On 18/05/11 02:28, Peter Hsiang wrote:
+> On Tue, May 17, 2011, Taylor Hutt wrote:
+> 
+>> Visual inspection shows that max98095_put_eq_enum() and
+>> max98095_put_bq_enum() each have a possible NULL deref of 'pdata'.
+>>
+>> This change moves the NULL check above the use.
+>>
+>> BUG=none
+>> TEST=Visual inspection
+> 
+> Mark, this patch looks good.
+> Thank you Taylor.
+> 
 
-Patch was previously:
-irq: export handle_simple_irq, irq_modify_status, irq_to_desc, irq_alloc_descs and irq_free_descs
-
-V2: add irq_alloc_descs and irq_free_descs for dynamic pool allocation.
-
-This is to allow their use in IIO. We have complete control of
-both the irq_chip creation and requesting of irqs so would like
-to be able to build as a module. That requires these exports.
-
-Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
----
-Hi Thomas,
-
-Looking a bit more at possible locations it is clear that CONFIG_GENERIC_HARDIRQS
-only exists as an ifdef in irqdesc.c so I guess that is the least intrusive place
-to move this to.
-
-Lots stacked behind this, so thought I'd keep the ball rolling rather than
-waiting for your reply to my question of where best to put generic_handle_irq.
-
-Thanks,
-
-Jonathan
-
- include/linux/irqdesc.h |    5 +----
- kernel/irq/chip.c       |    2 ++
- kernel/irq/irqdesc.c    |    8 ++++++++
- 3 files changed, 11 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-index a082905..27b971d 100644
---- a/include/linux/irqdesc.h
-+++ b/include/linux/irqdesc.h
-@@ -109,10 +109,7 @@ static inline void generic_handle_irq_desc(unsigned int irq, struct irq_desc *de
- 	desc->handle_irq(irq, desc);
- }
- 
--static inline void generic_handle_irq(unsigned int irq)
--{
--	generic_handle_irq_desc(irq, irq_to_desc(irq));
--}
-+void generic_handle_irq(unsigned int irq);
- 
- /* Test to see if a driver has successfully requested an irq */
- static inline int irq_has_action(unsigned int irq)
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 4af1e2b..ad409d3 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -310,6 +310,7 @@ handle_simple_irq(unsigned int irq, struct irq_desc *desc)
- out_unlock:
- 	raw_spin_unlock(&desc->lock);
- }
-+EXPORT_SYMBOL_GPL(handle_simple_irq);
- 
- /**
-  *	handle_level_irq - Level type irq handler
-@@ -612,6 +613,7 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
- 
- 	irq_put_desc_unlock(desc, flags);
- }
-+EXPORT_SYMBOL_GPL(irq_modify_status);
- 
- /**
-  *	irq_cpu_online - Invoke all irq_cpu_online functions.
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 2c039c9..dbffb95 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -311,6 +311,7 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
- 	bitmap_clear(allocated_irqs, from, cnt);
- 	mutex_unlock(&sparse_irq_lock);
- }
-+EXPORT_SYMBOL_GPL(irq_free_descs);
- 
- /**
-  * irq_alloc_descs - allocate and initialize a range of irq descriptors
-@@ -351,6 +352,7 @@ err:
- 	mutex_unlock(&sparse_irq_lock);
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(irq_alloc_descs);
- 
- /**
-  * irq_reserve_irqs - mark irqs allocated
-@@ -443,4 +445,10 @@ unsigned int kstat_irqs(unsigned int irq)
- 		sum += *per_cpu_ptr(desc->kstat_irqs, cpu);
- 	return sum;
- }
-+
-+void generic_handle_irq(unsigned int irq)
-+{
-+	generic_handle_irq_desc(irq, irq_to_desc(irq));
-+}
-+EXPORT_SYMBOL(generic_handle_irq);
- #endif /* CONFIG_GENERIC_HARDIRQS */
--- 
-1.7.3.4
-
+Acked-by: Liam Girdwood <lrg@ti.com>
