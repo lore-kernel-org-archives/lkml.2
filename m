@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089Ab1ERMfg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 08:35:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58952 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933012Ab1ERMff convert rfc822-to-8bit (ORCPT
+	id S1757163Ab1ERM7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 08:59:10 -0400
+Received: from investici.nine.ch ([217.150.252.179]:25212 "EHLO
+	confino.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757121Ab1ERM7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 08:35:35 -0400
-Subject: Re: [PATCH v1 5/5] KVM: Expose a version 1 architectural PMU to
- guests
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-In-Reply-To: <4DD3AF88.2040704@redhat.com>
-References: <1305129333-7456-1-git-send-email-avi@redhat.com>
-	 <1305129333-7456-6-git-send-email-avi@redhat.com>
-	 <20110517194117.GA26184@elte.hu> <4DD38B57.2070904@redhat.com>
-	 <20110518110759.GB16556@elte.hu> <1305718350.2466.7110.camel@twins>
-	 <4DD3AF88.2040704@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 18 May 2011 14:35:16 +0200
-Message-ID: <1305722116.2466.7171.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 18 May 2011 08:59:08 -0400
+X-Greylist: delayed 1230 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 May 2011 08:59:08 EDT
+X-DKIM: Sendmail DKIM Filter v2.8.2 confino.investici.org BD13D8445C
+From: Antonio Quartulli <ordex@autistici.org>
+To: linux-kernel@vger.kernel.org
+Cc: Antonio Quartulli <ordex@autistici.org>
+Subject: [PATCH] net: add seq_before/seq_after functions
+Date: Wed, 18 May 2011 14:38:39 +0200
+Message-Id: <1305722319-8315-1-git-send-email-ordex@autistici.org>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-18 at 14:37 +0300, Avi Kivity wrote:
-> On 05/18/2011 02:32 PM, Peter Zijlstra wrote:
-> > On Wed, 2011-05-18 at 13:07 +0200, Ingo Molnar wrote:
-> > >
-> > >  It does through raw events - which are indeed model specific.
-> >
-> > Which is exactly what is needed anyway, he gets a raw msr value.
-> >
-> > The only thing that is not exposed is the ANY bit, but since KVM doesn't
-> > expose HT anyway that doesn't matter.
-> 
-> If I were to use raw events, I'd need to program AMD and Intel hosts 
-> separately.  As it is, I just use the generic counters and the perf 
-> backend does its thing.
+Introduce two operations to handle comparison between packet sequence
+numbers taking into account overflow/wraparound. Batman-adv uses
+these functions already to check for successor packet even in case of
+overflow.
+---
 
-But why exactly, from what I understood you emulate an actual hardware
-PMU, that means the guest will be writing proper content to the relevant
-MSRs, you can feed that directly into the raw config field (with
-exception of the USR/OS/INT bits).
+I added this two functions in net.h because I didn't really know where
+best placement is. I saw several modules that redefine their own functions
+for the same purpose.
 
-I'm fairly sure that emulating the intel arch bits on an cpu that
-otherwise identifies itself as AMD is going to confuse things.
+ include/linux/net.h |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/net.h b/include/linux/net.h
+index 94de83c..c7bc9bf 100644
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -295,4 +295,21 @@ extern struct ratelimit_state net_ratelimit_state;
+ #endif
+ 
+ #endif /* __KERNEL__ */
++
++/* Returns the smallest signed integer in two's complement with the sizeof x */
++#define smallest_signed_int(x) (1u << (7u + 8u * (sizeof(x) - 1u)))
++
++/* Checks if a sequence number x is a predecessor/successor of y.
++ * they handle overflows/underflows and can correctly check for a
++ * predecessor/successor unless the variable sequence number has grown by
++ * more then 2**(bitwidth(x)-1)-1.
++ * This means that for a uint8_t with the maximum value 255, it would think:
++ *  - when adding nothing - it is neither a predecessor nor a successor
++ *  - before adding more than 127 to the starting value - it is a predecessor,
++ *  - when adding 128 - it is neither a predecessor nor a successor,
++ *  - after adding more than 127 to the starting value - it is a successor */
++#define seq_before(x, y) ({typeof(x) _dummy = (x - y); \
++			_dummy > smallest_signed_int(_dummy); })
++#define seq_after(x, y) seq_before(y, x)
++
+ #endif	/* _LINUX_NET_H */
+-- 
+1.7.3.4
 
