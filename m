@@ -1,203 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933491Ab1ERSdn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 14:33:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44757 "EHLO hera.kernel.org"
+	id S933540Ab1ERSeB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 14:34:01 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44770 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933459Ab1ERSdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 14:33:39 -0400
-Date: Wed, 18 May 2011 18:33:19 GMT
+	id S933459Ab1ERSdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 14:33:54 -0400
+Date: Wed, 18 May 2011 18:33:45 GMT
 From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-dfad3d598c4bbbaf137588e22bac1ce624529f7e@git.kernel.org>
+Message-ID: <tip-85356f802225fedeee8c3e65bdd93b263ace0a8b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, srostedt@redhat.com, jreiser@bitwagon.com,
+        rostedt@goodmis.org, srostedt@redhat.com, mmarek@suse.cz,
         tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, jreiser@bitwagon.com,
-        tglx@linutronix.de
-In-Reply-To: <20110421023738.476989377@goodmis.org>
-References: <20110421023738.476989377@goodmis.org>
+        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de,
+        mmarek@suse.cz
+In-Reply-To: <20110421023738.714956282@goodmis.org>
+References: <20110421023738.714956282@goodmis.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace/recordmcount: Add warning logic to warn on mcount not recorded
-Git-Commit-ID: dfad3d598c4bbbaf137588e22bac1ce624529f7e
+Subject: [tip:perf/core] kbuild/recordmcount: Add RECORDMCOUNT_WARN to warn about mcount callers
+Git-Commit-ID: 85356f802225fedeee8c3e65bdd93b263ace0a8b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 18 May 2011 18:33:20 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 18 May 2011 18:33:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dfad3d598c4bbbaf137588e22bac1ce624529f7e
-Gitweb:     http://git.kernel.org/tip/dfad3d598c4bbbaf137588e22bac1ce624529f7e
+Commit-ID:  85356f802225fedeee8c3e65bdd93b263ace0a8b
+Gitweb:     http://git.kernel.org/tip/85356f802225fedeee8c3e65bdd93b263ace0a8b
 Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Tue, 12 Apr 2011 18:53:25 -0400
+AuthorDate: Tue, 12 Apr 2011 18:59:10 -0400
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 16 May 2011 14:44:20 -0400
+CommitDate: Mon, 16 May 2011 14:45:03 -0400
 
-ftrace/recordmcount: Add warning logic to warn on mcount not recorded
+kbuild/recordmcount: Add RECORDMCOUNT_WARN to warn about mcount callers
 
-There's some sections that should not have mcount recorded and should not have
-modifications to the that code. But currently they waste some time by calling
-mcount anyway (which simply returns). As the real answer should be to
-either whitelist the section or have gcc ignore it fully.
+When mcount is called in a section that ftrace will not modify it into
+a nop, we want to warn about this. But not warn about this always. Now
+if the user builds the kernel with the option RECORDMCOUNT_WARN=1 then
+the build will warn about mcount callers that are ignored and will just
+waste execution time.
 
-This change adds a option to recordmcount to warn when it finds a section
-that is ignored by ftrace but still contains mcount callers. This is not on
-by default as developers may not know if the section should be completely
-ignored or added to the whitelist.
-
-Cc: John Reiser <jreiser@bitwagon.com>
-Link: http://lkml.kernel.org/r/20110421023738.476989377@goodmis.org
+Acked-by: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org
+Link: http://lkml.kernel.org/r/20110421023738.714956282@goodmis.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- scripts/recordmcount.c |   32 ++++++++++++++++++++++++--------
- scripts/recordmcount.h |   22 +++++++++++++++++-----
- 2 files changed, 41 insertions(+), 13 deletions(-)
+ Makefile               |    1 +
+ scripts/Makefile.build |    5 ++++-
+ 2 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
-index 78054a4..0e18975 100644
---- a/scripts/recordmcount.c
-+++ b/scripts/recordmcount.c
-@@ -24,6 +24,7 @@
- #include <sys/types.h>
- #include <sys/mman.h>
- #include <sys/stat.h>
-+#include <getopt.h>
- #include <elf.h>
- #include <fcntl.h>
- #include <setjmp.h>
-@@ -39,6 +40,7 @@ static char gpfx;	/* prefix for global symbol name (sometimes '_') */
- static struct stat sb;	/* Remember .st_size, etc. */
- static jmp_buf jmpenv;	/* setjmp/longjmp per-file error escape */
- static const char *altmcount;	/* alternate mcount symbol name */
-+static int warn_on_notrace_sect; /* warn when section has mcount not being recorded */
+diff --git a/Makefile b/Makefile
+index 41ea6fb..e7d01ad 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1268,6 +1268,7 @@ help:
+ 	@echo  '  make C=1   [targets] Check all c source with $$CHECK (sparse by default)'
+ 	@echo  '  make C=2   [targets] Force check of all c source with $$CHECK'
+ 	@echo  '  make W=1   [targets] Enable extra gcc checks'
++	@echo  '  make RECORDMCOUNT_WARN=1 [targets] Warn about ignored mcount sections'
+ 	@echo  ''
+ 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
+ 	@echo  'For further info see the ./README file'
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index d5f925a..fdca952 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -244,13 +244,16 @@ endif
  
- /* setjmp() return values */
- enum {
-@@ -397,19 +399,33 @@ do_file(char const *const fname)
- }
- 
- int
--main(int argc, char const *argv[])
-+main(int argc, char *argv[])
- {
- 	const char ftrace[] = "/ftrace.o";
- 	int ftrace_size = sizeof(ftrace) - 1;
- 	int n_error = 0;  /* gcc-4.3.0 false positive complaint */
-+	int c;
-+	int i;
- 
--	if (argc <= 1) {
--		fprintf(stderr, "usage: recordmcount file.o...\n");
-+	while ((c = getopt(argc, argv, "w")) >= 0) {
-+		switch (c) {
-+		case 'w':
-+			warn_on_notrace_sect = 1;
-+			break;
-+		default:
-+			fprintf(stderr, "usage: recordmcount [-w] file.o...\n");
-+			return 0;
-+		}
-+	}
-+
-+	if ((argc - optind) < 1) {
-+		fprintf(stderr, "usage: recordmcount [-w] file.o...\n");
- 		return 0;
- 	}
- 
- 	/* Process each file in turn, allowing deep failure. */
--	for (--argc, ++argv; argc > 0; --argc, ++argv) {
-+	for (i = optind; i < argc; i++) {
-+		char *file = argv[i];
- 		int const sjval = setjmp(jmpenv);
- 		int len;
- 
-@@ -418,14 +434,14 @@ main(int argc, char const *argv[])
- 		 * function but does not call it. Since ftrace.o should
- 		 * not be traced anyway, we just skip it.
- 		 */
--		len = strlen(argv[0]);
-+		len = strlen(file);
- 		if (len >= ftrace_size &&
--		    strcmp(argv[0] + (len - ftrace_size), ftrace) == 0)
-+		    strcmp(file + (len - ftrace_size), ftrace) == 0)
- 			continue;
- 
- 		switch (sjval) {
- 		default:
--			fprintf(stderr, "internal error: %s\n", argv[0]);
-+			fprintf(stderr, "internal error: %s\n", file);
- 			exit(1);
- 			break;
- 		case SJ_SETJMP:    /* normal sequence */
-@@ -433,7 +449,7 @@ main(int argc, char const *argv[])
- 			fd_map = -1;
- 			ehdr_curr = NULL;
- 			mmap_failed = 1;
--			do_file(argv[0]);
-+			do_file(file);
- 			break;
- 		case SJ_FAIL:    /* error in do_file or below */
- 			++n_error;
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index 657dbed..22033d5 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -313,7 +313,8 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
-  * into nops.
-  */
- static void nop_mcount(Elf_Shdr const *const relhdr,
--		       Elf_Ehdr const *const ehdr)
-+		       Elf_Ehdr const *const ehdr,
-+		       const char *const txtname)
- {
- 	Elf_Shdr *const shdr0 = (Elf_Shdr *)(_w(ehdr->e_shoff)
- 		+ (void *)ehdr);
-@@ -336,6 +337,7 @@ static void nop_mcount(Elf_Shdr const *const relhdr,
- 
- 	unsigned mcountsym = 0;
- 	unsigned t;
-+	int once = 0;
- 
- 	for (t = nrel; t; --t) {
- 		int ret = -1;
-@@ -353,8 +355,18 @@ static void nop_mcount(Elf_Shdr const *const relhdr,
- 				mcountsym = Elf_r_sym(relp);
- 		}
- 
--		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp))
--			ret = make_nop((void *)ehdr, shdr->sh_offset + relp->r_offset);
-+		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp)) {
-+			if (make_nop)
-+				ret = make_nop((void *)ehdr, shdr->sh_offset + relp->r_offset);
-+			if (warn_on_notrace_sect && !once) {
-+				printf("Section %s has mcount callers being ignored\n",
-+				       txtname);
-+				once = 1;
-+				/* just warn? */
-+				if (!make_nop)
-+					return;
-+			}
-+		}
- 
- 		/*
- 		 * If we successfully removed the mcount, mark the relocation
-@@ -501,12 +513,12 @@ do_func(Elf_Ehdr *const ehdr, char const *const fname, unsigned const reltype)
- 			mlocp = sift_rel_mcount(mlocp,
- 				(void *)mlocp - (void *)mloc0, &mrelp,
- 				relhdr, ehdr, recsym, recval, reltype);
--		} else if (make_nop && txtname) {
-+		} else if (txtname && (warn_on_notrace_sect || make_nop)) {
- 			/*
- 			 * This section is ignored by ftrace, but still
- 			 * has mcount calls. Convert them to nops now.
- 			 */
--			nop_mcount(relhdr, ehdr);
-+			nop_mcount(relhdr, ehdr, txtname);
- 		}
- 	}
- 	if (mloc0 != mlocp) {
+ ifdef CONFIG_FTRACE_MCOUNT_RECORD
+ ifdef BUILD_C_RECORDMCOUNT
++ifeq ("$(origin RECORDMCOUNT_WARN)", "command line")
++  RECORDMCOUNT_FLAGS = -w
++endif
+ # Due to recursion, we must skip empty.o.
+ # The empty.o file is created in the make process in order to determine
+ #  the target endianness and word size. It is made before all other C
+ #  files, including recordmcount.
+ sub_cmd_record_mcount =					\
+ 	if [ $(@) != "scripts/mod/empty.o" ]; then	\
+-		$(objtree)/scripts/recordmcount "$(@)";	\
++		$(objtree)/scripts/recordmcount $(RECORDMCOUNT_FLAGS) "$(@)";	\
+ 	fi;
+ else
+ sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
