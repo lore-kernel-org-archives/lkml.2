@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab1ERXVf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 19:21:35 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:28393 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755902Ab1ERXVd (ORCPT
+	id S1756122Ab1ERX3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 19:29:37 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61629 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755933Ab1ERX3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 19:21:33 -0400
+	Wed, 18 May 2011 19:29:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=bKRJiPUf85lyfK6JewWyzYAy/aa3aAali0zgtiTf3wHk+l6JTcL6Xt6b+gGRJgMj3C
-         9lEfVtphyAsO1I6A5wsg==
-MIME-Version: 1.0
-In-Reply-To: <20110518150346.508d6406@nehalam>
-References: <1305753000-14933-1-git-send-email-decot@google.com> <20110518150346.508d6406@nehalam>
-From: David Decotigny <decot@google.com>
-Date: Wed, 18 May 2011 16:21:10 -0700
-Message-ID: <BANLkTim1iVEU_+Y2CE90Qd3+LaVch2MVOg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] forcedeth: make module parameters readable in /sys/module
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-net-upstream@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=rRZZKUZfoRXNLdcxutABmWmWZf9rJicskJv6ZYlbxCSYMurVJW00O3Pvh/xdO4QHWc
+         VPVIketoWSioZpeY57bHTozvQ/SaNJlfuSzoUWmGjFAAWy2ZGib9jSPC4qPllwDsynlV
+         toV+oRU4i5pLycEHXsR5os0aDSmrMwTx1mncg=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] tracing: Register static events output early
+Date: Thu, 19 May 2011 01:29:28 +0200
+Message-Id: <1305761368-5488-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Early uses of trace_printk() or trace_dump_stack() won't be
+displayed correctly if they are printed before device initcalls
+through explicit calls to ftrace_dump() or if there is an early
+BUG() and ftrace_dump_on_oops is set. This is because we only
+initialize these static events output callbacks at that initcall
+level.
 
-On Wed, May 18, 2011 at 3:03 PM, Stephen Hemminger
-<shemminger@vyatta.com> wrote:
-> Although this makes more info for developer, it also means more
-> stuff in sysfs taking more memory and not providing any real value
+Initialize these events output at the earliest initcall state
+to make boot debugging possible sooner.
 
-Right. I'll drop this patch for now.
+Before:
 
-I do agree that this creates unnecessary pressure on some systems. But
-on other systems, it is useful to know how all the loaded modules were
-actually configured to track down something weird.
+[    1.936168] Dumping ftrace buffer:
+[    1.936168] ---------------------------------
+[    1.936168]   <idle>-0       3d.s. 2299861us : Unknown type 4
+[    1.936168] ---------------------------------
 
-Regarding /sys/modules/X/parameters, the only knobs I know of are
-CONFIG_SYSFS and the last argument to module_param(). If this is
-correct, then it seems tricky to accommodate for both use cases above
-without being crude (eg. disable sysfs, edit/sed the sources to change
-last argument of module_param() macro, ...). Please correct me if I am
-wrong. But if I am not, how about having a new knob allowing to
-precisely control the presence/absence of /sys/module (another
-CONFIG_*)? That way, the last argument to module_param() can be
-interpreted as the permission when /sys/module is supported, and would
-be ignored otherwise: module authors could gradually change their
-perm=S_IRUGO and family without caring much about memory footprint.
-And both use cases above could be supported without having to disable
-sysfs altogether or change the sources.
+After:
 
-I would be happy to work on this if it makes any sense.
+[    1.946182] Dumping ftrace buffer:
+[    1.946182] ---------------------------------
+[    1.946182]   <idle>-0       3d.s. 2309844us : <stack trace>
+[    1.946182]  => tick_setup_sched_timer
+[    1.946182]  => hrtimer_run_pending
+[    1.946182]  => run_timer_softirq
+[    1.946182]  => __do_softirq
+[    1.946182]  => call_softirq
+[    1.946182]  => do_softirq
+[    1.946182]  => irq_exit
+[    1.946182]  => smp_apic_timer_interrupt
+[    1.946182] ---------------------------------
 
-Regards,
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/trace/trace_output.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+index cf535cc..ad92d9c 100644
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -1278,4 +1278,4 @@ __init static int init_events(void)
+ 
+ 	return 0;
+ }
+-device_initcall(init_events);
++early_initcall(init_events);
+-- 
+1.7.3.2
+
