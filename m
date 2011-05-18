@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814Ab1ERELG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 00:11:06 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37650 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab1ERELF (ORCPT
+	id S1751527Ab1ERELu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 00:11:50 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:42847 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab1ERELt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 00:11:05 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DD346C4.5030200@jp.fujitsu.com>
-Date: Wed, 18 May 2011 13:10:44 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: penguin-kernel@I-love.SAKURA.ne.jp
-CC: john.stultz@linaro.org, tytso@mit.edu, mina86@mina86.com,
-        jirislaby@gmail.com, rientjes@google.com, dave@linux.vne,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] v4 Improve task->comm locking situation
-References: <1305580757-13175-1-git-send-email-john.stultz@linaro.org> <201105180316.p4I3G6f2094560@www262.sakura.ne.jp>
-In-Reply-To: <201105180316.p4I3G6f2094560@www262.sakura.ne.jp>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Wed, 18 May 2011 00:11:49 -0400
+Subject: Re: [PATCH 1/4] comm: Introduce comm_lock spinlock to protect
+ task->comm access
+From: John Stultz <john.stultz@linaro.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, mingo@elte.hu,
+        mina86@mina86.com, apw@canonical.com, jirislaby@gmail.com,
+        rientjes@google.com, dave@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, linux-mm@kvack.org
+In-Reply-To: <4DD3287A.2030808@jp.fujitsu.com>
+References: <1305682865-27111-1-git-send-email-john.stultz@linaro.org>
+	 <1305682865-27111-2-git-send-email-john.stultz@linaro.org>
+	 <4DD3287A.2030808@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 May 2011 21:11:36 -0700
+Message-ID: <1305691896.2915.136.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/18 12:16), Tetsuo Handa wrote:
-> What about replacing
-> 	char comm[TASK_COMM_LEN];
-> with
-> 	char *rcu_commname;
-> and switching it atomically using RCU?
+On Wed, 2011-05-18 at 11:01 +0900, KOSAKI Motohiro wrote:
+> > diff --git a/fs/exec.c b/fs/exec.c
+> > index 5e62d26..34fa611 100644
+> > --- a/fs/exec.c
+> > +++ b/fs/exec.c
+> > @@ -998,17 +998,28 @@ static void flush_old_files(struct files_struct * files)
+> > 
+> >   char *get_task_comm(char *buf, struct task_struct *tsk)
+> >   {
+> > -	/* buf must be at least sizeof(tsk->comm) in size */
+> > -	task_lock(tsk);
+> > +	unsigned long flags;
+> > +
+> > +	spin_lock_irqsave(&tsk->comm_lock, flags);
+> >   	strncpy(buf, tsk->comm, sizeof(tsk->comm));
+> > -	task_unlock(tsk);
+> > +	spin_unlock_irqrestore(&tsk->comm_lock, flags);
+> >   	return buf;
+> >   }
+> > 
+> >   void set_task_comm(struct task_struct *tsk, char *buf)
+> >   {
+> > +	unsigned long flags;
+> > +
+> > +	/*
+> > +	 * XXX - Even though comm is protected by comm_lock,
+> > +	 * we take the task_lock here to serialize against
+> > +	 * current users that directly access comm.
+> > +	 * Once those users are removed, we can drop the
+> > +	 * task locking&  memsetting.
+> > +	 */
 > 
-> Advantages:
->    Readers can use RCU read lock rather than spinlock.
->    Makes task_struct smaller.
-> 
-> Disadvantages:
->    Need to allocate TASK_COMM_LEN bytes upon dup_task_struct() and set_task_comm().
->    Need to rewrite all task_struct.comm readers (steps shown below).
-> 
-> Steps to rewrite task_struct.comm readers
-> 
-> (1) Introduce a temporary accessor (say, task_comm).
-> 
->      #define task_comm(tsk) (tsk)->comm
-> 
-> (2) Rewrite all tsk->comm users to task_comm(tsk).
-> 
-> (3) Replace sizeof(tsk->comm) with TASK_COMM_LEN.
+> If we provide __get_task_comm(), we can't remove memset() forever.
 
-The problem is, they aren't a few. But if you have a enough brave,
-you can rewrite all. I'm not against it.
+True enough. I'll fix that comment up then.
 
+> 
+> >   	task_lock(tsk);
+> > +	spin_lock_irqsave(&tsk->comm_lock, flags);
+> 
+> This is strange order. task_lock() doesn't disable interrupt.
 
+Strange order? Can you explain why you think that is? Having comm_lock
+as an inner-most lock seems quite reasonable, given the limited nature
+of what it protects.
+
+> And, can you please document why we need interrupt disabling?
+
+Since we might access current->comm from irq context. Where would you
+like this documented? Just there in the code?
+
+thanks
+-john
 
 
