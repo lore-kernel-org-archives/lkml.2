@@ -1,100 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab1ERIsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 04:48:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50789 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725Ab1ERIsF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 04:48:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: [RFC] ARM Subarchitecture group maintainership
-Date: Wed, 18 May 2011 10:47:16 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+	id S1756623Ab1ERJDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 05:03:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46804 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755595Ab1ERJDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 05:03:36 -0400
+Message-ID: <4DD38B57.2070904@redhat.com>
+Date: Wed, 18 May 2011 12:03:19 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Ingo Molnar <mingo@elte.hu>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 5/5] KVM: Expose a version 1 architectural PMU to guests
+References: <1305129333-7456-1-git-send-email-avi@redhat.com> <1305129333-7456-6-git-send-email-avi@redhat.com> <20110517194117.GA26184@elte.hu>
+In-Reply-To: <20110517194117.GA26184@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105181047.17309.arnd@arndb.de>
-X-Provags-ID: V02:K0:seqqnGMEJfGhHDVEvXt7Y6RtSqNKgrPeqYlsoCJFeDu
- jPO/Z2YOUVRDRSAiezL+5Y6vAtG9Wb8hZMjt20I4YvXpXSX5a1
- BC0POajBfavgXT9XFKYhMVSnivmAYHs2JCumBhw00ovRIQhj5g
- xcqVWq7RHUk4+pU7wFDl7ykVABVsoVOVQXNVkIKTibvvz2l30a
- nGgNtv46u7p+++plKqWGg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the draft plan for maintaining the ARM subarchitectures in a common
-tree, as a way to help coordinate the upstream merging of the
-arch/arm/{plat,mach}-* changes into Linus' tree.
+On 05/17/2011 10:41 PM, Ingo Molnar wrote:
+> * Avi Kivity<avi@redhat.com>  wrote:
+>
+> >  Caveats:
+> >  - counters that have PMI (interrupt) enabled stop counting after the
+> >    interrupt is signalled.  This is because we need one-shot samples
+> >    that keep counting, which perf doesn't support yet
+>
+> Hm, do you need more than perf_event::event_limit, or something special?
 
-This was discussed in great length at the Linaro Developer Summit in Budapest
-last week where we worked out an initial plan. We are modeling the maintainance
-after how the linux-tip tree is used for the x86 architecture, with a set
-of developers that have commit access to one tree on kernel.org and
-have mutual trust in one another. Nicolas Pitre and me are funded
-by Linaro to do the bulk of the work, while Thomas Gleixner will help
-us part-time with his long time architecture maintainance experience.
-Despite the funding by Linaro, this is not a Linaro project and all
-ARM subarchitectures are welcome to go through our tree.
+I do use event_limit, but it's inexact since it auto-disables the event 
+after firing the callback.  I want to limit the callback to just one, 
+but let the event keep counting.
 
-Russell King's role as ARM maintainer is of course unchanged by this, but
-he has the same commit access to the new tree as the other maintainers and
-is welcome to work in the same tree. We are also open to nominations for
-further people outside of Linaro to join us as committers. Marc Zyngier from
-ARM ltd is one of the candidates that has been suggested and I would also
-like to see someone from Google. We have to find the right balance with the
-number of committers so we get all the work done without stepping on each
-other's toes.
+> >  - some combinations of INV and CMASK are not supported
+>
+> Could you please describe this better, where does this limit come from?
+> If perf then this needs fixing.
 
-Our tree will be strictly organized in topic brances so we can feed them
-upstream in the bitesized chunks that Linus likes. The master branch
-is an integration branch that pulls all other branches that are scheduled
-for the next merge window and itself gets integrated into linux-next.
+perf_event_attr does not support generic INV and CMASK at all.  I 
+imagine you can get them through the model-specific hardware 
+configuration, but that means we have to encode model specific 
+information into kvm host code, which is (a) hard (b) counter to the 
+spirit of perf.
 
-We will probably not be fully functional during the 2.6.40 merge window,
-but we are trying our best to be useful. For 2.6.41, my hope is that
-we can merge the bulk of the ARM subarchitecture changes through this
-tree. Once Linus is happy with the way that the process works, we can
-mandate that all ARM subarchitecture changes go through our tree, until
-then it stays voluntary.
+(INV and CMASK allow you to increment the counter only when > N or < N 
+events occur simultaneously, for example count when 2 or more 
+instructions are retired in a single clock).
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
+> >  - counters keep on counting in the host as well as the guest
+>
+> I suspect fixing this either needs a hw filter feature, or the ability to
+> disable/enable these events across VM exits/entries.
+>
+> I would imagine the disable/enable to be rather expensive so hw help would be
+> preferred ...
 
----
+Yes, Joerg already posted support for this feature for AMD.  Intel 
+supports this in a more complicated way (you can tell vmx to load 
+IA32_PERF_GLOBAL_CTL atomically during entry or exit).  This can be done 
+independently of this patchset.
 
-Maintainers: If you are happy with the layout of the process,
-please ack this patch, otherwise please comment.
+> I didnt see anything objectionable in your patches, but i'd like to have
+> Peter's Acked-by as well before we go forward. I think that in the long run
+> having a virtio-perf gateway would allow us a lot more tricks than just
+> arch-perfmon emulation:
+>
+>   - we could do things like propagate guest side traces over to the host
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8fce5e6..942d052 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -630,6 +630,17 @@ S:	Maintained
- F:	drivers/amba/
- F:	include/linux/amba/bus.h
- 
-+ARM SUBARCHITECTURES
-+M:	Arnd Bergmann <arnd@arndb.de>
-+M:	Nicolas Pitre <nico@fluxnic.net>
-+M:	Thomas Gleixner <tglx@linutronix.de>
-+M:	arm@kernel.org
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	MAINTAINED
-+F:	arch/arm/mach-*/
-+F:	arch/arm/plat-*/
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-subarch.git
-+
- ARM/ADI ROADRUNNER MACHINE SUPPORT
- M:	Lennert Buytenhek <kernel@wantstofly.org>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+We support that already via 'perf kvm', no?  This is more about the 
+guest profiling itself without access to the host (which is the more 
+common scenario, IMO).
+
+We're still missing tunnelling guest ftrace to the host, but a patch was 
+recently posted to do that.
+
+>   - we could control from the host which events we measure on the guest side
+>
+>   - etc.
+>
+> How would you like to handle the flow of patches - should we merge #1,#2,#3 in
+> perf/core and you'd then merge #4,#5 via the KVM tree once the first bits hit
+> upstream?
+>
+> We could also set up a separate branch for these three commits, which you could
+> pull - this would allow all this to still hit .40.
+
+You can put them in either perf/core or a different branch, and I can 
+pull them as long as its fast-forward only.
+
+But I don't think I'll target 2.6.40, this needs to be tested a lot 
+more, particularly wrt guest-initiated DoS against the host.
+
+-- 
+error compiling committee.c: too many arguments to function
+
