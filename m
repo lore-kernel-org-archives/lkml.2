@@ -1,35 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934220Ab1ESSKJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:10:09 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36111 "EHLO mx2.mail.elte.hu"
+	id S934222Ab1ESSKc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:10:32 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57879 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934167Ab1ESSKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:10:03 -0400
-Date: Thu, 19 May 2011 20:09:40 +0200
+	id S934156Ab1ESSK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 14:10:29 -0400
+Date: Thu, 19 May 2011 20:10:22 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: "Rao, Nikhil" <nikhil.rao@intel.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]  x86: Removing unnecessary check in detect_ht
-Message-ID: <20110519180940.GD6139@elte.hu>
-References: <43F901BD926A4E43B106BF17856F0755018E1CF482@orsmsx508.amr.corp.intel.com>
- <4FF5AC937153B0459463C1A88EB478F2010DFD3D3F@orsmsx505.amr.corp.intel.com>
- <43F901BD926A4E43B106BF17856F0755018E1CF69D@orsmsx508.amr.corp.intel.com>
- <1305048201.2736.17.camel@sbsiddha-MOBL3.sc.intel.com>
- <1F668163772FA946975B9466A9DFF729B5E5@ORSMSX101.amr.corp.intel.com>
- <1F668163772FA946975B9466A9DFF729B64C@ORSMSX101.amr.corp.intel.com>
- <20110518210754.GA28476@elte.hu>
- <1F668163772FA946975B9466A9DFF729B6A3@ORSMSX101.amr.corp.intel.com>
- <20110518212351.GE28476@elte.hu>
- <1F668163772FA946975B9466A9DFF729B7E4@ORSMSX101.amr.corp.intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [patch 4/7] clockevents: Provide combined configure and register
+ function
+Message-ID: <20110519181022.GE6139@elte.hu>
+References: <20110518205713.947614271@linutronix.de>
+ <20110518210136.331975870@linutronix.de>
+ <20110519090849.GA6251@elte.hu>
+ <alpine.LFD.2.02.1105191155170.3078@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1F668163772FA946975B9466A9DFF729B7E4@ORSMSX101.amr.corp.intel.com>
+In-Reply-To: <alpine.LFD.2.02.1105191155170.3078@ionos>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -42,15 +35,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rao, Nikhil <nikhil.rao@intel.com> wrote:
+* Thomas Gleixner <tglx@linutronix.de> wrote:
 
-> Hi Ingo,
+> On Thu, 19 May 2011, Ingo Molnar wrote:
 > 
-> Reposting as per your feedback.
+> > 
+> > * Thomas Gleixner <tglx@linutronix.de> wrote:
+> > 
+> > > +extern void clockevents_config_and_register(struct clock_event_device *dev,
+> > > +					    u32 freq, unsigned long min_delta,
+> > > +					    unsigned long max_delta);
+> > 
+> > might be worth collecting these fields into a clocksource_params structure:
+> > 
+> > struct clocksource_params {
+> > 	u32		freq;
+> > 	unsigned long	min_delta;
+> > 	unsigned long	max_delta;
+> > };
+> > 
+> > That way the initialization API looks even more streamlined:
+> > 
+> > extern void
+> > clockevents_config_and_register(struct clock_event_device *dev,
+> > 				struct clocksource_params params);
+> > 
+> > and could be extended in the future, without having to update every single 
+> > clocksource driver again.
+> 
+> Though it's unlikely that we have more params int the foreseeable
+> future and it's more code in the clock events registration sites as
+> you have to do:
+> 
+>     struct param par;
+> 
+>     par.freq = f;
+>     par.min_delta = x;
+>     par.max_delta = y;
+>     clockevents_config_and_register(&dev, &p);
+> 
+> instead of having a single line.
 
-Please send a patch that applies to the x86 tree cleanly:
+Indeed that looks uglish.
 
-  http://people.redhat.com/mingo/tip.git/README
+> When the need arises we still can do
+> 
+> __clockevents_config_and_register(struct clock_event_device *dev,
+>    	                          struct clocksource_params params);
+> 
+> and have the current function as a wrapper around it.
+
+Okay, you are right.
 
 Thanks,
 
