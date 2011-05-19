@@ -1,83 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933593Ab1ESQor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:44:47 -0400
-Received: from mail202c2.megamailservers.com ([69.49.111.103]:45625 "EHLO
-	mail202c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754532Ab1ESQop (ORCPT
+	id S933220Ab1ESNlU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 09:41:20 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:49924 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932921Ab1ESNlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:44:45 -0400
-X-Greylist: delayed 11117 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 May 2011 12:44:45 EDT
-X-Authenticated-User: daniel.gaisler.com
-Message-ID: <4DD51D37.3010907@gaisler.com>
-Date: Thu, 19 May 2011 15:37:59 +0200
-From: Daniel Hellstrom <daniel@gaisler.com>
-User-Agent: Mozilla Thunderbird 1.0.6 (X11/20050716)
-X-Accept-Language: en-us, en
+	Thu, 19 May 2011 09:41:19 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] arch/tile: add /proc/tile, /proc/sys/tile, and a sysfs cpu attribute
+Date: Thu, 19 May 2011 15:41:11 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com>
+In-Reply-To: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: manual merge of the tip tree with the sparc tree
-References: <20110517131435.aceca54e.sfr@canb.auug.org.au>
-In-Reply-To: <20110517131435.aceca54e.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-CSC: 0
-X-CHA: v=1.1 cv=xbudj22Aknmj7PWPRHa2OUfQBaxQEGnZbHIINz1otWI= c=1 sm=1
-		a=pl2ZPvC6udcA:10 a=lNNZMRzb4sQA:10 a=U62ajLuCel8A:10 a=8nJEP1OIZ-IA:10
-		a=jXKJviUpWSOlMmIvGrHOfw==:17 a=K2H0Sixetaskski1OVsA:9
-		a=IvkyMYZoMBZ0O5vuSqsA:7 a=wPNLvfGTeEIA:10 a=jXKJviUpWSOlMmIvGrHOfw==:117
+Message-Id: <201105191541.11939.arnd@arndb.de>
+X-Provags-ID: V02:K0:tZS002d4Mn1Mqxk/Cc0r9uefxvO5JTE7hx3QjAqgtIM
+ uFAp/JZ6qWYXnaJquHN/S/VUAqAyizWnmnhbalJIVDS2d8efpp
+ M1uxTFAvqXJHZc/YobTQ0pD9qD4kP3vgKmWFpu4HYbmYqP+eAW
+ K8rzYQm2lr3pQoKSYIFRiucNXGjB5npeYztv6dmu8JyFpyH8Kz
+ 8618yvZbasJfsDj0VBpJQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
+On Tuesday 17 May 2011, Chris Metcalf wrote:
 
->Hi all,
->
->Today's linux-next merge of the tip tree got a conflict in
->arch/sparc/kernel/smp_32.c between commit d6d048192b1d ("sparc32:
->implement SMP IPIs using the generic functions") from the sparc tree and
->commit 184748cc50b2 ("sched: Provide scheduler_ipi() callback in response
->to smp_send_reschedule()") from the tip tree.
->
->I fixed it up (I am pretty sure that the sparc tree patch supercedes the
->tip tree one) and can carry the fix as necessary.
->  
->
-Thanks for noticing this.
+> /proc/tile/hv
+>   Version information about the running Tilera hypervisor
+> 
+> /proc/tile/hvconfig
+>   Detailed configuration description of the hypervisor config
+> 
+> /proc/tile/board
+>   Information on part numbers, serial numbers, etc., of the
+>   hardware that the kernel is executing on
+> 
+> /proc/tile/switch
+>   The type of control path for the onboard network switch, if any.
+> 
+> /proc/tile/hardwall
+>   Information on the set of currently active hardwalls (note that
+>   the implementation is already present in arch/tile/kernel/hardwall.c;
+>   this change just enables it)
 
-I looked at linux-next and I think the call to the scheduler_ipi is 
-missing in the resched interrupt routine. I believe that the below patch 
-should be applied ontop of linux-next. Could you include it in the merge 
-or what do you suggest I do?
+These all look like ideal candidates for sysfs attributes under
+/sys/hypervisor, doing them one value per file, instead of grouping
+them into multiple entries per file.
 
-Thanks,
-Daniel
+You can also turn each of these files into one directory under
+/sys/hypervisor, with one or more files under it.
 
+> diff --git a/arch/tile/kernel/sysfs.c b/arch/tile/kernel/sysfs.c
+> new file mode 100644
+> index 0000000..151deeb
+> --- /dev/null
+> +++ b/arch/tile/kernel/sysfs.c
+> @@ -0,0 +1,52 @@
+> +/*
+> + * Copyright 2011 Tilera Corporation. All Rights Reserved.
+> + *
+> + *   This program is free software; you can redistribute it and/or
+> + *   modify it under the terms of the GNU General Public License
+> + *   as published by the Free Software Foundation, version 2.
+> + *
+> + *   This program is distributed in the hope that it will be useful, but
+> + *   WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+> + *   NON INFRINGEMENT.  See the GNU General Public License for
+> + *   more details.
+> + *
+> + * /sys entry support.
+> + */
+> +
+> +#include <linux/sysdev.h>
+> +#include <linux/cpu.h>
+> +#include <linux/smp.h>
+> +
+> +static ssize_t chip_width_show(struct sysdev_class *dev,
+> +			       struct sysdev_class_attribute *attr,
+> +			       char *page)
+> +{
+> +	return sprintf(page, "%u\n", smp_width);
+> +}
+> +static SYSDEV_CLASS_ATTR(chip_width, 0444, chip_width_show, NULL);
+> +
+> +static ssize_t chip_height_show(struct sysdev_class *dev,
+> +				struct sysdev_class_attribute *attr,
+> +				char *page)
+> +{
+> +	return sprintf(page, "%u\n", smp_height);
+> +}
+> +static SYSDEV_CLASS_ATTR(chip_height, 0444, chip_height_show, NULL);
+> +
+> +
+> +static int __init create_cpu_entries(void)
+> +{
+> +	struct sysdev_class *cls = &cpu_sysdev_class;
+> +	int err = 0;
+> +
+> +	if (!err)
+> +		err = sysfs_create_file(&cls->kset.kobj,
+> +					&attr_chip_width.attr);
+> +	if (!err)
+> +		err = sysfs_create_file(&cls->kset.kobj,
+> +					&attr_chip_height.attr);
+> +
+> +	return err;
+> +}
 
-diff --git a/arch/sparc/kernel/smp_32.c b/arch/sparc/kernel/smp_32.c
-index 41102c5..d5b3958 100644
---- a/arch/sparc/kernel/smp_32.c
-+++ b/arch/sparc/kernel/smp_32.c
-@@ -156,11 +156,11 @@ void arch_send_call_function_ipi_mask(const struct 
-cpumask *mask)
+This should use sysdev_create_file instead of open-coding it.
 
- void smp_resched_interrupt(void)
- {
-+       irq_enter();
-+       scheduler_ipi();
-        local_cpu_data().irq_resched_count++;
--       /*
--        * do nothing, since it all was about calling re-schedule
--        * routine called by interrupt return code.
--        */
-+       irq_exit();
-+       /* re-schedule routine called by interrupt return code. */
- }
-
- void smp_call_function_single_interrupt(void)
+	Arnd
 
