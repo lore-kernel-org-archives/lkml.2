@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab1ERX6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 19:58:03 -0400
-Received: from dell.nexicom.net ([216.168.96.13]:49130 "EHLO smtp.nexicom.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753635Ab1ERX6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 19:58:01 -0400
-Message-ID: <4DD45D2D.7060300@lockie.ca>
-Date: Wed, 18 May 2011 19:58:37 -0400
-From: James <bjlockie@lockie.ca>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110512 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1752525Ab1ESADs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 20:03:48 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43428 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab1ESADp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 20:03:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HPJ7FDQBaoPIos8QlkJb94sjVKLL+U4a9q1EkNKUAaDrOynz9HuiyzveEehCC4r9Qg
+         qubb7uQZRypD6pa3MsPbGticiTuy/Bs+qOuUKWPOc9HYMS7FyDXlmwTKtgGR7BaPpdVP
+         0UUAoeNVbjph0ZpPxV6NSZDVgIbO2+Uw8Gs+4=
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-wireless@vger.kernel.org
-Subject: Re: help to bisect
-References: <4DD31264.4070704@lockie.ca> <20110518072245.GB17608@liondog.tnic> <4DD42F10.90602@lockie.ca> <20110518211723.GA4313@liondog.tnic>
-In-Reply-To: <20110518211723.GA4313@liondog.tnic>
+In-Reply-To: <20110517161508.GN5279@suse.de>
+References: <1305295404-12129-5-git-send-email-mgorman@suse.de>
+	<4DCFAA80.7040109@jp.fujitsu.com>
+	<1305519711.4806.7.camel@mulgrave.site>
+	<BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
+	<20110516084558.GE5279@suse.de>
+	<BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
+	<20110516102753.GF5279@suse.de>
+	<BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
+	<20110517103840.GL5279@suse.de>
+	<1305640239.2046.27.camel@lenovo>
+	<20110517161508.GN5279@suse.de>
+Date: Thu, 19 May 2011 09:03:44 +0900
+Message-ID: <BANLkTimfKwJWgiDp7m8WqeUK00N5sV=mWQ@mail.gmail.com>
+Subject: Re: [PATCH] mm: vmscan: Correctly check if reclaimer should schedule
+ during shrink_slab
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: akpm@linux-foundation.org, Colin Ian King <colin.king@canonical.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
+        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/11 17:17, Borislav Petkov wrote:
-> First of all, please hit "reply-to-all" next time so that all recipients
-> can receive your mail and not find it by chance when looking thru the
-> new lkml messages.
+On Wed, May 18, 2011 at 1:15 AM, Mel Gorman <mgorman@suse.de> wrote:
+> It has been reported on some laptops that kswapd is consuming large
+> amounts of CPU and not being scheduled when SLUB is enabled during
+> large amounts of file copying. It is expected that this is due to
+> kswapd missing every cond_resched() point because;
 >
-> On Wed, May 18, 2011 at 04:41:52PM -0400, James wrote:
->> Here is what I did:
->>
->> $ git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.37.y.git
->> $ cd linux-2.6.37.y
->> $ git checkout v2.6.36
->> build and boot kernel
-> what does that mean? Is .36 ok?
-Yes, no problems.
->> $ cd linux-2.6.37.y
->> $ git bisect start
->> $ git bisect good v2.6.36
->> $ git bisect bad v2.6.37.6
-> Also, is .37.6 bad?
-Yes, it is bad.
->> build and boot kernel
->> git bisect good|bad
->> repeat
->>
->> 3044100e58c84e133791c8b60a2f5bef69d732e4 is the first bad commit.
-> Which is a merge commit and it means that you most likely made a mistake
-> during bisection.
-Am I doing it right?
-boot kernel, cd to git source, git bisect good or bad, compile new
-kernel and copy it to /boot, repeat
-> What is actually the problem you're experiencing with .37.6?
+> shrink_page_list() calls cond_resched() if inactive pages were isolated
+>        which in turn may not happen if all_unreclaimable is set in
+>        shrink_zones(). If for whatver reason, all_unreclaimable is
+>        set on all zones, we can miss calling cond_resched().
 >
-> ..
+> balance_pgdat() only calls cond_resched if the zones are not
+>        balanced. For a high-order allocation that is balanced, it
+>        checks order-0 again. During that window, order-0 might have
+>        become unbalanced so it loops again for order-0 and returns
+>        that it was reclaiming for order-0 to kswapd(). It can then
+>        find that a caller has rewoken kswapd for a high-order and
+>        re-enters balance_pgdat() without ever calling cond_resched().
 >
->> How do I find out what change causes the problem?
->> The problem causes my wireless card not to work.
-> Ah, here it is.
+> shrink_slab only calls cond_resched() if we are reclaiming slab
+>        pages. If there are a large number of direct reclaimers, the
+>        shrinker_rwsem can be contended and prevent kswapd calling
+>        cond_resched().
 >
->> Other people have similar cards that do work so the problem seems
->> isolated to my hardware but kernel-2.6.36 works so I don't think my
->> hardware is faulty.
-> Which card is that? (adding linux-wireless)
-D-Link dwa552
-ieee80211 phy0: Atheros AR5416 MAC/BB Rev:2 AR2133 RF Rev:81
-mem=0xffffc90000140
-000, irq=16
-Other people have this card working so it is probably my system
-configuration that is causing an obscure bug.
-
-> Please, describe in a very detailed way how your problem incarnates
-> itself: dmesg, error messages, what exactly do you do to trigger it?
-It seems to be 100% that if "ath: Failed to stop TX DMA in 100 msec
-after killing last frame
-ath: Failed to stop TX DMA!" shows up in dmesg that scans don't return
-any APs or 1-3 (iwlist wlan0 scan | grep SSID).
-If there is a different way to scan, I'll try that.
-
-
-
-> Also, can you test whether 38.6 works for ya - it could've been fixed in
-> the meantime. You can also test .39 which will be released any minute
-> now.
-38.6 does NOT work and compat-wireless-2011-05-11 works on kernel-2.6.36
-which is why I think it is the kernel and not the wireless code.
-> I think that should be enough for now.
+> This patch modifies the shrink_slab() case. If the semaphore is
+> contended, the caller will still check cond_resched(). After each
+> successful call into a shrinker, the check for cond_resched() is
+> still necessary in case one shrinker call is particularly slow.
 >
+> This patch replaces
+> mm-vmscan-if-kswapd-has-been-running-too-long-allow-it-to-sleep.patch
+> in -mm.
+>
+> [mgorman@suse.de: Preserve call to cond_resched after each call into shrinker]
+> From: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
+-- 
+Kind regards,
+Minchan Kim
