@@ -1,130 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934084Ab1ESSsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:48:18 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:44571 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933895Ab1ESSsQ (ORCPT
+	id S934199Ab1ESSu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:50:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:5496 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934115Ab1ESSu5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:48:16 -0400
-Date: Thu, 19 May 2011 14:48:15 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-cc: greg@kroah.com, <linux-usb@vger.kernel.org>, <balbi@ti.com>,
-        <ablay@codeaurora.org>, <linux-arm-msm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v11 6/7] usb:dummy_hcd: use the shared_hcd infrustructure
-In-Reply-To: <1305805417-31750-7-git-send-email-tlinder@codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1105191432120.1900-100000@iolanthe.rowland.org>
+	Thu, 19 May 2011 14:50:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=vbmghHKsAVuoTKpglJqB04EWjDIm1DXLmDDyByX31IzjVmRYIfwXmmfQIw7fMv3Yk9
+         3rkgh151ZAgOcbx+oykw==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <sig.9120f46b2d.4DD5452F.9050108@radicalsystems.co.za>
+References: <sig.9120f46b2d.4DD5452F.9050108@radicalsystems.co.za>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 19 May 2011 12:50:35 -0600
+Message-ID: <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
+Subject: Re: PCI BAR1 Unassigned
+To: Jan Zwiegers <jan@radicalsystems.co.za>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 May 2011, Tatyana Brokhman wrote:
+On Thu, May 19, 2011 at 10:28 AM, Jan Zwiegers <jan@radicalsystems.co.za> wrote:
+> I have the problem below where my PCI card's second BAR does not get
+> assigned.
+> What can be the cause of this problem?
+> The last kernel I tested on which worked OK was 2.6.27.
+> My current problematic kernel 2.6.35.
+>
+> 05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O Card
+> (rev 5c)
+>    Flags: bus master, slow devsel, latency 32, IRQ 22
+>    Memory at 93b00000 (type 3, prefetchable) [size=2K]
+>    Memory at <unassigned> (type 3, prefetchable)
+>    Capabilities: [80] #00 [0600]
+>    Kernel modules: pci703drv
 
-> This patch is a preparation for adding SuperSpeed support to dummy hcd.
-> It takes the master side fields out of the struct dummy to a separate
-> structure. The init process was also modified to resemble the way it is
-> done by xHCI.
-> 
-> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+Could be resource exhaustion or, more likely, we ran out because we
+now assign resource to things that don't need them, leaving none for
+things that *do* need them.  This sounds like a regression, so we
+should open a bugzilla for it and attach dmesg logs from 2.6.27 and
+2.6.35.
 
-I have not checked this in detail, but right off the bat there are a 
-few stylistic issues.
+Does this problem keep the driver from working?  (Sometimes drivers
+don't actually use all the BARs a device supports.)
 
-BTW, splitting this up into two patches as Felipe suggested was a very 
-good idea.
-
-> --- a/drivers/usb/gadget/dummy_hcd.c
-> +++ b/drivers/usb/gadget/dummy_hcd.c
-> @@ -152,6 +152,24 @@ enum dummy_rh_state {
->  	DUMMY_RH_RUNNING
->  };
->  
-> +struct dummy_hcd {
-> +	struct usb_hcd *hcd;
-
-What is this pointer for?  It doesn't get used by the 
-dummy_hcd_to_hcd() routine, which means it shouldn't get used at all.
-
-> +
-> +	struct dummy			*dum;
-> +	enum dummy_rh_state		rh_state;
-> +	struct timer_list		timer;
-> +	u32				port_status;
-> +	u32				old_status;
-> +	unsigned			resuming:1;
-
-It's silly to have a bitfield in isolation like this -- you end up 
-wasting a bunch of space.  Move this next to the other bitfields.
-
-> +	unsigned long			re_timeout;
-> +
-> +	struct usb_device		*udev;
-> +	struct list_head		urbp_list;
-> +
-> +	unsigned			active:1;
-> +	unsigned			old_active:1;
-> +};
-> +
->  struct dummy {
->  	spinlock_t			lock;
->  
-> @@ -167,36 +185,26 @@ struct dummy {
->  	u16				devstatus;
->  	unsigned			udc_suspended:1;
->  	unsigned			pullup:1;
-> -	unsigned			active:1;
-> -	unsigned			old_active:1;
->  
->  	/*
->  	 * MASTER/HOST side support
->  	 */
-> -	enum dummy_rh_state		rh_state;
-> -	struct timer_list		timer;
-> -	u32				port_status;
-> -	u32				old_status;
-> -	unsigned			resuming:1;
-> -	unsigned long			re_timeout;
-> -
-> -	struct usb_device		*udev;
-> -	struct list_head		urbp_list;
-> +	struct dummy_hcd *hs_hcd;
-
-You should use tabs to line up the columns with the existing entries.  
-Doesn't this look strange to you -- a single item in the middle of the 
-line by itself like that?
-
->  };
->  
-> -static inline struct dummy *hcd_to_dummy (struct usb_hcd *hcd)
-> +static inline struct dummy_hcd *hcd_to_dummy_hcd(struct usb_hcd *hcd)
->  {
-> -	return (struct dummy *) (hcd->hcd_priv);
-> +	return (struct dummy_hcd *) (hcd->hcd_priv);
->  }
->  
-> -static inline struct usb_hcd *dummy_to_hcd (struct dummy *dum)
-> +static inline struct usb_hcd *dummy_hcd_to_hcd(struct dummy_hcd *dum)
->  {
->  	return container_of((void *) dum, struct usb_hcd, hcd_priv);
->  }
-
-In several places you open-coded dummy_hcd_to_hcd().  Please change
-them to use the inline routine instead.
-
-> -static inline struct device *dummy_dev (struct dummy *dum)
-> +static inline struct device *dummy_dev(struct dummy_hcd *dum)
->  {
-> -	return dummy_to_hcd(dum)->self.controller;
-> +	return dummy_hcd_to_hcd(dum)->self.controller;
->  }
-
-You also open-coded this routine.  It doesn't matter so much, but for 
-the sake of style you should use this inline routine too.
-
-Alan Stern
-
+Bjorn
