@@ -1,137 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab1ESCM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 22:12:59 -0400
+	id S932247Ab1ESCOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 22:14:51 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:48926 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755774Ab1ESCM5 (ORCPT
+	with ESMTP id S1756019Ab1ESCM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 May 2011 22:12:57 -0400
-X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=vhdKIqpQuCYA:10 a=P7R3Y0ANyKcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=orXai1FcPfeG1WgOt9cA:9 a=UIO_JIiqGv00OqBu5akA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=vhdKIqpQuCYA:10 a=x6KSG09zUXMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=XvmY4zP1pyBlY3_fnRIA:9 a=g7NeYGFmlUwW5WA1RJYA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110519021255.939888337@goodmis.org>
+Message-Id: <20110519021256.229981824@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 18 May 2011 22:11:57 -0400
+Date: Wed, 18 May 2011 22:11:58 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 06/13] ftrace: Add enabled_functions file
+Subject: [PATCH 07/13] ftrace: Add ops parameter to ftrace_startup/shutdown functions
 References: <20110519021151.600991800@goodmis.org>
-Content-Disposition: inline; filename=0006-ftrace-Add-enabled_functions-file.patch
+Content-Disposition: inline; filename=0007-ftrace-Add-ops-parameter-to-ftrace_startup-shutdown-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Add the enabled_functions file that is used to show all the
-functions that have been enabled for tracing as well as their
-ref counts. This helps seeing if any function has been registered
-and what functions are being traced.
+In order to allow different ops to enable different functions,
+the ftrace_startup() and ftrace_shutdown() functions need the
+ops parameter passed to them.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 49 insertions(+), 2 deletions(-)
+ kernel/trace/ftrace.c |   28 ++++++++++++++--------------
+ 1 files changed, 14 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 5dd332c..065f1e6 100644
+index 065f1e6..8fef1d9 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -1703,6 +1703,7 @@ enum {
- 	FTRACE_ITER_NOTRACE	= (1 << 1),
- 	FTRACE_ITER_PRINTALL	= (1 << 2),
- 	FTRACE_ITER_HASH	= (1 << 3),
-+	FTRACE_ITER_ENABLED	= (1 << 4),
- };
- 
- #define FTRACE_BUFF_MAX (KSYM_SYMBOL_LEN+4) /* room for wildcards */
-@@ -1842,7 +1843,11 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
- 		     !(ftrace_lookup_ip(ops->filter_hash, rec->ip))) ||
- 
- 		    ((iter->flags & FTRACE_ITER_NOTRACE) &&
--		     !ftrace_lookup_ip(ops->notrace_hash, rec->ip))) {
-+		     !ftrace_lookup_ip(ops->notrace_hash, rec->ip)) ||
-+
-+		    ((iter->flags & FTRACE_ITER_ENABLED) &&
-+		     !(rec->flags & ~FTRACE_FL_MASK))) {
-+
- 			rec = NULL;
- 			goto retry;
- 		}
-@@ -1944,7 +1949,11 @@ static int t_show(struct seq_file *m, void *v)
- 	if (!rec)
- 		return 0;
- 
--	seq_printf(m, "%ps\n", (void *)rec->ip);
-+	seq_printf(m, "%ps", (void *)rec->ip);
-+	if (iter->flags & FTRACE_ITER_ENABLED)
-+		seq_printf(m, " (%ld)",
-+			   rec->flags & ~FTRACE_FL_MASK);
-+	seq_printf(m, "\n");
- 
- 	return 0;
- }
-@@ -1983,6 +1992,34 @@ ftrace_avail_open(struct inode *inode, struct file *file)
- 	return ret;
+@@ -1522,10 +1522,8 @@ static void ftrace_startup_enable(int command)
+ 	ftrace_run_update_code(command);
  }
  
-+static int
-+ftrace_enabled_open(struct inode *inode, struct file *file)
-+{
-+	struct ftrace_iterator *iter;
-+	int ret;
-+
-+	if (unlikely(ftrace_disabled))
-+		return -ENODEV;
-+
-+	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
-+	if (!iter)
-+		return -ENOMEM;
-+
-+	iter->pg = ftrace_pages_start;
-+	iter->flags = FTRACE_ITER_ENABLED;
-+
-+	ret = seq_open(file, &show_ftrace_seq_ops);
-+	if (!ret) {
-+		struct seq_file *m = file->private_data;
-+
-+		m->private = iter;
-+	} else {
-+		kfree(iter);
-+	}
-+
-+	return ret;
-+}
-+
- static void ftrace_filter_reset(struct ftrace_hash *hash)
+-static void ftrace_startup(int command)
++static void ftrace_startup(struct ftrace_ops *ops, int command)
  {
- 	mutex_lock(&ftrace_lock);
-@@ -2838,6 +2875,13 @@ static const struct file_operations ftrace_avail_fops = {
- 	.release = seq_release_private,
- };
+-	struct ftrace_ops *ops = &global_ops;
+-
+ 	if (unlikely(ftrace_disabled))
+ 		return;
  
-+static const struct file_operations ftrace_enabled_fops = {
-+	.open = ftrace_enabled_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release_private,
+@@ -1539,10 +1537,8 @@ static void ftrace_startup(int command)
+ 	ftrace_startup_enable(command);
+ }
+ 
+-static void ftrace_shutdown(int command)
++static void ftrace_shutdown(struct ftrace_ops *ops, int command)
+ {
+-	struct ftrace_ops *ops = &global_ops;
+-
+ 	if (unlikely(ftrace_disabled))
+ 		return;
+ 
+@@ -2362,7 +2358,7 @@ static void __enable_ftrace_function_probe(void)
+ 		return;
+ 
+ 	__register_ftrace_function(&trace_probe_ops);
+-	ftrace_startup(0);
++	ftrace_startup(&global_ops, 0);
+ 	ftrace_probe_registered = 1;
+ }
+ 
+@@ -2381,7 +2377,7 @@ static void __disable_ftrace_function_probe(void)
+ 
+ 	/* no more funcs left */
+ 	__unregister_ftrace_function(&trace_probe_ops);
+-	ftrace_shutdown(0);
++	ftrace_shutdown(&global_ops, 0);
+ 	ftrace_probe_registered = 0;
+ }
+ 
+@@ -3267,6 +3263,10 @@ void __init ftrace_init(void)
+ 
+ #else
+ 
++struct ftrace_ops global_ops = {
++	.func			= ftrace_stub,
 +};
 +
- static const struct file_operations ftrace_filter_fops = {
- 	.open = ftrace_filter_open,
- 	.read = seq_read,
-@@ -3069,6 +3113,9 @@ static __init int ftrace_init_dyn_debugfs(struct dentry *d_tracer)
- 	trace_create_file("available_filter_functions", 0444,
- 			d_tracer, NULL, &ftrace_avail_fops);
+ static int __init ftrace_nodyn_init(void)
+ {
+ 	ftrace_enabled = 1;
+@@ -3277,8 +3277,8 @@ device_initcall(ftrace_nodyn_init);
+ static inline int ftrace_init_dyn_debugfs(struct dentry *d_tracer) { return 0; }
+ static inline void ftrace_startup_enable(int command) { }
+ /* Keep as macros so we do not need to define the commands */
+-# define ftrace_startup(command)	do { } while (0)
+-# define ftrace_shutdown(command)	do { } while (0)
++# define ftrace_startup(ops, command)	do { } while (0)
++# define ftrace_shutdown(ops, command)	do { } while (0)
+ # define ftrace_startup_sysctl()	do { } while (0)
+ # define ftrace_shutdown_sysctl()	do { } while (0)
+ #endif /* CONFIG_DYNAMIC_FTRACE */
+@@ -3583,7 +3583,7 @@ int register_ftrace_function(struct ftrace_ops *ops)
+ 		goto out_unlock;
  
-+	trace_create_file("enabled_functions", 0444,
-+			d_tracer, NULL, &ftrace_enabled_fops);
-+
- 	trace_create_file("set_ftrace_filter", 0644, d_tracer,
- 			NULL, &ftrace_filter_fops);
+ 	ret = __register_ftrace_function(ops);
+-	ftrace_startup(0);
++	ftrace_startup(&global_ops, 0);
+ 
+  out_unlock:
+ 	mutex_unlock(&ftrace_lock);
+@@ -3602,7 +3602,7 @@ int unregister_ftrace_function(struct ftrace_ops *ops)
+ 
+ 	mutex_lock(&ftrace_lock);
+ 	ret = __unregister_ftrace_function(ops);
+-	ftrace_shutdown(0);
++	ftrace_shutdown(&global_ops, 0);
+ 	mutex_unlock(&ftrace_lock);
+ 
+ 	return ret;
+@@ -3825,7 +3825,7 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 	ftrace_graph_return = retfunc;
+ 	ftrace_graph_entry = entryfunc;
+ 
+-	ftrace_startup(FTRACE_START_FUNC_RET);
++	ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
+ 
+ out:
+ 	mutex_unlock(&ftrace_lock);
+@@ -3842,7 +3842,7 @@ void unregister_ftrace_graph(void)
+ 	ftrace_graph_active--;
+ 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
+ 	ftrace_graph_entry = ftrace_graph_entry_stub;
+-	ftrace_shutdown(FTRACE_STOP_FUNC_RET);
++	ftrace_shutdown(&global_ops, FTRACE_STOP_FUNC_RET);
+ 	unregister_pm_notifier(&ftrace_suspend_notifier);
+ 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
  
 -- 
 1.7.4.4
