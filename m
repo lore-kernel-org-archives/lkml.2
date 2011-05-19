@@ -1,68 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab1ESBQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 21:16:07 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41277 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752945Ab1ESBQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 21:16:06 -0400
-Date: Thu, 19 May 2011 11:15:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Gardiner <bengardiner@nanometrics.ca>
-Subject: linux-next: build failure after merge of the sound tree
-Message-Id: <20110519111557.f147fc1e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__19_May_2011_11_15_57_+1000_/H0icm5ngUg=3.qM"
+	id S1755307Ab1ESBYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 21:24:39 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:40288 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab1ESBYi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 21:24:38 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6350"; a="92178837"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Richard Weinberger <richard@nod.at>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Kyle McMartin <kyle@mcmartin.ca>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>
+Subject: [PATCH] Remove unused PROC_CHANGE_PENALTY constant
+Date: Wed, 18 May 2011 18:24:35 -0700
+Message-Id: <1305768275-24316-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.1.339.gb602ed
+In-Reply-To: <\>
+References: <\>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__19_May_2011_11_15_57_+1000_/H0icm5ngUg=3.qM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This constant hasn't been used since before the git era (2.6.12)
+and thus can be dropped.
 
-Hi Takashi,
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: Hirokazu Takata <takata@linux-m32r.org>
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/alpha/include/asm/smp.h  |    2 --
+ arch/arm/include/asm/smp.h    |    6 ------
+ arch/m32r/include/asm/smp.h   |    2 --
+ arch/parisc/include/asm/smp.h |    9 ---------
+ arch/um/include/asm/smp.h     |    1 -
+ 5 files changed, 0 insertions(+), 20 deletions(-)
 
-After merging the sound tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+diff --git a/arch/alpha/include/asm/smp.h b/arch/alpha/include/asm/smp.h
+index 3f390e8..c46e714 100644
+--- a/arch/alpha/include/asm/smp.h
++++ b/arch/alpha/include/asm/smp.h
+@@ -39,8 +39,6 @@ struct cpuinfo_alpha {
+ 
+ extern struct cpuinfo_alpha cpu_data[NR_CPUS];
+ 
+-#define PROC_CHANGE_PENALTY     20
+-
+ #define hard_smp_processor_id()	__hard_smp_processor_id()
+ #define raw_smp_processor_id()	(current_thread_info()->cpu)
+ 
+diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
+index 96ed521..dfeb29c 100644
+--- a/arch/arm/include/asm/smp.h
++++ b/arch/arm/include/asm/smp.h
+@@ -22,12 +22,6 @@
+ 
+ #define raw_smp_processor_id() (current_thread_info()->cpu)
+ 
+-/*
+- * at the moment, there's not a big penalty for changing CPUs
+- * (the >big< penalty is running SMP in the first place)
+- */
+-#define PROC_CHANGE_PENALTY		15
+-
+ struct seq_file;
+ 
+ /*
+diff --git a/arch/m32r/include/asm/smp.h b/arch/m32r/include/asm/smp.h
+index e67ded1..8accc1b 100644
+--- a/arch/m32r/include/asm/smp.h
++++ b/arch/m32r/include/asm/smp.h
+@@ -94,8 +94,6 @@ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+ 
+ #define NO_PROC_ID (0xff)	/* No processor magic marker */
+ 
+-#define PROC_CHANGE_PENALTY	(15)	/* Schedule penalty */
+-
+ /*
+  * M32R-mp IPI
+  */
+diff --git a/arch/parisc/include/asm/smp.h b/arch/parisc/include/asm/smp.h
+index 2e73623..e8f8037 100644
+--- a/arch/parisc/include/asm/smp.h
++++ b/arch/parisc/include/asm/smp.h
+@@ -33,15 +33,6 @@ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+ 
+ #endif /* !ASSEMBLY */
+ 
+-/*
+- *	This magic constant controls our willingness to transfer
+- *      a process across CPUs. Such a transfer incurs cache and tlb
+- *      misses. The current value is inherited from i386. Still needs
+- *      to be tuned for parisc.
+- */
+- 
+-#define PROC_CHANGE_PENALTY	15		/* Schedule penalty */
+-
+ #define raw_smp_processor_id()	(current_thread_info()->cpu)
+ 
+ #else /* CONFIG_SMP */
+diff --git a/arch/um/include/asm/smp.h b/arch/um/include/asm/smp.h
+index f27a963..4a4b09d 100644
+--- a/arch/um/include/asm/smp.h
++++ b/arch/um/include/asm/smp.h
+@@ -11,7 +11,6 @@
+ 
+ #define cpu_logical_map(n) (n)
+ #define cpu_number_map(n) (n)
+-#define PROC_CHANGE_PENALTY	15 /* Pick a number, any number */
+ extern int hard_smp_processor_id(void);
+ #define NO_PROC_ID -1
+ 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-sound/core/pcm_lib.c:333:40: error: macro "xrun_log" passed 3 arguments, bu=
-t takes just 2
-sound/core/pcm_lib.c: In function 'snd_pcm_update_hw_ptr0':
-sound/core/pcm_lib.c:333: error: 'xrun_log' undeclared (first use in this f=
-unction)
-
-Caused by commit ec08b14483de ("ALSA: sound, core, pcm_lib: xrun_log: log
-also in_interrupt").  This build has CONFIG_SND_PCM_XRUN_DEBUG unset.
-
-Please, please, use grep or some search when making API changes.
-
-I have used the sound tree from next-20110518 for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__19_May_2011_11_15_57_+1000_/H0icm5ngUg=3.qM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN1G9NAAoJEDMEi1NhKgbscUsH/2B2UC7QwU/zJckJVh8Y1CLD
-NZYsmIWD/7Xct0tervTQdRUVKm0GamR6VUGzZwq1YyfhJqow4PIKi6FaTKDo/oQh
-hfgMz22DfjNPNhHQHalVz542merS7fHAb7zuLQkgxVRooXpiTfC9o7wL9epchn3a
-AkudOnJjFBLgMZ5GjOitqgOlNDl93FV/8gUfO8vU/mY4NzWXnwq57VLUFfc06ecG
-88KTfQF4IfavOfLS+fjHNjDUUuUYeugTHOgWpY6QZShCLPTuF4IVrj6H4IuILNQe
-m2nm5A7kKHj3P3t/9pMJvmg4o1t/uNAV8fJv7gWBcXTegQ4eyrMN/srZRt4D68Q=
-=1sBr
------END PGP SIGNATURE-----
-
---Signature=_Thu__19_May_2011_11_15_57_+1000_/H0icm5ngUg=3.qM--
