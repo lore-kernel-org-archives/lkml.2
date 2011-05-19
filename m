@@ -1,235 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934897Ab1ESVmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:42:42 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64690 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933194Ab1ESVml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:42:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=U1hZu0vwf7ky9GoKhFoSuJd0NdyQEMALJ2aA1iVH/7kv4jPrLuaufNwG+f51wKupGh
-         tqCicNOOPZUc04V9gc/Lp6xplbHmwF9FMUsmOxCBJ09IGKyVsUJ6wACo47Zka1XiSAEC
-         qJVcGcUwLimk4FFpM4mkcXkWilO0TZmk5e1EM=
-From: Eric Van Hensbergen <ericvh@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org, bg-linux@lists.anl-external.org,
-        Eric Van Hensbergen <ericvh@gmail.com>
-Subject: [PATCH 4/7] [RFC][V2] enable BGP_L1_WRITETHROUGH mode for BG/P
-Date: Thu, 19 May 2011 16:42:24 -0500
-Message-Id: <1305841344-4918-1-git-send-email-ericvh@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1305753895-24845-4-git-send-email-ericvh@gmail.com>
-References: <1305753895-24845-4-git-send-email-ericvh@gmail.com>
+	id S935057Ab1ESVyv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:54:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61718 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934993Ab1ESVyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 17:54:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,239,1304319600"; 
+   d="scan'208";a="439348022"
+Message-Id: <20110519214530.939830917@intel.com>
+User-Agent: quilt/0.48-1
+Date: Fri, 20 May 2011 05:45:30 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Jan Kara <jack@suse.cz>
+cc: Dave Chinner <david@fromorbit.com>
+cc: Christoph Hellwig <hch@infradead.org>
+cc: <linux-fsdevel@vger.kernel.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/18] writeback fixes and cleanups for 2.6.40 (v3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BG/P nodes need to be configured for writethrough to work in SMP
-configurations.  This patch adds the right hooks in the MMU code
-to make sure BGP_L1_WRITETHROUGH configurations are setup for BG/P.
+Andrew,
 
-Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
----
- arch/powerpc/include/asm/mmu-44x.h     |    2 ++
- arch/powerpc/kernel/head_44x.S         |   24 ++++++++++++++++++++++--
- arch/powerpc/kernel/misc_32.S          |   15 +++++++++++++++
- arch/powerpc/lib/copy_32.S             |   10 ++++++++++
- arch/powerpc/mm/44x_mmu.c              |    7 +++++--
- arch/powerpc/platforms/Kconfig         |    5 +++++
- arch/powerpc/platforms/Kconfig.cputype |    1 +
- 7 files changed, 60 insertions(+), 4 deletions(-)
+This is the combination of all the recent writeback patches that get
+reasonably reviewed and tested.
 
-diff --git a/arch/powerpc/include/asm/mmu-44x.h b/arch/powerpc/include/asm/mmu-44x.h
-index bf52d70..ca1b90c 100644
---- a/arch/powerpc/include/asm/mmu-44x.h
-+++ b/arch/powerpc/include/asm/mmu-44x.h
-@@ -8,6 +8,7 @@
- 
- #define PPC44x_MMUCR_TID	0x000000ff
- #define PPC44x_MMUCR_STS	0x00010000
-+#define PPC44x_MMUCR_U2		0x00200000
- 
- #define	PPC44x_TLB_PAGEID	0
- #define	PPC44x_TLB_XLAT		1
-@@ -32,6 +33,7 @@
- 
- /* Storage attribute and access control fields */
- #define PPC44x_TLB_ATTR_MASK	0x0000ff80
-+#define PPC44x_TLB_WL1		0x00100000	/* Write-through L1 */
- #define PPC44x_TLB_U0		0x00008000      /* User 0 */
- #define PPC44x_TLB_U1		0x00004000      /* User 1 */
- #define PPC44x_TLB_U2		0x00002000      /* User 2 */
-diff --git a/arch/powerpc/kernel/head_44x.S b/arch/powerpc/kernel/head_44x.S
-index 5e12b74..f10ac53 100644
---- a/arch/powerpc/kernel/head_44x.S
-+++ b/arch/powerpc/kernel/head_44x.S
-@@ -429,7 +429,16 @@ finish_tlb_load_44x:
- 	andi.	r10,r12,_PAGE_USER		/* User page ? */
- 	beq	1f				/* nope, leave U bits empty */
- 	rlwimi	r11,r11,3,26,28			/* yes, copy S bits to U */
--1:	tlbwe	r11,r13,PPC44x_TLB_ATTRIB	/* Write ATTRIB */
-+1:
-+#ifdef CONFIG_BGP_L1_WRITETHROUGH
-+	andi.	r10, r11, PPC44x_TLB_I
-+	bne	2f
-+	oris    r11,r11,PPC44x_TLB_WL1@h	/* Add coherency for */
-+						/* non-inhibited */
-+	ori	r11,r11,PPC44x_TLB_U2|PPC44x_TLB_M
-+2:
-+#endif /* CONFIG_BGP_L1_WRITETHROUGH */
-+	tlbwe	r11,r13,PPC44x_TLB_ATTRIB	/* Write ATTRIB */
- 
- 	/* Done...restore registers and get out of here.
- 	*/
-@@ -799,7 +808,11 @@ skpinv:	addi	r4,r4,1				/* Increment */
- 	sync
- 
- 	/* Initialize MMUCR */
-+#ifdef CONFIG_BGP_L1_WRITETHROUGH
-+	lis	r5, PPC44x_MMUCR_U2@h
-+#else
- 	li	r5,0
-+#endif /* CONFIG_BGP_L1_WRITETHROUGH */
- 	mtspr	SPRN_MMUCR,r5
- 	sync
- 
-@@ -814,7 +827,14 @@ skpinv:	addi	r4,r4,1				/* Increment */
- 	/* attrib fields */
- 	/* Added guarded bit to protect against speculative loads/stores */
- 	li	r5,0
--	ori	r5,r5,(PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_G)
-+#ifdef CONFIG_BGP_L1_WRITETHROUGH
-+	ori	r5,r5,(PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | \
-+						PPC44x_TLB_G | PPC44x_TLB_U2)
-+	oris	r5,r5,PPC44x_TLB_WL1@h
-+#else
-+	ori	r5,r5,(PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | \
-+			PPC44x_TLB_G)
-+#endif /* CONFIG_BGP_L1_WRITETHROUGH
- 
-         li      r0,63                    /* TLB slot 63 */
- 
-diff --git a/arch/powerpc/kernel/misc_32.S b/arch/powerpc/kernel/misc_32.S
-index 094bd98..3f56d7b 100644
---- a/arch/powerpc/kernel/misc_32.S
-+++ b/arch/powerpc/kernel/misc_32.S
-@@ -506,7 +506,20 @@ _GLOBAL(clear_pages)
- 	li	r0,PAGE_SIZE/L1_CACHE_BYTES
- 	slw	r0,r0,r4
- 	mtctr	r0
-+#ifdef CONFIG_BGP_L1_WRITETHROUGH
-+	/* assuming 32 byte cacheline */
-+	li      r4, 0
-+1:	stw     r4, 0(r3)
-+	stw     r4, 4(r3)
-+	stw     r4, 8(r3)
-+	stw     r4, 12(r3)
-+	stw     r4, 16(r3)
-+	stw     r4, 20(r3)
-+	stw     r4, 24(r3)
-+	stw     r4, 28(r3)
-+#else
- 1:	dcbz	0,r3
-+#endif /* CONFIG_BGP_L1_WRITETHROUGH */
- 	addi	r3,r3,L1_CACHE_BYTES
- 	bdnz	1b
- 	blr
-@@ -550,7 +563,9 @@ _GLOBAL(copy_page)
- 	mtctr	r0
- 1:
- 	dcbt	r11,r4
-+#ifndef CONFIG_BGP_L1_WRITETHROUGH
- 	dcbz	r5,r3
-+#endif /* CONFIG_BGP_L1_WRITETHROUGH */
- 	COPY_16_BYTES
- #if L1_CACHE_BYTES >= 32
- 	COPY_16_BYTES
-diff --git a/arch/powerpc/lib/copy_32.S b/arch/powerpc/lib/copy_32.S
-index 55f19f9..552df54 100644
---- a/arch/powerpc/lib/copy_32.S
-+++ b/arch/powerpc/lib/copy_32.S
-@@ -98,7 +98,11 @@ _GLOBAL(cacheable_memzero)
- 	bdnz	4b
- 3:	mtctr	r9
- 	li	r7,4
-+#ifdef CONFIG_BGP_L1_WRITETHROUGH
-+10:
-+#else
- 10:	dcbz	r7,r6
-+#endif /* CONFIG_L1_WRITETHROUGH */
- 	addi	r6,r6,CACHELINE_BYTES
- 	bdnz	10b
- 	clrlwi	r5,r8,32-LG_CACHELINE_BYTES
-@@ -187,7 +191,9 @@ _GLOBAL(cacheable_memcpy)
- 	mtctr	r0
- 	beq	63f
- 53:
-+#ifndef CONFIG_BGP_L1_WRITETHROUGH
- 	dcbz	r11,r6
-+#endif /* CONFIG_BGP_L1_WRITETHROUGH */
- 	COPY_16_BYTES
- #if L1_CACHE_BYTES >= 32
- 	COPY_16_BYTES
-@@ -368,7 +374,11 @@ _GLOBAL(__copy_tofrom_user)
- 	mtctr	r8
- 
- 53:	dcbt	r3,r4
-+#ifdef CONFIG_BGP_L1_WRITETHROUGH
-+54:
-+#else
- 54:	dcbz	r11,r6
-+#endif
- 	.section __ex_table,"a"
- 	.align	2
- 	.long	54b,105f
-diff --git a/arch/powerpc/mm/44x_mmu.c b/arch/powerpc/mm/44x_mmu.c
-index 024acab..f5c60b3 100644
---- a/arch/powerpc/mm/44x_mmu.c
-+++ b/arch/powerpc/mm/44x_mmu.c
-@@ -80,9 +80,12 @@ static void __init ppc44x_pin_tlb(unsigned int virt, unsigned int phys)
- 	:
- #ifdef CONFIG_PPC47x
- 	: "r" (PPC47x_TLB2_S_RWX),
--#else
-+#elseif CONFIG_BGP_L1_WRITETHROUGH
-+	: "r" (PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_WL1 \
-+		| PPC44x_TLB_U2 | PPC44x_TLB_M),
-+#else /* neither CONFIG_PPC47x or CONFIG_BGP_L1_WRITETHROUGH */
- 	: "r" (PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_G),
--#endif
-+#endif /* CONFIG_PPC47x */
- 	  "r" (phys),
- 	  "r" (virt | PPC44x_TLB_VALID | PPC44x_TLB_256M),
- 	  "r" (entry),
-diff --git a/arch/powerpc/platforms/Kconfig b/arch/powerpc/platforms/Kconfig
-index f7b0772..7defe94 100644
---- a/arch/powerpc/platforms/Kconfig
-+++ b/arch/powerpc/platforms/Kconfig
-@@ -348,4 +348,9 @@ config XILINX_PCI
- 	bool "Xilinx PCI host bridge support"
- 	depends on PCI && XILINX_VIRTEX
- 
-+config BGP_L1_WRITETHROUGH
-+	bool "Blue Gene/P enabled writethrough mode"
-+	depends on BGP
-+	default y
-+
- endmenu
-diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
-index 1ae59c5..caa3bbf 100644
---- a/arch/powerpc/platforms/Kconfig.cputype
-+++ b/arch/powerpc/platforms/Kconfig.cputype
-@@ -333,6 +333,7 @@ config NOT_COHERENT_CACHE
- 	bool
- 	depends on 4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON
- 	default n if PPC_47x
-+	default n if BGP
- 	default y
- 
- config CHECK_CACHE_COHERENCY
--- 
-1.7.4.1
+The first 10 patches are already in -mm tree, with updates:
+
+- remove "writeback: pass writeback_control down to move_expired_inodes()", and
+  resolve the resulting merge conflicts in other patches.
+- move ahead the sync livelock prevention patches (01, 02) so that (04) won't livelock sync
+- merge the three -mm fixes to (08)
+- fixed changelog of (01)
+- rename .for_sync to .tagged_writepages
+
+	[PATCH 01/18] writeback: introduce .tagged_writepages for the WB_SYNC_NONE sync stage
+	[PATCH 02/18] writeback: update dirtied_when for synced inode to prevent livelock
+	[PATCH 03/18] writeback: introduce writeback_control.inodes_cleaned
+	[PATCH 04/18] writeback: try more writeback as long as something was written
+	[PATCH 05/18] writeback: the kupdate expire timestamp should be a moving target
+	[PATCH 06/18] writeback: sync expired inodes first in background writeback
+	[PATCH 07/18] writeback: refill b_io iff empty
+	[PATCH 08/18] writeback: split inode_wb_list_lock into bdi_writeback.list_lock
+	[PATCH 09/18] writeback: elevate queue_io() into wb_writeback()
+	[PATCH 10/18] writeback: avoid extra sync work at enqueue time
+
+The following 8 patches were posted and reviewed these days:
+
+	[PATCH 11/18] writeback: add bdi_dirty_limit() kernel-doc
+	[PATCH 12/18] writeback: skip balance_dirty_pages() for in-memory fs
+	[PATCH 13/18] writeback: remove writeback_control.more_io
+	[PATCH 14/18] writeback: make writeback_control.nr_to_write straight
+	[PATCH 15/18] writeback: remove .nonblocking and .encountered_congestion
+	[PATCH 16/18] writeback: trace event writeback_single_inode
+	[PATCH 17/18] writeback: trace event writeback_queue_io
+	[PATCH 18/18] writeback: rearrange the wb_writeback() loop
+
+Thanks to Jan and Dave for the careful reviews!
+
+The patches are git pullable from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git fs-writeback
+
+ fs/block_dev.c                   |   16 +-
+ fs/btrfs/extent_io.c             |    2 -
+ fs/ext4/inode.c                  |    4 +-
+ fs/fs-writeback.c                |  411 +++++++++++++++++++++-----------------
+ fs/inode.c                       |    5 +-
+ fs/nfs/write.c                   |    3 +-
+ fs/xfs/linux-2.6/xfs_aops.c      |    2 +-
+ include/linux/backing-dev.h      |    2 +
+ include/linux/writeback.h        |   14 +-
+ include/trace/events/btrfs.h     |    6 +-
+ include/trace/events/ext4.h      |    6 +-
+ include/trace/events/writeback.h |  137 ++++++++++++--
+ mm/backing-dev.c                 |   30 ++-
+ mm/filemap.c                     |    6 +-
+ mm/page-writeback.c              |   42 ++--
+ mm/rmap.c                        |    4 +-
+ 16 files changed, 420 insertions(+), 270 deletions(-)
+
+Thanks,
+Fengguang
 
