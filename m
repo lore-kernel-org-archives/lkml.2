@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933599Ab1ESQeG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:34:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15412 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933541Ab1ESQeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:34:03 -0400
-Date: Thu, 19 May 2011 18:32:46 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 10/10] ptrace: implement group stop notification for
-	ptracer
-Message-ID: <20110519163246.GF17265@redhat.com>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-11-git-send-email-tj@kernel.org>
+	id S933528Ab1ESQdX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:33:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33167 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933117Ab1ESQdV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 12:33:21 -0400
+Date: Thu, 19 May 2011 12:33:03 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: dgdegra@tycho.nsa.gov
+Subject: [GIT PULL] (xen) stable/backend.base.v3 stable/gntalloc.v7 for 2.6.40
+Message-ID: <20110519163303.GA13186@dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305569849-10448-11-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090206.4DD5464D.006B:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16, Tejun Heo wrote:
->
-> When group stop state of a seized tracee changes, JOBCTL_TRAP_NOTIFY
-> is set, which triggers STOP trap but is sticky until the next
-> PTRACE_GETSIGINFO.
+Hey Linus
 
-I simply can't understand this patch. And the supposed API as it seen
-by the user-space. I'll try to read it again and think more.
+Please git pull:
 
-A couple of questions,
+ git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/backend.base.v3 stable/gntalloc.v7
 
-> +static void ptrace_trap_notify(struct task_struct *t)
-> +{
-> +	siginfo_t *si = t->last_siginfo;
-> +
-> +	WARN_ON_ONCE(!(t->ptrace & PT_SEIZED));
-> +	assert_spin_locked(&t->sighand->siglock);
-> +
-> +	/*
-> +	 * @t is being ptraced and new SEIZE behavior is in effect.
-> +	 * Schedule sticky trap which will clear on the next GETSIGINFO.
-> +	 */
-> +	t->jobctl |= JOBCTL_TRAP_NOTIFY;
+where stable/backend.base.v3 is based off v2.6.39-rc3
+(a6360dd37e1a144ed11e6548371bade559a1e4df)
+This particular patchset touches a lot of Xen code in different directories,
+which I could have avoided by splitting the patches in different branches.
+However for simplicity reasons (one branch name so much easier to keep in mind)
+I stuck them all in this branch.
 
-This is also set by do_signal_stop(). Cleared by PTRACE_GETSIGINFO.
+The patchset does a couple of things:
+ - Allows the Xen's Machine to Frame Number (MFN) to Page Frame Number (PFN)
+   override mechanism (which we as a way to share pages with other guests)
+   to work with other backends. The other backend right now is the block
+   backend, but can also be the network backend.
+ - Fixes compile errors if backends are compiled as modules.
+ - Lays out the groundwork for the PCI backend to remember which of the PCI
+   devices are assigned to a guest if the pci backend is used.
+ - Lastly, exposes some of the Xen's IRQ lookup code to the pci backend so
+   that the correct Physical IRQ (GSI or vector if MSI/MSI-X used) is
+   provided to the guest.
 
-How can this work? Doesn't this mean PTRACE_GETSIGINFO becomes mandatory
-before PTRACE_CONT? IOW, unless the tracee does PTRACE_GETSIGINFO to clear
-this bit, PTRACE_CONT just leads to another trap, no?
+The #stable/gntalloc.v7 is based of .. 38eaeb0fd8819dce424a61579500bd9987d5c930
+(xen: gntdev: fix build warning), which went in at the beginning of 2.6.39.
+Anyhow, it just removes an unneeded flag.
 
-> +	if (task_is_traced(t) && si && si->si_code == PTRACE_STOP_SI_CODE) {
+The full diffstat:
 
-OK, this PTRACE_STOP_SI_CODE check is clear. But the same check in
-ptrace_check_attach() looks confusing, why can't we set BLOCK_NOTIFY
-unconditionally?
+ arch/x86/include/asm/xen/page.h |    5 +-
+ arch/x86/include/asm/xen/pci.h  |   16 +++++++
+ arch/x86/pci/xen.c              |   96 +++++++++++++++++++++++++++++++++++++--
+ arch/x86/xen/p2m.c              |   13 +++---
+ drivers/xen/events.c            |   39 ++++++++++++++--
+ drivers/xen/gntalloc.c          |   14 +++++-
+ drivers/xen/gntdev.c            |   16 ++++++-
+ drivers/xen/grant-table.c       |   31 ++++++++++---
+ include/xen/events.h            |    9 +++-
+ 9 files changed, 208 insertions(+), 31 deletions(-)
 
-> +		t->jobctl |= JOBCTL_TRAPPING;
-> +		if (!(t->jobctl & JOBCTL_BLOCK_NOTIFY))
-> +			signal_wake_up(t, true);
+Daniel De Graaf (1):
+      xen/gntdev,gntalloc: Remove unneeded VM flags
 
-Could you please remind me why we can't avoid the awful ptrace_wait_trapping()
-in do_wait() paths? Assuming that ptrace_check_attach() does this. I got lost
-a bit.
-
-So. The tracee reports PTRACE_EVENT_STOP, debugger issues a lot of PTRACE_
-requests. The tracee can report another trap "in between". Looks confusing...
-Perhaps I need to get used to it.
-
-Oleg.
+Konrad Rzeszutek Wilk (8):
+      xen/pci: Add xen_[find|register|unregister]_device_domain_owner functions.
+      xen/irq: Check if the PCI device is owned by a domain different than DOMID_SELF.
+      xen/irq: Add support to check if IRQ line is shared with other domains.
+      xen/irq: Export 'xen_pirq_from_irq' function.
+      xen/irq: The Xen hypervisor cleans up the PIRQs if the other domain forgot.
+      xen/p2m/m2p/gnttab: Support GNTMAP_host_map in the M2P override.
+      xen/p2m: Add EXPORT_SYMBOL_GPL to the M2P override functions.
+      xen/pci: Fix compiler error when CONFIG_XEN_PRIVILEGED_GUEST is not set.
 
