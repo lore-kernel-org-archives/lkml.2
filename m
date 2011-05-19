@@ -1,175 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab1ESIyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 04:54:40 -0400
-Received: from narfation.org ([79.140.41.39]:36262 "EHLO v3-1039.vlinux.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932376Ab1ESIyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 04:54:39 -0400
-From: Sven Eckelmann <sven@narfation.org>
-To: Antonio Quartulli <ordex@autistici.org>
-Subject: Re: net: add seq_before/seq_after functions
-Date: Thu, 19 May 2011 10:54:32 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-rc6-686-pae; KDE/4.6.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org
-References: <1305722319-8315-1-git-send-email-ordex@autistici.org>
-In-Reply-To: <1305722319-8315-1-git-send-email-ordex@autistici.org>
+	id S932821Ab1ESIym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 04:54:42 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:64048 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932376Ab1ESIyl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 04:54:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LLk/XnptSLKSBxxqNzT5LQQCeFTYPRhVTEX30ic/PAeEw7jBrvHFJ7MraVYqmOWXNm
+         cFaWZXJVmLE/+LyEtvx0XSf6deOLDcfFhfhRdkw+kxltH3koUkQ7WDMGMsOFi+rkvRTe
+         AAnn3E1xcA6E5T7cekRsgXmfgkB5gBSiCdmIo=
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1581044.BhJUx0NJpY";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha512
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105191054.34912.sven@narfation.org>
+In-Reply-To: <1305794708.2466.7194.camel@twins>
+References: <20110428161149.GA15658@redhat.com>
+	<20110502194416.2D61.A69D9226@jp.fujitsu.com>
+	<20110502195657.2D68.A69D9226@jp.fujitsu.com>
+	<1305129929.2914.247.camel@laptop>
+	<4DCCC61F.80408@jp.fujitsu.com>
+	<BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
+	<1305306135.2466.173.camel@twins>
+	<20110516133748.GB2058@zhy>
+	<1305794708.2466.7194.camel@twins>
+Date: Thu, 19 May 2011 16:54:40 +0800
+Message-ID: <BANLkTi=GYr6XWyt50YaJ=WrDMFZ3aGAQkg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
+ update tsk->rt.nr_cpus_allowed
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1581044.BhJUx0NJpY
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 19, 2011 at 4:45 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Mon, 2011-05-16 at 21:37 +0800, Yong Zhang wrote:
+>>
+>> But I'm afraid this patch still doesn't help.
+>> If I understand your patch correctly, you just put the wake up to CPU_STARTING,
+>> but it's still before CPU_ONLINE.\
+>
+> Well, that's the whole point really, CPU_ONLINE is terribly late. But
+> did you perhaps mean to say its before we mark the cpu online?
 
-On Wednesday 18 May 2011 14:38:39 Antonio Quartulli wrote:
-> Introduce two operations to handle comparison between packet sequence
-> numbers taking into account overflow/wraparound. Batman-adv uses
-> these functions already to check for successor packet even in case of
-> overflow.
+I always try to express myself correctly(poor english :)
 
-Thanks for your efforts to bring that to the kernel. But when you prepare a=
-=20
-patch then you have to add a signoff. And also David S. Miller is the=20
-maintainer for this header - it would be interesting to ask him first when =
-we=20
-want to change that file.
+Precisely, it's before we mark the cpu active. sched_cpu_active()
+is call when CPU_ONLINE.
 
-> ---
-> I added this two functions in net.h because I didn't really know where
-> best placement is. I saw several modules that redefine their own functions
-> for the same purpose.
->=20
->  include/linux/net.h |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
->=20
-> diff --git a/include/linux/net.h b/include/linux/net.h
-> index 94de83c..c7bc9bf 100644
-> --- a/include/linux/net.h
-> +++ b/include/linux/net.h
-> @@ -295,4 +295,21 @@ extern struct ratelimit_state net_ratelimit_state;
->  #endif
->=20
->  #endif /* __KERNEL__ */
-> +
-> +/* Returns the smallest signed integer in two's complement with the size=
-of
-> x */ +#define smallest_signed_int(x) (1u << (7u + 8u * (sizeof(x) - 1u)))
-> +
-> +/* Checks if a sequence number x is a predecessor/successor of y.
-> + * they handle overflows/underflows and can correctly check for a
-> + * predecessor/successor unless the variable sequence number has grown by
-> + * more then 2**(bitwidth(x)-1)-1.
-> + * This means that for a uint8_t with the maximum value 255, it would
-> think: + *  - when adding nothing - it is neither a predecessor nor a
-> successor + *  - before adding more than 127 to the starting value - it is
-> a predecessor, + *  - when adding 128 - it is neither a predecessor nor a
-> successor, + *  - after adding more than 127 to the starting value - it is
-> a successor */ +#define seq_before(x, y) ({typeof(x) _dummy =3D (x - y); \
-> +			_dummy > smallest_signed_int(_dummy); })
-> +#define seq_after(x, y) seq_before(y, x)
-> +
->  #endif	/* _LINUX_NET_H */
+Thanks,
+Yong
 
-I suggested yesterday (probably too late) that it would be good to check the
-type of both parameters (similar to the min and max functions in
-include/linux/kernel.h
-
-#define seq_before(x, y) ({typeof(x) _d1 =3D (x); \
-			  typeof(y) _d2 =3D (y); \
-			  (void) (&_d1 =3D=3D &_d2); \
-			  typeof(x) _dummy =3D (_d1 - _d2); \
-			  _dummy > smallest_signed_int(_dummy); })
+>
+>> Please check my mail to Paul's in this thread group.
+>
+> Not sure that made things any clearer.
+>
 
 
-And your seq_before/after conflicts with the one defined in ppp_generic.c
 
-drivers/net/ppp_generic.c:232:0: warning: "seq_before" redefined [enabled b=
-y=20
-default]
-include/linux/net.h:312:0: note: this is the location of the previous=20
-definition
-drivers/net/ppp_generic.c:233:0: warning: "seq_after" redefined [enabled by=
-=20
-default]
-include/linux/net.h:314:0: note: this is the location of the previous=20
-definition
-
-The definition there is only for u32 - thus you would have to remove it and=
-=20
-check that it always gives the same result:
-#define seq_before(a, b)        ((s32)((a) - (b)) < 0)
-#define seq_after(a, b)         ((s32)((a) - (b)) > 0)
-
-But I would say that they have a different definition of seq_before. Changi=
-ng=20
-that behaviour for batman-adv would not be that problematic, but maybe for=
-=20
-ppp.
-
-A defintion which should fulfil the requirements for ppp could be:
-
-#define seq_after(x, y) ({typeof(x) _d1 =3D (x); \
-			  typeof(y) _d2 =3D (y); \
-			  (void) (&_d1 =3D=3D &_d2); \
-			  typeof(x) _dummy =3D (_d2 - _d1); \
-			  _dummy > smallest_signed_int(_dummy); })
-#define seq_before(x, y) ({typeof(x) _d1 =3D (x); \
-			  typeof(y) _d2 =3D (y); \
-			  (void) (&_d1 =3D=3D &_d2); \
-			  typeof(x) _dummy =3D (_d1 - _d2); \
-			  _dummy >=3D smallest_signed_int(_dummy); })
-
-Of course the comment above the seq_before/seq_after would be wrong.
-
-/* Checks if a sequence number x is a predecessor/successor of y.
- * they handle overflows/underflows and can correctly check for a
- * predecessor/successor unless the variable sequence number has grown by
- * more then 2**(bitwidth(x)-1).
- * This means that for a uint8_t with the maximum value 255, it would think:
- *  - when adding nothing - it is neither a predecessor nor a successor
- *  - before adding more than 128 to the starting value - it is a predecess=
-or,
- *  - after adding more than 127 to the starting value - it is a successor =
-*/
-
-I think there could be more candidates which would like to use this abstrac=
-t=20
-functionality. Maybe some one else on linux-kernel or netdev has a suggesti=
-on.
-
-Kind regards,
-	Sven
-
---nextPart1581044.BhJUx0NJpY
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABCgAGBQJN1NrIAAoJEF2HCgfBJntGjl8P/1RLU/dFt/G933cjo8rlDwuy
-7q0cUAjVneysotz4moe5R514WC1HbDu6iDegncPS+ZpZO5uOw1s0qQehsjxl+XgV
-15w9ELNbryuIAyEMa44EXhLnCY3Ae5upcf5uefMSPxk7pALxVGO1uqOkWPLSJWiD
-br6MaJbJ5moxOVlNDLm9Q5FIJyxRXRcQJOpWVf7/hVsPEMXR9zdpl1WOGellPYGG
-iez1HcqMzLIkSg0HcGDn/dBLbykpDzh5QZi+YquD1YPfrzXt74UAwrHfBzOaS8Vu
-RmCLQzmAjgoeBbQzPptc7eESwLlF7kMWlg2xOz3Z/kkf1AvA0irzVMTHbXU2xkW+
-oO8Vf6TKH/aiznEtwB2ll6HlGU9WXUqUWEVPIt6rLZUaURXyBCbum5AkFA3rMu6d
-tWeSnaOBrEj1nJegYiajaTv5kEsA1bZswc3N+5r84xkJN+8L6X4vkEVyWUH8U9T8
-RtcIaAAN8MlAvGtzj+IA6W1Gx94p39TeVJI4C3V3zca6vjypdM9JicVCbhjHw+BP
-zfEfYT8F3KsgvN3JhM4AWwdWLRnzIXK5tWDGlOvYDa5UWGLGj6B+z8y4n95MvEVO
-MVWINWrhv+kfBVZzps2StxCPG6DRkQl7qD8Ar9gP0LTOLxYpMcldZ1prVuz7Uj+t
-0e8amN2PN0oWCM0rpQEC
-=ztLq
------END PGP SIGNATURE-----
-
---nextPart1581044.BhJUx0NJpY--
+-- 
+Only stand for myself
