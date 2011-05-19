@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933923Ab1ESSIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:08:11 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41814 "EHLO
+	id S933929Ab1ESSWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:22:44 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57825 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933888Ab1ESSIE (ORCPT
+	by vger.kernel.org with ESMTP id S933898Ab1ESSIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:08:04 -0400
-X-Sasl-enc: sDyGGd8CWlI1raZaLWHLiVzICwU7hKwKM6DxZA1VBl7/ 1305828483
+	Thu, 19 May 2011 14:08:06 -0400
+X-Sasl-enc: Cg7XgjbtIiEeJcKop5TEorPy6fIpb6s7r+srC/zWJtaD 1305828485
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:55 2011
-Message-Id: <20110519180555.826758741@clark.kroah.org>
+Message-Id: <20110519180555.918072951@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:04:44 -0700
+Date: Thu, 19 May 2011 11:04:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Alex Williamson <alex.williamson@redhat.com>,
         Chris Wilson <chris@chris-wilson.co.uk>,
         Keith Packard <keithp@keithp.com>
-Subject: [16/71] drm/i915/dp: Be paranoid in case we disable a DP before it is attached
+Subject: [17/71] drm/i915/lvds: Only act on lid notify when the device is on
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,60 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 31acbcc408f412d1ba73765b846c38642be553c3 upstream.
+commit 2fb4e61d9471867677c97bf11dba8f1e9dfa7f7c upstream.
 
-Given that the hardware may be left in a random condition by the BIOS,
-it is conceivable that we then attempt to clear the DP_PIPEB_SELECT bit
-without us ever enabling/attaching the DP encoder to a pipe. Thus
-causing a NULL deference when we attempt to wait for a vblank on that
-crtc.
+If we're using vga switcheroo, the device may be turned off
+and poking it can return random state. This provokes an OOPS fixed
+separately by 8ff887c847 (drm/i915/dp: Be paranoid in case we disable a
+DP before it is attached). Trying to use and respond to events on a
+device that has been turned off by the user is in principle a silly thing
+to do.
 
-Reported-and-tested-by: Bryan Christ <bryan.christ@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=36314
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=36456
-Reported-and-tested-by: Bo Wang <bo.b.wang@intel.com>
 Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_dp.c |   17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_lvds.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -1455,7 +1455,8 @@ intel_dp_link_down(struct intel_dp *inte
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -540,6 +540,9 @@ static int intel_lid_notify(struct notif
+ 	struct drm_device *dev = dev_priv->dev;
+ 	struct drm_connector *connector = dev_priv->int_lvds_connector;
  
- 	if (!HAS_PCH_CPT(dev) &&
- 	    I915_READ(intel_dp->output_reg) & DP_PIPEB_SELECT) {
--		struct intel_crtc *intel_crtc = to_intel_crtc(intel_dp->base.base.crtc);
-+		struct drm_crtc *crtc = intel_dp->base.base.crtc;
++	if (dev->switch_power_state != DRM_SWITCH_POWER_ON)
++		return NOTIFY_OK;
 +
- 		/* Hardware workaround: leaving our transcoder select
- 		 * set to transcoder B while it's off will prevent the
- 		 * corresponding HDMI output on transcoder A.
-@@ -1470,7 +1471,19 @@ intel_dp_link_down(struct intel_dp *inte
- 		/* Changes to enable or select take place the vblank
- 		 * after being written.
- 		 */
--		intel_wait_for_vblank(dev, intel_crtc->pipe);
-+		if (crtc == NULL) {
-+			/* We can arrive here never having been attached
-+			 * to a CRTC, for instance, due to inheriting
-+			 * random state from the BIOS.
-+			 *
-+			 * If the pipe is not running, play safe and
-+			 * wait for the clocks to stabilise before
-+			 * continuing.
-+			 */
-+			POSTING_READ(intel_dp->output_reg);
-+			msleep(50);
-+		} else
-+			intel_wait_for_vblank(dev, to_intel_crtc(crtc)->pipe);
- 	}
- 
- 	I915_WRITE(intel_dp->output_reg, DP & ~DP_PORT_EN);
+ 	/*
+ 	 * check and update the status of LVDS connector after receiving
+ 	 * the LID nofication event.
 
 
