@@ -1,69 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934574Ab1ESTnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 15:43:13 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:60397 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934482Ab1ESTnK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 15:43:10 -0400
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirqus@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1305738028.32080.66.camel@localhost.localdomain>
-References: <1305671318.10756.49.camel@localhost.localdomain>
-	 <20110518103819.GL7589@redhat.com>
-	 <BANLkTimc1RbC3uQsra1HUvS_Trg63iMWGA@mail.gmail.com>
-	 <20110518111734.GO7589@redhat.com>
-	 <BANLkTi=g_PFfS5653K8ZoQ2Jhp8DhCV1hg@mail.gmail.com>
-	 <1305729507.32080.6.camel@localhost.localdomain>
-	 <20110518154746.GA21378@redhat.com>
-	 <1305734857.32080.53.camel@localhost.localdomain>
-	 <20110518163633.GB22001@redhat.com>
-	 <1305737140.32080.59.camel@localhost.localdomain>
-	 <20110518165138.GD22001@redhat.com>
-	 <1305738028.32080.66.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 May 2011 12:42:49 -0700
-Message-ID: <1305834169.32080.81.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S934254Ab1ESTuc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:50:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50231 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753728Ab1ESTub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 15:50:31 -0400
+Date: Thu, 19 May 2011 21:49:08 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: Ptrace documentation, draft #1
+Message-ID: <20110519194908.GA26584@redhat.com>
+References: <201105152235.32073.vda.linux@googlemail.com> <20110516153122.GA15856@redhat.com> <BANLkTintE-QVUJhJY-_A5nvgj7viJatZ4Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTintE-QVUJhJY-_A5nvgj7viJatZ4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-18 at 10:00 -0700, Shirley Ma wrote:
-> On Wed, 2011-05-18 at 19:51 +0300, Michael S. Tsirkin wrote:
-> > > > Yes, I agree.  I think for tcpdump, we really need to copy the
-> > data
-> > > > anyway, to avoid guest changing it in between.  So we do that
-> and
-> > then
-> > > > use the copy everywhere, release the old one. Hmm? 
-> > > 
-> > > Yes. Old one use zerocopy, new one use copy data.
-> > > 
-> > > Thanks
-> > > Shirley
-> > 
-> > No, that's wrong, as they might become different with a
-> > malicious guest. As long as we copied already, lets realease
-> > the data and have everyone use the copy. 
-> 
-> Ok, I will patch pskb_expand_head to test it out. 
+On 05/18, Denys Vlasenko wrote:
+>
+> On Mon, May 16, 2011 at 5:31 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > Note: currently a killed PT_TRACE_EXIT tracee can stop and report
+> > PTRACE_EVENT_EXIT before it actually exits. I'd say this is wrong and
+> > should be fixed.
+>
+> Yes, I assumed this is normal.
+> Or do you mean that *killed* tracee (that is, by signal) also stops there?
 
-I am patching skb_copy, skb_clone, pskb_copy, pskb_expand_head to
-convert a zero-copy skb to a copy skb to avoid this kind of issue.
+Yes.
 
-This overhead won't impact macvtap/vhost TX zero-copy normally.
+> >> Tracer can kill a tracee with ptrace(PTRACE_KILL, pid, 0, 0).
+> >
+> > Oh, no. This is more or less equivalent to PTRACE_CONT(SIGKILL) except
+> > PTRACE_KILL doesn't return the error if the tracee is not stopped.
+> >
+> > I'd say: do not use PTRACE_KILL, never. If the tracer wants to kill
+> > the tracee - kill or tkill should be used.
+>
+> Regardless. We need to tell users what to expect after they do PTRACE_KILL.
 
-Shirley
+Once again, PTRACE_KILL == ptrace(PTRACE_CONT, SIGKILL), except it
+doesn't return the error if the tracee is not stopped.
+
+OTOH, it does the unconditional wakeup, but I don't think we should
+document this bug.
+
+> >> When any thread executes exit_group syscall, every tracee reports its
+> >> death to its tracer.
+> >>
+> >> ??? Is it true that *every* thread reports death?
+> >
+> > Yes, if you mean do_wait() as above.
+>
+> And will PTRACE_EVENT_EXIT happen for *every* tracee (which has it configured)?
+
+Oh. This depends on /dev/random. Most probably the exiting tracee
+dequeues the (implicit) SIGKILL and report PTRACE_EVENT_EXIT. Oh,
+unless arch_ptrace_stop_needed() is true. But it can exit on its own
+or deque another fatal signal, then it won't stop because of
+fatal_signal_pending().
+
+In short: this should be fixed. We already discussed this a bit (many
+times ;), first of all we should define the correct behaviour. If you
+ask me, personally I think PTRACE_EVENT_EXIT should be always reported
+unless the task was explicitly killed by SIGKILL. But this is not clear.
+
+> >> Kernel delivers an extra SIGTRAP to tracee after execve syscall
+> >> returns. This is an ordinary signal (similar to one generated by kill
+> >> -TRAP), not a special kind of ptrace-stop. If PTRACE_O_TRACEEXEC option
+> >> is in effect, a PTRACE_EVENT_EXEC-stop is generated instead.
+> >>
+> >> ??? can this SIGTRAP be distinguished from "real" user-generated SIGTRAP
+> >>     by looking at its siginfo?
+> >
+> > Afaics no. Well, except .si_pid shows that the signal was sent by the
+> > tracing process to itself.
+>
+> What about si_code? Is it set to SI_KERNEL for this signal?
+
+No, SI_USER.
+
+> > I'd say it is better to assume nobody sends SIGTRAP to the tracee.
+> > Even if the tracer could filter out the "real" signals, SIGTRAP doesn't
+> > queue.
+>
+> Yes, I understand that the race with real SIGTRAPs is not fixable.
+> I mostly look for a way for tracer to say "aha, this is that pesky
+> SIGTRAP from execve, ignore it". One way is to set PTRACE_O_TRACEEXEC.
+
+Yes.
+
+> Is GETSIGINFO another?
+
+How? We simply send SIGTRAP as if it was sent by kill(), the tracee
+will dequeue this signal and report later.
+
+> >> ??? Are syscalls interrupted by signals which are suppressed by tracer?
+> >>     If yes, document it here
+> >
+> > Please reiterate, can't understand.
+>
+> Let's say tracee is in nanosleep. Then some signal arrives,
+
+note that the tracee is already interrupted here, sys_nanosleep()
+returns ERESTART_RESTARTBLOCK.
+
+> but tracer decides to ignore it. In tracer:
+>
+> waitpid: WIFSTOPPED, WSTOPSIG = some_sig  <===
+> ptrace(PTRACE_CONT, pid, 0, 0)  ===>
+>
+> will this interrupt nanosleep in tracee?
+
+Yes and no. Once again, the tracee already returned from sys_nanosleep,
+but it will restart this syscall (actually, it will do sys_restart_syscall)
+and continue to sleep.
+
+> >> As of kernel 2.6.38, after tracer sees tracee ptrace-stop and until it
+> >> restarts or kills it, tracee will not run,
+> >
+> > Well, this is not exactly true. Initially the tracee sleeps in TASK_STOPPED
+> > and thus it can be woken by SIGCONT. But the first ptrace request changes
+> > turns this state into TASK_TRACED.
+>
+> > This was already changed by the pending patches.
+>
+> This is an extremely subtle point, and is not really a part of API "as
+> designed":
+
+I think this was never designed ;)
+
+> I propose to not document it, as you guys plan to fix this thing for good.
+
+Agreed.
+
+> >> If tracee was restarted by PTRACE_SYSCALL, tracee enters
+> >> syscall-enter-stop just prior to entering any syscall. If tracer
+> >> restarts it with PTRACE_SYSCALL, tracee enters syscall-exit-stop when
+> >> syscall is finished, or if it is interrupted by a signal. (That is,
+> >> signal-delivery-stop never happens between syscall-enter-stop and
+> >> syscall-exit-stop, it happens after syscall-exit-stop).
+> >
+> > This is true. But, just in case, please note that PTRACE_EVENT_EXEC
+> > or PTRACE_EVENT_{FORK,CLONE,etc} can be reported in between.
+>
+> Aha, so PTRACE_EVENT-stops happen "within" the syscall?
+> Meaning, between syscall-enter-stop and syscall-exit-stop?
+
+Yes.
+
+> >>       ptrace(PTRACE_cmd, pid, 0, sig);
+> >> where cmd is CONT, DETACH, SYSCALL, SINGLESTEP, SYSEMU,
+> >> SYSEMU_SINGLESTEP. If tracee is in signal-delivery-stop, sig is the
+> >> signal to be injected. Otherwise, sig is ignored.
+> >
+> > There is another special case. If the tracee single-stepps into the
+> > signal handler, it reports SIGTRAP as if it recieved this SIGNAL.
+> > But ptrace(PTRACE, ..., sig) doesn't inject after that.
+>
+> This is part of missing doc about PTRACE_SINGLESTEP.
+> From what you are saying it looks like PTRACE_SINGLESTEP
+> implies PTRACE_SYSCALL behavior: "report syscall-stops".
+
+Hmm. Why do you think so?
+
+Oleg.
 
