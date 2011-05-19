@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab1ESEOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 00:14:06 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54437 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540Ab1ESEOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 00:14:05 -0400
-Subject: Re: [PATCH RFCv7 0/2] CARMA Board Support
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linuxppc-dev@lists.ozlabs.org, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1297467270-29576-1-git-send-email-iws@ovro.caltech.edu>
-References: <1297467270-29576-1-git-send-email-iws@ovro.caltech.edu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 May 2011 14:13:41 +1000
-Message-ID: <1305778421.7481.38.camel@pasglop>
+	id S1752723Ab1ESES0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 00:18:26 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:60960 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab1ESESZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 00:18:25 -0400
+Date: Thu, 19 May 2011 00:14:26 -0400 (EDT)
+Message-Id: <20110519.001426.2119532755281545481.davem@davemloft.net>
+To: tsunanet@gmail.com
+Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, hagen@jauu.net,
+        eric.dumazet@gmail.com, alexander.zimmermann@comsys.rwth-aachen.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tcp: Implement a two-level initial RTO as per draft
+ RFC 2988bis-02.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <BANLkTinEN_=jSCw4qR1PqtWaQ+07OMq7tg@mail.gmail.com>
+References: <1305771744-83951-1-git-send-email-tsunanet@gmail.com>
+	<20110518.223622.1525088601595365235.davem@davemloft.net>
+	<BANLkTinEN_=jSCw4qR1PqtWaQ+07OMq7tg@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 18 May 2011 21:14:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-11 at 15:34 -0800, Ira W. Snyder wrote:
-> Hello everyone,
-> 
-> This is the seventh posting of these drivers, taking into account comments
-> from earlier postings. I've made sure that the drivers both pass checkpatch
-> without any errors or warnings. I would appreciate as much review as you
-> can offer, so that these can get into the next merge cycle. They've been
-> sitting outside mainline for far too long.
+From: tsuna <tsunanet@gmail.com>
+Date: Wed, 18 May 2011 20:56:33 -0700
 
-This has been bitrotting for way too long indeed. I'm sticking this into
-powerpc -next today.
+> On Wed, May 18, 2011 at 7:36 PM, David Miller <davem@davemloft.net> wrote:
+>> From: Benoit Sigoure <tsunanet@gmail.com>
+>> Date: Wed, 18 May 2011 19:22:24 -0700
+>>
+>>> Prior to this patch, Linux would always use 3 seconds (compile-time
+>>> constant) as the initial RTO.  Draft RFC 2988bis-02 proposes to tune
+>>> this down to 1 second and, in case of a timeout during the TCP 3WHS,
+>>> revert the RTO back up to 3 seconds when data transmission begins.
+>>
+>> We just had a discussion where it was determined that changes to
+>> these settings are "network specific" and therefore that if it
+>> is appropriate at all (I'm still not convinced) it is only suitable
+>> as a routing metric.
+> 
+> Fair enough.  I'll take another stab at it and see if I can change
+> this to be on a per network basis.  Do I need any patch that's not yet
+> in Linus' tree?  I'm referring to this:
 
-Cheers,
-Ben.
+Keep in mind another thing I do not like about this knob.
 
-> RFCv6 -> RFCv7:
-> - reference count private data structure (to support unbind)
-> - use #defines instead of hex values for registers
-> - keep lines <=80 characters
-> 
-> RFCv5 -> RFCv6:
-> - change locking in several functions
-> - use list_move_tail() to simplify code
-> - remove unused helper functions
-> 
-> RFCv4 -> RFCv5:
-> - remove unecessary locking per review comments
-> - do not clobber return values from *_interruptible()
-> - explicitly track buffer DMA mapping
-> - use #defines instead of raw hex addresses
-> - change enable sysfs attribute to root-writeable only
-> 
-> RFCv3 -> RFCv4:
-> - updates for DATA-FPGA version 2
-> 
-> RFCv2 -> RFCv3:
-> - use miscdevice framework (removing the carma class)
-> - add bitfile readback capability to the programmer
-> 
-> RFCv1 -> RFCv2:
-> - change comments to kerneldoc format
-> - Kconfig improvements
-> - use the videobuf_dma_sg API in the programmer
-> - updates for Freescale DMAEngine DMA_SLAVE API changes
-> 
-> KNOWN ISSUES:
-> - untested with a setup that can generate interrupts (will get access soon)
-> - does not handle runtime "unbind"
-> 
-> Information about the CARMA board:
-> 
-> The CARMA board is essentially an MPC8349EA MDS reference design with a
-> 1GHz ADC and 4 high powered data processing FPGAs connected to the local
-> bus. It is all packed into a compact PCI form factor. It is used at the
-> Owens Valley Radio Observatory as the main component in the correlator
-> system.
-> 
-> For board information, see:
-> http://www.mmarray.org/~dwh/carma_board/index.html
-> 
-> For DATA-FPGA register layout, see:
-> http://www.mmarray.org/memos/carma_memo46.pdf
-> 
-> These drivers are the necessary pieces to get the data processing FPGAs
-> working and producing data. Despite the fact that the hardware is custom
-> and we are the only users, I'd still like to get the drivers upstream.
-> Several people have suggested that this is possible.
-> 
-> Some further patches will be forthcoming. I have a driver for the LED
-> subsystem and the PPS subsystem. The LED register layout is expected to
-> change soon, so I won't post the driver until that is finished. The PPS
-> driver will be posted seperately from this patch series; it is very
-> generic.
-> 
-> Thanks to everyone who has provided comments on earlier versions!
-> 
-> Ira W. Snyder (2):
->   misc: add CARMA DATA-FPGA Access Driver
->   misc: add CARMA DATA-FPGA Programmer support
-> 
->  drivers/misc/Kconfig                    |    1 +
->  drivers/misc/Makefile                   |    1 +
->  drivers/misc/carma/Kconfig              |   18 +
->  drivers/misc/carma/Makefile             |    2 +
->  drivers/misc/carma/carma-fpga-program.c | 1141 ++++++++++++++++++++++++
->  drivers/misc/carma/carma-fpga.c         | 1433 +++++++++++++++++++++++++++++++
->  6 files changed, 2596 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/misc/carma/Kconfig
->  create mode 100644 drivers/misc/carma/Makefile
->  create mode 100644 drivers/misc/carma/carma-fpga-program.c
->  create mode 100644 drivers/misc/carma/carma-fpga.c
-> 
+The IETF draft has a requirement that we fallback to 3 seconds if the
+initial RTO is 1 second.
 
+Nothing in your facilities ensure this, or provide a way for the
+kernel to make sure this is the case.
 
+And for other values of initial RTO, what fallback is appropriate?
+
+As a result of all of this, I do not really think this is something
+the user should control at all.
+
+I really would rather see the initial RTO be static and be set to 1
+with fallback RTO of 3.
