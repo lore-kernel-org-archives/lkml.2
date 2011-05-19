@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749Ab1ESH2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 03:28:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22540 "EHLO mx1.redhat.com"
+	id S1756672Ab1ESH1l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 03:27:41 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:41483 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756457Ab1ESH2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 03:28:34 -0400
-Date: Thu, 19 May 2011 10:27:34 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCH 09/18] virtio: use avail_event index
-Message-ID: <20110519072734.GB31253@redhat.com>
-References: <cover.1304541918.git.mst@redhat.com>
- <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com>
- <874o54h4rt.fsf@rustcorp.com.au>
- <20110515135541.GF24932@redhat.com>
- <87ei3zdsq2.fsf@rustcorp.com.au>
- <20110517061031.GC26989@redhat.com>
- <87tycsn9lt.fsf@rustcorp.com.au>
+	id S1754979Ab1ESH1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 03:27:40 -0400
+X-ASG-Debug-ID: 1305790059-03d6a50f36b0240001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DD4C667.7030507@fusionio.com>
+Date: Thu, 19 May 2011 09:27:35 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87tycsn9lt.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: New boot time message: detected capacity change
+References: <BANLkTin3T8msxSSbTLJOvC5WLNFGspPEcg@mail.gmail.com> <BANLkTimY+y3vXa0R7Evs6dYLVjJ==KVq1A@mail.gmail.com> <20110519052903.GA2904@mtj.dyndns.org> <20110519060100.GB2904@mtj.dyndns.org>
+X-ASG-Orig-Subj: Re: New boot time message: detected capacity change
+In-Reply-To: <20110519060100.GB2904@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1305790059
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64169
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 09:49:42AM +0930, Rusty Russell wrote:
-> On Tue, 17 May 2011 09:10:31 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > Well one can imagine a driver doing:
-> > 
-> > 	while (virtqueue_get_buf()) {
-> > 		virtqueue_add_buf()
-> > 	}
-> > 	virtqueue_kick()
-> > 
-> > which looks sensible (batch kicks) but might
-> > process any number of bufs between kicks.
+On 2011-05-19 08:01, Tejun Heo wrote:
+> Hello, again.
 > 
-> No, we currently only expose the buffers in the kick, so it can only
-> fill the ring doing that.
+> On Thu, May 19, 2011 at 07:29:03AM +0200, Tejun Heo wrote:
+>> The commit message is incomplete rather than misleading.  The problem
+>> has been there for a long time but hasn't affected cdrom so not many
+>> people have noticed it.  The changes to media revalidation exposed the
+>> bug for cdrom too, so it became a regression for 2.6.38.  Please refer
+>> to the following thread.
+>>
+>>   https://lkml.org/lkml/2011/3/31/436
+>>
+>> As the root cause was the same as the 2009 bug, I just referenced that
+>> one.  I should have included the link to the newer thread or explained
+>> how it affected recent conversion from ->media_changed to
+>> ->check_events.  My bad.
 > 
-> We could change that (and maybe that's worth looking at)...
+> I was a bit confused here, so there were two separate problems.  One
+> affected sr, which was fixed by bf2253a6f0 and the other affecting
+> partition scan on sd fixed by 02e352287a.  The two were mixed in my
+> head, and I explained the wrong one.
+> 
+> The cdrom problem was a plain kernel regression.  The latter (the one
+> being shouted at in this thread) is slightly more complex.  Due to the
+> way devices were polled for media change from userland, the problem
+> wasn't noticeable.  The kernel misbehaved but userland polling masked
+> it.  2.6.38 added in-kernel polling and the userland workaround no
+> longer applied and the problem became visible - similar story with the
+> cdrom problem but involves userland behavior change too.
+> 
+> Both were very simliar in the cause too.  cdrom was unnecessarily
+> skipping check_disk_change() while the block layer was unnecessarily
+> skipping partition check.
+> 
+> Anyways, I'll go to my office and look into the warning message, but
+> please revert 02e352287a if necessary.  We can do that with -stable
+> later.
 
-That's actually what one of the early patches in the series did.
-I guess I can try and reorder the patches, I do believe
-it makes sense to publish immediately as this way
-host can work in parallel with the guest.
-
-> > If we look at drivers closely enough, I think none
-> > of them do the equivalent of the above, but not 100% sure.
-> 
-> I'm pretty sure we don't have this kind of 'echo' driver yet.  Drivers
-> tend to take OS requests and queue them.  The only one which does
-> anything even partially sophisticated is the net driver...
-> 
-> Thanks,
-> Rusty.
-
-I guess I'll just need to do the legwork and check then.
+It's too late at this point really, since 2.6.39 is tagged and done. The
+capacity message should be purely harmless, even if it does look
+somewhat odd. The placement is fairly logical, so should not cause too
+many confused users.
 
 -- 
-MST
+Jens Axboe
+
