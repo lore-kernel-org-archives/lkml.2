@@ -1,122 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932844Ab1ESJXi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 05:23:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34575 "EHLO mx2.suse.de"
+	id S932870Ab1ESJYY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 05:24:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57911 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754230Ab1ESJXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 05:23:36 -0400
-Date: Thu, 19 May 2011 10:23:33 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: sparsemem: allow pfn_valid to be overridden when
- using SPARSEMEM
-Message-ID: <20110519092333.GU5279@suse.de>
-References: <1305734639-6561-1-git-send-email-will.deacon@arm.com>
- <20110518165910.GS5279@suse.de>
- <1305795317.29560.9.camel@e102144-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1305795317.29560.9.camel@e102144-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754230Ab1ESJYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 05:24:22 -0400
+Subject: Re: [PATCH v5 13/21] evm: add evm_inode_post_init call in gfs2
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>,
+        linux-security-module@vger.kernl.org, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Mimi Zohar <zohar@us.ibm.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@redhat.com>
+In-Reply-To: <1305766540.3304.44.camel@localhost.localdomain>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305559822.2855.14.camel@menhir>
+	 <1305561051.2669.10.camel@localhost.localdomain>
+	 <1305562469.2855.26.camel@menhir>
+	 <1305563758.2669.26.camel@localhost.localdomain>
+	 <1305568250.2669.47.camel@localhost.localdomain>
+	 <1305568671.2855.31.camel@menhir>  <4DD16B96.7020907@schaufler-ca.com>
+	 <1305571683.2669.90.camel@localhost.localdomain>
+	 <4DD17A15.2060102@schaufler-ca.com>
+	 <1305766540.3304.44.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 19 May 2011 10:25:29 +0100
+Message-ID: <1305797129.2867.2.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 09:55:17AM +0100, Will Deacon wrote:
-> Hi Mel,
+Hi,
+
+On Wed, 2011-05-18 at 20:55 -0400, Mimi Zohar wrote:
+> On Mon, 2011-05-16 at 12:25 -0700, Casey Schaufler wrote: 
+> > On 5/16/2011 11:48 AM, Mimi Zohar wrote:
+> > > On Mon, 2011-05-16 at 11:23 -0700, Casey Schaufler wrote:
 > 
-> Thanks for looking at this.
-> 
-> On Wed, 2011-05-18 at 17:59 +0100, Mel Gorman wrote:
-> > On Wed, May 18, 2011 at 05:03:59PM +0100, Will Deacon wrote:
-> > > In commit eb33575c ("[ARM] Double check memmap is actually valid with a
-> > > memmap has unexpected holes V2"), a new function, memmap_valid_within,
-> > > was introduced to mmzone.h so that holes in the memmap which pass
-> > > pfn_valid in SPARSEMEM configurations can be detected and avoided.
-> > >
-> > > The fix to this problem checks that the pfn <-> page linkages are
-> > > correct by calculating the page for the pfn and then checking that
-> > > page_to_pfn on that page returns the original pfn. Unfortunately, in
-> > > SPARSEMEM configurations, this results in reading from the page flags to
-> > > determine the correct section. Since the memmap here has been freed,
-> > > junk is read from memory and the check is no longer robust.
-> > >
-> > > In the best case, reading from /proc/pagetypeinfo will give you the
-> > > wrong answer. In the worst case, you get SEGVs, Kernel OOPses and hung
-> > > CPUs.
-> > >
-> > > This patch allows architectures to provide their own pfn_valid function
-> > > instead of using the default implementation used by sparsemem. The
-> > > architecture-specific version is aware of the memmap state and will
-> > > return false when passed a pfn for a freed page within a valid section.
-> > >
-> > > Cc: Russell King <linux@arm.linux.org.uk>
-> > > Cc: Mel Gorman <mgorman@suse.de>
-> > > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> > > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > >> There is a very real possibility that multiple concurrent LSMs will
+> > >> be supported before too long. Smack already uses multiple attributes
+> > >> (SMACK64, SMACK64EXEC) on a file. Getting all the attributes in a
+> > >> single call could result in an interface that requires parsing a
+> > >> string argument, and we all know how popular those are. Introducing
+> > >> an interface that we know isn't going to accommodate this upcoming
+> > >> direction does not seem prudent.
+> > > I would think that Smack would benefit from Steven's suggestion of
+> > > returning an array of xattrs. Without his suggestion, I'm not sure how
+> > > you are, or planning on, initializing multiple xattrs from a single LSM,
+> > > unless of course you're not using security_inode_init_security().
 > > 
-> > I don't have an ARM machine to test on and I'm not particularly
-> > sensitive to the requirements of ARM so I'm not the best reviewer. If
-> > this passes tests, I see little problem with it other than the
-> > architecture-specific pfn_valid is slower than the sparsemem equivalent
-> > and the cache footprint is probably higher as memblock_is_memory
-> > is searching a list of blocks. 
+> > The good news is that Smack has one required attribute. The others
+> > are for special purposes and will usually be absent. It is easy to
+> > imagine an LSM that always uses multiple attributes on a given file.
+> > 
+> > Yes, the array of xattr structures makes sense for any one LSM,
+> > but there still needs to be the potential for multiple calls for
+> > the multiple LSM case. I can't see that going away without a radical
+> > LSM restructuring.
+> > 
+> > > Multiple LSMs calling security_inode_init_security() will be an issue
+> > > for EVM, as EVM assumes there is a single LSM xattr on which to base the
+> > > initial hmac.
+> > 
+> > That is far from the biggest issue with multiple LSMs, but is definitely
+> > something to worry about.
 > 
-> Yes, it is slower than just checking to see if the sparsemem section is
-> valid but that is the price you pay for partially populated sections. At
-> the end of the day, we're just falling back to the pfn_valid definition
-> that is used when !CONFIG_SPARSEMEM.
+> Ok. After thinking about this a bit more, moving
+> evm_inode_init_security() into security_inode_init_security() only works
+> for the single LSM and EVM case, but not for the multiple LSMs and EVM
+> case, as the 'stacker' would call each LSM's
+> security_inode_iint_security().  Having the 'stacker' return an array of
+> xattrs would make sense and, at the same time, resolve the EVM issue. In
+> evm_inode_post_init_security(), EVM could then walk the list of xattrs.
 > 
-
-Ok.
-
-> > If this problem is exclusive to
-> > reading /proc/pagetypeinfo, you might want to consider only using
-> > memblock_is_memory in that case. Otherwise, functionally it looks like
-> > it should work.
+> Mimi
 > 
-> I initially thought it was exclusive to that operation, but it turns out
-> the problem is more far-reaching as pfn_valid is used by things like the
-> ioremap code to ensure that we don't remap normal memory.
 > 
-
-That would justify it. Might want to stick that into the changelog
-because we'll forget it and someone will "fix" it :)
-
-> > > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> > > index e56f835..72225dd 100644
-> > > --- a/include/linux/mmzone.h
-> > > +++ b/include/linux/mmzone.h
-> > > @@ -1053,12 +1053,14 @@ static inline struct mem_section *__pfn_to_section(unsigned long pfn)
-> > >       return __nr_to_section(pfn_to_section_nr(pfn));
-> > >  }
-> > > 
-> > > +#ifndef CONFIG_ARCH_PROVIDES_PFN_VALID
-> > >  static inline int pfn_valid(unsigned long pfn)
-> > >  {
-> > >       if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
-> > >               return 0;
-> > >       return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
-> > >  }
-> > > +#endif
-> > > 
-> > >  static inline int pfn_present(unsigned long pfn)
-> > >  {
 > 
-> Can I add your Ack for the changes to mmzone.h please?
-> 
+That sounds like a reasonable solution to me,
 
-Minor nit on the name but it'd be nice if it was simile to
-CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID as they are both related to the
-memory model. Whether you do it or not in a v2, I'll ack the mmzone.h
-change;
+Steve.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
 
--- 
-Mel Gorman
-SUSE Labs
