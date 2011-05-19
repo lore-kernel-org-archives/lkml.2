@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934465Ab1ESSdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:33:50 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33575 "EHLO
+	id S934462Ab1ESSdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:33:35 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:39586 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934431Ab1ESSc5 (ORCPT
+	by vger.kernel.org with ESMTP id S934435Ab1ESSc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:32:57 -0400
-X-Sasl-enc: lx+KMwp5k7dgARvqhhyEp41tFxN2UGIkZt/ghZD3js7f 1305829976
+	Thu, 19 May 2011 14:32:59 -0400
+X-Sasl-enc: DhUbPp5PUtJNxX0DKWcWUobVyCWy72+6zzRYd2NyjTfs 1305829978
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:31:27 2011
-Message-Id: <20110519183127.811831002@clark.kroah.org>
+Message-Id: <20110519183127.912693053@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:30:54 -0700
+Date: Thu, 19 May 2011 11:30:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julia Lawall <julia@diku.dk>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [22/24] x86, mce, AMD: Fix leaving freed data in a list
+        =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Michael Benz <Michael.Benz@lsi.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [23/24] [SCSI] megaraid_sas: Sanity check user supplied length before passing it to dma_alloc_coherent()
 In-Reply-To: <20110519182446.GA23751@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,56 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1265
-Lines: 49
+Content-Length: 4415
+Lines: 82
 
-From: Julia Lawall <julia@diku.dk>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit d9a5ac9ef306eb5cc874f285185a15c303c50009 upstream.
+commit 98cb7e4413d189cd2b54daf993a4667d9788c0bb upstream.
 
-b may be added to a list, but is not removed before being freed
-in the case of an error.  This is done in the corresponding
-deallocation function, so the code here has been changed to
-follow that.
+The ioc->sgl[i].iov_len value is supplied by the ioctl caller, and can be
+zero in some cases.  Assume that's valid and continue without error.
 
-The sematic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Fixes (multiple individual reports of the same problem for quite a while):
 
-// <smpl>
-@@
-expression E,E1,E2;
-identifier l;
-@@
+http://marc.info/?l=linux-ide&m=128941801715301
+http://bugs.debian.org/604627
+http://www.mail-archive.com/linux-poweredge@dell.com/msg02575.html
 
-*list_add(&E->l,E1);
-... when != E1
-    when != list_del(&E->l)
-    when != list_del_init(&E->l)
-    when != E = E2
-*kfree(E);// </smpl>
+megasas: Failed to alloc kernel SGL buffer for IOCTL
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
-Link: http://lkml.kernel.org/r/1305294731-12127-1-git-send-email-julia@diku.dk
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+and
+
+[   69.162538] ------------[ cut here ]------------
+[   69.162806] kernel BUG at /build/buildd/linux-2.6.32/lib/swiotlb.c:368!
+[   69.163134] invalid opcode: 0000 [#1] SMP
+[   69.163570] last sysfs file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
+[   69.163975] CPU 0
+[   69.164227] Modules linked in: fbcon tileblit font bitblit softcursor vga16fb vgastate ioatdma radeon ttm drm_kms_helper shpchp drm i2c_algo_bit lp parport floppy pata_jmicron megaraid_sas igb dca
+[   69.167419] Pid: 1206, comm: smartctl Tainted: G        W  2.6.32-25-server #45-Ubuntu X8DTN
+[   69.167843] RIP: 0010:[<ffffffff812c4dc5>]  [<ffffffff812c4dc5>] map_single+0x255/0x260
+[   69.168370] RSP: 0018:ffff88081c0ebc58  EFLAGS: 00010246
+[   69.168655] RAX: 000000000003bffc RBX: 00000000ffffffff RCX: 0000000000000002
+[   69.169000] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff88001dffe000
+[   69.169346] RBP: ffff88081c0ebcb8 R08: 0000000000000000 R09: ffff880000030840
+[   69.169691] R10: 0000000000100000 R11: 0000000000000000 R12: 0000000000000000
+[   69.170036] R13: 00000000ffffffff R14: 0000000000000001 R15: 0000000000200000
+[   69.170382] FS:  00007fb8de189720(0000) GS:ffff88001de00000(0000) knlGS:0000000000000000
+[   69.170794] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   69.171094] CR2: 00007fb8dd59237c CR3: 000000081a790000 CR4: 00000000000006f0
+[   69.171439] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   69.171784] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   69.172130] Process smartctl (pid: 1206, threadinfo ffff88081c0ea000, task ffff88081a760000)
+[   69.194513] Stack:
+[   69.205788]  0000000000000034 00000002817e3390 0000000000000000 ffff88081c0ebe00
+[   69.217739] <0> 0000000000000000 000000000003bffc 0000000000000000 0000000000000000
+[   69.241250] <0> 0000000000000000 00000000ffffffff ffff88081c5b4080 ffff88081c0ebe00
+[   69.277310] Call Trace:
+[   69.289278]  [<ffffffff812c52ac>] swiotlb_alloc_coherent+0xec/0x130
+[   69.301118]  [<ffffffff81038b31>] x86_swiotlb_alloc_coherent+0x61/0x70
+[   69.313045]  [<ffffffffa002d0ce>] megasas_mgmt_fw_ioctl+0x1ae/0x690 [megaraid_sas]
+[   69.336399]  [<ffffffffa002d748>] megasas_mgmt_ioctl_fw+0x198/0x240 [megaraid_sas]
+[   69.359346]  [<ffffffffa002f695>] megasas_mgmt_ioctl+0x35/0x50 [megaraid_sas]
+[   69.370902]  [<ffffffff81153b12>] vfs_ioctl+0x22/0xa0
+[   69.382322]  [<ffffffff8115da2a>] ? alloc_fd+0x10a/0x150
+[   69.393622]  [<ffffffff81153cb1>] do_vfs_ioctl+0x81/0x410
+[   69.404696]  [<ffffffff8155cc13>] ? do_page_fault+0x153/0x3b0
+[   69.415761]  [<ffffffff811540c1>] sys_ioctl+0x81/0xa0
+[   69.426640]  [<ffffffff810121b2>] system_call_fastpath+0x16/0x1b
+[   69.437491] Code: fe ff ff 48 8b 3d 74 38 76 00 41 bf 00 00 20 00 e8 51 f5 d7 ff 83 e0 ff 48 05 ff 07 00 00 48 c1 e8 0b 48 89 45 c8 e9 13 fe ff ff <0f> 0b eb fe 0f 1f 80 00 00 00 00 55 48 89 e5 48 83 ec 20 4c 89
+[   69.478216] RIP  [<ffffffff812c4dc5>] map_single+0x255/0x260
+[   69.489668]  RSP <ffff88081c0ebc58>
+[   69.500975] ---[ end trace 6a2181b634e2abc7 ]---
+
+Reported-by: Bokhan Artem <aptem@ngs.ru>
+Reported by: Marc-Christian Petersen <m.c.p@gmx.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Cc: Michael Benz <Michael.Benz@lsi.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/mcheck/mce_amd.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/megaraid/megaraid_sas.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -468,6 +468,7 @@ recurse:
- out_free:
- 	if (b) {
- 		kobject_put(&b->kobj);
-+		list_del(&b->miscj);
- 		kfree(b);
- 	}
- 	return err;
+--- a/drivers/scsi/megaraid/megaraid_sas.c
++++ b/drivers/scsi/megaraid/megaraid_sas.c
+@@ -3566,6 +3566,9 @@ megasas_mgmt_fw_ioctl(struct megasas_ins
+ 	 * For each user buffer, create a mirror buffer and copy in
+ 	 */
+ 	for (i = 0; i < ioc->sge_count; i++) {
++		if (!ioc->sgl[i].iov_len)
++			continue;
++
+ 		kbuff_arr[i] = dma_alloc_coherent(&instance->pdev->dev,
+ 						    ioc->sgl[i].iov_len,
+ 						    &buf_handle, GFP_KERNEL);
 
 
