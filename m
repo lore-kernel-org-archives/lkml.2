@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934401Ab1ESSgf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:36:35 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:40453 "EHLO
+	id S934421Ab1ESSgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:36:14 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:49065 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934371Ab1ESSck (ORCPT
+	by vger.kernel.org with ESMTP id S934365Ab1ESScl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:32:40 -0400
-X-Sasl-enc: dcD1kozPO508X7FSWKW3Gc4wPpYKjYB4oUBulYsSG/+f 1305829959
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:31:26 2011
-Message-Id: <20110519183126.805288901@clark.kroah.org>
+	Thu, 19 May 2011 14:32:41 -0400
+X-Sasl-enc: cNm/XI2Q0vf0B4VUwh6hC1hGGy91IDbklgKKT3obEiyp 1305829960
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:31:27 2011
+Message-Id: <20110519183126.915194758@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:30:44 -0700
+Date: Thu, 19 May 2011 11:30:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Fox <pgf@laptop.org>, Daniel Drake <dsd@laptop.org>,
-        Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [12/24] libertas: fix cmdpendingq locking
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [13/24] zorro8390: Fix regression caused during net_device_ops conversion
 In-Reply-To: <20110519182446.GA23751@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,63 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 2150
-Lines: 56
+Content-Length: 2594
+Lines: 71
 
-From: Paul Fox <pgf@laptop.org>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 2ae1b8b35faba31a59b153cbad07f9c15de99740 upstream.
+commit cf7e032fc87d59c475df26c4d40bf45d401b2adb upstream.
 
-We occasionally see list corruption using libertas.
+Changeset b6114794a1c394534659f4a17420e48cf23aa922 ("zorro8390: convert to
+net_device_ops") broke zorro8390 by adding 8390.o to the link. That
+meant that lib8390.c was included twice, once in zorro8390.c and once in
+8390.c, subject to different macros. This patch reverts that by
+avoiding the wrappers in 8390.c.
 
-While we haven't been able to diagnose this precisely, we have spotted
-a possible cause: cmdpendingq is generally modified with driver_lock
-held. However, there are a couple of points where this is not the case.
+Fix based on commits 217cbfa856dc1cbc2890781626c4032d9e3ec59f ("mac8390:
+fix regression caused during net_device_ops conversion") and
+4e0168fa4842e27795a75b205a510f25b62181d9 ("mac8390: fix build with
+NET_POLL_CONTROLLER").
 
-Fix up those operations to execute under the lock, it seems like
-the correct thing to do and will hopefully improve the situation.
-
-Signed-off-by: Paul Fox <pgf@laptop.org>
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Acked-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Christian T. Steigies <cts@debian.org>
+Suggested-by: Finn Thain <fthain@telegraphics.com.au>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Tested-by: Christian T. Steigies <cts@debian.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/libertas/cmd.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/Makefile    |    2 +-
+ drivers/net/zorro8390.c |   12 ++++++------
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/libertas/cmd.c
-+++ b/drivers/net/wireless/libertas/cmd.c
-@@ -1278,8 +1278,8 @@ int lbs_execute_next_command(struct lbs_
- 				    cpu_to_le16(CMD_SUBCMD_EXIT_PS)) {
- 					lbs_deb_host(
- 					       "EXEC_NEXT_CMD: ignore ENTER_PS cmd\n");
--					list_del(&cmdnode->list);
- 					spin_lock_irqsave(&priv->driver_lock, flags);
-+					list_del(&cmdnode->list);
- 					lbs_complete_command(priv, cmdnode, 0);
- 					spin_unlock_irqrestore(&priv->driver_lock, flags);
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -208,7 +208,7 @@ obj-$(CONFIG_SC92031) += sc92031.o
+ obj-$(CONFIG_LP486E) += lp486e.o
  
-@@ -1291,8 +1291,8 @@ int lbs_execute_next_command(struct lbs_
- 				    (priv->psstate == PS_STATE_PRE_SLEEP)) {
- 					lbs_deb_host(
- 					       "EXEC_NEXT_CMD: ignore EXIT_PS cmd in sleep\n");
--					list_del(&cmdnode->list);
- 					spin_lock_irqsave(&priv->driver_lock, flags);
-+					list_del(&cmdnode->list);
- 					lbs_complete_command(priv, cmdnode, 0);
- 					spin_unlock_irqrestore(&priv->driver_lock, flags);
- 					priv->needtowakeup = 1;
-@@ -1305,7 +1305,9 @@ int lbs_execute_next_command(struct lbs_
- 				       "EXEC_NEXT_CMD: sending EXIT_PS\n");
- 			}
- 		}
-+		spin_lock_irqsave(&priv->driver_lock, flags);
- 		list_del(&cmdnode->list);
-+		spin_unlock_irqrestore(&priv->driver_lock, flags);
- 		lbs_deb_host("EXEC_NEXT_CMD: sending command 0x%04x\n",
- 			    le16_to_cpu(cmd->command));
- 		lbs_submit_command(priv, cmdnode);
+ obj-$(CONFIG_ETH16I) += eth16i.o
+-obj-$(CONFIG_ZORRO8390) += zorro8390.o 8390.o
++obj-$(CONFIG_ZORRO8390) += zorro8390.o
+ obj-$(CONFIG_HPLANCE) += hplance.o 7990.o
+ obj-$(CONFIG_MVME147_NET) += mvme147.o 7990.o
+ obj-$(CONFIG_EQUALIZER) += eql.o
+--- a/drivers/net/zorro8390.c
++++ b/drivers/net/zorro8390.c
+@@ -125,7 +125,7 @@ static int __devinit zorro8390_init_one(
+ 
+     board = z->resource.start;
+     ioaddr = board+cards[i].offset;
+-    dev = alloc_ei_netdev();
++    dev = ____alloc_ei_netdev(0);
+     if (!dev)
+ 	return -ENOMEM;
+     if (!request_mem_region(ioaddr, NE_IO_EXTENT*2, DRV_NAME)) {
+@@ -145,15 +145,15 @@ static int __devinit zorro8390_init_one(
+ static const struct net_device_ops zorro8390_netdev_ops = {
+ 	.ndo_open		= zorro8390_open,
+ 	.ndo_stop		= zorro8390_close,
+-	.ndo_start_xmit		= ei_start_xmit,
+-	.ndo_tx_timeout		= ei_tx_timeout,
+-	.ndo_get_stats		= ei_get_stats,
+-	.ndo_set_multicast_list = ei_set_multicast_list,
++	.ndo_start_xmit		= __ei_start_xmit,
++	.ndo_tx_timeout		= __ei_tx_timeout,
++	.ndo_get_stats		= __ei_get_stats,
++	.ndo_set_multicast_list = __ei_set_multicast_list,
+ 	.ndo_validate_addr	= eth_validate_addr,
+ 	.ndo_set_mac_address 	= eth_mac_addr,
+ 	.ndo_change_mtu		= eth_change_mtu,
+ #ifdef CONFIG_NET_POLL_CONTROLLER
+-	.ndo_poll_controller	= ei_poll,
++	.ndo_poll_controller	= __ei_poll,
+ #endif
+ };
+ 
 
 
