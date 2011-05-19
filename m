@@ -1,35 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933177Ab1ESVOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:14:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58407 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752714Ab1ESVOq (ORCPT
+	id S933208Ab1ESVP2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:15:28 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43868 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714Ab1ESVP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:14:46 -0400
-Date: Thu, 19 May 2011 14:14:48 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dmitry Artamonow <mad_soft@inbox.ru>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Eric Miao <eric.y.miao@gmail.com>,
-        Harald Welte <laforge@gnumonks.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 0/3] ASoC: add support for audio on iPaq hx4700
-Message-ID: <20110519211448.GF18849@opensource.wolfsonmicro.com>
-References: <1305732311-17639-1-git-send-email-mad_soft@inbox.ru>
+	Thu, 19 May 2011 17:15:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=G6koI0gqFnOQHHHw7PWeTlJl8W+Q8IE/HXs8/7Nwuzg0I2G3s1xRX+IqOdzIO4EzCY
+         ix1aCyvJ1DTTvl0bK61y5wMcsH0TsdHHOKpu/710IGryFk7iOSyjoW62C7Dd+rkcnmbA
+         b5QEM5+WdzlXqmKRxUQP5Sy4C4TfsyusrjX+s=
+Date: Thu, 19 May 2011 23:15:00 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+Message-ID: <20110519211458.GG1956@nowhere>
+References: <20110516074822.GE2573@linux.vnet.ibm.com>
+ <20110516115148.GA2421@elte.hu>
+ <20110516122329.GA29356@elte.hu>
+ <20110516212449.GJ2573@linux.vnet.ibm.com>
+ <20110517024000.GA5026@nowhere>
+ <4DD435C2.6040305@kernel.org>
+ <20110518231314.GA1723@nowhere>
+ <4DD49DAF.5080605@kernel.org>
+ <20110519144740.GC1956@nowhere>
+ <4DD574BE.7050709@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305732311-17639-1-git-send-email-mad_soft@inbox.ru>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DD574BE.7050709@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 07:25:08PM +0400, Dmitry Artamonow wrote:
-> Ok, here's another version of patches adding audio support for good ole
-> iPAQ hx4700. It took a bit faster to make v3 than I expected, so here is it.
+On Thu, May 19, 2011 at 12:51:26PM -0700, Yinghai Lu wrote:
+> [   85.194797]   <idle>-0       0d... 85152953us : rcu_irq_enter: 1 49
+> [   85.194808]   <idle>-0       0dN.. 85153081us : <stack trace>
+> [   85.194809]  => rcu_irq_exit
+> [   85.194810]  => irq_exit
+> [   85.194811]  => smp_apic_timer_interrupt
+> [   85.194812]  => apic_timer_interrupt
+> [   85.194813]  => cpu_idle
+> [   85.194813]  => rest_init
+> [   85.194814]  => start_kernel
+> [   85.194815]  => x86_64_start_reservations
 
-Applied patches 1 and 2, I can apply patch 3 if you're OK Eric?
+So it's the dynticks_nesting going crazy. As if we had rcu_irq_enter()
+without rcu_irq_exit().
+
+I see you have CONFIG_DEBUG_LOCKING_API_SELFTESTS=y
+and the locking api selftest is doing a strange thing: if we look
+at HARDIRQ_ENTER(), it calls irq_enter(), but HARDIRQ_EXIT() only
+calls __irq_exit(). Which means it lacks the rcu_irq_exit().
+
+So, if I understood correctly the thing there, some selftests simulating
+the hardirq context are unbalancing the rcu state.
+
+Does that help if you unset CONFIG_DEBUG_LOCKING_API_SELFTESTS ?
