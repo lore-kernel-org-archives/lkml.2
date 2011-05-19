@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab1ESH0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 03:26:55 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:53447
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755520Ab1ESH0x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 03:26:53 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LLFM0O-01-CLZ-02
-X-M-MSG: 
-Date: Thu, 19 May 2011 09:26:46 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Matthew Garrett <mjg@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <borislav.petkov@amd.com>,
-        <davej@redhat.com>, <mark.langsdorf@amd.com>,
-        <cpufreq@vger.kernel.org>
-Subject: Re: [PATCH 1/5] acpi-cpufreq: Add support for modern AMD CPUs
-Message-ID: <20110519072646.GB19481@alberich.amd.com>
-References: <1305651819-25660-1-git-send-email-mjg@redhat.com>
+	id S1756749Ab1ESH2g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 03:28:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22540 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756457Ab1ESH2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 03:28:34 -0400
+Date: Thu, 19 May 2011 10:27:34 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCH 09/18] virtio: use avail_event index
+Message-ID: <20110519072734.GB31253@redhat.com>
+References: <cover.1304541918.git.mst@redhat.com>
+ <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com>
+ <874o54h4rt.fsf@rustcorp.com.au>
+ <20110515135541.GF24932@redhat.com>
+ <87ei3zdsq2.fsf@rustcorp.com.au>
+ <20110517061031.GC26989@redhat.com>
+ <87tycsn9lt.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305651819-25660-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <87tycsn9lt.fsf@rustcorp.com.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 01:03:35PM -0400, Matthew Garrett wrote:
-> The programming model for P-states on modern AMD CPUs is very similar to
-> that of Intel and VIA. It makes sense to consolidate this support into one
-> driver rather than duplicating functionality between two of them. This
-> patch adds support for AMDs with hardware P-state control to acpi-cpufreq.
-
-I think it's a good idea to move the stuff into the more general
-driver.  (And this way powernow-k8 becomes what it is supposed to be
--- relevant for K8 CPUs only.)  From a first glance most stuff looks
-fine. (but detailed review and testing still outstanding.)
-
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> ---
->  arch/x86/include/asm/cpufeature.h          |    1 +
->  arch/x86/include/asm/msr-index.h           |    2 +
->  arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |   43 ++++++++++++++++++++++++----
->  arch/x86/kernel/cpu/scattered.c            |    1 +
->  4 files changed, 41 insertions(+), 6 deletions(-)
+On Wed, May 18, 2011 at 09:49:42AM +0930, Rusty Russell wrote:
+> On Tue, 17 May 2011 09:10:31 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > Well one can imagine a driver doing:
+> > 
+> > 	while (virtqueue_get_buf()) {
+> > 		virtqueue_add_buf()
+> > 	}
+> > 	virtqueue_kick()
+> > 
+> > which looks sensible (batch kicks) but might
+> > process any number of bufs between kicks.
 > 
-> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> index 91f3e087..fee7089 100644
-> --- a/arch/x86/include/asm/cpufeature.h
-> +++ b/arch/x86/include/asm/cpufeature.h
-> @@ -174,6 +174,7 @@
->  #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
->  #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
->  #define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
-> +#define X86_FEATURE_POWERNOW	(7*32+ 8) /* AMD frequency scaling */
+> No, we currently only expose the buffers in the kick, so it can only
+> fill the ring doing that.
+> 
+> We could change that (and maybe that's worth looking at)...
 
-I think it shouldn't be named like that. I'd rather call it
-HW_PSTATE. The more general term POWERNOW is also associated with the
-old FID/VID control method of changing frequencies on AMD CPUs.  Also
-AMD documentation refers to this feature as HwPstate.
+That's actually what one of the early patches in the series did.
+I guess I can try and reorder the patches, I do believe
+it makes sense to publish immediately as this way
+host can work in parallel with the guest.
 
+> > If we look at drivers closely enough, I think none
+> > of them do the equivalent of the above, but not 100% sure.
+> 
+> I'm pretty sure we don't have this kind of 'echo' driver yet.  Drivers
+> tend to take OS requests and queue them.  The only one which does
+> anything even partially sophisticated is the net driver...
+> 
+> Thanks,
+> Rusty.
 
-Regards,
+I guess I'll just need to do the legwork and check then.
 
-Andreas
-
-
+-- 
+MST
