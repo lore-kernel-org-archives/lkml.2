@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934334Ab1ESTWQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 15:22:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47966 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933955Ab1ESTWO (ORCPT
+	id S934433Ab1ESTbE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:31:04 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40807 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934236Ab1ESTbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 15:22:14 -0400
-Message-ID: <4DD56DDE.6060003@infradead.org>
-Date: Thu, 19 May 2011 16:22:06 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: linux-media@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        gregkh@suse.de, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Igor M. Liplianin" <liplianin@netup.ru>
-Subject: Re: Fw: [PATCH -next RESEND/still needed] staging: altera-jtag needs
- delay.h
-References: <20110328082305.c6fa41d9.randy.dunlap@oracle.com>
-In-Reply-To: <20110328082305.c6fa41d9.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 May 2011 15:31:01 -0400
+Date: Thu, 19 May 2011 15:27:03 -0400 (EDT)
+Message-Id: <20110519.152703.1327182804872376183.davem@davemloft.net>
+To: tsunanet@gmail.com
+Cc: alexander.zimmermann@comsys.rwth-aachen.de, hagen@jauu.net,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tcp: Implement a two-level initial RTO as per draft
+ RFC 2988bis-02.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <BANLkTikZasOVfr2zTfXVjPqQsnzy9Hk5uA@mail.gmail.com>
+References: <BANLkTimSZEbnNVzi3UvBFndHp25S0ow7YQ@mail.gmail.com>
+	<1456193D-84D1-46E2-B930-8FD0A5B8C409@comsys.rwth-aachen.de>
+	<BANLkTikZasOVfr2zTfXVjPqQsnzy9Hk5uA@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 19 May 2011 12:27:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 28-03-2011 12:23, Randy Dunlap escreveu:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> altera-jtag.c needs to include <linux/delay.h> to fix a build error:
-> 
-> drivers/staging/altera-stapl/altera-jtag.c:398: error: implicit declaration of function 'udelay'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: tsuna <tsunanet@gmail.com>
+Date: Thu, 19 May 2011 10:11:50 -0700
 
-> Cc: Igor M. Liplianin <liplianin@netup.ru>
-> ---
->  drivers/staging/altera-stapl/altera-jtag.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> Somehow I was supposed to know to send this to Mauro instead of to Greg,
-> but I don't see anything in drivers/staging/altera-stapl/ that says that.
+> Looking through the kernel, I see that SCTP already has knobs for
+> this: sctp_rto_initial, sctp_rto_min, sctp_rto_max.  You can even
+> control the constants used to update rttvar and srtt: sctp_rto_alpha,
+> sctp_rto_beta
 
-Ah, yes, we need to add a readme file there stating about that.
+SCTP is 1) not even a sliver of deployment compared to TCP and 2)
+doesn't get nearly the same scrutiny on patch review that TCP
+changes do.
 
-Greg, you may add it on your tree, or if you prefer, I can just add here for
-my next upstream pull.
+I basically let the SCTP folks play in their own sandbox, because
+frankly SCTP doesn't matter.
 
-Thanks,
-Mauro.
+The only time I care about an SCTP change is when it has an impact on
+the rest of the networking code.
 
-> 
-> 
-> --- linux-next-20110304.orig/drivers/staging/altera-stapl/altera-jtag.c
-> +++ linux-next-20110304/drivers/staging/altera-stapl/altera-jtag.c
-> @@ -23,6 +23,7 @@
->   * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
->   */
->  
-> +#include <linux/delay.h>
->  #include <linux/firmware.h>
->  #include <linux/slab.h>
->  #include <staging/altera.h>
-> --
-
+So using SCTP as an example of "see we do this already over here" is a
+non-starter.  Don't do it.
