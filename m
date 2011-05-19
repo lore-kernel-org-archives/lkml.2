@@ -1,444 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934531Ab1ESUJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 16:09:36 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41231 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933926Ab1ESUJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 16:09:34 -0400
-Date: Thu, 19 May 2011 22:09:24 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] core/locking changes for v2.6.40
-Message-ID: <20110519200924.GA6105@elte.hu>
+	id S934601Ab1ESUK4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 16:10:56 -0400
+Received: from mail-vx0-f202.google.com ([209.85.220.202]:39195 "EHLO
+	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933926Ab1ESUKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 16:10:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:reply-to:message-id:date:subject:from:to:content-type;
+        b=t4710sYkUej/YRiLJAdPAu+hZtxii3CUX2ej58u8wwdMGXA8kQI6rhdmD4yf2MlVV5
+         ltSzx+jzKs+riJODJwbQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Reply-To: Harry Tan <bfusales4@126.com>
+Message-ID: <00151750e892b1ee1404a3a687ec@google.com>
+Date: Thu, 19 May 2011 20:10:54 +0000
+Subject: New cellphone with the best price
+From: Picasa Web Albums <picasawebalbums-noreply@google.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=00151750e892404cec04a3a69ab1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+--00151750e892404cec04a3a69ab1
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed; delsp=yes
 
-Please pull the latest core-locking-for-linus git tree from:
+Dear friend,
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-locking-for-linus
+Good day!
+Our company is mainly in the OEM and ODM business with all kinds of mobile  
+phone.
 
- Thanks,
+New items with great price mobile phone here come out, the lowest price is  
+10.95 USD.
 
-	Ingo
+If you need the detail requirement, please kindly contact us.
 
------------------->
-Jeff Mahoney (1):
-      watchdog, hung_task_timeout: Add Kconfig configurable default
+Best wishes
+Juce
 
-Milton Miller (1):
-      seqlock: Don't smp_rmb in seqlock reader spin loop
+Mobile: 86-13424432252
+Tel: 86-0755-85282599
+Fax: 86-0755-81752355
+E-mail: elink@vip.188.com
+Web size: www.oemmobile.com
 
-Steven Rostedt (7):
-      lockdep: Print a nicer description for irq lock inversions
-      lockdep: Print a nicer description for normal deadlocks
-      lockdep: Print a nicer description for simple deadlocks
-      lockdep: Print a nicer description for irq inversion bugs
-      lockdep: Replace "Bad BFS generated tree" message with something less cryptic
-      lockdep: Print a nicer description for simple irq lock inversions
-      lockdep: Remove cmpxchg to update nr_chain_hlocks
+--00151750e892404cec04a3a69ab1
+Content-Type: image/jpeg; name="mobile phone.jpg"
+Content-Disposition: attachment; filename="mobile phone.jpg"
+Content-Transfer-Encoding: base64
 
-
- include/linux/seqlock.h |    4 +-
- kernel/hung_task.c      |    2 +-
- kernel/lockdep.c        |  206 ++++++++++++++++++++++++++++++++++++++++++++---
- lib/Kconfig.debug       |   15 ++++
- 4 files changed, 213 insertions(+), 14 deletions(-)
-
-diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-index e98cd2e..06d6964 100644
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -88,12 +88,12 @@ static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
- 	unsigned ret;
- 
- repeat:
--	ret = sl->sequence;
--	smp_rmb();
-+	ret = ACCESS_ONCE(sl->sequence);
- 	if (unlikely(ret & 1)) {
- 		cpu_relax();
- 		goto repeat;
- 	}
-+	smp_rmb();
- 
- 	return ret;
- }
-diff --git a/kernel/hung_task.c b/kernel/hung_task.c
-index 53ead17..ea64012 100644
---- a/kernel/hung_task.c
-+++ b/kernel/hung_task.c
-@@ -33,7 +33,7 @@ unsigned long __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
- /*
-  * Zero means infinite timeout - no checking done:
-  */
--unsigned long __read_mostly sysctl_hung_task_timeout_secs = 120;
-+unsigned long __read_mostly sysctl_hung_task_timeout_secs = CONFIG_DEFAULT_HUNG_TASK_TIMEOUT;
- 
- unsigned long __read_mostly sysctl_hung_task_warnings = 10;
- 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 53a6895..63437d0 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -490,6 +490,18 @@ void get_usage_chars(struct lock_class *class, char usage[LOCK_USAGE_CHARS])
- 	usage[i] = '\0';
- }
- 
-+static int __print_lock_name(struct lock_class *class)
-+{
-+	char str[KSYM_NAME_LEN];
-+	const char *name;
-+
-+	name = class->name;
-+	if (!name)
-+		name = __get_key_name(class->key, str);
-+
-+	return printk("%s", name);
-+}
-+
- static void print_lock_name(struct lock_class *class)
- {
- 	char str[KSYM_NAME_LEN], usage[LOCK_USAGE_CHARS];
-@@ -1053,6 +1065,56 @@ print_circular_bug_entry(struct lock_list *target, int depth)
- 	return 0;
- }
- 
-+static void
-+print_circular_lock_scenario(struct held_lock *src,
-+			     struct held_lock *tgt,
-+			     struct lock_list *prt)
-+{
-+	struct lock_class *source = hlock_class(src);
-+	struct lock_class *target = hlock_class(tgt);
-+	struct lock_class *parent = prt->class;
-+
-+	/*
-+	 * A direct locking problem where unsafe_class lock is taken
-+	 * directly by safe_class lock, then all we need to show
-+	 * is the deadlock scenario, as it is obvious that the
-+	 * unsafe lock is taken under the safe lock.
-+	 *
-+	 * But if there is a chain instead, where the safe lock takes
-+	 * an intermediate lock (middle_class) where this lock is
-+	 * not the same as the safe lock, then the lock chain is
-+	 * used to describe the problem. Otherwise we would need
-+	 * to show a different CPU case for each link in the chain
-+	 * from the safe_class lock to the unsafe_class lock.
-+	 */
-+	if (parent != source) {
-+		printk("Chain exists of:\n  ");
-+		__print_lock_name(source);
-+		printk(" --> ");
-+		__print_lock_name(parent);
-+		printk(" --> ");
-+		__print_lock_name(target);
-+		printk("\n\n");
-+	}
-+
-+	printk(" Possible unsafe locking scenario:\n\n");
-+	printk("       CPU0                    CPU1\n");
-+	printk("       ----                    ----\n");
-+	printk("  lock(");
-+	__print_lock_name(target);
-+	printk(");\n");
-+	printk("                               lock(");
-+	__print_lock_name(parent);
-+	printk(");\n");
-+	printk("                               lock(");
-+	__print_lock_name(target);
-+	printk(");\n");
-+	printk("  lock(");
-+	__print_lock_name(source);
-+	printk(");\n");
-+	printk("\n *** DEADLOCK ***\n\n");
-+}
-+
- /*
-  * When a circular dependency is detected, print the
-  * header first:
-@@ -1096,6 +1158,7 @@ static noinline int print_circular_bug(struct lock_list *this,
- {
- 	struct task_struct *curr = current;
- 	struct lock_list *parent;
-+	struct lock_list *first_parent;
- 	int depth;
- 
- 	if (!debug_locks_off_graph_unlock() || debug_locks_silent)
-@@ -1109,6 +1172,7 @@ static noinline int print_circular_bug(struct lock_list *this,
- 	print_circular_bug_header(target, depth, check_src, check_tgt);
- 
- 	parent = get_lock_parent(target);
-+	first_parent = parent;
- 
- 	while (parent) {
- 		print_circular_bug_entry(parent, --depth);
-@@ -1116,6 +1180,9 @@ static noinline int print_circular_bug(struct lock_list *this,
- 	}
- 
- 	printk("\nother info that might help us debug this:\n\n");
-+	print_circular_lock_scenario(check_src, check_tgt,
-+				     first_parent);
-+
- 	lockdep_print_held_locks(curr);
- 
- 	printk("\nstack backtrace:\n");
-@@ -1314,7 +1381,7 @@ print_shortest_lock_dependencies(struct lock_list *leaf,
- 		printk("\n");
- 
- 		if (depth == 0 && (entry != root)) {
--			printk("lockdep:%s bad BFS generated tree\n", __func__);
-+			printk("lockdep:%s bad path found in chain graph\n", __func__);
- 			break;
- 		}
- 
-@@ -1325,6 +1392,62 @@ print_shortest_lock_dependencies(struct lock_list *leaf,
- 	return;
- }
- 
-+static void
-+print_irq_lock_scenario(struct lock_list *safe_entry,
-+			struct lock_list *unsafe_entry,
-+			struct lock_class *prev_class,
-+			struct lock_class *next_class)
-+{
-+	struct lock_class *safe_class = safe_entry->class;
-+	struct lock_class *unsafe_class = unsafe_entry->class;
-+	struct lock_class *middle_class = prev_class;
-+
-+	if (middle_class == safe_class)
-+		middle_class = next_class;
-+
-+	/*
-+	 * A direct locking problem where unsafe_class lock is taken
-+	 * directly by safe_class lock, then all we need to show
-+	 * is the deadlock scenario, as it is obvious that the
-+	 * unsafe lock is taken under the safe lock.
-+	 *
-+	 * But if there is a chain instead, where the safe lock takes
-+	 * an intermediate lock (middle_class) where this lock is
-+	 * not the same as the safe lock, then the lock chain is
-+	 * used to describe the problem. Otherwise we would need
-+	 * to show a different CPU case for each link in the chain
-+	 * from the safe_class lock to the unsafe_class lock.
-+	 */
-+	if (middle_class != unsafe_class) {
-+		printk("Chain exists of:\n  ");
-+		__print_lock_name(safe_class);
-+		printk(" --> ");
-+		__print_lock_name(middle_class);
-+		printk(" --> ");
-+		__print_lock_name(unsafe_class);
-+		printk("\n\n");
-+	}
-+
-+	printk(" Possible interrupt unsafe locking scenario:\n\n");
-+	printk("       CPU0                    CPU1\n");
-+	printk("       ----                    ----\n");
-+	printk("  lock(");
-+	__print_lock_name(unsafe_class);
-+	printk(");\n");
-+	printk("                               local_irq_disable();\n");
-+	printk("                               lock(");
-+	__print_lock_name(safe_class);
-+	printk(");\n");
-+	printk("                               lock(");
-+	__print_lock_name(middle_class);
-+	printk(");\n");
-+	printk("  <Interrupt>\n");
-+	printk("    lock(");
-+	__print_lock_name(safe_class);
-+	printk(");\n");
-+	printk("\n *** DEADLOCK ***\n\n");
-+}
-+
- static int
- print_bad_irq_dependency(struct task_struct *curr,
- 			 struct lock_list *prev_root,
-@@ -1376,6 +1499,9 @@ print_bad_irq_dependency(struct task_struct *curr,
- 	print_stack_trace(forwards_entry->class->usage_traces + bit2, 1);
- 
- 	printk("\nother info that might help us debug this:\n\n");
-+	print_irq_lock_scenario(backwards_entry, forwards_entry,
-+				hlock_class(prev), hlock_class(next));
-+
- 	lockdep_print_held_locks(curr);
- 
- 	printk("\nthe dependencies between %s-irq-safe lock", irqclass);
-@@ -1539,6 +1665,26 @@ static inline void inc_chains(void)
- 
- #endif
- 
-+static void
-+print_deadlock_scenario(struct held_lock *nxt,
-+			     struct held_lock *prv)
-+{
-+	struct lock_class *next = hlock_class(nxt);
-+	struct lock_class *prev = hlock_class(prv);
-+
-+	printk(" Possible unsafe locking scenario:\n\n");
-+	printk("       CPU0\n");
-+	printk("       ----\n");
-+	printk("  lock(");
-+	__print_lock_name(prev);
-+	printk(");\n");
-+	printk("  lock(");
-+	__print_lock_name(next);
-+	printk(");\n");
-+	printk("\n *** DEADLOCK ***\n\n");
-+	printk(" May be due to missing lock nesting notation\n\n");
-+}
-+
- static int
- print_deadlock_bug(struct task_struct *curr, struct held_lock *prev,
- 		   struct held_lock *next)
-@@ -1557,6 +1703,7 @@ print_deadlock_bug(struct task_struct *curr, struct held_lock *prev,
- 	print_lock(prev);
- 
- 	printk("\nother info that might help us debug this:\n");
-+	print_deadlock_scenario(next, prev);
- 	lockdep_print_held_locks(curr);
- 
- 	printk("\nstack backtrace:\n");
-@@ -1826,7 +1973,7 @@ static inline int lookup_chain_cache(struct task_struct *curr,
- 	struct list_head *hash_head = chainhashentry(chain_key);
- 	struct lock_chain *chain;
- 	struct held_lock *hlock_curr, *hlock_next;
--	int i, j, n, cn;
-+	int i, j;
- 
- 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
- 		return 0;
-@@ -1886,15 +2033,9 @@ cache_hit:
- 	}
- 	i++;
- 	chain->depth = curr->lockdep_depth + 1 - i;
--	cn = nr_chain_hlocks;
--	while (cn + chain->depth <= MAX_LOCKDEP_CHAIN_HLOCKS) {
--		n = cmpxchg(&nr_chain_hlocks, cn, cn + chain->depth);
--		if (n == cn)
--			break;
--		cn = n;
--	}
--	if (likely(cn + chain->depth <= MAX_LOCKDEP_CHAIN_HLOCKS)) {
--		chain->base = cn;
-+	if (likely(nr_chain_hlocks + chain->depth <= MAX_LOCKDEP_CHAIN_HLOCKS)) {
-+		chain->base = nr_chain_hlocks;
-+		nr_chain_hlocks += chain->depth;
- 		for (j = 0; j < chain->depth - 1; j++, i++) {
- 			int lock_id = curr->held_locks[i].class_idx - 1;
- 			chain_hlocks[chain->base + j] = lock_id;
-@@ -2011,6 +2152,24 @@ static void check_chain_key(struct task_struct *curr)
- #endif
- }
- 
-+static void
-+print_usage_bug_scenario(struct held_lock *lock)
-+{
-+	struct lock_class *class = hlock_class(lock);
-+
-+	printk(" Possible unsafe locking scenario:\n\n");
-+	printk("       CPU0\n");
-+	printk("       ----\n");
-+	printk("  lock(");
-+	__print_lock_name(class);
-+	printk(");\n");
-+	printk("  <Interrupt>\n");
-+	printk("    lock(");
-+	__print_lock_name(class);
-+	printk(");\n");
-+	printk("\n *** DEADLOCK ***\n\n");
-+}
-+
- static int
- print_usage_bug(struct task_struct *curr, struct held_lock *this,
- 		enum lock_usage_bit prev_bit, enum lock_usage_bit new_bit)
-@@ -2039,6 +2198,8 @@ print_usage_bug(struct task_struct *curr, struct held_lock *this,
- 
- 	print_irqtrace_events(curr);
- 	printk("\nother info that might help us debug this:\n");
-+	print_usage_bug_scenario(this);
-+
- 	lockdep_print_held_locks(curr);
- 
- 	printk("\nstack backtrace:\n");
-@@ -2073,6 +2234,10 @@ print_irq_inversion_bug(struct task_struct *curr,
- 			struct held_lock *this, int forwards,
- 			const char *irqclass)
- {
-+	struct lock_list *entry = other;
-+	struct lock_list *middle = NULL;
-+	int depth;
-+
- 	if (!debug_locks_off_graph_unlock() || debug_locks_silent)
- 		return 0;
- 
-@@ -2091,6 +2256,25 @@ print_irq_inversion_bug(struct task_struct *curr,
- 	printk("\n\nand interrupts could create inverse lock ordering between them.\n\n");
- 
- 	printk("\nother info that might help us debug this:\n");
-+
-+	/* Find a middle lock (if one exists) */
-+	depth = get_lock_depth(other);
-+	do {
-+		if (depth == 0 && (entry != root)) {
-+			printk("lockdep:%s bad path found in chain graph\n", __func__);
-+			break;
-+		}
-+		middle = entry;
-+		entry = get_lock_parent(entry);
-+		depth--;
-+	} while (entry && entry != root && (depth >= 0));
-+	if (forwards)
-+		print_irq_lock_scenario(root, other,
-+			middle ? middle->class : root->class, other->class);
-+	else
-+		print_irq_lock_scenario(other, root,
-+			middle ? middle->class : other->class, root->class);
-+
- 	lockdep_print_held_locks(curr);
- 
- 	printk("\nthe shortest dependencies between 2nd lock and 1st lock:\n");
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index c768bcd..debbb05 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -238,6 +238,21 @@ config DETECT_HUNG_TASK
- 	  enabled then all held locks will also be reported. This
- 	  feature has negligible overhead.
- 
-+config DEFAULT_HUNG_TASK_TIMEOUT
-+	int "Default timeout for hung task detection (in seconds)"
-+	depends on DETECT_HUNG_TASK
-+	default 120
-+	help
-+	  This option controls the default timeout (in seconds) used
-+	  to determine when a task has become non-responsive and should
-+	  be considered hung.
-+
-+	  It can be adjusted at runtime via the kernel.hung_task_timeout
-+	  sysctl or by writing a value to /proc/sys/kernel/hung_task_timeout.
-+
-+	  A timeout of 0 disables the check.  The default is two minutes.
-+	  Keeping the default should be fine in most cases.
-+
- config BOOTPARAM_HUNG_TASK_PANIC
- 	bool "Panic (Reboot) On Hung Tasks"
- 	depends on DETECT_HUNG_TASK
+/9j/4AAQSkZJRgABAQAAAQABAAD/4QDWRXhpZgAASUkqAAgAAAADADEBAgAHAAAAMgAAADsBAgAH
+AAAAOQAAAGmHBAABAAAAQAAAAAAAAABQaWNhc2EAUGljYXNhAAUAAJAHAAQAAAAwMjIwAqAEAAEA
+AADgAQAAA6AEAAEAAAC5AAAABaAEAAEAAACkAAAAIKQCACEAAACCAAAAAAAAAGZlOTQwMTFiOWE5
+NzdjNTI5MjkwNWZhY2FhNGY4Zjk1AAADAAIABwAEAAAAMDEwMAEQBAABAAAA3wMAAAIQBAABAAAA
+fgEAAAAAAAD/4QImaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWNrZXQgYmVnaW49
+Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/PiA8eDp4bXBtZXRhIHhtbG5zOng9
+ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJYTVAgQ29yZSA1LjEuMiI+IDxyZGY6UkRGIHhtbG5z
+OnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6
+RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxl
+bWVudHMvMS4xLyI+IDxkYzpjcmVhdG9yPiA8cmRmOlNlcT4gPHJkZjpsaT5QaWNhc2E8L3JkZjps
+aT4gPC9yZGY6U2VxPiA8L2RjOmNyZWF0b3I+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+
+IDwveDp4bXBtZXRhPiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgIDw/eHBhY2tldCBlbmQ9InciPz7/7QBaUGhvdG9z
+aG9wIDMuMAA4QklNBAQAAAAAACEcAQAAAgAEHAFaAAMbJUccAgAAAgAEHAJQAAZQaWNhc2EAOEJJ
+TQQlAAAAAAAQbe2+Zu4fnmNxfmVBNp+XdP/bAEMABQMEBAQDBQQEBAUFBQYHDAgHBwcHDwsLCQwR
+DxISEQ8RERMWHBcTFBoVEREYIRgaHR0fHx8TFyIkIh4kHB4fHv/bAEMBBQUFBwYHDggIDh4UERQe
+Hh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHv/AABEIALkB
+4AMBIgACEQEDEQH/xAAdAAEAAgIDAQEAAAAAAAAAAAAABggFBwMECQIB/8QAWhAAAQMDAgIFBAsK
+CgcGBwAAAQACAwQFEQYhBxIIEzFBURQiMnEVIzY3YXR1gZGxswkWNEJSc6GywdEXJCUzNWJyg7TC
+U1RjZYKSoyYnQ5Oi4YSk0tPi8PH/xAAaAQEAAwEBAQAAAAAAAAAAAAAAAQIDBAUG/8QALhEBAAIB
+AgMFBwUBAAAAAAAAAAECAwQREiExMjNBUZEFFCJSYXHwEyOBwdFC/9oADAMBAAIRAxEAPwC5aIiA
+iIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiI
+CIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiI
+gIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICZRcchwNlW1uGJkcmUWHlrKx1U+Glp3T
+cgBeQ5rQzO4G/acb/Asfer7WWiFktbTPY15IbykP/VBURNpjoJRlMrVeoeK1PZqbyiWjqJWYJw3l
+aR8zsHxPzFc/CjinbuIE9bDQw1FNLRtY+SGdgyWOOA4Fpx27YS1rVjeYI5tm5RQK53LWFwvc9Lp9
+9DBDTlzXddFzuOHFvMSSBuQcAdw3WOvFVxItdKKisu1oiiLgwHyIv3OdsNcT3KIvMxvs3/Q87Q2d
+lMrRN213rqgpzP7MWiVv9W3kHw7HOB71w6A4taguWqqi23OehqIqYN6+NlKYn4c5rQWO5iDguGQe
+5Ta01jeYWjTb9Lx6t+ZRRXV11ulKW09rfDHMeXz5Gc/MXFwDQMj8kkkqN1Vx17BBJUSXS2MijaXO
+JpGnAHb2OylLTeN4hzTybOTK0HfeKGoLTRyVU1+tz2MIyGW12TnsxlwUe0V0g63UGpqC0U9ypXyV
+c4hjE9sdExxPcXhx5c+OFeYtHgjeFncosbaK72QtdNXNaWCeMP5SezKyEe7QsceaLzMbLTD6REWy
+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
+1XaxvElNNNJdH0EzqMTQ01RFExzWuq2w9Y7zHEY38QMglp2CDZtFa7bRACjt9JTAdgihazH0Bdxa
+/df77bzcYp5nV12orAysbbGdSS+YukBcSOUuxyszgtB5jgAloH7fLxeqevvNTHcqinbQUNNcPYww
+wOk6smQSRhwDvOPVbOyQC4jwwE/KxosVmF5dehaqL2Se0NdV9Q3rSB2DmxlRFl+1DHRV9Ncust3k
+9NBI25VDImNLpA5xYTkhhb5rOZ0eByklu4Xc0LfbjdLtVU9wqZnSRxZMBpmxNiAkc1jzvz5e0A4O
+QQA4coOEE0RRK3aip/vtrLdVX+heGv6kU5cxhbKXYYyMekTy45yS4FzgG8vK4LFXHXDLTc68S3Wh
+rWxzCEwOeGCJ/MRhoY10hAbgOPK8F7tixrXYCdVlFR1jOSrpYKhvhLGHj9IUduHDnQdweXVmjbDM
+497qCP8AcurVa6bHJTQxUdJ19TWx0ccE9b1crHuaSOdnKS3s7NyQQe/C6Y4jTOlEbdPFvNViFvWX
+KBhazbPOC7zJd9oz6X5XbgO/S8LuHNK8Pp9EafjcO9tAz9ykNvstnt/L5Ba6Gk5ezqadjMfQFitF
+6qi1LAXNgjgl8lgqw2OcSgRy84bkgDDsxv28Mb5JAhum9a3uqttNJVVraj+UayOWogphiQxSgMgj
+ZjL/ADSTgASEMI3ILiG1l+qLcPbvV3eiqpKqqFSY5uUODW7bZO7AG48G+k0bP85SlAREQEREBERA
+wiIgYTHr+lEQMetMIiBhMev6URAwmERBxxwxxue6ONrC93M8tAHM7AGT4nAH0LkREDCIiAiIgJhE
+QMIiIGPX9KYREBMIiBhMetEQMev6V8SRRyOjc+NrnRu5mEjJacEZHgcEj1Er7RAwiIgIiICIiAiI
+gIiICYREBMetEQEREBERAwmPX9KIgYTCIg/ML5hhihZyRRsjbkuw0YGSSSdvEkn519ogIiICIiAi
+IgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiIC
+IiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIg
+IiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIi
+AiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIg//
+2Q==
+--00151750e892404cec04a3a69ab1--
