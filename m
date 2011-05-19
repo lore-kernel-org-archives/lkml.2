@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933962Ab1ESSIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:08:22 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54013 "EHLO
+	id S933950Ab1ESSIU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:08:20 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:47060 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933818Ab1ESSIP (ORCPT
+	by vger.kernel.org with ESMTP id S933938Ab1ESSIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:08:15 -0400
-X-Sasl-enc: Tnk4I0JAPddTJYPx2gi+7IM6QY+lCw0vHGnGh3yvT6LK 1305828494
+	Thu, 19 May 2011 14:08:17 -0400
+X-Sasl-enc: sb1lI/hU1tm0Uaa8OK3i/z6bm5S8mT35dcCTOce8MmWq 1305828496
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:56 2011
-Message-Id: <20110519180556.391376988@clark.kroah.org>
+Message-Id: <20110519180556.482988919@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:04:50 -0700
+Date: Thu, 19 May 2011 11:04:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yinghai LU <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [22/71] mm: use alloc_bootmem_node_nopanic() on really needed path
+        Hugh Dickins <hughd@google.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: [23/71] tmpfs: fix race between umount and swapoff
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,110 +28,201 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Hugh Dickins <hughd@google.com>
 
-commit 8f389a99b652aab5b42297280bd94d95933ad12f upstream.
+commit 778dd893ae785c5fd505dac30b5fc40aae188bf1 upstream.
 
-Stefan found nobootmem does not work on his system that has only 8M of
-RAM.  This causes an early panic:
+The use of igrab() in swapoff's shmem_unuse_inode() is just as vulnerable
+to umount as that in shmem_writepage().
 
-  BIOS-provided physical RAM map:
-   BIOS-88: 0000000000000000 - 000000000009f000 (usable)
-   BIOS-88: 0000000000100000 - 0000000000840000 (usable)
-  bootconsole [earlyser0] enabled
-  Notice: NX (Execute Disable) protection missing in CPU or disabled in BIOS!
-  DMI not present or invalid.
-  last_pfn = 0x840 max_arch_pfn = 0x100000
-  init_memory_mapping: 0000000000000000-0000000000840000
-  8MB LOWMEM available.
-    mapped low ram: 0 - 00840000
-    low ram: 0 - 00840000
-  Zone PFN ranges:
-    DMA      0x00000001 -> 0x00001000
-    Normal   empty
-  Movable zone start PFN for each node
-  early_node_map[2] active PFN ranges
-      0: 0x00000001 -> 0x0000009f
-      0: 0x00000100 -> 0x00000840
-  BUG: Int 6: CR2 (null)
-       EDI c034663c  ESI (null)  EBP c0329f38  ESP c0329ef4
-       EBX c0346380  EDX 00000006  ECX ffffffff  EAX fffffff4
-       err (null)  EIP c0353191   CS c0320060  flg 00010082
-  Stack: (null) c030c533 000007cd (null) c030c533 00000001 (null) (null)
-         00000003 0000083f 00000018 00000002 00000002 c0329f6c c03534d6 (null)
-         (null) 00000100 00000840 (null) c0329f64 00000001 00001000 (null)
-  Pid: 0, comm: swapper Not tainted 2.6.36 #5
-  Call Trace:
-   [<c02e3707>] ? 0xc02e3707
-   [<c035e6e5>] 0xc035e6e5
-   [<c0353191>] ? 0xc0353191
-   [<c03534d6>] 0xc03534d6
-   [<c034f1cd>] 0xc034f1cd
-   [<c034a824>] 0xc034a824
-   [<c03513cb>] ? 0xc03513cb
-   [<c0349432>] 0xc0349432
-   [<c0349066>] 0xc0349066
+Fix this instance by extending the protection of shmem_swaplist_mutex
+right across shmem_unuse_inode(): while it's on the list, the inode cannot
+be evicted (and the filesystem cannot be unmounted) without
+shmem_evict_inode() taking that mutex to remove it from the list.
 
-It turns out that we should ignore the low limit of 16M.
+But since shmem_writepage() might take that mutex, we should avoid making
+memory allocations or memcg charges while holding it: prepare them at the
+outer level in shmem_unuse().  When mem_cgroup_cache_charge() was
+originally placed, we didn't know until that point that the page from swap
+was actually a shmem page; but nowadays it's noted in the swap_map, so
+we're safe to charge upfront.  For the radix_tree, do as is done in
+shmem_getpage(): preload upfront, but don't pin to the cpu; so we make a
+habit of refreshing the node pool, but might dip into GFP_NOWAIT reserves
+on occasion if subsequently preempted.
 
-Use alloc_bootmem_node_nopanic() in this case.
+With the allocation and charge moved out from shmem_unuse_inode(),
+we can also hold index map and info->lock over from finding the entry.
 
-[akpm@linux-foundation.org: less mess]
-Signed-off-by: Yinghai LU <yinghai@kernel.org>
-Reported-by: Stefan Hellermann <stefan@the2masters.de>
-Tested-by: Stefan Hellermann <stefan@the2masters.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/bootmem.h |    2 ++
- mm/page_alloc.c         |    7 ++++---
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ mm/shmem.c |   88 +++++++++++++++++++++++++++++--------------------------------
+ 1 file changed, 43 insertions(+), 45 deletions(-)
 
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -115,6 +115,8 @@ extern void *__alloc_bootmem_low_node(pg
- 	__alloc_bootmem_nopanic(x, PAGE_SIZE, __pa(MAX_DMA_ADDRESS))
- #define alloc_bootmem_node(pgdat, x) \
- 	__alloc_bootmem_node(pgdat, x, SMP_CACHE_BYTES, __pa(MAX_DMA_ADDRESS))
-+#define alloc_bootmem_node_nopanic(pgdat, x) \
-+	__alloc_bootmem_node_nopanic(pgdat, x, SMP_CACHE_BYTES, __pa(MAX_DMA_ADDRESS))
- #define alloc_bootmem_pages_node(pgdat, x) \
- 	__alloc_bootmem_node(pgdat, x, PAGE_SIZE, __pa(MAX_DMA_ADDRESS))
- #define alloc_bootmem_pages_node_nopanic(pgdat, x) \
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3498,7 +3498,7 @@ int zone_wait_table_init(struct zone *zo
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -852,7 +852,7 @@ static inline int shmem_find_swp(swp_ent
  
- 	if (!slab_is_available()) {
- 		zone->wait_table = (wait_queue_head_t *)
--			alloc_bootmem_node(pgdat, alloc_size);
-+			alloc_bootmem_node_nopanic(pgdat, alloc_size);
- 	} else {
- 		/*
- 		 * This case means that a zone whose size was 0 gets new memory
-@@ -4071,7 +4071,8 @@ static void __init setup_usemap(struct p
- 	unsigned long usemapsize = usemap_size(zonesize);
- 	zone->pageblock_flags = NULL;
- 	if (usemapsize)
--		zone->pageblock_flags = alloc_bootmem_node(pgdat, usemapsize);
-+		zone->pageblock_flags = alloc_bootmem_node_nopanic(pgdat,
-+								   usemapsize);
- }
- #else
- static inline void setup_usemap(struct pglist_data *pgdat,
-@@ -4237,7 +4238,7 @@ static void __init_refok alloc_node_mem_
- 		size =  (end - start) * sizeof(struct page);
- 		map = alloc_remap(pgdat->node_id, size);
- 		if (!map)
--			map = alloc_bootmem_node(pgdat, size);
-+			map = alloc_bootmem_node_nopanic(pgdat, size);
- 		pgdat->node_mem_map = map + (pgdat->node_start_pfn - start);
+ static int shmem_unuse_inode(struct shmem_inode_info *info, swp_entry_t entry, struct page *page)
+ {
+-	struct inode *inode;
++	struct address_space *mapping;
+ 	unsigned long idx;
+ 	unsigned long size;
+ 	unsigned long limit;
+@@ -875,8 +875,10 @@ static int shmem_unuse_inode(struct shme
+ 	if (size > SHMEM_NR_DIRECT)
+ 		size = SHMEM_NR_DIRECT;
+ 	offset = shmem_find_swp(entry, ptr, ptr+size);
+-	if (offset >= 0)
++	if (offset >= 0) {
++		shmem_swp_balance_unmap();
+ 		goto found;
++	}
+ 	if (!info->i_indirect)
+ 		goto lost2;
+ 
+@@ -914,11 +916,11 @@ static int shmem_unuse_inode(struct shme
+ 			if (size > ENTRIES_PER_PAGE)
+ 				size = ENTRIES_PER_PAGE;
+ 			offset = shmem_find_swp(entry, ptr, ptr+size);
+-			shmem_swp_unmap(ptr);
+ 			if (offset >= 0) {
+ 				shmem_dir_unmap(dir);
+ 				goto found;
+ 			}
++			shmem_swp_unmap(ptr);
+ 		}
  	}
- #ifndef CONFIG_NEED_MULTIPLE_NODES
+ lost1:
+@@ -928,8 +930,7 @@ lost2:
+ 	return 0;
+ found:
+ 	idx += offset;
+-	inode = igrab(&info->vfs_inode);
+-	spin_unlock(&info->lock);
++	ptr += offset;
+ 
+ 	/*
+ 	 * Move _head_ to start search for next from here.
+@@ -940,37 +941,18 @@ found:
+ 	 */
+ 	if (shmem_swaplist.next != &info->swaplist)
+ 		list_move_tail(&shmem_swaplist, &info->swaplist);
+-	mutex_unlock(&shmem_swaplist_mutex);
+ 
+-	error = 1;
+-	if (!inode)
+-		goto out;
+ 	/*
+-	 * Charge page using GFP_KERNEL while we can wait.
+-	 * Charged back to the user(not to caller) when swap account is used.
+-	 * add_to_page_cache() will be called with GFP_NOWAIT.
++	 * We rely on shmem_swaplist_mutex, not only to protect the swaplist,
++	 * but also to hold up shmem_evict_inode(): so inode cannot be freed
++	 * beneath us (pagelock doesn't help until the page is in pagecache).
+ 	 */
+-	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL);
+-	if (error)
+-		goto out;
+-	error = radix_tree_preload(GFP_KERNEL);
+-	if (error) {
+-		mem_cgroup_uncharge_cache_page(page);
+-		goto out;
+-	}
+-	error = 1;
+-
+-	spin_lock(&info->lock);
+-	ptr = shmem_swp_entry(info, idx, NULL);
+-	if (ptr && ptr->val == entry.val) {
+-		error = add_to_page_cache_locked(page, inode->i_mapping,
+-						idx, GFP_NOWAIT);
+-		/* does mem_cgroup_uncharge_cache_page on error */
+-	} else	/* we must compensate for our precharge above */
+-		mem_cgroup_uncharge_cache_page(page);
++	mapping = info->vfs_inode.i_mapping;
++	error = add_to_page_cache_locked(page, mapping, idx, GFP_NOWAIT);
++	/* which does mem_cgroup_uncharge_cache_page on error */
+ 
+ 	if (error == -EEXIST) {
+-		struct page *filepage = find_get_page(inode->i_mapping, idx);
++		struct page *filepage = find_get_page(mapping, idx);
+ 		error = 1;
+ 		if (filepage) {
+ 			/*
+@@ -990,14 +972,8 @@ found:
+ 		swap_free(entry);
+ 		error = 1;	/* not an error, but entry was found */
+ 	}
+-	if (ptr)
+-		shmem_swp_unmap(ptr);
++	shmem_swp_unmap(ptr);
+ 	spin_unlock(&info->lock);
+-	radix_tree_preload_end();
+-out:
+-	unlock_page(page);
+-	page_cache_release(page);
+-	iput(inode);		/* allows for NULL */
+ 	return error;
+ }
+ 
+@@ -1009,6 +985,26 @@ int shmem_unuse(swp_entry_t entry, struc
+ 	struct list_head *p, *next;
+ 	struct shmem_inode_info *info;
+ 	int found = 0;
++	int error;
++
++	/*
++	 * Charge page using GFP_KERNEL while we can wait, before taking
++	 * the shmem_swaplist_mutex which might hold up shmem_writepage().
++	 * Charged back to the user (not to caller) when swap account is used.
++	 * add_to_page_cache() will be called with GFP_NOWAIT.
++	 */
++	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL);
++	if (error)
++		goto out;
++	/*
++	 * Try to preload while we can wait, to not make a habit of
++	 * draining atomic reserves; but don't latch on to this cpu,
++	 * it's okay if sometimes we get rescheduled after this.
++	 */
++	error = radix_tree_preload(GFP_KERNEL);
++	if (error)
++		goto uncharge;
++	radix_tree_preload_end();
+ 
+ 	mutex_lock(&shmem_swaplist_mutex);
+ 	list_for_each_safe(p, next, &shmem_swaplist) {
+@@ -1016,17 +1012,19 @@ int shmem_unuse(swp_entry_t entry, struc
+ 		found = shmem_unuse_inode(info, entry, page);
+ 		cond_resched();
+ 		if (found)
+-			goto out;
++			break;
+ 	}
+ 	mutex_unlock(&shmem_swaplist_mutex);
+-	/*
+-	 * Can some race bring us here?  We've been holding page lock,
+-	 * so I think not; but would rather try again later than BUG()
+-	 */
++
++uncharge:
++	if (!found)
++		mem_cgroup_uncharge_cache_page(page);
++	if (found < 0)
++		error = found;
++out:
+ 	unlock_page(page);
+ 	page_cache_release(page);
+-out:
+-	return (found < 0) ? found : 0;
++	return error;
+ }
+ 
+ /*
 
 
