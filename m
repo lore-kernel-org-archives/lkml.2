@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab1ESIf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 04:35:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44888 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653Ab1ESIfZ convert rfc822-to-8bit (ORCPT
+	id S1756816Ab1ESIgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 04:36:36 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:37840 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756054Ab1ESIge convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 04:35:25 -0400
-Subject: Re: [PATCH v2 1/2] rcu: don't bind offline cpu
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: yong.zhang0@gmail.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-        lizf@cn.fujitsu.com, miaox@cn.fujitsu.com
-In-Reply-To: <4DD4B358.3080705@jp.fujitsu.com>
-References: <20110428161149.GA15658@redhat.com>
-	 <20110502194416.2D61.A69D9226@jp.fujitsu.com>
-	 <20110502195657.2D68.A69D9226@jp.fujitsu.com>
-	 <1305129929.2914.247.camel@laptop> <4DCCC61F.80408@jp.fujitsu.com>
-	 <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
-	 <20110515185547.GL2258@linux.vnet.ibm.com> <20110516132623.GA2058@zhy>
-	 <4DD4B358.3080705@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 19 May 2011 04:36:34 -0400
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 19 May 2011 10:34:38 +0200
-Message-ID: <1305794078.2466.7193.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Subject: RE: [PATCH 1/3] mpt2sas: remove the use of writeq, since writeq isnot atomic
+Date: Thu, 19 May 2011 09:35:19 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8AD41@saturn3.aculab.com>
+In-Reply-To: <1305780360.2576.20.camel@mulgrave.site>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH 1/3] mpt2sas: remove the use of writeq, since writeq isnot atomic
+thread-index: AcwV4IaA6VpZHGVaQdm8cLPpe983xAAHW3ug
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "James Bottomley" <James.Bottomley@HansenPartnership.com>,
+        "Hitoshi Mitake" <h.mitake@gmail.com>
+Cc: "linux-arch" <linux-arch@vger.kernel.org>,
+        "Prakash,Sathya" <Sathya.Prakash@lsi.com>,
+        "Roland Dreier" <roland@kernel.org>,
+        "Desai, Kashyap" <Kashyap.Desai@lsi.com>,
+        "linux scsi dev" <linux-scsi@vger.kernel.org>,
+        "Matthew Wilcox" <matthew@wil.cx>, "Moore, Eric" <Eric.Moore@lsi.com>,
+        "linux pci" <linux-pci@vger.kernel.org>,
+        "linux powerpc dev" <linuxppc-dev@lists.ozlabs.org>,
+        "Milton Miller" <miltonm@bga.com>,
+        "linux kernel" <linux-kernel@vger.kernel.org>,
+        "Ingo Molnar" <mingo@redhat.com>, <paulus@samba.org>,
+        "Ingo Molnar" <mingo@elte.hu>, "Sam Ravnborg" <sam@ravnborg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 15:06 +0900, KOSAKI Motohiro wrote:
-> 
-> The right way is, explicit two phase cpu bindings (1) bind boot
-> (or any other online) cpu at CPU_UP_PREPARE (2) bind correct
-> target cpu at CPU_ONLINE. This patch does it. 
+ 
+> The specific mpt2sas problem is that if we write a 64 bit register non
+> atomically, we can't allow any interleaving writes for any other
+region
+> on the chip, otherwise the HW will take the write as complete in the
+64
+> bit register and latch the wrong value.  The only way to achieve that
+> given the semantics of writeq is a global static spinlock.
 
-I'm not sure that is in-fact correct. From what I understood, RCU could
-have need of this thread before the ONLINE callback and expects it to be
-affine at that time.
+That sounds like very specific and slightly dodgy hardware.
+You don't say what the scope of 'region on the chip' is, but
+it looks like you need to disable ALL writes to the memory
+area between the first and second writes of the 64bit value
+and not just those coming from writeq().
+I don't see how this can possibly be done by normal mutexing
+around the writeq() sequence, surely you need to lock the bus
+between the two transfers.
+Even dma writes would be a problem.
 
-What was wrong with delaying the wakeup to STARTING?
+The only way I can think to stop other cpus doing writes
+is to use IPIs for force them into a busy wait loop.
+
+All rather reminds me of a PCI slave that got things
+horribly wrong when a read was done while a write was
+still 'posted', or a 2nd master did a cycle did a read
+while a read rerun sequence was still in progress.
+(required a mutex and dummy cycles).
+At least than one wqs confined to one driver.
+
+	David
+
+
