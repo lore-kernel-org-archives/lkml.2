@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab1ESKx6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 06:53:58 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45522 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab1ESKx5 (ORCPT
+	id S1754826Ab1ESLAG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 07:00:06 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:53366 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab1ESLAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 06:53:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=cGXqJaVhV9spXFGlvJ7D7sCJucRqhPEp4Pt6yI+oTj9ByBMd+eHFub9Q9PfEE5drck
-         TYoISPRfQZhUuQ2pevXj3M8FiO9BzXD6izBuZcwhgW4AISOqNE4GDpW3CfG+lkyyq+0g
-         d6VcZb70xbAftASx46mLy3hhhJoSUAE3ENdNU=
-Message-ID: <4DD4F6C1.5090701@gmail.com>
-Date: Thu, 19 May 2011 12:53:53 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Thu, 19 May 2011 07:00:04 -0400
+Date: Thu, 19 May 2011 07:01:05 -0400
+From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        bg-linux@lists.anl-external.org
+Subject: Re: [PATCH 1/7] [RFC] Mainline BG/P platform support
+Message-ID: <20110519110105.GB25179@zod.rchland.ibm.com>
+References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Yong Zhang <yong.zhang0@gmail.com>, trivial@kernel.org
-Subject: [RESEND PATCH] Documentation: statistics about nested locks
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Explain what the trailing "/1" on some lock class names of lock_stat output
-means.
+On Wed, May 18, 2011 at 04:24:49PM -0500, Eric Van Hensbergen wrote:
+>The Linux kernel patches for the IBM BlueGene/P have been open-sourced
+>for quite some time, but haven't been integrated into the mainline Linux
+>kernel source tree.  This is the first patch series of several where I
+>will attempt to cleanup and mainline the already public patches.  I
+>welcome feedback as well as any help I can get.  I'm drawing on
+>the patches available for the IBM Compute Node kernel, the ZeptoOS project
+>and the Kittyhawk project.
+>(all available from http://wiki.bg.anl-external.org)
+>
+>I'll be prioritizing core patches which are harder to keep current with
+>mainline due to merge conflicts and then slowly incorporating the drivers
+>and other extensions (if acceptable after community review).
+>
+>I'll be maintaining the patchset in my kernel.org repository
+>(/pub/scm/linux/kernel/git/ericvh/bluegene.git) under the bluegene
+>branch with the source repos (zepto, kittyhawk, ibmcn) available in
+>respective branches.  Ben - if you would prefer me to send pull requests
+>once we get rolling, I can switch to that -- otherwise I'll stick to
+>just submitting patches to the list assuming you'll pull them when they
+>become acceptable.  Thanks for your attention reviewing these patches.
 
-Cc: Yong Zhang <yong.zhang0@gmail.com>
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+This is going to get slightly messy if there are lots of changes in
+platforms/44x and/or head_44x.S.  Most 4xx changes go through my tree,
+and I'm happy to pull from your tree once things get off the ground.  We
+just need to make sure and coordinate as we go.
 
----
- Documentation/lockstat.txt |   36 ++++++++++++++++++++++++++++++++++--
- 1 files changed, 34 insertions(+), 2 deletions(-)
+My tree is fairly low-churn (as is all of 4xx) so hopefully I'm worried
+for nothing.
 
-diff --git a/Documentation/lockstat.txt b/Documentation/lockstat.txt
-index 65f4c79..75eeb65 100644
---- a/Documentation/lockstat.txt
-+++ b/Documentation/lockstat.txt
-@@ -12,8 +12,9 @@ Because things like lock contention can severely impact performance.
- - HOW
- 
- Lockdep already has hooks in the lock functions and maps lock instances to
--lock classes. We build on that. The graph below shows the relation between
--the lock functions and the various hooks therein.
-+lock classes. We build on that (see Documentation/lockdep-design.txt).
-+The graph below shows the relation between the lock functions and the various
-+hooks therein.
- 
-         __acquire
-             |
-@@ -128,6 +129,37 @@ points are the points we're contending with.
- 
- The integer part of the time values is in us.
- 
-+Dealing with nested locks, subclasses may appear:
-+
-+32...............................................................................................................................................................................................
-+33
-+34                               &rq->lock:         13128          13128           0.43         190.53      103881.26          97454        3453404           0.00         401.11    13224683.11
-+35                               ---------
-+36                               &rq->lock            645          [<ffffffff8103bfc4>] task_rq_lock+0x43/0x75
-+37                               &rq->lock            297          [<ffffffff8104ba65>] try_to_wake_up+0x127/0x25a
-+38                               &rq->lock            360          [<ffffffff8103c4c5>] select_task_rq_fair+0x1f0/0x74a
-+39                               &rq->lock            428          [<ffffffff81045f98>] scheduler_tick+0x46/0x1fb
-+40                               ---------
-+41                               &rq->lock             77          [<ffffffff8103bfc4>] task_rq_lock+0x43/0x75
-+42                               &rq->lock            174          [<ffffffff8104ba65>] try_to_wake_up+0x127/0x25a
-+43                               &rq->lock           4715          [<ffffffff8103ed4b>] double_rq_lock+0x42/0x54
-+44                               &rq->lock            893          [<ffffffff81340524>] schedule+0x157/0x7b8
-+45
-+46...............................................................................................................................................................................................
-+47
-+48                             &rq->lock/1:         11526          11488           0.33         388.73      136294.31          21461          38404           0.00          37.93      109388.53
-+49                             -----------
-+50                             &rq->lock/1          11526          [<ffffffff8103ed58>] double_rq_lock+0x4f/0x54
-+51                             -----------
-+52                             &rq->lock/1           5645          [<ffffffff8103ed4b>] double_rq_lock+0x42/0x54
-+53                             &rq->lock/1           1224          [<ffffffff81340524>] schedule+0x157/0x7b8
-+54                             &rq->lock/1           4336          [<ffffffff8103ed58>] double_rq_lock+0x4f/0x54
-+55                             &rq->lock/1            181          [<ffffffff8104ba65>] try_to_wake_up+0x127/0x25a
-+
-+Line 48 shows statistics for the second subclass (/1) of &rq->lock class
-+(subclass starts from 0), since in this case, as line 50 suggests,
-+double_rq_lock actually acquires a nested lock of two spinlocks.
-+
- View the top contending locks:
- 
- # grep : /proc/lock_stat | head
--- 
-1.7.4.1
+>Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
+>---
+> MAINTAINERS |    8 ++++++++
+> 1 files changed, 8 insertions(+), 0 deletions(-)
+>
+>diff --git a/MAINTAINERS b/MAINTAINERS
+>index 69f19f1..3ffca88 100644
+>--- a/MAINTAINERS
+>+++ b/MAINTAINERS
+>@@ -3863,6 +3863,14 @@ S:	Maintained
+> F:	arch/powerpc/platforms/40x/
+> F:	arch/powerpc/platforms/44x/
+>
+>+LINUX FOR POWERPC BLUEGENE/P
+>+M:	Eric Van Hensbergen <ericvh@gmail.com>
+>+W:	http://bg-linux.anl-external.org/wiki/index.php/Main_Page
+>+L:	bg-linux@lists.anl-external.org
+>+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/bluegene.git
+>+S:	Maintained
+>+F:	arch/powerpc/platforms/44x/bgp*
+
+This should probably be the last patch in the series.  You have a file
+pattern listed for files that don't exist at all in any of the other
+patches you submitted :).
+
+josh
