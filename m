@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934197Ab1ESSLb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:11:31 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57775 "EHLO
+	id S934224Ab1ESSLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:11:06 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:44740 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934107Ab1ESSJg (ORCPT
+	by vger.kernel.org with ESMTP id S934171Ab1ESSJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:09:36 -0400
-X-Sasl-enc: laRHtwRjl8uXKaxqM6jhwemCHf/g9p3NQWG8dq74vIVU 1305828575
+	Thu, 19 May 2011 14:09:38 -0400
+X-Sasl-enc: WH/w3+lUrsCv6t2aMfQ558lnCIP3kEjAbbZ7OzPB/ap6 1305828577
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:06:00 2011
-Message-Id: <20110519180600.800586087@clark.kroah.org>
+Message-Id: <20110519180600.892508434@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:36 -0700
+Date: Thu, 19 May 2011 11:05:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luben Tuikov <ltuikov@yahoo.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [68/71] [SCSI] Revert "[SCSI] Retrieve the Caching mode page"
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [69/71] cifs: clean up various nits in unicode routines (try #2)
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,114 +27,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <James.Bottomley@suse.de>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 3dea642afd9187728d119fce5c82a7ed9faa9b6a upstream.
+commit 581ade4d1c025eb10421eda0d0c0a2f04447d7c5 upstream.
 
-This reverts commit 24d720b726c1a85f1962831ac30ad4d2ef8276b1.
+Minor revision to the original patch. Don't abuse the __le16 variable
+on the stack by casting it to wchar_t and handing it off to char2uni.
+Declare an actual wchar_t on the stack instead. This fixes a valid
+sparse warning.
 
-Previously we thought there was little possibility that devices would
-crash with this, but some have been found.
+Fix the spelling of UNI_ASTERISK. Eliminate the unneeded len_remaining
+variable in cifsConvertToUCS.
 
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
-Cc: Luben Tuikov <ltuikov@yahoo.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Also, as David Howells points out. We were better off making
+cifsConvertToUCS *not* use put_unaligned_le16 since it means that we
+can't optimize the mapped characters at compile time. Switch them
+instead to use cpu_to_le16, and simply use put_unaligned to set them
+in the string.
+
+Reported-and-acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/sd.c |   63 +++++++++++++-----------------------------------------
- 1 file changed, 16 insertions(+), 47 deletions(-)
+ fs/cifs/cifs_unicode.c |   35 +++++++++++++++++------------------
+ fs/cifs/cifs_unicode.h |    2 +-
+ 2 files changed, 18 insertions(+), 19 deletions(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1910,14 +1910,10 @@ sd_read_cache_type(struct scsi_disk *sdk
- 	int old_rcd = sdkp->RCD;
- 	int old_dpofua = sdkp->DPOFUA;
+--- a/fs/cifs/cifs_unicode.c
++++ b/fs/cifs/cifs_unicode.c
+@@ -90,7 +90,7 @@ cifs_mapchar(char *target, const __u16 s
+ 	case UNI_COLON:
+ 		*target = ':';
+ 		break;
+-	case UNI_ASTERIK:
++	case UNI_ASTERISK:
+ 		*target = '*';
+ 		break;
+ 	case UNI_QUESTION:
+@@ -264,40 +264,40 @@ cifs_strndup_from_ucs(const char *src, c
+  * names are little endian 16 bit Unicode on the wire
+  */
+ int
+-cifsConvertToUCS(__le16 *target, const char *source, int maxlen,
++cifsConvertToUCS(__le16 *target, const char *source, int srclen,
+ 		 const struct nls_table *cp, int mapChars)
+ {
+ 	int i, j, charlen;
+-	int len_remaining = maxlen;
+ 	char src_char;
+-	__u16 temp;
++	__le16 dst_char;
++	wchar_t tmp;
  
--	if (sdp->skip_ms_page_8) {
--		if (sdp->type == TYPE_RBC)
--			goto defaults;
--		else {
--			modepage = 0x3F;
--			dbd = 0;
--		}
--	} else if (sdp->type == TYPE_RBC) {
-+	if (sdp->skip_ms_page_8)
-+		goto defaults;
+ 	if (!mapChars)
+ 		return cifs_strtoUCS(target, source, PATH_MAX, cp);
+ 
+-	for (i = 0, j = 0; i < maxlen; j++) {
++	for (i = 0, j = 0; i < srclen; j++) {
+ 		src_char = source[i];
+ 		switch (src_char) {
+ 		case 0:
+-			put_unaligned_le16(0, &target[j]);
++			put_unaligned(0, &target[j]);
+ 			goto ctoUCS_out;
+ 		case ':':
+-			temp = UNI_COLON;
++			dst_char = cpu_to_le16(UNI_COLON);
+ 			break;
+ 		case '*':
+-			temp = UNI_ASTERIK;
++			dst_char = cpu_to_le16(UNI_ASTERISK);
+ 			break;
+ 		case '?':
+-			temp = UNI_QUESTION;
++			dst_char = cpu_to_le16(UNI_QUESTION);
+ 			break;
+ 		case '<':
+-			temp = UNI_LESSTHAN;
++			dst_char = cpu_to_le16(UNI_LESSTHAN);
+ 			break;
+ 		case '>':
+-			temp = UNI_GRTRTHAN;
++			dst_char = cpu_to_le16(UNI_GRTRTHAN);
+ 			break;
+ 		case '|':
+-			temp = UNI_PIPE;
++			dst_char = cpu_to_le16(UNI_PIPE);
+ 			break;
+ 		/*
+ 		 * FIXME: We can not handle remapping backslash (UNI_SLASH)
+@@ -305,17 +305,17 @@ cifsConvertToUCS(__le16 *target, const c
+ 		 * as they use backslash as separator.
+ 		 */
+ 		default:
+-			charlen = cp->char2uni(source+i, len_remaining,
+-						&temp);
++			charlen = cp->char2uni(source + i, srclen - i, &tmp);
++			dst_char = cpu_to_le16(tmp);
 +
-+	if (sdp->type == TYPE_RBC) {
- 		modepage = 6;
- 		dbd = 8;
- 	} else {
-@@ -1945,11 +1941,13 @@ sd_read_cache_type(struct scsi_disk *sdk
- 	 */
- 	if (len < 3)
- 		goto bad_sense;
--	else if (len > SD_BUF_SIZE) {
--		sd_printk(KERN_NOTICE, sdkp, "Truncating mode parameter "
--			  "data from %d to %d bytes\n", len, SD_BUF_SIZE);
--		len = SD_BUF_SIZE;
--	}
-+	if (len > 20)
-+		len = 20;
-+
-+	/* Take headers and block descriptors into account */
-+	len += data.header_length + data.block_descriptor_length;
-+	if (len > SD_BUF_SIZE)
-+		goto bad_sense;
- 
- 	/* Get the data */
- 	res = sd_do_mode_sense(sdp, dbd, modepage, buffer, len, &data, &sshdr);
-@@ -1957,45 +1955,16 @@ sd_read_cache_type(struct scsi_disk *sdk
- 	if (scsi_status_is_good(res)) {
- 		int offset = data.header_length + data.block_descriptor_length;
- 
--		while (offset < len) {
--			u8 page_code = buffer[offset] & 0x3F;
--			u8 spf       = buffer[offset] & 0x40;
--
--			if (page_code == 8 || page_code == 6) {
--				/* We're interested only in the first 3 bytes.
--				 */
--				if (len - offset <= 2) {
--					sd_printk(KERN_ERR, sdkp, "Incomplete "
--						  "mode parameter data\n");
--					goto defaults;
--				} else {
--					modepage = page_code;
--					goto Page_found;
--				}
--			} else {
--				/* Go to the next page */
--				if (spf && len - offset > 3)
--					offset += 4 + (buffer[offset+2] << 8) +
--						buffer[offset+3];
--				else if (!spf && len - offset > 1)
--					offset += 2 + buffer[offset+1];
--				else {
--					sd_printk(KERN_ERR, sdkp, "Incomplete "
--						  "mode parameter data\n");
--					goto defaults;
--				}
--			}
-+		if (offset >= SD_BUF_SIZE - 2) {
-+			sd_printk(KERN_ERR, sdkp, "Malformed MODE SENSE response\n");
-+			goto defaults;
+ 			/*
+ 			 * if no match, use question mark, which at least in
+ 			 * some cases serves as wild card
+ 			 */
+ 			if (charlen < 1) {
+-				temp = 0x003f;
++				dst_char = cpu_to_le16(0x003f);
+ 				charlen = 1;
+ 			}
+-			len_remaining -= charlen;
+ 			/*
+ 			 * character may take more than one byte in the source
+ 			 * string, but will take exactly two bytes in the
+@@ -324,9 +324,8 @@ cifsConvertToUCS(__le16 *target, const c
+ 			i += charlen;
+ 			continue;
  		}
+-		put_unaligned_le16(temp, &target[j]);
++		put_unaligned(dst_char, &target[j]);
+ 		i++; /* move to next char in source string */
+-		len_remaining--;
+ 	}
  
--		if (modepage == 0x3F) {
--			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
--				  "present\n");
--			goto defaults;
--		} else if ((buffer[offset] & 0x3f) != modepage) {
-+		if ((buffer[offset] & 0x3f) != modepage) {
- 			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
- 			goto defaults;
- 		}
--	Page_found:
-+
- 		if (modepage == 8) {
- 			sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
- 			sdkp->RCD = ((buffer[offset + 2] & 0x01) != 0);
+ ctoUCS_out:
+--- a/fs/cifs/cifs_unicode.h
++++ b/fs/cifs/cifs_unicode.h
+@@ -44,7 +44,7 @@
+  * reserved symbols (along with \ and /), otherwise illegal to store
+  * in filenames in NTFS
+  */
+-#define UNI_ASTERIK     (__u16) ('*' + 0xF000)
++#define UNI_ASTERISK    (__u16) ('*' + 0xF000)
+ #define UNI_QUESTION    (__u16) ('?' + 0xF000)
+ #define UNI_COLON       (__u16) (':' + 0xF000)
+ #define UNI_GRTRTHAN    (__u16) ('>' + 0xF000)
 
 
