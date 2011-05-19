@@ -1,265 +1,1094 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934601Ab1ESUK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 16:10:56 -0400
-Received: from mail-vx0-f202.google.com ([209.85.220.202]:39195 "EHLO
-	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933926Ab1ESUKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 16:10:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:reply-to:message-id:date:subject:from:to:content-type;
-        b=t4710sYkUej/YRiLJAdPAu+hZtxii3CUX2ej58u8wwdMGXA8kQI6rhdmD4yf2MlVV5
-         ltSzx+jzKs+riJODJwbQ==
+	id S934629Ab1ESUPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 16:15:10 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50622 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934611Ab1ESUPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 16:15:07 -0400
+Date: Thu, 19 May 2011 22:14:48 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] irq/core changes for v2.6.40
+Message-ID: <20110519201448.GA10769@elte.hu>
 MIME-Version: 1.0
-Reply-To: Harry Tan <bfusales4@126.com>
-Message-ID: <00151750e892b1ee1404a3a687ec@google.com>
-Date: Thu, 19 May 2011 20:10:54 +0000
-Subject: New cellphone with the best price
-From: Picasa Web Albums <picasawebalbums-noreply@google.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=00151750e892404cec04a3a69ab1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00151750e892404cec04a3a69ab1
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed; delsp=yes
+Linus,
 
-Dear friend,
+Please pull the latest irq-core-for-linus git tree from:
 
-Good day!
-Our company is mainly in the OEM and ODM business with all kinds of mobile  
-phone.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-core-for-linus
 
-New items with great price mobile phone here come out, the lowest price is  
-10.95 USD.
+ Thanks,
 
-If you need the detail requirement, please kindly contact us.
+	Ingo
 
-Best wishes
-Juce
+------------------>
+Geert Uytterhoeven (3):
+      genirq: Forgotten updates/deletions after removal of compat code
+      genirq: Update DocBook comments
+      genirq: irq_desc: Document preflow_handler and affinity_hint
 
-Mobile: 86-13424432252
-Tel: 86-0755-85282599
-Fax: 86-0755-81752355
-E-mail: elink@vip.188.com
-Web size: www.oemmobile.com
+Jonathan Cameron (1):
+      irq: Export functions to allow modular irq drivers
 
---00151750e892404cec04a3a69ab1
-Content-Type: image/jpeg; name="mobile phone.jpg"
-Content-Disposition: attachment; filename="mobile phone.jpg"
-Content-Transfer-Encoding: base64
+Paul Mundt (1):
+      genirq: Support per-IRQ thread disabling.
 
-/9j/4AAQSkZJRgABAQAAAQABAAD/4QDWRXhpZgAASUkqAAgAAAADADEBAgAHAAAAMgAAADsBAgAH
-AAAAOQAAAGmHBAABAAAAQAAAAAAAAABQaWNhc2EAUGljYXNhAAUAAJAHAAQAAAAwMjIwAqAEAAEA
-AADgAQAAA6AEAAEAAAC5AAAABaAEAAEAAACkAAAAIKQCACEAAACCAAAAAAAAAGZlOTQwMTFiOWE5
-NzdjNTI5MjkwNWZhY2FhNGY4Zjk1AAADAAIABwAEAAAAMDEwMAEQBAABAAAA3wMAAAIQBAABAAAA
-fgEAAAAAAAD/4QImaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWNrZXQgYmVnaW49
-Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/PiA8eDp4bXBtZXRhIHhtbG5zOng9
-ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJYTVAgQ29yZSA1LjEuMiI+IDxyZGY6UkRGIHhtbG5z
-OnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6
-RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxl
-bWVudHMvMS4xLyI+IDxkYzpjcmVhdG9yPiA8cmRmOlNlcT4gPHJkZjpsaT5QaWNhc2E8L3JkZjps
-aT4gPC9yZGY6U2VxPiA8L2RjOmNyZWF0b3I+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+
-IDwveDp4bXBtZXRhPiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgIDw/eHBhY2tldCBlbmQ9InciPz7/7QBaUGhvdG9z
-aG9wIDMuMAA4QklNBAQAAAAAACEcAQAAAgAEHAFaAAMbJUccAgAAAgAEHAJQAAZQaWNhc2EAOEJJ
-TQQlAAAAAAAQbe2+Zu4fnmNxfmVBNp+XdP/bAEMABQMEBAQDBQQEBAUFBQYHDAgHBwcHDwsLCQwR
-DxISEQ8RERMWHBcTFBoVEREYIRgaHR0fHx8TFyIkIh4kHB4fHv/bAEMBBQUFBwYHDggIDh4UERQe
-Hh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHv/AABEIALkB
-4AMBIgACEQEDEQH/xAAdAAEAAgIDAQEAAAAAAAAAAAAABggFBwMECQIB/8QAWhAAAQMDAgIFBAsK
-CgcGBwAAAQACAwQFEQYhBxIIEzFBURQiMnEVIzY3YXR1gZGxswkWNEJSc6GywdEXJCUzNWJyg7TC
-U1RjZYKSoyYnQ5Oi4YSk0tPi8PH/xAAaAQEAAwEBAQAAAAAAAAAAAAAAAQIDBAUG/8QALhEBAAIB
-AgMFBwUBAAAAAAAAAAECAwQREiExMjNBUZEFFCJSYXHwEyOBwdFC/9oADAMBAAIRAxEAPwC5aIiA
-iIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiI
-CIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiI
-gIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICZRcchwNlW1uGJkcmUWHlrKx1U+Glp3T
-cgBeQ5rQzO4G/acb/Asfer7WWiFktbTPY15IbykP/VBURNpjoJRlMrVeoeK1PZqbyiWjqJWYJw3l
-aR8zsHxPzFc/CjinbuIE9bDQw1FNLRtY+SGdgyWOOA4Fpx27YS1rVjeYI5tm5RQK53LWFwvc9Lp9
-9DBDTlzXddFzuOHFvMSSBuQcAdw3WOvFVxItdKKisu1oiiLgwHyIv3OdsNcT3KIvMxvs3/Q87Q2d
-lMrRN213rqgpzP7MWiVv9W3kHw7HOB71w6A4taguWqqi23OehqIqYN6+NlKYn4c5rQWO5iDguGQe
-5Ta01jeYWjTb9Lx6t+ZRRXV11ulKW09rfDHMeXz5Gc/MXFwDQMj8kkkqN1Vx17BBJUSXS2MijaXO
-JpGnAHb2OylLTeN4hzTybOTK0HfeKGoLTRyVU1+tz2MIyGW12TnsxlwUe0V0g63UGpqC0U9ypXyV
-c4hjE9sdExxPcXhx5c+OFeYtHgjeFncosbaK72QtdNXNaWCeMP5SezKyEe7QsceaLzMbLTD6REWy
-BQ7ixxEsfDfTYvN6ZU1Blk6qnpaZoMsz8EkDJAAABJJIAUxVQ/uiNZI2DT9C15a2SKXIz25ez/6c
-fOgsBwa4lW7iVpiG+UVDLQtlfI1sUkrZCOR3K4Et2B3Bx4FZ/VGqbTp2PNdJNJMY3SiCnidLKWN7
-X8o7Gg7cxwMqu/Qkpxb7FR0UecTConcMnGRyt/asr0gLvVRasqrfFK+Jj2MkkLXYL2tHK1hP5IIc
-7Hi4lBstvFBk7A+l07Uhh7H1NdTQj6DIXD6E/hEqz6NDYz/VN8jDvqx+lU61DWTkPzUTY/OH96hV
-31HeaVpbDc6hjW9mOU/WEHoLTa6ukoGNJyVA8aS7Ukn6DI0rL2PV9vuVxbbKilr7XcHgmOnrqcx9
-bjc9W/dr8Dc8pK8opNS341Ms7bxXtke4u5m1L249WCB+hbs6LPEjVtZxHtumbreq24W+Z4kijqJC
-/qZI3B4c0ncZa1zT8DiPFBcvjbxatfC+2U1dXW2e4iaqZTGOGZkbg5zXO25yASA3J8MjxCknDfWl
-m17peDUFkMzYJHGOSGdnJLDIMczHjxGQdsggghVf6c1M25Nqo5Mk0NbC6Pc4Alp/O2/umqT/AHP6
-ulqNCXiCSQuEEsGATnfleCfoA+hBu3iNxK0joGOH74bi5lTUAmCkp4nTTygd4Y0E4z3nAWtLt0mr
-TSs6yl4f6wqYzu2R8MULXDx85+f0KLcQr3p6h426pueoa+lhqKSlhgoWzOGcj8kYPitXat19Y+bq
-5LiXHkBbzMdu0jII27COwoNsVHS5pYXe2cN741viaqLKU/TM0U14bctI6lpPFzOpkA/9YKq/e9SU
-NXnyeoa7PZkEKDXllVVvPVBrwfyXIPTDhTxr4e8S6l1Fpu8O9kWR9Y6hqojDNy95aDs4DvLScLY4
-7F5d9GySvtfHLSlQQ+J7a6NjTnue4MI/5XEL1ECAiIgIiICIiD8c5rQXOIAG5JKj1frnRtC8srNV
-WWFw7Q6tjyP0rWHS/wBW1mm9E0NNSvma2tqHeUCKTkc6NgHm58CXD4DjfbY1EpdaWzyiMSadLYOY
-dY4TM5+XvwGRtGfnQX4l4rcNoz5+uLAP/jGfvX5HxY4ayHDddafJ+OsH7VSGzav07Kak3CgpKQNk
-xTjyGepL2b7u9tAB7Nlxv1tSiJzorHp6R4fhrH22UAt8Set7fgQX0oNd6Lrzij1XZZz4MrYz+1SC
-KSOWNskb2vY4Za5pyCPgK86o9X22U/xvQ2l589uKeVmf/WVY/oj6tF0qblZKWgjt1BHTtmhpY53y
-RxvDi08nPu3IOSBtt3boLErG3G/Wa31sFFXXSjp6mdwbFFJKA9x+ALInsVT6LX1isvETiHc9RB9L
-SzF9DKYY3SySmNmA8Dt7d8ZwEFsQiw2iLrHfNH2a8xFxZXUMNQ0uGDhzAdx861z0qNR1Vl0TbLbR
-3CS3Pvd0jo5aiNxDmQhrpJMEbjLWYON90Gw7jq/S1ue6Ou1Faqd7fSbJVMBH6VjX8TOHzD52srGD
-8cZ+9U2i1loumhY2Clq3uDRnkpQ3fG+/rX6eIOnR6NquLv8AjYFO0C4zeJ/Dx2w1pY/nq2j9q7lH
-rzRdY7lptVWaU+Daxn71S5uvtPu2dZ7iP7xhX399mkKgYqKKtYP60IkH6E2gXugnhqImzQSxyxuG
-WvY4OaR8BC5FW/o3ahtsWt4bNYrnUTWu6WmSodSSMMbYKmGUA8jT2ZY7fGxwCrIBQCIiAiIgFccn
-Z865CuOXs+cLLP3cphjrP+F1v919mFy3SRzWHlcW+orjs/4XWf3X2YXFfZmx08kjj5rGlx+Za06Q
-rKsXHK6vrLrcj1hc2Jr2jJzjHm4+kE/8S5+ht7p9RfJ8P2qh/EKpdNBXTPOXPOD6ycKY9Df3T6j+
-IRfaquo/oxdmVgdF7329fGJPtXqUznlicRkHCi2iv6bvXxmT7V6ktc7lp3FMfZhrl7Sv/GOvfV6j
-dTmRzmxkN3Oez/8Ap+ha54Vu6ziFeZO3PIP+vEFJtWVXleo6mbOQZSR6sk/tUT4Nnn1dcpPyuU//
-ADMavm5VV0vPLus9qTLtTMZ3ckB/TULkmdyxZGRgL4v++qm/m4PrqF83B/JTuPwLPT93VSequPSs
-vckdvgt4lf7ZzOI5j2nzfqJPzLTfBf3ydMH/AHpD+spT0oLj5RrLyUO2iY0EeBA//JRjgwMcR9L/
-AClD+str+CKdZeg2ivcla/izfqWfj9ELAaK9yVr+LM+pZ+P0QvN00/u2az0h9IiLvUFTv7oc0Or9
-N5APtEmD4ecriKnn3Q38O05+Yk+tBIuh2Ty24dwo6n9dq5uOccc3FJ8UkTpWGlHMxpIJ893huuv0
-NnBwoiCCBRVG4/ttWV4pNjk42dXJPHA00Z895wB5zk4or8Vui+OnHaK+bTl5082czuFPVs39rYI3
-uzv2Z7sD1qL3zh66a3SS9VWc5Y7ADHEZ7t/Ahb6rfY+ld7beKI9+BM396/X6qt1FZ56Fk1BK2bAL
-3TMyPVnsUz7V0tI3mk+j2sPsS+TlxQqJ95cdLWctZQ1ro25yGMccnGwz68KY8AbdSW3jtpRtLDUx
-ufHMZhMwt8/kdkDPaB2Z71sa+TQSPkPlFICO0Gdn71H9Aujd0gNHmOSF/m1GereHY8w+C1t7R0mo
-rw46zE/ZnrfY2XS45yWmNobC6ZR/jl8b3ddR/wCHesz9z2a1ukNQhrQB1sH6rlhemZ+HXoeMtGf+
-hIs59z49yGofz0H6rli8ZqHpW4/hsvZ+EfsWm7tL14g53zPlawRvc92dhs0D4AMersW5Old79l79
-f7AtJ1+xQfrcYXIO1dds227VyCX+qgmPA9oHGvSoG38oQfaMXp6F5g8DTzcatKHxuMP2jF6fBARE
-QEREBERBWfp3e5q1f2Zvraqo0thvVTYIJqeyMc1xMjanrY2uezfvc4HGfg7grXdO/wBzNr/sy/W1
-Vx0vq2+2+wU1HDPQMp44+VvWUcb3Yz3lwKvTFqss7aaImfHfyUyZMVI3y7/wwNJYpprgYz1tPT8u
-zpKmHm5sd5Dsdv6F2avSt2aOuoZpZYQ3f21jiD39h7FnabVnUyGcUltmlB5y4W+A/OcsXc/hNvfk
-k1JDG5lNyZ5Im4A37cNG+VpqdL7RrtGOtN/Hef8AIaaTNo7bzkm232RKITwUwbNFLzthc3mbM0Zl
-J9I9vmgdw3z3qyHQu31JXfFP8xWgpbzS1FAeWz07cgkyEHIyO3tW/OhZ7o674p/mKZ6XpMRfbf6K
-xOOeePfb6rYFefnFv+kdY/KtX9a9AyvPvi24i66u7Mey1X2+tYJXO4CuL+CujHHt9haX7MLV/TUO
-KPRHyrP/AIWRbO4BHPBPRh/3NTfZhaw6a+9Bonzi0+ys+CMf6tIgpwO3xXetclPHVskqoeuiaHHq
-znDncp5Qcd3Ny58RkLoB4Bxyj591yMfk7MZ9CDN3OkZDS0tZyeTyVIdzUxa1pZj8YNBPK052z4Hu
-xnGNbJzg8p7e3Oy+A8jtYz6F9tmx+I35tkG9+it76GmPity/VYrmDsVMeimP+9LTLuZxBpbjgHu8
-1nzq5w7EBERAREQFxzdnzhci45vR+cLHUd3b7Jjqx1n/AAus/uvswsRr6fqNOXKXO7aaTHr5Ssta
-D/Gq3+6+zCjvFBsjtI3MRty50XKN8dpAW+PpCsqk65f/ACc8Z9OQfXlbB6G/ul1F8Qh+1WveIlPU
-U1FD10fIHTEDcHOAVsLoc+6TUPxCL7VZamec/ZOKPgWA0T/Tl7+MyfavWZ1JP5Pap5M+hG530BYT
-RB/ly+fGZPtXrt6/e/727h1bSXeSyYA8eUq2Hsw0zdpWiqeXTTSHua4/oKwvBLzr7UvP40UZ+moi
-WYusFTS26uqJoXMayF+5x24WK4Kt5bzMP9jF9vEraieSNHHxLO333VtH+yg+uoXUvsnLTO9S7V+P
-/a1v5mH66hYvUhcYS1gJOOwKml7qrO3VSHjnWeVcRLo/OQ2XlHzDH7F9cHBjiTpcf7yg/WXS4mW6
-6S6xu9Q6in6s1Ujg/G3KHHdd/hD75umPlKD61rfrBj6S9AtFe5K1/Fm/UpBF6IUf0V7krX8Wb9Sz
-8XoBeXpJ/es0nsw+0RF6SgqefdDfw/Tf5iT9ZXDVPPuhv4dpz8xJ9aDP9CyIx09MDjIpKgnHZvKD
-+1d3jA5zeNWWSch8iJz6i5cHQw3gi+KTfrtUS6X9zrbRxBFZSVEERdEI+Vx89x5j6Pq71alq1tE2
-jeETMxHwztLr6nv8VE+eN9NDL1UYky5vpA7+HaoPedXvkraejgbTwtmY6QuaXMDQAMh22/zKKXB9
-4qDUurqqRvUtjdOWuBDQ/wBEHft+BZCLhPXXWhdeH3yojZFEXOBe3njOAWhrM8xByNx4q2TNFpnh
-6OimsybdWNuVykrYH1rqmnDGSOjMRcOYEEDO7dxv4rN8FpGP496VDXMcOWbdu34rhgjAPaFquHS+
-pJnMjYPMkqJKdrnTcrXOYMuOD3fCp/0YrdOOK9gutTWxud5VLTshL+Z7sROy71DYJOabV235Itnt
-kiYby6Z4xXXc+L6T7GRZr7nx7kNQ/nYP1XLEdNMYq7kfF9L9jIsv9z49yGofz0H6rlmxai6Vvv2X
-v1/sC0nX9pW7Old79l79f7AtJ1/eg6o9IBczVwj0guYIJpwL9+nSnyhD9qxen4XmBwL9+nSnyhB9
-qxen4QEREBERAREQVn6d/uYtn9mX62qsFutdvi0g26TSummbD1giceWPPNjBxudt1aDp3e5i2f2Z
-vrYqY0jZpgIYzJIDn2tvMc+PmhdWl1H6EzO2+8MsuOb7bSk1O9kF1qIYzQyScrZmB1MHBhG2Mc23
-075XM24umtVJBVGgibVlxm5GuzDnv7d+wZ8F07J7HUcY8qtNNUv5i0dZsMkbDG24x2LJ3ae0OoHt
-ptN0dPLMXc0odksJIIDRnsaAcZ/KPwK86y0zv/n9wfpbMP1xE1RUsqWymFvL5jXmNwIzk5IIz2Db
-t2VmehX7o674r/mKrSI5Y+VskDmZGWh45cj4MhWV6FHN98VfzNx/Fdt8584rHPmnLMTK1KRWNoWy
-K89uL8hbedVR8j3c92rBzAbN9a9CSvOrjaKw6mv3k/W9R7M1vXcvZjuz8CwXXd4Ae8loz5Fpvswt
-YdNb8B0R8qz/AOGkWzuAHvJaM+Rqb7MLWPTX/AdE/Ks/+GkQUxcfPK+2PI7D+jK4ZD7YV+tPd3oO
-y1xPf+gLka7ZcD2ywSuhmikikbjLXtLXD1g7r6DkFguin75+l/ilx/VYrmqmXRS98/S/xS4/qsVz
-UBERAREQFxTeh865SuKb0PnWGp7q32TXq01xS4l3LQ198loqCiqWTwRyuM5fkHlxgcpHgtP6946a
-lv8AbJbJS2iijnqW5cYHP5mgEHIy7Hd3qe8fNHai1JqRtTaaOGWmgo42ySS1cULWuIOPTcFpm9cD
-9f1FUypbQ0BYxoZKHXWBgwcEYd1gU04948ntWnRxo44Yicn1n6oDcr3d66c0tyqKmKaJ2TG8DYHv
-H6FvjoVOe7VGpc1D5gLfDjmbjHtq19Pwa1o1sDhb7bGwMcc+zFO4FvMN+bnPfhbk6LGhNR6Qvl7q
-r1S08UFbRRtp3xVccweWy5O7CUyTPDM7eEuPJTDXHytEzy6fw2dbrpNa7hfZ4o45D5VJlrncv/iv
-UR4icQJqqwvoYWltZWtfFFHBu8+JbnvXY1K64yVl3pbdTvlkfVykkPY0ACV2x5nDx7lq7Vuk71cJ
-7fII3R1VE5xki8phwWP8CH9vmnb6u9jtMUrs68Wmw3rxX68vzzQK+Vl6ENRRVV2vNHMXiOSnqIoy
-HxuHaHAbHs23271IuBsUzNR1fPXzVLRDEA17QAPb4t9l2teMtr9M26yWuzVMFwgqjNUTVFTG90gL
-cY2dnGewL74M26spbxVzTw8jHMiaDzg79dEe4+Ci9942dUaLHTFN+Hbb8/OazN0jdPrRsbe3yeIg
-eJBqNlhddTUNstM1XXTOgcxwbyudkZOcZIKyeoKqSk1g2aKOR7+oha0RgE5c6cA77dpC1zxOtN51
-XpartzYy2qkna6Jwmi5XPZlxafP22Hf/AOy00fc1fMXnnLQGp9N0015qpri69UgrHSSxSSxO6qRx
-OeXtBAPjvjwWR4eaXt9Jr2wVET5C9ldC8An+sFPG0FHQ6NutHcrdX1d6qKXqYZHVkEkULsjdvtpI
-O3asDoCjrZNaWlwije2Kpic8smYeVocMnZy6piPJSOLwla3RR/7JWv4s36lIYvQHqUe0X7krX8WZ
-9SkMXoD1LxNH39/zxdVuzD7REXqMxU8+6G/h2nPzEn1q4ap590N/DtOfmJPrQSXoWnMAHhSSn6ZG
-qF9MSihquIzppHBrqek5257wX4IG/b39hzgqZ9Cn0Zh+TRE/S/8A9lEel4G/whzvNM6bFEcPA/mS
-Hg8+cE43wcePb4hpl2nKplaaan9jqs+Xx04LnuAdK9vMxxIBGDn4TnO3euem1BqiR9NHDYKN88cF
-QY55Kl3KGwjleZGjzXFojAGe4Bda5ixtuLjWWa6UjBcYg5jBIwsjLBzx9riHA5cO04PzKK0500TF
-1t2uzWuhrC6Fpky52T1Y9HGHbZx4HOE2HxV6X1NKJKysqAxxjhqjzzkEmpd5vYNic5PwLYPR/wBP
-01l4x2fmvFNVVkdynpjBDv5rIjmTOScEnA9SgD2aYkp38lPeq6XyajAIa8jm5gJT2jb8VvaN9vFb
-J4FxNh4v2iGHSzrQxt1qMzTbSACMgQ8pyRy9+53KDbfTWOKuvb4+Sn/pSrLfc+PchqH87B+q5Yjp
-s/0lVD8qOA/Qx4/zLL/c+PchqH89B+q5BqHpW+/Ze/X+wLSlf2lbs6Vvv2Xv1j6gtJ3DtQdZi5Wr
-jYuRvagmnAv36dKfKMP2jF6fheYHAv36dKfKEH2rF6fhAREQEREBERBWrp0Nc7TtqaxnO4iXDcZ5
-jlm2O/1KmcXWwzMa6N1HIM8ocTG4/Tjx+hXU6a5a212XnDy0icFrASXAgZaMEHcZHb3qqNI9rKZg
-hunKDSyOkLn9p87lcGtb5uMHOST2HwTZExu+LFV05tFwpnVUcdROx0cEpJw1xacPzgkAeOMrnko6
-ouo/Kqmkq5m00sUlRTuyHZcC3OQCTgeC+putDWOLqMv8nBcXRAjrMnABcdwfHbs7PHJW3ZlJ10kM
-T3Nk68QxD0x6LW4OSPEjs+FEsVE1zLjA6aN1a1j2kwFxPO0HJbtuAezZWQ6HrhJrG7SNom0IfC5z
-aYAgRAuOGgHfA+FaStsvNGwT1jpyaKbnbvjn7OcBwwQPm3Iwt8dEvm++eRuMRttMXV5dkluXHJ3O
-CSScfD2ImZiZ5LOlefXF3+ldW/K1Z9a9BSvPri7/AErq35WrPrRC5nAD3ktGfI1N9mFrHpr/AIDo
-n5Vn/wANItn8APeS0Z8jU32YWsOmt+A6J+VZ/wDDSIKVTfzrl90zndfHyuDTztwSezcbrhqD7e71
-o12DkdoQSTXckbtU1LWMY0saxrzG4lriG9oDiSBjG2VhgVx1NVLVVDp5gA4gDYY7F+ByCxXRR987
-S/xS4/qsVz1S/onn/vN0v8UuP6sauggIiICIiAVxT/zfzhcpXDUH2v5wsNV3NvtKa9UMuAHsrVvc
-wgdTCC90hDPROxAe36V0iRmpk5oA3Mfnvlfy82B/tfXjdd+7Ru8tqHRtmLpIWsyG8zWuaMYLe8d+
-V0HwvHlPVR1Q5yws5qVpbsBnIz61tjmJpCssZXkeWwudJRFphd5xkdyk87f9qfrWe0lnry53nu8m
-3lZITG7z/wAVpe7Cw0lJXOlY7qJdoHs2pmhvMXAjzc9myzml6fqajzoXscYAwjl5Q53NkkNGzQme
-0Ritz8JKxzRGtjD9SXLNPNLioqN2SlgHtvfhwysPdIMV8wbAQ3qGeaZnc3a/v51zaoulJZ9aVsF0
-NZSte+WQPbC5zSHSczSMbOyPoWIr9Q2Capmey7VRa6NjWk0js7F+R+kLnxWrNI5voMWLJ8MxWdmu
-tRszXvDYwPNyGiQlwPju5ZvhY1omqHNgfGC6LcycwPtsXYsffqelrKlz6e4AsOMdZTuz8KzXC6jk
-df3W+F0lRJOWdTyscRhsjHHmzs0BrTv39ipadomXtaq8Tppj88G7NWY++tmRKfa6X+bzn+el8F0Z
-4o+sp+VtGSZnE9XG4Z9rfklc/ECupLTfqeuuE09NTyNiDZWA9rHyOIz3ek36VHpdVaafLHJ7OQNP
-XPcTHC0HlLHAZ23OTuttFzwVl8JflMofq+Nnthb7GkdxiYRtk/8A79KwnD1uNW0n4HgyM/Bsg552
-7n4Flr/VW+qklMN2t5afQ5YQ09p7dl0dJtt9u1BDXVVzogxsrcGFnK7HMDvjt7OwLu35MvFYnRfu
-StfxZikUP8231LAaTifBpm3QyMcx7KdgLXDBGyz8P8231L5/QTvnv+eLrt2YfaIi9hmKof3Q6nkD
-NP1oBLG08wO2wIewf5lbxay6RPC/+FDRrLZTVkNHcKaQyU75mF0TwRh0b8bgHY5HYQCg1t0Io2Ta
-biuQ9KooiD/wylqx3Ss0ncbtc7jcKCF0lTS9W8wsPnS00sYYSPH2yNwx3raPRr4dXPh3oOntV7fS
-vr2BzD5O8vY1vOXbEgZzkFS/X+j6fVdqlp21kturHQvhZVxMDyGP9Jrmu2c3YHB7CAQQg87qy+T0
-L6mduoKiKWGWCrp+voHxtkljaRglpHKQA0ZHpZ7RhdCkvFE2kFQdXWhkzIqmNjH0E5kxMSXEEHlB
-8448O/Ks9cuj3xLp8tt+sLJXQt2ZHVU72nHcN+ZqwzuBfGAPwIdHO/rFkX/2kFbmXyasgYIr5E1z
-309P1dNbXvcyKD0JD2juHm9/wLdXRk0feariBJqa9TVggmm5bTBWMEc1TI+aN084jHotEbXdwznb
-sKn9p4C8VZCDVarsVqHf5JAeb5uQNW3eEXCWj0PVzXivvFXfb3Mzq/KqjZsLO0tjb3ZOcuO57EGl
-una1tLQS15HnF0EfzODgP0sKzPQApZI9E3qocDyzyU/Ltt6L8/sU16UfCm78TNO0tHYpaJlQJ4uu
-FXI5jORjnEHIBO3M7bvyFLeB3D+PhvoSnsBrG1lUXmaqnYzlY6QgDDB2hoDQBnftPegqp0t7CYuM
-9fM4yRtqqaKdjsZDsjBwPgIwtF3Gzu35ahp9bcL0Y4z8KbJxLtkEdbUT265UufJK+nAL4we1rmnZ
-zT4H1qut56KevmF5t+qNP1rPxRLBLC8+vtCCrklI6H0ntPqBXUnqmQ/iuJ+ZWHqeirxZkeWh2nMf
-leXO+rlXYt/Q013Wb3PU1goQe0RskmI+oINYdF+Ca/8AHrStLDTu8yrEz3NyeVsY5yT8Hm4+cL06
-HYtO9HvgHpnhI2evp6mW7XypjEctdMwNDGbEsjaPRBPac5OAtxICIiAiIgIiIK39Nx7Y7RZpHSGJ
-jetLnjkyBlg259u0gb+KqtQtqpGwvZb43/xeURuYXFrHHO2xxvt2Du+Ha8HSa0TcNXaLbJa6EXGq
-o+sDqPmwZ4ngcwafywWMI9RVF7jZWWqobBUXS4WSSCTmZBdaJ8Za7Pc7AB9aDtCGRrGvZbWt/iRa
-AcEMbk5ZvnzvDvWZtNNMaa0mOGnha2CYx9Zj2lve1/i53dn5lFKekro5uuodQWzHKBiOVgbjGPRP
-wBc7Y6vyuGoq77biYiHAdazDiOwkDtQTa3QyNgpjUGKOP2LkA5GuBjP4sLtyNzgkn6Vu7ok9X99N
-TySiR4tzGyYLSA8E5Ax2AZGyr5aSblXVMlPcXVk9W1sc8dBRlxc0YwNhgDYdgVsujFoqustJNea6
-gmt7JIeppopxiWQOIc+R47s8rQB4ZQbvK8+uL39Lat+Vqz616CFedvHn2Rp+IeodM0tLNPcK25TS
-U8UbS5zxI4cuANyUF2uAHvJaM+Rqb7MLWHTW/AtD/Ddpx8/k0i3HwrstRp3htpyw1n4TQWyCCYeD
-2sAI+nKhnSh0HddccPYvvfjEt6s9Y24UcJcG9cQ1zXxgnvLHOx8OEHntVZbUPaRg5XyCpRqG309P
-VyC80dwsNVzESRVtK6NrXd+C4AfQVjo7bbpd4LxQvHwOQYtpX2CezvWWFpo2jMl1omjxLl2rfRWR
-0wbHcDWy/wCio4jI8/M3JQbs6J/m8T9LtPaaK4kD4MRq6IVYuifoK+DUr9cXi1VNpt9NROo7TBUM
-LJZecgySlp3AwABnBJyrOhAREQEREBfL2hwwexfSiusbxNb7rbqeO7MohM7+bbEx73nmA3a7dzN9
-wwh4yD2AqLVi0bSJL1Ef5KdRH+Stf2vWFyrKG1TNqqOV07Wguij8yok690cjGjJx1bB1hAOcDfZS
-LTd6kuXD+lvZuFC6d9D1slTy4gbIG+c4gHZocDkZ2wRlY+7Yfkj0TxSz3k8f5KdRH+ThQqza0jFI
-C+rjuER6ySOaSVkc0kY7BytaGvkHpOaA0sa5gILtjwWTiVHc6mSCK2wPfTwOmqm09c2ZzOVwaeUB
-vnDzmnJx5uScEYT3bD8sehxSnL6SF5HPG12PEZX55DS/6CP/AJQoVovXfsteW2eR9FUzOnqG9bBO
-XjlY48pHKwNIxgZcWOJ3DSPOObfqGnpdWXS33C6UEFPTUNLUMY8hj2F8krHFxJ3BIjA2GM9+VPu2
-H5Y9DilmfIaX/QR/8gX0ykgYcsja0+LRhQjUOsqiy6kr2zVMTqanjGIHgNbu0EdgMmcndwDmuGGs
-aX5XNW8QoKa2OrXUtK0tEPtU1b1T39Y8NDmhzMlhyCHbZw7YYGXu2H5Y9DeUykpYJG8skbXt8HDI
-/SuL2MoP9Tg/8sfuUNuPEKqo566ndp9nW0z2xDnucMbeffmL+bBjj2815HnZGzchZXSusIb5XmjN
-Kyne8VDomtqWyuxBMIn84bs3dzcYLgfO32BcjT4o/wCY9DeWd9jKD/U4P/LH7kFtoQQW0kAI7CIx
-+5a9o9ZXKO63iGsu9F1dLqanoAX04axkEjR7WDkHn7yTnBzgkEcue0xqaaruzqO4ywRPlyGRHDXR
-TBzswfC7kAfg74dnsT3fF8sG8pX1LPA/SuRjeUY7lrWTVd6dfH0s1U2Klp5XRzSUj4HOknDgPJ48
-h3MQATyENlJcNgtlhWphx0netYg3kREWiBFw1pqG0kxpBEagRu6oSkhhdjbmI3Az2rWrNZXialjr
-KOqZUHmIp6Zscb3VkZaD1o6suD2gkt5o3AM5SXB/YA2gigNl1Tc6q9so+tiqYPKWw08jIx/HYC3L
-qlpH4rHENPLt4rt6h1dPada0trlgcykfQzzYMDiZntMWCHjzWsaHO5s77E4AGSEzRa8v/E6ks5b1
-1LRysNKZg9lxZyveGueWsyPOaWsdyu2y7DXBucr91Lr6Wz3KjjqY6On82Tr4H1OesIjL2vZ5nM6P
-b0mguJyAwkHAbCRRe93/AJdGw3ny1tsZM1ri9oDn4dnDY+duOYnGC5uAMkgY24ay/ibSArKfUFtZ
-UM5WT1EMjOrEnLnkD3B7YyTjdzXDG2NwQEuRQWj1+ySSemkp4RLThjZZJXvgbG87Hrstc2IE5AAc
-8g4a7Dtl8VHEKRrKmSntFPUxw3A0Ikbc42x8wAc7me4BrTyuAAycuDm7DDiE9Ra8/hMDZ5WzWZlP
-GwTyZluEXOI4WB7+Zjclr8E4adjsebc4yOub/W26v0kaKtZTU9yukcE7DCHyTMewkNGdgM4JwQQN
-wTylrgmSLXUmo7m2R/V6gp5g2pb1YZA09eT6Ubdty3/Qfzo2PWnKzOoLnWVElqmsN4b1FV1jmmKN
-kkcrWNLiS8g7bYAaBv3oJYijug7lNcrQZKirlq5Wvw+U9WYycbhjmNaCAcjxB2JypEgIiICIiAiI
-gLrVtBQ1reWso6epb4SxNeP0hQrWmoNQW/WlJbbbzGlnpmZd5MJGRSmR7i5+4PL1UU2wIJLWgYJ3
-68Gqbs3njFxhlY2Rraad0IlbVsc8iSRrmBgkELcPdyBuM8rt2lxDN13DfQFc8vq9GWCZx7S6gj/c
-vij4Z8PaN4kpdFWCJw7C2gjH7FHq3VmqI7LVxUEElY5tDNJTXRoifG+USMbGMjlDweY5IjA7vxST
-1XaxvElNNNJdH0EzqMTQ01RFExzWuq2w9Y7zHEY38QMglp2CDZtFa7bRACjt9JTAdgihazH0Bdxa
-/df77bzcYp5nV12orAysbbGdSS+YukBcSOUuxyszgtB5jgAloH7fLxeqevvNTHcqinbQUNNcPYww
-wOk6smQSRhwDvOPVbOyQC4jwwE/KxosVmF5dehaqL2Se0NdV9Q3rSB2DmxlRFl+1DHRV9Ncust3k
-9NBI25VDImNLpA5xYTkhhb5rOZ0eByklu4Xc0LfbjdLtVU9wqZnSRxZMBpmxNiAkc1jzvz5e0A4O
-QQA4coOEE0RRK3aip/vtrLdVX+heGv6kU5cxhbKXYYyMekTy45yS4FzgG8vK4LFXHXDLTc68S3Wh
-rWxzCEwOeGCJ/MRhoY10hAbgOPK8F7tixrXYCdVlFR1jOSrpYKhvhLGHj9IUduHDnQdweXVmjbDM
-497qCP8AcurVa6bHJTQxUdJ19TWx0ccE9b1crHuaSOdnKS3s7NyQQe/C6Y4jTOlEbdPFvNViFvWX
-KBhazbPOC7zJd9oz6X5XbgO/S8LuHNK8Pp9EafjcO9tAz9ykNvstnt/L5Ba6Gk5ezqadjMfQFitF
-6qi1LAXNgjgl8lgqw2OcSgRy84bkgDDsxv28Mb5JAhum9a3uqttNJVVraj+UayOWogphiQxSgMgj
-ZjL/ADSTgASEMI3ILiG1l+qLcPbvV3eiqpKqqFSY5uUODW7bZO7AG48G+k0bP85SlAREQEREBERA
-wiIgYTHr+lEQMetMIiBhMev6URAwmERBxxwxxue6ONrC93M8tAHM7AGT4nAH0LkREDCIiAiIgJhE
-QMIiIGPX9KYREBMIiBhMetEQMev6V8SRRyOjc+NrnRu5mEjJacEZHgcEj1Er7RAwiIgIiICIiAiI
-gIiICYREBMetEQEREBERAwmPX9KIgYTCIg/ML5hhihZyRRsjbkuw0YGSSSdvEkn519ogIiICIiAi
-IgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiIC
-IiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIg
-IiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIi
-AiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIg//
-2Q==
---00151750e892404cec04a3a69ab1--
+Thomas Gleixner (5):
+      genirq: Implement a generic interrupt chip
+      genirq: Add chip suspend and resume callbacks
+      genirq: Make generic irq chip depend on CONFIG_GENERIC_IRQ_CHIP
+      genirq: Remove pointless ifdefs
+      genirq: Uninline and sanity check generic_handle_irq()
+
+
+ Documentation/DocBook/genericirq.tmpl |   82 +++++----
+ include/linux/irq.h                   |  179 +++++++++++++++--
+ include/linux/irqdesc.h               |   11 +-
+ kernel/irq/Kconfig                    |    4 +
+ kernel/irq/Makefile                   |    1 +
+ kernel/irq/chip.c                     |    3 +
+ kernel/irq/debug.h                    |    1 +
+ kernel/irq/generic-chip.c             |  354 +++++++++++++++++++++++++++++++++
+ kernel/irq/irqdesc.c                  |   22 ++-
+ kernel/irq/manage.c                   |    3 +-
+ kernel/irq/settings.h                 |   17 ++
+ 11 files changed, 613 insertions(+), 64 deletions(-)
+ create mode 100644 kernel/irq/generic-chip.c
+
+diff --git a/Documentation/DocBook/genericirq.tmpl b/Documentation/DocBook/genericirq.tmpl
+index fb10fd0..b342234 100644
+--- a/Documentation/DocBook/genericirq.tmpl
++++ b/Documentation/DocBook/genericirq.tmpl
+@@ -191,8 +191,8 @@
+ 	<para>
+ 	Whenever an interrupt triggers, the lowlevel arch code calls into
+ 	the generic interrupt code by calling desc->handle_irq().
+-	This highlevel IRQ handling function only uses desc->chip primitives
+-	referenced by the assigned chip descriptor structure.
++	This highlevel IRQ handling function only uses desc->irq_data.chip
++	primitives referenced by the assigned chip descriptor structure.
+ 	</para>
+     </sect1>
+     <sect1 id="Highlevel_Driver_API">
+@@ -206,11 +206,11 @@
+ 	  <listitem><para>enable_irq()</para></listitem>
+ 	  <listitem><para>disable_irq_nosync() (SMP only)</para></listitem>
+ 	  <listitem><para>synchronize_irq() (SMP only)</para></listitem>
+-	  <listitem><para>set_irq_type()</para></listitem>
+-	  <listitem><para>set_irq_wake()</para></listitem>
+-	  <listitem><para>set_irq_data()</para></listitem>
+-	  <listitem><para>set_irq_chip()</para></listitem>
+-	  <listitem><para>set_irq_chip_data()</para></listitem>
++	  <listitem><para>irq_set_irq_type()</para></listitem>
++	  <listitem><para>irq_set_irq_wake()</para></listitem>
++	  <listitem><para>irq_set_handler_data()</para></listitem>
++	  <listitem><para>irq_set_chip()</para></listitem>
++	  <listitem><para>irq_set_chip_data()</para></listitem>
+           </itemizedlist>
+ 	  See the autogenerated function documentation for details.
+ 	</para>
+@@ -225,6 +225,8 @@
+ 	  <listitem><para>handle_fasteoi_irq</para></listitem>
+ 	  <listitem><para>handle_simple_irq</para></listitem>
+ 	  <listitem><para>handle_percpu_irq</para></listitem>
++	  <listitem><para>handle_edge_eoi_irq</para></listitem>
++	  <listitem><para>handle_bad_irq</para></listitem>
+ 	  </itemizedlist>
+ 	  The interrupt flow handlers (either predefined or architecture
+ 	  specific) are assigned to specific interrupts by the architecture
+@@ -241,13 +243,13 @@
+ 		<programlisting>
+ default_enable(struct irq_data *data)
+ {
+-	desc->chip->irq_unmask(data);
++	desc->irq_data.chip->irq_unmask(data);
+ }
+ 
+ default_disable(struct irq_data *data)
+ {
+ 	if (!delay_disable(data))
+-		desc->chip->irq_mask(data);
++		desc->irq_data.chip->irq_mask(data);
+ }
+ 
+ default_ack(struct irq_data *data)
+@@ -284,9 +286,9 @@ noop(struct irq_data *data))
+ 		<para>
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+-desc->chip->irq_mask();
+-handle_IRQ_event(desc->action);
+-desc->chip->irq_unmask();
++desc->irq_data.chip->irq_mask_ack();
++handle_irq_event(desc->action);
++desc->irq_data.chip->irq_unmask();
+ 		</programlisting>
+ 		</para>
+ 	    </sect3>
+@@ -300,8 +302,8 @@ desc->chip->irq_unmask();
+ 		<para>
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+-handle_IRQ_event(desc->action);
+-desc->chip->irq_eoi();
++handle_irq_event(desc->action);
++desc->irq_data.chip->irq_eoi();
+ 		</programlisting>
+ 		</para>
+ 	    </sect3>
+@@ -315,17 +317,17 @@ desc->chip->irq_eoi();
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+ if (desc->status &amp; running) {
+-	desc->chip->irq_mask();
++	desc->irq_data.chip->irq_mask_ack();
+ 	desc->status |= pending | masked;
+ 	return;
+ }
+-desc->chip->irq_ack();
++desc->irq_data.chip->irq_ack();
+ desc->status |= running;
+ do {
+ 	if (desc->status &amp; masked)
+-		desc->chip->irq_unmask();
++		desc->irq_data.chip->irq_unmask();
+ 	desc->status &amp;= ~pending;
+-	handle_IRQ_event(desc->action);
++	handle_irq_event(desc->action);
+ } while (status &amp; pending);
+ desc->status &amp;= ~running;
+ 		</programlisting>
+@@ -344,7 +346,7 @@ desc->status &amp;= ~running;
+ 		<para>
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+-handle_IRQ_event(desc->action);
++handle_irq_event(desc->action);
+ 		</programlisting>
+ 		</para>
+    	    </sect3>
+@@ -362,12 +364,29 @@ handle_IRQ_event(desc->action);
+ 		<para>
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+-handle_IRQ_event(desc->action);
+-if (desc->chip->irq_eoi)
+-        desc->chip->irq_eoi();
++if (desc->irq_data.chip->irq_ack)
++	desc->irq_data.chip->irq_ack();
++handle_irq_event(desc->action);
++if (desc->irq_data.chip->irq_eoi)
++        desc->irq_data.chip->irq_eoi();
+ 		</programlisting>
+ 		</para>
+    	    </sect3>
++	    <sect3 id="EOI_Edge_IRQ_flow_handler">
++	 	<title>EOI Edge IRQ flow handler</title>
++		<para>
++		handle_edge_eoi_irq provides an abnomination of the edge
++		handler which is solely used to tame a badly wreckaged
++		irq controller on powerpc/cell.
++		</para>
++   	    </sect3>
++	    <sect3 id="BAD_IRQ_flow_handler">
++	 	<title>Bad IRQ flow handler</title>
++		<para>
++		handle_bad_irq is used for spurious interrupts which
++		have no real handler assigned..
++		</para>
++   	    </sect3>
+ 	</sect2>
+ 	<sect2 id="Quirks_and_optimizations">
+ 	<title>Quirks and optimizations</title>
+@@ -410,6 +429,7 @@ if (desc->chip->irq_eoi)
+ 	  <listitem><para>irq_mask_ack() - Optional, recommended for performance</para></listitem>
+ 	  <listitem><para>irq_mask()</para></listitem>
+ 	  <listitem><para>irq_unmask()</para></listitem>
++	  <listitem><para>irq_eoi() - Optional, required for eoi flow handlers</para></listitem>
+ 	  <listitem><para>irq_retrigger() - Optional</para></listitem>
+ 	  <listitem><para>irq_set_type() - Optional</para></listitem>
+ 	  <listitem><para>irq_set_wake() - Optional</para></listitem>
+@@ -424,32 +444,24 @@ if (desc->chip->irq_eoi)
+   <chapter id="doirq">
+      <title>__do_IRQ entry point</title>
+      <para>
+- 	The original implementation __do_IRQ() is an alternative entry
+-	point for all types of interrupts.
++	The original implementation __do_IRQ() was an alternative entry
++	point for all types of interrupts. It not longer exists.
+      </para>
+      <para>
+ 	This handler turned out to be not suitable for all
+ 	interrupt hardware and was therefore reimplemented with split
+-	functionality for egde/level/simple/percpu interrupts. This is not
++	functionality for edge/level/simple/percpu interrupts. This is not
+ 	only a functional optimization. It also shortens code paths for
+ 	interrupts.
+       </para>
+-      <para>
+-	To make use of the split implementation, replace the call to
+-	__do_IRQ by a call to desc->handle_irq() and associate
+-        the appropriate handler function to desc->handle_irq().
+-	In most cases the generic handler implementations should
+-	be sufficient.
+-     </para>
+   </chapter>
+ 
+   <chapter id="locking">
+      <title>Locking on SMP</title>
+      <para>
+ 	The locking of chip registers is up to the architecture that
+-	defines the chip primitives. There is a chip->lock field that can be used
+-	for serialization, but the generic layer does not touch it. The per-irq
+-	structure is protected via desc->lock, by the generic layer.
++	defines the chip primitives. The per-irq structure is
++	protected via desc->lock, by the generic layer.
+      </para>
+   </chapter>
+   <chapter id="structs">
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 09a3080..8b45384 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -53,12 +53,13 @@ typedef	void (*irq_preflow_handler_t)(struct irq_data *data);
+  * Bits which can be modified via irq_set/clear/modify_status_flags()
+  * IRQ_LEVEL			- Interrupt is level type. Will be also
+  *				  updated in the code when the above trigger
+- *				  bits are modified via set_irq_type()
++ *				  bits are modified via irq_set_irq_type()
+  * IRQ_PER_CPU			- Mark an interrupt PER_CPU. Will protect
+  *				  it from affinity setting
+  * IRQ_NOPROBE			- Interrupt cannot be probed by autoprobing
+  * IRQ_NOREQUEST		- Interrupt cannot be requested via
+  *				  request_irq()
++ * IRQ_NOTHREAD			- Interrupt cannot be threaded
+  * IRQ_NOAUTOEN			- Interrupt is not automatically enabled in
+  *				  request/setup_irq()
+  * IRQ_NO_BALANCING		- Interrupt cannot be balanced (affinity set)
+@@ -85,6 +86,7 @@ enum {
+ 	IRQ_NO_BALANCING	= (1 << 13),
+ 	IRQ_MOVE_PCNTXT		= (1 << 14),
+ 	IRQ_NESTED_THREAD	= (1 << 15),
++	IRQ_NOTHREAD		= (1 << 16),
+ };
+ 
+ #define IRQF_MODIFY_MASK	\
+@@ -261,23 +263,6 @@ static inline void irqd_clr_chained_irq_inprogress(struct irq_data *d)
+  * struct irq_chip - hardware interrupt chip descriptor
+  *
+  * @name:		name for /proc/interrupts
+- * @startup:		deprecated, replaced by irq_startup
+- * @shutdown:		deprecated, replaced by irq_shutdown
+- * @enable:		deprecated, replaced by irq_enable
+- * @disable:		deprecated, replaced by irq_disable
+- * @ack:		deprecated, replaced by irq_ack
+- * @mask:		deprecated, replaced by irq_mask
+- * @mask_ack:		deprecated, replaced by irq_mask_ack
+- * @unmask:		deprecated, replaced by irq_unmask
+- * @eoi:		deprecated, replaced by irq_eoi
+- * @end:		deprecated, will go away with __do_IRQ()
+- * @set_affinity:	deprecated, replaced by irq_set_affinity
+- * @retrigger:		deprecated, replaced by irq_retrigger
+- * @set_type:		deprecated, replaced by irq_set_type
+- * @set_wake:		deprecated, replaced by irq_wake
+- * @bus_lock:		deprecated, replaced by irq_bus_lock
+- * @bus_sync_unlock:	deprecated, replaced by irq_bus_sync_unlock
+- *
+  * @irq_startup:	start up the interrupt (defaults to ->enable if NULL)
+  * @irq_shutdown:	shut down the interrupt (defaults to ->disable if NULL)
+  * @irq_enable:		enable the interrupt (defaults to chip->unmask if NULL)
+@@ -295,6 +280,9 @@ static inline void irqd_clr_chained_irq_inprogress(struct irq_data *d)
+  * @irq_bus_sync_unlock:function to sync and unlock slow bus (i2c) chips
+  * @irq_cpu_online:	configure an interrupt source for a secondary CPU
+  * @irq_cpu_offline:	un-configure an interrupt source for a secondary CPU
++ * @irq_suspend:	function called from core code on suspend once per chip
++ * @irq_resume:		function called from core code on resume once per chip
++ * @irq_pm_shutdown:	function called from core code on shutdown once per chip
+  * @irq_print_chip:	optional to print special chip info in show_interrupts
+  * @flags:		chip specific flags
+  *
+@@ -324,6 +312,10 @@ struct irq_chip {
+ 	void		(*irq_cpu_online)(struct irq_data *data);
+ 	void		(*irq_cpu_offline)(struct irq_data *data);
+ 
++	void		(*irq_suspend)(struct irq_data *data);
++	void		(*irq_resume)(struct irq_data *data);
++	void		(*irq_pm_shutdown)(struct irq_data *data);
++
+ 	void		(*irq_print_chip)(struct irq_data *data, struct seq_file *p);
+ 
+ 	unsigned long	flags;
+@@ -439,7 +431,7 @@ irq_set_handler(unsigned int irq, irq_flow_handler_t handle)
+ /*
+  * Set a highlevel chained flow handler for a given IRQ.
+  * (a chained handler is automatically enabled and set to
+- *  IRQ_NOREQUEST and IRQ_NOPROBE)
++ *  IRQ_NOREQUEST, IRQ_NOPROBE, and IRQ_NOTHREAD)
+  */
+ static inline void
+ irq_set_chained_handler(unsigned int irq, irq_flow_handler_t handle)
+@@ -469,6 +461,16 @@ static inline void irq_set_probe(unsigned int irq)
+ 	irq_modify_status(irq, IRQ_NOPROBE, 0);
+ }
+ 
++static inline void irq_set_nothread(unsigned int irq)
++{
++	irq_modify_status(irq, 0, IRQ_NOTHREAD);
++}
++
++static inline void irq_set_thread(unsigned int irq)
++{
++	irq_modify_status(irq, IRQ_NOTHREAD, 0);
++}
++
+ static inline void irq_set_nested_thread(unsigned int irq, bool nest)
+ {
+ 	if (nest)
+@@ -573,6 +575,145 @@ static inline int irq_reserve_irq(unsigned int irq)
+ 	return irq_reserve_irqs(irq, 1);
+ }
+ 
++#ifndef irq_reg_writel
++# define irq_reg_writel(val, addr)	writel(val, addr)
++#endif
++#ifndef irq_reg_readl
++# define irq_reg_readl(addr)		readl(addr)
++#endif
++
++/**
++ * struct irq_chip_regs - register offsets for struct irq_gci
++ * @enable:	Enable register offset to reg_base
++ * @disable:	Disable register offset to reg_base
++ * @mask:	Mask register offset to reg_base
++ * @ack:	Ack register offset to reg_base
++ * @eoi:	Eoi register offset to reg_base
++ * @type:	Type configuration register offset to reg_base
++ * @polarity:	Polarity configuration register offset to reg_base
++ */
++struct irq_chip_regs {
++	unsigned long		enable;
++	unsigned long		disable;
++	unsigned long		mask;
++	unsigned long		ack;
++	unsigned long		eoi;
++	unsigned long		type;
++	unsigned long		polarity;
++};
++
++/**
++ * struct irq_chip_type - Generic interrupt chip instance for a flow type
++ * @chip:		The real interrupt chip which provides the callbacks
++ * @regs:		Register offsets for this chip
++ * @handler:		Flow handler associated with this chip
++ * @type:		Chip can handle these flow types
++ *
++ * A irq_generic_chip can have several instances of irq_chip_type when
++ * it requires different functions and register offsets for different
++ * flow types.
++ */
++struct irq_chip_type {
++	struct irq_chip		chip;
++	struct irq_chip_regs	regs;
++	irq_flow_handler_t	handler;
++	u32			type;
++};
++
++/**
++ * struct irq_chip_generic - Generic irq chip data structure
++ * @lock:		Lock to protect register and cache data access
++ * @reg_base:		Register base address (virtual)
++ * @irq_base:		Interrupt base nr for this chip
++ * @irq_cnt:		Number of interrupts handled by this chip
++ * @mask_cache:		Cached mask register
++ * @type_cache:		Cached type register
++ * @polarity_cache:	Cached polarity register
++ * @wake_enabled:	Interrupt can wakeup from suspend
++ * @wake_active:	Interrupt is marked as an wakeup from suspend source
++ * @num_ct:		Number of available irq_chip_type instances (usually 1)
++ * @private:		Private data for non generic chip callbacks
++ * @list:		List head for keeping track of instances
++ * @chip_types:		Array of interrupt irq_chip_types
++ *
++ * Note, that irq_chip_generic can have multiple irq_chip_type
++ * implementations which can be associated to a particular irq line of
++ * an irq_chip_generic instance. That allows to share and protect
++ * state in an irq_chip_generic instance when we need to implement
++ * different flow mechanisms (level/edge) for it.
++ */
++struct irq_chip_generic {
++	raw_spinlock_t		lock;
++	void __iomem		*reg_base;
++	unsigned int		irq_base;
++	unsigned int		irq_cnt;
++	u32			mask_cache;
++	u32			type_cache;
++	u32			polarity_cache;
++	u32			wake_enabled;
++	u32			wake_active;
++	unsigned int		num_ct;
++	void			*private;
++	struct list_head	list;
++	struct irq_chip_type	chip_types[0];
++};
++
++/**
++ * enum irq_gc_flags - Initialization flags for generic irq chips
++ * @IRQ_GC_INIT_MASK_CACHE:	Initialize the mask_cache by reading mask reg
++ * @IRQ_GC_INIT_NESTED_LOCK:	Set the lock class of the irqs to nested for
++ *				irq chips which need to call irq_set_wake() on
++ *				the parent irq. Usually GPIO implementations
++ */
++enum irq_gc_flags {
++	IRQ_GC_INIT_MASK_CACHE		= 1 << 0,
++	IRQ_GC_INIT_NESTED_LOCK		= 1 << 1,
++};
++
++/* Generic chip callback functions */
++void irq_gc_noop(struct irq_data *d);
++void irq_gc_mask_disable_reg(struct irq_data *d);
++void irq_gc_mask_set_bit(struct irq_data *d);
++void irq_gc_mask_clr_bit(struct irq_data *d);
++void irq_gc_unmask_enable_reg(struct irq_data *d);
++void irq_gc_ack(struct irq_data *d);
++void irq_gc_mask_disable_reg_and_ack(struct irq_data *d);
++void irq_gc_eoi(struct irq_data *d);
++int irq_gc_set_wake(struct irq_data *d, unsigned int on);
++
++/* Setup functions for irq_chip_generic */
++struct irq_chip_generic *
++irq_alloc_generic_chip(const char *name, int nr_ct, unsigned int irq_base,
++		       void __iomem *reg_base, irq_flow_handler_t handler);
++void irq_setup_generic_chip(struct irq_chip_generic *gc, u32 msk,
++			    enum irq_gc_flags flags, unsigned int clr,
++			    unsigned int set);
++int irq_setup_alt_chip(struct irq_data *d, unsigned int type);
++void irq_remove_generic_chip(struct irq_chip_generic *gc, u32 msk,
++			     unsigned int clr, unsigned int set);
++
++static inline struct irq_chip_type *irq_data_get_chip_type(struct irq_data *d)
++{
++	return container_of(d->chip, struct irq_chip_type, chip);
++}
++
++#define IRQ_MSK(n) (u32)((n) < 32 ? ((1 << (n)) - 1) : UINT_MAX)
++
++#ifdef CONFIG_SMP
++static inline void irq_gc_lock(struct irq_chip_generic *gc)
++{
++	raw_spin_lock(&gc->lock);
++}
++
++static inline void irq_gc_unlock(struct irq_chip_generic *gc)
++{
++	raw_spin_unlock(&gc->lock);
++}
++#else
++static inline void irq_gc_lock(struct irq_chip_generic *gc) { }
++static inline void irq_gc_unlock(struct irq_chip_generic *gc) { }
++#endif
++
+ #endif /* CONFIG_GENERIC_HARDIRQS */
+ 
+ #endif /* !CONFIG_S390 */
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index a082905..2d921b3 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -16,16 +16,18 @@ struct timer_rand_state;
+  * @irq_data:		per irq and chip data passed down to chip functions
+  * @timer_rand_state:	pointer to timer rand state struct
+  * @kstat_irqs:		irq stats per cpu
+- * @handle_irq:		highlevel irq-events handler [if NULL, __do_IRQ()]
++ * @handle_irq:		highlevel irq-events handler
++ * @preflow_handler:	handler called before the flow handler (currently used by sparc)
+  * @action:		the irq action chain
+  * @status:		status information
+  * @core_internal_state__do_not_mess_with_it: core internal status information
+  * @depth:		disable-depth, for nested irq_disable() calls
+- * @wake_depth:		enable depth, for multiple set_irq_wake() callers
++ * @wake_depth:		enable depth, for multiple irq_set_irq_wake() callers
+  * @irq_count:		stats field to detect stalled irqs
+  * @last_unhandled:	aging timer for unhandled count
+  * @irqs_unhandled:	stats field for spurious unhandled interrupts
+  * @lock:		locking for SMP
++ * @affinity_hint:	hint to user space for preferred irq affinity
+  * @affinity_notify:	context for notification of affinity changes
+  * @pending_mask:	pending rebalanced interrupts
+  * @threads_oneshot:	bitfield to handle shared oneshot threads
+@@ -109,10 +111,7 @@ static inline void generic_handle_irq_desc(unsigned int irq, struct irq_desc *de
+ 	desc->handle_irq(irq, desc);
+ }
+ 
+-static inline void generic_handle_irq(unsigned int irq)
+-{
+-	generic_handle_irq_desc(irq, irq_to_desc(irq));
+-}
++int generic_handle_irq(unsigned int irq);
+ 
+ /* Test to see if a driver has successfully requested an irq */
+ static inline int irq_has_action(unsigned int irq)
+diff --git a/kernel/irq/Kconfig b/kernel/irq/Kconfig
+index c574f9a..d1d051b3 100644
+--- a/kernel/irq/Kconfig
++++ b/kernel/irq/Kconfig
+@@ -48,6 +48,10 @@ config IRQ_PREFLOW_FASTEOI
+ config IRQ_EDGE_EOI_HANDLER
+        bool
+ 
++# Generic configurable interrupt chip implementation
++config GENERIC_IRQ_CHIP
++       bool
++
+ # Support forced irq threading
+ config IRQ_FORCED_THREADING
+        bool
+diff --git a/kernel/irq/Makefile b/kernel/irq/Makefile
+index 54329cd..7329005 100644
+--- a/kernel/irq/Makefile
++++ b/kernel/irq/Makefile
+@@ -1,5 +1,6 @@
+ 
+ obj-y := irqdesc.o handle.o manage.o spurious.o resend.o chip.o dummychip.o devres.o
++obj-$(CONFIG_GENERIC_IRQ_CHIP) += generic-chip.o
+ obj-$(CONFIG_GENERIC_IRQ_PROBE) += autoprobe.o
+ obj-$(CONFIG_PROC_FS) += proc.o
+ obj-$(CONFIG_GENERIC_PENDING_IRQ) += migration.o
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 4af1e2b..d5a3009 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -310,6 +310,7 @@ handle_simple_irq(unsigned int irq, struct irq_desc *desc)
+ out_unlock:
+ 	raw_spin_unlock(&desc->lock);
+ }
++EXPORT_SYMBOL_GPL(handle_simple_irq);
+ 
+ /**
+  *	handle_level_irq - Level type irq handler
+@@ -573,6 +574,7 @@ __irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
+ 	if (handle != handle_bad_irq && is_chained) {
+ 		irq_settings_set_noprobe(desc);
+ 		irq_settings_set_norequest(desc);
++		irq_settings_set_nothread(desc);
+ 		irq_startup(desc);
+ 	}
+ out:
+@@ -612,6 +614,7 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+ 
+ 	irq_put_desc_unlock(desc, flags);
+ }
++EXPORT_SYMBOL_GPL(irq_modify_status);
+ 
+ /**
+  *	irq_cpu_online - Invoke all irq_cpu_online functions.
+diff --git a/kernel/irq/debug.h b/kernel/irq/debug.h
+index 306cba3..97a8bfa 100644
+--- a/kernel/irq/debug.h
++++ b/kernel/irq/debug.h
+@@ -27,6 +27,7 @@ static inline void print_irq_desc(unsigned int irq, struct irq_desc *desc)
+ 	P(IRQ_PER_CPU);
+ 	P(IRQ_NOPROBE);
+ 	P(IRQ_NOREQUEST);
++	P(IRQ_NOTHREAD);
+ 	P(IRQ_NOAUTOEN);
+ 
+ 	PS(IRQS_AUTODETECT);
+diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
+new file mode 100644
+index 0000000..31a9db7
+--- /dev/null
++++ b/kernel/irq/generic-chip.c
+@@ -0,0 +1,354 @@
++/*
++ * Library implementing the most common irq chip callback functions
++ *
++ * Copyright (C) 2011, Thomas Gleixner
++ */
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/slab.h>
++#include <linux/interrupt.h>
++#include <linux/kernel_stat.h>
++#include <linux/syscore_ops.h>
++
++#include "internals.h"
++
++static LIST_HEAD(gc_list);
++static DEFINE_RAW_SPINLOCK(gc_lock);
++
++static inline struct irq_chip_regs *cur_regs(struct irq_data *d)
++{
++	return &container_of(d->chip, struct irq_chip_type, chip)->regs;
++}
++
++/**
++ * irq_gc_noop - NOOP function
++ * @d: irq_data
++ */
++void irq_gc_noop(struct irq_data *d)
++{
++}
++
++/**
++ * irq_gc_mask_disable_reg - Mask chip via disable register
++ * @d: irq_data
++ *
++ * Chip has separate enable/disable registers instead of a single mask
++ * register.
++ */
++void irq_gc_mask_disable_reg(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	u32 mask = 1 << (d->irq - gc->irq_base);
++
++	irq_gc_lock(gc);
++	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->disable);
++	gc->mask_cache &= ~mask;
++	irq_gc_unlock(gc);
++}
++
++/**
++ * irq_gc_mask_set_mask_bit - Mask chip via setting bit in mask register
++ * @d: irq_data
++ *
++ * Chip has a single mask register. Values of this register are cached
++ * and protected by gc->lock
++ */
++void irq_gc_mask_set_bit(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	u32 mask = 1 << (d->irq - gc->irq_base);
++
++	irq_gc_lock(gc);
++	gc->mask_cache |= mask;
++	irq_reg_writel(gc->mask_cache, gc->reg_base + cur_regs(d)->mask);
++	irq_gc_unlock(gc);
++}
++
++/**
++ * irq_gc_mask_set_mask_bit - Mask chip via clearing bit in mask register
++ * @d: irq_data
++ *
++ * Chip has a single mask register. Values of this register are cached
++ * and protected by gc->lock
++ */
++void irq_gc_mask_clr_bit(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	u32 mask = 1 << (d->irq - gc->irq_base);
++
++	irq_gc_lock(gc);
++	gc->mask_cache &= ~mask;
++	irq_reg_writel(gc->mask_cache, gc->reg_base + cur_regs(d)->mask);
++	irq_gc_unlock(gc);
++}
++
++/**
++ * irq_gc_unmask_enable_reg - Unmask chip via enable register
++ * @d: irq_data
++ *
++ * Chip has separate enable/disable registers instead of a single mask
++ * register.
++ */
++void irq_gc_unmask_enable_reg(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	u32 mask = 1 << (d->irq - gc->irq_base);
++
++	irq_gc_lock(gc);
++	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->enable);
++	gc->mask_cache |= mask;
++	irq_gc_unlock(gc);
++}
++
++/**
++ * irq_gc_ack - Ack pending interrupt
++ * @d: irq_data
++ */
++void irq_gc_ack(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	u32 mask = 1 << (d->irq - gc->irq_base);
++
++	irq_gc_lock(gc);
++	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->ack);
++	irq_gc_unlock(gc);
++}
++
++/**
++ * irq_gc_mask_disable_reg_and_ack- Mask and ack pending interrupt
++ * @d: irq_data
++ */
++void irq_gc_mask_disable_reg_and_ack(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	u32 mask = 1 << (d->irq - gc->irq_base);
++
++	irq_gc_lock(gc);
++	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->mask);
++	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->ack);
++	irq_gc_unlock(gc);
++}
++
++/**
++ * irq_gc_eoi - EOI interrupt
++ * @d: irq_data
++ */
++void irq_gc_eoi(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	u32 mask = 1 << (d->irq - gc->irq_base);
++
++	irq_gc_lock(gc);
++	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->eoi);
++	irq_gc_unlock(gc);
++}
++
++/**
++ * irq_gc_set_wake - Set/clr wake bit for an interrupt
++ * @d: irq_data
++ *
++ * For chips where the wake from suspend functionality is not
++ * configured in a separate register and the wakeup active state is
++ * just stored in a bitmask.
++ */
++int irq_gc_set_wake(struct irq_data *d, unsigned int on)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	u32 mask = 1 << (d->irq - gc->irq_base);
++
++	if (!(mask & gc->wake_enabled))
++		return -EINVAL;
++
++	irq_gc_lock(gc);
++	if (on)
++		gc->wake_active |= mask;
++	else
++		gc->wake_active &= ~mask;
++	irq_gc_unlock(gc);
++	return 0;
++}
++
++/**
++ * irq_alloc_generic_chip - Allocate a generic chip and initialize it
++ * @name:	Name of the irq chip
++ * @num_ct:	Number of irq_chip_type instances associated with this
++ * @irq_base:	Interrupt base nr for this chip
++ * @reg_base:	Register base address (virtual)
++ * @handler:	Default flow handler associated with this chip
++ *
++ * Returns an initialized irq_chip_generic structure. The chip defaults
++ * to the primary (index 0) irq_chip_type and @handler
++ */
++struct irq_chip_generic *
++irq_alloc_generic_chip(const char *name, int num_ct, unsigned int irq_base,
++		       void __iomem *reg_base, irq_flow_handler_t handler)
++{
++	struct irq_chip_generic *gc;
++	unsigned long sz = sizeof(*gc) + num_ct * sizeof(struct irq_chip_type);
++
++	gc = kzalloc(sz, GFP_KERNEL);
++	if (gc) {
++		raw_spin_lock_init(&gc->lock);
++		gc->num_ct = num_ct;
++		gc->irq_base = irq_base;
++		gc->reg_base = reg_base;
++		gc->chip_types->chip.name = name;
++		gc->chip_types->handler = handler;
++	}
++	return gc;
++}
++
++/*
++ * Separate lockdep class for interrupt chip which can nest irq_desc
++ * lock.
++ */
++static struct lock_class_key irq_nested_lock_class;
++
++/**
++ * irq_setup_generic_chip - Setup a range of interrupts with a generic chip
++ * @gc:		Generic irq chip holding all data
++ * @msk:	Bitmask holding the irqs to initialize relative to gc->irq_base
++ * @flags:	Flags for initialization
++ * @clr:	IRQ_* bits to clear
++ * @set:	IRQ_* bits to set
++ *
++ * Set up max. 32 interrupts starting from gc->irq_base. Note, this
++ * initializes all interrupts to the primary irq_chip_type and its
++ * associated handler.
++ */
++void irq_setup_generic_chip(struct irq_chip_generic *gc, u32 msk,
++			    enum irq_gc_flags flags, unsigned int clr,
++			    unsigned int set)
++{
++	struct irq_chip_type *ct = gc->chip_types;
++	unsigned int i;
++
++	raw_spin_lock(&gc_lock);
++	list_add_tail(&gc->list, &gc_list);
++	raw_spin_unlock(&gc_lock);
++
++	/* Init mask cache ? */
++	if (flags & IRQ_GC_INIT_MASK_CACHE)
++		gc->mask_cache = irq_reg_readl(gc->reg_base + ct->regs.mask);
++
++	for (i = gc->irq_base; msk; msk >>= 1, i++) {
++		if (!msk & 0x01)
++			continue;
++
++		if (flags & IRQ_GC_INIT_NESTED_LOCK)
++			irq_set_lockdep_class(i, &irq_nested_lock_class);
++
++		irq_set_chip_and_handler(i, &ct->chip, ct->handler);
++		irq_set_chip_data(i, gc);
++		irq_modify_status(i, clr, set);
++	}
++	gc->irq_cnt = i - gc->irq_base;
++}
++
++/**
++ * irq_setup_alt_chip - Switch to alternative chip
++ * @d:		irq_data for this interrupt
++ * @type	Flow type to be initialized
++ *
++ * Only to be called from chip->irq_set_type() callbacks.
++ */
++int irq_setup_alt_chip(struct irq_data *d, unsigned int type)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	struct irq_chip_type *ct = gc->chip_types;
++	unsigned int i;
++
++	for (i = 0; i < gc->num_ct; i++, ct++) {
++		if (ct->type & type) {
++			d->chip = &ct->chip;
++			irq_data_to_desc(d)->handle_irq = ct->handler;
++			return 0;
++		}
++	}
++	return -EINVAL;
++}
++
++/**
++ * irq_remove_generic_chip - Remove a chip
++ * @gc:		Generic irq chip holding all data
++ * @msk:	Bitmask holding the irqs to initialize relative to gc->irq_base
++ * @clr:	IRQ_* bits to clear
++ * @set:	IRQ_* bits to set
++ *
++ * Remove up to 32 interrupts starting from gc->irq_base.
++ */
++void irq_remove_generic_chip(struct irq_chip_generic *gc, u32 msk,
++			     unsigned int clr, unsigned int set)
++{
++	unsigned int i = gc->irq_base;
++
++	raw_spin_lock(&gc_lock);
++	list_del(&gc->list);
++	raw_spin_unlock(&gc_lock);
++
++	for (; msk; msk >>= 1, i++) {
++		if (!msk & 0x01)
++			continue;
++
++		/* Remove handler first. That will mask the irq line */
++		irq_set_handler(i, NULL);
++		irq_set_chip(i, &no_irq_chip);
++		irq_set_chip_data(i, NULL);
++		irq_modify_status(i, clr, set);
++	}
++}
++
++#ifdef CONFIG_PM
++static int irq_gc_suspend(void)
++{
++	struct irq_chip_generic *gc;
++
++	list_for_each_entry(gc, &gc_list, list) {
++		struct irq_chip_type *ct = gc->chip_types;
++
++		if (ct->chip.irq_suspend)
++			ct->chip.irq_suspend(irq_get_irq_data(gc->irq_base));
++	}
++	return 0;
++}
++
++static void irq_gc_resume(void)
++{
++	struct irq_chip_generic *gc;
++
++	list_for_each_entry(gc, &gc_list, list) {
++		struct irq_chip_type *ct = gc->chip_types;
++
++		if (ct->chip.irq_resume)
++			ct->chip.irq_resume(irq_get_irq_data(gc->irq_base));
++	}
++}
++#else
++#define irq_gc_suspend NULL
++#define irq_gc_resume NULL
++#endif
++
++static void irq_gc_shutdown(void)
++{
++	struct irq_chip_generic *gc;
++
++	list_for_each_entry(gc, &gc_list, list) {
++		struct irq_chip_type *ct = gc->chip_types;
++
++		if (ct->chip.irq_pm_shutdown)
++			ct->chip.irq_pm_shutdown(irq_get_irq_data(gc->irq_base));
++	}
++}
++
++static struct syscore_ops irq_gc_syscore_ops = {
++	.suspend = irq_gc_suspend,
++	.resume = irq_gc_resume,
++	.shutdown = irq_gc_shutdown,
++};
++
++static int __init irq_gc_init_ops(void)
++{
++	register_syscore_ops(&irq_gc_syscore_ops);
++	return 0;
++}
++device_initcall(irq_gc_init_ops);
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 2c039c9..886e803 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -22,7 +22,7 @@
+  */
+ static struct lock_class_key irq_desc_lock_class;
+ 
+-#if defined(CONFIG_SMP) && defined(CONFIG_GENERIC_HARDIRQS)
++#if defined(CONFIG_SMP)
+ static void __init init_irq_default_affinity(void)
+ {
+ 	alloc_cpumask_var(&irq_default_affinity, GFP_NOWAIT);
+@@ -290,6 +290,22 @@ static int irq_expand_nr_irqs(unsigned int nr)
+ 
+ #endif /* !CONFIG_SPARSE_IRQ */
+ 
++/**
++ * generic_handle_irq - Invoke the handler for a particular irq
++ * @irq:	The irq number to handle
++ *
++ */
++int generic_handle_irq(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (!desc)
++		return -EINVAL;
++	generic_handle_irq_desc(irq, desc);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(generic_handle_irq);
++
+ /* Dynamic interrupt handling */
+ 
+ /**
+@@ -311,6 +327,7 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
+ 	bitmap_clear(allocated_irqs, from, cnt);
+ 	mutex_unlock(&sparse_irq_lock);
+ }
++EXPORT_SYMBOL_GPL(irq_free_descs);
+ 
+ /**
+  * irq_alloc_descs - allocate and initialize a range of irq descriptors
+@@ -351,6 +368,7 @@ err:
+ 	mutex_unlock(&sparse_irq_lock);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(irq_alloc_descs);
+ 
+ /**
+  * irq_reserve_irqs - mark irqs allocated
+@@ -430,7 +448,6 @@ unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
+ 			*per_cpu_ptr(desc->kstat_irqs, cpu) : 0;
+ }
+ 
+-#ifdef CONFIG_GENERIC_HARDIRQS
+ unsigned int kstat_irqs(unsigned int irq)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+@@ -443,4 +460,3 @@ unsigned int kstat_irqs(unsigned int irq)
+ 		sum += *per_cpu_ptr(desc->kstat_irqs, cpu);
+ 	return sum;
+ }
+-#endif /* CONFIG_GENERIC_HARDIRQS */
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 07c1611..f7ce002 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -900,7 +900,8 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 		 */
+ 		new->handler = irq_nested_primary_handler;
+ 	} else {
+-		irq_setup_forced_threading(new);
++		if (irq_settings_can_thread(desc))
++			irq_setup_forced_threading(new);
+ 	}
+ 
+ 	/*
+diff --git a/kernel/irq/settings.h b/kernel/irq/settings.h
+index 0d91730..f166783 100644
+--- a/kernel/irq/settings.h
++++ b/kernel/irq/settings.h
+@@ -8,6 +8,7 @@ enum {
+ 	_IRQ_LEVEL		= IRQ_LEVEL,
+ 	_IRQ_NOPROBE		= IRQ_NOPROBE,
+ 	_IRQ_NOREQUEST		= IRQ_NOREQUEST,
++	_IRQ_NOTHREAD		= IRQ_NOTHREAD,
+ 	_IRQ_NOAUTOEN		= IRQ_NOAUTOEN,
+ 	_IRQ_MOVE_PCNTXT	= IRQ_MOVE_PCNTXT,
+ 	_IRQ_NO_BALANCING	= IRQ_NO_BALANCING,
+@@ -20,6 +21,7 @@ enum {
+ #define IRQ_LEVEL		GOT_YOU_MORON
+ #define IRQ_NOPROBE		GOT_YOU_MORON
+ #define IRQ_NOREQUEST		GOT_YOU_MORON
++#define IRQ_NOTHREAD		GOT_YOU_MORON
+ #define IRQ_NOAUTOEN		GOT_YOU_MORON
+ #define IRQ_NESTED_THREAD	GOT_YOU_MORON
+ #undef IRQF_MODIFY_MASK
+@@ -94,6 +96,21 @@ static inline void irq_settings_set_norequest(struct irq_desc *desc)
+ 	desc->status_use_accessors |= _IRQ_NOREQUEST;
+ }
+ 
++static inline bool irq_settings_can_thread(struct irq_desc *desc)
++{
++	return !(desc->status_use_accessors & _IRQ_NOTHREAD);
++}
++
++static inline void irq_settings_clr_nothread(struct irq_desc *desc)
++{
++	desc->status_use_accessors &= ~_IRQ_NOTHREAD;
++}
++
++static inline void irq_settings_set_nothread(struct irq_desc *desc)
++{
++	desc->status_use_accessors |= _IRQ_NOTHREAD;
++}
++
+ static inline bool irq_settings_can_probe(struct irq_desc *desc)
+ {
+ 	return !(desc->status_use_accessors & _IRQ_NOPROBE);
