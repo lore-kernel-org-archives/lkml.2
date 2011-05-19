@@ -1,116 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935088Ab1ESVyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:54:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2603 "EHLO mga09.intel.com"
+	id S935035Ab1ESV4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:56:45 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61718 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935017Ab1ESVys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935019Ab1ESVys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 May 2011 17:54:48 -0400
 X-ExtLoop1: 1
-Message-Id: <20110519214745.037010107@intel.com>
+X-IronPort-AV: E=Sophos;i="4.65,239,1304319600"; 
+   d="scan'208";a="439348043"
+Message-Id: <20110519214745.161791619@intel.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 20 May 2011 05:45:36 +0800
+Date: Fri, 20 May 2011 05:45:37 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@csn.ul.ie>,
         Wu Fengguang <fengguang.wu@intel.com>
+cc: Dave Chinner <david@fromorbit.com>
 cc: Christoph Hellwig <hch@infradead.org>
 cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 06/18] writeback: sync expired inodes first in background writeback
+Subject: [PATCH 07/18] writeback: refill b_io iff empty
 References: <20110519214530.939830917@intel.com>
-Content-Disposition: inline; filename=writeback-moving-dirty-expired-background.patch
+Content-Disposition: inline; filename=writeback-refill-queue-iff-empty.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A background flush work may run for ever. So it's reasonable for it to
-mimic the kupdate behavior of syncing old/expired inodes first.
+There is no point to carry different refill policies between for_kupdate
+and other type of works. Use a consistent "refill b_io iff empty" policy
+which can guarantee fairness in an easy to understand way.
 
-At each queue_io() time, first try enqueuing only newly expired inodes.
-If there are zero expired inodes to work with, then relax the rule and
-enqueue all dirty inodes.
+A b_io refill will setup a _fixed_ work set with all currently eligible
+inodes and start a new round of walk through b_io. The "fixed" work set
+means no new inodes will be added to the work set during the walk.
+Only when a complete walk over b_io is done, new inodes that are
+eligible at the time will be enqueued and the walk be started over.
 
-It at least makes sense from the data integrity point of view.
+This procedure provides fairness among the inodes because it guarantees
+each inode to be synced once and only once at each round. So all inodes
+will be free from starvations.
 
-This may also reduce the number of dirty pages encountered by page
-reclaim, eg. the pageout() calls. Normally older inodes contain older
-dirty pages, which are more close to the end of the LRU lists. So
-syncing older inodes first helps reducing the dirty pages reached by the
-page reclaim code.
+This change relies on wb_writeback() to keep retrying as long as we made
+some progress on cleaning some pages and/or inodes. Without that ability,
+the old logic on background works relies on aggressively queuing all
+eligible inodes into b_io at every time. But that's not a guarantee.
 
-More background: as Mel put it, "it makes sense to write old pages first
-to reduce the chances page reclaim is initiating IO."
+The below test script completes a slightly faster now:
 
-Rik also presented the situation with a graph:
+             2.6.39-rc3	  2.6.39-rc3-dyn-expire+
+------------------------------------------------
+all elapsed     256.043      252.367
+stddev           24.381       12.530
 
-LRU head                                 [*] dirty page
-[                          *              *      * *  *  * * * * * *]
+tar elapsed      30.097       28.808
+dd  elapsed      13.214       11.782
 
-Ideally, most dirty pages should lie close to the LRU tail instead of
-LRU head. That requires the flusher thread to sync old/expired inodes
-first (as there are obvious correlations between inode age and page
-age), and to give fair opportunities to newly expired inodes rather
-than sticking with some large eldest inodes (as larger inodes have
-weaker correlations in the inode<=>page ages).
+	#!/bin/zsh
 
-This patch helps the flusher to meet both the above requirements.
+	cp /c/linux-2.6.38.3.tar.bz2 /dev/shm/
 
-Side effects: it might reduce the batch size and hence reduce
-inode_wb_list_lock hold time, but in turn make the cluster-by-partition
-logic in the same function less effective on reducing disk seeks.
+	umount /dev/sda7
+	mkfs.xfs -f /dev/sda7
+	mount /dev/sda7 /fs
 
-v2: keep policy changes inside wb_writeback() and keep the
-wbc.older_than_this visibility as suggested by Dave.
+	echo 3 > /proc/sys/vm/drop_caches
 
-CC: Dave Chinner <david@fromorbit.com>
-Acked-by: Jan Kara <jack@suse.cz>
-Acked-by: Rik van Riel<riel@redhat.com>
+	tic=$(cat /proc/uptime|cut -d' ' -f2)
+
+	cd /fs
+	time tar jxf /dev/shm/linux-2.6.38.3.tar.bz2 &
+	time dd if=/dev/zero of=/fs/zero bs=1M count=1000 &
+
+	wait
+	sync
+	tac=$(cat /proc/uptime|cut -d' ' -f2)
+	echo elapsed: $((tac - tic))
+
+It maintains roughly the same small vs. large file writeout shares, and
+offers large files better chances to be written in nice 4M chunks.
+
+Analyzes from Dave Chinner in great details:
+
+Let's say we have lots of inodes with 100 dirty pages being created,
+and one large writeback going on. We expire 8 new inodes for every
+1024 pages we write back.
+
+With the old code, we do:
+
+	b_more_io (large inode) -> b_io (1l)
+	8 newly expired inodes -> b_io (1l, 8s)
+
+	writeback  large inode 1024 pages -> b_more_io
+
+	b_more_io (large inode) -> b_io (8s, 1l)
+	8 newly expired inodes -> b_io (8s, 1l, 8s)
+
+	writeback  8 small inodes 800 pages
+		   1 large inode 224 pages -> b_more_io
+
+	b_more_io (large inode) -> b_io (8s, 1l)
+	8 newly expired inodes -> b_io (8s, 1l, 8s)
+	.....
+
+Your new code:
+
+	b_more_io (large inode) -> b_io (1l)
+	8 newly expired inodes -> b_io (1l, 8s)
+
+	writeback  large inode 1024 pages -> b_more_io
+	(b_io == 8s)
+	writeback  8 small inodes 800 pages
+
+	b_io empty: (1800 pages written)
+		b_more_io (large inode) -> b_io (1l)
+		14 newly expired inodes -> b_io (1l, 14s)
+
+	writeback  large inode 1024 pages -> b_more_io
+	(b_io == 14s)
+	writeback  10 small inodes 1000 pages
+		   1 small inode 24 pages -> b_more_io (1l, 1s(24))
+	writeback  5 small inodes 500 pages
+	b_io empty: (2548 pages written)
+		b_more_io (large inode) -> b_io (1l, 1s(24))
+		20 newly expired inodes -> b_io (1l, 1s(24), 20s)
+	......
+
+Rough progression of pages written at b_io refill:
+
+Old code:
+
+	total	large file	% of writeback
+	1024	224		21.9% (fixed)
+
+New code:
+	total	large file	% of writeback
+	1800	1024		~55%
+	2550	1024		~40%
+	3050	1024		~33%
+	3500	1024		~29%
+	3950	1024		~26%
+	4250	1024		~24%
+	4500	1024		~22.7%
+	4700	1024		~21.7%
+	4800	1024		~21.3%
+	4800	1024		~21.3%
+	(pretty much steady state from here)
+
+Ok, so the steady state is reached with a similar percentage of
+writeback to the large file as the existing code. Ok, that's good,
+but providing some evidence that is doesn't change the shared of
+writeback to the large should be in the commit message ;)
+
+The other advantage to this is that we always write 1024 page chunks
+to the large file, rather than smaller "whatever remains" chunks.
+
+CC: Jan Kara <jack@suse.cz>
 Acked-by: Mel Gorman <mel@csn.ul.ie>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ fs/fs-writeback.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- linux-next.orig/fs/fs-writeback.c	2011-05-20 05:11:29.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-20 05:11:30.000000000 +0800
-@@ -718,7 +718,7 @@ static long wb_writeback(struct bdi_writ
- 		if (work->for_background && !over_bground_thresh())
- 			break;
+after + dyn-expire + ioless:
+                &(&wb->list_lock)->rlock:          2291           2304           0.15         204.09        3125.12          35315         970712           0.10         223.84     1113437.05
+                ------------------------
+                &(&wb->list_lock)->rlock              9          [<ffffffff8115dc5d>] inode_wb_list_del+0x5f/0x85
+                &(&wb->list_lock)->rlock           1614          [<ffffffff8115da6a>] __mark_inode_dirty+0x173/0x1cf
+                &(&wb->list_lock)->rlock            459          [<ffffffff8115d351>] writeback_sb_inodes+0x108/0x154
+                &(&wb->list_lock)->rlock            137          [<ffffffff8115cdcf>] writeback_single_inode+0x1b4/0x296
+                ------------------------
+                &(&wb->list_lock)->rlock              3          [<ffffffff8110c367>] bdi_lock_two+0x46/0x4b
+                &(&wb->list_lock)->rlock              6          [<ffffffff8115dc5d>] inode_wb_list_del+0x5f/0x85
+                &(&wb->list_lock)->rlock           1160          [<ffffffff8115da6a>] __mark_inode_dirty+0x173/0x1cf
+                &(&wb->list_lock)->rlock            435          [<ffffffff8115dcb6>] writeback_inodes_wb+0x33/0x12b
+
+after + dyn-expire:
+                &(&wb->list_lock)->rlock:        226820         229719           0.10         194.28      809275.91         327372     1033513685           0.08         476.96  3590929811.61
+                ------------------------
+                &(&wb->list_lock)->rlock             11          [<ffffffff8115b6d3>] inode_wb_list_del+0x5f/0x85
+                &(&wb->list_lock)->rlock          30559          [<ffffffff8115bb1f>] wb_writeback+0x2fb/0x3c3
+                &(&wb->list_lock)->rlock          37339          [<ffffffff8115b72c>] writeback_inodes_wb+0x33/0x12b
+                &(&wb->list_lock)->rlock          54880          [<ffffffff8115a87f>] writeback_single_inode+0x17f/0x227
+                ------------------------
+                &(&wb->list_lock)->rlock              3          [<ffffffff8110b606>] bdi_lock_two+0x46/0x4b
+                &(&wb->list_lock)->rlock              6          [<ffffffff8115b6d3>] inode_wb_list_del+0x5f/0x85
+                &(&wb->list_lock)->rlock          55347          [<ffffffff8115b72c>] writeback_inodes_wb+0x33/0x12b
+                &(&wb->list_lock)->rlock          55338          [<ffffffff8115a87f>] writeback_single_inode+0x17f/0x227
+
+--- linux-next.orig/fs/fs-writeback.c	2011-05-20 05:11:30.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-20 05:11:31.000000000 +0800
+@@ -589,7 +589,8 @@ void writeback_inodes_wb(struct bdi_writ
+ 	if (!wbc->wb_start)
+ 		wbc->wb_start = jiffies; /* livelock avoidance */
+ 	spin_lock(&inode_wb_list_lock);
+-	if (!wbc->for_kupdate || list_empty(&wb->b_io))
++
++	if (list_empty(&wb->b_io))
+ 		queue_io(wb, wbc->older_than_this);
  
--		if (work->for_kupdate) {
-+		if (work->for_kupdate || work->for_background) {
- 			oldest_jif = jiffies -
- 				msecs_to_jiffies(dirty_expire_interval * 10);
- 			wbc.older_than_this = &oldest_jif;
-@@ -729,6 +729,7 @@ static long wb_writeback(struct bdi_writ
- 		wbc.pages_skipped = 0;
- 		wbc.inodes_cleaned = 0;
+ 	while (!list_empty(&wb->b_io)) {
+@@ -616,7 +617,7 @@ static void __writeback_inodes_sb(struct
+ 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
  
-+retry:
- 		trace_wbc_writeback_start(&wbc, wb->bdi);
- 		if (work->sb)
- 			__writeback_inodes_sb(work->sb, wb, &wbc);
-@@ -752,6 +753,19 @@ static long wb_writeback(struct bdi_writ
- 		if (wbc.inodes_cleaned)
- 			continue;
- 		/*
-+		 * background writeback will start with expired inodes, and
-+		 * if none is found, fallback to all inodes. This order helps
-+		 * reduce the number of dirty pages reaching the end of LRU
-+		 * lists and cause trouble to the page reclaim.
-+		 */
-+		if (work->for_background &&
-+		    wbc.older_than_this &&
-+		    list_empty(&wb->b_io) &&
-+		    list_empty(&wb->b_more_io)) {
-+			wbc.older_than_this = NULL;
-+			goto retry;
-+		}
-+		/*
- 		 * No more inodes for IO, bail
- 		 */
- 		if (!wbc.more_io)
+ 	spin_lock(&inode_wb_list_lock);
+-	if (!wbc->for_kupdate || list_empty(&wb->b_io))
++	if (list_empty(&wb->b_io))
+ 		queue_io(wb, wbc->older_than_this);
+ 	writeback_sb_inodes(sb, wb, wbc, true);
+ 	spin_unlock(&inode_wb_list_lock);
 
 
