@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934797Ab1ESVBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:01:01 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46288 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933993Ab1ESVBA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:01:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=ZUUXLGxEn//6ttsQkxTUGAg0cRr/1YE06iS45cfbgxpb7BmUjsFFUyg1MvkP290y/u
-         i8p6J7BBqaJe2Pw2SUO0642sSq5karVvlVnQt8Or273u4zgEQXfeGTxnPynWIjFzApH0
-         nRpHzKTL0VHNLcqTmUkjP8mWXVP04oqc5SCzw=
-Subject: [PATCH] eisa: do not force probe if cannot allocate resource on
- mainboard
-From: Eduardo Silva <edsiper@gmail.com>
-To: Marc Zyngier <maz@wild-wind.fr.eu.org>, Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 May 2011 16:52:36 -0400
-Message-ID: <1305838356.5272.5.camel@monotop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S934770Ab1ESUwV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 16:52:21 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40940 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934726Ab1ESUwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 16:52:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [linux-pm] [PATCH 2/4] PM / Loss: power loss management
+Date: Thu, 19 May 2011 22:52:46 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: Davide Ciminaghi <ciminaghi@gnudd.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Raffaele Recalcati <raffaele.recalcati@bticino.it>,
+        linux-pm@lists.linux-foundation.org,
+        Raffaele Recalcati <lamiaposta71@gmail.com>
+References: <Pine.LNX.4.44L0.1105191021220.1900-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1105191021220.1900-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105192252.46836.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if the eisa_probe() function fails to allocate resource for the
-mainboard in question, it performs a force probe over the available
-slots and print all fails in the logs. e.g:
+On Thursday, May 19, 2011, Alan Stern wrote:
+> On Thu, 19 May 2011, Davide Ciminaghi wrote:
+> 
+> > I'm not completely sure about this. What we wanted to do was to avoid powering
+> > down the mmc while it is physically writing data into its internal memory.
+> > If we force a sync when the power loss warning event warning happens,
+> > it is very difficult to be able to guarantee that all buffered data will be 
+> > written before power actually dies. So we preferred to follow another strategy:
+> > let the mmc finish any running write operation, and then stop its request 
+> > queue. If power really goes down, then we hope that the file system journal 
+> > will fix things on next boot (yes, some data could get lost, but the fs should
+> > still be mountable). On the other hand, if power resumes, nothing bad should 
+> > happen for user space processes.
+> 
+> You could consider a totally different approach.
+> 
+> Each platform will have a different set of high-power devices it wants
+> to turn off when a power-loss warning occurs.  So instead of changing
+> the core PM interface, you could add a new "power_loss" notifier list.  
+> Only the most critical drivers would need to listen for notifications, 
+> and this could be different drivers on different platforms.
 
-[    1.264550] EISA: Cannot allocate resource for mainboard
-[    1.264552] Cannot allocate resource for EISA slot 1
-[    1.264554] Cannot allocate resource for EISA slot 2
-[    1.264556] Cannot allocate resource for EISA slot 3
-[    1.264557] Cannot allocate resource for EISA slot 4
-[    1.264559] Cannot allocate resource for EISA slot 5
-[    1.264561] Cannot allocate resource for EISA slot 6
-[    1.264563] Cannot allocate resource for EISA slot 7
-[    1.264564] Cannot allocate resource for EISA slot 8
-[    1.264566] EISA: Detected 0 cards.
+Moreover, it would allow not only drivers, but also filesystems (for
+one example) to get notifications.
 
-The force probe for this specific condition always fails. The
-patch make it to skip the force probe and print a more detailed ending
-message to the log adding the number available slots:
-
-[    1.264550] EISA: Cannot allocate resource for mainboard
-[    1.264566] EISA: Detected 0 cards in 8 slots.
-
-Signed-off-by: Eduardo Silva <edsiper@gmail.com>
----
- drivers/eisa/eisa-bus.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
-index 806c77b..1cf37e0 100644
---- a/drivers/eisa/eisa-bus.c
-+++ b/drivers/eisa/eisa-bus.c
-@@ -312,7 +312,7 @@ static void __init eisa_release_resources(struct eisa_device *edev)
- 
- static int __init eisa_probe(struct eisa_root_device *root)
- {
--        int i, c;
-+        int i, c = 0;
- 	struct eisa_device *edev;
- 
- 	printk(KERN_INFO "EISA: Probing bus %d at %s\n",
-@@ -333,7 +333,7 @@ static int __init eisa_probe(struct eisa_root_device *root)
- 		kfree(edev);
- 		if (!root->force_probe)
- 			return -EBUSY;
--		goto force_probe;
-+		goto out;
- 	}
- 
- 	if (eisa_init_device(root, edev, 0)) {
-@@ -355,7 +355,7 @@ static int __init eisa_probe(struct eisa_root_device *root)
- 	
-  force_probe:
- 	
--        for (c = 0, i = 1; i <= root->slots; i++) {
-+        for (i = 1; i <= root->slots; i++) {
- 		edev = kzalloc(sizeof(*edev), GFP_KERNEL);
- 		if (!edev) {
- 			printk(KERN_ERR "EISA: Out of memory for slot %d\n", i);
-@@ -405,7 +405,9 @@ static int __init eisa_probe(struct eisa_root_device *root)
- 		}
-         }
- 
--	printk(KERN_INFO "EISA: Detected %d card%s.\n", c, c == 1 ? "" : "s");
-+ out:
-+	printk(KERN_INFO "EISA: Detected %d card%s in %d slots.\n", c,
-+	       c == 1 ? "" : "s", root->slots);
- 
- 	return 0;
- }
--- 
-1.7.4.1
-
-
-
-
+Thanks,
+Rafael
