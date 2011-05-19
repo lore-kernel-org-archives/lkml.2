@@ -1,213 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934960Ab1ESVsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:48:21 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41099 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933194Ab1ESVsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:48:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Power management updates for 2.6.40
-Date: Thu, 19 May 2011 23:48:49 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+	id S935105Ab1ESVzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:55:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46664 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935018Ab1ESVzI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 17:55:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uJuDZ53oiyQd9MlSNAuS1zm2Gq87YfINYg8mmpfWdUHT9cQkTPxm89xWPjrK5a3nZn
+         6LDCm94sO/sgnzA2Mrc8Nk45gU592p2HL+L9UeNTarHd8pd7p2ItYEeY3iZiUtutWffk
+         /lpM2zB7sk17ork96Z7soF1fJqrS8nbx6RqUU=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105192348.49412.rjw@sisk.pl>
+In-Reply-To: <29601.1305840992@neuling.org>
+References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
+	<1305753895-24845-3-git-send-email-ericvh@gmail.com>
+	<425.1305784718@neuling.org>
+	<BANLkTimKhApFW8G1-pG0u_9Kv2YB0R1O0w@mail.gmail.com>
+	<29601.1305840992@neuling.org>
+Date: Thu, 19 May 2011 16:55:06 -0500
+Message-ID: <BANLkTi=rc5vZm3xAXHpHSxSH1wBWKhv92A@mail.gmail.com>
+Subject: Re: [PATCH 3/7] [RFC] add support for BlueGene/P FPU
+From: Eric Van Hensbergen <ericvh@gmail.com>
+To: Michael Neuling <mikey@neuling.org>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        bg-linux@lists.anl-external.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Damnit Mikey, just after I hit send on [V2].....
 
-Please pull power management updates for 2.6.40 from:
+On Thu, May 19, 2011 at 4:36 PM, Michael Neuling <mikey@neuling.org> wrote:
+> In message <BANLkTimKhApFW8G1-pG0u_9Kv2YB0R1O0w@mail.gmail.com> you wrote:
+>> On Thu, May 19, 2011 at 12:58 AM, Michael Neuling <mikey@neuling.org> wrote=
+>> :
+>> > Eric,
+>> >
+>> >> This patch adds save/restore register support for the BlueGene/P
+>> >> double hummer FPU.
+>> >
+>> > What does this mean? =A0Needs more details here.
+>> >
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git for-linus
+okay, I've changed it a bit in [V2], if you want more I can do my best.
 
-They include:
+>> "Each of the two FPU units contains 32 64-bit floating point registers
+>> for a total of 64 FP registers per processor." which would seem to
+>> point to the kittyhawk version - but they have a second SAVE_32SFPRS
+>> for the second hummer.  What wasn't clear to me with this version of
+>> the code was whether or not they were doing something clever like
+>> saving the pair of the 64-bit FPU registers in a single 128-bit slot
+>> (seems plausible).
+>
+> Ok, sounds like there is 32*8*2 bytes of data, rather than the normal
+> 32*8 bytes for FP only (ignoring VSX).  If this is the case, then you'll
+> need make 'fpr' in the thread struct bigger which you can do by setting
+> TS_FPRWIDTH = 2 like we do for VSX.
+>
 
-* Elimination of suspend/resume and shutdown callbacks from struct sysdev_class
-  and struct sysdev_driver.
+Okay, I'll incorporate that into [V3].
 
-* Consolidation of ARM OMAP and shmobile runtime PM clock management and update
-  of the core PM code related to power domains.
+> If there is some instruction that saves and restores two of these at a
+> time (which LFPDX/STFPDX might I guess), then we can use that, otherwise
+> we'll have to do 64 saves/restores.  Double load/stores will be faster
+> I'm guessing though.
 
-* Various PM fixes and extensions.
+I assume that's true.
 
+>
+> If two at a time, do we need to increase the index in pairs?
+>
 
- Documentation/ABI/testing/sysfs-power      |   14 +
- Documentation/feature-removal-schedule.txt |    8 -
- Documentation/kernel-parameters.txt        |    2 +-
- Documentation/power/devices.txt            |   14 +-
- Documentation/power/notifiers.txt          |   51 ++--
- arch/arm/common/vic.c                      |   69 ++---
- arch/arm/include/asm/mach/time.h           |    1 -
- arch/arm/kernel/leds.c                     |   28 +-
- arch/arm/kernel/time.c                     |   35 +--
- arch/arm/mach-exynos4/pm.c                 |   45 ++--
- arch/arm/mach-integrator/integrator_ap.c   |   26 +--
- arch/arm/mach-omap1/pm_bus.c               |   69 ++---
- arch/arm/mach-omap2/Makefile               |    6 +-
- arch/arm/mach-omap2/pm_bus.c               |   85 ------
- arch/arm/mach-pxa/balloon3.c               |    1 -
- arch/arm/mach-pxa/clock-pxa2xx.c           |   18 +-
- arch/arm/mach-pxa/clock-pxa3xx.c           |   17 +-
- arch/arm/mach-pxa/clock.h                  |    7 +-
- arch/arm/mach-pxa/cm-x270.c                |    1 -
- arch/arm/mach-pxa/cm-x2xx.c                |   23 +-
- arch/arm/mach-pxa/colibri-evalboard.c      |    1 -
- arch/arm/mach-pxa/colibri-pxa270-income.c  |    1 -
- arch/arm/mach-pxa/colibri-pxa270.c         |    1 -
- arch/arm/mach-pxa/generic.h                |    8 +-
- arch/arm/mach-pxa/irq.c                    |   17 +-
- arch/arm/mach-pxa/lpd270.c                 |   20 +-
- arch/arm/mach-pxa/lubbock.c                |   21 +-
- arch/arm/mach-pxa/mainstone.c              |   22 +-
- arch/arm/mach-pxa/mfp-pxa2xx.c             |   12 +-
- arch/arm/mach-pxa/mfp-pxa3xx.c             |   21 +-
- arch/arm/mach-pxa/mioa701.c                |   43 +---
- arch/arm/mach-pxa/palmld.c                 |    1 -
- arch/arm/mach-pxa/palmtreo.c               |    1 -
- arch/arm/mach-pxa/palmz72.c                |   24 +-
- arch/arm/mach-pxa/pxa25x.c                 |   25 +--
- arch/arm/mach-pxa/pxa27x.c                 |   25 +--
- arch/arm/mach-pxa/pxa3xx.c                 |   25 +--
- arch/arm/mach-pxa/pxa95x.c                 |   20 +-
- arch/arm/mach-pxa/raumfeld.c               |    1 -
- arch/arm/mach-pxa/smemc.c                  |   29 +--
- arch/arm/mach-pxa/trizeps4.c               |    1 -
- arch/arm/mach-pxa/viper.c                  |   12 +-
- arch/arm/mach-pxa/vpac270.c                |    1 -
- arch/arm/mach-s3c2410/irq.c                |   30 +--
- arch/arm/mach-s3c2410/mach-bast.c          |   17 +-
- arch/arm/mach-s3c2410/pm.c                 |   13 +-
- arch/arm/mach-s3c2410/s3c2410.c            |    5 +
- arch/arm/mach-s3c2412/irq.c                |    2 -
- arch/arm/mach-s3c2412/mach-jive.c          |   19 +-
- arch/arm/mach-s3c2412/pm.c                 |   27 +-
- arch/arm/mach-s3c2412/s3c2412.c            |    4 +
- arch/arm/mach-s3c2416/irq.c                |    2 -
- arch/arm/mach-s3c2416/pm.c                 |   27 +-
- arch/arm/mach-s3c2416/s3c2416.c            |    5 +
- arch/arm/mach-s3c2440/mach-osiris.c        |   18 +-
- arch/arm/mach-s3c2440/s3c2440.c            |    8 +
- arch/arm/mach-s3c2440/s3c2442.c            |    6 +
- arch/arm/mach-s3c2440/s3c244x-irq.c        |    4 -
- arch/arm/mach-s3c2440/s3c244x.c            |   62 ++--
- arch/arm/mach-s3c64xx/irq-pm.c             |   18 +-
- arch/arm/mach-s5pv210/pm.c                 |   25 ++-
- arch/arm/mach-sa1100/irq.c                 |   19 +-
- arch/arm/mach-shmobile/pm_runtime.c        |  145 ++--------
- arch/arm/plat-omap/gpio.c                  |   35 +--
- arch/arm/plat-omap/omap_device.c           |   23 ++
- arch/arm/plat-pxa/gpio.c                   |   17 +-
- arch/arm/plat-pxa/mfp.c                    |    1 -
- arch/arm/plat-s3c24xx/dma.c                |   68 ++---
- arch/arm/plat-s3c24xx/irq-pm.c             |    7 +-
- arch/arm/plat-s5p/irq-pm.c                 |    7 +-
- arch/arm/plat-samsung/include/plat/cpu.h   |    6 +
- arch/arm/plat-samsung/include/plat/pm.h    |    6 +-
- arch/arm/vfp/vfpmodule.c                   |   19 +-
- arch/avr32/mach-at32ap/intc.c              |   38 +--
- arch/blackfin/kernel/nmi.c                 |   30 +--
- arch/powerpc/include/asm/mpic.h            |    3 -
- arch/powerpc/platforms/cell/spu_base.c     |   28 ++-
- arch/powerpc/platforms/powermac/pic.c      |   42 +--
- arch/powerpc/sysdev/ipic.c                 |   36 +--
- arch/powerpc/sysdev/mpic.c                 |   48 ++--
- arch/sh/Kconfig                            |    1 -
- arch/sh/configs/apsh4ad0a_defconfig        |    1 -
- arch/sh/configs/sdk7786_defconfig          |    1 -
- arch/sh/kernel/cpu/shmobile/pm_runtime.c   |   33 ++-
- arch/unicore32/kernel/irq.c                |   23 +-
- arch/x86/Kconfig                           |    1 -
- arch/x86/kernel/acpi/sleep.c               |    5 -
- arch/x86/kernel/apm_32.c                   |    4 -
- drivers/base/Kconfig                       |    7 -
- drivers/base/base.h                        |    2 -
- drivers/base/dd.c                          |    6 +-
- drivers/base/firmware_class.c              |    5 +
- drivers/base/platform.c                    |  138 ++--------
- drivers/base/power/Makefile                |    4 +-
- drivers/base/power/clock_ops.c             |  431 ++++++++++++++++++++++++++++
- drivers/base/power/generic_ops.c           |   39 +++
- drivers/base/power/main.c                  |   82 +++---
- drivers/base/power/runtime.c               |   29 +--
- drivers/base/power/sysfs.c                 |    4 +-
- drivers/base/power/wakeup.c                |    1 -
- drivers/base/sys.c                         |  202 +-------------
- drivers/xen/manage.c                       |    8 +-
- include/linux/device.h                     |    7 -
- include/linux/kmod.h                       |    1 +
- include/linux/platform_device.h            |   63 ++++-
- include/linux/pm.h                         |   39 ++-
- include/linux/pm_runtime.h                 |   42 +++
- include/linux/sysdev.h                     |   11 -
- kernel/freezer.c                           |    4 +-
- kernel/kexec.c                             |    9 +-
- kernel/kmod.c                              |   16 +-
- kernel/power/Kconfig                       |   10 +-
- kernel/power/hibernate.c                   |   58 +++--
- kernel/power/main.c                        |    1 +
- kernel/power/power.h                       |    4 +
- kernel/power/snapshot.c                    |   33 ++-
- kernel/power/suspend.c                     |   10 +-
- kernel/sys.c                               |    3 -
- 118 files changed, 1393 insertions(+), 1667 deletions(-)
+I don't believe so.
 
----------------
+>> If this is not the way to go, I can certainly
+>> switch the kittyhawk version of the patch with the *, the extra
+>> SAVE32SFPR and the extra double hummer specific storage space in the
+>> thread_struct.
+>
+> I'd be tempted to keep it in the 'fpr' part of the struct so you can
+> then access it with ptrace/signals/core dumps.
+>
+>> If it would help I can post an alternate version of the patch for
+>> discussion with the kittyhawk version.
+>
+> Sure.
+>
 
-Amerigo Wang (1):
-      PM / ACPI: Remove acpi_sleep=s4_nonvs
+Kittyhawk version can be seen here:
 
-Eric Dumazet (1):
-      PM / Wakeup: Remove useless synchronize_rcu() call
+http://git.kernel.org/?p=linux/kernel/git/ericvh/bluegene.git;a=commitdiff;h=94bffe786324b9bd07187b11afd836e3ec362d95
 
-Kay Sievers (1):
-      kmod: always provide usermodehelper_disable()
+>
+> The most useful thing would be to see the instruction definition for
+> STFPDX/LFPDX.
+>
 
-Kevin Hilman (2):
-      OMAP2+ / PM: move runtime PM implementation to use device power domains
-      PM: Revert "driver core: platform_bus: allow runtime override of dev_pm_ops"
+https://wiki.alcf.anl.gov/images/d/d9/PPC440_FP2_arch.pdf
 
-Mike Frysinger (1):
-      Freezer: Use SMP barriers
+>>
+>> >> =A0/*
+>> >> diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms=
+>> /44x/
+>> > Kconfig
+>> >> index f485fc5f..24a515e 100644
+>> >> --- a/arch/powerpc/platforms/44x/Kconfig
+>> >> +++ b/arch/powerpc/platforms/44x/Kconfig
+>> >> @@ -169,6 +169,15 @@ config YOSEMITE
+>> >> =A0 =A0 =A0 help
+>> >> =A0 =A0 =A0 =A0 This option enables support for the AMCC PPC440EP evalua=
+>> tion board.
+>> >>
+>> >> +config =A0 =A0 =A0 BGP
+>> >
+>> > Does this FPU feature have a specific name like double hammer? =A0I'd
+>> > rather have the BGP defconfig depend on PPC_FPU_DOUBLE_HUMMER, or
+>> > something like that...
+>> >
+>> >> + =A0 =A0 bool "Blue Gene/P"
+>> >> + =A0 =A0 depends on 44x
+>> >> + =A0 =A0 default n
+>> >> + =A0 =A0 select PPC_FPU
+>> >> + =A0 =A0 select PPC_DOUBLE_FPU
+>> >
+>> > ... in fact, it seem you are doing something like these here but you
+>> > don't use PPC_DOUBLE_FPU anywhere?
+>> >
+>>
+>> A fair point.  I'm fine with calling it DOUBLE_HUMMER, but I wasn't sure if
+>> that was "too internal" of a name for the kernel.  Let me know and
+>> I'll fix it up.
+>
+> What I'm mostly concerned about is disassociating it with a particular
+> CPU.
+>
+> If it has an external name, then all the better.
+>
 
-MyungJoo Ham (1):
-      PM / Suspend: Do not ignore error codes returned by suspend_enter()
+Since it isn't available on other chips, shoudl it just be PPC_BGP_FPU
+or PPC_BGP_DOUBLE_FPU?
 
-Rafael J. Wysocki (27):
-      ARM: Use struct syscore_ops instead of sysdevs for PM in common code
-      ARM / OMAP: Use struct syscore_ops for "core" power management
-      ARM / Integrator: Use struct syscore_ops for core PM
-      ARM / SA1100: Use struct syscore_ops for "core" power management
-      ARM / PXA: Use struct syscore_ops for "core" power management
-      ARM / Samsung: Use struct syscore_ops for "core" power management
-      PM / Blackfin: Use struct syscore_ops instead of sysdevs for PM
-      PM: Make power domain callbacks take precedence over subsystem ones
-      PM: Export platform bus type's default PM callbacks
-      shmobile: Use power domains for platform runtime PM
-      PM / Platform: Use generic runtime PM callbacks directly
-      PM / Runtime: Add subsystem data field to struct dev_pm_info
-      PM / Runtime: Generic clock manipulation rountines for runtime PM (v6)
-      PM / AVR32: Use struct syscore_ops instead of sysdevs for PM
-      PM / UNICORE32: Use struct syscore_ops instead of sysdevs for PM
-      PM / PowerPC: Use struct syscore_ops instead of sysdevs for PM
-      PM: Remove sysdev suspend, resume and shutdown operations
-      OMAP1 / PM: Use generic clock manipulation routines for runtime PM
-      PM: Fix build issue in clock_ops.c for CONFIG_PM_RUNTIME unset
-      PM / Runtime: Rework runtime PM handling during driver removal
-      PM: Print a warning if firmware is requested when tasks are frozen
-      PM / Wakeup: Fix build warning related to the "wakeup" sysfs file
-      PM / Hibernate: Add sysfs knob to control size of memory for drivers
-      Revert "PM / Hibernate: Reduce autotuned default image size"
-      PM: Remove CONFIG_PM_VERBOSE
-      PM: Allow drivers to allocate memory from .prepare() callbacks safely
-      PM: Introduce generic prepare and complete callbacks for subsystems
-
+      -eric
