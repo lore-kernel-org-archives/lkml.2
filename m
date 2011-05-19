@@ -1,41 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416Ab1ESPO1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 11:14:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57437 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab1ESPOZ convert rfc822-to-8bit (ORCPT
+	id S933442Ab1ESPP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 11:15:58 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:19304
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933014Ab1ESPP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 11:14:25 -0400
-Subject: Re: [RFC PATCH] perf: Split up buffer handling from core code
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>
-In-Reply-To: <20110519145951.GD1956@nowhere>
-References: <1305767185-5771-1-git-send-email-fweisbec@gmail.com>
-	 <20110519073136.GB14049@liondog.tnic> <1305793931.2466.7191.camel@twins>
-	 <20110519141456.GB1956@nowhere> <1305816208.2466.7223.camel@twins>
-	 <20110519145951.GD1956@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 19 May 2011 17:14:01 +0200
-Message-ID: <1305818041.2466.7225.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 19 May 2011 11:15:57 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4DD533DE.1020705@freescale.com>
+Date: Thu, 19 May 2011 10:14:38 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/2.0.14-1.fc13 SeaMonkey/2.0.14
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
+        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 6/7] tty/powerpc: introduce the ePAPR embedded hypervisor
+ byte channel driver
+References: <1305813272-31826-1-git-send-email-timur@freescale.com>	<1305813272-31826-7-git-send-email-timur@freescale.com> <20110519153358.5876f310@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110519153358.5876f310@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 16:59 +0200, Frederic Weisbecker wrote:
-> I thought it would be nice to keep it inline for core use, as it's called
-> pretty often from the overflow path.
+Alan Cox wrote:
+> ttys = tty_port_tty_get(&bc->port);
+> stuff
+> if (ttys != NULL)
+> 	tty stuff
+> 	tty_kref_put(ttys);
 
-That's what I meant.
+Under what circumstances can ttys be NULL?  I currently only use this code in
+the RX and TX interrupt handlers, which are both enabled in the
+tty_port_operations.activate() function.
 
-> A solution is to have a perf_output_copy_inline() in internal.h
-> and export it through perf_output_copy() in buffer.c 
+Is this right for the TX handler:
 
-If only "external inline" would work :-)
+static irqreturn_t ehv_bc_tty_tx_isr(int irq, void *data)
+{
+	struct ehv_bc_data *bc = data;
+	struct tty_struct *ttys = tty_port_tty_get(&bc->port);
 
-I'd call it __perf_output_copy() though, less typing.
+	ehv_bc_tx_dequeue(bc);
+	if (ttys) {
+		tty_wakeup(ttys);
+		tty_kref_put(ttys);
+	}
+
+	return IRQ_HANDLED;
+}
+
+I just want to make sure that testing for NULL is really necessary in my
+interrupt handlers.
+
+>> > +		len = min_t(unsigned int,
+>> > +			    CIRC_CNT_TO_END(bc->head, bc->tail, BUF_SIZE),
+>> > +			    EV_BYTE_CHANNEL_MAX_BYTES);
+> The kfifo API is probably faster and cleaner. Much of tty still uses
+> CIRC_* because they predate the new APIs.
+
+Ok, I'll change it.
+
+> You really also need a hangup method so vhangup() does the right thing
+> and you can securely do logins etc and sessions on your console. As
+> you've got no hardware entangled in this and you already use tty_port
+> helpers the hangup helper will do the work for you.
+
+Ok.
+
+> 
+> I guess the only other thing to consider is whether you want to implement
+> a SYSRQ interface on your console ?
+
+I don't think byte channels can support SYSRQ, but I'll look into it.
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
+
