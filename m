@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934456Ab1ESSdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:33:20 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:57238 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934397Ab1ESSdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:33:15 -0400
-X-ASG-Debug-ID: 1305829993-01de28096b4f990001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DD56266.7090209@fusionio.com>
-Date: Thu, 19 May 2011 20:33:10 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S934478Ab1ESSed (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:34:33 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33251 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933829Ab1ESSe3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 14:34:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=nc8ApmzuI4Dwwk/TTKrNjUvkAylLluCvKVtRIAZfVuAn+eYaPY5etBYJdXUDkIsqfZ
+         djZJqliSmc304ONkSzsv/j/YbHedJSCejh+xuqsuJyZmOlv8c9NTzVlHZnbzlEtRjeuA
+         If6jFROw2BP8AxjubxW8R7IYtkiNpMkuNJKjQ=
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dpshah@google.com" <dpshah@google.com>
-Subject: Re: [RFC PATCH 00/14] blk-throttle: lockless bio processing for no
-  throttle rule group
-References: <1305746006-5837-1-git-send-email-vgoyal@redhat.com>
-X-ASG-Orig-Subj: Re: [RFC PATCH 00/14] blk-throttle: lockless bio processing for no
-  throttle rule group
-In-Reply-To: <1305746006-5837-1-git-send-email-vgoyal@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1305829993
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64214
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <20110519174420.GD12525@obsidianresearch.com>
+References: <1305682604-21383-1-git-send-email-nab@linux-iscsi.org>
+ <BANLkTi=e+v7PLcSc8GNov-TOXFF7rurXew@mail.gmail.com> <20110518170556.GB2595@obsidianresearch.com>
+ <BANLkTikOCeNcDvoCM=BOSxQaSECFhJ05Gg@mail.gmail.com> <20110519174420.GD12525@obsidianresearch.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Thu, 19 May 2011 20:34:08 +0200
+X-Google-Sender-Auth: pv21198uUGTazztIy5C1q8fJo7U
+Message-ID: <BANLkTikOsqazAE-mHFrM+=4GTs+249Ae5Q@mail.gmail.com>
+Subject: Re: [RFC] ib_srpt: initial .40-rc1 drivers/infiniband/ulp/srpt merge
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-rmda <linux-rdma@vger.kernel.org>,
+        Roland Dreier <roland@purestorage.com>, Vu Pham <vu@mellanox.com>,
+        David Dillow <dillowda@ornl.gov>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-18 21:13, Vivek Goyal wrote:
-> Hi,
-> 
-> Block throttling code takes request queue lock for every incoming bio
-> (blk_throtl_bio()). This is true even if there are no throttle rules in
-> the group. This is a common case for root cgroup where distributions
-> will have throttling support compiled in but a vast majority of users
-> will not be specifying throttling rule.
-> 
-> This patch series tries to make bio processing lockless (no requeust
-> queue lock), if there are no rules specified for the group. Once
-> a bio is submitted, under rcu_read_lock() we search for the group, 
-> update the stats and release the rcu lock. request queue lock is taken
-> only if there are throttling rules specified in the group.
-> 
-> I have made some of the dispatch stats per cpu so that these can be updated
-> without taking request queue lock.
-> 
-> On my system for a simple dd as follows, request queue lock acquisition
-> count has gone down by 11% roughly.
-> 
-> dd if=/mnt/zerofile-1G of=/dev/null bs=4K iflag=direct
-> 
-> lockstat output vanilla kernel
-> -----------------------------
-> class name			acquisitions	holdtime-total
-> 
-> &(&q->__queue_lock)->rlock:	2360944		1850183.07
-> 
-> lockstat output with patched kernel
-> -----------------------------------
-> class name			acquisitions	holdtime-total
-> &(&q->__queue_lock)->rlock:	2098599		1430478.79
-> 
-> 
-> I did test on a 4 cpu system doing IO to one SSD. I did not see any
-> significant improvement in throughput. I suspect that I never saturated
-> the cpus hence I don't see the improvement in throughput. I will see
-> if I can get more testing done on this and see if I notice IO throughput
-> improvement.
-> 
-> Jens, first patch of the series is already in your for-linus branch. I
-> was waiting for it to be pushed to Linus and then I can drop that first
-> patch.
+On Thu, May 19, 2011 at 7:44 PM, Jason Gunthorpe
+<jgunthorpe@obsidianresearch.com> wrote:
+> On Thu, May 19, 2011 at 07:29:21PM +0200, Bart Van Assche wrote:
+> > Regarding APM: the Linux kernel already has multipath support and
+> > duplicate functionality is in general not welcomed. So you will have
+> > to come up with a very good reason before APM support in ib_srp or
+> > ib_srpt would be considered for acceptance.
+>
+> APM is a feature of IB's tranport layerthat provides disruption free
+> lossless failover to a backup network path completely transparently to
+> the application (eg SRP in this case).
+>
+> This plays a similar role in the IB stack to the realtime spanning
+> tree protocol that ethernet uses, or the multipath IP routing that is
+> already in the net stack. I don't see it duplicating SCSI multipath at
+> all. On very large IB networks (eg > 1000 switches) the rate of link
+> failures is high enough that taking an application level recovery on
+> hundreds of nodes due to a link failure is troublesome.
+>
+> If ib_srpt is implemented properly it may already support APM because
+> APM is supported by the IB CM that it relies on to setup connections,
+> and any SRP client could already request APM functionality during
+> connection setup.
 
-Vivek, I get weird things in these patches. In fact I always get on your
-patches. = are =3D, =20 some places, and line breaks. Can I ask you to
-try and resend it to axboe@kernel.dk just to see if it's the company MTA
-screwing things up, or if it's something at your end?
+My reply applies to your original statement where you were referring
+to APM with different destination ports. What you write above is about
+APM with identical destination ports and hence does not apply to my
+reply.
 
--- 
-Jens Axboe
-
+Bart.
