@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933599Ab1ESQ65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:58:57 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54387 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933494Ab1ESQ64 (ORCPT
+	id S933617Ab1ESRAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:00:37 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:63126 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933554Ab1ESRAg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:58:56 -0400
+	Thu, 19 May 2011 13:00:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ovMKXVbMQxHypfovIFWFAzb7HUbOSN6Kp2GJeLlQcCYATL0r668zer4D5ONyrJBP1p
-         X5A/0s7yTHp8h54VNlQFyGKY3lmzzNYP5b5mfmjEw6Exgv46yCn56h7nAPIDd7z0oN5f
-         TviYnUcF5Jm60N8dQj/QiG5wutf9F4OvaqUW8=
-Date: Thu, 19 May 2011 18:58:51 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 09/10] ptrace: add JOBCTL_BLOCK_NOTIFY
-Message-ID: <20110519165851.GQ627@htj.dyndns.org>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org>
- <1305569849-10448-10-git-send-email-tj@kernel.org>
- <20110519163233.GE17265@redhat.com>
- <20110519164402.GO627@htj.dyndns.org>
- <20110519164833.GA19053@redhat.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eDYO/DWsJ7nH8DUrp8zxlnjNvmL4zQVKYRglZWjLJLlQcp72MEgNn8te7WibeBjAvZ
+         P8bc8cr1rFoggUSid7lqhktbkLSM+wd6y+OPa0V+NN16RBSAYOetTEOiFSKvJ3DjoIJt
+         AfAYab7sS3uYiCYpO5lnZ+qANG8+HQwTf405g=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110519164833.GA19053@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201105191526.31904.toralf.foerster@gmx.de>
+References: <201105191526.31904.toralf.foerster@gmx.de>
+Date: Thu, 19 May 2011 19:00:35 +0200
+Message-ID: <BANLkTi=FinuAYpYXf1K6pQ-3i2vRJS=g9g@mail.gmail.com>
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 06:48:33PM +0200, Oleg Nesterov wrote:
-> On 05/19, Tejun Heo wrote:
-> >
-> > Hello,
-> >
-> > On Thu, May 19, 2011 at 06:32:33PM +0200, Oleg Nesterov wrote:
-> > > > +	/*
-> > > > +	 * Make sure @chlid is still ptraced by us and clear BLOCK_NOTIFY.
-> > > > +	 */
-> > > > +	if (likely((child->ptrace & PT_PTRACED) && child->parent == current))
-> > >
-> > > This looks a bit confusing... It is either traced or not. If it is traced,
-> > > nobody else can trace it. In fact even PT_PTRACED is not strictly needed
-> > > but I agree this check makes the code cleaner.
-> >
-> > Hmmm... I suppose we can make the error paths finer grained so that
-> > attach failure
-> 
-> Ah, you are right again, I forgot about PTRACE_ATTACH path.
+Hi,
 
-We can move the PT_PTRACED and parenthood test outside the siglock tho
-and I agree that the 'still ptraced' comment is misleading.  I'll
-update it.
+Please CC also user-mode-linux-devel@lists.sourceforge.net,
+so you can reach much more UML users. :)
 
-Thanks.
+2011/5/19 Toralf Förster <toralf.foerster@gmx.de>:
+> I got a segfault as soon as I try to access the phpmyadmin web page of the UML
+> instance at https://<uml_hostname>/phpmyadmin/  :
+
+Hmm, strange.
+phpmyadmin works fine on my UML test bed.
+Can you bisect the issue?
 
 -- 
-tejun
+Thanks,
+//richard
