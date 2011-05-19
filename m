@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab1ESMGE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 08:06:04 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:16370 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab1ESMGC (ORCPT
+	id S1756333Ab1ESMI0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 08:08:26 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52981 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754003Ab1ESMIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 08:06:02 -0400
-X-IronPort-AV: E=Sophos;i="4.65,237,1304294400"; 
-   d="scan'208";a="5842187"
-Date: Thu, 19 May 2011 13:08:07 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: "Tian, Kevin" <kevin.tian@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "JBeulich@novell.com" <JBeulich@novell.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: RE: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
- them
-In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1505C9BBF8D40@shsmsx502.ccr.corp.intel.com>
-Message-ID: <alpine.DEB.2.00.1105191304530.12963@kaball-desktop>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com> <alpine.LFD.2.02.1105061149330.3005@ionos> <625BA99ED14B2D499DC4E29D8138F1505C8ED7F962@shsmsx502.ccr.corp.intel.com> <alpine.DEB.2.00.1105061526120.10886@kaball-desktop>
- <625BA99ED14B2D499DC4E29D8138F1505C8ED7FB9F@shsmsx502.ccr.corp.intel.com> <alpine.DEB.2.00.1105091301040.10886@kaball-desktop> <alpine.LFD.2.02.1105091435350.2843@ionos> <625BA99ED14B2D499DC4E29D8138F1505C8F008B68@shsmsx502.ccr.corp.intel.com>
- <625BA99ED14B2D499DC4E29D8138F1505C9BBF8D40@shsmsx502.ccr.corp.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 19 May 2011 08:08:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SeNjE7d898lLXJIIiyYY3Sp2yPKIvoZqp3DY8GgOoZpmUQovEUK6QAewkUILXbXfL/
+         dYnvUg0sTFeZqHaNfYW0YpViSpkFJVJ4zQWrd/UaQ2CeZq941g5eq6xpx5DADRyjvYxv
+         ysdm/O5prIVFsuW+QvlM2MFrfLW9RxrYNlsh0=
+Date: Thu, 19 May 2011 14:08:21 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and
+ group stop notification, take#2
+Message-ID: <20110519120821.GF627@htj.dyndns.org>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org>
+ <20110518185050.GC1064@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110518185050.GC1064@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 May 2011, Tian, Kevin wrote:
-> for [1/2] I think it's still necessary as it's meaningless to migrate a percpu type irq.
-> However Stefano has sent out a cleanup patch for Xen percpu irqchip which uses
-> nop mask/unmask hack borrowed from uv machine to work around the issue. As
-> you suggested it's better to consolidate into the common place instead of scattering
-> in different places. My view on this common logic is what [1/2] tries to address, is
-> it correct? If yes, would you consider taking this patch? Stefano told me that his
-> patches will go in in next merge window. So I think either you can take [1/2] now and
-> then I'll do cleanup after Stefano's patch is in, or I can rebase my [1/2] after Stefano's
-> patch to clean both xen and uv parts. 
+On Wed, May 18, 2011 at 08:50:50PM +0200, Oleg Nesterov wrote:
+> On 05/16, Tejun Heo wrote:
+> >
+> > This patchset is on top of Oleg's ptrace branch[3] + prep patchset[2]
+> > and available in the following git branch.
+> 
+> IIUC 8/9 from prep patchset[2] needs the fix, do_wait()->restart_syscall()
+> is not right. Do you agree or I misunderstood the result of our discussion?
 
-Actually I think Kevin's generic patch is better too.
-If you ack it I'll remove my patch right away from the queue (maybe I
-should remove it anyway?).
-Kevin probably needs to write a cleanup patch to remove the equivalent
-hack from the uv_irq.
+Yeah, I agree.  I was just waiting for review of this series before
+proceeding with the next round.
+
+Thanks.
+
+-- 
+tejun
