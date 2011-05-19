@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934121Ab1ESSPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:15:21 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43870 "EHLO
+	id S934103Ab1ESSJK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:09:10 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:39092 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934070Ab1ESSJB (ORCPT
+	by vger.kernel.org with ESMTP id S934074Ab1ESSJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:09:01 -0400
-X-Sasl-enc: a7HyVjuotvmjckNG8jqjTLyckW48menqyi/m1kfsPigv 1305828540
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:58 2011
-Message-Id: <20110519180558.894710041@clark.kroah.org>
+	Thu, 19 May 2011 14:09:03 -0400
+X-Sasl-enc: LLy4oz6c6LqLe4SVAfZbere/VyQ22CAgeTyXx6ZxzTD3 1305828542
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:59 2011
+Message-Id: <20110519180559.000998675@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:16 -0700
+Date: Thu, 19 May 2011 11:05:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hugh Dickins <hughd@google.com>, Tim Chen <tim.c.chen@linux.intel.com>
-Subject: [48/71] tmpfs: fix off-by-one in max_blocks checks
+        Hugh Dickins <hughd@google.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: [49/71] tmpfs: fix spurious ENOSPC when racing with unswap
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,47 +30,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hugh Dickins <hughd@google.com>
 
-commit fc5da22ae35d4720be59af8787a8a6d5e4da9517 upstream.
+commit 59a16ead572330deb38e5848151d30ed1af754bc upstream.
 
-If you fill up a tmpfs, df was showing
+Testing the shmem_swaplist replacements for igrab() revealed another bug:
+writes to /dev/loop0 on a tmpfs file which fills its filesystem were
+sometimes failing with "Buffer I/O error"s.
 
-  tmpfs                   460800         -         -   -  /tmp
+These came from ENOSPC failures of shmem_getpage(), when racing with
+swapoff: the same could happen when racing with another shmem_getpage(),
+pulling the page in from swap in between our find_lock_page() and our
+taking the info->lock (though not in the single-threaded loop case).
 
-because of an off-by-one in the max_blocks checks.  Fix it so df shows
+This is unacceptable, and surprising that I've not noticed it before:
+it dates back many years, but (presumably) was made a lot easier to
+reproduce in 2.6.36, which sited a page preallocation in the race window.
 
-  tmpfs                   460800    460800         0 100% /tmp
+Fix it by rechecking the page cache before settling on an ENOSPC error.
 
 Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/shmem.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ mm/shmem.c |   32 ++++++++++++++++++++++----------
+ 1 file changed, 22 insertions(+), 10 deletions(-)
 
 --- a/mm/shmem.c
 +++ b/mm/shmem.c
-@@ -422,7 +422,8 @@ static swp_entry_t *shmem_swp_alloc(stru
- 		 * a waste to allocate index if we cannot allocate data.
- 		 */
+@@ -1407,20 +1407,14 @@ repeat:
  		if (sbinfo->max_blocks) {
--			if (percpu_counter_compare(&sbinfo->used_blocks, (sbinfo->max_blocks - 1)) > 0)
-+			if (percpu_counter_compare(&sbinfo->used_blocks,
-+						sbinfo->max_blocks - 1) >= 0)
- 				return ERR_PTR(-ENOSPC);
+ 			if (percpu_counter_compare(&sbinfo->used_blocks,
+ 						sbinfo->max_blocks) >= 0 ||
+-			    shmem_acct_block(info->flags)) {
+-				spin_unlock(&info->lock);
+-				error = -ENOSPC;
+-				goto failed;
+-			}
++			    shmem_acct_block(info->flags))
++				goto nospace;
  			percpu_counter_inc(&sbinfo->used_blocks);
  			spin_lock(&inode->i_lock);
-@@ -1404,7 +1405,8 @@ repeat:
- 		shmem_swp_unmap(entry);
- 		sbinfo = SHMEM_SB(inode->i_sb);
- 		if (sbinfo->max_blocks) {
--			if ((percpu_counter_compare(&sbinfo->used_blocks, sbinfo->max_blocks) > 0) ||
-+			if (percpu_counter_compare(&sbinfo->used_blocks,
-+						sbinfo->max_blocks) >= 0 ||
- 			    shmem_acct_block(info->flags)) {
- 				spin_unlock(&info->lock);
- 				error = -ENOSPC;
+ 			inode->i_blocks += BLOCKS_PER_PAGE;
+ 			spin_unlock(&inode->i_lock);
+-		} else if (shmem_acct_block(info->flags)) {
+-			spin_unlock(&info->lock);
+-			error = -ENOSPC;
+-			goto failed;
+-		}
++		} else if (shmem_acct_block(info->flags))
++			goto nospace;
+ 
+ 		if (!filepage) {
+ 			int ret;
+@@ -1500,6 +1494,24 @@ done:
+ 	error = 0;
+ 	goto out;
+ 
++nospace:
++	/*
++	 * Perhaps the page was brought in from swap between find_lock_page
++	 * and taking info->lock?  We allow for that at add_to_page_cache_lru,
++	 * but must also avoid reporting a spurious ENOSPC while working on a
++	 * full tmpfs.  (When filepage has been passed in to shmem_getpage, it
++	 * is already in page cache, which prevents this race from occurring.)
++	 */
++	if (!filepage) {
++		struct page *page = find_get_page(mapping, idx);
++		if (page) {
++			spin_unlock(&info->lock);
++			page_cache_release(page);
++			goto repeat;
++		}
++	}
++	spin_unlock(&info->lock);
++	error = -ENOSPC;
+ failed:
+ 	if (*pagep != filepage) {
+ 		unlock_page(filepage);
 
 
