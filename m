@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934139Ab1ESSOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:14:18 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:52911 "EHLO
+	id S934114Ab1ESSJR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:09:17 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:47102 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934045Ab1ESSJI (ORCPT
+	by vger.kernel.org with ESMTP id S934102Ab1ESSJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:09:08 -0400
-X-Sasl-enc: gSiDuhoFsnP391dyC9boTkSeyY9yETpFwsv13ZyZMrqS 1305828547
+	Thu, 19 May 2011 14:09:10 -0400
+X-Sasl-enc: pHEK5NnKtoU0r9bWkc8tZDzL2ZA637YPWJwT6hhiYAE6 1305828549
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:59 2011
-Message-Id: <20110519180559.278337910@clark.kroah.org>
+Message-Id: <20110519180559.365562059@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:20 -0700
+Date: Thu, 19 May 2011 11:05:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Ball <cjb@laptop.org>
-Subject: [52/71] Revert "mmc: fix a race between card-detect rescan and clock-gate work instances"
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [53/71] cifs: add fallback in is_path_accessible for old servers
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,78 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Ball <cjb@laptop.org>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 86f315bbb2374f1f077500ad131dd9b71856e697 upstream.
+commit 221d1d797202984cb874e3ed9f1388593d34ee22 upstream.
 
-This reverts commit 26fc8775b51484d8c0a671198639c6d5ae60533e, which has
-been reported to cause boot/resume-time crashes for some users:
+The is_path_accessible check uses a QPathInfo call, which isn't
+supported by ancient win9x era servers. Fall back to an older
+SMBQueryInfo call if it fails with the magic error codes.
 
-https://bbs.archlinux.org/viewtopic.php?id=118751.
-
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Reported-and-Tested-by: Sandro Bonazzola <sandro.bonazzola@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/core/host.c  |    9 +++++----
- include/linux/mmc/host.h |    1 +
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ fs/cifs/connect.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -94,7 +94,7 @@ static void mmc_host_clk_gate_delayed(st
- 		spin_unlock_irqrestore(&host->clk_lock, flags);
- 		return;
- 	}
--	mmc_claim_host(host);
-+	mutex_lock(&host->clk_gate_mutex);
- 	spin_lock_irqsave(&host->clk_lock, flags);
- 	if (!host->clk_requests) {
- 		spin_unlock_irqrestore(&host->clk_lock, flags);
-@@ -104,7 +104,7 @@ static void mmc_host_clk_gate_delayed(st
- 		pr_debug("%s: gated MCI clock\n", mmc_hostname(host));
- 	}
- 	spin_unlock_irqrestore(&host->clk_lock, flags);
--	mmc_release_host(host);
-+	mutex_unlock(&host->clk_gate_mutex);
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -2657,6 +2657,11 @@ is_path_accessible(int xid, struct cifsT
+ 			      0 /* not legacy */, cifs_sb->local_nls,
+ 			      cifs_sb->mnt_cifs_flags &
+ 				CIFS_MOUNT_MAP_SPECIAL_CHR);
++
++	if (rc == -EOPNOTSUPP || rc == -EINVAL)
++		rc = SMBQueryInformation(xid, tcon, full_path, pfile_info,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++				  CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	kfree(pfile_info);
+ 	return rc;
  }
- 
- /*
-@@ -130,7 +130,7 @@ void mmc_host_clk_ungate(struct mmc_host
- {
- 	unsigned long flags;
- 
--	mmc_claim_host(host);
-+	mutex_lock(&host->clk_gate_mutex);
- 	spin_lock_irqsave(&host->clk_lock, flags);
- 	if (host->clk_gated) {
- 		spin_unlock_irqrestore(&host->clk_lock, flags);
-@@ -140,7 +140,7 @@ void mmc_host_clk_ungate(struct mmc_host
- 	}
- 	host->clk_requests++;
- 	spin_unlock_irqrestore(&host->clk_lock, flags);
--	mmc_release_host(host);
-+	mutex_unlock(&host->clk_gate_mutex);
- }
- 
- /**
-@@ -218,6 +218,7 @@ static inline void mmc_host_clk_init(str
- 	host->clk_gated = false;
- 	INIT_WORK(&host->clk_gate_work, mmc_host_clk_gate_work);
- 	spin_lock_init(&host->clk_lock);
-+	mutex_init(&host->clk_gate_mutex);
- }
- 
- /**
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -183,6 +183,7 @@ struct mmc_host {
- 	struct work_struct	clk_gate_work; /* delayed clock gate */
- 	unsigned int		clk_old;	/* old clock value cache */
- 	spinlock_t		clk_lock;	/* lock for clk fields */
-+	struct mutex		clk_gate_mutex;	/* mutex for clock gating */
- #endif
- 
- 	/* host specific block data */
 
 
