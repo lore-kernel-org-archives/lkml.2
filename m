@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324Ab1ESPoj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 11:44:39 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:5455 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751527Ab1ESPoj (ORCPT
+	id S933014Ab1ESPsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 11:48:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43423 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab1ESPsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 11:44:39 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAGA61U1Ld/sX/2dsb2JhbAAMhE3bFJEYgSuDZ4EHBJ8i
-X-IronPort-AV: E=Sophos;i="4.65,238,1304308800"; 
-   d="scan'208";a="114246223"
-Message-ID: <4DD53AE5.8020103@teksavvy.com>
-Date: Thu, 19 May 2011 11:44:37 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+	Thu, 19 May 2011 11:48:06 -0400
+Date: Thu, 19 May 2011 08:47:51 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: Linux 2.6.39
+Message-Id: <20110519084751.a2953fce.randy.dunlap@oracle.com>
+In-Reply-To: <4DD53AE5.8020103@teksavvy.com>
 References: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
-In-Reply-To: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	<4DD53AE5.8020103@teksavvy.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DD53BB3.00F6:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's some more funny business that was new after rc7-git12:
+On Thu, 19 May 2011 11:44:37 -0400 Mark Lord wrote:
 
-warning: (AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI &&
-RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has
-unmet direct dependencies (MISC_DEVICES)
-warning: (ACPI_APEI) selects PSTORE which has unmet direct dependencies
-(MISC_FILESYSTEMS)
+> Here's some more funny business that was new after rc7-git12:
+> 
+> warning: (AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI &&
+> RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has
+> unmet direct dependencies (MISC_DEVICES)
+> warning: (ACPI_APEI) selects PSTORE which has unmet direct dependencies
+> (MISC_FILESYSTEMS)
+> 
+> The exact same .config didn't do that with rc7-git12,
+> but does do it with 2.6.39 final.
 
-The exact same .config didn't do that with rc7-git12,
-but does do it with 2.6.39 final.
+I've seen those kconfig warnings plenty of times, before 2.6.39.
 
-Odd thing is, if I select both MISC_DEVICES and MISC_FILESYSTEMS,
-but do NOT select anything from under either of those,
-the warnings go away.
+Tony Luck has posted a patch for the ACPI_APEI/PSTORE warning (yes, select
+MISC_FILESYSTEMS).
 
-Which likely means the warnings are totally bogus.
+> Odd thing is, if I select both MISC_DEVICES and MISC_FILESYSTEMS,
+> but do NOT select anything from under either of those,
+> the warnings go away.
+> 
+> Which likely means the warnings are totally bogus.
 
-Cheers
+It's just the nature of the tree-structured kconfig hierarchy.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
