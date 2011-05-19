@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934476Ab1ESTiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 15:38:20 -0400
-Received: from mail.codesourcery.com ([38.113.113.100]:49268 "EHLO
-	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933830Ab1ESTiS (ORCPT
+	id S934472Ab1ESTbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:31:40 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61373 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933808Ab1ESTbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 15:38:18 -0400
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 May 2011 15:38:18 EDT
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Date: Thu, 19 May 2011 20:31:33 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-28-generic; KDE/4.6.2; x86_64; ; )
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, oleg@redhat.com,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
-        bdonlan@gmail.com
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <20110518095539.GU20624@htj.dyndns.org> <20110519141728.GJ627@htj.dyndns.org>
-In-Reply-To: <20110519141728.GJ627@htj.dyndns.org>
+	Thu, 19 May 2011 15:31:37 -0400
+Date: Thu, 19 May 2011 15:31:34 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Linus Walleij <linus.walleij@linaro.org>, Barry Song <21cnbao@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] ARM Subarchitecture group maintainership
+In-Reply-To: <20110519192817.GB7445@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1105191531170.14430@xanadu.home>
+References: <201105181047.17309.arnd@arndb.de> <BANLkTim_0eRvDkQwAYjTNQsOVQiHV+DdBQ@mail.gmail.com> <alpine.LFD.2.00.1105182234130.14430@xanadu.home> <BANLkTinXQvrG3LeSEO9Lnam3Bvq3dDKOsw@mail.gmail.com> <BANLkTi=OdvDT6MEk-RxiTNnX-rbwTOqrrw@mail.gmail.com>
+ <20110519192817.GB7445@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105192031.33569.pedro@codesourcery.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 May 2011 15:17:28, Tejun Heo wrote:
-> But making SEIZE not trigger INTERRUPT and SETOPTIONS without
-> requiring TRACED don't seem too difficult.  Jan, would that be enough?
-> Oleg, what do you think?
+On Thu, 19 May 2011, Russell King - ARM Linux wrote:
 
-UUIC, that opens a race where between SEIZEing and
-SETOPTIONS(O_TRACE FORK|VFORK|EXEC...), the tracee can
-fork/vfork/clone/exec, without the tracer getting the
-nice corresponding PTRACE_EVENT_ events.
+> On Thu, May 19, 2011 at 03:31:42PM +0200, Linus Walleij wrote:
+> > On Thu, May 19, 2011 at 5:01 AM, Barry Song <21cnbao@gmail.com> wrote:
+> > 
+> > > i asked this because we wanted to send the source codes of
+> > > CSR(http://www.csr.com) to upstream as i have told you in LDS. it
+> > > looks like we need to follow the below new changes to make our source
+> > > codes acceptable?
+> > > 1. arm device tree
+> > > 2. new pinmux framework from Linus Walleij
+> > 
+> > I'm working on that to post a new v3 of this patch set ASAP, if the
+> > ARM subarch tree maintainers are interested I can send them a
+> > pull request after that.
+> 
+> As my tree currently contains a large proportion of the consolidation work
+> so far, it probably makes sense for this stuff to continue coming through
+> my tree so that we can sort out any merge conflicts there, rather than
+> starting on a new tree... It probably makes sense for the subarch tree to
+> get going after this merge window has closed.
 
-In GDBs case, GDB will want to poke at memory
-right after attaching, to at least read the
-loaded DSO list, so if you can't read tracee
-memory without interrupting it, you won't get much
-benefit from SEIZE not interrupting.
-Not to say other users wouldn't benefit.
+Agreed.
 
--- 
-Pedro Alves
+
+Nicolas
