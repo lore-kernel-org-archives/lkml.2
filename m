@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933911Ab1ESSII (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:08:08 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54076 "EHLO
+	id S933923Ab1ESSIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:08:11 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41814 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933842Ab1ESSIC (ORCPT
+	by vger.kernel.org with ESMTP id S933888Ab1ESSIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:08:02 -0400
-X-Sasl-enc: VVdeAaM17uz5VQ1YvVZC3cC1lK25jZySwYSySgHBx37R 1305828481
+	Thu, 19 May 2011 14:08:04 -0400
+X-Sasl-enc: sDyGGd8CWlI1raZaLWHLiVzICwU7hKwKM6DxZA1VBl7/ 1305828483
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:55 2011
-Message-Id: <20110519180555.728533003@clark.kroah.org>
+Message-Id: <20110519180555.826758741@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:04:43 -0700
+Date: Thu, 19 May 2011 11:04:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Subject: [15/71] Dont lock guardpage if the stack is growing up
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Keith Packard <keithp@keithp.com>
+Subject: [16/71] drm/i915/dp: Be paranoid in case we disable a DP before it is attached
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,141 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit a09a79f66874c905af35d5bb5e5f2fdc7b6b894d upstream.
+commit 31acbcc408f412d1ba73765b846c38642be553c3 upstream.
 
-Linux kernel excludes guard page when performing mlock on a VMA with
-down-growing stack. However, some architectures have up-growing stack
-and locking the guard page should be excluded in this case too.
+Given that the hardware may be left in a random condition by the BIOS,
+it is conceivable that we then attempt to clear the DP_PIPEB_SELECT bit
+without us ever enabling/attaching the DP encoder to a pipe. Thus
+causing a NULL deference when we attempt to wait for a vblank on that
+crtc.
 
-This patch fixes lvm2 on PA-RISC (and possibly other architectures with
-up-growing stack). lvm2 calculates number of used pages when locking and
-when unlocking and reports an internal error if the numbers mismatch.
-
-[ Patch changed fairly extensively to also fix /proc/<pid>/maps for the
-  grows-up case, and to move things around a bit to clean it all up and
-  share the infrstructure with the /proc bits.
-
-  Tested on ia64 that has both grow-up and grow-down segments  - Linus ]
-
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Tested-by: Tony Luck <tony.luck@gmail.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-tested-by: Bryan Christ <bryan.christ@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=36314
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=36456
+Reported-and-tested-by: Bo Wang <bo.b.wang@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/task_mmu.c |   12 +++++++-----
- include/linux/mm.h |   24 +++++++++++++++++++++++-
- mm/memory.c        |   16 +++++++---------
- 3 files changed, 37 insertions(+), 15 deletions(-)
+ drivers/gpu/drm/i915/intel_dp.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -211,7 +211,7 @@ static void show_map_vma(struct seq_file
- 	int flags = vma->vm_flags;
- 	unsigned long ino = 0;
- 	unsigned long long pgoff = 0;
--	unsigned long start;
-+	unsigned long start, end;
- 	dev_t dev = 0;
- 	int len;
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -1455,7 +1455,8 @@ intel_dp_link_down(struct intel_dp *inte
  
-@@ -224,13 +224,15 @@ static void show_map_vma(struct seq_file
- 
- 	/* We don't show the stack guard page in /proc/maps */
- 	start = vma->vm_start;
--	if (vma->vm_flags & VM_GROWSDOWN)
--		if (!vma_stack_continue(vma->vm_prev, vma->vm_start))
--			start += PAGE_SIZE;
-+	if (stack_guard_page_start(vma, start))
-+		start += PAGE_SIZE;
-+	end = vma->vm_end;
-+	if (stack_guard_page_end(vma, end))
-+		end -= PAGE_SIZE;
- 
- 	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
- 			start,
--			vma->vm_end,
-+			end,
- 			flags & VM_READ ? 'r' : '-',
- 			flags & VM_WRITE ? 'w' : '-',
- 			flags & VM_EXEC ? 'x' : '-',
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -994,11 +994,33 @@ int set_page_dirty_lock(struct page *pag
- int clear_page_dirty_for_io(struct page *page);
- 
- /* Is the vma a continuation of the stack vma above it? */
--static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
-+static inline int vma_growsdown(struct vm_area_struct *vma, unsigned long addr)
- {
- 	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
- }
- 
-+static inline int stack_guard_page_start(struct vm_area_struct *vma,
-+					     unsigned long addr)
-+{
-+	return (vma->vm_flags & VM_GROWSDOWN) &&
-+		(vma->vm_start == addr) &&
-+		!vma_growsdown(vma->vm_prev, addr);
-+}
+ 	if (!HAS_PCH_CPT(dev) &&
+ 	    I915_READ(intel_dp->output_reg) & DP_PIPEB_SELECT) {
+-		struct intel_crtc *intel_crtc = to_intel_crtc(intel_dp->base.base.crtc);
++		struct drm_crtc *crtc = intel_dp->base.base.crtc;
 +
-+/* Is the vma a continuation of the stack vma below it? */
-+static inline int vma_growsup(struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return vma && (vma->vm_start == addr) && (vma->vm_flags & VM_GROWSUP);
-+}
-+
-+static inline int stack_guard_page_end(struct vm_area_struct *vma,
-+					   unsigned long addr)
-+{
-+	return (vma->vm_flags & VM_GROWSUP) &&
-+		(vma->vm_end == addr) &&
-+		!vma_growsup(vma->vm_next, addr);
-+}
-+
- extern unsigned long move_page_tables(struct vm_area_struct *vma,
- 		unsigned long old_addr, struct vm_area_struct *new_vma,
- 		unsigned long new_addr, unsigned long len);
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1412,9 +1412,8 @@ no_page_table:
+ 		/* Hardware workaround: leaving our transcoder select
+ 		 * set to transcoder B while it's off will prevent the
+ 		 * corresponding HDMI output on transcoder A.
+@@ -1470,7 +1471,19 @@ intel_dp_link_down(struct intel_dp *inte
+ 		/* Changes to enable or select take place the vblank
+ 		 * after being written.
+ 		 */
+-		intel_wait_for_vblank(dev, intel_crtc->pipe);
++		if (crtc == NULL) {
++			/* We can arrive here never having been attached
++			 * to a CRTC, for instance, due to inheriting
++			 * random state from the BIOS.
++			 *
++			 * If the pipe is not running, play safe and
++			 * wait for the clocks to stabilise before
++			 * continuing.
++			 */
++			POSTING_READ(intel_dp->output_reg);
++			msleep(50);
++		} else
++			intel_wait_for_vblank(dev, to_intel_crtc(crtc)->pipe);
+ 	}
  
- static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
- {
--	return (vma->vm_flags & VM_GROWSDOWN) &&
--		(vma->vm_start == addr) &&
--		!vma_stack_continue(vma->vm_prev, addr);
-+	return stack_guard_page_start(vma, addr) ||
-+	       stack_guard_page_end(vma, addr+PAGE_SIZE);
- }
- 
- int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
-@@ -1502,12 +1501,6 @@ int __get_user_pages(struct task_struct
- 			continue;
- 		}
- 
--		/*
--		 * For mlock, just skip the stack guard page.
--		 */
--		if ((gup_flags & FOLL_MLOCK) && stack_guard_page(vma, start))
--			goto next_page;
--
- 		do {
- 			struct page *page;
- 			unsigned int foll_flags = gup_flags;
-@@ -1524,6 +1517,11 @@ int __get_user_pages(struct task_struct
- 				int ret;
- 				unsigned int fault_flags = 0;
- 
-+				/* For mlock, just skip the stack guard page. */
-+				if (foll_flags & FOLL_MLOCK) {
-+					if (stack_guard_page(vma, start))
-+						goto next_page;
-+				}
- 				if (foll_flags & FOLL_WRITE)
- 					fault_flags |= FAULT_FLAG_WRITE;
- 				if (nonblocking)
+ 	I915_WRITE(intel_dp->output_reg, DP & ~DP_PORT_EN);
 
 
