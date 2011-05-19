@@ -1,179 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934874Ab1ESVlf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:41:35 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56969 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933194Ab1ESVle (ORCPT
+	id S934897Ab1ESVmm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:42:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64690 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933194Ab1ESVml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:41:34 -0400
+	Thu, 19 May 2011 17:42:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=eLZKcGtBM0sZ2t3pMlfCpri79ZCTeRrZ6IVfuDRN5R7jYzlQA6iVIHTMqDRkbIFN/U
-         8DEs73aryrli7XBlQzqPeaHlIq2SJ1maZuFjYOV7slzT3J/vZWXy0Mvn/UIEGKbkr6ur
-         3KaI1y9/4d/3DhbizwA+LwTtpu7sQnOYjlz1k=
+        b=U1hZu0vwf7ky9GoKhFoSuJd0NdyQEMALJ2aA1iVH/7kv4jPrLuaufNwG+f51wKupGh
+         tqCicNOOPZUc04V9gc/Lp6xplbHmwF9FMUsmOxCBJ09IGKyVsUJ6wACo47Zka1XiSAEC
+         qJVcGcUwLimk4FFpM4mkcXkWilO0TZmk5e1EM=
 From: Eric Van Hensbergen <ericvh@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: linuxppc-dev@lists.ozlabs.org, bg-linux@lists.anl-external.org,
         Eric Van Hensbergen <ericvh@gmail.com>
-Subject: [PATCH 3/7] [RFC][V2] add support for BlueGene/P Double FPU
-Date: Thu, 19 May 2011 16:41:11 -0500
-Message-Id: <1305841271-4879-1-git-send-email-ericvh@gmail.com>
+Subject: [PATCH 4/7] [RFC][V2] enable BGP_L1_WRITETHROUGH mode for BG/P
+Date: Thu, 19 May 2011 16:42:24 -0500
+Message-Id: <1305841344-4918-1-git-send-email-ericvh@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1305753895-24845-3-git-send-email-ericvh@gmail.com>
-References: <1305753895-24845-3-git-send-email-ericvh@gmail.com>
+In-Reply-To: <1305753895-24845-4-git-send-email-ericvh@gmail.com>
+References: <1305753895-24845-4-git-send-email-ericvh@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds save/restore register support for the BlueGene/P
-double FPU.  Since there are two FPUs, we need to save and restore
-twice the registers.  Fortunately BG/P gives us some opcodes to
-assist with that task.
+BG/P nodes need to be configured for writethrough to work in SMP
+configurations.  This patch adds the right hooks in the MMU code
+to make sure BGP_L1_WRITETHROUGH configurations are setup for BG/P.
 
 Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
 ---
- arch/powerpc/include/asm/ppc-opcode.h  |    9 +++++++++
- arch/powerpc/include/asm/ppc_asm.h     |   32 ++++++++++++++++++++------------
- arch/powerpc/kernel/fpu.S              |    8 ++++----
- arch/powerpc/platforms/44x/Kconfig     |    9 +++++++++
- arch/powerpc/platforms/Kconfig.cputype |    4 ++++
- 5 files changed, 46 insertions(+), 16 deletions(-)
+ arch/powerpc/include/asm/mmu-44x.h     |    2 ++
+ arch/powerpc/kernel/head_44x.S         |   24 ++++++++++++++++++++++--
+ arch/powerpc/kernel/misc_32.S          |   15 +++++++++++++++
+ arch/powerpc/lib/copy_32.S             |   10 ++++++++++
+ arch/powerpc/mm/44x_mmu.c              |    7 +++++--
+ arch/powerpc/platforms/Kconfig         |    5 +++++
+ arch/powerpc/platforms/Kconfig.cputype |    1 +
+ 7 files changed, 60 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/ppc-opcode.h b/arch/powerpc/include/asm/ppc-opcode.h
-index 1255569..12a3cc9 100644
---- a/arch/powerpc/include/asm/ppc-opcode.h
-+++ b/arch/powerpc/include/asm/ppc-opcode.h
-@@ -56,6 +56,9 @@
- #define PPC_INST_TLBSRX_DOT		0x7c0006a5
- #define PPC_INST_XXLOR			0xf0000510
+diff --git a/arch/powerpc/include/asm/mmu-44x.h b/arch/powerpc/include/asm/mmu-44x.h
+index bf52d70..ca1b90c 100644
+--- a/arch/powerpc/include/asm/mmu-44x.h
++++ b/arch/powerpc/include/asm/mmu-44x.h
+@@ -8,6 +8,7 @@
  
-+#define PPC_INST_LFPDX			0x7c00039c
-+#define PPC_INST_STFPDX			0x7c00079c
+ #define PPC44x_MMUCR_TID	0x000000ff
+ #define PPC44x_MMUCR_STS	0x00010000
++#define PPC44x_MMUCR_U2		0x00200000
+ 
+ #define	PPC44x_TLB_PAGEID	0
+ #define	PPC44x_TLB_XLAT		1
+@@ -32,6 +33,7 @@
+ 
+ /* Storage attribute and access control fields */
+ #define PPC44x_TLB_ATTR_MASK	0x0000ff80
++#define PPC44x_TLB_WL1		0x00100000	/* Write-through L1 */
+ #define PPC44x_TLB_U0		0x00008000      /* User 0 */
+ #define PPC44x_TLB_U1		0x00004000      /* User 1 */
+ #define PPC44x_TLB_U2		0x00002000      /* User 2 */
+diff --git a/arch/powerpc/kernel/head_44x.S b/arch/powerpc/kernel/head_44x.S
+index 5e12b74..f10ac53 100644
+--- a/arch/powerpc/kernel/head_44x.S
++++ b/arch/powerpc/kernel/head_44x.S
+@@ -429,7 +429,16 @@ finish_tlb_load_44x:
+ 	andi.	r10,r12,_PAGE_USER		/* User page ? */
+ 	beq	1f				/* nope, leave U bits empty */
+ 	rlwimi	r11,r11,3,26,28			/* yes, copy S bits to U */
+-1:	tlbwe	r11,r13,PPC44x_TLB_ATTRIB	/* Write ATTRIB */
++1:
++#ifdef CONFIG_BGP_L1_WRITETHROUGH
++	andi.	r10, r11, PPC44x_TLB_I
++	bne	2f
++	oris    r11,r11,PPC44x_TLB_WL1@h	/* Add coherency for */
++						/* non-inhibited */
++	ori	r11,r11,PPC44x_TLB_U2|PPC44x_TLB_M
++2:
++#endif /* CONFIG_BGP_L1_WRITETHROUGH */
++	tlbwe	r11,r13,PPC44x_TLB_ATTRIB	/* Write ATTRIB */
+ 
+ 	/* Done...restore registers and get out of here.
+ 	*/
+@@ -799,7 +808,11 @@ skpinv:	addi	r4,r4,1				/* Increment */
+ 	sync
+ 
+ 	/* Initialize MMUCR */
++#ifdef CONFIG_BGP_L1_WRITETHROUGH
++	lis	r5, PPC44x_MMUCR_U2@h
++#else
+ 	li	r5,0
++#endif /* CONFIG_BGP_L1_WRITETHROUGH */
+ 	mtspr	SPRN_MMUCR,r5
+ 	sync
+ 
+@@ -814,7 +827,14 @@ skpinv:	addi	r4,r4,1				/* Increment */
+ 	/* attrib fields */
+ 	/* Added guarded bit to protect against speculative loads/stores */
+ 	li	r5,0
+-	ori	r5,r5,(PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_G)
++#ifdef CONFIG_BGP_L1_WRITETHROUGH
++	ori	r5,r5,(PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | \
++						PPC44x_TLB_G | PPC44x_TLB_U2)
++	oris	r5,r5,PPC44x_TLB_WL1@h
++#else
++	ori	r5,r5,(PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | \
++			PPC44x_TLB_G)
++#endif /* CONFIG_BGP_L1_WRITETHROUGH
+ 
+         li      r0,63                    /* TLB slot 63 */
+ 
+diff --git a/arch/powerpc/kernel/misc_32.S b/arch/powerpc/kernel/misc_32.S
+index 094bd98..3f56d7b 100644
+--- a/arch/powerpc/kernel/misc_32.S
++++ b/arch/powerpc/kernel/misc_32.S
+@@ -506,7 +506,20 @@ _GLOBAL(clear_pages)
+ 	li	r0,PAGE_SIZE/L1_CACHE_BYTES
+ 	slw	r0,r0,r4
+ 	mtctr	r0
++#ifdef CONFIG_BGP_L1_WRITETHROUGH
++	/* assuming 32 byte cacheline */
++	li      r4, 0
++1:	stw     r4, 0(r3)
++	stw     r4, 4(r3)
++	stw     r4, 8(r3)
++	stw     r4, 12(r3)
++	stw     r4, 16(r3)
++	stw     r4, 20(r3)
++	stw     r4, 24(r3)
++	stw     r4, 28(r3)
++#else
+ 1:	dcbz	0,r3
++#endif /* CONFIG_BGP_L1_WRITETHROUGH */
+ 	addi	r3,r3,L1_CACHE_BYTES
+ 	bdnz	1b
+ 	blr
+@@ -550,7 +563,9 @@ _GLOBAL(copy_page)
+ 	mtctr	r0
+ 1:
+ 	dcbt	r11,r4
++#ifndef CONFIG_BGP_L1_WRITETHROUGH
+ 	dcbz	r5,r3
++#endif /* CONFIG_BGP_L1_WRITETHROUGH */
+ 	COPY_16_BYTES
+ #if L1_CACHE_BYTES >= 32
+ 	COPY_16_BYTES
+diff --git a/arch/powerpc/lib/copy_32.S b/arch/powerpc/lib/copy_32.S
+index 55f19f9..552df54 100644
+--- a/arch/powerpc/lib/copy_32.S
++++ b/arch/powerpc/lib/copy_32.S
+@@ -98,7 +98,11 @@ _GLOBAL(cacheable_memzero)
+ 	bdnz	4b
+ 3:	mtctr	r9
+ 	li	r7,4
++#ifdef CONFIG_BGP_L1_WRITETHROUGH
++10:
++#else
+ 10:	dcbz	r7,r6
++#endif /* CONFIG_L1_WRITETHROUGH */
+ 	addi	r6,r6,CACHELINE_BYTES
+ 	bdnz	10b
+ 	clrlwi	r5,r8,32-LG_CACHELINE_BYTES
+@@ -187,7 +191,9 @@ _GLOBAL(cacheable_memcpy)
+ 	mtctr	r0
+ 	beq	63f
+ 53:
++#ifndef CONFIG_BGP_L1_WRITETHROUGH
+ 	dcbz	r11,r6
++#endif /* CONFIG_BGP_L1_WRITETHROUGH */
+ 	COPY_16_BYTES
+ #if L1_CACHE_BYTES >= 32
+ 	COPY_16_BYTES
+@@ -368,7 +374,11 @@ _GLOBAL(__copy_tofrom_user)
+ 	mtctr	r8
+ 
+ 53:	dcbt	r3,r4
++#ifdef CONFIG_BGP_L1_WRITETHROUGH
++54:
++#else
+ 54:	dcbz	r11,r6
++#endif
+ 	.section __ex_table,"a"
+ 	.align	2
+ 	.long	54b,105f
+diff --git a/arch/powerpc/mm/44x_mmu.c b/arch/powerpc/mm/44x_mmu.c
+index 024acab..f5c60b3 100644
+--- a/arch/powerpc/mm/44x_mmu.c
++++ b/arch/powerpc/mm/44x_mmu.c
+@@ -80,9 +80,12 @@ static void __init ppc44x_pin_tlb(unsigned int virt, unsigned int phys)
+ 	:
+ #ifdef CONFIG_PPC47x
+ 	: "r" (PPC47x_TLB2_S_RWX),
+-#else
++#elseif CONFIG_BGP_L1_WRITETHROUGH
++	: "r" (PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_WL1 \
++		| PPC44x_TLB_U2 | PPC44x_TLB_M),
++#else /* neither CONFIG_PPC47x or CONFIG_BGP_L1_WRITETHROUGH */
+ 	: "r" (PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_G),
+-#endif
++#endif /* CONFIG_PPC47x */
+ 	  "r" (phys),
+ 	  "r" (virt | PPC44x_TLB_VALID | PPC44x_TLB_256M),
+ 	  "r" (entry),
+diff --git a/arch/powerpc/platforms/Kconfig b/arch/powerpc/platforms/Kconfig
+index f7b0772..7defe94 100644
+--- a/arch/powerpc/platforms/Kconfig
++++ b/arch/powerpc/platforms/Kconfig
+@@ -348,4 +348,9 @@ config XILINX_PCI
+ 	bool "Xilinx PCI host bridge support"
+ 	depends on PCI && XILINX_VIRTEX
+ 
++config BGP_L1_WRITETHROUGH
++	bool "Blue Gene/P enabled writethrough mode"
++	depends on BGP
++	default y
 +
- /* macros to insert fields into opcodes */
- #define __PPC_RA(a)	(((a) & 0x1f) << 16)
- #define __PPC_RB(b)	(((b) & 0x1f) << 11)
-@@ -126,4 +129,10 @@
- #define XXLOR(t, a, b)		stringify_in_c(.long PPC_INST_XXLOR | \
- 					       VSX_XX3((t), (a), (b)))
- 
-+#define LFPDX(t, a, b)		stringify_in_c(.long PPC_INST_LFPDX | \
-+				    __PPC_RT(t) | __PPC_RA(a) | __PPC_RB(b)))
-+#define STFPDX(t, a, b)		stringify_in_c(.long PPC_INST_STFPDX | \
-+				    __PPC_RT(t) | __PPC_RA(a) | __PPC_RB(b)))
-+
-+
- #endif /* _ASM_POWERPC_PPC_OPCODE_H */
-diff --git a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
-index 9821006..c5f05ad 100644
---- a/arch/powerpc/include/asm/ppc_asm.h
-+++ b/arch/powerpc/include/asm/ppc_asm.h
-@@ -97,18 +97,26 @@ END_FW_FTR_SECTION_IFSET(FW_FEATURE_SPLPAR)
- #define REST_8GPRS(n, base)	REST_4GPRS(n, base); REST_4GPRS(n+4, base)
- #define REST_10GPRS(n, base)	REST_8GPRS(n, base); REST_2GPRS(n+8, base)
- 
--#define SAVE_FPR(n, base)	stfd	n,THREAD_FPR0+8*TS_FPRWIDTH*(n)(base)
--#define SAVE_2FPRS(n, base)	SAVE_FPR(n, base); SAVE_FPR(n+1, base)
--#define SAVE_4FPRS(n, base)	SAVE_2FPRS(n, base); SAVE_2FPRS(n+2, base)
--#define SAVE_8FPRS(n, base)	SAVE_4FPRS(n, base); SAVE_4FPRS(n+4, base)
--#define SAVE_16FPRS(n, base)	SAVE_8FPRS(n, base); SAVE_8FPRS(n+8, base)
--#define SAVE_32FPRS(n, base)	SAVE_16FPRS(n, base); SAVE_16FPRS(n+16, base)
--#define REST_FPR(n, base)	lfd	n,THREAD_FPR0+8*TS_FPRWIDTH*(n)(base)
--#define REST_2FPRS(n, base)	REST_FPR(n, base); REST_FPR(n+1, base)
--#define REST_4FPRS(n, base)	REST_2FPRS(n, base); REST_2FPRS(n+2, base)
--#define REST_8FPRS(n, base)	REST_4FPRS(n, base); REST_4FPRS(n+4, base)
--#define REST_16FPRS(n, base)	REST_8FPRS(n, base); REST_8FPRS(n+8, base)
--#define REST_32FPRS(n, base)	REST_16FPRS(n, base); REST_16FPRS(n+16, base)
-+#ifdef CONFIG_DOUBLE_FPU
-+#define SAVE_FPR(n, b, base)	li b, THREAD_FPR0+(16*(n)); STFPDX(n, base, b)
-+#define REST_FPR(n, b, base)	li b, THREAD_FPR0+(16*(n)); LFPDX(n, base, b)
-+#else /* CONFIG_DOUBLE_FPU */
-+#define SAVE_FPR(n, b, base)	stfd	n, THREAD_FPR0+8*TS_FPRWIDTH*(n)(base)
-+#define REST_FPR(n, b, base)	lfd	n, THREAD_FPR0+8*TS_FPRWIDTH*(n)(base)
-+#endif /* CONFIG_DOUBLE_FPU */
-+
-+#define SAVE_2FPRS(n, b, base)	SAVE_FPR(n, b, base); SAVE_FPR(n+1, b, base)
-+#define SAVE_4FPRS(n, b, base)	SAVE_2FPRS(n, b, base); SAVE_2FPRS(n+2, b, base)
-+#define SAVE_8FPRS(n, b, base)	SAVE_4FPRS(n, b, base); SAVE_4FPRS(n+4, b, base)
-+#define SAVE_16FPRS(n, b, base)	SAVE_8FPRS(n, b, base); SAVE_8FPRS(n+8, b, base)
-+#define SAVE_32FPRS(n, b, base)	SAVE_16FPRS(n, b, base); \
-+				SAVE_16FPRS(n+16, b, base)
-+#define REST_2FPRS(n, b, base)	REST_FPR(n, b, base); REST_FPR(n+1, b, base)
-+#define REST_4FPRS(n, b, base)	REST_2FPRS(n, b, base); REST_2FPRS(n+2, b, base)
-+#define REST_8FPRS(n, b, base)	REST_4FPRS(n, b, base); REST_4FPRS(n+4, b, base)
-+#define REST_16FPRS(n, b, base)	REST_8FPRS(n, b, base); REST_8FPRS(n+8, b, base)
-+#define REST_32FPRS(n, b, base)	REST_16FPRS(n, b, base); \
-+				REST_16FPRS(n+16, b, base)
- 
- #define SAVE_VR(n,b,base)	li b,THREAD_VR0+(16*(n));  stvx n,base,b
- #define SAVE_2VRS(n,b,base)	SAVE_VR(n,b,base); SAVE_VR(n+1,b,base)
-diff --git a/arch/powerpc/kernel/fpu.S b/arch/powerpc/kernel/fpu.S
-index de36955..9f11c66 100644
---- a/arch/powerpc/kernel/fpu.S
-+++ b/arch/powerpc/kernel/fpu.S
-@@ -30,7 +30,7 @@
- BEGIN_FTR_SECTION							\
- 	b	2f;							\
- END_FTR_SECTION_IFSET(CPU_FTR_VSX);					\
--	REST_32FPRS(n,base);						\
-+	REST_32FPRS(n,c,base);						\
- 	b	3f;							\
- 2:	REST_32VSRS(n,c,base);						\
- 3:
-@@ -39,13 +39,13 @@ END_FTR_SECTION_IFSET(CPU_FTR_VSX);					\
- BEGIN_FTR_SECTION							\
- 	b	2f;							\
- END_FTR_SECTION_IFSET(CPU_FTR_VSX);					\
--	SAVE_32FPRS(n,base);						\
-+	SAVE_32FPRS(n,c,base);						\
- 	b	3f;							\
- 2:	SAVE_32VSRS(n,c,base);						\
- 3:
- #else
--#define REST_32FPVSRS(n,b,base)	REST_32FPRS(n, base)
--#define SAVE_32FPVSRS(n,b,base)	SAVE_32FPRS(n, base)
-+#define REST_32FPVSRS(n,b,base)	REST_32FPRS(n,b,base)
-+#define SAVE_32FPVSRS(n,b,base)	SAVE_32FPRS(n,b,base)
- #endif
- 
- /*
-diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-index f485fc5f..24a515e 100644
---- a/arch/powerpc/platforms/44x/Kconfig
-+++ b/arch/powerpc/platforms/44x/Kconfig
-@@ -169,6 +169,15 @@ config YOSEMITE
- 	help
- 	  This option enables support for the AMCC PPC440EP evaluation board.
- 
-+config	BGP
-+	bool "Blue Gene/P"
-+	depends on 44x
-+	default n
-+	select PPC_FPU
-+	select PPC_DOUBLE_FPU
-+	help
-+	  This option enables support for the IBM BlueGene/P supercomputer.
-+
- config ISS4xx
- 	bool "ISS 4xx Simulator"
- 	depends on (44x || 40x)
+ endmenu
 diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
-index 111138c..1ae59c5 100644
+index 1ae59c5..caa3bbf 100644
 --- a/arch/powerpc/platforms/Kconfig.cputype
 +++ b/arch/powerpc/platforms/Kconfig.cputype
-@@ -137,6 +137,10 @@ config PPC_FPU
+@@ -333,6 +333,7 @@ config NOT_COHERENT_CACHE
  	bool
- 	default y if PPC64
+ 	depends on 4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON
+ 	default n if PPC_47x
++	default n if BGP
+ 	default y
  
-+config PPC_DOUBLE_FPU
-+	bool "Bluegene/P Double FPU Support"
-+	depends on BGP
-+
- config FSL_EMB_PERFMON
- 	bool "Freescale Embedded Perfmon"
- 	depends on E500 || PPC_83xx
+ config CHECK_CACHE_COHERENCY
 -- 
 1.7.4.1
 
