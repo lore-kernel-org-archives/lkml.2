@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934199Ab1ESSu7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:50:59 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:5496 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934115Ab1ESSu5 convert rfc822-to-8bit (ORCPT
+	id S1757154Ab1ESSwA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:52:00 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:50475 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757005Ab1ESSv7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:50:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=vbmghHKsAVuoTKpglJqB04EWjDIm1DXLmDDyByX31IzjVmRYIfwXmmfQIw7fMv3Yk9
-         3rkgh151ZAgOcbx+oykw==
+	Thu, 19 May 2011 14:51:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <sig.9120f46b2d.4DD5452F.9050108@radicalsystems.co.za>
-References: <sig.9120f46b2d.4DD5452F.9050108@radicalsystems.co.za>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 19 May 2011 12:50:35 -0600
-Message-ID: <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
-Subject: Re: PCI BAR1 Unassigned
-To: Jan Zwiegers <jan@radicalsystems.co.za>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTi=5MY7Lr4KU4vtOFSQiOedKGXxZLw@mail.gmail.com>
+References: <BANLkTi=5MY7Lr4KU4vtOFSQiOedKGXxZLw@mail.gmail.com>
+Date: Thu, 19 May 2011 13:51:57 -0500
+Message-ID: <BANLkTim56oPzQ_knGc6ezg+9_CY2kqshqQ@mail.gmail.com>
+Subject: Re: [PATCHv4 0/4] Initial support for TPS65912 PMIC
+From: Margarita Olaya <magi@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        sameo@linux.intel.com, grant.likely@secretlab.ca
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 10:28 AM, Jan Zwiegers <jan@radicalsystems.co.za> wrote:
-> I have the problem below where my PCI card's second BAR does not get
-> assigned.
-> What can be the cause of this problem?
-> The last kernel I tested on which worked OK was 2.6.27.
-> My current problematic kernel 2.6.35.
+Hi,
+
+On Mon, May 16, 2011 at 6:02 PM, Margarita Olaya <magi@slimlogic.co.uk> wrote:
+> Hi,
 >
-> 05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O Card
-> (rev 5c)
->    Flags: bus master, slow devsel, latency 32, IRQ 22
->    Memory at 93b00000 (type 3, prefetchable) [size=2K]
->    Memory at <unassigned> (type 3, prefetchable)
->    Capabilities: [80] #00 [0600]
->    Kernel modules: pci703drv
+> This is the initial version of the TPS65912 PMIC, a power management IC
+> for multimedia products.
+>
+> The tps65912 consists of 4 DCDCs and 10 LDOs, that are able to supply
+> voltage to main processor and other components. The chip includes a
+> GPIO module.
+>
+> Changes from V3:
+> - split core driver into tps65912-spi and tps65912-i2c
+> - create new function in regulator with common code in set/get mode
+>
 
-Could be resource exhaustion or, more likely, we ran out because we
-now assign resource to things that don't need them, leaving none for
-things that *do* need them.  This sounds like a regression, so we
-should open a bugzilla for it and attach dmesg logs from 2.6.27 and
-2.6.35.
+Do you have any comments on this version of the driver? Please let me know them.
 
-Does this problem keep the driver from working?  (Sometimes drivers
-don't actually use all the BARs a device supports.)
+Regards,
+Margarita
 
-Bjorn
+> Margarita Olaya Cabrera (4):
+>  mfd: tps65912: Add new mfd device
+>  tps65912: irq: add interrupt controller
+>  tps65912: gpio: add gpio driver
+>  tps65912: add regulator driver
+>
+>  drivers/gpio/Kconfig                   |    6 +
+>  drivers/gpio/Makefile                  |    1 +
+>  drivers/gpio/tps65912-gpio.c           |  159 +++++++
+>  drivers/mfd/Kconfig                    |   22 +
+>  drivers/mfd/Makefile                   |    4 +
+>  drivers/mfd/tps65912-core.c            |  177 +++++++
+>  drivers/mfd/tps65912-i2c.c             |  139 ++++++
+>  drivers/mfd/tps65912-irq.c             |  225 +++++++++
+>  drivers/mfd/tps65912-spi.c             |  142 ++++++
+>  drivers/regulator/Kconfig              |    6 +
+>  drivers/regulator/Makefile             |    1 +
+>  drivers/regulator/tps65912-regulator.c |  800 ++++++++++++++++++++++++++++++++
+>  include/linux/mfd/tps65912.h           |  327 +++++++++++++
+>  13 files changed, 2009 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/gpio/tps65912-gpio.c
+>  create mode 100644 drivers/mfd/tps65912-core.c
+>  create mode 100644 drivers/mfd/tps65912-i2c.c
+>  create mode 100644 drivers/mfd/tps65912-irq.c
+>  create mode 100644 drivers/mfd/tps65912-spi.c
+>  create mode 100644 drivers/regulator/tps65912-regulator.c
+>  create mode 100644 include/linux/mfd/tps65912.h
+>
