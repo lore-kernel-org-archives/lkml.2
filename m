@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab1ESA3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 20:29:04 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:6118 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752537Ab1ESA3B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 20:29:01 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: An0EAFxi1E15LCoegWdsb2JhbACmGxUBARYmJcdmDoYLBJ8Y
-Date: Thu, 19 May 2011 10:28:55 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, stable <stable@kernel.org>
-Subject: Re: [PATCH 2/2] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-Message-ID: <20110519002855.GD32466@dastard>
-References: <1305558417-24354-1-git-send-email-mgorman@suse.de>
- <1305558417-24354-3-git-send-email-mgorman@suse.de>
- <20110516141654.2728f05a.akpm@linux-foundation.org>
- <1305614225.6008.19.camel@mulgrave.site>
- <20110517162226.96974d89.akpm@linux-foundation.org>
- <20110518094718.GP5279@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110518094718.GP5279@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754004Ab1ESAcq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 20:32:46 -0400
+Received: from mail.perches.com ([173.55.12.10]:1765 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752871Ab1ESAcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 20:32:45 -0400
+Subject: Re: [PATCH] staging: brcm80211: brcmfmac: Add and use dhd_dbg
+From: Joe Perches <joe@perches.com>
+To: Henry Ptasinski <henryp@broadcom.com>
+Cc: Brett Rudley <brudley@broadcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Dowan Kim <dowan@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
+        Arend Van Spriel <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
+In-Reply-To: <4DD44C21.1080502@broadcom.com>
+References: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
+	 <4DD44C21.1080502@broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 May 2011 17:32:43 -0700
+Message-ID: <1305765163.1745.4.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 10:47:18AM +0100, Mel Gorman wrote:
-> As we are aggressively shrinking slab, we can reach the stage where
-> we scan the requested number of objects and reclaim none of them
-> potentially setting zone->all_unreclaimable to 1 if a lot of scanning
-> has also taken place recently without pages being freed. Once this
-> happens, kswapd isn't even trying to reclaim pages and is instead stuck
-> in shrink_slab until a page is freed clearing zone->all_unreclaimable
-> and zone->pages-scanned.
+On Wed, 2011-05-18 at 15:45 -0700, Henry Ptasinski wrote:
+> On 05/18/2011 11:23 AM, Joe Perches wrote:
+> > All uses of DHD_<TYPE>  macros are for debugging only.
+> > Change the multiple uses of DHD_<TYPE>((...)) to dhd_dbg(TYPE, ...)
+> > for a more consistent style.
+> I generally like this approach, but in brcmsmac we've been switching to 
+> wiphy_err() and related instead.  Any strong argument for one over the 
+> other?
 
-Isn't this completely broken then? We can have slabs with lots of
-objects but none are reclaimable - e.g. dirty inodes are not even on
-the inode LRU and require IO to get there, so repeatedly scanning
-the slab trying to free inodes is completely pointless.
+These aren't described as errors but are debugging messages.
+ 
+> > -       DHD_TRACE(("%s: Enter\n", __func__));
+> > +       dhd_dbg(TRACE, "%s: Enter\n", __func__);
+> I'd propose moving __func__ into the macro definition itself, which 
+> would help ensure consistency (and shorten all the debug lines a bit).
 
-If the shrinkers are not freeing anything, then it should be backing
-off and giving thme some time to clean objects is a much more
-efficient use of CPU time than spinning madly. Indeed, if you back
-off, you can do another pass over the LRU and see if there are more
-pages that can be reclaimed, too, so you're not dependent on the
-shrinkers actually making progress to break the livelock....
+I think TRACE is unnecessary and can be eliminated
+and replaced by the function tracer.
 
-Cheers,
+Not all uses use __func__.
+I think __func__ unnecessary and it should be avoided.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Other than that, I've no objections.
+
+> Also, perhaps rename to "brcm_dbg()", "bcm_dbg()" or something like that 
+> and move it into include/bcmutils.h, so brcmsmac can use it as well.
+
+Your choice.
+
