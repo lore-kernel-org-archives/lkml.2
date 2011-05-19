@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab1ESJIU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 05:08:20 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:24196 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753120Ab1ESJIT (ORCPT
+	id S932938Ab1ESJKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 05:10:13 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:53732 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932305Ab1ESJKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 05:08:19 -0400
-Date: Thu, 19 May 2011 11:06:22 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the i2c tree
-Message-ID: <20110519110622.681205cf@endymion.delvare>
-In-Reply-To: <20110519132704.9785243e.sfr@canb.auug.org.au>
-References: <20110519132704.9785243e.sfr@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	Thu, 19 May 2011 05:10:07 -0400
+Date: Thu, 19 May 2011 05:08:24 -0400 (EDT)
+Message-Id: <20110519.050824.838971689287732822.davem@davemloft.net>
+To: sven@narfation.org
+Cc: ordex@autistici.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        paulus@samba.org, linux-ppp@vger.kernel.org
+Subject: Re: net: add seq_before/seq_after functions
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201105191054.34912.sven@narfation.org>
+References: <1305722319-8315-1-git-send-email-ordex@autistici.org>
+	<201105191054.34912.sven@narfation.org>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 19 May 2011 02:08:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 May 2011 13:27:04 +1000, Stephen Rothwell wrote:
-> Hi Jean,
+From: Sven Eckelmann <sven@narfation.org>
+Date: Thu, 19 May 2011 10:54:32 +0200
+
+> On Wednesday 18 May 2011 14:38:39 Antonio Quartulli wrote:
+>> Introduce two operations to handle comparison between packet sequence
+>> numbers taking into account overflow/wraparound. Batman-adv uses
+>> these functions already to check for successor packet even in case of
+>> overflow.
 > 
-> After merging the i2c tree, today's linux-next build (i386 defconfig)
-> failed like this:
-> 
-> drivers/built-in.o: In function `i2c_i801_init':
-> i2c-i801.c:(.init.text+0x88b9): undefined reference to `check_signature'
-> 
-> Probably caused by commit fc02951b3293 ("i2c-i801: Don't depend on other
-> kernel driver config options").  Reverting that commit fixes the problem,
-> so I have done that for today.
+> Thanks for your efforts to bring that to the kernel. But when you prepare a 
+> patch then you have to add a signoff. And also David S. Miller is the 
+> maintainer for this header - it would be interesting to ask him first when we 
+> want to change that file.
 
-Oops, good catch. Fix is:
+Well it makes no sense to add these interfaces until we see an
+upstream submission of code which will actually use it.
 
----
- drivers/i2c/busses/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Also I'm skeptical that such generic sounding interfaces make
+sense when it appears to me that these are protocol specific
+sequence number tests so probably belong in whatever protocol
+is upcoming which will use these interfaces.
 
---- linux-2.6.39-rc7.orig/drivers/i2c/busses/Kconfig	2011-05-19 09:02:42.000000000 +0200
-+++ linux-2.6.39-rc7/drivers/i2c/busses/Kconfig	2011-05-19 11:03:36.000000000 +0200
-@@ -79,6 +79,7 @@ config I2C_AMD8111
- config I2C_I801
- 	tristate "Intel 82801 (ICH/PCH)"
- 	depends on PCI
-+	select CHECK_SIGNATURE if X86 && DMI
- 	help
- 	  If you say yes to this option, support will be included for the Intel
- 	  801 family of mainboard I2C interfaces.  Specifically, the following
-
-I'll fold it in the faulty patch so it should build fine tomorrow.
-
--- 
-Jean Delvare
+Again, this is why we want to see the code that's going to use
+these new routines before we can seriously consider adding them
+at all.
