@@ -1,124 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935145Ab1ESWK7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 18:10:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59318 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934954Ab1ESWK5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 18:10:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=AeVLxYdNq/8KadUPw3OoVvvA2GCDec6bHiz/fJ87VX06WPTrfVg3/MmWKQ7kzBVpKi
-         NOzg3KfBRTHQ12LfNyi+e9rnJQCHhbObFb3thtYdlsEtyTbSl4K7D9Inxu/CQL4n13dZ
-         MxT/9ewg7mu6gR4aKJ7atvuhl/Vflc5ywO29U=
-MIME-Version: 1.0
-In-Reply-To: <4DD53E2B.2090002@ladisch.de>
-References: <BANLkTi==cinS1bZc_ARRbnYT3YD+FQr8gA@mail.gmail.com>
-	<20110519145921.GE9854@dumpdata.com>
-	<4DD53E2B.2090002@ladisch.de>
-Date: Fri, 20 May 2011 00:10:57 +0200
-Message-ID: <BANLkTinO1xR4XTN2B325pKCpJ3AjC9YidA@mail.gmail.com>
-Subject: Re: mmap() implementation for pci_alloc_consistent() memory?
-From: Leon Woestenberg <leon.woestenberg@gmail.com>
-To: Clemens Ladisch <clemens@ladisch.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-pci@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S935118Ab1ESWLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 18:11:08 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:39047 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934954Ab1ESWLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 18:11:06 -0400
+Date: Thu, 19 May 2011 17:11:01 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Rafael Aquini <aquini@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH] [BUGFIX] mm: hugepages can cause negative commitlimit
+Message-ID: <20110519221101.GC19648@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20110518153445.GA18127@sgi.com> <BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com> <20110519045630.GA22533@sgi.com> <BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Clemens, Konrad, others,
+On Thu, May 19, 2011 at 10:37:13AM -0300, Rafael Aquini wrote:
+> On Thu, May 19, 2011 at 1:56 AM, Russ Anderson <rja@sgi.com> wrote:
+> >
+> > The way it was verified was putting a printk in to print totalram_pages
+> > and hugetlb_total_pages.  First the system was booted without any huge
+> > pages.  The next boot one huge page was allocated.  The next boot more
+> > hugepages allocated.  Each time totalram_pages was reduced by the nuber
+> > of huge pages allocated, with totalram_pages + hugetlb_total_pages
+> > equaling the original number of pages.
+> >
+> > That behavior is also consistent with allocating over half of memory
+> > resulting in CommitLimit going negative (as is shown in the above
+> > output).
+> >
+> > Here is some data.  Each represents a boot using 1G hugepages.
+> >   0 hugepages : totalram_pages 16519867 hugetlb_total_pages       0
+> >   1 hugepages : totalram_pages 16257723 hugetlb_total_pages  262144
+> >   2 hugepages : totalram_pages 15995578 hugetlb_total_pages  524288
+> >  31 hugepages : totalram_pages  8393403 hugetlb_total_pages 8126464
+> >  32 hugepages : totalram_pages  8131258 hugetlb_total_pages 8388608
+> >
+> >
+> > > hugepages are reserved, hugetlb_total_pages() has to be accounted and
+> > > subtracted from totalram_pages in order to render an accurate number of
+> > > remaining pages available to the general memory workload commitment.
+> > >
+> > > I've tried to reproduce your findings on my boxes,  without
+> > > success, unfortunately.
+> >
+> > Put a printk in meminfo_proc_show() to print totalram_pages and
+> > hugetlb_total_pages().  Add "default_hugepagesz=1G hugepagesz=1G
+> > hugepages=64"
+> > to the boot line (varying the number of hugepages).
+> >
+> > > I'll keep chasing to hit this behaviour, though.
+> 
+> I got what I was doing different, and you are partially right.
+> Checking mm/hugetlb.c:
+> 1811 static int __init hugetlb_nrpages_setup(char *s)
+> 1812 {
+> ....
+> 1834         /*
+> 1835          * Global state is always initialized later in hugetlb_init.
+> 1836          * But we need to allocate >= MAX_ORDER hstates here early to
+> still
+> 1837          * use the bootmem allocator.
+> 1838          */
+> 1839         if (max_hstate && parsed_hstate->order >= MAX_ORDER)
+> 1840                 hugetlb_hstate_alloc_pages(parsed_hstate);
+> 1841
+> 1842         last_mhp = mhp;
+> 1843
+> 1844         return 1;
+> 1845 }
+> 1846 __setup("hugepages=", hugetlb_nrpages_setup);
+> 
+> I realize this issue you've reported only happens when you're using
+> oversized hugepages. As their order are always >= MAX_ORDER, they got pages
+> early allocated from bootmem allocator. So, these pages are not accounted
+> for totalram_pages.
+> 
+> Although your patch covers a fix for the proposed case, it only works for
+> scenarios where oversized hugepages are allocated on boot. I think it will,
+> unfortunately, cause a bug for the remaining scenarios.
 
-On Thu, May 19, 2011 at 5:58 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
-> Konrad Rzeszutek Wilk wrote:
->> On Thu, May 19, 2011 at 12:14:40AM +0200, Leon Woestenberg wrote:
->> > I cannot get my driver's mmap() to work. I allocate 64 KiB ringbuffer
->> > using pci_alloc_consistent(), then implement mmap() to allow programs
->> > to map that memory into their user space.
->> > ...
->> > int ringbuffer_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
->> > {
->> >         /* the buffer allocated with pci_alloc_consistent() */
->> >     void *vaddr = ringbuffer_virt;
->> >     int ret;
->> >
->> >     /* find the struct page that describes vaddr, the buffer
->> >      * allocated with pci_alloc_consistent() */
->> >     struct page *page = virt_to_page(lro_char->engine->ringbuffer_virt);
->> >     vmf->page = page;
->> >
->> >         /*** I have verified that vaddr, page, and the pfn correspond with vaddr = pci_alloc_consistent() ***/
->> >     ret = vm_insert_pfn(vma, address, page_to_pfn(page));
->>
->> address is the vmf->virtual_address?
->>
-yes, I missed that line when removing some noise:
+OK, I see your point.  The root problem is hugepages allocated at boot are
+subtracted from totalram_pages but hugepages allocated at run time are not.
+Correct me if I've mistate it or are other conditions.
 
-	unsigned long address = (unsigned long)vmf->virtual_address;
+By "allocated at run time" I mean "echo 1 > /proc/sys/vm/nr_hugepages".
+That allocation will not change totalram_pages but will change
+hugetlb_total_pages().
 
->> And is the page_to_pfn(page) value correct? As in:
->>
->>   int pfn = page_to_pfn(page);
->>
->>   WARN(pfn << PAGE_SIZE != vaddr,"Something fishy.");
->>
-Yes, this holds true.
+How best to fix this inconsistency?  Should totalram_pages include or exclude
+hugepages?  What are the implications?
 
-I also verified that the pfn corresponds with the pfn of the virtual
-address returned by pci_alloc_consistent().
+I have no strong preference as to which way to go as long as it is consistent.
 
->> Hm, I think I might have misled you now that I look at that WARN.
->>
->> The pfn to be supplied has to be physical page frame number. Which in
->> this case should be your bus addr shifted by PAGE_SIZE. Duh! Try that
->> value.
->
-The physical address? Why? (Just learning here, this is no objection
-to your suggestion.)
+> Cheers!
+> --aquini
 
-Also, the bus address is not the physical address, or not in general.
-For example on IOMMU systems this certainly doesn't hold true.
-
-So how can I reliably find the out the physical memory address of
-pci_alloc_consistent() memory?
-
-> There are wildly different implementations of pci_alloc_consistent
-> (actually dma_alloc_coherent) that can return somewhat different
-> virtual and/or physical addresses.
->
->> I think a better example might be the 'hpet_mmap' code
->
-> Which is x86 and ia64 only.
->
->> > static int ringbuffer_mmap(struct file *file, struct vm_area_struct *vma)
->> > {
->> >     vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
->
-> So is this an architecture without coherent caches?
->
-My aim is to have an architecture independent driver.
-
-My goal is to make sure the CPU can poll for data that the PCI(e) bus
-master writes into host memory.
-
-> Or would you want to use pgprot_dmacoherent, if available?
->
-Hmm, let me check that.
-
-> I recently looked into this problem, and ended up with the code below.
-> I then decided that streaming DMA mappings might be a better idea.
->
-I got streaming DMA mappings working already. I cannot use them in my
-case as streaming mappings are not cache-coherent in general.
-
-Thanks for the code snippet, it seems x86 only though?
-
-Regards,
 -- 
-Leon
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
