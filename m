@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933481Ab1ESQQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:16:33 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40299 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932732Ab1ESQQc (ORCPT
+	id S933454Ab1ESQSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:18:08 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:33484
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932732Ab1ESQSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:16:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=LPXkmY5Vlf1THONKBpm+bKHK9jfpuhci8307XZWe0rboND6nxnJDGK2nBfD+svj8qg
-         HlLMG/6IvHFrHB5MYKFdpqMxuSKOomRzYiebtdYKZKzdmpL/67iWNH6m1x7Fge06IaKs
-         mjWDCJj8JizFkbJnDWm4NMUV7sbxutgspJ+Xc=
+	Thu, 19 May 2011 12:18:06 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4DD542BA.6040608@freescale.com>
+Date: Thu, 19 May 2011 11:18:02 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/2.0.14-1.fc13 SeaMonkey/2.0.14
 MIME-Version: 1.0
-In-Reply-To: <4DD53AE5.8020103@teksavvy.com>
-References: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
-	<4DD53AE5.8020103@teksavvy.com>
-Date: Thu, 19 May 2011 17:16:32 +0100
-X-Google-Sender-Auth: sYlMqIp5jU5s3nzk2LNxwK4uLkA
-Message-ID: <BANLkTi=7v40xpM6-jQ2CS09fEb0noFLYPg@mail.gmail.com>
-Subject: Re: Linux 2.6.39
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <greg@kroah.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, <kumar.gala@freescale.com>,
+        <benh@kernel.crashing.org>, <akpm@kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 6/7] tty/powerpc: introduce the ePAPR embedded hypervisor
+ byte channel driver
+References: <1305813272-31826-1-git-send-email-timur@freescale.com> <1305813272-31826-7-git-send-email-timur@freescale.com> <20110519153358.5876f310@lxorguk.ukuu.org.uk> <4DD533DE.1020705@freescale.com> <20110519165039.7fd8ec34@lxorguk.ukuu.org.uk> <4DD53D1B.4060600@freescale.com> <20110519160239.GB25606@kroah.com>
+In-Reply-To: <20110519160239.GB25606@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 May 2011 16:44, Mark Lord <kernel@teksavvy.com> wrote:
-> Here's some more funny business that was new after rc7-git12:
->
-> warning: (AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI &&
-> RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has
-> unmet direct dependencies (MISC_DEVICES)
-> warning: (ACPI_APEI) selects PSTORE which has unmet direct dependencies
-> (MISC_FILESYSTEMS)
->
-> The exact same .config didn't do that with rc7-git12,
-> but does do it with 2.6.39 final.
->
-> Odd thing is, if I select both MISC_DEVICES and MISC_FILESYSTEMS,
-> but do NOT select anything from under either of those,
-> the warnings go away.
->
-> Which likely means the warnings are totally bogus.
+Greg KH wrote:
+> It's too late, it needed to be in linux-next _before_ the window opened.
+> 
+> sorry,
 
-The problem is:
+Curses!  Foiled again!
 
-AX88796_93CX6 selects EEPROM_93CX6
-EEPROM_93CX6 depends on MISC_DEVICES (as part of the EEPROM menu which
-is only included if MISC_DEVICES)
-
-By enabling MISC_DEVICES, you allow AX88796_93CX6 to select
-EEPROM_93CX6 without any warning as it has the dependencies met.
-
-The issue here is that EEPROM_93CX6 doesn't really depend on any
-MISC_DEVICES infrastructure. That's just a directory for various
-drivers and MISC_DEVICES only has a visibility role. There was a
-proposal last year for kbuild to differentiate between dependency and
-visibility but I don't know what happened to it.
+Well, then I'd like to get this patchset fixed up and approved soon after the
+window closes, so that there's no excuse for missing 2.6.41.
 
 -- 
-Catalin
+Timur Tabi
+Linux kernel developer at Freescale
+
