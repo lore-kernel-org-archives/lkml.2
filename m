@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab1ESICL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 04:02:11 -0400
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:46065 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932304Ab1ESICI (ORCPT
+	id S1756758Ab1ESITO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 04:19:14 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:29222 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755454Ab1ESITL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 04:02:08 -0400
-To: Alexander Zimmermann <alexander.zimmermann@comsys.rwth-aachen.de>
-Subject: Re: [PATCH] tcp: Implement a two-level initial RTO as per draft RFC  2988bis-02.
+	Thu, 19 May 2011 04:19:11 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LLFOFW-02-0BM-02
+X-M-MSG: 
+Date: Thu, 19 May 2011 10:19:31 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v2] dma-debug: print some unfreed allocations
+Message-ID: <20110519081931.GM31309@amd.com>
+References: <1305052944.3544.8.camel@jlt3.sipsolutions.net>
+ <1305118077.3416.5.camel@jlt3.sipsolutions.net>
+ <20110516110029.GC31309@amd.com>
+ <1305758908.8827.3.camel@jlt3.sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Date: Thu, 19 May 2011 10:02:07 +0200
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: tsuna <tsunanet@gmail.com>, David Miller <davem@davemloft.net>,
-        <kuznet@ms2.inr.ac.ru>, <pekkas@netcore.fi>, <jmorris@namei.org>,
-        <yoshfuji@linux-ipv6.org>, <kaber@trash.net>, <eric.dumazet@gmail.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <8C5DF277-320D-4DEB-A133-EEC301DE58DC@comsys.rwth-aachen.de>
-References: <1305771744-83951-1-git-send-email-tsunanet@gmail.com>
- <20110518.223622.1525088601595365235.davem@davemloft.net>
- <BANLkTinEN_=jSCw4qR1PqtWaQ+07OMq7tg@mail.gmail.com>
- <20110519.001426.2119532755281545481.davem@davemloft.net>
- <BANLkTikQEq9+YkJHcTe3PWnRvh7AN=VVWA@mail.gmail.com>
- <9DC9A4D5-8E16-4361-B323-C92D563171A1@comsys.rwth-aachen.de>
- <BANLkTimVMYC5rzizaM+3dReG14obxGL=Bw@mail.gmail.com>
- <C70B920C-6176-481B-B6D2-E52769291EBC@comsys.rwth-aachen.de>
- <BANLkTiku9KTHCm59cib5KY8mz0ewSLsHFQ@mail.gmail.com>
- <8C5DF277-320D-4DEB-A133-EEC301DE58DC@comsys.rwth-aachen.de>
-Message-ID: <ef84de89c2597793d4cca5eee446ba90@localhost>
-User-Agent: RoundCube Webmail/0.1-rc1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1305758908.8827.3.camel@jlt3.sipsolutions.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Thu, 19 May 2011 08:52:10 +0200, Alexander Zimmermann wrote:
-
->> #define TCP_RTO_MAX     ((unsigned)(120*HZ))
->> #define TCP_RTO_MIN     ((unsigned)(HZ/5))
->> 
->> So we're talking about a [200ms ; 120s] range no matter what.
+On Wed, May 18, 2011 at 06:48:28PM -0400, Johannes Berg wrote:
+> On Mon, 2011-05-16 at 13:00 +0200, Roedel, Joerg wrote:
+> > > +		/*
+> > > +		 * If we have, print out some stack traces for the allocations.
+> > > +		 * In case of module unload, the stack traces will be useless,
+> > > +		 * but instead of unloading the module you can manually unbind
+> > > +		 * the driver instead and get useful traces.
+> > > +		 */
+> > > +		printk(KERN_WARNING "Showing traces for %d allocations:\n",
+> > > +		       DMA_DEBUG_NUM_PRINT_UNFREED);
 > 
-> Why is 200ms a valid lower bound for initRTO? I'm aware of
-> measurements that 1s is save for Internet, but I don't know of any
-> studies that 200ms is save... 
+> > This is surely useful to developers, but can trash the dmesg if done
+> > unconditionally. I would prefer this verbose output to be configurable
+> > and off by default.
+> 
+> Are you thinking of runtime or compile time configuration? Kconfig entry
+> depending on stacktrace (or selecting it, depending on have_stacktrace)
+> would be easy enough.
 
-TCP_RTO_MAX and TCP_RTO_MIN is the lower/upper bound for the RTO in
-general, not for the initial RTO. RFC 2988 specify a lower bound of 1
-second but all operating system choose a lower one because at the time
-where RFC 2988 was written the clock granularity was not that accurate. The
-minimum RTO for FreeBSD is even 30ms! Furthermore, analysis had
-demonstrated that a minimum RTO of 1 second badly breaks throughput in
-environments faster then 33kB with minor packet loss rate (e.g. 1%).
+It should be configurable at runtime. DMA-debugging already has a
+debugfs interface which you can use for that. By default dma-debugging
+should only print out the message about leaked entries. The developer
+can then reproduce it and find the cause by enabling the verbose output.
 
-So yes, it CAN be wise to choose other lower/upper bounds. But keep in
-mind that we should NOT artificial limit ourself. I can image data center
-scenarios where a initial RTO of <1 match perfectly.
+Note that there is documentation in Documentation/DMA-API.txt to
+document the debugfs interface. Please make sure to update that too.
 
-Hagen
+Regards,
+
+	Joerg
+
+
