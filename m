@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934157Ab1ESSMk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:12:40 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50647 "EHLO
+	id S934150Ab1ESSJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:09:26 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:34548 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934129Ab1ESSJU (ORCPT
+	by vger.kernel.org with ESMTP id S934139Ab1ESSJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:09:20 -0400
-X-Sasl-enc: ArpcmINT4CO+u7tW9BBAqPkqix3Qy011NQ2VpZHj7VWB 1305828559
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:59 2011
-Message-Id: <20110519180559.895335353@clark.kroah.org>
+	Thu, 19 May 2011 14:09:22 -0400
+X-Sasl-enc: h/rRj0ShmPQODsSP+A8QqYhSA/H74sSMewnhBlhElMTp 1305828561
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:06:00 2011
+Message-Id: <20110519180559.981526864@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:27 -0700
+Date: Thu, 19 May 2011 11:05:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [59/71] tick: Clear broadcast active bit when switching to oneshot
+        Youquan Song <youquan.song@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yong Wang <yong.y.wang@intel.com>, hpa@linux.intel.com,
+        joe@perches.com, jbaron@redhat.com, trenn@suse.de, kent.liu@intel.com,
+        chaohong.guo@intel.com, Ingo Molnar <mingo@elte.hu>
+Subject: [60/71] x86, apic: Fix spurious error interrupts triggering on all non-boot APs
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,85 +31,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Youquan Song <youquan.song@intel.com>
 
-commit 07f4beb0b5bbfaf36a64aa00d59e670ec578a95a upstream.
+commit e503f9e4b092e2349a9477a333543de8f3c7f5d9 upstream.
 
-The first cpu which switches from periodic to oneshot mode switches
-also the broadcast device into oneshot mode. The broadcast device
-serves as a backup for per cpu timers which stop in deeper
-C-states. To avoid starvation of the cpus which might be in idle and
-depend on broadcast mode it marks the other cpus as broadcast active
-and sets the brodcast expiry value of those cpus to the next tick.
+This patch fixes a bug reported by a customer, who found
+that many unreasonable error interrupts reported on all
+non-boot CPUs (APs) during the system boot stage.
 
-The oneshot mode broadcast bit for the other cpus is sticky and gets
-only cleared when those cpus exit idle. If a cpu was not idle while
-the bit got set in consequence the bit prevents that the broadcast
-device is armed on behalf of that cpu when it enters idle for the
-first time after it switched to oneshot mode.
+According to Chapter 10 of Intel Software Developer Manual
+Volume 3A, Local APIC may signal an illegal vector error when
+an LVT entry is set as an illegal vector value (0~15) under
+FIXED delivery mode (bits 8-11 is 0), regardless of whether
+the mask bit is set or an interrupt actually happen. These
+errors are seen as error interrupts.
 
-In most cases that goes unnoticed as one of the other cpus has usually
-a timer pending which keeps the broadcast device armed with a short
-timeout. Now if the only cpu which has a short timer active has the
-bit set then the broadcast device will not be armed on behalf of that
-cpu and will fire way after the expected timer expiry. In the case of
-Christians bug report it took ~145 seconds which is about half of the
-wrap around time of HPET (the limit for that device) due to the fact
-that all other cpus had no timers armed which expired before the 145
-seconds timeframe.
+The initial value of thermal LVT entries on all APs always reads
+0x10000 because APs are woken up by BSP issuing INIT-SIPI-SIPI
+sequence to them and LVT registers are reset to 0s except for
+the mask bits which are set to 1s when APs receive INIT IPI.
 
-The solution is simply to clear the broadcast active bit
-unconditionally when a cpu switches to oneshot mode after the first
-cpu switched the broadcast device over. It's not idle at that point
-otherwise it would not be executing that code.
+When the BIOS takes over the thermal throttling interrupt,
+the LVT thermal deliver mode should be SMI and it is required
+from the kernel to keep AP's LVT thermal monitoring register
+programmed as such as well.
 
-[ I fundamentally hate that broadcast crap. Why the heck thought some
-  folks that when going into deep idle it's a brilliant concept to
-  switch off the last device which brings the cpu back from that
-  state? ]
+This issue happens when BIOS does not take over thermal throttling
+interrupt, AP's LVT thermal monitor register will be restored to
+0x10000 which means vector 0 and fixed deliver mode, so all APs will
+signal illegal vector error interrupts.
 
-Thanks to Christian for providing all the valuable debug information!
+This patch check if interrupt delivery mode is not fixed mode before
+restoring AP's LVT thermal monitor register.
 
-Reported-and-tested-by: Christian Hoffmann <email@christianhoffmann.info>
-Cc: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/%3Calpine.LFD.2.02.1105161105170.3078%40ionos%3E
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Yong Wang <yong.y.wang@intel.com>
+Cc: hpa@linux.intel.com
+Cc: joe@perches.com
+Cc: jbaron@redhat.com
+Cc: trenn@suse.de
+Cc: kent.liu@intel.com
+Cc: chaohong.guo@intel.com
+Link: http://lkml.kernel.org/r/1303402963-17738-1-git-send-email-youquan.song@intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/time/tick-broadcast.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/apicdef.h           |    1 +
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   12 +++++++-----
+ 2 files changed, 8 insertions(+), 5 deletions(-)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -523,10 +523,11 @@ static void tick_broadcast_init_next_eve
-  */
- void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
- {
-+	int cpu = smp_processor_id();
-+
- 	/* Set it up only once ! */
- 	if (bc->event_handler != tick_handle_oneshot_broadcast) {
- 		int was_periodic = bc->mode == CLOCK_EVT_MODE_PERIODIC;
--		int cpu = smp_processor_id();
+--- a/arch/x86/include/asm/apicdef.h
++++ b/arch/x86/include/asm/apicdef.h
+@@ -78,6 +78,7 @@
+ #define		APIC_DEST_LOGICAL	0x00800
+ #define		APIC_DEST_PHYSICAL	0x00000
+ #define		APIC_DM_FIXED		0x00000
++#define		APIC_DM_FIXED_MASK	0x00700
+ #define		APIC_DM_LOWEST		0x00100
+ #define		APIC_DM_SMI		0x00200
+ #define		APIC_DM_REMRD		0x00300
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -446,18 +446,20 @@ void intel_init_thermal(struct cpuinfo_x
+ 	 */
+ 	rdmsr(MSR_IA32_MISC_ENABLE, l, h);
  
- 		bc->event_handler = tick_handle_oneshot_broadcast;
- 		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
-@@ -552,6 +553,15 @@ void tick_broadcast_setup_oneshot(struct
- 			tick_broadcast_set_event(tick_next_period, 1);
- 		} else
- 			bc->next_event.tv64 = KTIME_MAX;
-+	} else {
-+		/*
-+		 * The first cpu which switches to oneshot mode sets
-+		 * the bit for all other cpus which are in the general
-+		 * (periodic) broadcast mask. So the bit is set and
-+		 * would prevent the first broadcast enter after this
-+		 * to program the bc device.
-+		 */
-+		tick_broadcast_clear_oneshot(cpu);
- 	}
- }
++	h = lvtthmr_init;
+ 	/*
+ 	 * The initial value of thermal LVT entries on all APs always reads
+ 	 * 0x10000 because APs are woken up by BSP issuing INIT-SIPI-SIPI
+ 	 * sequence to them and LVT registers are reset to 0s except for
+ 	 * the mask bits which are set to 1s when APs receive INIT IPI.
+-	 * Always restore the value that BIOS has programmed on AP based on
+-	 * BSP's info we saved since BIOS is always setting the same value
+-	 * for all threads/cores
++	 * If BIOS takes over the thermal interrupt and sets its interrupt
++	 * delivery mode to SMI (not fixed), it restores the value that the
++	 * BIOS has programmed on AP based on BSP's info we saved since BIOS
++	 * is always setting the same value for all threads/cores.
+ 	 */
+-	apic_write(APIC_LVTTHMR, lvtthmr_init);
++	if ((h & APIC_DM_FIXED_MASK) != APIC_DM_FIXED)
++		apic_write(APIC_LVTTHMR, lvtthmr_init);
  
+-	h = lvtthmr_init;
+ 
+ 	if ((l & MSR_IA32_MISC_ENABLE_TM1) && (h & APIC_DM_SMI)) {
+ 		printk(KERN_DEBUG
 
 
