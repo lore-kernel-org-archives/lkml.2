@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934593Ab1EST6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 15:58:20 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:58770 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933926Ab1EST6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 15:58:19 -0400
-Date: Thu, 19 May 2011 21:56:53 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: David Rientjes <rientjes@google.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi.kleen@intel.com>, haicheng.li@linux.intel.com,
-        fengguang.wu@intel.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
-        Dave Hansen <dave@linux.vnet.ibm.com>, wdauchy@gmail.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH V3 1/2] mm: Add SECTION_ALIGN_UP() and SECTION_ALIGN_DOWN() macro
-Message-ID: <20110519195653.GC27202@router-fw-old.local.net-space.pl>
-References: <20110517213750.GB30232@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1105182019170.20651@chino.kir.corp.google.com>
-Mime-Version: 1.0
+	id S934608Ab1EST7F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:59:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934531Ab1EST7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 15:59:04 -0400
+Date: Thu, 19 May 2011 15:58:59 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, axboe@kernel.dk
+Cc: dpshah@google.com
+Subject: Re: [PATCH 00/13] blk-throttle: lockless bio processing for no
+ throttle rule group [V2]
+Message-ID: <20110519195859.GF12600@redhat.com>
+References: <1305833911-7717-1-git-send-email-vgoyal@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105182019170.20651@chino.kir.corp.google.com>
-User-Agent: Mutt/1.3.28i
+In-Reply-To: <1305833911-7717-1-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 08:21:23PM -0700, David Rientjes wrote:
-> On Tue, 17 May 2011, Daniel Kiper wrote:
->
-> > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> > index d715200..217bcf6 100644
-> > --- a/include/linux/mmzone.h
-> > +++ b/include/linux/mmzone.h
-> > @@ -956,6 +956,9 @@ static inline unsigned long early_pfn_to_nid(unsigned long pfn)
-> >  #define pfn_to_section_nr(pfn) ((pfn) >> PFN_SECTION_SHIFT)
-> >  #define section_nr_to_pfn(sec) ((sec) << PFN_SECTION_SHIFT)
-> >
-> > +#define SECTION_ALIGN_UP(pfn)	(((pfn) + PAGES_PER_SECTION - 1) & PAGE_SECTION_MASK)
-> > +#define SECTION_ALIGN_DOWN(pfn)	((pfn) & PAGE_SECTION_MASK)
-> > +
-> >  struct page;
-> >  struct page_cgroup;
-> >  struct mem_section {
->
-> These seem useful.  Could you convert the code in drivers/base/node.c,
-> mm/page_cgroup.c, mm/page_alloc.c, and mm/sparse.c that already do this to
-> use the new macros?
+On Thu, May 19, 2011 at 03:38:18PM -0400, Vivek Goyal wrote:
+> Hi,
+> 
+> This is V2 of the patch. Changes from V1 are.
+> 
+> - Dropped first patch of the series which has already been merged.
+> - Fixed couple of white space warnings.
+> 
+> Jens, I am sending this series on your both the ids. See if both produce
+> warnings.
+> 
+> Block throttling code takes request queue lock for every incoming bio
+> (blk_throtl_bio()). This is true even if there are no throttle rules in
+> the group. This is a common case for root cgroup where distributions
+> will have throttling support compiled in but a vast majority of users
+> will not be specifying throttling rule.
+> 
+> This patch series tries to make bio processing lockless (no requeust
+> queue lock), if there are no rules specified for the group. Once
+> a bio is submitted, under rcu_read_lock() we search for the group,
+> update the stats and release the rcu lock. request queue lock is taken
+> only if there are throttling rules specified in the group.
+> 
+> I have made some of the dispatch stats per cpu so that these can be updated
+> without taking request queue lock.
 
-No problem. I do that in next week or two.
+Also forgot to mention that now throttling path does not take blkg->stat_lock
+at all. Throttling updates only 3 stats and all these 3 stats have been
+converted to per cpu, hence we got rid of the need of taking blkg->stat_lock
+also.
 
-Daniel
+Divyesh, can you have a look at locking changes around stats and see if 
+you have any concerns.
+
+Thanks
+Vivek
