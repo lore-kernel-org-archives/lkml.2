@@ -1,140 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933758Ab1ESRmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:42:44 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:24638 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933628Ab1ESRmm convert rfc822-to-8bit (ORCPT
+	id S933773Ab1ESRmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:42:51 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11886 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933628Ab1ESRmt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:42:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=oZzRvy5aD/iTdOfdAq0kh4lfWkj0p8pzGa4wlIll2dr9kJcZiRzjPBvUsASofPIGad
-         wKbiE4OG0PLRkXsC4xGg==
-MIME-Version: 1.0
-In-Reply-To: <1305786976-84532-1-git-send-email-tsunanet@gmail.com>
-References: <20110519.014656.1735519603194773578.davem@davemloft.net> <1305786976-84532-1-git-send-email-tsunanet@gmail.com>
-From: Yuchung Cheng <ycheng@google.com>
-Date: Thu, 19 May 2011 10:42:19 -0700
-Message-ID: <BANLkTinzF1LrvR_3Q5b02CFd6nLWqGgERg@mail.gmail.com>
-Subject: Re: [PATCH] tcp: Lower the initial RTO to 1s as per draft RFC 2988bis-02.
-To: Benoit Sigoure <tsunanet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benoit Sigoure <tsuna@stumbleupon.com>,
-        Hsiao-keng Jerry Chu <hkchu@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 May 2011 13:42:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 19 May 2011 10:42:38 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 19 May 2011 10:42:36 -0700
+Subject: RE: [PATCH] drivers: create a pinmux subsystem v2
+Thread-Topic: [PATCH] drivers: create a pinmux subsystem v2
+Thread-Index: AcwVHwzP8HfSiB5yThGjIBB2wvBs+wBKztdA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF0498A47C0C@HQMAIL01.nvidia.com>
+References: <1305070783-23193-1-git-send-email-linus.walleij@linaro.org>
+	<74CDBE0F657A3D45AFBB94109FB122FF04986AA6A2@HQMAIL01.nvidia.com>
+	<BANLkTi=wTB6R8vjHVAWM3T0e5HjOq77tdA@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04986AAB5F@HQMAIL01.nvidia.com>
+ <BANLkTi=0OTUsCvj2fJTKnGiCjqVx=bOHrA@mail.gmail.com>
+In-Reply-To: <BANLkTi=0OTUsCvj2fJTKnGiCjqVx=bOHrA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
-
-AFAICT, the passive open side would not fall back the
-RTO to 3sec in this change because SYNACK timeouts are not
-recorded in icsk_retransmits but reqsk->retrans?
-
-Yuchung
-
-On Wed, May 18, 2011 at 11:36 PM, Benoit Sigoure <tsunanet@gmail.com> wrote:
->
-> From: Benoit Sigoure <tsuna@stumbleupon.com>
->
-> Draft RFC 2988bis-02 recommends that the initial RTO be lowered
-> from 3 seconds down to 1 second, and that in case of a timeout
-> during the TCP 3WHS, the RTO should fallback to 3 seconds when
-> data transmission begins.
-> ---
->
-> On Wed, May 18, 2011 at 10:46 PM, David Miller <davem@davemloft.net> wrote:
-> > From: tsuna <tsunanet@gmail.com>
-> > Date: Wed, 18 May 2011 21:33:21 -0700
+Linus Walleij wrote at Tuesday, May 17, 2011 11:47 PM:
+> 2011/5/17 Stephen Warren <swarren@nvidia.com>:
+> > The one remaining thing I don't understand:
 > >
-> >> On Wed, May 18, 2011 at 9:14 PM, David Miller <davem@davemloft.net> wrote:
-> >>> I really would rather see the initial RTO be static and be set to 1
-> >>> with fallback RTO of 3.
-> >>
-> >> I can also provide a simple patch for this if you want to start from
-> >> there.  And then maybe we can discuss having a runtime knob some more
-> >> :-)
+> > The board provides a mapping from driver name to pinmux selections.
+> > The example documentation includes:
 > >
-> > Yeah why don't we do that :-)
->
-> Alright, here we go.
->
->
->  include/net/tcp.h    |    5 ++++-
->  net/ipv4/tcp_input.c |   13 +++++++++----
->  2 files changed, 13 insertions(+), 5 deletions(-)
->
-> diff --git a/include/net/tcp.h b/include/net/tcp.h
-> index cda30ea..274d761 100644
-> --- a/include/net/tcp.h
-> +++ b/include/net/tcp.h
-> @@ -122,7 +122,10 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
->  #endif
->  #define TCP_RTO_MAX    ((unsigned)(120*HZ))
->  #define TCP_RTO_MIN    ((unsigned)(HZ/5))
-> -#define TCP_TIMEOUT_INIT ((unsigned)(3*HZ))    /* RFC 1122 initial RTO value   */
-> +/* The next 2 values come from Draft RFC 2988bis-02. */
-> +#define TCP_TIMEOUT_INIT ((unsigned)(1*HZ))            /* initial RTO value    */
-> +#define TCP_TIMEOUT_INIT_FALLBACK ((unsigned)(3*HZ))   /* initial RTO to fallback to when
-> +                                                        * a timeout happens during the 3WHS.   */
->
->  #define TCP_RESOURCE_PROBE_INTERVAL ((unsigned)(HZ/2U)) /* Maximal interval between probes
->                                                         * for local resources.
-> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-> index bef9f04..a36bc35 100644
-> --- a/net/ipv4/tcp_input.c
-> +++ b/net/ipv4/tcp_input.c
-> @@ -868,6 +868,11 @@ static void tcp_init_metrics(struct sock *sk)
->  {
->        struct tcp_sock *tp = tcp_sk(sk);
->        struct dst_entry *dst = __sk_dst_get(sk);
-> +       /* If we had to retransmit anything during the 3WHS, use
-> +        * the initial fallback RTO as per draft RFC 2988bis-02.
-> +        */
-> +       int init_rto = inet_csk(sk)->icsk_retransmits ?
-> +               TCP_TIMEOUT_INIT_FALLBACK : TCP_TIMEOUT_INIT;
->
->        if (dst == NULL)
->                goto reset;
-> @@ -890,7 +895,7 @@ static void tcp_init_metrics(struct sock *sk)
->        if (dst_metric(dst, RTAX_RTT) == 0)
->                goto reset;
->
-> -       if (!tp->srtt && dst_metric_rtt(dst, RTAX_RTT) < (TCP_TIMEOUT_INIT << 3))
-> +       if (!tp->srtt && dst_metric_rtt(dst, RTAX_RTT) < (init_rto << 3))
->                goto reset;
->
->        /* Initial rtt is determined from SYN,SYN-ACK.
-> @@ -916,7 +921,7 @@ static void tcp_init_metrics(struct sock *sk)
->                tp->mdev_max = tp->rttvar = max(tp->mdev, tcp_rto_min(sk));
->        }
->        tcp_set_rto(sk);
-> -       if (inet_csk(sk)->icsk_rto < TCP_TIMEOUT_INIT && !tp->rx_opt.saw_tstamp) {
-> +       if (inet_csk(sk)->icsk_rto < init_rto && !tp->rx_opt.saw_tstamp) {
->  reset:
->                /* Play conservative. If timestamps are not
->                 * supported, TCP will fail to recalculate correct
-> @@ -924,8 +929,8 @@ reset:
->                 */
->                if (!tp->rx_opt.saw_tstamp && tp->srtt) {
->                        tp->srtt = 0;
-> -                       tp->mdev = tp->mdev_max = tp->rttvar = TCP_TIMEOUT_INIT;
-> -                       inet_csk(sk)->icsk_rto = TCP_TIMEOUT_INIT;
-> +                       tp->mdev = tp->mdev_max = tp->rttvar = init_rto;
-> +                       inet_csk(sk)->icsk_rto = init_rto;
->                }
->        }
->        tp->snd_cwnd = tcp_init_cwnd(tp, dst);
-> --
-> 1.7.0.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > +static struct pinmux_map pmx_mapping[] = {
+> > +       {
+> > +               .function = "spi0-1",
+> > +               .dev_name = "foo-spi.0",
+> > +       },
+> > +       {
+> > +               .function = "i2c0",
+> > +               .dev_name = "foo-i2c.0",
+> > +       },
+> > +};
+> >
+> > I don't think this fits the model of a driver needing to pinmux_get
+> > e.g. 1, 2, or 3 pinmux functions. Rather, I think the .function field
+> > should be an array of functions needed by the driver:
+> >
+> > +static struct pinmux_map pmx_mapping[] = {
+> > +       {
+> > +               .functions = "spi0-1",
+> > +               .dev_name = "foo-spi.0",
+> > +       },
+> > +       {
+> > +               .function = "i2c0",
+> > +               .dev_name = "foo-i2c.0",
+> > +       },
+> > +       {
+> > +               .function = {"bus0-7:4", "bus0-3:2", "bus0-1:0"},
+> > +               .dev_name = "foo-bus.0",
+> > +       },
+> > +};
+> >
+> > (obviously that syntax is bogus, but you get the idea)
+> >
+> > The intent being that the driver could perform single pinmux_get call
+> > for "foo-bus.0" and then the subsequent pinmux_enable would enable all 3
+> > entries in that device's .function array.
+> 
+> I think the above usage scenario falls under the category of pinmux
+> groups that I detailed in the mail reply to Sascha Hauer earlier in the
+> thread, yes I think it makes sense for some scenarios to have
+> groups of functions being activated at once, especially on
+> system boot/suspend/resume/shutdown actually.
+
+For reference, that is:
+https://lkml.org/lkml/2011/5/12/193
+
+> I'm thinking that we can model this on top of the existing functions,
+> so that we add new functions like
+> 
+> pinmux_group_get()
+> pinmux_group_enable()
+> pinmux_group_disable()
+> pinmux_group_put()
+> 
+> that will invoke all the necessary calls to individual functions
+> and also provide an optional hook down to the driver for
+> drivers that can mux large groups at once.
+> 
+> However I think this can be a separate patch on top of the
+> current system, so we can start out with what we have.
+
+OK, looking at that email and the above, that API does make general
+sense to me.
+
+However, I don't really see the point of exposing separate APIs for
+controlling a single pinmux function vs. a whole group of them. When
+writing a driver, I just want to pinmux_get_something(),
+pinmux_enable_something(), and have _something be the same in all
+cases without having to think about it.
+
+So, while drivers for systems with simple pinmuxes can simply pinmux_get
+one function, and drivers for more complex systems could pinmux_get N
+functions, and then later be converted to pinmux_get_group one group, I
+think it'd be a lot better if the pinmux API just hid this all from the
+very start, and allowed the SoC's/board's pinmux data definitions to
+just expose one thing, and drivers to just get/enable one thing, right
+from the start.
+
+To enable simple cases to be simple, perhaps implement it this way:
+
+Initially, pinmux_get/enable/... all operate just on the raw functions
+exposed by the SoC-supplied data.
+
+Later, we augment pinmux_get/enable (i.e. not new names) to also work
+on groups, if the SoC/board has defined any.
+
+That way, the API that drivers use will not change, but the actual
+implementation behind it will go from:
+
+pinmux_get:
+  scan function table
+  if match, return match
+  return NULL
+
+to:
+
+pinmux_get:
+  scan function table
+  if match, return match
+  scan group table
+  if match, return match
+  return NULL
+
+and similarly, the SoC's pinmux driver's enable/... functions would either
+need to accept an entry from either table type, or the core API could grow new
+functions for this with the pinmux core performing the appropriate dispatch
+based on the type of object passed to pinmux_enable, or the pinmux core
+could just loop and call the existing APIs N times when processing a group
+rather than a function.
+
+That approach would allow your current changes to be accepted unmodified,
+followed by a later driver-transparent change to add support for groups on
+top of functions.
+
+Hopefully that functionality would show up pretty quick, since it seems
+like a variety of people foresee requiring it.
+
+As an aside, I didn't really follow your discussion about the difference
+between describing muxing at the die vs. package level, given I was
+talking specifically about slightly different dies where the logic cores
+are identical with just pinmux logic changes, not just bound-out changes.
+Still, I think if something like the above goes in, any issues I have are
+taken care of.
+
+-- 
+nvpublic
+
