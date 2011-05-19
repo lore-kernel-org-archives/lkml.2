@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933610Ab1ESQ5l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:57:41 -0400
-Received: from quartz.orcorp.ca ([139.142.54.143]:37215 "EHLO quartz.orcorp.ca"
+	id S933615Ab1ESQ7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:59:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63890 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933494Ab1ESQ5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:57:38 -0400
-Date: Thu, 19 May 2011 10:57:28 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Roland Dreier <roland@purestorage.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-rmda <linux-rdma@vger.kernel.org>, Vu Pham <vu@mellanox.com>,
-        David Dillow <dillowda@ornl.gov>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Subject: Re: [RFC] ib_srpt: initial .40-rc1 drivers/infiniband/ulp/srpt
- merge
-Message-ID: <20110519165728.GB12525@obsidianresearch.com>
-References: <1305682604-21383-1-git-send-email-nab@linux-iscsi.org>
- <BANLkTi=e+v7PLcSc8GNov-TOXFF7rurXew@mail.gmail.com>
- <20110518170556.GB2595@obsidianresearch.com>
- <BANLkTimQXU0u5gtRzXsnsB=sCF-bvpY+Ag@mail.gmail.com>
- <BANLkTi==bZ0h3o5FNrg8PSJFp6F-zh5hTA@mail.gmail.com>
- <1305778694.2856.533.camel@haakon2.linux-iscsi.org>
- <BANLkTi=Xb-ypQNa3=MmwiLeE4Q9FWHnZXg@mail.gmail.com>
+	id S933550Ab1ESQ7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 12:59:51 -0400
+Date: Thu, 19 May 2011 18:58:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 10/10] ptrace: implement group stop notification for
+	ptracer
+Message-ID: <20110519165833.GA19418@redhat.com>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-11-git-send-email-tj@kernel.org> <20110519163246.GF17265@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=Xb-ypQNa3=MmwiLeE4Q9FWHnZXg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.11
+In-Reply-To: <20110519163246.GF17265@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 12:40:02PM +0200, Bart Van Assche wrote:
+On 05/19, Oleg Nesterov wrote:
+>
+> On 05/16, Tejun Heo wrote:
+> >
+> > When group stop state of a seized tracee changes, JOBCTL_TRAP_NOTIFY
+> > is set, which triggers STOP trap but is sticky until the next
+> > PTRACE_GETSIGINFO.
+>
+> I simply can't understand this patch. And the supposed API as it seen
+> by the user-space.
 
-> I'm still wondering whether it was a good idea to switch from ib<n>
-> style names to port GIDs. Not only will that make it hard for users to
-> match the ib<n> names already assigned to InfiniBand HCAs with target
-> port names but this also deviates from the naming scheme used for any
-> other Linux device. Ethernet devices e.g. appear as eth<n> in /dev
-> instead of a MAC address like 00:1a:64:10:18:6f.
+I'm afraid I wasn't clear. I didn't mean the patch is bad, I only meant
+that I got lost in details and I feel I'll ask more questions later.
 
-The ib# names returned by ip addr are already disjoint from the
-namespace that is being used by SRP targets. The only choices are port
-GUID or something like mlx4_0/1, the later is somewhat less
-commonly used..
+Oleg.
 
-Is there some approach here for selecting the pkey as well?
-
-Jason
