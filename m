@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab1ESDBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 23:01:25 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:37087 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943Ab1ESDBY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 23:01:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=q/LquCWTKeZ/yl47zFGuRuGxrzj09r9JLGCyPyfcZoeV0VmtOWfG9JC6odzSYXXzCK
-         j7ENf+13MogR6gUgv+O//IzuDSku84CEhTLVMrivOduKIJYqgr9/Oc8VLjT5LgTkeLU5
-         6Dsy6YSnqkXEDqC2l9ljCG5irs416XdyavnIA=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1105182234130.14430@xanadu.home>
-References: <201105181047.17309.arnd@arndb.de> <BANLkTim_0eRvDkQwAYjTNQsOVQiHV+DdBQ@mail.gmail.com>
- <alpine.LFD.2.00.1105182234130.14430@xanadu.home>
-From: Barry Song <21cnbao@gmail.com>
-Date: Thu, 19 May 2011 11:01:03 +0800
-Message-ID: <BANLkTinXQvrG3LeSEO9Lnam3Bvq3dDKOsw@mail.gmail.com>
-Subject: Re: [RFC] ARM Subarchitecture group maintainership
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932459Ab1ESDJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 23:09:39 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38538 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932147Ab1ESDJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 23:09:37 -0400
+Subject: Re: [PATCH] PPC_47x SMP fix
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Michael Neuling <mikey@neuling.org>,
+        Will Schmidt <will_schmidt@vnet.ibm.com>
+In-Reply-To: <1305712631-21690-1-git-send-email-kerstin.jonsson@ericsson.com>
+References: <1305712631-21690-1-git-send-email-kerstin.jonsson@ericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 May 2011 13:09:12 +1000
+Message-ID: <1305774552.7481.26.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
-Thanks for your reply.
+On Wed, 2011-05-18 at 11:57 +0200, Kerstin Jonsson wrote:
+> commit c56e58537d504706954a06570b4034c04e5b7500 breaks SMP support in PPC_47x chip.
+>  secondary_ti must be set to current thread info before callin kick_cpu or else
+>  start_secondary_47x will jump into void when trying to return to c-code.
+>  In the current setup secondary_ti is initialized before the CPU idle task is started
+>  and only the boot core will start. I am not sure this is the correct solution, but it
+>  makes SMP possible in my chip.
+>  Note! The HOTPLUG support probably need some fixing to, There is no trampoline code
+>  available in head_44x.S - start_secondary_resume?
 
-2011/5/19 Nicolas Pitre <nico@fluxnic.net>:
-> On Thu, 19 May 2011, Barry Song wrote:
->
->> does it mean if we want to add a new SoC plat/mach, we will send
->> patches againest this tree?
->
-> Yes.  Or against latest mainline tree from Linus.
->
->> will this tree merge into rmk's tree? then rmk's tree will only manage
->> arm common codes?
->
-> Something like that.  The exact details will be fleshed out as we go.
-> The idea is to give a round of review from a higher point of view to
-> make sure no opportunities for code reuse is missed, etc.  The mechanics
-> of how this code transitions from this tree into mainline during the
-> merge window is secondary.
+Sending to Linus now. I've also committed a fix for the later, moving
+the 32-bit definition of start_secondary_resume to misc_32.S
 
-i asked this because we wanted to send the source codes of
-CSR(http://www.csr.com) to upstream as i have told you in LDS. it
-looks like we need to follow the below new changes to make our source
-codes acceptable?
-1. arm device tree
-2. new pinmux framework from Linus Walleij
-3. move GPIO from plat/mach to drivers/gpio?
+Thanks !
 
->
->
-> Nicolas
--barry
+Cheers,
+Ben. 
+> 
+> Signed-off-by: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Michael Neuling <mikey@neuling.org>
+> Cc: Will Schmidt <will_schmidt@vnet.ibm.com>
+> ---
+>  arch/powerpc/kernel/smp.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+> index cbdbb14..f2dcab7 100644
+> --- a/arch/powerpc/kernel/smp.c
+> +++ b/arch/powerpc/kernel/smp.c
+> @@ -410,8 +410,6 @@ int __cpuinit __cpu_up(unsigned int cpu)
+>  {
+>  	int rc, c;
+>  
+> -	secondary_ti = current_set[cpu];
+> -
+>  	if (smp_ops == NULL ||
+>  	    (smp_ops->cpu_bootable && !smp_ops->cpu_bootable(cpu)))
+>  		return -EINVAL;
+> @@ -421,6 +419,8 @@ int __cpuinit __cpu_up(unsigned int cpu)
+>  	if (rc)
+>  		return rc;
+>  
+> +	secondary_ti = current_set[cpu];
+> +
+>  	/* Make sure callin-map entry is 0 (can be leftover a CPU
+>  	 * hotplug
+>  	 */
+
+
