@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab1ESIgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 04:36:36 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:37840 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756054Ab1ESIge convert rfc822-to-8bit (ORCPT
+	id S1756803Ab1ESIhl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 04:37:41 -0400
+Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:53240
+	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754292Ab1ESIhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 04:36:34 -0400
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 1/3] mpt2sas: remove the use of writeq, since writeq isnot atomic
-Date: Thu, 19 May 2011 09:35:19 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8AD41@saturn3.aculab.com>
-In-Reply-To: <1305780360.2576.20.camel@mulgrave.site>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH 1/3] mpt2sas: remove the use of writeq, since writeq isnot atomic
-thread-index: AcwV4IaA6VpZHGVaQdm8cLPpe983xAAHW3ug
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "James Bottomley" <James.Bottomley@HansenPartnership.com>,
-        "Hitoshi Mitake" <h.mitake@gmail.com>
-Cc: "linux-arch" <linux-arch@vger.kernel.org>,
-        "Prakash,Sathya" <Sathya.Prakash@lsi.com>,
-        "Roland Dreier" <roland@kernel.org>,
-        "Desai, Kashyap" <Kashyap.Desai@lsi.com>,
-        "linux scsi dev" <linux-scsi@vger.kernel.org>,
-        "Matthew Wilcox" <matthew@wil.cx>, "Moore, Eric" <Eric.Moore@lsi.com>,
-        "linux pci" <linux-pci@vger.kernel.org>,
-        "linux powerpc dev" <linuxppc-dev@lists.ozlabs.org>,
-        "Milton Miller" <miltonm@bga.com>,
-        "linux kernel" <linux-kernel@vger.kernel.org>,
-        "Ingo Molnar" <mingo@redhat.com>, <paulus@samba.org>,
-        "Ingo Molnar" <mingo@elte.hu>, "Sam Ravnborg" <sam@ravnborg.org>
+	Thu, 19 May 2011 04:37:40 -0400
+From: matt mooney <mfm@muteddisk.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: usbip: userspace: stub_driver.c: update kernel module name
+Date: Thu, 19 May 2011 01:37:31 -0700
+Message-Id: <7e165c8295921944bbd2f6c2bf36a548af5a167b.1305794195.git.mfm@muteddisk.com>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Change kernel module name to usbip-host.
+
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+---
+ .../staging/usbip/userspace/libsrc/stub_driver.c   |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/usbip/userspace/libsrc/stub_driver.c b/drivers/staging/usbip/userspace/libsrc/stub_driver.c
+index 4c76e03..cc33643 100644
+--- a/drivers/staging/usbip/userspace/libsrc/stub_driver.c
++++ b/drivers/staging/usbip/userspace/libsrc/stub_driver.c
+@@ -8,7 +8,8 @@
  
-> The specific mpt2sas problem is that if we write a 64 bit register non
-> atomically, we can't allow any interleaving writes for any other
-region
-> on the chip, otherwise the HW will take the write as complete in the
-64
-> bit register and latch the wrong value.  The only way to achieve that
-> given the semantics of writeq is a global static spinlock.
-
-That sounds like very specific and slightly dodgy hardware.
-You don't say what the scope of 'region on the chip' is, but
-it looks like you need to disable ALL writes to the memory
-area between the first and second writes of the 64bit value
-and not just those coming from writeq().
-I don't see how this can possibly be done by normal mutexing
-around the writeq() sequence, surely you need to lock the bus
-between the two transfers.
-Even dma writes would be a problem.
-
-The only way I can think to stop other cpus doing writes
-is to use IPIs for force them into a busy wait loop.
-
-All rather reminds me of a PCI slave that got things
-horribly wrong when a read was done while a write was
-still 'posted', or a 2nd master did a cycle did a read
-while a read rerun sequence was still in progress.
-(required a mutex and dummy cycles).
-At least than one wqs confined to one driver.
-
-	David
-
+ #include "usbip.h"
+ 
+-static const char *usbip_stub_driver_name = "usbip";
++/* kernel module name */
++static const char *usbip_stub_driver_name = "usbip-host";
+ 
+ 
+ struct usbip_stub_driver *stub_driver;
+-- 
+1.7.5.1
 
