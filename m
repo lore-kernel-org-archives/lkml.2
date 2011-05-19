@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab1ESERN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 00:17:13 -0400
-Received: from na3sys010aog112.obsmtp.com ([74.125.245.92]:58610 "HELO
-	na3sys010aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751927Ab1ESERM (ORCPT
+	id S1753067Ab1ESE02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 00:26:28 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:57328 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab1ESE01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 00:17:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <x86-32-writeq-is-broken@mdm.bga.com>
-References: <20110504115324.GE17855@lsi.com> <1305616571.6008.23.camel@mulgrave.site>
- <B2FD678A64EAAD45B089B123FDFC3ED70157F7BCE5@inbmail01.lsi.com>
- <20110518041551.GL15227@parisc-linux.org> <1305692584.2580.3.camel@mulgrave.site>
- <1305702010.2781.33.camel@pasglop> <mpt2sas-writeq-powerpc64@mdm.bga.com>
- <4565AEA676113A449269C2F3A549520F80B66280@cosmail03.lsi.com> <x86-32-writeq-is-broken@mdm.bga.com>
-From: Roland Dreier <roland@kernel.org>
-Date: Wed, 18 May 2011 21:16:49 -0700
-X-Google-Sender-Auth: tfiAep7mY5YYcrgTINyC8tKngkI
-Message-ID: <BANLkTimDktq8SxOU3HZkPpj=J9pdkzVX-w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mpt2sas: remove the use of writeq, since writeq is
- not atomic
-To: Milton Miller <miltonm@bga.com>
-Cc: Hitoshi Mitake <h.mitake@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@redhat.com>,
-        "Desai, Kashyap" <Kashyap.Desai@lsi.com>,
-        "Prakash, Sathya" <Sathya.Prakash@lsi.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Matthew Wilcox <matthew@wil.cx>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux scsi dev <linux-scsi@vger.kernel.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        linux powerpc dev <linuxppc-dev@lists.ozlabs.org>,
-        linux pci <linux-pci@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 May 2011 00:26:27 -0400
+Subject: Re: [RFC] ib_srpt: initial .40-rc1 drivers/infiniband/ulp/srpt
+	merge
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Roland Dreier <roland@purestorage.com>
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-rmda <linux-rdma@vger.kernel.org>, Vu Pham <vu@mellanox.com>,
+        David Dillow <dillowda@ornl.gov>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+In-Reply-To: <BANLkTi==bZ0h3o5FNrg8PSJFp6F-zh5hTA@mail.gmail.com>
+References: <1305682604-21383-1-git-send-email-nab@linux-iscsi.org>
+	 <BANLkTi=e+v7PLcSc8GNov-TOXFF7rurXew@mail.gmail.com>
+	 <20110518170556.GB2595@obsidianresearch.com>
+	 <BANLkTimQXU0u5gtRzXsnsB=sCF-bvpY+Ag@mail.gmail.com>
+	 <BANLkTi==bZ0h3o5FNrg8PSJFp6F-zh5hTA@mail.gmail.com>
+Content-Type: text/plain
+Date: Wed, 18 May 2011 21:18:14 -0700
+Message-Id: <1305778694.2856.533.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 11:31 AM, Milton Miller <miltonm@bga.com> wrote:
-> So the real question should be why is x86-32 supplying a broken writeq
-> instead of letting drivers work out what to do it when needed?
+On Wed, 2011-05-18 at 12:17 -0700, Roland Dreier wrote:
+> On Wed, May 18, 2011 at 11:02 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> > Thanks for the feedback. I'm still wondering though about the
+> > usefulness of disabling / enabling SRPT per HCA port. For the use
+> > cases I know about SRP communication over all target ports will be
+> > enabled as soon as target configuration has finished and more
+> > fine-grained access configuration will occur by allowing/disallowing
+> > certain initiators to log in.
+> 
+> I definitely think that allowing the flexibility to configure ports individually
+> is required.  It's easy to imagine a case with a separate front-end and
+> back-end networks on the two HCA ports (this would be a pretty normal
+> ethernet config), where only one port should be a target port.
+> 
+> It may not be how people do things now but it should at least be possible.
+> 
 
-Sounds a lot like what I was asking a couple of years ago :)
-http://lkml.org/lkml/2009/4/19/164
+Hey guys,
 
-But Ingo insisted that non-atomic writeq would be fine:
-http://lkml.org/lkml/2009/4/19/167
+Apologies for the slightly delay response here..  Just to clarify on
+Bart's point above.  The srpt_port->port_wwn patch in question does
+current ensure that sport->enabled has been set via an configfs
+attribute at:
 
- - R.
+   /sys/kernel/config/target/srpt/$IB_PORT_GUID/tpgt_1/enable
+
+and will reject all SRP login attempts to an individual struct srpt_port
+until the attribute has been explictly triggered.
+
+This allows ib_srpt to follow what is expected by rtsadmin-v2 +
+lio-utils, and used to generate /etc/target/srpt_start.sh used to save
+persistent fabric configuration.  Currently other fabrics like
+iscsi-target and tcm_qla2xxx expect to be able to reject fabric login
+requests before the full set of WWPN endpoints, LUNs, NodeACLs +
+MappedLUNs have been recreated during an typical init.d/target start
+operation.
+
+I think it makes sense to do the same for the SRPT control plane on an
+individual HCA port GUID basis as long as there are no underlying fabric
+issues, and that Roland is happy.  In terms of supporting more than one
+type of /sys/kernel/config/target/srpt/$WWPN/$TPGT/ layout, I would
+really like to avoid this for mainline code unless there is a really
+good reason..
+
+Also, I think ib_srpt needs to properly support 'demo-mode' operation
+in /var/target/fabric/ib_srpt.spec as this is very useful for testing
+and development purposes.  I go ahead and get this added to upstream LIO
+v4.1 in the next days and respin for mainline with Hch's review + Bart's
+changes.
+
+Thanks folks,
+
+--nab
+
