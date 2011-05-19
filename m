@@ -1,131 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab1ESIkV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 04:40:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47988 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756776Ab1ESIkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 04:40:19 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, WANG Cong <amwang@redhat.com>,
-        Neil Horman <nhorman@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>, netdev@vger.kernel.org
-Subject: [V2 Patch net-next-2.6] netpoll: disable netpoll when enslave a device
-Date: Thu, 19 May 2011 16:39:53 +0800
-Message-Id: <1305794393-20775-1-git-send-email-amwang@redhat.com>
-In-Reply-To: <20110518105558.GA3203@hmsreliant.think-freely.org>
-References: <20110518105558.GA3203@hmsreliant.think-freely.org>
+	id S1756835Ab1ESIn1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 04:43:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46754 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756727Ab1ESIn0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 04:43:26 -0400
+Date: Thu, 19 May 2011 10:43:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [patch 2/7] clocksource: Get rid of the hardcoded 5 seconds
+ sleep time limit
+In-Reply-To: <1305766655.2915.187.camel@work-vm>
+Message-ID: <alpine.LFD.2.02.1105191041030.3078@ionos>
+References: <20110518205713.947614271@linutronix.de>  <20110518210136.109811585@linutronix.de> <1305766655.2915.187.camel@work-vm>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we do nothing when we enslave a net device which is running netconsole.
-Neil pointed out that we may get weird results in such case, so let's disable
-netpoll on the device being enslaved. I think it is too harsh to prevent
-the device being ensalved if it is running netconsole.
+On Wed, 18 May 2011, John Stultz wrote:
+> On Wed, 2011-05-18 at 21:33 +0000, Thomas Gleixner wrote:
+> > -	 * Ideally we want to use  some of the limits used in
+> > -	 * clocksource_max_deferment, to provide a more informed
+> > -	 * MAX_UPDATE_LENGTH. But for now this just gets the
+> > -	 * register interface working properly.
+> > +	 * Calc the maximum number of seconds which we can run before
+> > +	 * wrapping around. For clocksources which have a mask > 32bit
+> > +	 * we need to limit the max sleep time to have a good
+> > +	 * conversion precision. 10 minutes is still a reasonable
+> > +	 * amount. That results in a shift value of 24 for a
+> > +	 * clocksource with mask >= 40bit and f >= 4GHz. That maps to
+> > +	 * ~ 0.06ppm granularity for NTP. We apply the same 12.5%
+> > +	 * margin as we do in clocksource_max_deferment()
+> >  	 */
+> 
+> So, its not clear to me that the 12.5% margin really needed, since we
+> take it out when we calculate clocksource_max_deferment(). Although with
+> or without the margin I get the same mult/shift/max_idle_ns values for
+> the hardware I'm testing.
+> 
+> Another nice detail from the change: It doesn't affect clocksources that
+> normally wrap quickly:
+> 
+> Without your patch:
+> --------------
+> JDB: hpet mult: 2684354560 shift: 26 max_idle: 83214991360
+> JDB: acpi_pm mult: 2343484437 shift: 23 max_idle: 4540500826
+> JDB: tsc mult: 1342183991 shift: 31 max_idle: 2600481483
+> 
+> With your patch:
+> ---------------
+> JDB: hpet mult: 2684354560 shift: 26 max_idle: 83214991360
+> JDB: acpi_pm mult: 2343484437 shift: 23 max_idle: 4540500826
+> JDB: tsc mult: 10485812 shift: 24 max_idle: 332861616128
+> 
+> Although interestingly 332 secs calculated for the max idle is more then
+> 12% off of 600.
 
-By the way, this patch also removes the NETDEV_GOING_DOWN from netconsole
-netdev notifier, because netpoll will check if the device is running or not
-and we don't handle NETDEV_PRE_UP neither.
+We probably need to look at the math of clocksource_max_deferment()
+again.
+ 
+> Overall it looks good. I'm doing some NTP testing with the TSC shift
+> change to make sure we don't get any odd side effects. I'll let you know
+> how those go.
 
-Signed-off-by: WANG Cong <amwang@redhat.com>
-Cc: Neil Horman <nhorman@redhat.com>
+Ok.
 
----
- drivers/net/bonding/bond_main.c |    2 ++
- drivers/net/netconsole.c        |   26 +++++++++++++++++---------
- include/linux/notifier.h        |    1 +
- 3 files changed, 20 insertions(+), 9 deletions(-)
+Thanks,
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 088fd84..b9c70c5 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1640,6 +1640,8 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
- 		}
- 	}
- 
-+	netdev_bonding_change(slave_dev, NETDEV_ENSLAVE);
-+
- 	/* If this is the first slave, then we need to set the master's hardware
- 	 * address to be the same as the slave's. */
- 	if (is_zero_ether_addr(bond->dev->dev_addr))
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index a83e101..c2a8230 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -621,11 +621,10 @@ static int netconsole_netdev_event(struct notifier_block *this,
- 	bool stopped = false;
- 
- 	if (!(event == NETDEV_CHANGENAME || event == NETDEV_UNREGISTER ||
--	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN))
-+	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_ENSLAVE))
- 		goto done;
- 
- 	spin_lock_irqsave(&target_list_lock, flags);
--restart:
- 	list_for_each_entry(nt, &target_list, list) {
- 		netconsole_target_get(nt);
- 		if (nt->np.dev == dev) {
-@@ -633,6 +632,8 @@ restart:
- 			case NETDEV_CHANGENAME:
- 				strlcpy(nt->np.dev_name, dev->name, IFNAMSIZ);
- 				break;
-+			case NETDEV_BONDING_DESLAVE:
-+			case NETDEV_ENSLAVE:
- 			case NETDEV_UNREGISTER:
- 				/*
- 				 * rtnl_lock already held
-@@ -647,11 +648,7 @@ restart:
- 					dev_put(nt->np.dev);
- 					nt->np.dev = NULL;
- 					netconsole_target_put(nt);
--					goto restart;
- 				}
--				/* Fall through */
--			case NETDEV_GOING_DOWN:
--			case NETDEV_BONDING_DESLAVE:
- 				nt->enabled = 0;
- 				stopped = true;
- 				break;
-@@ -660,10 +657,21 @@ restart:
- 		netconsole_target_put(nt);
- 	}
- 	spin_unlock_irqrestore(&target_list_lock, flags);
--	if (stopped && (event == NETDEV_UNREGISTER || event == NETDEV_BONDING_DESLAVE))
-+	if (stopped) {
- 		printk(KERN_INFO "netconsole: network logging stopped on "
--			"interface %s as it %s\n",  dev->name,
--			event == NETDEV_UNREGISTER ? "unregistered" : "released slaves");
-+		       "interface %s as it ", dev->name);
-+		switch (event) {
-+		case NETDEV_UNREGISTER:
-+			printk(KERN_CONT "unregistered\n");
-+			break;
-+		case NETDEV_BONDING_DESLAVE:
-+			printk(KERN_CONT "released slaves\n");
-+			break;
-+		case NETDEV_ENSLAVE:
-+			printk(KERN_CONT "is enslaved\n");
-+			break;
-+		}
-+	}
- 
- done:
- 	return NOTIFY_DONE;
-diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index 621dfa1..3d82867 100644
---- a/include/linux/notifier.h
-+++ b/include/linux/notifier.h
-@@ -211,6 +211,7 @@ static inline int notifier_to_errno(int ret)
- #define NETDEV_UNREGISTER_BATCH 0x0011
- #define NETDEV_BONDING_DESLAVE  0x0012
- #define NETDEV_NOTIFY_PEERS	0x0013
-+#define NETDEV_ENSLAVE		0x0014
- 
- #define SYS_DOWN	0x0001	/* Notify of system down */
- #define SYS_RESTART	SYS_DOWN
+	tglx
