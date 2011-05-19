@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933483Ab1ESQCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:02:55 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:36476 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932733Ab1ESQCy (ORCPT
+	id S933489Ab1ESQEv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:04:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42584 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932336Ab1ESQEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:02:54 -0400
-X-Sasl-enc: s6c56tMvCw2f1FbCdnKtduvoWgUcQM/rp5zNtfj+w69F 1305820973
-Date: Thu, 19 May 2011 09:02:39 -0700
-From: Greg KH <greg@kroah.com>
-To: Timur Tabi <timur@freescale.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, kumar.gala@freescale.com,
-        benh@kernel.crashing.org, akpm@kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-console@vger.kernel.org
-Subject: Re: [PATCH 6/7] tty/powerpc: introduce the ePAPR embedded hypervisor
- byte channel driver
-Message-ID: <20110519160239.GB25606@kroah.com>
-References: <1305813272-31826-1-git-send-email-timur@freescale.com>
- <1305813272-31826-7-git-send-email-timur@freescale.com>
- <20110519153358.5876f310@lxorguk.ukuu.org.uk>
- <4DD533DE.1020705@freescale.com>
- <20110519165039.7fd8ec34@lxorguk.ukuu.org.uk>
- <4DD53D1B.4060600@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD53D1B.4060600@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 May 2011 12:04:50 -0400
+Date: Thu, 19 May 2011 09:04:11 -0700
+From: Stephen Hemminger <shemminger@linux-foundation.org>
+To: Stephen Hemminger <shemminger@linux-foundation.org>
+Cc: Amerigo Wang <amwang@redhat.com>, Neil Horman <nhorman@redhat.com>,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Jay Vosburgh <fubar@us.ibm.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [Bridge] [Patch] bridge: call NETDEV_ENSLAVE notifiers when
+ adding a slave
+Message-ID: <20110519090411.1f039a88@nehalam>
+In-Reply-To: <20110519081213.15c05da2@nehalam>
+References: <1305794393-20775-1-git-send-email-amwang@redhat.com>
+	<1305800661-4081-1-git-send-email-amwang@redhat.com>
+	<20110519081213.15c05da2@nehalam>
+Organization: Linux Foundation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 10:54:03AM -0500, Timur Tabi wrote:
-> > Depends if the functionality is useful in your environment or not
+On Thu, 19 May 2011 08:12:13 -0700
+Stephen Hemminger <shemminger@linux-foundation.org> wrote:
+
+> On Thu, 19 May 2011 18:24:17 +0800
+> Amerigo Wang <amwang@redhat.com> wrote:
 > 
-> It is, but I'd like to add it later so that I can make the 2.6.40 window (if it
-> isn't already too late).
+> > In the previous patch I added NETDEV_ENSLAVE, now
+> > we can notify netconsole when adding a device to a bridge too.
+> > 
+> > By the way, s/netdev_bonding_change/call_netdevice_notifiers/ in
+> > bond_main.c, since this is not bonding specific.
+> > 
+> > Signed-off-by: WANG Cong <amwang@redhat.com>
+> > Cc: Neil Horman <nhorman@redhat.com>
+> > 
+> 
+> Is there a usage for this? What listens for this notification?
 
-It's too late, it needed to be in linux-next _before_ the window opened.
+Never mind it was in the first patch which you did not send.
+You should always put a number on group of patches and send
+to all parties.
 
-sorry,
-
-greg k-h
+Also, sending networking patches to LKML is a waste of bandwidth
+please don't bother.
