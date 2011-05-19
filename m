@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932634Ab1ESMTG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 08:19:06 -0400
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:35228 "EHLO
+	id S932591Ab1ESMTE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 08:19:04 -0400
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:35226 "EHLO
 	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932507Ab1ESMTB (ORCPT
+	with ESMTP id S932510Ab1ESMTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 08:19:01 -0400
+	Thu, 19 May 2011 08:19:00 -0400
 From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>,
         Benjamin Tissoires <benjamin.tissoires@enac.fr>,
         Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@lii-enac.fr>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] hid-multitouch: add support for Unitec panels
-Date: Thu, 19 May 2011 14:18:17 +0200
-Message-Id: <1305807498-8785-6-git-send-email-benjamin.tissoires@enac.fr>
+Subject: [PATCH 6/6] hid-multitouch: class MT_CLS_STANTUM is redundant with MT_CLS_CONFIDENCE
+Date: Thu, 19 May 2011 14:18:18 +0200
+Message-Id: <1305807498-8785-7-git-send-email-benjamin.tissoires@enac.fr>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1305807498-8785-1-git-send-email-benjamin.tissoires@enac.fr>
 References: <1305807498-8785-1-git-send-email-benjamin.tissoires@enac.fr>
@@ -23,77 +23,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduce support for Unitec panels.
-This device has not been optimized in term of kernel processing
-operations (default class), but it will work.
+Stantum devices used to work with MT_CLS_STANTUM but MT_CLS_CONFIDENCE
+is exactly the same. This patch switches them to this generic class,
+and remove the unused MT_CLS_STANTUM.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 ---
- drivers/hid/Kconfig          |    1 +
- drivers/hid/hid-core.c       |    2 ++
- drivers/hid/hid-ids.h        |    4 ++++
- drivers/hid/hid-multitouch.c |    8 ++++++++
- 4 files changed, 15 insertions(+), 0 deletions(-)
+ drivers/hid/hid-multitouch.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 7a53d8e..6145f2e 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -321,6 +321,7 @@ config HID_MULTITOUCH
- 	    Joojoo and Wetab tablets
- 	  - Stantum multitouch panels
- 	  - Touch International Panels
-+	  - Unitec Panels
- 
- 	  If unsure, say N.
- 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 4539aa1..e811b81 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1486,6 +1486,8 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP4030U) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP5540U) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP8060U) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_UNITEC, USB_DEVICE_ID_UNITEC_USB_TOUCH_0709) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_UNITEC, USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_WISEGROUP, USB_DEVICE_ID_SMARTJOY_PLUS) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_WALTOP, USB_DEVICE_ID_WALTOP_SLIM_TABLET_5_8_INCH) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 0f6aa2f..e715c43 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -607,6 +607,10 @@
- #define USB_DEVICE_ID_UCLOGIC_TABLET_WP5540U	0x0004
- #define USB_DEVICE_ID_UCLOGIC_TABLET_WP8060U	0x0005
- 
-+#define USB_VENDOR_ID_UNITEC	0x227d
-+#define USB_DEVICE_ID_UNITEC_USB_TOUCH_0709	0x0709
-+#define USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19	0x0a19
-+
- #define USB_VENDOR_ID_VERNIER		0x08f7
- #define USB_DEVICE_ID_VERNIER_LABPRO	0x0001
- #define USB_DEVICE_ID_VERNIER_GOTEMP	0x0002
 diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index bc57615..feeb0b7 100644
+index feeb0b7..65b92d2 100644
 --- a/drivers/hid/hid-multitouch.c
 +++ b/drivers/hid/hid-multitouch.c
-@@ -688,6 +688,14 @@ static const struct hid_device_id mt_devices[] = {
- 		HID_USB_DEVICE(USB_VENDOR_ID_TOUCH_INTL,
- 			USB_DEVICE_ID_TOUCH_INTL_MULTI_TOUCH) },
+@@ -88,7 +88,6 @@ struct mt_class {
+ #define MT_CLS_DUAL_INRANGE_CONTACTNUMBER	3
+ #define MT_CLS_CYPRESS				4
+ #define MT_CLS_EGALAX				5
+-#define MT_CLS_STANTUM				6
+ #define MT_CLS_3M				7
+ #define MT_CLS_CONFIDENCE			8
+ #define MT_CLS_CONFIDENCE_MINUS_ONE		9
+@@ -154,8 +153,6 @@ struct mt_class mt_classes[] = {
+ 		.sn_move = 4096,
+ 		.sn_pressure = 32,
+ 	},
+-	{ .name = MT_CLS_STANTUM,
+-		.quirks = MT_QUIRK_VALID_IS_CONFIDENCE },
+ 	{ .name = MT_CLS_3M,
+ 		.quirks = MT_QUIRK_VALID_IS_CONFIDENCE |
+ 			MT_QUIRK_SLOT_IS_CONTACTID,
+@@ -673,13 +670,13 @@ static const struct hid_device_id mt_devices[] = {
+ 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
  
-+	/* Unitec panels */
-+	{ .driver_data = MT_CLS_DEFAULT,
-+		HID_USB_DEVICE(USB_VENDOR_ID_UNITEC,
-+			USB_DEVICE_ID_UNITEC_USB_TOUCH_0709) },
-+	{ .driver_data = MT_CLS_DEFAULT,
-+		HID_USB_DEVICE(USB_VENDOR_ID_UNITEC,
-+			USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
-+
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, mt_devices);
+ 	/* Stantum panels */
+-	{ .driver_data = MT_CLS_STANTUM,
++	{ .driver_data = MT_CLS_CONFIDENCE,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM,
+ 			USB_DEVICE_ID_MTP)},
+-	{ .driver_data = MT_CLS_STANTUM,
++	{ .driver_data = MT_CLS_CONFIDENCE,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM,
+ 			USB_DEVICE_ID_MTP_STM)},
+-	{ .driver_data = MT_CLS_STANTUM,
++	{ .driver_data = MT_CLS_CONFIDENCE,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM,
+ 			USB_DEVICE_ID_MTP_SITRONIX)},
+ 
 -- 
 1.7.4.4
 
