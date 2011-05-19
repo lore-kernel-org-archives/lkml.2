@@ -1,118 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab1ESGoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 02:44:25 -0400
-Received: from mga03.intel.com ([143.182.124.21]:22634 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932304Ab1ESGoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 02:44:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,236,1304319600"; 
-   d="scan'208";a="438859717"
-Message-ID: <4DD4BC45.8050301@intel.com>
-Date: Thu, 19 May 2011 14:44:21 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Iceowl/1.0b2 Icedove/3.1.9
+	id S932724Ab1ESGp7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 02:45:59 -0400
+Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:2723 "EHLO
+	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932304Ab1ESGp6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 02:45:58 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Ondrej Zary <linux@rainbow-software.org>
+Subject: Re: [PATCH v4] tea575x: convert to control framework
+Date: Thu, 19 May 2011 08:45:38 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.38-tschai; KDE/4.6.1; x86_64; ; )
+Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+References: <201105140017.26968.linux@rainbow-software.org> <201105182225.58838.hverkuil@xs4all.nl> <201105182335.25161.linux@rainbow-software.org>
+In-Reply-To: <201105182335.25161.linux@rainbow-software.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Don Zickus <dzickus@redhat.com>, huang ying <huang.ying.caritas@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com> <20110513124523.GM13984@redhat.com> <20110513130011.GA6474@elte.hu> <BANLkTi=Z_3MZVs2CQyk82NfvZj-KdSw5kw@mail.gmail.com> <20110513152033.GB3854@elte.hu> <20110513160029.GD31888@redhat.com> <20110516112934.GE19837@elte.hu> <4DD22692.7050209@intel.com> <20110517085327.GG22093@elte.hu>
-In-Reply-To: <20110517085327.GG22093@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105190845.38194.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2011 04:53 PM, Ingo Molnar wrote:
+On Wednesday, May 18, 2011 23:35:22 Ondrej Zary wrote:
+> Convert tea575x-tuner to use the new V4L2 control framework. Also add
+> ext_init() callback that can be used by a card driver for additional
+> initialization right before registering the video device (for SF16-FMR2).
 > 
-> * Huang Ying <ying.huang@intel.com> wrote:
+> Also embed struct video_device to struct snd_tea575x to simplify the code.
 > 
->> On 05/16/2011 07:29 PM, Ingo Molnar wrote:
->>>
->>> * Don Zickus <dzickus@redhat.com> wrote:
->>>
->>>> On Fri, May 13, 2011 at 05:20:33PM +0200, Ingo Molnar wrote:
->>>>>
->>>>> * huang ying <huang.ying.caritas@gmail.com> wrote:
->>>>>
->>>>>>> What should be done instead is to add an event for unknown NMIs, which can 
->>>>>>> then be processed by the RAS daemon to implement policy.
->>>>>>>
->>>>>>> By using 'active' event filters it could even be set on a system to panic 
->>>>>>> the box by default.
->>>>>>
->>>>>> If there is real fatal hardware error, maybe we have no luxury to go from NMI 
->>>>>> handler to user space RAS daemon to determine what to do. System may explode, 
->>>>>> bad data may go to disk before that.
->>>>>
->>>>> That is why i suggested:
->>>>>
->>>>>   > > By using 'active' event filters it could even be set on a system to panic 
->>>>>   > > the box by default.
->>>>>
->>>>> event filters are evaluated in the kernel, so the panic could be instantaneous, 
->>>>> without the event having to reach user-space.
->>>>
->>>> Interesting.  Question though, what do you mean by 'event filtering'.  Is 
->>>> that different then setting 'unknown_nmi_panic' panic on the commandline or 
->>>> procfs?
->>>>
->>>> Or are you suggesting something like registering another callback on the 
->>>> die_chain that looks for DIE_NMIUNKNOWN as the event, swallows them and 
->>>> implements the policy?  That way only on HEST related platforms would 
->>>> register them while others would keep the default of 'Dazed and confused' 
->>>> messages?
->>>
->>> The idea is that "event filters", which are an existing upstream feature and 
->>> which can be used in rather flexible ways:
->>>
->>>   http://lkml.org/lkml/2011/4/27/660
->>>
->>> Could be used to trigger non-standard policy action as well - such as to panic 
->>> the box.
->>>
->>> This would replace various very limited /debugfs and /sys event filtering hacks 
->>> (and hardcoded policies) such as arch/x86/kernel/cpu/mcheck/mce-severity.c, and 
->>> it would allow nonstandard behavior like 'panic the box on unknown NMIs' as 
->>> well.
->>>
->>> This could be set by the RAS daemon, and it could be propagated to the kernel 
->>> boot line as well, where event filter syntax would look like this:
->>>
->>>   events=nmi::unknown"if (reason == 0) panic();"
->>>
->>> (Where the 'reason' field of the NMI event is the current legacy 'reason' value 
->>> there.)
->>>
->>> The filter code would have to be modified to be able to recognize the panic() 
->>> bit, but that's desirable anyway and it is a one-time effort.
->>>
->>> This:
->>>
->>>   events=nmi::unknown:"if (reason == 0) ignore();"
->>>
->>> would be a possible outcome as well, on certain boxes - to skip certain events.
->>
->> We can determine whether NMI is unknown in kernel now.  If you want to push 
->> all unknown NMI logic into user space (although I don't think that is the 
->> best solution), is it not sufficient that just check system in user space 
->> (via PCI ID or DMI ID, etc) and set existing "unknown_nmi_panic" accordingly?
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 > 
-> yeah - no need to push the 'reason' if it's not needed.
-> 
-> We want the kernel defaults to be sane - i.e. this is not to 'push' anything to 
-> user-space in a forced way, this is to make *optional*, different policy action 
-> possible to configure.
+> --- linux-2.6.39-rc2-/include/sound/tea575x-tuner.h	2011-05-13 19:39:23.000000000 +0200
+> +++ linux-2.6.39-rc2/include/sound/tea575x-tuner.h	2011-05-18 23:14:48.000000000 +0200
+> @@ -23,8 +23,8 @@
+>   */
+>  
+>  #include <linux/videodev2.h>
+> +#include <media/v4l2-ctrls.h>
+>  #include <media/v4l2-dev.h>
+> -#include <media/v4l2-ioctl.h>
+>  
+>  #define TEA575X_FMIF	10700
+>  
+> @@ -42,7 +42,8 @@ struct snd_tea575x_ops {
+>  };
+>  
+>  struct snd_tea575x {
+> -	struct video_device *vd;	/* video device */
+> +	struct video_device vd;		/* video device */
+> +	bool initialized;
 
-OK.  Then, what is the proper default behavior?  We think Linux kernel
-should treat unknown NMI as hardware error reporting, at least on some
-modern machines (via a white list).  Do you agree?
+This isn't needed, more about that below.
 
-Best Regards,
-Huang Ying
+>  	bool tea5759;			/* 5759 chip is present */
+>  	bool mute;			/* Device is muted? */
+>  	bool stereo;			/* receiving stereo */
+> @@ -54,6 +55,8 @@ struct snd_tea575x {
+>  	void *private_data;
+>  	u8 card[32];
+>  	u8 bus_info[32];
+> +	struct v4l2_ctrl_handler ctrl_handler;
+> +	void (*ext_init)(struct snd_tea575x *tea);
+
+ext_init should return int to pass back errors.
+
+>  };
+>  
+>  int snd_tea575x_init(struct snd_tea575x *tea);
+> --- linux-2.6.39-rc2-/sound/i2c/other/tea575x-tuner.c	2011-05-13 19:39:23.000000000 +0200
+> +++ linux-2.6.39-rc2/sound/i2c/other/tea575x-tuner.c	2011-05-18 23:22:44.000000000 +0200
+> @@ -22,11 +22,11 @@
+>  
+>  #include <asm/io.h>
+>  #include <linux/delay.h>
+> -#include <linux/interrupt.h>
+>  #include <linux/init.h>
+>  #include <linux/slab.h>
+>  #include <linux/version.h>
+> -#include <sound/core.h>
+> +#include <media/v4l2-dev.h>
+> +#include <media/v4l2-ioctl.h>
+>  #include <sound/tea575x-tuner.h>
+>  
+>  MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
+> @@ -62,17 +62,6 @@ module_param(radio_nr, int, 0);
+>  #define TEA575X_BIT_DUMMY	(1<<15)		/* buffer */
+>  #define TEA575X_BIT_FREQ_MASK	0x7fff
+>  
+> -static struct v4l2_queryctrl radio_qctrl[] = {
+> -	{
+> -		.id            = V4L2_CID_AUDIO_MUTE,
+> -		.name          = "Mute",
+> -		.minimum       = 0,
+> -		.maximum       = 1,
+> -		.default_value = 1,
+> -		.type          = V4L2_CTRL_TYPE_BOOLEAN,
+> -	}
+> -};
+> -
+>  /*
+>   * lowlevel part
+>   */
+> @@ -266,47 +255,17 @@ static int vidioc_s_audio(struct file *f
+>  	return 0;
+>  }
+>  
+> -static int vidioc_queryctrl(struct file *file, void *priv,
+> -					struct v4l2_queryctrl *qc)
+> -{
+> -	int i;
+> -
+> -	for (i = 0; i < ARRAY_SIZE(radio_qctrl); i++) {
+> -		if (qc->id && qc->id == radio_qctrl[i].id) {
+> -			memcpy(qc, &(radio_qctrl[i]),
+> -						sizeof(*qc));
+> -			return 0;
+> -		}
+> -	}
+> -	return -EINVAL;
+> -}
+> -
+> -static int vidioc_g_ctrl(struct file *file, void *priv,
+> -					struct v4l2_control *ctrl)
+> +static int tea575x_s_ctrl(struct v4l2_ctrl *ctrl)
+>  {
+> -	struct snd_tea575x *tea = video_drvdata(file);
+> +	struct snd_tea575x *tea = container_of(ctrl->handler, struct snd_tea575x, ctrl_handler);
+>  
+>  	switch (ctrl->id) {
+>  	case V4L2_CID_AUDIO_MUTE:
+> -		ctrl->value = tea->mute;
+> +		tea->mute = ctrl->val;
+> +		snd_tea575x_set_freq(tea);
+>  		return 0;
+>  	}
+> -	return -EINVAL;
+> -}
+> -
+> -static int vidioc_s_ctrl(struct file *file, void *priv,
+> -					struct v4l2_control *ctrl)
+> -{
+> -	struct snd_tea575x *tea = video_drvdata(file);
+>  
+> -	switch (ctrl->id) {
+> -	case V4L2_CID_AUDIO_MUTE:
+> -		if (tea->mute != ctrl->value) {
+> -			tea->mute = ctrl->value;
+> -			snd_tea575x_set_freq(tea);
+> -		}
+> -		return 0;
+> -	}
+>  	return -EINVAL;
+>  }
+>  
+> @@ -355,16 +314,17 @@ static const struct v4l2_ioctl_ops tea57
+>  	.vidioc_s_input     = vidioc_s_input,
+>  	.vidioc_g_frequency = vidioc_g_frequency,
+>  	.vidioc_s_frequency = vidioc_s_frequency,
+> -	.vidioc_queryctrl   = vidioc_queryctrl,
+> -	.vidioc_g_ctrl      = vidioc_g_ctrl,
+> -	.vidioc_s_ctrl      = vidioc_s_ctrl,
+>  };
+>  
+>  static struct video_device tea575x_radio = {
+>  	.name           = "tea575x-tuner",
+>  	.fops           = &tea575x_fops,
+>  	.ioctl_ops 	= &tea575x_ioctl_ops,
+> -	.release	= video_device_release,
+> +	.release	= video_device_release_empty,
+> +};
+> +
+> +static const struct v4l2_ctrl_ops tea575x_ctrl_ops = {
+> +	.s_ctrl = tea575x_s_ctrl,
+>  };
+>  
+>  /*
+> @@ -373,7 +333,6 @@ static struct video_device tea575x_radio
+>  int snd_tea575x_init(struct snd_tea575x *tea)
+>  {
+>  	int retval;
+> -	struct video_device *tea575x_radio_inst;
+>  
+>  	tea->mute = 1;
+>  
+> @@ -384,39 +343,44 @@ int snd_tea575x_init(struct snd_tea575x
+>  	tea->in_use = 0;
+>  	tea->val = TEA575X_BIT_BAND_FM | TEA575X_BIT_SEARCH_10_40;
+>  	tea->freq = 90500 * 16;		/* 90.5Mhz default */
+> +	snd_tea575x_set_freq(tea);
+>  
+> -	tea575x_radio_inst = video_device_alloc();
+> -	if (tea575x_radio_inst == NULL) {
+> -		printk(KERN_ERR "tea575x-tuner: not enough memory\n");
+> -		return -ENOMEM;
+> -	}
+> +	memcpy(&tea->vd, &tea575x_radio, sizeof(tea575x_radio));
+
+You can use tea->vd = tea575x_radio instead of memcpy.
+
+> +	video_set_drvdata(&tea->vd, tea);
+>  
+> -	memcpy(tea575x_radio_inst, &tea575x_radio, sizeof(tea575x_radio));
+> +	v4l2_ctrl_handler_init(&tea->ctrl_handler, 1);
+> +	tea->vd.ctrl_handler = &tea->ctrl_handler;
+> +	v4l2_ctrl_new_std(&tea->ctrl_handler, &tea575x_ctrl_ops, V4L2_CID_AUDIO_MUTE, 0, 1, 1, 1);
+> +	retval = tea->ctrl_handler.error;
+> +	if (retval) {
+> +		printk(KERN_ERR "tea575x-tuner: can't initialize controls\n");
+> +		v4l2_ctrl_handler_free(&tea->ctrl_handler);
+> +		return retval;
+> +	}
+> +	v4l2_ctrl_handler_setup(&tea->ctrl_handler);
+
+It's better to move this after the ext_init call, then the driver implementing
+ext_init doesn't have to call v4l2_ctrl_handler_setup again.
+
+>  
+> -	strcpy(tea575x_radio.name, tea->tea5759 ?
+> -				   "TEA5759 radio" : "TEA5757 radio");
+> +	if (tea->ext_init)
+> +		tea->ext_init(tea);
+
+ext_init can return an error. In particular, radio-sf16fmr2 should return
+tea->ctrl_handler.error after adding the two new controls since adding
+those controls might have failed.
+
+>  
+> -	video_set_drvdata(tea575x_radio_inst, tea);
+> +	tea->initialized = 1;
+>  
+> -	retval = video_register_device(tea575x_radio_inst,
+> -				       VFL_TYPE_RADIO, radio_nr);
+> +	retval = video_register_device(&tea->vd, VFL_TYPE_RADIO, radio_nr);
+>  	if (retval) {
+>  		printk(KERN_ERR "tea575x-tuner: can't register video device!\n");
+> -		kfree(tea575x_radio_inst);
+> +		v4l2_ctrl_handler_free(&tea->ctrl_handler);
+> +		tea->initialized = 0;
+>  		return retval;
+>  	}
+>  
+> -	snd_tea575x_set_freq(tea);
+> -	tea->vd = tea575x_radio_inst;
+> -
+>  	return 0;
+>  }
+>  
+>  void snd_tea575x_exit(struct snd_tea575x *tea)
+>  {
+> -	if (tea->vd) {
+> -		video_unregister_device(tea->vd);
+> -		tea->vd = NULL;
+> +	if (tea->initialized) {
+> +		video_unregister_device(&tea->vd);
+
+video_unregister_device is smart enough to detect a failed video_register_device
+call, so there is no need to use this 'initialized' field.
+
+> +		v4l2_ctrl_handler_free(&tea->ctrl_handler);
+> +		tea->initialized = 0;
+>  	}
+>  }
+>  
+> 
+> 
+> 
+
+Regards,
+
+	Hans
