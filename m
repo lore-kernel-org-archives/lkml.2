@@ -1,93 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934777Ab1ESV2b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:28:31 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:56755 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932349Ab1ESV2a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:28:30 -0400
-Date: Thu, 19 May 2011 16:28:14 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Nick Kossifidis <mickflemm@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
-        ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: ath5k regression associating with APs in 2.6.38
-Message-ID: <20110519212814.GA16139@thinkpad-t410>
-Mail-Followup-To: Nick Kossifidis <mickflemm@gmail.com>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	Jiri Slaby <jirislaby@gmail.com>,
-	"Luis R. Rodriguez" <lrodriguez@atheros.com>,
-	Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
-	ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20110504153819.GA4551@thinkpad-t410>
- <20110504172716.GC18541@tuxdriver.com>
- <20110504192639.GB4551@thinkpad-t410>
- <BANLkTimEmBRyxbZgffJMrH4TTc4f6peuTg@mail.gmail.com>
- <20110505135207.GA13727@thinkpad-t410>
- <BANLkTinkiTQU2k7vBEc0JPGa01AUVCvp2Q@mail.gmail.com>
- <20110509070230.GA20458@thinkpad-t410>
- <20110517165720.GB9258@thinkpad-t410>
- <BANLkTi=8ZRUVWn3FLAMtPh=4yY1F0k6i9w@mail.gmail.com>
- <20110517185032.GC9258@thinkpad-t410>
+	id S934789Ab1ESV3a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:29:30 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51815 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932665Ab1ESV33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 17:29:29 -0400
+Date: Thu, 19 May 2011 23:29:13 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>
+Subject: [GIT PULL] x86/smep changes for v2.6.40
+Message-ID: <20110519212913.GA28313@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110517185032.GC9258@thinkpad-t410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 01:50:32PM -0500, Seth Forshee wrote:
-> On Tue, May 17, 2011 at 08:14:34PM +0300, Nick Kossifidis wrote:
-> > 2011/5/17 Seth Forshee <seth.forshee@canonical.com>:
-> > > On Mon, May 09, 2011 at 09:02:30AM +0200, Seth Forshee wrote:
-> > >> On Thu, May 05, 2011 at 05:30:42PM +0300, Nick Kossifidis wrote:
-> > >> > Hmm I don't see any errors from reset/phy code, can you disable
-> > >> > Network Manager/wpa-supplicant and test connection on an open network
-> > >> > using iw ? It 'll give us a better picture...
-> > >> >
-> > >> > If iw doesn't return any scan results we are probably hitting a PHY/RF
-> > >> > error specific to your device (not all vendors follow the reference
-> > >> > design). Maybe we should follow a blacklist/whitelist approach for
-> > >> > this feature.
-> > >>
-> > >> I got the results back from my tester. He was able to get scan results,
-> > >> but it took multiple tries and the direct probe failures appear in the
-> > >> log. He didn't enable ATH5K_DEBUG_RESET this time; let me know if you
-> > >> need that and I'll request he retest with the extra debug logs enabled.
-> > >
-> > > I got some more feedback. Most of the time iw does not get scan results,
-> > > but even when it does connecting to the AP isn't always successful. The
-> > > tester did note that he doesn't seem to have any trouble if his machine
-> > > is within a few feet of his AP. Let me know if you'd like something else
-> > > tested.
-> > >
-> > > I noticed that bugzilla #31922 (ath5k: Decreased throughput in IBSS or
-> > > 802.11n mode) is also fixed by reverting 8aec7af9. It seems like the
-> > > synth-only channel changes are resulting in poor connection quality.
-> > > Maybe that patch needs to be reverted?
-> > >
-> > > Thanks,
-> > > Seth
-> > >
-> > >
-> > 
-> > http://www.kernel.org/pub/linux/kernel/people/mickflemm/01-fast-chan-switch-modparm
-> 
-> That looks like it should do the trick. I'll request some testing with
-> it and let you know how it goes. Thanks!
+Linus,
 
-I've received feedback from a number of testers that the patch fixes the
-wireless problems they've been seeing since upgrading to 2.6.38, so this
-fix looks good from my perspective.
+Please pull the latest x86-smep-for-linus git tree from:
 
-Thanks,
-Seth
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-smep-for-linus
 
+ Thanks,
+
+	Ingo
+
+------------------>
+Fenghua Yu (5):
+      x86, cpufeature: Fix cpuid leaf 7 feature detection
+      x86, cpufeature: Add CPU feature bit for enhanced REP MOVSB/STOSB
+      x86, cpufeature: Add cpufeature flag for SMEP
+      x86, cpu: Add SMEP CPU feature in CR4
+      x86, cpu: Enable/disable Supervisor Mode Execution Protection
+
+
+ Documentation/kernel-parameters.txt    |    4 ++++
+ arch/x86/include/asm/cpufeature.h      |    2 ++
+ arch/x86/include/asm/processor-flags.h |    1 +
+ arch/x86/kernel/cpu/common.c           |   26 ++++++++++++++++++++++++--
+ 4 files changed, 31 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index cc85a92..56fb8c1 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1664,6 +1664,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			noexec=on: enable non-executable mappings (default)
+ 			noexec=off: disable non-executable mappings
+ 
++	nosmep		[X86]
++			Disable SMEP (Supervisor Mode Execution Protection)
++			even if it is supported by processor.
++
+ 	noexec32	[X86-64]
+ 			This affects only 32-bit executables.
+ 			noexec32=on: enable non-executable mappings (default)
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 91f3e087..8808cdb 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -195,6 +195,8 @@
+ 
+ /* Intel-defined CPU features, CPUID level 0x00000007:0 (ebx), word 9 */
+ #define X86_FEATURE_FSGSBASE	(9*32+ 0) /* {RD/WR}{FS/GS}BASE instructions*/
++#define X86_FEATURE_SMEP	(9*32+ 7) /* Supervisor Mode Execution Protection */
++#define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
+ 
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
+ 
+diff --git a/arch/x86/include/asm/processor-flags.h b/arch/x86/include/asm/processor-flags.h
+index a898a2b..59ab4df 100644
+--- a/arch/x86/include/asm/processor-flags.h
++++ b/arch/x86/include/asm/processor-flags.h
+@@ -60,6 +60,7 @@
+ #define X86_CR4_OSXMMEXCPT 0x00000400 /* enable unmasked SSE exceptions */
+ #define X86_CR4_VMXE	0x00002000 /* enable VMX virtualization */
+ #define X86_CR4_OSXSAVE 0x00040000 /* enable xsave and xrestore */
++#define X86_CR4_SMEP	0x00100000 /* enable SMEP support */
+ 
+ /*
+  * x86-64 Task Priority Register, CR8
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index e2ced007..cbc70a2 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -254,6 +254,25 @@ static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
+ }
+ #endif
+ 
++static int disable_smep __initdata;
++static __init int setup_disable_smep(char *arg)
++{
++	disable_smep = 1;
++	return 1;
++}
++__setup("nosmep", setup_disable_smep);
++
++static __init void setup_smep(struct cpuinfo_x86 *c)
++{
++	if (cpu_has(c, X86_FEATURE_SMEP)) {
++		if (unlikely(disable_smep)) {
++			setup_clear_cpu_cap(X86_FEATURE_SMEP);
++			clear_in_cr4(X86_CR4_SMEP);
++		} else
++			set_in_cr4(X86_CR4_SMEP);
++	}
++}
++
+ /*
+  * Some CPU features depend on higher CPUID levels, which may not always
+  * be available due to CPUID level capping or broken virtualization
+@@ -565,8 +584,7 @@ void __cpuinit get_cpu_cap(struct cpuinfo_x86 *c)
+ 
+ 		cpuid_count(0x00000007, 0, &eax, &ebx, &ecx, &edx);
+ 
+-		if (eax > 0)
+-			c->x86_capability[9] = ebx;
++		c->x86_capability[9] = ebx;
+ 	}
+ 
+ 	/* AMD-defined flags: level 0x80000001 */
+@@ -668,6 +686,8 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+ 	c->cpu_index = 0;
+ #endif
+ 	filter_cpuid_features(c, false);
++
++	setup_smep(c);
+ }
+ 
+ void __init early_cpu_init(void)
+@@ -753,6 +773,8 @@ static void __cpuinit generic_identify(struct cpuinfo_x86 *c)
+ #endif
+ 	}
+ 
++	setup_smep(c);
++
+ 	get_model_name(c); /* Default name */
+ 
+ 	detect_nopl(c);
