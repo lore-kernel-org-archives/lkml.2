@@ -1,50 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933666Ab1ESRS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:18:28 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:44562 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933583Ab1ESRS1 (ORCPT
+	id S933663Ab1ESRTj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:19:39 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1690 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933605Ab1ESRTi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:18:27 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Kmemleak fixes for 2.6.40-rc1
-Date: Thu, 19 May 2011 18:18:17 +0100
-Message-Id: <1305825497-16225-1-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.4.2.g597a6
-X-OriginalArrivalTime: 19 May 2011 17:18:30.0077 (UTC) FILETIME=[C5E976D0:01CC1648]
-X-MC-Unique: 111051918182501401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Thu, 19 May 2011 13:19:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 19 May 2011 10:19:37 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Joe Perches <joe@perches.com>, Lee Jones <lee.jones@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Date: Thu, 19 May 2011 10:19:35 -0700
+Subject: RE: [PATCH] drivers: create a pinmux subsystem v2
+Thread-Topic: [PATCH] drivers: create a pinmux subsystem v2
+Thread-Index: AcwVIGewPofm9nUcRoCMDpPVybuDegBKAnPA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF0498A47BF9@HQMAIL01.nvidia.com>
+References: <1305070783-23193-1-git-send-email-linus.walleij@linaro.org>
+	<74CDBE0F657A3D45AFBB94109FB122FF0498A478E6@HQMAIL01.nvidia.com>
+ <BANLkTimMHjUFN8NqAxoF5h_eXgmJP+znSg@mail.gmail.com>
+In-Reply-To: <BANLkTimMHjUFN8NqAxoF5h_eXgmJP+znSg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p4JHIbMj010710
 
-Hi Linus,
+Linus Walleij wrote at Tuesday, May 17, 2011 11:57 PM:
+> 2011/5/18 Stephen Warren <swarren@nvidia.com>:
+> 
+> >> +static struct foo_pmx_func myfuncs[] = {
+> >> +     {
+> >> +             .name = "spi0-0",
+> >> +             .pins = spi0_0_pins,
+> >> +             .num_pins = ARRAY_SIZE(spi0_1_pins),
+> >> +     },
+> >> ...
+> >
+> > Rather than defining a custom type (foo_pmx_func) for this array inside
+> > each driver, and then having to implement _list, _get_fname, _get_pins
+> > below, how about:
+> >
+> > * pinmux core defines a basic structure containing all the information
+> >  that the core needs from the specific implementation.
+> >
+> > ...
+> > static struct foo_pmx_func spi0_0_func = {
+> >        FOO_REG_PMX_A,
+> >        0x30,
+> >        0x10,
+> > };
+> > ...
+> > static struct pinmux_function myfuncs[] = {
+> >        {
+> >                .name = "spi0-0",
+> >                .pins = spi0_0_pins,
+> >                .num_pins = ARRAY_SIZE(spi0_1_pins),
+> >                .driver_data = &spi0_0_func,
+> >        },
+> > ...
+> >
+> > This would remove some boiler-plate code from the SoC drivers,
+> > although it might be considered a bad breaking of abstraction barriers?
+> 
+> Yes it does, however I didn't want to make the initial submission
+> feature creepy. So I would like this to go in as is, then refactor
+> drivers to get help from the framework later on, if we see that
+> it is needed. (So the solution would evolve gradually rather
+> than being too much designed-in from the beginning.)
+> 
+> Do you think the driver support functions are needed from start?
+> I could do it I think...
 
-Could you please pull the patches below? The branch contains a few
-fixes for kmemleak.
+Sorry for the slow responses.
 
-Thanks.
+I think this suggestion of mine isn't a big deal, so I'd basically be
+OK going either way initially.
 
+Still, if I was writing the patches, and I agreed with the above change,
+I think I'd want to put it into the first patchset (or at least before
+other people started implementing their pinmux drivers on top of the code)
+since it'd avoid everyone else (or me) having to refactor all their
+drivers almost immediately after writing them, plus it looks like a very
+simple change to the current pinmux patchset.
 
-The following changes since commit 8e10cd74342c7f5ce259cceca36f6eba084f5d58:
-
-  Linux 2.6.39-rc5 (2011-04-26 20:48:50 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-2.6-cm.git for-linus
-
-Catalin Marinas (3):
-      kmemleak: Do not return a pointer to an object that kmemleak did not get
-      kmemleak: Select DEBUG_FS unconditionally in DEBUG_KMEMLEAK
-      kmemleak: Initialise kmemleak after debug_objects_mem_init()
-
- init/main.c       |    2 +-
- lib/Kconfig.debug |    2 +-
- mm/kmemleak.c     |    7 +++++--
- 3 files changed, 7 insertions(+), 4 deletions(-)
+-- 
+nvpublic
 
