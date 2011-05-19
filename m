@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663Ab1ESRTj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:19:39 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1690 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933605Ab1ESRTi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:19:38 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 19 May 2011 10:19:37 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Martin Persson <martin.persson@stericsson.com>,
-        Joe Perches <joe@perches.com>, Lee Jones <lee.jones@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Date: Thu, 19 May 2011 10:19:35 -0700
-Subject: RE: [PATCH] drivers: create a pinmux subsystem v2
-Thread-Topic: [PATCH] drivers: create a pinmux subsystem v2
-Thread-Index: AcwVIGewPofm9nUcRoCMDpPVybuDegBKAnPA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF0498A47BF9@HQMAIL01.nvidia.com>
-References: <1305070783-23193-1-git-send-email-linus.walleij@linaro.org>
-	<74CDBE0F657A3D45AFBB94109FB122FF0498A478E6@HQMAIL01.nvidia.com>
- <BANLkTimMHjUFN8NqAxoF5h_eXgmJP+znSg@mail.gmail.com>
-In-Reply-To: <BANLkTimMHjUFN8NqAxoF5h_eXgmJP+znSg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S933657Ab1ESRUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:20:52 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:40827 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933593Ab1ESRUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 13:20:51 -0400
+Date: Thu, 19 May 2011 19:20:39 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC PATCH] perf: Split up buffer handling from core code
+Message-ID: <20110519172039.GA27370@elte.hu>
+References: <1305767185-5771-1-git-send-email-fweisbec@gmail.com>
+ <20110519073136.GB14049@liondog.tnic>
+ <1305793931.2466.7191.camel@twins>
+ <20110519141456.GB1956@nowhere>
+ <1305816208.2466.7223.camel@twins>
+ <20110519145951.GD1956@nowhere>
+ <1305818041.2466.7225.camel@twins>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305818041.2466.7225.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Tuesday, May 17, 2011 11:57 PM:
-> 2011/5/18 Stephen Warren <swarren@nvidia.com>:
+
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+
+> On Thu, 2011-05-19 at 16:59 +0200, Frederic Weisbecker wrote:
+> > I thought it would be nice to keep it inline for core use, as it's called
+> > pretty often from the overflow path.
 > 
-> >> +static struct foo_pmx_func myfuncs[] = {
-> >> +     {
-> >> +             .name = "spi0-0",
-> >> +             .pins = spi0_0_pins,
-> >> +             .num_pins = ARRAY_SIZE(spi0_1_pins),
-> >> +     },
-> >> ...
-> >
-> > Rather than defining a custom type (foo_pmx_func) for this array inside
-> > each driver, and then having to implement _list, _get_fname, _get_pins
-> > below, how about:
-> >
-> > * pinmux core defines a basic structure containing all the information
-> >  that the core needs from the specific implementation.
-> >
-> > ...
-> > static struct foo_pmx_func spi0_0_func = {
-> >        FOO_REG_PMX_A,
-> >        0x30,
-> >        0x10,
-> > };
-> > ...
-> > static struct pinmux_function myfuncs[] = {
-> >        {
-> >                .name = "spi0-0",
-> >                .pins = spi0_0_pins,
-> >                .num_pins = ARRAY_SIZE(spi0_1_pins),
-> >                .driver_data = &spi0_0_func,
-> >        },
-> > ...
-> >
-> > This would remove some boiler-plate code from the SoC drivers,
-> > although it might be considered a bad breaking of abstraction barriers?
+> That's what I meant.
 > 
-> Yes it does, however I didn't want to make the initial submission
-> feature creepy. So I would like this to go in as is, then refactor
-> drivers to get help from the framework later on, if we see that
-> it is needed. (So the solution would evolve gradually rather
-> than being too much designed-in from the beginning.)
+> > A solution is to have a perf_output_copy_inline() in internal.h
+> > and export it through perf_output_copy() in buffer.c 
 > 
-> Do you think the driver support functions are needed from start?
-> I could do it I think...
+> If only "external inline" would work :-)
+> 
+> I'd call it __perf_output_copy() though, less typing.
 
-Sorry for the slow responses.
+Just __output_copy() please - if someone is looking at kernel/events/*.c then 
+it's pretty clear that it's related to perf.
 
-I think this suggestion of mine isn't a big deal, so I'd basically be
-OK going either way initially.
+I.e. non-exposed symbols should lose their perf_ prefixes.
 
-Still, if I was writing the patches, and I agreed with the above change,
-I think I'd want to put it into the first patchset (or at least before
-other people started implementing their pinmux drivers on top of the code)
-since it'd avoid everyone else (or me) having to refactor all their
-drivers almost immediately after writing them, plus it looks like a very
-simple change to the current pinmux patchset.
+Thanks,
 
--- 
-nvpublic
-
+	Ingo
