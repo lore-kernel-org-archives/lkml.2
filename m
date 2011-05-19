@@ -1,129 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932939Ab1ESQKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:10:32 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:40651 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754507Ab1ESQKb (ORCPT
+	id S933237Ab1ESQME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:12:04 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:53182 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932797Ab1ESQMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:10:31 -0400
-Date: Thu, 19 May 2011 09:10:29 -0700
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linuxppc-dev@lists.ozlabs.org, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFCv7 0/2] CARMA Board Support
-Message-ID: <20110519161029.GC28291@ovro.caltech.edu>
-References: <1297467270-29576-1-git-send-email-iws@ovro.caltech.edu>
- <1305778421.7481.38.camel@pasglop>
+	Thu, 19 May 2011 12:12:01 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Subject: [PATCH v5] tea575x: convert to control framework
+Date: Thu, 19 May 2011 18:11:49 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+References: <201105140017.26968.linux@rainbow-software.org> <201105182335.25161.linux@rainbow-software.org> <201105190845.38194.hverkuil@xs4all.nl>
+In-Reply-To: <201105190845.38194.hverkuil@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1305778421.7481.38.camel@pasglop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201105191811.51910.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 02:13:41PM +1000, Benjamin Herrenschmidt wrote:
-> On Fri, 2011-02-11 at 15:34 -0800, Ira W. Snyder wrote:
-> > Hello everyone,
-> > 
-> > This is the seventh posting of these drivers, taking into account comments
-> > from earlier postings. I've made sure that the drivers both pass checkpatch
-> > without any errors or warnings. I would appreciate as much review as you
-> > can offer, so that these can get into the next merge cycle. They've been
-> > sitting outside mainline for far too long.
-> 
-> This has been bitrotting for way too long indeed. I'm sticking this into
-> powerpc -next today.
-> 
+Convert tea575x-tuner to use the new V4L2 control framework. Also add
+ext_init() callback that can be used by a card driver for additional
+initialization right before registering the video device (for SF16-FMR2).
 
-Thanks Ben.
+Also embed struct video_device to struct snd_tea575x to simplify the code.
 
-I'll grab the -next tree and make sure it builds on my board. I don't
-think any API's have changed, but I will send an updated version if they
-have.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Thanks,
-Ira
+--- linux-2.6.39-rc2-/include/sound/tea575x-tuner.h	2011-05-13 19:39:23.000000000 +0200
++++ linux-2.6.39-rc2/include/sound/tea575x-tuner.h	2011-05-19 17:27:45.000000000 +0200
+@@ -23,8 +23,8 @@
+  */
+ 
+ #include <linux/videodev2.h>
++#include <media/v4l2-ctrls.h>
+ #include <media/v4l2-dev.h>
+-#include <media/v4l2-ioctl.h>
+ 
+ #define TEA575X_FMIF	10700
+ 
+@@ -42,7 +42,7 @@ struct snd_tea575x_ops {
+ };
+ 
+ struct snd_tea575x {
+-	struct video_device *vd;	/* video device */
++	struct video_device vd;		/* video device */
+ 	bool tea5759;			/* 5759 chip is present */
+ 	bool mute;			/* Device is muted? */
+ 	bool stereo;			/* receiving stereo */
+@@ -54,6 +54,8 @@ struct snd_tea575x {
+ 	void *private_data;
+ 	u8 card[32];
+ 	u8 bus_info[32];
++	struct v4l2_ctrl_handler ctrl_handler;
++	int (*ext_init)(struct snd_tea575x *tea);
+ };
+ 
+ int snd_tea575x_init(struct snd_tea575x *tea);
+--- linux-2.6.39-rc2-/sound/i2c/other/tea575x-tuner.c	2011-05-13 19:39:23.000000000 +0200
++++ linux-2.6.39-rc2/sound/i2c/other/tea575x-tuner.c	2011-05-19 17:31:45.000000000 +0200
+@@ -22,11 +22,11 @@
+ 
+ #include <asm/io.h>
+ #include <linux/delay.h>
+-#include <linux/interrupt.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/version.h>
+-#include <sound/core.h>
++#include <media/v4l2-dev.h>
++#include <media/v4l2-ioctl.h>
+ #include <sound/tea575x-tuner.h>
+ 
+ MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
+@@ -62,17 +62,6 @@ module_param(radio_nr, int, 0);
+ #define TEA575X_BIT_DUMMY	(1<<15)		/* buffer */
+ #define TEA575X_BIT_FREQ_MASK	0x7fff
+ 
+-static struct v4l2_queryctrl radio_qctrl[] = {
+-	{
+-		.id            = V4L2_CID_AUDIO_MUTE,
+-		.name          = "Mute",
+-		.minimum       = 0,
+-		.maximum       = 1,
+-		.default_value = 1,
+-		.type          = V4L2_CTRL_TYPE_BOOLEAN,
+-	}
+-};
+-
+ /*
+  * lowlevel part
+  */
+@@ -266,47 +255,17 @@ static int vidioc_s_audio(struct file *f
+ 	return 0;
+ }
+ 
+-static int vidioc_queryctrl(struct file *file, void *priv,
+-					struct v4l2_queryctrl *qc)
++static int tea575x_s_ctrl(struct v4l2_ctrl *ctrl)
+ {
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(radio_qctrl); i++) {
+-		if (qc->id && qc->id == radio_qctrl[i].id) {
+-			memcpy(qc, &(radio_qctrl[i]),
+-						sizeof(*qc));
+-			return 0;
+-		}
+-	}
+-	return -EINVAL;
+-}
+-
+-static int vidioc_g_ctrl(struct file *file, void *priv,
+-					struct v4l2_control *ctrl)
+-{
+-	struct snd_tea575x *tea = video_drvdata(file);
++	struct snd_tea575x *tea = container_of(ctrl->handler, struct snd_tea575x, ctrl_handler);
+ 
+ 	switch (ctrl->id) {
+ 	case V4L2_CID_AUDIO_MUTE:
+-		ctrl->value = tea->mute;
++		tea->mute = ctrl->val;
++		snd_tea575x_set_freq(tea);
+ 		return 0;
+ 	}
+-	return -EINVAL;
+-}
+ 
+-static int vidioc_s_ctrl(struct file *file, void *priv,
+-					struct v4l2_control *ctrl)
+-{
+-	struct snd_tea575x *tea = video_drvdata(file);
+-
+-	switch (ctrl->id) {
+-	case V4L2_CID_AUDIO_MUTE:
+-		if (tea->mute != ctrl->value) {
+-			tea->mute = ctrl->value;
+-			snd_tea575x_set_freq(tea);
+-		}
+-		return 0;
+-	}
+ 	return -EINVAL;
+ }
+ 
+@@ -355,16 +314,17 @@ static const struct v4l2_ioctl_ops tea57
+ 	.vidioc_s_input     = vidioc_s_input,
+ 	.vidioc_g_frequency = vidioc_g_frequency,
+ 	.vidioc_s_frequency = vidioc_s_frequency,
+-	.vidioc_queryctrl   = vidioc_queryctrl,
+-	.vidioc_g_ctrl      = vidioc_g_ctrl,
+-	.vidioc_s_ctrl      = vidioc_s_ctrl,
+ };
+ 
+ static struct video_device tea575x_radio = {
+ 	.name           = "tea575x-tuner",
+ 	.fops           = &tea575x_fops,
+ 	.ioctl_ops 	= &tea575x_ioctl_ops,
+-	.release	= video_device_release,
++	.release	= video_device_release_empty,
++};
++
++static const struct v4l2_ctrl_ops tea575x_ctrl_ops = {
++	.s_ctrl = tea575x_s_ctrl,
+ };
+ 
+ /*
+@@ -373,7 +333,6 @@ static struct video_device tea575x_radio
+ int snd_tea575x_init(struct snd_tea575x *tea)
+ {
+ 	int retval;
+-	struct video_device *tea575x_radio_inst;
+ 
+ 	tea->mute = 1;
+ 
+@@ -384,40 +343,45 @@ int snd_tea575x_init(struct snd_tea575x
+ 	tea->in_use = 0;
+ 	tea->val = TEA575X_BIT_BAND_FM | TEA575X_BIT_SEARCH_10_40;
+ 	tea->freq = 90500 * 16;		/* 90.5Mhz default */
++	snd_tea575x_set_freq(tea);
+ 
+-	tea575x_radio_inst = video_device_alloc();
+-	if (tea575x_radio_inst == NULL) {
+-		printk(KERN_ERR "tea575x-tuner: not enough memory\n");
+-		return -ENOMEM;
+-	}
++	tea->vd = tea575x_radio;
++	video_set_drvdata(&tea->vd, tea);
+ 
+-	memcpy(tea575x_radio_inst, &tea575x_radio, sizeof(tea575x_radio));
++	v4l2_ctrl_handler_init(&tea->ctrl_handler, 1);
++	tea->vd.ctrl_handler = &tea->ctrl_handler;
++	v4l2_ctrl_new_std(&tea->ctrl_handler, &tea575x_ctrl_ops, V4L2_CID_AUDIO_MUTE, 0, 1, 1, 1);
++	retval = tea->ctrl_handler.error;
++	if (retval) {
++		printk(KERN_ERR "tea575x-tuner: can't initialize controls\n");
++		v4l2_ctrl_handler_free(&tea->ctrl_handler);
++		return retval;
++	}
+ 
+-	strcpy(tea575x_radio.name, tea->tea5759 ?
+-				   "TEA5759 radio" : "TEA5757 radio");
++	if (tea->ext_init) {
++		retval = tea->ext_init(tea);
++		if (retval) {
++			v4l2_ctrl_handler_free(&tea->ctrl_handler);
++			return retval;
++		}
++	}
+ 
+-	video_set_drvdata(tea575x_radio_inst, tea);
++	v4l2_ctrl_handler_setup(&tea->ctrl_handler);
+ 
+-	retval = video_register_device(tea575x_radio_inst,
+-				       VFL_TYPE_RADIO, radio_nr);
++	retval = video_register_device(&tea->vd, VFL_TYPE_RADIO, radio_nr);
+ 	if (retval) {
+ 		printk(KERN_ERR "tea575x-tuner: can't register video device!\n");
+-		kfree(tea575x_radio_inst);
++		v4l2_ctrl_handler_free(&tea->ctrl_handler);
+ 		return retval;
+ 	}
+ 
+-	snd_tea575x_set_freq(tea);
+-	tea->vd = tea575x_radio_inst;
+-
+ 	return 0;
+ }
+ 
+ void snd_tea575x_exit(struct snd_tea575x *tea)
+ {
+-	if (tea->vd) {
+-		video_unregister_device(tea->vd);
+-		tea->vd = NULL;
+-	}
++	video_unregister_device(&tea->vd);
++	v4l2_ctrl_handler_free(&tea->ctrl_handler);
+ }
+ 
+ static int __init alsa_tea575x_module_init(void)
 
-> > RFCv6 -> RFCv7:
-> > - reference count private data structure (to support unbind)
-> > - use #defines instead of hex values for registers
-> > - keep lines <=80 characters
-> > 
-> > RFCv5 -> RFCv6:
-> > - change locking in several functions
-> > - use list_move_tail() to simplify code
-> > - remove unused helper functions
-> > 
-> > RFCv4 -> RFCv5:
-> > - remove unecessary locking per review comments
-> > - do not clobber return values from *_interruptible()
-> > - explicitly track buffer DMA mapping
-> > - use #defines instead of raw hex addresses
-> > - change enable sysfs attribute to root-writeable only
-> > 
-> > RFCv3 -> RFCv4:
-> > - updates for DATA-FPGA version 2
-> > 
-> > RFCv2 -> RFCv3:
-> > - use miscdevice framework (removing the carma class)
-> > - add bitfile readback capability to the programmer
-> > 
-> > RFCv1 -> RFCv2:
-> > - change comments to kerneldoc format
-> > - Kconfig improvements
-> > - use the videobuf_dma_sg API in the programmer
-> > - updates for Freescale DMAEngine DMA_SLAVE API changes
-> > 
-> > KNOWN ISSUES:
-> > - untested with a setup that can generate interrupts (will get access soon)
-> > - does not handle runtime "unbind"
-> > 
-> > Information about the CARMA board:
-> > 
-> > The CARMA board is essentially an MPC8349EA MDS reference design with a
-> > 1GHz ADC and 4 high powered data processing FPGAs connected to the local
-> > bus. It is all packed into a compact PCI form factor. It is used at the
-> > Owens Valley Radio Observatory as the main component in the correlator
-> > system.
-> > 
-> > For board information, see:
-> > http://www.mmarray.org/~dwh/carma_board/index.html
-> > 
-> > For DATA-FPGA register layout, see:
-> > http://www.mmarray.org/memos/carma_memo46.pdf
-> > 
-> > These drivers are the necessary pieces to get the data processing FPGAs
-> > working and producing data. Despite the fact that the hardware is custom
-> > and we are the only users, I'd still like to get the drivers upstream.
-> > Several people have suggested that this is possible.
-> > 
-> > Some further patches will be forthcoming. I have a driver for the LED
-> > subsystem and the PPS subsystem. The LED register layout is expected to
-> > change soon, so I won't post the driver until that is finished. The PPS
-> > driver will be posted seperately from this patch series; it is very
-> > generic.
-> > 
-> > Thanks to everyone who has provided comments on earlier versions!
-> > 
-> > Ira W. Snyder (2):
-> >   misc: add CARMA DATA-FPGA Access Driver
-> >   misc: add CARMA DATA-FPGA Programmer support
-> > 
-> >  drivers/misc/Kconfig                    |    1 +
-> >  drivers/misc/Makefile                   |    1 +
-> >  drivers/misc/carma/Kconfig              |   18 +
-> >  drivers/misc/carma/Makefile             |    2 +
-> >  drivers/misc/carma/carma-fpga-program.c | 1141 ++++++++++++++++++++++++
-> >  drivers/misc/carma/carma-fpga.c         | 1433 +++++++++++++++++++++++++++++++
-> >  6 files changed, 2596 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/misc/carma/Kconfig
-> >  create mode 100644 drivers/misc/carma/Makefile
-> >  create mode 100644 drivers/misc/carma/carma-fpga-program.c
-> >  create mode 100644 drivers/misc/carma/carma-fpga.c
-> > 
-> 
-> 
+
+-- 
+Ondrej Zary
