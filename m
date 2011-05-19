@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934029Ab1ESSU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:20:56 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33761 "EHLO
+	id S933993Ab1ESSUh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:20:37 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:39662 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933951Ab1ESSIU (ORCPT
+	by vger.kernel.org with ESMTP id S933963Ab1ESSIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:08:20 -0400
-X-Sasl-enc: 9bBYxgtRkYLgdfnG1bZKfPU6tUlslYd5q3E2P0M7vfWI 1305828499
+	Thu, 19 May 2011 14:08:22 -0400
+X-Sasl-enc: nrRZpJyUc5LjgEdYTsg5rBQk+/Lb8jXbQeP8rAJSdxS9 1305828501
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:56 2011
-Message-Id: <20110519180556.687159978@clark.kroah.org>
+Message-Id: <20110519180556.795118184@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:04:53 -0700
+Date: Thu, 19 May 2011 11:04:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [25/71] PM: Fix warning in pm_restrict_gfp_mask() during SNAPSHOT_S2RAM ioctl
+Subject: [26/71] PM / Hibernate: Make snapshot_release() restore GFP mask
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,54 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-commit 87186475a402391a1ca7d42a675c9b35a18dc348 upstream.
+commit 9744997a8a2280e67984d4bffd87221d24f3b6b1 upstream.
 
-A warning is printed by pm_restrict_gfp_mask() while the
-SNAPSHOT_S2RAM ioctl is being executed after creating a hibernation
-image, because pm_restrict_gfp_mask() has been called once already
-before the image creation and suspend_devices_and_enter() calls it
-once again.  This happens after commit 452aa6999e6703ffbddd7f6ea124d3
-(mm/pm: force GFP_NOIO during suspend/hibernation and resume).
+If the process using the hibernate user space interface closes
+/dev/snapshot after creating a hibernation image without thawing
+tasks, snapshot_release() should call pm_restore_gfp_mask() to
+restore the GFP mask used before the creation of the image.  Make
+that happen.
 
-To avoid this issue, move pm_restrict_gfp_mask() and
-pm_restore_gfp_mask() from suspend_devices_and_enter() to its caller
-in kernel/power/suspend.c.
-
-Reported-by: Alexandre Felipe Muller de Souza <alexandrefm@mandriva.com.br>
+Tested-by: Alexandre Felipe Muller de Souza <alexandrefm@mandriva.com.br>
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/power/suspend.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/power/user.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -209,7 +209,6 @@ int suspend_devices_and_enter(suspend_st
- 			goto Close;
- 	}
- 	suspend_console();
--	pm_restrict_gfp_mask();
- 	suspend_test_start();
- 	error = dpm_suspend_start(PMSG_SUSPEND);
- 	if (error) {
-@@ -226,7 +225,6 @@ int suspend_devices_and_enter(suspend_st
- 	suspend_test_start();
- 	dpm_resume_end(PMSG_RESUME);
- 	suspend_test_finish("resume devices");
--	pm_restore_gfp_mask();
- 	resume_console();
-  Close:
- 	if (suspend_ops->end)
-@@ -287,7 +285,9 @@ int enter_state(suspend_state_t state)
- 		goto Finish;
- 
- 	pr_debug("PM: Entering %s sleep\n", pm_states[state]);
-+	pm_restrict_gfp_mask();
- 	error = suspend_devices_and_enter(state);
-+	pm_restore_gfp_mask();
- 
-  Finish:
- 	pr_debug("PM: Finishing wakeup.\n");
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -135,8 +135,10 @@ static int snapshot_release(struct inode
+ 	free_basic_memory_bitmaps();
+ 	data = filp->private_data;
+ 	free_all_swap_pages(data->swap);
+-	if (data->frozen)
++	if (data->frozen) {
++		pm_restore_gfp_mask();
+ 		thaw_processes();
++	}
+ 	pm_notifier_call_chain(data->mode == O_RDONLY ?
+ 			PM_POST_HIBERNATION : PM_POST_RESTORE);
+ 	atomic_inc(&snapshot_device_available);
 
 
