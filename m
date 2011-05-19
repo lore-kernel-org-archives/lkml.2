@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591Ab1ESMTE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 08:19:04 -0400
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:35226 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932510Ab1ESMTA (ORCPT
+	id S932570Ab1ESMUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 08:20:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:59750 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932345Ab1ESMUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 08:19:00 -0400
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@lii-enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] hid-multitouch: class MT_CLS_STANTUM is redundant with MT_CLS_CONFIDENCE
-Date: Thu, 19 May 2011 14:18:18 +0200
-Message-Id: <1305807498-8785-7-git-send-email-benjamin.tissoires@enac.fr>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1305807498-8785-1-git-send-email-benjamin.tissoires@enac.fr>
-References: <1305807498-8785-1-git-send-email-benjamin.tissoires@enac.fr>
+	Thu, 19 May 2011 08:20:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Barry Song <21cnbao@gmail.com>
+Subject: Re: [RFC] ARM Subarchitecture group maintainership
+Date: Thu, 19 May 2011 14:20:33 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>
+References: <201105181047.17309.arnd@arndb.de> <BANLkTim_0eRvDkQwAYjTNQsOVQiHV+DdBQ@mail.gmail.com>
+In-Reply-To: <BANLkTim_0eRvDkQwAYjTNQsOVQiHV+DdBQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105191420.33269.arnd@arndb.de>
+X-Provags-ID: V02:K0:cu7Ye2OgWjUlPnApGZiyB7ZcwHDRfkSEDbE7OLM1aKd
+ T5rQvvsWmZd9GolsiZHgKDEfzAV6N7c4y6YI6YehRZMP9D2ShK
+ uZZdOkM3WEF8WLJ/xPghcA+1f/Z17uWlXsR+A9aQ5C6TdLm5Of
+ f3urg10G5fXjqf3KY81LDPrJ+Y1Xjs8a1U6dSJXz4hVqHUdjbz
+ 29QNRF7NKpkJgUdn+7w1w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stantum devices used to work with MT_CLS_STANTUM but MT_CLS_CONFIDENCE
-is exactly the same. This patch switches them to this generic class,
-and remove the unused MT_CLS_STANTUM.
+On Thursday 19 May 2011, Barry Song wrote:
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 8fce5e6..942d052 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -630,6 +630,17 @@ S: Maintained
+> >  F:     drivers/amba/
+> >  F:     include/linux/amba/bus.h
+> >
+> > +ARM SUBARCHITECTURES
+> > +M:     Arnd Bergmann <arnd@arndb.de>
+> > +M:     Nicolas Pitre <nico@fluxnic.net>
+> > +M:     Thomas Gleixner <tglx@linutronix.de>
+> > +M:     arm@kernel.org
+> > +L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> > +S:     MAINTAINEDftp.arm.linux.org.uk Git - linux-2.6-arm.git/summary
+> > +F:     arch/arm/mach-*/
+> > +F:     arch/arm/plat-*/
+> > +T:     git git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-subarch.git
+> > +
+> 
+> does it mean if we want to add a new SoC plat/mach, we will send
+> patches againest this tree?
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
----
- drivers/hid/hid-multitouch.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+You should submit it for inclusion into this tree, but as a new branch
+(or multiple branches) forked off from the mainline tree. We will make sure
+it cleanly merges with the other subarchitectures.
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index feeb0b7..65b92d2 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -88,7 +88,6 @@ struct mt_class {
- #define MT_CLS_DUAL_INRANGE_CONTACTNUMBER	3
- #define MT_CLS_CYPRESS				4
- #define MT_CLS_EGALAX				5
--#define MT_CLS_STANTUM				6
- #define MT_CLS_3M				7
- #define MT_CLS_CONFIDENCE			8
- #define MT_CLS_CONFIDENCE_MINUS_ONE		9
-@@ -154,8 +153,6 @@ struct mt_class mt_classes[] = {
- 		.sn_move = 4096,
- 		.sn_pressure = 32,
- 	},
--	{ .name = MT_CLS_STANTUM,
--		.quirks = MT_QUIRK_VALID_IS_CONFIDENCE },
- 	{ .name = MT_CLS_3M,
- 		.quirks = MT_QUIRK_VALID_IS_CONFIDENCE |
- 			MT_QUIRK_SLOT_IS_CONTACTID,
-@@ -673,13 +670,13 @@ static const struct hid_device_id mt_devices[] = {
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
- 
- 	/* Stantum panels */
--	{ .driver_data = MT_CLS_STANTUM,
-+	{ .driver_data = MT_CLS_CONFIDENCE,
- 		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM,
- 			USB_DEVICE_ID_MTP)},
--	{ .driver_data = MT_CLS_STANTUM,
-+	{ .driver_data = MT_CLS_CONFIDENCE,
- 		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM,
- 			USB_DEVICE_ID_MTP_STM)},
--	{ .driver_data = MT_CLS_STANTUM,
-+	{ .driver_data = MT_CLS_CONFIDENCE,
- 		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM,
- 			USB_DEVICE_ID_MTP_SITRONIX)},
- 
--- 
-1.7.4.4
+> will this tree merge into rmk's tree? then rmk's tree will only manage
+> arm common codes?
 
+We'll see. My current idea is that we will push all subarchitecture branches
+upstream to Linus directly, while Russell pushes the core branch(es) upstream
+in parallel, but the master branch of the subarch tree could end up pulling
+in the core tree as well, in order to make life easier for Stephen's
+linux-next tree that needs both. This depends to some degree on whether
+Russell wants to keep some subarchitectures in his own tree, or we put all
+of them in the new subarch tree.
+
+	Arnd
