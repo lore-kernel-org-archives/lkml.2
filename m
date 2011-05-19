@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934688Ab1ESU2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 16:28:09 -0400
-Received: from ns5.dns-guards.com ([41.203.20.164]:37598 "EHLO
-	velocity.dns-guards.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933991Ab1ESU2H (ORCPT
+	id S934685Ab1ESUai (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 16:30:38 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50678 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933813Ab1ESUaf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 16:28:07 -0400
-Message-ID: <sig.512079e334.4DD57D44.50009@radicalsystems.co.za>
-Date: Thu, 19 May 2011 22:27:48 +0200
-From: Jan Zwiegers <jan@radicalsystems.co.za>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Thu, 19 May 2011 16:30:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=uW4ZIQ7+SIALBO2NeslHDI8hFhnipQv7XMwT+N1Ye0T5Xuov3G4WVPQIPFwho9WCEI
+         4RP3q1i9eVE+cML01r7vj0KKWTcTbiPJoelFcqwMDvgGsaw8KHmj5X1tkhofVA35GkoN
+         5pedxSFW5DPMkP5RkJHCTFwl11zo1sT2COas0=
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: PCI BAR1 Unassigned
-References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
-In-Reply-To: <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Assp-ID: velocity.dns-guards.com ()
-X-Assp-Version: 1.7.1.3(1.0.2)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - velocity.dns-guards.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - radicalsystems.co.za
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <20110519.152703.1327182804872376183.davem@davemloft.net>
+References: <BANLkTimSZEbnNVzi3UvBFndHp25S0ow7YQ@mail.gmail.com>
+ <1456193D-84D1-46E2-B930-8FD0A5B8C409@comsys.rwth-aachen.de>
+ <BANLkTikZasOVfr2zTfXVjPqQsnzy9Hk5uA@mail.gmail.com> <20110519.152703.1327182804872376183.davem@davemloft.net>
+From: tsuna <tsunanet@gmail.com>
+Date: Thu, 19 May 2011 13:30:15 -0700
+Message-ID: <BANLkTinzTN=w9213+pCvBWuT5af7L7bKfg@mail.gmail.com>
+Subject: Re: [PATCH] tcp: Implement a two-level initial RTO as per draft RFC 2988bis-02.
+To: David Miller <davem@davemloft.net>
+Cc: alexander.zimmermann@comsys.rwth-aachen.de, hagen@jauu.net,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-19 08:50 PM, Bjorn Helgaas wrote:
-> On Thu, May 19, 2011 at 10:28 AM, Jan Zwiegers<jan@radicalsystems.co.za>  wrote:
->> I have the problem below where my PCI card's second BAR does not get
->> assigned.
->> What can be the cause of this problem?
->> The last kernel I tested on which worked OK was 2.6.27.
->> My current problematic kernel 2.6.35.
->>
->> 05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O Card
->> (rev 5c)
->>     Flags: bus master, slow devsel, latency 32, IRQ 22
->>     Memory at 93b00000 (type 3, prefetchable) [size=2K]
->>     Memory at<unassigned>  (type 3, prefetchable)
->>     Capabilities: [80] #00 [0600]
->>     Kernel modules: pci703drv
->
-> Could be resource exhaustion or, more likely, we ran out because we
-> now assign resource to things that don't need them, leaving none for
-> things that *do* need them.  This sounds like a regression, so we
-> should open a bugzilla for it and attach dmesg logs from 2.6.27 and
-> 2.6.35.
->
-> Does this problem keep the driver from working?  (Sometimes drivers
-> don't actually use all the BARs a device supports.)
->
-> Bjorn
->
+On Thu, May 19, 2011 at 12:27 PM, David Miller <davem@davemloft.net> wrote:
+> So using SCTP as an example of "see we do this already over here" is a
+> non-starter.  Don't do it.
 
-I'm the maintainer of the driver and was involved in the development of 
-the board as well in 2003. The board uses two BARS and the second BAR is 
-the most important. The board worked fine since the 2.4 days and only 
-recently became problematic. I suspect it works on even later kernels 
-than 27, maybe 2.6.32.
+Fair enough.  I hope that the "there's no one-size-fits-all solution"
+argument has more weight than "hey SCTP does it".  :)
 
-My knowledge is too little to actually determine if the problem is 
-because the FPGA based PCI interface is not within spec or something 
-that changed in the kernel, because of the post .30 releases becoming 
-more strict to PCI specification, i.e. BIOS / Kernel interaction.
-
-Jan
+-- 
+Benoit "tsuna" Sigoure
+Software Engineer @ www.StumbleUpon.com
