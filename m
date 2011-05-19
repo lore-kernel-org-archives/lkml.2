@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab1ESR31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:29:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20074 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933596Ab1ESR30 (ORCPT
+	id S933729Ab1ESR3p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:29:45 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45234 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933596Ab1ESR3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:29:26 -0400
-Message-ID: <4DD55364.8070002@oracle.com>
-Date: Thu, 19 May 2011 10:29:08 -0700
-From: Sunil Mushran <sunil.mushran@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
+	Thu, 19 May 2011 13:29:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=gIYUzFTqHASK+beenj5eCN6rGJrrjPESXytL29jMCk3Kx2cK4QNYWes4ETCjCjk5Dx
+         sdqX+XY8meq2kT/jc5rDQnDVA+5C6WTGjmXvtWPcAGiZ8mHoLLr7iE9WhuB5OwSc1L3z
+         VfMT4YBSQeKC5P1wUHLTLN6Kkgx/KobJK0FZ0=
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: josef@redhat.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        ocfs2-devel@oss.oracle.com
-Subject: Re: [Ocfs2-devel] [PATCH] ocfs2: Implement llseek()
-References: <1305773084-19296-1-git-send-email-sunil.mushran@oracle.com> <1305773084-19296-3-git-send-email-sunil.mushran@oracle.com> <20110519110531.GB6357@lst.de>
-In-Reply-To: <20110519110531.GB6357@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DD55373.0049:SCFMA922111,ss=1,fgs=0
+In-Reply-To: <20110518170556.GB2595@obsidianresearch.com>
+References: <1305682604-21383-1-git-send-email-nab@linux-iscsi.org>
+ <BANLkTi=e+v7PLcSc8GNov-TOXFF7rurXew@mail.gmail.com> <20110518170556.GB2595@obsidianresearch.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Thu, 19 May 2011 19:29:21 +0200
+X-Google-Sender-Auth: PIwcjBHZfgz1uN9ItbCb9wlOcl4
+Message-ID: <BANLkTikOCeNcDvoCM=BOSxQaSECFhJ05Gg@mail.gmail.com>
+Subject: Re: [RFC] ib_srpt: initial .40-rc1 drivers/infiniband/ulp/srpt merge
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-rmda <linux-rdma@vger.kernel.org>,
+        Roland Dreier <roland@purestorage.com>, Vu Pham <vu@mellanox.com>,
+        David Dillow <dillowda@ornl.gov>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2011 04:05 AM, Christoph Hellwig wrote:
-> On Wed, May 18, 2011 at 07:44:44PM -0700, Sunil Mushran wrote:
->> Unwritten (preallocated) extents are considered holes because the file system
->> treats reads to such regions in the same way as it does to holes.
-> How does this work for the case of an unwrittent extent that has been
-> written to in the pagecache but not converted yet?  Y'know the big data
-> corruption and flamewar that started all this?
+On Wed, May 18, 2011 at 7:05 PM, Jason Gunthorpe
+<jgunthorpe@obsidianresearch.com> wrote:
+> Many installations run dual rail IB with a desire
+> for both ports to be active and handling traffic at once. Not sure how
+> this translates to SRPT, but a good goal would be for a SRPT target to
+> be available on both HCA ports and support APM between them, at the
+> discretion of the client.
 
-We don't delay splitting the extent. It is split in ->write_begin(). Delaying
-it will be a challenge as we have to provide cache coherency across the
-cluster.
+Regarding APM: the Linux kernel already has multipath support and
+duplicate functionality is in general not welcomed. So you will have
+to come up with a very good reason before APM support in ib_srp or
+ib_srpt would be considered for acceptance.
 
+Bart.
