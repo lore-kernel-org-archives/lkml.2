@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933862Ab1ESSH5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:07:57 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:48609 "EHLO
+	id S933879Ab1ESSXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:23:41 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:60336 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933850Ab1ESSHy (ORCPT
+	by vger.kernel.org with ESMTP id S933854Ab1ESSHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:07:54 -0400
-X-Sasl-enc: GcKKbQkUwG5GNeQsJCBzk33ahDm76WsoHfMYK6JoL5/t 1305828473
+	Thu, 19 May 2011 14:07:55 -0400
+X-Sasl-enc: lbscudGxEB4Yh/1pUoGsnVr47Za4+WS4g8Bk+1clCpDq 1305828474
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:55 2011
-Message-Id: <20110519180555.251618489@clark.kroah.org>
+Message-Id: <20110519180555.352937123@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:04:38 -0700
+Date: Thu, 19 May 2011 11:04:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Will Deacon <will.deacon@arm.com>, Prasad <prasad@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [10/71] ptrace: Prepare to fix racy accesses on task breakpoints
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LPPC <linuxppc-dev@lists.ozlabs.org>,
+        Prasad <prasad@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [11/71] hw_breakpoints, powerpc: Fix CONFIG_HAVE_HW_BREAKPOINT off-case in ptrace_set_debugreg()
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,119 +31,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit bf26c018490c2fce7fe9b629083b96ce0e6ad019 upstream.
+commit 925f83c085e1bb08435556c5b4844a60de002e31 upstream.
 
-When a task is traced and is in a stopped state, the tracer
-may execute a ptrace request to examine the tracee state and
-get its task struct. Right after, the tracee can be killed
-and thus its breakpoints released.
-This can happen concurrently when the tracer is in the middle
-of reading or modifying these breakpoints, leading to dereferencing
-a freed pointer.
+We make use of ptrace_get_breakpoints() / ptrace_put_breakpoints() to
+protect ptrace_set_debugreg() even if CONFIG_HAVE_HW_BREAKPOINT if off.
+However in this case, these APIs are not implemented.
 
-Hence, to prepare the fix, create a generic breakpoint reference
-holding API. When a reference on the breakpoints of a task is
-held, the breakpoints won't be released until the last reference
-is dropped. After that, no more ptrace request on the task's
-breakpoints can be serviced for the tracer.
+To fix this, push the protection down inside the relevant ifdef.
+Best would be to export the code inside
+CONFIG_HAVE_HW_BREAKPOINT into a standalone function to cleanup
+the ifdefury there and call the breakpoint ref API inside. But
+as it is more invasive, this should be rather made in an -rc1.
 
-Reported-by: Oleg Nesterov <oleg@redhat.com>
+Fixes this build error:
+
+  arch/powerpc/kernel/ptrace.c:1594: error: implicit declaration of function 'ptrace_get_breakpoints' make[2]: ***
+
+Reported-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Will Deacon <will.deacon@arm.com>
+Cc: LPPC <linuxppc-dev@lists.ozlabs.org>
 Cc: Prasad <prasad@linux.vnet.ibm.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Link: http://lkml.kernel.org/r/1302284067-7860-2-git-send-email-fweisbec@gmail.com
+Link: http://lkml.kernel.org/r/1304639598-4707-1-git-send-email-fweisbec@gmail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/ptrace.h |   13 ++++++++++++-
- include/linux/sched.h  |    3 +++
- kernel/exit.c          |    2 +-
- kernel/ptrace.c        |   17 +++++++++++++++++
- 4 files changed, 33 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/ptrace.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -189,6 +189,10 @@ static inline void ptrace_init_task(stru
- 		child->ptrace = current->ptrace;
- 		__ptrace_link(child, current->parent);
+--- a/arch/powerpc/kernel/ptrace.c
++++ b/arch/powerpc/kernel/ptrace.c
+@@ -924,12 +924,16 @@ int ptrace_set_debugreg(struct task_stru
+ 	if (data && !(data & DABR_TRANSLATION))
+ 		return -EIO;
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
++	if (ptrace_get_breakpoints(task) < 0)
++		return -ESRCH;
++
+ 	bp = thread->ptrace_bps[0];
+ 	if ((!data) || !(data & (DABR_DATA_WRITE | DABR_DATA_READ))) {
+ 		if (bp) {
+ 			unregister_hw_breakpoint(bp);
+ 			thread->ptrace_bps[0] = NULL;
+ 		}
++		ptrace_put_breakpoints(task);
+ 		return 0;
  	}
+ 	if (bp) {
+@@ -939,9 +943,12 @@ int ptrace_set_debugreg(struct task_stru
+ 					(DABR_DATA_WRITE | DABR_DATA_READ),
+ 							&attr.bp_type);
+ 		ret =  modify_user_hw_breakpoint(bp, &attr);
+-		if (ret)
++		if (ret) {
++			ptrace_put_breakpoints(task);
+ 			return ret;
++		}
+ 		thread->ptrace_bps[0] = bp;
++		ptrace_put_breakpoints(task);
+ 		thread->dabr = data;
+ 		return 0;
+ 	}
+@@ -956,9 +963,12 @@ int ptrace_set_debugreg(struct task_stru
+ 							ptrace_triggered, task);
+ 	if (IS_ERR(bp)) {
+ 		thread->ptrace_bps[0] = NULL;
++		ptrace_put_breakpoints(task);
+ 		return PTR_ERR(bp);
+ 	}
+ 
++	ptrace_put_breakpoints(task);
 +
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+	atomic_set(&child->ptrace_bp_refcnt, 1);
-+#endif
- }
+ #endif /* CONFIG_HAVE_HW_BREAKPOINT */
  
- /**
-@@ -350,6 +354,13 @@ extern int task_current_syscall(struct t
- 				unsigned long args[6], unsigned int maxargs,
- 				unsigned long *sp, unsigned long *pc);
- 
--#endif
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+extern int ptrace_get_breakpoints(struct task_struct *tsk);
-+extern void ptrace_put_breakpoints(struct task_struct *tsk);
-+#else
-+static inline void ptrace_put_breakpoints(struct task_struct *tsk) { }
-+#endif /* CONFIG_HAVE_HW_BREAKPOINT */
-+
-+#endif /* __KERNEL */
- 
- #endif
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1531,6 +1531,9 @@ struct task_struct {
- 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
- 	} memcg_batch;
- #endif
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+	atomic_t ptrace_bp_refcnt;
-+#endif
- };
- 
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1015,7 +1015,7 @@ NORET_TYPE void do_exit(long code)
- 	/*
- 	 * FIXME: do that only when needed, using sched_exit tracepoint
- 	 */
--	flush_ptrace_hw_breakpoint(tsk);
-+	ptrace_put_breakpoints(tsk);
- 
- 	exit_notify(tsk, group_dead);
- #ifdef CONFIG_NUMA
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -22,6 +22,7 @@
- #include <linux/syscalls.h>
- #include <linux/uaccess.h>
- #include <linux/regset.h>
-+#include <linux/hw_breakpoint.h>
- 
- 
- /*
-@@ -876,3 +877,19 @@ asmlinkage long compat_sys_ptrace(compat
- 	return ret;
- }
- #endif	/* CONFIG_COMPAT */
-+
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+int ptrace_get_breakpoints(struct task_struct *tsk)
-+{
-+	if (atomic_inc_not_zero(&tsk->ptrace_bp_refcnt))
-+		return 0;
-+
-+	return -1;
-+}
-+
-+void ptrace_put_breakpoints(struct task_struct *tsk)
-+{
-+	if (atomic_dec_and_test(&tsk->ptrace_bp_refcnt))
-+		flush_ptrace_hw_breakpoint(tsk);
-+}
-+#endif /* CONFIG_HAVE_HW_BREAKPOINT */
+ 	/* Move contents to the DABR register */
 
 
