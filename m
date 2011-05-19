@@ -1,89 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933723Ab1ESRbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:31:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44012 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933494Ab1ESRbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:31:13 -0400
-Date: Thu, 19 May 2011 17:31:01 GMT
-From: tip-bot for Michal Marek <mmarek@suse.cz>
-Message-ID: <tip-d6971822c288ce5547190c6f812cc978d6520777@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, mmarek@suse.cz, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de, mmarek@suse.cz
-In-Reply-To: <20110517133646.GP13293@sepie.suse.cz>
-References: <20110517133646.GP13293@sepie.suse.cz>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace/kbuild: Add recordmcount files to force full build
-Git-Commit-ID: d6971822c288ce5547190c6f812cc978d6520777
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S933747Ab1ESRc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:32:26 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59437 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933732Ab1ESRcY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 13:32:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=j0OAh50dRp6MzC//xmtptMFdIeAkARq7Oq2R3NUtK0nET0rVb24r+r811qB7G5pIod
+         c/+0mFwZtAr0PWigtKkVJYdl7MuBuKWdP58Vi8LcEptsPVf1G3n1uj6LEZ18YNY9fP66
+         T4Kgng7uD8fppK5IQxCuhpS7Wi8yjXoye2H1o=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 May 2011 17:31:02 +0000 (UTC)
+In-Reply-To: <1305588114-23728-1-git-send-email-ccross@android.com>
+References: <1305588114-23728-1-git-send-email-ccross@android.com>
+Date: Thu, 19 May 2011 19:32:22 +0200
+X-Google-Sender-Auth: NxR45ba9c8uQNAz08zmB5VYktTs
+Message-ID: <BANLkTim4U-CJ_D3VSNzwd23XL3fDXT7onQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: smp_twd: Reconfigure clockevents after cpufreq change
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Colin Cross <ccross@android.com>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists-infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Martin Persson <martin.persson@stericsson.com>,
+        Rob Herring <robherring2@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d6971822c288ce5547190c6f812cc978d6520777
-Gitweb:     http://git.kernel.org/tip/d6971822c288ce5547190c6f812cc978d6520777
-Author:     Michal Marek <mmarek@suse.cz>
-AuthorDate: Tue, 17 May 2011 15:36:46 +0200
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 19 May 2011 07:58:28 -0400
+2011/5/17 Colin Cross <ccross@android.com>:
 
-ftrace/kbuild: Add recordmcount files to force full build
+> This patch depends on Thomas Gleixner's patch to add clockevents_reconfigure
+> See: https://lkml.org/lkml/2011/5/13/122
 
-Modifications to recordmcount must be performed on all object
-files to stay consistent with what the kernel code may expect.
-Add the recordmcount files to the main dependencies to make sure
-any change to them causes a full recompile.
+Patch set has evolved, see below.
+Also note that you more or less reimplement Rob Herrings patch:
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6802/1
+(no big deal I guess, give him a nod)
 
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-Link: http://lkml.kernel.org/r/20110517133646.GP13293@sepie.suse.cz
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+To work with Thomas full changeset just create a fresh branch and:
+git pull git://git.kernel.org/pub/scm/linux/kernel/git/x86/linux-2.6-tip.git
+timers/clockevents
+
+Pls change subject from ARM: to clockevents: and merge through
+Thomas tree (IMHO).
+
+> diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+> index 60636f4..dbf58d4 100644
+> --- a/arch/arm/kernel/smp_twd.c
+> +++ b/arch/arm/kernel/smp_twd.c
+> @@ -10,21 +10,29 @@
+>  */
+>  #include <linux/init.h>
+>  #include <linux/kernel.h>
+> +#include <linux/clk.h>
+> +#include <linux/cpufreq.h>
+>  #include <linux/delay.h>
+>  #include <linux/device.h>
+> +#include <linux/err.h>
+>  #include <linux/smp.h>
+>  #include <linux/jiffies.h>
+>  #include <linux/clockchips.h>
+>  #include <linux/irq.h>
+>  #include <linux/io.h>
+> +#include <linux/percpu.h>
+>
+>  #include <asm/smp_twd.h>
+>  #include <asm/hardware/gic.h>
+>
+> +#define TWD_MIN_RANGE 4
+> +
+
+Loose this. Let the framework decide using the function below.
+
+>  /* set up by the platform code */
+>  void __iomem *twd_base;
+>
+> +static struct clk *twd_clk;
+>  static unsigned long twd_timer_rate;
+> +static DEFINE_PER_CPU(struct clock_event_device *, twd_ce);
+>
+>  static void twd_set_mode(enum clock_event_mode mode,
+>                        struct clock_event_device *clk)
+> @@ -80,6 +88,49 @@ int twd_timer_ack(void)
+>        return 0;
+>  }
+>
+> +/*
+> + * Updates clockevent frequency when the cpu frequency changes.
+> + * Called on the cpu that is changing frequency with interrupts disabled.
+> + */
+> +static void twd_update_frequency(void *data)
+> +{
+> +       twd_timer_rate = clk_get_rate(twd_clk);
+> +
+> +       clockevents_reconfigure(__get_cpu_var(twd_ce), twd_timer_rate,
+> +                       TWD_MIN_RANGE);
+
+Changed name to clockevents_update_freq(), dropped range argument.
+
+> +}
+> +
+> +static int twd_cpufreq_transition(struct notifier_block *nb,
+> +       unsigned long state, void *data)
+> +{
+> +       struct cpufreq_freqs *freqs = data;
+> +
+> +       /*
+> +        * The twd clock events must be reprogrammed to account for the new
+> +        * frequency.  The timer is local to a cpu, so cross-call to the
+> +        * changing cpu.
+> +        */
+> +       if (state == CPUFREQ_POSTCHANGE || state == CPUFREQ_RESUMECHANGE)
+> +               smp_call_function_single(freqs->cpu, twd_update_frequency,
+> +                       NULL, 1);
+> +
+> +       return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block twd_cpufreq_nb = {
+> +       .notifier_call = twd_cpufreq_transition,
+> +};
+> +
+> +static int twd_cpufreq_init(void)
+> +{
+> +       if (!IS_ERR_OR_NULL(twd_clk))
+> +               return cpufreq_register_notifier(&twd_cpufreq_nb,
+> +                       CPUFREQ_TRANSITION_NOTIFIER);
+> +
+> +       return 0;
+> +}
+> +core_initcall(twd_cpufreq_init);
+> +
+>  static void __cpuinit twd_calibrate_rate(void)
+>  {
+>        unsigned long count;
+> @@ -124,7 +175,16 @@ static void __cpuinit twd_calibrate_rate(void)
+>  */
+>  void __cpuinit twd_timer_setup(struct clock_event_device *clk)
+>  {
+> -       twd_calibrate_rate();
+> +       if (twd_clk == NULL) {
+> +               twd_clk = clk_get_sys("smp_twd", NULL);
+> +               if (IS_ERR_OR_NULL(twd_clk))
+> +                       pr_warn("%s: no clock found\n", __func__);
+> +       }
+> +
+> +       if (!IS_ERR_OR_NULL(twd_clk))
+> +               twd_timer_rate = clk_get_rate(twd_clk);
+> +       else
+> +               twd_calibrate_rate();
+>
+>        clk->name = "local_timer";
+>        clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT |
+> @@ -132,13 +192,16 @@ void __cpuinit twd_timer_setup(struct clock_event_device *clk)
+>        clk->rating = 350;
+>        clk->set_mode = twd_set_mode;
+>        clk->set_next_event = twd_set_next_event;
+> -       clk->shift = 20;
+> -       clk->mult = div_sc(twd_timer_rate, NSEC_PER_SEC, clk->shift);
+> +
+> +       clockevents_calc_mult_shift(clk, twd_timer_rate, TWD_MIN_RANGE);
+> +
+>        clk->max_delta_ns = clockevent_delta2ns(0xffffffff, clk);
+>        clk->min_delta_ns = clockevent_delta2ns(0xf, clk);
+
+Get rid of everything between clk->shift ... and here and replace it with:
+
+clockevents_config_and_register(clk, twd_timer_rate,
+                                       0xf, 0xffffffff);
+
+>        /* Make sure our local interrupt controller has this enabled */
+>        gic_enable_ppi(clk->irq);
+>
+> +       __get_cpu_var(twd_ce) = clk;
+> +
+>        clockevents_register_device(clk);
+>  }
+
+
+Or just smack in this patch on top:
+
+>From fd546090b8f0cb5df06103c014466c86cf58b73a Mon Sep 17 00:00:00 2001
+From: Linus Walleij <linus.walleij@stericsson.com>
+Date: Thu, 19 May 2011 18:55:22 +0200
+Subject: [PATCH] Fix smallish cleanup
+
 ---
- scripts/Makefile.build |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ arch/arm/kernel/smp_twd.c |   13 +++----------
+ 1 files changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index fdca952..6165622 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -255,6 +255,8 @@ sub_cmd_record_mcount =					\
- 	if [ $(@) != "scripts/mod/empty.o" ]; then	\
- 		$(objtree)/scripts/recordmcount $(RECORDMCOUNT_FLAGS) "$(@)";	\
- 	fi;
-+recordmcount_source := $(srctree)/scripts/recordmcount.c \
-+		    $(srctree)/scripts/recordmcount.h
- else
- sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
- 	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
-@@ -262,6 +264,7 @@ sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH
- 	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)" \
- 	"$(LD)" "$(NM)" "$(RM)" "$(MV)" \
- 	"$(if $(part-of-module),1,0)" "$(@)";
-+recordmcount_source := $(srctree)/scripts/recordmcount.pl
- endif
- cmd_record_mcount = 						\
- 	if [ "$(findstring -pg,$(_c_flags))" = "-pg" ]; then	\
-@@ -282,13 +285,13 @@ define rule_cc_o_c
- endef
- 
- # Built-in and composite module parts
--$(obj)/%.o: $(src)/%.c FORCE
-+$(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
- 	$(call cmd,force_checksrc)
- 	$(call if_changed_rule,cc_o_c)
- 
- # Single-part modules are special since we need to mark them in $(MODVERDIR)
- 
--$(single-used-m): $(obj)/%.o: $(src)/%.c FORCE
-+$(single-used-m): $(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
- 	$(call cmd,force_checksrc)
- 	$(call if_changed_rule,cc_o_c)
- 	@{ echo $(@:.o=.ko); echo $@; } > $(MODVERDIR)/$(@F:.o=.mod)
+diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+index dbf58d4..968f298 100644
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -25,8 +25,6 @@
+ #include <asm/smp_twd.h>
+ #include <asm/hardware/gic.h>
+
+-#define TWD_MIN_RANGE 4
+-
+ /* set up by the platform code */
+ void __iomem *twd_base;
+
+@@ -96,8 +94,7 @@ static void twd_update_frequency(void *data)
+ {
+        twd_timer_rate = clk_get_rate(twd_clk);
+
+-       clockevents_reconfigure(__get_cpu_var(twd_ce), twd_timer_rate,
+-                       TWD_MIN_RANGE);
++       clockevents_update_freq(__get_cpu_var(twd_ce), twd_timer_rate);
+ }
+
+ static int twd_cpufreq_transition(struct notifier_block *nb,
+@@ -193,15 +190,11 @@ void __cpuinit twd_timer_setup(struct
+clock_event_device *clk)
+        clk->set_mode = twd_set_mode;
+        clk->set_next_event = twd_set_next_event;
+
+-       clockevents_calc_mult_shift(clk, twd_timer_rate, TWD_MIN_RANGE);
+-
+-       clk->max_delta_ns = clockevent_delta2ns(0xffffffff, clk);
+-       clk->min_delta_ns = clockevent_delta2ns(0xf, clk);
+-
+        /* Make sure our local interrupt controller has this enabled */
+        gic_enable_ppi(clk->irq);
+
+        __get_cpu_var(twd_ce) = clk;
+
+-       clockevents_register_device(clk);
++       clockevents_config_and_register(clk, twd_timer_rate,
++                                       0xf, 0xffffffff);
+ }
+-- 
+1.7.3.2
+
+
+With these changes (provided they work) all should be well, so:
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
+
+If all is well on your side as well, ask Thomas to take this into the
+timers/clockevents branch where all dependencies are.
+
+Yours,
+Linus Walleij
