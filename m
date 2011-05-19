@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab1ESA0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 20:26:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51953 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752387Ab1ESA0D (ORCPT
+	id S1753582Ab1ESA3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 20:29:04 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:6118 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752537Ab1ESA3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 20:26:03 -0400
-Date: Wed, 18 May 2011 17:25:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-Subject: Re: [PATCH v5 00/21] EVM
-Message-Id: <20110518172552.6d482c7a.akpm@linux-foundation.org>
-In-Reply-To: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 18 May 2011 20:29:01 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: An0EAFxi1E15LCoegWdsb2JhbACmGxUBARYmJcdmDoYLBJ8Y
+Date: Thu, 19 May 2011 10:28:55 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, stable <stable@kernel.org>
+Subject: Re: [PATCH 2/2] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+Message-ID: <20110519002855.GD32466@dastard>
+References: <1305558417-24354-1-git-send-email-mgorman@suse.de>
+ <1305558417-24354-3-git-send-email-mgorman@suse.de>
+ <20110516141654.2728f05a.akpm@linux-foundation.org>
+ <1305614225.6008.19.camel@mulgrave.site>
+ <20110517162226.96974d89.akpm@linux-foundation.org>
+ <20110518094718.GP5279@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110518094718.GP5279@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 May 2011 10:44:54 -0400
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+On Wed, May 18, 2011 at 10:47:18AM +0100, Mel Gorman wrote:
+> As we are aggressively shrinking slab, we can reach the stage where
+> we scan the requested number of objects and reclaim none of them
+> potentially setting zone->all_unreclaimable to 1 if a lot of scanning
+> has also taken place recently without pages being freed. Once this
+> happens, kswapd isn't even trying to reclaim pages and is instead stuck
+> in shrink_slab until a page is freed clearing zone->all_unreclaimable
+> and zone->pages-scanned.
 
-> Extended Verification Module(EVM) detects offline tampering of the security
-> extended attributes (e.g. security.selinux, security.SMACK64, security.ima),
-> which is the basis for LSM permission decisions and, with the IMA-appraisal
-> patchset, integrity appraisal decisions. This patchset provides the framework
-> and an initial method to detect offline tampering of the security extended
-> attributes.  The initial method maintains an HMAC-sha1 across a set of
-> security extended attributes, storing the HMAC as the extended attribute
-> 'security.evm'. To verify the integrity of an extended attribute, EVM exports
-> evm_verifyxattr(), which re-calculates the HMAC and compares it with the
-> version stored in 'security.evm'.  Other methods of validating the integrity
-> of a file's metadata will be posted separately (eg. EVM-digital-signatures).
-> 
-> While this patchset does authenticate the security xattrs, and
-> cryptographically binds them to the inode, coming extensions will bind other
-> directory and inode metadata for more complete protection.  To help simplify
-> the review and upstreaming process, each extension will be posted separately
-> (eg. IMA-appraisal, IMA-appraisal-directory).  For a general overview of the
-> proposed Linux integrity subsystem, refer to Dave Safford's whitepaper:
-> http://downloads.sf.net/project/linux-ima/linux-ima/Integrity_overview.pdf.
-> 
-> Much appreciation to Dave Hansen, Serge Hallyn, and Matt Helsley for
-> reviewing the original patches.
+Isn't this completely broken then? We can have slabs with lots of
+objects but none are reclaimable - e.g. dirty inodes are not even on
+the inode LRU and require IO to get there, so repeatedly scanning
+the slab trying to free inodes is completely pointless.
 
-The changelog forgot to define "offline tampering".  I can guess what
-it means, but my guess will surely be incomplete.  I can do a web
-search for the term but that really only leads me to this patchset.
+If the shrinkers are not freeing anything, then it should be backing
+off and giving thme some time to clean objects is a much more
+efficient use of CPU time than spinning madly. Indeed, if you back
+off, you can do another pass over the LRU and see if there are more
+pages that can be reclaimed, too, so you're not dependent on the
+shrinkers actually making progress to break the livelock....
 
-It would be much better if I didn't have to guess.  A good description
-would list all the known offline tampering scenarios and would explain
-how the patchset addresses them and whether there are any scenarios
-which are not addressed.
+Cheers,
 
-Secondly, the changelog didn't attempt to give anyone a reason to merge
-the patchset.  Why is offline tampering bad?  Why should we bother
-addressing it?  What value does this patchset provide to our users? 
-Again, I could guess.  But it would be much much better to have these
-things explained to us by the people who understand them.
-
-Thirdly, I'm not seeing a description of the user interface anywhere. 
-Please fully describe it in a manner which can be efficiently reviewed.
-For example, if there are any user-provided inputs, describe them.  If
-tampering has been detected then this is presumably communicated to the
-operator in some fashion.  Please fully describe that reporting scheme.
-What steps do we expect the operator to take after tampering has been
-detected?  How does the patchset aid them in that?  etc.
-
-
-Once we have a better understanding of what the feature does and why it
-does it and how it interfaces with the user, we can start looking at
-the implementation.
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
