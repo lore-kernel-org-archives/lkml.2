@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934187Ab1ESS3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:29:18 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:38285 "EHLO
+	id S934282Ab1ESSZv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:25:51 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33303 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934003Ab1ESSZm (ORCPT
+	by vger.kernel.org with ESMTP id S933941Ab1ESSZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:25:42 -0400
-X-Sasl-enc: APxzn2R+1JkK/tqvJm4Mv5nb/Pd1nEhFOch4Mg2vozZ8 1305829541
+	Thu, 19 May 2011 14:25:43 -0400
+X-Sasl-enc: s4wco7H7MErqy0ktGsSsj+tyfTQulh1cBukmMCwOC+Xq 1305829543
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:24:37 2011
-Message-Id: <20110519182437.102333320@clark.kroah.org>
+Message-Id: <20110519182437.200665197@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:23:38 -0700
+Date: Thu, 19 May 2011 11:23:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [08/21] ne-h8300: Fix regression caused during net_device_ops conversion
+Subject: [09/21] hydra: Fix regression caused during net_device_ops conversion
 In-Reply-To: <20110519182446.GA23751@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,11 +30,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 2592a7354092afd304a8c067319b15ab1e441e35 upstream.
+commit 0b25e0157dfa236a0629c16c8ad6f222f633f682 upstream.
 
-Changeset dcd39c90290297f6e6ed8a04bb20da7ac2b043c5 ("ne-h8300: convert to
-net_device_ops") broke ne-h8300 by adding 8390.o to the link. That
-meant that lib8390.c was included twice, once in ne-h8300.c and once in
+Changeset 5618f0d1193d6b051da9b59b0e32ad24397f06a4 ("hydra: convert to
+net_device_ops") broke hydra by adding 8390.o to the link. That
+meant that lib8390.c was included twice, once in hydra.c and once in
 8390.c, subject to different macros. This patch reverts that by
 avoiding the wrappers in 8390.c.
 
@@ -48,35 +48,26 @@ Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/Makefile   |    2 +-
- drivers/net/ne-h8300.c |   16 ++++++++--------
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/net/Makefile |    2 +-
+ drivers/net/hydra.c  |   14 +++++++-------
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
 --- a/drivers/net/Makefile
 +++ b/drivers/net/Makefile
-@@ -138,7 +138,7 @@ obj-$(CONFIG_NE3210) += ne3210.o 8390.o
- obj-$(CONFIG_SB1250_MAC) += sb1250-mac.o
- obj-$(CONFIG_B44) += b44.o
- obj-$(CONFIG_FORCEDETH) += forcedeth.o
--obj-$(CONFIG_NE_H8300) += ne-h8300.o 8390.o
-+obj-$(CONFIG_NE_H8300) += ne-h8300.o
- obj-$(CONFIG_AX88796) += ax88796.o
- obj-$(CONFIG_BCM63XX_ENET) += bcm63xx_enet.o
- 
---- a/drivers/net/ne-h8300.c
-+++ b/drivers/net/ne-h8300.c
-@@ -167,7 +167,7 @@ static void cleanup_card(struct net_devi
- #ifndef MODULE
- struct net_device * __init ne_probe(int unit)
- {
--	struct net_device *dev = alloc_ei_netdev();
-+	struct net_device *dev = ____alloc_ei_netdev(0);
- 	int err;
- 
- 	if (!dev)
-@@ -197,15 +197,15 @@ static const struct net_device_ops ne_ne
- 	.ndo_open		= ne_open,
- 	.ndo_stop		= ne_close,
+@@ -220,7 +220,7 @@ obj-$(CONFIG_SGI_IOC3_ETH) += ioc3-eth.o
+ obj-$(CONFIG_DECLANCE) += declance.o
+ obj-$(CONFIG_ATARILANCE) += atarilance.o
+ obj-$(CONFIG_A2065) += a2065.o
+-obj-$(CONFIG_HYDRA) += hydra.o 8390.o
++obj-$(CONFIG_HYDRA) += hydra.o
+ obj-$(CONFIG_ARIADNE) += ariadne.o
+ obj-$(CONFIG_CS89x0) += cs89x0.o
+ obj-$(CONFIG_MACSONIC) += macsonic.o
+--- a/drivers/net/hydra.c
++++ b/drivers/net/hydra.c
+@@ -98,15 +98,15 @@ static const struct net_device_ops hydra
+ 	.ndo_open		= hydra_open,
+ 	.ndo_stop		= hydra_close,
  
 -	.ndo_start_xmit		= ei_start_xmit,
 -	.ndo_tx_timeout		= ei_tx_timeout,
@@ -96,14 +87,14 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
  #endif
  };
  
-@@ -638,7 +638,7 @@ int init_module(void)
- 	int err;
+@@ -125,7 +125,7 @@ static int __devinit hydra_init(struct z
+ 	0x10, 0x12, 0x14, 0x16, 0x18, 0x1a, 0x1c, 0x1e,
+     };
  
- 	for (this_dev = 0; this_dev < MAX_NE_CARDS; this_dev++) {
--		struct net_device *dev = alloc_ei_netdev();
-+		struct net_device *dev = ____alloc_ei_netdev(0);
- 		if (!dev)
- 			break;
- 		if (io[this_dev]) {
+-    dev = alloc_ei_netdev();
++    dev = ____alloc_ei_netdev(0);
+     if (!dev)
+ 	return -ENOMEM;
+ 
 
 
