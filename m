@@ -1,116 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab1ESO7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 10:59:39 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22877 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab1ESO7i (ORCPT
+	id S932931Ab1ESO77 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 10:59:59 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64664 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932238Ab1ESO76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 10:59:38 -0400
-Date: Thu, 19 May 2011 10:59:21 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Leon Woestenberg <leon.woestenberg@gmail.com>
-Cc: linux-pci@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mmap() implementation for pci_alloc_consistent() memory?
-Message-ID: <20110519145921.GE9854@dumpdata.com>
-References: <BANLkTi==cinS1bZc_ARRbnYT3YD+FQr8gA@mail.gmail.com>
+	Thu, 19 May 2011 10:59:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=kFtD0xznMMlcEWWvLv5UQ+zj98TW4KhYTfDxXajpbj0hZMaJK1PxuUO2IxMy3/Ildd
+         YR4f2g1ObD95ukO0raT9MiLC2W2i/P+ff5knhx0ANJVf8/OBsfJbaFeWdSsU1EOjr1El
+         ng8BtEKgIqSpmKw8tuKVQTqfmaIvtXbBppF0k=
+Date: Thu, 19 May 2011 16:59:53 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC PATCH] perf: Split up buffer handling from core code
+Message-ID: <20110519145951.GD1956@nowhere>
+References: <1305767185-5771-1-git-send-email-fweisbec@gmail.com>
+ <20110519073136.GB14049@liondog.tnic>
+ <1305793931.2466.7191.camel@twins>
+ <20110519141456.GB1956@nowhere>
+ <1305816208.2466.7223.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTi==cinS1bZc_ARRbnYT3YD+FQr8gA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090209.4DD53057.013F:SCFSTAT5015188,ss=1,fgs=0
+In-Reply-To: <1305816208.2466.7223.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 12:14:40AM +0200, Leon Woestenberg wrote:
-> Hello,
+On Thu, May 19, 2011 at 04:43:28PM +0200, Peter Zijlstra wrote:
+> On Thu, 2011-05-19 at 16:14 +0200, Frederic Weisbecker wrote:
+> > 
+> > Great. I kept it global because I read in a review from you
+> > that you wanted it to stay a visible API. But if you're fine
+> > with it internal, let's move it there. 
 > 
-> I cannot get my driver's mmap() to work. I allocate 64 KiB ringbuffer
-> using pci_alloc_consistent(), then implement mmap() to allow programs
-> to map that memory into their user space.
-> 
-> My driver writes 0xDEADBEEF into the first 32-bit word of the memory
-> block. When I dump this word from my mmap.c program, it reads 0. It
-> seems a zero-page got mapped rather than the buffer.
-> 
-> This is the code, Ieft out all error checking but inserted comments to
-> show what I have verified.
-> 
-> int main(void)
-> {
->   int fd = open("/device_node", O_RDWR | O_SYNC);
->   uint32_t *addr = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
->   uint32_t data = *addr;
->   printf("address 0x%p reads data 0x%08x\n", addr32, (unsigned int)data);
->   munmap(addr, 4096);
->   close(fd);
-> }
-> 
-> 
-> void ringbuffer_vma_open(struct vm_area_struct *vma)
-> {
-> }
-> 
-> void ringbuffer_vma_close(struct vm_area_struct *vma)
-> {
-> }
-> 
-> int ringbuffer_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> {
->         /* the buffer allocated with pci_alloc_consistent() */
-> 	void *vaddr = ringbuffer_virt;
-> 	int ret;
-> 
-> 	/* find the struct page that describes vaddr, the buffer
-> 	 * allocated with pci_alloc_consistent() */
-> 	struct page *page = virt_to_page(lro_char->engine->ringbuffer_virt);
-> 	vmf->page = page;
-> 
->         /*** I have verified that vaddr, page, and the pfn correspond
-> with vaddr = pci_alloc_consistent() ***/
-> 	ret = vm_insert_pfn(vma, address, page_to_pfn(page));
+> Well, its needed as an external symbol, but the inline isn't needed.
 
-address is the vmf->virtual_address?
+I thought it would be nice to keep it inline for core use, as it's called
+pretty often from the overflow path.
 
-And is the page_to_pfn(page) value correct? As in:
+A solution is to have a perf_output_copy_inline() in internal.h
+and export it through perf_output_copy() in buffer.c
 
-  int pfn = page_to_pfn(page);
+> I thought that the BTS code used it as well, but apparently that code
+> doesn't anymore (or never did any my memory if fuzzy).
 
-  WARN(pfn << PAGE_SIZE != vaddr,"Something fishy.");
-
-Hm, I think I might have misled you now that I look at that WARN.
-
-The pfn to be supplied has to be physical page frame number. Which in
-this case should be your bus addr shifted by PAGE_SIZE. Duh! Try that
-value.
-
-I think a better example might be the 'hpet_mmap' code as it is simpler
-and it also adds the VM_IO flag.
-
-> 	return ret;
-> }
-> 
-> static const struct vm_operations_struct ringbuffer_vm_ops = {
-> 	.fault          = ringbuffer_vma_fault,
-> };
-> 
-> static int ringbuffer_mmap(struct file *file, struct vm_area_struct *vma)
-> {
->         <...extract private data...>
-> 
-> 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-> 
-> 	vma->vm_flags |= VM_RESERVED | VM_MIXEDMAP;
-> 	vma->vm_private_data = file->private_data;
-> 	vma->vm_ops = &ringbuffer_vm_ops;
-> 	ringbuffer_vma_open(vma);
-> 	return 0;
-> }
-> 
-> What did I miss?
-
-I gave you the wrong data :-(
+I thought it did too, but it actually use perf_output_sample().
