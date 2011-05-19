@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab1ESWUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 18:20:36 -0400
-Received: from ns5.dns-guards.com ([41.203.20.164]:57939 "EHLO
-	velocity.dns-guards.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927Ab1ESWUf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 18:20:35 -0400
-Message-ID: <sig.2120eee186.4DD597A2.4040306@radicalsystems.co.za>
-Date: Fri, 20 May 2011 00:20:18 +0200
-From: Jan Zwiegers <jan@radicalsystems.co.za>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1754464Ab1ESWY0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 18:24:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9488 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753356Ab1ESWYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 18:24:24 -0400
+Date: Thu, 19 May 2011 18:24:04 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Paul Bolle <pebolle@tiscali.nl>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Mysterious CFQ crash and RCU
+Message-ID: <20110519222404.GG12600@redhat.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: PCI BAR1 Unassigned
-References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com> <sig.512079e334.4DD57D44.50009@radicalsystems.co.za> <BANLkTinK5PtxuWpaJq9XeDDN_quGj=MhTg@mail.gmail.com>
-In-Reply-To: <BANLkTinK5PtxuWpaJq9XeDDN_quGj=MhTg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Assp-ID: velocity.dns-guards.com ()
-X-Assp-Version: 1.7.1.3(1.0.2)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - velocity.dns-guards.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - radicalsystems.co.za
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-20 12:13 AM, Bjorn Helgaas wrote:
-> On Thu, May 19, 2011 at 2:27 PM, Jan Zwiegers<jan@radicalsystems.co.za>  wrote:
->> On 2011-05-19 08:50 PM, Bjorn Helgaas wrote:
->>>
->>> On Thu, May 19, 2011 at 10:28 AM, Jan Zwiegers<jan@radicalsystems.co.za>
->>>   wrote:
->>>>
->>>> I have the problem below where my PCI card's second BAR does not get
->>>> assigned.
->>>> What can be the cause of this problem?
->>>> The last kernel I tested on which worked OK was 2.6.27.
->>>> My current problematic kernel 2.6.35.
->>>>
->>>> 05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O Card
->>>> (rev 5c)
->>>>     Flags: bus master, slow devsel, latency 32, IRQ 22
->>>>     Memory at 93b00000 (type 3, prefetchable) [size=2K]
->>>>     Memory at<unassigned>    (type 3, prefetchable)
->>>>     Capabilities: [80] #00 [0600]
->>>>     Kernel modules: pci703drv
->>>
->>> Could be resource exhaustion or, more likely, we ran out because we
->>> now assign resource to things that don't need them, leaving none for
->>> things that *do* need them.  This sounds like a regression, so we
->>> should open a bugzilla for it and attach dmesg logs from 2.6.27 and
->>> 2.6.35.
->>>
->>> Does this problem keep the driver from working?  (Sometimes drivers
->>> don't actually use all the BARs a device supports.)
->>
->> I'm the maintainer of the driver and was involved in the development of the
->> board as well in 2003. The board uses two BARS and the second BAR is the
->> most important. The board worked fine since the 2.4 days and only recently
->> became problematic. I suspect it works on even later kernels than 27, maybe
->> 2.6.32.
->>
->> My knowledge is too little to actually determine if the problem is because
->> the FPGA based PCI interface is not within spec or something that changed in
->> the kernel, because of the post .30 releases becoming more strict to PCI
->> specification, i.e. BIOS / Kernel interaction.
->
-> Well, let's at least look at the working and broken dmesg logs.  My
-> money is on kernel breakage.  If it used to work, it should still
-> work.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Hi Paul,
 
-What do you need from me? I have at least 3 machines on which it used to 
-work and is now running a later kernel. I can post dmesg from both .27 
-and .35. Will do tomorrow when I'm back at the office.
+Few people have reported hard to reproduce CFQ crash time to time. Most of
+the people could not reproduce the issue consistently hence we could not
+debug it further. Now for the first time, Paul Bolle, can reproduce this issue
+reliably on his machine, so I am hopeful that we can get to bottom of this
+long time pending mysterious issue.
+
+There might be many bz tracking this issue but one of the bzs is 577968 in
+bugzilla.redhat.com
+
+BUG: unable to handle kernel paging request at 6b6b6b6b
+IP: [<c05e859d>] call_for_each_cic+0x29/0x44
+*pde = 00000000 
+Oops: 0000 [#1] SMP 
+last sysfs file:
+/sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:01/PNP0C09:00/PNP0C0A:00/power_supply/BAT0/energy_full
+Modules linked in: bnep bluetooth fuse cpufreq_ondemand acpi_cpufreq mperf
+ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_netbios_ns
+ip6table_filter nf_conntrack_broadcast ip6_tables snd_intel8x0m
+snd_intel8x0
+arc4 snd_ac97_codec ath5k ac97_bus snd_seq ath snd_seq_device mac80211
+snd_pcm
+ppdev thinkpad_acpi cfg80211 microcode snd_timer parport_pc e1000 snd
+rfkill
+parport iTCO_wdt soundcore snd_page_alloc iTCO_vendor_support joydev
+i2c_i801
+pcspkr uinput ipv6 yenta_socket video radeon ttm drm_kms_helper drm
+i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
+
+Pid: 11397, comm: mandb Not tainted 2.6.39-0.rc5.git0.0.local.fc16.i686 #1
+IBM 
+      /       
+EIP: 0060:[<c05e859d>] EFLAGS: 00010202 CPU: 0
+EIP is at call_for_each_cic+0x29/0x44
+EAX: 00000001 EBX: 6b6b6b6b ECX: 00000246 EDX: c0ad4a98
+ESI: ecfd0980 EDI: c05e88a4 EBP: c670bf18 ESP: c670bf0c
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process mandb (pid: 11397, ti=c670a000 task=d40769f0 task.ti=c670a000)
+Stack:
+ ecfd0980 d40769f0 d4076dc0 c670bf20 c05e85ca c670bf2c c05ddc86 ecfd0980
+ c670bf40 c05ddd16 d40769f0 00000012 c670bf74 c670bf8c c0440813 f2a182e8
+ d401ac08 c670bf70 c04f48da 00000001 d4076bf4 d40769e8 d4076bf4 00000001
+Call Trace:
+ [<c05e85ca>] cfq_free_io_context+0x12/0x14
+ [<c05ddc86>] put_io_context+0x34/0x5c
+ [<c05ddd16>] exit_io_context+0x68/0x6d
+ [<c0440813>] do_exit+0x63e/0x661
+ [<c04f48da>] ? fsnotify_modify+0x64/0x6c
+ [<c0440a4d>] do_group_exit+0x63/0x86
+ [<c0440a88>] sys_exit_group+0x18/0x18
+ [<c082551f>] sysenter_do_call+0x12/0x38
+Code: 5d c3 55 89 e5 57 56 53 3e 8d 74 26 00 89 c6 89 d7 e8 3a ec ff ff 8b
+5e
+4c e8 00 b1 e6 ff 85 c0 74 05 e8 b7 ff ff ff 85 db 74 11 <8b> 03 0f 18 00
+90 8d
+53 d8 89 f0 ff d7 8b 1b eb dd e8 49 ec ff 
+EIP: [<c05e859d>] call_for_each_cic+0x29/0x44 SS:ESP 0068:c670bf0c
+CR2: 000000006b6b6b6b
+---[ end trace 70dea08ef41fda48 ]---
+
+In summary once in a while people notice CFQ crash. Debugging shows that
+we have a rcu protected hlist of elements of type cfq_io_context. Head of
+the list is at ioc->cic_list. We crash while traversing ioc->cic_list
+under rcu.
+
+Looks like an element which we are trying to fetch the next pointer from got
+freed to slab, and the object got poisoned with 0x6b6b6b6b.. and then we
+tried to fetch the next object pointer and ended up dereferencing a
+freed object and CFQ crashes.
+
+The function in question here is call_for_each_cic() in block/cfq-iosched.c
+
+We free the cfq_io_context object using call_rcu(). So on the surface
+it looks like that we decoupled a cfq_io_context object from the hash
+list and scheduled a call_rcu() so that it is freed after rcu grace
+period but somehow object got freed earlier and got released to slab
+and got poisoned.
+
+Is it possible? We have looked at the code many a times and we think
+that rcu locking around it is fine. Is it possible that a call_rcu()
+can fire before rcu grace period is over.
+
+I had put a debug patch in CFQ (details are in bugzilla) and I can
+see that after decoupling the object from the hash list, it got
+freed while we were still under rcu_read_lock().
+
+Is there any known issue or is there any quick tip on how can I 
+go about debugging it further from rcu point of view.
+
+Thanks
+Vivek
