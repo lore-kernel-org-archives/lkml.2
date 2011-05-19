@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933679Ab1ESRYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:24:41 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57413 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933494Ab1ESRYj (ORCPT
+	id S933709Ab1ESRZz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:25:55 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37213 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933494Ab1ESRZx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:24:39 -0400
-Date: Thu, 19 May 2011 18:25:51 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Timur Tabi <timur@freescale.com>
-Cc: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
-        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
-Subject: Re: [PATCH 6/7] tty/powerpc: introduce the ePAPR embedded
- hypervisor byte channel driver
-Message-ID: <20110519182551.0c06cd10@lxorguk.ukuu.org.uk>
-In-Reply-To: <4DD545E4.9090408@freescale.com>
-References: <1305813272-31826-1-git-send-email-timur@freescale.com>
-	<1305813272-31826-7-git-send-email-timur@freescale.com>
-	<20110519153358.5876f310@lxorguk.ukuu.org.uk>
-	<4DD545E4.9090408@freescale.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 May 2011 13:25:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=puzgegY5b6FLRNf2zEzA466JTm55kUDSZWpiPti9lTDi/oZAireMc8aqh6nFikI7Qz
+         oFefy6zetGGmx11HBgIMXFCcHMu903n0S9FcfobEmMWWBMOKbO33CbVLqQWADb9nmkjq
+         OtZSOyAJH32f9oi0h4gXeMF5+Z/vKrySJnV08=
+MIME-Version: 1.0
+In-Reply-To: <201105191920.44596.toralf.foerster@gmx.de>
+References: <201105191526.31904.toralf.foerster@gmx.de>
+	<BANLkTi=FinuAYpYXf1K6pQ-3i2vRJS=g9g@mail.gmail.com>
+	<201105191920.44596.toralf.foerster@gmx.de>
+Date: Thu, 19 May 2011 19:25:52 +0200
+Message-ID: <BANLkTi=kDHuhKyVxEYWL92pyfLuQWAjtdQ@mail.gmail.com>
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 May 2011 11:31:32 -0500
-Timur Tabi <timur@freescale.com> wrote:
+2011/5/19 Toralf Förster <toralf.foerster@gmx.de>:
+> Errm, automatic bisecting doesn't work, b/c the issue can't be reproduced by a
+> simple "wget https://..." - when I use konqueror - up to 6-10 times I'm asked
+> to confirm a cookie or something else before the crash occures.
+>
+> And if I use "lynx -accept_all_cookies https://n22_uml/phpmyadmin/" then I'm
+> able to login - so it has something to do with HTTP frames I suspected - but a
+> shutdown of the UML instance wasn't possible too after such a try - probably
+> something else then the HTTP frames itself triggers the issue ...
+>
+> In short -  it is not phpmyadmin (3.4.0) itself, but it triggers the bug (in
+> fact sometimes I even could see the login window within Firefox of the
+> phpmyadmin site before the crash happened).
+>
+> Because therefore manual interaction is needed (or do you know an automated
+> way for konqueror/ff/.... ?) at least it would be helpful if the bisecting
+> could be narrowed doesn to a given path or somethign else.
 
-> Alan Cox wrote:
-> > You really also need a hangup method so vhangup() does the right thing
-> > and you can securely do logins etc and sessions on your console. As
-> > you've got no hardware entangled in this and you already use tty_port
-> > helpers the hangup helper will do the work for you.
-> 
-> So all I need is this?
-> 
-> static void ehv_bc_tty_hangup(struct tty_struct *ttys)
-> {
-> 	struct ehv_bc_data *bc = ttys->driver_data;
-> 
-> 	tty_port_hangup(&bc->port);
-> }
-> 
-> I've noticed that some drivers flush their transmit buffers before calling
-> tty_port_hangup(), but some others don't.  Should I do this too?  I don't know
-> if hangup should be as quick as possible.
+BTW: Haven’t you had such an issue a few months ago?
+Does it work without https? Maybe mod_ssl triggers the bug...
 
-Doesn't matter too much. If you can flush it quickly then do so
+-- 
+Thanks,
+//richard
