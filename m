@@ -1,100 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932835Ab1ESJV2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 05:21:28 -0400
-Received: from narfation.org ([79.140.41.39]:32844 "EHLO v3-1039.vlinux.de"
+	id S932844Ab1ESJXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 05:23:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34575 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab1ESJV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 05:21:27 -0400
-From: Sven Eckelmann <sven@narfation.org>
-To: David Miller <davem@davemloft.net>
-Subject: Re: net: add seq_before/seq_after functions
-Date: Thu, 19 May 2011 11:21:21 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-rc6-686-pae; KDE/4.6.2; i686; ; )
-Cc: ordex@autistici.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        paulus@samba.org, linux-ppp@vger.kernel.org
-References: <1305722319-8315-1-git-send-email-ordex@autistici.org> <201105191054.34912.sven@narfation.org> <20110519.050824.838971689287732822.davem@davemloft.net>
-In-Reply-To: <20110519.050824.838971689287732822.davem@davemloft.net>
+	id S1754230Ab1ESJXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 05:23:36 -0400
+Date: Thu, 19 May 2011 10:23:33 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: sparsemem: allow pfn_valid to be overridden when
+ using SPARSEMEM
+Message-ID: <20110519092333.GU5279@suse.de>
+References: <1305734639-6561-1-git-send-email-will.deacon@arm.com>
+ <20110518165910.GS5279@suse.de>
+ <1305795317.29560.9.camel@e102144-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart10883730.ts7hrPEUfv";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha512
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105191121.23888.sven@narfation.org>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1305795317.29560.9.camel@e102144-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart10883730.ts7hrPEUfv
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 19, 2011 at 09:55:17AM +0100, Will Deacon wrote:
+> Hi Mel,
+> 
+> Thanks for looking at this.
+> 
+> On Wed, 2011-05-18 at 17:59 +0100, Mel Gorman wrote:
+> > On Wed, May 18, 2011 at 05:03:59PM +0100, Will Deacon wrote:
+> > > In commit eb33575c ("[ARM] Double check memmap is actually valid with a
+> > > memmap has unexpected holes V2"), a new function, memmap_valid_within,
+> > > was introduced to mmzone.h so that holes in the memmap which pass
+> > > pfn_valid in SPARSEMEM configurations can be detected and avoided.
+> > >
+> > > The fix to this problem checks that the pfn <-> page linkages are
+> > > correct by calculating the page for the pfn and then checking that
+> > > page_to_pfn on that page returns the original pfn. Unfortunately, in
+> > > SPARSEMEM configurations, this results in reading from the page flags to
+> > > determine the correct section. Since the memmap here has been freed,
+> > > junk is read from memory and the check is no longer robust.
+> > >
+> > > In the best case, reading from /proc/pagetypeinfo will give you the
+> > > wrong answer. In the worst case, you get SEGVs, Kernel OOPses and hung
+> > > CPUs.
+> > >
+> > > This patch allows architectures to provide their own pfn_valid function
+> > > instead of using the default implementation used by sparsemem. The
+> > > architecture-specific version is aware of the memmap state and will
+> > > return false when passed a pfn for a freed page within a valid section.
+> > >
+> > > Cc: Russell King <linux@arm.linux.org.uk>
+> > > Cc: Mel Gorman <mgorman@suse.de>
+> > > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> > > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > 
+> > I don't have an ARM machine to test on and I'm not particularly
+> > sensitive to the requirements of ARM so I'm not the best reviewer. If
+> > this passes tests, I see little problem with it other than the
+> > architecture-specific pfn_valid is slower than the sparsemem equivalent
+> > and the cache footprint is probably higher as memblock_is_memory
+> > is searching a list of blocks. 
+> 
+> Yes, it is slower than just checking to see if the sparsemem section is
+> valid but that is the price you pay for partially populated sections. At
+> the end of the day, we're just falling back to the pfn_valid definition
+> that is used when !CONFIG_SPARSEMEM.
+> 
 
-On Thursday 19 May 2011 11:08:24 David Miller wrote:
-> From: Sven Eckelmann <sven@narfation.org>
-> Date: Thu, 19 May 2011 10:54:32 +0200
->=20
-> > On Wednesday 18 May 2011 14:38:39 Antonio Quartulli wrote:
-> >> Introduce two operations to handle comparison between packet sequence
-> >> numbers taking into account overflow/wraparound. Batman-adv uses
-> >> these functions already to check for successor packet even in case of
-> >> overflow.
-> >=20
-> > Thanks for your efforts to bring that to the kernel. But when you prepa=
-re
-> > a patch then you have to add a signoff. And also David S. Miller is the
-> > maintainer for this header - it would be interesting to ask him first
-> > when we want to change that file.
->=20
-> Well it makes no sense to add these interfaces until we see an
-> upstream submission of code which will actually use it.
->=20
-> Also I'm skeptical that such generic sounding interfaces make
-> sense when it appears to me that these are protocol specific
-> sequence number tests so probably belong in whatever protocol
-> is upcoming which will use these interfaces.
->=20
-> Again, this is why we want to see the code that's going to use
-> these new routines before we can seriously consider adding them
-> at all.
+Ok.
 
-This is currently used by vis.c in net/batman-adv and could also be used by=
-=20
-ppp-generic.c (with my changes of course). And it is planned to be used by=
-=20
-transtable.c in net/batman-adv. The idea was to propose this to linux-
-kernel/netdev before we move it to a place were only batman-adv can use it=
-=20
-(the current situation is that vis.c in batman-adv can only use it).
+> > If this problem is exclusive to
+> > reading /proc/pagetypeinfo, you might want to consider only using
+> > memblock_is_memory in that case. Otherwise, functionally it looks like
+> > it should work.
+> 
+> I initially thought it was exclusive to that operation, but it turns out
+> the problem is more far-reaching as pfn_valid is used by things like the
+> ioremap code to ensure that we don't remap normal memory.
+> 
 
-It is ok that you say that it should be batman-adv specific - we only wante=
-d=20
-to ask first.
+That would justify it. Might want to stick that into the changelog
+because we'll forget it and someone will "fix" it :)
 
-Thanks,
-	Sven
+> > > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> > > index e56f835..72225dd 100644
+> > > --- a/include/linux/mmzone.h
+> > > +++ b/include/linux/mmzone.h
+> > > @@ -1053,12 +1053,14 @@ static inline struct mem_section *__pfn_to_section(unsigned long pfn)
+> > >       return __nr_to_section(pfn_to_section_nr(pfn));
+> > >  }
+> > > 
+> > > +#ifndef CONFIG_ARCH_PROVIDES_PFN_VALID
+> > >  static inline int pfn_valid(unsigned long pfn)
+> > >  {
+> > >       if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+> > >               return 0;
+> > >       return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
+> > >  }
+> > > +#endif
+> > > 
+> > >  static inline int pfn_present(unsigned long pfn)
+> > >  {
+> 
+> Can I add your Ack for the changes to mmzone.h please?
+> 
 
---nextPart10883730.ts7hrPEUfv
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Minor nit on the name but it'd be nice if it was simile to
+CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID as they are both related to the
+memory model. Whether you do it or not in a v2, I'll ack the mmzone.h
+change;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-iQIcBAABCgAGBQJN1OESAAoJEF2HCgfBJntGI98P/3Kz6biulUZuYblnQbLw9qt1
-k3u6dabcCkq3u/llGMLZ2OcgaSnsLlCYfhZkZ/hS6UOnqbfhDEdRgn+nyPoH4UhV
-keDjmW0tp6y6rBoNehyaK1me3RizvYeieOuVPwABoPkwSRt1fJTND8junde1Fl+U
-27S2QD3LmsLvwvxuE6Im9Or2lrKEU0MBCG0aCnPTSKBCgdLR+ZzS7MueJB3u+9KR
-4HkY0qZVzhyK9Mv/ySHENgS5EbK1nNzfNuESfF9lNSLhjZadZJ0PA7qludIKxZgv
-vEtuKJ561gpj2AIx0jHehq4Kssjf4ceV6dHSzwC5KVADT3gy9xZU83LqYp0HOfT3
-1xYd8PolzyAiurwHEpwtPasxX7+wv3q2WWqk5dd0smHQxF9DDoIHyLSGuWkI0vhd
-4L0d77S+Xxc5JMlKre3bK6rM5UgcfT+S6+Qb2ottv4xfJMspP4wWYumlyPIWVuY5
-wuxisG/5Q6Skvie5uMmC9ubGLW8bze3dIHbf62BnW9bek2FZS614WAOEFkrbHye7
-yd5uNqe5QNeADYopInDUay1y7rrRR5SZmCv9D1vE8025uZKFlV2XvejaUJtdjH/3
-G+UIuHGKIQ4zn0qSL54d9A1Ygfx9P5OF29BH0JFY+xGN1jIcqcgbC/W5vZi0J5Do
-R4KI7hPiKljQsVS0QasO
-=quch
------END PGP SIGNATURE-----
-
---nextPart10883730.ts7hrPEUfv--
+-- 
+Mel Gorman
+SUSE Labs
