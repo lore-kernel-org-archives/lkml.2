@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935067Ab1ESVyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:54:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:33854 "EHLO mga01.intel.com"
+	id S935132Ab1ESV73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:59:29 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61718 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934994Ab1ESVyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934998Ab1ESVyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 May 2011 17:54:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,239,1304319600"; 
-   d="scan'208";a="4877259"
-Message-Id: <20110519214744.681431233@intel.com>
+   d="scan'208";a="439348029"
+Message-Id: <20110519214744.801506906@intel.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 20 May 2011 05:45:33 +0800
+Date: Fri, 20 May 2011 05:45:34 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>
+cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
 cc: Dave Chinner <david@fromorbit.com>
 cc: Christoph Hellwig <hch@infradead.org>
 cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 03/18] writeback: introduce writeback_control.inodes_cleaned
+Subject: [PATCH 04/18] writeback: try more writeback as long as something was written
 References: <20110519214530.939830917@intel.com>
-Content-Disposition: inline; filename=writeback-inodes_written.patch
+Content-Disposition: inline; filename=writeback-background-retry.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The flusher works on dirty inodes in batches, and may quit prematurely
-if the batch of inodes happen to be metadata-only dirtied: in this case
-wbc->nr_to_write won't be decreased at all, which stands for "no pages
-written" but also mis-interpreted as "no progress".
+writeback_inodes_wb()/__writeback_inodes_sb() are not aggressive in that
+they only populate possibly a subset of eligible inodes into b_io at
+entrance time. When the queued set of inodes are all synced, they just
+return, possibly with all queued inode pages written but still
+wbc.nr_to_write > 0.
 
-So introduce writeback_control.inodes_cleaned to count the inodes get
-cleaned.  A non-zero value means there are some progress on writeback,
-in which case more writeback can be tried.
+For kupdate and background writeback, there may be more eligible inodes
+sitting in b_dirty when the current set of b_io inodes are completed. So
+it is necessary to try another round of writeback as long as we made some
+progress in this round. When there are no more eligible inodes, no more
+inodes will be enqueued in queue_io(), hence nothing could/will be
+synced and we may safely bail.
+
+For example, imagine 100 inodes
+
+        i0, i1, i2, ..., i90, i91, i99
+
+At queue_io() time, i90-i99 happen to be expired and moved to s_io for
+IO. When finished successfully, if their total size is less than
+MAX_WRITEBACK_PAGES, nr_to_write will be > 0. Then wb_writeback() will
+quit the background work (w/o this patch) while it's still over
+background threshold. This will be a fairly normal/frequent case I guess.
+
+Now that we do tagged sync and update inode->dirtied_when after the sync,
+this change won't livelock sync(1).  I actually tried to write 1 page
+per 1ms with this command
+
+	write-and-fsync -n10000 -S 1000 -c 4096 /fs/test
+
+and do sync(1) at the same time. The sync completes quickly on ext4,
+xfs, btrfs.
 
 Acked-by: Jan Kara <jack@suse.cz>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c         |    4 ++++
- include/linux/writeback.h |    1 +
- 2 files changed, 5 insertions(+)
+ fs/fs-writeback.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-about v1: The initial version was to count successful ->write_inode()
-calls.  However it leads to busy loops for sync() over NFS, because NFS
-ridiculously returns 0 (success) while at the same time redirties the
-inode.  The NFS case can be trivially fixed, however there may be more
-hidden bugs in other filesystems..
-
---- linux-next.orig/fs/fs-writeback.c	2011-05-20 05:11:08.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-20 05:11:24.000000000 +0800
-@@ -464,6 +464,7 @@ writeback_single_inode(struct inode *ino
- 			 * No need to add it back to the LRU.
- 			 */
- 			list_del_init(&inode->i_wb_list);
-+			wbc->inodes_cleaned++;
- 		}
- 	}
- 	inode_sync_complete(inode);
-@@ -725,6 +726,7 @@ static long wb_writeback(struct bdi_writ
- 		wbc.more_io = 0;
- 		wbc.nr_to_write = write_chunk;
- 		wbc.pages_skipped = 0;
-+		wbc.inodes_cleaned = 0;
+--- linux-next.orig/fs/fs-writeback.c	2011-05-20 05:11:24.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-20 05:11:28.000000000 +0800
+@@ -739,23 +739,23 @@ static long wb_writeback(struct bdi_writ
+ 		wrote += write_chunk - wbc.nr_to_write;
  
- 		trace_wbc_writeback_start(&wbc, wb->bdi);
- 		if (work->sb)
-@@ -741,6 +743,8 @@ static long wb_writeback(struct bdi_writ
- 		 */
- 		if (wbc.nr_to_write <= 0)
- 			continue;
-+		if (wbc.inodes_cleaned)
-+			continue;
  		/*
- 		 * Didn't write everything and we don't have more IO, bail
+-		 * If we consumed everything, see if we have more
++		 * Did we write something? Try for more
++		 *
++		 * Dirty inodes are moved to b_io for writeback in batches.
++		 * The completion of the current batch does not necessarily
++		 * mean the overall work is done. So we keep looping as long
++		 * as made some progress on cleaning pages or inodes.
  		 */
---- linux-next.orig/include/linux/writeback.h	2011-05-20 05:08:27.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-05-20 05:11:24.000000000 +0800
-@@ -34,6 +34,7 @@ struct writeback_control {
- 	long nr_to_write;		/* Write this many pages, and decrement
- 					   this for each page written */
- 	long pages_skipped;		/* Pages which were not written */
-+	long inodes_cleaned;		/* # of inodes cleaned */
- 
- 	/*
- 	 * For a_ops->writepages(): is start or end are non-zero then this is
+-		if (wbc.nr_to_write <= 0)
++		if (wbc.nr_to_write < write_chunk)
+ 			continue;
+ 		if (wbc.inodes_cleaned)
+ 			continue;
+ 		/*
+-		 * Didn't write everything and we don't have more IO, bail
++		 * No more inodes for IO, bail
+ 		 */
+ 		if (!wbc.more_io)
+ 			break;
+ 		/*
+-		 * Did we write something? Try for more
+-		 */
+-		if (wbc.nr_to_write < write_chunk)
+-			continue;
+-		/*
+ 		 * Nothing written. Wait for some inode to
+ 		 * become available for writeback. Otherwise
+ 		 * we'll just busyloop.
 
 
