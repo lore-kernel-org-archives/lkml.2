@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933546Ab1ESQb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:31:57 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:4060
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932238Ab1ESQb4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:31:56 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DD545E4.9090408@freescale.com>
-Date: Thu, 19 May 2011 11:31:32 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/2.0.14-1.fc13 SeaMonkey/2.0.14
+	id S933537Ab1ESQbi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:31:38 -0400
+Received: from postkast.cyber.ee ([195.50.202.7]:58305 "EHLO postkast.cyber.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932336Ab1ESQbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 12:31:37 -0400
+Date: Thu, 19 May 2011 19:31:36 +0300 (EEST)
+From: Madis Janson <madis@cyber.ee>
+X-X-Sender: madis@paabel.itsise
+To: Takashi Iwai <tiwai@suse.de>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Enable Realtek ALC269 codec input layer beep
+In-Reply-To: <s5htycqu0j8.wl%tiwai@suse.de>
+Message-ID: <alpine.DEB.2.00.1105191925570.2046@paabel.itsise>
+References: <alpine.DEB.2.00.1105191717530.2046@paabel.itsise> <s5htycqu0j8.wl%tiwai@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-Respect: HAZ NONE
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
-        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
-Subject: Re: [PATCH 6/7] tty/powerpc: introduce the ePAPR embedded hypervisor
- byte channel driver
-References: <1305813272-31826-1-git-send-email-timur@freescale.com>	<1305813272-31826-7-git-send-email-timur@freescale.com> <20110519153358.5876f310@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110519153358.5876f310@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
-> You really also need a hangup method so vhangup() does the right thing
-> and you can securely do logins etc and sessions on your console. As
-> you've got no hardware entangled in this and you already use tty_port
-> helpers the hangup helper will do the work for you.
 
-So all I need is this?
+On Thu, 19 May 2011, Takashi Iwai wrote:
 
-static void ehv_bc_tty_hangup(struct tty_struct *ttys)
-{
-	struct ehv_bc_data *bc = ttys->driver_data;
+> The change look good, but could you give your sign-off?
+> See Documentation/SubmittingPatches section 12 "Sign your work" for
+> details.
+>
+> Also, at the next time, please try to send the patch to the
+> corresponding subsystem maintainers.  scripts/get_maintainer.pl is
+> your friend.
 
-	tty_port_hangup(&bc->port);
-}
+Ok. Would this sign-off suffice? :)
+---
 
-I've noticed that some drivers flush their transmit buffers before calling
-tty_port_hangup(), but some others don't.  Should I do this too?  I don't know
-if hangup should be as quick as possible.
+This fixes the input layer beep not working on some EeePC 1000 models by
+adding the subsystem id into whitelist. Otherwise the corresponding ALSA
+mixer is not enabled and stays muted, resulting in no console beep.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Signed-off-by: Madis Janson <madis@cyber.ee>
+
+diff -u linux-2.6.39/sound/pci/hda/patch_realtek.c lohe-2.6.39/sound/pci/hda/patch_realtek.c
+--- linux-2.6.39/sound/pci/hda/patch_realtek.c	2011-05-19 07:06:34.000000000 +0300
++++ lohe-2.6.39/sound/pci/hda/patch_realtek.c	2011-05-19 11:58:28.415669828 +0300
+@@ -5646,6 +5646,7 @@
+  	SND_PCI_QUIRK(0x1043, 0x829f, "ASUS", 1),
+  	SND_PCI_QUIRK(0x1043, 0x83ce, "EeePC", 1),
+  	SND_PCI_QUIRK(0x1043, 0x831a, "EeePC", 1),
++	SND_PCI_QUIRK(0x1043, 0x834a, "EeePC", 1),
+  	SND_PCI_QUIRK(0x8086, 0xd613, "Intel", 1),
+  	{}
+  };
 
