@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab1ESMBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 08:01:32 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55736 "EHLO mga14.intel.com"
+	id S1756122Ab1ESLbi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 07:31:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16601 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab1ESMBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 08:01:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,237,1304319600"; 
-   d="scan'208";a="439005217"
-Subject: Re: [PATCH] dmaengine: move link order
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-In-Reply-To: <1305721137-11433-1-git-send-email-linus.walleij@stericsson.com>
-References: <1305721137-11433-1-git-send-email-linus.walleij@stericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 May 2011 16:58:17 +0530
-Message-ID: <1305804497.28926.304.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754088Ab1ESLbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 07:31:37 -0400
+Date: Thu, 19 May 2011 07:31:27 -0400
+From: Andy Gospodarek <andy@greyhouse.net>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Neil Horman <nhorman@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>, netdev@vger.kernel.org
+Subject: Re: [V2 Patch net-next-2.6] netpoll: disable netpoll when enslave
+	a device
+Message-ID: <20110519113127.GE21309@gospo.rdu.redhat.com>
+References: <20110518105558.GA3203@hmsreliant.think-freely.org> <1305794393-20775-1-git-send-email-amwang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305794393-20775-1-git-send-email-amwang@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-18 at 14:18 +0200, Linus Walleij wrote:
-> Move the dmaengine subsystem up early in the drivers Makefile so
-> DMA is made available early to all drivers, just like e.g.
-> regulators. Now even regulators can use DMA on the same initlevel.
-> As a result we can bump the ste_dma40 and coh901318 dmaengine
-> drivers down one initlevel to subsys_init().
-> 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/Makefile        |    4 +++-
->  drivers/dma/coh901318.c |    2 +-
->  drivers/dma/ste_dma40.c |    2 +-
->  3 files changed, 5 insertions(+), 3 deletions(-)
-Applied thanks....
+On Thu, May 19, 2011 at 04:39:53PM +0800, Amerigo Wang wrote:
+[...]
+> diff --git a/include/linux/notifier.h b/include/linux/notifier.h
+> index 621dfa1..3d82867 100644
+> --- a/include/linux/notifier.h
+> +++ b/include/linux/notifier.h
+> @@ -211,6 +211,7 @@ static inline int notifier_to_errno(int ret)
+>  #define NETDEV_UNREGISTER_BATCH 0x0011
+>  #define NETDEV_BONDING_DESLAVE  0x0012
+>  #define NETDEV_NOTIFY_PEERS	0x0013
+> +#define NETDEV_ENSLAVE		0x0014
+>  
+>  #define SYS_DOWN	0x0001	/* Notify of system down */
+>  #define SYS_RESTART	SYS_DOWN
 
-Hadn't read the patch fully so ignore my comment on st-dma
+Neil just noted the same concern I had -- the asymmetry between
+NETDEV_ENSLAVE and NETDEV_BONDING_DESLAVE bothers me a bit.  I also
+don't really like the followup patch that uses 'ENSLAVE' in the bridging
+code when we typically use that language for bonding only.
 
--- 
-~Vinod
-
+What about changing NETDEV_BONDING_DESLAVE to NETDEV_RELEASE and create
+NETDEV_JOIN instead of NETDEV_ENSLAVE?  I would prefer that or something
+else that might use more generic language that could be applied to all
+for stacked interfaces.
