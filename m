@@ -1,48 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934241Ab1ESUC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 16:02:57 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59327 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934063Ab1ESUC4 (ORCPT
+	id S934618Ab1ESUMR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 16:12:17 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:49211 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933670Ab1ESUMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 16:02:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110518221951.GD20909@sirena.org.uk>
-References: <BANLkTikAzjmVoNK20RHRkhHkn3YgSra6dA@mail.gmail.com>
-	<20110518162558.GA16414@opensource.wolfsonmicro.com>
-	<BANLkTinc-KXfe3aLgX0DPuSj0_+7gBO0vg@mail.gmail.com>
-	<20110518221951.GD20909@sirena.org.uk>
-Date: Thu, 19 May 2011 22:02:54 +0200
-Message-ID: <BANLkTikwH0pDLadZ6w5FGd5Q0e6Nskvp5w@mail.gmail.com>
-Subject: Re: Smartcard/SIM card subsystem, LDO regulator and signal modelling
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Bibek BASU <bibek.basu@stericsson.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Juergen Beisert <jbe@pengutronix.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 May 2011 16:12:15 -0400
+Subject: Re: [RFC] ib_srpt: initial .40-rc1 drivers/infiniband/ulp/srpt
+	merge
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Roland Dreier <roland@purestorage.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-rmda <linux-rdma@vger.kernel.org>, Vu Pham <vu@mellanox.com>,
+        David Dillow <dillowda@ornl.gov>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+In-Reply-To: <BANLkTi=Xb-ypQNa3=MmwiLeE4Q9FWHnZXg@mail.gmail.com>
+References: <1305682604-21383-1-git-send-email-nab@linux-iscsi.org>
+	 <BANLkTi=e+v7PLcSc8GNov-TOXFF7rurXew@mail.gmail.com>
+	 <20110518170556.GB2595@obsidianresearch.com>
+	 <BANLkTimQXU0u5gtRzXsnsB=sCF-bvpY+Ag@mail.gmail.com>
+	 <BANLkTi==bZ0h3o5FNrg8PSJFp6F-zh5hTA@mail.gmail.com>
+	 <1305778694.2856.533.camel@haakon2.linux-iscsi.org>
+	 <BANLkTi=Xb-ypQNa3=MmwiLeE4Q9FWHnZXg@mail.gmail.com>
+Content-Type: text/plain
+Date: Thu, 19 May 2011 13:03:39 -0700
+Message-Id: <1305835419.32066.20.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 12:19 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Wed, May 18, 2011 at 07:03:38PM +0200, Linus Walleij wrote:
->
->> I am now starting to contemplate if I should rename the pinmux
->> subsystem to "pinctrl" and not only handle muxing but also
->> biasing in that system.
->
-> I've not yet had time to look at pinmux but I'd certainly expect that
-> sort of feature - many systems rely on the mode configuration to get the
-> functions working (eg, I2C might be a function but you also need to put
-> the pin into open drain mode for it to function correctly).
+On Thu, 2011-05-19 at 12:40 +0200, Bart Van Assche wrote:
+> On Thu, May 19, 2011 at 6:18 AM, Nicholas A. Bellinger
+> <nab@linux-iscsi.org> wrote:
+> > The srpt_port->port_wwn patch in question does
+> > current ensure that sport->enabled has been set via an configfs
+> > attribute at:
+> >
+> >   /sys/kernel/config/target/srpt/$IB_PORT_GUID/tpgt_1/enable
+> >
+> > and will reject all SRP login attempts to an individual struct srpt_port
+> > until the attribute has been explictly triggered.
+> >
+> > This allows ib_srpt to follow what is expected by rtsadmin-v2 +
+> > lio-utils, and used to generate /etc/target/srpt_start.sh used to save
+> > persistent fabric configuration.  Currently other fabrics like
+> > iscsi-target and tcm_qla2xxx expect to be able to reject fabric login
+> > requests before the full set of WWPN endpoints, LUNs, NodeACLs +
+> > MappedLUNs have been recreated during an typical init.d/target start
+> > operation.
+> >
+> > I think it makes sense to do the same for the SRPT control plane on an
+> > individual HCA port GUID basis as long as there are no underlying fabric
+> > issues, and that Roland is happy.  In terms of supporting more than one
+> > type of /sys/kernel/config/target/srpt/$WWPN/$TPGT/ layout, I would
+> > really like to avoid this for mainline code unless there is a really
+> > good reason..
+> 
+> I'm still wondering whether it was a good idea to switch from ib<n>
+> style names to port GIDs. Not only will that make it hard for users to
+> match the ib<n> names already assigned to InfiniBand HCAs with target
+> port names but this also deviates from the naming scheme used for any
+> other Linux device. Ethernet devices e.g. appear as eth<n> in /dev
+> instead of a MAC address like 00:1a:64:10:18:6f.
+> 
 
-I've renamed the subsystem folder "pinctrl" in next iteration, with
-pinmux implemented. We will then expand it to handle other
-control such as biasing, driver strength etc, as we go along.
+So from the user perspective in rtsadmin/rtslib, the Port GUIDs are
+automatically presented in long-form after being extracted and parsed
+from /sys/class/infiniband/*/ports/*/gids/0 input via ib_srpt.spec here:
 
-Linus Walleij
+http://www.linux-iscsi.org/wiki/SCSI_RDMA_Protocol/RTSadmin#Specification_file
+
+The available IB Port GUIs appear as <TAB> completable input
+in /ib_srpt/ during a 'create wwn=' operation shown here:
+
+http://www.linux-iscsi.org/wiki/SCSI_RDMA_Protocol/RTSadmin#Configuration
+
+There is no reason why we can't present a more verbose informational
+display based on individual available HW fabric WWPNs. Eg: things like
+HW port status information, driver, firmware rev, etc..
+
+So aside from the user side of things, I think using a IB Port GUID
+makes more sense to ensure that /sys/kernel/config/target/srpt/
+configuration does not depend upon the ordering of symbolic HCA names
+in /sys/class/infiniband/, which AFAIK are not guarenteed to be
+persistent as HCAs are added/removed from the system.
+
+Ensuring that we can reference target fabric WWPNs using an underlying
+HW reference instead of a symbolic name is important for this reason,
+and is currently how other HW target mode drivers including
+tcm_fc(openfcoe) currently function.
+
+Thanks,
+
+--nab
+
