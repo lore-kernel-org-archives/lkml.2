@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933709Ab1ESRZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:25:55 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37213 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933494Ab1ESRZx convert rfc822-to-8bit (ORCPT
+	id S933714Ab1ESR31 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:29:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20074 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933596Ab1ESR30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:25:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=puzgegY5b6FLRNf2zEzA466JTm55kUDSZWpiPti9lTDi/oZAireMc8aqh6nFikI7Qz
-         oFefy6zetGGmx11HBgIMXFCcHMu903n0S9FcfobEmMWWBMOKbO33CbVLqQWADb9nmkjq
-         OtZSOyAJH32f9oi0h4gXeMF5+Z/vKrySJnV08=
+	Thu, 19 May 2011 13:29:26 -0400
+Message-ID: <4DD55364.8070002@oracle.com>
+Date: Thu, 19 May 2011 10:29:08 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <201105191920.44596.toralf.foerster@gmx.de>
-References: <201105191526.31904.toralf.foerster@gmx.de>
-	<BANLkTi=FinuAYpYXf1K6pQ-3i2vRJS=g9g@mail.gmail.com>
-	<201105191920.44596.toralf.foerster@gmx.de>
-Date: Thu, 19 May 2011 19:25:52 +0200
-Message-ID: <BANLkTi=kDHuhKyVxEYWL92pyfLuQWAjtdQ@mail.gmail.com>
-Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Christoph Hellwig <hch@lst.de>
+CC: josef@redhat.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [Ocfs2-devel] [PATCH] ocfs2: Implement llseek()
+References: <1305773084-19296-1-git-send-email-sunil.mushran@oracle.com> <1305773084-19296-3-git-send-email-sunil.mushran@oracle.com> <20110519110531.GB6357@lst.de>
+In-Reply-To: <20110519110531.GB6357@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DD55373.0049:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/19 Toralf Förster <toralf.foerster@gmx.de>:
-> Errm, automatic bisecting doesn't work, b/c the issue can't be reproduced by a
-> simple "wget https://..." - when I use konqueror - up to 6-10 times I'm asked
-> to confirm a cookie or something else before the crash occures.
->
-> And if I use "lynx -accept_all_cookies https://n22_uml/phpmyadmin/" then I'm
-> able to login - so it has something to do with HTTP frames I suspected - but a
-> shutdown of the UML instance wasn't possible too after such a try - probably
-> something else then the HTTP frames itself triggers the issue ...
->
-> In short -  it is not phpmyadmin (3.4.0) itself, but it triggers the bug (in
-> fact sometimes I even could see the login window within Firefox of the
-> phpmyadmin site before the crash happened).
->
-> Because therefore manual interaction is needed (or do you know an automated
-> way for konqueror/ff/.... ?) at least it would be helpful if the bisecting
-> could be narrowed doesn to a given path or somethign else.
+On 05/19/2011 04:05 AM, Christoph Hellwig wrote:
+> On Wed, May 18, 2011 at 07:44:44PM -0700, Sunil Mushran wrote:
+>> Unwritten (preallocated) extents are considered holes because the file system
+>> treats reads to such regions in the same way as it does to holes.
+> How does this work for the case of an unwrittent extent that has been
+> written to in the pagecache but not converted yet?  Y'know the big data
+> corruption and flamewar that started all this?
 
-BTW: Haven’t you had such an issue a few months ago?
-Does it work without https? Maybe mod_ssl triggers the bug...
+We don't delay splitting the extent. It is split in ->write_begin(). Delaying
+it will be a challenge as we have to provide cache coherency across the
+cluster.
 
--- 
-Thanks,
-//richard
