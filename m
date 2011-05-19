@@ -1,60 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934717Ab1ESUj5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 16:39:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57282 "EHLO mx2.suse.de"
+	id S934722Ab1ESUkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 16:40:31 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40459 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933968Ab1ESUjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 16:39:55 -0400
-Date: Thu, 19 May 2011 13:39:16 -0700
-From: Greg KH <gregkh@suse.de>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-media@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Igor M. Liplianin" <liplianin@netup.ru>
-Subject: Re: Fw: [PATCH -next RESEND/still needed] staging: altera-jtag needs
- delay.h
-Message-ID: <20110519203916.GA28736@suse.de>
-References: <20110328082305.c6fa41d9.randy.dunlap@oracle.com>
- <4DD56DDE.6060003@infradead.org>
+	id S933968Ab1ESUk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 16:40:29 -0400
+Date: Thu, 19 May 2011 22:40:16 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/apic changes for v2.6.40
+Message-ID: <20110519204016.GA26181@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DD56DDE.6060003@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 04:22:06PM -0300, Mauro Carvalho Chehab wrote:
-> Em 28-03-2011 12:23, Randy Dunlap escreveu:
-> > From: Randy Dunlap <randy.dunlap@oracle.com>
-> > 
-> > altera-jtag.c needs to include <linux/delay.h> to fix a build error:
-> > 
-> > drivers/staging/altera-stapl/altera-jtag.c:398: error: implicit declaration of function 'udelay'
-> > 
-> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> > Cc: Igor M. Liplianin <liplianin@netup.ru>
-> > ---
-> >  drivers/staging/altera-stapl/altera-jtag.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > Somehow I was supposed to know to send this to Mauro instead of to Greg,
-> > but I don't see anything in drivers/staging/altera-stapl/ that says that.
-> 
-> Ah, yes, we need to add a readme file there stating about that.
-> 
-> Greg, you may add it on your tree, or if you prefer, I can just add here for
-> my next upstream pull.
+Linus,
 
-I see this in my tree already, git commit
-92ce52695ccf2b6c4ef7eb02e1bee1bcbf5fde89, what happened to need this
-again?
+Please pull the latest x86-apic-for-linus git tree from:
 
-confused,
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-apic-for-linus
 
-greg k-h
+ Thanks,
+
+	Ingo
+
+------------------>
+Youquan Song (1):
+      x86, apic: Print verbose error interrupt reason on apic=debug
+
+
+ arch/x86/kernel/apic/apic.c |   41 ++++++++++++++++++++++++++---------------
+ 1 files changed, 26 insertions(+), 15 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index fabf01e..ae14712 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1812,30 +1812,41 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+  */
+ void smp_error_interrupt(struct pt_regs *regs)
+ {
+-	u32 v, v1;
++	u32 v0, v1;
++	u32 i = 0;
++	static const char * const error_interrupt_reason[] = {
++		"Send CS error",		/* APIC Error Bit 0 */
++		"Receive CS error",		/* APIC Error Bit 1 */
++		"Send accept error",		/* APIC Error Bit 2 */
++		"Receive accept error",		/* APIC Error Bit 3 */
++		"Redirectable IPI",		/* APIC Error Bit 4 */
++		"Send illegal vector",		/* APIC Error Bit 5 */
++		"Received illegal vector",	/* APIC Error Bit 6 */
++		"Illegal register address",	/* APIC Error Bit 7 */
++	};
+ 
+ 	exit_idle();
+ 	irq_enter();
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+-	v = apic_read(APIC_ESR);
++	v0 = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+ 	v1 = apic_read(APIC_ESR);
+ 	ack_APIC_irq();
+ 	atomic_inc(&irq_err_count);
+ 
+-	/*
+-	 * Here is what the APIC error bits mean:
+-	 * 0: Send CS error
+-	 * 1: Receive CS error
+-	 * 2: Send accept error
+-	 * 3: Receive accept error
+-	 * 4: Reserved
+-	 * 5: Send illegal vector
+-	 * 6: Received illegal vector
+-	 * 7: Illegal register address
+-	 */
+-	pr_debug("APIC error on CPU%d: %02x(%02x)\n",
+-		smp_processor_id(), v , v1);
++	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
++		    smp_processor_id(), v0 , v1);
++
++	v1 = v1 & 0xff;
++	while (v1) {
++		if (v1 & 0x1)
++			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
++		i++;
++		v1 >>= 1;
++	};
++
++	apic_printk(APIC_DEBUG, KERN_CONT "\n");
++
+ 	irq_exit();
+ }
+ 
