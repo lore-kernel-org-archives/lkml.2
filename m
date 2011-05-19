@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934130Ab1ESSPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:15:42 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54880 "EHLO
+	id S934005Ab1ESSJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:09:07 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:49150 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934060Ab1ESSI4 (ORCPT
+	by vger.kernel.org with ESMTP id S934045Ab1ESSI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:08:56 -0400
-X-Sasl-enc: nHXsxJIbrRxSj7J5+s5VOTK4scTPr1v09ETtBoZ0Yx/J 1305828535
+	Thu, 19 May 2011 14:08:57 -0400
+X-Sasl-enc: iidXEuvzcbEcWsU0TgQABkJ+KlqnhD56zWpqqe//AXaD 1305828536
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:58 2011
-Message-Id: <20110519180558.623546432@clark.kroah.org>
+Message-Id: <20110519180558.710554606@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:13 -0700
+Date: Thu, 19 May 2011 11:05:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [45/71] zorro8390: Fix regression caused during net_device_ops conversion
+        Hugh Dickins <hughd@google.com>
+Subject: [46/71] tmpfs: fix race between umount and writepage
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,75 +27,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Hugh Dickins <hughd@google.com>
 
-commit cf7e032fc87d59c475df26c4d40bf45d401b2adb upstream.
+commit b1dea800ac39599301d4bb8dcf2b1d29c2558211 upstream.
 
-Changeset b6114794a1c394534659f4a17420e48cf23aa922 ("zorro8390: convert to
-net_device_ops") broke zorro8390 by adding 8390.o to the link. That
-meant that lib8390.c was included twice, once in zorro8390.c and once in
-8390.c, subject to different macros. This patch reverts that by
-avoiding the wrappers in 8390.c.
+Konstanin Khlebnikov reports that a dangerous race between umount and
+shmem_writepage can be reproduced by this script:
 
-Fix based on commits 217cbfa856dc1cbc2890781626c4032d9e3ec59f ("mac8390:
-fix regression caused during net_device_ops conversion") and
-4e0168fa4842e27795a75b205a510f25b62181d9 ("mac8390: fix build with
-NET_POLL_CONTROLLER").
+  for i in {1..300} ; do
+	mkdir $i
+	while true ; do
+		mount -t tmpfs none $i
+		dd if=/dev/zero of=$i/test bs=1M count=$(($RANDOM % 100))
+		umount $i
+	done &
+  done
 
-Reported-by: Christian T. Steigies <cts@debian.org>
-Suggested-by: Finn Thain <fthain@telegraphics.com.au>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Tested-by: Christian T. Steigies <cts@debian.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+on a 6xCPU node with 8Gb RAM: kernel very unstable after this accident. =)
+
+Kernel log:
+
+  VFS: Busy inodes after unmount of tmpfs.
+                 Self-destruct in 5 seconds.  Have a nice day...
+
+  WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
+  list_del corruption. prev->next should be ffff880222fdaac8, but was (null)
+  Pid: 11222, comm: mount.tmpfs Not tainted 2.6.39-rc2+ #4
+  Call Trace:
+   warn_slowpath_common+0x80/0x98
+   warn_slowpath_fmt+0x41/0x43
+   __list_del_entry+0x8d/0x98
+   evict+0x50/0x113
+   iput+0x138/0x141
+  ...
+  BUG: unable to handle kernel paging request at ffffffffffffffff
+  IP: shmem_free_blocks+0x18/0x4c
+  Pid: 10422, comm: dd Tainted: G        W   2.6.39-rc2+ #4
+  Call Trace:
+   shmem_recalc_inode+0x61/0x66
+   shmem_writepage+0xba/0x1dc
+   pageout+0x13c/0x24c
+   shrink_page_list+0x28e/0x4be
+   shrink_inactive_list+0x21f/0x382
+  ...
+
+shmem_writepage() calls igrab() on the inode for the page which came from
+page reclaim, to add it later into shmem_swaplist for swapoff operation.
+
+This igrab() can race with super-block deactivating process:
+
+  shrink_inactive_list()          deactivate_super()
+  pageout()                       tmpfs_fs_type->kill_sb()
+  shmem_writepage()               kill_litter_super()
+                                  generic_shutdown_super()
+                                   evict_inodes()
+   igrab()
+                                    atomic_read(&inode->i_count)
+                                     skip-inode
+   iput()
+                                   if (!list_empty(&sb->s_inodes))
+                                          printk("VFS: Busy inodes after...
+
+This igrap-iput pair was added in commit 1b1b32f2c6f6 "tmpfs: fix
+shmem_swaplist races" based on incorrect assumptions: igrab() protects the
+inode from concurrent eviction by deletion, but it does nothing to protect
+it from concurrent unmounting, which goes ahead despite the raised
+i_count.
+
+So this use of igrab() was wrong all along, but the race made much worse
+in 2.6.37 when commit 63997e98a3be "split invalidate_inodes()" replaced
+two attempts at invalidate_inodes() by a single evict_inodes().
+
+Konstantin posted a plausible patch, raising sb->s_active too: I'm unsure
+whether it was correct or not; but burnt once by igrab(), I am sure that
+we don't want to rely more deeply upon externals here.
+
+Fix it by adding the inode to shmem_swaplist earlier, while the page lock
+on page in page cache still secures the inode against eviction, without
+artifically raising i_count.  It was originally added later because
+shmem_unuse_inode() is liable to remove an inode from the list while it's
+unswapped; but we can guard against that by taking spinlock before
+dropping mutex.
+
+Reported-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Tested-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/Makefile    |    2 +-
- drivers/net/zorro8390.c |   12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ mm/shmem.c |   31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
 
---- a/drivers/net/Makefile
-+++ b/drivers/net/Makefile
-@@ -217,7 +217,7 @@ obj-$(CONFIG_SC92031) += sc92031.o
- obj-$(CONFIG_LP486E) += lp486e.o
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1037,6 +1037,7 @@ static int shmem_writepage(struct page *
+ 	struct address_space *mapping;
+ 	unsigned long index;
+ 	struct inode *inode;
++	bool unlock_mutex = false;
  
- obj-$(CONFIG_ETH16I) += eth16i.o
--obj-$(CONFIG_ZORRO8390) += zorro8390.o 8390.o
-+obj-$(CONFIG_ZORRO8390) += zorro8390.o
- obj-$(CONFIG_HPLANCE) += hplance.o 7990.o
- obj-$(CONFIG_MVME147_NET) += mvme147.o 7990.o
- obj-$(CONFIG_EQUALIZER) += eql.o
---- a/drivers/net/zorro8390.c
-+++ b/drivers/net/zorro8390.c
-@@ -126,7 +126,7 @@ static int __devinit zorro8390_init_one(
+ 	BUG_ON(!PageLocked(page));
+ 	mapping = page->mapping;
+@@ -1062,7 +1063,26 @@ static int shmem_writepage(struct page *
+ 	else
+ 		swap.val = 0;
  
-     board = z->resource.start;
-     ioaddr = board+cards[i].offset;
--    dev = alloc_ei_netdev();
-+    dev = ____alloc_ei_netdev(0);
-     if (!dev)
- 	return -ENOMEM;
-     if (!request_mem_region(ioaddr, NE_IO_EXTENT*2, DRV_NAME)) {
-@@ -146,15 +146,15 @@ static int __devinit zorro8390_init_one(
- static const struct net_device_ops zorro8390_netdev_ops = {
- 	.ndo_open		= zorro8390_open,
- 	.ndo_stop		= zorro8390_close,
--	.ndo_start_xmit		= ei_start_xmit,
--	.ndo_tx_timeout		= ei_tx_timeout,
--	.ndo_get_stats		= ei_get_stats,
--	.ndo_set_multicast_list = ei_set_multicast_list,
-+	.ndo_start_xmit		= __ei_start_xmit,
-+	.ndo_tx_timeout		= __ei_tx_timeout,
-+	.ndo_get_stats		= __ei_get_stats,
-+	.ndo_set_multicast_list = __ei_set_multicast_list,
- 	.ndo_validate_addr	= eth_validate_addr,
- 	.ndo_set_mac_address 	= eth_mac_addr,
- 	.ndo_change_mtu		= eth_change_mtu,
- #ifdef CONFIG_NET_POLL_CONTROLLER
--	.ndo_poll_controller	= ei_poll,
-+	.ndo_poll_controller	= __ei_poll,
- #endif
- };
++	/*
++	 * Add inode to shmem_unuse()'s list of swapped-out inodes,
++	 * if it's not already there.  Do it now because we cannot take
++	 * mutex while holding spinlock, and must do so before the page
++	 * is moved to swap cache, when its pagelock no longer protects
++	 * the inode from eviction.  But don't unlock the mutex until
++	 * we've taken the spinlock, because shmem_unuse_inode() will
++	 * prune a !swapped inode from the swaplist under both locks.
++	 */
++	if (swap.val && list_empty(&info->swaplist)) {
++		mutex_lock(&shmem_swaplist_mutex);
++		/* move instead of add in case we're racing */
++		list_move_tail(&info->swaplist, &shmem_swaplist);
++		unlock_mutex = true;
++	}
++
+ 	spin_lock(&info->lock);
++	if (unlock_mutex)
++		mutex_unlock(&shmem_swaplist_mutex);
++
+ 	if (index >= info->next_index) {
+ 		BUG_ON(!(info->flags & SHMEM_TRUNCATE));
+ 		goto unlock;
+@@ -1082,22 +1102,11 @@ static int shmem_writepage(struct page *
+ 		remove_from_page_cache(page);
+ 		shmem_swp_set(info, entry, swap.val);
+ 		shmem_swp_unmap(entry);
+-		if (list_empty(&info->swaplist))
+-			inode = igrab(inode);
+-		else
+-			inode = NULL;
+ 		spin_unlock(&info->lock);
+ 		swap_shmem_alloc(swap);
+ 		BUG_ON(page_mapped(page));
+ 		page_cache_release(page);	/* pagecache ref */
+ 		swap_writepage(page, wbc);
+-		if (inode) {
+-			mutex_lock(&shmem_swaplist_mutex);
+-			/* move instead of add in case we're racing */
+-			list_move_tail(&info->swaplist, &shmem_swaplist);
+-			mutex_unlock(&shmem_swaplist_mutex);
+-			iput(inode);
+-		}
+ 		return 0;
+ 	}
  
 
 
