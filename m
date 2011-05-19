@@ -1,94 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934145Ab1ESS4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:56:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44921 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756851Ab1ESS4t (ORCPT
+	id S933834Ab1ESTAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:00:38 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:35545 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933670Ab1ESTAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:56:49 -0400
-Date: Thu, 19 May 2011 20:56:48 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd wm8350: allocate irq descs dynamically
-Message-ID: <20110519185648.GR30963@pengutronix.de>
+	Thu, 19 May 2011 15:00:36 -0400
+Date: Thu, 19 May 2011 13:00:34 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] spi: Use void pointers for data in simple SPI I/O
+ operations
+Message-ID: <20110519190034.GF5109@ponder.secretlab.ca>
+References: <1305065370-28616-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 20:48:36 up 12 days, 10:26, 26 users,  load average: 0.53, 0.99,
- 1.12
+In-Reply-To: <1305065370-28616-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 11, 2011 at 12:09:30AM +0200, Mark Brown wrote:
+> Currently the simple SPI I/O operations all take pointers to u8 * buffers
+> to operate on. This creates needless type compatibility issues and the
+> underlying spi_transfer structure uses void pointers anyway so convert the
+> API over to take void pointers too.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-This allows boards to leave the irq_base field unitialized and
-prevents them having to reserve irqs in the platform.
+Merged, thanks.
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- drivers/mfd/wm8350-irq.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
+g.
 
-As this seems to be the first user of irq_alloc_descs outside the core I
-added Thomas to cc to check if this is the correct usage of this
-function.
-Unfortunately I have no hardware to test this. I created this patch
-since one of the wm8350 users is the mx31ads board which prevents me
-from getting rid of the irq ifdeffery in i.MX land, so it would be nice
-if someone could give it a test run.
-
-diff --git a/drivers/mfd/wm8350-irq.c b/drivers/mfd/wm8350-irq.c
-index ed4b22a..04408a5 100644
---- a/drivers/mfd/wm8350-irq.c
-+++ b/drivers/mfd/wm8350-irq.c
-@@ -479,8 +479,8 @@ int wm8350_irq_init(struct wm8350 *wm8350, int irq,
- 		return 0;
- 	}
- 
--	if (!pdata || !pdata->irq_base) {
--		dev_warn(wm8350->dev, "No interrupt support, no IRQ base\n");
-+	if (!pdata) {
-+		dev_warn(wm8350->dev, "No interrupt support, no platform data\n");
- 		return 0;
- 	}
- 
-@@ -500,7 +500,17 @@ int wm8350_irq_init(struct wm8350 *wm8350, int irq,
- 
- 	mutex_init(&wm8350->irq_lock);
- 	wm8350->chip_irq = irq;
--	wm8350->irq_base = pdata->irq_base;
-+
-+	if (!pdata->irq_base) {
-+		wm8350->irq_base = irq_alloc_descs(-1, 0, ARRAY_SIZE(wm8350_irqs), 0);
-+		if (wm8350->irq_base < 0) {
-+			dev_warn(wm8350->dev, "Allocating irqs failed with %d\n",
-+				wm8350->irq_base);
-+			return 0;
-+		}
-+	} else {
-+		wm8350->irq_base = pdata->irq_base;
-+	}
- 
- 	if (pdata->irq_high) {
- 		flags |= IRQF_TRIGGER_HIGH;
--- 
-1.7.4.1
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> ---
+>  drivers/spi/spi.c       |    4 ++--
+>  include/linux/spi/spi.h |    8 ++++----
+>  2 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+> index 82b9a42..2e13a14 100644
+> --- a/drivers/spi/spi.c
+> +++ b/drivers/spi/spi.c
+> @@ -1047,8 +1047,8 @@ static u8	*buf;
+>   * spi_{async,sync}() calls with dma-safe buffers.
+>   */
+>  int spi_write_then_read(struct spi_device *spi,
+> -		const u8 *txbuf, unsigned n_tx,
+> -		u8 *rxbuf, unsigned n_rx)
+> +		const void *txbuf, unsigned n_tx,
+> +		void *rxbuf, unsigned n_rx)
+>  {
+>  	static DEFINE_MUTEX(lock);
+>  
+> diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+> index b4d7710..bb4f5fb 100644
+> --- a/include/linux/spi/spi.h
+> +++ b/include/linux/spi/spi.h
+> @@ -581,7 +581,7 @@ extern int spi_bus_unlock(struct spi_master *master);
+>   * Callable only from contexts that can sleep.
+>   */
+>  static inline int
+> -spi_write(struct spi_device *spi, const u8 *buf, size_t len)
+> +spi_write(struct spi_device *spi, const void *buf, size_t len)
+>  {
+>  	struct spi_transfer	t = {
+>  			.tx_buf		= buf,
+> @@ -605,7 +605,7 @@ spi_write(struct spi_device *spi, const u8 *buf, size_t len)
+>   * Callable only from contexts that can sleep.
+>   */
+>  static inline int
+> -spi_read(struct spi_device *spi, u8 *buf, size_t len)
+> +spi_read(struct spi_device *spi, void *buf, size_t len)
+>  {
+>  	struct spi_transfer	t = {
+>  			.rx_buf		= buf,
+> @@ -620,8 +620,8 @@ spi_read(struct spi_device *spi, u8 *buf, size_t len)
+>  
+>  /* this copies txbuf and rxbuf data; for small transfers only! */
+>  extern int spi_write_then_read(struct spi_device *spi,
+> -		const u8 *txbuf, unsigned n_tx,
+> -		u8 *rxbuf, unsigned n_rx);
+> +		const void *txbuf, unsigned n_tx,
+> +		void *rxbuf, unsigned n_rx);
+>  
+>  /**
+>   * spi_w8r8 - SPI synchronous 8 bit write followed by 8 bit read
+> -- 
+> 1.7.5.1
+> 
