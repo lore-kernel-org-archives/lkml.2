@@ -1,85 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab1ESHYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 03:24:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36838 "EHLO mx1.redhat.com"
+	id S1756552Ab1ESHZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 03:25:39 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:53915 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755809Ab1ESHYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 03:24:40 -0400
-Date: Thu, 19 May 2011 10:24:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCH 14/18] virtio: add api for delayed callbacks
-Message-ID: <20110519072412.GA31253@redhat.com>
-References: <cover.1304541918.git.mst@redhat.com>
- <64d47c628b3fdc0ac156aed4be182933d8bcc0db.1304541919.git.mst@redhat.com>
- <871v08h0vm.fsf@rustcorp.com.au>
- <20110515124818.GD24932@redhat.com>
- <87boz3dsoe.fsf@rustcorp.com.au>
+	id S1756293Ab1ESHZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 03:25:38 -0400
+X-ASG-Debug-ID: 1305789936-01de28096b4cdc0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DD4C5EC.8060200@fusionio.com>
+Date: Thu, 19 May 2011 09:25:32 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87boz3dsoe.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Tony Luck <tony.luck@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: New boot time message: detected capacity change
+References: <BANLkTin3T8msxSSbTLJOvC5WLNFGspPEcg@mail.gmail.com> <BANLkTimY+y3vXa0R7Evs6dYLVjJ==KVq1A@mail.gmail.com>
+X-ASG-Orig-Subj: Re: New boot time message: detected capacity change
+In-Reply-To: <BANLkTimY+y3vXa0R7Evs6dYLVjJ==KVq1A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1305789936
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64168
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 04:43:21PM +0930, Rusty Russell wrote:
-> On Sun, 15 May 2011 15:48:18 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > On Mon, May 09, 2011 at 03:27:33PM +0930, Rusty Russell wrote:
-> > > On Wed, 4 May 2011 23:52:33 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > Add an API that tells the other side that callbacks
-> > > > should be delayed until a lot of work has been done.
-> > > > Implement using the new used_event feature.
-> > > 
-> > > Since you're going to add a capacity query anyway, why not add the
-> > > threshold argument here?
-> > 
-> > I thought that if we keep the API kind of generic
-> > there might be more of a chance that future transports
-> > will be able to implement it. For example, with an
-> > old host we can't commit to a specific index.
+On 2011-05-18 22:50, Linus Torvalds wrote:
+> On Wed, May 18, 2011 at 1:32 PM, Tony Luck <tony.luck@gmail.com> wrote:
+>> Today's pull from Linus' tree (HEAD = 258-ga2b9c1f) gave me some new
+>> messages during boot:
+>>
+>> sda: detected capacity change from 0 to 146815737856
+>> sdb: detected capacity change from 0 to 146815737856
+>>
+>> They weren't there yesterday (HEAD = 211-gc1d10d1) ... nor do they
+>> show up in any of my saved boot time dmesg files for the last few
+>> months.
+>>
+>> Harmless?  Or something to worry about in the last few commits
+>> before 2.6.39 goes final?
 > 
-> No, it's always a hint anyway: you can be notified before the threshold
-> is reached.  But best make it explicit I think.
+> I htink it's 02e352287a40 ("block: rescan partitions on invalidated
+> devices on -ENOMEDIA too"), which was reported to fix a bugzilla
+> entry.
 > 
-> Cheers,
-> Rusty.
+> However, now that I look closer, that bugzilla entry was two years old
+> and reported for 2.6.29.
+> 
+> So it wasn't a regression fix like the changelog made me think (with a
+> stable pointer for 38)
+> 
+> Jens, Tejun - stop this messing around! The block layer has been one
+> of the problem children in the last releases, the *LAST* thing we need
+> is things like this happening this late in the -rc series!
 
+This release has not been great, mostly early in the cycle. I will take
+complete blame for pushing this change so late, that's why I asked Tejun
+about the three patches queues up yesterday. We've had more churn in
+this cycle due to both the plugging and media event notification
+changes, both have caused way more commits and later in the cycle that
+I'm usually comfortable with. I do _always_ try to push the big stuff
+before -rc1, so I don't think it's completely fair to quote earlier
+releases as problematic.
 
-I tried doing that and remembered the real reason I went for this API:
+> Seriously. I'm really upset. I need to be able to trust you, and you
+> are not being trust-worthy. F*&^ you, in other words. This was *NOT* a
+> regression.
+> 
+> I don't care if it fixes a long-standing bug, you do not send fixes
+> like that to me. It should have gone into the merge window for 40, and
+> at *that* point it might be marked for stable.
+> 
+> As it was, I feel that those commit descriptions were actively
+> misleading me into thinking this was a regression.
+> 
+> Maybe it won't cause any problems, but -rc7 is not the time to make
+> these kinds of experiments!
 
-capacity is limited by descriptor table space, not
-used ring space: each entry in the used ring frees up multiple entries
-in the descriptor ring. Thus the ring can't provide
-callback after capacity is N: capacity is only available
-after we get bufs.
+I agree. And not that it's an excuse, but it has been well tested here
+on my test and primary machines. Arguably this particular patch should
+just have waited for 2.6.40 and with a stable backport instead.
 
-We could try and make the API pass in the number of freed bufs, however:
-- this is not really what virtio-net cares about (it cares about
-  capacity)
-- if the driver passes a number > number of outstanding bufs, it will
-  never get a callback. So to stay correct the driver will need to
-  track number of outstanding requests. The simpler API avoids that. 
-
-
-APIs are easy to change so I'm guessing it's not a major blocker:
-we can change later when e.g. block tries to
-pass in some kind of extra hint: we'll be smarter
-about how this API can change then.
-
-Right?
+Will not happen again.
 
 -- 
-MST
+Jens Axboe
+
