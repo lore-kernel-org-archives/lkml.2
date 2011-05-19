@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933617Ab1ESRAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:00:37 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:63126 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933554Ab1ESRAg convert rfc822-to-8bit (ORCPT
+	id S1757054Ab1ESRHC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:07:02 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:52108 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756761Ab1ESRHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:00:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eDYO/DWsJ7nH8DUrp8zxlnjNvmL4zQVKYRglZWjLJLlQcp72MEgNn8te7WibeBjAvZ
-         P8bc8cr1rFoggUSid7lqhktbkLSM+wd6y+OPa0V+NN16RBSAYOetTEOiFSKvJ3DjoIJt
-         AfAYab7sS3uYiCYpO5lnZ+qANG8+HQwTf405g=
+	Thu, 19 May 2011 13:07:00 -0400
+Date: Thu, 19 May 2011 19:06:58 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Greg Ungerer <gerg@uclinux.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 2.6.40
+Message-ID: <alpine.DEB.2.00.1105191904450.26486@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201105191526.31904.toralf.foerster@gmx.de>
-References: <201105191526.31904.toralf.foerster@gmx.de>
-Date: Thu, 19 May 2011 19:00:35 +0200
-Message-ID: <BANLkTi=FinuAYpYXf1K6pQ-3i2vRJS=g9g@mail.gmail.com>
-Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+	Hi Linus,
 
-Please CC also user-mode-linux-devel@lists.sourceforge.net,
-so you can reach much more UML users. :)
+The following changes since commit 61c4f2c81c61f73549928dfd9f3e8f26aa36a8cf:
+  Linus Torvalds (1):
+        Linux 2.6.39
 
-2011/5/19 Toralf Förster <toralf.foerster@gmx.de>:
-> I got a segfault as soon as I try to access the phpmyadmin web page of the UML
-> instance at https://<uml_hostname>/phpmyadmin/  :
+are available in the git repository at:
 
-Hmm, strange.
-phpmyadmin works fine on my UML test bed.
-Can you bisect the issue?
+  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+  git://git.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
 
--- 
-Thanks,
-//richard
+Geert Uytterhoeven (8):
+      m68k: bitops - offset == ((long)p - (long)vaddr) * 8
+      m68k: bitops - Never step beyond the end of the bitmap
+      MAINTAINERS: Roman Zippel has been MIA for several years.
+      m68k: Merge mmu and non-mmu versions of sys_call_table
+      m68k: Really wire up sys_pselect6 and sys_ppoll
+      m68k: unistd - Comment out definitions for unimplemented syscalls
+      m68k/atari: Do not use "/" in interrupt names
+      input/atari: Fix mouse movement and button mapping
+
+Michael Schmitz (2):
+      input/atari: Use the correct mouse interrupt hook
+      input/atari: Fix atarimouse init
+
+ MAINTAINERS                       |    9 +-
+ arch/m68k/atari/atakeyb.c         |    9 +-
+ arch/m68k/atari/stdma.c           |    2 +-
+ arch/m68k/include/asm/atarikb.h   |    2 -
+ arch/m68k/include/asm/bitops_mm.h |   87 ++++++----
+ arch/m68k/include/asm/unistd.h    |   46 +++---
+ arch/m68k/kernel/Makefile_mm      |    2 +-
+ arch/m68k/kernel/entry_mm.S       |  348 -------------------------------------
+ arch/m68k/kernel/syscalltable.S   |  195 ++++++++++-----------
+ drivers/input/keyboard/atakbd.c   |    5 +-
+ drivers/input/mouse/atarimouse.c  |   15 +-
+ drivers/net/atarilance.c          |    2 +-
+ drivers/video/atafb.c             |    2 +-
+ 13 files changed, 200 insertions(+), 524 deletions(-)
+
+It was OK for Dmitry to let the input changes go in through the m68k tree.
+
+Thanks for pulling!
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
