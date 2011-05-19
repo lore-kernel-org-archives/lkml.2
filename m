@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab1ESDJY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 23:09:24 -0400
-Received: from elasmtp-kukur.atl.sa.earthlink.net ([209.86.89.65]:47561 "EHLO
-	elasmtp-kukur.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932147Ab1ESDJW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 23:09:22 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=sbBSH2DTjB/d3kRdcgXe/18TUt8L673TJwEVs9SwgRXOiJ0wzyCZ6Y9Z2vO3ZLhC;
-  h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Date: Wed, 18 May 2011 23:09:18 -0400
-From: Bill Fink <billfink@mindspring.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: David Decotigny <decot@google.com>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-net-upstream@google.com
-Subject: Re: [PATCH 1/2] forcedeth: make module parameters readable in
- /sys/module
-Message-Id: <20110518230918.5c03ba68.billfink@mindspring.com>
-In-Reply-To: <20110518150346.508d6406@nehalam>
-References: <1305753000-14933-1-git-send-email-decot@google.com>
-	<20110518150346.508d6406@nehalam>
-X-Mailer: Sylpheed 2.6.0 (GTK+ 2.16.6; x86_64-redhat-linux-gnu)
+	id S1756591Ab1ESDTY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 23:19:24 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49936 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755533Ab1ESDTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 23:19:23 -0400
+Date: Thu, 19 May 2011 13:19:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the powerpc tree
+Message-Id: <20110519131913.79c14fe7.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: c598f748b88b6fd49c7f779228e2f6aeda0071232e20db4d06a4fcaadc5c6f1a2384ff367c881fee350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.179.3.111
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__19_May_2011_13_19_13_+1000_4LoZgqk+29JvW/Pz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 May 2011, Stephen Hemminger wrote:
+--Signature=_Thu__19_May_2011_13_19_13_+1000_4LoZgqk+29JvW/Pz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, 18 May 2011 14:09:59 -0700
-> David Decotigny <decot@google.com> wrote:
-> 
-> > This change allows to publish the values of the module parameters in
-> > /sys/module.
-> 
-> Although this makes more info for developer, it also means more
-> stuff in sysfs taking more memory and not providing any real value
-> that can't be found by looking at the /etc/modprobe.d for any parameters
-> user might have set.
+Hi all,
 
-As a user, I find having the module parameter info in
-/sys/module/driver/parameters/* extremely useful at times.
-In tracking down weird problems I can for example do:
+After merging the powerpc tree, today's linux-next build (powerpc
+allyesconfig) produced this warning:
 
-	grep . /sys/module/driver/parameters/*
+WARNING: arch/powerpc/sysdev/built-in.o(.text+0x10eb8): Section mismatch in=
+ reference from the function .ics_rtas_init() to the function .init.text:.x=
+ics_register_ics()
+The function .ics_rtas_init() references
+the function __init .xics_register_ics().
+This is often because .ics_rtas_init lacks a __init=20
+annotation or the annotation of .xics_register_ics is wrong.
 
-to get a snapshot of module parameters.  I can then compare
-this with other similar systems to see if there are any
-differences of note that might be significant (anything
-from differences due to kernel versions to just forgetting
-some change I made).
+Introduced by commit 0b05ac6e2480 ("powerpc/xics: Rewrite XICS driver").
 
-I don't see that it's really much extra significant overhead
-on the system either.
+ics_rtas_init() is only called from xics_init() which is marked __init,
+so ics_rtas_init() should be as well.
 
-					-Bill
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__19_May_2011_13_19_13_+1000_4LoZgqk+29JvW/Pz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN1IwxAAoJEDMEi1NhKgbsPH8IAIW5jLyxW5D1Q8J3j52PpFAB
+yDgDtCSQ675W8NrKydXzCgk0pnwb4lXHidy/cK4xgvl6RswtSvwgeMQTRHG60hkl
+fM6/8LsMtxfptClMb/6SATqblAxXkZn1l34LaQhJQ9/+LobvhkXZTaFqx1GZNMu2
+RovOuhzsolWrmkNr+jYYbaHNV1eJ+gh3kVFej5gJ270HmLMA1/mxAXVjSJ01+zMe
+7MGhr3+SurwNXJF7Py4VCqrUMFt/alyMlh2tCY0o/smYqTtV9/pYnRdeUsGbBYJQ
+5j2cahrbK8f50nBqh3fNhJsOUloHl4FsHb84bnFq17LCxFoq6b3CXHy1LWsNQuA=
+=v/Uj
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_May_2011_13_19_13_+1000_4LoZgqk+29JvW/Pz--
