@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934262Ab1ESSSW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:18:22 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40474 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933997Ab1ESSSR (ORCPT
+	id S934265Ab1ESSSd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:18:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41854 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933997Ab1ESSSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:18:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=Gk7o3aafAO4dCngwCBz3ML+UZlPWZ7p4w5FrAimhyTuq13NpGWuf3RtREbZ2e4OeUl
-         UnbPnVzOvvHIAuowORtMqQhN7iuzjkNhyoBUvTKbulfP3JBM3MFMWTiLhqLcrI5r9/OY
-         BuVG4MM5sBdi+PoYUkxTC8z8sNqnFQbWC6WTs=
+	Thu, 19 May 2011 14:18:30 -0400
+Date: Thu, 19 May 2011 12:18:27 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] gpio: remove some legacy comments in build files
+Message-ID: <20110519181827.GC5109@ponder.secretlab.ca>
+References: <1303975117-20651-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Date: Thu, 19 May 2011 20:18:16 +0200
-Message-ID: <BANLkTikwjL-3m110CcRs+-KLdZpH0rOTsQ@mail.gmail.com>
-Subject: samsung-laptop backlight control not working
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@suse.de, mjg@redhat.com,
-        David Herrmann <dh.herrmann@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303975117-20651-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Thu, Apr 28, 2011 at 09:18:37AM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> The build files for drivers/gpio has some wording and comments
+> about the directory being reserved exclusively for GPIO expanders
+> (according to the gpio.txt file these are on external busses) and
+> this has been false for some time. We already have PL061 and
+> Xilinx drivers which are in silicon and now I'm moving more
+> silicon drivers here, so delete this and reword it a bit.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-I tried the new samsung-laptop driver with samsung backlight support.
-It is detected as:
-[109282.931433] samsung_laptop: found laptop model 'N150P/N210P/N220P'
+Applied, thanks.
+g.
 
-However, backlight support is kind of weird:
-"echo 1 >/sys/class/backlight/samsung/brightness"
-does not set brightness to 1 but instead reduces brightness for 1.
-That is, if my current brightness setting is 8, I need to call "echo 1
->..." 7 times to get brightness value 1.
-
-"cat /sys/class/backlight...."
-returns 1 after the first try, though.
-
-"echo 3 >..."
-reduces brightness also for 1 but stops at brightness level 3 if I
-repeat the command.
-
-dmesg shows the following for every "echo" I call:
-[110690.073783] ACPI: Failed to switch the brightness
-
-Furthermore "echo 0 >..." doesn't disable backlight but instead
-behaves like a brightness setting below 1.
-
-
-However, I know the following works on my machine:
-setpci -s 00:02.0 F4.B=255
-It accepts a setting between 0-255 and 255 is full brightness and 0 is
-backlight off.
-
-
-Regards
-David
+> ---
+>  drivers/gpio/Kconfig  |    8 ++++----
+>  drivers/gpio/Makefile |    6 +-----
+>  2 files changed, 5 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index c23401f..b7fac15 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -1,5 +1,5 @@
+>  #
+> -# platform-neutral GPIO infrastructure and expanders
+> +# GPIO infrastructure and drivers
+>  #
+>  
+>  config ARCH_WANT_OPTIONAL_GPIOLIB
+> @@ -31,7 +31,7 @@ menuconfig GPIOLIB
+>  	help
+>  	  This enables GPIO support through the generic GPIO library.
+>  	  You only need to enable this, if you also want to enable
+> -	  one or more of the GPIO expansion card drivers below.
+> +	  one or more of the GPIO drivers below.
+>  
+>  	  If unsure, say N.
+>  
+> @@ -63,12 +63,12 @@ config GPIO_SYSFS
+>  	  Kernel drivers may also request that a particular GPIO be
+>  	  exported to userspace; this can be useful when debugging.
+>  
+> -# put expanders in the right section, in alphabetical order
+> +# put drivers in the right section, in alphabetical order
+>  
+>  config GPIO_MAX730X
+>  	tristate
+>  
+> -comment "Memory mapped GPIO expanders:"
+> +comment "Memory mapped GPIO drivers:"
+>  
+>  config GPIO_BASIC_MMIO
+>  	tristate "Basic memory-mapped GPIO controllers support"
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index e4851c5..cfbdef1 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -1,8 +1,4 @@
+> -# generic gpio support: dedicated expander chips, etc
+> -#
+> -# NOTE: platform-specific GPIO drivers don't belong in the
+> -# drivers/gpio directory; put them with other platform setup
+> -# code, IRQ controllers, board init, etc.
+> +# generic gpio support: platform drivers, dedicated expander chips, etc
+>  
+>  ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+>  
+> -- 
+> 1.7.3.2
+> 
