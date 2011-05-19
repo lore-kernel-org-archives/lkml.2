@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934209Ab1ESS3x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:29:53 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43265 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933799Ab1ESSZi (ORCPT
+	id S933858Ab1ESSZW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:25:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48374 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933803Ab1ESSZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:25:38 -0400
-X-Sasl-enc: X7puba+ncuPxkvyGpMf4VhckNFuDJEZ2QSnGmO7oq+Gi 1305829537
-Date: Thu, 19 May 2011 11:24:46 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/21] 2.6.32.41-longterm review
-Message-ID: <20110519182446.GA23751@kroah.com>
+	Thu, 19 May 2011 14:25:19 -0400
+Date: Thu, 19 May 2011 20:25:15 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Ludovic Desroches <ludovic.desroches@atmel.com>, linux-mm@kvack.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: atmel-mci causes kernel panic when CONFIG_DEBUG_VM is set
+Message-ID: <20110519182515.GC21172@pengutronix.de>
+References: <4DD4CC68.80408@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4DD4CC68.80408@atmel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.41 release.
-There are 21 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+Hello,
 
-Responses should be made by Sunday, May 22 2011, 18:00:00 UTC.
-Anything received after that time might be too late.
+On Thu, May 19, 2011 at 09:53:12AM +0200, Ludovic Desroches wrote:
+> There is a bug with the atmel-mci driver when the debug feature
+> CONFIG_DEBUG_VM is set.
+for the new audience: the driver does the following:
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.41-rc1.gz
-and the diffstat can be found below.
+	flush_dcache_page(sg_page(sg));
 
-thanks,
+with sg being a struct scatterlist * provided by the caller of the
+struct mmc_host_ops.request callback.
 
-greg k-h
+> Into the atmci_read_data_pio function we use flush_dcache_page (do
+> we really need it?) which call the page_mapping function where we
+> can find VM_BUG_ON(PageSlab(Page)). Then a kernel panic happens.
+> 
+> I don't understand the purpose of the VM_BUG_ON(PageSlab(Page)) (the
+> page comes from a scatter list). How could I correct this problem?
+I discussed this problem with Steven and Peter on irc and Steven found
+two functions in the mmc code (mmc_send_cxd_data and mmc_send_bus_test)
+that use the following idiom:
 
- Makefile                                 |    2 +-
- arch/x86/include/asm/apicdef.h           |    1 +
- arch/x86/kernel/cpu/amd.c                |    4 ++--
- arch/x86/kernel/cpu/mcheck/mce_amd.c     |    1 +
- arch/x86/kernel/cpu/mcheck/therm_throt.c |   12 +++++++-----
- drivers/net/Makefile                     |    6 +++---
- drivers/net/ehea/ehea_ethtool.c          |   21 +++++++++++++--------
- drivers/net/hydra.c                      |   14 +++++++-------
- drivers/net/ne-h8300.c                   |   16 ++++++++--------
- drivers/net/netxen/netxen_nic.h          |    1 -
- drivers/net/netxen/netxen_nic_init.c     |    1 -
- drivers/net/netxen/netxen_nic_main.c     |    1 -
- drivers/net/slip.c                       |    4 +++-
- drivers/net/vmxnet3/vmxnet3_ethtool.c    |    3 +++
- drivers/net/wireless/libertas/cmd.c      |    6 ++++--
- drivers/net/zorro8390.c                  |   12 ++++++------
- drivers/scsi/megaraid/megaraid_sas.c     |    3 +++
- fs/cifs/connect.c                        |   10 ++++++++--
- fs/cifs/sess.c                           |    4 +++-
- fs/partitions/efi.c                      |    6 ++++++
- kernel/time/clocksource.c                |    2 +-
- kernel/time/tick-broadcast.c             |   12 +++++++++++-
- kernel/time/timekeeping.c                |   11 +++++++++--
- net/dccp/options.c                       |    2 ++
- 24 files changed, 102 insertions(+), 53 deletions(-)
+	struct scatterlist sg;
+	void *data_buf;
+
+	data_buf = kmalloc(len, GFP_KERNEL);
+
+	sg_init_one(&sg, data_buf, len);
+
+Is that allowed (i.e. pass  kmalloc'd memory to sg_init_one)? That might
+be the source of the slub page in the scatterlist, no?
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
