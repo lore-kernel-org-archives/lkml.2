@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933537Ab1ESQbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:31:38 -0400
-Received: from postkast.cyber.ee ([195.50.202.7]:58305 "EHLO postkast.cyber.ee"
+	id S933591Ab1ESQd4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:33:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54913 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932336Ab1ESQbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:31:37 -0400
-Date: Thu, 19 May 2011 19:31:36 +0300 (EEST)
-From: Madis Janson <madis@cyber.ee>
-X-X-Sender: madis@paabel.itsise
-To: Takashi Iwai <tiwai@suse.de>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Enable Realtek ALC269 codec input layer beep
-In-Reply-To: <s5htycqu0j8.wl%tiwai@suse.de>
-Message-ID: <alpine.DEB.2.00.1105191925570.2046@paabel.itsise>
-References: <alpine.DEB.2.00.1105191717530.2046@paabel.itsise> <s5htycqu0j8.wl%tiwai@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-Respect: HAZ NONE
+	id S933481Ab1ESQdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 12:33:53 -0400
+Date: Thu, 19 May 2011 18:32:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 09/10] ptrace: add JOBCTL_BLOCK_NOTIFY
+Message-ID: <20110519163233.GE17265@redhat.com>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-10-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305569849-10448-10-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Thu, 19 May 2011, Takashi Iwai wrote:
-
-> The change look good, but could you give your sign-off?
-> See Documentation/SubmittingPatches section 12 "Sign your work" for
-> details.
+On 05/16, Tejun Heo wrote:
 >
-> Also, at the next time, please try to send the patch to the
-> corresponding subsystem maintainers.  scripts/get_maintainer.pl is
-> your friend.
+> +static void ptrace_put_task_struct(struct task_struct *child)
+> +{
+> +	unsigned long flags;
+> +
+> +	if (!(child->jobctl & JOBCTL_BLOCK_NOTIFY))
+> +		goto out_put;
+> +
+> +	if (unlikely(!lock_task_sighand(child, &flags)))
+> +		goto out_put;
+> +
+> +	/*
+> +	 * Make sure @chlid is still ptraced by us and clear BLOCK_NOTIFY.
+> +	 */
+> +	if (likely((child->ptrace & PT_PTRACED) && child->parent == current))
 
-Ok. Would this sign-off suffice? :)
----
+This looks a bit confusing... It is either traced or not. If it is traced,
+nobody else can trace it. In fact even PT_PTRACED is not strictly needed
+but I agree this check makes the code cleaner.
 
-This fixes the input layer beep not working on some EeePC 1000 models by
-adding the subsystem id into whitelist. Otherwise the corresponding ALSA
-mixer is not enabled and stays muted, resulting in no console beep.
-
-Signed-off-by: Madis Janson <madis@cyber.ee>
-
-diff -u linux-2.6.39/sound/pci/hda/patch_realtek.c lohe-2.6.39/sound/pci/hda/patch_realtek.c
---- linux-2.6.39/sound/pci/hda/patch_realtek.c	2011-05-19 07:06:34.000000000 +0300
-+++ lohe-2.6.39/sound/pci/hda/patch_realtek.c	2011-05-19 11:58:28.415669828 +0300
-@@ -5646,6 +5646,7 @@
-  	SND_PCI_QUIRK(0x1043, 0x829f, "ASUS", 1),
-  	SND_PCI_QUIRK(0x1043, 0x83ce, "EeePC", 1),
-  	SND_PCI_QUIRK(0x1043, 0x831a, "EeePC", 1),
-+	SND_PCI_QUIRK(0x1043, 0x834a, "EeePC", 1),
-  	SND_PCI_QUIRK(0x8086, 0xd613, "Intel", 1),
-  	{}
-  };
+Oleg.
 
