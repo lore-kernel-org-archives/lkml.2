@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933737Ab1ESRbb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:31:31 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38093 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933494Ab1ESRba convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:31:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ln1CIK6ulb+NkUpPsEV3Tr4WXMJT7fl3EuhvM0wUmifJ7zi2/dpoSpAnJBQeFN70YV
-         fM6UPx1L8VjYQPL/SIes7EkdKxs4Q8pn/gC3TrcS5MQoyeml763+ndLUWCuELTJDtakG
-         cZRU3roC2rsHQvBIMcvNnFzDHxfrvQ4dFxdzw=
+	id S933723Ab1ESRbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:31:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44012 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933494Ab1ESRbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 13:31:13 -0400
+Date: Thu, 19 May 2011 17:31:01 GMT
+From: tip-bot for Michal Marek <mmarek@suse.cz>
+Message-ID: <tip-d6971822c288ce5547190c6f812cc978d6520777@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rostedt@goodmis.org, mmarek@suse.cz, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, tglx@linutronix.de, mmarek@suse.cz
+In-Reply-To: <20110517133646.GP13293@sepie.suse.cz>
+References: <20110517133646.GP13293@sepie.suse.cz>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] ftrace/kbuild: Add recordmcount files to force full build
+Git-Commit-ID: d6971822c288ce5547190c6f812cc978d6520777
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20110519085234.2784f588.randy.dunlap@oracle.com>
-References: <20110519135941.2fda46ca.sfr@canb.auug.org.au>
-	<20110519085234.2784f588.randy.dunlap@oracle.com>
-Date: Thu, 19 May 2011 20:29:26 +0300
-Message-ID: <BANLkTi=PyyFxvL3YUJcO=2GTrHpjwG-RLA@mail.gmail.com>
-Subject: Re: [PATCH -next] staging: fix mei build when PM is not enabled
-From: Tomas Winkler <tomasw@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh <greg@kroah.com>,
-        driverdevel <devel@driverdev.osuosl.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 May 2011 17:31:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 6:52 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
->
-> Fix mei build when CONFIG_PM is not enabled (i.e., fix typo):
->
-> drivers/staging/mei/main.c:1159: error: 'MEI_PM_OPS' undeclared here (not in a function)
->
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
->  drivers/staging/mei/main.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- linux-next-20110519.orig/drivers/staging/mei/main.c
-> +++ linux-next-20110519/drivers/staging/mei/main.c
-> @@ -1145,7 +1145,7 @@ static int mei_pci_resume(struct device
->  static SIMPLE_DEV_PM_OPS(mei_pm_ops, mei_pci_suspend, mei_pci_resume);
->  #define MEI_PM_OPS     (&mei_pm_ops)
->  #else
-> -#define MIE_PM_OPS     NULL
-> +#define MEI_PM_OPS     NULL
->  #endif /* CONFIG_PM */
->  /*
->  *  PCI driver structure
+Commit-ID:  d6971822c288ce5547190c6f812cc978d6520777
+Gitweb:     http://git.kernel.org/tip/d6971822c288ce5547190c6f812cc978d6520777
+Author:     Michal Marek <mmarek@suse.cz>
+AuthorDate: Tue, 17 May 2011 15:36:46 +0200
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 19 May 2011 07:58:28 -0400
 
-Thanks for catching this
-Ack
-Tomas
+ftrace/kbuild: Add recordmcount files to force full build
+
+Modifications to recordmcount must be performed on all object
+files to stay consistent with what the kernel code may expect.
+Add the recordmcount files to the main dependencies to make sure
+any change to them causes a full recompile.
+
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+Link: http://lkml.kernel.org/r/20110517133646.GP13293@sepie.suse.cz
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ scripts/Makefile.build |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index fdca952..6165622 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -255,6 +255,8 @@ sub_cmd_record_mcount =					\
+ 	if [ $(@) != "scripts/mod/empty.o" ]; then	\
+ 		$(objtree)/scripts/recordmcount $(RECORDMCOUNT_FLAGS) "$(@)";	\
+ 	fi;
++recordmcount_source := $(srctree)/scripts/recordmcount.c \
++		    $(srctree)/scripts/recordmcount.h
+ else
+ sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+ 	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
+@@ -262,6 +264,7 @@ sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH
+ 	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)" \
+ 	"$(LD)" "$(NM)" "$(RM)" "$(MV)" \
+ 	"$(if $(part-of-module),1,0)" "$(@)";
++recordmcount_source := $(srctree)/scripts/recordmcount.pl
+ endif
+ cmd_record_mcount = 						\
+ 	if [ "$(findstring -pg,$(_c_flags))" = "-pg" ]; then	\
+@@ -282,13 +285,13 @@ define rule_cc_o_c
+ endef
+ 
+ # Built-in and composite module parts
+-$(obj)/%.o: $(src)/%.c FORCE
++$(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
+ 	$(call cmd,force_checksrc)
+ 	$(call if_changed_rule,cc_o_c)
+ 
+ # Single-part modules are special since we need to mark them in $(MODVERDIR)
+ 
+-$(single-used-m): $(obj)/%.o: $(src)/%.c FORCE
++$(single-used-m): $(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
+ 	$(call cmd,force_checksrc)
+ 	$(call if_changed_rule,cc_o_c)
+ 	@{ echo $(@:.o=.ko); echo $@; } > $(MODVERDIR)/$(@F:.o=.mod)
