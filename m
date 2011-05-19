@@ -1,166 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591Ab1ESGJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 02:09:11 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41996 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932267Ab1ESGJJ (ORCPT
+	id S932606Ab1ESGKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 02:10:46 -0400
+Received: from mta-2.ms.rz.RWTH-Aachen.DE ([134.130.7.73]:41431 "EHLO
+	mta-2.ms.rz.rwth-aachen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932267Ab1ESGKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 02:09:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DD4B3FA.5060901@jp.fujitsu.com>
-Date: Thu, 19 May 2011 15:08:58 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: yong.zhang0@gmail.com
-CC: paulmck@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, oleg@redhat.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-        lizf@cn.fujitsu.com, miaox@cn.fujitsu.com
-Subject: [PATCH v2 2/2] cpuset: fix cpuset_cpus_allowed_fallback() don't update
- tsk->rt.nr_cpus_allowed
-References: <20110428161149.GA15658@redhat.com> <20110502194416.2D61.A69D9226@jp.fujitsu.com> <20110502195657.2D68.A69D9226@jp.fujitsu.com> <1305129929.2914.247.camel@laptop> <4DCCC61F.80408@jp.fujitsu.com> <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com> <20110515185547.GL2258@linux.vnet.ibm.com> <20110516132623.GA2058@zhy> <4DD4B358.3080705@jp.fujitsu.com>
-In-Reply-To: <4DD4B358.3080705@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 19 May 2011 02:10:44 -0400
+MIME-version: 1.0
+X-IronPort-AV: E=Sophos;i="4.65,235,1304287200";
+ d="sig'?scan'208";a="113308872"
+Subject: Re: [PATCH] tcp: Implement a two-level initial RTO as per draft RFC
+ 2988bis-02.
+Content-type: multipart/signed; protocol="application/pgp-signature";
+ micalg=pgp-sha1; boundary=Apple-Mail-33-1060726600
+From: Alexander Zimmermann <alexander.zimmermann@comsys.rwth-aachen.de>
+In-reply-to: <BANLkTikQEq9+YkJHcTe3PWnRvh7AN=VVWA@mail.gmail.com>
+Date: Thu, 19 May 2011 08:10:40 +0200
+Cc: David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, hagen@jauu.net, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-transfer-encoding: 7bit
+Message-id: <9DC9A4D5-8E16-4361-B323-C92D563171A1@comsys.rwth-aachen.de>
+References: <1305771744-83951-1-git-send-email-tsunanet@gmail.com>
+ <20110518.223622.1525088601595365235.davem@davemloft.net>
+ <BANLkTinEN_=jSCw4qR1PqtWaQ+07OMq7tg@mail.gmail.com>
+ <20110519.001426.2119532755281545481.davem@davemloft.net>
+ <BANLkTikQEq9+YkJHcTe3PWnRvh7AN=VVWA@mail.gmail.com>
+To: tsuna <tsunanet@gmail.com>
+X-Pgp-Agent: GPGMail 1.3.3
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rule is, we have to update tsk->rt.nr_cpus_allowed if we change
-tsk->cpus_allowed. Otherwise RT scheduler may confuse.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--Apple-Mail-33-1060726600
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 
-This patch fixes it.
+Hi,
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
----
-  include/linux/cpuset.h |    2 +-
-  include/linux/sched.h  |    7 +++++++
-  kernel/cpuset.c        |    4 ++--
-  kernel/kthread.c       |    4 ++--
-  kernel/sched.c         |   19 ++++++++++++-------
-  5 files changed, 24 insertions(+), 12 deletions(-)
+Am 19.05.2011 um 06:33 schrieb tsuna:
 
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index f20eb8f..e9eaec5 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -146,7 +146,7 @@ static inline void cpuset_cpus_allowed(struct task_struct *p,
+> Presumably if the user decides to tweak these knobs, they'll know
+> what's appropriate for their environment.
 
-  static inline int cpuset_cpus_allowed_fallback(struct task_struct *p)
-  {
--	cpumask_copy(&p->cpus_allowed, cpu_possible_mask);
-+	do_set_cpus_allowed(p, cpu_possible_mask);
-  	return cpumask_any(cpu_active_mask);
-  }
+Are you sure? I'm not. I fully agree with David that minRTO is
+something that a user shout not control at all
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 12211e1..fa8fe23 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1799,9 +1799,16 @@ static inline void rcu_copy_process(struct task_struct *p)
-  #endif
+> Or are you suggesting that
+> one value be derived from the other?  (e.g. tcp_initial_fallback_rto =
+> 3 * tcp_initial_rto)
+> 
+>> As a result of all of this, I do not really think this is something
+>> the user should control at all.
+>> 
+>> I really would rather see the initial RTO be static and be set to 1
+>> with fallback RTO of 3.
+> 
+> I can also provide a simple patch for this if you want to start from
+> there.  And then maybe we can discuss having a runtime knob some more
+> :-)
+> 
+> -- 
+> Benoit "tsuna" Sigoure
+> Software Engineer @ www.StumbleUpon.com
 
-  #ifdef CONFIG_SMP
-+extern void do_set_cpus_allowed(struct task_struct *p,
-+			       const struct cpumask *new_mask);
-+
-  extern int set_cpus_allowed_ptr(struct task_struct *p,
-  				const struct cpumask *new_mask);
-  #else
-+static inline void do_set_cpus_allowed(struct task_struct *p,
-+				      const struct cpumask *new_mask)
-+{
-+}
-  static inline int set_cpus_allowed_ptr(struct task_struct *p,
-  				       const struct cpumask *new_mask)
-  {
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 2bb8c2e..04ceb53 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2195,7 +2195,7 @@ int cpuset_cpus_allowed_fallback(struct task_struct *tsk)
-  	rcu_read_lock();
-  	cs = task_cs(tsk);
-  	if (cs)
--		cpumask_copy(&tsk->cpus_allowed, cs->cpus_allowed);
-+		do_set_cpus_allowed(tsk, cs->cpus_allowed);
-  	rcu_read_unlock();
-
-  	/*
-@@ -2222,7 +2222,7 @@ int cpuset_cpus_allowed_fallback(struct task_struct *tsk)
-  		 * Like above we can temporary set any mask and rely on
-  		 * set_cpus_allowed_ptr() as synchronization point.
-  		 */
--		cpumask_copy(&tsk->cpus_allowed, cpu_possible_mask);
-+		do_set_cpus_allowed(tsk, cpu_possible_mask);
-  		cpu = cpumask_any(cpu_active_mask);
-  	}
-
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 3b34d27..4ba7ccc 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -202,8 +202,8 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
-  		return;
-  	}
-
--	p->cpus_allowed = cpumask_of_cpu(cpu);
--	p->rt.nr_cpus_allowed = 1;
-+	/* It's safe because the task is inactive. */
-+	do_set_cpus_allowed(p, cpumask_of(cpu));
-  	p->flags |= PF_THREAD_BOUND;
-  }
-  EXPORT_SYMBOL(kthread_bind);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 8efe3b7..52f1b5b 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -5826,7 +5826,7 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
-  	idle->state = TASK_RUNNING;
-  	idle->se.exec_start = sched_clock();
-
--	cpumask_copy(&idle->cpus_allowed, cpumask_of(cpu));
-+	do_set_cpus_allowed(idle, cpumask_of(cpu));
-  	/*
-  	 * We're having a chicken and egg problem, even though we are
-  	 * holding rq->lock, the cpu isn't yet set to this cpu so the
-@@ -5914,6 +5914,16 @@ static inline void sched_init_granularity(void)
-  }
-
-  #ifdef CONFIG_SMP
-+void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
-+{
-+	if (p->sched_class && p->sched_class->set_cpus_allowed)
-+		p->sched_class->set_cpus_allowed(p, new_mask);
-+	else {
-+		cpumask_copy(&p->cpus_allowed, new_mask);
-+		p->rt.nr_cpus_allowed = cpumask_weight(new_mask);
-+	}
-+}
-+
-  /*
-   * This is how migration works:
-   *
-@@ -5959,12 +5969,7 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
-  		goto out;
-  	}
-
--	if (p->sched_class->set_cpus_allowed)
--		p->sched_class->set_cpus_allowed(p, new_mask);
--	else {
--		cpumask_copy(&p->cpus_allowed, new_mask);
--		p->rt.nr_cpus_allowed = cpumask_weight(new_mask);
--	}
-+	do_set_cpus_allowed(p, new_mask);
-
-  	/* Can the task run on the task's current CPU? If so, we're done */
-  	if (cpumask_test_cpu(task_cpu(p), new_mask))
--- 
-1.7.3.1
+//
+// Dipl.-Inform. Alexander Zimmermann
+// Department of Computer Science, Informatik 4
+// RWTH Aachen University
+// Ahornstr. 55, 52056 Aachen, Germany
+// phone: (49-241) 80-21422, fax: (49-241) 80-22222
+// email: zimmermann@cs.rwth-aachen.de
+// web: http://www.umic-mesh.net
+//
 
 
+--Apple-Mail-33-1060726600
+content-type: application/pgp-signature; x-mac-type=70674453;
+	name=PGP.sig
+content-description: Signierter Teil der Nachricht
+content-disposition: inline; filename=PGP.sig
+content-transfer-encoding: 7bit
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.17 (Darwin)
+Comment: GPGTools - http://gpgtools.org
+
+iEYEARECAAYFAk3UtGEACgkQdyiq39b9uS5BAQCg8rVcWTflWjYU7QI7/dqL2ceV
+Bm8AoIKqyDcY2osrORNtI3LGQN7D0+zz
+=8ujM
+-----END PGP SIGNATURE-----
+
+--Apple-Mail-33-1060726600--
