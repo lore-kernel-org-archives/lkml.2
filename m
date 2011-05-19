@@ -1,98 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933980Ab1ESSof (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:44:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933814Ab1ESSod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:44:33 -0400
-Date: Thu, 19 May 2011 14:44:31 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dpshah@google.com" <dpshah@google.com>
-Subject: Re: [RFC PATCH 00/14] blk-throttle: lockless bio processing for no
- throttle rule group
-Message-ID: <20110519184431.GE12600@redhat.com>
-References: <1305746006-5837-1-git-send-email-vgoyal@redhat.com>
- <4DD56266.7090209@fusionio.com>
+	id S934084Ab1ESSsS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:48:18 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:44571 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933895Ab1ESSsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 14:48:16 -0400
+Date: Thu, 19 May 2011 14:48:15 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+cc: greg@kroah.com, <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <ablay@codeaurora.org>, <linux-arm-msm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v11 6/7] usb:dummy_hcd: use the shared_hcd infrustructure
+In-Reply-To: <1305805417-31750-7-git-send-email-tlinder@codeaurora.org>
+Message-ID: <Pine.LNX.4.44L0.1105191432120.1900-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD56266.7090209@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 08:33:10PM +0200, Jens Axboe wrote:
-> On 2011-05-18 21:13, Vivek Goyal wrote:
-> > Hi,
-> > 
-> > Block throttling code takes request queue lock for every incoming bio
-> > (blk_throtl_bio()). This is true even if there are no throttle rules in
-> > the group. This is a common case for root cgroup where distributions
-> > will have throttling support compiled in but a vast majority of users
-> > will not be specifying throttling rule.
-> > 
-> > This patch series tries to make bio processing lockless (no requeust
-> > queue lock), if there are no rules specified for the group. Once
-> > a bio is submitted, under rcu_read_lock() we search for the group, 
-> > update the stats and release the rcu lock. request queue lock is taken
-> > only if there are throttling rules specified in the group.
-> > 
-> > I have made some of the dispatch stats per cpu so that these can be updated
-> > without taking request queue lock.
-> > 
-> > On my system for a simple dd as follows, request queue lock acquisition
-> > count has gone down by 11% roughly.
-> > 
-> > dd if=/mnt/zerofile-1G of=/dev/null bs=4K iflag=direct
-> > 
-> > lockstat output vanilla kernel
-> > -----------------------------
-> > class name			acquisitions	holdtime-total
-> > 
-> > &(&q->__queue_lock)->rlock:	2360944		1850183.07
-> > 
-> > lockstat output with patched kernel
-> > -----------------------------------
-> > class name			acquisitions	holdtime-total
-> > &(&q->__queue_lock)->rlock:	2098599		1430478.79
-> > 
-> > 
-> > I did test on a 4 cpu system doing IO to one SSD. I did not see any
-> > significant improvement in throughput. I suspect that I never saturated
-> > the cpus hence I don't see the improvement in throughput. I will see
-> > if I can get more testing done on this and see if I notice IO throughput
-> > improvement.
-> > 
-> > Jens, first patch of the series is already in your for-linus branch. I
-> > was waiting for it to be pushed to Linus and then I can drop that first
-> > patch.
+On Thu, 19 May 2011, Tatyana Brokhman wrote:
+
+> This patch is a preparation for adding SuperSpeed support to dummy hcd.
+> It takes the master side fields out of the struct dummy to a separate
+> structure. The init process was also modified to resemble the way it is
+> done by xHCI.
 > 
-> Vivek, I get weird things in these patches. In fact I always get on your
-> patches. = are =3D, =20 some places, and line breaks. Can I ask you to
-> try and resend it to axboe@kernel.dk just to see if it's the company MTA
-> screwing things up, or if it's something at your end?
+> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 
-Sure, I am resending the series to your axboe@kernel.dk id. If you still
-see the problem there, then I need to look into my setup.
+I have not checked this in detail, but right off the bat there are a 
+few stylistic issues.
 
-I had cced the patches to myself. So took the mailbox of  the series
-and did "git am <patch-series>" and it gave two warnings about space
-before tab indent.
+BTW, splitting this up into two patches as Felipe suggested was a very 
+good idea.
 
-/home/vgoyal/main/git/linux-2.6/.git/rebase-apply/patch:16: space before
-tab in indent.
- 	struct backing_dev_info *bdi = &td->queue->backing_dev_info;
-/home/vgoyal/main/git/linux-2.6/.git/rebase-apply/patch:17: space before
-tab in indent.
- 	unsigned int major, minor;
-warning: 2 lines add whitespace errors.
+> --- a/drivers/usb/gadget/dummy_hcd.c
+> +++ b/drivers/usb/gadget/dummy_hcd.c
+> @@ -152,6 +152,24 @@ enum dummy_rh_state {
+>  	DUMMY_RH_RUNNING
+>  };
+>  
+> +struct dummy_hcd {
+> +	struct usb_hcd *hcd;
 
-Apart from that nothing else appeared. I will fix above two warnings and
-resend the series and this time on your axboe@kernel.dk id.
+What is this pointer for?  It doesn't get used by the 
+dummy_hcd_to_hcd() routine, which means it shouldn't get used at all.
 
-Thanks
-Vivek
+> +
+> +	struct dummy			*dum;
+> +	enum dummy_rh_state		rh_state;
+> +	struct timer_list		timer;
+> +	u32				port_status;
+> +	u32				old_status;
+> +	unsigned			resuming:1;
+
+It's silly to have a bitfield in isolation like this -- you end up 
+wasting a bunch of space.  Move this next to the other bitfields.
+
+> +	unsigned long			re_timeout;
+> +
+> +	struct usb_device		*udev;
+> +	struct list_head		urbp_list;
+> +
+> +	unsigned			active:1;
+> +	unsigned			old_active:1;
+> +};
+> +
+>  struct dummy {
+>  	spinlock_t			lock;
+>  
+> @@ -167,36 +185,26 @@ struct dummy {
+>  	u16				devstatus;
+>  	unsigned			udc_suspended:1;
+>  	unsigned			pullup:1;
+> -	unsigned			active:1;
+> -	unsigned			old_active:1;
+>  
+>  	/*
+>  	 * MASTER/HOST side support
+>  	 */
+> -	enum dummy_rh_state		rh_state;
+> -	struct timer_list		timer;
+> -	u32				port_status;
+> -	u32				old_status;
+> -	unsigned			resuming:1;
+> -	unsigned long			re_timeout;
+> -
+> -	struct usb_device		*udev;
+> -	struct list_head		urbp_list;
+> +	struct dummy_hcd *hs_hcd;
+
+You should use tabs to line up the columns with the existing entries.  
+Doesn't this look strange to you -- a single item in the middle of the 
+line by itself like that?
+
+>  };
+>  
+> -static inline struct dummy *hcd_to_dummy (struct usb_hcd *hcd)
+> +static inline struct dummy_hcd *hcd_to_dummy_hcd(struct usb_hcd *hcd)
+>  {
+> -	return (struct dummy *) (hcd->hcd_priv);
+> +	return (struct dummy_hcd *) (hcd->hcd_priv);
+>  }
+>  
+> -static inline struct usb_hcd *dummy_to_hcd (struct dummy *dum)
+> +static inline struct usb_hcd *dummy_hcd_to_hcd(struct dummy_hcd *dum)
+>  {
+>  	return container_of((void *) dum, struct usb_hcd, hcd_priv);
+>  }
+
+In several places you open-coded dummy_hcd_to_hcd().  Please change
+them to use the inline routine instead.
+
+> -static inline struct device *dummy_dev (struct dummy *dum)
+> +static inline struct device *dummy_dev(struct dummy_hcd *dum)
+>  {
+> -	return dummy_to_hcd(dum)->self.controller;
+> +	return dummy_hcd_to_hcd(dum)->self.controller;
+>  }
+
+You also open-coded this routine.  It doesn't matter so much, but for 
+the sake of style you should use this inline routine too.
+
+Alan Stern
+
