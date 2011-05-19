@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044Ab1ESJKY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 05:10:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62365 "EHLO mx1.redhat.com"
+	id S933193Ab1ESJPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 05:15:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10562 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933021Ab1ESJKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 05:10:22 -0400
+	id S933032Ab1ESJKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 05:10:23 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 14/32] GFS2: Add an AIL writeback tracepoint
-Date: Thu, 19 May 2011 09:47:09 +0100
-Message-Id: <1305794847-3291-15-git-send-email-swhiteho@redhat.com>
+Cc: Benjamin Marzinski <bmarzins@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 15/32] GFS2: make sure fallocate bytes is a multiple of blksize
+Date: Thu, 19 May 2011 09:47:10 +0100
+Message-Id: <1305794847-3291-16-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1305794847-3291-1-git-send-email-swhiteho@redhat.com>
 References: <1305794847-3291-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a tracepoint for monitoring writeback of the AIL.
+From: Benjamin Marzinski <bmarzins@redhat.com>
 
+The GFS2 fallocate code chooses a target size to for allocating chunks of
+space.  Whenever it can't find any resource groups with enough space free, it
+halves its target. Since this target is in bytes, eventually it will no longer
+be a multiple of blksize.  As long as there is more space available in the
+resource group than the target, this isn't a problem, since gfs2 will use the
+actual space available, which is always a multiple of blksize.  However,
+when gfs couldn't fallocate a bigger chunk than the target, it was using the
+non-blksize aligned number. This caused a BUG in later code that required
+blksize aligned offsets.  GFS2 now ensures that bytes is always a multiple of
+blksize
+
+Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/log.c b/fs/gfs2/log.c
-index 03e0041..ad1f188 100644
---- a/fs/gfs2/log.c
-+++ b/fs/gfs2/log.c
-@@ -144,6 +144,7 @@ void gfs2_ail1_flush(struct gfs2_sbd *sdp, struct writeback_control *wbc)
- 	struct list_head *head = &sdp->sd_ail1_list;
- 	struct gfs2_ail *ai;
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index 23eab47..a9f5cbe 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -816,6 +816,7 @@ static long gfs2_fallocate(struct file *file, int mode, loff_t offset,
+ 	loff_t bytes, max_bytes;
+ 	struct gfs2_alloc *al;
+ 	int error;
++	loff_t bsize_mask = ~((loff_t)sdp->sd_sb.sb_bsize - 1);
+ 	loff_t next = (offset + len - 1) >> sdp->sd_sb.sb_bsize_shift;
+ 	next = (next + 1) << sdp->sd_sb.sb_bsize_shift;
  
-+	trace_gfs2_ail_flush(sdp, wbc, 1);
- 	spin_lock(&sdp->sd_ail_lock);
- 	list_for_each_entry_reverse(ai, head, ai_list) {
- 		if (wbc->nr_to_write <= 0)
-@@ -151,6 +152,7 @@ void gfs2_ail1_flush(struct gfs2_sbd *sdp, struct writeback_control *wbc)
- 		gfs2_ail1_start_one(sdp, wbc, ai); /* This may drop ail lock */
- 	}
- 	spin_unlock(&sdp->sd_ail_lock);
-+	trace_gfs2_ail_flush(sdp, wbc, 0);
- }
+@@ -823,13 +824,15 @@ static long gfs2_fallocate(struct file *file, int mode, loff_t offset,
+ 	if (mode & ~FALLOC_FL_KEEP_SIZE)
+ 		return -EOPNOTSUPP;
  
- /**
-diff --git a/fs/gfs2/trace_gfs2.h b/fs/gfs2/trace_gfs2.h
-index 9133d0a..5d07609 100644
---- a/fs/gfs2/trace_gfs2.h
-+++ b/fs/gfs2/trace_gfs2.h
-@@ -10,6 +10,7 @@
- #include <linux/buffer_head.h>
- #include <linux/dlmconstants.h>
- #include <linux/gfs2_ondisk.h>
-+#include <linux/writeback.h>
- #include "incore.h"
- #include "glock.h"
+-	offset = (offset >> sdp->sd_sb.sb_bsize_shift) <<
+-		 sdp->sd_sb.sb_bsize_shift;
++	offset &= bsize_mask;
  
-@@ -320,6 +321,33 @@ TRACE_EVENT(gfs2_log_blocks,
- 		  MINOR(__entry->dev), __entry->blocks)
- );
+ 	len = next - offset;
+ 	bytes = sdp->sd_max_rg_data * sdp->sd_sb.sb_bsize / 2;
+ 	if (!bytes)
+ 		bytes = UINT_MAX;
++	bytes &= bsize_mask;
++	if (bytes == 0)
++		bytes = sdp->sd_sb.sb_bsize;
  
-+/* Writing back the AIL */
-+TRACE_EVENT(gfs2_ail_flush,
-+
-+	TP_PROTO(const struct gfs2_sbd *sdp, const struct writeback_control *wbc, int start),
-+
-+	TP_ARGS(sdp, wbc, start),
-+
-+	TP_STRUCT__entry(
-+		__field(	dev_t,	dev			)
-+		__field(	int, start			)
-+		__field(	int, sync_mode			)
-+		__field(	long, nr_to_write		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev		= sdp->sd_vfs->s_dev;
-+		__entry->start		= start;
-+		__entry->sync_mode	= wbc->sync_mode;
-+		__entry->nr_to_write	= wbc->nr_to_write;
-+	),
-+
-+	TP_printk("%u,%u ail flush %s %s %ld", MAJOR(__entry->dev),
-+		  MINOR(__entry->dev), __entry->start ? "start" : "end",
-+		  __entry->sync_mode == WB_SYNC_ALL ? "all" : "none",
-+		  __entry->nr_to_write)
-+);
-+
- /* Section 3 - bmap
-  *
-  * Objectives:
+ 	gfs2_holder_init(ip->i_gl, LM_ST_EXCLUSIVE, 0, &ip->i_gh);
+ 	error = gfs2_glock_nq(&ip->i_gh);
+@@ -860,6 +863,9 @@ retry:
+ 		if (error) {
+ 			if (error == -ENOSPC && bytes > sdp->sd_sb.sb_bsize) {
+ 				bytes >>= 1;
++				bytes &= bsize_mask;
++				if (bytes == 0)
++					bytes = sdp->sd_sb.sb_bsize;
+ 				goto retry;
+ 			}
+ 			goto out_qunlock;
 -- 
 1.7.4
 
