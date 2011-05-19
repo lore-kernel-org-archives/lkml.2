@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab1ESEfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 00:35:47 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51075 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab1ESEfq convert rfc822-to-8bit (ORCPT
+	id S1754573Ab1ESEqQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 00:46:16 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54287 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750752Ab1ESEqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 00:35:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BFR6Y33Zl6ggwKh6hSCm3Q24YuGTDjscKWLuG1zc3EC6HP09habJ2nx34xq7/2F6Zq
-         HxEwQxrf1LqkpugQhR0I4KTR1sj6+IRFkRxB7md2mCu2N+YoA4Ku8pwXMZo2y117aAqW
-         /4b8LA9O4l4VYK57JyRV2L9hc3sxAACMwGNgI=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimy6FPdgW=f8HOTBd6ORKmjvX3KFONXesacJ6Ms@mail.gmail.com>
-References: <AANLkTimkh2QLvupu+62NGrKfqRb_gC7KLCAKkEoS9N9N@mail.gmail.com>
-	<20110325172709.GC8483@linux-mips.org>
-	<AANLkTimy6FPdgW=f8HOTBd6ORKmjvX3KFONXesacJ6Ms@mail.gmail.com>
-Date: Thu, 19 May 2011 10:05:45 +0530
-Message-ID: <BANLkTimysdkBnr0LEdOsiT+Z3O-w-KO7=g@mail.gmail.com>
-Subject: Re: flush_kernel_vmap_range() invalidate_kernel_vmap_range() API not
- exists for MIPS
-From: naveen yadav <yad.naveen@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 May 2011 00:46:13 -0400
+Subject: Re: [PATCH 1/3] mpt2sas: remove the use of writeq, since writeq is
+ not atomic
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Hitoshi Mitake <h.mitake@gmail.com>
+Cc: "Moore, Eric" <Eric.Moore@lsi.com>, Milton Miller <miltonm@bga.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Desai, Kashyap" <Kashyap.Desai@lsi.com>,
+        "Prakash, Sathya" <Sathya.Prakash@lsi.com>,
+        Matthew Wilcox <matthew@wil.cx>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux scsi dev <linux-scsi@vger.kernel.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        linux powerpc dev <linuxppc-dev@lists.ozlabs.org>,
+        linux pci <linux-pci@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>
+In-Reply-To: <BANLkTin4w1QyL1NyTyrZARPWASai45W_4Q@mail.gmail.com>
+References: <20110504115324.GE17855@lsi.com>
+	 <1305616571.6008.23.camel@mulgrave.site>
+	 <B2FD678A64EAAD45B089B123FDFC3ED70157F7BCE5@inbmail01.lsi.com>
+	 <20110518041551.GL15227@parisc-linux.org>
+	 <1305692584.2580.3.camel@mulgrave.site> <1305702010.2781.33.camel@pasglop>
+	 <mpt2sas-writeq-powerpc64@mdm.bga.com>
+	 <4565AEA676113A449269C2F3A549520F80B66280@cosmail03.lsi.com>
+	 <x86-32-writeq-is-broken@mdm.bga.com>
+	 <4565AEA676113A449269C2F3A549520F80BE7F37@cosmail03.lsi.com>
+	 <BANLkTin4w1QyL1NyTyrZARPWASai45W_4Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 May 2011 08:46:00 +0400
+Message-ID: <1305780360.2576.20.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ralf,
+On Thu, 2011-05-19 at 13:08 +0900, Hitoshi Mitake wrote:
+> On Thu, May 19, 2011 at 04:11, Moore, Eric <Eric.Moore@lsi.com> wrote:
+> > On Wednesday, May 18, 2011 12:31 PM Milton Miller wrote:
+> >> Ingo I would propose the following commits added in 2.6.29 be reverted.
+> >> I think the current concensus is drivers must know if the writeq is
+> >> not atomic so they can provide their own locking or other workaround.
+> >>
+> >
+> >
+> > Exactly.
+> >
+> 
+> The original motivation of preparing common readq/writeq is that
+> letting each driver
+> have their own readq/writeq is bad for maintenance of source code.
+> 
+> But if you really dislike them, there might be two solutions:
+> 
+> 1. changing the name of readq/writeq to readq_nonatomic/writeq_nonatomic
 
-Have you got time to look into this issue.
+This is fine, but not really very useful
 
-Regards
+> 2. adding new C file to somewhere and defining spinlock for them.
+>     With spin_lock_irqsave() and spin_unlock_irqrestore() on the spinlock,
+>     readq/writeq can be atomic.
+
+This can't really be done generically.  There are several considerations
+to do with hardware requirements.  I can see some hw requiring a
+specific write order (I think this applies more to read order, though).
+
+The specific mpt2sas problem is that if we write a 64 bit register non
+atomically, we can't allow any interleaving writes for any other region
+on the chip, otherwise the HW will take the write as complete in the 64
+bit register and latch the wrong value.  The only way to achieve that
+given the semantics of writeq is a global static spinlock.
+
+> How do you think about them? If you cannot agree with the above two
+> solutions, I'll agree with reverting them.
+
+Having x86 roll its own never made any sense, so I think they need
+reverting anyway.  This is a driver/platform bus problem not an
+architecture problem.  The assumption we can make is that the platform
+CPU can write atomically at its chip width.  We *may* be able to make
+the assumption that the bus controller can translate an atomic chip
+width transaction to a single atomic bus transaction; I think that
+assumption holds true for at least PCI and on the parisc legacy busses,
+so if we can agree on semantics, this should be a global define
+somewhere.  If there are problems with the bus assumption, we'll likely
+need some type of opt-in (or just not bother).
+
+James
 
 
-On Tue, Mar 29, 2011 at 11:24 AM, naveen yadav <yad.naveen@gmail.com> wrote:
-> I am sorry, Yes they are VIPT,
->
->
-> On Fri, Mar 25, 2011 at 10:57 PM, Ralf Baechle <ralf@linux-mips.org> wrote:
->> On Fri, Mar 25, 2011 at 02:38:13PM +0530, naveen yadav wrote:
->>
->>> We are working on 2.6.35.9 linux kernel on MIPS 34kce core and our
->>> cache is VIVT having cache aliasing .
->>
->> No, they're VIPT unless you successfully modified your 34K core to
->> change it from a less than perfect cache design to the most lunatic
->> cache policy known to man kind ...
->>
->>> When I check the implementation on ARM I can check the implemenation
->>> exists , but there is not similar implementation exists on MIPS.
->>> These API's are used by XFS module:
->>>
->>> static inline void flush_kernel_vmap_range(void *vaddr, int size)
->>> static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
->>> static inline void flush_kernel_dcache_page(struct page *page)
->>
->> A known problem for (too ...) long.  I'll finally take care of it.
->>
->>  Ralf
->>
->
