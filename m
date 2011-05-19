@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933552Ab1ESQdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:33:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33305 "EHLO
+	id S933564Ab1ESQdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:33:42 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33379 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933117Ab1ESQdd (ORCPT
+	with ESMTP id S933481Ab1ESQdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:33:33 -0400
-Date: Thu, 19 May 2011 12:33:13 -0400
+	Thu, 19 May 2011 12:33:40 -0400
+Date: Thu, 19 May 2011 12:33:21 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: dkiper@net-space.pl, Ian Campbell <Ian.Campbell@eu.citrix.com>
-Subject: [GIT PULL] (xen) stable/balloon.cleanup stable/general.cleanup
-Message-ID: <20110519163313.GB13186@dumpdata.com>
+Cc: dkiper@net-space.pl, kevin.tian@intel.com, tinnycloud@hotmail.com,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [GIT PULL] (xen) stable/irq stable/p2m.bugfixes stable/e820.bugfixes
+ stable/mmu.bugfixes
+Message-ID: <20110519163321.GC13186@dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090202.4DD54655.0162:SCFSTAT5015188,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090209.4DD5465D.0039:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hey Linus,
 
-Please git pull the following two branches:
+Please pull these four branches:
 
- git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/balloon.cleanup stable/general.cleanup
+  git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/irq stable/p2m.bugfixes stable/e820.bugfixes stable/mmu.bugfixes
 
+Which has ..um.. bug-fixes.
 
-The #stable/balloon.cleanup is based off v2.6.39-rc1 (0ce790e7d736cedc563e1fb4e998babf5a4dbc3d)
+#stable/irq is based of v2.6.39-rc7 (693d92a1bbc9e42681c42ed190bd42b636ca876f)
+which has one patch that cleans up the way event channels are funneled into the
+right IRQ handler in Linux. The way we do the things right is pretty horrid.
+In the Xen hypervisor, GSI, vectors, or virtual vectors are all funneled in their
+respective event channels. On the Linux side we have to de-multiplex this
+and let the right IRQ handler handle it. Except that we were overloading the
+chip functions that dealt with GSI and vectors (MSI/MSI-X) causing us to have to
+do some extra hack^H^H^H fancy unmasking/masking. All this is now going away.
+The IRQ ACKing might be slower now, but it is much easier to understand.
 
-and cleans up the drivers/xen/balloon.c to make it easier to read and as well
-prep it up hotplug memory code written by Daniel Kiper, an Google Summer of Code
-student.
+#stable/p2m.bugfixes is based off v2.6.39-rc1 (0ce790e7d736cedc563e1fb4e998babf5a4dbc3d)
+During save and restore we did not remember the PFN to MFN entries that were
+created for the E820 PCI holes. Hence during restore we would forget them
+and crash.
 
-The #stable/general.cleanup, which is based of a particular git commit in the
-2.6.39-rc6-ish: "Merge branch 'stable/bug-fixes-for-rc7' of git://git.kernel.org/../konrad"
-with git commit 0c5e1577f1108e88475ca7b7ca75c411460173e1. This was due to the fact
-that at that point in time there was no nice tag to base it off and the patches depended
-on that merge. Anyhow, the patches cleanup the __init* usage in Xen code as well
-clean up the Makefile.
+#stable/e820.bugfixes is based off v2.6.39-rc7 (693d92a1bbc9e42681c42ed190bd42b636ca876f)
+.. has two fixes for the patches that went in 2.6.39. We were mishandling
+the E820 parsing under certain conditions - workaround existed so they weren't
+being pushed for 2.6.39.
 
-The full diffstat:
+#stable/mmu.bugfixes is based off v2.6.39-rc7 (693d92a1bbc9e42681c42ed190bd42b636ca876f)
+.. fixes a nasty race condition. This particular bug started manifesting
+itself when git commit 831d52bc153971b70e64eccfbed2b232394f22f8
+("x86, mm: avoid possible bogus tlb entries by clearing prev mm_cpumask after") was
+introduced.
 
- arch/x86/xen/enlighten.c     |   20 ++++++++++----------
- arch/x86/xen/irq.c           |    2 +-
- arch/x86/xen/mmu.c           |   34 +++++++++++++++++-----------------
- arch/x86/xen/setup.c         |    4 ++--
- arch/x86/xen/smp.c           |    8 ++++----
- arch/x86/xen/time.c          |    8 ++++----
- arch/x86/xen/xen-ops.h       |    2 +-
- drivers/xen/Makefile         |   24 ++++++++++++------------
- drivers/xen/balloon.c        |   25 +++++++++++--------------
- drivers/xen/sys-hypervisor.c |    2 +-
- 10 files changed, 63 insertions(+), 66 deletions(-)
+The diff stat:
 
-And log:
+ arch/x86/xen/mmu.c   |    2 +-
+ arch/x86/xen/p2m.c   |   30 ++++++++++++-
+ arch/x86/xen/setup.c |    6 ++-
+ drivers/xen/events.c |  113 ++++++++++++++++++++++++++++++++------------------
+ 4 files changed, 107 insertions(+), 44 deletions(-)
 
-Daniel Kiper (12):
-      xen/balloon: Use PageHighMem() for high memory page detection
-      xen/balloon: Simplify HVM integration
-      xen/balloon: Clarify credit calculation
-      xen/balloon: Move dec_totalhigh_pages() from __balloon_append() to balloon_append()
-      arch/x86/xen/irq: Cleanup code/data sections definitions
-      arch/x86/xen/enlighten: Cleanup code/data sections definitions
-      arch/x86/xen/setup: Cleanup code/data sections definitions
-      arch/x86/xen/mmu: Cleanup code/data sections definitions
-      arch/x86/xen/xen-ops: Cleanup code/data sections definitions
-      arch/x86/xen/time: Cleanup code/data sections definitions
-      arch/x86/xen/smp: Cleanup code/data sections definitions
-      drivers/xen/sys-hypervisor: Cleanup code/data sections definitions
+and the full log:
 
-Ian Campbell (1):
-      xen: tidy up whitespace in drivers/xen/Makefile
+Daniel Kiper (1):
+      xen/setup: Fix for incorrect xen_extra_mem_start initialization under 32-bit
+
+Konrad Rzeszutek Wilk (2):
+      xen/setup: Ignore E820_UNUSABLE when setting 1-1 mappings.
+      xen/p2m: Create entries in the P2M_MFN trees's to track 1-1 mappings
+
+Stefano Stabellini (1):
+      xen: do not clear and mask evtchns in __xen_evtchn_do_upcall
+
+Tian, Kevin (1):
+      xen mmu: fix a race window causing leave_mm BUG()
 
