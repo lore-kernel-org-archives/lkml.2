@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab1ESAqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 20:46:55 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:3662 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424Ab1ESAqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 20:46:53 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-Message-ID: <4DD46865.9010708@broadcom.com>
-Date: Wed, 18 May 2011 17:46:29 -0700
-From: "Henry Ptasinski" <henryp@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.5)
- Gecko/20091204 Lightning/1.0b1 Thunderbird/3.0
-MIME-Version: 1.0
-To: "Joe Perches" <joe@perches.com>
-cc: "Brett Rudley" <brudley@broadcom.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "Dowan Kim" <dowan@broadcom.com>,
-        "Roland Vossen" <rvossen@broadcom.com>,
-        "Arend Van Spriel" <arend@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        "Henry Ptasinski" <henryp@broadcom.com>
-Subject: Re: [PATCH] staging: brcm80211: brcmfmac: Add and use dhd_dbg
-References: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
- <4DD44C21.1080502@broadcom.com> <1305765163.1745.4.camel@Joe-Laptop>
-In-Reply-To: <1305765163.1745.4.camel@Joe-Laptop>
-X-WSS-ID: 61CAB6C23IC2928684-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
+	id S1754209Ab1ESAzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 20:55:47 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:44697 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424Ab1ESAzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 20:55:46 -0400
+Subject: Re: [PATCH v5 13/21] evm: add evm_inode_post_init call in gfs2
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>,
+        linux-security-module@vger.kernl.org, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Mimi Zohar <zohar@us.ibm.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@redhat.com>
+In-Reply-To: <4DD17A15.2060102@schaufler-ca.com>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305559822.2855.14.camel@menhir>
+	 <1305561051.2669.10.camel@localhost.localdomain>
+	 <1305562469.2855.26.camel@menhir>
+	 <1305563758.2669.26.camel@localhost.localdomain>
+	 <1305568250.2669.47.camel@localhost.localdomain>
+	 <1305568671.2855.31.camel@menhir>  <4DD16B96.7020907@schaufler-ca.com>
+	 <1305571683.2669.90.camel@localhost.localdomain>
+	 <4DD17A15.2060102@schaufler-ca.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 May 2011 20:55:40 -0400
+Message-ID: <1305766540.3304.44.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2011 05:32 PM, Joe Perches wrote:
-> On Wed, 2011-05-18 at 15:45 -0700, Henry Ptasinski wrote:
->> On 05/18/2011 11:23 AM, Joe Perches wrote:
->>> All uses of DHD_<TYPE>   macros are for debugging only.
->>> Change the multiple uses of DHD_<TYPE>((...)) to dhd_dbg(TYPE, ...)
->>> for a more consistent style.
->> I generally like this approach, but in brcmsmac we've been switching to
->> wiphy_err() and related instead.  Any strong argument for one over the
->> other?
->
-> These aren't described as errors but are debugging messages.
+On Mon, 2011-05-16 at 12:25 -0700, Casey Schaufler wrote: 
+> On 5/16/2011 11:48 AM, Mimi Zohar wrote:
+> > On Mon, 2011-05-16 at 11:23 -0700, Casey Schaufler wrote:
 
-Yes, so wiphy_debug(), wiphy_info(), wiphy_notice(), etc could be used. 
-  It's not as fine grained as the current logging mechanism, so that 
-would be one argument against using wiphy_*.  I don't have a strong 
-opinion either way, just looking to see which is the generally preferred 
-approach in the kernel (if there is any preference).
+> >> There is a very real possibility that multiple concurrent LSMs will
+> >> be supported before too long. Smack already uses multiple attributes
+> >> (SMACK64, SMACK64EXEC) on a file. Getting all the attributes in a
+> >> single call could result in an interface that requires parsing a
+> >> string argument, and we all know how popular those are. Introducing
+> >> an interface that we know isn't going to accommodate this upcoming
+> >> direction does not seem prudent.
+> > I would think that Smack would benefit from Steven's suggestion of
+> > returning an array of xattrs. Without his suggestion, I'm not sure how
+> > you are, or planning on, initializing multiple xattrs from a single LSM,
+> > unless of course you're not using security_inode_init_security().
+> 
+> The good news is that Smack has one required attribute. The others
+> are for special purposes and will usually be absent. It is easy to
+> imagine an LSM that always uses multiple attributes on a given file.
+> 
+> Yes, the array of xattr structures makes sense for any one LSM,
+> but there still needs to be the potential for multiple calls for
+> the multiple LSM case. I can't see that going away without a radical
+> LSM restructuring.
+> 
+> > Multiple LSMs calling security_inode_init_security() will be an issue
+> > for EVM, as EVM assumes there is a single LSM xattr on which to base the
+> > initial hmac.
+> 
+> That is far from the biggest issue with multiple LSMs, but is definitely
+> something to worry about.
+
+Ok. After thinking about this a bit more, moving
+evm_inode_init_security() into security_inode_init_security() only works
+for the single LSM and EVM case, but not for the multiple LSMs and EVM
+case, as the 'stacker' would call each LSM's
+security_inode_iint_security().  Having the 'stacker' return an array of
+xattrs would make sense and, at the same time, resolve the EVM issue. In
+evm_inode_post_init_security(), EVM could then walk the list of xattrs.
+
+Mimi
 
 
->>> -       DHD_TRACE(("%s: Enter\n", __func__));
->>> +       dhd_dbg(TRACE, "%s: Enter\n", __func__);
->> I'd propose moving __func__ into the macro definition itself, which
->> would help ensure consistency (and shorten all the debug lines a bit).
->
-> I think TRACE is unnecessary and can be eliminated
-> and replaced by the function tracer.
->
-> Not all uses use __func__.
-
-That's just sloppiness on our part.  They should all be consistent.
-
-> I think __func__ unnecessary and it should be avoided.
-
-If it's moved into the macro, then there's only one place to change if 
-you want to delete "__func__"/add it back/include it conditionally.
-
-
-> Other than that, I've no objections.
->
->> Also, perhaps rename to "brcm_dbg()", "bcm_dbg()" or something like that
->> and move it into include/bcmutils.h, so brcmsmac can use it as well.
->
-> Your choice.
-
-"brcm_dbg()" seems fine to me.
-
-- Henry
 
