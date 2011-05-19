@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934342Ab1ESS1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:27:14 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:35969 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934302Ab1ESS1K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:27:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=CYRXlKSRpjSN2BjW87VPFHZjtblxKYVLdlsK5dVKaD0FKMxG723e1vhCopdYUKUIaj
-         F3SMKh5UNf2vvxXEKu3qrxtydt75TFc3NB4tzz/ocGpxSuRdAnLnx4hqJgCM7wlvSKok
-         byir54ZKRourFh4i/O6iTEmF30SitI2C4JMjk=
-Date: Thu, 19 May 2011 21:27:03 +0300
-From: Maxin B John <maxin.john@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, tim.gardner@canonical.com, airlied@redhat.com,
-        lethal@linux-sh.org, james@albanarts.com, error27@gmail.com,
-        randy.dunlap@oracle.com
-Subject: [PATCH] drivers: video: Remove useless checks
-Message-ID: <20110519182702.GA3337@maxin>
+	id S934351Ab1ESS11 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:27:27 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:57177 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934350Ab1ESS1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 14:27:22 -0400
+X-ASG-Debug-ID: 1305829640-01de28096b4f8d0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DD56104.6080801@fusionio.com>
+Date: Thu, 19 May 2011 20:27:16 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Alex,Shi" <alex.shi@intel.com>
+CC: "Li, Shaohua" <shaohua.li@intel.com>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Perfromance drop on SCSI hard disk
+References: <1305009600.21534.587.camel@debian>	 <4DCC4340.6000407@fusionio.com>  <1305247704.2373.32.camel@sli10-conroe>	 <1305255717.2373.38.camel@sli10-conroe>	 <1305533054.2375.45.camel@sli10-conroe>	 <1305535071.21534.2122.camel@debian> <1305612565.21534.2177.camel@debian>	 <4DD221BE.3040406@fusionio.com> <1305793580.22968.155.camel@debian>
+X-ASG-Orig-Subj: Re: Perfromance drop on SCSI hard disk
+In-Reply-To: <1305793580.22968.155.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1305829640
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64212
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comparing unsigned less than zero will never be true.
-Removing similar checks from 'fbmem.c' and 'fbcmap.c'.
+On 2011-05-19 10:26, Alex,Shi wrote:
+> 
+>> I will queue up the combined patch, it looks fine from here as well.
+>>
+> 
+> When I have some time to study Jens and shaohua's patch today. I find a
+> simpler way to resolved the re-enter issue on starved_list. Following
+> Jens' idea, we can just put the starved_list device into kblockd if it
+> come from __scsi_queue_insert(). 
+> It can resolve the re-enter issue and recover performance totally, and
+> need not a work_struct in every scsi_device. The logic/code also looks a
+> bit simpler. 
+> What's your opinion of this? 
 
-Please let me know your comments.
+Isn't this _identical_ to my original patch, with the added async run of
+the queue passed in (which is important, an oversight)?
 
-Signed-off-by: Maxin B. John <maxin.john@gmail.com>
----
-diff --git a/drivers/video/fbcmap.c b/drivers/video/fbcmap.c
-index 5c3960d..15cf8fc 100644
---- a/drivers/video/fbcmap.c
-+++ b/drivers/video/fbcmap.c
-@@ -285,8 +285,7 @@ int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *info)
- 		rc = -ENODEV;
- 		goto out;
- 	}
--	if (cmap->start < 0 || (!info->fbops->fb_setcolreg &&
--				!info->fbops->fb_setcmap)) {
-+	if (!info->fbops->fb_setcolreg && !info->fbops->fb_setcmap) {
- 		rc = -EINVAL;
- 		goto out1;
- 	}
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index 5aac00e..9edca4d 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1143,7 +1143,7 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
- 			return -EFAULT;
- 		if (con2fb.console < 1 || con2fb.console > MAX_NR_CONSOLES)
- 			return -EINVAL;
--		if (con2fb.framebuffer < 0 || con2fb.framebuffer >= FB_MAX)
-+		if (con2fb.framebuffer >= FB_MAX)
- 			return -EINVAL;
- 		if (!registered_fb[con2fb.framebuffer])
- 			request_module("fb%d", con2fb.framebuffer);
+-- 
+Jens Axboe
+
