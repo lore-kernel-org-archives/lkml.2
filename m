@@ -1,92 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933188Ab1ESJNo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 05:13:44 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50666 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933078Ab1ESJK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 05:10:28 -0400
-Date: Thu, 19 May 2011 11:10:24 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [patch 5/7] clockevents: Provide interface to reconfigure an
- active clock event device
-Message-ID: <20110519091024.GB6251@elte.hu>
-References: <20110518205713.947614271@linutronix.de>
- <20110518210136.437459958@linutronix.de>
+	id S933203Ab1ESJN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 05:13:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30146 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932717Ab1ESJNm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 05:13:42 -0400
+Message-ID: <4DD4DF4C.501@oracle.com>
+Date: Thu, 19 May 2011 17:13:48 +0800
+From: Tristan Ye <tristan.ye@oracle.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110518210136.437459958@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Sunil Mushran <sunil.mushran@oracle.com>
+CC: josef@redhat.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [Ocfs2-devel] [PATCH] ocfs2: Implement llseek()
+References: <1305773084-19296-1-git-send-email-sunil.mushran@oracle.com> <1305773084-19296-3-git-send-email-sunil.mushran@oracle.com>
+In-Reply-To: <1305773084-19296-3-git-send-email-sunil.mushran@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DD4DF3E.014F:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Thomas Gleixner <tglx@linutronix.de> wrote:
-
-> Some ARM SoCs have clock event devices which have their frequency
-> modified due to frequency scaling. Provide an interface which allows
-> to reconfigure an active device. After reconfiguration reprogram the
-> current pending event.
+Sunil Mushran wrote:
+> ocfs2 implements its own llseek() to provide the SEEK_HOLE/SEEK_DATA
+> functionality.
 > 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> SEEK_HOLE sets the file pointer to the start of either a hole or an unwritten
+> (preallocated) extent, that is greater than or equal to the supplied offset.
+> 
+> SEEK_DATA sets the file pointer to the start of an allocated extent (not
+> unwritten) that is greater than or equal to the supplied offset.
+> 
+> If the supplied offset is on a desired region, then the file pointer is set
+> to it. Offsets greater than or equal to the file size return -ENXIO.
+> 
+> Unwritten (preallocated) extents are considered holes because the file system
+> treats reads to such regions in the same way as it does to holes.
+> 
+> Signed-off-by: Sunil Mushran <sunil.mushran@oracle.com>
 > ---
->  include/linux/clockchips.h |    2 ++
->  kernel/time/clockevents.c  |   20 ++++++++++++++++++++
->  2 files changed, 22 insertions(+)
+>  fs/ocfs2/extent_map.c |   97 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  fs/ocfs2/extent_map.h |    2 +
+>  fs/ocfs2/file.c       |   53 ++++++++++++++++++++++++++-
+>  3 files changed, 150 insertions(+), 2 deletions(-)
 > 
-> Index: linux-2.6-tip/include/linux/clockchips.h
-> ===================================================================
-> --- linux-2.6-tip.orig/include/linux/clockchips.h
-> +++ linux-2.6-tip/include/linux/clockchips.h
-> @@ -132,6 +132,8 @@ extern void clockevents_config_and_regis
->  					    u32 freq, unsigned long min_delta,
->  					    unsigned long max_delta);
->  
-> +extern int clockevents_reconfigure(struct clock_event_device *ce, u32 freq);
-> +
->  extern void clockevents_exchange_device(struct clock_event_device *old,
->  					struct clock_event_device *new);
->  extern void clockevents_set_mode(struct clock_event_device *dev,
-> Index: linux-2.6-tip/kernel/time/clockevents.c
-> ===================================================================
-> --- linux-2.6-tip.orig/kernel/time/clockevents.c
-> +++ linux-2.6-tip/kernel/time/clockevents.c
-> @@ -238,6 +238,26 @@ void clockevents_config_and_register(str
->  	clockevents_register_device(dev);
+> diff --git a/fs/ocfs2/extent_map.c b/fs/ocfs2/extent_map.c
+> index 23457b4..6942c21 100644
+> --- a/fs/ocfs2/extent_map.c
+> +++ b/fs/ocfs2/extent_map.c
+> @@ -832,6 +832,103 @@ out:
+>  	return ret;
 >  }
 >  
-> +/**
-> + * clockevents_reconfigure - Reconfigure and reprogram a clock event device.
-> + * @dev:	device to modify
-> + * @freq:	new device frequency
-> + *
-> + * Reconfigure and reprogram a clock event device in oneshot
-> + * mode. Must be called on the cpu for which the device delivers per
-> + * cpu timer events with interrupts disabled!  Returns 0 on success,
-> + * -ETIME when the event is in the past.
-> + */
-> +int clockevents_reconfigure(struct clock_event_device *dev, u32 freq)
+> +int ocfs2_seek_data_hole_offset(struct file *file, loff_t *offset, int origin)
+> +{
+> +	struct inode *inode = file->f_mapping->host;
+> +	int ret;
+> +	unsigned int is_last = 0, is_data = 0;
+> +	u16 cs_bits = OCFS2_SB(inode->i_sb)->s_clustersize_bits;
+> +	u32 cpos, cend, clen, hole_size;
+> +	u64 extoff, extlen;
+> +	struct buffer_head *di_bh = NULL;
+> +	struct ocfs2_extent_rec rec;
+> +
+> +	BUG_ON(origin != SEEK_DATA && origin != SEEK_HOLE);
+> +
+> +	ret = ocfs2_inode_lock(inode, &di_bh, 0);
+> +	if (ret) {
+> +		mlog_errno(ret);
+> +		goto out;
+> +	}
+> +
+> +	down_read(&OCFS2_I(inode)->ip_alloc_sem);
+> +
+> +	if (inode->i_size == 0 || *offset >= inode->i_size) {
+> +		ret = -ENXIO;
+> +		goto out_unlock;
+> +	}
 
-This too could use a struct clockevents_params perhaps - and would only use 
-params.freq for now but might be extended in the future.
+Why not using if (*offset >= inode->i_size) directly?
 
-But i'm fine with this API as well:
+> +
+> +	if (OCFS2_I(inode)->ip_dyn_features & OCFS2_INLINE_DATA_FL) {
+> +		if (origin == SEEK_HOLE)
+> +			*offset = inode->i_size;
+> +		goto out_unlock;
+> +	}
+> +
+> +	clen = 0;
+> +	cpos = *offset >> cs_bits;
+> +	cend = ocfs2_clusters_for_bytes(inode->i_sb, inode->i_size);
+> +
+> +	while (cpos < cend && !is_last) {
+> +		ret = ocfs2_get_clusters_nocache(inode, di_bh, cpos, &hole_size,
+> +						 &rec, &is_last);
+> +		if (ret) {
+> +			mlog_errno(ret);
+> +			goto out_unlock;
+> +		}
+> +
+> +		extoff = cpos;
+> +		extoff <<= cs_bits;
+> +
+> +		if (rec.e_blkno == 0ULL) {
+> +			clen = hole_size;
+> +			is_data = 0;
+> +		} else {
+> +			BUG_ON(cpos < le32_to_cpu(rec.e_cpos));
 
-Reviewed-by: Ingo Molnar <mingo@elte.hu>
 
-Thanks,
+A same assert has already been performed inside ocfs2_get_clusters_nocache(),
+does it make sense to do it again here?
 
-	Ingo
+
+> +			clen = le16_to_cpu(rec.e_leaf_clusters) -
+> +				(cpos - le32_to_cpu(rec.e_cpos));
+> +			is_data = (rec.e_flags & OCFS2_EXT_UNWRITTEN) ?  0 : 1;
+> +		}
+> +
+> +		if ((!is_data && origin == SEEK_HOLE) ||
+> +		    (is_data && origin == SEEK_DATA)) {
+> +			if (extoff > *offset)
+> +				*offset = extoff;
+> +			goto out_unlock;
+
+Seems above logic is going to stop at the first time we find a hole.
+
+How about the offset was within the range of a hole already when we doing
+SEEK_HOLE, shouldn't we proceed detecting until the next hole gets found, whose
+start_offset was greater than supplied offset, according to semantics described
+by the the header of this patch, should it be like following?
+
+			if (extoff > *offset) {
+				*offset = extoff;
+				goto out_unlock;
+			}
+
+> +		}
+> +
+> +		if (!is_last)
+> +			cpos += clen;
+> +	}
+> +
+> +	if (origin == SEEK_HOLE) {
+> +		extoff = cpos;
+> +		extoff <<= cs_bits;
+
+extoff already has been assigned properly above in while loop?
+
+> +		extlen = clen;
+> +		extlen <<=  cs_bits;
+> +
+> +		if ((extoff + extlen) > inode->i_size)
+> +			extlen = inode->i_size - extoff;
+> +		extoff += extlen;
+> +		if (extoff > *offset)
+> +			*offset = extoff;
+> +		goto out_unlock;
+> +	}
+> +
+> +	ret = -ENXIO;
+> +
+> +out_unlock:
+> +
+> +	brelse(di_bh);
+> +
+> +	up_read(&OCFS2_I(inode)->ip_alloc_sem);
+> +
+> +	ocfs2_inode_unlock(inode, 0);
+> +out:
+> +	if (ret && ret != -ENXIO)
+> +		ret = -ENXIO;
+> +	return ret;
+> +}
+> +
+>  int ocfs2_read_virt_blocks(struct inode *inode, u64 v_block, int nr,
+>  			   struct buffer_head *bhs[], int flags,
+>  			   int (*validate)(struct super_block *sb,
+> diff --git a/fs/ocfs2/extent_map.h b/fs/ocfs2/extent_map.h
+> index e79d41c..67ea57d 100644
+> --- a/fs/ocfs2/extent_map.h
+> +++ b/fs/ocfs2/extent_map.h
+> @@ -53,6 +53,8 @@ int ocfs2_extent_map_get_blocks(struct inode *inode, u64 v_blkno, u64 *p_blkno,
+>  int ocfs2_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  		 u64 map_start, u64 map_len);
+>  
+> +int ocfs2_seek_data_hole_offset(struct file *file, loff_t *offset, int origin);
+> +
+>  int ocfs2_xattr_get_clusters(struct inode *inode, u32 v_cluster,
+>  			     u32 *p_cluster, u32 *num_clusters,
+>  			     struct ocfs2_extent_list *el,
+> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+> index cce8c2b..5349a4b 100644
+> --- a/fs/ocfs2/file.c
+> +++ b/fs/ocfs2/file.c
+> @@ -2572,6 +2572,55 @@ bail:
+>  	return ret;
+>  }
+>  
+> +/* Refer generic_file_llseek_unlocked() */
+> +static loff_t ocfs2_file_llseek(struct file *file, loff_t offset, int origin)
+> +{
+> +	struct inode *inode = file->f_mapping->host;
+> +	int ret = 0;
+> +
+> +	mutex_lock(&inode->i_mutex);
+> +
+> +	switch (origin) {
+> +	case SEEK_END:
+> +		offset += inode->i_size;
+> +		break;
+> +	case SEEK_CUR:
+> +		if (offset == 0) {
+> +			offset = file->f_pos;
+> +			goto out;
+> +		}
+> +		offset += file->f_pos;
+> +		break;
+> +	case SEEK_DATA:
+> +	case SEEK_HOLE:
+> +		ret = ocfs2_seek_data_hole_offset(file, &offset, origin);
+> +		if (ret)
+> +			goto out;
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET))
+> +		ret = -EINVAL;
+> +	if (!ret && offset > inode->i_sb->s_maxbytes)
+> +		ret = -EINVAL;
+> +	if (ret)
+> +		goto out;
+> +
+> +	if (offset != file->f_pos) {
+> +		file->f_pos = offset;
+> +		file->f_version = 0;
+> +	}
+> +
+> +out:
+> +	mutex_unlock(&inode->i_mutex);
+> +	if (ret)
+> +		return ret;
+> +	return offset;
+> +}
+> +
+>  const struct inode_operations ocfs2_file_iops = {
+>  	.setattr	= ocfs2_setattr,
+>  	.getattr	= ocfs2_getattr,
+> @@ -2594,7 +2643,7 @@ const struct inode_operations ocfs2_special_file_iops = {
+>   * ocfs2_fops_no_plocks and ocfs2_dops_no_plocks!
+>   */
+>  const struct file_operations ocfs2_fops = {
+> -	.llseek		= generic_file_llseek,
+> +	.llseek		= ocfs2_file_llseek,
+>  	.read		= do_sync_read,
+>  	.write		= do_sync_write,
+>  	.mmap		= ocfs2_mmap,
+> @@ -2642,7 +2691,7 @@ const struct file_operations ocfs2_dops = {
+>   * the cluster.
+>   */
+>  const struct file_operations ocfs2_fops_no_plocks = {
+> -	.llseek		= generic_file_llseek,
+> +	.llseek		= ocfs2_file_llseek,
+>  	.read		= do_sync_read,
+>  	.write		= do_sync_write,
+>  	.mmap		= ocfs2_mmap,
+
