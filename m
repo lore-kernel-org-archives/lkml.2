@@ -1,91 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934749Ab1ESUqB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 16:46:01 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:59078 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934077Ab1ESUqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 16:46:00 -0400
-Date: Thu, 19 May 2011 22:45:09 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: David Rientjes <rientjes@google.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        akpm@linux-foundation.org, haicheng.li@linux.intel.com,
-        fengguang.wu@intel.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
-        dave@linux.vnet.ibm.com, wdauchy@gmail.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH V3 2/2] mm: Extend memory hotplug API to allow memory hotplug in virtual machines
-Message-ID: <20110519204509.GD27202@router-fw-old.local.net-space.pl>
-References: <20110517213858.GC30232@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1105182026390.20651@chino.kir.corp.google.com>
-Mime-Version: 1.0
+	id S934753Ab1ESUrd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 16:47:33 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52092 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934077Ab1ESUrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 16:47:32 -0400
+Date: Thu, 19 May 2011 22:47:14 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/cleanups changes for v2.6.40
+Message-ID: <20110519204714.GA32252@elte.hu>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105182026390.20651@chino.kir.corp.google.com>
-User-Agent: Mutt/1.3.28i
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 08:36:02PM -0700, David Rientjes wrote:
-> On Tue, 17 May 2011, Daniel Kiper wrote:
->
-> > This patch contains online_page_callback and apropriate functions for
-> > setting/restoring online page callbacks. It allows to do some machine
-> > specific tasks during online page stage which is required to implement
-> > memory hotplug in virtual machines. Additionally, __online_page_set_limits(),
-> > __online_page_increment_counters() and __online_page_free() function
-> > was added to ease generic hotplug operation.
->
-> There are several issues with this.
->
-> First, this is completely racy and only allows one global callback to be
-> in use at a time without looping, which is probably why you had to pass an
+Linus,
 
-One callback is allowed by design. Currently I do not see
-any real usage for more than one callback.
+Please pull the latest x86-cleanups-for-linus git tree from:
 
-> argument to restore_online_page_callback().  Your implementation also
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-cleanups-for-linus
 
-This is protection against accidental callback restore
-by module which does not registered callback.
+ Thanks,
 
-> requires that a callback must be synchronized with itself for the
-> comparison to generic_online_page to make any sense.  Nobody knows which
+	Ingo
 
-This is protection against accidental earlier registered callback
-overwrite by module which does not registered callback.
+------------------>
+Bart Van Assche (1):
+      x86: Fix spelling error in the memcpy() source code comment
 
-> callback is effective at any given moment and has no guarantees that when
-> they've set the callback that it will be the one called, otherwise.
+Luis R. Rodriguez (1):
+      x86: Fix mrst sparse complaints
 
-It is assured by design described above that if module registered callback
-then it will be called during online page phase (If it is not earlier
-unregistered by module knowing address to that callback).
+Rakib Mullick (1):
+      x86, mpparse: Remove unnecessary variable
 
-> Second, there's no explanation offered about why you have to split
-> online_page() into three separate functions.  In addition, you've exported
-> all of them so presumably modules will need to be doing this when loading
-> or unloading and that further complicates the race mentioned above.
 
-My work on memory hotplug for Xen showed that most of the code from original
-online_page() is called in my implementation of Xen online_page(). In that
-situation Dave Hansen and I agreed that it is worth to split original
-online_page() into let say "atomic" operations and export them to
-other modules to reuse existing code and avoid stupid bugs.
+ arch/x86/kernel/mpparse.c     |    4 +---
+ arch/x86/lib/memcpy_64.S      |    2 +-
+ arch/x86/platform/mrst/mrst.c |    4 ++--
+ 3 files changed, 4 insertions(+), 6 deletions(-)
 
-> Third, there are no followup patches that use this interface or show how
-> you plan on using it (other than eluding that it will be used for virtual
-> machines in the changelog) so we're left guessing as to why we need it
-> implemented in this fashion and restricts the amount of help I can offer
-> because I don't know the problem you're facing.
-
-Patch which depends on that patch is here: https://lkml.org/lkml/2011/5/17/413.
-However, I agree that comment is not clear.
-
-In general I see that comment for this
-patch should be clarified/extended.
-
-Daniel
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 5a532ce..ef59817 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -718,14 +718,12 @@ static void __init check_irq_src(struct mpc_intsrc *m, int *nr_m_spare)
+ static int
+ check_slot(unsigned long mpc_new_phys, unsigned long mpc_new_length, int count)
+ {
+-	int ret = 0;
+-
+ 	if (!mpc_new_phys || count <= mpc_new_length) {
+ 		WARN(1, "update_mptable: No spare slots (length: %x)\n", count);
+ 		return -1;
+ 	}
+ 
+-	return ret;
++	return 0;
+ }
+ #else /* CONFIG_X86_IO_APIC */
+ static
+diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
+index 75ef61e..2a560bb 100644
+--- a/arch/x86/lib/memcpy_64.S
++++ b/arch/x86/lib/memcpy_64.S
+@@ -49,7 +49,7 @@ ENTRY(memcpy)
+ 	jb .Lhandle_tail
+ 
+ 	/*
+-	 * We check whether memory false dependece could occur,
++	 * We check whether memory false dependence could occur,
+ 	 * then jump to corresponding copy mode.
+ 	 */
+ 	cmp  %dil, %sil
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index 275dbc1..7000e74 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -194,7 +194,7 @@ static unsigned long __init mrst_calibrate_tsc(void)
+ 	return 0;
+ }
+ 
+-void __init mrst_time_init(void)
++static void __init mrst_time_init(void)
+ {
+ 	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
+ 	switch (mrst_timer_options) {
+@@ -216,7 +216,7 @@ void __init mrst_time_init(void)
+ 	apbt_time_init();
+ }
+ 
+-void __cpuinit mrst_arch_setup(void)
++static void __cpuinit mrst_arch_setup(void)
+ {
+ 	if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x27)
+ 		__mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
