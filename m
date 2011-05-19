@@ -1,128 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935049Ab1ESV5V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:57:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17849 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935013Ab1ESVyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:54:47 -0400
-X-ExtLoop1: 1
-Message-Id: <20110519214746.536735878@intel.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 20 May 2011 05:45:48 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
-cc: Dave Chinner <david@fromorbit.com>
-cc: Christoph Hellwig <hch@infradead.org>
-cc: <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 18/18] writeback: rearrange the wb_writeback() loop
-References: <20110519214530.939830917@intel.com>
-Content-Disposition: inline; filename=loop-cleanup
+	id S934926Ab1ESVqJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:46:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54746 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933194Ab1ESVqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 17:46:07 -0400
+Message-ID: <4DD58F90.4090506@kernel.org>
+Date: Thu, 19 May 2011 14:45:52 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+References: <20110516074822.GE2573@linux.vnet.ibm.com> <20110516115148.GA2421@elte.hu> <20110516122329.GA29356@elte.hu> <20110516212449.GJ2573@linux.vnet.ibm.com> <20110517024000.GA5026@nowhere> <4DD435C2.6040305@kernel.org> <20110518231314.GA1723@nowhere> <4DD49DAF.5080605@kernel.org> <20110519144740.GC1956@nowhere> <4DD574BE.7050709@kernel.org> <20110519211458.GG1956@nowhere>
+In-Reply-To: <20110519211458.GG1956@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090205.4DD58F97.0089,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the terminate conditions to the end of the loop, and move the
-work->older_than_this updates close to each others.
-
-Proposed-by: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/fs-writeback.c |   58 +++++++++++++++++++++++---------------------
- 1 file changed, 31 insertions(+), 27 deletions(-)
-
---- linux-next.orig/fs/fs-writeback.c	2011-05-20 05:41:35.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-20 05:41:36.000000000 +0800
-@@ -712,42 +712,22 @@ static long wb_writeback(struct bdi_writ
- 	unsigned long oldest_jif;
- 	struct inode *inode;
- 	long progress;
-+	bool bg_retry_all = false;
- 
- 	oldest_jif = jiffies;
- 	work->older_than_this = &oldest_jif;
- 
- 	spin_lock(&wb->list_lock);
- 	for (;;) {
--		/*
--		 * Stop writeback when nr_pages has been consumed
--		 */
--		if (work->nr_pages <= 0)
--			break;
--
--		/*
--		 * Background writeout and kupdate-style writeback may
--		 * run forever. Stop them if there is other work to do
--		 * so that e.g. sync can proceed. They'll be restarted
--		 * after the other works are all done.
--		 */
--		if ((work->for_background || work->for_kupdate) &&
--		    !list_empty(&wb->bdi->work_list))
--			break;
--
--		/*
--		 * For background writeout, stop when we are below the
--		 * background dirty threshold
--		 */
--		if (work->for_background && !over_bground_thresh())
--			break;
--
--		if (work->for_kupdate || work->for_background) {
-+		if (bg_retry_all) {
-+			bg_retry_all = false;
-+			work->older_than_this = NULL;
-+		} else if (work->for_kupdate || work->for_background) {
- 			oldest_jif = jiffies -
- 				msecs_to_jiffies(dirty_expire_interval * 10);
- 			work->older_than_this = &oldest_jif;
- 		}
- 
--retry:
- 		trace_writeback_start(wb->bdi, work);
- 		if (list_empty(&wb->b_io))
- 			queue_io(wb, work->older_than_this);
-@@ -777,14 +757,38 @@ retry:
- 		    work->older_than_this &&
- 		    list_empty(&wb->b_io) &&
- 		    list_empty(&wb->b_more_io)) {
--			work->older_than_this = NULL;
--			goto retry;
-+			bg_retry_all = true;
-+			continue;
- 		}
- 		/*
- 		 * No more inodes for IO, bail
- 		 */
- 		if (list_empty(&wb->b_more_io))
- 			break;
-+
-+		/*
-+		 * Stop writeback when nr_pages has been consumed
-+		 */
-+		if (work->nr_pages <= 0)
-+			break;
-+
-+		/*
-+		 * For background writeout, stop when we are below the
-+		 * background dirty threshold
-+		 */
-+		if (work->for_background && !over_bground_thresh())
-+			break;
-+
-+		/*
-+		 * Background writeout and kupdate-style writeback may
-+		 * run forever. Stop them if there is other work to do
-+		 * so that e.g. sync can proceed. They'll be restarted
-+		 * after the other works are all done.
-+		 */
-+		if ((work->for_background || work->for_kupdate) &&
-+		    !list_empty(&wb->bdi->work_list))
-+			break;
-+
- 		/*
- 		 * Nothing written. Wait for some inode to
- 		 * become available for writeback. Otherwise
+On 05/19/2011 02:15 PM, Frederic Weisbecker wrote:
+> On Thu, May 19, 2011 at 12:51:26PM -0700, Yinghai Lu wrote:
+>> [   85.194797]   <idle>-0       0d... 85152953us : rcu_irq_enter: 1 49
+>> [   85.194808]   <idle>-0       0dN.. 85153081us : <stack trace>
+>> [   85.194809]  => rcu_irq_exit
+>> [   85.194810]  => irq_exit
+>> [   85.194811]  => smp_apic_timer_interrupt
+>> [   85.194812]  => apic_timer_interrupt
+>> [   85.194813]  => cpu_idle
+>> [   85.194813]  => rest_init
+>> [   85.194814]  => start_kernel
+>> [   85.194815]  => x86_64_start_reservations
+> 
+> So it's the dynticks_nesting going crazy. As if we had rcu_irq_enter()
+> without rcu_irq_exit().
+> 
+> I see you have CONFIG_DEBUG_LOCKING_API_SELFTESTS=y
+> and the locking api selftest is doing a strange thing: if we look
+> at HARDIRQ_ENTER(), it calls irq_enter(), but HARDIRQ_EXIT() only
+> calls __irq_exit(). Which means it lacks the rcu_irq_exit().
+> 
+> So, if I understood correctly the thing there, some selftests simulating
+> the hardirq context are unbalancing the rcu state.
+> 
+> Does that help if you unset CONFIG_DEBUG_LOCKING_API_SELFTESTS ?
 
 
+yes, after unset that, no warning and delay...
+
+Thanks
