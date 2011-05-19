@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934162Ab1ESSJc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:09:32 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:53679 "EHLO
+	id S934180Ab1ESSL5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:11:57 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:59291 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934148Ab1ESSJ0 (ORCPT
+	by vger.kernel.org with ESMTP id S934139Ab1ESSJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:09:26 -0400
-X-Sasl-enc: l9PhBqcJKvQpfGhi4ju+OO+lw81Fv+a0uRdDI3CTWlwO 1305828565
+	Thu, 19 May 2011 14:09:28 -0400
+X-Sasl-enc: P8yolvOorOjGFRmuhajZOHs3iptuMFb8L2L5TuCfRoBr 1305828566
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:06:00 2011
-Message-Id: <20110519180600.189183372@clark.kroah.org>
+Message-Id: <20110519180600.296107652@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:30 -0700
+Date: Thu, 19 May 2011 11:05:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [62/71] [media] v4l: Release module if subdev registration fails
+        Cliff Wickman <cpw@sgi.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [63/71] x86: Fix UV BAU for non-consecutive nasids
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,42 +27,335 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Cliff Wickman <cpw@sgi.com>
 
-commit b7534f002d3c81d18abfbf57179d07d3ec763bb5 upstream.
+commit 77ed23f8d995a01cd8101d84351b567bf5177a30 upstream.
 
-If v4l2_device_register_subdev() fails, the reference to the subdev
-module taken by the function isn't released. Fix this.
+This is a fix for the SGI Altix-UV Broadcast Assist Unit code,
+which is used for TLB flushing.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Acked-by: Hans Verkuil <hverkuil@xs4all.nl>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Certain hardware configurations (that customers are ordering)
+cause nasids (numa address space id's) to be non-consecutive.
+Specifically, once you have more than 4 blades in a IRU
+(Individual Rack Unit - or 1/2 rack) but less than the maximum
+of 16, the nasid numbering becomes non-consecutive.  This
+currently results in a 'catastrophic error' (CATERR) detected by
+the firmware during OS boot.  The BAU is generating an 'INTD'
+request that is targeting a non-existent nasid value. Such
+configurations may also occur when a blade is configured off
+because of hardware errors. (There is one UV hub per blade.)
+
+This patch is required to support such configurations.
+
+The problem with the tlb_uv.c code is that is using the
+consecutive hub numbers as indices to the BAU distribution bit
+map. These are simply the ordinal position of the hub or blade
+within its partition.  It should be using physical node numbers
+(pnodes), which correspond to the physical nasid values. Use of
+the hub number only works as long as the nasids in the partition
+are consecutive and increase with a stride of 1.
+
+This patch changes the index to be the pnode number, thus
+allowing nasids to be non-consecutive.
+It also provides a table in local memory for each cpu to
+translate target cpu number to target pnode and nasid.
+And it improves naming to properly reflect 'node' and 'uvhub'
+versus 'nasid'.
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Link: http://lkml.kernel.org/r/E1QJmxX-0002Mz-Fk@eag09.americas.sgi.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/v4l2-device.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/uv/uv_bau.h |   17 +++++--
+ arch/x86/platform/uv/tlb_uv.c    |   92 ++++++++++++++++++++++++++-------------
+ 2 files changed, 76 insertions(+), 33 deletions(-)
 
---- a/drivers/media/video/v4l2-device.c
-+++ b/drivers/media/video/v4l2-device.c
-@@ -131,14 +131,17 @@ int v4l2_device_register_subdev(struct v
- 	sd->v4l2_dev = v4l2_dev;
- 	if (sd->internal_ops && sd->internal_ops->registered) {
- 		err = sd->internal_ops->registered(sd);
--		if (err)
-+		if (err) {
-+			module_put(sd->owner);
- 			return err;
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -94,6 +94,8 @@
+ /* after this # consecutive successes, bump up the throttle if it was lowered */
+ #define COMPLETE_THRESHOLD 5
+ 
++#define UV_LB_SUBNODEID 0x10
++
+ /*
+  * number of entries in the destination side payload queue
+  */
+@@ -124,7 +126,7 @@
+  * The distribution specification (32 bytes) is interpreted as a 256-bit
+  * distribution vector. Adjacent bits correspond to consecutive even numbered
+  * nodeIDs. The result of adding the index of a given bit to the 15-bit
+- * 'base_dest_nodeid' field of the header corresponds to the
++ * 'base_dest_nasid' field of the header corresponds to the
+  * destination nodeID associated with that specified bit.
+  */
+ struct bau_target_uvhubmask {
+@@ -176,7 +178,7 @@ struct bau_msg_payload {
+ struct bau_msg_header {
+ 	unsigned int dest_subnodeid:6;	/* must be 0x10, for the LB */
+ 	/* bits 5:0 */
+-	unsigned int base_dest_nodeid:15; /* nasid of the */
++	unsigned int base_dest_nasid:15; /* nasid of the */
+ 	/* bits 20:6 */			  /* first bit in uvhub map */
+ 	unsigned int command:8;	/* message type */
+ 	/* bits 28:21 */
+@@ -378,6 +380,10 @@ struct ptc_stats {
+ 	unsigned long d_rcanceled; /* number of messages canceled by resets */
+ };
+ 
++struct hub_and_pnode {
++	short uvhub;
++	short pnode;
++};
+ /*
+  * one per-cpu; to locate the software tables
+  */
+@@ -399,10 +405,12 @@ struct bau_control {
+ 	int baudisabled;
+ 	int set_bau_off;
+ 	short cpu;
++	short osnode;
+ 	short uvhub_cpu;
+ 	short uvhub;
+ 	short cpus_in_socket;
+ 	short cpus_in_uvhub;
++	short partition_base_pnode;
+ 	unsigned short message_number;
+ 	unsigned short uvhub_quiesce;
+ 	short socket_acknowledge_count[DEST_Q_SIZE];
+@@ -422,15 +430,16 @@ struct bau_control {
+ 	int congested_period;
+ 	cycles_t period_time;
+ 	long period_requests;
++	struct hub_and_pnode *target_hub_and_pnode;
+ };
+ 
+ static inline int bau_uvhub_isset(int uvhub, struct bau_target_uvhubmask *dstp)
+ {
+ 	return constant_test_bit(uvhub, &dstp->bits[0]);
+ }
+-static inline void bau_uvhub_set(int uvhub, struct bau_target_uvhubmask *dstp)
++static inline void bau_uvhub_set(int pnode, struct bau_target_uvhubmask *dstp)
+ {
+-	__set_bit(uvhub, &dstp->bits[0]);
++	__set_bit(pnode, &dstp->bits[0]);
+ }
+ static inline void bau_uvhubs_clear(struct bau_target_uvhubmask *dstp,
+ 				    int nbits)
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -698,16 +698,17 @@ const struct cpumask *uv_flush_tlb_other
+ 					  struct mm_struct *mm,
+ 					  unsigned long va, unsigned int cpu)
+ {
+-	int tcpu;
+-	int uvhub;
+ 	int locals = 0;
+ 	int remotes = 0;
+ 	int hubs = 0;
++	int tcpu;
++	int tpnode;
+ 	struct bau_desc *bau_desc;
+ 	struct cpumask *flush_mask;
+ 	struct ptc_stats *stat;
+ 	struct bau_control *bcp;
+ 	struct bau_control *tbcp;
++	struct hub_and_pnode *hpp;
+ 
+ 	/* kernel was booted 'nobau' */
+ 	if (nobau)
+@@ -749,11 +750,18 @@ const struct cpumask *uv_flush_tlb_other
+ 	bau_desc += UV_ITEMS_PER_DESCRIPTOR * bcp->uvhub_cpu;
+ 	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
+ 
+-	/* cpu statistics */
+ 	for_each_cpu(tcpu, flush_mask) {
+-		uvhub = uv_cpu_to_blade_id(tcpu);
+-		bau_uvhub_set(uvhub, &bau_desc->distribution);
+-		if (uvhub == bcp->uvhub)
++		/*
++		 * The distribution vector is a bit map of pnodes, relative
++		 * to the partition base pnode (and the partition base nasid
++		 * in the header).
++		 * Translate cpu to pnode and hub using an array stored
++		 * in local memory.
++		 */
++		hpp = &bcp->socket_master->target_hub_and_pnode[tcpu];
++		tpnode = hpp->pnode - bcp->partition_base_pnode;
++		bau_uvhub_set(tpnode, &bau_desc->distribution);
++		if (hpp->uvhub == bcp->uvhub)
+ 			locals++;
+ 		else
+ 			remotes++;
+@@ -854,7 +862,7 @@ void uv_bau_message_interrupt(struct pt_
+  * an interrupt, but causes an error message to be returned to
+  * the sender.
+  */
+-static void uv_enable_timeouts(void)
++static void __init uv_enable_timeouts(void)
+ {
+ 	int uvhub;
+ 	int nuvhubs;
+@@ -1325,10 +1333,10 @@ static int __init uv_ptc_init(void)
+ }
+ 
+ /*
+- * initialize the sending side's sending buffers
++ * Initialize the sending side's sending buffers.
+  */
+ static void
+-uv_activation_descriptor_init(int node, int pnode)
++uv_activation_descriptor_init(int node, int pnode, int base_pnode)
+ {
+ 	int i;
+ 	int cpu;
+@@ -1351,11 +1359,11 @@ uv_activation_descriptor_init(int node,
+ 	n = pa >> uv_nshift;
+ 	m = pa & uv_mmask;
+ 
++	/* the 14-bit pnode */
+ 	uv_write_global_mmr64(pnode, UVH_LB_BAU_SB_DESCRIPTOR_BASE,
+ 			      (n << UV_DESC_BASE_PNODE_SHIFT | m));
+-
+ 	/*
+-	 * initializing all 8 (UV_ITEMS_PER_DESCRIPTOR) descriptors for each
++	 * Initializing all 8 (UV_ITEMS_PER_DESCRIPTOR) descriptors for each
+ 	 * cpu even though we only use the first one; one descriptor can
+ 	 * describe a broadcast to 256 uv hubs.
+ 	 */
+@@ -1364,12 +1372,13 @@ uv_activation_descriptor_init(int node,
+ 		memset(bd2, 0, sizeof(struct bau_desc));
+ 		bd2->header.sw_ack_flag = 1;
+ 		/*
+-		 * base_dest_nodeid is the nasid of the first uvhub
+-		 * in the partition. The bit map will indicate uvhub numbers,
+-		 * which are 0-N in a partition. Pnodes are unique system-wide.
++		 * The base_dest_nasid set in the message header is the nasid
++		 * of the first uvhub in the partition. The bit map will
++		 * indicate destination pnode numbers relative to that base.
++		 * They may not be consecutive if nasid striding is being used.
+ 		 */
+-		bd2->header.base_dest_nodeid = UV_PNODE_TO_NASID(uv_partition_base_pnode);
+-		bd2->header.dest_subnodeid = 0x10; /* the LB */
++		bd2->header.base_dest_nasid = UV_PNODE_TO_NASID(base_pnode);
++		bd2->header.dest_subnodeid = UV_LB_SUBNODEID;
+ 		bd2->header.command = UV_NET_ENDPOINT_INTD;
+ 		bd2->header.int_both = 1;
+ 		/*
+@@ -1441,7 +1450,7 @@ uv_payload_queue_init(int node, int pnod
+ /*
+  * Initialization of each UV hub's structures
+  */
+-static void __init uv_init_uvhub(int uvhub, int vector)
++static void __init uv_init_uvhub(int uvhub, int vector, int base_pnode)
+ {
+ 	int node;
+ 	int pnode;
+@@ -1449,11 +1458,11 @@ static void __init uv_init_uvhub(int uvh
+ 
+ 	node = uvhub_to_first_node(uvhub);
+ 	pnode = uv_blade_to_pnode(uvhub);
+-	uv_activation_descriptor_init(node, pnode);
++	uv_activation_descriptor_init(node, pnode, base_pnode);
+ 	uv_payload_queue_init(node, pnode);
+ 	/*
+-	 * the below initialization can't be in firmware because the
+-	 * messaging IRQ will be determined by the OS
++	 * The below initialization can't be in firmware because the
++	 * messaging IRQ will be determined by the OS.
+ 	 */
+ 	apicid = uvhub_to_first_apicid(uvhub) | uv_apicid_hibits;
+ 	uv_write_global_mmr64(pnode, UVH_BAU_DATA_CONFIG,
+@@ -1490,10 +1499,11 @@ calculate_destination_timeout(void)
+ /*
+  * initialize the bau_control structure for each cpu
+  */
+-static int __init uv_init_per_cpu(int nuvhubs)
++static int __init uv_init_per_cpu(int nuvhubs, int base_part_pnode)
+ {
+ 	int i;
+ 	int cpu;
++	int tcpu;
+ 	int pnode;
+ 	int uvhub;
+ 	int have_hmaster;
+@@ -1527,6 +1537,15 @@ static int __init uv_init_per_cpu(int nu
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		memset(bcp, 0, sizeof(struct bau_control));
+ 		pnode = uv_cpu_hub_info(cpu)->pnode;
++		if ((pnode - base_part_pnode) >= UV_DISTRIBUTION_SIZE) {
++			printk(KERN_EMERG
++				"cpu %d pnode %d-%d beyond %d; BAU disabled\n",
++				cpu, pnode, base_part_pnode,
++				UV_DISTRIBUTION_SIZE);
++			return 1;
 +		}
++		bcp->osnode = cpu_to_node(cpu);
++		bcp->partition_base_pnode = uv_partition_base_pnode;
+ 		uvhub = uv_cpu_hub_info(cpu)->numa_blade_id;
+ 		*(uvhub_mask + (uvhub/8)) |= (1 << (uvhub%8));
+ 		bdp = &uvhub_descs[uvhub];
+@@ -1535,7 +1554,7 @@ static int __init uv_init_per_cpu(int nu
+ 		bdp->pnode = pnode;
+ 		/* kludge: 'assuming' one node per socket, and assuming that
+ 		   disabling a socket just leaves a gap in node numbers */
+-		socket = (cpu_to_node(cpu) & 1);
++		socket = bcp->osnode & 1;
+ 		bdp->socket_mask |= (1 << socket);
+ 		sdp = &bdp->socket[socket];
+ 		sdp->cpu_number[sdp->num_cpus] = cpu;
+@@ -1584,6 +1603,20 @@ static int __init uv_init_per_cpu(int nu
+ nextsocket:
+ 			socket++;
+ 			socket_mask = (socket_mask >> 1);
++			/* each socket gets a local array of pnodes/hubs */
++			bcp = smaster;
++			bcp->target_hub_and_pnode = kmalloc_node(
++				sizeof(struct hub_and_pnode) *
++				num_possible_cpus(), GFP_KERNEL, bcp->osnode);
++			memset(bcp->target_hub_and_pnode, 0,
++				sizeof(struct hub_and_pnode) *
++				num_possible_cpus());
++			for_each_present_cpu(tcpu) {
++				bcp->target_hub_and_pnode[tcpu].pnode =
++					uv_cpu_hub_info(tcpu)->pnode;
++				bcp->target_hub_and_pnode[tcpu].uvhub =
++					uv_cpu_hub_info(tcpu)->numa_blade_id;
++			}
+ 		}
  	}
- 	/* This just returns 0 if either of the two args is NULL */
- 	err = v4l2_ctrl_add_handler(v4l2_dev->ctrl_handler, sd->ctrl_handler);
- 	if (err) {
- 		if (sd->internal_ops && sd->internal_ops->unregistered)
- 			sd->internal_ops->unregistered(sd);
-+		module_put(sd->owner);
- 		return err;
- 	}
- 	spin_lock(&v4l2_dev->lock);
+ 	kfree(uvhub_descs);
+@@ -1636,21 +1669,22 @@ static int __init uv_bau_init(void)
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = microsec_2_cycles(congested_response_us);
+ 
+-	if (uv_init_per_cpu(nuvhubs)) {
+-		nobau = 1;
+-		return 0;
+-	}
+-
+ 	uv_partition_base_pnode = 0x7fffffff;
+-	for (uvhub = 0; uvhub < nuvhubs; uvhub++)
++	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
+ 		if (uv_blade_nr_possible_cpus(uvhub) &&
+ 			(uv_blade_to_pnode(uvhub) < uv_partition_base_pnode))
+ 			uv_partition_base_pnode = uv_blade_to_pnode(uvhub);
++	}
++
++	if (uv_init_per_cpu(nuvhubs, uv_partition_base_pnode)) {
++		nobau = 1;
++		return 0;
++	}
+ 
+ 	vector = UV_BAU_MESSAGE;
+ 	for_each_possible_blade(uvhub)
+ 		if (uv_blade_nr_possible_cpus(uvhub))
+-			uv_init_uvhub(uvhub, vector);
++			uv_init_uvhub(uvhub, vector, uv_partition_base_pnode);
+ 
+ 	uv_enable_timeouts();
+ 	alloc_intr_gate(vector, uv_bau_message_intr1);
 
 
