@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934317Ab1ESScc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:32:32 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57402 "EHLO
+	id S934396Ab1ESShi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:37:38 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:39675 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933788Ab1ESSc3 (ORCPT
+	by vger.kernel.org with ESMTP id S934145Ab1ESScb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:32:29 -0400
-X-Sasl-enc: xkWrwZWeMl/cWNGtGXOemPtQ7oyutrQ5xntZVyWKKuJw 1305829948
+	Thu, 19 May 2011 14:32:31 -0400
+X-Sasl-enc: Q2/NcuDpK9XFD4UIluaag0KENPoDf4/QQ6ptp2/f2CwK 1305829950
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:31:26 2011
-Message-Id: <20110519183126.183832199@clark.kroah.org>
+Message-Id: <20110519183126.302147055@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:30:38 -0700
+Date: Thu, 19 May 2011 11:30:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [06/24] CIFS: Fix memory over bound bug in cifs_parse_mount_options
+        Hugh Dickins <hughd@google.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: [07/24] tmpfs: fix race between umount and swapoff
 In-Reply-To: <20110519182446.GA23751@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,53 +27,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1382
-Lines: 46
+Content-Length: 6159
+Lines: 197
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: Hugh Dickins <hughd@google.com>
 
-commit 4906e50b37e6f6c264e7ee4237343eb2b7f8d16d upstream.
+commit 778dd893ae785c5fd505dac30b5fc40aae188bf1 upstream.
 
-While password processing we can get out of options array bound if
-the next character after array is delimiter. The patch adds a check
-if we reach the end.
+The use of igrab() in swapoff's shmem_unuse_inode() is just as vulnerable
+to umount as that in shmem_writepage().
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Fix this instance by extending the protection of shmem_swaplist_mutex
+right across shmem_unuse_inode(): while it's on the list, the inode cannot
+be evicted (and the filesystem cannot be unmounted) without
+shmem_evict_inode() taking that mutex to remove it from the list.
+
+But since shmem_writepage() might take that mutex, we should avoid making
+memory allocations or memcg charges while holding it: prepare them at the
+outer level in shmem_unuse().  When mem_cgroup_cache_charge() was
+originally placed, we didn't know until that point that the page from swap
+was actually a shmem page; but nowadays it's noted in the swap_map, so
+we're safe to charge upfront.  For the radix_tree, do as is done in
+shmem_getpage(): preload upfront, but don't pin to the cpu; so we make a
+habit of refreshing the node pool, but might dip into GFP_NOWAIT reserves
+on occasion if subsequently preempted.
+
+With the allocation and charge moved out from shmem_unuse_inode(),
+we can also hold index map and info->lock over from finding the entry.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/connect.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ mm/shmem.c |   88 +++++++++++++++++++++++++++++--------------------------------
+ 1 file changed, 43 insertions(+), 45 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -799,8 +799,7 @@ static int
- cifs_parse_mount_options(char *options, const char *devname,
- 			 struct smb_vol *vol)
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -850,7 +850,7 @@ static inline int shmem_find_swp(swp_ent
+ 
+ static int shmem_unuse_inode(struct shmem_inode_info *info, swp_entry_t entry, struct page *page)
  {
--	char *value;
--	char *data;
-+	char *value, *data, *end;
- 	unsigned int  temp_len, i, j;
- 	char separator[2];
- 	short int override_uid = -1;
-@@ -843,6 +842,7 @@ cifs_parse_mount_options(char *options,
- 	if (!options)
- 		return 1;
+-	struct inode *inode;
++	struct address_space *mapping;
+ 	unsigned long idx;
+ 	unsigned long size;
+ 	unsigned long limit;
+@@ -873,8 +873,10 @@ static int shmem_unuse_inode(struct shme
+ 	if (size > SHMEM_NR_DIRECT)
+ 		size = SHMEM_NR_DIRECT;
+ 	offset = shmem_find_swp(entry, ptr, ptr+size);
+-	if (offset >= 0)
++	if (offset >= 0) {
++		shmem_swp_balance_unmap();
+ 		goto found;
++	}
+ 	if (!info->i_indirect)
+ 		goto lost2;
  
-+	end = options + strlen(options);
- 	if (strncmp(options, "sep=", 4) == 0) {
- 		if (options[4] != 0) {
- 			separator[0] = options[4];
-@@ -907,6 +907,7 @@ cifs_parse_mount_options(char *options,
- 			the only illegal character in a password is null */
+@@ -912,11 +914,11 @@ static int shmem_unuse_inode(struct shme
+ 			if (size > ENTRIES_PER_PAGE)
+ 				size = ENTRIES_PER_PAGE;
+ 			offset = shmem_find_swp(entry, ptr, ptr+size);
+-			shmem_swp_unmap(ptr);
+ 			if (offset >= 0) {
+ 				shmem_dir_unmap(dir);
+ 				goto found;
+ 			}
++			shmem_swp_unmap(ptr);
+ 		}
+ 	}
+ lost1:
+@@ -926,8 +928,7 @@ lost2:
+ 	return 0;
+ found:
+ 	idx += offset;
+-	inode = igrab(&info->vfs_inode);
+-	spin_unlock(&info->lock);
++	ptr += offset;
  
- 			if ((value[temp_len] == 0) &&
-+			    (value + temp_len < end) &&
- 			    (value[temp_len+1] == separator[0])) {
- 				/* reinsert comma */
- 				value[temp_len] = separator[0];
+ 	/*
+ 	 * Move _head_ to start search for next from here.
+@@ -938,37 +939,18 @@ found:
+ 	 */
+ 	if (shmem_swaplist.next != &info->swaplist)
+ 		list_move_tail(&shmem_swaplist, &info->swaplist);
+-	mutex_unlock(&shmem_swaplist_mutex);
+ 
+-	error = 1;
+-	if (!inode)
+-		goto out;
+ 	/*
+-	 * Charge page using GFP_KERNEL while we can wait.
+-	 * Charged back to the user(not to caller) when swap account is used.
+-	 * add_to_page_cache() will be called with GFP_NOWAIT.
++	 * We rely on shmem_swaplist_mutex, not only to protect the swaplist,
++	 * but also to hold up shmem_evict_inode(): so inode cannot be freed
++	 * beneath us (pagelock doesn't help until the page is in pagecache).
+ 	 */
+-	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL);
+-	if (error)
+-		goto out;
+-	error = radix_tree_preload(GFP_KERNEL);
+-	if (error) {
+-		mem_cgroup_uncharge_cache_page(page);
+-		goto out;
+-	}
+-	error = 1;
+-
+-	spin_lock(&info->lock);
+-	ptr = shmem_swp_entry(info, idx, NULL);
+-	if (ptr && ptr->val == entry.val) {
+-		error = add_to_page_cache_locked(page, inode->i_mapping,
+-						idx, GFP_NOWAIT);
+-		/* does mem_cgroup_uncharge_cache_page on error */
+-	} else	/* we must compensate for our precharge above */
+-		mem_cgroup_uncharge_cache_page(page);
++	mapping = info->vfs_inode.i_mapping;
++	error = add_to_page_cache_locked(page, mapping, idx, GFP_NOWAIT);
++	/* which does mem_cgroup_uncharge_cache_page on error */
+ 
+ 	if (error == -EEXIST) {
+-		struct page *filepage = find_get_page(inode->i_mapping, idx);
++		struct page *filepage = find_get_page(mapping, idx);
+ 		error = 1;
+ 		if (filepage) {
+ 			/*
+@@ -988,14 +970,8 @@ found:
+ 		swap_free(entry);
+ 		error = 1;	/* not an error, but entry was found */
+ 	}
+-	if (ptr)
+-		shmem_swp_unmap(ptr);
++	shmem_swp_unmap(ptr);
+ 	spin_unlock(&info->lock);
+-	radix_tree_preload_end();
+-out:
+-	unlock_page(page);
+-	page_cache_release(page);
+-	iput(inode);		/* allows for NULL */
+ 	return error;
+ }
+ 
+@@ -1007,6 +983,26 @@ int shmem_unuse(swp_entry_t entry, struc
+ 	struct list_head *p, *next;
+ 	struct shmem_inode_info *info;
+ 	int found = 0;
++	int error;
++
++	/*
++	 * Charge page using GFP_KERNEL while we can wait, before taking
++	 * the shmem_swaplist_mutex which might hold up shmem_writepage().
++	 * Charged back to the user (not to caller) when swap account is used.
++	 * add_to_page_cache() will be called with GFP_NOWAIT.
++	 */
++	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL);
++	if (error)
++		goto out;
++	/*
++	 * Try to preload while we can wait, to not make a habit of
++	 * draining atomic reserves; but don't latch on to this cpu,
++	 * it's okay if sometimes we get rescheduled after this.
++	 */
++	error = radix_tree_preload(GFP_KERNEL);
++	if (error)
++		goto uncharge;
++	radix_tree_preload_end();
+ 
+ 	mutex_lock(&shmem_swaplist_mutex);
+ 	list_for_each_safe(p, next, &shmem_swaplist) {
+@@ -1014,17 +1010,19 @@ int shmem_unuse(swp_entry_t entry, struc
+ 		found = shmem_unuse_inode(info, entry, page);
+ 		cond_resched();
+ 		if (found)
+-			goto out;
++			break;
+ 	}
+ 	mutex_unlock(&shmem_swaplist_mutex);
+-	/*
+-	 * Can some race bring us here?  We've been holding page lock,
+-	 * so I think not; but would rather try again later than BUG()
+-	 */
++
++uncharge:
++	if (!found)
++		mem_cgroup_uncharge_cache_page(page);
++	if (found < 0)
++		error = found;
++out:
+ 	unlock_page(page);
+ 	page_cache_release(page);
+-out:
+-	return (found < 0) ? found : 0;
++	return error;
+ }
+ 
+ /*
 
 
