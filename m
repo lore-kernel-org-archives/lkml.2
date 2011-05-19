@@ -1,86 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab1ESAzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 20:55:47 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44697 "EHLO
+	id S1754256Ab1ESA5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 20:57:41 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:44998 "EHLO
 	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab1ESAzq (ORCPT
+	with ESMTP id S1753210Ab1ESA5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 20:55:46 -0400
-Subject: Re: [PATCH v5 13/21] evm: add evm_inode_post_init call in gfs2
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Steven Whitehouse <swhiteho@redhat.com>,
-        linux-security-module@vger.kernl.org, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
-        Mimi Zohar <zohar@us.ibm.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@redhat.com>
-In-Reply-To: <4DD17A15.2060102@schaufler-ca.com>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1305559822.2855.14.camel@menhir>
-	 <1305561051.2669.10.camel@localhost.localdomain>
-	 <1305562469.2855.26.camel@menhir>
-	 <1305563758.2669.26.camel@localhost.localdomain>
-	 <1305568250.2669.47.camel@localhost.localdomain>
-	 <1305568671.2855.31.camel@menhir>  <4DD16B96.7020907@schaufler-ca.com>
-	 <1305571683.2669.90.camel@localhost.localdomain>
-	 <4DD17A15.2060102@schaufler-ca.com>
+	Wed, 18 May 2011 20:57:40 -0400
+Subject: Re: [patch 2/7] clocksource: Get rid of the hardcoded 5 seconds
+ sleep time limit
+From: John Stultz <john.stultz@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20110518210136.109811585@linutronix.de>
+References: <20110518205713.947614271@linutronix.de>
+	 <20110518210136.109811585@linutronix.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 May 2011 20:55:40 -0400
-Message-ID: <1305766540.3304.44.camel@localhost.localdomain>
+Date: Wed, 18 May 2011 17:57:35 -0700
+Message-ID: <1305766655.2915.187.camel@work-vm>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-16 at 12:25 -0700, Casey Schaufler wrote: 
-> On 5/16/2011 11:48 AM, Mimi Zohar wrote:
-> > On Mon, 2011-05-16 at 11:23 -0700, Casey Schaufler wrote:
+On Wed, 2011-05-18 at 21:33 +0000, Thomas Gleixner wrote:
+> plain text document attachment
+> (clocksource-make-shift-mult-calc-more-clever.patch)
+> Slow clocksources can have a way longer sleep time than 5 seconds and
+> even fast ones can easily cope with 600 seconds and still maintain
+> proper accuracy.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/time/clocksource.c |   38 +++++++++++++++++++-------------------
+>  1 file changed, 19 insertions(+), 19 deletions(-)
+> 
+> Index: linux-2.6-tip/kernel/time/clocksource.c
+> ===================================================================
+> --- linux-2.6-tip.orig/kernel/time/clocksource.c
+> +++ linux-2.6-tip/kernel/time/clocksource.c
+> @@ -626,19 +626,6 @@ static void clocksource_enqueue(struct c
+>  	list_add(&cs->list, entry);
+>  }
+> 
+> -
+> -/*
+> - * Maximum time we expect to go between ticks. This includes idle
+> - * tickless time. It provides the trade off between selecting a
+> - * mult/shift pair that is very precise but can only handle a short
+> - * period of time, vs. a mult/shift pair that can handle long periods
+> - * of time but isn't as precise.
+> - *
+> - * This is a subsystem constant, and actual hardware limitations
+> - * may override it (ie: clocksources that wrap every 3 seconds).
+> - */
+> -#define MAX_UPDATE_LENGTH 5 /* Seconds */
+> -
+>  /**
+>   * __clocksource_updatefreq_scale - Used update clocksource with new freq
+>   * @t:		clocksource to be registered
+> @@ -652,15 +639,28 @@ static void clocksource_enqueue(struct c
+>   */
+>  void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
+>  {
+> +	unsigned long sec;
+> +
+>  	/*
+> -	 * Ideally we want to use  some of the limits used in
+> -	 * clocksource_max_deferment, to provide a more informed
+> -	 * MAX_UPDATE_LENGTH. But for now this just gets the
+> -	 * register interface working properly.
+> +	 * Calc the maximum number of seconds which we can run before
+> +	 * wrapping around. For clocksources which have a mask > 32bit
+> +	 * we need to limit the max sleep time to have a good
+> +	 * conversion precision. 10 minutes is still a reasonable
+> +	 * amount. That results in a shift value of 24 for a
+> +	 * clocksource with mask >= 40bit and f >= 4GHz. That maps to
+> +	 * ~ 0.06ppm granularity for NTP. We apply the same 12.5%
+> +	 * margin as we do in clocksource_max_deferment()
+>  	 */
 
-> >> There is a very real possibility that multiple concurrent LSMs will
-> >> be supported before too long. Smack already uses multiple attributes
-> >> (SMACK64, SMACK64EXEC) on a file. Getting all the attributes in a
-> >> single call could result in an interface that requires parsing a
-> >> string argument, and we all know how popular those are. Introducing
-> >> an interface that we know isn't going to accommodate this upcoming
-> >> direction does not seem prudent.
-> > I would think that Smack would benefit from Steven's suggestion of
-> > returning an array of xattrs. Without his suggestion, I'm not sure how
-> > you are, or planning on, initializing multiple xattrs from a single LSM,
-> > unless of course you're not using security_inode_init_security().
-> 
-> The good news is that Smack has one required attribute. The others
-> are for special purposes and will usually be absent. It is easy to
-> imagine an LSM that always uses multiple attributes on a given file.
-> 
-> Yes, the array of xattr structures makes sense for any one LSM,
-> but there still needs to be the potential for multiple calls for
-> the multiple LSM case. I can't see that going away without a radical
-> LSM restructuring.
-> 
-> > Multiple LSMs calling security_inode_init_security() will be an issue
-> > for EVM, as EVM assumes there is a single LSM xattr on which to base the
-> > initial hmac.
-> 
-> That is far from the biggest issue with multiple LSMs, but is definitely
-> something to worry about.
+So, its not clear to me that the 12.5% margin really needed, since we
+take it out when we calculate clocksource_max_deferment(). Although with
+or without the margin I get the same mult/shift/max_idle_ns values for
+the hardware I'm testing.
 
-Ok. After thinking about this a bit more, moving
-evm_inode_init_security() into security_inode_init_security() only works
-for the single LSM and EVM case, but not for the multiple LSMs and EVM
-case, as the 'stacker' would call each LSM's
-security_inode_iint_security().  Having the 'stacker' return an array of
-xattrs would make sense and, at the same time, resolve the EVM issue. In
-evm_inode_post_init_security(), EVM could then walk the list of xattrs.
+Another nice detail from the change: It doesn't affect clocksources that
+normally wrap quickly:
 
-Mimi
+Without your patch:
+--------------
+JDB: hpet mult: 2684354560 shift: 26 max_idle: 83214991360
+JDB: acpi_pm mult: 2343484437 shift: 23 max_idle: 4540500826
+JDB: tsc mult: 1342183991 shift: 31 max_idle: 2600481483
+
+With your patch:
+---------------
+JDB: hpet mult: 2684354560 shift: 26 max_idle: 83214991360
+JDB: acpi_pm mult: 2343484437 shift: 23 max_idle: 4540500826
+JDB: tsc mult: 10485812 shift: 24 max_idle: 332861616128
+
+Although interestingly 332 secs calculated for the max idle is more then
+12% off of 600.
+
+> +	sec = (cs->mask - (cs->mask >> 5));
+> +	do_div(sec, freq);
+> +	do_div(sec, scale);
+> +	if (!sec)
+> +		sec = 1;
+> +	else if (sec > 600 && cs->mask > UINT_MAX)
+> +		sec = 600;
+> +
+>  	clocks_calc_mult_shift(&cs->mult, &cs->shift, freq,
+> -				      NSEC_PER_SEC/scale,
+> -				      MAX_UPDATE_LENGTH*scale);
+> +			       NSEC_PER_SEC / scale, sec * scale);
+>  	cs->max_idle_ns = clocksource_max_deferment(cs);
+>  }
+>  EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
+
+Overall it looks good. I'm doing some NTP testing with the TSC shift
+change to make sure we don't get any odd side effects. I'll let you know
+how those go.
+
+thanks
+-john
 
 
 
