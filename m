@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab1ESWsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 18:48:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54721 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932323Ab1ESWsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 18:48:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=AkbqMwRv62GwCOpKSMGita52B1wgvYEkzQFJIxBALUzcoTrCZlHl3Bxl/WpUAQxc61
-         lOTPx3Bb3d3zsIeDuosCqwNURf2o8RVH4OOY08ZtzBFVOSI5uYIEoHSAxC1MX726u36x
-         rn8ANAw1rb5FZm1LDONc6xQdbDWRAxJpHHCpw=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 10/10] ptrace: implement group stop notification for ptracer
-Date: Fri, 20 May 2011 00:48:07 +0200
-User-Agent: KMail/1.8.2
-Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <20110519165722.GP627@htj.dyndns.org> <20110519171327.GA19698@redhat.com>
-In-Reply-To: <20110519171327.GA19698@redhat.com>
+	id S933122Ab1ESWst (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 18:48:49 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:42990 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932822Ab1ESWsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 18:48:47 -0400
+Subject: [PATCHSET v3.2 0/3] data integrity: Stabilize pages during writeback
+	for various fses
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Theodore Tso <tytso@mit.edu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Date: Thu, 19 May 2011 15:48:41 -0700
+Message-ID: <20110519224841.28755.80650.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201105200048.07942.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 May 2011 19:13, Oleg Nesterov wrote:
-> On 05/19, Tejun Heo wrote:
-> > On Thu, May 19, 2011 at 06:32:46PM +0200, Oleg Nesterov wrote:
-> > > > +static void ptrace_trap_notify(struct task_struct *t)
-> > > > +{
-> > > > +	siginfo_t *si = t->last_siginfo;
-> > > > +
-> > > > +	WARN_ON_ONCE(!(t->ptrace & PT_SEIZED));
-> > > > +	assert_spin_locked(&t->sighand->siglock);
-> > > > +
-> > > > +	/*
-> > > > +	 * @t is being ptraced and new SEIZE behavior is in effect.
-> > > > +	 * Schedule sticky trap which will clear on the next GETSIGINFO.
-> > > > +	 */
-> > > > +	t->jobctl |= JOBCTL_TRAP_NOTIFY;
-> > >
-> > > This is also set by do_signal_stop(). Cleared by PTRACE_GETSIGINFO.
-> > >
-> > > How can this work? Doesn't this mean PTRACE_GETSIGINFO becomes mandatory
-> > > before PTRACE_CONT? IOW, unless the tracee does PTRACE_GETSIGINFO to clear
-> > > this bit, PTRACE_CONT just leads to another trap, no?
-> >
-> > Yes, group stop state change raises a sticky trap condition which is
-> > cleared by GETSIGINFO.
-> 
-> Hmm. At least now I understand the meaining what "sticky" means in
-> this discussion ;) I was confused.
+Hi all,
 
-I still don't see why is it needed. Userspace API doesn't require it.
+This is v3.2 of the stable-page-writes patchset for ext4 and xfs.  The purpose
+of this patchset is to prohibit processes from writing on memory pages that are
+currently being written to disk because certain storage setups (e.g. SCSI disks
+with DIF integrity checksums) will fail a write if the page contents don't
+match the checksum.  btrfs already guarantees page stability, so it does not
+use these changes.
 
-Are you trying to solve/simplify something on the kernel side with it?
+The technique used is fairly simple -- whenever a page is about to become
+writable (either because of a write fault to a mapped page, or a buffered write
+is in progress), wait for the page writeback flag to be clear, indicating that
+the page is not being written to disk.  This means that it is necessary (1) to
+add wait for writeback code to grab_cache_page_write_begin to take care of
+buffered writes, and (2) all filesystems must have a page_mkwrite that locks a
+page, waits for writeback, and returns the locked page.  For filesystems that
+piggyback on the generic block_page_mkwrite, the patchset adds the writeback
+wait to that function; for filesystems that do not use the page_mkwrite hook at
+all, the patchset provides a stub page_mkwrite.
 
--- 
-vda
+I ran my write-after-checksum ("wac") reproducer program to try to create the
+DIF checksum errors by madly rewriting the same memory pages.  In fact, I tried
+the following combinations against ext4, xfs, and btrfs:
+
+a. 64 write() threads + sync_file_range
+b. 64 mmap write threads + msync
+c. 32 write() threads + sync_file_range + 32 mmap write threads + msync
+d. Same as C, but with all threads in directio mode
+e. Same as A, but with all threads in directio mode
+f. Same as B, but with all threads in directio mode
+
+After running profiles A-F for 30 minutes each on 6 different machines, ext4
+and xfs report no errors.   btrfs eventually reports -ENOSPC and fails the
+test, though it does that even without any of the patches applied.
+
+To assess the performance impact of stable page writes, I moved to a disk that
+doesn't have DIF support so that I could measure just the impact of waiting for
+writeback.  I first ran wac with 64 threads madly scribbling on a 64k file and
+saw about a 12 percent performance decrease.  I then reran the wac program with
+64 threads and a 64MB file and saw about the same performance numbers.  As I
+suspected, the patchset only seems to impact workloads that rewrite the same
+memory page frequently.
+
+Per various comments regarding v3 of this patchset, I've integrated his
+suggestions, reworked the patch descriptions to make it clearer which ones
+touch all the filesystems and which ones are to fix remaining holes in specific
+filesystems, and expanded the scope of filesystems that got fixed.
+
+As always, questions and comments are welcome; and thank you to all the
+previous reviewers of this patchset.  I am also soliciting people's opinions on
+whether or not these patches could go upstream for .40.
+
+This latest iteration of the patchset focuses solely on the generic changes
+necessary to provide stable pages.  It is being sent to Al Viro (just like v3.1
+was).
+
+--D
