@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934879Ab1ESVeP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:34:15 -0400
+	id S934867Ab1ESVeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:34:13 -0400
 Received: from mail-px0-f173.google.com ([209.85.212.173]:44365 "EHLO
 	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934851Ab1ESVeJ (ORCPT
+	with ESMTP id S934834Ab1ESVeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:34:09 -0400
+	Thu, 19 May 2011 17:34:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=t06Gc9WCj5FUPJm1IfufdsDU7CGPEWrLTFPugskxQLFMfXdgmGxcVmpjQVMBJTVaya
-         pp2vUbqn97BpLvMBaCgDfctiZ2zzcfMrud/zwsb39EcE4KBERBchr1FzS/HJ1tnXJcwv
-         pLXPrBuREzIMMi4dV9s8eLNvT+DIq/VACK/ws=
+        b=fU/i5uAdo3kuKJKm1XPX/DGUX7MHtGiaRuVugBgoc62ECeJjY04KUqfFArkwYr97tG
+         csFKG66mJvJ92a1NNZZ8ZvTT4GrdM12lhDcpCs9kE7b6T0tLMCehMtISCurFR0MJFx3S
+         h51i/sYegaNV/YY1pUBpTpPtXAvKFPDS+3vLA=
 From: Jim Cromie <jim.cromie@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@suse.de, Jim Cromie <jim.cromie@gmail.com>,
-        Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
-        Benny Halevy <bhalevy@panasas.com>,
-        Boaz Harrosh <bharrosh@panasas.com>, osd-dev@open-osd.org,
-        Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
-Subject: [PATCH 08/23] use register_chrdev_ids in drivers/scsi/
-Date: Thu, 19 May 2011 15:33:11 -0600
-Message-Id: <1305840792-25877-9-git-send-email-jim.cromie@gmail.com>
+        devel@driverdev.osuosl.org
+Subject: [PATCH 09/23] use register_chrdev_ids in drivers/staging/
+Date: Thu, 19 May 2011 15:33:12 -0600
+Message-Id: <1305840792-25877-10-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com>
 References: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com>
@@ -30,129 +27,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc: Doug Gilbert <dgilbert@interlog.com>
-cc: linux-scsi@vger.kernel.org
-cc: Benny Halevy <bhalevy@panasas.com>
-cc: Boaz Harrosh <bharrosh@panasas.com>
-cc: osd-dev@open-osd.org
-cc: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
-cc: linux-scsi@vger.kernel.org
+cc: Greg Kroah-Hartman <gregkh@suse.de>
+cc: devel@driverdev.osuosl.org
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- drivers/scsi/osd/osd_uld.c |    6 +++---
- drivers/scsi/pmcraid.c     |    3 +--
- drivers/scsi/sg.c          |    6 +++---
- drivers/scsi/st.c          |    7 +++----
- 4 files changed, 10 insertions(+), 12 deletions(-)
+ drivers/staging/comedi/comedi_fops.c             |   15 ++++++---------
+ drivers/staging/cs5535_gpio/cs5535_gpio.c        |   10 +---------
+ drivers/staging/iio/industrialio-core.c          |    2 +-
+ drivers/staging/tidspbridge/rmgr/drv_interface.c |    2 +-
+ 4 files changed, 9 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
-index b31a8e3..18dcd38 100644
---- a/drivers/scsi/osd/osd_uld.c
-+++ b/drivers/scsi/osd/osd_uld.c
-@@ -528,6 +528,7 @@ static struct scsi_driver osd_driver = {
- static int __init osd_uld_init(void)
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index e7e72b8..55f831f 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1960,6 +1960,7 @@ static int __init comedi_init(void)
+ {
+ 	int i;
+ 	int retval;
++	dev_t devt = MKDEV(COMEDI_MAJOR, 0);
+ 
+ 	printk(KERN_INFO "comedi: version " COMEDI_RELEASE
+ 	       " - http://www.comedi.org\n");
+@@ -1983,24 +1984,21 @@ static int __init comedi_init(void)
+ 	memset(comedi_file_info_table, 0,
+ 	       sizeof(struct comedi_device_file_info *) * COMEDI_NUM_MINORS);
+ 
+-	retval = register_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
+-					COMEDI_NUM_MINORS, "comedi");
++	retval = register_chrdev_ids(&devt, COMEDI_NUM_MINORS, "comedi");
+ 	if (retval)
+ 		return -EIO;
+ 	cdev_init(&comedi_cdev, &comedi_fops);
+ 	comedi_cdev.owner = THIS_MODULE;
+ 	kobject_set_name(&comedi_cdev.kobj, "comedi");
+-	if (cdev_add(&comedi_cdev, MKDEV(COMEDI_MAJOR, 0), COMEDI_NUM_MINORS)) {
+-		unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
+-					 COMEDI_NUM_MINORS);
++	if (cdev_add(&comedi_cdev, devt, COMEDI_NUM_MINORS)) {
++		unregister_chrdev_region(devt, COMEDI_NUM_MINORS);
+ 		return -EIO;
+ 	}
+ 	comedi_class = class_create(THIS_MODULE, "comedi");
+ 	if (IS_ERR(comedi_class)) {
+ 		printk(KERN_ERR "comedi: failed to create class");
+ 		cdev_del(&comedi_cdev);
+-		unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
+-					 COMEDI_NUM_MINORS);
++		unregister_chrdev_region(devt, COMEDI_NUM_MINORS);
+ 		return PTR_ERR(comedi_class);
+ 	}
+ 
+@@ -2014,8 +2012,7 @@ static int __init comedi_init(void)
+ 		if (minor < 0) {
+ 			comedi_cleanup_legacy_minors();
+ 			cdev_del(&comedi_cdev);
+-			unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
+-						 COMEDI_NUM_MINORS);
++			unregister_chrdev_region(devt, COMEDI_NUM_MINORS);
+ 			return minor;
+ 		}
+ 	}
+diff --git a/drivers/staging/cs5535_gpio/cs5535_gpio.c b/drivers/staging/cs5535_gpio/cs5535_gpio.c
+index b25f9d1..539a08a 100644
+--- a/drivers/staging/cs5535_gpio/cs5535_gpio.c
++++ b/drivers/staging/cs5535_gpio/cs5535_gpio.c
+@@ -223,15 +223,7 @@ static int __init cs5535_gpio_init(void)
+ 		return -ENODEV;
+ 	}
+ 
+-	if (major) {
+-		dev_id = MKDEV(major, 0);
+-		retval = register_chrdev_region(dev_id, CS5535_GPIO_COUNT,
+-						NAME);
+-	} else {
+-		retval = alloc_chrdev_region(&dev_id, 0, CS5535_GPIO_COUNT,
+-					     NAME);
+-		major = MAJOR(dev_id);
+-	}
++	retval = register_chrdev_ids(&dev_id, CS5535_GPIO_COUNT, NAME);
+ 
+ 	if (retval) {
+ 		release_region(gpio_base, CS5535_GPIO_SIZE);
+diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
+index 1795ee1..1ef7198 100644
+--- a/drivers/staging/iio/industrialio-core.c
++++ b/drivers/staging/iio/industrialio-core.c
+@@ -443,7 +443,7 @@ static int __init iio_dev_init(void)
  {
  	int err;
-+	dev_t devt = MKDEV(SCSI_OSD_MAJOR, 0);
  
- 	err = class_register(&osd_uld_class);
+-	err = alloc_chrdev_region(&iio_devt, 0, IIO_DEV_MAX, "iio");
++	err = register_chrdev_ids(&iio_devt, IIO_DEV_MAX, "iio");
+ 	if (err < 0)
+ 		printk(KERN_ERR "%s: failed to allocate char dev region\n",
+ 		       __FILE__);
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+index c43c7e3..ec7773f 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -349,7 +349,7 @@ static int __devinit omap34_xx_bridge_probe(struct platform_device *pdev)
+ 		goto err1;
+ 
+ 	/* use 2.6 device model */
+-	err = alloc_chrdev_region(&dev, 0, 1, driver_name);
++	err = register_chrdev_ids(&dev, 1, driver_name);
  	if (err) {
-@@ -535,8 +536,7 @@ static int __init osd_uld_init(void)
- 		return err;
- 	}
- 
--	err = register_chrdev_region(MKDEV(SCSI_OSD_MAJOR, 0),
--				     SCSI_OSD_MAX_MINOR, osd_name);
-+	err = register_chrdev_ids(&devt, SCSI_OSD_MAX_MINOR, osd_name);
- 	if (err) {
- 		OSD_ERR("Unable to register major %d for osd ULD => %d\n",
- 			SCSI_OSD_MAJOR, err);
-@@ -553,7 +553,7 @@ static int __init osd_uld_init(void)
- 	return 0;
- 
- err_out_chrdev:
--	unregister_chrdev_region(MKDEV(SCSI_OSD_MAJOR, 0), SCSI_OSD_MAX_MINOR);
-+	unregister_chrdev_region(devt, SCSI_OSD_MAX_MINOR);
- err_out:
- 	class_unregister(&osd_uld_class);
- 	return err;
-diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
-index 7f636b1..61a2207 100644
---- a/drivers/scsi/pmcraid.c
-+++ b/drivers/scsi/pmcraid.c
-@@ -6100,8 +6100,7 @@ static int __init pmcraid_init(void)
- 			 PMCRAID_DRIVER_NAME,
- 			 PMCRAID_DRIVER_VERSION, PMCRAID_DRIVER_DATE);
- 
--	error = alloc_chrdev_region(&dev, 0,
--				    PMCRAID_MAX_ADAPTERS,
-+	error = register_chrdev_ids(&dev, PMCRAID_MAX_ADAPTERS,
- 				    PMCRAID_DEVFILE);
- 
- 	if (error) {
-diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index 909ed9e..e741988 100644
---- a/drivers/scsi/sg.c
-+++ b/drivers/scsi/sg.c
-@@ -1575,6 +1575,7 @@ static int __init
- init_sg(void)
- {
- 	int rc;
-+	dev_t devt = MKDEV(SCSI_GENERIC_MAJOR, 0);
- 
- 	if (scatter_elem_sz < PAGE_SIZE) {
- 		scatter_elem_sz = PAGE_SIZE;
-@@ -1585,8 +1586,7 @@ init_sg(void)
- 	else
- 		def_reserved_size = sg_big_buff;
- 
--	rc = register_chrdev_region(MKDEV(SCSI_GENERIC_MAJOR, 0), 
--				    SG_MAX_DEVS, "sg");
-+	rc = register_chrdev_ids(&devt, SG_MAX_DEVS, "sg");
- 	if (rc)
- 		return rc;
-         sg_sysfs_class = class_create(THIS_MODULE, "scsi_generic");
-@@ -1604,7 +1604,7 @@ init_sg(void)
- 	}
- 	class_destroy(sg_sysfs_class);
- err_out:
--	unregister_chrdev_region(MKDEV(SCSI_GENERIC_MAJOR, 0), SG_MAX_DEVS);
-+	unregister_chrdev_region(devt, SG_MAX_DEVS);
- 	return rc;
- }
- 
-diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-index 1871b8a..5cce227 100644
---- a/drivers/scsi/st.c
-+++ b/drivers/scsi/st.c
-@@ -4260,6 +4260,7 @@ static void scsi_tape_release(struct kref *kref)
- static int __init init_st(void)
- {
- 	int err;
-+	dev_t devt = MKDEV(SCSI_TAPE_MAJOR, 0);
- 
- 	validate_options();
- 
-@@ -4272,8 +4273,7 @@ static int __init init_st(void)
- 		return PTR_ERR(st_sysfs_class);
- 	}
- 
--	err = register_chrdev_region(MKDEV(SCSI_TAPE_MAJOR, 0),
--				     ST_MAX_TAPE_ENTRIES, "st");
-+	err = register_chrdev_ids(&devt, ST_MAX_TAPE_ENTRIES, "st");
- 	if (err) {
- 		printk(KERN_ERR "Unable to get major %d for SCSI tapes\n",
- 		       SCSI_TAPE_MAJOR);
-@@ -4293,8 +4293,7 @@ static int __init init_st(void)
- err_scsidrv:
- 	scsi_unregister_driver(&st_template.gendrv);
- err_chrdev:
--	unregister_chrdev_region(MKDEV(SCSI_TAPE_MAJOR, 0),
--				 ST_MAX_TAPE_ENTRIES);
-+	unregister_chrdev_region(devt, ST_MAX_TAPE_ENTRIES);
- err_class:
- 	class_destroy(st_sysfs_class);
- 	return err;
+ 		pr_err("%s: Can't get major %d\n", __func__, driver_major);
+ 		goto err1;
 -- 
 1.7.4.4
 
