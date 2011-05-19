@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934787Ab1ESU5G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 16:57:06 -0400
-Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:1975 "EHLO
-	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933993Ab1ESU5E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 16:57:04 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Ondrej Zary <linux@rainbow-software.org>
-Subject: Re: [PATCH v5] radio-sf16fmr2: convert to generic TEA575x interface
-Date: Thu, 19 May 2011 22:56:44 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38-tschai; KDE/4.6.1; x86_64; ; )
-Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
-References: <201105140017.26968.linux@rainbow-software.org> <201105190845.38194.hverkuil@xs4all.nl> <201105191815.46658.linux@rainbow-software.org>
-In-Reply-To: <201105191815.46658.linux@rainbow-software.org>
+	id S934792Ab1ESU6n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 16:58:43 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46492 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933993Ab1ESU6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 16:58:42 -0400
+Date: Thu, 19 May 2011 22:58:34 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/gart change for v2.6.40
+Message-ID: <20110519205834.GA5644@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105192256.44127.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 19, 2011 18:15:43 Ondrej Zary wrote:
-> Convert radio-sf16fmr2 to use generic TEA575x implementation. Most of the
-> driver code goes away as SF16-FMR2 is basically just a TEA5757 tuner
-> connected to ISA bus.
-> The card can optionally be equipped with PT2254A volume control (equivalent
-> of TC9154AP) - the volume setting is completely reworked (with balance control
-> added) and tested.
-> 
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Linus,
 
-Acked-by: Hans Verkuil <hverkuil@xs4all.nl>
+Please pull the latest x86-gart-for-linus git tree from:
 
-Except for one tiny little typo:
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-gart-for-linus
 
-> --- linux-2.6.39-rc2-/drivers/media/radio/radio-sf16fmr2.c	2011-04-06 03:30:43.000000000 +0200
-> +++ linux-2.6.39-rc2/drivers/media/radio/radio-sf16fmr2.c	2011-05-19 17:56:08.000000000 +0200
-> +static int fmr2_tea_ext_init(struct snd_tea575x *tea)
->  {
-> -	return a->index ? -EINVAL : 0;
-> -}
-> +	struct fmr2 *fmr2 = tea->private_data;
->  
-> -static const struct v4l2_file_operations fmr2_fops = {
-> -	.owner          = THIS_MODULE,
-> -	.unlocked_ioctl = video_ioctl2,
-> -};
-> +	if (inb(fmr2->io) & FMR2_HASVOL) {
-> +		fmr2->volume = v4l2_ctrl_new_std(&tea->ctrl_handler, &fmr2_ctrl_ops, V4L2_CID_AUDIO_VOLUME, 0, 68, 2, 56);
-> +		fmr2->balance = v4l2_ctrl_new_std(&tea->ctrl_handler, &fmr2_ctrl_ops, V4L2_CID_AUDIO_BALANCE, -68, 68, 2, 0);
-> +		if (tea->ctrl_handler.error) {
-> +			printk(KERN_ERR "radio-sf16fmr2: can't initialize contrls\n");
+ Thanks,
 
-contrls -> controls
+	Ingo
 
-> +			return tea->ctrl_handler.error;
-> +		}
-> +	}
+------------------>
+Joerg Roedel (1):
+      x86, gart: Don't enforce GART aperture lower-bound by alignment
+
+
+ arch/x86/kernel/aperture_64.c |   34 +++++++++++++++++++---------------
+ 1 files changed, 19 insertions(+), 15 deletions(-)
+
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index 73fb469..3d2661c 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -30,6 +30,22 @@
+ #include <asm/amd_nb.h>
+ #include <asm/x86_init.h>
+ 
++/*
++ * Using 512M as goal, in case kexec will load kernel_big
++ * that will do the on-position decompress, and could overlap with
++ * with the gart aperture that is used.
++ * Sequence:
++ * kernel_small
++ * ==> kexec (with kdump trigger path or gart still enabled)
++ * ==> kernel_small (gart area become e820_reserved)
++ * ==> kexec (with kdump trigger path or gart still enabled)
++ * ==> kerne_big (uncompressed size will be big than 64M or 128M)
++ * So don't use 512M below as gart iommu, leave the space for kernel
++ * code for safe.
++ */
++#define GART_MIN_ADDR	(512ULL << 20)
++#define GART_MAX_ADDR	(1ULL   << 32)
++
+ int gart_iommu_aperture;
+ int gart_iommu_aperture_disabled __initdata;
+ int gart_iommu_aperture_allowed __initdata;
+@@ -70,21 +86,9 @@ static u32 __init allocate_aperture(void)
+ 	 * memory. Unfortunately we cannot move it up because that would
+ 	 * make the IOMMU useless.
+ 	 */
+-	/*
+-	 * using 512M as goal, in case kexec will load kernel_big
+-	 * that will do the on position decompress, and  could overlap with
+-	 * that position with gart that is used.
+-	 * sequende:
+-	 * kernel_small
+-	 * ==> kexec (with kdump trigger path or previous doesn't shutdown gart)
+-	 * ==> kernel_small(gart area become e820_reserved)
+-	 * ==> kexec (with kdump trigger path or previous doesn't shutdown gart)
+-	 * ==> kerne_big (uncompressed size will be big than 64M or 128M)
+-	 * so don't use 512M below as gart iommu, leave the space for kernel
+-	 * code for safe
+-	 */
+-	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
+-	if (addr == MEMBLOCK_ERROR || addr + aper_size > 0xffffffff) {
++	addr = memblock_find_in_range(GART_MIN_ADDR, GART_MAX_ADDR,
++				      aper_size, aper_size);
++	if (addr == MEMBLOCK_ERROR || addr + aper_size > GART_MAX_ADDR) {
+ 		printk(KERN_ERR
+ 			"Cannot allocate aperture memory hole (%lx,%uK)\n",
+ 				addr, aper_size>>10);
