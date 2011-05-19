@@ -1,99 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933689Ab1ESRPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:15:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53894 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933640Ab1ESRPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:15:19 -0400
-Date: Thu, 19 May 2011 19:13:27 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 10/10] ptrace: implement group stop notification for
-	ptracer
-Message-ID: <20110519171327.GA19698@redhat.com>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-11-git-send-email-tj@kernel.org> <20110519163246.GF17265@redhat.com> <20110519165722.GP627@htj.dyndns.org>
+	id S933218Ab1ESJPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 05:15:17 -0400
+Received: from nm5-vm1.bullet.mail.bf1.yahoo.com ([98.139.213.155]:28829 "HELO
+	nm5-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933062Ab1ESJPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 05:15:12 -0400
+X-Yahoo-Newman-Id: 720915.63051.bm@omp1008.mail.bf1.yahoo.com
+Cc: recipient list not shown:;
+Message-ID: <670999.45680.qm@smtp105.biz.mail.bf1.yahoo.com>
+X-Yahoo-SMTP: f4Xo3gyswBAM6yTqFfI97Jy4LK2Q0Q--
+X-YMail-OSG: iHwpusEVM1niyLS22.jMhk1430IiJfP35r4b5M_.Z4PoVTD
+ BgYnpzRtYWOVGIraApTPuX2B_OuZhRZBQKyg302vOODcoRNXo3RuUBWPUIg0
+ yVFvo2p65amP_CFrO3Gy9eVN_Uvbo6cQuvvDKyycTIzm9.i2iZwubLIpEGWi
+ HpmY.IwCHkuQNsZ_EpOjtbDuep0Kj2zKRYJeDk2X6.TbioBqz2uAjq.FOC7E
+ .KhJBal2zStjW6TWyJHjUBHxsmcyYfBUX.P1Xct31d8_4dYszbuTtGfXSJL0
+ HfyopHwaVGBsViKC9G5p1Zf48_4GgM7dO68mW5UM1v3n8pf0RrFwPMKDH7jY
+ 0Ly3J5D.tdgKvfD7ub9GKmFYHsh3LsE4jYNqidc.uxmdqz5qBD2Ji3vI7WCe
+ vcY_9SR2Vl0L0ohmimnTt2FcOBoVyeHRkaHgSBHm0BMHmjOX1LosHSNoTAtj
+ BpsNswGuIbbwignJSsUchZlRWeLsU039Jf711C4Z6GZN1c0zt.FZbNdl4rHr
+ ZInOHuwtbUFOrcxhwuZhY8GGDeZ6WOJYeP7VFtcG3nq9..1DC_cW8K3Vq8Ad
+ E30fgX_dxw2Xdg4ZIEosRMMgaoH.OTbKatoVxv1IRp.YKern1sNQ1lDh7abo
+ n47Uz0Igq3wgV5CCktQo2YDJE7lzEfwmd_yisisJsGyYgdEkWrfVEZPP2VRE
+ L4ZDOAajhtfbeUMsONReGezo2xpXju0vYXrvSmGbfrCYGXbY1NM_vzsLcjLP
+ 0GuwmkrumvIqniJ55q26.WmyukrLL4bymjAvUttVn0Aw.b3p4jmyQGjRdE0h
+ Hz8qu0yIddgmTJm4r5TUcaVOOXdioC70Y4k0uiQx03p0Uzm_sehegKGqHUQp
+ ofqsWk_blX9NwQslOKRRdor.o25QSELbsaU5xvCJfbixcP96OFv1chkWhe_s
+ impc7nhNTxrIbJmxhVy214dSWRxcVIsXgMfYiSIrhh0X8kW9X4sSPpE8AJuL
+ omtXqWNsh0Rh_K54TPewXnzlGwX8Lee.zdm_eAUTzRj9ZM5Jk4XRjwmjEZzh
+ U5D3F7klt.tw5bKqJ8xKagOZ6mGRnsHgP77YW6Ehc_eoCsZfaCo2YkMCTPZ9
+ cySb2nNlRFOuxcUuUDtdxvhKUyod7V3Btqs8YyKa1h2qwQPqIjWXyzqnTdUu
+ KnVB.eBTqJUQMvKD_GawRZzFQdtvDx0toUd95c8lZ4eBp40Xn8Gu8Z4VVe6X
+ IputwdYUBzO1VB_Mr9q2nGg6E2jJBs6AC2PAZ_EHs.UZ8wanEM2OnAUCG6QZ
+ 0VOmsC5QPuVy2PCgt.ttVFg74CzSrcpuAInCn524_Ii.c1d5fSCGYrBthQEt
+ 0W1O99ulh.tmHlet2SXR_DNi4LM_4y.zJ54Y47Nhowx6mTWHROATQZyrdJHf
+ uA.XcszuzypjMU0Q2PmxjP0BFCauc4NXBTmU7blQIjaRvVbOo0rp3TmJRYtG
+ R0W.VrUCXUS7kL0SKO.VT0VAAlgHbiFCiOTOJyn.4pkk9eeWXwk5Jx79yaYF
+ UdgGG2wRKOzoBlwuPUONVvvv_f4gEZ.bRqJmki7KLqDiaiJIFxbYBx6BOsxi
+ cGAKkqrLc6N2bVxE3.b2j8Ux8BKfWiwxJQsC6vPq57ojm.NBD9cv0QowAiE_
+ ShCLCVHbjUuSV1MzssZ57vLvRsrk7IRdrEH3NJ.m2HTnu5Oxh4aOgO2ehtMf
+ SnWpEZKDTybU2AudjwYVaUaOOB94BZCaY1duwrcdAqToBGEt.bS8VYwehDtp
+ _5FSz34AkcBIPMbK3qBku_EqoeqmhW972_SUmBtGIMULRASeKtUbw7s1k1Pk
+ HjCPmw8q.JUjwZig0IJWTonF742C5ePSVnmP1mtypMOjV4nMAKCAXzWnpaEo
+ KQMSrXhJ.rEAGdMZpTXN5MUYOtsNi9H.cBfjgRSogt94X1UlN3HwzuuqQlkw
+ US1Cvqgku0JJ29wiQdSJfagHTr5w9EX5nVl1mQOK4YQcBOD12s4ydlqbDXLm
+ LUmat.JprjVhF.dVJ5MbeyCOHpoAwCQqLMRTOPA93ePQCbecCSeLXevtc64Z
+ XMgXRw_fZ0p4q_r0hEwmDApgUA3HAgDBo2GN5cwYbNUq5oc1ThMPGqDF50sD
+ AFjlPlcdLtE8vSD4c1W4GNCii68dJwBtHNPLxM3r_hSBGFZw3725wgANumpY
+ nJMDzFzIkDdXEedZQz9T9MDvYxCcEnEh0Q.BRl9j3Ya.A._W33APnUCIo73G
+ GW3IZhllp6XgR4cZHPvoGYSR_giX4D3jpEvwIJ6uOKit63ZSAtjhUkd0H3Ef
+ HCQax0GYqqYWSoiwLuJDYhZRdkJq9H10L9nycJGvmWMxnZeFx_zpllpYgH1E
+ L6BlvJ8NgUF4lU5RFs01NGONQodR5sppcNmftY8oqwxppNskExet.UiM6HBM
+ PuKfJ9Ts_L7dVBl4stNoC4NpoiPdf8QCxXPELnXBxaFJqA5Qoj7ps0LMVoVR
+ XJ92b9qkgv52lszi0FGlJ72fzV1cpRXHeLNhz5pdSx9_XgkrTVTEuceeQPZ5
+ _jORsno7mCtsyOLzCDKoVx62z.IRWNN4HKi8oa9mBwh.mrjNlFE7dsLIFGsL
+ blGvKPFjRc1phE.zcz1csqL2XEeq50.jMp.te9jpfLWLpauuAFbLiTnZwvTz
+ G5VVSl33Ums.FCb0kjDis4M34gNbXBQZL_KpZA9fW.E.aNvyUAbm1YWbfbgq
+ j4y1krqojFa8NaSKJ0YIRzPsil5oO8IewWE2Tc7gdC7DOO161V_115hG7n7U
+ GuhtTR2VCg6Y9QVvYQxY0CeKJ8tY_3QLsQinKwHlCrh5ECy3ADMU2Cr39aAv
+ AW8CDUmr3Eno1e1XNLrXtad4d0zN5a.tnrfeGp66PguddeH7ucSnzjpePXd8
+ Qp4AAV6a.AZ6humXBEVqVgNfu37bpZw_kdNgDkePsz7d8ZVW5lY.vue1thtN
+ om52BAHzFDWkeVabEAMdUhhIO9H1hiH.DScvFW.ZUncrEPb5G7nwOGH6wumU
+ NXWRihraufdu_JvJBgOQ7osOlTB019VtqGNNOu.Wsbz4n.KvPNDEaMckFG_U
+ dlS.nVjB5MIEzI_xgMiiV0VdhBKyplnLt53JVtvPTtF3tJu1vCMFt6CBvy6p
+ uX0sB1xcHyPg3ncYst6PRla1nzopAhTMsZpmY.q6.8TyBqlHAnYifgm31wp_
+ 1PpwQz4JUwDHbOmrBim.7.h6DBL75e.N63432QIp0whbE9cDhTWH5Z7jrAUz
+ 3rqNbhWvyxiys7ksimSIEwukVSvRCpkm9qLfTXVby7N8S6T0ZtToRQa3.lXo
+ xcWRMdkidTWaB5wRJ0oqhGWGCxWsoR5TwM471eOahv79.rWth2SPXuh9Qlzv
+ X2sa9S3NusfjOn2fwSnvuovV205EfZ_wiY44T331gpd7HptKolKPzuRzksFz
+ uszAFH5awCPTBxc99DhcL6ARNHlUevoY_82K4ns729E3pwLZMHtamOe_WVq.
+ BOuqEJOkKuFJkObT3elzeQzfsMlYlTvt1CUFyfI5P9qesZwtI2LKnc79RAqi
+ LhUy40ZQ2QrbD2x8ySysNDPYgGI.dYBbsrdAlW3hggI_osvpxMcGM6VzLa0_
+ Bts7OJU22js4H26.mml2NDAja63iT7WRK9XZqWu22sEye2ZyPygbu8QHJLlK
+ v.dRYgqIk6NHCC8Mn1RifisYO8hNN9tyl8r1_u0VqdwRNJAEMbzMxLA6TwjD
+ AzVBzt23.WH_CJ7fP5M8ufw--
+X-Yahoo-Newman-Property: ymail-5
+Reply-To: <ir.irsclim@hotmail.com>
+From: "Irish Online Promo" <art-paid@art-paid.com>
+Subject: Award Notice#
+Date: Thu, 19 May 2011 10:14:56 -0700
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110519165722.GP627@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19, Tejun Heo wrote:
->
-> Hey,
->
-> On Thu, May 19, 2011 at 06:32:46PM +0200, Oleg Nesterov wrote:
-> > > +static void ptrace_trap_notify(struct task_struct *t)
-> > > +{
-> > > +	siginfo_t *si = t->last_siginfo;
-> > > +
-> > > +	WARN_ON_ONCE(!(t->ptrace & PT_SEIZED));
-> > > +	assert_spin_locked(&t->sighand->siglock);
-> > > +
-> > > +	/*
-> > > +	 * @t is being ptraced and new SEIZE behavior is in effect.
-> > > +	 * Schedule sticky trap which will clear on the next GETSIGINFO.
-> > > +	 */
-> > > +	t->jobctl |= JOBCTL_TRAP_NOTIFY;
-> >
-> > This is also set by do_signal_stop(). Cleared by PTRACE_GETSIGINFO.
-> >
-> > How can this work? Doesn't this mean PTRACE_GETSIGINFO becomes mandatory
-> > before PTRACE_CONT? IOW, unless the tracee does PTRACE_GETSIGINFO to clear
-> > this bit, PTRACE_CONT just leads to another trap, no?
->
-> Yes, group stop state change raises a sticky trap condition which is
-> cleared by GETSIGINFO.
-
-Hmm. At least now I understand the meaining what "sticky" means in
-this discussion ;) I was confused.
-
-> > > +	if (task_is_traced(t) && si && si->si_code == PTRACE_STOP_SI_CODE) {
-> >
-> > OK, this PTRACE_STOP_SI_CODE check is clear. But the same check in
-> > ptrace_check_attach() looks confusing, why can't we set BLOCK_NOTIFY
-> > unconditionally?
->
-> It's an optimization.  If we set the flag, we'll have to acquire
-> siglock
-
-OK, I see.
-
-> > > +		t->jobctl |= JOBCTL_TRAPPING;
-> > > +		if (!(t->jobctl & JOBCTL_BLOCK_NOTIFY))
-> > > +			signal_wake_up(t, true);
-> >
-> > Could you please remind me why we can't avoid the awful ptrace_wait_trapping()
-> > in do_wait() paths? Assuming that ptrace_check_attach() does this. I got lost
-> > a bit.
->
-> Please consider the following scenario.
->
-> 1. Tracee is in group stop and stops at TRAP_STOP notifying the
->    tracer.
->
-> 2. Tracer does WNOWAIT wait(2) and determines that the tracee is
->    trapped in TRAP_STOP.
->
-> 3. Something generates SIGCONT which finishes the group stop and
->    triggers the notification re-trapping.
->
-> 4. While tracee is re-trapping, tracer issues WNOHANG
-
-OK. I still hope we can avoid this somehow. May be play with exit_code
-so that do_wait() can succeed even if the JOBCTL_TRAPPING tracee is
-running. Perhaps.
-
-If only we could notify the tracer from ptrace_trap_notify... IIUC,
-this is the only problem? I mean, apart from this there is no need
-to wake up the tracee.
-
-Oleg.
-
+Your email has won 891,934.00 Pound Sterlings  in the Irish National Lottery Draws For Internet Use
+To Begin Send:Name,Age, Address, Tel, Country
