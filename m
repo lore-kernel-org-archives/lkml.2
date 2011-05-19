@@ -1,85 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab1ESLDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 07:03:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52323 "EHLO mx1.redhat.com"
+	id S1755421Ab1ESLEV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 07:04:21 -0400
+Received: from verein.lst.de ([213.95.11.211]:45489 "EHLO newverein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752505Ab1ESLDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 07:03:47 -0400
-Date: Thu, 19 May 2011 07:03:14 -0400
-From: Neil Horman <nhorman@redhat.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Ferenc Wagner <wferi@niif.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Ian Campbell <ian.campbell@citrix.com>, netdev@vger.kernel.org
-Subject: Re: [Patch net-next-2.6] netpoll: disable netpoll when enslave a
- device
-Message-ID: <20110519110314.GC2723@hmsreliant.think-freely.org>
-References: <1305712845-11762-1-git-send-email-amwang@redhat.com>
- <20110518105558.GA3203@hmsreliant.think-freely.org>
- <4DD4A6F9.4010002@redhat.com>
+	id S1752943Ab1ESLET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 07:04:19 -0400
+Date: Thu, 19 May 2011 13:04:19 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Sunil Mushran <sunil.mushran@oracle.com>
+Cc: josef@redhat.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [Ocfs2-devel] SEEK_DATA/HOLE on ocfs2 - v2
+Message-ID: <20110519110419.GA6357@lst.de>
+References: <1305773084-19296-1-git-send-email-sunil.mushran@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DD4A6F9.4010002@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1305773084-19296-1-git-send-email-sunil.mushran@oracle.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 01:13:29PM +0800, Cong Wang wrote:
-> 于 2011年05月18日 18:56, Neil Horman 写道:
-> >On Wed, May 18, 2011 at 06:00:35PM +0800, Amerigo Wang wrote:
-> ...
-> >>-			case NETDEV_GOING_DOWN:
-> >>  			case NETDEV_BONDING_DESLAVE:
-> >>+			case NETDEV_ENSLAVE:
-> >>  				nt->enabled = 0;
-> >>  				stopped = true;
-> >>  				break;
-> >This wasn't introduced by this patch, but looking at it made me realize that
-> >nt->enabled, if it passes through this code path, doesn't properly track weather
-> >or not netpoll_setup has been called on this interface.  If you look at
-> >drop_netconsole_target, you'll see we only call netpoll_cleanup_target if
-> >nt->enabled is set.  We should probably change the nt->enabled check there, and
-> >in store_enabled to be if (nt->np.dev), like we do in the NETDEV_UNREGISTER case
-> >in netconsole_netdev_event.
-> 
-> Yeah, also note that we can change ->enabled via configfs too.
-> I guess we probably need to fix this in another patch...
-> 
-Yeah, or you can roll it into this one, I think this is the only location that
-needs fixing.
+On Wed, May 18, 2011 at 07:44:42PM -0700, Sunil Mushran wrote:
+> It is improved since the last post. It runs cleanly on zfs, ocfs2 and ext3
+> (default behavior). Users testing on zfs will need to flip the values of
+> SEEK_HOLE/DATA.
 
-> 
-> >>+#define NETDEV_ENSLAVE		0x0014
-> >>
-> >Nit:
-> >Shouldn't this be NETDEV_BONDING_ENSLAVE, to keep it in line with
-> >NETDEV_BONDING_DESLAVE above?
-> 
-> Actually that is my first thought, but I plan to use this in bridge
-> case too, because using netconsole on a device underlying a bridge
-> makes little sense too. Thus, I prefer NETDEV_ENSLAVE to
-> NETDEV_BONDING_ENSLAVE.
-> 
-That seems reasonable, but if its going to be more generic, could you change
-NETDEV_BONDING_DESLAVE to NETDEV_DESLAVE?
-
-> >
-> >>  #define SYS_DOWN	0x0001	/* Notify of system down */
-> >>  #define SYS_RESTART	SYS_DOWN
-> >>
-> >
-> >
-> >Other than those two points, this looks good to me
-> 
-> Thanks for review.
-Thank you!
+sounds like we should switch the around, just to cause the least
+amount of confusion.
 
