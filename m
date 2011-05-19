@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292Ab1ESNyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 09:54:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63734 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933220Ab1ESNya (ORCPT
+	id S933310Ab1ESNyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 09:54:41 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:51223
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933215Ab1ESNyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 09:54:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=P6xgg8kf6gwm+xGt/KGPEHcm3E79vB1dBFgMGAmdXNHWeAGl75F5saC2tGJQ3pzLYg
-         fOPPJY/4q3FdH8af4TgVjYhNri5g7rVvYfx7tN5jEJl4huK2Ofkv8MkJDWF+pB93YDOJ
-         UNZRKhb+Z8HClbVMPIIzrO/Dk3dcxcE0PejWs=
-Date: Thu, 19 May 2011 15:54:25 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: early kernel crash when kmemleak is enabled
-Message-ID: <20110519135425.GI627@htj.dyndns.org>
-References: <20110515105505.GA21631@joi.lan>
- <20110519134218.GH627@htj.dyndns.org>
- <1305812924.26710.41.camel@e102109-lin.cambridge.arm.com>
+	Thu, 19 May 2011 09:54:39 -0400
+X-SpamScore: -1
+X-BigFish: VS-1(z3c23mz11f6Nzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Timur Tabi <timur@freescale.com>
+To: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
+        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
+Subject: [PATCH 0/7] This patchset adds support for running Linux under the Freescale hypervisor,
+Date: Thu, 19 May 2011 08:54:25 -0500
+Message-ID: <1305813272-31826-1-git-send-email-timur@freescale.com>
+X-Mailer: git-send-email 1.7.3.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305812924.26710.41.camel@e102109-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 02:48:44PM +0100, Catalin Marinas wrote:
-> Thanks for tracking this down. Untested (I can add a log afterwards):
-> 
-> diff --git a/init/main.c b/init/main.c
-> index 4a9479e..48df882 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -580,8 +580,8 @@ asmlinkage void __init start_kernel(void)
->  #endif
->  	page_cgroup_init();
->  	enable_debug_pagealloc();
-> -	kmemleak_init();
->  	debug_objects_mem_init();
-> +	kmemleak_init();
->  	setup_per_cpu_pageset();
->  	numa_policy_init();
->  	if (late_time_init)
+have hypervisor extensions (e.g. the P4080 which has an e500mc core).
 
-Heh, that was swift.  Yeap, seems to work here.  Please feel free to
-add my Tested-by.
+I think it makes sense for this patchset to go through Kumar Gala's -next 
+branch, but I still need ACKs from various people on the parts that are
+not e500-specific.
 
-Thank you.
+1. powerpc: make irq_choose_cpu() available to all PIC drivers
+2. powerpc: introduce ePAPR embedded hypervisor hcall interface
+3. powerpc: introduce the ePAPR embedded hypervisor vmpic driver
+4. powerpc: add Freescale hypervisor partition control functions
+5. powerpc/85xx: add board support for the Freescale hypervisor
+6. tty/powerpc: introduce the ePAPR embedded hypervisor byte channel driver
+7. drivers/misc: introduce Freescale hypervisor management driver
 
--- 
-tejun
+Ben Herrenschmidt, please review/ack parts 1-3.
+
+Greg Kroah-Hartman, please review/ack part 6.
+
+Andrew Morton, please review/ack part 7.
+
+Thank you very much for looking at this patchset.  I hope to have it included 
+in 2.6.40.
+
