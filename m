@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933871Ab1ESSYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:24:05 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:52315 "EHLO
+	id S933874Ab1ESSH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:07:58 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33195 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933758Ab1ESSHu (ORCPT
+	by vger.kernel.org with ESMTP id S933842Ab1ESSHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:07:50 -0400
-X-Sasl-enc: 4JrIOz3y3T9vL4n6TSAB0paVT+cOCVq2qiIvmDUVYsin 1305828469
+	Thu, 19 May 2011 14:07:52 -0400
+X-Sasl-enc: efEvW42wtZTrPJM9IVp9KshLzy2J+OD1hAcyPaIptlkD 1305828471
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:55 2011
-Message-Id: <20110519180555.057280654@clark.kroah.org>
+Message-Id: <20110519180555.150198505@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:04:36 -0700
+Date: Thu, 19 May 2011 11:04:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Manoj Iyer <manoj.iyer@canonical.com>, Andy Lutomirski <luto@mit.edu>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [08/71] thinkpad-acpi: module autoloading for newer Lenovo ThinkPads.
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Will Deacon <will.deacon@arm.com>, Prasad <prasad@linux.vnet.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [09/71] x86, hw_breakpoints: Fix racy access to ptrace breakpoints
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,45 +30,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 9fbdaeb4f4dd14a0caa9fc35c496d5440c251a3a upstream.
+commit 87dc669ba25777b67796d7262c569429e58b1ed4 upstream.
 
-The newer Lenovo ThinkPads have HKEY HID of LEN0068 instead
-of IBM0068. Added new HID so that thinkpad_acpi module will
-auto load on these newer Lenovo ThinkPads.
+While the tracer accesses ptrace breakpoints, the child task may
+concurrently exit due to a SIGKILL and thus release its breakpoints
+at the same time. We can then dereference some freed pointers.
 
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+To fix this, hold a reference on the child breakpoints before
+manipulating them.
+
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Prasad <prasad@linux.vnet.ibm.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Link: http://lkml.kernel.org/r/1302284067-7860-3-git-send-email-fweisbec@gmail.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/thinkpad_acpi.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/kernel/ptrace.c |   36 ++++++++++++++++++++++++++----------
+ 1 file changed, 26 insertions(+), 10 deletions(-)
 
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -128,7 +128,8 @@ enum {
- };
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -608,6 +608,9 @@ static int ptrace_write_dr7(struct task_
+ 	unsigned len, type;
+ 	struct perf_event *bp;
  
- /* ACPI HIDs */
--#define TPACPI_ACPI_HKEY_HID		"IBM0068"
-+#define TPACPI_ACPI_IBM_HKEY_HID	"IBM0068"
-+#define TPACPI_ACPI_LENOVO_HKEY_HID	"LEN0068"
- #define TPACPI_ACPI_EC_HID		"PNP0C09"
- 
- /* Input IDs */
-@@ -3879,7 +3880,8 @@ errexit:
++	if (ptrace_get_breakpoints(tsk) < 0)
++		return -ESRCH;
++
+ 	data &= ~DR_CONTROL_RESERVED;
+ 	old_dr7 = ptrace_get_dr7(thread->ptrace_bps);
+ restore:
+@@ -655,6 +658,9 @@ restore:
+ 		}
+ 		goto restore;
+ 	}
++
++	ptrace_put_breakpoints(tsk);
++
+ 	return ((orig_ret < 0) ? orig_ret : rc);
  }
  
- static const struct acpi_device_id ibm_htk_device_ids[] = {
--	{TPACPI_ACPI_HKEY_HID, 0},
-+	{TPACPI_ACPI_IBM_HKEY_HID, 0},
-+	{TPACPI_ACPI_LENOVO_HKEY_HID, 0},
- 	{"", 0},
- };
+@@ -668,10 +674,17 @@ static unsigned long ptrace_get_debugreg
  
+ 	if (n < HBP_NUM) {
+ 		struct perf_event *bp;
++
++		if (ptrace_get_breakpoints(tsk) < 0)
++			return -ESRCH;
++
+ 		bp = thread->ptrace_bps[n];
+ 		if (!bp)
+-			return 0;
+-		val = bp->hw.info.address;
++			val = 0;
++		else
++			val = bp->hw.info.address;
++
++		ptrace_put_breakpoints(tsk);
+ 	} else if (n == 6) {
+ 		val = thread->debugreg6;
+ 	 } else if (n == 7) {
+@@ -686,6 +699,10 @@ static int ptrace_set_breakpoint_addr(st
+ 	struct perf_event *bp;
+ 	struct thread_struct *t = &tsk->thread;
+ 	struct perf_event_attr attr;
++	int err = 0;
++
++	if (ptrace_get_breakpoints(tsk) < 0)
++		return -ESRCH;
+ 
+ 	if (!t->ptrace_bps[nr]) {
+ 		ptrace_breakpoint_init(&attr);
+@@ -709,24 +726,23 @@ static int ptrace_set_breakpoint_addr(st
+ 		 * writing for the user. And anyway this is the previous
+ 		 * behaviour.
+ 		 */
+-		if (IS_ERR(bp))
+-			return PTR_ERR(bp);
++		if (IS_ERR(bp)) {
++			err = PTR_ERR(bp);
++			goto put;
++		}
+ 
+ 		t->ptrace_bps[nr] = bp;
+ 	} else {
+-		int err;
+-
+ 		bp = t->ptrace_bps[nr];
+ 
+ 		attr = bp->attr;
+ 		attr.bp_addr = addr;
+ 		err = modify_user_hw_breakpoint(bp, &attr);
+-		if (err)
+-			return err;
+ 	}
+ 
+-
+-	return 0;
++put:
++	ptrace_put_breakpoints(tsk);
++	return err;
+ }
+ 
+ /*
 
 
