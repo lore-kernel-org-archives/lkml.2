@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab1ESAcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 20:32:46 -0400
-Received: from mail.perches.com ([173.55.12.10]:1765 "EHLO mail.perches.com"
+	id S1754061Ab1ESAfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 20:35:50 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46582 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752871Ab1ESAcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 20:32:45 -0400
-Subject: Re: [PATCH] staging: brcm80211: brcmfmac: Add and use dhd_dbg
-From: Joe Perches <joe@perches.com>
-To: Henry Ptasinski <henryp@broadcom.com>
-Cc: Brett Rudley <brudley@broadcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Dowan Kim <dowan@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
-        Arend Van Spriel <arend@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
-In-Reply-To: <4DD44C21.1080502@broadcom.com>
-References: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
-	 <4DD44C21.1080502@broadcom.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 May 2011 17:32:43 -0700
-Message-ID: <1305765163.1745.4.camel@Joe-Laptop>
+	id S1752906Ab1ESAfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 20:35:48 -0400
+Date: Thu, 19 May 2011 10:35:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>
+Subject: linux-next: manual merge of the s390 tree with Linus' tree
+Message-Id: <20110519103539.aa1b5094.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__19_May_2011_10_35_39_+1000_Qp_9/XQcL7DK8vfb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-18 at 15:45 -0700, Henry Ptasinski wrote:
-> On 05/18/2011 11:23 AM, Joe Perches wrote:
-> > All uses of DHD_<TYPE>  macros are for debugging only.
-> > Change the multiple uses of DHD_<TYPE>((...)) to dhd_dbg(TYPE, ...)
-> > for a more consistent style.
-> I generally like this approach, but in brcmsmac we've been switching to 
-> wiphy_err() and related instead.  Any strong argument for one over the 
-> other?
+--Signature=_Thu__19_May_2011_10_35_39_+1000_Qp_9/XQcL7DK8vfb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-These aren't described as errors but are debugging messages.
- 
-> > -       DHD_TRACE(("%s: Enter\n", __func__));
-> > +       dhd_dbg(TRACE, "%s: Enter\n", __func__);
-> I'd propose moving __func__ into the macro definition itself, which 
-> would help ensure consistency (and shorten all the debug lines a bit).
+Hi all,
 
-I think TRACE is unnecessary and can be eliminated
-and replaced by the function tracer.
+Today's linux-next merge of the s390 tree got a conflict in
+drivers/s390/char/tape_block.c between commit 9fd097b14918 ("block:
+unexport DISK_EVENT_MEDIA_CHANGE for legacy/fringe drivers") from Linus'
+tree and commit 263fa17de50e ("[S390] Remove tape block device driver")
+from the s390 tree.
 
-Not all uses use __func__.
-I think __func__ unnecessary and it should be avoided.
+The latter just removes the file updated by the former.  So I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Other than that, I've no objections.
+--Signature=_Thu__19_May_2011_10_35_39_+1000_Qp_9/XQcL7DK8vfb
+Content-Type: application/pgp-signature
 
-> Also, perhaps rename to "brcm_dbg()", "bcm_dbg()" or something like that 
-> and move it into include/bcmutils.h, so brcmsmac can use it as well.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Your choice.
+iQEcBAEBAgAGBQJN1GXbAAoJEDMEi1NhKgbsTGYH/0DNRiy+ooM6v1KBsUpgPgu3
+3T0I/rKP3gNTjtPSGjgYnPhAgshy8i5YTDAtxN4eVp6uGLglS5OvxZeQhgcjNySW
+a9k6LvWDfe/MwvFxOwosM09cD+lWmspGOeCBHjcDp3Yz96h4FbOEk9e866csr/2p
+13BeBkngXgg3MV2Hs9p/7QJa9s9o+VFTXGR748YeqL1oJqxFaaSNPGOenA3VZJXo
+FRMetzq2Qrv1KhspOPrTp4T64a1VMzcJSB54Hthwuu45IgGj2zTYxwHSaCAgJdWe
+MpAApMu7yfG9OJO9qBu7uySynOIoXoDChdqrgRSGA0Zlrr5Jra9YasiWR+5a3ME=
+=J0En
+-----END PGP SIGNATURE-----
 
+--Signature=_Thu__19_May_2011_10_35_39_+1000_Qp_9/XQcL7DK8vfb--
