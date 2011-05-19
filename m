@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab1ESLAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 07:00:06 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:53366 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab1ESLAE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 07:00:04 -0400
-Date: Thu, 19 May 2011 07:01:05 -0400
-From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        bg-linux@lists.anl-external.org
-Subject: Re: [PATCH 1/7] [RFC] Mainline BG/P platform support
-Message-ID: <20110519110105.GB25179@zod.rchland.ibm.com>
-References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
+	id S1755067Ab1ESLDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 07:03:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52323 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752505Ab1ESLDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 07:03:47 -0400
+Date: Thu, 19 May 2011 07:03:14 -0400
+From: Neil Horman <nhorman@redhat.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
+        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Ferenc Wagner <wferi@niif.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Ian Campbell <ian.campbell@citrix.com>, netdev@vger.kernel.org
+Subject: Re: [Patch net-next-2.6] netpoll: disable netpoll when enslave a
+ device
+Message-ID: <20110519110314.GC2723@hmsreliant.think-freely.org>
+References: <1305712845-11762-1-git-send-email-amwang@redhat.com>
+ <20110518105558.GA3203@hmsreliant.think-freely.org>
+ <4DD4A6F9.4010002@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4DD4A6F9.4010002@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 04:24:49PM -0500, Eric Van Hensbergen wrote:
->The Linux kernel patches for the IBM BlueGene/P have been open-sourced
->for quite some time, but haven't been integrated into the mainline Linux
->kernel source tree.  This is the first patch series of several where I
->will attempt to cleanup and mainline the already public patches.  I
->welcome feedback as well as any help I can get.  I'm drawing on
->the patches available for the IBM Compute Node kernel, the ZeptoOS project
->and the Kittyhawk project.
->(all available from http://wiki.bg.anl-external.org)
->
->I'll be prioritizing core patches which are harder to keep current with
->mainline due to merge conflicts and then slowly incorporating the drivers
->and other extensions (if acceptable after community review).
->
->I'll be maintaining the patchset in my kernel.org repository
->(/pub/scm/linux/kernel/git/ericvh/bluegene.git) under the bluegene
->branch with the source repos (zepto, kittyhawk, ibmcn) available in
->respective branches.  Ben - if you would prefer me to send pull requests
->once we get rolling, I can switch to that -- otherwise I'll stick to
->just submitting patches to the list assuming you'll pull them when they
->become acceptable.  Thanks for your attention reviewing these patches.
+On Thu, May 19, 2011 at 01:13:29PM +0800, Cong Wang wrote:
+> 于 2011年05月18日 18:56, Neil Horman 写道:
+> >On Wed, May 18, 2011 at 06:00:35PM +0800, Amerigo Wang wrote:
+> ...
+> >>-			case NETDEV_GOING_DOWN:
+> >>  			case NETDEV_BONDING_DESLAVE:
+> >>+			case NETDEV_ENSLAVE:
+> >>  				nt->enabled = 0;
+> >>  				stopped = true;
+> >>  				break;
+> >This wasn't introduced by this patch, but looking at it made me realize that
+> >nt->enabled, if it passes through this code path, doesn't properly track weather
+> >or not netpoll_setup has been called on this interface.  If you look at
+> >drop_netconsole_target, you'll see we only call netpoll_cleanup_target if
+> >nt->enabled is set.  We should probably change the nt->enabled check there, and
+> >in store_enabled to be if (nt->np.dev), like we do in the NETDEV_UNREGISTER case
+> >in netconsole_netdev_event.
+> 
+> Yeah, also note that we can change ->enabled via configfs too.
+> I guess we probably need to fix this in another patch...
+> 
+Yeah, or you can roll it into this one, I think this is the only location that
+needs fixing.
 
-This is going to get slightly messy if there are lots of changes in
-platforms/44x and/or head_44x.S.  Most 4xx changes go through my tree,
-and I'm happy to pull from your tree once things get off the ground.  We
-just need to make sure and coordinate as we go.
+> 
+> >>+#define NETDEV_ENSLAVE		0x0014
+> >>
+> >Nit:
+> >Shouldn't this be NETDEV_BONDING_ENSLAVE, to keep it in line with
+> >NETDEV_BONDING_DESLAVE above?
+> 
+> Actually that is my first thought, but I plan to use this in bridge
+> case too, because using netconsole on a device underlying a bridge
+> makes little sense too. Thus, I prefer NETDEV_ENSLAVE to
+> NETDEV_BONDING_ENSLAVE.
+> 
+That seems reasonable, but if its going to be more generic, could you change
+NETDEV_BONDING_DESLAVE to NETDEV_DESLAVE?
 
-My tree is fairly low-churn (as is all of 4xx) so hopefully I'm worried
-for nothing.
+> >
+> >>  #define SYS_DOWN	0x0001	/* Notify of system down */
+> >>  #define SYS_RESTART	SYS_DOWN
+> >>
+> >
+> >
+> >Other than those two points, this looks good to me
+> 
+> Thanks for review.
+Thank you!
 
->Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
->---
-> MAINTAINERS |    8 ++++++++
-> 1 files changed, 8 insertions(+), 0 deletions(-)
->
->diff --git a/MAINTAINERS b/MAINTAINERS
->index 69f19f1..3ffca88 100644
->--- a/MAINTAINERS
->+++ b/MAINTAINERS
->@@ -3863,6 +3863,14 @@ S:	Maintained
-> F:	arch/powerpc/platforms/40x/
-> F:	arch/powerpc/platforms/44x/
->
->+LINUX FOR POWERPC BLUEGENE/P
->+M:	Eric Van Hensbergen <ericvh@gmail.com>
->+W:	http://bg-linux.anl-external.org/wiki/index.php/Main_Page
->+L:	bg-linux@lists.anl-external.org
->+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/bluegene.git
->+S:	Maintained
->+F:	arch/powerpc/platforms/44x/bgp*
-
-This should probably be the last patch in the series.  You have a file
-pattern listed for files that don't exist at all in any of the other
-patches you submitted :).
-
-josh
