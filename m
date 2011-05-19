@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935125Ab1ESV64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:58:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:33854 "EHLO mga01.intel.com"
+	id S935049Ab1ESV5V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:57:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17849 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934999Ab1ESVyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:54:46 -0400
+	id S935013Ab1ESVyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 17:54:47 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,239,1304319600"; 
-   d="scan'208";a="4207008"
-Message-Id: <20110519214746.416139673@intel.com>
+Message-Id: <20110519214746.536735878@intel.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 20 May 2011 05:45:47 +0800
+Date: Fri, 20 May 2011 05:45:48 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
@@ -19,115 +17,112 @@ cc: Dave Chinner <david@fromorbit.com>
 cc: Christoph Hellwig <hch@infradead.org>
 cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 17/18] writeback: trace event writeback_queue_io
+Subject: [PATCH 18/18] writeback: rearrange the wb_writeback() loop
 References: <20110519214530.939830917@intel.com>
-Content-Disposition: inline; filename=writeback-trace-queue_io.patch
+Content-Disposition: inline; filename=loop-cleanup
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note that it adds a little overheads to account the moved/enqueued
-inodes from b_dirty to b_io. The "moved" accounting may be later used to
-limit the number of inodes that can be moved in one shot, in order to
-keep spinlock hold time under control.
+Move the terminate conditions to the end of the loop, and move the
+work->older_than_this updates close to each others.
 
+Proposed-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c                |   14 ++++++++++----
- include/trace/events/writeback.h |   25 +++++++++++++++++++++++++
- 2 files changed, 35 insertions(+), 4 deletions(-)
+ fs/fs-writeback.c |   58 +++++++++++++++++++++++---------------------
+ 1 file changed, 31 insertions(+), 27 deletions(-)
 
---- linux-next.orig/fs/fs-writeback.c	2011-05-20 05:12:48.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-20 05:12:49.000000000 +0800
-@@ -258,15 +258,16 @@ static bool inode_dirtied_after(struct i
- /*
-  * Move expired dirty inodes from @delaying_queue to @dispatch_queue.
-  */
--static void move_expired_inodes(struct list_head *delaying_queue,
-+static int move_expired_inodes(struct list_head *delaying_queue,
- 			       struct list_head *dispatch_queue,
--				unsigned long *older_than_this)
-+			       unsigned long *older_than_this)
- {
- 	LIST_HEAD(tmp);
- 	struct list_head *pos, *node;
- 	struct super_block *sb = NULL;
+--- linux-next.orig/fs/fs-writeback.c	2011-05-20 05:41:35.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-20 05:41:36.000000000 +0800
+@@ -712,42 +712,22 @@ static long wb_writeback(struct bdi_writ
+ 	unsigned long oldest_jif;
  	struct inode *inode;
- 	int do_sb_sort = 0;
-+	int moved = 0;
+ 	long progress;
++	bool bg_retry_all = false;
  
- 	while (!list_empty(delaying_queue)) {
- 		inode = wb_inode(delaying_queue->prev);
-@@ -277,12 +278,13 @@ static void move_expired_inodes(struct l
- 			do_sb_sort = 1;
- 		sb = inode->i_sb;
- 		list_move(&inode->i_wb_list, &tmp);
-+		moved++;
- 	}
+ 	oldest_jif = jiffies;
+ 	work->older_than_this = &oldest_jif;
  
- 	/* just one sb in list, splice to dispatch_queue and we're done */
- 	if (!do_sb_sort) {
- 		list_splice(&tmp, dispatch_queue);
--		return;
-+		goto out;
- 	}
- 
- 	/* Move inodes from one superblock together */
-@@ -294,6 +296,8 @@ static void move_expired_inodes(struct l
- 				list_move(&inode->i_wb_list, dispatch_queue);
+ 	spin_lock(&wb->list_lock);
+ 	for (;;) {
+-		/*
+-		 * Stop writeback when nr_pages has been consumed
+-		 */
+-		if (work->nr_pages <= 0)
+-			break;
+-
+-		/*
+-		 * Background writeout and kupdate-style writeback may
+-		 * run forever. Stop them if there is other work to do
+-		 * so that e.g. sync can proceed. They'll be restarted
+-		 * after the other works are all done.
+-		 */
+-		if ((work->for_background || work->for_kupdate) &&
+-		    !list_empty(&wb->bdi->work_list))
+-			break;
+-
+-		/*
+-		 * For background writeout, stop when we are below the
+-		 * background dirty threshold
+-		 */
+-		if (work->for_background && !over_bground_thresh())
+-			break;
+-
+-		if (work->for_kupdate || work->for_background) {
++		if (bg_retry_all) {
++			bg_retry_all = false;
++			work->older_than_this = NULL;
++		} else if (work->for_kupdate || work->for_background) {
+ 			oldest_jif = jiffies -
+ 				msecs_to_jiffies(dirty_expire_interval * 10);
+ 			work->older_than_this = &oldest_jif;
  		}
- 	}
-+out:
-+	return moved;
- }
  
- /*
-@@ -309,9 +313,11 @@ static void move_expired_inodes(struct l
-  */
- static void queue_io(struct bdi_writeback *wb, unsigned long *older_than_this)
- {
-+	int moved;
- 	assert_spin_locked(&wb->list_lock);
- 	list_splice_init(&wb->b_more_io, &wb->b_io);
--	move_expired_inodes(&wb->b_dirty, &wb->b_io, older_than_this);
-+	moved = move_expired_inodes(&wb->b_dirty, &wb->b_io, older_than_this);
-+	trace_writeback_queue_io(wb, older_than_this, moved);
- }
- 
- static int write_inode(struct inode *inode, struct writeback_control *wbc)
---- linux-next.orig/include/trace/events/writeback.h	2011-05-20 05:12:48.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2011-05-20 05:12:49.000000000 +0800
-@@ -179,6 +179,31 @@ DEFINE_EVENT(wbc_class, name, \
- 	TP_ARGS(wbc, bdi))
- DEFINE_WBC_EVENT(wbc_writepage);
- 
-+TRACE_EVENT(writeback_queue_io,
-+	TP_PROTO(struct bdi_writeback *wb,
-+		 unsigned long *older_than_this,
-+		 int moved),
-+	TP_ARGS(wb, older_than_this, moved),
-+	TP_STRUCT__entry(
-+		__array(char,		name, 32)
-+		__field(unsigned long,	older)
-+		__field(long,		age)
-+		__field(int,		moved)
-+	),
-+	TP_fast_assign(
-+		strncpy(__entry->name, dev_name(wb->bdi->dev), 32);
-+		__entry->older	= older_than_this ?  *older_than_this : 0;
-+		__entry->age	= older_than_this ?
-+				  (jiffies - *older_than_this) * 1000 / HZ : -1;
-+		__entry->moved	= moved;
-+	),
-+	TP_printk("bdi %s: older=%lu age=%ld enqueue=%d",
-+		__entry->name,
-+		__entry->older,	/* older_than_this in jiffies */
-+		__entry->age,	/* older_than_this in relative milliseconds */
-+		__entry->moved)
-+);
+-retry:
+ 		trace_writeback_start(wb->bdi, work);
+ 		if (list_empty(&wb->b_io))
+ 			queue_io(wb, work->older_than_this);
+@@ -777,14 +757,38 @@ retry:
+ 		    work->older_than_this &&
+ 		    list_empty(&wb->b_io) &&
+ 		    list_empty(&wb->b_more_io)) {
+-			work->older_than_this = NULL;
+-			goto retry;
++			bg_retry_all = true;
++			continue;
+ 		}
+ 		/*
+ 		 * No more inodes for IO, bail
+ 		 */
+ 		if (list_empty(&wb->b_more_io))
+ 			break;
 +
- DECLARE_EVENT_CLASS(writeback_congest_waited_template,
- 
- 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
++		/*
++		 * Stop writeback when nr_pages has been consumed
++		 */
++		if (work->nr_pages <= 0)
++			break;
++
++		/*
++		 * For background writeout, stop when we are below the
++		 * background dirty threshold
++		 */
++		if (work->for_background && !over_bground_thresh())
++			break;
++
++		/*
++		 * Background writeout and kupdate-style writeback may
++		 * run forever. Stop them if there is other work to do
++		 * so that e.g. sync can proceed. They'll be restarted
++		 * after the other works are all done.
++		 */
++		if ((work->for_background || work->for_kupdate) &&
++		    !list_empty(&wb->bdi->work_list))
++			break;
++
+ 		/*
+ 		 * Nothing written. Wait for some inode to
+ 		 * become available for writeback. Otherwise
 
 
