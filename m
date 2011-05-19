@@ -1,105 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab1ESKTh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 06:19:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38780 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab1ESKTf (ORCPT
+	id S1753367Ab1ESKVE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 06:21:04 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:42600 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751573Ab1ESKVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 06:19:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CHUYLXxK7sO6tmInANAp8D6Fq+2boXLXUNxWf8J1y70ogKYDFz/Pu0LdPALpY7Jdw0
-         f+L0N7Xnhzn3AShpnRrtGziec1gTh44s0od9TG66K3SSFc3ZZVcmPsh1QMRN4vSIqp/g
-         CPOCqt445Z1DnOg8EArZwW189H2+me/SzSrXc=
-Date: Thu, 19 May 2011 12:19:30 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 02/10] job control: introduce JOBCTL_TRAP_STOP and use
- it for group stop trap
-Message-ID: <20110519101930.GC627@htj.dyndns.org>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org>
- <1305569849-10448-3-git-send-email-tj@kernel.org>
- <20110518164814.GA28848@redhat.com>
+	Thu, 19 May 2011 06:21:01 -0400
+From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+To: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Cc: <linus.walleij@stericsson.com>, <richard.purdie@linuxfoundation.org>,
+        <rpurdie@rpsys.net>, <lee.jones@linaro.org>,
+        <shreshthakumar.sahu@stericsson.com>
+Subject: [PATCHv2] leds: add regulator to lm3530 driver
+Date: Thu, 19 May 2011 15:50:35 +0530
+Message-ID: <1305800435-21112-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
+In-Reply-To: <20110519101426.GA5268@bnru05.bnr.st.com>
+References: <20110519101426.GA5268@bnru05.bnr.st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110518164814.GA28848@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
 
-On Wed, May 18, 2011 at 06:48:14PM +0200, Oleg Nesterov wrote:
-> > Although this adds an unlock-relocking between checking of
-> > JOBCTL_STOP_PENDING and actually trapping for STOP, this doesn't
-> > affect correctness.
-> 
-> Well, I think it does affect. Although the problem is minor.
-> 
-> > ptrace_stop() already had conditional unlock-relocking
-> 
-> Yes, but ptrace_stop() can't send the CLD_STOPPED notfication before
-> the tracee is ready for do_wait(WNOHANG). Contrary, get_signal_to_deliver()
-> can if we race with SIGCONT.
+This patch adds regulator support to lm3530 driver. lm3530 driver
+need to get proper regulator during device probe and enable it
+before accessing the device. Also it disables the regulator in
+case of brightness == LED_OFF, and put back during driver remove.
 
-That CLD_STOPPED notification is actually for continuation (although
-it's indistinguishible from actual stopped notification) and as such
-the ptracer has to query the tracee state after the notification
-signal and can't expect it to be in TRACED.  Please consider the
-following scenario.
+Signed-off-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+---
+changes in v2:
+  fixed checkpatch errors
 
-1. thread t1 and t2.  t1 is ptraced.  Both running.
+ drivers/leds/leds-lm3530.c |   73 +++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 65 insertions(+), 8 deletions(-)
 
-2. SIGSTOP delivered by t2.  Group stop starts.
-
-3. SIGCONT is generated before t1 participates.
-
-4. t1 will enter get_signal_to_deliver() and deliver CLD_STOPPED but
-   won't trap.
-
-So, I don't think this affects correctness.  The above can happen if
-both t1 and t2 are attached by the same ptracer.  What changes is that
-it now may happen with single thread too.  We can put STOP trap before
-CONTINUED notification but I don't think that's necessary.
-
-> > While at it, add proper function comment to do_signal_stop() and make
-> > it return bool.
-> > ...
-> >
-> > + * RETURNS:
-> > + * %false if group stop is already cancelled and nothing happened.  %true
-> > + * if participated in group stop.
-> 
-> Well, the traced task didn't participate yet... Nevermind.
-
-Eh, should have read this earlier.  :-)
-
-> So far I can't really understand why do we have both JOBCTL_TRAP_STOP and
-> and JOBCTL_TRAPPING... Please ignore, I didn't read other patches yet.
-
-JOBCTL_TRAP_STOP is the renamed JOBCTL_TRAP_INTERRUPT.  It's a trap
-condition while TRAPPING is synchronization flag to protect -> TRACED
-transitions.  JOBCTL_TRAP_STOP might not be the best name, but it
-isn't INTERRUPT trap anymore JOBCTL_TRAP_GROUP_STOP or
-JOBCTL_TRAP_GSTOP seemed a bit inconsistent with other flags.
-
-> Hmm. And afaics there is a bug in do_signal_stop(), after
-> "[PATCH 6/9] job control: make task_clear_jobctl_pending() clear TRAPPING automatically"
-> ->jobctl &= ~JOBCTL_STOP_SIGMASK is no longer safe. We can clear _TRAPPING
-> without wakeup.
-
-Hmmm?  ->jobctl &= ~JOBCTL_STOP_SIGMASK clears lower sixteen bits.
-All the flags including TRAPPING live in the upper sixteen bits.
-
-Thank you.
-
+diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
+index b37e618..4d7ce76 100644
+--- a/drivers/leds/leds-lm3530.c
++++ b/drivers/leds/leds-lm3530.c
+@@ -17,6 +17,7 @@
+ #include <linux/input.h>
+ #include <linux/led-lm3530.h>
+ #include <linux/types.h>
++#include <linux/regulator/consumer.h>
+ 
+ #define LM3530_LED_DEV "lcd-backlight"
+ #define LM3530_NAME "lm3530-led"
+@@ -96,12 +97,18 @@ static struct lm3530_mode_map mode_map[] = {
+  * @client: i2c client
+  * @pdata: LM3530 platform data
+  * @mode: mode of operation - manual, ALS, PWM
++ * @regulator: regulator
++ * @brighness: previous brightness value
++ * @enable: regulator is enabled
+  */
+ struct lm3530_data {
+ 	struct led_classdev led_dev;
+ 	struct i2c_client *client;
+ 	struct lm3530_platform_data *pdata;
+ 	enum lm3530_mode mode;
++	struct regulator *regulator;
++	enum led_brightness brightness;
++	bool enable;
+ };
+ 
+ static const u8 lm3530_reg[LM3530_REG_MAX] = {
+@@ -172,7 +179,10 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
+ 	brt_ramp = (pltfm->brt_ramp_fall << LM3530_BRT_RAMP_FALL_SHIFT) |
+ 			(pltfm->brt_ramp_rise << LM3530_BRT_RAMP_RISE_SHIFT);
+ 
+-	brightness = pltfm->brt_val;
++	if (drvdata->brightness)
++		brightness = drvdata->brightness;
++	else
++		brightness = drvdata->brightness = pltfm->brt_val;
+ 
+ 	reg_val[0] = gen_config;	/* LM3530_GEN_CONFIG */
+ 	reg_val[1] = als_config;	/* LM3530_ALS_CONFIG */
+@@ -190,6 +200,16 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
+ 	reg_val[13] = LM3530_DEF_ZT_3;	/* LM3530_ALS_Z3T_REG */
+ 	reg_val[14] = LM3530_DEF_ZT_4;	/* LM3530_ALS_Z4T_REG */
+ 
++	if (!drvdata->enable) {
++		ret = regulator_enable(drvdata->regulator);
++		if (ret) {
++			dev_err(&drvdata->client->dev,
++					"Enable regulator failed\n");
++			return ret;
++		}
++		drvdata->enable = true;
++	}
++
+ 	for (i = 0; i < LM3530_REG_MAX; i++) {
+ 		ret = i2c_smbus_write_byte_data(client,
+ 				lm3530_reg[i], reg_val[i]);
+@@ -210,12 +230,31 @@ static void lm3530_brightness_set(struct led_classdev *led_cdev,
+ 	switch (drvdata->mode) {
+ 	case LM3530_BL_MODE_MANUAL:
+ 
++		if (!drvdata->enable) {
++			err = lm3530_init_registers(drvdata);
++			if (err) {
++				dev_err(&drvdata->client->dev,
++					"Register Init failed: %d\n", err);
++				break;
++			}
++		}
++
+ 		/* set the brightness in brightness control register*/
+ 		err = i2c_smbus_write_byte_data(drvdata->client,
+ 				LM3530_BRT_CTRL_REG, brt_val / 2);
+ 		if (err)
+ 			dev_err(&drvdata->client->dev,
+ 				"Unable to set brightness: %d\n", err);
++		else
++			drvdata->brightness = brt_val / 2;
++
++		if (brt_val == 0) {
++			err = regulator_disable(drvdata->regulator);
++			if (err)
++				dev_err(&drvdata->client->dev,
++					"Disable regulator failed\n");
++			drvdata->enable = false;
++		}
+ 		break;
+ 	case LM3530_BL_MODE_ALS:
+ 		break;
+@@ -297,20 +336,31 @@ static int __devinit lm3530_probe(struct i2c_client *client,
+ 	drvdata->mode = pdata->mode;
+ 	drvdata->client = client;
+ 	drvdata->pdata = pdata;
++	drvdata->brightness = LED_OFF;
++	drvdata->enable = false;
+ 	drvdata->led_dev.name = LM3530_LED_DEV;
+ 	drvdata->led_dev.brightness_set = lm3530_brightness_set;
+ 
+ 	i2c_set_clientdata(client, drvdata);
+ 
+-	err = lm3530_init_registers(drvdata);
+-	if (err < 0) {
+-		dev_err(&client->dev, "Register Init failed: %d\n", err);
+-		err = -ENODEV;
+-		goto err_reg_init;
++	drvdata->regulator = regulator_get(&client->dev, "vin");
++	if (IS_ERR(drvdata->regulator)) {
++		dev_err(&client->dev, "regulator get failed\n");
++		err = PTR_ERR(drvdata->regulator);
++		drvdata->regulator = NULL;
++		goto err_regulator_get;
+ 	}
+ 
+-	err = led_classdev_register((struct device *)
+-				      &client->dev, &drvdata->led_dev);
++	if (drvdata->pdata->brt_val) {
++		err = lm3530_init_registers(drvdata);
++		if (err < 0) {
++			dev_err(&client->dev,
++				"Register Init failed: %d\n", err);
++			err = -ENODEV;
++			goto err_reg_init;
++		}
++	}
++	err = led_classdev_register(&client->dev, &drvdata->led_dev);
+ 	if (err < 0) {
+ 		dev_err(&client->dev, "Register led class failed: %d\n", err);
+ 		err = -ENODEV;
+@@ -330,6 +380,9 @@ err_create_file:
+ 	led_classdev_unregister(&drvdata->led_dev);
+ err_class_register:
+ err_reg_init:
++	regulator_put(drvdata->regulator);
++err_regulator_get:
++	i2c_set_clientdata(client, NULL);
+ 	kfree(drvdata);
+ err_out:
+ 	return err;
+@@ -340,6 +393,10 @@ static int __devexit lm3530_remove(struct i2c_client *client)
+ 	struct lm3530_data *drvdata = i2c_get_clientdata(client);
+ 
+ 	device_remove_file(drvdata->led_dev.dev, &dev_attr_mode);
++
++	if (drvdata->enable)
++		regulator_disable(drvdata->regulator);
++	regulator_put(drvdata->regulator);
+ 	led_classdev_unregister(&drvdata->led_dev);
+ 	kfree(drvdata);
+ 	return 0;
 -- 
-tejun
+1.7.2.dirty
+
