@@ -1,254 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933747Ab1ESRc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:32:26 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59437 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933732Ab1ESRcY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:32:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=j0OAh50dRp6MzC//xmtptMFdIeAkARq7Oq2R3NUtK0nET0rVb24r+r811qB7G5pIod
-         c/+0mFwZtAr0PWigtKkVJYdl7MuBuKWdP58Vi8LcEptsPVf1G3n1uj6LEZ18YNY9fP66
-         T4Kgng7uD8fppK5IQxCuhpS7Wi8yjXoye2H1o=
-MIME-Version: 1.0
-In-Reply-To: <1305588114-23728-1-git-send-email-ccross@android.com>
-References: <1305588114-23728-1-git-send-email-ccross@android.com>
-Date: Thu, 19 May 2011 19:32:22 +0200
-X-Google-Sender-Auth: NxR45ba9c8uQNAz08zmB5VYktTs
-Message-ID: <BANLkTim4U-CJ_D3VSNzwd23XL3fDXT7onQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: smp_twd: Reconfigure clockevents after cpufreq change
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Colin Cross <ccross@android.com>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists-infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Martin Persson <martin.persson@stericsson.com>,
-        Rob Herring <robherring2@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933727Ab1ESRcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:32:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755583Ab1ESRcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 13:32:18 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: x86@vkernel.org, hpa@zytor.com, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] efi: Retain boot service code until after switching to virtual mode
+Date: Thu, 19 May 2011 13:32:23 -0400
+Message-Id: <1305826343-3302-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.202
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/17 Colin Cross <ccross@android.com>:
+UEFI stands for "Unified Extensible Firmware Interface", where "Firmware"
+is an ancient African word meaning "Why do something right when you can
+do it so wrong that children will weep and brave adults will cower before
+you", and "UEI" is Celtic for "We missed DOS so we burned it into your
+ROMs". The UEFI specification provides for runtime services (ie, another
+way for the operating system to be forced to depend on the firmware) and
+we rely on these for certain trivial tasks such as setting up the
+bootloader. But some hardware fails to work if we attempt to use these
+runtime services from physical mode, and so we have to switch into virtual
+mode. So far so dreadful.
 
-> This patch depends on Thomas Gleixner's patch to add clockevents_reconfigure
-> See: https://lkml.org/lkml/2011/5/13/122
+The specification makes it clear that the operating system is free to do
+whatever it wants with boot services code after ExitBootServices() has been
+called. SetVirtualAddressMap() can't be called until ExitBootServices() has
+been. So, obviously, a whole bunch of EFI implementations call into boot
+services code when we do that. Since we've been charmingly naive and
+trusted that the specification may be somehow relevant to the real world,
+we've already stuffed a picture of a penguin or something in that address
+space. And just to make things more entertaining, we've also marked it
+non-executable.
 
-Patch set has evolved, see below.
-Also note that you more or less reimplement Rob Herrings patch:
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6802/1
-(no big deal I guess, give him a nod)
+This patch allocates the boot services regions during EFI init and makes
+sure that they're executable. Then, after SetVirtualAddressMap(), it
+discards them and everyone lives happily ever after. Except for the ones
+who have to work on EFI, who live sad lives haunted by the knowledge that
+someone's eventually going to write yet another firmware specification.
 
-To work with Thomas full changeset just create a fresh branch and:
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/x86/linux-2.6-tip.git
-timers/clockevents
-
-Pls change subject from ARM: to clockevents: and merge through
-Thomas tree (IMHO).
-
-> diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-> index 60636f4..dbf58d4 100644
-> --- a/arch/arm/kernel/smp_twd.c
-> +++ b/arch/arm/kernel/smp_twd.c
-> @@ -10,21 +10,29 @@
->  */
->  #include <linux/init.h>
->  #include <linux/kernel.h>
-> +#include <linux/clk.h>
-> +#include <linux/cpufreq.h>
->  #include <linux/delay.h>
->  #include <linux/device.h>
-> +#include <linux/err.h>
->  #include <linux/smp.h>
->  #include <linux/jiffies.h>
->  #include <linux/clockchips.h>
->  #include <linux/irq.h>
->  #include <linux/io.h>
-> +#include <linux/percpu.h>
->
->  #include <asm/smp_twd.h>
->  #include <asm/hardware/gic.h>
->
-> +#define TWD_MIN_RANGE 4
-> +
-
-Loose this. Let the framework decide using the function below.
-
->  /* set up by the platform code */
->  void __iomem *twd_base;
->
-> +static struct clk *twd_clk;
->  static unsigned long twd_timer_rate;
-> +static DEFINE_PER_CPU(struct clock_event_device *, twd_ce);
->
->  static void twd_set_mode(enum clock_event_mode mode,
->                        struct clock_event_device *clk)
-> @@ -80,6 +88,49 @@ int twd_timer_ack(void)
->        return 0;
->  }
->
-> +/*
-> + * Updates clockevent frequency when the cpu frequency changes.
-> + * Called on the cpu that is changing frequency with interrupts disabled.
-> + */
-> +static void twd_update_frequency(void *data)
-> +{
-> +       twd_timer_rate = clk_get_rate(twd_clk);
-> +
-> +       clockevents_reconfigure(__get_cpu_var(twd_ce), twd_timer_rate,
-> +                       TWD_MIN_RANGE);
-
-Changed name to clockevents_update_freq(), dropped range argument.
-
-> +}
-> +
-> +static int twd_cpufreq_transition(struct notifier_block *nb,
-> +       unsigned long state, void *data)
-> +{
-> +       struct cpufreq_freqs *freqs = data;
-> +
-> +       /*
-> +        * The twd clock events must be reprogrammed to account for the new
-> +        * frequency.  The timer is local to a cpu, so cross-call to the
-> +        * changing cpu.
-> +        */
-> +       if (state == CPUFREQ_POSTCHANGE || state == CPUFREQ_RESUMECHANGE)
-> +               smp_call_function_single(freqs->cpu, twd_update_frequency,
-> +                       NULL, 1);
-> +
-> +       return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block twd_cpufreq_nb = {
-> +       .notifier_call = twd_cpufreq_transition,
-> +};
-> +
-> +static int twd_cpufreq_init(void)
-> +{
-> +       if (!IS_ERR_OR_NULL(twd_clk))
-> +               return cpufreq_register_notifier(&twd_cpufreq_nb,
-> +                       CPUFREQ_TRANSITION_NOTIFIER);
-> +
-> +       return 0;
-> +}
-> +core_initcall(twd_cpufreq_init);
-> +
->  static void __cpuinit twd_calibrate_rate(void)
->  {
->        unsigned long count;
-> @@ -124,7 +175,16 @@ static void __cpuinit twd_calibrate_rate(void)
->  */
->  void __cpuinit twd_timer_setup(struct clock_event_device *clk)
->  {
-> -       twd_calibrate_rate();
-> +       if (twd_clk == NULL) {
-> +               twd_clk = clk_get_sys("smp_twd", NULL);
-> +               if (IS_ERR_OR_NULL(twd_clk))
-> +                       pr_warn("%s: no clock found\n", __func__);
-> +       }
-> +
-> +       if (!IS_ERR_OR_NULL(twd_clk))
-> +               twd_timer_rate = clk_get_rate(twd_clk);
-> +       else
-> +               twd_calibrate_rate();
->
->        clk->name = "local_timer";
->        clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT |
-> @@ -132,13 +192,16 @@ void __cpuinit twd_timer_setup(struct clock_event_device *clk)
->        clk->rating = 350;
->        clk->set_mode = twd_set_mode;
->        clk->set_next_event = twd_set_next_event;
-> -       clk->shift = 20;
-> -       clk->mult = div_sc(twd_timer_rate, NSEC_PER_SEC, clk->shift);
-> +
-> +       clockevents_calc_mult_shift(clk, twd_timer_rate, TWD_MIN_RANGE);
-> +
->        clk->max_delta_ns = clockevent_delta2ns(0xffffffff, clk);
->        clk->min_delta_ns = clockevent_delta2ns(0xf, clk);
-
-Get rid of everything between clk->shift ... and here and replace it with:
-
-clockevents_config_and_register(clk, twd_timer_rate,
-                                       0xf, 0xffffffff);
-
->        /* Make sure our local interrupt controller has this enabled */
->        gic_enable_ppi(clk->irq);
->
-> +       __get_cpu_var(twd_ce) = clk;
-> +
->        clockevents_register_device(clk);
->  }
-
-
-Or just smack in this patch on top:
-
->From fd546090b8f0cb5df06103c014466c86cf58b73a Mon Sep 17 00:00:00 2001
-From: Linus Walleij <linus.walleij@stericsson.com>
-Date: Thu, 19 May 2011 18:55:22 +0200
-Subject: [PATCH] Fix smallish cleanup
-
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- arch/arm/kernel/smp_twd.c |   13 +++----------
- 1 files changed, 3 insertions(+), 10 deletions(-)
+ arch/x86/platform/efi/efi.c    |   51 +++++++++++++++++++++++++++++++++++++++-
+ arch/x86/platform/efi/efi_64.c |    5 ++-
+ 2 files changed, 53 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index dbf58d4..968f298 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -25,8 +25,6 @@
- #include <asm/smp_twd.h>
- #include <asm/hardware/gic.h>
-
--#define TWD_MIN_RANGE 4
--
- /* set up by the platform code */
- void __iomem *twd_base;
-
-@@ -96,8 +94,7 @@ static void twd_update_frequency(void *data)
- {
-        twd_timer_rate = clk_get_rate(twd_clk);
-
--       clockevents_reconfigure(__get_cpu_var(twd_ce), twd_timer_rate,
--                       TWD_MIN_RANGE);
-+       clockevents_update_freq(__get_cpu_var(twd_ce), twd_timer_rate);
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index b30aa26..8237c6e 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -304,6 +304,40 @@ static void __init print_efi_memmap(void)
  }
-
- static int twd_cpufreq_transition(struct notifier_block *nb,
-@@ -193,15 +190,11 @@ void __cpuinit twd_timer_setup(struct
-clock_event_device *clk)
-        clk->set_mode = twd_set_mode;
-        clk->set_next_event = twd_set_next_event;
-
--       clockevents_calc_mult_shift(clk, twd_timer_rate, TWD_MIN_RANGE);
--
--       clk->max_delta_ns = clockevent_delta2ns(0xffffffff, clk);
--       clk->min_delta_ns = clockevent_delta2ns(0xf, clk);
--
-        /* Make sure our local interrupt controller has this enabled */
-        gic_enable_ppi(clk->irq);
-
-        __get_cpu_var(twd_ce) = clk;
-
--       clockevents_register_device(clk);
-+       clockevents_config_and_register(clk, twd_timer_rate,
-+                                       0xf, 0xffffffff);
+ #endif  /*  EFI_DEBUG  */
+ 
++static void __init reserve_efi_boot_services(void)
++{
++	void *p;
++
++	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
++		efi_memory_desc_t *md = p;
++		unsigned long long start = md->phys_addr;
++		unsigned long long size = md->num_pages << EFI_PAGE_SHIFT;
++
++		if (md->type != EFI_BOOT_SERVICES_CODE &&
++		    md->type != EFI_BOOT_SERVICES_DATA)
++			continue;
++
++		memblock_x86_reserve_range(start, start + size, "EFI Boot");
++	}
++}
++
++static void __init free_efi_boot_services(void)
++{
++	void *p;
++
++	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
++		efi_memory_desc_t *md = p;
++		unsigned long long start = md->phys_addr;
++		unsigned long long size = md->num_pages << EFI_PAGE_SHIFT;
++
++		if (md->type != EFI_BOOT_SERVICES_CODE &&
++		    md->type != EFI_BOOT_SERVICES_DATA)
++			continue;
++
++		memblock_x86_free_range(start, start + size);
++	}
++}
++
+ void __init efi_init(void)
+ {
+ 	efi_config_table_t *config_tables;
+@@ -441,6 +475,12 @@ void __init efi_init(void)
+ 		printk(KERN_WARNING
+ 		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
+ 
++	/*
++	 * The EFI specification says that boot service code won't be called
++	 * after ExitBootServices(). This is, in fact, a lie.
++	 */
++	reserve_efi_boot_services();
++
+ 	if (add_efi_memmap)
+ 		do_add_efi_memmap();
+ 
+@@ -536,7 +576,9 @@ void __init efi_enter_virtual_mode(void)
+ 
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+-		if (!(md->attribute & EFI_MEMORY_RUNTIME))
++		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
++		    md->type != EFI_BOOT_SERVICES_CODE &&
++		    md->type != EFI_BOOT_SERVICES_DATA)
+ 			continue;
+ 
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
+@@ -593,6 +635,13 @@ void __init efi_enter_virtual_mode(void)
+ 	}
+ 
+ 	/*
++	 * Thankfully, it does seem that no runtime services other than
++	 * SetVirtualAddressMap() will touch boot services code, so we can
++	 * get rid of it all at this point
++	 */
++	free_efi_boot_services();
++
++	/*
+ 	 * Now that EFI is in virtual mode, update the function
+ 	 * pointers in the runtime service table to the new virtual addresses.
+ 	 *
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index 2649426..ac3aa54 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -49,10 +49,11 @@ static void __init early_code_mapping_set_exec(int executable)
+ 	if (!(__supported_pte_mask & _PAGE_NX))
+ 		return;
+ 
+-	/* Make EFI runtime service code area executable */
++	/* Make EFI service code area executable */
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+-		if (md->type == EFI_RUNTIME_SERVICES_CODE)
++		if (md->type == EFI_RUNTIME_SERVICES_CODE ||
++		    md->type == EFI_BOOT_SERVICES_CODE)
+ 			efi_set_executable(md, executable);
+ 	}
  }
 -- 
-1.7.3.2
+1.7.5
 
-
-With these changes (provided they work) all should be well, so:
-Tested-by: Linus Walleij <linus.walleij@linaro.org>
-
-If all is well on your side as well, ask Thomas to take this into the
-timers/clockevents branch where all dependencies are.
-
-Yours,
-Linus Walleij
