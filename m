@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934229Ab1ESSN4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:13:56 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58034 "EHLO
+	id S934127Ab1ESSJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:09:19 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:32995 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934074Ab1ESSJM (ORCPT
+	by vger.kernel.org with ESMTP id S934105Ab1ESSJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:09:12 -0400
-X-Sasl-enc: GtYW2TaBm1R6xPRXi42Zfzg/n/JymUODiuOQOCGGQXdU 1305828551
+	Thu, 19 May 2011 14:09:13 -0400
+X-Sasl-enc: tfMfIjmsdxLfkc8lDbuUlOEYwvp9UaR73PzQST16yn5I 1305828552
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:59 2011
-Message-Id: <20110519180559.451207499@clark.kroah.org>
+Message-Id: <20110519180559.544790273@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:22 -0700
+Date: Thu, 19 May 2011 11:05:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>
-Subject: [54/71] rapidio: fix default routing initialization
+        Ingo Molnar <mingo@elte.hu>
+Subject: [55/71] Revert "x86, AMD: Fix APIC timer erratum 400 affecting K8 Rev.A-E processors"
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,94 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit 0bf2461fdd9008290cf429e50e4f362dafab4249 upstream.
+commit 328935e6348c6a7cb34798a68c326f4b8372e68a upstream.
 
-Fix switch initialization to ensure that all switches have default routing
-disabled.  This guarantees that no unexpected RapidIO packets arrive to
-the default port set by reset and there is no default routing destination
-until it is properly configured by software.
+This reverts commit e20a2d205c05cef6b5783df339a7d54adeb50962, as it crashes
+certain boxes with specific AMD CPU models.
 
-This update also unifies handling of unmapped destinations by tsi57x, IDT
-Gen1 and IDT Gen2 switches.
+Moving the lower endpoint of the Erratum 400 check to accomodate
+earlier K8 revisions (A-E) opens a can of worms which is simply
+not worth to fix properly by tweaking the errata checking
+framework:
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Thomas Moll <thomas.moll@sysgo.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+* missing IntPenging MSR on revisions < CG cause #GP:
+
+http://marc.info/?l=linux-kernel&m=130541471818831
+
+* makes earlier revisions use the LAPIC timer instead of the C1E
+idle routine which switches to HPET, thus not waking up in
+deeper C-states:
+
+http://lkml.org/lkml/2011/4/24/20
+
+Therefore, leave the original boundary starting with K8-revF.
+
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rapidio/switches/idt_gen2.c |    9 +++++++++
- drivers/rapidio/switches/idtcps.c   |    6 ++++++
- drivers/rapidio/switches/tsi57x.c   |    6 ++++++
- 3 files changed, 21 insertions(+)
+ arch/x86/kernel/cpu/amd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/rapidio/switches/idt_gen2.c
-+++ b/drivers/rapidio/switches/idt_gen2.c
-@@ -95,6 +95,9 @@ idtg2_route_add_entry(struct rio_mport *
- 	else
- 		table++;
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -681,7 +681,7 @@ cpu_dev_register(amd_cpu_dev);
+  */
  
-+	if (route_port == RIO_INVALID_ROUTE)
-+		route_port = IDT_DEFAULT_ROUTE;
-+
- 	rio_mport_write_config_32(mport, destid, hopcount,
- 				  LOCAL_RTE_CONF_DESTID_SEL, table);
- 
-@@ -411,6 +414,12 @@ static int idtg2_switch_init(struct rio_
- 	rdev->rswitch->em_handle = idtg2_em_handler;
- 	rdev->rswitch->sw_sysfs = idtg2_sysfs;
- 
-+	if (do_enum) {
-+		/* Ensure that default routing is disabled on startup */
-+		rio_write_config_32(rdev,
-+				    RIO_STD_RTE_DEFAULT_PORT, IDT_NO_ROUTE);
-+	}
-+
- 	return 0;
- }
- 
---- a/drivers/rapidio/switches/idtcps.c
-+++ b/drivers/rapidio/switches/idtcps.c
-@@ -26,6 +26,9 @@ idtcps_route_add_entry(struct rio_mport
- {
- 	u32 result;
- 
-+	if (route_port == RIO_INVALID_ROUTE)
-+		route_port = CPS_DEFAULT_ROUTE;
-+
- 	if (table == RIO_GLOBAL_TABLE) {
- 		rio_mport_write_config_32(mport, destid, hopcount,
- 				RIO_STD_RTE_CONF_DESTID_SEL_CSR, route_destid);
-@@ -130,6 +133,9 @@ static int idtcps_switch_init(struct rio
- 		/* set TVAL = ~50us */
- 		rio_write_config_32(rdev,
- 			rdev->phys_efptr + RIO_PORT_LINKTO_CTL_CSR, 0x8e << 8);
-+		/* Ensure that default routing is disabled on startup */
-+		rio_write_config_32(rdev,
-+				    RIO_STD_RTE_DEFAULT_PORT, CPS_NO_ROUTE);
- 	}
- 
- 	return 0;
---- a/drivers/rapidio/switches/tsi57x.c
-+++ b/drivers/rapidio/switches/tsi57x.c
-@@ -303,6 +303,12 @@ static int tsi57x_switch_init(struct rio
- 	rdev->rswitch->em_init = tsi57x_em_init;
- 	rdev->rswitch->em_handle = tsi57x_em_handler;
- 
-+	if (do_enum) {
-+		/* Ensure that default routing is disabled on startup */
-+		rio_write_config_32(rdev, RIO_STD_RTE_DEFAULT_PORT,
-+				    RIO_INVALID_ROUTE);
-+	}
-+
- 	return 0;
- }
+ const int amd_erratum_400[] =
+-	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0x0f, 0x4, 0x2, 0xff, 0xf),
++	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
+ 			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
+ EXPORT_SYMBOL_GPL(amd_erratum_400);
  
 
 
