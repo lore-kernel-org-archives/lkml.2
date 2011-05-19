@@ -1,275 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932724Ab1ESGp7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 02:45:59 -0400
-Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:2723 "EHLO
-	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932304Ab1ESGp6 (ORCPT
+	id S932752Ab1ESGsb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 02:48:31 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44458 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932304Ab1ESGsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 02:45:58 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Ondrej Zary <linux@rainbow-software.org>
-Subject: Re: [PATCH v4] tea575x: convert to control framework
-Date: Thu, 19 May 2011 08:45:38 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38-tschai; KDE/4.6.1; x86_64; ; )
-Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
-References: <201105140017.26968.linux@rainbow-software.org> <201105182225.58838.hverkuil@xs4all.nl> <201105182335.25161.linux@rainbow-software.org>
-In-Reply-To: <201105182335.25161.linux@rainbow-software.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105190845.38194.hverkuil@xs4all.nl>
+	Thu, 19 May 2011 02:48:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=r6Blkxq8d6IDN5/oBwHooe5/Ci42d+/Va0sgxnBjIYVpsnf9r4lk0BpLnVzsslpOl2
+         dJ30Mv573SUzxafWI/B4W4LAZx8IeyPIuTHSTPkWSi/zlz6xtdOEyIRhoRYIWaz9Zawh
+         JiOmI727shYFgSeNMhHa+1wHUWu9Jv42cSdcI=
+From: Benoit Sigoure <tsunanet@gmail.com>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        hagen@jauu.net, eric.dumazet@gmail.com,
+        alexander.zimmermann@comsys.rwth-aachen.de
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benoit Sigoure <tsunanet@gmail.com>
+Subject: [PATCH] tcp: Lower the initial RTO to 1s as per draft RFC 2988bis-02.
+Date: Wed, 18 May 2011 23:47:49 -0700
+Message-Id: <1305787669-84634-1-git-send-email-tsunanet@gmail.com>
+X-Mailer: git-send-email 1.7.0.2.157.gb7e7f
+In-Reply-To: <20110519.014656.1735519603194773578.davem@davemloft.net>
+References: <20110519.014656.1735519603194773578.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 18, 2011 23:35:22 Ondrej Zary wrote:
-> Convert tea575x-tuner to use the new V4L2 control framework. Also add
-> ext_init() callback that can be used by a card driver for additional
-> initialization right before registering the video device (for SF16-FMR2).
-> 
-> Also embed struct video_device to struct snd_tea575x to simplify the code.
-> 
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> 
-> --- linux-2.6.39-rc2-/include/sound/tea575x-tuner.h	2011-05-13 19:39:23.000000000 +0200
-> +++ linux-2.6.39-rc2/include/sound/tea575x-tuner.h	2011-05-18 23:14:48.000000000 +0200
-> @@ -23,8 +23,8 @@
->   */
->  
->  #include <linux/videodev2.h>
-> +#include <media/v4l2-ctrls.h>
->  #include <media/v4l2-dev.h>
-> -#include <media/v4l2-ioctl.h>
->  
->  #define TEA575X_FMIF	10700
->  
-> @@ -42,7 +42,8 @@ struct snd_tea575x_ops {
->  };
->  
->  struct snd_tea575x {
-> -	struct video_device *vd;	/* video device */
-> +	struct video_device vd;		/* video device */
-> +	bool initialized;
+Draft RFC 2988bis-02 recommends that the initial RTO be lowered
+from 3 seconds down to 1 second, and that in case of a timeout
+during the TCP 3WHS, the RTO should fallback to 3 seconds when
+data transmission begins.
 
-This isn't needed, more about that below.
+Signed-off-by: Benoit Sigoure <tsunanet@gmail.com>
+---
 
->  	bool tea5759;			/* 5759 chip is present */
->  	bool mute;			/* Device is muted? */
->  	bool stereo;			/* receiving stereo */
-> @@ -54,6 +55,8 @@ struct snd_tea575x {
->  	void *private_data;
->  	u8 card[32];
->  	u8 bus_info[32];
-> +	struct v4l2_ctrl_handler ctrl_handler;
-> +	void (*ext_init)(struct snd_tea575x *tea);
+Apologies for the spam, I sent this patch from the wrong address and without
+sob'ing it.  I build the Linux kernel in a 15G tmpfs (it's faster this way :D)
+and I lost my .git/config after a reboot.
 
-ext_init should return int to pass back errors.
+ include/net/tcp.h    |    5 ++++-
+ net/ipv4/tcp_input.c |   13 +++++++++----
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
->  };
->  
->  int snd_tea575x_init(struct snd_tea575x *tea);
-> --- linux-2.6.39-rc2-/sound/i2c/other/tea575x-tuner.c	2011-05-13 19:39:23.000000000 +0200
-> +++ linux-2.6.39-rc2/sound/i2c/other/tea575x-tuner.c	2011-05-18 23:22:44.000000000 +0200
-> @@ -22,11 +22,11 @@
->  
->  #include <asm/io.h>
->  #include <linux/delay.h>
-> -#include <linux/interrupt.h>
->  #include <linux/init.h>
->  #include <linux/slab.h>
->  #include <linux/version.h>
-> -#include <sound/core.h>
-> +#include <media/v4l2-dev.h>
-> +#include <media/v4l2-ioctl.h>
->  #include <sound/tea575x-tuner.h>
->  
->  MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
-> @@ -62,17 +62,6 @@ module_param(radio_nr, int, 0);
->  #define TEA575X_BIT_DUMMY	(1<<15)		/* buffer */
->  #define TEA575X_BIT_FREQ_MASK	0x7fff
->  
-> -static struct v4l2_queryctrl radio_qctrl[] = {
-> -	{
-> -		.id            = V4L2_CID_AUDIO_MUTE,
-> -		.name          = "Mute",
-> -		.minimum       = 0,
-> -		.maximum       = 1,
-> -		.default_value = 1,
-> -		.type          = V4L2_CTRL_TYPE_BOOLEAN,
-> -	}
-> -};
-> -
->  /*
->   * lowlevel part
->   */
-> @@ -266,47 +255,17 @@ static int vidioc_s_audio(struct file *f
->  	return 0;
->  }
->  
-> -static int vidioc_queryctrl(struct file *file, void *priv,
-> -					struct v4l2_queryctrl *qc)
-> -{
-> -	int i;
-> -
-> -	for (i = 0; i < ARRAY_SIZE(radio_qctrl); i++) {
-> -		if (qc->id && qc->id == radio_qctrl[i].id) {
-> -			memcpy(qc, &(radio_qctrl[i]),
-> -						sizeof(*qc));
-> -			return 0;
-> -		}
-> -	}
-> -	return -EINVAL;
-> -}
-> -
-> -static int vidioc_g_ctrl(struct file *file, void *priv,
-> -					struct v4l2_control *ctrl)
-> +static int tea575x_s_ctrl(struct v4l2_ctrl *ctrl)
->  {
-> -	struct snd_tea575x *tea = video_drvdata(file);
-> +	struct snd_tea575x *tea = container_of(ctrl->handler, struct snd_tea575x, ctrl_handler);
->  
->  	switch (ctrl->id) {
->  	case V4L2_CID_AUDIO_MUTE:
-> -		ctrl->value = tea->mute;
-> +		tea->mute = ctrl->val;
-> +		snd_tea575x_set_freq(tea);
->  		return 0;
->  	}
-> -	return -EINVAL;
-> -}
-> -
-> -static int vidioc_s_ctrl(struct file *file, void *priv,
-> -					struct v4l2_control *ctrl)
-> -{
-> -	struct snd_tea575x *tea = video_drvdata(file);
->  
-> -	switch (ctrl->id) {
-> -	case V4L2_CID_AUDIO_MUTE:
-> -		if (tea->mute != ctrl->value) {
-> -			tea->mute = ctrl->value;
-> -			snd_tea575x_set_freq(tea);
-> -		}
-> -		return 0;
-> -	}
->  	return -EINVAL;
->  }
->  
-> @@ -355,16 +314,17 @@ static const struct v4l2_ioctl_ops tea57
->  	.vidioc_s_input     = vidioc_s_input,
->  	.vidioc_g_frequency = vidioc_g_frequency,
->  	.vidioc_s_frequency = vidioc_s_frequency,
-> -	.vidioc_queryctrl   = vidioc_queryctrl,
-> -	.vidioc_g_ctrl      = vidioc_g_ctrl,
-> -	.vidioc_s_ctrl      = vidioc_s_ctrl,
->  };
->  
->  static struct video_device tea575x_radio = {
->  	.name           = "tea575x-tuner",
->  	.fops           = &tea575x_fops,
->  	.ioctl_ops 	= &tea575x_ioctl_ops,
-> -	.release	= video_device_release,
-> +	.release	= video_device_release_empty,
-> +};
-> +
-> +static const struct v4l2_ctrl_ops tea575x_ctrl_ops = {
-> +	.s_ctrl = tea575x_s_ctrl,
->  };
->  
->  /*
-> @@ -373,7 +333,6 @@ static struct video_device tea575x_radio
->  int snd_tea575x_init(struct snd_tea575x *tea)
->  {
->  	int retval;
-> -	struct video_device *tea575x_radio_inst;
->  
->  	tea->mute = 1;
->  
-> @@ -384,39 +343,44 @@ int snd_tea575x_init(struct snd_tea575x
->  	tea->in_use = 0;
->  	tea->val = TEA575X_BIT_BAND_FM | TEA575X_BIT_SEARCH_10_40;
->  	tea->freq = 90500 * 16;		/* 90.5Mhz default */
-> +	snd_tea575x_set_freq(tea);
->  
-> -	tea575x_radio_inst = video_device_alloc();
-> -	if (tea575x_radio_inst == NULL) {
-> -		printk(KERN_ERR "tea575x-tuner: not enough memory\n");
-> -		return -ENOMEM;
-> -	}
-> +	memcpy(&tea->vd, &tea575x_radio, sizeof(tea575x_radio));
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index cda30ea..274d761 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -122,7 +122,10 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
+ #endif
+ #define TCP_RTO_MAX	((unsigned)(120*HZ))
+ #define TCP_RTO_MIN	((unsigned)(HZ/5))
+-#define TCP_TIMEOUT_INIT ((unsigned)(3*HZ))	/* RFC 1122 initial RTO value	*/
++/* The next 2 values come from Draft RFC 2988bis-02. */
++#define TCP_TIMEOUT_INIT ((unsigned)(1*HZ))		/* initial RTO value	*/
++#define TCP_TIMEOUT_INIT_FALLBACK ((unsigned)(3*HZ))	/* initial RTO to fallback to when
++							 * a timeout happens during the 3WHS.	*/
+ 
+ #define TCP_RESOURCE_PROBE_INTERVAL ((unsigned)(HZ/2U)) /* Maximal interval between probes
+ 					                 * for local resources.
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index bef9f04..a36bc35 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -868,6 +868,11 @@ static void tcp_init_metrics(struct sock *sk)
+ {
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	struct dst_entry *dst = __sk_dst_get(sk);
++	/* If we had to retransmit anything during the 3WHS, use
++	 * the initial fallback RTO as per draft RFC 2988bis-02.
++	 */
++	int init_rto = inet_csk(sk)->icsk_retransmits ?
++		TCP_TIMEOUT_INIT_FALLBACK : TCP_TIMEOUT_INIT;
+ 
+ 	if (dst == NULL)
+ 		goto reset;
+@@ -890,7 +895,7 @@ static void tcp_init_metrics(struct sock *sk)
+ 	if (dst_metric(dst, RTAX_RTT) == 0)
+ 		goto reset;
+ 
+-	if (!tp->srtt && dst_metric_rtt(dst, RTAX_RTT) < (TCP_TIMEOUT_INIT << 3))
++	if (!tp->srtt && dst_metric_rtt(dst, RTAX_RTT) < (init_rto << 3))
+ 		goto reset;
+ 
+ 	/* Initial rtt is determined from SYN,SYN-ACK.
+@@ -916,7 +921,7 @@ static void tcp_init_metrics(struct sock *sk)
+ 		tp->mdev_max = tp->rttvar = max(tp->mdev, tcp_rto_min(sk));
+ 	}
+ 	tcp_set_rto(sk);
+-	if (inet_csk(sk)->icsk_rto < TCP_TIMEOUT_INIT && !tp->rx_opt.saw_tstamp) {
++	if (inet_csk(sk)->icsk_rto < init_rto && !tp->rx_opt.saw_tstamp) {
+ reset:
+ 		/* Play conservative. If timestamps are not
+ 		 * supported, TCP will fail to recalculate correct
+@@ -924,8 +929,8 @@ reset:
+ 		 */
+ 		if (!tp->rx_opt.saw_tstamp && tp->srtt) {
+ 			tp->srtt = 0;
+-			tp->mdev = tp->mdev_max = tp->rttvar = TCP_TIMEOUT_INIT;
+-			inet_csk(sk)->icsk_rto = TCP_TIMEOUT_INIT;
++			tp->mdev = tp->mdev_max = tp->rttvar = init_rto;
++			inet_csk(sk)->icsk_rto = init_rto;
+ 		}
+ 	}
+ 	tp->snd_cwnd = tcp_init_cwnd(tp, dst);
+-- 
+1.7.0.4
 
-You can use tea->vd = tea575x_radio instead of memcpy.
-
-> +	video_set_drvdata(&tea->vd, tea);
->  
-> -	memcpy(tea575x_radio_inst, &tea575x_radio, sizeof(tea575x_radio));
-> +	v4l2_ctrl_handler_init(&tea->ctrl_handler, 1);
-> +	tea->vd.ctrl_handler = &tea->ctrl_handler;
-> +	v4l2_ctrl_new_std(&tea->ctrl_handler, &tea575x_ctrl_ops, V4L2_CID_AUDIO_MUTE, 0, 1, 1, 1);
-> +	retval = tea->ctrl_handler.error;
-> +	if (retval) {
-> +		printk(KERN_ERR "tea575x-tuner: can't initialize controls\n");
-> +		v4l2_ctrl_handler_free(&tea->ctrl_handler);
-> +		return retval;
-> +	}
-> +	v4l2_ctrl_handler_setup(&tea->ctrl_handler);
-
-It's better to move this after the ext_init call, then the driver implementing
-ext_init doesn't have to call v4l2_ctrl_handler_setup again.
-
->  
-> -	strcpy(tea575x_radio.name, tea->tea5759 ?
-> -				   "TEA5759 radio" : "TEA5757 radio");
-> +	if (tea->ext_init)
-> +		tea->ext_init(tea);
-
-ext_init can return an error. In particular, radio-sf16fmr2 should return
-tea->ctrl_handler.error after adding the two new controls since adding
-those controls might have failed.
-
->  
-> -	video_set_drvdata(tea575x_radio_inst, tea);
-> +	tea->initialized = 1;
->  
-> -	retval = video_register_device(tea575x_radio_inst,
-> -				       VFL_TYPE_RADIO, radio_nr);
-> +	retval = video_register_device(&tea->vd, VFL_TYPE_RADIO, radio_nr);
->  	if (retval) {
->  		printk(KERN_ERR "tea575x-tuner: can't register video device!\n");
-> -		kfree(tea575x_radio_inst);
-> +		v4l2_ctrl_handler_free(&tea->ctrl_handler);
-> +		tea->initialized = 0;
->  		return retval;
->  	}
->  
-> -	snd_tea575x_set_freq(tea);
-> -	tea->vd = tea575x_radio_inst;
-> -
->  	return 0;
->  }
->  
->  void snd_tea575x_exit(struct snd_tea575x *tea)
->  {
-> -	if (tea->vd) {
-> -		video_unregister_device(tea->vd);
-> -		tea->vd = NULL;
-> +	if (tea->initialized) {
-> +		video_unregister_device(&tea->vd);
-
-video_unregister_device is smart enough to detect a failed video_register_device
-call, so there is no need to use this 'initialized' field.
-
-> +		v4l2_ctrl_handler_free(&tea->ctrl_handler);
-> +		tea->initialized = 0;
->  	}
->  }
->  
-> 
-> 
-> 
-
-Regards,
-
-	Hans
