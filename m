@@ -1,68 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934222Ab1ESTVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 15:21:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44552 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933955Ab1ESTVo convert rfc822-to-8bit (ORCPT
+	id S934300Ab1ESTVz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:21:55 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:32955 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934227Ab1ESTVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 15:21:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=HsfUvf7vFqoj7ETAmRDSXqvkET8zj6AlcW+ZwcrNg5ZEar8gxaAFZcOc90bZmzTEuy
-         auY2xlGAoxZ8jo0mRKakRXso2NyTAAkQSf2yl1Pp6+GhbRPCxNZaG2bNLv815gph1S4E
-         vAKR3VL2CaqXGNTuHmq+MldmgD61QMpToNoG4=
+	Thu, 19 May 2011 15:21:52 -0400
+Date: Thu, 19 May 2011 13:21:49 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] gpio: rename VIA local config struct
+Message-ID: <20110519192149.GN5109@ponder.secretlab.ca>
+References: <1303973940-13296-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-In-Reply-To: <20110519181931.GA22506@redhat.com>
-References: <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
- <20110423175901.GA484@redhat.com> <20110426194822.GA8520@redhat.com>
- <20110426194904.GC8520@redhat.com> <BANLkTikhJkFtJUwUJ3stT=juKKuo+6xT7g@mail.gmail.com>
- <20110513164435.GA22435@redhat.com> <BANLkTimGjunaA4Fzdo6dc5=cKTc_g90j5Q@mail.gmail.com>
- <20110516125702.GA7941@redhat.com> <20110516125728.GB7941@redhat.com>
- <20110518163725.13e816fe.akpm@linux-foundation.org> <20110519181931.GA22506@redhat.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 19 May 2011 15:21:23 -0400
-Message-ID: <BANLkTimjP1t9Qycwc7iVnssi0YDpVAZL7Q@mail.gmail.com>
-Subject: Re: [PATCH v2] signal: trivial, fix the "timespec declared inside
- parameter list" warning
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303973940-13296-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 14:19, Oleg Nesterov wrote:
-> On 05/18, Andrew Morton wrote:
->> On Mon, 16 May 2011 14:57:29 +0200 Oleg Nesterov wrote:
->> > --- sigprocmask/include/linux/signal.h~15_stw_warning       2011-05-12 20:44:43.000000000 +0200
->> > +++ sigprocmask/include/linux/signal.h      2011-05-16 14:53:08.000000000 +0200
->> > @@ -234,6 +234,9 @@ static inline int valid_signal(unsigned
->> >     return sig <= _NSIG ? 1 : 0;
->> >  }
->> >
->> > +struct timespec;
->> > +struct pt_regs;
->> > +
->> >  extern int next_signal(struct sigpending *pending, sigset_t *mask);
->> >  extern int do_send_sig_info(int sig, struct siginfo *info,
->> >                             struct task_struct *p, bool group);
->>
->> Please put the forward declarations at top-of-file.  In this case,
->> inside #ifdef __KERNEL__.  This reduces the risk of accumulating
->> duplicated forward declarations, as has happened in the past.
->
-> This is what Mike suggested from the very beginnig. Perhaps this
-> would be better but since I already applied this patch... I'd prefer
-> to not test my git skills, unless you or Mike object.
+On Thu, Apr 28, 2011 at 08:59:00AM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> The local VIA GPIO config struct "gpio_config" collides with my
+> extension to the gpio_chip struct, so rename it to via_gpio_config
+> so we don't get this clash.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-i'm ok with this version as it's at the top of the existing prototype
-block.  Andrew's version also would work of course.
--mike
+This is a good change regardless.  However, one nitpick.  Since the
+driver already uses the "viafb_" prefix on functions, you should use
+rename the structure to viafb_gpio_config too.
+
+g.
+
+> ---
+>  drivers/video/via/via-gpio.c |   49 +++++++++++++++++++++--------------------
+>  1 files changed, 25 insertions(+), 24 deletions(-)
+> 
+> diff --git a/drivers/video/via/via-gpio.c b/drivers/video/via/via-gpio.c
+> index c2a0a1c..4b26f3f 100644
+> --- a/drivers/video/via/via-gpio.c
+> +++ b/drivers/video/via/via-gpio.c
+> @@ -145,7 +145,7 @@ static int via_gpio_get(struct gpio_chip *chip, unsigned int nr)
+>  }
+>  
+>  
+> -static struct viafb_gpio_cfg gpio_config = {
+> +static struct viafb_gpio_cfg via_gpio_config = {
+>  	.gpio_chip = {
+>  		.label = "VIAFB onboard GPIO",
+>  		.owner = THIS_MODULE,
+> @@ -183,8 +183,8 @@ static int viafb_gpio_resume(void *private)
+>  {
+>  	int i;
+>  
+> -	for (i = 0; i < gpio_config.gpio_chip.ngpio; i += 2)
+> -		viafb_gpio_enable(gpio_config.active_gpios[i]);
+> +	for (i = 0; i < via_gpio_config.gpio_chip.ngpio; i += 2)
+> +		viafb_gpio_enable(via_gpio_config.active_gpios[i]);
+>  	return 0;
+>  }
+>  
+> @@ -201,9 +201,9 @@ int viafb_gpio_lookup(const char *name)
+>  {
+>  	int i;
+>  
+> -	for (i = 0; i < gpio_config.gpio_chip.ngpio; i++)
+> -		if (!strcmp(name, gpio_config.active_gpios[i]->vg_name))
+> -			return gpio_config.gpio_chip.base + i;
+> +	for (i = 0; i < via_gpio_config.gpio_chip.ngpio; i++)
+> +		if (!strcmp(name, via_gpio_config.active_gpios[i]->vg_name))
+> +			return via_gpio_config.gpio_chip.base + i;
+>  	return -1;
+>  }
+>  EXPORT_SYMBOL_GPL(viafb_gpio_lookup);
+> @@ -229,14 +229,15 @@ static __devinit int viafb_gpio_probe(struct platform_device *platdev)
+>  		for (gpio = viafb_all_gpios;
+>  		     gpio < viafb_all_gpios + VIAFB_NUM_GPIOS; gpio++)
+>  			if (gpio->vg_port_index == port_cfg[i].ioport_index) {
+> -				gpio_config.active_gpios[ngpio] = gpio;
+> -				gpio_config.gpio_names[ngpio] = gpio->vg_name;
+> +				via_gpio_config.active_gpios[ngpio] = gpio;
+> +				via_gpio_config.gpio_names[ngpio] =
+> +					gpio->vg_name;
+>  				ngpio++;
+>  			}
+>  	}
+> -	gpio_config.gpio_chip.ngpio = ngpio;
+> -	gpio_config.gpio_chip.names = gpio_config.gpio_names;
+> -	gpio_config.vdev = vdev;
+> +	via_gpio_config.gpio_chip.ngpio = ngpio;
+> +	via_gpio_config.gpio_chip.names = via_gpio_config.gpio_names;
+> +	via_gpio_config.vdev = vdev;
+>  	if (ngpio == 0) {
+>  		printk(KERN_INFO "viafb: no GPIOs configured\n");
+>  		return 0;
+> @@ -245,18 +246,18 @@ static __devinit int viafb_gpio_probe(struct platform_device *platdev)
+>  	 * Enable the ports.  They come in pairs, with a single
+>  	 * enable bit for both.
+>  	 */
+> -	spin_lock_irqsave(&gpio_config.vdev->reg_lock, flags);
+> +	spin_lock_irqsave(&via_gpio_config.vdev->reg_lock, flags);
+>  	for (i = 0; i < ngpio; i += 2)
+> -		viafb_gpio_enable(gpio_config.active_gpios[i]);
+> -	spin_unlock_irqrestore(&gpio_config.vdev->reg_lock, flags);
+> +		viafb_gpio_enable(via_gpio_config.active_gpios[i]);
+> +	spin_unlock_irqrestore(&via_gpio_config.vdev->reg_lock, flags);
+>  	/*
+>  	 * Get registered.
+>  	 */
+> -	gpio_config.gpio_chip.base = -1;  /* Dynamic */
+> -	ret = gpiochip_add(&gpio_config.gpio_chip);
+> +	via_gpio_config.gpio_chip.base = -1;  /* Dynamic */
+> +	ret = gpiochip_add(&via_gpio_config.gpio_chip);
+>  	if (ret) {
+>  		printk(KERN_ERR "viafb: failed to add gpios (%d)\n", ret);
+> -		gpio_config.gpio_chip.ngpio = 0;
+> +		via_gpio_config.gpio_chip.ngpio = 0;
+>  	}
+>  #ifdef CONFIG_PM
+>  	viafb_pm_register(&viafb_gpio_pm_hooks);
+> @@ -277,8 +278,8 @@ static int viafb_gpio_remove(struct platform_device *platdev)
+>  	/*
+>  	 * Get unregistered.
+>  	 */
+> -	if (gpio_config.gpio_chip.ngpio > 0) {
+> -		ret = gpiochip_remove(&gpio_config.gpio_chip);
+> +	if (via_gpio_config.gpio_chip.ngpio > 0) {
+> +		ret = gpiochip_remove(&via_gpio_config.gpio_chip);
+>  		if (ret) { /* Somebody still using it? */
+>  			printk(KERN_ERR "Viafb: GPIO remove failed\n");
+>  			return ret;
+> @@ -287,11 +288,11 @@ static int viafb_gpio_remove(struct platform_device *platdev)
+>  	/*
+>  	 * Disable the ports.
+>  	 */
+> -	spin_lock_irqsave(&gpio_config.vdev->reg_lock, flags);
+> -	for (i = 0; i < gpio_config.gpio_chip.ngpio; i += 2)
+> -		viafb_gpio_disable(gpio_config.active_gpios[i]);
+> -	gpio_config.gpio_chip.ngpio = 0;
+> -	spin_unlock_irqrestore(&gpio_config.vdev->reg_lock, flags);
+> +	spin_lock_irqsave(&via_gpio_config.vdev->reg_lock, flags);
+> +	for (i = 0; i < via_gpio_config.gpio_chip.ngpio; i += 2)
+> +		viafb_gpio_disable(via_gpio_config.active_gpios[i]);
+> +	via_gpio_config.gpio_chip.ngpio = 0;
+> +	spin_unlock_irqrestore(&via_gpio_config.vdev->reg_lock, flags);
+>  	return ret;
+>  }
+>  
+> -- 
+> 1.7.3.2
+> 
