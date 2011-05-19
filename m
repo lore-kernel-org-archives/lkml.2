@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab1ESLbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 07:31:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16601 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754088Ab1ESLbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 07:31:37 -0400
-Date: Thu, 19 May 2011 07:31:27 -0400
-From: Andy Gospodarek <andy@greyhouse.net>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Neil Horman <nhorman@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>, netdev@vger.kernel.org
-Subject: Re: [V2 Patch net-next-2.6] netpoll: disable netpoll when enslave
-	a device
-Message-ID: <20110519113127.GE21309@gospo.rdu.redhat.com>
-References: <20110518105558.GA3203@hmsreliant.think-freely.org> <1305794393-20775-1-git-send-email-amwang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305794393-20775-1-git-send-email-amwang@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755958Ab1ESLfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 07:35:19 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:22518 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab1ESLfR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 07:35:17 -0400
+Date: Thu, 19 May 2011 13:33:44 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio: New driver for the Intel 82801 (ICH) GPIO pins
+Message-ID: <20110519133344.285a6a14@endymion.delvare>
+In-Reply-To: <20110423154707.454e1010@lxorguk.ukuu.org.uk>
+References: <20110419145303.111aead7@endymion.delvare>
+	<BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
+	<20110423154528.4145698d@endymion.delvare>
+	<20110423154707.454e1010@lxorguk.ukuu.org.uk>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 04:39:53PM +0800, Amerigo Wang wrote:
-[...]
-> diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-> index 621dfa1..3d82867 100644
-> --- a/include/linux/notifier.h
-> +++ b/include/linux/notifier.h
-> @@ -211,6 +211,7 @@ static inline int notifier_to_errno(int ret)
->  #define NETDEV_UNREGISTER_BATCH 0x0011
->  #define NETDEV_BONDING_DESLAVE  0x0012
->  #define NETDEV_NOTIFY_PEERS	0x0013
-> +#define NETDEV_ENSLAVE		0x0014
->  
->  #define SYS_DOWN	0x0001	/* Notify of system down */
->  #define SYS_RESTART	SYS_DOWN
+Hi Alan, Grant,
 
-Neil just noted the same concern I had -- the asymmetry between
-NETDEV_ENSLAVE and NETDEV_BONDING_DESLAVE bothers me a bit.  I also
-don't really like the followup patch that uses 'ENSLAVE' in the bridging
-code when we typically use that language for bonding only.
+On Sat, 23 Apr 2011 15:47:07 +0100, Alan Cox wrote:
+> > And a technical question (which makes me feel somewhat ashamed as I
+> > guess I really should know the answer): the ICH is using I/O ports for
+> > GPIO control, not a memory mapping. Would basic_mmio_gpio work for it
+> > still?
+> 
+> basic_mmio_gpio would need to use iomap for this and a lot of platforms
+> don't support generic iomap - so no it won't.
+> 
+> You don't generally want want to create sub platform devices anyway
+> without care as it makes sysfs, pci removal and power management ugly and
+> takes up *more* memory than repeating the code in the first places.
 
-What about changing NETDEV_BONDING_DESLAVE to NETDEV_RELEASE and create
-NETDEV_JOIN instead of NETDEV_ENSLAVE?  I would prefer that or something
-else that might use more generic language that could be applied to all
-for stacked interfaces.
+OK, so given that I can't use basic_mmio_gpio and Alan thinks that
+having an independent driver is the way to go anyway, is there any
+chance to get my code reviewed and merged? I am using it since the day
+I submitted it (one month ago), it appears to work fine for me, and
+it is a mandatory piece to support SMBus multiplexing on many x86 server
+boards. I'd like to see it happen in kernel 2.6.40.
+
+I can resend the patch if it helps, but I did not make any change to
+the code since the first submission.
+
+Thanks,
+-- 
+Jean Delvare
