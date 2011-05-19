@@ -1,44 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933448Ab1ESP7N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 11:59:13 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50209 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751360Ab1ESP7L (ORCPT
+	id S933481Ab1ESQB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:01:27 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:43235 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932733Ab1ESQBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 11:59:11 -0400
-Date: Thu, 19 May 2011 17:00:30 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Timur Tabi <timur@freescale.com>
-Cc: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
-        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
-Subject: Re: [PATCH 6/7] tty/powerpc: introduce the ePAPR embedded
- hypervisor byte channel driver
-Message-ID: <20110519170030.11476cc1@lxorguk.ukuu.org.uk>
-In-Reply-To: <4DD53D1B.4060600@freescale.com>
-References: <1305813272-31826-1-git-send-email-timur@freescale.com>
-	<1305813272-31826-7-git-send-email-timur@freescale.com>
-	<20110519153358.5876f310@lxorguk.ukuu.org.uk>
-	<4DD533DE.1020705@freescale.com>
-	<20110519165039.7fd8ec34@lxorguk.ukuu.org.uk>
-	<4DD53D1B.4060600@freescale.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 May 2011 12:01:25 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAEY81U1tg2Sy/2dsb2JhbACmEHiIcMEXDoYLBJ8I
+Date: Thu, 19 May 2011 18:01:23 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Jimmy Chen =?utf-8?B?KOmZs+awuOmBlCk=?= <jimmy.chen@moxa.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 2/2] watchdog: add support for MOXA V2100 watchdog
+	driver
+Message-ID: <20110519160123.GN17887@infomag.iguana.be>
+References: <ECB3782BB8F03341905DD923270296115F73D8@mhqms01.moxa.com> <ECB3782BB8F03341905DD92327029611622363@mhqms01.moxa.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ECB3782BB8F03341905DD92327029611622363@mhqms01.moxa.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ok, I can do that.
-> 
-> > Depends if the functionality is useful in your environment or not
-> 
-> It is, but I'd like to add it later so that I can make the 2.6.40 window (if it
-> isn't already too late).
+Hi Jimmy,
 
-Seems sensible.
+> From: Jimmy Chen <jimmy.chen@moxa.com>
+> 
+> Does anyone have comment on this driver?
+> 
+> Signed-off-by: Jimmy Chen <jimmy.chen@moxa.com>
 
-Alan
+I'm not going to add this driver. Reason is that the underlying hardware is an ITE IT8783 EC LPC superI/O chipset.
+Support for this should actually go in it87_wdt.c . I think the following patch replaces your driver (see below).
+Could you test it?
+
+(and we can probably add the IT8781F and the IT8782F also, and the hwmon guys can probably add all 3 also in it87.c).
+
+Kind regards,
+Wim.
+
+
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 1b0f98b..0afa0bf 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -590,7 +590,8 @@ config IT87_WDT
+ 	depends on X86 && EXPERIMENTAL
+ 	---help---
+ 	  This is the driver for the hardware watchdog on the ITE IT8702,
+-	  IT8712, IT8716, IT8718, IT8720, IT8721, IT8726 Super I/O chips.
++	  IT8712, IT8716, IT8718, IT8720, IT8721, IT8726, IT8783 Super I/O
++	  chips.
+ 	  This watchdog simply watches your kernel to make sure it doesn't
+ 	  freeze, and if it does, it reboots your computer after a certain
+ 	  amount of time.
+diff --git a/drivers/watchdog/it87_wdt.c b/drivers/watchdog/it87_wdt.c
+index b1bc72f..3529e8c 100644
+--- a/drivers/watchdog/it87_wdt.c
++++ b/drivers/watchdog/it87_wdt.c
+@@ -12,7 +12,7 @@
+  *		    http://www.ite.com.tw/
+  *
+  *	Support of the watchdog timers, which are available on
+- *	IT8702, IT8712, IT8716, IT8718, IT8720, IT8721 and IT8726.
++ *	IT8702, IT8712, IT8716, IT8718, IT8720, IT8721, IT8726 and IT8783.
+  *
+  *	This program is free software; you can redistribute it and/or
+  *	modify it under the terms of the GNU General Public License
+@@ -84,6 +84,7 @@
+ #define IT8720_ID	0x8720
+ #define IT8721_ID	0x8721
+ #define IT8726_ID	0x8726	/* the data sheet suggest wrongly 0x8716 */
++#define IT8783_ID	0x8783
+ 
+ /* GPIO Configuration Registers LDN=0x07 */
+ #define WDTCTRL		0x71
+@@ -585,6 +586,7 @@ static int __init it87_wdt_init(void)
+ 	case IT8718_ID:
+ 	case IT8720_ID:
+ 	case IT8721_ID:
++	case IT8783_ID:
+ 		max_units = 65535;
+ 		try_gameport = 0;
+ 		break;
