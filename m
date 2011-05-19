@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab1ESADs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 20:03:48 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43428 "EHLO
+	id S1752871Ab1ESAJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 20:09:40 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39727 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941Ab1ESADp convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751188Ab1ESAJj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 20:03:45 -0400
+	Wed, 18 May 2011 20:09:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=HPJ7FDQBaoPIos8QlkJb94sjVKLL+U4a9q1EkNKUAaDrOynz9HuiyzveEehCC4r9Qg
-         qubb7uQZRypD6pa3MsPbGticiTuy/Bs+qOuUKWPOc9HYMS7FyDXlmwTKtgGR7BaPpdVP
-         0UUAoeNVbjph0ZpPxV6NSZDVgIbO2+Uw8Gs+4=
+        b=fzIPXiNuI97a4Lhp6G1zn3RoGCJ3dUOUJVV6Wy3FAjjZewuyQm7rTKkP/IO1iYFmJY
+         X4h9jcUlK3xB8OjhLVLx6o/1luuRdJ3RuKYmARQ9rRpq0jtEhNPlzFAgZu2agtt+hZLD
+         ++oUaOMlYf8ucHaaGcuPclJmRKfa49otLGd0I=
 MIME-Version: 1.0
 In-Reply-To: <20110517161508.GN5279@suse.de>
 References: <1305295404-12129-5-git-send-email-mgorman@suse.de>
@@ -27,13 +27,13 @@ References: <1305295404-12129-5-git-send-email-mgorman@suse.de>
 	<20110517103840.GL5279@suse.de>
 	<1305640239.2046.27.camel@lenovo>
 	<20110517161508.GN5279@suse.de>
-Date: Thu, 19 May 2011 09:03:44 +0900
-Message-ID: <BANLkTimfKwJWgiDp7m8WqeUK00N5sV=mWQ@mail.gmail.com>
+Date: Thu, 19 May 2011 09:09:37 +0900
+Message-ID: <BANLkTimUJeTbWV_0BzgjrDjY=Wpc-PaG5Q@mail.gmail.com>
 Subject: Re: [PATCH] mm: vmscan: Correctly check if reclaimer should schedule
  during shrink_slab
 From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: akpm@linux-foundation.org, Colin Ian King <colin.king@canonical.com>,
+To: Mel Gorman <mgorman@suse.de>, Colin Ian King <colin.king@canonical.com>
+Cc: akpm@linux-foundation.org,
         James Bottomley <James.Bottomley@hansenpartnership.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
@@ -45,6 +45,19 @@ Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Hi Colin.
+
+Sorry for bothering you. :(
+I hope this test is last.
+
+We(Mel, KOSAKI and me) finalized opinion.
+
+Could you test below patch with patch[1/4] of Mel's series(ie,
+!pgdat_balanced  of sleeping_prematurely)?
+If it is successful, we will try to merge this version instead of
+various cond_resched sprinkling version.
+
 
 On Wed, May 18, 2011 at 1:15 AM, Mel Gorman <mgorman@suse.de> wrote:
 > It has been reported on some laptops that kswapd is consuming large
@@ -81,8 +94,41 @@ On Wed, May 18, 2011 at 1:15 AM, Mel Gorman <mgorman@suse.de> wrote:
 >
 > [mgorman@suse.de: Preserve call to cond_resched after each call into shrinker]
 > From: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/vmscan.c |    9 +++++++--
+>  1 files changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index af24d1e..0bed248 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -230,8 +230,11 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+>        if (scanned == 0)
+>                scanned = SWAP_CLUSTER_MAX;
+>
+> -       if (!down_read_trylock(&shrinker_rwsem))
+> -               return 1;       /* Assume we'll be able to shrink next time */
+> +       if (!down_read_trylock(&shrinker_rwsem)) {
+> +               /* Assume we'll be able to shrink next time */
+> +               ret = 1;
+> +               goto out;
+> +       }
+>
+>        list_for_each_entry(shrinker, &shrinker_list, list) {
+>                unsigned long long delta;
+> @@ -282,6 +285,8 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+>                shrinker->nr += total_scan;
+>        }
+>        up_read(&shrinker_rwsem);
+> +out:
+> +       cond_resched();
+>        return ret;
+>  }
+>
+>
+
+
 
 -- 
 Kind regards,
