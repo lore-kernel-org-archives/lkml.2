@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932606Ab1ESGKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 02:10:46 -0400
-Received: from mta-2.ms.rz.RWTH-Aachen.DE ([134.130.7.73]:41431 "EHLO
-	mta-2.ms.rz.rwth-aachen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932267Ab1ESGKo (ORCPT
+	id S932622Ab1ESGLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 02:11:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36293 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932267Ab1ESGLW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 02:10:44 -0400
-MIME-version: 1.0
-X-IronPort-AV: E=Sophos;i="4.65,235,1304287200";
- d="sig'?scan'208";a="113308872"
-Subject: Re: [PATCH] tcp: Implement a two-level initial RTO as per draft RFC
- 2988bis-02.
-Content-type: multipart/signed; protocol="application/pgp-signature";
- micalg=pgp-sha1; boundary=Apple-Mail-33-1060726600
-From: Alexander Zimmermann <alexander.zimmermann@comsys.rwth-aachen.de>
-In-reply-to: <BANLkTikQEq9+YkJHcTe3PWnRvh7AN=VVWA@mail.gmail.com>
-Date: Thu, 19 May 2011 08:10:40 +0200
-Cc: David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, hagen@jauu.net, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-transfer-encoding: 7bit
-Message-id: <9DC9A4D5-8E16-4361-B323-C92D563171A1@comsys.rwth-aachen.de>
-References: <1305771744-83951-1-git-send-email-tsunanet@gmail.com>
- <20110518.223622.1525088601595365235.davem@davemloft.net>
- <BANLkTinEN_=jSCw4qR1PqtWaQ+07OMq7tg@mail.gmail.com>
- <20110519.001426.2119532755281545481.davem@davemloft.net>
- <BANLkTikQEq9+YkJHcTe3PWnRvh7AN=VVWA@mail.gmail.com>
-To: tsuna <tsunanet@gmail.com>
-X-Pgp-Agent: GPGMail 1.3.3
-X-Mailer: Apple Mail (2.1084)
+	Thu, 19 May 2011 02:11:22 -0400
+X-ExtLoop1: 1
+From: "Tian, Kevin" <kevin.tian@intel.com>
+To: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>
+CC: "H. Peter Anvin" <hpa@zytor.com>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "Shan, Haitao" <haitao.shan@intel.com>
+Date: Thu, 19 May 2011 14:10:51 +0800
+Subject: RE: [PATCH v2 0/4] Enable SMEP CPU Feature
+Thread-Topic: [PATCH v2 0/4] Enable SMEP CPU Feature
+Thread-Index: AcwUho0pQZ9BKQLLSGu3l9k5Ay+SLQBZIliQ
+Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C9BEEF80B@shsmsx502.ccr.corp.intel.com>
+References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com>
+ <4DD19C81.8000902@zytor.com> <20110517070527.GD22305@elte.hu>
+ <4DD23CB6.3050503@redhat.com> <20110517092903.GJ22093@elte.hu>
+ <4DD2409F.4030800@redhat.com> <20110517104654.GN22093@elte.hu>
+ <4DD25D29.9040008@redhat.com>
+In-Reply-To: <4DD25D29.9040008@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---Apple-Mail-33-1060726600
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=us-ascii
-
-Hi,
-
-Am 19.05.2011 um 06:33 schrieb tsuna:
-
-> Presumably if the user decides to tweak these knobs, they'll know
-> what's appropriate for their environment.
-
-Are you sure? I'm not. I fully agree with David that minRTO is
-something that a user shout not control at all
-
-> Or are you suggesting that
-> one value be derived from the other?  (e.g. tcp_initial_fallback_rto =
-> 3 * tcp_initial_rto)
+> From: Avi Kivity
+> Sent: Tuesday, May 17, 2011 7:34 PM
 > 
->> As a result of all of this, I do not really think this is something
->> the user should control at all.
->> 
->> I really would rather see the initial RTO be static and be set to 1
->> with fallback RTO of 3.
+> On 05/17/2011 01:46 PM, Ingo Molnar wrote:
+> > >
+> > >  We could support it as a non-default feature, but that reduces its utility.
+> >
+> > It would be a nice touch for tools/kvm/: we would use KVM_GET_SREGS
+> > and KVM_GET_SREGS to twiddle CR4.SMEP, even without the guest explicitly
+> doing it.
+> >
+> > A quick glance suggests that it could be done straight away in
+> > tools/kvm/kvm-cpu.c::kvm_cpu__setup_sregs() during vcpu setup, and
+> > hopefully that cr4 value survives boot and ends up in the guest
+> > kernel's mmu_cr4_features mask shadow register.
 > 
-> I can also provide a simple patch for this if you want to start from
-> there.  And then maybe we can discuss having a runtime knob some more
-> :-)
+> Depends if the guest uses a read-modify-write pattern or not.  We could do it
+> transparently in kvm.ko, since the real cr4 need not corresponds to the guest
+> notion (for example, we often set cr0.wp or cr0.ts even though the guest wants
+> them clear).
 > 
-> -- 
-> Benoit "tsuna" Sigoure
-> Software Engineer @ www.StumbleUpon.com
 
-//
-// Dipl.-Inform. Alexander Zimmermann
-// Department of Computer Science, Informatik 4
-// RWTH Aachen University
-// Ahornstr. 55, 52056 Aachen, Germany
-// phone: (49-241) 80-21422, fax: (49-241) 80-22222
-// email: zimmermann@cs.rwth-aachen.de
-// web: http://www.umic-mesh.net
-//
+We have a patch in hand now to enable SMEP for kvm guest, which is under 
+test and cleanup and will be sent out soon. Basically it contains the basic
+idea by exposing CR4.smep and cpuid leaf. Above idea is nice and we'll try 
+that in a following work.
 
-
---Apple-Mail-33-1060726600
-content-type: application/pgp-signature; x-mac-type=70674453;
-	name=PGP.sig
-content-description: Signierter Teil der Nachricht
-content-disposition: inline; filename=PGP.sig
-content-transfer-encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG/MacGPG2 v2.0.17 (Darwin)
-Comment: GPGTools - http://gpgtools.org
-
-iEYEARECAAYFAk3UtGEACgkQdyiq39b9uS5BAQCg8rVcWTflWjYU7QI7/dqL2ceV
-Bm8AoIKqyDcY2osrORNtI3LGQN7D0+zz
-=8ujM
------END PGP SIGNATURE-----
-
---Apple-Mail-33-1060726600--
+Thanks
+Kevin
