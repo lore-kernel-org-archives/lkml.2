@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933858Ab1ESSZW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:25:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48374 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933803Ab1ESSZT (ORCPT
+	id S934342Ab1ESS1O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:27:14 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35969 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934302Ab1ESS1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:25:19 -0400
-Date: Thu, 19 May 2011 20:25:15 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Ludovic Desroches <ludovic.desroches@atmel.com>, linux-mm@kvack.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: atmel-mci causes kernel panic when CONFIG_DEBUG_VM is set
-Message-ID: <20110519182515.GC21172@pengutronix.de>
-References: <4DD4CC68.80408@atmel.com>
+	Thu, 19 May 2011 14:27:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=CYRXlKSRpjSN2BjW87VPFHZjtblxKYVLdlsK5dVKaD0FKMxG723e1vhCopdYUKUIaj
+         F3SMKh5UNf2vvxXEKu3qrxtydt75TFc3NB4tzz/ocGpxSuRdAnLnx4hqJgCM7wlvSKok
+         byir54ZKRourFh4i/O6iTEmF30SitI2C4JMjk=
+Date: Thu, 19 May 2011 21:27:03 +0300
+From: Maxin B John <maxin.john@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, tim.gardner@canonical.com, airlied@redhat.com,
+        lethal@linux-sh.org, james@albanarts.com, error27@gmail.com,
+        randy.dunlap@oracle.com
+Subject: [PATCH] drivers: video: Remove useless checks
+Message-ID: <20110519182702.GA3337@maxin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DD4CC68.80408@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Comparing unsigned less than zero will never be true.
+Removing similar checks from 'fbmem.c' and 'fbcmap.c'.
 
-On Thu, May 19, 2011 at 09:53:12AM +0200, Ludovic Desroches wrote:
-> There is a bug with the atmel-mci driver when the debug feature
-> CONFIG_DEBUG_VM is set.
-for the new audience: the driver does the following:
+Please let me know your comments.
 
-	flush_dcache_page(sg_page(sg));
-
-with sg being a struct scatterlist * provided by the caller of the
-struct mmc_host_ops.request callback.
-
-> Into the atmci_read_data_pio function we use flush_dcache_page (do
-> we really need it?) which call the page_mapping function where we
-> can find VM_BUG_ON(PageSlab(Page)). Then a kernel panic happens.
-> 
-> I don't understand the purpose of the VM_BUG_ON(PageSlab(Page)) (the
-> page comes from a scatter list). How could I correct this problem?
-I discussed this problem with Steven and Peter on irc and Steven found
-two functions in the mmc code (mmc_send_cxd_data and mmc_send_bus_test)
-that use the following idiom:
-
-	struct scatterlist sg;
-	void *data_buf;
-
-	data_buf = kmalloc(len, GFP_KERNEL);
-
-	sg_init_one(&sg, data_buf, len);
-
-Is that allowed (i.e. pass  kmalloc'd memory to sg_init_one)? That might
-be the source of the slub page in the scatterlist, no?
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+---
+diff --git a/drivers/video/fbcmap.c b/drivers/video/fbcmap.c
+index 5c3960d..15cf8fc 100644
+--- a/drivers/video/fbcmap.c
++++ b/drivers/video/fbcmap.c
+@@ -285,8 +285,7 @@ int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *info)
+ 		rc = -ENODEV;
+ 		goto out;
+ 	}
+-	if (cmap->start < 0 || (!info->fbops->fb_setcolreg &&
+-				!info->fbops->fb_setcmap)) {
++	if (!info->fbops->fb_setcolreg && !info->fbops->fb_setcmap) {
+ 		rc = -EINVAL;
+ 		goto out1;
+ 	}
+diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+index 5aac00e..9edca4d 100644
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1143,7 +1143,7 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
+ 			return -EFAULT;
+ 		if (con2fb.console < 1 || con2fb.console > MAX_NR_CONSOLES)
+ 			return -EINVAL;
+-		if (con2fb.framebuffer < 0 || con2fb.framebuffer >= FB_MAX)
++		if (con2fb.framebuffer >= FB_MAX)
+ 			return -EINVAL;
+ 		if (!registered_fb[con2fb.framebuffer])
+ 			request_module("fb%d", con2fb.framebuffer);
