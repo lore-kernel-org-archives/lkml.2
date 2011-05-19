@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934060Ab1ESTSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 15:18:31 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59955 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728Ab1ESTS3 convert rfc822-to-8bit (ORCPT
+	id S934150Ab1ESTU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:20:59 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:58556 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757147Ab1ESTU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 15:18:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=XaJP05R7oBQ8nst2yW6sdISJvzotBjBMT0GWBVJCKPpma12FywcGLHiJtaR57D3WQA
-         +9gsRbOxnys8Ld9zTyOD840pNurUt54X+abAoS/p5ljX2sUBxE2df2/OtAr0pWXmsgov
-         n8sW4Doc20OAQvjQEML4cJ9s21V15KGyHlNLc=
-MIME-Version: 1.0
-In-Reply-To: <1305824936.1465.4.camel@gandalf.stny.rr.com>
-References: <1305824936.1465.4.camel@gandalf.stny.rr.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 19 May 2011 15:18:08 -0400
-X-Google-Sender-Auth: CzHjaI9vq1IMUdKqbWHtIYWWt2Q
-Message-ID: <BANLkTinj5BbdKUun4ne9sY-5vE=0ZoLciQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH] maccess,probe_kernel: Make write/read src const void *
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 May 2011 15:20:57 -0400
+Date: Thu, 19 May 2011 21:19:47 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>,
+        Vasiliy G Tolstov <v.tolstov@selfip.ru>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "wdauchy@gmail.com" <wdauchy@gmail.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "andi.kleen@intel.com" <andi.kleen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [Xen-devel] Re: [PATCH V3] xen/balloon: Memory hotplug support for Xen balloon driver
+Message-ID: <20110519191947.GA27202@router-fw-old.local.net-space.pl>
+References: <20110517214421.GD30232@router-fw-old.local.net-space.pl> <1305701868.28175.1.camel@vase> <1305703309.7738.23.camel@dagon.hellion.org.uk> <1305703494.28175.2.camel@vase> <20110518103543.GA5066@router-fw-old.local.net-space.pl> <20110518150630.GA4709@dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110518150630.GA4709@dumpdata.com>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 13:08, Steven Rostedt <rostedt@goodmis.org> wrote:
-> maccess,probe_kernel: Make src const void *
+On Wed, May 18, 2011 at 11:06:30AM -0400, Konrad Rzeszutek Wilk wrote:
+> > Here is proper udev rule:
+> >
+> > SUBSYSTEM=="memory", ACTION=="add", RUN+="/bin/sh -c '[ -f /sys$devpath/state ] && echo online > /sys$devpath/state'"
+> >
+> > Konrad, could you add it to git comment and Kconfig help ???
 >
-> The functions probe_kernel_write() and probe_kernel_read() do not modify
-> the src pointer. Allow const pointers to be passed in without the need
-> of a typecast.
->
->  arch/blackfin/mm/maccess.c |    4 ++--
+> I am going to be lazy and ask you to resend this patch with that udev rule mentioned in it :-)
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+OK. However, David Rientjes has some objections to "Extend memory
+hotplug API to allow memory hotplug in virtual machine" patch
+and I will do that after clarifying/solving some issues.
+
+Daniel
