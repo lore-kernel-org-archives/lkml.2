@@ -1,60 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933278Ab1ESNuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 09:50:44 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60197 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933140Ab1ESNun (ORCPT
+	id S933260Ab1ESNxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 09:53:39 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57415 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933140Ab1ESNxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 09:50:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Barry Song <21cnbao@gmail.com>
-Subject: Re: [RFC] ARM Subarchitecture group maintainership
-Date: Thu, 19 May 2011 15:50:19 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Nicolas Pitre <nico@fluxnic.net>, linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <201105181047.17309.arnd@arndb.de> <alpine.LFD.2.00.1105182234130.14430@xanadu.home> <BANLkTinXQvrG3LeSEO9Lnam3Bvq3dDKOsw@mail.gmail.com>
-In-Reply-To: <BANLkTinXQvrG3LeSEO9Lnam3Bvq3dDKOsw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105191550.20129.arnd@arndb.de>
-X-Provags-ID: V02:K0:+w+p18yHq4wNjx+I6Yd+XLMJl2zyQP7Ty1x5dQbIdpJ
- VhtGcIK/uWr5r08fHi1SyrJ+ZSGE82eFoeFD6F2kFayTkyPYPW
- wJy2BU5d5GuM+7jbn0L4z7yrP4owzSfy5JjDxE0+EOv596cZvN
- cgpEsqGiOl637ty/cyvTmONoAfIQVtlFvnjWNe/lbvjTWQEUbN
- +ixxyTxZk8io28/XNWQCQ==
+	Thu, 19 May 2011 09:53:38 -0400
+Date: Thu, 19 May 2011 15:53:36 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andy Lutomirski <luto@MIT.EDU>
+Cc: x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86-64: Add time to vDSO
+Message-ID: <20110519135336.GI12317@one.firstfloor.org>
+References: <8f0d3bec51be8d9a2c37bac5aeb64c35cb387640.1305811184.git.luto@mit.edu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8f0d3bec51be8d9a2c37bac5aeb64c35cb387640.1305811184.git.luto@mit.edu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 May 2011, Barry Song wrote:
-> 2011/5/19 Nicolas Pitre <nico@fluxnic.net>:
-> > On Thu, 19 May 2011, Barry Song wrote:
-> > Something like that.  The exact details will be fleshed out as we go.
-> > The idea is to give a round of review from a higher point of view to
-> > make sure no opportunities for code reuse is missed, etc.  The mechanics
-> > of how this code transitions from this tree into mainline during the
-> > merge window is secondary.
-> 
-> i asked this because we wanted to send the source codes of
-> CSR(http://www.csr.com) to upstream as i have told you in LDS. it
-> looks like we need to follow the below new changes to make our source
-> codes acceptable?
-> 1. arm device tree
-> 2. new pinmux framework from Linus Walleij
-> 3. move GPIO from plat/mach to drivers/gpio?
+On Thu, May 19, 2011 at 09:24:48AM -0400, Andy Lutomirski wrote:
+> The only fast implementation of time(2) we expose is through the
+> vsyscall page and we want to get userspace to stop using the
+> vsyscall page.  So make it available through the vDSO as well.
 
-I would count at least the last two as mandatory, for the device tree,
-it depends on how much work it would be for you to do the conversion
-and at what time you submit the series. The longer you wait before
-submitting the series, the stricter the requirements will get.
+User space can just use vgettimeofday() and only take the seconds.
+Adding time() too was a mistake back then.
 
-Do you have a diffstat or a git tree with your work available?
+And BTW just for seconds alone you wouldn't need the seqlock.
 
-	Arnd
+-Andi
