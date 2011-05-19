@@ -1,105 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab1ESChs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 22:37:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34976 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755472Ab1ESChr (ORCPT
+	id S1755875Ab1ESCdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 22:33:04 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60746 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755472Ab1ESCdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 22:37:47 -0400
+	Wed, 18 May 2011 22:33:02 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 19 May 2011 11:30:59 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
- vmlinux)
-Message-Id: <20110519113059.06d0e0d2.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com>
-References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
-	<20110512054631.GI6008@one.firstfloor.org>
-	<BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
-	<BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
-	<20110514165346.GV6008@one.firstfloor.org>
-	<BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
-	<20110514174333.GW6008@one.firstfloor.org>
-	<BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
-	<20110515152747.GA25905@localhost>
-	<BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
-	<20110517060001.GC24069@localhost>
-	<BANLkTi=TOm3aLQCD6j=4va6B+Jn2nSfwAg@mail.gmail.com>
-	<BANLkTi=9W6-JXi94rZfTtTpAt3VUiY5fNw@mail.gmail.com>
-	<BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Message-ID: <4DD48154.1090506@jp.fujitsu.com>
+Date: Thu, 19 May 2011 11:32:52 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: kosaki.motohiro@jp.fujitsu.com
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        riel@redhat.com
+Subject: [PATCH v2 2/3] vmscan: implement swap token trace
+References: <4DD480DD.2040307@jp.fujitsu.com>
+In-Reply-To: <4DD480DD.2040307@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 May 2011 22:15:53 -0400
-Andrew Lutomirski <luto@mit.edu> wrote:
+This is useful for observing swap token activity.
 
-> On Wed, May 18, 2011 at 1:17 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> > On Wed, May 18, 2011 at 4:22 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+example output:
 
-> > Andrew, Could you test this patch with !pgdat_balanced patch?
-> > I think we shouldn't see OOM message if we have lots of free swap space.
-> >
-> > == CUT_HERE ==
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index f73b865..cc23f04 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1341,10 +1341,6 @@ static inline bool
-> > should_reclaim_stall(unsigned long nr_taken,
-> >        if (current_is_kswapd())
-> >                return false;
-> >
-> > -       /* Only stall on lumpy reclaim */
-> > -       if (sc->reclaim_mode & RECLAIM_MODE_SINGLE)
-> > -               return false;
-> > -
-> >        /* If we have relaimed everything on the isolated list, no stall */
-> >        if (nr_freed == nr_taken)
-> >                return false;
-> >
-> >
-> >
-> > Then, if you don't see any unnecessary OOM but still see the hangup,
-> > could you apply this patch based on previous?
-> 
-> With this patch, I started GNOME and Firefox, turned on swap, and ran
-> test_mempressure.sh 1500 1400 1.  Instant panic (or OOPS and hang or
-> something -- didn't get the top part).  Picture attached -- it looks
-> like memcg might be involved.  I'm running F15, so it might even be
-> doing something.
-> 
+             zsh-1845  [000]   598.962716: update_swap_token_priority:
+mm=ffff88015eaf7700 old_prio=1 new_prio=0
+          memtoy-1830  [001]   602.033900: update_swap_token_priority:
+mm=ffff880037a45880 old_prio=947 new_prio=949
+          memtoy-1830  [000]   602.041509: update_swap_token_priority:
+mm=ffff880037a45880 old_prio=949 new_prio=951
+          memtoy-1830  [000]   602.051959: update_swap_token_priority:
+mm=ffff880037a45880 old_prio=951 new_prio=953
+          memtoy-1830  [000]   602.052188: update_swap_token_priority:
+mm=ffff880037a45880 old_prio=953 new_prio=955
+          memtoy-1830  [001]   602.427184: put_swap_token:
+token_mm=ffff880037a45880
+             zsh-1789  [000]   602.427281: replace_swap_token:
+old_token_mm=          (null) old_prio=0 new_token_mm=ffff88015eaf7018
+new_prio=2
+             zsh-1789  [001]   602.433456: update_swap_token_priority:
+mm=ffff88015eaf7018 old_prio=2 new_prio=4
+             zsh-1789  [000]   602.437613: update_swap_token_priority:
+mm=ffff88015eaf7018 old_prio=4 new_prio=6
+             zsh-1789  [000]   602.443924: update_swap_token_priority:
+mm=ffff88015eaf7018 old_prio=6 new_prio=8
+             zsh-1789  [000]   602.451873: update_swap_token_priority:
+mm=ffff88015eaf7018 old_prio=8 new_prio=10
+             zsh-1789  [001]   602.462639: update_swap_token_priority:
+mm=ffff88015eaf7018 old_prio=10 new_prio=12
 
-Hmm, what kernel version do you use ?
-I think memcg is not guilty because RIP is shrink_page_list().
-But ok, I'll dig this. Could you give us your .config ?
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Rik van Riel<riel@redhat.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/trace/events/vmscan.h |   77 +++++++++++++++++++++++++++++++++++++++++
+ mm/thrash.c                   |   11 +++++-
+ 2 files changed, 87 insertions(+), 1 deletions(-)
 
-Thanks,
--Kame
+diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+index ea422aa..1798e0c 100644
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -6,6 +6,8 @@
+
+ #include <linux/types.h>
+ #include <linux/tracepoint.h>
++#include <linux/mm.h>
++#include <linux/memcontrol.h>
+ #include "gfpflags.h"
+
+ #define RECLAIM_WB_ANON		0x0001u
+@@ -310,6 +312,81 @@ TRACE_EVENT(mm_vmscan_lru_shrink_inactive,
+ 		show_reclaim_flags(__entry->reclaim_flags))
+ );
+
++TRACE_EVENT(replace_swap_token,
++	TP_PROTO(struct mm_struct *old_mm,
++		 struct mm_struct *new_mm),
++
++	TP_ARGS(old_mm, new_mm),
++
++	TP_STRUCT__entry(
++		__field(struct mm_struct*,	old_mm)
++		__field(unsigned int,		old_prio)
++		__field(struct mm_struct*,	new_mm)
++		__field(unsigned int,		new_prio)
++	),
++
++	TP_fast_assign(
++		__entry->old_mm   = old_mm;
++		__entry->old_prio = old_mm ? old_mm->token_priority : 0;
++		__entry->new_mm   = new_mm;
++		__entry->new_prio = new_mm->token_priority;
++	),
++
++	TP_printk("old_token_mm=%p old_prio=%u new_token_mm=%p new_prio=%u",
++		  __entry->old_mm, __entry->old_prio,
++		  __entry->new_mm, __entry->new_prio)
++);
++
++DECLARE_EVENT_CLASS(put_swap_token_template,
++	TP_PROTO(struct mm_struct *swap_token_mm),
++
++	TP_ARGS(swap_token_mm),
++
++	TP_STRUCT__entry(
++		__field(struct mm_struct*, swap_token_mm)
++	),
++
++	TP_fast_assign(
++		__entry->swap_token_mm = swap_token_mm;
++	),
++
++	TP_printk("token_mm=%p", __entry->swap_token_mm)
++);
++
++DEFINE_EVENT(put_swap_token_template, put_swap_token,
++	TP_PROTO(struct mm_struct *swap_token_mm),
++	TP_ARGS(swap_token_mm)
++);
++
++DEFINE_EVENT_CONDITION(put_swap_token_template, disable_swap_token,
++	TP_PROTO(struct mm_struct *swap_token_mm),
++	TP_ARGS(swap_token_mm),
++	TP_CONDITION(swap_token_mm != NULL)
++);
++
++TRACE_EVENT_CONDITION(update_swap_token_priority,
++	TP_PROTO(struct mm_struct *mm,
++		 unsigned int old_prio),
++
++	TP_ARGS(mm, old_prio),
++
++	TP_CONDITION(mm->token_priority != old_prio),
++
++	TP_STRUCT__entry(
++		__field(struct mm_struct*, mm)
++		__field(unsigned int, old_prio)
++		__field(unsigned int, new_prio)
++	),
++
++	TP_fast_assign(
++		__entry->mm = mm;
++		__entry->old_prio = old_prio;
++		__entry->new_prio = mm->token_priority;
++	),
++
++	TP_printk("mm=%p old_prio=%u new_prio=%u",
++		  __entry->mm, __entry->old_prio, __entry->new_prio)
++);
+
+ #endif /* _TRACE_VMSCAN_H */
+
+diff --git a/mm/thrash.c b/mm/thrash.c
+index 32c07fd..14c6c9f 100644
+--- a/mm/thrash.c
++++ b/mm/thrash.c
+@@ -23,6 +23,8 @@
+ #include <linux/swap.h>
+ #include <linux/memcontrol.h>
+
++#include <trace/events/vmscan.h>
++
+ static DEFINE_SPINLOCK(swap_token_lock);
+ struct mm_struct *swap_token_mm;
+ struct mem_cgroup *swap_token_memcg;
+@@ -31,6 +33,7 @@ static unsigned int global_faults;
+ void grab_swap_token(struct mm_struct *mm)
+ {
+ 	int current_interval;
++	unsigned int old_prio = mm->token_priority;
+ 	struct mem_cgroup *memcg;
+
+ 	global_faults++;
+@@ -46,7 +49,7 @@ void grab_swap_token(struct mm_struct *mm)
+
+ 	if (mm == swap_token_mm) {
+ 		mm->token_priority += 2;
+-		goto out;
++		goto update_priority;
+ 	}
+
+ 	if (current_interval < mm->last_interval)
+@@ -60,6 +63,9 @@ void grab_swap_token(struct mm_struct *mm)
+ 	if (mm->token_priority > swap_token_mm->token_priority)
+ 		goto replace_token;
+
++update_priority:
++	trace_update_swap_token_priority(mm, old_prio);
++
+ out:
+ 	mm->faultstamp = global_faults;
+ 	mm->last_interval = current_interval;
+@@ -71,6 +77,7 @@ replace_token:
+ 	memcg = try_get_mem_cgroup_from_mm(mm);
+ 	if (memcg)
+ 		css_put(mem_cgroup_css(memcg));
++	trace_replace_swap_token(swap_token_mm, mm);
+ 	swap_token_mm = mm;
+ 	swap_token_memcg = memcg;
+ 	goto out;
+@@ -81,6 +88,7 @@ void __put_swap_token(struct mm_struct *mm)
+ {
+ 	spin_lock(&swap_token_lock);
+ 	if (likely(mm == swap_token_mm)) {
++		trace_put_swap_token(swap_token_mm);
+ 		swap_token_mm = NULL;
+ 		swap_token_memcg = NULL;
+ 	}
+@@ -104,6 +112,7 @@ void disable_swap_token(struct mem_cgroup *memcg)
+ 	if (match_memcg(memcg, swap_token_memcg)) {
+ 		spin_lock(&swap_token_lock);
+ 		if (match_memcg(memcg, swap_token_memcg)) {
++			trace_disable_swap_token(swap_token_mm);
+ 			swap_token_mm = NULL;
+ 			swap_token_memcg = NULL;
+ 		}
+-- 
+1.7.3.1
 
 
-> I won't be able to get netconsole dumps until next week because I'm
-> out of town and only have this one computer here.
-> 
-> I haven't tried the other patch.
-> 
-> Also, the !pgdat_balanced fix plus the if (need_resched()) return
-> false patch just hung once on 2.6.37-rc9.  I don't know what triggered
-> it.  Maybe yum.
-> 
-> --Andy
 
