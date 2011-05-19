@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757011Ab1ESNmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 09:42:25 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48104 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944Ab1ESNmX (ORCPT
+	id S933245Ab1ESNmG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 09:42:06 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49318 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932921Ab1ESNmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 09:42:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fgZ1lSUc74PmJfDSMgfZ+9xISXlNjrZhLmHmoeYMg7+GIJuTL/uJWUwogALBT4GZ/K
-         xGQDNKtoO4I8uPvutuSgqqL9TXesd2/dhkMS5MqY6pDsTx2hwhOIDKFNgEePGRfyhh+t
-         rQDES1aMSy0f7wyhXnxjPDuyPFMs52cIOrWMc=
-Date: Thu, 19 May 2011 15:42:18 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: early kernel crash when kmemleak is enabled
-Message-ID: <20110519134218.GH627@htj.dyndns.org>
-References: <20110515105505.GA21631@joi.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110515105505.GA21631@joi.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 19 May 2011 09:42:04 -0400
+Date: Thu, 19 May 2011 14:43:12 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: d.g.jansen@googlemail.com
+Cc: Dennis.Jansen@web.de, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tytso@mit.edu
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+Message-ID: <20110519144312.38177704@lxorguk.ukuu.org.uk>
+In-Reply-To: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> Problem: laptop_mode wants to keep applications from waking the hard
+> disks but fsync calls can "sneak through". (IMHO this is a bug.)
 
-On Sun, May 15, 2011 at 12:55:05PM +0200, Marcin Slusarz wrote:
-> [    0.100047] BUG: unable to handle kernel NULL pointer dereference at           (null)
-> [    0.101416] IP: [<ffffffff810854d1>] __queue_work+0x29/0x41a
-...
-> [    0.110000] Call Trace:
-> [    0.110000]  <IRQ> 
-> [    0.110000]  [<ffffffff81085910>] queue_work_on+0x16/0x1d
-> [    0.110000]  [<ffffffff81085abc>] queue_work+0x29/0x55
-> [    0.110000]  [<ffffffff81085afb>] schedule_work+0x13/0x15
-> [    0.110000]  [<ffffffff81242de1>] free_object+0x90/0x95
-> [    0.110000]  [<ffffffff81242f6d>] debug_check_no_obj_freed+0x187/0x1d3
-> [    0.110000]  [<ffffffff814b6504>] ? _raw_spin_unlock_irqrestore+0x30/0x4d
-> [    0.110000]  [<ffffffff8110bd14>] ? free_object_rcu+0x68/0x6d
-> [    0.110000]  [<ffffffff8110890c>] kmem_cache_free+0x64/0x12c
-> [    0.110000]  [<ffffffff8110bd14>] free_object_rcu+0x68/0x6d
-> [    0.110000]  [<ffffffff810b58bc>] __rcu_process_callbacks+0x1b6/0x2d9
-> [    0.110000]  [<ffffffff81095c9f>] ? tick_handle_periodic+0x1f/0x6c
-> [    0.110000]  [<ffffffff810b5a5a>] rcu_process_callbacks+0x7b/0x83
-> [    0.110000]  [<ffffffff810733b2>] __do_softirq+0x117/0x207
-> [    0.110000]  [<ffffffff810b05d3>] ? handle_irq_event+0x47/0x5c
-> [    0.110000]  [<ffffffff814bd0cc>] call_softirq+0x1c/0x30
-> [    0.110000]  [<ffffffff81034bc4>] do_softirq+0x38/0x80
-> [    0.110000]  [<ffffffff810730ed>] irq_exit+0x4e/0xa0
-> [    0.110000]  [<ffffffff8103429a>] do_IRQ+0x97/0xae
-> [    0.110000]  [<ffffffff814b6853>] common_interrupt+0x13/0x13
+Its a standards requirement and thing many apps rely on. Also you can do
+it perfectly well in user space for all apps. Thats why you can
+preconfigure preloads and it's why you have glic library source code!
 
-I can reproduce this reliably with your config too.  From a quick
-glance, the cause seems to be debug objects using RCU callback
-free_object() to free objects, which ends up being called before
-workqueue is initialized.  The offending object type is "rcu_head" and
-turning off CONFIG_DEBUG_OBJECTS_RCU_HEAD makes the problem go away.
+> Proposed solution: Pretend the fsync was executed and successful.
+> Insert two lines into the fsync and fdatasync calls in fs/sync.c:
+> if (unlikely(laptop_mode))
+>    return 0;
 
-Any ideas on how to fix this?
+Whoops you've just risked corrupting any app which relies on fsync for
+ordering if there is a crash.
 
-Thanks.
+> "This is not necessary with SSDs"
+> I'm not sure, but I think that SSDs will also keep an active SATA
+> connection if you write to them all the time. They also have standby
 
--- 
-tejun
+On SSD the impact is miniscule as far as I can tell. A graph would tell
+you more.
+
+The "right" way to do this is more complicated by far. An fsync is an
+ordering guarantee so you need to implement that ordering guarantee even
+if you don't force writes to physical media. That at least cuts down most
+failures (but not all - eg commits with a network component such as email
+receives)
+
+Anyway you can do it in userspace trivially if you want.
