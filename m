@@ -1,115 +1,474 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab1ESWY0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 18:24:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753356Ab1ESWYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 18:24:24 -0400
-Date: Thu, 19 May 2011 18:24:04 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Paul Bolle <pebolle@tiscali.nl>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Mysterious CFQ crash and RCU
-Message-ID: <20110519222404.GG12600@redhat.com>
+	id S932411Ab1ESWhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 18:37:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44095 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab1ESWhH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 18:37:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=AlMUEZ3ohJ+9tS9LUo/a9vz0/S6ZnQTPHdzEyKaErpQa8IuHd01XHR+dkzzYDAkB9U
+         ZmqAeL11QK3uoIGJx5kyhtmJBbNVF2T0a19ZCh2Kqus/TG3bOe7TKBxOumlM91MuAfis
+         7izWbVfXKBNsjuP2YKf6uEnoA01yjuD1Thj0k=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87boyyo0gr.fsf@macbook.be.48ers.dk>
+References: <1305725244-5327-1-git-send-email-benjamin.tissoires@enac.fr>
+	<87boyyo0gr.fsf@macbook.be.48ers.dk>
+Date: Fri, 20 May 2011 00:37:05 +0200
+X-Google-Sender-Auth: S82uf5YlrfR2nq-e5nQXNywBB2w
+Message-ID: <BANLkTikPXHswWQqQHqd8fegotqoZPLErsQ@mail.gmail.com>
+Subject: Re: [PATCH] hid-multitouch: Add support for Lumio panels
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Peter Korsgaard <jacmet@sunsite.dk>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hi Peter,
 
-Few people have reported hard to reproduce CFQ crash time to time. Most of
-the people could not reproduce the issue consistently hence we could not
-debug it further. Now for the first time, Paul Bolle, can reproduce this issue
-reliably on his machine, so I am hopeful that we can get to bottom of this
-long time pending mysterious issue.
+your device presents Contact ID, Tip Switch, In Range and Confidence.
+I would say that Win 7 would treat it as a multitouch screen, so this
+might work with hid-multitouch. Please note that's the first time I
+see a report descriptor with only one touch reported for a multitouch
+screen.
 
-There might be many bz tracking this issue but one of the bzs is 577968 in
-bugzilla.redhat.com
+For the configuration, the device may emulate a mouse by default, and
+hid-multitouch is able to switch to the multitouch mode. You will
+loose the right click, but it can be enabled in gnome at least
+(accessibility settings).
 
-BUG: unable to handle kernel paging request at 6b6b6b6b
-IP: [<c05e859d>] call_for_each_cic+0x29/0x44
-*pde = 00000000 
-Oops: 0000 [#1] SMP 
-last sysfs file:
-/sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:01/PNP0C09:00/PNP0C0A:00/power_supply/BAT0/energy_full
-Modules linked in: bnep bluetooth fuse cpufreq_ondemand acpi_cpufreq mperf
-ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_netbios_ns
-ip6table_filter nf_conntrack_broadcast ip6_tables snd_intel8x0m
-snd_intel8x0
-arc4 snd_ac97_codec ath5k ac97_bus snd_seq ath snd_seq_device mac80211
-snd_pcm
-ppdev thinkpad_acpi cfg80211 microcode snd_timer parport_pc e1000 snd
-rfkill
-parport iTCO_wdt soundcore snd_page_alloc iTCO_vendor_support joydev
-i2c_i801
-pcspkr uinput ipv6 yenta_socket video radeon ttm drm_kms_helper drm
-i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
+Can you just replace in hid-ids.h:
+- #define USB_DEVICE_ID_CRYSTALTOUCH  0x0006
++ #define USB_DEVICE_ID_CRYSTALTOUCH  0x0005
 
-Pid: 11397, comm: mandb Not tainted 2.6.39-0.rc5.git0.0.local.fc16.i686 #1
-IBM 
-      /       
-EIP: 0060:[<c05e859d>] EFLAGS: 00010202 CPU: 0
-EIP is at call_for_each_cic+0x29/0x44
-EAX: 00000001 EBX: 6b6b6b6b ECX: 00000246 EDX: c0ad4a98
-ESI: ecfd0980 EDI: c05e88a4 EBP: c670bf18 ESP: c670bf0c
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process mandb (pid: 11397, ti=c670a000 task=d40769f0 task.ti=c670a000)
-Stack:
- ecfd0980 d40769f0 d4076dc0 c670bf20 c05e85ca c670bf2c c05ddc86 ecfd0980
- c670bf40 c05ddd16 d40769f0 00000012 c670bf74 c670bf8c c0440813 f2a182e8
- d401ac08 c670bf70 c04f48da 00000001 d4076bf4 d40769e8 d4076bf4 00000001
-Call Trace:
- [<c05e85ca>] cfq_free_io_context+0x12/0x14
- [<c05ddc86>] put_io_context+0x34/0x5c
- [<c05ddd16>] exit_io_context+0x68/0x6d
- [<c0440813>] do_exit+0x63e/0x661
- [<c04f48da>] ? fsnotify_modify+0x64/0x6c
- [<c0440a4d>] do_group_exit+0x63/0x86
- [<c0440a88>] sys_exit_group+0x18/0x18
- [<c082551f>] sysenter_do_call+0x12/0x38
-Code: 5d c3 55 89 e5 57 56 53 3e 8d 74 26 00 89 c6 89 d7 e8 3a ec ff ff 8b
-5e
-4c e8 00 b1 e6 ff 85 c0 74 05 e8 b7 ff ff ff 85 db 74 11 <8b> 03 0f 18 00
-90 8d
-53 d8 89 f0 ff d7 8b 1b eb dd e8 49 ec ff 
-EIP: [<c05e859d>] call_for_each_cic+0x29/0x44 SS:ESP 0068:c670bf0c
-CR2: 000000006b6b6b6b
----[ end trace 70dea08ef41fda48 ]---
+and see if it's working?
+If you prefer, I can make a new patch, but I'll need to know which
+kernel you are running (tree and branch). A 2.6.39 and above would be
+great.
 
-In summary once in a while people notice CFQ crash. Debugging shows that
-we have a rcu protected hlist of elements of type cfq_io_context. Head of
-the list is at ioc->cic_list. We crash while traversing ioc->cic_list
-under rcu.
+Cheers,
+Benjamin
 
-Looks like an element which we are trying to fetch the next pointer from got
-freed to slab, and the object got poisoned with 0x6b6b6b6b.. and then we
-tried to fetch the next object pointer and ended up dereferencing a
-freed object and CFQ crashes.
-
-The function in question here is call_for_each_cic() in block/cfq-iosched.c
-
-We free the cfq_io_context object using call_rcu(). So on the surface
-it looks like that we decoupled a cfq_io_context object from the hash
-list and scheduled a call_rcu() so that it is freed after rcu grace
-period but somehow object got freed earlier and got released to slab
-and got poisoned.
-
-Is it possible? We have looked at the code many a times and we think
-that rcu locking around it is fine. Is it possible that a call_rcu()
-can fire before rcu grace period is over.
-
-I had put a debug patch in CFQ (details are in bugzilla) and I can
-see that after decoupling the object from the hash list, it got
-freed while we were still under rcu_read_lock().
-
-Is there any known issue or is there any quick tip on how can I 
-go about debugging it further from rcu point of view.
-
-Thanks
-Vivek
+On Thu, May 19, 2011 at 23:16, Peter Korsgaard <jacmet@sunsite.dk> wrote:
+>>>>>> "Benjamin" == Benjamin Tissoires <benjamin.tissoires@enac.fr> writes:
+>
+>  Benjamin> This patch enables support for Lumio optical devices.
+>  Benjamin> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+>
+>  Benjamin> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+>  Benjamin> index 2e46eb2..a8c46b0 100644
+>  Benjamin> --- a/drivers/hid/hid-ids.h
+>  Benjamin> +++ b/drivers/hid/hid-ids.h
+>  Benjamin> @@ -411,6 +411,9 @@
+>  Benjamin>  #define USB_DEVICE_ID_DINOVO_MINI   0xc71f
+>  Benjamin>  #define USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2  0xca03
+>
+>  Benjamin> +#define USB_VENDOR_ID_LUMIO         0x202e
+>  Benjamin> +#define USB_DEVICE_ID_CRYSTALTOUCH  0x0006
+>  Benjamin> +
+>
+> Does this require any special configuration of the touchscreen
+> controller? I have a 202e:0005 device which afaik normally doesn't send
+> any multi touch events.
+>
+> HID descriptors:
+>
+> Bus 001 Device 021: ID 202e:0005
+> Device Descriptor:
+>  bLength                18
+>  bDescriptorType         1
+>  bcdUSB               2.00
+>  bDeviceClass            0 (Defined at Interface level)
+>  bDeviceSubClass         0
+>  bDeviceProtocol         0
+>  bMaxPacketSize0        64
+>  idVendor           0x202e
+>  idProduct          0x0005
+>  bcdDevice            2.00
+>  iManufacturer           1 LUMIO Inc
+>  iProduct                2 LUMIO CrystalTouch ver 1.1C
+>  iSerial                 0
+>  bNumConfigurations      1
+>  Configuration Descriptor:
+>    bLength                 9
+>    bDescriptorType         2
+>    wTotalLength          116
+>    bNumInterfaces          4
+>    bConfigurationValue     1
+>    iConfiguration          0
+>    bmAttributes         0x80
+>      (Bus Powered)
+>    MaxPower              500mA
+>    Interface Descriptor:
+>      bLength                 9
+>      bDescriptorType         4
+>      bInterfaceNumber        0
+>      bAlternateSetting       0
+>      bNumEndpoints           2
+>      bInterfaceClass         3 Human Interface Device
+>      bInterfaceSubClass      0 No Subclass
+>      bInterfaceProtocol      0 None
+>      iInterface              0
+>        HID Device Descriptor:
+>          bLength                 9
+>          bDescriptorType        33
+>          bcdHID               1.10
+>          bCountryCode            0 Not supported
+>          bNumDescriptors         1
+>          bDescriptorType        34 Report
+>          wDescriptorLength      38
+>          Report Descriptor: (length is 38)
+>            Item(Global): Usage Page, data= [ 0xa0 0xff ] 65440
+>                            (null)
+>            Item(Local ): Usage, data= [ 0x05 ] 5
+>                            (null)
+>            Item(Main  ): Collection, data= [ 0x01 ] 1
+>                            Application
+>            Item(Local ): Usage, data= [ 0xa6 ] 166
+>                            (null)
+>            Item(Local ): Usage, data= [ 0xa7 ] 167
+>                            (null)
+>            Item(Global): Logical Minimum, data= [ 0x80 ] 128
+>            Item(Global): Logical Maximum, data= [ 0x7f ] 127
+>            Item(Global): Report Size, data= [ 0x08 ] 8
+>            Item(Global): Report Count, data= [ 0x40 ] 64
+>            Item(Main  ): Input, data= [ 0x02 ] 2
+>                            Data Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Local ): Usage, data= [ 0x33 ] 51
+>                            (null)
+>            Item(Global): Report Size, data= [ 0x08 ] 8
+>            Item(Global): Report Count, data= [ 0x40 ] 64
+>            Item(Main  ): Output, data= [ 0x00 ] 0
+>                            Data Array Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Local ): Usage, data= [ 0x33 ] 51
+>                            (null)
+>            Item(Global): Report Size, data= [ 0x08 ] 8
+>            Item(Global): Report Count, data= [ 0x08 ] 8
+>            Item(Main  ): Feature, data= [ 0x00 ] 0
+>                            Data Array Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Main  ): End Collection, data=none
+>      Endpoint Descriptor:
+>        bLength                 7
+>        bDescriptorType         5
+>        bEndpointAddress     0x81  EP 1 IN
+>        bmAttributes            3
+>          Transfer Type            Interrupt
+>          Synch Type               None
+>          Usage Type               Data
+>        wMaxPacketSize     0x0040  1x 64 bytes
+>        bInterval               2
+>      Endpoint Descriptor:
+>        bLength                 7
+>        bDescriptorType         5
+>        bEndpointAddress     0x02  EP 2 OUT
+>        bmAttributes            3
+>          Transfer Type            Interrupt
+>          Synch Type               None
+>          Usage Type               Data
+>        wMaxPacketSize     0x0040  1x 64 bytes
+>        bInterval               2
+>    Interface Descriptor:
+>      bLength                 9
+>      bDescriptorType         4
+>      bInterfaceNumber        1
+>      bAlternateSetting       0
+>      bNumEndpoints           1
+>      bInterfaceClass         3 Human Interface Device
+>      bInterfaceSubClass      0 No Subclass
+>      bInterfaceProtocol      0 None
+>      iInterface              0
+>        HID Device Descriptor:
+>          bLength                 9
+>          bDescriptorType        33
+>          bcdHID               1.11
+>          bCountryCode            0 Not supported
+>          bNumDescriptors         1
+>          bDescriptorType        34 Report
+>          wDescriptorLength      64
+>          Report Descriptor: (length is 64)
+>            Item(Global): Usage Page, data= [ 0x01 ] 1
+>                            Generic Desktop Controls
+>            Item(Local ): Usage, data= [ 0x06 ] 6
+>                            Keyboard
+>            Item(Main  ): Collection, data= [ 0x01 ] 1
+>                            Application
+>            Item(Global): Usage Page, data= [ 0x07 ] 7
+>                            Keyboard
+>            Item(Local ): Usage Minimum, data= [ 0xe0 ] 224
+>                            Control Left
+>            Item(Local ): Usage Maximum, data= [ 0xe7 ] 231
+>                            GUI Right
+>            Item(Global): Logical Minimum, data= [ 0x00 ] 0
+>            Item(Global): Logical Maximum, data= [ 0x01 ] 1
+>            Item(Global): Report Size, data= [ 0x01 ] 1
+>            Item(Global): Report Count, data= [ 0x08 ] 8
+>            Item(Main  ): Input, data= [ 0x02 ] 2
+>                            Data Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Global): Report Count, data= [ 0x01 ] 1
+>            Item(Global): Report Size, data= [ 0x08 ] 8
+>            Item(Main  ): Input, data= [ 0x03 ] 3
+>                            Constant Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Global): Report Count, data= [ 0x05 ] 5
+>            Item(Global): Report Size, data= [ 0x01 ] 1
+>            Item(Global): Report Count, data= [ 0x06 ] 6
+>            Item(Global): Report Size, data= [ 0x08 ] 8
+>            Item(Global): Logical Minimum, data= [ 0x00 ] 0
+>            Item(Global): Logical Maximum, data= [ 0x65 ] 101
+>            Item(Global): Usage Page, data= [ 0x07 ] 7
+>                            Keyboard
+>            Item(Local ): Usage Minimum, data= [ 0x00 ] 0
+>                            No Event
+>            Item(Local ): Usage Maximum, data= [ 0x65 ] 101
+>                            Keyboard Application (Windows Key for Win95 or Compose)
+>            Item(Main  ): Input, data= [ 0x00 ] 0
+>                            Data Array Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Global): Usage Page, data= [ 0xa0 0xff ] 65440
+>                            (null)
+>            Item(Local ): Usage, data= [ 0xa5 ] 165
+>                            (null)
+>            Item(Global): Logical Minimum, data= [ 0x80 ] 128
+>            Item(Global): Logical Maximum, data= [ 0x7f ] 127
+>            Item(Global): Report Size, data= [ 0x08 ] 8
+>            Item(Global): Report Count, data= [ 0x08 ] 8
+>            Item(Main  ): Feature, data= [ 0x02 ] 2
+>                            Data Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Main  ): End Collection, data=none
+>      Endpoint Descriptor:
+>        bLength                 7
+>        bDescriptorType         5
+>        bEndpointAddress     0x86  EP 6 IN
+>        bmAttributes            3
+>          Transfer Type            Interrupt
+>          Synch Type               None
+>          Usage Type               Data
+>        wMaxPacketSize     0x0008  1x 8 bytes
+>        bInterval               1
+>    Interface Descriptor:
+>      bLength                 9
+>      bDescriptorType         4
+>      bInterfaceNumber        2
+>      bAlternateSetting       0
+>      bNumEndpoints           1
+>      bInterfaceClass         3 Human Interface Device
+>      bInterfaceSubClass      0 No Subclass
+>      bInterfaceProtocol      0 None
+>      iInterface              0
+>        HID Device Descriptor:
+>          bLength                 9
+>          bDescriptorType        33
+>          bcdHID               1.11
+>          bCountryCode            0 Not supported
+>          bNumDescriptors         1
+>          bDescriptorType        34 Report
+>          wDescriptorLength      85
+>          Report Descriptor: (length is 85)
+>            Item(Global): Usage Page, data= [ 0x01 ] 1
+>                            Generic Desktop Controls
+>            Item(Local ): Usage, data= [ 0x02 ] 2
+>                            Mouse
+>            Item(Main  ): Collection, data= [ 0x01 ] 1
+>                            Application
+>            Item(Local ): Usage, data= [ 0x01 ] 1
+>                            Pointer
+>            Item(Main  ): Collection, data= [ 0x00 ] 0
+>                            Physical
+>            Item(Global): Usage Page, data= [ 0x09 ] 9
+>                            Buttons
+>            Item(Local ): Usage Minimum, data= [ 0x01 ] 1
+>                            Button 1 (Primary)
+>            Item(Local ): Usage Maximum, data= [ 0x03 ] 3
+>                            Button 3 (Tertiary)
+>            Item(Global): Logical Minimum, data= [ 0x00 ] 0
+>            Item(Global): Logical Maximum, data= [ 0x01 ] 1
+>            Item(Global): Report Count, data= [ 0x03 ] 3
+>            Item(Global): Report Size, data= [ 0x01 ] 1
+>            Item(Main  ): Input, data= [ 0x02 ] 2
+>                            Data Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Global): Report Count, data= [ 0x01 ] 1
+>            Item(Global): Report Size, data= [ 0x05 ] 5
+>            Item(Main  ): Input, data= [ 0x01 ] 1
+>                            Constant Array Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Global): Usage Page, data= [ 0x01 ] 1
+>                            Generic Desktop Controls
+>            Item(Local ): Usage, data= [ 0x30 ] 48
+>                            Direction-X
+>            Item(Local ): Usage, data= [ 0x31 ] 49
+>                            Direction-Y
+>            Item(Global): Logical Minimum, data= [ 0x00 0x00 ] 0
+>            Item(Global): Logical Maximum, data= [ 0xff 0x0f ] 4095
+>            Item(Global): Physical Minimum, data= [ 0x00 0x00 ] 0
+>            Item(Global): Physical Maximum, data= [ 0xff 0x7f ] 32767
+>            Item(Global): Unit, data= [ 0x00 0x00 ] 0
+>                            System: None, Unit: (None)
+>            Item(Global): Report Size, data= [ 0x10 ] 16
+>            Item(Global): Report Count, data= [ 0x02 ] 2
+>            Item(Main  ): Input, data= [ 0x62 ] 98
+>                            Data Variable Absolute No_Wrap Linear
+>                            No_Preferred_State Null_State Non_Volatile Bitfield
+>            Item(Global): Usage Page, data= [ 0x01 ] 1
+>                            Generic Desktop Controls
+>            Item(Local ): Usage, data= [ 0x88 ] 136
+>                            System Menu Exit
+>            Item(Global): Logical Minimum, data= [ 0x81 ] 129
+>            Item(Global): Logical Maximum, data= [ 0x7f ] 127
+>            Item(Global): Report Size, data= [ 0x08 ] 8
+>            Item(Global): Report Count, data= [ 0x01 ] 1
+>            Item(Main  ): Input, data= [ 0x06 ] 6
+>                            Data Variable Relative No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Global): Usage Page, data= [ 0xff ] 255
+>                            Vendor Specific
+>            Item(Local ): Usage, data= [ 0x02 ] 2
+>                            (null)
+>            Item(Global): Report Count, data= [ 0x02 ] 2
+>            Item(Global): Report Size, data= [ 0x08 ] 8
+>            Item(Main  ): Input, data= [ 0x01 ] 1
+>                            Constant Array Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Main  ): End Collection, data=none
+>            Item(Main  ): End Collection, data=none
+>      Endpoint Descriptor:
+>        bLength                 7
+>        bDescriptorType         5
+>        bEndpointAddress     0x85  EP 5 IN
+>        bmAttributes            3
+>          Transfer Type            Interrupt
+>          Synch Type               None
+>          Usage Type               Data
+>        wMaxPacketSize     0x0008  1x 8 bytes
+>        bInterval               1
+>    Interface Descriptor:
+>      bLength                 9
+>      bDescriptorType         4
+>      bInterfaceNumber        3
+>      bAlternateSetting       0
+>      bNumEndpoints           1
+>      bInterfaceClass         3 Human Interface Device
+>      bInterfaceSubClass      0 No Subclass
+>      bInterfaceProtocol      0 None
+>      iInterface              0
+>        HID Device Descriptor:
+>          bLength                 9
+>          bDescriptorType        33
+>          bcdHID               1.11
+>          bCountryCode            0 Not supported
+>          bNumDescriptors         1
+>          bDescriptorType        34 Report
+>          wDescriptorLength      89
+>          Report Descriptor: (length is 89)
+>            Item(Global): Usage Page, data= [ 0x0d ] 13
+>                            Digitizer
+>            Item(Local ): Usage, data= [ 0x04 ] 4
+>                            Touch Screen
+>            Item(Main  ): Collection, data= [ 0x01 ] 1
+>                            Application
+>            Item(Local ): Usage, data= [ 0x22 ] 34
+>                            Finger
+>            Item(Main  ): Collection, data= [ 0x00 ] 0
+>                            Physical
+>            Item(Local ): Usage, data= [ 0x42 ] 66
+>                            Tip Switch
+>            Item(Global): Logical Minimum, data= [ 0x00 ] 0
+>            Item(Global): Logical Maximum, data= [ 0x01 ] 1
+>            Item(Global): Report Size, data= [ 0x01 ] 1
+>            Item(Global): Report Count, data= [ 0x01 ] 1
+>            Item(Main  ): Input, data= [ 0x02 ] 2
+>                            Data Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Global): Report Count, data= [ 0x03 ] 3
+>            Item(Main  ): Input, data= [ 0x03 ] 3
+>                            Constant Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Local ): Usage, data= [ 0x32 ] 50
+>                            In Range
+>            Item(Local ): Usage, data= [ 0x47 ] 71
+>                            Confidence
+>            Item(Global): Report Count, data= [ 0x02 ] 2
+>            Item(Main  ): Input, data= [ 0x02 ] 2
+>                            Data Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Global): Report Count, data= [ 0x0a ] 10
+>            Item(Main  ): Input, data= [ 0x03 ] 3
+>                            Constant Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Global): Usage Page, data= [ 0x01 ] 1
+>                            Generic Desktop Controls
+>            Item(Global): Logical Maximum, data= [ 0xff 0x7f ] 32767
+>            Item(Global): Unit, data= [ 0x11 ] 17
+>                            System: SI Linear, Unit: Centimeter
+>            Item(Global): Unit Exponent, data= [ 0x0e ] 14
+>                            Unit Exponent: 14
+>            Item(Global): Physical Maximum, data= [ 0x5d 0x14 ] 5213
+>            Item(Global): Report Size, data= [ 0x10 ] 16
+>            Item(Global): Report Count, data= [ 0x01 ] 1
+>            Item(Local ): Usage, data= [ 0x30 ] 48
+>                            Direction-X
+>            Item(Main  ): Input, data= [ 0x02 ] 2
+>                            Data Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Local ): Usage, data= [ 0x31 ] 49
+>                            Direction-Y
+>            Item(Global): Physical Maximum, data= [ 0x75 0x0b ] 2933
+>            Item(Main  ): Input, data= [ 0x02 ] 2
+>                            Data Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Global): Usage Page, data= [ 0x0d ] 13
+>                            Digitizer
+>            Item(Local ): Usage, data= [ 0x51 ] 81
+>                            Contact ID
+>            Item(Global): Report Size, data= [ 0x10 ] 16
+>            Item(Global): Report Count, data= [ 0x01 ] 1
+>            Item(Main  ): Input, data= [ 0x02 ] 2
+>                            Data Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Local ): Usage, data= [ 0x55 ] 85
+>                            Maximum Contact Number
+>            Item(Global): Logical Minimum, data= [ 0x00 ] 0
+>            Item(Global): Logical Maximum, data= [ 0x08 ] 8
+>            Item(Global): Report Size, data= [ 0x08 ] 8
+>            Item(Global): Report Count, data= [ 0x01 ] 1
+>            Item(Main  ): Feature, data= [ 0x02 ] 2
+>                            Data Variable Absolute No_Wrap Linear
+>                            Preferred_State No_Null_Position Non_Volatile Bitfield
+>            Item(Main  ): End Collection, data=none
+>            Item(Main  ): End Collection, data=none
+>      Endpoint Descriptor:
+>        bLength                 7
+>        bDescriptorType         5
+>        bEndpointAddress     0x87  EP 7 IN
+>        bmAttributes            3
+>          Transfer Type            Interrupt
+>          Synch Type               None
+>          Usage Type               Data
+>        wMaxPacketSize     0x0008  1x 8 bytes
+>        bInterval               1
+> Device Status:     0x0001
+>  Self Powered
+>
+> --
+> Bye, Peter Korsgaard
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
