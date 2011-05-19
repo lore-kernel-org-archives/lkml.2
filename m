@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932829Ab1ESIzf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 04:55:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60102 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932370Ab1ESIzd convert rfc822-to-8bit (ORCPT
+	id S932789Ab1ESIz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 04:55:28 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63911 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932370Ab1ESIz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 04:55:33 -0400
-Subject: Re: [PATCH v2 1/2] rcu: don't bind offline cpu
-From: Peter Zijlstra <peterz@infradead.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: yong.zhang0@gmail.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-        lizf@cn.fujitsu.com, miaox@cn.fujitsu.com
-In-Reply-To: <1305794078.2466.7193.camel@twins>
-References: <20110428161149.GA15658@redhat.com>
-	 <20110502194416.2D61.A69D9226@jp.fujitsu.com>
-	 <20110502195657.2D68.A69D9226@jp.fujitsu.com>
-	 <1305129929.2914.247.camel@laptop> <4DCCC61F.80408@jp.fujitsu.com>
-	 <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
-	 <20110515185547.GL2258@linux.vnet.ibm.com> <20110516132623.GA2058@zhy>
-	 <4DD4B358.3080705@jp.fujitsu.com>  <1305794078.2466.7193.camel@twins>
+	Thu, 19 May 2011 04:55:27 -0400
+Subject: Re: [PATCH] ARM: sparsemem: allow pfn_valid to be overridden when
+ using SPARSEMEM
+From: Will Deacon <will.deacon@arm.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20110518165910.GS5279@suse.de>
+References: <1305734639-6561-1-git-send-email-will.deacon@arm.com>
+	 <20110518165910.GS5279@suse.de>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 19 May 2011 10:55:01 +0200
-Message-ID: <1305795301.2466.7200.camel@twins>
+Date: Thu, 19 May 2011 09:55:17 +0100
+Message-ID: <1305795317.29560.9.camel@e102144-lin.cambridge.arm.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 10:34 +0200, Peter Zijlstra wrote:
-> On Thu, 2011-05-19 at 15:06 +0900, KOSAKI Motohiro wrote:
-> > 
-> > The right way is, explicit two phase cpu bindings (1) bind boot
-> > (or any other online) cpu at CPU_UP_PREPARE (2) bind correct
-> > target cpu at CPU_ONLINE. This patch does it. 
+Hi Mel,
+
+Thanks for looking at this.
+
+On Wed, 2011-05-18 at 17:59 +0100, Mel Gorman wrote:
+> On Wed, May 18, 2011 at 05:03:59PM +0100, Will Deacon wrote:
+> > In commit eb33575c ("[ARM] Double check memmap is actually valid with a
+> > memmap has unexpected holes V2"), a new function, memmap_valid_within,
+> > was introduced to mmzone.h so that holes in the memmap which pass
+> > pfn_valid in SPARSEMEM configurations can be detected and avoided.
+> >
+> > The fix to this problem checks that the pfn <-> page linkages are
+> > correct by calculating the page for the pfn and then checking that
+> > page_to_pfn on that page returns the original pfn. Unfortunately, in
+> > SPARSEMEM configurations, this results in reading from the page flags to
+> > determine the correct section. Since the memmap here has been freed,
+> > junk is read from memory and the check is no longer robust.
+> >
+> > In the best case, reading from /proc/pagetypeinfo will give you the
+> > wrong answer. In the worst case, you get SEGVs, Kernel OOPses and hung
+> > CPUs.
+> >
+> > This patch allows architectures to provide their own pfn_valid function
+> > instead of using the default implementation used by sparsemem. The
+> > architecture-specific version is aware of the memmap state and will
+> > return false when passed a pfn for a freed page within a valid section.
+> >
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> > Signed-off-by: Will Deacon <will.deacon@arm.com>
 > 
-> I'm not sure that is in-fact correct. From what I understood, RCU could
-> have need of this thread before the ONLINE callback and expects it to be
-> affine at that time.
+> I don't have an ARM machine to test on and I'm not particularly
+> sensitive to the requirements of ARM so I'm not the best reviewer. If
+> this passes tests, I see little problem with it other than the
+> architecture-specific pfn_valid is slower than the sparsemem equivalent
+> and the cache footprint is probably higher as memblock_is_memory
+> is searching a list of blocks. 
 
-Right, so we're waking that thread from the timer tick, so we must have
-that thread set-up and ready _before_ we enable interrupts for the first
-time. CPU_ONLINE is _WAAAAAY_ too late for that.
+Yes, it is slower than just checking to see if the sparsemem section is
+valid but that is the price you pay for partially populated sections. At
+the end of the day, we're just falling back to the pfn_valid definition
+that is used when !CONFIG_SPARSEMEM.
 
-> What was wrong with delaying the wakeup to STARTING?
+> If this problem is exclusive to
+> reading /proc/pagetypeinfo, you might want to consider only using
+> memblock_is_memory in that case. Otherwise, functionally it looks like
+> it should work.
 
-Hrmm right, so I thought STARTING was right after we marked the cpu
-online, but its right before. Bummer.
+I initially thought it was exclusive to that operation, but it turns out
+the problem is more far-reaching as pfn_valid is used by things like the
+ioremap code to ensure that we don't remap normal memory.
 
-Also Paul:
+> > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> > index e56f835..72225dd 100644
+> > --- a/include/linux/mmzone.h
+> > +++ b/include/linux/mmzone.h
+> > @@ -1053,12 +1053,14 @@ static inline struct mem_section *__pfn_to_section(unsigned long pfn)
+> >       return __nr_to_section(pfn_to_section_nr(pfn));
+> >  }
+> > 
+> > +#ifndef CONFIG_ARCH_PROVIDES_PFN_VALID
+> >  static inline int pfn_valid(unsigned long pfn)
+> >  {
+> >       if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+> >               return 0;
+> >       return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
+> >  }
+> > +#endif
+> > 
+> >  static inline int pfn_present(unsigned long pfn)
+> >  {
 
-rcu_cpu_kthread()
-  rcu_process_callbacks()
-    __rcu_process_callbacks()
-      rcu_do_batch()
-        invoke_rcu_cpu_kthread()
+Can I add your Ack for the changes to mmzone.h please?
 
-Why wake the thread again if its already running?
+Thanks,
 
+Will
 
