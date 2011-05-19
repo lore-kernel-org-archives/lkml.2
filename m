@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab1ESDxD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 23:53:03 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:32799 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932317Ab1ESDxA (ORCPT
+	id S932506Ab1ESD4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 23:56:55 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55404 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932147Ab1ESD4y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 23:53:00 -0400
+	Wed, 18 May 2011 23:56:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=nanometrics.ca; s=google;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=U+djO/9/O0Dqc45vqQeanvL8OKQDNakS+tpOzEL62c0SpD6QXntnlQNUW+9c2SLLUl
-         Ae5t3yILou5h/GU0cgQ6vEjIipUz7pg6JPOQPYk1cJtY7FP3iU/KlAngWY1MeAJYkTYN
-         9ecqXorEnL1gqeALxqbdxsVgPhRIO0SMd87Gc=
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Takashi Iwai <tiwai@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: [PATCH] ALSA: sound, core, pcm_lib: fix xrun_log
-Date: Wed, 18 May 2011 23:52:38 -0400
-Message-Id: <1305777158-21361-1-git-send-email-bengardiner@nanometrics.ca>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <20110519111557.f147fc1e.sfr@canb.auug.org.au>
-References: <20110519111557.f147fc1e.sfr@canb.auug.org.au>
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=wLZJ9y4qeSKqVUocLXnSN+XygwdzVmF3iUSOPAYtJQ7ODMgjDRZhJ0DcXl81hWoXyK
+         6oOrIuKUzJOGxbwDIrv641ciNIXwtCzKlHvU9HtdAAldkMteY58SN04Fc0XGIkAh7kDu
+         rBQk4H/w7n47wMN9UtsqcDK2l9JUevNA841iY=
+MIME-Version: 1.0
+In-Reply-To: <20110518.223622.1525088601595365235.davem@davemloft.net>
+References: <20110518.155200.801089483916944725.davem@davemloft.net>
+ <1305771744-83951-1-git-send-email-tsunanet@gmail.com> <20110518.223622.1525088601595365235.davem@davemloft.net>
+From: tsuna <tsunanet@gmail.com>
+Date: Wed, 18 May 2011 20:56:33 -0700
+Message-ID: <BANLkTinEN_=jSCw4qR1PqtWaQ+07OMq7tg@mail.gmail.com>
+Subject: Re: [PATCH] tcp: Implement a two-level initial RTO as per draft RFC 2988bis-02.
+To: David Miller <davem@davemloft.net>
+Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, hagen@jauu.net,
+        eric.dumazet@gmail.com, alexander.zimmermann@comsys.rwth-aachen.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The xrun_log function was augmented with the in_interrupt parameter whereas the
-empty macro definition used when xrun logging is disabled was not.
+On Wed, May 18, 2011 at 7:36 PM, David Miller <davem@davemloft.net> wrote:
+> From: Benoit Sigoure <tsunanet@gmail.com>
+> Date: Wed, 18 May 2011 19:22:24 -0700
+>
+>> Prior to this patch, Linux would always use 3 seconds (compile-time
+>> constant) as the initial RTO.  Draft RFC 2988bis-02 proposes to tune
+>> this down to 1 second and, in case of a timeout during the TCP 3WHS,
+>> revert the RTO back up to 3 seconds when data transmission begins.
+>
+> We just had a discussion where it was determined that changes to
+> these settings are "network specific" and therefore that if it
+> is appropriate at all (I'm still not convinced) it is only suitable
+> as a routing metric.
 
-Add a third parameter to the empty macro definition so as to not cause compiler
-errors when xrun logging (CONFIG_SND_PCM_XRUN_DEBUG) is disabled.
+Fair enough.  I'll take another stab at it and see if I can change
+this to be on a per network basis.  Do I need any patch that's not yet
+in Linus' tree?  I'm referring to this:
 
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+On Tue, May 17, 2011 at 5:20 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Adding many knobs to each clone had a huge cost on previous kernels.
+> (Think some machines have millions entries in IP route cache), this used
+> quite a lot of memory.
+>
+> With latest David work, we'll consume less ram, because we can now share
+> settings, instead of copying them on each dst entry.
 
----
-This fixes the build error caused by ec08b14483de ("ALSA: sound, core, pcm_lib:
-xrun_log: log also in_interrupt") -- which was my patch. Sorry for the breakage.
+If this has already been merged then it sounds like I should have
+everything I need..?
 
----
- sound/core/pcm_lib.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
-index c8c8091..abfeff16 100644
---- a/sound/core/pcm_lib.c
-+++ b/sound/core/pcm_lib.c
-@@ -266,7 +266,7 @@ static void xrun_log_show(struct snd_pcm_substream *substream)
- #else /* ! CONFIG_SND_PCM_XRUN_DEBUG */
- 
- #define hw_ptr_error(substream, fmt, args...) do { } while (0)
--#define xrun_log(substream, pos)	do { } while (0)
-+#define xrun_log(substream, pos, in_interrupt)	do { } while (0)
- #define xrun_log_show(substream)	do { } while (0)
- 
- #endif
 -- 
-1.7.4.1
-
+Benoit "tsuna" Sigoure
+Software Engineer @ www.StumbleUpon.com
