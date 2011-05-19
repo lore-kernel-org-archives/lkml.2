@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508Ab1ESH0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 03:26:16 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52487 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755520Ab1ESH0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 03:26:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=DYYzwSnNtz8C4qPm0HlJgElwjyU1b5P9ErfkIYOMvTRCZS7pI70JSjIBLKfn4aeljf
-         vUmNzCvDHe3Hou48VVfavWz2WUe8EhQQZOCHnxQKdxB6QVQ8IhdgeQN/O7Juw/NNx3AF
-         l8PIyxTergofgb7VjrkhO2z0kFvmYknw5nfy0=
+	id S935224Ab1ETEvc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 00:51:32 -0400
+Received: from ozlabs.org ([203.10.76.45]:35870 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932136Ab1ETEva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 00:51:30 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Dirk Behme <dirk.behme@googlemail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>
+Cc: Anders Kaseorg <andersk@ksplice.com>, Tim Abbott <tabbott@ksplice.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH] module: Use binary search in lookup_symbol()
+In-Reply-To: <4DD3E540.8000205@googlemail.com>
+References: <BANLkTinPG100vbVAN1RZWb3h9Xuu6SKJ0Q@mail.gmail.com> <1305665763-3988-1-git-send-email-abogani@kernel.org> <4DD3E540.8000205@googlemail.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 19 May 2011 16:56:34 +0930
+Message-ID: <8762p75exh.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <20110518210136.437459958@linutronix.de>
-References: <20110518205713.947614271@linutronix.de>
-	<20110518210136.437459958@linutronix.de>
-Date: Thu, 19 May 2011 09:26:14 +0200
-X-Google-Sender-Auth: Hr4wPTJaAlMGdp-gYMv1CuTC9Wk
-Message-ID: <BANLkTimhg6WAErYPSaSagZUc0mRZdNREvw@mail.gmail.com>
-Subject: Re: [patch 5/7] clockevents: Provide interface to reconfigure an
- active clock event device
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, John Stultz <john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/18 Thomas Gleixner <tglx@linutronix.de>:
+On Wed, 18 May 2011 17:26:56 +0200, Dirk Behme <dirk.behme@googlemail.com> wrote:
+> The old version with the warning is in linux-next now
+> 
+> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=903996de9b35213aaa4162c24351a2cb2931d9ac
 
-> Some ARM SoCs have clock event devices which have their frequency
-> modified due to frequency scaling. Provide an interface which allows
-> to reconfigure an active device. After reconfiguration reprogram the
-> current pending event.
->
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Yep, I switched to the new one after sfr's pull.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Then I switched to the enhanced-comments one just now, but if Linus was
+quick to pull he'll have the undercommented version rather than the
+overcommented one.
 
-Thanks for fixing this much needed function Thomas!
-Linus Walleij
+Cheers,
+Rusty.
+
