@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933320Ab1ESN6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 09:58:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21665 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932671Ab1ESN6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 09:58:45 -0400
-Date: Thu, 19 May 2011 15:58:29 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@linux.intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Arnd Bergmann <arnd@arndb.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: NULL pointer deref in tty port / uart
-Message-ID: <20110519135829.GA1976@jolsa.brq.redhat.com>
-References: <20110517231229.GB1776@nowhere>
- <20110518004420.2b8f5da9@bob.linux.org.uk>
- <20110518142631.GB2011@jolsa.brq.redhat.com>
- <20110518153636.5cdcdd78@lxorguk.ukuu.org.uk>
- <20110518144429.GC2011@jolsa.brq.redhat.com>
- <20110518155033.2773b323@bob.linux.org.uk>
- <20110518194212.GA27758@suse.de>
- <20110519111901.GC2061@jolsa.brq.redhat.com>
- <20110519125120.GA12844@suse.de>
+	id S1756997Ab1ESOFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 10:05:47 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:42420 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756942Ab1ESOFq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 10:05:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Q5XxLvZhhOomXncfuigYrGqFqFtxEBLdh9x4BGz6T1UAlYMmjE14SKnNcpyJTq+tYH
+         Cw5O3EQd8Rw8Pd6gWTLQCrZEaxKUZ9PmSLmygWTpUaBSBKH/XcxR9MFHckpmqWJf1AGB
+         /6VbflNftPtOAsTt6C+HQmX7ChQwsvQlFqjsA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110519125120.GA12844@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTinABWucqESqSRYJV+-frm6vDmpxFQ@mail.gmail.com>
+References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
+ <BANLkTi=poU17RqAzp28CPjWHrN_+aFiyag@mail.gmail.com> <BANLkTindee6UMez8HyBUwd2H6mN-DknzPw@mail.gmail.com>
+ <BANLkTik7BnJKWCsm2L3-GJPTaaiXFNSgaA@mail.gmail.com> <BANLkTim2rv9QHDd2zjBfyVqG9dSGCM=PAw@mail.gmail.com>
+ <BANLkTinABWucqESqSRYJV+-frm6vDmpxFQ@mail.gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Thu, 19 May 2011 22:05:25 +0800
+Message-ID: <BANLkTim=iwHY2NhWuK6qmhAdez-5AiJDBw@mail.gmail.com>
+Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to drivers/gpio
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 05:51:20AM -0700, Greg KH wrote:
-> On Thu, May 19, 2011 at 01:19:01PM +0200, Jiri Olsa wrote:
-> > On Wed, May 18, 2011 at 12:42:12PM -0700, Greg KH wrote:
-> > > On Wed, May 18, 2011 at 03:50:33PM +0100, Alan Cox wrote:
-> > > > > I think it's the 
-> > > > > 
-> > > > > uart_update_termios in uart_dtr_rts (drivers/tty/serial/serial_core.c)
-> > > > > 
-> > > > > called path:
-> > > > > 
-> > > > > tty_port_block_til_ready
-> > > > > 	tty_port_raise_dtr_rts
-> > > > > 		uart_dtr_rts
-> > > > > 			uart_update_termios
-> > > > 
-> > > > Ah that would explain why I can't find and dup it - it isn't found in
-> > > > the current -next tree.
-> > > > 
-> > > > 
-> > > > c7d7abff40c27f82fe78b1091ab3fad69b2546f9 (and thereafter)
-> > > > 
-> > > > Jiri Slaby fixed it in sorting out uart_startup
-> > > > 
-> > > > I guess these should now get tagged for -stable.
-> > > 
-> > > So that would be the following patches in the linux-next tree:
-> > > 	c7d7abff40c27f82fe78b1091ab3fad69b2546f9 serial: core, move termios handling to uart_startup
-> > > 	303a7a1199c20f7c9452f024a6e17bf348b6b398 serial: core, do not set DTR/RTS twice on startup
-> > > 	6f5c24ad0f7619502199185a026a228174a27e68 serial: core, remove uart_update_termios
-> > > 
-> > > right?
-> > > 
-> > > Anything else need to be backported?
-> > > 
-> > > Frederic, can you test that these 3 patches solve the problem for you?
-> > > If you want, I can send them to you separately if you don't have a copy
-> > > of linux-next around anywhere.
-> > > 
-> > > thanks,
-> > > 
-> > > greg k-h
-> > 
-> > I tried linux-next and cannot hit the issue anymore
-> 
-> That's great, but can you try .38 or .39 with those patches above and
-> verify that they solve the problem?
+2011/5/19 Linus Walleij <linus.walleij@linaro.org>:
+> On Thu, May 19, 2011 at 2:35 PM, Barry Song <21cnbao@gmail.com> wrote:
+>> 2011/5/19 Linus Walleij <linus.walleij@linaro.org>:
+>>> On Thu, May 19, 2011 at 1:38 PM, Barry Song <21cnbao@gmail.com> wrote:
+>>>>
+>>>> looks like the driver can't be a real module, is the module_exit
+>>>> suitable? it looks strange module_exit plays together with
+>>>> arch_initcall.
+>>>
+>>> It's a rather common design pattern in the kernel for early
+>>> platform drivers. Either the dependencies are resolved by the
+>>> different initlevels or they are resolved in probe order with
+>>> loadable modules. Module load will call all initlevels in order.
+>>>
+>>> It is not elegant but it is common.
+>>
+>> Linus, thanks for your reply. module_exit and related functions are
+>> really useless codes. but people have done that before, then we have
+>> no way except following.
+>> u300_gpio_exit never gets chance to run and when we disassemble
+>> vmlinux, u300_gpio_exit()  function should be not in the final binary
+>> at all, just a symbol name is left.
+>
+> I know. I can make the Kconfig options tristate if it makes you feel
+> better...
+what i feel headache is that it is really difficult and unpredicted
+for an internal gpio driver to be removable in lots of read products
+because gpio is probably the last bottom module other drivers need.
+even it can be called in arch/arm/plat(mach).
 
-yes, this works for me as well
+i am not sure whether  i am thinking right. gpio and pinmux are more
+things of bottom level APIs like dma/clock tree but not like device
+drivers.  but i really think you have sent a great pinmux core
+framework.
 
-jirka
+we once thought we could have a plat-common above all
+plat-xxx/mach-xxx, and let the plat-common provide the cores of dma,
+clk, gpio, pinmux(pinmux core from you), for example, all common API
+and abstract level codes like gpio_request can be there, and SoCs just
+implement some hardware-related callbacks required by plat-common in
+themselves plat-xxx .
+
+>
+> Linus Walleij
+>
