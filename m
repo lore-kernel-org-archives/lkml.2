@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933174Ab1ESXEu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 19:04:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54481 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932238Ab1ESXEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 19:04:49 -0400
-Date: Thu, 19 May 2011 15:44:45 -0700
-From: Greg KH <gregkh@suse.de>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/23] add register_chrdev_ids() to char_dev.c, API
-Message-ID: <20110519224445.GA9885@suse.de>
-References: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932732Ab1ESWpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 18:45:33 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:40689 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932323Ab1ESWpb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 18:45:31 -0400
+Subject: Re: [PATCH v5 01/21] integrity: move ima inode integrity data
+ management
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <20110519020619.GA10188@mail.hallyn.com>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305557115-15652-2-git-send-email-zohar@linux.vnet.ibm.com>
+	 <20110519020619.GA10188@mail.hallyn.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 May 2011 18:45:21 -0400
+Message-ID: <1305845121.2528.0.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 03:33:03PM -0600, Jim Cromie wrote:
-> over on kernelnewbies, gregkh said:
+On Wed, 2011-05-18 at 21:06 -0500, Serge E. Hallyn wrote: 
+> Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
+> > Move the inode integrity data(iint) management up to the integrity directory
+> > in order to share the iint among the different integrity models.
 > 
->      The chardev stuff is a mess, I keep meaning for years to clean it
->      up.  Any proposals on a sane interface for this stuff is greatly
->      appreciated.
+> You also
 > 
-> this is a 1st step.
-> 
-> register_chrdev_ids() replaces and deprecates register_chrdev_region()
-> and alloc_chrdev_region() with a single function that works for both
-> dynamic and static major numbers.
-> 
-> Like alloc_chrdev_region(), 1st arg is a dev_t*, but its an in/out
-> parameter, and expects both major and minor to be preset, and thus the
-> separate minor arg is dropped.  If major == 0, a dynamic major is
-> reserved, saved into 1st arg, and thus available to caller afterwards.
-> 
-> [PATCH 01/23] add register_chrdev_ids() to char_dev.c, API
-> [PATCH 02/23] reimplement alloc_chrdev_region with
-> [PATCH 03/23] use register_chrdev_ids to replace
-> [PATCH 04/23] use register_chrdev_ids in drivers/tty/
-> [PATCH 05/23] use register_chrdev_ids in drivers/infiniband/
-> [PATCH 06/23] use register_chrdev_ids in drivers/media/
-> [PATCH 07/23] use register_chrdev_ids in drivers/s390/
-> [PATCH 08/23] use register_chrdev_ids in drivers/scsi/
-> [PATCH 09/23] use register_chrdev_ids in drivers/staging/
-> 
-> Ive held back the rest, no point in spamming.
+>   rename several globally visible ima_* functions, structs, locks etc to
+>      integrity_\0
+>   replace '20' by SHA1_DIGEST_SIZE
+>   remove unnecessary initialization of iint_initialized to 0
 
-It's a nice first step, but that's the easy part, what is your 2nd
-through 4th one going to be?  :)
+Yes, will update the changelog to reflect these changes as well.
 
-I'd also like to sanatize the function namespace a bit as well, how
-about chrdev_register_ids() instead?
+> Which all are fine, but probably should be mentioned in changelog,
+> along with the magic phrase "no other functional changes" to aid
+> reviewers.
 
-Ideally, we could drop down to a single register/unregister pair of
-functions, that are easy to use and understand.  Do you think you can
-get there with this intermediate step or do you want to step back and
-rethink this?
+Wasn't aware of this.
 
-thanks,
+> > Changelog:
+> >    - Rebased on current ima_iint.c
+> >    - Define integrity_iint_store/lock as static
+> > 
+> > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> 
+> Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+> 
+> thanks,
+> -serge
 
-greg k-h
+Thanks!
+
+Mimi 
+
