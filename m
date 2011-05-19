@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab1ESO77 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 10:59:59 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64664 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab1ESO76 (ORCPT
+	id S932900Ab1ESPAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 11:00:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54976 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932238Ab1ESPAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 10:59:58 -0400
+	Thu, 19 May 2011 11:00:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kFtD0xznMMlcEWWvLv5UQ+zj98TW4KhYTfDxXajpbj0hZMaJK1PxuUO2IxMy3/Ildd
-         YR4f2g1ObD95ukO0raT9MiLC2W2i/P+ff5knhx0ANJVf8/OBsfJbaFeWdSsU1EOjr1El
-         ng8BtEKgIqSpmKw8tuKVQTqfmaIvtXbBppF0k=
-Date: Thu, 19 May 2011 16:59:53 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC PATCH] perf: Split up buffer handling from core code
-Message-ID: <20110519145951.GD1956@nowhere>
-References: <1305767185-5771-1-git-send-email-fweisbec@gmail.com>
- <20110519073136.GB14049@liondog.tnic>
- <1305793931.2466.7191.camel@twins>
- <20110519141456.GB1956@nowhere>
- <1305816208.2466.7223.camel@twins>
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=NhuTuY8/DnRkMP5x0WAAI4cfTyTGJ12Xj+Fszfa72r6pU9SwH/eCcWsfykRVBF66Nc
+         2MmoNGH7vbeHMwRVqPwcYpiT+irCOrF2gltbCx4LSNfgPg8PGxVof6qzU8JHUhipIDN4
+         HveY5EQ1Ygslwv6KiroFXjI8MnQTn0FksNaCo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305816208.2466.7223.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110519145147.GA14658@localhost>
+References: <BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
+ <20110514165346.GV6008@one.firstfloor.org> <BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
+ <20110514174333.GW6008@one.firstfloor.org> <BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
+ <20110515152747.GA25905@localhost> <BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
+ <20110517060001.GC24069@localhost> <BANLkTi=TOm3aLQCD6j=4va6B+Jn2nSfwAg@mail.gmail.com>
+ <BANLkTi=9W6-JXi94rZfTtTpAt3VUiY5fNw@mail.gmail.com> <20110519145147.GA14658@localhost>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 19 May 2011 11:00:24 -0400
+X-Google-Sender-Auth: REcKtdmDjXc88-Oj1MvwoTDN74c
+Message-ID: <BANLkTim4caSU_uRY1GLMh9D=8gctp34jMA@mail.gmail.com>
+Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 04:43:28PM +0200, Peter Zijlstra wrote:
-> On Thu, 2011-05-19 at 16:14 +0200, Frederic Weisbecker wrote:
-> > 
-> > Great. I kept it global because I read in a review from you
-> > that you wanted it to stay a visible API. But if you're fine
-> > with it internal, let's move it there. 
-> 
-> Well, its needed as an external symbol, but the inline isn't needed.
+On Thu, May 19, 2011 at 10:51 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> > I had 6GB swap available, so there shouldn't have
+>> > been any OOM.
+>>
+>> Yes. It's strange but we have seen such case several times, AFAIR.
+>
+> I noticed that the test script mounted a "ramfs" not "tmpfs", hence
+> the 1.4G pages won't be swapped?
 
-I thought it would be nice to keep it inline for core use, as it's called
-pretty often from the overflow path.
+That's intentional.
 
-A solution is to have a perf_output_copy_inline() in internal.h
-and export it through perf_output_copy() in buffer.c
+I run LVM over dm-crypt on an SSD, and I thought that might be part of
+the problem.  I wanted a script that would see if I could reproduce
+the problem without stressing that system too much, so I created a
+second backing store on dm-crypt over ramfs so that no real I/O will
+happen.  The script is quite effective at bringing down my system, so
+I haven't changed it.
 
-> I thought that the BTS code used it as well, but apparently that code
-> doesn't anymore (or never did any my memory if fuzzy).
+(I have 6GB of "real" swap on the LVM, so pinning 1500MB into RAM
+ought to cause some thrashing but not take the system down.  And this
+script with a larger ramfs does not take down my desktop, which is an
+8GB Sandy Bridge box.  But whatever the underlying bug is seems to
+mainly affect Sandy Bridge *laptops*, so maybe that's expected.)
 
-I thought it did too, but it actually use perf_output_sample().
+--Andy
+
+>
+> Thanks,
+> Fengguang
+>
