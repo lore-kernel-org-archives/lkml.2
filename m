@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab1ESDJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 23:09:28 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6008 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147Ab1ESDJ0 (ORCPT
+	id S932343Ab1ESDJY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 23:09:24 -0400
+Received: from elasmtp-kukur.atl.sa.earthlink.net ([209.86.89.65]:47561 "EHLO
+	elasmtp-kukur.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932147Ab1ESDJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 23:09:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=jOin1nKo5/JT/hXfmCrWN87hLIKv3lWQvPMN3WyrATFMjpXhcS919CPtpb1K973wV/
-         KPTlLQ+O6MP60RZiJ4Fg==
-Date: Wed, 18 May 2011 20:09:17 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
-        dave@linux.vnet.ibm.com, wdauchy@gmail.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH V3 0/2] mm: Memory hotplug interface changes
-In-Reply-To: <20110518151131.GB4709@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1105182008160.20651@chino.kir.corp.google.com>
-References: <20110517213604.GA30232@router-fw-old.local.net-space.pl> <20110518151131.GB4709@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 18 May 2011 23:09:22 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=mindspring.com;
+  b=sbBSH2DTjB/d3kRdcgXe/18TUt8L673TJwEVs9SwgRXOiJ0wzyCZ6Y9Z2vO3ZLhC;
+  h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
+Date: Wed, 18 May 2011 23:09:18 -0400
+From: Bill Fink <billfink@mindspring.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: David Decotigny <decot@google.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-net-upstream@google.com
+Subject: Re: [PATCH 1/2] forcedeth: make module parameters readable in
+ /sys/module
+Message-Id: <20110518230918.5c03ba68.billfink@mindspring.com>
+In-Reply-To: <20110518150346.508d6406@nehalam>
+References: <1305753000-14933-1-git-send-email-decot@google.com>
+	<20110518150346.508d6406@nehalam>
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.16.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-ELNK-Trace: c598f748b88b6fd49c7f779228e2f6aeda0071232e20db4d06a4fcaadc5c6f1a2384ff367c881fee350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 71.179.3.111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 May 2011, Konrad Rzeszutek Wilk wrote:
+On Wed, 18 May 2011, Stephen Hemminger wrote:
 
-> > Full list of futures:
-> >   - mm: Add SECTION_ALIGN_UP() and SECTION_ALIGN_DOWN() macro,
-> >   - mm: Extend memory hotplug API to allow memory hotplug in virtual
-> >     machines.
-> > 
-> > Those patches applies to Linus' git tree, v2.6.39-rc7 tag with a few
-> > prerequisite patches available at https://lkml.org/lkml/2011/5/2/296.
+> On Wed, 18 May 2011 14:09:59 -0700
+> David Decotigny <decot@google.com> wrote:
 > 
-> Are they in akpm tree?
+> > This change allows to publish the values of the module parameters in
+> > /sys/module.
 > 
-> Dave and David, you guys Acked them - are they suppose to go through your
-> tree(s) or Andrew's?
-> 
+> Although this makes more info for developer, it also means more
+> stuff in sysfs taking more memory and not providing any real value
+> that can't be found by looking at the /etc/modprobe.d for any parameters
+> user might have set.
 
-All of the prerequisite patches are in mmotm-2011-05-12-15-52 already.  
-See http://userweb.kernel.org/~akpm/mmotm/
+As a user, I find having the module parameter info in
+/sys/module/driver/parameters/* extremely useful at times.
+In tracking down weird problems I can for example do:
+
+	grep . /sys/module/driver/parameters/*
+
+to get a snapshot of module parameters.  I can then compare
+this with other similar systems to see if there are any
+differences of note that might be significant (anything
+from differences due to kernel versions to just forgetting
+some change I made).
+
+I don't see that it's really much extra significant overhead
+on the system either.
+
+					-Bill
