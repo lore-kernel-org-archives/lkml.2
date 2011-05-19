@@ -1,89 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934768Ab1ESUur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 16:50:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55327 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934077Ab1ESUup convert rfc822-to-8bit (ORCPT
+	id S934797Ab1ESVBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:01:01 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46288 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933993Ab1ESVBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 16:50:45 -0400
+	Thu, 19 May 2011 17:01:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ntmaCcfLNkXLOc/zkVKFCb9gSszQkeJORyrmGAniHraOi8w5Th2rkVY7CMSSrube6Q
-         wRkYaoa52tfWDZJMeKm1TIHN6xfiOXI5NDehQUCf/TyPGmtzuUCKthbyyOoW/qUSOvK7
-         CRWkt4faLSiJe9Rz+m146gMQ3GsFVefuwatBE=
-MIME-Version: 1.0
-In-Reply-To: <sig.512079e334.4DD57D44.50009@radicalsystems.co.za>
-References: <4DD5452F.9050108@radicalsystems.co.za>
-	<BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
-	<sig.512079e334.4DD57D44.50009@radicalsystems.co.za>
-Date: Thu, 19 May 2011 15:50:43 -0500
-Message-ID: <BANLkTikHQNQdWoDS2dXUC9gTPWvtmUM=yA@mail.gmail.com>
-Subject: Re: PCI BAR1 Unassigned
-From: Xianghua Xiao <xiaoxianghua@gmail.com>
-To: Jan Zwiegers <jan@radicalsystems.co.za>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=ZUUXLGxEn//6ttsQkxTUGAg0cRr/1YE06iS45cfbgxpb7BmUjsFFUyg1MvkP290y/u
+         i8p6J7BBqaJe2Pw2SUO0642sSq5karVvlVnQt8Or273u4zgEQXfeGTxnPynWIjFzApH0
+         nRpHzKTL0VHNLcqTmUkjP8mWXVP04oqc5SCzw=
+Subject: [PATCH] eisa: do not force probe if cannot allocate resource on
+ mainboard
+From: Eduardo Silva <edsiper@gmail.com>
+To: Marc Zyngier <maz@wild-wind.fr.eu.org>, Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 May 2011 16:52:36 -0400
+Message-ID: <1305838356.5272.5.camel@monotop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 3:27 PM, Jan Zwiegers <jan@radicalsystems.co.za> wrote:
-> On 2011-05-19 08:50 PM, Bjorn Helgaas wrote:
->>
->> On Thu, May 19, 2011 at 10:28 AM, Jan Zwiegers<jan@radicalsystems.co.za>
->>  wrote:
->>>
->>> I have the problem below where my PCI card's second BAR does not get
->>> assigned.
->>> What can be the cause of this problem?
->>> The last kernel I tested on which worked OK was 2.6.27.
->>> My current problematic kernel 2.6.35.
->>>
->>> 05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O Card
->>> (rev 5c)
->>>    Flags: bus master, slow devsel, latency 32, IRQ 22
->>>    Memory at 93b00000 (type 3, prefetchable) [size=2K]
->>>    Memory at<unassigned>  (type 3, prefetchable)
->>>    Capabilities: [80] #00 [0600]
->>>    Kernel modules: pci703drv
->>
->> Could be resource exhaustion or, more likely, we ran out because we
->> now assign resource to things that don't need them, leaving none for
->> things that *do* need them.  This sounds like a regression, so we
->> should open a bugzilla for it and attach dmesg logs from 2.6.27 and
->> 2.6.35.
->>
->> Does this problem keep the driver from working?  (Sometimes drivers
->> don't actually use all the BARs a device supports.)
->>
->> Bjorn
->>
->
-> I'm the maintainer of the driver and was involved in the development of the
-> board as well in 2003. The board uses two BARS and the second BAR is the
-> most important. The board worked fine since the 2.4 days and only recently
-> became problematic. I suspect it works on even later kernels than 27, maybe
-> 2.6.32.
->
-> My knowledge is too little to actually determine if the problem is because
-> the FPGA based PCI interface is not within spec or something that changed in
-> the kernel, because of the post .30 releases becoming more strict to PCI
-> specification, i.e. BIOS / Kernel interaction.
->
-> Jan
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+if the eisa_probe() function fails to allocate resource for the
+mainboard in question, it performs a force probe over the available
+slots and print all fails in the logs. e.g:
 
-What's the size for BAR1? one reason is that no more space to
-align/allocate BAR1.
+[    1.264550] EISA: Cannot allocate resource for mainboard
+[    1.264552] Cannot allocate resource for EISA slot 1
+[    1.264554] Cannot allocate resource for EISA slot 2
+[    1.264556] Cannot allocate resource for EISA slot 3
+[    1.264557] Cannot allocate resource for EISA slot 4
+[    1.264559] Cannot allocate resource for EISA slot 5
+[    1.264561] Cannot allocate resource for EISA slot 6
+[    1.264563] Cannot allocate resource for EISA slot 7
+[    1.264564] Cannot allocate resource for EISA slot 8
+[    1.264566] EISA: Detected 0 cards.
 
-If the board stays the same then your FPGA might be the cause, I have
-seen similar issues and they ended up in FPGA implementation.
+The force probe for this specific condition always fails. The
+patch make it to skip the force probe and print a more detailed ending
+message to the log adding the number available slots:
+
+[    1.264550] EISA: Cannot allocate resource for mainboard
+[    1.264566] EISA: Detected 0 cards in 8 slots.
+
+Signed-off-by: Eduardo Silva <edsiper@gmail.com>
+---
+ drivers/eisa/eisa-bus.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
+index 806c77b..1cf37e0 100644
+--- a/drivers/eisa/eisa-bus.c
++++ b/drivers/eisa/eisa-bus.c
+@@ -312,7 +312,7 @@ static void __init eisa_release_resources(struct eisa_device *edev)
+ 
+ static int __init eisa_probe(struct eisa_root_device *root)
+ {
+-        int i, c;
++        int i, c = 0;
+ 	struct eisa_device *edev;
+ 
+ 	printk(KERN_INFO "EISA: Probing bus %d at %s\n",
+@@ -333,7 +333,7 @@ static int __init eisa_probe(struct eisa_root_device *root)
+ 		kfree(edev);
+ 		if (!root->force_probe)
+ 			return -EBUSY;
+-		goto force_probe;
++		goto out;
+ 	}
+ 
+ 	if (eisa_init_device(root, edev, 0)) {
+@@ -355,7 +355,7 @@ static int __init eisa_probe(struct eisa_root_device *root)
+ 	
+  force_probe:
+ 	
+-        for (c = 0, i = 1; i <= root->slots; i++) {
++        for (i = 1; i <= root->slots; i++) {
+ 		edev = kzalloc(sizeof(*edev), GFP_KERNEL);
+ 		if (!edev) {
+ 			printk(KERN_ERR "EISA: Out of memory for slot %d\n", i);
+@@ -405,7 +405,9 @@ static int __init eisa_probe(struct eisa_root_device *root)
+ 		}
+         }
+ 
+-	printk(KERN_INFO "EISA: Detected %d card%s.\n", c, c == 1 ? "" : "s");
++ out:
++	printk(KERN_INFO "EISA: Detected %d card%s in %d slots.\n", c,
++	       c == 1 ? "" : "s", root->slots);
+ 
+ 	return 0;
+ }
+-- 
+1.7.4.1
+
+
+
+
