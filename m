@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab1ESXBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 19:01:41 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8747 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755536Ab1ESXBj (ORCPT
+	id S1755515Ab1ESXAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 19:00:23 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:53088 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755036Ab1ESXAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 19:01:39 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 19 May 2011 16:01:36 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: cbouatmailru@gmail.com
-Cc: bleung@google.com, olof@lixom.net, linux-kernel@vger.kernel.org,
-        Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH 2/2] power: bq20z75: enable detection after registering
-Date: Thu, 19 May 2011 16:00:04 -0700
-Message-Id: <1305846004-11895-2-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <1305846004-11895-1-git-send-email-rklein@nvidia.com>
-References: <1305846004-11895-1-git-send-email-rklein@nvidia.com>
+	Thu, 19 May 2011 19:00:21 -0400
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+Date: Fri, 20 May 2011 00:00:17 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-28-generic; KDE/4.6.2; x86_64; ; )
+Cc: Tejun Heo <tj@kernel.org>, oleg@redhat.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <201105192031.33569.pedro@codesourcery.com> <201105200042.12230.vda.linux@googlemail.com>
+In-Reply-To: <201105200042.12230.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105200000.18310.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need to enable detection, which is also blocking the unit conversion logic
-after registering the power_supply.
+On Thursday 19 May 2011 23:42:12, Denys Vlasenko wrote:
+> On Thursday 19 May 2011 21:31, Pedro Alves wrote:
+> > On Thursday 19 May 2011 15:17:28, Tejun Heo wrote:
+> > > But making SEIZE not trigger INTERRUPT and SETOPTIONS without
+> > > requiring TRACED don't seem too difficult.  Jan, would that be enough?
+> > > Oleg, what do you think?
+> > 
+> > UUIC, that opens a race where between SEIZEing and
+> > SETOPTIONS(O_TRACE FORK|VFORK|EXEC...), the tracee can
+> > fork/vfork/clone/exec, without the tracer getting the
+> > nice corresponding PTRACE_EVENT_ events.
+> 
+> SEIZE,fork-in-tracee,INTERRUPT sequence is indistinguishable
+> from SEIZE happening two microseconds later:
+> 
+> fork-in-tracee,SEIZE,INTERRUPT
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
- drivers/power/bq20z75.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ SEIZE,execvd,INTERRUPT (SETOPTS on interrupt)
 
-diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
-index 9c5e5be..e1adc0e 100644
---- a/drivers/power/bq20z75.c
-+++ b/drivers/power/bq20z75.c
-@@ -702,8 +702,6 @@ skip_gpio:
- 
- 	INIT_DELAYED_WORK(&bq20z75_device->work, bq20z75_delayed_work);
- 
--	bq20z75_device->enable_detection = true;
--
- 	return 0;
- 
- exit_psupply:
+will make the tracer see a SIGTRAP that 
+
+ execvd,SEIZE,INTERRUPT
+
+nor
+
+ SEIZE,SETOPTS,execvd (SETOPTS on interrupt)
+
+would cause, isn't it?
+
+Now, if it were possible for the tracer to set the
+default OPTS _before_ PTRACE_ATTACH/PTRACE_SEIZE...
+
+> 
+> > In GDBs case, GDB will want to poke at memory
+> > right after attaching
+> 
+> ...where "right after attaching" is defined as "when the first ptrace-stop
+> is reported". Which will happen very soon.
+
+Hmm?  Why would it happen very soon?  Isn't the point of SEIZE not
+interrupting that you'd not get any INTERRUPT or stop at all?
+Where is the ptrace-stop coming from?
+
 -- 
-1.7.5.1
-
+Pedro Alves
