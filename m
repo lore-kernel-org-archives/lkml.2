@@ -1,148 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab1ESXCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 19:02:10 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:47602 "EHLO duck.linux-mips.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755179Ab1ESXCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 19:02:07 -0400
-Date: Fri, 20 May 2011 00:02:02 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: Define dummy MAX_DMA_CHANNELS to fix build failure
-Message-ID: <20110519230202.GA10628@linux-mips.org>
-References: <1287673079-15065-1-git-send-email-namhyung@gmail.com>
+	id S933054Ab1ESXD7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 19:03:59 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45409 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751998Ab1ESXD5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 19:03:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,239,1304319600"; 
+   d="scan'208";a="439379933"
+From: "Rao, Nikhil" <nikhil.rao@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH]  x86: Removing unnecessary check in detect_ht
+Thread-Topic: [PATCH]  x86: Removing unnecessary check in detect_ht
+Thread-Index: AQHMFZ+wwMCJ5f57lUKQ3lDQVr7GwpSTFQXQgAB42ID//97J8IABfUoA///cXEA=
+Date: Thu, 19 May 2011 23:03:53 +0000
+Message-ID: <1F668163772FA946975B9466A9DFF729BEDD@ORSMSX101.amr.corp.intel.com>
+References: <43F901BD926A4E43B106BF17856F0755018E1CF482@orsmsx508.amr.corp.intel.com>
+ <4FF5AC937153B0459463C1A88EB478F2010DFD3D3F@orsmsx505.amr.corp.intel.com>
+ <43F901BD926A4E43B106BF17856F0755018E1CF69D@orsmsx508.amr.corp.intel.com>
+ <1305048201.2736.17.camel@sbsiddha-MOBL3.sc.intel.com>
+ <1F668163772FA946975B9466A9DFF729B5E5@ORSMSX101.amr.corp.intel.com>
+ <1F668163772FA946975B9466A9DFF729B64C@ORSMSX101.amr.corp.intel.com>
+ <20110518210754.GA28476@elte.hu>
+ <1F668163772FA946975B9466A9DFF729B6A3@ORSMSX101.amr.corp.intel.com>
+ <20110518212351.GE28476@elte.hu>
+ <1F668163772FA946975B9466A9DFF729B7E4@ORSMSX101.amr.corp.intel.com>
+ <20110519180940.GD6139@elte.hu>
+In-Reply-To: <20110519180940.GD6139@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.131.214]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1287673079-15065-1-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 11:57:59PM +0900, Namhyung Kim wrote:
-> Date:   Thu, 21 Oct 2010 23:57:59 +0900
-> From: Namhyung Kim <namhyung@gmail.com>
-> To: Ralf Baechle <ralf@linux-mips.org>
-> Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-> Subject: [PATCH] MIPS: Define dummy MAX_DMA_CHANNELS to fix build failure
+This patch removes a check that causes incorrect scheduler domain setup (SMP instead of SMT) and bootlog warning messages when cpuid extensions for topology enumeration are not supported and the number of processors reported to the OS is smaller than smp_num_siblings
+
+Signed-off-by: Nikhil P Rao <nikhil.rao@intel.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/kernel/cpu/common.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c index cbc70a2..d2bcd54 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -477,13 +477,6 @@ void __cpuinit detect_ht(struct cpuinfo_x86 *c)
+        if (smp_num_siblings <= 1)
+                goto out;
+ 
+-       if (smp_num_siblings > nr_cpu_ids) {
+-               pr_warning("CPU: Unsupported number of siblings %d",
+-                          smp_num_siblings);
+-               smp_num_siblings = 1;
+-               return;
+-       }
+-
+        index_msb = get_count_order(smp_num_siblings);
+        c->phys_proc_id = apic->phys_pkg_id(c->initial_apicid, index_msb);
+ 
+--
+1.7.4.2
+
+> -----Original Message-----
+> From: Ingo Molnar [mailto:mingo@elte.hu]
+> Sent: Thursday, May 19, 2011 11:10 AM
+> To: Rao, Nikhil
+> Cc: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
+> x86@kernel.org; Siddha, Suresh B; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] x86: Removing unnecessary check in detect_ht
 > 
-> allmodconfig build failes like following:
+> * Rao, Nikhil <nikhil.rao@intel.com> wrote:
 > 
->   CC [M]  sound/oss/soundcard.o
-> sound/oss/soundcard.c:68: error: 'MAX_DMA_CHANNELS' undeclared here (not in a function)
-> make[3]: *** [sound/oss/soundcard.o] Error 1
-> make[2]: *** [sound/oss] Error 2
-> make[1]: *** [sub-make] Error 2
-> make: *** [all] Error 2
-
-With your patch applied I get this:
-
-  CC      kernel/dma.o
-kernel/dma.c:61:2: error: array index in initializer exceeds array bounds
-kernel/dma.c:61:2: error: (near initialization for ‘dma_chan_busy’)
-kernel/dma.c:61:2: warning: excess elements in array initializer [enabled by default]
-kernel/dma.c:61:2: warning: (near initialization for ‘dma_chan_busy’) [enabled by default]
-make[1]: *** [kernel/dma.o] Error 1
-make: *** [kernel] Error 2
-
-MAX_DMA_CHANNELS is left undefined so kernel/dma.c builds only the dummy
-versions but sound/oss/soundcard.c doesn't support the same thing except
-with a rather crude patch following what kernel/dma.c already does such
-as below.  It gets everything to build for the affected systems but I
-doubt much (if anything) will be working.
-
-At this stage I just wanna get rid of OSS for MIPS entirely; it has very
-little life if any left.
-
-  Ralf
-
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-
- sound/oss/soundcard.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
-
-diff --git a/sound/oss/soundcard.c b/sound/oss/soundcard.c
-index 7c7793a..78ef95a 100644
---- a/sound/oss/soundcard.c
-+++ b/sound/oss/soundcard.c
-@@ -66,7 +66,9 @@ int             sound_dmap_flag = 1;
- int             sound_dmap_flag = 0;
- #endif
- 
-+#ifdef MAX_DMA_CHANNELS
- static char     dma_alloc_map[MAX_DMA_CHANNELS];
-+#endif
- 
- #define DMA_MAP_UNAVAIL		0
- #define DMA_MAP_FREE		1
-@@ -594,11 +596,13 @@ static void __exit oss_cleanup(void)
- 
- 	sequencer_unload();
- 
-+#ifdef MAX_DMA_CHANNELS
- 	for (i = 0; i < MAX_DMA_CHANNELS; i++)
- 		if (dma_alloc_map[i] != DMA_MAP_UNAVAIL) {
- 			printk(KERN_ERR "Sound: Hmm, DMA%d was left allocated - fixed\n", i);
- 			sound_free_dma(i);
- 		}
-+#endif
- 
- 	for (i = 0; i < sound_nblocks; i++)
- 		vfree(sound_mem_blocks[i]);
-@@ -619,7 +623,9 @@ int sound_alloc_dma(int chn, char *deviceID)
- 	if ((err = request_dma(chn, deviceID)) != 0)
- 		return err;
- 
-+#ifdef MAX_DMA_CHANNELS
- 	dma_alloc_map[chn] = DMA_MAP_FREE;
-+#endif
- 
- 	return 0;
- }
-@@ -627,6 +633,7 @@ EXPORT_SYMBOL(sound_alloc_dma);
- 
- int sound_open_dma(int chn, char *deviceID)
- {
-+#ifdef MAX_DMA_CHANNELS
- 	if (!valid_dma(chn)) {
- 		printk(KERN_ERR "sound_open_dma: Invalid DMA channel %d\n", chn);
- 		return 1;
-@@ -638,27 +645,34 @@ int sound_open_dma(int chn, char *deviceID)
- 	}
- 	dma_alloc_map[chn] = DMA_MAP_BUSY;
- 	return 0;
-+#else
-+	return 1;	/* No ISA DMA supported  */
-+#endif
- }
- EXPORT_SYMBOL(sound_open_dma);
- 
- void sound_free_dma(int chn)
- {
-+#ifdef MAX_DMA_CHANNELS
- 	if (dma_alloc_map[chn] == DMA_MAP_UNAVAIL) {
- 		/* printk( "sound_free_dma: Bad access to DMA channel %d\n",  chn); */
- 		return;
- 	}
- 	free_dma(chn);
- 	dma_alloc_map[chn] = DMA_MAP_UNAVAIL;
-+#endif
- }
- EXPORT_SYMBOL(sound_free_dma);
- 
- void sound_close_dma(int chn)
- {
-+#ifdef MAX_DMA_CHANNELS
- 	if (dma_alloc_map[chn] != DMA_MAP_BUSY) {
- 		printk(KERN_ERR "sound_close_dma: Bad access to DMA channel %d\n", chn);
- 		return;
- 	}
- 	dma_alloc_map[chn] = DMA_MAP_FREE;
-+#endif
- }
- EXPORT_SYMBOL(sound_close_dma);
- 
+> > Hi Ingo,
+> >
+> > Reposting as per your feedback.
+> 
+> Please send a patch that applies to the x86 tree cleanly:
+> 
+>   http://people.redhat.com/mingo/tip.git/README
+> 
+> Thanks,
+> 
+> 	Ingo
