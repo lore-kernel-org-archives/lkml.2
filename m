@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab1ESAfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 20:35:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46582 "EHLO smtps.tip.net.au"
+	id S1753944Ab1ESAqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 20:46:55 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3662 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752906Ab1ESAfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 20:35:48 -0400
-Date: Thu, 19 May 2011 10:35:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>
-Subject: linux-next: manual merge of the s390 tree with Linus' tree
-Message-Id: <20110519103539.aa1b5094.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__19_May_2011_10_35_39_+1000_Qp_9/XQcL7DK8vfb"
+	id S1752424Ab1ESAqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 20:46:53 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Message-ID: <4DD46865.9010708@broadcom.com>
+Date: Wed, 18 May 2011 17:46:29 -0700
+From: "Henry Ptasinski" <henryp@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.5)
+ Gecko/20091204 Lightning/1.0b1 Thunderbird/3.0
+MIME-Version: 1.0
+To: "Joe Perches" <joe@perches.com>
+cc: "Brett Rudley" <brudley@broadcom.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "Dowan Kim" <dowan@broadcom.com>,
+        "Roland Vossen" <rvossen@broadcom.com>,
+        "Arend Van Spriel" <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        "Henry Ptasinski" <henryp@broadcom.com>
+Subject: Re: [PATCH] staging: brcm80211: brcmfmac: Add and use dhd_dbg
+References: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
+ <4DD44C21.1080502@broadcom.com> <1305765163.1745.4.camel@Joe-Laptop>
+In-Reply-To: <1305765163.1745.4.camel@Joe-Laptop>
+X-WSS-ID: 61CAB6C23IC2928684-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__19_May_2011_10_35_39_+1000_Qp_9/XQcL7DK8vfb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/18/2011 05:32 PM, Joe Perches wrote:
+> On Wed, 2011-05-18 at 15:45 -0700, Henry Ptasinski wrote:
+>> On 05/18/2011 11:23 AM, Joe Perches wrote:
+>>> All uses of DHD_<TYPE>   macros are for debugging only.
+>>> Change the multiple uses of DHD_<TYPE>((...)) to dhd_dbg(TYPE, ...)
+>>> for a more consistent style.
+>> I generally like this approach, but in brcmsmac we've been switching to
+>> wiphy_err() and related instead.  Any strong argument for one over the
+>> other?
+>
+> These aren't described as errors but are debugging messages.
 
-Hi all,
+Yes, so wiphy_debug(), wiphy_info(), wiphy_notice(), etc could be used. 
+  It's not as fine grained as the current logging mechanism, so that 
+would be one argument against using wiphy_*.  I don't have a strong 
+opinion either way, just looking to see which is the generally preferred 
+approach in the kernel (if there is any preference).
 
-Today's linux-next merge of the s390 tree got a conflict in
-drivers/s390/char/tape_block.c between commit 9fd097b14918 ("block:
-unexport DISK_EVENT_MEDIA_CHANGE for legacy/fringe drivers") from Linus'
-tree and commit 263fa17de50e ("[S390] Remove tape block device driver")
-from the s390 tree.
 
-The latter just removes the file updated by the former.  So I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>>> -       DHD_TRACE(("%s: Enter\n", __func__));
+>>> +       dhd_dbg(TRACE, "%s: Enter\n", __func__);
+>> I'd propose moving __func__ into the macro definition itself, which
+>> would help ensure consistency (and shorten all the debug lines a bit).
+>
+> I think TRACE is unnecessary and can be eliminated
+> and replaced by the function tracer.
+>
+> Not all uses use __func__.
 
---Signature=_Thu__19_May_2011_10_35_39_+1000_Qp_9/XQcL7DK8vfb
-Content-Type: application/pgp-signature
+That's just sloppiness on our part.  They should all be consistent.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> I think __func__ unnecessary and it should be avoided.
 
-iQEcBAEBAgAGBQJN1GXbAAoJEDMEi1NhKgbsTGYH/0DNRiy+ooM6v1KBsUpgPgu3
-3T0I/rKP3gNTjtPSGjgYnPhAgshy8i5YTDAtxN4eVp6uGLglS5OvxZeQhgcjNySW
-a9k6LvWDfe/MwvFxOwosM09cD+lWmspGOeCBHjcDp3Yz96h4FbOEk9e866csr/2p
-13BeBkngXgg3MV2Hs9p/7QJa9s9o+VFTXGR748YeqL1oJqxFaaSNPGOenA3VZJXo
-FRMetzq2Qrv1KhspOPrTp4T64a1VMzcJSB54Hthwuu45IgGj2zTYxwHSaCAgJdWe
-MpAApMu7yfG9OJO9qBu7uySynOIoXoDChdqrgRSGA0Zlrr5Jra9YasiWR+5a3ME=
-=J0En
------END PGP SIGNATURE-----
+If it's moved into the macro, then there's only one place to change if 
+you want to delete "__func__"/add it back/include it conditionally.
 
---Signature=_Thu__19_May_2011_10_35_39_+1000_Qp_9/XQcL7DK8vfb--
+
+> Other than that, I've no objections.
+>
+>> Also, perhaps rename to "brcm_dbg()", "bcm_dbg()" or something like that
+>> and move it into include/bcmutils.h, so brcmsmac can use it as well.
+>
+> Your choice.
+
+"brcm_dbg()" seems fine to me.
+
+- Henry
+
