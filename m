@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab1ESWmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 18:42:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47980 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932323Ab1ESWmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 18:42:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=Qn4BIPyyFmG/U9Gf+Ggtb/XIVt13gUlFG1y2WvoyfaFZdlApLWaYHkpP81SSoclqSK
-         /OtgAhKBqLe8epPkwVOCieXm3S08sHrjUOkBTWJ4bCNUCz1a8sQfJ6VcN9bn0ES/XMpo
-         KGb/eGj776KsgpBIGtq84iy3/SbML74327aSw=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Pedro Alves <pedro@codesourcery.com>
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Date: Fri, 20 May 2011 00:42:12 +0200
-User-Agent: KMail/1.8.2
-Cc: Tejun Heo <tj@kernel.org>, oleg@redhat.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <20110519141728.GJ627@htj.dyndns.org> <201105192031.33569.pedro@codesourcery.com>
-In-Reply-To: <201105192031.33569.pedro@codesourcery.com>
+	id S933174Ab1ESXEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 19:04:50 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54481 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932238Ab1ESXEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 19:04:49 -0400
+Date: Thu, 19 May 2011 15:44:45 -0700
+From: Greg KH <gregkh@suse.de>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/23] add register_chrdev_ids() to char_dev.c, API
+Message-ID: <20110519224445.GA9885@suse.de>
+References: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201105200042.12230.vda.linux@googlemail.com>
+In-Reply-To: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 May 2011 21:31, Pedro Alves wrote:
-> On Thursday 19 May 2011 15:17:28, Tejun Heo wrote:
-> > But making SEIZE not trigger INTERRUPT and SETOPTIONS without
-> > requiring TRACED don't seem too difficult.  Jan, would that be enough?
-> > Oleg, what do you think?
+On Thu, May 19, 2011 at 03:33:03PM -0600, Jim Cromie wrote:
+> over on kernelnewbies, gregkh said:
 > 
-> UUIC, that opens a race where between SEIZEing and
-> SETOPTIONS(O_TRACE FORK|VFORK|EXEC...), the tracee can
-> fork/vfork/clone/exec, without the tracer getting the
-> nice corresponding PTRACE_EVENT_ events.
+>      The chardev stuff is a mess, I keep meaning for years to clean it
+>      up.  Any proposals on a sane interface for this stuff is greatly
+>      appreciated.
+> 
+> this is a 1st step.
+> 
+> register_chrdev_ids() replaces and deprecates register_chrdev_region()
+> and alloc_chrdev_region() with a single function that works for both
+> dynamic and static major numbers.
+> 
+> Like alloc_chrdev_region(), 1st arg is a dev_t*, but its an in/out
+> parameter, and expects both major and minor to be preset, and thus the
+> separate minor arg is dropped.  If major == 0, a dynamic major is
+> reserved, saved into 1st arg, and thus available to caller afterwards.
+> 
+> [PATCH 01/23] add register_chrdev_ids() to char_dev.c, API
+> [PATCH 02/23] reimplement alloc_chrdev_region with
+> [PATCH 03/23] use register_chrdev_ids to replace
+> [PATCH 04/23] use register_chrdev_ids in drivers/tty/
+> [PATCH 05/23] use register_chrdev_ids in drivers/infiniband/
+> [PATCH 06/23] use register_chrdev_ids in drivers/media/
+> [PATCH 07/23] use register_chrdev_ids in drivers/s390/
+> [PATCH 08/23] use register_chrdev_ids in drivers/scsi/
+> [PATCH 09/23] use register_chrdev_ids in drivers/staging/
+> 
+> Ive held back the rest, no point in spamming.
 
-SEIZE,fork-in-tracee,INTERRUPT sequence is indistinguishable
-from SEIZE happening two microseconds later:
+It's a nice first step, but that's the easy part, what is your 2nd
+through 4th one going to be?  :)
 
-fork-in-tracee,SEIZE,INTERRUPT
+I'd also like to sanatize the function namespace a bit as well, how
+about chrdev_register_ids() instead?
 
-> In GDBs case, GDB will want to poke at memory
-> right after attaching
+Ideally, we could drop down to a single register/unregister pair of
+functions, that are easy to use and understand.  Do you think you can
+get there with this intermediate step or do you want to step back and
+rethink this?
 
-...where "right after attaching" is defined as "when the first ptrace-stop
-is reported". Which will happen very soon.
+thanks,
 
--- 
-vda
+greg k-h
