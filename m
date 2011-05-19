@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960Ab1ESJeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 05:34:09 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:32859 "EHLO mx3.mail.elte.hu"
+	id S932968Ab1ESJhT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 05:37:19 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46905 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932629Ab1ESJeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 05:34:08 -0400
-Date: Thu, 19 May 2011 11:34:03 +0200
+	id S932901Ab1ESJhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 05:37:17 -0400
+Date: Thu, 19 May 2011 11:37:06 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         LAK <linux-arm-kernel@lists.infradead.org>,
         John Stultz <john.stultz@linaro.org>
-Subject: Re: [patch 0/7] clocksources/clockevents improvements
-Message-ID: <20110519093403.GD6251@elte.hu>
+Subject: Re: [patch 5/7] clockevents: Provide interface to reconfigure an
+ active clock event device
+Message-ID: <20110519093706.GE6251@elte.hu>
 References: <20110518205713.947614271@linutronix.de>
+ <20110518210136.437459958@linutronix.de>
+ <20110519091024.GB6251@elte.hu>
+ <alpine.LFD.2.02.1105191132260.3078@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110518205713.947614271@linutronix.de>
+In-Reply-To: <alpine.LFD.2.02.1105191132260.3078@ionos>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -34,28 +38,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Thomas Gleixner <tglx@linutronix.de> wrote:
 
-> The series provides a few improvements to the core code of
-> clocksources and clockevents.
+> On Thu, 19 May 2011, Ingo Molnar wrote:
+> > * Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > + */
+> > > +int clockevents_reconfigure(struct clock_event_device *dev, u32 freq)
+> > 
+> > This too could use a struct clockevents_params perhaps - and would only use 
+> > params.freq for now but might be extended in the future.
+> > 
+> > But i'm fine with this API as well:
 > 
-> 1) Better layout and cacheline alignment of the hotpath data in both
->    data structures
-> 
-> 2) Get rid of the hardcoded 5 seconds sleep limit in clocksources
-> 
-> 3) Provide a generic configuration and registration interface for
->    clockevents which does all the common math tasks so we can remove
->    copied code all over the place
-> 
-> 4) Provide a function to reconfigure an active clock event
->    device. Needed by devices which are affected by frequency scaling.
-> 
-> The last two patches are x86 specific and make use of the new
-> config_register() functions.
+> I agree for the config_register interface, but here we really just
+> want to update the frequency and not change any other parameter.
 
-Nice! Other than the comments i made for specific patches it's looking good to 
-me:
+ok, fair enough - in that case i'd suggest making that property explicitly 
+visible in the API name, via something like:
 
-Reviewed-by: Ingo Molnar <mingo@elte.hu>
+	int clockevents_set_freq(struct clock_event_device *dev, u32 freq)
+
+That way it's obvious at first sight what this does:
+
+	clockevents_set_freq(dev, 1000000);
+
+Versus:
+
+	clockevents_reconfigure(dev, 1000000);
 
 Thanks,
 
