@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933874Ab1ESSH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:07:58 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33195 "EHLO
+	id S933862Ab1ESSH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:07:57 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:48609 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933842Ab1ESSHw (ORCPT
+	by vger.kernel.org with ESMTP id S933850Ab1ESSHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:07:52 -0400
-X-Sasl-enc: efEvW42wtZTrPJM9IVp9KshLzy2J+OD1hAcyPaIptlkD 1305828471
+	Thu, 19 May 2011 14:07:54 -0400
+X-Sasl-enc: GcKKbQkUwG5GNeQsJCBzk33ahDm76WsoHfMYK6JoL5/t 1305828473
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:55 2011
-Message-Id: <20110519180555.150198505@clark.kroah.org>
+Message-Id: <20110519180555.251618489@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:04:37 -0700
+Date: Thu, 19 May 2011 11:04:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -20,7 +20,7 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Will Deacon <will.deacon@arm.com>, Prasad <prasad@linux.vnet.ibm.com>,
         Paul Mundt <lethal@linux-sh.org>
-Subject: [09/71] x86, hw_breakpoints: Fix racy access to ptrace breakpoints
+Subject: [10/71] ptrace: Prepare to fix racy accesses on task breakpoints
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,14 +32,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 87dc669ba25777b67796d7262c569429e58b1ed4 upstream.
+commit bf26c018490c2fce7fe9b629083b96ce0e6ad019 upstream.
 
-While the tracer accesses ptrace breakpoints, the child task may
-concurrently exit due to a SIGKILL and thus release its breakpoints
-at the same time. We can then dereference some freed pointers.
+When a task is traced and is in a stopped state, the tracer
+may execute a ptrace request to examine the tracee state and
+get its task struct. Right after, the tracee can be killed
+and thus its breakpoints released.
+This can happen concurrently when the tracer is in the middle
+of reading or modifying these breakpoints, leading to dereferencing
+a freed pointer.
 
-To fix this, hold a reference on the child breakpoints before
-manipulating them.
+Hence, to prepare the fix, create a generic breakpoint reference
+holding API. When a reference on the breakpoints of a task is
+held, the breakpoints won't be released until the last reference
+is dropped. After that, no more ptrace request on the task's
+breakpoints can be serviced for the tracer.
 
 Reported-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
@@ -48,97 +55,96 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Will Deacon <will.deacon@arm.com>
 Cc: Prasad <prasad@linux.vnet.ibm.com>
 Cc: Paul Mundt <lethal@linux-sh.org>
-Link: http://lkml.kernel.org/r/1302284067-7860-3-git-send-email-fweisbec@gmail.com
+Link: http://lkml.kernel.org/r/1302284067-7860-2-git-send-email-fweisbec@gmail.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/ptrace.c |   36 ++++++++++++++++++++++++++----------
- 1 file changed, 26 insertions(+), 10 deletions(-)
+ include/linux/ptrace.h |   13 ++++++++++++-
+ include/linux/sched.h  |    3 +++
+ kernel/exit.c          |    2 +-
+ kernel/ptrace.c        |   17 +++++++++++++++++
+ 4 files changed, 33 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -608,6 +608,9 @@ static int ptrace_write_dr7(struct task_
- 	unsigned len, type;
- 	struct perf_event *bp;
- 
-+	if (ptrace_get_breakpoints(tsk) < 0)
-+		return -ESRCH;
-+
- 	data &= ~DR_CONTROL_RESERVED;
- 	old_dr7 = ptrace_get_dr7(thread->ptrace_bps);
- restore:
-@@ -655,6 +658,9 @@ restore:
- 		}
- 		goto restore;
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -189,6 +189,10 @@ static inline void ptrace_init_task(stru
+ 		child->ptrace = current->ptrace;
+ 		__ptrace_link(child, current->parent);
  	}
 +
-+	ptrace_put_breakpoints(tsk);
-+
- 	return ((orig_ret < 0) ? orig_ret : rc);
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++	atomic_set(&child->ptrace_bp_refcnt, 1);
++#endif
  }
  
-@@ -668,10 +674,17 @@ static unsigned long ptrace_get_debugreg
+ /**
+@@ -350,6 +354,13 @@ extern int task_current_syscall(struct t
+ 				unsigned long args[6], unsigned int maxargs,
+ 				unsigned long *sp, unsigned long *pc);
  
- 	if (n < HBP_NUM) {
- 		struct perf_event *bp;
+-#endif
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++extern int ptrace_get_breakpoints(struct task_struct *tsk);
++extern void ptrace_put_breakpoints(struct task_struct *tsk);
++#else
++static inline void ptrace_put_breakpoints(struct task_struct *tsk) { }
++#endif /* CONFIG_HAVE_HW_BREAKPOINT */
 +
-+		if (ptrace_get_breakpoints(tsk) < 0)
-+			return -ESRCH;
-+
- 		bp = thread->ptrace_bps[n];
- 		if (!bp)
--			return 0;
--		val = bp->hw.info.address;
-+			val = 0;
-+		else
-+			val = bp->hw.info.address;
-+
-+		ptrace_put_breakpoints(tsk);
- 	} else if (n == 6) {
- 		val = thread->debugreg6;
- 	 } else if (n == 7) {
-@@ -686,6 +699,10 @@ static int ptrace_set_breakpoint_addr(st
- 	struct perf_event *bp;
- 	struct thread_struct *t = &tsk->thread;
- 	struct perf_event_attr attr;
-+	int err = 0;
-+
-+	if (ptrace_get_breakpoints(tsk) < 0)
-+		return -ESRCH;
++#endif /* __KERNEL */
  
- 	if (!t->ptrace_bps[nr]) {
- 		ptrace_breakpoint_init(&attr);
-@@ -709,24 +726,23 @@ static int ptrace_set_breakpoint_addr(st
- 		 * writing for the user. And anyway this is the previous
- 		 * behaviour.
- 		 */
--		if (IS_ERR(bp))
--			return PTR_ERR(bp);
-+		if (IS_ERR(bp)) {
-+			err = PTR_ERR(bp);
-+			goto put;
-+		}
+ #endif
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1531,6 +1531,9 @@ struct task_struct {
+ 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ #endif
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++	atomic_t ptrace_bp_refcnt;
++#endif
+ };
  
- 		t->ptrace_bps[nr] = bp;
- 	} else {
--		int err;
--
- 		bp = t->ptrace_bps[nr];
- 
- 		attr = bp->attr;
- 		attr.bp_addr = addr;
- 		err = modify_user_hw_breakpoint(bp, &attr);
--		if (err)
--			return err;
- 	}
- 
--
--	return 0;
-+put:
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1015,7 +1015,7 @@ NORET_TYPE void do_exit(long code)
+ 	/*
+ 	 * FIXME: do that only when needed, using sched_exit tracepoint
+ 	 */
+-	flush_ptrace_hw_breakpoint(tsk);
 +	ptrace_put_breakpoints(tsk);
-+	return err;
- }
+ 
+ 	exit_notify(tsk, group_dead);
+ #ifdef CONFIG_NUMA
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -22,6 +22,7 @@
+ #include <linux/syscalls.h>
+ #include <linux/uaccess.h>
+ #include <linux/regset.h>
++#include <linux/hw_breakpoint.h>
+ 
  
  /*
+@@ -876,3 +877,19 @@ asmlinkage long compat_sys_ptrace(compat
+ 	return ret;
+ }
+ #endif	/* CONFIG_COMPAT */
++
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++int ptrace_get_breakpoints(struct task_struct *tsk)
++{
++	if (atomic_inc_not_zero(&tsk->ptrace_bp_refcnt))
++		return 0;
++
++	return -1;
++}
++
++void ptrace_put_breakpoints(struct task_struct *tsk)
++{
++	if (atomic_dec_and_test(&tsk->ptrace_bp_refcnt))
++		flush_ptrace_hw_breakpoint(tsk);
++}
++#endif /* CONFIG_HAVE_HW_BREAKPOINT */
 
 
