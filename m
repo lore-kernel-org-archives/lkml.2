@@ -1,135 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab1ESAJk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 20:09:40 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39727 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab1ESAJj convert rfc822-to-8bit (ORCPT
+	id S1753383Ab1ESAPN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 20:15:13 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:35893 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab1ESAPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 20:09:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fzIPXiNuI97a4Lhp6G1zn3RoGCJ3dUOUJVV6Wy3FAjjZewuyQm7rTKkP/IO1iYFmJY
-         X4h9jcUlK3xB8OjhLVLx6o/1luuRdJ3RuKYmARQ9rRpq0jtEhNPlzFAgZu2agtt+hZLD
-         ++oUaOMlYf8ucHaaGcuPclJmRKfa49otLGd0I=
-MIME-Version: 1.0
-In-Reply-To: <20110517161508.GN5279@suse.de>
-References: <1305295404-12129-5-git-send-email-mgorman@suse.de>
-	<4DCFAA80.7040109@jp.fujitsu.com>
-	<1305519711.4806.7.camel@mulgrave.site>
-	<BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
-	<20110516084558.GE5279@suse.de>
-	<BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
-	<20110516102753.GF5279@suse.de>
-	<BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
-	<20110517103840.GL5279@suse.de>
-	<1305640239.2046.27.camel@lenovo>
-	<20110517161508.GN5279@suse.de>
-Date: Thu, 19 May 2011 09:09:37 +0900
-Message-ID: <BANLkTimUJeTbWV_0BzgjrDjY=Wpc-PaG5Q@mail.gmail.com>
-Subject: Re: [PATCH] mm: vmscan: Correctly check if reclaimer should schedule
- during shrink_slab
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>, Colin Ian King <colin.king@canonical.com>
-Cc: akpm@linux-foundation.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
-        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 May 2011 20:15:10 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:organization;
+	b=TPwkrIQrbO+M9hCfB5HS/KoTYIaa0E1VsxJ7MtNhDqkzqCGU8UH4iSdssg2BWtgwa
+	HBwN1mDFIfv9XFlPFE43w==
+From: David Decotigny <decot@google.com>
+To: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kernel-net-upstream@google.com, Mandeep Baines <msb@google.com>,
+        David Decotigny <decot@google.com>
+Subject: [PATCH 1/6] forcedeth: Improve stats counters
+Date: Wed, 18 May 2011 17:14:35 -0700
+Message-Id: <1305764080-24853-1-git-send-email-decot@google.com>
+X-Mailer: git-send-email 1.7.3.1
+Organization: Google, Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Colin.
+From: Mandeep Baines <msb@google.com>
 
-Sorry for bothering you. :(
-I hope this test is last.
+Rx byte count was off; instead use the hardware's count.  Tx packet
+count was counting pre-TSO packets; instead count on-the-wire packets.
+Report hardware dropped frame count as rx_fifo_errors.
 
-We(Mel, KOSAKI and me) finalized opinion.
+- The count of transmitted packets reported by the forcedeth driver
+  reports pre-TSO (TCP Segmentation Offload) packet counts and not the
+  count of the number of packets sent on the wire. This change fixes
+  the forcedeth driver to report the correct count. Fixed the code by
+  copying the count stored in the NIC H/W to the value reported by the
+  driver.
 
-Could you test below patch with patch[1/4] of Mel's series(ie,
-!pgdat_balanced  of sleeping_prematurely)?
-If it is successful, we will try to merge this version instead of
-various cond_resched sprinkling version.
-
-
-On Wed, May 18, 2011 at 1:15 AM, Mel Gorman <mgorman@suse.de> wrote:
-> It has been reported on some laptops that kswapd is consuming large
-> amounts of CPU and not being scheduled when SLUB is enabled during
-> large amounts of file copying. It is expected that this is due to
-> kswapd missing every cond_resched() point because;
->
-> shrink_page_list() calls cond_resched() if inactive pages were isolated
->        which in turn may not happen if all_unreclaimable is set in
->        shrink_zones(). If for whatver reason, all_unreclaimable is
->        set on all zones, we can miss calling cond_resched().
->
-> balance_pgdat() only calls cond_resched if the zones are not
->        balanced. For a high-order allocation that is balanced, it
->        checks order-0 again. During that window, order-0 might have
->        become unbalanced so it loops again for order-0 and returns
->        that it was reclaiming for order-0 to kswapd(). It can then
->        find that a caller has rewoken kswapd for a high-order and
->        re-enters balance_pgdat() without ever calling cond_resched().
->
-> shrink_slab only calls cond_resched() if we are reclaiming slab
->        pages. If there are a large number of direct reclaimers, the
->        shrinker_rwsem can be contended and prevent kswapd calling
->        cond_resched().
->
-> This patch modifies the shrink_slab() case. If the semaphore is
-> contended, the caller will still check cond_resched(). After each
-> successful call into a shrinker, the check for cond_resched() is
-> still necessary in case one shrinker call is particularly slow.
->
-> This patch replaces
-> mm-vmscan-if-kswapd-has-been-running-too-long-allow-it-to-sleep.patch
-> in -mm.
->
-> [mgorman@suse.de: Preserve call to cond_resched after each call into shrinker]
-> From: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  mm/vmscan.c |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index af24d1e..0bed248 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -230,8 +230,11 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
->        if (scanned == 0)
->                scanned = SWAP_CLUSTER_MAX;
->
-> -       if (!down_read_trylock(&shrinker_rwsem))
-> -               return 1;       /* Assume we'll be able to shrink next time */
-> +       if (!down_read_trylock(&shrinker_rwsem)) {
-> +               /* Assume we'll be able to shrink next time */
-> +               ret = 1;
-> +               goto out;
-> +       }
->
->        list_for_each_entry(shrinker, &shrinker_list, list) {
->                unsigned long long delta;
-> @@ -282,6 +285,8 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
->                shrinker->nr += total_scan;
->        }
->        up_read(&shrinker_rwsem);
-> +out:
-> +       cond_resched();
->        return ret;
->  }
->
->
+- Count rx_drop_frame errors as rx_fifo_errors:
+  We see a lot of rx_drop_frame errors if we disable the rx bottom-halves
+  for too long.  Normally, rx_fifo_errors would be counted in this case.
+  The rx_drop_frame error count is private to forcedeth and is not
+  reported by ifconfig or sysfs.  The rx_fifo_errors count is currently
+  unused in the forcedeth driver.  It is reported by ifconfig as overruns.
+  This change reports rx_drop_frame errors as rx_fifo_errors.
 
 
+Signed-off-by: David Decotigny <decot@google.com>
+---
+ drivers/net/forcedeth.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
+index d09e8b0..895471d 100644
+--- a/drivers/net/forcedeth.c
++++ b/drivers/net/forcedeth.c
+@@ -1684,6 +1684,7 @@ static void nv_get_hw_stats(struct net_device *dev)
+ 		np->estats.tx_pause += readl(base + NvRegTxPause);
+ 		np->estats.rx_pause += readl(base + NvRegRxPause);
+ 		np->estats.rx_drop_frame += readl(base + NvRegRxDropFrame);
++		np->estats.rx_errors_total += np->estats.rx_drop_frame;
+ 	}
+ 
+ 	if (np->driver_data & DEV_HAS_STATISTICS_V3) {
+@@ -1708,11 +1709,14 @@ static struct net_device_stats *nv_get_stats(struct net_device *dev)
+ 		nv_get_hw_stats(dev);
+ 
+ 		/* copy to net_device stats */
++		dev->stats.tx_packets = np->estats.tx_packets;
++		dev->stats.rx_bytes = np->estats.rx_bytes;
+ 		dev->stats.tx_bytes = np->estats.tx_bytes;
+ 		dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
+ 		dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
+ 		dev->stats.rx_crc_errors = np->estats.rx_crc_errors;
+ 		dev->stats.rx_over_errors = np->estats.rx_over_errors;
++		dev->stats.rx_fifo_errors = np->estats.rx_drop_frame;
+ 		dev->stats.rx_errors = np->estats.rx_errors_total;
+ 		dev->stats.tx_errors = np->estats.tx_errors_total;
+ 	}
 -- 
-Kind regards,
-Minchan Kim
+1.7.3.1
+
