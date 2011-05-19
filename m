@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204Ab1ESPIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 11:08:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59275 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab1ESPIg (ORCPT
+	id S933301Ab1ESPJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 11:09:25 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:33444
+	"EHLO CH1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932238Ab1ESPJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 11:08:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Barry Song <21cnbao@gmail.com>
-Subject: Re: [RFC] ARM Subarchitecture group maintainership
-Date: Thu, 19 May 2011 17:08:27 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Nicolas Pitre <nico@fluxnic.net>, linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <201105181047.17309.arnd@arndb.de> <201105191550.20129.arnd@arndb.de> <BANLkTikKhZu_H_QT+Uds22sepk1OnEeDNA@mail.gmail.com>
-In-Reply-To: <BANLkTikKhZu_H_QT+Uds22sepk1OnEeDNA@mail.gmail.com>
+	Thu, 19 May 2011 11:09:22 -0400
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dKzz1202hzz8275dhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4DD5329C.2040200@freescale.com>
+Date: Thu, 19 May 2011 10:09:16 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/2.0.14-1.fc13 SeaMonkey/2.0.14
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
+        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 6/7] tty/powerpc: introduce the ePAPR embedded hypervisor
+ byte channel driver
+References: <1305813272-31826-1-git-send-email-timur@freescale.com> <1305813272-31826-7-git-send-email-timur@freescale.com> <201105191702.39919.arnd@arndb.de>
+In-Reply-To: <201105191702.39919.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105191708.27464.arnd@arndb.de>
-X-Provags-ID: V02:K0:AFgRerG6sl8MTh/owsl8ysWNIieONOtsUl7w5Sa602Y
- HAqmHtC271tjjOSE3iNnuNXW6XfLXDQxJ9nzSNobk4mk0JGBvO
- dlpO/BZhQAE5ZpJ3O/ZOrxSfrhU8kNxd3cxKIZ97bB2fEgpAyK
- A8mOXiRnBkU1fxHqSC2UE4Cjlmgx0z0Dj2Rf/cI6vDJhP+fHHi
- mn5/Sk1swyl51P8fQSsEg==
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 May 2011, Barry Song wrote:
-> >
-> > Do you have a diffstat or a git tree with your work available?
-> 
-> not yet by now. it should be coming in the middle of next month. we
-> have workable codes but need a lot of refinations before sending
-> patches for review. it is more like a new begin from scratch, so
-> arm/arch changes should be things we can catch.
+Arnd Bergmann wrote:
+> Why is this using a full tty driver instead of the hvc framework that most
+> other hypervisor consoles use?
 
-I'd like to make sure that you are not doing duplicate work by
-going in a wrong direction with this, so I think it would be best
-to post as early as possible, ideally with a list of things that
-you already know you need to change, so people don't need to comment
-on them.
+Because HVC uses the same interface for consoles and tty, and that resulted in
+dropped characters if the client driver returns EAGAIN because it's output
+buffer is full.  I posted a patch that "fixes" this, but it was rejected.
+Here's the original patch:
 
-If you can just post a diffstat of the stuff you currently have,
-we also get an impression of the amount of code that you are
-talking about.
+http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-August/085136.html
 
-	Arnd
+And here's the thread discussing our concerns:
+
+http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-September/thread.html
+
+(search for "fix dropping of characters when output byte channel is full")
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
+
