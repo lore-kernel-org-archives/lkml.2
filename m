@@ -1,182 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab1ESCOD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 22:14:03 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:48926 "EHLO
+	id S1756552Ab1ESCND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 22:13:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:58541 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756090Ab1ESCM6 (ORCPT
+	with ESMTP id S1755806Ab1ESCM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 22:12:58 -0400
-X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=vhdKIqpQuCYA:10 a=vUYgtxGB2ZsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=ub5fkPtXNE4uSVaks_IA:9 a=OZ5PjjlgJ_G-0UEiIh0A:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Wed, 18 May 2011 22:12:57 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=k5rAD8_ZGUwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=SN9RV68_6VhCKgxovi4A:9 a=4niIxAcjxNTzXcwDGfQA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110519021256.450408258@goodmis.org>
+Message-Id: <20110519021256.720408836@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 18 May 2011 22:11:59 -0400
+Date: Wed, 18 May 2011 22:12:00 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 08/13] ftrace: Have global_ops store the functions that are to be traced
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 09/13] ftrace: Free hash with call_rcu_sched()
 References: <20110519021151.600991800@goodmis.org>
-Content-Disposition: inline; filename=0008-ftrace-Have-global_ops-store-the-functions-that-are-.patch
+Content-Disposition: inline; filename=0009-ftrace-Free-hash-with-call_rcu_sched.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-This is a step towards each ops structure defining its own set
-of functions to trace. As the current code with pid's and such
-are specific to the global_ops, it is restructured to be used
-with the global ops.
+When a hash is modified and might be in use, we need to perform
+a schedule RCU operation on it, as the hashes will soon be used
+directly in the function tracer callback.
 
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |   69 +++++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 53 insertions(+), 16 deletions(-)
+ kernel/trace/ftrace.c |   55 +++++++++++++++++++++++++------------------------
+ 1 files changed, 28 insertions(+), 27 deletions(-)
 
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 8fef1d9..dcce0bf 100644
+index dcce0bf..92b6fdf 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -91,6 +91,7 @@ static struct ftrace_ops *ftrace_list __read_mostly = &ftrace_list_end;
- ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
- ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
- ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
-+static struct ftrace_ops global_ops;
+@@ -913,6 +913,7 @@ struct ftrace_hash {
+ 	unsigned long		size_bits;
+ 	struct hlist_head	*buckets;
+ 	unsigned long		count;
++	struct rcu_head		rcu;
+ };
  
  /*
-  * Traverse the ftrace_list, invoking all entries.  The reason that we
-@@ -153,7 +154,7 @@ static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_ip)
+@@ -1058,6 +1059,21 @@ static void free_ftrace_hash(struct ftrace_hash *hash)
+ 	kfree(hash);
  }
- #endif
  
--static void update_ftrace_function(void)
-+static void update_global_ops(void)
- {
- 	ftrace_func_t func;
- 
-@@ -173,6 +174,18 @@ static void update_ftrace_function(void)
- 		set_ftrace_pid_function(func);
- 		func = ftrace_pid_func;
- 	}
++static void __free_ftrace_hash_rcu(struct rcu_head *rcu)
++{
++	struct ftrace_hash *hash;
 +
-+	global_ops.func = func;
++	hash = container_of(rcu, struct ftrace_hash, rcu);
++	free_ftrace_hash(hash);
 +}
 +
-+static void update_ftrace_function(void)
++static void free_ftrace_hash_rcu(struct ftrace_hash *hash)
 +{
-+	ftrace_func_t func;
++	if (!hash || hash == EMPTY_HASH)
++		return;
++	call_rcu_sched(&hash->rcu, __free_ftrace_hash_rcu);
++}
 +
-+	update_global_ops();
-+
-+	func = global_ops.func;
-+
- #ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	ftrace_trace_function = func;
- #else
-@@ -181,24 +194,19 @@ static void update_ftrace_function(void)
- #endif
- }
- 
--static int __register_ftrace_function(struct ftrace_ops *ops)
-+static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
+ static struct ftrace_hash *alloc_ftrace_hash(int size_bits)
  {
--	ops->next = ftrace_list;
-+	ops->next = *list;
- 	/*
- 	 * We are entering ops into the ftrace_list but another
- 	 * CPU might be walking that list. We need to make sure
- 	 * the ops->next pointer is valid before another CPU sees
- 	 * the ops pointer included into the ftrace_list.
+ 	struct ftrace_hash *hash;
+@@ -1122,7 +1138,8 @@ ftrace_hash_move(struct ftrace_hash **dst, struct ftrace_hash *src)
+ 	struct ftrace_func_entry *entry;
+ 	struct hlist_node *tp, *tn;
+ 	struct hlist_head *hhd;
+-	struct ftrace_hash *hash = *dst;
++	struct ftrace_hash *old_hash;
++	struct ftrace_hash *new_hash;
+ 	unsigned long key;
+ 	int size = src->count;
+ 	int bits = 0;
+@@ -1133,13 +1150,11 @@ ftrace_hash_move(struct ftrace_hash **dst, struct ftrace_hash *src)
+ 	 * the empty_hash.
  	 */
--	rcu_assign_pointer(ftrace_list, ops);
--
--	if (ftrace_enabled)
--		update_ftrace_function();
--
--	return 0;
-+	rcu_assign_pointer(*list, ops);
- }
- 
--static int __unregister_ftrace_function(struct ftrace_ops *ops)
-+static int remove_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
- {
- 	struct ftrace_ops **p;
- 
-@@ -206,13 +214,12 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
- 	 * If we are removing the last function, then simply point
- 	 * to the ftrace_stub.
- 	 */
--	if (ftrace_list == ops && ops->next == &ftrace_list_end) {
--		ftrace_trace_function = ftrace_stub;
--		ftrace_list = &ftrace_list_end;
-+	if (*list == ops && ops->next == &ftrace_list_end) {
-+		*list = &ftrace_list_end;
+ 	if (!src->count) {
+-		free_ftrace_hash(*dst);
+-		*dst = EMPTY_HASH;
++		free_ftrace_hash_rcu(*dst);
++		rcu_assign_pointer(*dst, EMPTY_HASH);
  		return 0;
  	}
  
--	for (p = &ftrace_list; *p != &ftrace_list_end; p = &(*p)->next)
-+	for (p = list; *p != &ftrace_list_end; p = &(*p)->next)
- 		if (*p == ops)
- 			break;
+-	ftrace_hash_clear(hash);
+-
+ 	/*
+ 	 * Make the hash size about 1/2 the # found
+ 	 */
+@@ -1150,27 +1165,9 @@ ftrace_hash_move(struct ftrace_hash **dst, struct ftrace_hash *src)
+ 	if (bits > FTRACE_HASH_MAX_BITS)
+ 		bits = FTRACE_HASH_MAX_BITS;
  
-@@ -220,7 +227,37 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
- 		return -1;
+-	/* We can't modify the empty_hash */
+-	if (hash == EMPTY_HASH) {
+-		/* Create a new hash */
+-		*dst = alloc_ftrace_hash(bits);
+-		if (!*dst) {
+-			*dst = EMPTY_HASH;
+-			return -ENOMEM;
+-		}
+-		hash = *dst;
+-	} else {
+-		size = 1 << bits;
+-
+-		/* Use the old hash, but create new buckets */
+-		hhd = kzalloc(sizeof(*hhd) * size, GFP_KERNEL);
+-		if (!hhd)
+-			return -ENOMEM;
+-
+-		kfree(hash->buckets);
+-		hash->buckets = hhd;
+-		hash->size_bits = bits;
+-	}
++	new_hash = alloc_ftrace_hash(bits);
++	if (!new_hash)
++		return -ENOMEM;
  
- 	*p = (*p)->next;
-+	return 0;
-+}
-+
-+static int __register_ftrace_function(struct ftrace_ops *ops)
-+{
-+	if (ftrace_disabled)
-+		return -ENODEV;
-+
-+	if (FTRACE_WARN_ON(ops == &global_ops))
-+		return -EINVAL;
-+
-+	add_ftrace_ops(&ftrace_list, ops);
-+	if (ftrace_enabled)
-+		update_ftrace_function();
-+
-+	return 0;
-+}
+ 	size = 1 << src->size_bits;
+ 	for (i = 0; i < size; i++) {
+@@ -1181,10 +1178,14 @@ ftrace_hash_move(struct ftrace_hash **dst, struct ftrace_hash *src)
+ 			else
+ 				key = 0;
+ 			remove_hash_entry(src, entry);
+-			__add_hash_entry(hash, entry);
++			__add_hash_entry(new_hash, entry);
+ 		}
+ 	}
  
-+static int __unregister_ftrace_function(struct ftrace_ops *ops)
-+{
-+	int ret;
++	old_hash = *dst;
++	rcu_assign_pointer(*dst, new_hash);
++	free_ftrace_hash_rcu(old_hash);
 +
-+	if (ftrace_disabled)
-+		return -ENODEV;
-+
-+	if (FTRACE_WARN_ON(ops == &global_ops))
-+		return -EINVAL;
-+
-+	ret = remove_ftrace_ops(&ftrace_list, ops);
-+	if (ret < 0)
-+		return ret;
- 	if (ftrace_enabled)
- 		update_ftrace_function();
- 
-@@ -894,7 +931,7 @@ enum {
- 	FTRACE_OPS_FL_ENABLED		= 1,
- };
- 
--struct ftrace_ops global_ops = {
-+static struct ftrace_ops global_ops = {
- 	.func			= ftrace_stub,
- 	.notrace_hash		= EMPTY_HASH,
- 	.filter_hash		= EMPTY_HASH,
-@@ -3263,7 +3300,7 @@ void __init ftrace_init(void)
- 
- #else
- 
--struct ftrace_ops global_ops = {
-+static struct ftrace_ops global_ops = {
- 	.func			= ftrace_stub,
- };
+ 	return 0;
+ }
  
 -- 
 1.7.4.4
