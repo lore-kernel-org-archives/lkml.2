@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014Ab1ESPft (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 11:35:49 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:44392 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab1ESPfr convert rfc822-to-8bit (ORCPT
+	id S933324Ab1ESPoj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 11:44:39 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:5455 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751527Ab1ESPoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 11:35:47 -0400
-Subject: Re: linux-next: manual merge of the tip tree with the sparc tree
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Hellstrom <daniel@gaisler.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <4DD51D37.3010907@gaisler.com>
-References: <20110517131435.aceca54e.sfr@canb.auug.org.au>
-	 <4DD51D37.3010907@gaisler.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 19 May 2011 17:35:06 +0200
-Message-ID: <1305819306.2466.7228.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 19 May 2011 11:44:39 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAGA61U1Ld/sX/2dsb2JhbAAMhE3bFJEYgSuDZ4EHBJ8i
+X-IronPort-AV: E=Sophos;i="4.65,238,1304308800"; 
+   d="scan'208";a="114246223"
+Message-ID: <4DD53AE5.8020103@teksavvy.com>
+Date: Thu, 19 May 2011 11:44:37 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.39
+References: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
+In-Reply-To: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 15:37 +0200, Daniel Hellstrom wrote:
+Here's some more funny business that was new after rc7-git12:
 
+warning: (AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI &&
+RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has
+unmet direct dependencies (MISC_DEVICES)
+warning: (ACPI_APEI) selects PSTORE which has unmet direct dependencies
+(MISC_FILESYSTEMS)
 
-> diff --git a/arch/sparc/kernel/smp_32.c b/arch/sparc/kernel/smp_32.c
-> index 41102c5..d5b3958 100644
-> --- a/arch/sparc/kernel/smp_32.c
-> +++ b/arch/sparc/kernel/smp_32.c
-> @@ -156,11 +156,11 @@ void arch_send_call_function_ipi_mask(const struct 
-> cpumask *mask)
-> 
->  void smp_resched_interrupt(void)
->  {
-> +       irq_enter();
-> +       scheduler_ipi();
->         local_cpu_data().irq_resched_count++;
-> -       /*
-> -        * do nothing, since it all was about calling re-schedule
-> -        * routine called by interrupt return code.
-> -        */
-> +       irq_exit();
-> +       /* re-schedule routine called by interrupt return code. */
->  }
+The exact same .config didn't do that with rc7-git12,
+but does do it with 2.6.39 final.
 
-That doesn't look like an IPI, that looks like its calls the function on
-the local cpu, which is completely pointless.
+Odd thing is, if I select both MISC_DEVICES and MISC_FILESYSTEMS,
+but do NOT select anything from under either of those,
+the warnings go away.
+
+Which likely means the warnings are totally bogus.
+
+Cheers
