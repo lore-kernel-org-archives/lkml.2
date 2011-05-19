@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932727Ab1ESIwU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 04:52:20 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:47992
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756833Ab1ESIwT (ORCPT
+	id S1756910Ab1ESJFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 05:05:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65159 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753120Ab1ESJFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 04:52:19 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 19 May 2011 16:56:39 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
-Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to
- drivers/gpio
-Message-ID: <20110519085638.GA26816@S2100-06.ap.freescale.net>
-References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Thu, 19 May 2011 05:05:22 -0400
+Subject: RE: [PATCH] ARM: sparsemem: allow pfn_valid to be overridden when
+ using	SPARSEMEM
+From: Will Deacon <will.deacon@arm.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mgorman@suse.de>
+In-Reply-To: <0D753D10438DA54287A00B027084269764D2F73AC4@AUSP01VMBX24.collaborationhost.net>
+References: <1305734639-6561-1-git-send-email-will.deacon@arm.com>
+	 <0D753D10438DA54287A00B027084269764D2F73AC4@AUSP01VMBX24.collaborationhost.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 May 2011 10:05:12 +0100
+Message-ID: <1305795912.29560.19.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 03:13:22PM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Wed, 2011-05-18 at 19:53 +0100, H Hartley Sweeten wrote:
+> On Wednesday, May 18, 2011 9:04 AM, Will Deacon wrote:
+> >
+> > In commit eb33575c ("[ARM] Double check memmap is actually valid with a
+> > memmap has unexpected holes V2"), a new function, memmap_valid_within,
+> > was introduced to mmzone.h so that holes in the memmap which pass
+> > pfn_valid in SPARSEMEM configurations can be detected and avoided.
+
+[...]
+
+> I tested this on an EP93xx based system which uses ARCH_HAS_HOLES_MEMORYMODEL.
+> The EP9307A has 64MB of memory that appears as two 32MB blocks at addresses
+> 0xc0000000 and 0xc4000000.  Currently the EP93xx uses a Flat Memory model and
+> the hole used to cause a Kernel OOPs before commit e80d6a24 ("[ARM] Skip memory
+> holes in FLATMEM when reading /proc/pagetypeinfo"), which is where I think this
+> all started.
 > 
-> This rewrites the U300 GPIO driver using gpiolib and the irq_chip
-> abstractions, makes it runtime-configured rather than compile-time,
-> and moves it to the drivers/gpio subsystem where it belongs,
-> depopulating the ARM tree of one more driver.
+[...]
+
+> I'm not sure what the output "should" be, but the patch does not seem to
+> cause any issues.  So feel free to add:
 > 
-> Cc: Jonas Aaberg <jonas.aberg@stericsson.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
+> Tested-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-I start working on moving mxs gpio (arch/arm/mach-mxs/gpio.c) into
-driver/gpio, and I see the possibility to go a different approach
-from U300 one posted here.
+Thanks for that. It's good to know that this patch doesn't break
+non-sparsemem platforms with whacky flatmem configurations :)
 
-The common thing between these two hardwares is there are several
-gpio ports implemented in one memory region. And it seems no problem
-to treat all these gpio ports as one gpio chip, and we can use
-platform data to specify port number, and calculate base address of
-each port with shifting start address.  But I do not think this
-approach is able to scale comparing to the one that we treat each
-port as an independent gpio chip.
+Will
 
-Looking at mxc gpio driver, we will see those gpio ports lay at the
-discrete memory regions.  One port one chip approach works for both
-cases, since sharing one memory region is just a special case of one
-port one region case.  And most importantly, it will make gpio driver
-clean and easy to see the common pattern among different gpio drivers.
-
--- 
-Regards,
-Shawn
 
