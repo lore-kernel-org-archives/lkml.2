@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933936Ab1ESSIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:08:14 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:45102 "EHLO
+	id S933968Ab1ESSVj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:21:39 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57182 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933818Ab1ESSIL (ORCPT
+	by vger.kernel.org with ESMTP id S933927Ab1ESSIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:08:11 -0400
-X-Sasl-enc: gQiCVs7UB8wxk9VL9y3AAYIZD0KJFA98BxlY0qnZKa/d 1305828490
+	Thu, 19 May 2011 14:08:13 -0400
+X-Sasl-enc: QuntaM1gfu8wd2n8UYjAUqB0Mah/L9gvzUcHUvfjhaJh 1305828492
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:56 2011
-Message-Id: <20110519180556.205254396@clark.kroah.org>
+Message-Id: <20110519180556.304313981@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:04:48 -0700
+Date: Thu, 19 May 2011 11:04:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [20/71] CIFS: Fix memory over bound bug in cifs_parse_mount_options
+        Ben Dooks <ben-linux@fluff.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: [21/71] drivers/rtc/rtc-s3c.c: fixup wake support for rtc
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,50 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: Ben Dooks <ben-linux@fluff.org>
 
-commit 4906e50b37e6f6c264e7ee4237343eb2b7f8d16d upstream.
+commit 52cd4e5c620af9e21b5298bf01844b98573505a7 upstream.
 
-While password processing we can get out of options array bound if
-the next character after array is delimiter. The patch adds a check
-if we reach the end.
+The driver is not balancing set_irq and disable_irq_wake() calls, so
+ensure that it keeps track of whether the wake is enabled.
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+The fixes the following error on S3C6410 devices:
+
+  WARNING: at kernel/irq/manage.c:382 set_irq_wake+0x84/0xec()
+  Unbalanced IRQ 92 wake disable
+
+Signed-off-by: Ben Dooks <ben-linux@fluff.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/connect.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-s3c.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -822,8 +822,7 @@ static int
- cifs_parse_mount_options(char *options, const char *devname,
- 			 struct smb_vol *vol)
- {
--	char *value;
--	char *data;
-+	char *value, *data, *end;
- 	unsigned int  temp_len, i, j;
- 	char separator[2];
- 	short int override_uid = -1;
-@@ -866,6 +865,7 @@ cifs_parse_mount_options(char *options,
- 	if (!options)
- 		return 1;
+--- a/drivers/rtc/rtc-s3c.c
++++ b/drivers/rtc/rtc-s3c.c
+@@ -46,6 +46,7 @@ static struct clk *rtc_clk;
+ static void __iomem *s3c_rtc_base;
+ static int s3c_rtc_alarmno = NO_IRQ;
+ static int s3c_rtc_tickno  = NO_IRQ;
++static bool wake_en;
+ static enum s3c_cpu_type s3c_rtc_cpu_type;
  
-+	end = options + strlen(options);
- 	if (strncmp(options, "sep=", 4) == 0) {
- 		if (options[4] != 0) {
- 			separator[0] = options[4];
-@@ -930,6 +930,7 @@ cifs_parse_mount_options(char *options,
- 			the only illegal character in a password is null */
+ static DEFINE_SPINLOCK(s3c_rtc_pie_lock);
+@@ -597,8 +598,12 @@ static int s3c_rtc_suspend(struct platfo
+ 	}
+ 	s3c_rtc_enable(pdev, 0);
  
- 			if ((value[temp_len] == 0) &&
-+			    (value + temp_len < end) &&
- 			    (value[temp_len+1] == separator[0])) {
- 				/* reinsert comma */
- 				value[temp_len] = separator[0];
+-	if (device_may_wakeup(&pdev->dev))
+-		enable_irq_wake(s3c_rtc_alarmno);
++	if (device_may_wakeup(&pdev->dev) && !wake_en) {
++		if (enable_irq_wake(s3c_rtc_alarmno) == 0)
++			wake_en = true;
++		else
++			dev_err(&pdev->dev, "enable_irq_wake failed\n");
++	}
+ 
+ 	return 0;
+ }
+@@ -614,8 +619,10 @@ static int s3c_rtc_resume(struct platfor
+ 		writew(tmp | ticnt_en_save, s3c_rtc_base + S3C2410_RTCCON);
+ 	}
+ 
+-	if (device_may_wakeup(&pdev->dev))
++	if (device_may_wakeup(&pdev->dev) && wake_en) {
+ 		disable_irq_wake(s3c_rtc_alarmno);
++		wake_en = false;
++	}
+ 
+ 	return 0;
+ }
 
 
