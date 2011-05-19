@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933649Ab1ESRXg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:23:36 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46014 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933494Ab1ESRXf (ORCPT
+	id S933691Ab1ESRXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:23:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41664 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933494Ab1ESRXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:23:35 -0400
+	Thu, 19 May 2011 13:23:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=d9CA5svgLl3m7uEO2JKtUAYXALFQikYfzR2zLOvcJwr63w27T19KInIAv17zT1g+ry
-         U2PojfFc7IdhUf6vbtPPoro8dlTaqV4xS6VDssGXcn8vVb+slSoVWWSQ4ul7PbuBo+rK
-         ZN7zg6GeVaNxeCup5oznKrkZ9+QPMSpZkpwvA=
-Subject: PATCH] patch to generate warning when signed-of line in patch in
- not proper
-From: anish <anish198519851985@gmail.com>
-To: apw@canonical.com, greg@kroah.com, man.k1983@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 May 2011 22:53:29 +0530
-Message-ID: <1305825809.2336.110.camel@anish-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fi7tkCFvqgpTeUaGPZ87ipr+NQ4Nqn3SIV3X+W4YEYBgCYqXoGr8KY+7qgXw9FTRZm
+         9qi6fGu+601o3YNpWUGpsMR1vbN0J9W8cYdgWYsl+wnfsicy1jx6/VnePDfaniQCUwuX
+         mYw66Pfvscg0VBDzgNz+2rLBsY4w1E8wG/BUs=
+Date: Thu, 19 May 2011 19:23:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC PATCH] perf: Split up buffer handling from core code
+Message-ID: <20110519172331.GF1956@nowhere>
+References: <1305767185-5771-1-git-send-email-fweisbec@gmail.com>
+ <20110519073136.GB14049@liondog.tnic>
+ <1305793931.2466.7191.camel@twins>
+ <20110519141456.GB1956@nowhere>
+ <1305816208.2466.7223.camel@twins>
+ <20110519145951.GD1956@nowhere>
+ <1305818041.2466.7225.camel@twins>
+ <20110519172039.GA27370@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110519172039.GA27370@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: anish kumar <anish198519851985@gmail.com>
+On Thu, May 19, 2011 at 07:20:39PM +0200, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> 
+> > On Thu, 2011-05-19 at 16:59 +0200, Frederic Weisbecker wrote:
+> > > I thought it would be nice to keep it inline for core use, as it's called
+> > > pretty often from the overflow path.
+> > 
+> > That's what I meant.
+> > 
+> > > A solution is to have a perf_output_copy_inline() in internal.h
+> > > and export it through perf_output_copy() in buffer.c 
+> > 
+> > If only "external inline" would work :-)
+> > 
+> > I'd call it __perf_output_copy() though, less typing.
+> 
+> Just __output_copy() please - if someone is looking at kernel/events/*.c then 
+> it's pretty clear that it's related to perf.
+> 
+> I.e. non-exposed symbols should lose their perf_ prefixes.
 
-This patch generates warning when there is no space between the
-patch submitter name and successive mail-id.
-
-Signed-off-by: anish kumar <anish198519851985@gmail.com>
----
- scripts/checkpatch.pl |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d867081..437c6d4 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1373,10 +1373,16 @@ sub process {
- 				WARN("Signed-off-by: is the preferred form\n" .
- 					$herecurr);
- 			}
--			if ($line =~ /^\s*signed-off-by:\S/i) {
--				WARN("space required after Signed-off-by:\n" .
-+			if ($line =~ /^\s*signed-off-by:(.*)/i) {
-+			 if($1 !~ /^(\s[a-zA-Z].*)/i) {
-+				WARN("Space required after Signed-off-by:\n" .
- 					$herecurr);
- 			}
-+			if($1 !~ /[\sa-zA-Z]+\s<.*>/i) {
-+				WARN("Space required between Full Name & Mail-id:\n" .
-+					$herecurr);
-+				}
-+			}
- 		}
- 
- # Check for wrappage within a valid hunk of the file
--- 
-1.7.0.4
+Agreed, I'm fixing that.
 
 
+> 
+> Thanks,
+> 
+> 	Ingo
