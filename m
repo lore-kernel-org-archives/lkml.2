@@ -1,30 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933790Ab1ESSG4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:06:56 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43911 "EHLO mx3.mail.elte.hu"
+	id S934220Ab1ESSKJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:10:09 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36111 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933638Ab1ESSGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:06:55 -0400
-Date: Thu, 19 May 2011 20:06:50 +0200
+	id S934167Ab1ESSKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 14:10:03 -0400
+Date: Thu, 19 May 2011 20:09:40 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] perf, x86: Fix event scheduler for constraints with
- overlapping counters
-Message-ID: <20110519180650.GC6139@elte.hu>
-References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
- <1302913676-14352-5-git-send-email-robert.richter@amd.com>
- <20110419102600.GU31407@erda.amd.com>
- <1305753398.2466.7180.camel@twins>
- <20110518212054.GC28476@elte.hu>
- <1305754613.2466.7190.camel@twins>
+To: "Rao, Nikhil" <nikhil.rao@intel.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]  x86: Removing unnecessary check in detect_ht
+Message-ID: <20110519180940.GD6139@elte.hu>
+References: <43F901BD926A4E43B106BF17856F0755018E1CF482@orsmsx508.amr.corp.intel.com>
+ <4FF5AC937153B0459463C1A88EB478F2010DFD3D3F@orsmsx505.amr.corp.intel.com>
+ <43F901BD926A4E43B106BF17856F0755018E1CF69D@orsmsx508.amr.corp.intel.com>
+ <1305048201.2736.17.camel@sbsiddha-MOBL3.sc.intel.com>
+ <1F668163772FA946975B9466A9DFF729B5E5@ORSMSX101.amr.corp.intel.com>
+ <1F668163772FA946975B9466A9DFF729B64C@ORSMSX101.amr.corp.intel.com>
+ <20110518210754.GA28476@elte.hu>
+ <1F668163772FA946975B9466A9DFF729B6A3@ORSMSX101.amr.corp.intel.com>
+ <20110518212351.GE28476@elte.hu>
+ <1F668163772FA946975B9466A9DFF729B7E4@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305754613.2466.7190.camel@twins>
+In-Reply-To: <1F668163772FA946975B9466A9DFF729B7E4@ORSMSX101.amr.corp.intel.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -37,30 +42,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+* Rao, Nikhil <nikhil.rao@intel.com> wrote:
 
-> On Wed, 2011-05-18 at 23:20 +0200, Ingo Molnar wrote:
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > >                         if (c->weight != w)
-> > > >                                 continue;
-> > > >  
-> > > > -                       for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
-> > > > -                               if (!test_bit(j, used_mask))
-> > > > +                       /* for each bit in idxmsk starting from idx */
-> > > > +                       while (idx < X86_PMC_IDX_MAX) {
-> > > > +                               idx = find_next_bit(c->idxmsk, X86_PMC_IDX_MAX,
-> > > > +                                                   idx);
-> > > 
-> > > I'd be mighty tempted to ignore that 80 column rule here ;-)
-> > 
-> > Please put the body of the loop into a helper function, the function is large 
-> > and there are countless col80 uglinesses in it!
+> Hi Ingo,
 > 
-> I just tried that, its real ugly due to the amount of state you need to
-> pass around.
+> Reposting as per your feedback.
 
-Does it help if you put that state into a helper structure?
+Please send a patch that applies to the x86 tree cleanly:
+
+  http://people.redhat.com/mingo/tip.git/README
 
 Thanks,
 
