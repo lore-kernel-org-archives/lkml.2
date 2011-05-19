@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab1ESLrB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 07:47:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36512 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932302Ab1ESLrA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 07:47:00 -0400
-Subject: Re: [RESEND PATCH] Documentation: statistics about nested locks
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Yong Zhang <yong.zhang0@gmail.com>, trivial@kernel.org
-In-Reply-To: <4DD4F6C1.5090701@gmail.com>
-References: <4DD4F6C1.5090701@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 19 May 2011 13:46:37 +0200
-Message-ID: <1305805597.2466.7219.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756062Ab1ESLsm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 07:48:42 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:48627 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755109Ab1ESLsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 07:48:41 -0400
+Date: Thu, 19 May 2011 12:48:41 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] MIPS: pfn_valid() is broken on low memory HIGHMEM
+ systems
+Message-ID: <20110519114841.GA17284@linux-mips.org>
+References: <1b31306f28573a4bee56f164b1f74962fced9bc5@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1b31306f28573a4bee56f164b1f74962fced9bc5@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 12:53 +0200, Juri Lelli wrote:
-> Explain what the trailing "/1" on some lock class names of lock_stat output
-> means.
+Queued for 2.6.41 with David Daney's suggested change to avoid GNU C
+extensions but I'm probably going to change my mind and will push this
+earlier.
 
-great, this applies without problems, thanks!
+Thanks!
+
+  Ralf
