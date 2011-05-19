@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934472Ab1ESTbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 15:31:40 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:61373 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933808Ab1ESTbh (ORCPT
+	id S934487Ab1ESTbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:31:47 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64049 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933808Ab1ESTbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 15:31:37 -0400
-Date: Thu, 19 May 2011 15:31:34 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Linus Walleij <linus.walleij@linaro.org>, Barry Song <21cnbao@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC] ARM Subarchitecture group maintainership
-In-Reply-To: <20110519192817.GB7445@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.00.1105191531170.14430@xanadu.home>
-References: <201105181047.17309.arnd@arndb.de> <BANLkTim_0eRvDkQwAYjTNQsOVQiHV+DdBQ@mail.gmail.com> <alpine.LFD.2.00.1105182234130.14430@xanadu.home> <BANLkTinXQvrG3LeSEO9Lnam3Bvq3dDKOsw@mail.gmail.com> <BANLkTi=OdvDT6MEk-RxiTNnX-rbwTOqrrw@mail.gmail.com>
- <20110519192817.GB7445@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 19 May 2011 15:31:44 -0400
+Date: Thu, 19 May 2011 13:31:42 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ben Dooks <ben@simtec.co.uk>,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH 2/2] spi: spi_s3c24xx: Use spi_bitbang_stop instead of
+ spi_unregister_master in s3c24xx_spi_remove
+Message-ID: <20110519193142.GR5109@ponder.secretlab.ca>
+References: <1305416008.24670.1.camel@phoenix>
+ <1305416116.24670.3.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305416116.24670.3.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 May 2011, Russell King - ARM Linux wrote:
-
-> On Thu, May 19, 2011 at 03:31:42PM +0200, Linus Walleij wrote:
-> > On Thu, May 19, 2011 at 5:01 AM, Barry Song <21cnbao@gmail.com> wrote:
-> > 
-> > > i asked this because we wanted to send the source codes of
-> > > CSR(http://www.csr.com) to upstream as i have told you in LDS. it
-> > > looks like we need to follow the below new changes to make our source
-> > > codes acceptable?
-> > > 1. arm device tree
-> > > 2. new pinmux framework from Linus Walleij
-> > 
-> > I'm working on that to post a new v3 of this patch set ASAP, if the
-> > ARM subarch tree maintainers are interested I can send them a
-> > pull request after that.
+On Sun, May 15, 2011 at 07:35:16AM +0800, Axel Lin wrote:
+> Calling spi_bitbang_stop() will also destroy bitbang->workqueue,
+> which is created by calling spi_bitbang_start() in s3c24xx_spi_probe().
 > 
-> As my tree currently contains a large proportion of the consolidation work
-> so far, it probably makes sense for this stuff to continue coming through
-> my tree so that we can sort out any merge conflicts there, rather than
-> starting on a new tree... It probably makes sense for the subarch tree to
-> get going after this merge window has closed.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Agreed.
+Applied, thanks.
+g.
 
-
-Nicolas
+> ---
+>  drivers/spi/spi_s3c24xx.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/spi/spi_s3c24xx.c b/drivers/spi/spi_s3c24xx.c
+> index 151a95e..1a5fcab 100644
+> --- a/drivers/spi/spi_s3c24xx.c
+> +++ b/drivers/spi/spi_s3c24xx.c
+> @@ -668,7 +668,7 @@ static int __exit s3c24xx_spi_remove(struct platform_device *dev)
+>  
+>  	platform_set_drvdata(dev, NULL);
+>  
+> -	spi_unregister_master(hw->master);
+> +	spi_bitbang_stop(&hw->bitbang);
+>  
+>  	clk_disable(hw->clk);
+>  	clk_put(hw->clk);
+> -- 
+> 1.7.1
+> 
+> 
+> 
