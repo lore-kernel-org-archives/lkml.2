@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933532Ab1ESQ3d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:29:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2994 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932850Ab1ESQ3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:29:32 -0400
-Date: Thu, 19 May 2011 18:27:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 07/10] ptrace: make group stop state visible via
-	PTRACE_GETSIGINFO
-Message-ID: <20110519162741.GD17265@redhat.com>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-8-git-send-email-tj@kernel.org>
+	id S1757005Ab1ESQwn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:52:43 -0400
+Received: from ns5.dns-guards.com ([41.203.20.164]:30521 "EHLO
+	velocity.dns-guards.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756120Ab1ESQwm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 12:52:42 -0400
+X-Greylist: delayed 1435 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 May 2011 12:52:41 EDT
+Message-ID: <sig.9120f46b2d.4DD5452F.9050108@radicalsystems.co.za>
+Date: Thu, 19 May 2011 18:28:31 +0200
+From: Jan Zwiegers <jan@radicalsystems.co.za>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305569849-10448-8-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: linux-pci@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: PCI BAR1 Unassigned
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Assp-ID: velocity.dns-guards.com ()
+X-Assp-Version: 1.7.1.3(1.0.2)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - velocity.dns-guards.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - radicalsystems.co.za
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16, Tejun Heo wrote:
->
->  static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
->  {
-> +	struct signal_struct *sig;
->  	unsigned long flags;
->  	int error;
->
->  	if (!lock_task_sighand(child, &flags))
->  		return -ESRCH;
-> +	sig = child->signal;
->
->  	error = -EINVAL;
->  	if (!child->last_siginfo)
-> @@ -585,6 +587,23 @@ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
->
->  	error = 0;
->  	*info = *child->last_siginfo;
-> +
-> +	/*
-> +	 * If reporting ptrace trap for a seized tracee, enable reporting
-> +	 * of info->si_pt_flags.
-> +	 */
-> +	if ((child->ptrace & PT_SEIZED) &&
-> +	    (info->si_code & __SI_MASK) == __SI_TRAP) {
-> +		/*
-> +		 * Report whether group stop is in effect w/ SI_STOPPED and
-> +		 * if so which signal caused it.
-> +		 */
-> +		if (sig->group_stop_count || sig->flags & SIGNAL_STOP_STOPPED) {
+I have the problem below where my PCI card's second BAR does not get 
+assigned.
+What can be the cause of this problem?
+The last kernel I tested on which worked OK was 2.6.27.
+My current problematic kernel 2.6.35.
 
-Cosmetic nit, you could declare "struct signal_struct *sig" here, under
-if (PT_SEIZED && __SI_TRAP).
+05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O 
+Card (rev 5c)
+     Flags: bus master, slow devsel, latency 32, IRQ 22
+     Memory at 93b00000 (type 3, prefetchable) [size=2K]
+     Memory at <unassigned> (type 3, prefetchable)
+     Capabilities: [80] #00 [0600]
+     Kernel modules: pci703drv
 
-
-I must admit, personally I still dislike this new PTRACE_GETSIGINFO API...
-But I can't suggest anything better, so I am not going to argue.
-
-Oleg.
-
+Cheers
+Jan
