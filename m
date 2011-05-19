@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab1ESXAX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 19:00:23 -0400
-Received: from mail.codesourcery.com ([38.113.113.100]:53088 "EHLO
-	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036Ab1ESXAV (ORCPT
+	id S933042Ab1ESXC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 19:02:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48637 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752886Ab1ESXCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 19:00:21 -0400
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Date: Fri, 20 May 2011 00:00:17 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-28-generic; KDE/4.6.2; x86_64; ; )
-Cc: Tejun Heo <tj@kernel.org>, oleg@redhat.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <201105192031.33569.pedro@codesourcery.com> <201105200042.12230.vda.linux@googlemail.com>
-In-Reply-To: <201105200042.12230.vda.linux@googlemail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 19 May 2011 19:02:55 -0400
+Date: Thu, 19 May 2011 16:01:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: David Rientjes <rientjes@google.com>, ian.campbell@citrix.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
+        wdauchy@gmail.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH V3 2/2] mm: Extend memory hotplug API to allow memory
+ hotplug in virtual machines
+Message-Id: <20110519160143.02163f36.akpm@linux-foundation.org>
+In-Reply-To: <20110519204509.GD27202@router-fw-old.local.net-space.pl>
+References: <20110517213858.GC30232@router-fw-old.local.net-space.pl>
+	<alpine.DEB.2.00.1105182026390.20651@chino.kir.corp.google.com>
+	<20110519204509.GD27202@router-fw-old.local.net-space.pl>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105200000.18310.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 May 2011 23:42:12, Denys Vlasenko wrote:
-> On Thursday 19 May 2011 21:31, Pedro Alves wrote:
-> > On Thursday 19 May 2011 15:17:28, Tejun Heo wrote:
-> > > But making SEIZE not trigger INTERRUPT and SETOPTIONS without
-> > > requiring TRACED don't seem too difficult.  Jan, would that be enough?
-> > > Oleg, what do you think?
-> > 
-> > UUIC, that opens a race where between SEIZEing and
-> > SETOPTIONS(O_TRACE FORK|VFORK|EXEC...), the tracee can
-> > fork/vfork/clone/exec, without the tracer getting the
-> > nice corresponding PTRACE_EVENT_ events.
+On Thu, 19 May 2011 22:45:09 +0200
+Daniel Kiper <dkiper@net-space.pl> wrote:
+
+> On Wed, May 18, 2011 at 08:36:02PM -0700, David Rientjes wrote:
+> > On Tue, 17 May 2011, Daniel Kiper wrote:
+> >
+> > > This patch contains online_page_callback and apropriate functions for
+> > > setting/restoring online page callbacks. It allows to do some machine
+> > > specific tasks during online page stage which is required to implement
+> > > memory hotplug in virtual machines. Additionally, __online_page_set_limits(),
+> > > __online_page_increment_counters() and __online_page_free() function
+> > > was added to ease generic hotplug operation.
+> >
+> > There are several issues with this.
+> >
+> > First, this is completely racy and only allows one global callback to be
+> > in use at a time without looping, which is probably why you had to pass an
 > 
-> SEIZE,fork-in-tracee,INTERRUPT sequence is indistinguishable
-> from SEIZE happening two microseconds later:
-> 
-> fork-in-tracee,SEIZE,INTERRUPT
+> One callback is allowed by design. Currently I do not see
+> any real usage for more than one callback.
 
- SEIZE,execvd,INTERRUPT (SETOPTS on interrupt)
+I'd suggest that you try using the notifier.h tools here and remove the
+restriction.  Sure, we may never use the capability but I expect the
+code will look nice and simple and once it's done, it's done.
 
-will make the tracer see a SIGTRAP that 
-
- execvd,SEIZE,INTERRUPT
-
-nor
-
- SEIZE,SETOPTS,execvd (SETOPTS on interrupt)
-
-would cause, isn't it?
-
-Now, if it were possible for the tracer to set the
-default OPTS _before_ PTRACE_ATTACH/PTRACE_SEIZE...
-
-> 
-> > In GDBs case, GDB will want to poke at memory
-> > right after attaching
-> 
-> ...where "right after attaching" is defined as "when the first ptrace-stop
-> is reported". Which will happen very soon.
-
-Hmm?  Why would it happen very soon?  Isn't the point of SEIZE not
-interrupting that you'd not get any INTERRUPT or stop at all?
-Where is the ptrace-stop coming from?
-
--- 
-Pedro Alves
