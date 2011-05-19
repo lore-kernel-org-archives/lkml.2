@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968Ab1ESJhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 05:37:19 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46905 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932901Ab1ESJhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 05:37:17 -0400
-Date: Thu, 19 May 2011 11:37:06 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [patch 5/7] clockevents: Provide interface to reconfigure an
- active clock event device
-Message-ID: <20110519093706.GE6251@elte.hu>
-References: <20110518205713.947614271@linutronix.de>
- <20110518210136.437459958@linutronix.de>
- <20110519091024.GB6251@elte.hu>
- <alpine.LFD.2.02.1105191132260.3078@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1105191132260.3078@ionos>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S933044Ab1ESJhl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 05:37:41 -0400
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:39587 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932844Ab1ESJhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 05:37:39 -0400
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@lii-enac.fr>,
+        Bastien Nocera <hadess@hadess.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] hid-multitouch: Introduce Elo TouchSystems 2515 IntelliTouch Plus
+Date: Thu, 19 May 2011 11:37:29 +0200
+Message-Id: <1305797849-5181-1-git-send-email-benjamin.tissoires@enac.fr>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds support for Elo TouchSystems 2515 IntelliTouch Plus
+that can be found in Lenovo A700 all-in-one.
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Tested-by: Bastien Nocera <hadess@hadess.net>
+---
+ drivers/hid/Kconfig          |    1 +
+ drivers/hid/hid-core.c       |    1 +
+ drivers/hid/hid-ids.h        |    1 +
+ drivers/hid/hid-multitouch.c |   10 ++++++++++
+ 4 files changed, 13 insertions(+), 0 deletions(-)
 
-> On Thu, 19 May 2011, Ingo Molnar wrote:
-> > * Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > + */
-> > > +int clockevents_reconfigure(struct clock_event_device *dev, u32 freq)
-> > 
-> > This too could use a struct clockevents_params perhaps - and would only use 
-> > params.freq for now but might be extended in the future.
-> > 
-> > But i'm fine with this API as well:
-> 
-> I agree for the config_register interface, but here we really just
-> want to update the frequency and not change any other parameter.
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index edc43ed..d83c23b 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -305,6 +305,7 @@ config HID_MULTITOUCH
+ 	  - 3M PCT touch screens
+ 	  - Cando dual touch panel
+ 	  - Cypress TrueTouch panels
++	  - Elo TouchSystems IntelliTouch Plus panels
+ 	  - Hanvon dual touch panels
+ 	  - Ilitek dual touch panel
+ 	  - IrTouch Infrared USB panels
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 715fa0a..72f5a4f 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1369,6 +1369,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ELECOM, USB_DEVICE_ID_ELECOM_BM084) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2515) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_EMS, USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_EZKEY, USB_DEVICE_ID_BTC_8193) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GAMERON, USB_DEVICE_ID_GAMERON_DUAL_PSX_ADAPTOR) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 851c71d..dd0805a 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -220,6 +220,7 @@
+ #define USB_VENDOR_ID_DREAM_CHEEKY	0x1d34
+ 
+ #define USB_VENDOR_ID_ELO		0x04E7
++#define USB_DEVICE_ID_ELO_TS2515	0x0022
+ #define USB_DEVICE_ID_ELO_TS2700	0x0020
+ 
+ #define USB_VENDOR_ID_EMS		0x2006
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index ef33e2d..3bc8de6 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -92,6 +92,7 @@ struct mt_class {
+ #define MT_CLS_3M				7
+ #define MT_CLS_CONFIDENCE			8
+ #define MT_CLS_CONFIDENCE_MINUS_ONE		9
++#define MT_CLS_DUAL_NSMU_CONTACTID		10
+ 
+ #define MT_DEFAULT_MAXCONTACT	10
+ 
+@@ -163,6 +164,10 @@ struct mt_class mt_classes[] = {
+ 		.sn_height = 128 },
+ 	{ .name = MT_CLS_CONFIDENCE,
+ 		.quirks = MT_QUIRK_VALID_IS_CONFIDENCE },
++	{ .name = MT_CLS_DUAL_NSMU_CONTACTID,
++		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
++			MT_QUIRK_SLOT_IS_CONTACTID,
++		.maxcontacts = 2 },
+ 
+ 	{ }
+ };
+@@ -584,6 +589,11 @@ static const struct hid_device_id mt_devices[] = {
+ 		HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS,
+ 			USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
+ 
++	/* Elo TouchSystems IntelliTouch Plus panel */
++	{ .driver_data = MT_CLS_DUAL_NSMU_CONTACTID,
++		HID_USB_DEVICE(USB_VENDOR_ID_ELO,
++			USB_DEVICE_ID_ELO_TS2515) },
++
+ 	/* GeneralTouch panel */
+ 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+-- 
+1.7.4.4
 
-ok, fair enough - in that case i'd suggest making that property explicitly 
-visible in the API name, via something like:
-
-	int clockevents_set_freq(struct clock_event_device *dev, u32 freq)
-
-That way it's obvious at first sight what this does:
-
-	clockevents_set_freq(dev, 1000000);
-
-Versus:
-
-	clockevents_reconfigure(dev, 1000000);
-
-Thanks,
-
-	Ingo
