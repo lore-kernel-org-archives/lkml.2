@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab1ESBMd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 21:12:33 -0400
-Received: from mail.perches.com ([173.55.12.10]:1769 "EHLO mail.perches.com"
+	id S1755192Ab1ESBQH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 21:16:07 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41277 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754976Ab1ESBMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 21:12:31 -0400
-Subject: Re: [PATCH] staging: brcm80211: brcmfmac: Add and use dhd_dbg
-From: Joe Perches <joe@perches.com>
-To: Henry Ptasinski <henryp@broadcom.com>
-Cc: Brett Rudley <brudley@broadcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Dowan Kim <dowan@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
-        Arend Van Spriel <arend@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
-In-Reply-To: <4DD46865.9010708@broadcom.com>
-References: <60c19c2ad4f078b6f283b5ff4ecca3653833ea28.1305742868.git.joe@perches.com>
-	 <4DD44C21.1080502@broadcom.com> <1305765163.1745.4.camel@Joe-Laptop>
-	 <4DD46865.9010708@broadcom.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 May 2011 18:09:41 -0700
-Message-ID: <1305767381.1745.8.camel@Joe-Laptop>
+	id S1752945Ab1ESBQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 21:16:06 -0400
+Date: Thu, 19 May 2011 11:15:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Gardiner <bengardiner@nanometrics.ca>
+Subject: linux-next: build failure after merge of the sound tree
+Message-Id: <20110519111557.f147fc1e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__19_May_2011_11_15_57_+1000_/H0icm5ngUg=3.qM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-18 at 17:46 -0700, Henry Ptasinski wrote:
-> On 05/18/2011 05:32 PM, Joe Perches wrote:
-> > On Wed, 2011-05-18 at 15:45 -0700, Henry Ptasinski wrote:
-> >> On 05/18/2011 11:23 AM, Joe Perches wrote:
-> >>> All uses of DHD_<TYPE>   macros are for debugging only.
-> >>> Change the multiple uses of DHD_<TYPE>((...)) to dhd_dbg(TYPE, ...)
-> >>> for a more consistent style.
-> >> I generally like this approach, but in brcmsmac we've been switching to
-> >> wiphy_err() and related instead.  Any strong argument for one over the
-> >> other?
-> > These aren't described as errors but are debugging messages.
-> Yes, so wiphy_debug(), wiphy_info(), wiphy_notice(), etc could be used. 
+--Signature=_Thu__19_May_2011_11_15_57_+1000_/H0icm5ngUg=3.qM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-True.  I think debugging messages should not have message levels
-promoted without cause.
+Hi Takashi,
 
-> > Not all uses use __func__.
-> That's just sloppiness on our part.  They should all be consistent.
-> > I think __func__ unnecessary and it should be avoided.
-> If it's moved into the macro, then there's only one place to change if 
-> you want to delete "__func__"/add it back/include it conditionally.
-[]
-> "brcm_dbg()" seems fine to me.
+After merging the sound tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-I'll fix these and resubmit.
+sound/core/pcm_lib.c:333:40: error: macro "xrun_log" passed 3 arguments, bu=
+t takes just 2
+sound/core/pcm_lib.c: In function 'snd_pcm_update_hw_ptr0':
+sound/core/pcm_lib.c:333: error: 'xrun_log' undeclared (first use in this f=
+unction)
 
+Caused by commit ec08b14483de ("ALSA: sound, core, pcm_lib: xrun_log: log
+also in_interrupt").  This build has CONFIG_SND_PCM_XRUN_DEBUG unset.
+
+Please, please, use grep or some search when making API changes.
+
+I have used the sound tree from next-20110518 for today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__19_May_2011_11_15_57_+1000_/H0icm5ngUg=3.qM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN1G9NAAoJEDMEi1NhKgbscUsH/2B2UC7QwU/zJckJVh8Y1CLD
+NZYsmIWD/7Xct0tervTQdRUVKm0GamR6VUGzZwq1YyfhJqow4PIKi6FaTKDo/oQh
+hfgMz22DfjNPNhHQHalVz542merS7fHAb7zuLQkgxVRooXpiTfC9o7wL9epchn3a
+AkudOnJjFBLgMZ5GjOitqgOlNDl93FV/8gUfO8vU/mY4NzWXnwq57VLUFfc06ecG
+88KTfQF4IfavOfLS+fjHNjDUUuUYeugTHOgWpY6QZShCLPTuF4IVrj6H4IuILNQe
+m2nm5A7kKHj3P3t/9pMJvmg4o1t/uNAV8fJv7gWBcXTegQ4eyrMN/srZRt4D68Q=
+=1sBr
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_May_2011_11_15_57_+1000_/H0icm5ngUg=3.qM--
