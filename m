@@ -1,118 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933215Ab1ESJKr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 05:10:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8786 "EHLO mx1.redhat.com"
+	id S933199Ab1ESJKp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 05:10:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40579 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933018Ab1ESJKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 05:10:39 -0400
+	id S933178Ab1ESJKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 05:10:40 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
 Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 26/32] GFS2: Move final part of inode.c into super.c
-Date: Thu, 19 May 2011 09:47:21 +0100
-Message-Id: <1305794847-3291-27-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 27/32] GFS2: Inode.c is empty now, remove it
+Date: Thu, 19 May 2011 09:47:22 +0100
+Message-Id: <1305794847-3291-28-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1305794847-3291-1-git-send-email-swhiteho@redhat.com>
 References: <1305794847-3291-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now inode.c is empty.
-
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
+diff --git a/fs/gfs2/Makefile b/fs/gfs2/Makefile
+index f3d23ef..d22edbb 100644
+--- a/fs/gfs2/Makefile
++++ b/fs/gfs2/Makefile
+@@ -1,7 +1,7 @@
+ ccflags-y := -I$(src)
+ obj-$(CONFIG_GFS2_FS) += gfs2.o
+ gfs2-y := acl.o bmap.o dir.o xattr.o glock.o \
+-	glops.o inode.o log.o lops.o main.o meta_io.o \
++	glops.o log.o lops.o main.o meta_io.o \
+ 	aops.o dentry.o export.o file.o \
+ 	ops_fstype.o ops_inode.o quota.o \
+ 	recovery.o rgrp.o super.o sys.o trans.o util.o
 diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-index b95ee5d..9076fbe 100644
+deleted file mode 100644
+index 9076fbe..0000000
 --- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -36,39 +36,3 @@
- #include "util.h"
- 
- 
--void gfs2_dinode_out(const struct gfs2_inode *ip, void *buf)
--{
--	struct gfs2_dinode *str = buf;
++++ /dev/null
+@@ -1,38 +0,0 @@
+-/*
+- * Copyright (C) Sistina Software, Inc.  1997-2003 All rights reserved.
+- * Copyright (C) 2004-2008 Red Hat, Inc.  All rights reserved.
+- *
+- * This copyrighted material is made available to anyone wishing to use,
+- * modify, copy, or redistribute it subject to the terms and conditions
+- * of the GNU General Public License version 2.
+- */
 -
--	str->di_header.mh_magic = cpu_to_be32(GFS2_MAGIC);
--	str->di_header.mh_type = cpu_to_be32(GFS2_METATYPE_DI);
--	str->di_header.mh_format = cpu_to_be32(GFS2_FORMAT_DI);
--	str->di_num.no_addr = cpu_to_be64(ip->i_no_addr);
--	str->di_num.no_formal_ino = cpu_to_be64(ip->i_no_formal_ino);
--	str->di_mode = cpu_to_be32(ip->i_inode.i_mode);
--	str->di_uid = cpu_to_be32(ip->i_inode.i_uid);
--	str->di_gid = cpu_to_be32(ip->i_inode.i_gid);
--	str->di_nlink = cpu_to_be32(ip->i_inode.i_nlink);
--	str->di_size = cpu_to_be64(i_size_read(&ip->i_inode));
--	str->di_blocks = cpu_to_be64(gfs2_get_inode_blocks(&ip->i_inode));
--	str->di_atime = cpu_to_be64(ip->i_inode.i_atime.tv_sec);
--	str->di_mtime = cpu_to_be64(ip->i_inode.i_mtime.tv_sec);
--	str->di_ctime = cpu_to_be64(ip->i_inode.i_ctime.tv_sec);
+-#include <linux/sched.h>
+-#include <linux/slab.h>
+-#include <linux/spinlock.h>
+-#include <linux/completion.h>
+-#include <linux/buffer_head.h>
+-#include <linux/posix_acl.h>
+-#include <linux/sort.h>
+-#include <linux/gfs2_ondisk.h>
+-#include <linux/crc32.h>
+-#include <linux/security.h>
+-#include <linux/time.h>
 -
--	str->di_goal_meta = cpu_to_be64(ip->i_goal);
--	str->di_goal_data = cpu_to_be64(ip->i_goal);
--	str->di_generation = cpu_to_be64(ip->i_generation);
+-#include "gfs2.h"
+-#include "incore.h"
+-#include "acl.h"
+-#include "bmap.h"
+-#include "dir.h"
+-#include "xattr.h"
+-#include "glock.h"
+-#include "glops.h"
+-#include "inode.h"
+-#include "log.h"
+-#include "meta_io.h"
+-#include "quota.h"
+-#include "rgrp.h"
+-#include "trans.h"
+-#include "util.h"
 -
--	str->di_flags = cpu_to_be32(ip->i_diskflags);
--	str->di_height = cpu_to_be16(ip->i_height);
--	str->di_payload_format = cpu_to_be32(S_ISDIR(ip->i_inode.i_mode) &&
--					     !(ip->i_diskflags & GFS2_DIF_EXHASH) ?
--					     GFS2_FORMAT_DE : 0);
--	str->di_depth = cpu_to_be16(ip->i_depth);
--	str->di_entries = cpu_to_be32(ip->i_entries);
 -
--	str->di_eattr = cpu_to_be64(ip->i_eattr);
--	str->di_atime_nsec = cpu_to_be32(ip->i_inode.i_atime.tv_nsec);
--	str->di_mtime_nsec = cpu_to_be32(ip->i_inode.i_mtime.tv_nsec);
--	str->di_ctime_nsec = cpu_to_be32(ip->i_inode.i_ctime.tv_nsec);
--}
-diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
-index 3061ac6..ed540e7 100644
---- a/fs/gfs2/super.c
-+++ b/fs/gfs2/super.c
-@@ -701,6 +701,42 @@ void gfs2_unfreeze_fs(struct gfs2_sbd *sdp)
- 	mutex_unlock(&sdp->sd_freeze_lock);
- }
- 
-+void gfs2_dinode_out(const struct gfs2_inode *ip, void *buf)
-+{
-+	struct gfs2_dinode *str = buf;
-+
-+	str->di_header.mh_magic = cpu_to_be32(GFS2_MAGIC);
-+	str->di_header.mh_type = cpu_to_be32(GFS2_METATYPE_DI);
-+	str->di_header.mh_format = cpu_to_be32(GFS2_FORMAT_DI);
-+	str->di_num.no_addr = cpu_to_be64(ip->i_no_addr);
-+	str->di_num.no_formal_ino = cpu_to_be64(ip->i_no_formal_ino);
-+	str->di_mode = cpu_to_be32(ip->i_inode.i_mode);
-+	str->di_uid = cpu_to_be32(ip->i_inode.i_uid);
-+	str->di_gid = cpu_to_be32(ip->i_inode.i_gid);
-+	str->di_nlink = cpu_to_be32(ip->i_inode.i_nlink);
-+	str->di_size = cpu_to_be64(i_size_read(&ip->i_inode));
-+	str->di_blocks = cpu_to_be64(gfs2_get_inode_blocks(&ip->i_inode));
-+	str->di_atime = cpu_to_be64(ip->i_inode.i_atime.tv_sec);
-+	str->di_mtime = cpu_to_be64(ip->i_inode.i_mtime.tv_sec);
-+	str->di_ctime = cpu_to_be64(ip->i_inode.i_ctime.tv_sec);
-+
-+	str->di_goal_meta = cpu_to_be64(ip->i_goal);
-+	str->di_goal_data = cpu_to_be64(ip->i_goal);
-+	str->di_generation = cpu_to_be64(ip->i_generation);
-+
-+	str->di_flags = cpu_to_be32(ip->i_diskflags);
-+	str->di_height = cpu_to_be16(ip->i_height);
-+	str->di_payload_format = cpu_to_be32(S_ISDIR(ip->i_inode.i_mode) &&
-+					     !(ip->i_diskflags & GFS2_DIF_EXHASH) ?
-+					     GFS2_FORMAT_DE : 0);
-+	str->di_depth = cpu_to_be16(ip->i_depth);
-+	str->di_entries = cpu_to_be32(ip->i_entries);
-+
-+	str->di_eattr = cpu_to_be64(ip->i_eattr);
-+	str->di_atime_nsec = cpu_to_be32(ip->i_inode.i_atime.tv_nsec);
-+	str->di_mtime_nsec = cpu_to_be32(ip->i_inode.i_mtime.tv_nsec);
-+	str->di_ctime_nsec = cpu_to_be32(ip->i_inode.i_ctime.tv_nsec);
-+}
- 
- /**
-  * gfs2_write_inode - Make sure the inode is stable on the disk
 -- 
 1.7.4
 
