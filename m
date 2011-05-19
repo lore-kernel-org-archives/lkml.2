@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193Ab1ESWtB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 18:49:01 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60515 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932822Ab1ESWs6 (ORCPT
+	id S933256Ab1ESWtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 18:49:08 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50139 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932822Ab1ESWtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 18:48:58 -0400
-Subject: [PATCH 1/3] mm: Wait for writeback when grabbing pages to begin a
-	write
+	Thu, 19 May 2011 18:49:04 -0400
+Subject: [PATCH 2/3] fs: block_page_mkwrite should wait for writeback to finish
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -22,8 +21,8 @@ Cc: Jens Axboe <axboe@kernel.dk>, Theodore Tso <tytso@mit.edu>,
         linux-scsi <linux-scsi@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
         linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Date: Thu, 19 May 2011 15:48:49 -0700
-Message-ID: <20110519224849.28755.19733.stgit@elm3c44.beaverton.ibm.com>
+Date: Thu, 19 May 2011 15:48:55 -0700
+Message-ID: <20110519224855.28755.2720.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20110519224841.28755.80650.stgit@elm3c44.beaverton.ibm.com>
 References: <20110519224841.28755.80650.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
@@ -34,37 +33,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When grabbing a page for a buffered IO write, the mm should wait for writeback
-on the page to complete so that the page does not become writable during the IO
-operation.  This change is needed to provide page stability during writes for
-all filesystems.
+For filesystems such as nilfs2 and xfs that use block_page_mkwrite, modify that
+function to wait for pending writeback before allowing the page to become
+writable.  This is needed to stabilize pages during writeback for those two
+filesystems.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- mm/filemap.c |    4 +++-
+ fs/buffer.c |    4 +++-
  1 files changed, 3 insertions(+), 1 deletions(-)
 
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index c641edf..fd0e7f2 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2288,7 +2288,7 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
- repeat:
- 	page = find_lock_page(mapping, index);
- 	if (page)
--		return page;
-+		goto found;
+diff --git a/fs/buffer.c b/fs/buffer.c
+index a08bb8e..0e7fa16 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2367,8 +2367,10 @@ block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 			ret = VM_FAULT_OOM;
+ 		else /* -ENOSPC, -EIO, etc */
+ 			ret = VM_FAULT_SIGBUS;
+-	} else
++	} else {
++		wait_on_page_writeback(page);
+ 		ret = VM_FAULT_LOCKED;
++	}
  
- 	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
- 	if (!page)
-@@ -2301,6 +2301,8 @@ repeat:
- 			goto repeat;
- 		return NULL;
- 	}
-+found:
-+	wait_on_page_writeback(page);
- 	return page;
- }
- EXPORT_SYMBOL(grab_cache_page_write_begin);
+ out:
+ 	return ret;
 
