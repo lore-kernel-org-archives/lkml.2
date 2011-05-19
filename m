@@ -1,192 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935180Ab1ESWNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 18:13:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38591 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935139Ab1ESWNC (ORCPT
+	id S935185Ab1ESWNu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 18:13:50 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:38932 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935139Ab1ESWNs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 18:13:02 -0400
-X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=wom5GMh1gUkA:10 a=F_mybiSpfNMA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=VnNF1IyMAAAA:8 a=fxJcL_dCAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=ga-IXIfovCPIgsT4c4oA:9 a=yTAhs_1f294bcsV37Y0A:7 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=2eKvNQJKnqYA:10 a=g3F5VGk0NOMZWSIEWMgijA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.158.191
-Date: Thu, 19 May 2011 17:13:01 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH v5 06/21] security: imbed evm calls in security hooks
-Message-ID: <20110519221301.GB4332@mail.hallyn.com>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
- <1305557115-15652-7-git-send-email-zohar@linux.vnet.ibm.com>
+	Thu, 19 May 2011 18:13:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=OPqLalsANXLgF0gPBInAVzr7strQC1WX2AO8zKWk416yxfRHAC5/irZn2HPTSQM5kE
+         4V+/1Bnzr2bFM9MVB/Qg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305557115-15652-7-git-send-email-zohar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <sig.512079e334.4DD57D44.50009@radicalsystems.co.za>
+References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
+ <sig.512079e334.4DD57D44.50009@radicalsystems.co.za>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 19 May 2011 16:13:25 -0600
+Message-ID: <BANLkTinK5PtxuWpaJq9XeDDN_quGj=MhTg@mail.gmail.com>
+Subject: Re: PCI BAR1 Unassigned
+To: Jan Zwiegers <jan@radicalsystems.co.za>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
-> Imbed the evm calls evm_inode_setxattr(), evm_inode_post_setxattr(),
-> evm_inode_removexattr() in the security hooks.  evm_inode_setxattr()
-> protects security.evm xattr.  evm_inode_post_setxattr() and
-> evm_inode_removexattr() updates the hmac associated with an inode.
-> 
-> (Assumes an LSM module protects the setting/removing of xattr.)
-> 
-> Changelog:
->   - Don't define evm_verifyxattr(), unless CONFIG_INTEGRITY is enabled.
->   - xattr_name is a 'const', value is 'void *'
-> 
-> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+On Thu, May 19, 2011 at 2:27 PM, Jan Zwiegers <jan@radicalsystems.co.za> wrote:
+> On 2011-05-19 08:50 PM, Bjorn Helgaas wrote:
+>>
+>> On Thu, May 19, 2011 at 10:28 AM, Jan Zwiegers<jan@radicalsystems.co.za>
+>>  wrote:
+>>>
+>>> I have the problem below where my PCI card's second BAR does not get
+>>> assigned.
+>>> What can be the cause of this problem?
+>>> The last kernel I tested on which worked OK was 2.6.27.
+>>> My current problematic kernel 2.6.35.
+>>>
+>>> 05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O Card
+>>> (rev 5c)
+>>>    Flags: bus master, slow devsel, latency 32, IRQ 22
+>>>    Memory at 93b00000 (type 3, prefetchable) [size=2K]
+>>>    Memory at<unassigned>  (type 3, prefetchable)
+>>>    Capabilities: [80] #00 [0600]
+>>>    Kernel modules: pci703drv
+>>
+>> Could be resource exhaustion or, more likely, we ran out because we
+>> now assign resource to things that don't need them, leaving none for
+>> things that *do* need them.  This sounds like a regression, so we
+>> should open a bugzilla for it and attach dmesg logs from 2.6.27 and
+>> 2.6.35.
+>>
+>> Does this problem keep the driver from working?  (Sometimes drivers
+>> don't actually use all the BARs a device supports.)
+>
+> I'm the maintainer of the driver and was involved in the development of the
+> board as well in 2003. The board uses two BARS and the second BAR is the
+> most important. The board worked fine since the 2.4 days and only recently
+> became problematic. I suspect it works on even later kernels than 27, maybe
+> 2.6.32.
+>
+> My knowledge is too little to actually determine if the problem is because
+> the FPGA based PCI interface is not within spec or something that changed in
+> the kernel, because of the post .30 releases becoming more strict to PCI
+> specification, i.e. BIOS / Kernel interaction.
 
-Still looks good, thanks.
-
-> ---
->  include/linux/evm.h               |   56 +++++++++++++++++++++++++++++++++++++
->  security/integrity/evm/evm_main.c |    1 +
->  security/security.c               |   16 +++++++++-
->  3 files changed, 71 insertions(+), 2 deletions(-)
->  create mode 100644 include/linux/evm.h
-> 
-> diff --git a/include/linux/evm.h b/include/linux/evm.h
-> new file mode 100644
-> index 0000000..8b4e9e3
-> --- /dev/null
-> +++ b/include/linux/evm.h
-> @@ -0,0 +1,56 @@
-> +/*
-> + * evm.h
-> + *
-> + * Copyright (c) 2009 IBM Corporation
-> + * Author: Mimi Zohar <zohar@us.ibm.com>
-> + */
-> +
-> +#ifndef _LINUX_EVM_H
-> +#define _LINUX_EVM_H
-> +
-> +#include <linux/integrity.h>
-> +
-> +#ifdef CONFIG_EVM
-> +extern enum integrity_status evm_verifyxattr(struct dentry *dentry,
-> +					     const char *xattr_name,
-> +					     void *xattr_value,
-> +					     size_t xattr_value_len);
-> +extern int evm_inode_setxattr(struct dentry *dentry, const char *name,
-> +			      const void *value, size_t size);
-> +extern void evm_inode_post_setxattr(struct dentry *dentry,
-> +				    const char *xattr_name,
-> +				    const void *xattr_value,
-> +				    size_t xattr_value_len);
-> +extern int evm_inode_removexattr(struct dentry *dentry, const char *xattr_name);
-> +#else
-> +#ifdef CONFIG_INTEGRITY
-> +static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
-> +						    const char *xattr_name,
-> +						    void *xattr_value,
-> +						    size_t xattr_value_len)
-> +{
-> +	return INTEGRITY_UNKNOWN;
-> +}
-> +#endif
-> +
-> +static inline int evm_inode_setxattr(struct dentry *dentry, const char *name,
-> +				     const void *value, size_t size)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline void evm_inode_post_setxattr(struct dentry *dentry,
-> +					   const char *xattr_name,
-> +					   const void *xattr_value,
-> +					   size_t xattr_value_len)
-> +{
-> +	return;
-> +}
-> +
-> +static inline int evm_inode_removexattr(struct dentry *dentry,
-> +					const char *xattr_name)
-> +{
-> +	return 0;
-> +}
-> +#endif /* CONFIG_EVM_H */
-> +#endif /* LINUX_EVM_H */
-> diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-> index 42c792f..e89ceb1 100644
-> --- a/security/integrity/evm/evm_main.c
-> +++ b/security/integrity/evm/evm_main.c
-> @@ -18,6 +18,7 @@
->  #include <linux/crypto.h>
->  #include <linux/xattr.h>
->  #include <linux/integrity.h>
-> +#include <linux/evm.h>
->  #include "evm.h"
->  
->  int evm_initialized;
-> diff --git a/security/security.c b/security/security.c
-> index d0c6576..635bcc9 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -18,6 +18,7 @@
->  #include <linux/security.h>
->  #include <linux/integrity.h>
->  #include <linux/ima.h>
-> +#include <linux/evm.h>
->  
->  /* Boot-time LSM user choice */
->  static __initdata char chosen_lsm[SECURITY_NAME_MAX + 1] =
-> @@ -549,9 +550,14 @@ int security_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
->  int security_inode_setxattr(struct dentry *dentry, const char *name,
->  			    const void *value, size_t size, int flags)
->  {
-> +	int ret;
-> +
->  	if (unlikely(IS_PRIVATE(dentry->d_inode)))
->  		return 0;
-> -	return security_ops->inode_setxattr(dentry, name, value, size, flags);
-> +	ret = security_ops->inode_setxattr(dentry, name, value, size, flags);
-> +	if (ret)
-> +		return ret;
-> +	return evm_inode_setxattr(dentry, name, value, size);
->  }
->  
->  void security_inode_post_setxattr(struct dentry *dentry, const char *name,
-> @@ -560,6 +566,7 @@ void security_inode_post_setxattr(struct dentry *dentry, const char *name,
->  	if (unlikely(IS_PRIVATE(dentry->d_inode)))
->  		return;
->  	security_ops->inode_post_setxattr(dentry, name, value, size, flags);
-> +	evm_inode_post_setxattr(dentry, name, value, size);
->  }
->  
->  int security_inode_getxattr(struct dentry *dentry, const char *name)
-> @@ -578,9 +585,14 @@ int security_inode_listxattr(struct dentry *dentry)
->  
->  int security_inode_removexattr(struct dentry *dentry, const char *name)
->  {
-> +	int ret;
-> +
->  	if (unlikely(IS_PRIVATE(dentry->d_inode)))
->  		return 0;
-> -	return security_ops->inode_removexattr(dentry, name);
-> +	ret = security_ops->inode_removexattr(dentry, name);
-> +	if (ret)
-> +		return ret;
-> +	return evm_inode_removexattr(dentry, name);
->  }
->  
->  int security_inode_need_killpriv(struct dentry *dentry)
-> -- 
-> 1.7.3.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Well, let's at least look at the working and broken dmesg logs.  My
+money is on kernel breakage.  If it used to work, it should still
+work.
