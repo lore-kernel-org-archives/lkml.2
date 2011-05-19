@@ -1,114 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933564Ab1ESQ4F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:56:05 -0400
-Received: from mta-2.ms.rz.RWTH-Aachen.DE ([134.130.7.73]:41266 "EHLO
-	mta-2.ms.rz.rwth-aachen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933163Ab1ESQ4D (ORCPT
+	id S933583Ab1ESQ5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:57:30 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:62334 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933540Ab1ESQ53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:56:03 -0400
-MIME-version: 1.0
-X-IronPort-AV: E=Sophos;i="4.65,238,1304287200";
- d="sig'?scan'208";a="113457316"
-Subject: Re: [PATCH] tcp: Implement a two-level initial RTO as per draft RFC
- 2988bis-02.
-Content-type: multipart/signed; protocol="application/pgp-signature";
- micalg=pgp-sha1; boundary=Apple-Mail-15--1048038099
-From: Alexander Zimmermann <alexander.zimmermann@comsys.rwth-aachen.de>
-In-reply-to: <BANLkTimSZEbnNVzi3UvBFndHp25S0ow7YQ@mail.gmail.com>
-Date: Thu, 19 May 2011 18:55:59 +0200
-Cc: Hagen Paul Pfeifer <hagen@jauu.net>, David Miller <davem@davemloft.net>,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-transfer-encoding: 7bit
-Message-id: <1456193D-84D1-46E2-B930-8FD0A5B8C409@comsys.rwth-aachen.de>
-References: <1305771744-83951-1-git-send-email-tsunanet@gmail.com>
- <20110518.223622.1525088601595365235.davem@davemloft.net>
- <BANLkTinEN_=jSCw4qR1PqtWaQ+07OMq7tg@mail.gmail.com>
- <20110519.001426.2119532755281545481.davem@davemloft.net>
- <BANLkTikQEq9+YkJHcTe3PWnRvh7AN=VVWA@mail.gmail.com>
- <9DC9A4D5-8E16-4361-B323-C92D563171A1@comsys.rwth-aachen.de>
- <BANLkTimVMYC5rzizaM+3dReG14obxGL=Bw@mail.gmail.com>
- <C70B920C-6176-481B-B6D2-E52769291EBC@comsys.rwth-aachen.de>
- <BANLkTiku9KTHCm59cib5KY8mz0ewSLsHFQ@mail.gmail.com>
- <8C5DF277-320D-4DEB-A133-EEC301DE58DC@comsys.rwth-aachen.de>
- <ef84de89c2597793d4cca5eee446ba90@localhost>
- <BANLkTimSZEbnNVzi3UvBFndHp25S0ow7YQ@mail.gmail.com>
-To: tsuna <tsunanet@gmail.com>
-X-Pgp-Agent: GPGMail 1.3.3
-X-Mailer: Apple Mail (2.1084)
+	Thu, 19 May 2011 12:57:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rvuX8jsx9l4ygvLuGqGjxiukrRIs5QuX1eqWmH8JQlC012gvJa4rLB6CzzBcU/Fsnm
+         tufc8W/7xa05BTlhsPzcJ8w+fT9pjJOUBCkvvfh9evqFbQ1xrXtqY4GCVUg6yLVNn053
+         +KTkDje4kozUHHEP7GXPol3TXWSfRCySKNDPs=
+Date: Thu, 19 May 2011 18:57:22 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 10/10] ptrace: implement group stop notification for
+ ptracer
+Message-ID: <20110519165722.GP627@htj.dyndns.org>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org>
+ <1305569849-10448-11-git-send-email-tj@kernel.org>
+ <20110519163246.GF17265@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110519163246.GF17265@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---Apple-Mail-15--1048038099
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset=iso-8859-1
+Hey,
 
+On Thu, May 19, 2011 at 06:32:46PM +0200, Oleg Nesterov wrote:
+> > +static void ptrace_trap_notify(struct task_struct *t)
+> > +{
+> > +	siginfo_t *si = t->last_siginfo;
+> > +
+> > +	WARN_ON_ONCE(!(t->ptrace & PT_SEIZED));
+> > +	assert_spin_locked(&t->sighand->siglock);
+> > +
+> > +	/*
+> > +	 * @t is being ptraced and new SEIZE behavior is in effect.
+> > +	 * Schedule sticky trap which will clear on the next GETSIGINFO.
+> > +	 */
+> > +	t->jobctl |= JOBCTL_TRAP_NOTIFY;
+> 
+> This is also set by do_signal_stop(). Cleared by PTRACE_GETSIGINFO.
+> 
+> How can this work? Doesn't this mean PTRACE_GETSIGINFO becomes mandatory
+> before PTRACE_CONT? IOW, unless the tracee does PTRACE_GETSIGINFO to clear
+> this bit, PTRACE_CONT just leads to another trap, no?
 
-Am 19.05.2011 um 18:40 schrieb tsuna:
+Yes, group stop state change raises a sticky trap condition which is
+cleared by GETSIGINFO.
 
-> On Thu, May 19, 2011 at 1:02 AM, Hagen Paul Pfeifer <hagen@jauu.net> =
-wrote:
->> So yes, it CAN be wise to choose other lower/upper bounds. But keep =
-in
->> mind that we should NOT artificial limit ourself. I can image data =
-center
->> scenarios where a initial RTO of <1 match perfectly.
->=20
-> Yes that's exactly the point I was trying to make when talking to
-> Alexander offline.  On today's Internet, RTTs are easily in the
-> hundreds of ms, and initRTO is 3s, so there's 2 orders of magnitude of
-> difference.  In my environment,
+> > +	if (task_is_traced(t) && si && si->si_code == PTRACE_STOP_SI_CODE) {
+> 
+> OK, this PTRACE_STOP_SI_CODE check is clear. But the same check in
+> ptrace_check_attach() looks confusing, why can't we set BLOCK_NOTIFY
+> unconditionally?
 
-Exactly. This is the point. It's *your* environment. However, TCP is
-general purpose. And for the wider internet 1s is know to be save. See =
-the
-measurements in the draft that Mark Allman run.
+It's an optimization.  If we set the flag, we'll have to acquire
+siglock and clear it before returning to userland.  Setting
+BLOCK_NOTIFY isn't necessary unless tracee is in TRAP_STOP, so...
 
-> if my RTT is ~2=B5s, an initRTO of 200ms
-> means that there's a gap of 6 orders of magnitude (!).
+> > +		t->jobctl |= JOBCTL_TRAPPING;
+> > +		if (!(t->jobctl & JOBCTL_BLOCK_NOTIFY))
+> > +			signal_wake_up(t, true);
+> 
+> Could you please remind me why we can't avoid the awful ptrace_wait_trapping()
+> in do_wait() paths? Assuming that ptrace_check_attach() does this. I got lost
+> a bit.
 
-Currently, initRTO is 3s. So you the gap is even larger.=20
+Please consider the following scenario.
 
-> And yes,
-> although I don't work for High Frequency Trading companies in Wall
-> Street, I'm already buying switches full of line-rate 10Gb ports with
-> a port-to-port latency of 500ns for L2/L3 forwarding/switching.  I
-> expect this kind of network gear will quickly become prevalent in
-> datacenter/backend environments.
->=20
-> --=20
-> Benoit "tsuna" Sigoure
-> Software Engineer @ www.StumbleUpon.com
+1. Tracee is in group stop and stops at TRAP_STOP notifying the
+   tracer.
 
-//
-// Dipl.-Inform. Alexander Zimmermann
-// Department of Computer Science, Informatik 4
-// RWTH Aachen University
-// Ahornstr. 55, 52056 Aachen, Germany
-// phone: (49-241) 80-21422, fax: (49-241) 80-22222
-// email: zimmermann@cs.rwth-aachen.de
-// web: http://www.umic-mesh.net
-//
+2. Tracer does WNOWAIT wait(2) and determines that the tracee is
+   trapped in TRAP_STOP.
 
+3. Something generates SIGCONT which finishes the group stop and
+   triggers the notification re-trapping.
 
---Apple-Mail-15--1048038099
-content-type: application/pgp-signature; x-mac-type=70674453;
-	name=PGP.sig
-content-description: Signierter Teil der Nachricht
-content-disposition: inline; filename=PGP.sig
-content-transfer-encoding: 7bit
+4. While tracee is re-trapping, tracer issues WNOHANG wait(2)
+   expecting it to succeed but the tracee could be RUNNING for re-trap
+   thus failing WNOHANG wait(2).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG/MacGPG2 v2.0.17 (Darwin)
-Comment: GPGTools - http://gpgtools.org
+> So. The tracee reports PTRACE_EVENT_STOP, debugger issues a lot of PTRACE_
+> requests. The tracee can report another trap "in between". Looks confusing...
+> Perhaps I need to get used to it.
 
-iEYEARECAAYFAk3VS6AACgkQdyiq39b9uS7VNwCg/rb5DvGzmcKnWXXNJx+ikMqp
-aVcAnArVGhoWtXF8Sz6DGG8aY9+UrGhm
-=Jzc5
------END PGP SIGNATURE-----
+Yes, and the reported trap doesn't interfere with wait(2) or ptrace
+requests.  Trapping is the only event notification mechanism available
+from tracee to tracer and we already have interface to wait and poll
+them, so I think it makes sense to use it.
 
---Apple-Mail-15--1048038099--
+Thank you.
+
+-- 
+tejun
