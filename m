@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934269Ab1ESSTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:19:09 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47184 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933928Ab1ESSTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:19:06 -0400
-Date: Thu, 19 May 2011 11:18:14 -0700
-From: Greg KH <gregkh@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [57/71] block: rescan partitions on invalidated devices on
- -ENOMEDIA too
-Message-ID: <20110519181814.GA17816@suse.de>
-References: <20110519180626.GA16555@kroah.com>
- <20110519180559.722522150@clark.kroah.org>
- <BANLkTi=dKXo=TeTU7a--r3YCxrptNU3VVg@mail.gmail.com>
+	id S934262Ab1ESSSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:18:22 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40474 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933997Ab1ESSSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 14:18:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Gk7o3aafAO4dCngwCBz3ML+UZlPWZ7p4w5FrAimhyTuq13NpGWuf3RtREbZ2e4OeUl
+         UnbPnVzOvvHIAuowORtMqQhN7iuzjkNhyoBUvTKbulfP3JBM3MFMWTiLhqLcrI5r9/OY
+         BuVG4MM5sBdi+PoYUkxTC8z8sNqnFQbWC6WTs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=dKXo=TeTU7a--r3YCxrptNU3VVg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 19 May 2011 20:18:16 +0200
+Message-ID: <BANLkTikwjL-3m110CcRs+-KLdZpH0rOTsQ@mail.gmail.com>
+Subject: samsung-laptop backlight control not working
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@suse.de, mjg@redhat.com,
+        David Herrmann <dh.herrmann@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 08:12:44PM +0200, Tejun Heo wrote:
-> Hello, Greg.
-> 
-> On Thu, May 19, 2011 at 8:05 PM, Greg KH <gregkh@suse.de> wrote:
-> >
-> > 2.6.38-stable review patch.  If anyone has any objections, please let us know.
-> >
-> > ------------------
-> >
-> > From: Tejun Heo <tj@kernel.org>
-> >
-> > commit 02e352287a40bd456eb78df705bf888bc3161d3f upstream.
-> >
-> > __blkdev_get() doesn't rescan partitions if disk->fops->open() fails,
-> > which leads to ghost partition devices lingering after medimum removal
-> > is known to both the kernel and userland.  The behavior also creates a
-> > subtle inconsistency where O_NONBLOCK open, which doesn't fail even if
-> > there's no medium, clears the ghots partitions, which is exploited to
-> > work around the problem from userland.
-> >
-> > Fix it by updating __blkdev_get() to issue partition rescan after
-> > -ENOMEDIA too.
-> >
-> > This was reported in the following bz.
-> >
-> >  https://bugzilla.kernel.org/show_bug.cgi?id=13029
-> >
-> > Stable: 2.6.38
-> >
-> 
-> Can you please hold this for a while?  It causes an extra warning
-> message to be printed during device detection.  It isn't harmful but
-> still.  I'll soon send a patch to resolve the issue and it would be
-> better for them to go together.
+Hi
 
-Sure, I've dropped this one for now.  Let me know when I should add it
-back to the next round of stable releases.
+I tried the new samsung-laptop driver with samsung backlight support.
+It is detected as:
+[109282.931433] samsung_laptop: found laptop model 'N150P/N210P/N220P'
 
-thanks,
+However, backlight support is kind of weird:
+"echo 1 >/sys/class/backlight/samsung/brightness"
+does not set brightness to 1 but instead reduces brightness for 1.
+That is, if my current brightness setting is 8, I need to call "echo 1
+>..." 7 times to get brightness value 1.
 
-greg k-h
+"cat /sys/class/backlight...."
+returns 1 after the first try, though.
+
+"echo 3 >..."
+reduces brightness also for 1 but stops at brightness level 3 if I
+repeat the command.
+
+dmesg shows the following for every "echo" I call:
+[110690.073783] ACPI: Failed to switch the brightness
+
+Furthermore "echo 0 >..." doesn't disable backlight but instead
+behaves like a brightness setting below 1.
+
+
+However, I know the following works on my machine:
+setpci -s 00:02.0 F4.B=255
+It accepts a setting between 0-255 and 255 is full brightness and 0 is
+backlight off.
+
+
+Regards
+David
