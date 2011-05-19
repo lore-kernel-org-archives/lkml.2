@@ -1,218 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab1ESGIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 02:08:38 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:40197 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932267Ab1ESGIg (ORCPT
+	id S1754979Ab1ESGBH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 02:01:07 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:62142 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912Ab1ESGBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 02:08:36 -0400
-Subject: Re: [RFC] ib_srpt: initial .40-rc1 drivers/infiniband/ulp/srpt
-	merge
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-rmda <linux-rdma@vger.kernel.org>,
-        Roland Dreier <roland@purestorage.com>,
-        Bart Van Assche <bvanassche@acm.org>, Vu Pham <vu@mellanox.com>,
-        David Dillow <dillowda@ornl.gov>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20110518074716.GA8927@infradead.org>
-References: <1305682604-21383-1-git-send-email-nab@linux-iscsi.org>
-	 <20110518074716.GA8927@infradead.org>
-Content-Type: text/plain
-Date: Wed, 18 May 2011 23:00:24 -0700
-Message-Id: <1305784824.2856.576.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 19 May 2011 02:01:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Hzd7kcp0PRYwoGRRUxZYqgzobZVPcf3f9jFKELfD1C0K8onIvg6zI4ZBh38SVdOh2C
+         BVzbs+v0bL+d6JfiX8kpUFEDmjAS2dLlACvVdsKnQM6kQNkcKVO0CtL10vYGJiV5gY86
+         51DIu7ExE361K9Zn5+f/xbu8Gtn77jvlyN0Eg=
+Date: Thu, 19 May 2011 08:01:00 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tony Luck <tony.luck@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: New boot time message: detected capacity change
+Message-ID: <20110519060100.GB2904@mtj.dyndns.org>
+References: <BANLkTin3T8msxSSbTLJOvC5WLNFGspPEcg@mail.gmail.com>
+ <BANLkTimY+y3vXa0R7Evs6dYLVjJ==KVq1A@mail.gmail.com>
+ <20110519052903.GA2904@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110519052903.GA2904@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-18 at 03:47 -0400, Christoph Hellwig wrote:
-> > +ccflags-y			:= -Idrivers/target
+Hello, again.
+
+On Thu, May 19, 2011 at 07:29:03AM +0200, Tejun Heo wrote:
+> The commit message is incomplete rather than misleading.  The problem
+> has been there for a long time but hasn't affected cdrom so not many
+> people have noticed it.  The changes to media revalidation exposed the
+> bug for cdrom too, so it became a regression for 2.6.38.  Please refer
+> to the following thread.
 > 
-> Why do you need the ccflags?  Everything needed should be under
-> include/target, and if not that needs to be fixed.
+>   https://lkml.org/lkml/2011/3/31/436
 > 
-> > +#include <linux/kthread.h>
-> > +#include <linux/string.h>
-> > +#include <linux/delay.h>
-> > +#include <linux/atomic.h>
-> > +#include <scsi/libsas.h> /* TASK_ATTR_* */
-> 
-> We really need to stop spreading that include.  Care to submit a patch
-> for .40 to move the TASK_ATTR_* defines to scsi/scsi.h?
-> 
+> As the root cause was the same as the 2009 bug, I just referenced that
+> one.  I should have included the link to the newer thread or explained
+> how it affected recent conversion from ->media_changed to
+> ->check_events.  My bad.
 
-Agreed, this conversion is definately over-due for target-core.
+I was a bit confused here, so there were two separate problems.  One
+affected sr, which was fixed by bf2253a6f0 and the other affecting
+partition scan on sd fixed by 02e352287a.  The two were mixed in my
+head, and I explained the wrong one.
 
-Pushing this change now in lio-4.1 to use scsi_tcq.h for LIO upstream
-fabric modules tcm_loop, iscsi-target, tcm_fc, ibmvscsis, qla2xxx,
-ib_srpt, and tcm_vhost:
+The cdrom problem was a plain kernel regression.  The latter (the one
+being shouted at in this thread) is slightly more complex.  Due to the
+way devices were polled for media change from userland, the problem
+wasn't noticeable.  The kernel misbehaved but userland polling masked
+it.  2.6.38 added in-kernel polling and the userland workaround no
+longer applied and the problem became visible - similar story with the
+cdrom problem but involves userland behavior change too.
 
-commit 53076ba5838d9653e273c3e43b76fd8220e459a4
-Author: Nicholas Bellinger <nab@linux-iscsi.org>
-Date:   Wed May 18 22:24:05 2011 -0700
+Both were very simliar in the cause too.  cdrom was unnecessarily
+skipping check_disk_change() while the block layer was unnecessarily
+skipping partition check.
 
-    target: Convert TASK_ATTR to scsi_tcq.h definitions
+Anyways, I'll go to my office and look into the warning message, but
+please revert 02e352287a if necessary.  We can do that with -stable
+later.
 
-commit ffee1a685bc083b4c0984230affac6b434b1ea4c
-Author: Nicholas Bellinger <nab@linux-iscsi.org>
-Date:   Wed May 18 22:41:31 2011 -0700
+Thanks.
 
-    ibmvscsis: Convert TASK_ATTR to scsi_tcq.h definitions
-
-
-I will get this queued against scsi-misc for .40 with tcm_loop+tcm_fc
-bits for tomorrow & respin a fresh iscsi-target pull as well.
-
-> > +/**
-> > + * srpt_sdev_name() - Return the name associated with the HCA.
-> > + *
-> > + * Examples are ib0, ib1, ...
-> > + */
-> > +static inline const char *srpt_sdev_name(struct srpt_device *sdev)
-> > +{
-> > +	return sdev->device->name;
-> > +}
-> 
-> Does this really need a helper?
-> 
-
-Not sure..
-
-> > +
-> > +static enum rdma_ch_state srpt_get_ch_state(struct srpt_rdma_ch *ch)
-> > +{
-> > +	unsigned long flags;
-> > +	enum rdma_ch_state state;
-> > +
-> > +	spin_lock_irqsave(&ch->spinlock, flags);
-> > +	state = ch->state;
-> > +	spin_unlock_irqrestore(&ch->spinlock, flags);
-> > +	return state;
-> > +}
-> 
-> Given that the channel is a 32-bit value taking a lock over reading
-> it doesn't help anything.  If you need any kind of exclusion it needs
-> to be held over the actual use of it, else it can be dropped.
-> 
-
-Mmm, looks like it's safe to drop.  Bart..?
-
-> > +static enum rdma_ch_state
-> > +srpt_set_ch_state(struct srpt_rdma_ch *ch, enum rdma_ch_state new_state)
-> > +{
-> > +	unsigned long flags;
-> > +	enum rdma_ch_state prev;
-> > +
-> > +	spin_lock_irqsave(&ch->spinlock, flags);
-> > +	prev = ch->state;
-> > +	ch->state = new_state;
-> > +	spin_unlock_irqrestore(&ch->spinlock, flags);
-> > +	return prev;
-> > +}
-> 
-> The oly caller of this does a spin_lock_irq so I assume it's from
-> process context.  So this one could do the same.  It would be good idea
-> to check what kind of action is done from irq context at all and
-> document what data structures / critical sections can be access from
-> there.
-> 
-
-IB folks..?
-
-> > +/**
-> > + * srpt_srq_event() - SRQ event callback function.
-> > + */
-> > +static void srpt_srq_event(struct ib_event *event, void *ctx)
-> > +{
-> > +	printk(KERN_INFO "SRQ event %d\n", event->event);
-> > +}
-> 
-> Is this overly useful?
-> 
-
-IB folks..?
-
-> > +static enum srpt_command_state srpt_get_cmd_state(struct srpt_send_ioctx *ioctx)
-> > +{
-> > +	enum srpt_command_state state;
-> > +	unsigned long flags;
-> > +
-> > +	BUG_ON(!ioctx);
-> > +
-> > +	spin_lock_irqsave(&ioctx->spinlock, flags);
-> > +	state = ioctx->state;
-> > +	spin_unlock_irqrestore(&ioctx->spinlock, flags);
-> > +	return state;
-> 
-> Same comment about reading a variable as above.
-> 
-
-Bart..?
-
-> > +/*
-> > + * srpt_unpack_lun() - Convert from network LUN to linear LUN.
-> > + *
-> > + * Convert an 2-byte, 4-byte, 6-byte or 8-byte LUN structure in network byte
-> > + * order (big endian) to a linear LUN. Supports three LUN addressing methods:
-> > + * peripheral, flat and logical unit. See also SAM-2, section 4.9.4 (page 40).
-> > + */
-> > +static uint64_t srpt_unpack_lun(const uint8_t *lun, int len)
-> 
-> Nick, didn't you plan to take the LUN addressing to the core?  After
-> all it's not a transport specific format.
-> 
-
-Yes, this should be using scsilun_to_int(), but in current mainline code
-these is still required to load.  The iscsi-target PATCH-v4 series patch
-containing this fix wrt to REPORT_LUNs needs to go into mainline before
-this can be fixed..
-
-[PATCH-v4 03/14] target: Convert REPORT_LUNs to use int_to_scsilun
-http://marc.info/?l=linux-scsi&m=130561442821080&w=2
-
-Will get this converted in ib_srpt for lio-4.1 for now..
-
-> > +static int srpt_compl_thread(void *arg)
-> > +{
-> > +	struct srpt_rdma_ch *ch;
-> > +
-> > +	/* Hibernation / freezing of the SRPT kernel thread is not supported. */
-> > +	current->flags |= PF_NOFREEZE;
-> > +
-> > +	ch = arg;
-> > +	BUG_ON(!ch);
-> > +	printk(KERN_INFO "Session %s: kernel thread %s (PID %d) started\n",
-> > +	       ch->sess_name, ch->thread->comm, current->pid);
-> 
-> Can we please kill all these verbose printks?  I know the target core
-> does them, but that needs to be fixed to.  If you really care for
-> debugging you can trivially trace it using the function tracer.
-> 
-
-Ugh yes, this still needs to be addressed properly for target core..
-
-> > +	while (!kthread_should_stop()) {
-> > +		wait_event_interruptible(ch->wait_queue,
-> > +			(srpt_process_completion(ch->cq, ch),
-> > +			 kthread_should_stop()));
-> > +	}
-> 
-> Instead of doing a wait_event_interruptible in a kthread you can just
-> do a schedule() in interruptible context and use wake_up_process to wake
-> it up.
-> 
-
-This conversion looks reasonable to me, and will get this resolved for
-the next round.
-
-Thanks for your review Christoph!
-
---nab
-
+--
+tejun
