@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934200Ab1ESSNQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:13:16 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:39991 "EHLO
+	id S934157Ab1ESSMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:12:40 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50647 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934122Ab1ESSJT (ORCPT
+	by vger.kernel.org with ESMTP id S934129Ab1ESSJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:09:19 -0400
-X-Sasl-enc: VA8W8zs8cGztn/LSXUuFn8TfyLOJAiS2YRzDEwpqQZtV 1305828558
+	Thu, 19 May 2011 14:09:20 -0400
+X-Sasl-enc: ArpcmINT4CO+u7tW9BBAqPkqix3Qy011NQ2VpZHj7VWB 1305828559
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:59 2011
-Message-Id: <20110519180559.809061083@clark.kroah.org>
+Message-Id: <20110519180559.895335353@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:26 -0700
+Date: Thu, 19 May 2011 11:05:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         John Stultz <johnstul@us.ibm.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [58/71] clocksource: Install completely before selecting
+Subject: [59/71] tick: Clear broadcast active bit when switching to oneshot
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,58 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: john stultz <johnstul@us.ibm.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit e05b2efb82596905ebfe88e8612ee81dec9b6592 upstream.
+commit 07f4beb0b5bbfaf36a64aa00d59e670ec578a95a upstream.
 
-Christian Hoffmann reported that the command line clocksource override
-with acpi_pm timer fails:
+The first cpu which switches from periodic to oneshot mode switches
+also the broadcast device into oneshot mode. The broadcast device
+serves as a backup for per cpu timers which stop in deeper
+C-states. To avoid starvation of the cpus which might be in idle and
+depend on broadcast mode it marks the other cpus as broadcast active
+and sets the brodcast expiry value of those cpus to the next tick.
 
- Kernel command line: <SNIP> clocksource=acpi_pm
- hpet clockevent registered
- Switching to clocksource hpet
- Override clocksource acpi_pm is not HRT compatible.
- Cannot switch while in HRT/NOHZ mode.
+The oneshot mode broadcast bit for the other cpus is sticky and gets
+only cleared when those cpus exit idle. If a cpu was not idle while
+the bit got set in consequence the bit prevents that the broadcast
+device is armed on behalf of that cpu when it enters idle for the
+first time after it switched to oneshot mode.
 
-The watchdog code is what enables CLOCK_SOURCE_VALID_FOR_HRES, but we
-actually end up selecting the clocksource before we enqueue it into
-the watchdog list, so that's why we see the warning and fail to switch
-to acpi_pm timer as requested. That's particularly bad when we want to
-debug timekeeping related problems in early boot.
+In most cases that goes unnoticed as one of the other cpus has usually
+a timer pending which keeps the broadcast device armed with a short
+timeout. Now if the only cpu which has a short timer active has the
+bit set then the broadcast device will not be armed on behalf of that
+cpu and will fire way after the expected timer expiry. In the case of
+Christians bug report it took ~145 seconds which is about half of the
+wrap around time of HPET (the limit for that device) due to the fact
+that all other cpus had no timers armed which expired before the 145
+seconds timeframe.
 
-Put the selection call last.
+The solution is simply to clear the broadcast active bit
+unconditionally when a cpu switches to oneshot mode after the first
+cpu switched the broadcast device over. It's not idle at that point
+otherwise it would not be executing that code.
 
-Reported-by: Christian Hoffmann <email@christianhoffmann.info>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/%3C1304558210.2943.24.camel%40work-vm%3E
+[ I fundamentally hate that broadcast crap. Why the heck thought some
+  folks that when going into deep idle it's a brilliant concept to
+  switch off the last device which brings the cpu back from that
+  state? ]
+
+Thanks to Christian for providing all the valuable debug information!
+
+Reported-and-tested-by: Christian Hoffmann <email@christianhoffmann.info>
+Cc: John Stultz <johnstul@us.ibm.com>
+Link: http://lkml.kernel.org/r/%3Calpine.LFD.2.02.1105161105170.3078%40ionos%3E
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/time/clocksource.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/time/tick-broadcast.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -685,8 +685,8 @@ int __clocksource_register_scale(struct
- 	/* Add clocksource to the clcoksource list */
- 	mutex_lock(&clocksource_mutex);
- 	clocksource_enqueue(cs);
--	clocksource_select();
- 	clocksource_enqueue_watchdog(cs);
-+	clocksource_select();
- 	mutex_unlock(&clocksource_mutex);
- 	return 0;
- }
-@@ -706,8 +706,8 @@ int clocksource_register(struct clocksou
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -523,10 +523,11 @@ static void tick_broadcast_init_next_eve
+  */
+ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ {
++	int cpu = smp_processor_id();
++
+ 	/* Set it up only once ! */
+ 	if (bc->event_handler != tick_handle_oneshot_broadcast) {
+ 		int was_periodic = bc->mode == CLOCK_EVT_MODE_PERIODIC;
+-		int cpu = smp_processor_id();
  
- 	mutex_lock(&clocksource_mutex);
- 	clocksource_enqueue(cs);
--	clocksource_select();
- 	clocksource_enqueue_watchdog(cs);
-+	clocksource_select();
- 	mutex_unlock(&clocksource_mutex);
- 	return 0;
+ 		bc->event_handler = tick_handle_oneshot_broadcast;
+ 		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+@@ -552,6 +553,15 @@ void tick_broadcast_setup_oneshot(struct
+ 			tick_broadcast_set_event(tick_next_period, 1);
+ 		} else
+ 			bc->next_event.tv64 = KTIME_MAX;
++	} else {
++		/*
++		 * The first cpu which switches to oneshot mode sets
++		 * the bit for all other cpus which are in the general
++		 * (periodic) broadcast mask. So the bit is set and
++		 * would prevent the first broadcast enter after this
++		 * to program the bc device.
++		 */
++		tick_broadcast_clear_oneshot(cpu);
+ 	}
  }
+ 
 
 
