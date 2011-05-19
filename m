@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251Ab1ESVUz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:20:55 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38487 "EHLO mx2.mail.elte.hu"
+	id S933968Ab1ESVYA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:24:00 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38447 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932455Ab1ESVUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:20:54 -0400
-Date: Thu, 19 May 2011 23:20:45 +0200
+	id S932665Ab1ESVX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 17:23:59 -0400
+Date: Thu, 19 May 2011 23:23:52 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/reboot change for v2.6.40
-Message-ID: <20110519212045.GA21021@elte.hu>
+Subject: [GIT PULL] x86/setup change for v2.6.40
+Message-ID: <20110519212352.GA25131@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,77 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-reboot-for-linus git tree from:
+Please pull the latest x86-setup-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-reboot-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-setup-for-linus
 
-This change modifies the x86 reboot method order to be ACPI first.
 
-This affects a lot of systems - the hope is that it will reduce the steady 
-influx of reboot quirks (and the large body of boxes that will not reboot 
-properly under Linux).
+out-of-topic modifications in x86-setup-for-linus:
+--------------------------------------------------
+drivers/firmware/edd.c             # 0c61227: x86, setup: Fix EDD3.0 data verif
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Matthew Garrett (1):
-      x86: Reorder reboot method preferences
+Gleb Natapov (1):
+      x86, setup: Fix EDD3.0 data verification.
 
 
- arch/x86/kernel/reboot.c |   24 +++++++++++++++++++++++-
- 1 files changed, 23 insertions(+), 1 deletions(-)
+ drivers/firmware/edd.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 08c44b0..0c016f7 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -36,7 +36,7 @@ EXPORT_SYMBOL(pm_power_off);
- 
- static const struct desc_ptr no_idt = {};
- static int reboot_mode;
--enum reboot_type reboot_type = BOOT_KBD;
-+enum reboot_type reboot_type = BOOT_ACPI;
- int reboot_force;
- 
- #if defined(CONFIG_X86_32) && defined(CONFIG_SMP)
-@@ -478,9 +478,24 @@ void __attribute__((weak)) mach_reboot_fixups(void)
+diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+index 96c25d9..f1b7f65 100644
+--- a/drivers/firmware/edd.c
++++ b/drivers/firmware/edd.c
+@@ -531,8 +531,8 @@ static int
+ edd_has_edd30(struct edd_device *edev)
  {
+ 	struct edd_info *info;
+-	int i, nonzero_path = 0;
+-	char c;
++	int i;
++	u8 csum = 0;
+ 
+ 	if (!edev)
+ 		return 0;
+@@ -544,16 +544,16 @@ edd_has_edd30(struct edd_device *edev)
+ 		return 0;
+ 	}
+ 
+-	for (i = 30; i <= 73; i++) {
+-		c = *(((uint8_t *) info) + i + 4);
+-		if (c) {
+-			nonzero_path++;
+-			break;
+-		}
+-	}
+-	if (!nonzero_path) {
++
++	/* We support only T13 spec */
++	if (info->params.device_path_info_length != 44)
++		return 0;
++
++	for (i = 30; i < info->params.device_path_info_length + 30; i++)
++		csum += *(((u8 *)&info->params) + i);
++
++	if (csum)
+ 		return 0;
+-	}
+ 
+ 	return 1;
  }
- 
-+/*
-+ * Windows compatible x86 hardware expects the following on reboot:
-+ *
-+ * 1) If the FADT has the ACPI reboot register flag set, try it
-+ * 2) If still alive, write to the keyboard controller
-+ * 3) If still alive, write to the ACPI reboot register again
-+ * 4) If still alive, write to the keyboard controller again
-+ *
-+ * If the machine is still alive at this stage, it gives up. We default to
-+ * following the same pattern, except that if we're still alive after (4) we'll
-+ * try to force a triple fault and then cycle between hitting the keyboard
-+ * controller and doing that
-+ */
- static void native_machine_emergency_restart(void)
- {
- 	int i;
-+	int attempt = 0;
-+	int orig_reboot_type = reboot_type;
- 
- 	if (reboot_emergency)
- 		emergency_vmx_disable_all();
-@@ -502,6 +517,13 @@ static void native_machine_emergency_restart(void)
- 				outb(0xfe, 0x64); /* pulse reset low */
- 				udelay(50);
- 			}
-+			if (attempt == 0 && orig_reboot_type == BOOT_ACPI) {
-+				attempt = 1;
-+				reboot_type = BOOT_ACPI;
-+			} else {
-+				reboot_type = BOOT_TRIPLE;
-+			}
-+			break;
- 
- 		case BOOT_TRIPLE:
- 			load_idt(&no_idt);
