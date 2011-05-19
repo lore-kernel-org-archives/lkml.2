@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934537Ab1ESTC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 15:02:27 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60955 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934511Ab1ESTC0 (ORCPT
+	id S934162Ab1ESTET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:04:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46173 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932611Ab1ESTER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 15:02:26 -0400
-Date: Thu, 19 May 2011 13:02:23 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Erik Gilling <konkers@android.com>,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH 2/2] spi: spi_tegra: calling spi_unregister_master
- instead of spi_master_put in spi_tegra_remove
-Message-ID: <20110519190223.GH5109@ponder.secretlab.ca>
-References: <1305120420.6324.6.camel@phoenix>
- <1305120496.6324.8.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305120496.6324.8.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 May 2011 15:04:17 -0400
+Date: Thu, 19 May 2011 12:03:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Clifton Barnes <cabarnes@indesign-llc.com>
+Cc: <ryan@bluewatersys.com>, <haojian.zhuang@marvell.com>,
+        <johnpol@2ka.mipt.ru>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] w1: Add Maxim/Dallas DS2780 Stand-Alone Fuel Gauge
+ IC support.
+Message-Id: <20110519120334.69ccb4b6.akpm@linux-foundation.org>
+In-Reply-To: <4DD50B35.2000005@indesign-llc.com>
+References: <4DD50B35.2000005@indesign-llc.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 09:28:16PM +0800, Axel Lin wrote:
-> spi_master_put() should only be used in error handling.
-> Once spi_register_master() returns success, we should call
-> spi_unregister_master() instead.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Thu, 19 May 2011 08:21:09 -0400
+Clifton Barnes <cabarnes@indesign-llc.com> wrote:
 
-Applied, thanks.
+> Add support for the Maxim/Dallas DS2780 Stand-Alone Fuel Gauge IC.
+> 
+> I've updated the driver based on feedback from the last version.
+> I believe the locking is correct because the w1_ds2780_io function
+> has locking in it.  If there's still a problem that I'm missing let 
+> me know and I can correct it.
+> 
+> Changes for v3:
+>  - Formatting changes suggested from last version
+>  - Moved read/write functions to battery driver
+>  - Corrected temperature calculation
+>  - Changed EEPROM access to bin_attribute
+> 
 
-g.
+We have a min_t() helper to avoid (or hide) the typecasts:
 
-> ---
->  drivers/spi/spi_tegra.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/spi/spi_tegra.c b/drivers/spi/spi_tegra.c
-> index 891e590..6c3aa6e 100644
-> --- a/drivers/spi/spi_tegra.c
-> +++ b/drivers/spi/spi_tegra.c
-> @@ -578,6 +578,7 @@ static int __devexit spi_tegra_remove(struct platform_device *pdev)
->  	master = dev_get_drvdata(&pdev->dev);
->  	tspi = spi_master_get_devdata(master);
->  
-> +	spi_unregister_master(master);
->  	tegra_dma_free_channel(tspi->rx_dma);
->  
->  	dma_free_coherent(&pdev->dev, sizeof(u32) * BB_LEN,
-> @@ -586,7 +587,6 @@ static int __devexit spi_tegra_remove(struct platform_device *pdev)
->  	clk_put(tspi->clk);
->  	iounmap(tspi->base);
->  
-> -	spi_master_put(master);
->  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	release_mem_region(r->start, (r->end - r->start) + 1);
->  
-> -- 
-> 1.7.1
-> 
-> 
-> 
+--- a/drivers/power/ds2780_battery.c~w1-add-maxim-dallas-ds2780-stand-alone-fuel-gauge-ic-support-v3-fix
++++ a/drivers/power/ds2780_battery.c
+@@ -628,7 +628,7 @@ static ssize_t ds2780_read_param_eeprom_
+ 	struct power_supply *psy = to_power_supply(dev);
+ 	struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
+ 
+-	count = min((loff_t)count,
++	count = min_t(loff_t, count,
+ 		DS2780_EEPROM_BLOCK1_END -
+ 		DS2780_EEPROM_BLOCK1_START + 1 - off);
+ 
+@@ -646,7 +646,7 @@ static ssize_t ds2780_write_param_eeprom
+ 	struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
+ 	int ret;
+ 
+-	count = min((loff_t)count,
++	count = min_t(loff_t, count,
+ 		DS2780_EEPROM_BLOCK1_END -
+ 		DS2780_EEPROM_BLOCK1_START + 1 - off);
+ 
+@@ -681,7 +681,7 @@ static ssize_t ds2780_read_user_eeprom_b
+ 	struct power_supply *psy = to_power_supply(dev);
+ 	struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
+ 
+-	count = min((loff_t)count,
++	count = min_t(loff_t, count,
+ 		DS2780_EEPROM_BLOCK0_END -
+ 		DS2780_EEPROM_BLOCK0_START + 1 - off);
+ 
+@@ -700,7 +700,7 @@ static ssize_t ds2780_write_user_eeprom_
+ 	struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
+ 	int ret;
+ 
+-	count = min((loff_t)count,
++	count = min_t(loff_t, count,
+ 		DS2780_EEPROM_BLOCK0_END -
+ 		DS2780_EEPROM_BLOCK0_START + 1 - off);
+ 
+--- a/drivers/w1/slaves/w1_ds2780.c~w1-add-maxim-dallas-ds2780-stand-alone-fuel-gauge-ic-support-v3-fix
++++ a/drivers/w1/slaves/w1_ds2780.c
+@@ -40,7 +40,7 @@ int w1_ds2780_io(struct device *dev, cha
+ 		count = 0;
+ 		goto out;
+ 	}
+-	count = min((int)count, DS2780_DATA_SIZE - addr);
++	count = min_t(int, count, DS2780_DATA_SIZE - addr);
+ 
+ 	if (w1_reset_select_slave(sl) == 0) {
+ 		if (io) {
+_
+
+
+However its use is often a sign that some types were unwisely chosen.
