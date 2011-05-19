@@ -1,64 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932573Ab1ESMZs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 08:25:48 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52550 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755067Ab1ESMZr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 08:25:47 -0400
+	id S932523Ab1ESMbn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 08:31:43 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:39853 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756530Ab1ESMbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 08:31:42 -0400
+Date: Thu, 19 May 2011 13:31:43 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] MIPS: Install handlers for software IRQs
+Message-ID: <20110519123143.GC18668@linux-mips.org>
+References: <17ebecce124618ddf83ec6fe8e526f93@localhost>
+ <953858e54ceec800464756a0521abea1@localhost>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTindee6UMez8HyBUwd2H6mN-DknzPw@mail.gmail.com>
-References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
-	<BANLkTi=poU17RqAzp28CPjWHrN_+aFiyag@mail.gmail.com>
-	<BANLkTindee6UMez8HyBUwd2H6mN-DknzPw@mail.gmail.com>
-Date: Thu, 19 May 2011 14:25:47 +0200
-Message-ID: <BANLkTik7BnJKWCsm2L3-GJPTaaiXFNSgaA@mail.gmail.com>
-Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to drivers/gpio
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Barry Song <21cnbao@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <953858e54ceec800464756a0521abea1@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 1:38 PM, Barry Song <21cnbao@gmail.com> wrote:
+On Sat, Oct 16, 2010 at 02:22:33PM -0700, Kevin Cernekee wrote:
 
->> -arch_initcall(u300_gpio_init);
->> -module_exit(u300_gpio_exit);
->>
-> looks like the driver can't be a real module, is the module_exit
-> suitable? it looks strange module_exit plays together with
-> arch_initcall.
+> BMIPS4350/4380/5000 CMT/SMT all use SW INT0/INT1 for inter-thread
+> signaling.
 
-It's a rather common design pattern in the kernel for early
-platform drivers. Either the dependencies are resolved by the
-different initlevels or they are resolved in probe order with
-loadable modules. Module load will call all initlevels in order.
+I had previously ages ago applied this patch but it somehow vapolized
+so I just refreshed the patch and queued it for 2.6.41, sorry.
 
-It is not elegant but it is common.
-
-> guess symbol u300_gpio_exit will finally lose in the last vmlinux
-> since it is in exit section and built-in kernel.
-
-Yes. And if you one day, to do some testing, compile and load it
-as module and unload it, it is handy.
-
-I have other drivers where I simply don't have an exit function
-but this one I have actually used.
-
-> another problem i see is after moving gpio/pinmux to drivers as
-> platform device, codes in arch/arm/plat(mach) can't  call gpio/pinmux
-> api before the related platform devices registerred. that will
-> required these platform devices enter system earlier.
-
-This is exactly the reason why the u300 gpio driver needs to
-be initialized in an arch_initcall().
-
-Yours,
-Linus Walleij
+  Ralf
