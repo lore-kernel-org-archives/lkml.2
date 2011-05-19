@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933792Ab1ESXM0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 19:12:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55050 "EHLO mx1.redhat.com"
+	id S933827Ab1ESXNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 19:13:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33024 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933236Ab1ESXMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 19:12:21 -0400
-Date: Fri, 20 May 2011 02:11:56 +0300
+	id S933236Ab1ESXM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 19:12:56 -0400
+Date: Fri, 20 May 2011 02:12:19 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
@@ -20,8 +20,8 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
         Krishna Kumar <krkumar2@in.ibm.com>,
         Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
         habanero@linux.vnet.ibm.com
-Subject: [PATCHv2 10/14] virtio_net: limit xmit polling
-Message-ID: <aced8619c07018b5495f9ceb2c02d4fbf897a098.1305846412.git.mst@redhat.com>
+Subject: [PATCHv2 11/14] virtio: don't delay avail index update
+Message-ID: <33d7df119ccbedc9b54fbe4b674076b4f7ba3499.1305846412.git.mst@redhat.com>
 References: <cover.1305846412.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -33,74 +33,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code might introduce a lot of latency variation
-if there are many pending bufs at the time we
-attempt to transmit a new one. This is bad for
-real-time applications and can't be good for TCP either.
-
-Free up just enough to both clean up all buffers
-eventually and to be able to xmit the next packet.
+Update avail index immediately instead of upon kick:
+for virtio-net RX this helps parallelism with the host.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/net/virtio_net.c |   22 ++++++++++++++--------
- 1 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/virtio/virtio_ring.c |   28 +++++++++++++++++++---------
+ 1 files changed, 19 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index f33c92b..42935cb 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -509,17 +509,25 @@ again:
- 	return received;
- }
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index eed5f29..8218fe6 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -89,7 +89,7 @@ struct vring_virtqueue
+ 	unsigned int num_free;
+ 	/* Head of free buffer list. */
+ 	unsigned int free_head;
+-	/* Number we've added since last sync. */
++	/* Number we've added since last kick. */
+ 	unsigned int num_added;
  
--static void free_old_xmit_skbs(struct virtnet_info *vi)
-+static bool free_old_xmit_skbs(struct virtnet_info *vi, int capacity)
- {
- 	struct sk_buff *skb;
- 	unsigned int len;
--
--	while ((skb = virtqueue_get_buf(vi->svq, &len)) != NULL) {
-+	bool c;
-+	int n;
+ 	/* Last used index we've seen. */
+@@ -174,6 +174,13 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
+ 
+ 	BUG_ON(data == NULL);
+ 
++	/* Prevent drivers from adding more than num bufs without a kick. */
++	if (vq->num_added == vq->vring.num) {
++		printk(KERN_ERR "gaaa!!!\n");
++		END_USE(vq);
++		return -ENOSPC;
++	}
 +
-+	/* We try to free up at least 2 skbs per one sent, so that we'll get
-+	 * all of the memory back if they are used fast enough. */
-+	for (n = 0;
-+	     ((c = virtqueue_get_capacity(vi->svq) < capacity) || n < 2) &&
-+	     ((skb = virtqueue_get_buf(vi->svq, &len)));
-+	     ++n) {
- 		pr_debug("Sent skb %p\n", skb);
- 		vi->dev->stats.tx_bytes += skb->len;
- 		vi->dev->stats.tx_packets++;
- 		dev_kfree_skb_any(skb);
- 	}
-+	return !c;
- }
+ 	/* If the host supports indirect descriptor tables, and we have multiple
+ 	 * buffers, then go indirect. FIXME: tune this threshold */
+ 	if (vq->indirect && (out + in) > 1 && vq->num_free) {
+@@ -227,8 +234,14 @@ add_head:
  
- static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
-@@ -574,8 +582,8 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	struct virtnet_info *vi = netdev_priv(dev);
- 	int capacity;
+ 	/* Put entry in available array (but don't update avail->idx until they
+ 	 * do sync).  FIXME: avoid modulus here? */
+-	avail = (vq->vring.avail->idx + vq->num_added++) % vq->vring.num;
++	avail = vq->vring.avail->idx % vq->vring.num;
+ 	vq->vring.avail->ring[avail] = head;
++	vq->num_added++;
++
++	/* Descriptors and available array need to be set before we expose the
++	 * new available array entries. */
++	virtio_wmb();
++	vq->vring.avail->idx++;
  
--	/* Free up any pending old buffers before queueing new ones. */
--	free_old_xmit_skbs(vi);
-+	/* Free enough pending old buffers to enable queueing new ones. */
-+	free_old_xmit_skbs(vi, 2+MAX_SKB_FRAGS);
+ 	pr_debug("Added buffer head %i to %p\n", head, vq);
+ 	END_USE(vq);
+@@ -242,17 +255,14 @@ void virtqueue_kick(struct virtqueue *_vq)
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
+ 	u16 new, old;
+ 	START_USE(vq);
+-	/* Descriptors and available array need to be set before we expose the
+-	 * new available array entries. */
+-	virtio_wmb();
+-
+-	old = vq->vring.avail->idx;
+-	new = vq->vring.avail->idx = old + vq->num_added;
+-	vq->num_added = 0;
  
- 	/* Try to transmit */
- 	capacity = xmit_skb(vi, skb);
-@@ -609,9 +617,7 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		netif_stop_queue(dev);
- 		if (unlikely(!virtqueue_enable_cb_delayed(vi->svq))) {
- 			/* More just got used, free them then recheck. */
--			free_old_xmit_skbs(vi);
--			capacity = virtqueue_get_capacity(vi->svq);
--			if (capacity >= 2+MAX_SKB_FRAGS) {
-+			if (!likely(free_old_xmit_skbs(vi, 2+MAX_SKB_FRAGS))) {
- 				netif_start_queue(dev);
- 				virtqueue_disable_cb(vi->svq);
- 			}
+ 	/* Need to update avail index before checking if we should notify */
+ 	virtio_mb();
+ 
++	new = vq->vring.avail->idx;
++	old = new - vq->num_added;
++	vq->num_added = 0;
++
+ 	if (vq->event ?
+ 	    vring_need_event(vring_avail_event(&vq->vring), new, old) :
+ 	    !(vq->vring.used->flags & VRING_USED_F_NO_NOTIFY))
 -- 
 1.7.5.53.gc233e
 
