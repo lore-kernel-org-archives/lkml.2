@@ -1,94 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339Ab1ESFlB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 01:41:01 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33422 "EHLO gate.crashing.org"
+	id S1755886Ab1ESFmG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 01:42:06 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33453 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004Ab1ESFk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 01:40:59 -0400
-Subject: Re: [PATCH 1/3] mpt2sas: remove the use of writeq, since writeq is
- not atomic
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Hitoshi Mitake <h.mitake@gmail.com>, "Moore, Eric" <Eric.Moore@lsi.com>,
-        Milton Miller <miltonm@bga.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@redhat.com>,
-        "Desai, Kashyap" <Kashyap.Desai@lsi.com>,
-        "Prakash, Sathya" <Sathya.Prakash@lsi.com>,
-        Matthew Wilcox <matthew@wil.cx>,
-        linux scsi dev <linux-scsi@vger.kernel.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        linux powerpc dev <linuxppc-dev@lists.ozlabs.org>,
-        linux pci <linux-pci@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>
-In-Reply-To: <1305780360.2576.20.camel@mulgrave.site>
-References: <20110504115324.GE17855@lsi.com>
-	 <1305616571.6008.23.camel@mulgrave.site>
-	 <B2FD678A64EAAD45B089B123FDFC3ED70157F7BCE5@inbmail01.lsi.com>
-	 <20110518041551.GL15227@parisc-linux.org>
-	 <1305692584.2580.3.camel@mulgrave.site> <1305702010.2781.33.camel@pasglop>
-	 <mpt2sas-writeq-powerpc64@mdm.bga.com>
-	 <4565AEA676113A449269C2F3A549520F80B66280@cosmail03.lsi.com>
-	 <x86-32-writeq-is-broken@mdm.bga.com>
-	 <4565AEA676113A449269C2F3A549520F80BE7F37@cosmail03.lsi.com>
-	 <BANLkTin4w1QyL1NyTyrZARPWASai45W_4Q@mail.gmail.com>
-	 <1305780360.2576.20.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 May 2011 15:36:13 +1000
-Message-ID: <1305783373.7481.44.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754105Ab1ESFmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 01:42:04 -0400
+Subject: Re: [PATCH] powerpc/mpc8610_hpcd: Do not use "/" in interrupt names
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <alpine.DEB.2.00.1105041627560.2601@ayla.of.borg>
+Date: Thu, 19 May 2011 00:41:47 -0500
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
 Content-Transfer-Encoding: 7bit
+Message-Id: <914167DB-90BD-4ABA-B305-84918FA14BF9@kernel.crashing.org>
+References: <alpine.DEB.2.00.1105041627560.2601@ayla.of.borg>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 08:46 +0400, James Bottomley wrote:
-> This can't really be done generically.  There are several considerations
-> to do with hardware requirements.  I can see some hw requiring a
-> specific write order (I think this applies more to read order, though).
 
-Right. Or there can be a need for a completely different access pattern
-to do 32-bit, or maybe write only one half because both might have a
-side effect etc etc etc ...
+On May 4, 2011, at 9:29 AM, Geert Uytterhoeven wrote:
 
-Also a global lock would be suboptimal vs. a per device lock burried in
-the driver.
-
-> The specific mpt2sas problem is that if we write a 64 bit register non
-> atomically, we can't allow any interleaving writes for any other region
-> on the chip, otherwise the HW will take the write as complete in the 64
-> bit register and latch the wrong value.  The only way to achieve that
-> given the semantics of writeq is a global static spinlock.
+> It may trigger a warning in fs/proc/generic.c:__xlate_proc_name() when
+> trying to add an entry for the interrupt handler to sysfs.
 > 
-> > How do you think about them? If you cannot agree with the above two
-> > solutions, I'll agree with reverting them.
-> 
-> Having x86 roll its own never made any sense, so I think they need
-> reverting anyway. 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+> arch/powerpc/platforms/86xx/mpc8610_hpcd.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Agreed.
+applied to next, will CC for stable (2.6.39.1)
 
->  This is a driver/platform bus problem not an
-> architecture problem.  The assumption we can make is that the platform
-> CPU can write atomically at its chip width.  We *may* be able to make
-> the assumption that the bus controller can translate an atomic chip
-> width transaction to a single atomic bus transaction; I think that
-> assumption holds true for at least PCI and on the parisc legacy busses,
-> so if we can agree on semantics, this should be a global define
-> somewhere.  If there are problems with the bus assumption, we'll likely
-> need some type of opt-in (or just not bother).
-
-And we want a well defined #ifdef drivers test to know whether there's a
-writeq/readq (just #define writeq/readq itself is fine even if it's an
-inline function, we do that elsewhere) so they can have a fallback
-scenario.
-
-This is important as these can be used in very performance critical code
-path.
-
-Cheers,
-Ben.
-
+- k
