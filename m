@@ -1,120 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933220Ab1ESNlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 09:41:20 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:49924 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932921Ab1ESNlT (ORCPT
+	id S1757011Ab1ESNmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 09:42:25 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48104 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756944Ab1ESNmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 09:41:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] arch/tile: add /proc/tile, /proc/sys/tile, and a sysfs cpu attribute
-Date: Thu, 19 May 2011 15:41:11 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com>
-In-Reply-To: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com>
+	Thu, 19 May 2011 09:42:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fgZ1lSUc74PmJfDSMgfZ+9xISXlNjrZhLmHmoeYMg7+GIJuTL/uJWUwogALBT4GZ/K
+         xGQDNKtoO4I8uPvutuSgqqL9TXesd2/dhkMS5MqY6pDsTx2hwhOIDKFNgEePGRfyhh+t
+         rQDES1aMSy0f7wyhXnxjPDuyPFMs52cIOrWMc=
+Date: Thu, 19 May 2011 15:42:18 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: early kernel crash when kmemleak is enabled
+Message-ID: <20110519134218.GH627@htj.dyndns.org>
+References: <20110515105505.GA21631@joi.lan>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105191541.11939.arnd@arndb.de>
-X-Provags-ID: V02:K0:tZS002d4Mn1Mqxk/Cc0r9uefxvO5JTE7hx3QjAqgtIM
- uFAp/JZ6qWYXnaJquHN/S/VUAqAyizWnmnhbalJIVDS2d8efpp
- M1uxTFAvqXJHZc/YobTQ0pD9qD4kP3vgKmWFpu4HYbmYqP+eAW
- K8rzYQm2lr3pQoKSYIFRiucNXGjB5npeYztv6dmu8JyFpyH8Kz
- 8618yvZbasJfsDj0VBpJQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110515105505.GA21631@joi.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 May 2011, Chris Metcalf wrote:
+Hello,
 
-> /proc/tile/hv
->   Version information about the running Tilera hypervisor
-> 
-> /proc/tile/hvconfig
->   Detailed configuration description of the hypervisor config
-> 
-> /proc/tile/board
->   Information on part numbers, serial numbers, etc., of the
->   hardware that the kernel is executing on
-> 
-> /proc/tile/switch
->   The type of control path for the onboard network switch, if any.
-> 
-> /proc/tile/hardwall
->   Information on the set of currently active hardwalls (note that
->   the implementation is already present in arch/tile/kernel/hardwall.c;
->   this change just enables it)
+On Sun, May 15, 2011 at 12:55:05PM +0200, Marcin Slusarz wrote:
+> [    0.100047] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> [    0.101416] IP: [<ffffffff810854d1>] __queue_work+0x29/0x41a
+...
+> [    0.110000] Call Trace:
+> [    0.110000]  <IRQ> 
+> [    0.110000]  [<ffffffff81085910>] queue_work_on+0x16/0x1d
+> [    0.110000]  [<ffffffff81085abc>] queue_work+0x29/0x55
+> [    0.110000]  [<ffffffff81085afb>] schedule_work+0x13/0x15
+> [    0.110000]  [<ffffffff81242de1>] free_object+0x90/0x95
+> [    0.110000]  [<ffffffff81242f6d>] debug_check_no_obj_freed+0x187/0x1d3
+> [    0.110000]  [<ffffffff814b6504>] ? _raw_spin_unlock_irqrestore+0x30/0x4d
+> [    0.110000]  [<ffffffff8110bd14>] ? free_object_rcu+0x68/0x6d
+> [    0.110000]  [<ffffffff8110890c>] kmem_cache_free+0x64/0x12c
+> [    0.110000]  [<ffffffff8110bd14>] free_object_rcu+0x68/0x6d
+> [    0.110000]  [<ffffffff810b58bc>] __rcu_process_callbacks+0x1b6/0x2d9
+> [    0.110000]  [<ffffffff81095c9f>] ? tick_handle_periodic+0x1f/0x6c
+> [    0.110000]  [<ffffffff810b5a5a>] rcu_process_callbacks+0x7b/0x83
+> [    0.110000]  [<ffffffff810733b2>] __do_softirq+0x117/0x207
+> [    0.110000]  [<ffffffff810b05d3>] ? handle_irq_event+0x47/0x5c
+> [    0.110000]  [<ffffffff814bd0cc>] call_softirq+0x1c/0x30
+> [    0.110000]  [<ffffffff81034bc4>] do_softirq+0x38/0x80
+> [    0.110000]  [<ffffffff810730ed>] irq_exit+0x4e/0xa0
+> [    0.110000]  [<ffffffff8103429a>] do_IRQ+0x97/0xae
+> [    0.110000]  [<ffffffff814b6853>] common_interrupt+0x13/0x13
 
-These all look like ideal candidates for sysfs attributes under
-/sys/hypervisor, doing them one value per file, instead of grouping
-them into multiple entries per file.
+I can reproduce this reliably with your config too.  From a quick
+glance, the cause seems to be debug objects using RCU callback
+free_object() to free objects, which ends up being called before
+workqueue is initialized.  The offending object type is "rcu_head" and
+turning off CONFIG_DEBUG_OBJECTS_RCU_HEAD makes the problem go away.
 
-You can also turn each of these files into one directory under
-/sys/hypervisor, with one or more files under it.
+Any ideas on how to fix this?
 
-> diff --git a/arch/tile/kernel/sysfs.c b/arch/tile/kernel/sysfs.c
-> new file mode 100644
-> index 0000000..151deeb
-> --- /dev/null
-> +++ b/arch/tile/kernel/sysfs.c
-> @@ -0,0 +1,52 @@
-> +/*
-> + * Copyright 2011 Tilera Corporation. All Rights Reserved.
-> + *
-> + *   This program is free software; you can redistribute it and/or
-> + *   modify it under the terms of the GNU General Public License
-> + *   as published by the Free Software Foundation, version 2.
-> + *
-> + *   This program is distributed in the hope that it will be useful, but
-> + *   WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-> + *   NON INFRINGEMENT.  See the GNU General Public License for
-> + *   more details.
-> + *
-> + * /sys entry support.
-> + */
-> +
-> +#include <linux/sysdev.h>
-> +#include <linux/cpu.h>
-> +#include <linux/smp.h>
-> +
-> +static ssize_t chip_width_show(struct sysdev_class *dev,
-> +			       struct sysdev_class_attribute *attr,
-> +			       char *page)
-> +{
-> +	return sprintf(page, "%u\n", smp_width);
-> +}
-> +static SYSDEV_CLASS_ATTR(chip_width, 0444, chip_width_show, NULL);
-> +
-> +static ssize_t chip_height_show(struct sysdev_class *dev,
-> +				struct sysdev_class_attribute *attr,
-> +				char *page)
-> +{
-> +	return sprintf(page, "%u\n", smp_height);
-> +}
-> +static SYSDEV_CLASS_ATTR(chip_height, 0444, chip_height_show, NULL);
-> +
-> +
-> +static int __init create_cpu_entries(void)
-> +{
-> +	struct sysdev_class *cls = &cpu_sysdev_class;
-> +	int err = 0;
-> +
-> +	if (!err)
-> +		err = sysfs_create_file(&cls->kset.kobj,
-> +					&attr_chip_width.attr);
-> +	if (!err)
-> +		err = sysfs_create_file(&cls->kset.kobj,
-> +					&attr_chip_height.attr);
-> +
-> +	return err;
-> +}
+Thanks.
 
-This should use sysdev_create_file instead of open-coding it.
-
-	Arnd
-
+-- 
+tejun
