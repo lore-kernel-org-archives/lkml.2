@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab1ESITO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 04:19:14 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:29222 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755454Ab1ESITL (ORCPT
+	id S1756776Ab1ESIUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 04:20:45 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56850 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756457Ab1ESIUn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 04:19:11 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LLFOFW-02-0BM-02
-X-M-MSG: 
-Date: Thu, 19 May 2011 10:19:31 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v2] dma-debug: print some unfreed allocations
-Message-ID: <20110519081931.GM31309@amd.com>
-References: <1305052944.3544.8.camel@jlt3.sipsolutions.net>
- <1305118077.3416.5.camel@jlt3.sipsolutions.net>
- <20110516110029.GC31309@amd.com>
- <1305758908.8827.3.camel@jlt3.sipsolutions.net>
+	Thu, 19 May 2011 04:20:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=ffg5TUqULCzdqegsMxesfGQNa9iZ3oKuzGMoNiaVVAHUmOOoFDHjmd9iDWlOKx6R7o
+         CI2tK+WOuYU5goqNULZe1XKr0EpgvpDZ0GdR8xRxCftyZe1GmzDd/rb9skv/X09KHD4u
+         J7H9yfGh4cGH1KdVMH8Jb31G02l4pKMM4Cw2E=
+From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [stable] apparent regression (crash) - 2.6.38.6
+Date: Thu, 19 May 2011 10:20:34 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.5; KDE/4.6.3; x86_64; ; )
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Greg KH <greg@kroah.com>, Michael Tokarev <mjt@tls.msk.ru>,
+        Jiri Slaby <jslaby@suse.cz>, stable@kernel.org,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>
+References: <4DC9983B.4070006@msgid.tls.msk.ru> <20110519002505.GB8697@kroah.com> <1305776367.2576.0.camel@mulgrave.site>
+In-Reply-To: <1305776367.2576.0.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1305758908.8827.3.camel@jlt3.sipsolutions.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201105191020.34873.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 06:48:28PM -0400, Johannes Berg wrote:
-> On Mon, 2011-05-16 at 13:00 +0200, Roedel, Joerg wrote:
-> > > +		/*
-> > > +		 * If we have, print out some stack traces for the allocations.
-> > > +		 * In case of module unload, the stack traces will be useless,
-> > > +		 * but instead of unloading the module you can manually unbind
-> > > +		 * the driver instead and get useful traces.
-> > > +		 */
-> > > +		printk(KERN_WARNING "Showing traces for %d allocations:\n",
-> > > +		       DMA_DEBUG_NUM_PRINT_UNFREED);
+On Thursday 19 of May 2011, James Bottomley wrote:
+> On Wed, 2011-05-18 at 17:25 -0700, Greg KH wrote:
+> > On Wed, May 11, 2011 at 12:34:51PM -0700, Greg KH wrote:
+> > > On Wed, May 11, 2011 at 02:19:17PM -0500, James Bottomley wrote:
+> > > > On Wed, 2011-05-11 at 08:30 +0200, Jiri Slaby wrote:
+
+> > > > Hmm, it's another missing elevator guard, like this patch:
+> > > > 
+> > > > http://marc.info/?l=linux-scsi&m=130348673628282
+> > > > 
+> > > > I think the bug here is that q->elevator is null, so dereferencing
+> > > > elevator->ops gives the bug.
+> > > 
+> > > Is this patch going to Linus anytime soon?
+> > 
+> > Ping?
 > 
-> > This is surely useful to developers, but can trash the dmesg if done
-> > unconditionally. I would prefer this verbose output to be configurable
-> > and off by default.
-> 
-> Are you thinking of runtime or compile time configuration? Kconfig entry
-> depending on stacktrace (or selecting it, depending on have_stacktrace)
-> would be easy enough.
+> I pinged Jens about it yesterday; he said it should be on its way to
+> Linus.
 
-It should be configurable at runtime. DMA-debugging already has a
-debugfs interface which you can use for that. By default dma-debugging
-should only print out the message about leaked entries. The developer
-can then reproduce it and find the cause by enabling the verbose output.
+2.6.39 was released without it ;/
 
-Note that there is documentation in Documentation/DMA-API.txt to
-document the debugfs interface. Please make sure to update that too.
-
-Regards,
-
-	Joerg
+> James
 
 
+-- 
+Arkadiusz Miśkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
