@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab1ESAQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 20:16:09 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:40135 "EHLO
+	id S1754088Ab1ESAPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 20:15:19 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:40216 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab1ESAPM (ORCPT
+	with ESMTP id S1753344Ab1ESAPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 20:15:12 -0400
+	Wed, 18 May 2011 20:15:16 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
 	references:organization;
-	b=tSFfdE/2bYAEYhGusjtdlmW58SXYphxtCeIjvBQNLOBD+TllThyTsctFML+2evymK
-	8m0+QqybTqmEvGFyFRhIw==
+	b=puye012+Gh6mgctDyVhXxTQszPrqCBHUkxXKgvusg0Vu/lfxa4hQJKBPyLKCervit
+	yi12h0Imj0+RG68aLU92A==
 From: David Decotigny <decot@google.com>
 To: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
         Szymon Janc <szymon@janc.net.pl>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: kernel-net-upstream@google.com, Mike Ditto <mditto@google.com>,
         David Decotigny <decot@google.com>
-Subject: [PATCH 4/6] forcedeth: Acknowledge only interrupts that are being processed
-Date: Wed, 18 May 2011 17:14:38 -0700
-Message-Id: <1305764080-24853-4-git-send-email-decot@google.com>
+Subject: [PATCH 5/6] forcedeth: Add messages to indicate using MSI or MSI-X
+Date: Wed, 18 May 2011 17:14:39 -0700
+Message-Id: <1305764080-24853-5-git-send-email-decot@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1305764080-24853-1-git-send-email-decot@google.com>
 References: <1305764080-24853-1-git-send-email-decot@google.com>
@@ -31,63 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mike Ditto <mditto@google.com>
 
-This is to avoid a race, accidentally acknowledging an interrupt that
-we didn't notice and won't immediately process.  This is based solely
-on code inspection; it is not known if there was an actual bug here.
+This adds a few debug messages to indicate whether PCIe interrupts are
+signaled with MSI or MSI-X.
 
 
 Signed-off-by: David Decotigny <decot@google.com>
 ---
- drivers/net/forcedeth.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+ drivers/net/forcedeth.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
-index 7a6aa08..17e79de 100644
+index 17e79de..2712ddc 100644
 --- a/drivers/net/forcedeth.c
 +++ b/drivers/net/forcedeth.c
-@@ -3403,7 +3403,8 @@ static irqreturn_t nv_nic_irq_tx(int foo, void *data)
- 
- 	for (i = 0;; i++) {
- 		events = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQ_TX_ALL;
--		writel(NVREG_IRQ_TX_ALL, base + NvRegMSIXIrqStatus);
-+		writel(events, base + NvRegMSIXIrqStatus);
-+		netdev_dbg(dev, "%s: tx irq: %08x\n", dev->name, events);
- 		if (!(events & np->irqmask))
- 			break;
- 
-@@ -3514,7 +3515,8 @@ static irqreturn_t nv_nic_irq_rx(int foo, void *data)
- 
- 	for (i = 0;; i++) {
- 		events = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQ_RX_ALL;
--		writel(NVREG_IRQ_RX_ALL, base + NvRegMSIXIrqStatus);
-+		writel(events, base + NvRegMSIXIrqStatus);
-+		netdev_dbg(dev, "%s: rx irq: %08x\n", dev->name, events);
- 		if (!(events & np->irqmask))
- 			break;
- 
-@@ -3558,7 +3560,8 @@ static irqreturn_t nv_nic_irq_other(int foo, void *data)
- 
- 	for (i = 0;; i++) {
- 		events = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQ_OTHER;
--		writel(NVREG_IRQ_OTHER, base + NvRegMSIXIrqStatus);
-+		writel(events, base + NvRegMSIXIrqStatus);
-+		netdev_dbg(dev, "%s: irq: %08x\n", dev->name, events);
- 		if (!(events & np->irqmask))
- 			break;
- 
-@@ -3622,10 +3625,10 @@ static irqreturn_t nv_nic_irq_test(int foo, void *data)
- 
- 	if (!(np->msi_flags & NV_MSI_X_ENABLED)) {
- 		events = readl(base + NvRegIrqStatus) & NVREG_IRQSTAT_MASK;
--		writel(NVREG_IRQ_TIMER, base + NvRegIrqStatus);
-+		writel(events & NVREG_IRQ_TIMER, base + NvRegIrqStatus);
- 	} else {
- 		events = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQSTAT_MASK;
--		writel(NVREG_IRQ_TIMER, base + NvRegMSIXIrqStatus);
-+		writel(events & NVREG_IRQ_TIMER, base + NvRegMSIXIrqStatus);
+@@ -3745,6 +3745,7 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
+ 				writel(0, base + NvRegMSIXMap0);
+ 				writel(0, base + NvRegMSIXMap1);
+ 			}
++			netdev_info(dev, "forcedeth: MSI-X enabled\n");
+ 		}
  	}
- 	pci_push(base);
- 	if (!(events & NVREG_IRQ_TIMER))
+ 	if (ret != 0 && np->msi_flags & NV_MSI_CAPABLE) {
+@@ -3766,6 +3767,7 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
+ 			writel(0, base + NvRegMSIMap1);
+ 			/* enable msi vector 0 */
+ 			writel(NVREG_MSI_VECTOR_0_ENABLED, base + NvRegMSIIrqMask);
++			netdev_info(dev, "forcedeth: MSI enabled\n");
+ 		}
+ 	}
+ 	if (ret != 0) {
 -- 
 1.7.3.1
 
