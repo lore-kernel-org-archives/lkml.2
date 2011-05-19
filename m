@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab1ESD1N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 23:27:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41330 "EHLO smtps.tip.net.au"
+	id S932414Ab1ESDdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 23:33:36 -0400
+Received: from gate.crashing.org ([63.228.1.57]:41590 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756414Ab1ESD1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 23:27:11 -0400
-Date: Thu, 19 May 2011 13:27:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the i2c tree
-Message-Id: <20110519132704.9785243e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S932079Ab1ESDdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 23:33:35 -0400
+Subject: Re: [PATCH] lib: Consolidate DEBUG_STACK_USAGE option
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-m32r@ml.linux-m32r.org,
+        user-mode-linux-devel@lists.sourceforge.net, linux-sh@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>, sparclinux@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1304747831-2098-1-git-send-email-sboyd@codeaurora.org>
+References: <1304747831-2098-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 May 2011 13:32:07 +1000
+Message-ID: <1305775927.7481.31.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__19_May_2011_13_27_04_+1000_uh6so6E9TY/oR/Sc"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__19_May_2011_13_27_04_+1000_uh6so6E9TY/oR/Sc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2011-05-06 at 22:57 -0700, Stephen Boyd wrote:
+> Most arches define CONFIG_DEBUG_STACK_USAGE exactly the same way.
+> Move it to lib/Kconfig.debug so each arch doesn't have to define
+> it. This obviously makes the option generic, but that's fine
+> because the config is already used in generic code.
+> 
+> It's not obvious to me that sysrq-P actually does anything
+> different with this option enabled, but I erred on the side of
+> caution by keeping the most inclusive wording.
 
-Hi Jean,
+Sorry for the delay...
 
-After merging the i2c tree, today's linux-next build (i386 defconfig)
-failed like this:
+For powerpc:
 
-drivers/built-in.o: In function `i2c_i801_init':
-i2c-i801.c:(.init.text+0x88b9): undefined reference to `check_signature'
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-Probably caused by commit fc02951b3293 ("i2c-i801: Don't depend on other
-kernel driver config options").  Reverting that commit fixes the problem,
-so I have done that for today.
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Ben.
 
---Signature=_Thu__19_May_2011_13_27_04_+1000_uh6so6E9TY/oR/Sc
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN1I4IAAoJEDMEi1NhKgbssl0IAJrk7T8kvcZT6vFVXYH3a05X
-XfvD1X21ic1GHIdUKjTGeu8jrLt4I8wrdxVKdr0kcQqHKYeUc7GASCHRpnJwHaOI
-MIuSAdkEE+vYIzyr86kv+yTaMgjrsGDFJzBFAW25I/q+THbJH5Jgv9iE5UmzwZKe
-M53CdxkLnr9Lb/j/PmXDPuiZU/qwTUuCLwVAM9G0wljejwyh1sqAvnDpLO6Zca9u
-nuvcDeKRQhlNns0oOh/qwPrv/m+eZjtXTWmE02WhFop1m+3xtuMJzJbXBAGDmz92
-YG2SUQQUN1HyKkeELdTeWZ52Kv+zmTs8IRnJxxBGF+m+bgeNZQRRfdnjCoYkGZw=
-=qjTm
------END PGP SIGNATURE-----
-
---Signature=_Thu__19_May_2011_13_27_04_+1000_uh6so6E9TY/oR/Sc--
