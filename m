@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933779Ab1ESRpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 13:45:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18475 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932617Ab1ESRpw (ORCPT
+	id S933786Ab1ESRqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 13:46:44 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:49619 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932617Ab1ESRqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 13:45:52 -0400
-Message-ID: <4DD55738.3080405@oracle.com>
-Date: Thu, 19 May 2011 10:45:28 -0700
-From: Sunil Mushran <sunil.mushran@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
+	Thu, 19 May 2011 13:46:43 -0400
+Date: Thu, 19 May 2011 10:46:25 -0700
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Milton Miller <miltonm@bga.com>, Paul Mackerras <paulus@samba.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Anton Blanchard <anton@samba.org>,
+        Sonny Rao <sonnyrao@linux.vnet.ibm.com>,
+        Will Schmidt <will_schmidt@vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        cbe-oss-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 5/8] powerpc: override dma_get_required_mask by platform
+ hook and ops
+Message-ID: <20110519174625.GA3338@us.ibm.com>
+References: <1305152704-4864-1-git-send-email-nacc@us.ibm.com>
+ <1305152704-4864-6-git-send-email-nacc@us.ibm.com>
+ <1305791036.7481.52.camel@pasglop>
 MIME-Version: 1.0
-To: Tristan Ye <tristan.ye@oracle.com>
-CC: josef@redhat.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        ocfs2-devel@oss.oracle.com
-Subject: Re: [Ocfs2-devel] [PATCH] ocfs2: Implement llseek()
-References: <1305773084-19296-1-git-send-email-sunil.mushran@oracle.com> <1305773084-19296-3-git-send-email-sunil.mushran@oracle.com> <4DD4DF4C.501@oracle.com>
-In-Reply-To: <4DD4DF4C.501@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090206.4DD5574C.00F3:SCFSTAT5015188,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305791036.7481.52.camel@pasglop>
+X-Operating-System: Linux 2.6.38-8-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2011 02:13 AM, Tristan Ye wrote:
->> +	if (inode->i_size == 0 || *offset>= inode->i_size) {
->> +		ret = -ENXIO;
->> +		goto out_unlock;
->> +	}
-> Why not using if (*offset>= inode->i_size) directly?
+On 19.05.2011 [17:43:56 +1000], Benjamin Herrenschmidt wrote:
+> On Wed, 2011-05-11 at 15:25 -0700, Nishanth Aravamudan wrote:
+> > From: Milton Miller <miltonm@bga.com>
+> > 
+> > The hook dma_get_required_mask is supposed to return the mask required
+> > by the platform to operate efficently.  The generic version of
+> > dma_get_required_mask in driver/base/platform.c returns a mask based
+> > only on max_pfn.  However, this is likely too big for iommu systems
+> > and could be too small for platforms that require a dma offset or have
+> > a secondary window at a high offset.
+> 
+> The result of those 3 patches doesn't build on top of my current tree,
+> the generic dma_ops lacks the dma_get_required_mask hook. I'll have a
+> look again after the merge window.
 
-duh!
+Hrm, I think it's because for whatever reason [1] I forgot to cc you on 6/8?
 
-> +			BUG_ON(cpos<  le32_to_cpu(rec.e_cpos));
-> A same assert has already been performed inside ocfs2_get_clusters_nocache(),
-> does it make sense to do it again here?
+https://lkml.org/lkml/2011/5/11/473
 
-good catch
+-Nish
 
->> +
->> +		if ((!is_data&&  origin == SEEK_HOLE) ||
->> +		    (is_data&&  origin == SEEK_DATA)) {
->> +			if (extoff>  *offset)
->> +				*offset = extoff;
->> +			goto out_unlock;
-> Seems above logic is going to stop at the first time we find a hole.
->
-> How about the offset was within the range of a hole already when we doing
-> SEEK_HOLE, shouldn't we proceed detecting until the next hole gets found, whose
-> start_offset was greater than supplied offset, according to semantics described
-> by the the header of this patch, should it be like following?
->
-> 			if (extoff>  *offset) {
-> 				*offset = extoff;
-> 				goto out_unlock;
-> 			}
+[1] AKA over-reliance on get_maintainer.pl and lack of mental oversight!
 
-So if the offset is in a hole, then we set the file pointer to it. Same for
-data. The file pointer is set to the region asked at an offset that is equal
-to or greater than the supplied offset.
-
->> +	if (origin == SEEK_HOLE) {
->> +		extoff = cpos;
->> +		extoff<<= cs_bits;
-> extoff already has been assigned properly above in while loop?
-
-To handle the case when supplied cpos == cend.
-
-As always, excellent review.
-
-Thanks
-Sunil
+-- 
+Nishanth Aravamudan <nacc@us.ibm.com>
+IBM Linux Technology Center
