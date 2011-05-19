@@ -1,97 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934507Ab1ESTii (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 15:38:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	id S934546Ab1ESTiu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:38:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30653 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933830Ab1ESTig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 15:38:36 -0400
+	id S934522Ab1ESTik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 15:38:40 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, axboe@kernel.dk
 Cc: dpshah@google.com, vgoyal@redhat.com
-Subject: [PATCH 00/13] blk-throttle: lockless bio processing for no throttle rule group [V2]
-Date: Thu, 19 May 2011 15:38:18 -0400
-Message-Id: <1305833911-7717-1-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 01/13] blk-throttle: Do the new group initialization with the help of a function
+Date: Thu, 19 May 2011 15:38:19 -0400
+Message-Id: <1305833911-7717-2-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1305833911-7717-1-git-send-email-vgoyal@redhat.com>
+References: <1305833911-7717-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Group initialization code seems to be at two places. root group
+initialization in blk_throtl_init() and dynamically allocated group
+in throtl_find_alloc_tg(). Create a common function and use at both
+the places.
 
-This is V2 of the patch. Changes from V1 are.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-throttle.c |   64 +++++++++++++++++++++++++++----------------------
+ 1 files changed, 35 insertions(+), 29 deletions(-)
 
-- Dropped first patch of the series which has already been merged.
-- Fixed couple of white space warnings.
-
-Jens, I am sending this series on your both the ids. See if both produce
-warnings.
-
-Block throttling code takes request queue lock for every incoming bio
-(blk_throtl_bio()). This is true even if there are no throttle rules in
-the group. This is a common case for root cgroup where distributions
-will have throttling support compiled in but a vast majority of users
-will not be specifying throttling rule.
-
-This patch series tries to make bio processing lockless (no requeust
-queue lock), if there are no rules specified for the group. Once
-a bio is submitted, under rcu_read_lock() we search for the group,
-update the stats and release the rcu lock. request queue lock is taken
-only if there are throttling rules specified in the group.
-
-I have made some of the dispatch stats per cpu so that these can be updated
-without taking request queue lock.
-
-On my system for a simple dd as follows, request queue lock acquisition
-count has gone down by 11% roughly.
-
-dd if=/mnt/zerofile-1G of=/dev/null bs=4K iflag=direct
-
-lockstat output vanilla kernel
------------------------------
-class name                      acquisitions    holdtime-total
-
-&(&q->__queue_lock)->rlock:     2360944         1850183.07
-
-lockstat output with patched kernel
------------------------------------
-class name                      acquisitions    holdtime-total
-&(&q->__queue_lock)->rlock:     2098599         1430478.79
-
-
-I did test on a 4 cpu system doing IO to one SSD. I did not see any
-significant improvement in throughput. I suspect that I never saturated
-the cpus hence I don't see the improvement in throughput. I will see
-if I can get more testing done on this and see if I notice IO throughput
-improvement.
-
-Thanks
-Vivek
-
-Vivek Goyal (13):
-  blk-throttle: Do the new group initialization with the help of a
-    function
-  blk-cgroup: move some fields of unaccounted_time file under right
-    config option
-  cfq-iosched: Get rid of redundant function parameter "create"
-  cfq-iosched: Fix a possible race with cfq cgroup removal code
-  blk-cgroup: Allow sleeping while dynamically allocating a group
-  blk-throttle: Dynamically allocate root group
-  blk-throttle: Introduce a helper function to fill in device details
-  blk-throttle: Use helper function to add root throtl group to lists
-  blk-throttle: Free up a group only after one rcu grace period
-  blk-throttle: Make dispatch stats per cpu
-  blk-cgroup: Make 64bit per cpu stats safe on 32bit arch
-  blk-cgroup: Make cgroup stat reset path blkg->lock free for dispatch
-    stats
-  blk-throttle: Make no throttling rule group processing lockless
-
- block/blk-cgroup.c   |  180 +++++++++++++++++++++++------
- block/blk-cgroup.h   |   36 +++++--
- block/blk-core.c     |    3 +-
- block/blk-throttle.c |  313 ++++++++++++++++++++++++++++++++++++++------------
- block/cfq-iosched.c  |  202 ++++++++++++++++++++++++--------
- 5 files changed, 564 insertions(+), 170 deletions(-)
-
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 252a81a..fa9a900 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -159,6 +159,35 @@ static void throtl_put_tg(struct throtl_grp *tg)
+ 	kfree(tg);
+ }
+ 
++static void throtl_init_group(struct throtl_grp *tg)
++{
++	INIT_HLIST_NODE(&tg->tg_node);
++	RB_CLEAR_NODE(&tg->rb_node);
++	bio_list_init(&tg->bio_lists[0]);
++	bio_list_init(&tg->bio_lists[1]);
++	tg->limits_changed = false;
++
++	/* Practically unlimited BW */
++	tg->bps[0] = tg->bps[1] = -1;
++	tg->iops[0] = tg->iops[1] = -1;
++
++	/*
++	 * Take the initial reference that will be released on destroy
++	 * This can be thought of a joint reference by cgroup and
++	 * request queue which will be dropped by either request queue
++	 * exit or cgroup deletion path depending on who is exiting first.
++	 */
++	atomic_set(&tg->ref, 1);
++}
++
++/* Should be called with rcu read lock held (needed for blkcg) */
++static void
++throtl_add_group_to_td_list(struct throtl_data *td, struct throtl_grp *tg)
++{
++	hlist_add_head(&tg->tg_node, &td->tg_list);
++	td->nr_undestroyed_grps++;
++}
++
+ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
+ 			struct blkio_cgroup *blkcg)
+ {
+@@ -196,19 +225,7 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
+ 	if (!tg)
+ 		goto done;
+ 
+-	INIT_HLIST_NODE(&tg->tg_node);
+-	RB_CLEAR_NODE(&tg->rb_node);
+-	bio_list_init(&tg->bio_lists[0]);
+-	bio_list_init(&tg->bio_lists[1]);
+-	td->limits_changed = false;
+-
+-	/*
+-	 * Take the initial reference that will be released on destroy
+-	 * This can be thought of a joint reference by cgroup and
+-	 * request queue which will be dropped by either request queue
+-	 * exit or cgroup deletion path depending on who is exiting first.
+-	 */
+-	atomic_set(&tg->ref, 1);
++	throtl_init_group(tg);
+ 
+ 	/* Add group onto cgroup list */
+ 	sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+@@ -220,8 +237,7 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
+ 	tg->iops[READ] = blkcg_get_read_iops(blkcg, tg->blkg.dev);
+ 	tg->iops[WRITE] = blkcg_get_write_iops(blkcg, tg->blkg.dev);
+ 
+-	hlist_add_head(&tg->tg_node, &td->tg_list);
+-	td->nr_undestroyed_grps++;
++	throtl_add_group_to_td_list(td, tg);
+ done:
+ 	return tg;
+ }
+@@ -1060,18 +1076,11 @@ int blk_throtl_init(struct request_queue *q)
+ 	INIT_HLIST_HEAD(&td->tg_list);
+ 	td->tg_service_tree = THROTL_RB_ROOT;
+ 	td->limits_changed = false;
++	INIT_DELAYED_WORK(&td->throtl_work, blk_throtl_work);
+ 
+ 	/* Init root group */
+ 	tg = &td->root_tg;
+-	INIT_HLIST_NODE(&tg->tg_node);
+-	RB_CLEAR_NODE(&tg->rb_node);
+-	bio_list_init(&tg->bio_lists[0]);
+-	bio_list_init(&tg->bio_lists[1]);
+-
+-	/* Practically unlimited BW */
+-	tg->bps[0] = tg->bps[1] = -1;
+-	tg->iops[0] = tg->iops[1] = -1;
+-	td->limits_changed = false;
++	throtl_init_group(tg);
+ 
+ 	/*
+ 	 * Set root group reference to 2. One reference will be dropped when
+@@ -1080,16 +1089,13 @@ int blk_throtl_init(struct request_queue *q)
+ 	 * as it is statically allocated and gets destroyed when throtl_data
+ 	 * goes away.
+ 	 */
+-	atomic_set(&tg->ref, 2);
+-	hlist_add_head(&tg->tg_node, &td->tg_list);
+-	td->nr_undestroyed_grps++;
+-
+-	INIT_DELAYED_WORK(&td->throtl_work, blk_throtl_work);
++	atomic_inc(&tg->ref);
+ 
+ 	rcu_read_lock();
+ 	blkiocg_add_blkio_group(&blkio_root_cgroup, &tg->blkg, (void *)td,
+ 					0, BLKIO_POLICY_THROTL);
+ 	rcu_read_unlock();
++	throtl_add_group_to_td_list(td, tg);
+ 
+ 	/* Attach throtl data to request queue */
+ 	td->queue = q;
 -- 
 1.7.4.4
 
