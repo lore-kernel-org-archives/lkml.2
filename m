@@ -1,89 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935057Ab1ESVyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:54:51 -0400
-Received: from mga14.intel.com ([143.182.124.37]:61718 "EHLO mga14.intel.com"
+	id S935040Ab1ESVyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:54:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17849 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934993Ab1ESVyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934992Ab1ESVyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 May 2011 17:54:45 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,239,1304319600"; 
-   d="scan'208";a="439348022"
-Message-Id: <20110519214530.939830917@intel.com>
+Message-Id: <20110519214744.422532523@intel.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 20 May 2011 05:45:30 +0800
+Date: Fri, 20 May 2011 05:45:31 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jan Kara <jack@suse.cz>
-cc: Dave Chinner <david@fromorbit.com>
+cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
 cc: Christoph Hellwig <hch@infradead.org>
 cc: <linux-fsdevel@vger.kernel.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 00/18] writeback fixes and cleanups for 2.6.40 (v3)
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 01/18] writeback: introduce .tagged_writepages for the WB_SYNC_NONE sync stage
+References: <20110519214530.939830917@intel.com>
+Content-Disposition: inline; filename=writeback-for-sync.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+sync(2) is performed in two stages: the WB_SYNC_NONE sync and the
+WB_SYNC_ALL sync. Identify the first stage with .tagged_writepages and
+do livelock prevention for it, too.
 
-This is the combination of all the recent writeback patches that get
-reasonably reviewed and tested.
+Note that writeback_inodes_sb() is called by not only sync(), they are
+treated the same because the other callers also need livelock prevention.
 
-The first 10 patches are already in -mm tree, with updates:
+Impact:  It changes the order in which pages/inodes are synced to disk.
+Now in the WB_SYNC_NONE stage, it won't proceed to write the next inode
+until finished with the current inode.
 
-- remove "writeback: pass writeback_control down to move_expired_inodes()", and
-  resolve the resulting merge conflicts in other patches.
-- move ahead the sync livelock prevention patches (01, 02) so that (04) won't livelock sync
-- merge the three -mm fixes to (08)
-- fixed changelog of (01)
-- rename .for_sync to .tagged_writepages
+Acked-by: Jan Kara <jack@suse.cz>
+CC: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/ext4/inode.c           |    4 ++--
+ fs/fs-writeback.c         |   17 +++++++++--------
+ include/linux/writeback.h |    1 +
+ mm/page-writeback.c       |    4 ++--
+ 4 files changed, 14 insertions(+), 12 deletions(-)
 
-	[PATCH 01/18] writeback: introduce .tagged_writepages for the WB_SYNC_NONE sync stage
-	[PATCH 02/18] writeback: update dirtied_when for synced inode to prevent livelock
-	[PATCH 03/18] writeback: introduce writeback_control.inodes_cleaned
-	[PATCH 04/18] writeback: try more writeback as long as something was written
-	[PATCH 05/18] writeback: the kupdate expire timestamp should be a moving target
-	[PATCH 06/18] writeback: sync expired inodes first in background writeback
-	[PATCH 07/18] writeback: refill b_io iff empty
-	[PATCH 08/18] writeback: split inode_wb_list_lock into bdi_writeback.list_lock
-	[PATCH 09/18] writeback: elevate queue_io() into wb_writeback()
-	[PATCH 10/18] writeback: avoid extra sync work at enqueue time
+--- linux-next.orig/fs/fs-writeback.c	2011-05-20 05:01:40.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-20 05:02:18.000000000 +0800
+@@ -36,6 +36,7 @@ struct wb_writeback_work {
+ 	long nr_pages;
+ 	struct super_block *sb;
+ 	enum writeback_sync_modes sync_mode;
++	unsigned int tagged_writepages:1;
+ 	unsigned int for_kupdate:1;
+ 	unsigned int range_cyclic:1;
+ 	unsigned int for_background:1;
+@@ -650,6 +651,7 @@ static long wb_writeback(struct bdi_writ
+ {
+ 	struct writeback_control wbc = {
+ 		.sync_mode		= work->sync_mode,
++		.tagged_writepages	= work->tagged_writepages,
+ 		.older_than_this	= NULL,
+ 		.for_kupdate		= work->for_kupdate,
+ 		.for_background		= work->for_background,
+@@ -657,7 +659,7 @@ static long wb_writeback(struct bdi_writ
+ 	};
+ 	unsigned long oldest_jif;
+ 	long wrote = 0;
+-	long write_chunk;
++	long write_chunk = MAX_WRITEBACK_PAGES;
+ 	struct inode *inode;
+ 
+ 	if (wbc.for_kupdate) {
+@@ -683,9 +685,7 @@ static long wb_writeback(struct bdi_writ
+ 	 *                   (quickly) tag currently dirty pages
+ 	 *                   (maybe slowly) sync all tagged pages
+ 	 */
+-	if (wbc.sync_mode == WB_SYNC_NONE)
+-		write_chunk = MAX_WRITEBACK_PAGES;
+-	else
++	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_writepages)
+ 		write_chunk = LONG_MAX;
+ 
+ 	wbc.wb_start = jiffies; /* livelock avoidance */
+@@ -1191,10 +1191,11 @@ void writeback_inodes_sb_nr(struct super
+ {
+ 	DECLARE_COMPLETION_ONSTACK(done);
+ 	struct wb_writeback_work work = {
+-		.sb		= sb,
+-		.sync_mode	= WB_SYNC_NONE,
+-		.done		= &done,
+-		.nr_pages	= nr,
++		.sb			= sb,
++		.sync_mode		= WB_SYNC_NONE,
++		.tagged_writepages	= 1,
++		.done			= &done,
++		.nr_pages		= nr,
+ 	};
+ 
+ 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+--- linux-next.orig/include/linux/writeback.h	2011-05-20 05:01:40.000000000 +0800
++++ linux-next/include/linux/writeback.h	2011-05-20 05:01:42.000000000 +0800
+@@ -47,6 +47,7 @@ struct writeback_control {
+ 	unsigned encountered_congestion:1; /* An output: a queue is full */
+ 	unsigned for_kupdate:1;		/* A kupdate writeback */
+ 	unsigned for_background:1;	/* A background writeback */
++	unsigned tagged_writepages:1;	/* tag-and-write to avoid livelock */
+ 	unsigned for_reclaim:1;		/* Invoked from the page allocator */
+ 	unsigned range_cyclic:1;	/* range_start is cyclic */
+ 	unsigned more_io:1;		/* more io to be dispatched */
+--- linux-next.orig/mm/page-writeback.c	2011-05-20 05:01:40.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-05-20 05:01:42.000000000 +0800
+@@ -892,12 +892,12 @@ int write_cache_pages(struct address_spa
+ 			range_whole = 1;
+ 		cycled = 1; /* ignore range_cyclic tests */
+ 	}
+-	if (wbc->sync_mode == WB_SYNC_ALL)
++	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
+ 		tag = PAGECACHE_TAG_TOWRITE;
+ 	else
+ 		tag = PAGECACHE_TAG_DIRTY;
+ retry:
+-	if (wbc->sync_mode == WB_SYNC_ALL)
++	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
+ 		tag_pages_for_writeback(mapping, index, end);
+ 	done_index = index;
+ 	while (!done && (index <= end)) {
+--- linux-next.orig/fs/ext4/inode.c	2011-05-20 05:01:40.000000000 +0800
++++ linux-next/fs/ext4/inode.c	2011-05-20 05:01:42.000000000 +0800
+@@ -2741,7 +2741,7 @@ static int write_cache_pages_da(struct a
+ 	index = wbc->range_start >> PAGE_CACHE_SHIFT;
+ 	end = wbc->range_end >> PAGE_CACHE_SHIFT;
+ 
+-	if (wbc->sync_mode == WB_SYNC_ALL)
++	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
+ 		tag = PAGECACHE_TAG_TOWRITE;
+ 	else
+ 		tag = PAGECACHE_TAG_DIRTY;
+@@ -2975,7 +2975,7 @@ static int ext4_da_writepages(struct add
+ 	}
+ 
+ retry:
+-	if (wbc->sync_mode == WB_SYNC_ALL)
++	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
+ 		tag_pages_for_writeback(mapping, index, end);
+ 
+ 	while (!ret && wbc->nr_to_write > 0) {
 
-The following 8 patches were posted and reviewed these days:
-
-	[PATCH 11/18] writeback: add bdi_dirty_limit() kernel-doc
-	[PATCH 12/18] writeback: skip balance_dirty_pages() for in-memory fs
-	[PATCH 13/18] writeback: remove writeback_control.more_io
-	[PATCH 14/18] writeback: make writeback_control.nr_to_write straight
-	[PATCH 15/18] writeback: remove .nonblocking and .encountered_congestion
-	[PATCH 16/18] writeback: trace event writeback_single_inode
-	[PATCH 17/18] writeback: trace event writeback_queue_io
-	[PATCH 18/18] writeback: rearrange the wb_writeback() loop
-
-Thanks to Jan and Dave for the careful reviews!
-
-The patches are git pullable from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git fs-writeback
-
- fs/block_dev.c                   |   16 +-
- fs/btrfs/extent_io.c             |    2 -
- fs/ext4/inode.c                  |    4 +-
- fs/fs-writeback.c                |  411 +++++++++++++++++++++-----------------
- fs/inode.c                       |    5 +-
- fs/nfs/write.c                   |    3 +-
- fs/xfs/linux-2.6/xfs_aops.c      |    2 +-
- include/linux/backing-dev.h      |    2 +
- include/linux/writeback.h        |   14 +-
- include/trace/events/btrfs.h     |    6 +-
- include/trace/events/ext4.h      |    6 +-
- include/trace/events/writeback.h |  137 ++++++++++++--
- mm/backing-dev.c                 |   30 ++-
- mm/filemap.c                     |    6 +-
- mm/page-writeback.c              |   42 ++--
- mm/rmap.c                        |    4 +-
- 16 files changed, 420 insertions(+), 270 deletions(-)
-
-Thanks,
-Fengguang
 
