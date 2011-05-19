@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933900Ab1ESSIG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:08:06 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:38596 "EHLO
+	id S933911Ab1ESSII (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:08:08 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54076 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933884Ab1ESSIA (ORCPT
+	by vger.kernel.org with ESMTP id S933842Ab1ESSIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:08:00 -0400
-X-Sasl-enc: GKMoaKwXV1LUfjsRtJtnvmBnl0J25GX1uNjt0PzO+808 1305828480
+	Thu, 19 May 2011 14:08:02 -0400
+X-Sasl-enc: VVdeAaM17uz5VQ1YvVZC3cC1lK25jZySwYSySgHBx37R 1305828481
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:55 2011
-Message-Id: <20110519180555.630829390@clark.kroah.org>
+Message-Id: <20110519180555.728533003@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:04:42 -0700
+Date: Thu, 19 May 2011 11:04:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hugh Dickins <hughd@google.com>
-Subject: [14/71] vm: fix vm_pgoff wrap in upward expansion
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Subject: [15/71] Dont lock guardpage if the stack is growing up
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +27,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 
-commit 42c36f63ac1366ab0ecc2d5717821362c259f517 upstream.
+commit a09a79f66874c905af35d5bb5e5f2fdc7b6b894d upstream.
 
-Commit a626ca6a6564 ("vm: fix vm_pgoff wrap in stack expansion") fixed
-the case of an expanding mapping causing vm_pgoff wrapping when you had
-downward stack expansion.  But there was another case where IA64 and
-PA-RISC expand mappings: upward expansion.
+Linux kernel excludes guard page when performing mlock on a VMA with
+down-growing stack. However, some architectures have up-growing stack
+and locking the guard page should be excluded in this case too.
 
-This fixes that case too.
+This patch fixes lvm2 on PA-RISC (and possibly other architectures with
+up-growing stack). lvm2 calculates number of used pages when locking and
+when unlocking and reports an internal error if the numbers mismatch.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
+[ Patch changed fairly extensively to also fix /proc/<pid>/maps for the
+  grows-up case, and to move things around a bit to clean it all up and
+  share the infrstructure with the /proc bits.
+
+  Tested on ia64 that has both grow-up and grow-down segments  - Linus ]
+
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Tested-by: Tony Luck <tony.luck@gmail.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mmap.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ fs/proc/task_mmu.c |   12 +++++++-----
+ include/linux/mm.h |   24 +++++++++++++++++++++++-
+ mm/memory.c        |   16 +++++++---------
+ 3 files changed, 37 insertions(+), 15 deletions(-)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1767,10 +1767,13 @@ int expand_upwards(struct vm_area_struct
- 		size = address - vma->vm_start;
- 		grow = (address - vma->vm_end) >> PAGE_SHIFT;
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -211,7 +211,7 @@ static void show_map_vma(struct seq_file
+ 	int flags = vma->vm_flags;
+ 	unsigned long ino = 0;
+ 	unsigned long long pgoff = 0;
+-	unsigned long start;
++	unsigned long start, end;
+ 	dev_t dev = 0;
+ 	int len;
  
--		error = acct_stack_growth(vma, size, grow);
--		if (!error) {
--			vma->vm_end = address;
--			perf_event_mmap(vma);
-+		error = -ENOMEM;
-+		if (vma->vm_pgoff + (size >> PAGE_SHIFT) >= vma->vm_pgoff) {
-+			error = acct_stack_growth(vma, size, grow);
-+			if (!error) {
-+				vma->vm_end = address;
-+				perf_event_mmap(vma);
-+			}
+@@ -224,13 +224,15 @@ static void show_map_vma(struct seq_file
+ 
+ 	/* We don't show the stack guard page in /proc/maps */
+ 	start = vma->vm_start;
+-	if (vma->vm_flags & VM_GROWSDOWN)
+-		if (!vma_stack_continue(vma->vm_prev, vma->vm_start))
+-			start += PAGE_SIZE;
++	if (stack_guard_page_start(vma, start))
++		start += PAGE_SIZE;
++	end = vma->vm_end;
++	if (stack_guard_page_end(vma, end))
++		end -= PAGE_SIZE;
+ 
+ 	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
+ 			start,
+-			vma->vm_end,
++			end,
+ 			flags & VM_READ ? 'r' : '-',
+ 			flags & VM_WRITE ? 'w' : '-',
+ 			flags & VM_EXEC ? 'x' : '-',
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -994,11 +994,33 @@ int set_page_dirty_lock(struct page *pag
+ int clear_page_dirty_for_io(struct page *page);
+ 
+ /* Is the vma a continuation of the stack vma above it? */
+-static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
++static inline int vma_growsdown(struct vm_area_struct *vma, unsigned long addr)
+ {
+ 	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
+ }
+ 
++static inline int stack_guard_page_start(struct vm_area_struct *vma,
++					     unsigned long addr)
++{
++	return (vma->vm_flags & VM_GROWSDOWN) &&
++		(vma->vm_start == addr) &&
++		!vma_growsdown(vma->vm_prev, addr);
++}
++
++/* Is the vma a continuation of the stack vma below it? */
++static inline int vma_growsup(struct vm_area_struct *vma, unsigned long addr)
++{
++	return vma && (vma->vm_start == addr) && (vma->vm_flags & VM_GROWSUP);
++}
++
++static inline int stack_guard_page_end(struct vm_area_struct *vma,
++					   unsigned long addr)
++{
++	return (vma->vm_flags & VM_GROWSUP) &&
++		(vma->vm_end == addr) &&
++		!vma_growsup(vma->vm_next, addr);
++}
++
+ extern unsigned long move_page_tables(struct vm_area_struct *vma,
+ 		unsigned long old_addr, struct vm_area_struct *new_vma,
+ 		unsigned long new_addr, unsigned long len);
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1412,9 +1412,8 @@ no_page_table:
+ 
+ static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
+ {
+-	return (vma->vm_flags & VM_GROWSDOWN) &&
+-		(vma->vm_start == addr) &&
+-		!vma_stack_continue(vma->vm_prev, addr);
++	return stack_guard_page_start(vma, addr) ||
++	       stack_guard_page_end(vma, addr+PAGE_SIZE);
+ }
+ 
+ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+@@ -1502,12 +1501,6 @@ int __get_user_pages(struct task_struct
+ 			continue;
  		}
- 	}
- 	vma_unlock_anon_vma(vma);
+ 
+-		/*
+-		 * For mlock, just skip the stack guard page.
+-		 */
+-		if ((gup_flags & FOLL_MLOCK) && stack_guard_page(vma, start))
+-			goto next_page;
+-
+ 		do {
+ 			struct page *page;
+ 			unsigned int foll_flags = gup_flags;
+@@ -1524,6 +1517,11 @@ int __get_user_pages(struct task_struct
+ 				int ret;
+ 				unsigned int fault_flags = 0;
+ 
++				/* For mlock, just skip the stack guard page. */
++				if (foll_flags & FOLL_MLOCK) {
++					if (stack_guard_page(vma, start))
++						goto next_page;
++				}
+ 				if (foll_flags & FOLL_WRITE)
+ 					fault_flags |= FAULT_FLAG_WRITE;
+ 				if (nonblocking)
 
 
