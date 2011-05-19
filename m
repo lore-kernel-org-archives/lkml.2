@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934889Ab1ESVf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 17:35:26 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59113 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933194Ab1ESVeH (ORCPT
+	id S934879Ab1ESVeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 17:34:15 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:44365 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934851Ab1ESVeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 17:34:07 -0400
+	Thu, 19 May 2011 17:34:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=YSvOJ6QT8uZ9QuSAjKpzqmWTbbzR5TNNAAm05/l92oLjo7HxJiB3puqbmjLmCkXBaU
-         4BYiLvHG1FSuFIY4+xocdbEeFsCNTtUPN+EanM3hN5U6UJhWqGvtDQjkCV0xW1r1W7wL
-         vIA3D/MC3np/n3eI6MRmAlUDeSBThQ7pi3nJ0=
+        b=t06Gc9WCj5FUPJm1IfufdsDU7CGPEWrLTFPugskxQLFMfXdgmGxcVmpjQVMBJTVaya
+         pp2vUbqn97BpLvMBaCgDfctiZ2zzcfMrud/zwsb39EcE4KBERBchr1FzS/HJ1tnXJcwv
+         pLXPrBuREzIMMi4dV9s8eLNvT+DIq/VACK/ws=
 From: Jim Cromie <jim.cromie@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@suse.de, Jim Cromie <jim.cromie@gmail.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-s390@vger.kernel.org, linux390@de.ibm.com
-Subject: [PATCH 07/23] use register_chrdev_ids in drivers/s390/
-Date: Thu, 19 May 2011 15:33:10 -0600
-Message-Id: <1305840792-25877-8-git-send-email-jim.cromie@gmail.com>
+        Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
+        Benny Halevy <bhalevy@panasas.com>,
+        Boaz Harrosh <bharrosh@panasas.com>, osd-dev@open-osd.org,
+        Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
+Subject: [PATCH 08/23] use register_chrdev_ids in drivers/scsi/
+Date: Thu, 19 May 2011 15:33:11 -0600
+Message-Id: <1305840792-25877-9-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com>
 References: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com>
@@ -29,59 +30,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-cc: linux-s390@vger.kernel.org
-cc: linux390@de.ibm.com
+cc: Doug Gilbert <dgilbert@interlog.com>
+cc: linux-scsi@vger.kernel.org
+cc: Benny Halevy <bhalevy@panasas.com>
+cc: Boaz Harrosh <bharrosh@panasas.com>
+cc: osd-dev@open-osd.org
+cc: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
+cc: linux-scsi@vger.kernel.org
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- drivers/s390/char/tape_char.c |    2 +-
- drivers/s390/char/vmlogrdr.c  |    2 +-
- drivers/s390/char/vmur.c      |    4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/osd/osd_uld.c |    6 +++---
+ drivers/scsi/pmcraid.c     |    3 +--
+ drivers/scsi/sg.c          |    6 +++---
+ drivers/scsi/st.c          |    7 +++----
+ 4 files changed, 10 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/s390/char/tape_char.c b/drivers/s390/char/tape_char.c
-index 87cd0ab..e321435 100644
---- a/drivers/s390/char/tape_char.c
-+++ b/drivers/s390/char/tape_char.c
-@@ -494,7 +494,7 @@ tapechar_init (void)
+diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
+index b31a8e3..18dcd38 100644
+--- a/drivers/scsi/osd/osd_uld.c
++++ b/drivers/scsi/osd/osd_uld.c
+@@ -528,6 +528,7 @@ static struct scsi_driver osd_driver = {
+ static int __init osd_uld_init(void)
  {
- 	dev_t	dev;
+ 	int err;
++	dev_t devt = MKDEV(SCSI_OSD_MAJOR, 0);
  
--	if (alloc_chrdev_region(&dev, 0, 256, "tape") != 0)
-+	if (register_chrdev_ids(&dev, 256, "tape") != 0)
- 		return -1;
+ 	err = class_register(&osd_uld_class);
+ 	if (err) {
+@@ -535,8 +536,7 @@ static int __init osd_uld_init(void)
+ 		return err;
+ 	}
  
- 	tapechar_major = MAJOR(dev);
-diff --git a/drivers/s390/char/vmlogrdr.c b/drivers/s390/char/vmlogrdr.c
-index c837d74..15eeab7 100644
---- a/drivers/s390/char/vmlogrdr.c
-+++ b/drivers/s390/char/vmlogrdr.c
-@@ -866,7 +866,7 @@ static int __init vmlogrdr_init(void)
+-	err = register_chrdev_region(MKDEV(SCSI_OSD_MAJOR, 0),
+-				     SCSI_OSD_MAX_MINOR, osd_name);
++	err = register_chrdev_ids(&devt, SCSI_OSD_MAX_MINOR, osd_name);
+ 	if (err) {
+ 		OSD_ERR("Unable to register major %d for osd ULD => %d\n",
+ 			SCSI_OSD_MAJOR, err);
+@@ -553,7 +553,7 @@ static int __init osd_uld_init(void)
+ 	return 0;
  
-         recording_class_AB = vmlogrdr_get_recording_class_AB();
+ err_out_chrdev:
+-	unregister_chrdev_region(MKDEV(SCSI_OSD_MAJOR, 0), SCSI_OSD_MAX_MINOR);
++	unregister_chrdev_region(devt, SCSI_OSD_MAX_MINOR);
+ err_out:
+ 	class_unregister(&osd_uld_class);
+ 	return err;
+diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
+index 7f636b1..61a2207 100644
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -6100,8 +6100,7 @@ static int __init pmcraid_init(void)
+ 			 PMCRAID_DRIVER_NAME,
+ 			 PMCRAID_DRIVER_VERSION, PMCRAID_DRIVER_DATE);
  
--	rc = alloc_chrdev_region(&dev, 0, MAXMINOR, "vmlogrdr");
-+	rc = register_chrdev_ids(&dev, MAXMINOR, "vmlogrdr");
+-	error = alloc_chrdev_region(&dev, 0,
+-				    PMCRAID_MAX_ADAPTERS,
++	error = register_chrdev_ids(&dev, PMCRAID_MAX_ADAPTERS,
+ 				    PMCRAID_DEVFILE);
+ 
+ 	if (error) {
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index 909ed9e..e741988 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -1575,6 +1575,7 @@ static int __init
+ init_sg(void)
+ {
+ 	int rc;
++	dev_t devt = MKDEV(SCSI_GENERIC_MAJOR, 0);
+ 
+ 	if (scatter_elem_sz < PAGE_SIZE) {
+ 		scatter_elem_sz = PAGE_SIZE;
+@@ -1585,8 +1586,7 @@ init_sg(void)
+ 	else
+ 		def_reserved_size = sg_big_buff;
+ 
+-	rc = register_chrdev_region(MKDEV(SCSI_GENERIC_MAJOR, 0), 
+-				    SG_MAX_DEVS, "sg");
++	rc = register_chrdev_ids(&devt, SG_MAX_DEVS, "sg");
  	if (rc)
  		return rc;
- 	vmlogrdr_major = MAJOR(dev);
-diff --git a/drivers/s390/char/vmur.c b/drivers/s390/char/vmur.c
-index f6b00c3..e752c84 100644
---- a/drivers/s390/char/vmur.c
-+++ b/drivers/s390/char/vmur.c
-@@ -1037,9 +1037,9 @@ static int __init ur_init(void)
- 	if (rc)
- 		goto fail_class_destroy;
- 
--	rc = alloc_chrdev_region(&dev, 0, NUM_MINORS, "vmur");
-+	rc = register_chrdev_ids(&dev, NUM_MINORS, "vmur");
- 	if (rc) {
--		pr_err("Kernel function alloc_chrdev_region failed with "
-+		pr_err("register_chrdev_ids() failed with "
- 		       "error code %d\n", rc);
- 		goto fail_unregister_driver;
+         sg_sysfs_class = class_create(THIS_MODULE, "scsi_generic");
+@@ -1604,7 +1604,7 @@ init_sg(void)
  	}
+ 	class_destroy(sg_sysfs_class);
+ err_out:
+-	unregister_chrdev_region(MKDEV(SCSI_GENERIC_MAJOR, 0), SG_MAX_DEVS);
++	unregister_chrdev_region(devt, SG_MAX_DEVS);
+ 	return rc;
+ }
+ 
+diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
+index 1871b8a..5cce227 100644
+--- a/drivers/scsi/st.c
++++ b/drivers/scsi/st.c
+@@ -4260,6 +4260,7 @@ static void scsi_tape_release(struct kref *kref)
+ static int __init init_st(void)
+ {
+ 	int err;
++	dev_t devt = MKDEV(SCSI_TAPE_MAJOR, 0);
+ 
+ 	validate_options();
+ 
+@@ -4272,8 +4273,7 @@ static int __init init_st(void)
+ 		return PTR_ERR(st_sysfs_class);
+ 	}
+ 
+-	err = register_chrdev_region(MKDEV(SCSI_TAPE_MAJOR, 0),
+-				     ST_MAX_TAPE_ENTRIES, "st");
++	err = register_chrdev_ids(&devt, ST_MAX_TAPE_ENTRIES, "st");
+ 	if (err) {
+ 		printk(KERN_ERR "Unable to get major %d for SCSI tapes\n",
+ 		       SCSI_TAPE_MAJOR);
+@@ -4293,8 +4293,7 @@ static int __init init_st(void)
+ err_scsidrv:
+ 	scsi_unregister_driver(&st_template.gendrv);
+ err_chrdev:
+-	unregister_chrdev_region(MKDEV(SCSI_TAPE_MAJOR, 0),
+-				 ST_MAX_TAPE_ENTRIES);
++	unregister_chrdev_region(devt, ST_MAX_TAPE_ENTRIES);
+ err_class:
+ 	class_destroy(st_sysfs_class);
+ 	return err;
 -- 
 1.7.4.4
 
