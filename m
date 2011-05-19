@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934695Ab1ESUaz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 16:30:55 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54936 "EHLO mx2.mail.elte.hu"
+	id S934683Ab1ESUc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 16:32:56 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:50201 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933813Ab1ESUaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 16:30:52 -0400
-Date: Thu, 19 May 2011 22:30:30 +0200
+	id S933813Ab1ESUcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 16:32:55 -0400
+Date: Thu, 19 May 2011 22:32:36 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         John Stultz <johnstul@us.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] timers/clockevents changes for v2.6.40
-Message-ID: <20110519203030.GA20382@elte.hu>
+Subject: [GIT PULL] timers/clocksource changes for v2.6.40
+Message-ID: <20110519203236.GA21843@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -32,9 +32,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest timers-clockevents-for-linus git tree from:
+Please pull the latest timers-clocksource-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-clockevents-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-clocksource-for-linus
 
  Thanks,
 
@@ -58,15 +58,6 @@ Russell King (4):
 
 Russell King - ARM Linux (1):
       Make clocksource name const
-
-Thomas Gleixner (7):
-      clocksource: Restructure clocksource struct members
-      clocksource: Get rid of the hardcoded 5 seconds sleep time limit
-      clockevents: Restructure clock_event_device members
-      clockevents: Provide combined configure and register function
-      clockevents: Provide interface to reconfigure an active clock event device
-      x86: Convert PIT to clockevents_config_and_register()
-      x86: hpet: Cleanup the clockevents init and register code
 
 
  arch/alpha/kernel/time.c                        |    3 +-
@@ -96,8 +87,7 @@ Thomas Gleixner (7):
  arch/x86/Kconfig                                |    1 +
  arch/x86/include/asm/i8253.h                    |    2 +
  arch/x86/kernel/apb_timer.c                     |   10 +---
- arch/x86/kernel/hpet.c                          |   72 ++++--------------
- arch/x86/kernel/i8253.c                         |   86 +---------------------
+ arch/x86/kernel/i8253.c                         |   80 +--------------------
  arch/x86/kernel/kvmclock.c                      |    6 +--
  arch/x86/lguest/boot.c                          |    4 +-
  arch/x86/platform/uv/uv_time.c                  |    6 +--
@@ -108,11 +98,8 @@ Thomas Gleixner (7):
  drivers/clocksource/Makefile                    |    1 +
  drivers/clocksource/cyclone.c                   |   10 +--
  drivers/clocksource/i8253.c                     |   88 +++++++++++++++++++++++
- include/linux/clockchips.h                      |   56 +++++++++------
- include/linux/clocksource.h                     |   34 ++++-----
- kernel/time/clockevents.c                       |   64 ++++++++++++++++
- kernel/time/clocksource.c                       |   38 +++++-----
- 43 files changed, 305 insertions(+), 476 deletions(-)
+ include/linux/clocksource.h                     |    4 +-
+ 39 files changed, 158 insertions(+), 357 deletions(-)
  create mode 100644 arch/arm/include/asm/i8253.h
  create mode 100644 drivers/clocksource/Kconfig
  create mode 100644 drivers/clocksource/i8253.c
@@ -812,175 +799,11 @@ index cd1ffed..289e928 100644
  
  	return 0;
  }
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index bfe8f72..6781765 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -217,7 +217,7 @@ static void hpet_reserve_platform_timers(unsigned int id) { }
- /*
-  * Common hpet info
-  */
--static unsigned long hpet_period;
-+static unsigned long hpet_freq;
- 
- static void hpet_legacy_set_mode(enum clock_event_mode mode,
- 			  struct clock_event_device *evt);
-@@ -232,7 +232,6 @@ static struct clock_event_device hpet_clockevent = {
- 	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
- 	.set_mode	= hpet_legacy_set_mode,
- 	.set_next_event = hpet_legacy_next_event,
--	.shift		= 32,
- 	.irq		= 0,
- 	.rating		= 50,
- };
-@@ -290,28 +289,12 @@ static void hpet_legacy_clockevent_register(void)
- 	hpet_enable_legacy_int();
- 
- 	/*
--	 * The mult factor is defined as (include/linux/clockchips.h)
--	 *  mult/2^shift = cyc/ns (in contrast to ns/cyc in clocksource.h)
--	 * hpet_period is in units of femtoseconds (per cycle), so
--	 *  mult/2^shift = cyc/ns = 10^6/hpet_period
--	 *  mult = (10^6 * 2^shift)/hpet_period
--	 *  mult = (FSEC_PER_NSEC << hpet_clockevent.shift)/hpet_period
--	 */
--	hpet_clockevent.mult = div_sc((unsigned long) FSEC_PER_NSEC,
--				      hpet_period, hpet_clockevent.shift);
--	/* Calculate the min / max delta */
--	hpet_clockevent.max_delta_ns = clockevent_delta2ns(0x7FFFFFFF,
--							   &hpet_clockevent);
--	/* Setup minimum reprogramming delta. */
--	hpet_clockevent.min_delta_ns = clockevent_delta2ns(HPET_MIN_PROG_DELTA,
--							   &hpet_clockevent);
--
--	/*
- 	 * Start hpet with the boot cpu mask and make it
- 	 * global after the IO_APIC has been initialized.
- 	 */
- 	hpet_clockevent.cpumask = cpumask_of(smp_processor_id());
--	clockevents_register_device(&hpet_clockevent);
-+	clockevents_config_and_register(&hpet_clockevent, hpet_freq,
-+					HPET_MIN_PROG_DELTA, 0x7FFFFFFF);
- 	global_clock_event = &hpet_clockevent;
- 	printk(KERN_DEBUG "hpet clockevent registered\n");
- }
-@@ -549,7 +532,6 @@ static int hpet_setup_irq(struct hpet_dev *dev)
- static void init_one_hpet_msi_clockevent(struct hpet_dev *hdev, int cpu)
- {
- 	struct clock_event_device *evt = &hdev->evt;
--	uint64_t hpet_freq;
- 
- 	WARN_ON(cpu != smp_processor_id());
- 	if (!(hdev->flags & HPET_DEV_VALID))
-@@ -571,24 +553,10 @@ static void init_one_hpet_msi_clockevent(struct hpet_dev *hdev, int cpu)
- 
- 	evt->set_mode = hpet_msi_set_mode;
- 	evt->set_next_event = hpet_msi_next_event;
--	evt->shift = 32;
--
--	/*
--	 * The period is a femto seconds value. We need to calculate the
--	 * scaled math multiplication factor for nanosecond to hpet tick
--	 * conversion.
--	 */
--	hpet_freq = FSEC_PER_SEC;
--	do_div(hpet_freq, hpet_period);
--	evt->mult = div_sc((unsigned long) hpet_freq,
--				      NSEC_PER_SEC, evt->shift);
--	/* Calculate the max delta */
--	evt->max_delta_ns = clockevent_delta2ns(0x7FFFFFFF, evt);
--	/* 5 usec minimum reprogramming delta. */
--	evt->min_delta_ns = 5000;
--
- 	evt->cpumask = cpumask_of(hdev->cpu);
--	clockevents_register_device(evt);
-+
-+	clockevents_config_and_register(evt, hpet_freq, HPET_MIN_PROG_DELTA,
-+					0x7FFFFFFF);
- }
- 
- #ifdef CONFIG_HPET
-@@ -792,7 +760,6 @@ static struct clocksource clocksource_hpet = {
- static int hpet_clocksource_register(void)
- {
- 	u64 start, now;
--	u64 hpet_freq;
- 	cycle_t t1;
- 
- 	/* Start the counter */
-@@ -819,24 +786,7 @@ static int hpet_clocksource_register(void)
- 		return -ENODEV;
- 	}
- 
--	/*
--	 * The definition of mult is (include/linux/clocksource.h)
--	 * mult/2^shift = ns/cyc and hpet_period is in units of fsec/cyc
--	 * so we first need to convert hpet_period to ns/cyc units:
--	 *  mult/2^shift = ns/cyc = hpet_period/10^6
--	 *  mult = (hpet_period * 2^shift)/10^6
--	 *  mult = (hpet_period << shift)/FSEC_PER_NSEC
--	 */
--
--	/* Need to convert hpet_period (fsec/cyc) to cyc/sec:
--	 *
--	 * cyc/sec = FSEC_PER_SEC/hpet_period(fsec/cyc)
--	 * cyc/sec = (FSEC_PER_NSEC * NSEC_PER_SEC)/hpet_period
--	 */
--	hpet_freq = FSEC_PER_SEC;
--	do_div(hpet_freq, hpet_period);
- 	clocksource_register_hz(&clocksource_hpet, (u32)hpet_freq);
--
- 	return 0;
- }
- 
-@@ -845,7 +795,9 @@ static int hpet_clocksource_register(void)
-  */
- int __init hpet_enable(void)
- {
-+	unsigned long hpet_period;
- 	unsigned int id;
-+	u64 freq;
- 	int i;
- 
- 	if (!is_hpet_capable())
-@@ -884,6 +836,14 @@ int __init hpet_enable(void)
- 		goto out_nohpet;
- 
- 	/*
-+	 * The period is a femto seconds value. Convert it to a
-+	 * frequency.
-+	 */
-+	freq = FSEC_PER_SEC;
-+	do_div(freq, hpet_period);
-+	hpet_freq = freq;
-+
-+	/*
- 	 * Read the HPET ID register to retrieve the IRQ routing
- 	 * information and the number of channels
- 	 */
 diff --git a/arch/x86/kernel/i8253.c b/arch/x86/kernel/i8253.c
-index 2dfd315..fb66dc9 100644
+index 2dfd315..577e90c 100644
 --- a/arch/x86/kernel/i8253.c
 +++ b/arch/x86/kernel/i8253.c
-@@ -93,7 +93,6 @@ static struct clock_event_device pit_ce = {
- 	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
- 	.set_mode	= init_pit_timer,
- 	.set_next_event = pit_next_event,
--	.shift		= 32,
- 	.irq		= 0,
- };
- 
-@@ -108,90 +107,12 @@ void __init setup_pit_timer(void)
- 	 * IO_APIC has been initialized.
- 	 */
- 	pit_ce.cpumask = cpumask_of(smp_processor_id());
--	pit_ce.mult = div_sc(CLOCK_TICK_RATE, NSEC_PER_SEC, pit_ce.shift);
--	pit_ce.max_delta_ns = clockevent_delta2ns(0x7FFF, &pit_ce);
--	pit_ce.min_delta_ns = clockevent_delta2ns(0xF, &pit_ce);
- 
--	clockevents_register_device(&pit_ce);
-+	clockevents_config_and_register(&pit_ce, CLOCK_TICK_RATE, 0xF, 0x7FFF);
- 	global_clock_event = &pit_ce;
+@@ -117,81 +117,6 @@ void __init setup_pit_timer(void)
  }
  
  #ifndef CONFIG_X86_64
@@ -1062,7 +885,7 @@ index 2dfd315..fb66dc9 100644
  static int __init init_pit_clocksource(void)
  {
  	 /*
-@@ -205,10 +126,7 @@ static int __init init_pit_clocksource(void)
+@@ -205,10 +130,7 @@ static int __init init_pit_clocksource(void)
  	    pit_ce.mode != CLOCK_EVT_MODE_PERIODIC)
  		return 0;
  
@@ -1361,297 +1184,23 @@ index 0000000..225c176
 +{
 +	return clocksource_register_hz(&i8253_cs, PIT_TICK_RATE);
 +}
-diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index fc53492..d6733e2 100644
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@ -56,46 +56,52 @@ enum clock_event_nofitiers {
- 
- /**
-  * struct clock_event_device - clock event device descriptor
-- * @name:		ptr to clock event name
-- * @features:		features
-+ * @event_handler:	Assigned by the framework to be called by the low
-+ *			level handler of the event source
-+ * @set_next_event:	set next event function
-+ * @next_event:		local storage for the next event in oneshot mode
-  * @max_delta_ns:	maximum delta value in ns
-  * @min_delta_ns:	minimum delta value in ns
-  * @mult:		nanosecond to cycles multiplier
-  * @shift:		nanoseconds to cycles divisor (power of two)
-+ * @mode:		operating mode assigned by the management code
-+ * @features:		features
-+ * @retries:		number of forced programming retries
-+ * @set_mode:		set mode function
-+ * @broadcast:		function to broadcast events
-+ * @min_delta_ticks:	minimum delta value in ticks stored for reconfiguration
-+ * @max_delta_ticks:	maximum delta value in ticks stored for reconfiguration
-+ * @name:		ptr to clock event name
-  * @rating:		variable to rate clock event devices
-  * @irq:		IRQ number (only for non CPU local devices)
-  * @cpumask:		cpumask to indicate for which CPUs this device works
-- * @set_next_event:	set next event function
-- * @set_mode:		set mode function
-- * @event_handler:	Assigned by the framework to be called by the low
-- *			level handler of the event source
-- * @broadcast:		function to broadcast events
-  * @list:		list head for the management code
-- * @mode:		operating mode assigned by the management code
-- * @next_event:		local storage for the next event in oneshot mode
-- * @retries:		number of forced programming retries
-  */
- struct clock_event_device {
--	const char		*name;
--	unsigned int		features;
-+	void			(*event_handler)(struct clock_event_device *);
-+	int			(*set_next_event)(unsigned long evt,
-+						  struct clock_event_device *);
-+	ktime_t			next_event;
- 	u64			max_delta_ns;
- 	u64			min_delta_ns;
- 	u32			mult;
- 	u32			shift;
-+	enum clock_event_mode	mode;
-+	unsigned int		features;
-+	unsigned long		retries;
-+
-+	void			(*broadcast)(const struct cpumask *mask);
-+	void			(*set_mode)(enum clock_event_mode mode,
-+					    struct clock_event_device *);
-+	unsigned long		min_delta_ticks;
-+	unsigned long		max_delta_ticks;
-+
-+	const char		*name;
- 	int			rating;
- 	int			irq;
- 	const struct cpumask	*cpumask;
--	int			(*set_next_event)(unsigned long evt,
--						  struct clock_event_device *);
--	void			(*set_mode)(enum clock_event_mode mode,
--					    struct clock_event_device *);
--	void			(*event_handler)(struct clock_event_device *);
--	void			(*broadcast)(const struct cpumask *mask);
- 	struct list_head	list;
--	enum clock_event_mode	mode;
--	ktime_t			next_event;
--	unsigned long		retries;
--};
-+} ____cacheline_aligned;
- 
- /*
-  * Calculate a multiplication factor for scaled math, which is used to convert
-@@ -122,6 +128,12 @@ extern u64 clockevent_delta2ns(unsigned long latch,
- 			       struct clock_event_device *evt);
- extern void clockevents_register_device(struct clock_event_device *dev);
- 
-+extern void clockevents_config_and_register(struct clock_event_device *dev,
-+					    u32 freq, unsigned long min_delta,
-+					    unsigned long max_delta);
-+
-+extern int clockevents_update_freq(struct clock_event_device *ce, u32 freq);
-+
- extern void clockevents_exchange_device(struct clock_event_device *old,
- 					struct clock_event_device *new);
- extern void clockevents_set_mode(struct clock_event_device *dev,
 diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index c37b21a..c918fbd3 100644
+index c37b21a..0fb0b7e 100644
 --- a/include/linux/clocksource.h
 +++ b/include/linux/clocksource.h
-@@ -159,42 +159,38 @@ extern u64 timecounter_cyc2time(struct timecounter *tc,
-  */
- struct clocksource {
+@@ -161,7 +161,7 @@ struct clocksource {
  	/*
--	 * First part of structure is read mostly
-+	 * Hotpath data, fits in a single cache line when the
-+	 * clocksource itself is cacheline aligned.
+ 	 * First part of structure is read mostly
  	 */
 -	char *name;
--	struct list_head list;
--	int rating;
- 	cycle_t (*read)(struct clocksource *cs);
--	int (*enable)(struct clocksource *cs);
--	void (*disable)(struct clocksource *cs);
-+	cycle_t cycle_last;
- 	cycle_t mask;
- 	u32 mult;
- 	u32 shift;
- 	u64 max_idle_ns;
--	unsigned long flags;
--	cycle_t (*vread)(void);
--	void (*suspend)(struct clocksource *cs);
--	void (*resume)(struct clocksource *cs);
-+
- #ifdef CONFIG_IA64
- 	void *fsys_mmio;        /* used by fsyscall asm code */
- #define CLKSRC_FSYS_MMIO_SET(mmio, addr)      ((mmio) = (addr))
- #else
- #define CLKSRC_FSYS_MMIO_SET(mmio, addr)      do { } while (0)
- #endif
--
--	/*
--	 * Second part is written at each timer interrupt
--	 * Keep it in a different cache line to dirty no
--	 * more than one cache line.
--	 */
--	cycle_t cycle_last ____cacheline_aligned_in_smp;
 +	const char *name;
-+	struct list_head list;
-+	int rating;
-+	cycle_t (*vread)(void);
-+	int (*enable)(struct clocksource *cs);
-+	void (*disable)(struct clocksource *cs);
-+	unsigned long flags;
-+	void (*suspend)(struct clocksource *cs);
-+	void (*resume)(struct clocksource *cs);
- 
- #ifdef CONFIG_CLOCKSOURCE_WATCHDOG
- 	/* Watchdog related data, used by the framework */
- 	struct list_head wd_list;
- 	cycle_t wd_last;
- #endif
--};
-+} ____cacheline_aligned;
- 
- /*
-  * Clock source flags bits::
-@@ -341,4 +337,6 @@ static inline void update_vsyscall_tz(void)
+ 	struct list_head list;
+ 	int rating;
+ 	cycle_t (*read)(struct clocksource *cs);
+@@ -341,4 +341,6 @@ static inline void update_vsyscall_tz(void)
  
  extern void timekeeping_notify(struct clocksource *clock);
  
 +extern int clocksource_i8253_init(void);
 +
  #endif /* _LINUX_CLOCKSOURCE_H */
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 0d74b9b..22a9da9 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -194,6 +194,70 @@ void clockevents_register_device(struct clock_event_device *dev)
- }
- EXPORT_SYMBOL_GPL(clockevents_register_device);
- 
-+static void clockevents_config(struct clock_event_device *dev,
-+			       u32 freq)
-+{
-+	unsigned long sec;
-+
-+	if (!(dev->features & CLOCK_EVT_FEAT_ONESHOT))
-+		return;
-+
-+	/*
-+	 * Calculate the maximum number of seconds we can sleep. Limit
-+	 * to 10 minutes for hardware which can program more than
-+	 * 32bit ticks so we still get reasonable conversion values.
-+	 */
-+	sec = dev->max_delta_ticks;
-+	do_div(sec, freq);
-+	if (!sec)
-+		sec = 1;
-+	else if (sec > 600 && dev->max_delta_ticks > UINT_MAX)
-+		sec = 600;
-+
-+	clockevents_calc_mult_shift(dev, freq, sec);
-+	dev->min_delta_ns = clockevent_delta2ns(dev->min_delta_ticks, dev);
-+	dev->max_delta_ns = clockevent_delta2ns(dev->max_delta_ticks, dev);
-+}
-+
-+/**
-+ * clockevents_config_and_register - Configure and register a clock event device
-+ * @dev:	device to register
-+ * @freq:	The clock frequency
-+ * @min_delta:	The minimum clock ticks to program in oneshot mode
-+ * @max_delta:	The maximum clock ticks to program in oneshot mode
-+ *
-+ * min/max_delta can be 0 for devices which do not support oneshot mode.
-+ */
-+void clockevents_config_and_register(struct clock_event_device *dev,
-+				     u32 freq, unsigned long min_delta,
-+				     unsigned long max_delta)
-+{
-+	dev->min_delta_ticks = min_delta;
-+	dev->max_delta_ticks = max_delta;
-+	clockevents_config(dev, freq);
-+	clockevents_register_device(dev);
-+}
-+
-+/**
-+ * clockevents_update_freq - Update frequency and reprogram a clock event device.
-+ * @dev:	device to modify
-+ * @freq:	new device frequency
-+ *
-+ * Reconfigure and reprogram a clock event device in oneshot
-+ * mode. Must be called on the cpu for which the device delivers per
-+ * cpu timer events with interrupts disabled!  Returns 0 on success,
-+ * -ETIME when the event is in the past.
-+ */
-+int clockevents_update_freq(struct clock_event_device *dev, u32 freq)
-+{
-+	clockevents_config(dev, freq);
-+
-+	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
-+		return 0;
-+
-+	return clockevents_program_event(dev, dev->next_event, ktime_get());
-+}
-+
- /*
-  * Noop handler when we shut down an event device
-  */
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index 6519cf6..6dbbbb1 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -626,19 +626,6 @@ static void clocksource_enqueue(struct clocksource *cs)
- 	list_add(&cs->list, entry);
- }
- 
--
--/*
-- * Maximum time we expect to go between ticks. This includes idle
-- * tickless time. It provides the trade off between selecting a
-- * mult/shift pair that is very precise but can only handle a short
-- * period of time, vs. a mult/shift pair that can handle long periods
-- * of time but isn't as precise.
-- *
-- * This is a subsystem constant, and actual hardware limitations
-- * may override it (ie: clocksources that wrap every 3 seconds).
-- */
--#define MAX_UPDATE_LENGTH 5 /* Seconds */
--
- /**
-  * __clocksource_updatefreq_scale - Used update clocksource with new freq
-  * @t:		clocksource to be registered
-@@ -652,15 +639,28 @@ static void clocksource_enqueue(struct clocksource *cs)
-  */
- void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
- {
-+	unsigned long sec;
-+
- 	/*
--	 * Ideally we want to use  some of the limits used in
--	 * clocksource_max_deferment, to provide a more informed
--	 * MAX_UPDATE_LENGTH. But for now this just gets the
--	 * register interface working properly.
-+	 * Calc the maximum number of seconds which we can run before
-+	 * wrapping around. For clocksources which have a mask > 32bit
-+	 * we need to limit the max sleep time to have a good
-+	 * conversion precision. 10 minutes is still a reasonable
-+	 * amount. That results in a shift value of 24 for a
-+	 * clocksource with mask >= 40bit and f >= 4GHz. That maps to
-+	 * ~ 0.06ppm granularity for NTP. We apply the same 12.5%
-+	 * margin as we do in clocksource_max_deferment()
- 	 */
-+	sec = (cs->mask - (cs->mask >> 5));
-+	do_div(sec, freq);
-+	do_div(sec, scale);
-+	if (!sec)
-+		sec = 1;
-+	else if (sec > 600 && cs->mask > UINT_MAX)
-+		sec = 600;
-+
- 	clocks_calc_mult_shift(&cs->mult, &cs->shift, freq,
--				      NSEC_PER_SEC/scale,
--				      MAX_UPDATE_LENGTH*scale);
-+			       NSEC_PER_SEC / scale, sec * scale);
- 	cs->max_idle_ns = clocksource_max_deferment(cs);
- }
- EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
