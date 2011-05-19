@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933268Ab1ESNwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 09:52:09 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:18888
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933192Ab1ESNwH (ORCPT
+	id S933390Ab1ESN4x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 09:56:53 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:52862
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933289Ab1ESN4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 09:52:07 -0400
-X-SpamScore: -16
-X-BigFish: VS-16(zz9371O1432N98dKzz1202hzz8275bhz2dh2a8h668h839h61h)
+	Thu, 19 May 2011 09:56:50 -0400
+X-SpamScore: 2
+X-BigFish: VS2(z3c23mz98dKzz1202hzzz2dh2a8h668h839h61h)
 X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 19 May 2011 21:56:32 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
-Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to
- drivers/gpio
-Message-ID: <20110519135631.GB26816@S2100-06.ap.freescale.net>
-References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
- <20110519085638.GA26816@S2100-06.ap.freescale.net>
- <BANLkTinD9rAipfwNnh6QpgbcogckdtQ=OQ@mail.gmail.com>
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4DD52195.7060104@freescale.com>
+Date: Thu, 19 May 2011 08:56:37 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/2.0.14-1.fc13 SeaMonkey/2.0.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <BANLkTinD9rAipfwNnh6QpgbcogckdtQ=OQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
+        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 0/7] This patchset adds support for running Linux under
+ the Freescale hypervisor,
+References: <1305813272-31826-1-git-send-email-timur@freescale.com>
+In-Reply-To: <1305813272-31826-1-git-send-email-timur@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 02:21:27PM +0200, Linus Walleij wrote:
-> On Thu, May 19, 2011 at 10:56 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> 
-> > I start working on moving mxs gpio (arch/arm/mach-mxs/gpio.c) into
-> > driver/gpio, and I see the possibility to go a different approach
-> > from U300 one posted here.
-> 
-> I've tried to figure out what relation the mail has to the U300 driver
-> but cannot find any, more than that it's moving a driver... Please
-> start a new mail thread.
-> 
-I will post mxs-gpio driver once I get it done.  Then please review
-the code and see the difference between mxs-gpio and u300-gpio,
-though these hardwares have something in common.
+Timur Tabi wrote:
+> have hypervisor extensions (e.g. the P4080 which has an e500mc core).
+
+Oops, this email got munged.  The first paragraph should say:
+
+This patchset adds support for running Linux under the Freescale hypervisor,
+which is an ePAPR-compliant hypervisor that runs on our PowerPC SOCs that
+have hypervisor extensions (e.g. the P4080 which has an e500mc core).
 
 -- 
-Regards,
-Shawn
+Timur Tabi
+Linux kernel developer at Freescale
 
