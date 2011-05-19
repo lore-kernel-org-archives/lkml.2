@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934224Ab1ESSLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:11:06 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:44740 "EHLO
+	id S934204Ab1ESSJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:09:47 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43058 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934171Ab1ESSJi (ORCPT
+	by vger.kernel.org with ESMTP id S934175Ab1ESSJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:09:38 -0400
-X-Sasl-enc: WH/w3+lUrsCv6t2aMfQ558lnCIP3kEjAbbZ7OzPB/ap6 1305828577
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:06:00 2011
-Message-Id: <20110519180600.892508434@clark.kroah.org>
+	Thu, 19 May 2011 14:09:40 -0400
+X-Sasl-enc: Y5gbtiRDJ96WS9hszAa9wuxBoILx8WCmxrJIF2j73O0e 1305828579
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:06:01 2011
+Message-Id: <20110519180600.989720946@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:37 -0700
+Date: Thu, 19 May 2011 11:05:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [69/71] cifs: clean up various nits in unicode routines (try #2)
+Subject: [70/71] cifs: fix cifsConvertToUCS() for the mapchars case
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,138 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeff Layton <jlayton@redhat.com>
 
-commit 581ade4d1c025eb10421eda0d0c0a2f04447d7c5 upstream.
+commit 11379b5e33950048ad66825da7f462b0d0da9d73 upstream.
 
-Minor revision to the original patch. Don't abuse the __le16 variable
-on the stack by casting it to wchar_t and handing it off to char2uni.
-Declare an actual wchar_t on the stack instead. This fixes a valid
-sparse warning.
+As Metze pointed out, commit 84cdf74e broke mapchars option:
 
-Fix the spelling of UNI_ASTERISK. Eliminate the unneeded len_remaining
-variable in cifsConvertToUCS.
+    Commit "cifs: fix unaligned accesses in cifsConvertToUCS"
+    (84cdf74e8096a10dd6acbb870dd404b92f07a756) does multiple steps
+    in just one commit (moving the function and changing it without
+    testing).
 
-Also, as David Howells points out. We were better off making
-cifsConvertToUCS *not* use put_unaligned_le16 since it means that we
-can't optimize the mapped characters at compile time. Switch them
-instead to use cpu_to_le16, and simply use put_unaligned to set them
-in the string.
+    put_unaligned_le16(temp, &target[j]); is never called for any
+    codepoint the goes via the 'default' switch statement. As a result
+    we put just zero (or maybe uninitialized) bytes into the target
+    buffer.
 
-Reported-and-acked-by: David Howells <dhowells@redhat.com>
+His proposed patch looks correct, but doesn't apply to the current head
+of the tree. This patch should also fix it.
+
+Reported-by: Stefan Metzmacher <metze@samba.org>
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/cifs_unicode.c |   35 +++++++++++++++++------------------
- fs/cifs/cifs_unicode.h |    2 +-
- 2 files changed, 18 insertions(+), 19 deletions(-)
+ fs/cifs/cifs_unicode.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
 --- a/fs/cifs/cifs_unicode.c
 +++ b/fs/cifs/cifs_unicode.c
-@@ -90,7 +90,7 @@ cifs_mapchar(char *target, const __u16 s
- 	case UNI_COLON:
- 		*target = ':';
- 		break;
--	case UNI_ASTERIK:
-+	case UNI_ASTERISK:
- 		*target = '*';
- 		break;
- 	case UNI_QUESTION:
-@@ -264,40 +264,40 @@ cifs_strndup_from_ucs(const char *src, c
-  * names are little endian 16 bit Unicode on the wire
-  */
- int
--cifsConvertToUCS(__le16 *target, const char *source, int maxlen,
-+cifsConvertToUCS(__le16 *target, const char *source, int srclen,
- 		 const struct nls_table *cp, int mapChars)
- {
- 	int i, j, charlen;
--	int len_remaining = maxlen;
- 	char src_char;
--	__u16 temp;
-+	__le16 dst_char;
-+	wchar_t tmp;
+@@ -277,6 +277,7 @@ cifsConvertToUCS(__le16 *target, const c
  
- 	if (!mapChars)
- 		return cifs_strtoUCS(target, source, PATH_MAX, cp);
- 
--	for (i = 0, j = 0; i < maxlen; j++) {
-+	for (i = 0, j = 0; i < srclen; j++) {
+ 	for (i = 0, j = 0; i < srclen; j++) {
  		src_char = source[i];
++		charlen = 1;
  		switch (src_char) {
  		case 0:
--			put_unaligned_le16(0, &target[j]);
-+			put_unaligned(0, &target[j]);
- 			goto ctoUCS_out;
- 		case ':':
--			temp = UNI_COLON;
-+			dst_char = cpu_to_le16(UNI_COLON);
- 			break;
- 		case '*':
--			temp = UNI_ASTERIK;
-+			dst_char = cpu_to_le16(UNI_ASTERISK);
- 			break;
- 		case '?':
--			temp = UNI_QUESTION;
-+			dst_char = cpu_to_le16(UNI_QUESTION);
- 			break;
- 		case '<':
--			temp = UNI_LESSTHAN;
-+			dst_char = cpu_to_le16(UNI_LESSTHAN);
- 			break;
- 		case '>':
--			temp = UNI_GRTRTHAN;
-+			dst_char = cpu_to_le16(UNI_GRTRTHAN);
- 			break;
- 		case '|':
--			temp = UNI_PIPE;
-+			dst_char = cpu_to_le16(UNI_PIPE);
- 			break;
- 		/*
- 		 * FIXME: We can not handle remapping backslash (UNI_SLASH)
-@@ -305,17 +305,17 @@ cifsConvertToUCS(__le16 *target, const c
- 		 * as they use backslash as separator.
- 		 */
- 		default:
--			charlen = cp->char2uni(source+i, len_remaining,
--						&temp);
-+			charlen = cp->char2uni(source + i, srclen - i, &tmp);
-+			dst_char = cpu_to_le16(tmp);
-+
- 			/*
- 			 * if no match, use question mark, which at least in
- 			 * some cases serves as wild card
- 			 */
- 			if (charlen < 1) {
--				temp = 0x003f;
-+				dst_char = cpu_to_le16(0x003f);
+ 			put_unaligned(0, &target[j]);
+@@ -316,16 +317,13 @@ cifsConvertToUCS(__le16 *target, const c
+ 				dst_char = cpu_to_le16(0x003f);
  				charlen = 1;
  			}
--			len_remaining -= charlen;
- 			/*
- 			 * character may take more than one byte in the source
- 			 * string, but will take exactly two bytes in the
-@@ -324,9 +324,8 @@ cifsConvertToUCS(__le16 *target, const c
- 			i += charlen;
- 			continue;
+-			/*
+-			 * character may take more than one byte in the source
+-			 * string, but will take exactly two bytes in the
+-			 * target string
+-			 */
+-			i += charlen;
+-			continue;
  		}
--		put_unaligned_le16(temp, &target[j]);
-+		put_unaligned(dst_char, &target[j]);
- 		i++; /* move to next char in source string */
--		len_remaining--;
++		/*
++		 * character may take more than one byte in the source string,
++		 * but will take exactly two bytes in the target string
++		 */
++		i += charlen;
+ 		put_unaligned(dst_char, &target[j]);
+-		i++; /* move to next char in source string */
  	}
  
  ctoUCS_out:
---- a/fs/cifs/cifs_unicode.h
-+++ b/fs/cifs/cifs_unicode.h
-@@ -44,7 +44,7 @@
-  * reserved symbols (along with \ and /), otherwise illegal to store
-  * in filenames in NTFS
-  */
--#define UNI_ASTERIK     (__u16) ('*' + 0xF000)
-+#define UNI_ASTERISK    (__u16) ('*' + 0xF000)
- #define UNI_QUESTION    (__u16) ('?' + 0xF000)
- #define UNI_COLON       (__u16) (':' + 0xF000)
- #define UNI_GRTRTHAN    (__u16) ('>' + 0xF000)
 
 
