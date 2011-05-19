@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934058Ab1ESSIy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:08:54 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:44337 "EHLO
+	id S934246Ab1ESSQq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:16:46 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:49496 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934035Ab1ESSIu (ORCPT
+	by vger.kernel.org with ESMTP id S934048Ab1ESSIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:08:50 -0400
-X-Sasl-enc: BFG2qzvpZ20nT0yH8EDAx7yf+yXqtpyGGPNjkpnZgvX1 1305828529
+	Thu, 19 May 2011 14:08:52 -0400
+X-Sasl-enc: SSLobX5WhaSGcEPNaD1IMFQnN/jsNi52cm7lie8Or0Nd 1305828531
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:58 2011
-Message-Id: <20110519180558.342399374@clark.kroah.org>
+Message-Id: <20110519180558.440328693@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:10 -0700
+Date: Thu, 19 May 2011 11:05:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Anton Blanchard <anton@samba.org>,
+        Breno Leitao <leitao@linux.vnet.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [42/71] hydra: Fix regression caused during net_device_ops conversion
+Subject: [43/71] ehea: Fix memory hotplug oops
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,73 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Anton Blanchard <anton@samba.org>
 
-commit 0b25e0157dfa236a0629c16c8ad6f222f633f682 upstream.
+commit 21ccc7936dac5ca9b3e2838bbc112a60f34e18b3 upstream.
 
-Changeset 5618f0d1193d6b051da9b59b0e32ad24397f06a4 ("hydra: convert to
-net_device_ops") broke hydra by adding 8390.o to the link. That
-meant that lib8390.c was included twice, once in hydra.c and once in
-8390.c, subject to different macros. This patch reverts that by
-avoiding the wrappers in 8390.c.
+The ehea driver oopses during memory hotplug if the ports are not
+up. A simple testcase:
 
-Fix based on commits 217cbfa856dc1cbc2890781626c4032d9e3ec59f ("mac8390:
-fix regression caused during net_device_ops conversion") and
-4e0168fa4842e27795a75b205a510f25b62181d9 ("mac8390: fix build with
-NET_POLL_CONTROLLER").
+# ifconfig ethX down
+# echo offline > /sys/devices/system/memory/memory32/state
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Oops: Kernel access of bad area, sig: 11 [#1]
+last sysfs file: /sys/devices/system/memory/memory32/state
+REGS: c000000709393110 TRAP: 0300   Not tainted  (2.6.39-rc2-01385-g7ef73bc-dirty)
+DAR: 0000000000000000, DSISR: 40000000
+...
+NIP [c000000000067c98] .__wake_up_common+0x48/0xf0
+LR [c00000000006d034] .__wake_up+0x54/0x90
+Call Trace:
+[c00000000006d034] .__wake_up+0x54/0x90
+[d000000006bb6270] .ehea_rereg_mrs+0x140/0x730 [ehea]
+[d000000006bb69c4] .ehea_mem_notifier+0x164/0x170 [ehea]
+[c0000000006fc8a8] .notifier_call_chain+0x78/0xf0
+[c0000000000b3d70] .__blocking_notifier_call_chain+0x70/0xb0
+[c000000000458d78] .memory_notify+0x28/0x40
+[c0000000001871d8] .remove_memory+0x208/0x6d0
+[c000000000458264] .memory_section_action+0x94/0x140
+[c0000000004583ec] .memory_block_change_state+0xdc/0x1d0
+[c0000000004585cc] .store_mem_state+0xec/0x160
+[c00000000044768c] .sysdev_store+0x3c/0x50
+[c00000000020b48c] .sysfs_write_file+0xec/0x1f0
+[c00000000018f86c] .vfs_write+0xec/0x1e0
+[c00000000018fa88] .SyS_write+0x58/0xd0
+
+To fix this, initialise the waitqueues during port probe instead
+of port open.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Acked-by: Breno Leitao <leitao@linux.vnet.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/Makefile |    2 +-
- drivers/net/hydra.c  |   14 +++++++-------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/net/ehea/ehea_main.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/Makefile
-+++ b/drivers/net/Makefile
-@@ -229,7 +229,7 @@ obj-$(CONFIG_SGI_IOC3_ETH) += ioc3-eth.o
- obj-$(CONFIG_DECLANCE) += declance.o
- obj-$(CONFIG_ATARILANCE) += atarilance.o
- obj-$(CONFIG_A2065) += a2065.o
--obj-$(CONFIG_HYDRA) += hydra.o 8390.o
-+obj-$(CONFIG_HYDRA) += hydra.o
- obj-$(CONFIG_ARIADNE) += ariadne.o
- obj-$(CONFIG_CS89x0) += cs89x0.o
- obj-$(CONFIG_MACSONIC) += macsonic.o
---- a/drivers/net/hydra.c
-+++ b/drivers/net/hydra.c
-@@ -98,15 +98,15 @@ static const struct net_device_ops hydra
- 	.ndo_open		= hydra_open,
- 	.ndo_stop		= hydra_close,
+--- a/drivers/net/ehea/ehea_main.c
++++ b/drivers/net/ehea/ehea_main.c
+@@ -2688,9 +2688,6 @@ static int ehea_open(struct net_device *
+ 		netif_start_queue(dev);
+ 	}
  
--	.ndo_start_xmit		= ei_start_xmit,
--	.ndo_tx_timeout		= ei_tx_timeout,
--	.ndo_get_stats		= ei_get_stats,
--	.ndo_set_multicast_list = ei_set_multicast_list,
-+	.ndo_start_xmit		= __ei_start_xmit,
-+	.ndo_tx_timeout		= __ei_tx_timeout,
-+	.ndo_get_stats		= __ei_get_stats,
-+	.ndo_set_multicast_list = __ei_set_multicast_list,
- 	.ndo_validate_addr	= eth_validate_addr,
--	.ndo_set_mac_address 	= eth_mac_addr,
-+	.ndo_set_mac_address	= eth_mac_addr,
- 	.ndo_change_mtu		= eth_change_mtu,
- #ifdef CONFIG_NET_POLL_CONTROLLER
--	.ndo_poll_controller	= ei_poll,
-+	.ndo_poll_controller	= __ei_poll,
- #endif
- };
+-	init_waitqueue_head(&port->swqe_avail_wq);
+-	init_waitqueue_head(&port->restart_wq);
+-
+ 	mutex_unlock(&port->port_lock);
  
-@@ -125,7 +125,7 @@ static int __devinit hydra_init(struct z
- 	0x10, 0x12, 0x14, 0x16, 0x18, 0x1a, 0x1c, 0x1e,
-     };
+ 	return ret;
+@@ -3273,6 +3270,9 @@ struct ehea_port *ehea_setup_single_port
  
--    dev = alloc_ei_netdev();
-+    dev = ____alloc_ei_netdev(0);
-     if (!dev)
- 	return -ENOMEM;
+ 	INIT_WORK(&port->reset_task, ehea_reset_port);
  
++	init_waitqueue_head(&port->swqe_avail_wq);
++	init_waitqueue_head(&port->restart_wq);
++
+ 	ret = register_netdev(dev);
+ 	if (ret) {
+ 		pr_err("register_netdev failed. ret=%d\n", ret);
 
 
