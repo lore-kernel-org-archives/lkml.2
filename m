@@ -1,125 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab1ESGhZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 02:37:25 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:56087 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab1ESGhX (ORCPT
+	id S932622Ab1ESGmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 02:42:37 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2576 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932304Ab1ESGmg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 02:37:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Ea3tAkChQpN7aIVqgIwZJ3N3h7z9Jsu1HnS/mDgn0MCvi8LaI38Uk/Nfhe/xFyXsUb
-         JmCVpLAgi2z1TkqpmkFA/whS64SRBDrk0rdJySx3r5YS8IoM+AaAxX4a483Xt73C4Lvn
-         WDPblRIOyF87XGaMrnzGYaVktyersOOPgRqhU=
-From: Benoit Sigoure <tsunanet@gmail.com>
-To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        hagen@jauu.net, eric.dumazet@gmail.com,
-        alexander.zimmermann@comsys.rwth-aachen.de
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benoit Sigoure <tsuna@stumbleupon.com>
-Subject: [PATCH] tcp: Lower the initial RTO to 1s as per draft RFC 2988bis-02.
-Date: Wed, 18 May 2011 23:36:16 -0700
-Message-Id: <1305786976-84532-1-git-send-email-tsunanet@gmail.com>
-X-Mailer: git-send-email 1.7.0.2.157.gb7e7f
-In-Reply-To: <20110519.014656.1735519603194773578.davem@davemloft.net>
-References: <20110519.014656.1735519603194773578.davem@davemloft.net>
+	Thu, 19 May 2011 02:42:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,236,1304319600"; 
+   d="scan'208";a="438858712"
+From: "Shan, Haitao" <haitao.shan@intel.com>
+To: "Tian, Kevin" <kevin.tian@intel.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>
+CC: "H. Peter Anvin" <hpa@zytor.com>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Date: Thu, 19 May 2011 14:41:43 +0800
+Subject: RE: [PATCH v2 0/4] Enable SMEP CPU Feature
+Thread-Topic: [PATCH v2 0/4] Enable SMEP CPU Feature
+Thread-Index: AcwUho0pQZ9BKQLLSGu3l9k5Ay+SLQBZIliQAADrzjA=
+Message-ID: <04F972F38B3C4E4E91C4697DA8BF9F525B208891C9@shsmsx502.ccr.corp.intel.com>
+References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com>
+ <4DD19C81.8000902@zytor.com> <20110517070527.GD22305@elte.hu>
+ <4DD23CB6.3050503@redhat.com> <20110517092903.GJ22093@elte.hu>
+ <4DD2409F.4030800@redhat.com> <20110517104654.GN22093@elte.hu>
+ <4DD25D29.9040008@redhat.com>
+ <625BA99ED14B2D499DC4E29D8138F1505C9BEEF80B@shsmsx502.ccr.corp.intel.com>
+In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1505C9BEEF80B@shsmsx502.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benoit Sigoure <tsuna@stumbleupon.com>
+After this basic enabling work, we could work out a patch to address Ingo's idea, which will mandatorily turn on SMEP for guests.
 
-Draft RFC 2988bis-02 recommends that the initial RTO be lowered
-from 3 seconds down to 1 second, and that in case of a timeout
-during the TCP 3WHS, the RTO should fallback to 3 seconds when
-data transmission begins.
----
+Shan Haitao
 
-On Wed, May 18, 2011 at 10:46 PM, David Miller <davem@davemloft.net> wrote:
-> From: tsuna <tsunanet@gmail.com>
-> Date: Wed, 18 May 2011 21:33:21 -0700
->
->> On Wed, May 18, 2011 at 9:14 PM, David Miller <davem@davemloft.net> wrote:
->>> I really would rather see the initial RTO be static and be set to 1
->>> with fallback RTO of 3.
->>
->> I can also provide a simple patch for this if you want to start from
->> there.  And then maybe we can discuss having a runtime knob some more
->> :-)
->
-> Yeah why don't we do that :-)
+-----Original Message-----
+From: Tian, Kevin 
+Sent: Thursday, May 19, 2011 2:11 PM
+To: Avi Kivity; Ingo Molnar
+Cc: H. Peter Anvin; Yu, Fenghua; Thomas Gleixner; Mallick, Asit K; Linus Torvalds; Arjan van de Ven; Andrew Morton; Andi Kleen; linux-kernel; Pekka Enberg; Shan, Haitao
+Subject: RE: [PATCH v2 0/4] Enable SMEP CPU Feature
 
-Alright, here we go.
+> From: Avi Kivity
+> Sent: Tuesday, May 17, 2011 7:34 PM
+> 
+> On 05/17/2011 01:46 PM, Ingo Molnar wrote:
+> > >
+> > >  We could support it as a non-default feature, but that reduces its utility.
+> >
+> > It would be a nice touch for tools/kvm/: we would use KVM_GET_SREGS 
+> > and KVM_GET_SREGS to twiddle CR4.SMEP, even without the guest 
+> > explicitly
+> doing it.
+> >
+> > A quick glance suggests that it could be done straight away in
+> > tools/kvm/kvm-cpu.c::kvm_cpu__setup_sregs() during vcpu setup, and 
+> > hopefully that cr4 value survives boot and ends up in the guest 
+> > kernel's mmu_cr4_features mask shadow register.
+> 
+> Depends if the guest uses a read-modify-write pattern or not.  We 
+> could do it transparently in kvm.ko, since the real cr4 need not 
+> corresponds to the guest notion (for example, we often set cr0.wp or 
+> cr0.ts even though the guest wants them clear).
+> 
 
+We have a patch in hand now to enable SMEP for kvm guest, which is under test and cleanup and will be sent out soon. Basically it contains the basic idea by exposing CR4.smep and cpuid leaf. Above idea is nice and we'll try that in a following work.
 
- include/net/tcp.h    |    5 ++++-
- net/ipv4/tcp_input.c |   13 +++++++++----
- 2 files changed, 13 insertions(+), 5 deletions(-)
-
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index cda30ea..274d761 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -122,7 +122,10 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
- #endif
- #define TCP_RTO_MAX	((unsigned)(120*HZ))
- #define TCP_RTO_MIN	((unsigned)(HZ/5))
--#define TCP_TIMEOUT_INIT ((unsigned)(3*HZ))	/* RFC 1122 initial RTO value	*/
-+/* The next 2 values come from Draft RFC 2988bis-02. */
-+#define TCP_TIMEOUT_INIT ((unsigned)(1*HZ))		/* initial RTO value	*/
-+#define TCP_TIMEOUT_INIT_FALLBACK ((unsigned)(3*HZ))	/* initial RTO to fallback to when
-+							 * a timeout happens during the 3WHS.	*/
- 
- #define TCP_RESOURCE_PROBE_INTERVAL ((unsigned)(HZ/2U)) /* Maximal interval between probes
- 					                 * for local resources.
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index bef9f04..a36bc35 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -868,6 +868,11 @@ static void tcp_init_metrics(struct sock *sk)
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	struct dst_entry *dst = __sk_dst_get(sk);
-+	/* If we had to retransmit anything during the 3WHS, use
-+	 * the initial fallback RTO as per draft RFC 2988bis-02.
-+	 */
-+	int init_rto = inet_csk(sk)->icsk_retransmits ?
-+		TCP_TIMEOUT_INIT_FALLBACK : TCP_TIMEOUT_INIT;
- 
- 	if (dst == NULL)
- 		goto reset;
-@@ -890,7 +895,7 @@ static void tcp_init_metrics(struct sock *sk)
- 	if (dst_metric(dst, RTAX_RTT) == 0)
- 		goto reset;
- 
--	if (!tp->srtt && dst_metric_rtt(dst, RTAX_RTT) < (TCP_TIMEOUT_INIT << 3))
-+	if (!tp->srtt && dst_metric_rtt(dst, RTAX_RTT) < (init_rto << 3))
- 		goto reset;
- 
- 	/* Initial rtt is determined from SYN,SYN-ACK.
-@@ -916,7 +921,7 @@ static void tcp_init_metrics(struct sock *sk)
- 		tp->mdev_max = tp->rttvar = max(tp->mdev, tcp_rto_min(sk));
- 	}
- 	tcp_set_rto(sk);
--	if (inet_csk(sk)->icsk_rto < TCP_TIMEOUT_INIT && !tp->rx_opt.saw_tstamp) {
-+	if (inet_csk(sk)->icsk_rto < init_rto && !tp->rx_opt.saw_tstamp) {
- reset:
- 		/* Play conservative. If timestamps are not
- 		 * supported, TCP will fail to recalculate correct
-@@ -924,8 +929,8 @@ reset:
- 		 */
- 		if (!tp->rx_opt.saw_tstamp && tp->srtt) {
- 			tp->srtt = 0;
--			tp->mdev = tp->mdev_max = tp->rttvar = TCP_TIMEOUT_INIT;
--			inet_csk(sk)->icsk_rto = TCP_TIMEOUT_INIT;
-+			tp->mdev = tp->mdev_max = tp->rttvar = init_rto;
-+			inet_csk(sk)->icsk_rto = init_rto;
- 		}
- 	}
- 	tp->snd_cwnd = tcp_init_cwnd(tp, dst);
--- 
-1.7.0.4
-
+Thanks
+Kevin
