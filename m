@@ -1,170 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab1ESIsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 04:48:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:27742 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753944Ab1ESIst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 04:48:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,236,1304319600"; 
-   d="scan'208";a="4498059"
-Subject: Re: Perfromance drop on SCSI hard disk
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "Li, Shaohua" <shaohua.li@intel.com>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <1305793580.22968.155.camel@debian>
-References: <1305009600.21534.587.camel@debian>
-	 <4DCC4340.6000407@fusionio.com>  <1305247704.2373.32.camel@sli10-conroe>
-	 <1305255717.2373.38.camel@sli10-conroe>
-	 <1305533054.2375.45.camel@sli10-conroe>
-	 <1305535071.21534.2122.camel@debian> <1305612565.21534.2177.camel@debian>
-	 <4DD221BE.3040406@fusionio.com>  <1305793580.22968.155.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 May 2011 16:47:31 +0800
-Message-ID: <1305794851.22968.161.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1756879Ab1ESIvL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 04:51:11 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36738 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756843Ab1ESIvJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 04:51:09 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DD4D9EB.2040603@jp.fujitsu.com>
+Date: Thu, 19 May 2011 17:50:51 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: a.p.zijlstra@chello.nl
+CC: yong.zhang0@gmail.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+        lizf@cn.fujitsu.com, miaox@cn.fujitsu.com
+Subject: Re: [PATCH v2 1/2] rcu: don't bind offline cpu
+References: <20110428161149.GA15658@redhat.com>	 <20110502194416.2D61.A69D9226@jp.fujitsu.com>	 <20110502195657.2D68.A69D9226@jp.fujitsu.com>	 <1305129929.2914.247.camel@laptop> <4DCCC61F.80408@jp.fujitsu.com>	 <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>	 <20110515185547.GL2258@linux.vnet.ibm.com> <20110516132623.GA2058@zhy>	 <4DD4B358.3080705@jp.fujitsu.com> <1305794078.2466.7193.camel@twins>
+In-Reply-To: <1305794078.2466.7193.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 16:26 +0800, Alex,Shi wrote:
-> > I will queue up the combined patch, it looks fine from here as well.
-> > 
-> 
-> When I have some time to study Jens and shaohua's patch today. I find a
-> simpler way to resolved the re-enter issue on starved_list. Following
-> Jens' idea, we can just put the starved_list device into kblockd if it
-> come from __scsi_queue_insert(). 
-> It can resolve the re-enter issue and recover performance totally, and
-> need not a work_struct in every scsi_device. The logic/code also looks a
-> bit simpler. 
-> What's your opinion of this? 
+(2011/05/19 17:34), Peter Zijlstra wrote:
+> On Thu, 2011-05-19 at 15:06 +0900, KOSAKI Motohiro wrote:
+>>
+>> The right way is, explicit two phase cpu bindings (1) bind boot
+>> (or any other online) cpu at CPU_UP_PREPARE (2) bind correct
+>> target cpu at CPU_ONLINE. This patch does it.
+>
+> I'm not sure that is in-fact correct. From what I understood, RCU could
+> have need of this thread before the ONLINE callback and expects it to be
+> affine at that time.
+>
+> What was wrong with delaying the wakeup to STARTING?
 
-BTW, Jens, this patch is against on latest kernel, 2.6.39. 
-> 
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index ec1803a..de7c569 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -74,6 +74,8 @@ struct kmem_cache *scsi_sdb_cache;
->   */
->  #define SCSI_QUEUE_DELAY	3
->  
-> +static void scsi_run_queue_async(struct request_queue *q);
-> +
->  /*
->   * Function:	scsi_unprep_request()
->   *
-> @@ -159,7 +161,7 @@ static int __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
->  	blk_requeue_request(q, cmd->request);
->  	spin_unlock_irqrestore(q->queue_lock, flags);
->  
-> -	kblockd_schedule_work(q, &device->requeue_work);
-> +	scsi_run_queue_async(q);
->  
->  	return 0;
->  }
-> @@ -395,7 +397,7 @@ static inline int scsi_host_is_busy(struct Scsi_Host *shost)
->   * Notes:	The previous command was completely finished, start
->   *		a new one if possible.
->   */
-> -static void scsi_run_queue(struct request_queue *q)
-> +static void __scsi_run_queue(struct request_queue *q, bool async)
->  {
->  	struct scsi_device *sdev = q->queuedata;
->  	struct Scsi_Host *shost;
-> @@ -435,30 +437,35 @@ static void scsi_run_queue(struct request_queue *q)
->  				       &shost->starved_list);
->  			continue;
->  		}
-> -
-> -		spin_unlock(shost->host_lock);
-> -		spin_lock(sdev->request_queue->queue_lock);
-> -		__blk_run_queue(sdev->request_queue);
-> -		spin_unlock(sdev->request_queue->queue_lock);
-> -		spin_lock(shost->host_lock);
-> +		if (async)
-> +			blk_run_queue_async(sdev->request_queue);
-> +		else {
-> +			spin_unlock(shost->host_lock);
-> +			spin_lock(sdev->request_queue->queue_lock);
-> +			__blk_run_queue(sdev->request_queue);
-> +			spin_unlock(sdev->request_queue->queue_lock);
-> +			spin_lock(shost->host_lock);
-> +		}
->  	}
->  	/* put any unprocessed entries back */
->  	list_splice(&starved_list, &shost->starved_list);
->  	spin_unlock_irqrestore(shost->host_lock, flags);
->  
-> -	blk_run_queue(q);
-> +	if (async)
-> +		blk_run_queue_async(q);
-> +	else
-> +		blk_run_queue(q);
->  }
->  
-> -void scsi_requeue_run_queue(struct work_struct *work)
-> +static void scsi_run_queue(struct request_queue *q)
->  {
-> -	struct scsi_device *sdev;
-> -	struct request_queue *q;
-> -
-> -	sdev = container_of(work, struct scsi_device, requeue_work);
-> -	q = sdev->request_queue;
-> -	scsi_run_queue(q);
-> +	__scsi_run_queue(q, false);
->  }
->  
-> +static void scsi_run_queue_async(struct request_queue *q)
-> +{
-> +	__scsi_run_queue(q, true);
-> +}
->  /*
->   * Function:	scsi_requeue_command()
->   *
-> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> index 58584dc..087821f 100644
-> --- a/drivers/scsi/scsi_scan.c
-> +++ b/drivers/scsi/scsi_scan.c
-> @@ -242,7 +242,6 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
->  	int display_failure_msg = 1, ret;
->  	struct Scsi_Host *shost = dev_to_shost(starget->dev.parent);
->  	extern void scsi_evt_thread(struct work_struct *work);
-> -	extern void scsi_requeue_run_queue(struct work_struct *work);
->  
->  	sdev = kzalloc(sizeof(*sdev) + shost->transportt->device_size,
->  		       GFP_ATOMIC);
-> @@ -265,7 +264,6 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
->  	INIT_LIST_HEAD(&sdev->event_list);
->  	spin_lock_init(&sdev->list_lock);
->  	INIT_WORK(&sdev->event_work, scsi_evt_thread);
-> -	INIT_WORK(&sdev->requeue_work, scsi_requeue_run_queue);
->  
->  	sdev->sdev_gendev.parent = get_device(&starget->dev);
->  	sdev->sdev_target = starget;
-> diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-> index dd82e02..2d3ec50 100644
-> --- a/include/scsi/scsi_device.h
-> +++ b/include/scsi/scsi_device.h
-> @@ -169,7 +169,6 @@ struct scsi_device {
->  				sdev_dev;
->  
->  	struct execute_work	ew; /* used to get process context on put */
-> -	struct work_struct	requeue_work;
->  
->  	struct scsi_dh_data	*scsi_dh_data;
->  	enum scsi_device_state sdev_state;
-> 
+Grr, I misparsed Paul's mail. I thought he said "Sorry, but this does not work."
+to you. But in fact, he said to Young. I have to see and test your patch.
 
+I'm sorry. Please give me a bit time.
 
