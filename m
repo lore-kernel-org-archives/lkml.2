@@ -1,192 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab1ESCyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 22:54:08 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:55133 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755880Ab1ESCyG convert rfc822-to-8bit (ORCPT
+	id S932217Ab1ESDDD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 23:03:03 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:33427 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756019Ab1ESDDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 22:54:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BGch+TGeCqX7Kvp2sMwD/q6lka4PMrzhuuOZ8R9oudTRF9B9T8isTVZdAXZ2FStHff
-         hSscAC4UJoZDAk5UGFFWWjzmoZYbEYsl+k36T2v20DM+sAHuJassPZwFCWOmy0EfG0T5
-         bPIqDMJNAC7Rmzkab4w+t+56xOjqutrqH9GS0=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com>
-References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
-	<20110512054631.GI6008@one.firstfloor.org>
-	<BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
-	<BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
-	<20110514165346.GV6008@one.firstfloor.org>
-	<BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
-	<20110514174333.GW6008@one.firstfloor.org>
-	<BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
-	<20110515152747.GA25905@localhost>
-	<BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
-	<20110517060001.GC24069@localhost>
-	<BANLkTi=TOm3aLQCD6j=4va6B+Jn2nSfwAg@mail.gmail.com>
-	<BANLkTi=9W6-JXi94rZfTtTpAt3VUiY5fNw@mail.gmail.com>
-	<BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com>
-Date: Thu, 19 May 2011 11:54:05 +0900
-Message-ID: <BANLkTima0hPrPwe_x06afAh+zTi-bOcRMg@mail.gmail.com>
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Lutomirski <luto@mit.edu>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>
+	Wed, 18 May 2011 23:03:00 -0400
+Subject: Re: linux-next: build warning after merge of the scsi tree
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kiran Patil <kiran.patil@intel.com>, Christoph Hellwig <hch@lst.de>,
+        Yi Zou <yi.zou@intel.com>, Joe Eykholt <joe.eykholt@gmail.com>
+In-Reply-To: <20110518135823.a809f829.sfr@canb.auug.org.au>
+References: <20110518114912.dfdf8835.sfr@canb.auug.org.au>
+	 <1305684362.2856.349.camel@haakon2.linux-iscsi.org>
+	 <20110518135823.a809f829.sfr@canb.auug.org.au>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Wed, 18 May 2011 19:54:48 -0700
+Message-Id: <1305773688.2856.449.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 11:15 AM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Wed, May 18, 2011 at 1:17 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
->> On Wed, May 18, 2011 at 4:22 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->>>> No, thanks. However it would be valuable if you can retry with this
->>>> patch _alone_ (without the "if (need_resched()) return false;" change,
->>>> as I don't see how it helps your case).
->>>>
->>>> @@ -2286,7 +2290,7 @@ static bool sleeping_prematurely(pg_data_t
->>>> *pgdat, int order, long remaining,
->>>>        * must be balanced
->>>>        */
->>>>       if (order)
->>>> -               return pgdat_balanced(pgdat, balanced, classzone_idx);
->>>> +               return !pgdat_balanced(pgdat, balanced, classzone_idx);
->>>>       else
->>>>               return !all_zones_ok;
->>>>  }
->>>
->>> Done.
->>>
->>> I logged in, added swap, and ran a program that allocated 1900MB of
->>> RAM and memset it.  The system lagged a bit but survived.  kswapd
->>> showed 10% CPU (which is odd, IMO, since I'm using aesni-intel and I
->>> think that all the crypt happens in kworker when aesni-intel is in
->>> use).
->>
->> I think kswapd could use 10% enough for reclaim.
->>
->>>
->>> Then I started Firefox, loaded gmail, and ran test_mempressure.sh.
->>> Kaboom!  (I.e. system was hung)  SysRq-F saved the system and produced
->>
->> Hang?
->> It means you see softhangup of kswapd? or mouse/keyboard doesn't move?
->
-> Mouse and keyboard dead.
->
->> Andrew, Could you test this patch with !pgdat_balanced patch?
->> I think we shouldn't see OOM message if we have lots of free swap space.
->>
->> == CUT_HERE ==
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index f73b865..cc23f04 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -1341,10 +1341,6 @@ static inline bool
->> should_reclaim_stall(unsigned long nr_taken,
->>        if (current_is_kswapd())
->>                return false;
->>
->> -       /* Only stall on lumpy reclaim */
->> -       if (sc->reclaim_mode & RECLAIM_MODE_SINGLE)
->> -               return false;
->> -
->>        /* If we have relaimed everything on the isolated list, no stall */
->>        if (nr_freed == nr_taken)
->>                return false;
->>
->>
->>
->> Then, if you don't see any unnecessary OOM but still see the hangup,
->> could you apply this patch based on previous?
->
-> With this patch, I started GNOME and Firefox, turned on swap, and ran
-> test_mempressure.sh 1500 1400 1.  Instant panic (or OOPS and hang or
-> something -- didn't get the top part).  Picture attached -- it looks
-> like memcg might be involved.  I'm running F15, so it might even be
-> doing something.
+On Wed, 2011-05-18 at 13:58 +1000, Stephen Rothwell wrote:
+> Hi Nicholas,
+> 
+> On Tue, 17 May 2011 19:06:02 -0700 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> >
+> > On Wed, 2011-05-18 at 11:49 +1000, Stephen Rothwell wrote:
+> > > 
+> > > After merging the scsi tree, today's linux-next build (x86_64 allmodconfig)
+> > > produced this warning:
+> > > 
+> > > drivers/target/tcm_fc/tfc_io.c: In function 'ft_queue_data_in':
+> > > drivers/target/tcm_fc/tfc_io.c:209: warning: format '%x' expects type 'unsigned int', but argument 5 has type 'size_t'
+> > > 
+> > > Introduced by commit 3699d92a4d7b ("[SCSI] tcm_fc: Adding FC_FC4 provider
+> > > (tcm_fc) for FCoE target (TCM - target core) support").
+> > > 
+> > 
+> > It appears that this warning was fixed in LIO upstream a while back, but
+> > did not make it into this morning scsi-misc merge.  Please apply.
+> > 
+> > >From b830de5068d0c3745e83393f81d87f745ef7a4f2 Mon Sep 17 00:00:00 2001
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > Date: Thu, 17 Feb 2011 21:56:16 +0000
+> > Subject: [PATCH] tcm_fc: Fix conversion spec compile warning in ft_queue_data_in
+> > MIME-Version: 1.0
+> > Content-Type: text/plain; charset=UTF-8
+> > Content-Transfer-Encoding: 8bit
+> > 
+> > This patch fixes the following compile warning in ft_queue_data_in():
+> > 
+> > drivers/target/tcm_fc/tfc_io.c: In function ‘ft_queue_data_in’:
+> > drivers/target/tcm_fc/tfc_io.c:209: warning: format ‘%x’ expects type ‘unsigned int’, but argument 5 has type ‘size_t’
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > ---
+> >  drivers/target/tcm_fc/tfc_io.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/target/tcm_fc/tfc_io.c b/drivers/target/tcm_fc/tfc_io.c
+> > index 4c3c0ef..3936bb1 100644
+> > --- a/drivers/target/tcm_fc/tfc_io.c
+> > +++ b/drivers/target/tcm_fc/tfc_io.c
+> > @@ -206,7 +206,8 @@ int ft_queue_data_in(struct se_cmd *se_cmd)
+> >                                                 "xid <0x%x>, remaining <0x%x>, "
+> >                                                 "lso_max <0x%x>\n",
+> >                                                 __func__, fp, ep->xid,
+> > -                                               remaining, lport->lso_max);
+> > +                                               (unsigned int)remaining,
+> > +                                               lport->lso_max);
+> 
+> Given that "remaining" really is a length, surely it makes more sense to
+> print it with %zd than to cast it and print it with %x ...
+> 
 
-I cannot figure out why happens OOPS.
-Let me know your kernel version and config.
-Kame. Is there anything related to memcg you guess?
+This is fine with me.  Bad habit of explictly casting conversion
+specifications from sector_t type usage..
 
-In addition, the patch I give was utterly stupid.
-The goal is that we wait dirty page writeback in (order-0 | high
-priority) reclaim.
-(But I don't think it's ideal solution in this problem but just for
-proving the problem)
-But although we pass sync with 1 in set_reclaim_mode, it ignores.
-So fix is following as. (NOTICE: It doesn't related to your OOPS. )
-But before further experiment, let's fix your oops.
+Kiran, would you mind fixing this to use %zd in your tree, and include
+this along with the TMR LUN_RESET bugfix for James to include in
+scsi-misc..?
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 292582c..69d317e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -311,7 +311,8 @@ static void set_reclaim_mode(int priority, struct
-scan_control *sc,
-         */
-        if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-                sc->reclaim_mode |= syncmode;
--       else if (sc->order && priority < DEF_PRIORITY - 2)
-+       else if ((sc->order && priority < DEF_PRIORITY - 2) ||
-+                               prioiry <= DEF_PRIORITY / 3)
-                sc->reclaim_mode |= syncmode;
-        else
-                sc->reclaim_mode = RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC;
-@@ -1349,10 +1350,6 @@ static inline bool
-should_reclaim_stall(unsigned long nr_taken,
-        if (current_is_kswapd())
-                return false;
+Thanks,
 
--       /* Only stall on lumpy reclaim */
--       if (sc->reclaim_mode & RECLAIM_MODE_SINGLE)
--               return false;
--
-        /* If we have relaimed everything on the isolated list, no stall */
-        if (nr_freed == nr_taken)
-                return false;
+--nab
 
-
-
->
-> I won't be able to get netconsole dumps until next week because I'm
-> out of town and only have this one computer here.
-
-No problem. :)
-We should avoid OOPS for the experiment.
-
-
->
-> I haven't tried the other patch.
->
-> Also, the !pgdat_balanced fix plus the if (need_resched()) return
-> false patch just hung once on 2.6.37-rc9.  I don't know what triggered
-
-Thanks for the good information.
-It seems need_resched patch isn't good candidate to fix current problem.
-We already weeded it out.
-
-Thank you very much for the testing!
-
-> it.  Maybe yum.
->
-> --Andy
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
