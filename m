@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934193Ab1ESXhf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 19:37:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58886 "EHLO hera.kernel.org"
+	id S934217Ab1ESXmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 19:42:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48359 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934143Ab1ESXhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 19:37:31 -0400
-Date: Thu, 19 May 2011 23:37:09 GMT
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Message-ID: <tip-i878c8a0e0g0ep4v7i6vxnhz@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@redhat.com, rostedt@goodmis.org, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org, tglx@linutronix.de,
-        mingo@elte.hu
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] core_kernel_data(): Fix architectures that do not define _sdata
-Git-Commit-ID: c5fc472171ec4f96d06d1ac039d88f9b89bb95db
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S934003Ab1ESXmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 19:42:03 -0400
+Date: Fri, 20 May 2011 02:41:54 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
+ netdevice
+Message-ID: <20110519234154.GA13784@redhat.com>
+References: <20110518111734.GO7589@redhat.com>
+ <BANLkTi=g_PFfS5653K8ZoQ2Jhp8DhCV1hg@mail.gmail.com>
+ <1305729507.32080.6.camel@localhost.localdomain>
+ <20110518154746.GA21378@redhat.com>
+ <1305734857.32080.53.camel@localhost.localdomain>
+ <20110518163633.GB22001@redhat.com>
+ <1305737140.32080.59.camel@localhost.localdomain>
+ <20110518165138.GD22001@redhat.com>
+ <1305738028.32080.66.camel@localhost.localdomain>
+ <1305834169.32080.81.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 19 May 2011 23:37:10 +0000 (UTC)
+In-Reply-To: <1305834169.32080.81.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c5fc472171ec4f96d06d1ac039d88f9b89bb95db
-Gitweb:     http://git.kernel.org/tip/c5fc472171ec4f96d06d1ac039d88f9b89bb95db
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Fri, 20 May 2011 01:22:14 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 20 May 2011 01:27:16 +0200
+On Thu, May 19, 2011 at 12:42:49PM -0700, Shirley Ma wrote:
+> On Wed, 2011-05-18 at 10:00 -0700, Shirley Ma wrote:
+> > On Wed, 2011-05-18 at 19:51 +0300, Michael S. Tsirkin wrote:
+> > > > > Yes, I agree.  I think for tcpdump, we really need to copy the
+> > > data
+> > > > > anyway, to avoid guest changing it in between.  So we do that
+> > and
+> > > then
+> > > > > use the copy everywhere, release the old one. Hmm? 
+> > > > 
+> > > > Yes. Old one use zerocopy, new one use copy data.
+> > > > 
+> > > > Thanks
+> > > > Shirley
+> > > 
+> > > No, that's wrong, as they might become different with a
+> > > malicious guest. As long as we copied already, lets realease
+> > > the data and have everyone use the copy. 
+> > 
+> > Ok, I will patch pskb_expand_head to test it out. 
+> 
+> I am patching skb_copy, skb_clone, pskb_copy, pskb_expand_head to
+> convert a zero-copy skb to a copy skb to avoid this kind of issue.
+> 
+> This overhead won't impact macvtap/vhost TX zero-copy normally.
+> 
+> Shirley
 
-core_kernel_data(): Fix architectures that do not define _sdata
+OK, that will handle packet socket at least in that it won't crash :)
 
-Some architectures such as Alpha do not define _sdata but _data:
+So the requirements are
+- data must be released in a timely fashion (e.g. unlike virtio-net
+  tun or bridge)
+- no filtering based on data (data is mapped in guest)
+- SG support
+- HIGHDMA support (on arches where this makes sense)
+- on fast path no calls to skb_copy, skb_clone, pskb_copy,
+  pskb_expand_head as these are slow
 
-  kernel/built-in.o: In function `core_kernel_data':
-  kernel/extable.c:77: undefined reference to `_sdata'
+First 2 requirements are a must, all other requirements
+are just dependencies to make sure zero copy will be faster
+than non zero copy.
 
-So expand the scope of the data range to the text addresses too,
-this might be more correct anyway because this way we can
-cover readonly variables as well.
+Using a new feature bit is probably the simplest approach to
+this. macvtap on top of most physical NICs most likely works
+correctly so it seems a bit more work than it needs to be,
+but it's also the safest one I think ...
 
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-i878c8a0e0g0ep4v7i6vxnhz@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/extable.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/extable.c b/kernel/extable.c
-index c2d625f..d44aac0 100644
---- a/kernel/extable.c
-+++ b/kernel/extable.c
-@@ -74,7 +74,7 @@ int core_kernel_text(unsigned long addr)
- 
- int core_kernel_data(unsigned long addr)
- {
--	if (addr >= (unsigned long)_sdata &&
-+	if (addr >= (unsigned long)_stext &&
- 	    addr < (unsigned long)_edata)
- 		return 1;
- 	return 0;
+-- 
+MST
