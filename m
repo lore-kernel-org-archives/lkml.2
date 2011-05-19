@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934044Ab1ESSIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 14:08:48 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:60550 "EHLO
+	id S934232Ab1ESSRF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 14:17:05 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46892 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934035Ab1ESSIp (ORCPT
+	by vger.kernel.org with ESMTP id S933907Ab1ESSIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 14:08:45 -0400
-X-Sasl-enc: tDoXP+DeLp6uOvQ7d2AxhoiaSu3dZwhvNHhspsX6kUXZ 1305828524
+	Thu, 19 May 2011 14:08:47 -0400
+X-Sasl-enc: VyfDmLH8zIS7j1isqHZPlkvFdw/xkIXdS0rKCqo+0mXi 1305828526
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May 19 11:05:58 2011
-Message-Id: <20110519180558.052898924@clark.kroah.org>
+Message-Id: <20110519180558.149946223@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 19 May 2011 11:05:07 -0700
+Date: Thu, 19 May 2011 11:05:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marek Belisko <marek.belisko@open-nandra.com>,
-        Liam Girdwood <lrg@ti.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [39/71] ASoC: UDA134x: Remove POWER_OFF_ON_STANDBY define.
+Subject: [40/71] ASoC: SSM2602: Fix Mic Boost2 control
 In-Reply-To: <20110519180626.GA16555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,36 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Belisko <marek.belisko@open-nandra.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit bf707de21fec7bb203dace2d0a2bbd124d1b36ca upstream.
+commit 36c90ab33feabbd63da775bd92ad356e5bd5cf56 upstream.
 
-Define POWER_OFF_ON_STANDBY cause trobles when trying to get some
-sound from codec because code for bias setup was not compiled
-(define wasn't defined). This define was removed in commit:
-cc3202f5 but again introduced by commit: f0fba2ad1 which then
-completely break codec functionality so remove it again.
+The 'Mic Boost2' control's shift was off by one and thus was not working.
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Acked-by: Liam Girdwood <lrg@ti.com>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/uda134x.c |    2 --
- 1 file changed, 2 deletions(-)
+ sound/soc/codecs/ssm2602.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/uda134x.c
-+++ b/sound/soc/codecs/uda134x.c
-@@ -601,9 +601,7 @@ static struct snd_soc_codec_driver soc_c
- 	.reg_cache_step = 1,
- 	.read = uda134x_read_reg_cache,
- 	.write = uda134x_write,
--#ifdef POWER_OFF_ON_STANDBY
- 	.set_bias_level = uda134x_set_bias_level,
--#endif
- };
+--- a/sound/soc/codecs/ssm2602.c
++++ b/sound/soc/codecs/ssm2602.c
+@@ -139,7 +139,7 @@ SOC_DOUBLE_R("Capture Volume", SSM2602_L
+ SOC_DOUBLE_R("Capture Switch", SSM2602_LINVOL, SSM2602_RINVOL, 7, 1, 1),
  
- static int __devinit uda134x_codec_probe(struct platform_device *pdev)
+ SOC_SINGLE("Mic Boost (+20dB)", SSM2602_APANA, 0, 1, 0),
+-SOC_SINGLE("Mic Boost2 (+20dB)", SSM2602_APANA, 7, 1, 0),
++SOC_SINGLE("Mic Boost2 (+20dB)", SSM2602_APANA, 8, 1, 0),
+ SOC_SINGLE("Mic Switch", SSM2602_APANA, 1, 1, 1),
+ 
+ SOC_SINGLE("Sidetone Playback Volume", SSM2602_APANA, 6, 3, 1),
 
 
