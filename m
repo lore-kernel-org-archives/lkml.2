@@ -1,160 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab1ESLKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 07:10:50 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64328 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab1ESLKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 07:10:49 -0400
-Date: Thu, 19 May 2011 12:10:43 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: linux@arm.linux.org.uk,
-        "open list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arm: Add unwinding support for division functions
-Message-ID: <20110519111043.GC2431@arm.com>
-References: <f16b4b8d7735148b133e23547a7963b3.squirrel@www.codeaurora.org>
- <1305740006-11389-2-git-send-email-lauraa@codeaurora.org>
+	id S932414Ab1ESLMD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 07:12:03 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34105 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754254Ab1ESLL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 07:11:58 -0400
+Message-ID: <4DD4FAE6.3060008@ti.com>
+Date: Thu, 19 May 2011 12:11:34 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305740006-11389-2-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Artamonow <mad_soft@inbox.ru>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Harald Welte <laforge@gnumonks.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Paul Parsons <lost.distance@yahoo.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [alsa-devel] [PATCH v3 0/3] ASoC: add support for audio on iPaq
+ hx4700
+References: <1305732311-17639-1-git-send-email-mad_soft@inbox.ru>
+In-Reply-To: <1305732311-17639-1-git-send-email-mad_soft@inbox.ru>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 10:33:26AM -0700, Laura Abbott wrote:
-> The software division functions never had unwinding annotations
-> added. Currently, when a division by zero occurs the backtrace shown
-> will stop at Ldiv0 or some completely unrelated function. Add
-> unwinding annotations in hopes of getting a more useful backtrace
-> when a division by zero occurs.
+On 18/05/11 16:25, Dmitry Artamonow wrote:
+> Ok, here's another version of patches adding audio support for good ole
+> iPAQ hx4700. It took a bit faster to make v3 than I expected, so here is it.
 > 
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-> ---
->  arch/arm/lib/lib1funcs.S |   25 ++++++++++++++++++++-----
->  1 files changed, 20 insertions(+), 5 deletions(-)
+> Previous versions can be found here:
+> https://lkml.org/lkml/2010/11/20/50 (v1)
+> https://lkml.org/lkml/2011/5/16/462 (v2)
 > 
-> diff --git a/arch/arm/lib/lib1funcs.S b/arch/arm/lib/lib1funcs.S
-> index 6dc0648..c562f64 100644
-> --- a/arch/arm/lib/lib1funcs.S
-> +++ b/arch/arm/lib/lib1funcs.S
-> @@ -35,7 +35,7 @@ Boston, MA 02111-1307, USA.  */
->  
->  #include <linux/linkage.h>
->  #include <asm/assembler.h>
-> -
-> +#include <asm/unwind.h>
->  
->  .macro ARM_DIV_BODY dividend, divisor, result, curbit
->  
-> @@ -207,6 +207,7 @@ Boston, MA 02111-1307, USA.  */
->  
->  ENTRY(__udivsi3)
->  ENTRY(__aeabi_uidiv)
-> +UNWIND(.fnstart)
->  
->  	subs	r2, r1, #1
->  	moveq	pc, lr
-> @@ -230,10 +231,12 @@ ENTRY(__aeabi_uidiv)
->  	mov	r0, r0, lsr r2
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__udivsi3)
->  ENDPROC(__aeabi_uidiv)
->  
->  ENTRY(__umodsi3)
-> +UNWIND(.fnstart)
->  
->  	subs	r2, r1, #1			@ compare divisor with 1
->  	bcc	Ldiv0
-> @@ -247,10 +250,12 @@ ENTRY(__umodsi3)
->  
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__umodsi3)
->  
->  ENTRY(__divsi3)
->  ENTRY(__aeabi_idiv)
-> +UNWIND(.fnstart)
->  
->  	cmp	r1, #0
->  	eor	ip, r0, r1			@ save the sign of the result.
-> @@ -287,10 +292,12 @@ ENTRY(__aeabi_idiv)
->  	rsbmi	r0, r0, #0
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__divsi3)
->  ENDPROC(__aeabi_idiv)
->  
->  ENTRY(__modsi3)
-> +UNWIND(.fnstart)
->  
->  	cmp	r1, #0
->  	beq	Ldiv0
-> @@ -310,11 +317,14 @@ ENTRY(__modsi3)
->  	rsbmi	r0, r0, #0
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__modsi3)
->  
->  #ifdef CONFIG_AEABI
->  
->  ENTRY(__aeabi_uidivmod)
-> +UNWIND(.fnstart)
-> +UNWIND(.save {r0, r1, ip, lr}	)
->  
->  	stmfd	sp!, {r0, r1, ip, lr}
->  	bl	__aeabi_uidiv
-> @@ -323,10 +333,12 @@ ENTRY(__aeabi_uidivmod)
->  	sub	r1, r1, r3
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__aeabi_uidivmod)
->  
->  ENTRY(__aeabi_idivmod)
-> -
-> +UNWIND(.fnstart)
-> +UNWIND(.save {r0, r1, ip, lr}	)
->  	stmfd	sp!, {r0, r1, ip, lr}
->  	bl	__aeabi_idiv
->  	ldmfd	sp!, {r1, r2, ip, lr}
-> @@ -334,15 +346,18 @@ ENTRY(__aeabi_idivmod)
->  	sub	r1, r1, r3
->  	mov	pc, lr
->  
-> +UNWIND(.fnend)
->  ENDPROC(__aeabi_idivmod)
->  
->  #endif
->  
->  Ldiv0:
-> -
-> +UNWIND(.fnstart)
-> +UNWIND(.pad #4)
-> +UNWIND(.save {lr})
->  	str	lr, [sp, #-8]!
->  	bl	__div0
->  	mov	r0, #0			@ About as wrong as it could be.
->  	ldr	pc, [sp], #8
-> -
-> -
-> +UNWIND(.fnend)
-> +ENDPROC(Ldiv0)
-> -- 
-> 1.7.3.3
+> This patchset is based on 'for-next' branch of Mark's ASoC git tree
+> (fetched today), also applies cleanly on linux-next-20110518.
+> Lightly tested on real hardware - playback/recording/mixer seem to work
+> without any glitches.
+> 
+> Changes v2 -> v3
+> 
+> * data based init is now used in codec and machine audio driver
+>   for DAPM and controls
+> * machine audio driver now is a proper platform driver, instantiating
+>   sound card with snd_soc_register_card()
+> * platform code registers corresponding platform_device for machine audio driver
+> * ak4641_sync() is dropped in favour of snd_soc_cache_sync()
+> * snd_soc_update_bits() is used instead of snd_soc_read()/update/snd_soc_write()
+>   sequences. Also return value of snd_soc_update_bits is propagated further
+>   for catching errors (previously result of snd_soc_write wasn't checked)
+> * gpio_request_array is used now in machine audio driver
+> * some other minor cleanup in the couple of places
+> 
+> Dmitry Artamonow (3):
+>   ASoC: Asahi Kasei AK4641 codec driver
+>   ASoC: add iPAQ hx4700 machine driver
+>   pxa/hx4700: add platform device and I2C info for AK4641 codec
+> 
+>  arch/arm/mach-pxa/hx4700.c              |   25 ++
+>  arch/arm/mach-pxa/include/mach/hx4700.h |    4 +-
+>  include/sound/ak4641.h                  |   26 ++
+>  sound/soc/codecs/Kconfig                |    4 +
+>  sound/soc/codecs/Makefile               |    2 +
+>  sound/soc/codecs/ak4641.c               |  664 +++++++++++++++++++++++++++++++
+>  sound/soc/codecs/ak4641.h               |   47 +++
+>  sound/soc/pxa/Kconfig                   |    9 +
+>  sound/soc/pxa/Makefile                  |    2 +
+>  sound/soc/pxa/hx4700.c                  |  255 ++++++++++++
+>  10 files changed, 1036 insertions(+), 2 deletions(-)
+>  create mode 100644 include/sound/ak4641.h
+>  create mode 100644 sound/soc/codecs/ak4641.c
+>  create mode 100644 sound/soc/codecs/ak4641.h
+>  create mode 100644 sound/soc/pxa/hx4700.c
 > 
 
-OK, that looks good to me.
+All
 
-Tested with CONFIG_THUMB2_KERNEL on omap4.
-
-Acked-by: Dave Martin <dave.martin@linaro.org>
+Acked-by: Liam Girdwood <lrg@ti.com>
