@@ -1,121 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586Ab1ESHr3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 03:47:29 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33292 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755777Ab1ESHrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 03:47:25 -0400
-Date: Thu, 19 May 2011 09:47:22 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: James <bjlockie@lockie.ca>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-wireless@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@gmail.com>
-Subject: Re: help to bisect
-Message-ID: <20110519074722.GD14049@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	James <bjlockie@lockie.ca>,
-	Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-wireless@vger.kernel.org,
-	"Luis R. Rodriguez" <mcgrof@gmail.com>
-References: <4DD31264.4070704@lockie.ca>
- <20110518072245.GB17608@liondog.tnic>
- <4DD42F10.90602@lockie.ca>
- <20110518211723.GA4313@liondog.tnic>
- <4DD45D2D.7060300@lockie.ca>
+	id S932629Ab1ESICL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 04:02:11 -0400
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:46065 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932304Ab1ESICI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 04:02:08 -0400
+To: Alexander Zimmermann <alexander.zimmermann@comsys.rwth-aachen.de>
+Subject: Re: [PATCH] tcp: Implement a two-level initial RTO as per draft RFC  2988bis-02.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4DD45D2D.7060300@lockie.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Thu, 19 May 2011 10:02:07 +0200
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: tsuna <tsunanet@gmail.com>, David Miller <davem@davemloft.net>,
+        <kuznet@ms2.inr.ac.ru>, <pekkas@netcore.fi>, <jmorris@namei.org>,
+        <yoshfuji@linux-ipv6.org>, <kaber@trash.net>, <eric.dumazet@gmail.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+In-Reply-To: <8C5DF277-320D-4DEB-A133-EEC301DE58DC@comsys.rwth-aachen.de>
+References: <1305771744-83951-1-git-send-email-tsunanet@gmail.com>
+ <20110518.223622.1525088601595365235.davem@davemloft.net>
+ <BANLkTinEN_=jSCw4qR1PqtWaQ+07OMq7tg@mail.gmail.com>
+ <20110519.001426.2119532755281545481.davem@davemloft.net>
+ <BANLkTikQEq9+YkJHcTe3PWnRvh7AN=VVWA@mail.gmail.com>
+ <9DC9A4D5-8E16-4361-B323-C92D563171A1@comsys.rwth-aachen.de>
+ <BANLkTimVMYC5rzizaM+3dReG14obxGL=Bw@mail.gmail.com>
+ <C70B920C-6176-481B-B6D2-E52769291EBC@comsys.rwth-aachen.de>
+ <BANLkTiku9KTHCm59cib5KY8mz0ewSLsHFQ@mail.gmail.com>
+ <8C5DF277-320D-4DEB-A133-EEC301DE58DC@comsys.rwth-aachen.de>
+Message-ID: <ef84de89c2597793d4cca5eee446ba90@localhost>
+User-Agent: RoundCube Webmail/0.1-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 07:58:37PM -0400, James wrote:
-> On 05/18/11 17:17, Borislav Petkov wrote:
-> > First of all, please hit "reply-to-all" next time so that all recipients
-> > can receive your mail and not find it by chance when looking thru the
-> > new lkml messages.
-> >
-> > On Wed, May 18, 2011 at 04:41:52PM -0400, James wrote:
-> >> Here is what I did:
-> >>
-> >> $ git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.37.y.git
-> >> $ cd linux-2.6.37.y
-> >> $ git checkout v2.6.36
-> >> build and boot kernel
-> > what does that mean? Is .36 ok?
-> Yes, no problems.
-> >> $ cd linux-2.6.37.y
-> >> $ git bisect start
-> >> $ git bisect good v2.6.36
-> >> $ git bisect bad v2.6.37.6
-> > Also, is .37.6 bad?
-> Yes, it is bad.
-> >> build and boot kernel
-> >> git bisect good|bad
-> >> repeat
-> >>
-> >> 3044100e58c84e133791c8b60a2f5bef69d732e4 is the first bad commit.
-> > Which is a merge commit and it means that you most likely made a mistake
-> > during bisection.
-> Am I doing it right?
-> boot kernel, cd to git source, git bisect good or bad, compile new
-> kernel and copy it to /boot,
 
-Dumb question: do you boot into that new kernel and test it each time
-before tagging it as good or bad?
+On Thu, 19 May 2011 08:52:10 +0200, Alexander Zimmermann wrote:
 
-> repeat
-> > What is actually the problem you're experiencing with .37.6?
-> >
-> > ..
-> >
-> >> How do I find out what change causes the problem?
-> >> The problem causes my wireless card not to work.
-> > Ah, here it is.
-> >
-> >> Other people have similar cards that do work so the problem seems
-> >> isolated to my hardware but kernel-2.6.36 works so I don't think my
-> >> hardware is faulty.
-> > Which card is that? (adding linux-wireless)
-> D-Link dwa552
-> ieee80211 phy0: Atheros AR5416 MAC/BB Rev:2 AR2133 RF Rev:81
-> mem=0xffffc90000140
-> 000, irq=16
-> Other people have this card working so it is probably my system
-> configuration that is causing an obscure bug.
+>> #define TCP_RTO_MAX     ((unsigned)(120*HZ))
+>> #define TCP_RTO_MIN     ((unsigned)(HZ/5))
+>> 
+>> So we're talking about a [200ms ; 120s] range no matter what.
 > 
-> > Please, describe in a very detailed way how your problem incarnates
-> > itself: dmesg, error messages, what exactly do you do to trigger it?
-> It seems to be 100% that if "ath: Failed to stop TX DMA in 100 msec
-> after killing last frame
-> ath: Failed to stop TX DMA!" shows up in dmesg that scans don't return
-> any APs or 1-3 (iwlist wlan0 scan | grep SSID).
-> If there is a different way to scan, I'll try that.
-> 
-> 
-> 
-> > Also, can you test whether 38.6 works for ya - it could've been fixed in
-> > the meantime. You can also test .39 which will be released any minute
-> > now.
-> 38.6 does NOT work and compat-wireless-2011-05-11 works on kernel-2.6.36
-> which is why I think it is the kernel and not the wireless code.
-> > I think that should be enough for now.
+> Why is 200ms a valid lower bound for initRTO? I'm aware of
+> measurements that 1s is save for Internet, but I don't know of any
+> studies that 200ms is save... 
 
-Aha, here's the deal. You're using compat-wireless which is a bunch of
-patches ontop of the kernel so you want to add them to the repository
-you're bisecting in so that they can be considered too. Anyway, I've
-added Luis to Cc for comment.
+TCP_RTO_MAX and TCP_RTO_MIN is the lower/upper bound for the RTO in
+general, not for the initial RTO. RFC 2988 specify a lower bound of 1
+second but all operating system choose a lower one because at the time
+where RFC 2988 was written the clock granularity was not that accurate. The
+minimum RTO for FreeBSD is even 30ms! Furthermore, analysis had
+demonstrated that a minimum RTO of 1 second badly breaks throughput in
+environments faster then 33kB with minor packet loss rate (e.g. 1%).
 
-@Luis: bug descrption is above.
+So yes, it CAN be wise to choose other lower/upper bounds. But keep in
+mind that we should NOT artificial limit ourself. I can image data center
+scenarios where a initial RTO of <1 match perfectly.
 
-Btw, there's a newer version against 2.6.39-rc6 which you might want to
-test too: http://marc.info/?l=linux-wireless&m=130455450126421&w=2
-
-HTH.
-
--- 
-Regards/Gruss,
-    Boris.
+Hagen
