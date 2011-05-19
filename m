@@ -1,108 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933583Ab1ESQ5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 12:57:30 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62334 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933540Ab1ESQ53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 12:57:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rvuX8jsx9l4ygvLuGqGjxiukrRIs5QuX1eqWmH8JQlC012gvJa4rLB6CzzBcU/Fsnm
-         tufc8W/7xa05BTlhsPzcJ8w+fT9pjJOUBCkvvfh9evqFbQ1xrXtqY4GCVUg6yLVNn053
-         +KTkDje4kozUHHEP7GXPol3TXWSfRCySKNDPs=
-Date: Thu, 19 May 2011 18:57:22 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 10/10] ptrace: implement group stop notification for
- ptracer
-Message-ID: <20110519165722.GP627@htj.dyndns.org>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org>
- <1305569849-10448-11-git-send-email-tj@kernel.org>
- <20110519163246.GF17265@redhat.com>
+	id S933610Ab1ESQ5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 12:57:41 -0400
+Received: from quartz.orcorp.ca ([139.142.54.143]:37215 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933494Ab1ESQ5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 12:57:38 -0400
+Date: Thu, 19 May 2011 10:57:28 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Roland Dreier <roland@purestorage.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-rmda <linux-rdma@vger.kernel.org>, Vu Pham <vu@mellanox.com>,
+        David Dillow <dillowda@ornl.gov>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: [RFC] ib_srpt: initial .40-rc1 drivers/infiniband/ulp/srpt
+ merge
+Message-ID: <20110519165728.GB12525@obsidianresearch.com>
+References: <1305682604-21383-1-git-send-email-nab@linux-iscsi.org>
+ <BANLkTi=e+v7PLcSc8GNov-TOXFF7rurXew@mail.gmail.com>
+ <20110518170556.GB2595@obsidianresearch.com>
+ <BANLkTimQXU0u5gtRzXsnsB=sCF-bvpY+Ag@mail.gmail.com>
+ <BANLkTi==bZ0h3o5FNrg8PSJFp6F-zh5hTA@mail.gmail.com>
+ <1305778694.2856.533.camel@haakon2.linux-iscsi.org>
+ <BANLkTi=Xb-ypQNa3=MmwiLeE4Q9FWHnZXg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110519163246.GF17265@redhat.com>
+In-Reply-To: <BANLkTi=Xb-ypQNa3=MmwiLeE4Q9FWHnZXg@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Thu, May 19, 2011 at 12:40:02PM +0200, Bart Van Assche wrote:
 
-On Thu, May 19, 2011 at 06:32:46PM +0200, Oleg Nesterov wrote:
-> > +static void ptrace_trap_notify(struct task_struct *t)
-> > +{
-> > +	siginfo_t *si = t->last_siginfo;
-> > +
-> > +	WARN_ON_ONCE(!(t->ptrace & PT_SEIZED));
-> > +	assert_spin_locked(&t->sighand->siglock);
-> > +
-> > +	/*
-> > +	 * @t is being ptraced and new SEIZE behavior is in effect.
-> > +	 * Schedule sticky trap which will clear on the next GETSIGINFO.
-> > +	 */
-> > +	t->jobctl |= JOBCTL_TRAP_NOTIFY;
-> 
-> This is also set by do_signal_stop(). Cleared by PTRACE_GETSIGINFO.
-> 
-> How can this work? Doesn't this mean PTRACE_GETSIGINFO becomes mandatory
-> before PTRACE_CONT? IOW, unless the tracee does PTRACE_GETSIGINFO to clear
-> this bit, PTRACE_CONT just leads to another trap, no?
+> I'm still wondering whether it was a good idea to switch from ib<n>
+> style names to port GIDs. Not only will that make it hard for users to
+> match the ib<n> names already assigned to InfiniBand HCAs with target
+> port names but this also deviates from the naming scheme used for any
+> other Linux device. Ethernet devices e.g. appear as eth<n> in /dev
+> instead of a MAC address like 00:1a:64:10:18:6f.
 
-Yes, group stop state change raises a sticky trap condition which is
-cleared by GETSIGINFO.
+The ib# names returned by ip addr are already disjoint from the
+namespace that is being used by SRP targets. The only choices are port
+GUID or something like mlx4_0/1, the later is somewhat less
+commonly used..
 
-> > +	if (task_is_traced(t) && si && si->si_code == PTRACE_STOP_SI_CODE) {
-> 
-> OK, this PTRACE_STOP_SI_CODE check is clear. But the same check in
-> ptrace_check_attach() looks confusing, why can't we set BLOCK_NOTIFY
-> unconditionally?
+Is there some approach here for selecting the pkey as well?
 
-It's an optimization.  If we set the flag, we'll have to acquire
-siglock and clear it before returning to userland.  Setting
-BLOCK_NOTIFY isn't necessary unless tracee is in TRAP_STOP, so...
-
-> > +		t->jobctl |= JOBCTL_TRAPPING;
-> > +		if (!(t->jobctl & JOBCTL_BLOCK_NOTIFY))
-> > +			signal_wake_up(t, true);
-> 
-> Could you please remind me why we can't avoid the awful ptrace_wait_trapping()
-> in do_wait() paths? Assuming that ptrace_check_attach() does this. I got lost
-> a bit.
-
-Please consider the following scenario.
-
-1. Tracee is in group stop and stops at TRAP_STOP notifying the
-   tracer.
-
-2. Tracer does WNOWAIT wait(2) and determines that the tracee is
-   trapped in TRAP_STOP.
-
-3. Something generates SIGCONT which finishes the group stop and
-   triggers the notification re-trapping.
-
-4. While tracee is re-trapping, tracer issues WNOHANG wait(2)
-   expecting it to succeed but the tracee could be RUNNING for re-trap
-   thus failing WNOHANG wait(2).
-
-> So. The tracee reports PTRACE_EVENT_STOP, debugger issues a lot of PTRACE_
-> requests. The tracee can report another trap "in between". Looks confusing...
-> Perhaps I need to get used to it.
-
-Yes, and the reported trap doesn't interfere with wait(2) or ptrace
-requests.  Trapping is the only event notification mechanism available
-from tracee to tracer and we already have interface to wait and poll
-them, so I think it makes sense to use it.
-
-Thank you.
-
--- 
-tejun
+Jason
