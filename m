@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab1ESLWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 07:22:48 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13734 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755785Ab1ESLWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 07:22:47 -0400
-Date: Thu, 19 May 2011 13:15:24 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: samsonov@krista.ru
-cc: linux-kernel@vger.kernel.org
-Subject: Re: Some patches for ppp_generic.c and proc/base.c
-In-Reply-To: <20110519143213.094da1eb@wks1198.krista.ru>
-Message-ID: <alpine.LNX.2.00.1105191313390.22490@swampdragon.chaosbits.net>
-References: <20110519143213.094da1eb@wks1198.krista.ru>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755944Ab1ESLTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 07:19:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29891 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755811Ab1ESLTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 07:19:19 -0400
+Date: Thu, 19 May 2011 13:19:01 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: NULL pointer deref in tty port / uart
+Message-ID: <20110519111901.GC2061@jolsa.brq.redhat.com>
+References: <20110517231229.GB1776@nowhere>
+ <20110518004420.2b8f5da9@bob.linux.org.uk>
+ <20110518142631.GB2011@jolsa.brq.redhat.com>
+ <20110518153636.5cdcdd78@lxorguk.ukuu.org.uk>
+ <20110518144429.GC2011@jolsa.brq.redhat.com>
+ <20110518155033.2773b323@bob.linux.org.uk>
+ <20110518194212.GA27758@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110518194212.GA27758@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 May 2011, samsonov@krista.ru wrote:
-
-> Good day!
-> I mean that /proc file permission for process information must be
-> secure:
+On Wed, May 18, 2011 at 12:42:12PM -0700, Greg KH wrote:
+> On Wed, May 18, 2011 at 03:50:33PM +0100, Alan Cox wrote:
+> > > I think it's the 
+> > > 
+> > > uart_update_termios in uart_dtr_rts (drivers/tty/serial/serial_core.c)
+> > > 
+> > > called path:
+> > > 
+> > > tty_port_block_til_ready
+> > > 	tty_port_raise_dtr_rts
+> > > 		uart_dtr_rts
+> > > 			uart_update_termios
+> > 
+> > Ah that would explain why I can't find and dup it - it isn't found in
+> > the current -next tree.
+> > 
+> > 
+> > c7d7abff40c27f82fe78b1091ab3fad69b2546f9 (and thereafter)
+> > 
+> > Jiri Slaby fixed it in sorting out uart_startup
+> > 
+> > I guess these should now get tagged for -stable.
 > 
+> So that would be the following patches in the linux-next tree:
+> 	c7d7abff40c27f82fe78b1091ab3fad69b2546f9 serial: core, move termios handling to uart_startup
+> 	303a7a1199c20f7c9452f024a6e17bf348b6b398 serial: core, do not set DTR/RTS twice on startup
+> 	6f5c24ad0f7619502199185a026a228174a27e68 serial: core, remove uart_update_termios
+> 
+> right?
+> 
+> Anything else need to be backported?
+> 
+> Frederic, can you test that these 3 patches solve the problem for you?
+> If you want, I can send them to you separately if you don't have a copy
+> of linux-next around anywhere.
+> 
+> thanks,
+> 
+> greg k-h
 
-I'm not going to comment on whether or not changing the mode is 
-appropriate, but there are a few other details I will comment on:
+I tried linux-next and cannot hit the issue anymore
 
-[...]
-> --- ./linux-2.6.33.4.orig/drivers/net/ppp_generic.c	2010-05-13 02:04:27.000000000 +0400
-> +++ ./linux-2.6.33.4/drivers/net/ppp_generic.c	2011-05-10 13:51:11.909607463 +0400
-> @@ -366,8 +366,8 @@
->  	/*
->  	 * This could (should?) be enforced by the permissions on /dev/ppp.
->  	 */
-> -	if (!capable(CAP_NET_ADMIN))
-> -		return -EPERM;
-> +//	if (!capable(CAP_NET_ADMIN))
-> +//		return -EPERM;
-
-Don't just comment out lines. If they should go away, just remove them.
-
-
-[...]
-> --- ./linux-2.6.33.4.orig/fs/attr.c	2010-05-13 02:04:27.000000000 +0400
-> +++ ./linux-2.6.33.4/fs/attr.c	2011-05-10 14:25:57.727062904 +0400
-> @@ -35,11 +35,10 @@
->  
->  	/* Make sure caller can chgrp. */
->  	if ((ia_valid & ATTR_GID) &&
-> -	    (current_fsuid() != inode->i_uid ||
-> -	    (!in_group_p(attr->ia_gid) && attr->ia_gid != inode->i_gid)) &&
-> -	    !capable(CAP_CHOWN))
-> +	    !(in_group_p(attr->ia_gid) && is_owner_or_cap(inode)))
->  		goto error;
->  
-> +
-Why are you adding an extra blank line here? Seems rather pointless.
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+thanks,
+jirka
