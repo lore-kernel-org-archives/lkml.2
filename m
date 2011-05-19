@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934438Ab1ESTbg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 15:31:36 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:39817 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933808Ab1ESTbf (ORCPT
+	id S934476Ab1ESTiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 15:38:20 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:49268 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933830Ab1ESTiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 15:31:35 -0400
-Date: Thu, 19 May 2011 13:31:32 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Wan ZongShun <mcuos.com@gmail.com>,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH 1/2] spi: spi_nuc900: Use spi_bitbang_stop instead of
- spi_unregister_master in nuc900_spi_remove
-Message-ID: <20110519193132.GQ5109@ponder.secretlab.ca>
-References: <1305416008.24670.1.camel@phoenix>
+	Thu, 19 May 2011 15:38:18 -0400
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 May 2011 15:38:18 EDT
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+Date: Thu, 19 May 2011 20:31:33 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-28-generic; KDE/4.6.2; x86_64; ; )
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, oleg@redhat.com,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
+        bdonlan@gmail.com
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <20110518095539.GU20624@htj.dyndns.org> <20110519141728.GJ627@htj.dyndns.org>
+In-Reply-To: <20110519141728.GJ627@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305416008.24670.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105192031.33569.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 15, 2011 at 07:33:28AM +0800, Axel Lin wrote:
-> Calling spi_bitbang_stop() will also destroy bitbang->workqueue,
-> which is created by calling spi_bitbang_start() in nuc900_spi_probe().
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Thursday 19 May 2011 15:17:28, Tejun Heo wrote:
+> But making SEIZE not trigger INTERRUPT and SETOPTIONS without
+> requiring TRACED don't seem too difficult.  Jan, would that be enough?
+> Oleg, what do you think?
 
-Applied, thanks.
+UUIC, that opens a race where between SEIZEing and
+SETOPTIONS(O_TRACE FORK|VFORK|EXEC...), the tracee can
+fork/vfork/clone/exec, without the tracer getting the
+nice corresponding PTRACE_EVENT_ events.
 
-g.
+In GDBs case, GDB will want to poke at memory
+right after attaching, to at least read the
+loaded DSO list, so if you can't read tracee
+memory without interrupting it, you won't get much
+benefit from SEIZE not interrupting.
+Not to say other users wouldn't benefit.
 
-> ---
->  drivers/spi/spi_nuc900.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/spi/spi_nuc900.c b/drivers/spi/spi_nuc900.c
-> index d5be18b..3cd15f6 100644
-> --- a/drivers/spi/spi_nuc900.c
-> +++ b/drivers/spi/spi_nuc900.c
-> @@ -463,7 +463,7 @@ static int __devexit nuc900_spi_remove(struct platform_device *dev)
->  
->  	platform_set_drvdata(dev, NULL);
->  
-> -	spi_unregister_master(hw->master);
-> +	spi_bitbang_stop(&hw->bitbang);
->  
->  	clk_disable(hw->clk);
->  	clk_put(hw->clk);
-> -- 
-> 1.7.1
-> 
-> 
-> 
+-- 
+Pedro Alves
