@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934418Ab1ETAPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:15:06 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41170 "EHLO
+	id S934447Ab1ETAOu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:14:50 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:47363 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934944Ab1ETAME (ORCPT
+	by vger.kernel.org with ESMTP id S934965Ab1ETAMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:12:04 -0400
-X-Sasl-enc: nFWP1kXSR5sfHdyFaQKiKnAG+f+9oVQTflXmkUqRNOVv 1305850323
+	Thu, 19 May 2011 20:12:06 -0400
+X-Sasl-enc: NkAAP7sEfWH7AuaZUM9+OIVlei/PPfNWz7iK030AZ92f 1305850324
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 33/44] Allow setting of number of raw devices as a module parameter
-Date: Thu, 19 May 2011 17:10:51 -0700
-Message-Id: <1305850262-9575-33-git-send-email-gregkh@suse.de>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Mike Waychison <mikew@google.com>,
+        Matt Domsch <Matt_Domsch@dell.com>, <matthew.e.tolentino@intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 34/44] efivars: prevent oops on unload when efi is not enabled
+Date: Thu, 19 May 2011 17:10:52 -0700
+Message-Id: <1305850262-9575-34-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1305850262-9575-1-git-send-email-gregkh@suse.de>
 References: <20110520000821.GA9367@kroah.com>
@@ -22,119 +24,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Allow setting of maximal number of raw devices as a module parameter. This
-requires changing of static array into a vmalloced one (the array is going to
-be too large for kmalloc).
+efivars_exit() should check for efi_enabled and not undo
+allocations when efi is not enabled.  Otherwise there is an Oops
+during module unload:
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+calling  efivars_init+0x0/0x1000 [efivars] @ 2810
+EFI Variables Facility v0.08 2004-May-17
+initcall efivars_init+0x0/0x1000 [efivars] returned 0 after 5120 usecs
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+last sysfs file: /sys/module/firmware_class/initstate
+CPU 1
+Modules linked in: efivars(-) af_packet tun nfsd lockd nfs_acl auth_rpcgss sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 cpufreq_ondemand acpi_cpufreq freq_table mperf binfmt_misc dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep mousedev snd_seq joydev snd_seq_device mac_hid evdev snd_pcm usbkbd usbmouse usbhid snd_timer hid tg3 snd sr_mod pcspkr rtc_cmos soundcore cdrom iTCO_wdt processor sg dcdbas i2c_i801 rtc_core iTCO_vendor_support intel_agp snd_page_alloc thermal_sys rtc_lib intel_gtt 8250_pnp button hwmon unix ide_pci_generic ide_core ata_generic pata_acpi ata_piix sd_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ssb mmc_core pcmcia pcmcia_core firmware_class ehci_hcd usbcore [last unloaded: dell_rbu]
+
+Pid: 2812, comm: rmmod Not tainted 2.6.39-rc6 #1 Dell Inc.                 OptiPlex 745                 /0TY565
+RIP: 0010:[<ffffffffa06a17f6>]  [<ffffffffa06a17f6>] unregister_efivars+0x28/0x12c [efivars]
+RSP: 0018:ffff88005eedde98  EFLAGS: 00010283
+RAX: ffffffffa06a23fc RBX: ffffffffa06a44c0 RCX: ffff88007c227a50
+RDX: 0000000000000000 RSI: 00000055ac13db78 RDI: ffffffffa06a44c0
+RBP: ffff88005eeddec8 R08: 0000000000000000 R09: ffff88005eeddd78
+R10: ffffffffa06a4220 R11: ffff88005eeddd78 R12: fffffffffffff7d0
+R13: 00007fff5a3aaec0 R14: 0000000000000000 R15: ffffffffa06a4508
+FS:  00007fa8dcc4a6f0(0000) GS:ffff88007c200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000000 CR3: 000000005d148000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process rmmod (pid: 2812, threadinfo ffff88005eedc000, task ffff88006754b000)
+Stack:
+ ffff88005eeddec8 ffffffffa06a4220 0000000000000000 00007fff5a3aaec0
+ 0000000000000000 0000000000000001 ffff88005eedded8 ffffffffa06a2418
+ ffff88005eeddf78 ffffffff810d3598 ffffffffa06a4220 0000000000000880
+Call Trace:
+ [<ffffffffa06a2418>] efivars_exit+0x1c/0xc04 [efivars]
+ [<ffffffff810d3598>] sys_delete_module+0x2d6/0x368
+ [<ffffffff812d1db9>] ? lockdep_sys_exit_thunk+0x35/0x67
+ [<ffffffff810fcba1>] ? audit_syscall_entry+0x172/0x1a5
+ [<ffffffff81575082>] system_call_fastpath+0x16/0x1b
+Code: 5c c9 c3 55 48 89 e5 41 57 41 56 41 55 41 54 53 48 83 ec 08 0f 1f 44 00 00 4c 8b 67 48 48 89 fb 4c 8d 7f 48 49 81 ec 30 08 00 00 <4d> 8b ac 24 30 08 00 00 49 81 ed 30 08 00 00 eb 59 48 89 df 48
+RIP  [<ffffffffa06a17f6>] unregister_efivars+0x28/0x12c [efivars]
+ RSP <ffff88005eedde98>
+CR2: 0000000000000000
+ ---[ end trace aa99b99090f70baa ]---
+
+Matt apparently removed such a check in 2004 (with no reason given):
+ *  17 May 2004 - Matt Domsch <Matt_Domsch@dell.com>
+ *   remove check for efi_enabled in exit
+but there have been several changes since then.
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Mike Waychison <mikew@google.com>
+Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Matt Domsch <Matt_Domsch@dell.com>
+Cc: <matthew.e.tolentino@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/Kconfig |    2 +-
- drivers/char/raw.c   |   33 +++++++++++++++++++++++++++------
- 2 files changed, 28 insertions(+), 7 deletions(-)
+ drivers/firmware/efivars.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index ad59b4e..49502bc 100644
---- a/drivers/char/Kconfig
-+++ b/drivers/char/Kconfig
-@@ -523,7 +523,7 @@ config RAW_DRIVER
-           with the O_DIRECT flag.
- 
- config MAX_RAW_DEVS
--	int "Maximum number of RAW devices to support (1-8192)"
-+	int "Maximum number of RAW devices to support (1-65536)"
- 	depends on RAW_DRIVER
- 	default "256"
- 	help
-diff --git a/drivers/char/raw.c b/drivers/char/raw.c
-index b4b9d5a..6f9db62 100644
---- a/drivers/char/raw.c
-+++ b/drivers/char/raw.c
-@@ -21,6 +21,7 @@
- #include <linux/mutex.h>
- #include <linux/gfp.h>
- #include <linux/compat.h>
-+#include <linux/vmalloc.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -30,10 +31,15 @@ struct raw_device_data {
- };
- 
- static struct class *raw_class;
--static struct raw_device_data raw_devices[MAX_RAW_MINORS];
-+static struct raw_device_data *raw_devices;
- static DEFINE_MUTEX(raw_mutex);
- static const struct file_operations raw_ctl_fops; /* forward declaration */
- 
-+static int max_raw_minors = MAX_RAW_MINORS;
-+
-+module_param(max_raw_minors, int, 0);
-+MODULE_PARM_DESC(max_raw_minors, "Maximum number of raw devices (1-65536)");
-+
- /*
-  * Open/close code for raw IO.
-  *
-@@ -125,7 +131,7 @@ static int bind_set(int number, u64 major, u64 minor)
- 	struct raw_device_data *rawdev;
- 	int err = 0;
- 
--	if (number <= 0 || number >= MAX_RAW_MINORS)
-+	if (number <= 0 || number >= max_raw_minors)
- 		return -EINVAL;
- 
- 	if (MAJOR(dev) != major || MINOR(dev) != minor)
-@@ -312,12 +318,26 @@ static int __init raw_init(void)
- 	dev_t dev = MKDEV(RAW_MAJOR, 0);
- 	int ret;
- 
--	ret = register_chrdev_region(dev, MAX_RAW_MINORS, "raw");
-+	if (max_raw_minors < 1 || max_raw_minors > 65536) {
-+		printk(KERN_WARNING "raw: invalid max_raw_minors (must be"
-+			" between 1 and 65536), using %d\n", MAX_RAW_MINORS);
-+		max_raw_minors = MAX_RAW_MINORS;
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 5d1ec68..a2d2f1f 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -827,8 +827,10 @@ err_put:
+ static void __exit
+ efivars_exit(void)
+ {
+-	unregister_efivars(&__efivars);
+-	kobject_put(efi_kobj);
++	if (efi_enabled) {
++		unregister_efivars(&__efivars);
++		kobject_put(efi_kobj);
 +	}
-+
-+	raw_devices = vmalloc(sizeof(struct raw_device_data) * max_raw_minors);
-+	if (!raw_devices) {
-+		printk(KERN_ERR "Not enough memory for raw device structures\n");
-+		ret = -ENOMEM;
-+		goto error;
-+	}
-+	memset(raw_devices, 0, sizeof(struct raw_device_data) * max_raw_minors);
-+
-+	ret = register_chrdev_region(dev, max_raw_minors, "raw");
- 	if (ret)
- 		goto error;
- 
- 	cdev_init(&raw_cdev, &raw_fops);
--	ret = cdev_add(&raw_cdev, dev, MAX_RAW_MINORS);
-+	ret = cdev_add(&raw_cdev, dev, max_raw_minors);
- 	if (ret) {
- 		kobject_put(&raw_cdev.kobj);
- 		goto error_region;
-@@ -336,8 +356,9 @@ static int __init raw_init(void)
- 	return 0;
- 
- error_region:
--	unregister_chrdev_region(dev, MAX_RAW_MINORS);
-+	unregister_chrdev_region(dev, max_raw_minors);
- error:
-+	vfree(raw_devices);
- 	return ret;
  }
  
-@@ -346,7 +367,7 @@ static void __exit raw_exit(void)
- 	device_destroy(raw_class, MKDEV(RAW_MAJOR, 0));
- 	class_destroy(raw_class);
- 	cdev_del(&raw_cdev);
--	unregister_chrdev_region(MKDEV(RAW_MAJOR, 0), MAX_RAW_MINORS);
-+	unregister_chrdev_region(MKDEV(RAW_MAJOR, 0), max_raw_minors);
- }
- 
- module_init(raw_init);
+ module_init(efivars_init);
 -- 
 1.7.4.2
 
