@@ -1,166 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934232Ab1ETSCd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 14:02:33 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:60648 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab1ETSCc convert rfc822-to-8bit (ORCPT
+	id S1757262Ab1ETSFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 14:05:15 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:9835 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425Ab1ETSFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 14:02:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Q3Q1Ae0quhih2uRTxkxiCbRCCjj8CqWuyYVeUbVlaNgIn3UUaAdmoVkqw0zIgRF4hK
-         RzhObbgqB0qNL+IFSLW4EuVdkiHtTxFotX0IW9BElm18zqChFpZ2QnyL/aci5QfZ5Bzs
-         hZK3e5Mkxyg5Yd0g7UEQNtqoR7UsVZtBBW6Mk=
+	Fri, 20 May 2011 14:05:13 -0400
+Message-ID: <4DD6AD51.7090900@tilera.com>
+Date: Fri, 20 May 2011 14:05:05 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110519194908.GA26584@redhat.com>
-References: <201105152235.32073.vda.linux@googlemail.com> <20110516153122.GA15856@redhat.com>
- <BANLkTintE-QVUJhJY-_A5nvgj7viJatZ4Q@mail.gmail.com> <20110519194908.GA26584@redhat.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Fri, 20 May 2011 20:02:11 +0200
-Message-ID: <BANLkTi=bRb+NCqqS9+ptzxHVOjKKXhZgsg@mail.gmail.com>
-Subject: Re: Ptrace documentation, draft #1
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: Re: [PATCH] arch/tile: add arch/tile/drivers/ directory with SROM
+ driver
+References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com> <201105050841.40576.arnd@arndb.de>
+In-Reply-To: <201105050841.40576.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 9:49 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 05/18, Denys Vlasenko wrote:
+On 5/5/2011 2:41 AM, Arnd Bergmann wrote:
+> On Wednesday 04 May 2011, Chris Metcalf wrote:
+>> This commit does two things: it adds the infrastructure for a new
+>> arch/tile/drivers/ directory, and it populates it with the first
+>> instance of a driver for that directory, a SPI Flash ROM (srom) driver.
 >>
->> On Mon, May 16, 2011 at 5:31 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->> >
->> > Note: currently a killed PT_TRACE_EXIT tracee can stop and report
->> > PTRACE_EVENT_EXIT before it actually exits. I'd say this is wrong and
->> > should be fixed.
->>
->> Yes, I assumed this is normal.
->> Or do you mean that *killed* tracee (that is, by signal) also stops there?
+>> [...]
+> I generally advise against putting any device drivers into arch/*/,
+> on the ground that it is much easier to find similar drivers when
+> they are in a common place. We probably have a few similar drivers
+> in the tree already, e.g drivers/misc/eeprom/* and drivers/char/ps3flash.c
+> and drivers/platform/x86/intel_scu_ipcutil.c are examples of preexisting
+> drivers.
 >
-> Yes.
-
-Thanks, noted.
-
->> >> Tracer can kill a tracee with ptrace(PTRACE_KILL, pid, 0, 0).
->> >
->> > Oh, no. This is more or less equivalent to PTRACE_CONT(SIGKILL) except
->> > PTRACE_KILL doesn't return the error if the tracee is not stopped.
->> >
->> > I'd say: do not use PTRACE_KILL, never. If the tracer wants to kill
->> > the tracee - kill or tkill should be used.
->>
->> Regardless. We need to tell users what to expect after they do PTRACE_KILL.
+> I'd probably put this one in driver/misc/eeprom and make the interface
+> look like the other ones (sysfs bin attribute instead of character
+> device), which is a trivial change.
 >
-> Once again, PTRACE_KILL == ptrace(PTRACE_CONT, SIGKILL), except it
-> doesn't return the error if the tracee is not stopped.
+> [...]
+>> The actual SROM driver is fairly uncontroversial, and is just a simple
+>> driver that allows user space to read and write the SROM at a raw level.
+>> (A separate MTD driver exists for "tile", but this is not that driver.)
+>> The driver is particularly useful since the Tile chip can boot directly
+>> from the SROM, so providing this driver interface allows for updating
+>> the boot image prior to a reboot.
+> I think the sysfs bin attribute works well here because you don't need
+> any ioctl, and the contents are basically a representation of a flat
+> file. The implementation would be almost the same.
 
-Oleg, this doesn't explain the resulting behavior in terms understandable
-to mere mortals. *What will happen* when user does ptrace(PTRACE_KILL)?
+This works well, except for the fact that we take advantage of the fact
+that the hypervisor driver internally buffers up writes to the current
+EEPROM sector, and flushes it to hardware only when explicitly told to do
+so, or when we start writing to another sector.  This avoids excessive wear
+on the EEPROM and also handles detection of whether we need to do a sector
+erase before the re-write.  However, it also means that we need to be able
+to issue the final explicit flush, or else the last write just sits in the
+hypervisor buffer indefinitely.  To make that happen I think I need to
+extend the bin_attribute structure, and the bin.c release() function, slightly:
 
-Yes, it's obvious that the tracee gets SIGKILLed, but will it report WIFSIGNALED
-or not? Userspace folks won't be 100.00% sure if we won't be exact about it.
+--- fs/sysfs/bin.c~   2011-05-20 14:02:43.000000000 -0400
++++ fs/sysfs/bin.c  2011-05-20 13:31:23.240866000 -0400
+@@ -434,18 +434,26 @@
+ }
 
-They may think "hmm... maybe this PTRACE_KILL thing is so powerful it makes
-it unnecessary to waitpid for the nuked process?", which actualy isn't such
-a stupid hupothesis - if tracer itself PTRACE_KILL's tracee, it doesn't want
-to know about it anymore, so why should it waitpid for it?
+ static int release(struct inode * inode, struct file * file)
+ {
+        struct bin_buffer *bb = file->private_data;
++       struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
++       struct bin_attribute *attr = attr_sd->s_bin_attr.bin_attr;
++       int rc = 0;
++
++       if (attr->release && sysfs_get_active(attr_sd)) {
++               rc = attr->release(file, attr_sd->s_parent->s_dir.kobj, attr);
++               sysfs_put_active(attr_sd);
++       }
 
+        mutex_lock(&sysfs_bin_lock);
+        hlist_del(&bb->list);
+        mutex_unlock(&sysfs_bin_lock);
 
->> >> When any thread executes exit_group syscall, every tracee reports its
->> >> death to its tracer.
->> >>
->> >> ??? Is it true that *every* thread reports death?
->> >
->> > Yes, if you mean do_wait() as above.
->>
->> And will PTRACE_EVENT_EXIT happen for *every* tracee (which has it configured)?
->
-> Oh. This depends on /dev/random. Most probably the exiting tracee
-> dequeues the (implicit) SIGKILL and report PTRACE_EVENT_EXIT. Oh,
-> unless arch_ptrace_stop_needed() is true. But it can exit on its own
-> or deque another fatal signal, then it won't stop because of
-> fatal_signal_pending().
->
-> In short: this should be fixed. We already discussed this a bit (many
-> times ;), first of all we should define the correct behaviour. If you
-> ask me, personally I think PTRACE_EVENT_EXIT should be always reported
-> unless the task was explicitly killed by SIGKILL. But this is not clear.
+        kfree(bb->buffer);
+        kfree(bb);
+-       return 0;
++       return rc;
+ }
 
-Documented with "KNOWN BUG:" tag.
+ const struct file_operations bin_fops = {
+        .read           = read,
+        .write          = write,
+--- include/linux/sysfs.h~   2011-05-20 14:02:43.000000000 -0400
++++ include/linux/sysfs.h   2011-05-20 13:23:57.915080000 -0400
+@@ -93,10 +93,11 @@
+                        char *, loff_t, size_t);
+        ssize_t (*write)(struct file *,struct kobject *, struct bin_attribute *,
+                         char *, loff_t, size_t);
+        int (*mmap)(struct file *, struct kobject *, struct bin_attribute *attr,
+                    struct vm_area_struct *vma);
++       int (*release)(struct file *, struct kobject *, struct bin_attribute *);
+ };
 
-
->> >> Kernel delivers an extra SIGTRAP to tracee after execve syscall
->> >> returns. This is an ordinary signal (similar to one generated by kill
->> >> -TRAP), not a special kind of ptrace-stop. If PTRACE_O_TRACEEXEC option
->> >> is in effect, a PTRACE_EVENT_EXEC-stop is generated instead.
->> >>
->> >> ??? can this SIGTRAP be distinguished from "real" user-generated SIGTRAP
->> >>     by looking at its siginfo?
->> >
->> > Afaics no. Well, except .si_pid shows that the signal was sent by the
->> > tracing process to itself.
->>
->> What about si_code? Is it set to SI_KERNEL for this signal?
->
-> No, SI_USER.
-
-This is stupid. This signal is sent by kernel. Why is it flagged as "from user"?
-Maybe we should change it?
-
-(BTW, where is it generated in the kernel source? I found
-PTRACE_EVENT_EXEC generation, but failed to find
-"old-school SIGTRAP" generation code...)
-
-
->> >> ??? Are syscalls interrupted by signals which are suppressed by tracer?
->> >>     If yes, document it here
->> >
->> > Please reiterate, can't understand.
->>
->> Let's say tracee is in nanosleep. Then some signal arrives,
->
-> note that the tracee is already interrupted here, sys_nanosleep()
-> returns ERESTART_RESTARTBLOCK.
->
->> but tracer decides to ignore it. In tracer:
->>
->> waitpid: WIFSTOPPED, WSTOPSIG = some_sig  <===
->> ptrace(PTRACE_CONT, pid, 0, 0)  ===>
->>
->> will this interrupt nanosleep in tracee?
->
-> Yes and no. Once again, the tracee already returned from sys_nanosleep,
-> but it will restart this syscall (actually, it will do sys_restart_syscall)
-> and continue to sleep.
-
-Documented as such.
+ /**
+  *     sysfs_bin_attr_init - initialize a dynamically allocated bin_attribute
+  *     @attr: struct bin_attribute to initialize
 
 
->> >>       ptrace(PTRACE_cmd, pid, 0, sig);
->> >> where cmd is CONT, DETACH, SYSCALL, SINGLESTEP, SYSEMU,
->> >> SYSEMU_SINGLESTEP. If tracee is in signal-delivery-stop, sig is the
->> >> signal to be injected. Otherwise, sig is ignored.
->> >
->> > There is another special case. If the tracee single-stepps into the
->> > signal handler, it reports SIGTRAP as if it recieved this SIGNAL.
->> > But ptrace(PTRACE, ..., sig) doesn't inject after that.
->>
->> This is part of missing doc about PTRACE_SINGLESTEP.
->> From what you are saying it looks like PTRACE_SINGLESTEP
->> implies PTRACE_SYSCALL behavior: "report syscall-stops".
->
-> Hmm. Why do you think so?
 
-I am totally unfamiliar with PTRACE_SINGLESTEP.
+This change shouldn't require any changes to any other bin_attribute users
+elsewhere in the kernel.
 
+If something like this seems plausible, I already have the patch ready, and
+I can send it to LKML.  I've cc'ed Greg K-H and a few other recent
+submitters to bin.c in case they'd like to weigh in at this point too; thanks.
 
-Thanks! Expect draft #3 soon.
 -- 
-vda
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
+
