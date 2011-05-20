@@ -1,68 +1,3431 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934926Ab1ETIb7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 04:31:59 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:48361 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934559Ab1ETIb5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 04:31:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=l3JvSpGRuO/X7m+OzC/LOUf/mDD2sHZHDxzt3Y14DGlUQIaupFo0AKqc1JUzHsA0dH
-         b8vwX3LbP8B2lJb92AWNU8eLw1igsIcLJV4Y8xC7F5hg932M/GcsVxIcKSuynva8EXn7
-         7W88RKGYKBIWBKG7NazijIP8XiIYm7QvEDi3U=
+	id S934947Ab1ETIes (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 04:34:48 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:43065 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934136Ab1ETIek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 04:34:40 -0400
+Date: Fri, 20 May 2011 09:34:24 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Manuel Lauss <manuel.lauss@googlemail.com>
+Cc: Takashi Iwai <tiwai@suse.de>, linux-mips@linux-mips.org,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] SOUND: OSS: Remove Au1550 driver.
+Message-ID: <20110520083424.GB15887@linux-mips.org>
+References: <20110519231911.GB10628@linux-mips.org>
+ <s5hoc2x7tsr.wl%tiwai@suse.de>
+ <BANLkTimV4Wg5ZChixp5+0cpu5knrZesSjA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1305869337-4375-1-git-send-email-namhyung@gmail.com>
-References: <1305869337-4375-1-git-send-email-namhyung@gmail.com>
-Date: Fri, 20 May 2011 16:31:56 +0800
-X-Google-Sender-Auth: yYXGoFGZlNoGMilNX8dTZ8907b4
-Message-ID: <BANLkTik5Od9tLg1F6mDFkzpViXR2ZcRmgA@mail.gmail.com>
-Subject: Re: [PATCH] block: call elv_bio_merged() when merged
-From: Shaohua Li <shaohua.li@intel.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Divyesh Shah <dpshah@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimV4Wg5ZChixp5+0cpu5knrZesSjA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/20 Namhyung Kim <namhyung@gmail.com>:
-> Commit 73c101011926 ("block: initial patch for on-stack per-task plugging")
-> removed calls to elv_bio_merged() when @bio merged with @req. Re-add them.
->
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Cc: Divyesh Shah <dpshah@google.com>
-> ---
->  block/blk-core.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 3fe00a14822a..4dc02ef5fc82 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -1132,6 +1132,7 @@ static bool bio_attempt_back_merge(struct request_queue *q, struct request *req,
->        req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
->
->        drive_stat_acct(req, 0);
-> +       elv_bio_merged(q, req, bio);
->        return true;
->  }
->
-> @@ -1173,6 +1174,7 @@ static bool bio_attempt_front_merge(struct request_queue *q,
->        req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
->
->        drive_stat_acct(req, 0);
-> +       elv_bio_merged(q, req, bio);
->        return true;
->  }
-Looks you should do this in __make_request. when the routine is called
-in attempt_plug_merge, the request isn't added to elevator yet.
+This driver does no longer build since at least 2.6.30 and there is a
+modern ALSA replacement for it.  RIP, Rot In Pieces.
 
-Thanks,
-Shaohua
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+---
+
+As discussed earlier in this thread.
+
+ sound/oss/Kconfig       |    4 -
+ sound/oss/Makefile      |    1 -
+ sound/oss/ac97_codec.c  | 1203 --------------------------
+ sound/oss/au1550_ac97.c | 2147 -----------------------------------------------
+ 4 files changed, 0 insertions(+), 3355 deletions(-)
+
+diff --git a/sound/oss/Kconfig b/sound/oss/Kconfig
+index 76c0902..6c93e05 100644
+--- a/sound/oss/Kconfig
++++ b/sound/oss/Kconfig
+@@ -22,10 +22,6 @@ config SOUND_VWSND
+ 	  <file:Documentation/sound/oss/vwsnd> for more info on this driver's
+ 	  capabilities.
+ 
+-config SOUND_AU1550_AC97
+-	tristate "Au1550/Au1200 AC97 Sound"
+-	depends on SOC_AU1550 || SOC_AU1200
+-
+ config SOUND_MSNDCLAS
+ 	tristate "Support for Turtle Beach MultiSound Classic, Tahiti, Monterey"
+ 	depends on (m || !STANDALONE) && ISA
+diff --git a/sound/oss/Makefile b/sound/oss/Makefile
+index 90ffb99..77f21b6 100644
+--- a/sound/oss/Makefile
++++ b/sound/oss/Makefile
+@@ -25,7 +25,6 @@ obj-$(CONFIG_SOUND_WAVEARTIST)	+= waveartist.o
+ obj-$(CONFIG_SOUND_MSNDCLAS)	+= msnd.o msnd_classic.o
+ obj-$(CONFIG_SOUND_MSNDPIN)	+= msnd.o msnd_pinnacle.o
+ obj-$(CONFIG_SOUND_VWSND)	+= vwsnd.o
+-obj-$(CONFIG_SOUND_AU1550_AC97)	+= au1550_ac97.o ac97_codec.o
+ obj-$(CONFIG_SOUND_BCM_CS4297A)	+= swarm_cs4297a.o
+ 
+ obj-$(CONFIG_DMASOUND)		+= dmasound/
+diff --git a/sound/oss/ac97_codec.c b/sound/oss/ac97_codec.c
+deleted file mode 100644
+index 0cd23d9..0000000
+--- a/sound/oss/ac97_codec.c
++++ /dev/null
+@@ -1,1203 +0,0 @@
+-/*
+- * ac97_codec.c: Generic AC97 mixer/modem module
+- *
+- * Derived from ac97 mixer in maestro and trident driver.
+- *
+- * Copyright 2000 Silicon Integrated System Corporation
+- *
+- *	This program is free software; you can redistribute it and/or modify
+- *	it under the terms of the GNU General Public License as published by
+- *	the Free Software Foundation; either version 2 of the License, or
+- *	(at your option) any later version.
+- *
+- *	This program is distributed in the hope that it will be useful,
+- *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *	GNU General Public License for more details.
+- *
+- *	You should have received a copy of the GNU General Public License
+- *	along with this program; if not, write to the Free Software
+- *	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- **************************************************************************
+- *
+- * The Intel Audio Codec '97 specification is available at:
+- * http://download.intel.com/support/motherboards/desktop/sb/ac97_r23.pdf
+- *
+- **************************************************************************
+- *
+- * History
+- * May 02, 2003 Liam Girdwood <lrg@slimlogic.co.uk>
+- *	Removed non existent WM9700
+- *	Added support for WM9705, WM9708, WM9709, WM9710, WM9711
+- *	WM9712 and WM9717
+- * Mar 28, 2002 Randolph Bentson <bentson@holmsjoen.com>
+- *	corrections to support WM9707 in ViewPad 1000
+- * v0.4 Mar 15 2000 Ollie Lho
+- *	dual codecs support verified with 4 channels output
+- * v0.3 Feb 22 2000 Ollie Lho
+- *	bug fix for record mask setting
+- * v0.2 Feb 10 2000 Ollie Lho
+- *	add ac97_read_proc for /proc/driver/{vendor}/ac97
+- * v0.1 Jan 14 2000 Ollie Lho <ollie@sis.com.tw> 
+- *	Isolated from trident.c to support multiple ac97 codec
+- */
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/slab.h>
+-#include <linux/string.h>
+-#include <linux/errno.h>
+-#include <linux/bitops.h>
+-#include <linux/delay.h>
+-#include <linux/pci.h>
+-#include <linux/ac97_codec.h>
+-#include <asm/uaccess.h>
+-#include <linux/mutex.h>
+-
+-#define CODEC_ID_BUFSZ 14
+-
+-static int ac97_read_mixer(struct ac97_codec *codec, int oss_channel);
+-static void ac97_write_mixer(struct ac97_codec *codec, int oss_channel, 
+-			     unsigned int left, unsigned int right);
+-static void ac97_set_mixer(struct ac97_codec *codec, unsigned int oss_mixer, unsigned int val );
+-static int ac97_recmask_io(struct ac97_codec *codec, int rw, int mask);
+-static int ac97_mixer_ioctl(struct ac97_codec *codec, unsigned int cmd, unsigned long arg);
+-
+-static int ac97_init_mixer(struct ac97_codec *codec);
+-
+-static int wolfson_init03(struct ac97_codec * codec);
+-static int wolfson_init04(struct ac97_codec * codec);
+-static int wolfson_init05(struct ac97_codec * codec);
+-static int wolfson_init11(struct ac97_codec * codec);
+-static int wolfson_init13(struct ac97_codec * codec);
+-static int tritech_init(struct ac97_codec * codec);
+-static int tritech_maestro_init(struct ac97_codec * codec);
+-static int sigmatel_9708_init(struct ac97_codec *codec);
+-static int sigmatel_9721_init(struct ac97_codec *codec);
+-static int sigmatel_9744_init(struct ac97_codec *codec);
+-static int ad1886_init(struct ac97_codec *codec);
+-static int eapd_control(struct ac97_codec *codec, int);
+-static int crystal_digital_control(struct ac97_codec *codec, int slots, int rate, int mode);
+-static int cmedia_init(struct ac97_codec * codec);
+-static int cmedia_digital_control(struct ac97_codec *codec, int slots, int rate, int mode);
+-static int generic_digital_control(struct ac97_codec *codec, int slots, int rate, int mode);
+-
+-
+-/*
+- *	AC97 operations.
+- *
+- *	If you are adding a codec then you should be able to use
+- *		eapd_ops - any codec that supports EAPD amp control (most)
+- *		null_ops - any ancient codec that supports nothing
+- *
+- *	The three functions are
+- *		init - used for non AC97 standard initialisation
+- *		amplifier - used to do amplifier control (1=on 0=off)
+- *		digital - switch to digital modes (0 = analog)
+- *
+- *	Not all codecs support all features, not all drivers use all the
+- *	operations yet
+- */
+- 
+-static struct ac97_ops null_ops = { NULL, NULL, NULL };
+-static struct ac97_ops default_ops = { NULL, eapd_control, NULL };
+-static struct ac97_ops default_digital_ops = { NULL, eapd_control, generic_digital_control};
+-static struct ac97_ops wolfson_ops03 = { wolfson_init03, NULL, NULL };
+-static struct ac97_ops wolfson_ops04 = { wolfson_init04, NULL, NULL };
+-static struct ac97_ops wolfson_ops05 = { wolfson_init05, NULL, NULL };
+-static struct ac97_ops wolfson_ops11 = { wolfson_init11, NULL, NULL };
+-static struct ac97_ops wolfson_ops13 = { wolfson_init13, NULL, NULL };
+-static struct ac97_ops tritech_ops = { tritech_init, NULL, NULL };
+-static struct ac97_ops tritech_m_ops = { tritech_maestro_init, NULL, NULL };
+-static struct ac97_ops sigmatel_9708_ops = { sigmatel_9708_init, NULL, NULL };
+-static struct ac97_ops sigmatel_9721_ops = { sigmatel_9721_init, NULL, NULL };
+-static struct ac97_ops sigmatel_9744_ops = { sigmatel_9744_init, NULL, NULL };
+-static struct ac97_ops crystal_digital_ops = { NULL, eapd_control, crystal_digital_control };
+-static struct ac97_ops ad1886_ops = { ad1886_init, eapd_control, NULL };
+-static struct ac97_ops cmedia_ops = { NULL, eapd_control, NULL};
+-static struct ac97_ops cmedia_digital_ops = { cmedia_init, eapd_control, cmedia_digital_control};
+-
+-/* sorted by vendor/device id */
+-static const struct {
+-	u32 id;
+-	char *name;
+-	struct ac97_ops *ops;
+-	int flags;
+-} ac97_codec_ids[] = {
+-	{0x41445303, "Analog Devices AD1819",	&null_ops},
+-	{0x41445340, "Analog Devices AD1881",	&null_ops},
+-	{0x41445348, "Analog Devices AD1881A",	&null_ops},
+-	{0x41445360, "Analog Devices AD1885",	&default_ops},
+-	{0x41445361, "Analog Devices AD1886",	&ad1886_ops},
+-	{0x41445370, "Analog Devices AD1981",	&null_ops},
+-	{0x41445372, "Analog Devices AD1981A",	&null_ops},
+-	{0x41445374, "Analog Devices AD1981B",	&null_ops},
+-	{0x41445460, "Analog Devices AD1885",	&default_ops},
+-	{0x41445461, "Analog Devices AD1886",	&ad1886_ops},
+-	{0x414B4D00, "Asahi Kasei AK4540",	&null_ops},
+-	{0x414B4D01, "Asahi Kasei AK4542",	&null_ops},
+-	{0x414B4D02, "Asahi Kasei AK4543",	&null_ops},
+-	{0x414C4326, "ALC100P",			&null_ops},
+-	{0x414C4710, "ALC200/200P",		&null_ops},
+-	{0x414C4720, "ALC650",			&default_digital_ops},
+-	{0x434D4941, "CMedia",			&cmedia_ops,		AC97_NO_PCM_VOLUME },
+-	{0x434D4942, "CMedia",			&cmedia_ops,		AC97_NO_PCM_VOLUME },
+-	{0x434D4961, "CMedia",			&cmedia_digital_ops,	AC97_NO_PCM_VOLUME },
+-	{0x43525900, "Cirrus Logic CS4297",	&default_ops},
+-	{0x43525903, "Cirrus Logic CS4297",	&default_ops},
+-	{0x43525913, "Cirrus Logic CS4297A rev A", &default_ops},
+-	{0x43525914, "Cirrus Logic CS4297A rev B", &default_ops},
+-	{0x43525923, "Cirrus Logic CS4298",	&null_ops},
+-	{0x4352592B, "Cirrus Logic CS4294",	&null_ops},
+-	{0x4352592D, "Cirrus Logic CS4294",	&null_ops},
+-	{0x43525931, "Cirrus Logic CS4299 rev A", &crystal_digital_ops},
+-	{0x43525933, "Cirrus Logic CS4299 rev C", &crystal_digital_ops},
+-	{0x43525934, "Cirrus Logic CS4299 rev D", &crystal_digital_ops},
+-	{0x43585430, "CXT48",			&default_ops,		AC97_DELUDED_MODEM },
+-	{0x43585442, "CXT66",			&default_ops,		AC97_DELUDED_MODEM },
+-	{0x44543031, "Diamond Technology DT0893", &default_ops},
+-	{0x45838308, "ESS Allegro ES1988",	&null_ops},
+-	{0x49434511, "ICE1232",			&null_ops}, /* I hope --jk */
+-	{0x4e534331, "National Semiconductor LM4549", &null_ops},
+-	{0x53494c22, "Silicon Laboratory Si3036", &null_ops},
+-	{0x53494c23, "Silicon Laboratory Si3038", &null_ops},
+-	{0x545200FF, "TriTech TR?????",		&tritech_m_ops},
+-	{0x54524102, "TriTech TR28022",		&null_ops},
+-	{0x54524103, "TriTech TR28023",		&null_ops},
+-	{0x54524106, "TriTech TR28026",		&null_ops},
+-	{0x54524108, "TriTech TR28028",		&tritech_ops},
+-	{0x54524123, "TriTech TR A5",		&null_ops},
+-	{0x574D4C03, "Wolfson WM9703/07/08/17",	&wolfson_ops03},
+-	{0x574D4C04, "Wolfson WM9704M/WM9704Q",	&wolfson_ops04},
+-	{0x574D4C05, "Wolfson WM9705/WM9710",   &wolfson_ops05},
+-	{0x574D4C09, "Wolfson WM9709",		&null_ops},
+-	{0x574D4C12, "Wolfson WM9711/9712",	&wolfson_ops11},
+-	{0x574D4C13, "Wolfson WM9713",	&wolfson_ops13, AC97_DEFAULT_POWER_OFF},
+-	{0x83847600, "SigmaTel STAC????",	&null_ops},
+-	{0x83847604, "SigmaTel STAC9701/3/4/5", &null_ops},
+-	{0x83847605, "SigmaTel STAC9704",	&null_ops},
+-	{0x83847608, "SigmaTel STAC9708",	&sigmatel_9708_ops},
+-	{0x83847609, "SigmaTel STAC9721/23",	&sigmatel_9721_ops},
+-	{0x83847644, "SigmaTel STAC9744/45",	&sigmatel_9744_ops},
+-	{0x83847652, "SigmaTel STAC9752/53",	&default_ops},
+-	{0x83847656, "SigmaTel STAC9756/57",	&sigmatel_9744_ops},
+-	{0x83847666, "SigmaTel STAC9750T",	&sigmatel_9744_ops},
+-	{0x83847684, "SigmaTel STAC9783/84?",	&null_ops},
+-	{0x57454301, "Winbond 83971D",		&null_ops},
+-};
+-
+-/* this table has default mixer values for all OSS mixers. */
+-static struct mixer_defaults {
+-	int mixer;
+-	unsigned int value;
+-} mixer_defaults[SOUND_MIXER_NRDEVICES] = {
+-	/* all values 0 -> 100 in bytes */
+-	{SOUND_MIXER_VOLUME,	0x4343},
+-	{SOUND_MIXER_BASS,	0x4343},
+-	{SOUND_MIXER_TREBLE,	0x4343},
+-	{SOUND_MIXER_PCM,	0x4343},
+-	{SOUND_MIXER_SPEAKER,	0x4343},
+-	{SOUND_MIXER_LINE,	0x4343},
+-	{SOUND_MIXER_MIC,	0x0000},
+-	{SOUND_MIXER_CD,	0x4343},
+-	{SOUND_MIXER_ALTPCM,	0x4343},
+-	{SOUND_MIXER_IGAIN,	0x4343},
+-	{SOUND_MIXER_LINE1,	0x4343},
+-	{SOUND_MIXER_PHONEIN,	0x4343},
+-	{SOUND_MIXER_PHONEOUT,	0x4343},
+-	{SOUND_MIXER_VIDEO,	0x4343},
+-	{-1,0}
+-};
+-
+-/* table to scale scale from OSS mixer value to AC97 mixer register value */	
+-static struct ac97_mixer_hw {
+-	unsigned char offset;
+-	int scale;
+-} ac97_hw[SOUND_MIXER_NRDEVICES]= {
+-	[SOUND_MIXER_VOLUME]	=	{AC97_MASTER_VOL_STEREO,64},
+-	[SOUND_MIXER_BASS]	=	{AC97_MASTER_TONE,	16},
+-	[SOUND_MIXER_TREBLE]	=	{AC97_MASTER_TONE,	16},
+-	[SOUND_MIXER_PCM]	=	{AC97_PCMOUT_VOL,	32},
+-	[SOUND_MIXER_SPEAKER]	=	{AC97_PCBEEP_VOL,	16},
+-	[SOUND_MIXER_LINE]	=	{AC97_LINEIN_VOL,	32},
+-	[SOUND_MIXER_MIC]	=	{AC97_MIC_VOL,		32},
+-	[SOUND_MIXER_CD]	=	{AC97_CD_VOL,		32},
+-	[SOUND_MIXER_ALTPCM]	=	{AC97_HEADPHONE_VOL,	64},
+-	[SOUND_MIXER_IGAIN]	=	{AC97_RECORD_GAIN,	16},
+-	[SOUND_MIXER_LINE1]	=	{AC97_AUX_VOL,		32},
+-	[SOUND_MIXER_PHONEIN]	= 	{AC97_PHONE_VOL,	32},
+-	[SOUND_MIXER_PHONEOUT]	= 	{AC97_MASTER_VOL_MONO,	64},
+-	[SOUND_MIXER_VIDEO]	=	{AC97_VIDEO_VOL,	32},
+-};
+-
+-/* the following tables allow us to go from OSS <-> ac97 quickly. */
+-enum ac97_recsettings {
+-	AC97_REC_MIC=0,
+-	AC97_REC_CD,
+-	AC97_REC_VIDEO,
+-	AC97_REC_AUX,
+-	AC97_REC_LINE,
+-	AC97_REC_STEREO, /* combination of all enabled outputs..  */
+-	AC97_REC_MONO,	      /*.. or the mono equivalent */
+-	AC97_REC_PHONE
+-};
+-
+-static const unsigned int ac97_rm2oss[] = {
+-	[AC97_REC_MIC] 	 = SOUND_MIXER_MIC,
+-	[AC97_REC_CD] 	 = SOUND_MIXER_CD,
+-	[AC97_REC_VIDEO] = SOUND_MIXER_VIDEO,
+-	[AC97_REC_AUX] 	 = SOUND_MIXER_LINE1,
+-	[AC97_REC_LINE]  = SOUND_MIXER_LINE,
+-	[AC97_REC_STEREO]= SOUND_MIXER_IGAIN,
+-	[AC97_REC_PHONE] = SOUND_MIXER_PHONEIN
+-};
+-
+-/* indexed by bit position */
+-static const unsigned int ac97_oss_rm[] = {
+-	[SOUND_MIXER_MIC] 	= AC97_REC_MIC,
+-	[SOUND_MIXER_CD] 	= AC97_REC_CD,
+-	[SOUND_MIXER_VIDEO] 	= AC97_REC_VIDEO,
+-	[SOUND_MIXER_LINE1] 	= AC97_REC_AUX,
+-	[SOUND_MIXER_LINE] 	= AC97_REC_LINE,
+-	[SOUND_MIXER_IGAIN]	= AC97_REC_STEREO,
+-	[SOUND_MIXER_PHONEIN] 	= AC97_REC_PHONE
+-};
+-
+-static LIST_HEAD(codecs);
+-static LIST_HEAD(codec_drivers);
+-static DEFINE_MUTEX(codec_mutex);
+-
+-/* reads the given OSS mixer from the ac97 the caller must have insured that the ac97 knows
+-   about that given mixer, and should be holding a spinlock for the card */
+-static int ac97_read_mixer(struct ac97_codec *codec, int oss_channel) 
+-{
+-	u16 val;
+-	int ret = 0;
+-	int scale;
+-	struct ac97_mixer_hw *mh = &ac97_hw[oss_channel];
+-
+-	val = codec->codec_read(codec , mh->offset);
+-
+-	if (val & AC97_MUTE) {
+-		ret = 0;
+-	} else if (AC97_STEREO_MASK & (1 << oss_channel)) {
+-		/* nice stereo mixers .. */
+-		int left,right;
+-
+-		left = (val >> 8)  & 0x7f;
+-		right = val  & 0x7f;
+-
+-		if (oss_channel == SOUND_MIXER_IGAIN) {
+-			right = (right * 100) / mh->scale;
+-			left = (left * 100) / mh->scale;
+-		} else {
+-			/* these may have 5 or 6 bit resolution */
+-			if(oss_channel == SOUND_MIXER_VOLUME || oss_channel == SOUND_MIXER_ALTPCM)
+-				scale = (1 << codec->bit_resolution);
+-			else
+-				scale = mh->scale;
+-
+-			right = 100 - ((right * 100) / scale);
+-			left = 100 - ((left * 100) / scale);
+-		}
+-		ret = left | (right << 8);
+-	} else if (oss_channel == SOUND_MIXER_SPEAKER) {
+-		ret = 100 - ((((val & 0x1e)>>1) * 100) / mh->scale);
+-	} else if (oss_channel == SOUND_MIXER_PHONEIN) {
+-		ret = 100 - (((val & 0x1f) * 100) / mh->scale);
+-	} else if (oss_channel == SOUND_MIXER_PHONEOUT) {
+-		scale = (1 << codec->bit_resolution);
+-		ret = 100 - (((val & 0x1f) * 100) / scale);
+-	} else if (oss_channel == SOUND_MIXER_MIC) {
+-		ret = 100 - (((val & 0x1f) * 100) / mh->scale);
+-		/*  the low bit is optional in the tone sliders and masking
+-		    it lets us avoid the 0xf 'bypass'.. */
+-	} else if (oss_channel == SOUND_MIXER_BASS) {
+-		ret = 100 - ((((val >> 8) & 0xe) * 100) / mh->scale);
+-	} else if (oss_channel == SOUND_MIXER_TREBLE) {
+-		ret = 100 - (((val & 0xe) * 100) / mh->scale);
+-	}
+-
+-#ifdef DEBUG
+-	printk("ac97_codec: read OSS mixer %2d (%s ac97 register 0x%02x), "
+-	       "0x%04x -> 0x%04x\n",
+-	       oss_channel, codec->id ? "Secondary" : "Primary",
+-	       mh->offset, val, ret);
+-#endif
+-
+-	return ret;
+-}
+-
+-/* write the OSS encoded volume to the given OSS encoded mixer, again caller's job to
+-   make sure all is well in arg land, call with spinlock held */
+-static void ac97_write_mixer(struct ac97_codec *codec, int oss_channel,
+-		      unsigned int left, unsigned int right)
+-{
+-	u16 val = 0;
+-	int scale;
+-	struct ac97_mixer_hw *mh = &ac97_hw[oss_channel];
+-
+-#ifdef DEBUG
+-	printk("ac97_codec: wrote OSS mixer %2d (%s ac97 register 0x%02x), "
+-	       "left vol:%2d, right vol:%2d:",
+-	       oss_channel, codec->id ? "Secondary" : "Primary",
+-	       mh->offset, left, right);
+-#endif
+-
+-	if (AC97_STEREO_MASK & (1 << oss_channel)) {
+-		/* stereo mixers */
+-		if (left == 0 && right == 0) {
+-			val = AC97_MUTE;
+-		} else {
+-			if (oss_channel == SOUND_MIXER_IGAIN) {
+-				right = (right * mh->scale) / 100;
+-				left = (left * mh->scale) / 100;
+-				if (right >= mh->scale)
+-					right = mh->scale-1;
+-				if (left >= mh->scale)
+-					left = mh->scale-1;
+-			} else {
+-				/* these may have 5 or 6 bit resolution */
+-				if (oss_channel == SOUND_MIXER_VOLUME ||
+-				    oss_channel == SOUND_MIXER_ALTPCM)
+-					scale = (1 << codec->bit_resolution);
+-				else
+-					scale = mh->scale;
+-
+-				right = ((100 - right) * scale) / 100;
+-				left = ((100 - left) * scale) / 100;
+-				if (right >= scale)
+-					right = scale-1;
+-				if (left >= scale)
+-					left = scale-1;
+-			}
+-			val = (left << 8) | right;
+-		}
+-	} else if (oss_channel == SOUND_MIXER_BASS) {
+-		val = codec->codec_read(codec , mh->offset) & ~0x0f00;
+-		left = ((100 - left) * mh->scale) / 100;
+-		if (left >= mh->scale)
+-			left = mh->scale-1;
+-		val |= (left << 8) & 0x0e00;
+-	} else if (oss_channel == SOUND_MIXER_TREBLE) {
+-		val = codec->codec_read(codec , mh->offset) & ~0x000f;
+-		left = ((100 - left) * mh->scale) / 100;
+-		if (left >= mh->scale)
+-			left = mh->scale-1;
+-		val |= left & 0x000e;
+-	} else if(left == 0) {
+-		val = AC97_MUTE;
+-	} else if (oss_channel == SOUND_MIXER_SPEAKER) {
+-		left = ((100 - left) * mh->scale) / 100;
+-		if (left >= mh->scale)
+-			left = mh->scale-1;
+-		val = left << 1;
+-	} else if (oss_channel == SOUND_MIXER_PHONEIN) {
+-		left = ((100 - left) * mh->scale) / 100;
+-		if (left >= mh->scale)
+-			left = mh->scale-1;
+-		val = left;
+-	} else if (oss_channel == SOUND_MIXER_PHONEOUT) {
+-		scale = (1 << codec->bit_resolution);
+-		left = ((100 - left) * scale) / 100;
+-		if (left >= mh->scale)
+-			left = mh->scale-1;
+-		val = left;
+-	} else if (oss_channel == SOUND_MIXER_MIC) {
+-		val = codec->codec_read(codec , mh->offset) & ~0x801f;
+-		left = ((100 - left) * mh->scale) / 100;
+-		if (left >= mh->scale)
+-			left = mh->scale-1;
+-		val |= left;
+-		/*  the low bit is optional in the tone sliders and masking
+-		    it lets us avoid the 0xf 'bypass'.. */
+-	}
+-#ifdef DEBUG
+-	printk(" 0x%04x", val);
+-#endif
+-
+-	codec->codec_write(codec, mh->offset, val);
+-
+-#ifdef DEBUG
+-	val = codec->codec_read(codec, mh->offset);
+-	printk(" -> 0x%04x\n", val);
+-#endif
+-}
+-
+-/* a thin wrapper for write_mixer */
+-static void ac97_set_mixer(struct ac97_codec *codec, unsigned int oss_mixer, unsigned int val ) 
+-{
+-	unsigned int left,right;
+-
+-	/* cleanse input a little */
+-	right = ((val >> 8)  & 0xff) ;
+-	left = (val  & 0xff) ;
+-
+-	if (right > 100) right = 100;
+-	if (left > 100) left = 100;
+-
+-	codec->mixer_state[oss_mixer] = (right << 8) | left;
+-	codec->write_mixer(codec, oss_mixer, left, right);
+-}
+-
+-/* read or write the recmask, the ac97 can really have left and right recording
+-   inputs independently set, but OSS doesn't seem to want us to express that to
+-   the user. the caller guarantees that we have a supported bit set, and they
+-   must be holding the card's spinlock */
+-static int ac97_recmask_io(struct ac97_codec *codec, int rw, int mask) 
+-{
+-	unsigned int val;
+-
+-	if (rw) {
+-		/* read it from the card */
+-		val = codec->codec_read(codec, AC97_RECORD_SELECT);
+-#ifdef DEBUG
+-		printk("ac97_codec: ac97 recmask to set to 0x%04x\n", val);
+-#endif
+-		return (1 << ac97_rm2oss[val & 0x07]);
+-	}
+-
+-	/* else, write the first set in the mask as the
+-	   output */	
+-	/* clear out current set value first (AC97 supports only 1 input!) */
+-	val = (1 << ac97_rm2oss[codec->codec_read(codec, AC97_RECORD_SELECT) & 0x07]);
+-	if (mask != val)
+-	    mask &= ~val;
+-       
+-	val = ffs(mask); 
+-	val = ac97_oss_rm[val-1];
+-	val |= val << 8;  /* set both channels */
+-
+-#ifdef DEBUG
+-	printk("ac97_codec: setting ac97 recmask to 0x%04x\n", val);
+-#endif
+-
+-	codec->codec_write(codec, AC97_RECORD_SELECT, val);
+-
+-	return 0;
+-};
+-
+-static int ac97_mixer_ioctl(struct ac97_codec *codec, unsigned int cmd, unsigned long arg)
+-{
+-	int i, val = 0;
+-
+-	if (cmd == SOUND_MIXER_INFO) {
+-		mixer_info info;
+-		memset(&info, 0, sizeof(info));
+-		strlcpy(info.id, codec->name, sizeof(info.id));
+-		strlcpy(info.name, codec->name, sizeof(info.name));
+-		info.modify_counter = codec->modcnt;
+-		if (copy_to_user((void __user *)arg, &info, sizeof(info)))
+-			return -EFAULT;
+-		return 0;
+-	}
+-	if (cmd == SOUND_OLD_MIXER_INFO) {
+-		_old_mixer_info info;
+-		memset(&info, 0, sizeof(info));
+-		strlcpy(info.id, codec->name, sizeof(info.id));
+-		strlcpy(info.name, codec->name, sizeof(info.name));
+-		if (copy_to_user((void __user *)arg, &info, sizeof(info)))
+-			return -EFAULT;
+-		return 0;
+-	}
+-
+-	if (_IOC_TYPE(cmd) != 'M' || _SIOC_SIZE(cmd) != sizeof(int))
+-		return -EINVAL;
+-
+-	if (cmd == OSS_GETVERSION)
+-		return put_user(SOUND_VERSION, (int __user *)arg);
+-
+-	if (_SIOC_DIR(cmd) == _SIOC_READ) {
+-		switch (_IOC_NR(cmd)) {
+-		case SOUND_MIXER_RECSRC: /* give them the current record source */
+-			if (!codec->recmask_io) {
+-				val = 0;
+-			} else {
+-				val = codec->recmask_io(codec, 1, 0);
+-			}
+-			break;
+-
+-		case SOUND_MIXER_DEVMASK: /* give them the supported mixers */
+-			val = codec->supported_mixers;
+-			break;
+-
+-		case SOUND_MIXER_RECMASK: /* Arg contains a bit for each supported recording source */
+-			val = codec->record_sources;
+-			break;
+-
+-		case SOUND_MIXER_STEREODEVS: /* Mixer channels supporting stereo */
+-			val = codec->stereo_mixers;
+-			break;
+-
+-		case SOUND_MIXER_CAPS:
+-			val = SOUND_CAP_EXCL_INPUT;
+-			break;
+-
+-		default: /* read a specific mixer */
+-			i = _IOC_NR(cmd);
+-
+-			if (!supported_mixer(codec, i)) 
+-				return -EINVAL;
+-
+-			/* do we ever want to touch the hardware? */
+-		        /* val = codec->read_mixer(codec, i); */
+-			val = codec->mixer_state[i];
+- 			break;
+-		}
+-		return put_user(val, (int __user *)arg);
+-	}
+-
+-	if (_SIOC_DIR(cmd) == (_SIOC_WRITE|_SIOC_READ)) {
+-		codec->modcnt++;
+-		if (get_user(val, (int __user *)arg))
+-			return -EFAULT;
+-
+-		switch (_IOC_NR(cmd)) {
+-		case SOUND_MIXER_RECSRC: /* Arg contains a bit for each recording source */
+-			if (!codec->recmask_io) return -EINVAL;
+-			if (!val) return 0;
+-			if (!(val &= codec->record_sources)) return -EINVAL;
+-
+-			codec->recmask_io(codec, 0, val);
+-
+-			return 0;
+-		default: /* write a specific mixer */
+-			i = _IOC_NR(cmd);
+-
+-			if (!supported_mixer(codec, i)) 
+-				return -EINVAL;
+-
+-			ac97_set_mixer(codec, i, val);
+-
+-			return 0;
+-		}
+-	}
+-	return -EINVAL;
+-}
+-
+-/**
+- *	codec_id	-  Turn id1/id2 into a PnP string
+- *	@id1: Vendor ID1
+- *	@id2: Vendor ID2
+- *	@buf: CODEC_ID_BUFSZ byte buffer
+- *
+- *	Fills buf with a zero terminated PnP ident string for the id1/id2
+- *	pair. For convenience the return is the passed in buffer pointer.
+- */
+- 
+-static char *codec_id(u16 id1, u16 id2, char *buf)
+-{
+-	if(id1&0x8080) {
+-		snprintf(buf, CODEC_ID_BUFSZ, "0x%04x:0x%04x", id1, id2);
+-	} else {
+-		buf[0] = (id1 >> 8);
+-		buf[1] = (id1 & 0xFF);
+-		buf[2] = (id2 >> 8);
+-		snprintf(buf+3, CODEC_ID_BUFSZ - 3, "%d", id2&0xFF);
+-	}
+-	return buf;
+-}
+- 
+-/**
+- *	ac97_check_modem - Check if the Codec is a modem
+- *	@codec: codec to check
+- *
+- *	Return true if the device is an AC97 1.0 or AC97 2.0 modem
+- */
+- 
+-static int ac97_check_modem(struct ac97_codec *codec)
+-{
+-	/* Check for an AC97 1.0 soft modem (ID1) */
+-	if(codec->codec_read(codec, AC97_RESET) & 2)
+-		return 1;
+-	/* Check for an AC97 2.x soft modem */
+-	codec->codec_write(codec, AC97_EXTENDED_MODEM_ID, 0L);
+-	if(codec->codec_read(codec, AC97_EXTENDED_MODEM_ID) & 1)
+-		return 1;
+-	return 0;
+-}
+-
+-
+-/**
+- *	ac97_alloc_codec - Allocate an AC97 codec
+- *
+- *	Returns a new AC97 codec structure. AC97 codecs may become
+- *	refcounted soon so this interface is needed. Returns with
+- *	one reference taken.
+- */
+- 
+-struct ac97_codec *ac97_alloc_codec(void)
+-{
+-	struct ac97_codec *codec = kzalloc(sizeof(struct ac97_codec), GFP_KERNEL);
+-	if(!codec)
+-		return NULL;
+-
+-	spin_lock_init(&codec->lock);
+-	INIT_LIST_HEAD(&codec->list);
+-	return codec;
+-}
+-
+-EXPORT_SYMBOL(ac97_alloc_codec);
+-
+-/**
+- *	ac97_release_codec -	Release an AC97 codec
+- *	@codec: codec to release
+- *
+- *	Release an allocated AC97 codec. This will be refcounted in
+- *	time but for the moment is trivial. Calls the unregister
+- *	handler if the codec is now defunct.
+- */
+- 
+-void ac97_release_codec(struct ac97_codec *codec)
+-{
+-	/* Remove from the list first, we don't want to be
+-	   "rediscovered" */
+-	mutex_lock(&codec_mutex);
+-	list_del(&codec->list);
+-	mutex_unlock(&codec_mutex);
+-	/*
+-	 *	The driver needs to deal with internal
+-	 *	locking to avoid accidents here. 
+-	 */
+-	if(codec->driver)
+-		codec->driver->remove(codec, codec->driver);
+-	kfree(codec);
+-}
+-
+-EXPORT_SYMBOL(ac97_release_codec);
+-
+-/**
+- *	ac97_probe_codec - Initialize and setup AC97-compatible codec
+- *	@codec: (in/out) Kernel info for a single AC97 codec
+- *
+- *	Reset the AC97 codec, then initialize the mixer and
+- *	the rest of the @codec structure.
+- *
+- *	The codec_read and codec_write fields of @codec are
+- *	required to be setup and working when this function
+- *	is called.  All other fields are set by this function.
+- *
+- *	codec_wait field of @codec can optionally be provided
+- *	when calling this function.  If codec_wait is not %NULL,
+- *	this function will call codec_wait any time it is
+- *	necessary to wait for the audio chip to reach the
+- *	codec-ready state.  If codec_wait is %NULL, then
+- *	the default behavior is to call schedule_timeout.
+- *	Currently codec_wait is used to wait for AC97 codec
+- *	reset to complete. 
+- *
+- *     Some codecs will power down when a register reset is
+- *     performed. We now check for such codecs.
+- *
+- *	Returns 1 (true) on success, or 0 (false) on failure.
+- */
+- 
+-int ac97_probe_codec(struct ac97_codec *codec)
+-{
+-	u16 id1, id2;
+-	u16 audio;
+-	int i;
+-	char cidbuf[CODEC_ID_BUFSZ];
+-	u16 f;
+-	struct list_head *l;
+-	struct ac97_driver *d;
+-	
+-	/* wait for codec-ready state */
+-	if (codec->codec_wait)
+-		codec->codec_wait(codec);
+-	else
+-		udelay(10);
+-
+-	/* will the codec power down if register reset ? */
+-	id1 = codec->codec_read(codec, AC97_VENDOR_ID1);
+-	id2 = codec->codec_read(codec, AC97_VENDOR_ID2);
+-	codec->name = NULL;
+-	codec->codec_ops = &null_ops;
+-	for (i = 0; i < ARRAY_SIZE(ac97_codec_ids); i++) {
+-		if (ac97_codec_ids[i].id == ((id1 << 16) | id2)) {
+-			codec->type = ac97_codec_ids[i].id;
+-			codec->name = ac97_codec_ids[i].name;
+-			codec->codec_ops = ac97_codec_ids[i].ops;
+-			codec->flags = ac97_codec_ids[i].flags;
+-			break;
+-		}
+-	}
+-
+-	codec->model = (id1 << 16) | id2;
+-	if ((codec->flags & AC97_DEFAULT_POWER_OFF) == 0) {
+-		/* reset codec and wait for the ready bit before we continue */
+-		codec->codec_write(codec, AC97_RESET, 0L);
+-		if (codec->codec_wait)
+-			codec->codec_wait(codec);
+-		else
+-			udelay(10);
+-	}
+-
+-	/* probing AC97 codec, AC97 2.0 says that bit 15 of register 0x00 (reset) should
+-	 * be read zero.
+-	 *
+-	 * FIXME: is the following comment outdated?  -jgarzik
+-	 * Probing of AC97 in this way is not reliable, it is not even SAFE !!
+-	 */
+-	if ((audio = codec->codec_read(codec, AC97_RESET)) & 0x8000) {
+-		printk(KERN_ERR "ac97_codec: %s ac97 codec not present\n",
+-		       (codec->id & 0x2) ? (codec->id&1 ? "4th" : "Tertiary")
+-		       : (codec->id&1 ? "Secondary":  "Primary"));
+-		return 0;
+-	}
+-	
+-	/* probe for Modem Codec */
+-	codec->modem = ac97_check_modem(codec);
+-
+-	/* enable SPDIF */
+-	f = codec->codec_read(codec, AC97_EXTENDED_STATUS);
+-	if((codec->codec_ops == &null_ops) && (f & 4))
+-		codec->codec_ops = &default_digital_ops;
+-	
+-	/* A device which thinks its a modem but isn't */
+-	if(codec->flags & AC97_DELUDED_MODEM)
+-		codec->modem = 0;
+-		
+-	if (codec->name == NULL)
+-		codec->name = "Unknown";
+-	printk(KERN_INFO "ac97_codec: AC97 %s codec, id: %s (%s)\n", 
+-		codec->modem ? "Modem" : (audio ? "Audio" : ""),
+-	       codec_id(id1, id2, cidbuf), codec->name);
+-
+-	if(!ac97_init_mixer(codec))
+-		return 0;
+-		
+-	/* 
+-	 *	Attach last so the caller can override the mixer
+-	 *	callbacks.
+-	 */
+-	 
+-	mutex_lock(&codec_mutex);
+-	list_add(&codec->list, &codecs);
+-
+-	list_for_each(l, &codec_drivers) {
+-		d = list_entry(l, struct ac97_driver, list);
+-		if ((codec->model ^ d->codec_id) & d->codec_mask)
+-			continue;
+-		if(d->probe(codec, d) == 0)
+-		{
+-			codec->driver = d;
+-			break;
+-		}
+-	}
+-
+-	mutex_unlock(&codec_mutex);
+-	return 1;
+-}
+-
+-static int ac97_init_mixer(struct ac97_codec *codec)
+-{
+-	u16 cap;
+-	int i;
+-
+-	cap = codec->codec_read(codec, AC97_RESET);
+-
+-	/* mixer masks */
+-	codec->supported_mixers = AC97_SUPPORTED_MASK;
+-	codec->stereo_mixers = AC97_STEREO_MASK;
+-	codec->record_sources = AC97_RECORD_MASK;
+-	if (!(cap & 0x04))
+-		codec->supported_mixers &= ~(SOUND_MASK_BASS|SOUND_MASK_TREBLE);
+-	if (!(cap & 0x10))
+-		codec->supported_mixers &= ~SOUND_MASK_ALTPCM;
+-
+-
+-	/* detect bit resolution */
+-	codec->codec_write(codec, AC97_MASTER_VOL_STEREO, 0x2020);
+-	if(codec->codec_read(codec, AC97_MASTER_VOL_STEREO) == 0x2020)
+-		codec->bit_resolution = 6;
+-	else
+-		codec->bit_resolution = 5;
+-
+-	/* generic OSS to AC97 wrapper */
+-	codec->read_mixer = ac97_read_mixer;
+-	codec->write_mixer = ac97_write_mixer;
+-	codec->recmask_io = ac97_recmask_io;
+-	codec->mixer_ioctl = ac97_mixer_ioctl;
+-
+-	/* initialize mixer channel volumes */
+-	for (i = 0; i < SOUND_MIXER_NRDEVICES; i++) {
+-		struct mixer_defaults *md = &mixer_defaults[i];
+-		if (md->mixer == -1) 
+-			break;
+-		if (!supported_mixer(codec, md->mixer)) 
+-			continue;
+-		ac97_set_mixer(codec, md->mixer, md->value);
+-	}
+-
+-	/* codec specific initialization for 4-6 channel output or secondary codec stuff */
+-	if (codec->codec_ops->init != NULL) {
+-		codec->codec_ops->init(codec);
+-	}
+-
+-	/*
+-	 *	Volume is MUTE only on this device. We have to initialise
+-	 *	it but its useless beyond that.
+-	 */
+-	if(codec->flags & AC97_NO_PCM_VOLUME)
+-	{
+-		codec->supported_mixers &= ~SOUND_MASK_PCM;
+-		printk(KERN_WARNING "AC97 codec does not have proper volume support.\n");
+-	}
+-	return 1;
+-}
+-
+-#define AC97_SIGMATEL_ANALOG    0x6c	/* Analog Special */
+-#define AC97_SIGMATEL_DAC2INVERT 0x6e
+-#define AC97_SIGMATEL_BIAS1     0x70
+-#define AC97_SIGMATEL_BIAS2     0x72
+-#define AC97_SIGMATEL_MULTICHN  0x74	/* Multi-Channel programming */
+-#define AC97_SIGMATEL_CIC1      0x76
+-#define AC97_SIGMATEL_CIC2      0x78
+-
+-
+-static int sigmatel_9708_init(struct ac97_codec * codec)
+-{
+-	u16 codec72, codec6c;
+-
+-	codec72 = codec->codec_read(codec, AC97_SIGMATEL_BIAS2) & 0x8000;
+-	codec6c = codec->codec_read(codec, AC97_SIGMATEL_ANALOG);
+-
+-	if ((codec72==0) && (codec6c==0)) {
+-		codec->codec_write(codec, AC97_SIGMATEL_CIC1, 0xabba);
+-		codec->codec_write(codec, AC97_SIGMATEL_CIC2, 0x1000);
+-		codec->codec_write(codec, AC97_SIGMATEL_BIAS1, 0xabba);
+-		codec->codec_write(codec, AC97_SIGMATEL_BIAS2, 0x0007);
+-	} else if ((codec72==0x8000) && (codec6c==0)) {
+-		codec->codec_write(codec, AC97_SIGMATEL_CIC1, 0xabba);
+-		codec->codec_write(codec, AC97_SIGMATEL_CIC2, 0x1001);
+-		codec->codec_write(codec, AC97_SIGMATEL_DAC2INVERT, 0x0008);
+-	} else if ((codec72==0x8000) && (codec6c==0x0080)) {
+-		/* nothing */
+-	}
+-	codec->codec_write(codec, AC97_SIGMATEL_MULTICHN, 0x0000);
+-	return 0;
+-}
+-
+-
+-static int sigmatel_9721_init(struct ac97_codec * codec)
+-{
+-	/* Only set up secondary codec */
+-	if (codec->id == 0)
+-		return 0;
+-
+-	codec->codec_write(codec, AC97_SURROUND_MASTER, 0L);
+-
+-	/* initialize SigmaTel STAC9721/23 as secondary codec, decoding AC link
+-	   sloc 3,4 = 0x01, slot 7,8 = 0x00, */
+-	codec->codec_write(codec, AC97_SIGMATEL_MULTICHN, 0x00);
+-
+-	/* we don't have the crystal when we are on an AMR card, so use
+-	   BIT_CLK as our clock source. Write the magic word ABBA and read
+-	   back to enable register 0x78 */
+-	codec->codec_write(codec, AC97_SIGMATEL_CIC1, 0xabba);
+-	codec->codec_read(codec, AC97_SIGMATEL_CIC1);
+-
+-	/* sync all the clocks*/
+-	codec->codec_write(codec, AC97_SIGMATEL_CIC2, 0x3802);
+-
+-	return 0;
+-}
+-
+-
+-static int sigmatel_9744_init(struct ac97_codec * codec)
+-{
+-	// patch for SigmaTel
+-	codec->codec_write(codec, AC97_SIGMATEL_CIC1, 0xabba);
+-	codec->codec_write(codec, AC97_SIGMATEL_CIC2, 0x0000); // is this correct? --jk
+-	codec->codec_write(codec, AC97_SIGMATEL_BIAS1, 0xabba);
+-	codec->codec_write(codec, AC97_SIGMATEL_BIAS2, 0x0002);
+-	codec->codec_write(codec, AC97_SIGMATEL_MULTICHN, 0x0000);
+-	return 0;
+-}
+-
+-static int cmedia_init(struct ac97_codec *codec)
+-{
+-	/* Initialise the CMedia 9739 */
+-	/*
+-		We could set various options here
+-		Register 0x20 bit 0x100 sets mic as center bass
+-		Also do multi_channel_ctrl &=~0x3000 |=0x1000
+-		
+-		For now we set up the GPIO and PC beep 
+-	*/
+-	
+-	u16 v;
+-	
+-	/* MIC */
+-	codec->codec_write(codec, 0x64, 0x3000);
+-	v = codec->codec_read(codec, 0x64);
+-	v &= ~0x8000;
+-	codec->codec_write(codec, 0x64, v);
+-	codec->codec_write(codec, 0x70, 0x0100);
+-	codec->codec_write(codec, 0x72, 0x0020);
+-	return 0;
+-}
+-	
+-#define AC97_WM97XX_FMIXER_VOL 0x72
+-#define AC97_WM97XX_RMIXER_VOL 0x74
+-#define AC97_WM97XX_TEST 0x5a
+-#define AC97_WM9704_RPCM_VOL 0x70
+-#define AC97_WM9711_OUT3VOL 0x16
+-
+-static int wolfson_init03(struct ac97_codec * codec)
+-{
+-	/* this is known to work for the ViewSonic ViewPad 1000 */
+-	codec->codec_write(codec, AC97_WM97XX_FMIXER_VOL, 0x0808);
+-	codec->codec_write(codec, AC97_GENERAL_PURPOSE, 0x8000);
+-	return 0;
+-}
+-
+-static int wolfson_init04(struct ac97_codec * codec)
+-{
+-	codec->codec_write(codec, AC97_WM97XX_FMIXER_VOL, 0x0808);
+-	codec->codec_write(codec, AC97_WM97XX_RMIXER_VOL, 0x0808);
+-
+-	// patch for DVD noise
+-	codec->codec_write(codec, AC97_WM97XX_TEST, 0x0200);
+-
+-	// init vol as PCM vol
+-	codec->codec_write(codec, AC97_WM9704_RPCM_VOL,
+-		codec->codec_read(codec, AC97_PCMOUT_VOL));
+-
+-	/* set rear surround volume */
+-	codec->codec_write(codec, AC97_SURROUND_MASTER, 0x0000);
+-	return 0;
+-}
+-
+-/* WM9705, WM9710 */
+-static int wolfson_init05(struct ac97_codec * codec)
+-{
+-	/* set front mixer volume */
+-	codec->codec_write(codec, AC97_WM97XX_FMIXER_VOL, 0x0808);
+-	return 0;
+-}
+-
+-/* WM9711, WM9712 */
+-static int wolfson_init11(struct ac97_codec * codec)
+-{
+-	/* stop pop's during suspend/resume */
+-	codec->codec_write(codec, AC97_WM97XX_TEST,
+-		codec->codec_read(codec, AC97_WM97XX_TEST) & 0xffbf);
+-
+-	/* set out3 volume */
+-	codec->codec_write(codec, AC97_WM9711_OUT3VOL, 0x0808);
+-	return 0;
+-}
+-
+-/* WM9713 */
+-static int wolfson_init13(struct ac97_codec * codec)
+-{
+-	codec->codec_write(codec, AC97_RECORD_GAIN, 0x00a0);
+-	codec->codec_write(codec, AC97_POWER_CONTROL, 0x0000);
+-	codec->codec_write(codec, AC97_EXTENDED_MODEM_ID, 0xDA00);
+-	codec->codec_write(codec, AC97_EXTEND_MODEM_STAT, 0x3810);
+-	codec->codec_write(codec, AC97_PHONE_VOL, 0x0808);
+-	codec->codec_write(codec, AC97_PCBEEP_VOL, 0x0808);
+-
+-	return 0;
+-}
+-
+-static int tritech_init(struct ac97_codec * codec)
+-{
+-	codec->codec_write(codec, 0x26, 0x0300);
+-	codec->codec_write(codec, 0x26, 0x0000);
+-	codec->codec_write(codec, AC97_SURROUND_MASTER, 0x0000);
+-	codec->codec_write(codec, AC97_RESERVED_3A, 0x0000);
+-	return 0;
+-}
+-
+-
+-/* copied from drivers/sound/maestro.c */
+-static int tritech_maestro_init(struct ac97_codec * codec)
+-{
+-	/* no idea what this does */
+-	codec->codec_write(codec, 0x2A, 0x0001);
+-	codec->codec_write(codec, 0x2C, 0x0000);
+-	codec->codec_write(codec, 0x2C, 0XFFFF);
+-	return 0;
+-}
+-
+-
+-
+-/* 
+- *	Presario700 workaround 
+- * 	for Jack Sense/SPDIF Register mis-setting causing
+- *	no audible output
+- *	by Santiago Nullo 04/05/2002
+- */
+-
+-#define AC97_AD1886_JACK_SENSE 0x72
+-
+-static int ad1886_init(struct ac97_codec * codec)
+-{
+-	/* from AD1886 Specs */
+-	codec->codec_write(codec, AC97_AD1886_JACK_SENSE, 0x0010);
+-	return 0;
+-}
+-
+-
+-
+-
+-/*
+- *	This is basically standard AC97. It should work as a default for
+- *	almost all modern codecs. Note that some cards wire EAPD *backwards*
+- *	That side of it is up to the card driver not us to cope with.
+- *
+- */
+-
+-static int eapd_control(struct ac97_codec * codec, int on)
+-{
+-	if(on)
+-		codec->codec_write(codec, AC97_POWER_CONTROL,
+-			codec->codec_read(codec, AC97_POWER_CONTROL)|0x8000);
+-	else
+-		codec->codec_write(codec, AC97_POWER_CONTROL,
+-			codec->codec_read(codec, AC97_POWER_CONTROL)&~0x8000);
+-	return 0;
+-}
+-
+-static int generic_digital_control(struct ac97_codec *codec, int slots, int rate, int mode)
+-{
+-	u16 reg;
+-	
+-	reg = codec->codec_read(codec, AC97_SPDIF_CONTROL);
+-	
+-	switch(rate)
+-	{
+-		/* Off by default */
+-		default:
+-		case 0:
+-			reg = codec->codec_read(codec, AC97_EXTENDED_STATUS);
+-			codec->codec_write(codec, AC97_EXTENDED_STATUS, (reg & ~AC97_EA_SPDIF));
+-			if(rate == 0)
+-				return 0;
+-			return -EINVAL;
+-		case 1:
+-			reg = (reg & AC97_SC_SPSR_MASK) | AC97_SC_SPSR_48K;
+-			break;
+-		case 2:
+-			reg = (reg & AC97_SC_SPSR_MASK) | AC97_SC_SPSR_44K;
+-			break;
+-		case 3:
+-			reg = (reg & AC97_SC_SPSR_MASK) | AC97_SC_SPSR_32K;
+-			break;
+-	}
+-	
+-	reg &= ~AC97_SC_CC_MASK;
+-	reg |= (mode & AUDIO_CCMASK) << 6;
+-	
+-	if(mode & AUDIO_DIGITAL)
+-		reg |= 2;
+-	if(mode & AUDIO_PRO)
+-		reg |= 1;
+-	if(mode & AUDIO_DRS)
+-		reg |= 0x4000;
+-
+-	codec->codec_write(codec, AC97_SPDIF_CONTROL, reg);
+-
+-	reg = codec->codec_read(codec, AC97_EXTENDED_STATUS);
+-	reg &= (AC97_EA_SLOT_MASK);
+-	reg |= AC97_EA_VRA | AC97_EA_SPDIF | slots;
+-	codec->codec_write(codec, AC97_EXTENDED_STATUS, reg);
+-	
+-	reg = codec->codec_read(codec, AC97_EXTENDED_STATUS);
+-	if(!(reg & 0x0400))
+-	{
+-		codec->codec_write(codec, AC97_EXTENDED_STATUS, reg & ~ AC97_EA_SPDIF);
+-		return -EINVAL;
+-	}
+-	return 0;
+-}
+-
+-/*
+- *	Crystal digital audio control (CS4299)
+- */
+- 
+-static int crystal_digital_control(struct ac97_codec *codec, int slots, int rate, int mode)
+-{
+-	u16 cv;
+-
+-	if(mode & AUDIO_DIGITAL)
+-		return -EINVAL;
+-		
+-	switch(rate)
+-	{
+-		case 0: cv = 0x0; break;	/* SPEN off */
+-		case 48000: cv = 0x8004; break;	/* 48KHz digital */
+-		case 44100: cv = 0x8104; break;	/* 44.1KHz digital */
+-		case 32768: 			/* 32Khz */
+-		default:
+-			return -EINVAL;
+-	}
+-	codec->codec_write(codec, 0x68, cv);
+-	return 0;
+-}
+-
+-/*
+- *	CMedia digital audio control
+- *	Needs more work.
+- */
+- 
+-static int cmedia_digital_control(struct ac97_codec *codec, int slots, int rate, int mode)
+-{
+-	u16 cv;
+-
+-	if(mode & AUDIO_DIGITAL)
+-		return -EINVAL;
+-		
+-	switch(rate)
+-	{
+-		case 0:		cv = 0x0001; break;	/* SPEN off */
+-		case 48000:	cv = 0x0009; break;	/* 48KHz digital */
+-		default:
+-			return -EINVAL;
+-	}
+-	codec->codec_write(codec, 0x2A, 0x05c4);
+-	codec->codec_write(codec, 0x6C, cv);
+-	
+-	/* Switch on mix to surround */
+-	cv = codec->codec_read(codec, 0x64);
+-	cv &= ~0x0200;
+-	if(mode)
+-		cv |= 0x0200;
+-	codec->codec_write(codec, 0x64, cv);
+-	return 0;
+-}
+-
+-
+-/* copied from drivers/sound/maestro.c */
+-#if 0  /* there has been 1 person on the planet with a pt101 that we
+-        know of.  If they care, they can put this back in :) */
+-static int pt101_init(struct ac97_codec * codec)
+-{
+-	printk(KERN_INFO "ac97_codec: PT101 Codec detected, initializing but _not_ installing mixer device.\n");
+-	/* who knows.. */
+-	codec->codec_write(codec, 0x2A, 0x0001);
+-	codec->codec_write(codec, 0x2C, 0x0000);
+-	codec->codec_write(codec, 0x2C, 0xFFFF);
+-	codec->codec_write(codec, 0x10, 0x9F1F);
+-	codec->codec_write(codec, 0x12, 0x0808);
+-	codec->codec_write(codec, 0x14, 0x9F1F);
+-	codec->codec_write(codec, 0x16, 0x9F1F);
+-	codec->codec_write(codec, 0x18, 0x0404);
+-	codec->codec_write(codec, 0x1A, 0x0000);
+-	codec->codec_write(codec, 0x1C, 0x0000);
+-	codec->codec_write(codec, 0x02, 0x0404);
+-	codec->codec_write(codec, 0x04, 0x0808);
+-	codec->codec_write(codec, 0x0C, 0x801F);
+-	codec->codec_write(codec, 0x0E, 0x801F);
+-	return 0;
+-}
+-#endif
+-	
+-
+-EXPORT_SYMBOL(ac97_probe_codec);
+-
+-MODULE_LICENSE("GPL");
+-
+diff --git a/sound/oss/au1550_ac97.c b/sound/oss/au1550_ac97.c
+deleted file mode 100644
+index a8f626d..0000000
+--- a/sound/oss/au1550_ac97.c
++++ /dev/null
+@@ -1,2147 +0,0 @@
+-/*
+- * au1550_ac97.c  --  Sound driver for Alchemy Au1550 MIPS Internet Edge
+- *                    Processor.
+- *
+- * Copyright 2004 Embedded Edge, LLC
+- *	dan@embeddededge.com
+- *
+- * Mostly copied from the au1000.c driver and some from the
+- * PowerMac dbdma driver.
+- * We assume the processor can do memory coherent DMA.
+- *
+- * Ported to 2.6 by Matt Porter <mporter@kernel.crashing.org>
+- *
+- *  This program is free software; you can redistribute  it and/or modify it
+- *  under  the terms of  the GNU General  Public License as published by the
+- *  Free Software Foundation;  either version 2 of the  License, or (at your
+- *  option) any later version.
+- *
+- *  THIS  SOFTWARE  IS PROVIDED   ``AS  IS'' AND   ANY  EXPRESS OR IMPLIED
+- *  WARRANTIES,   INCLUDING, BUT NOT  LIMITED  TO, THE IMPLIED WARRANTIES OF
+- *  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN
+- *  NO  EVENT  SHALL   THE AUTHOR  BE    LIABLE FOR ANY   DIRECT, INDIRECT,
+- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+- *  NOT LIMITED   TO, PROCUREMENT OF  SUBSTITUTE GOODS  OR SERVICES; LOSS OF
+- *  USE, DATA,  OR PROFITS; OR  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+- *  ANY THEORY OF LIABILITY, WHETHER IN  CONTRACT, STRICT LIABILITY, OR TORT
+- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+- *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- *
+- *  You should have received a copy of the  GNU General Public License along
+- *  with this program; if not, write  to the Free Software Foundation, Inc.,
+- *  675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- */
+-
+-#undef DEBUG
+-
+-#include <linux/module.h>
+-#include <linux/string.h>
+-#include <linux/ioport.h>
+-#include <linux/sched.h>
+-#include <linux/delay.h>
+-#include <linux/sound.h>
+-#include <linux/slab.h>
+-#include <linux/soundcard.h>
+-#include <linux/init.h>
+-#include <linux/interrupt.h>
+-#include <linux/kernel.h>
+-#include <linux/poll.h>
+-#include <linux/bitops.h>
+-#include <linux/spinlock.h>
+-#include <linux/ac97_codec.h>
+-#include <linux/mutex.h>
+-
+-#include <asm/io.h>
+-#include <asm/uaccess.h>
+-#include <asm/hardirq.h>
+-#include <asm/mach-au1x00/au1xxx_psc.h>
+-#include <asm/mach-au1x00/au1xxx_dbdma.h>
+-#include <asm/mach-au1x00/au1xxx.h>
+-
+-#undef OSS_DOCUMENTED_MIXER_SEMANTICS
+-
+-/* misc stuff */
+-#define POLL_COUNT   0x50000
+-#define AC97_EXT_DACS (AC97_EXTID_SDAC | AC97_EXTID_CDAC | AC97_EXTID_LDAC)
+-
+-/* The number of DBDMA ring descriptors to allocate.  No sense making
+- * this too large....if you can't keep up with a few you aren't likely
+- * to be able to with lots of them, either.
+- */
+-#define NUM_DBDMA_DESCRIPTORS 4
+-
+-#define err(format, arg...) printk(KERN_ERR format "\n" , ## arg)
+-
+-/* Boot options
+- * 0 = no VRA, 1 = use VRA if codec supports it
+- */
+-static DEFINE_MUTEX(au1550_ac97_mutex);
+-static int      vra = 1;
+-module_param(vra, bool, 0);
+-MODULE_PARM_DESC(vra, "if 1 use VRA if codec supports it");
+-
+-static struct au1550_state {
+-	/* soundcore stuff */
+-	int             dev_audio;
+-
+-	struct ac97_codec *codec;
+-	unsigned        codec_base_caps; /* AC'97 reg 00h, "Reset Register" */
+-	unsigned        codec_ext_caps;  /* AC'97 reg 28h, "Extended Audio ID" */
+-	int             no_vra;		/* do not use VRA */
+-
+-	spinlock_t      lock;
+-	struct mutex open_mutex;
+-	struct mutex sem;
+-	fmode_t          open_mode;
+-	wait_queue_head_t open_wait;
+-
+-	struct dmabuf {
+-		u32		dmanr;
+-		unsigned        sample_rate;
+-		unsigned	src_factor;
+-		unsigned        sample_size;
+-		int             num_channels;
+-		int		dma_bytes_per_sample;
+-		int		user_bytes_per_sample;
+-		int		cnt_factor;
+-
+-		void		*rawbuf;
+-		unsigned        buforder;
+-		unsigned	numfrag;
+-		unsigned        fragshift;
+-		void		*nextIn;
+-		void		*nextOut;
+-		int		count;
+-		unsigned        total_bytes;
+-		unsigned        error;
+-		wait_queue_head_t wait;
+-
+-		/* redundant, but makes calculations easier */
+-		unsigned	fragsize;
+-		unsigned	dma_fragsize;
+-		unsigned	dmasize;
+-		unsigned	dma_qcount;
+-
+-		/* OSS stuff */
+-		unsigned        mapped:1;
+-		unsigned        ready:1;
+-		unsigned        stopped:1;
+-		unsigned        ossfragshift;
+-		int             ossmaxfrags;
+-		unsigned        subdivision;
+-	} dma_dac, dma_adc;
+-} au1550_state;
+-
+-static unsigned
+-ld2(unsigned int x)
+-{
+-	unsigned        r = 0;
+-
+-	if (x >= 0x10000) {
+-		x >>= 16;
+-		r += 16;
+-	}
+-	if (x >= 0x100) {
+-		x >>= 8;
+-		r += 8;
+-	}
+-	if (x >= 0x10) {
+-		x >>= 4;
+-		r += 4;
+-	}
+-	if (x >= 4) {
+-		x >>= 2;
+-		r += 2;
+-	}
+-	if (x >= 2)
+-		r++;
+-	return r;
+-}
+-
+-static void
+-au1550_delay(int msec)
+-{
+-	if (in_interrupt())
+-		return;
+-
+-	schedule_timeout_uninterruptible(msecs_to_jiffies(msec));
+-}
+-
+-static u16
+-rdcodec(struct ac97_codec *codec, u8 addr)
+-{
+-	struct au1550_state *s = codec->private_data;
+-	unsigned long   flags;
+-	u32             cmd, val;
+-	u16             data;
+-	int             i;
+-
+-	spin_lock_irqsave(&s->lock, flags);
+-
+-	for (i = 0; i < POLL_COUNT; i++) {
+-		val = au_readl(PSC_AC97STAT);
+-		au_sync();
+-		if (!(val & PSC_AC97STAT_CP))
+-			break;
+-	}
+-	if (i == POLL_COUNT)
+-		err("rdcodec: codec cmd pending expired!");
+-
+-	cmd = (u32)PSC_AC97CDC_INDX(addr);
+-	cmd |= PSC_AC97CDC_RD;	/* read command */
+-	au_writel(cmd, PSC_AC97CDC);
+-	au_sync();
+-
+-	/* now wait for the data
+-	*/
+-	for (i = 0; i < POLL_COUNT; i++) {
+-		val = au_readl(PSC_AC97STAT);
+-		au_sync();
+-		if (!(val & PSC_AC97STAT_CP))
+-			break;
+-	}
+-	if (i == POLL_COUNT) {
+-		err("rdcodec: read poll expired!");
+-		data = 0;
+-		goto out;
+-	}
+-
+-	/* wait for command done?
+-	*/
+-	for (i = 0; i < POLL_COUNT; i++) {
+-		val = au_readl(PSC_AC97EVNT);
+-		au_sync();
+-		if (val & PSC_AC97EVNT_CD)
+-			break;
+-	}
+-	if (i == POLL_COUNT) {
+-		err("rdcodec: read cmdwait expired!");
+-		data = 0;
+-		goto out;
+-	}
+-
+-	data = au_readl(PSC_AC97CDC) & 0xffff;
+-	au_sync();
+-
+-	/* Clear command done event.
+-	*/
+-	au_writel(PSC_AC97EVNT_CD, PSC_AC97EVNT);
+-	au_sync();
+-
+- out:
+-	spin_unlock_irqrestore(&s->lock, flags);
+-
+-	return data;
+-}
+-
+-
+-static void
+-wrcodec(struct ac97_codec *codec, u8 addr, u16 data)
+-{
+-	struct au1550_state *s = codec->private_data;
+-	unsigned long   flags;
+-	u32             cmd, val;
+-	int             i;
+-
+-	spin_lock_irqsave(&s->lock, flags);
+-
+-	for (i = 0; i < POLL_COUNT; i++) {
+-		val = au_readl(PSC_AC97STAT);
+-		au_sync();
+-		if (!(val & PSC_AC97STAT_CP))
+-			break;
+-	}
+-	if (i == POLL_COUNT)
+-		err("wrcodec: codec cmd pending expired!");
+-
+-	cmd = (u32)PSC_AC97CDC_INDX(addr);
+-	cmd |= (u32)data;
+-	au_writel(cmd, PSC_AC97CDC);
+-	au_sync();
+-
+-	for (i = 0; i < POLL_COUNT; i++) {
+-		val = au_readl(PSC_AC97STAT);
+-		au_sync();
+-		if (!(val & PSC_AC97STAT_CP))
+-			break;
+-	}
+-	if (i == POLL_COUNT)
+-		err("wrcodec: codec cmd pending expired!");
+-
+-	for (i = 0; i < POLL_COUNT; i++) {
+-		val = au_readl(PSC_AC97EVNT);
+-		au_sync();
+-		if (val & PSC_AC97EVNT_CD)
+-			break;
+-	}
+-	if (i == POLL_COUNT)
+-		err("wrcodec: read cmdwait expired!");
+-
+-	/* Clear command done event.
+-	*/
+-	au_writel(PSC_AC97EVNT_CD, PSC_AC97EVNT);
+-	au_sync();
+-
+-	spin_unlock_irqrestore(&s->lock, flags);
+-}
+-
+-static void
+-waitcodec(struct ac97_codec *codec)
+-{
+-	u16	temp;
+-	u32	val;
+-	int	i;
+-
+-	/* codec_wait is used to wait for a ready state after
+-	 * an AC97C_RESET.
+-	 */
+-	au1550_delay(10);
+-
+-	/* first poll the CODEC_READY tag bit
+-	*/
+-	for (i = 0; i < POLL_COUNT; i++) {
+-		val = au_readl(PSC_AC97STAT);
+-		au_sync();
+-		if (val & PSC_AC97STAT_CR)
+-			break;
+-	}
+-	if (i == POLL_COUNT) {
+-		err("waitcodec: CODEC_READY poll expired!");
+-		return;
+-	}
+-
+-	/* get AC'97 powerdown control/status register
+-	*/
+-	temp = rdcodec(codec, AC97_POWER_CONTROL);
+-
+-	/* If anything is powered down, power'em up
+-	*/
+-	if (temp & 0x7f00) {
+-		/* Power on
+-		*/
+-		wrcodec(codec, AC97_POWER_CONTROL, 0);
+-		au1550_delay(100);
+-
+-		/* Reread
+-		*/
+-		temp = rdcodec(codec, AC97_POWER_CONTROL);
+-	}
+-
+-	/* Check if Codec REF,ANL,DAC,ADC ready
+-	*/
+-	if ((temp & 0x7f0f) != 0x000f)
+-		err("codec reg 26 status (0x%x) not ready!!", temp);
+-}
+-
+-/* stop the ADC before calling */
+-static void
+-set_adc_rate(struct au1550_state *s, unsigned rate)
+-{
+-	struct dmabuf  *adc = &s->dma_adc;
+-	struct dmabuf  *dac = &s->dma_dac;
+-	unsigned        adc_rate, dac_rate;
+-	u16             ac97_extstat;
+-
+-	if (s->no_vra) {
+-		/* calc SRC factor
+-		*/
+-		adc->src_factor = ((96000 / rate) + 1) >> 1;
+-		adc->sample_rate = 48000 / adc->src_factor;
+-		return;
+-	}
+-
+-	adc->src_factor = 1;
+-
+-	ac97_extstat = rdcodec(s->codec, AC97_EXTENDED_STATUS);
+-
+-	rate = rate > 48000 ? 48000 : rate;
+-
+-	/* enable VRA
+-	*/
+-	wrcodec(s->codec, AC97_EXTENDED_STATUS,
+-		ac97_extstat | AC97_EXTSTAT_VRA);
+-
+-	/* now write the sample rate
+-	*/
+-	wrcodec(s->codec, AC97_PCM_LR_ADC_RATE, (u16) rate);
+-
+-	/* read it back for actual supported rate
+-	*/
+-	adc_rate = rdcodec(s->codec, AC97_PCM_LR_ADC_RATE);
+-
+-	pr_debug("set_adc_rate: set to %d Hz\n", adc_rate);
+-
+-	/* some codec's don't allow unequal DAC and ADC rates, in which case
+-	 * writing one rate reg actually changes both.
+-	 */
+-	dac_rate = rdcodec(s->codec, AC97_PCM_FRONT_DAC_RATE);
+-	if (dac->num_channels > 2)
+-		wrcodec(s->codec, AC97_PCM_SURR_DAC_RATE, dac_rate);
+-	if (dac->num_channels > 4)
+-		wrcodec(s->codec, AC97_PCM_LFE_DAC_RATE, dac_rate);
+-
+-	adc->sample_rate = adc_rate;
+-	dac->sample_rate = dac_rate;
+-}
+-
+-/* stop the DAC before calling */
+-static void
+-set_dac_rate(struct au1550_state *s, unsigned rate)
+-{
+-	struct dmabuf  *dac = &s->dma_dac;
+-	struct dmabuf  *adc = &s->dma_adc;
+-	unsigned        adc_rate, dac_rate;
+-	u16             ac97_extstat;
+-
+-	if (s->no_vra) {
+-		/* calc SRC factor
+-		*/
+-		dac->src_factor = ((96000 / rate) + 1) >> 1;
+-		dac->sample_rate = 48000 / dac->src_factor;
+-		return;
+-	}
+-
+-	dac->src_factor = 1;
+-
+-	ac97_extstat = rdcodec(s->codec, AC97_EXTENDED_STATUS);
+-
+-	rate = rate > 48000 ? 48000 : rate;
+-
+-	/* enable VRA
+-	*/
+-	wrcodec(s->codec, AC97_EXTENDED_STATUS,
+-		ac97_extstat | AC97_EXTSTAT_VRA);
+-
+-	/* now write the sample rate
+-	*/
+-	wrcodec(s->codec, AC97_PCM_FRONT_DAC_RATE, (u16) rate);
+-
+-	/* I don't support different sample rates for multichannel,
+-	 * so make these channels the same.
+-	 */
+-	if (dac->num_channels > 2)
+-		wrcodec(s->codec, AC97_PCM_SURR_DAC_RATE, (u16) rate);
+-	if (dac->num_channels > 4)
+-		wrcodec(s->codec, AC97_PCM_LFE_DAC_RATE, (u16) rate);
+-	/* read it back for actual supported rate
+-	*/
+-	dac_rate = rdcodec(s->codec, AC97_PCM_FRONT_DAC_RATE);
+-
+-	pr_debug("set_dac_rate: set to %d Hz\n", dac_rate);
+-
+-	/* some codec's don't allow unequal DAC and ADC rates, in which case
+-	 * writing one rate reg actually changes both.
+-	 */
+-	adc_rate = rdcodec(s->codec, AC97_PCM_LR_ADC_RATE);
+-
+-	dac->sample_rate = dac_rate;
+-	adc->sample_rate = adc_rate;
+-}
+-
+-static void
+-stop_dac(struct au1550_state *s)
+-{
+-	struct dmabuf  *db = &s->dma_dac;
+-	u32		stat;
+-	unsigned long   flags;
+-
+-	if (db->stopped)
+-		return;
+-
+-	spin_lock_irqsave(&s->lock, flags);
+-
+-	au_writel(PSC_AC97PCR_TP, PSC_AC97PCR);
+-	au_sync();
+-
+-	/* Wait for Transmit Busy to show disabled.
+-	*/
+-	do {
+-		stat = au_readl(PSC_AC97STAT);
+-		au_sync();
+-	} while ((stat & PSC_AC97STAT_TB) != 0);
+-
+-	au1xxx_dbdma_reset(db->dmanr);
+-
+-	db->stopped = 1;
+-
+-	spin_unlock_irqrestore(&s->lock, flags);
+-}
+-
+-static void
+-stop_adc(struct au1550_state *s)
+-{
+-	struct dmabuf  *db = &s->dma_adc;
+-	unsigned long   flags;
+-	u32		stat;
+-
+-	if (db->stopped)
+-		return;
+-
+-	spin_lock_irqsave(&s->lock, flags);
+-
+-	au_writel(PSC_AC97PCR_RP, PSC_AC97PCR);
+-	au_sync();
+-
+-	/* Wait for Receive Busy to show disabled.
+-	*/
+-	do {
+-		stat = au_readl(PSC_AC97STAT);
+-		au_sync();
+-	} while ((stat & PSC_AC97STAT_RB) != 0);
+-
+-	au1xxx_dbdma_reset(db->dmanr);
+-
+-	db->stopped = 1;
+-
+-	spin_unlock_irqrestore(&s->lock, flags);
+-}
+-
+-
+-static void
+-set_xmit_slots(int num_channels)
+-{
+-	u32	ac97_config, stat;
+-
+-	ac97_config = au_readl(PSC_AC97CFG);
+-	au_sync();
+-	ac97_config &= ~(PSC_AC97CFG_TXSLOT_MASK | PSC_AC97CFG_DE_ENABLE);
+-	au_writel(ac97_config, PSC_AC97CFG);
+-	au_sync();
+-
+-	switch (num_channels) {
+-	case 6:		/* stereo with surround and center/LFE,
+-			 * slots 3,4,6,7,8,9
+-			 */
+-		ac97_config |= PSC_AC97CFG_TXSLOT_ENA(6);
+-		ac97_config |= PSC_AC97CFG_TXSLOT_ENA(9);
+-
+-	case 4:		/* stereo with surround, slots 3,4,7,8 */
+-		ac97_config |= PSC_AC97CFG_TXSLOT_ENA(7);
+-		ac97_config |= PSC_AC97CFG_TXSLOT_ENA(8);
+-
+-	case 2:		/* stereo, slots 3,4 */
+-	case 1:		/* mono */
+-		ac97_config |= PSC_AC97CFG_TXSLOT_ENA(3);
+-		ac97_config |= PSC_AC97CFG_TXSLOT_ENA(4);
+-	}
+-
+-	au_writel(ac97_config, PSC_AC97CFG);
+-	au_sync();
+-
+-	ac97_config |= PSC_AC97CFG_DE_ENABLE;
+-	au_writel(ac97_config, PSC_AC97CFG);
+-	au_sync();
+-
+-	/* Wait for Device ready.
+-	*/
+-	do {
+-		stat = au_readl(PSC_AC97STAT);
+-		au_sync();
+-	} while ((stat & PSC_AC97STAT_DR) == 0);
+-}
+-
+-static void
+-set_recv_slots(int num_channels)
+-{
+-	u32	ac97_config, stat;
+-
+-	ac97_config = au_readl(PSC_AC97CFG);
+-	au_sync();
+-	ac97_config &= ~(PSC_AC97CFG_RXSLOT_MASK | PSC_AC97CFG_DE_ENABLE);
+-	au_writel(ac97_config, PSC_AC97CFG);
+-	au_sync();
+-
+-	/* Always enable slots 3 and 4 (stereo). Slot 6 is
+-	 * optional Mic ADC, which we don't support yet.
+-	 */
+-	ac97_config |= PSC_AC97CFG_RXSLOT_ENA(3);
+-	ac97_config |= PSC_AC97CFG_RXSLOT_ENA(4);
+-
+-	au_writel(ac97_config, PSC_AC97CFG);
+-	au_sync();
+-
+-	ac97_config |= PSC_AC97CFG_DE_ENABLE;
+-	au_writel(ac97_config, PSC_AC97CFG);
+-	au_sync();
+-
+-	/* Wait for Device ready.
+-	*/
+-	do {
+-		stat = au_readl(PSC_AC97STAT);
+-		au_sync();
+-	} while ((stat & PSC_AC97STAT_DR) == 0);
+-}
+-
+-/* Hold spinlock for both start_dac() and start_adc() calls */
+-static void
+-start_dac(struct au1550_state *s)
+-{
+-	struct dmabuf  *db = &s->dma_dac;
+-
+-	if (!db->stopped)
+-		return;
+-
+-	set_xmit_slots(db->num_channels);
+-	au_writel(PSC_AC97PCR_TC, PSC_AC97PCR);
+-	au_sync();
+-	au_writel(PSC_AC97PCR_TS, PSC_AC97PCR);
+-	au_sync();
+-
+-	au1xxx_dbdma_start(db->dmanr);
+-
+-	db->stopped = 0;
+-}
+-
+-static void
+-start_adc(struct au1550_state *s)
+-{
+-	struct dmabuf  *db = &s->dma_adc;
+-	int	i;
+-
+-	if (!db->stopped)
+-		return;
+-
+-	/* Put two buffers on the ring to get things started.
+-	*/
+-	for (i=0; i<2; i++) {
+-		au1xxx_dbdma_put_dest(db->dmanr, virt_to_phys(db->nextIn),
+-				db->dma_fragsize, DDMA_FLAGS_IE);
+-
+-		db->nextIn += db->dma_fragsize;
+-		if (db->nextIn >= db->rawbuf + db->dmasize)
+-			db->nextIn -= db->dmasize;
+-	}
+-
+-	set_recv_slots(db->num_channels);
+-	au1xxx_dbdma_start(db->dmanr);
+-	au_writel(PSC_AC97PCR_RC, PSC_AC97PCR);
+-	au_sync();
+-	au_writel(PSC_AC97PCR_RS, PSC_AC97PCR);
+-	au_sync();
+-
+-	db->stopped = 0;
+-}
+-
+-static int
+-prog_dmabuf(struct au1550_state *s, struct dmabuf *db)
+-{
+-	unsigned user_bytes_per_sec;
+-	unsigned        bufs;
+-	unsigned        rate = db->sample_rate;
+-
+-	if (!db->rawbuf) {
+-		db->ready = db->mapped = 0;
+-		db->buforder = 5;	/* 32 * PAGE_SIZE */
+-		db->rawbuf = kmalloc((PAGE_SIZE << db->buforder), GFP_KERNEL);
+-		if (!db->rawbuf)
+-			return -ENOMEM;
+-	}
+-
+-	db->cnt_factor = 1;
+-	if (db->sample_size == 8)
+-		db->cnt_factor *= 2;
+-	if (db->num_channels == 1)
+-		db->cnt_factor *= 2;
+-	db->cnt_factor *= db->src_factor;
+-
+-	db->count = 0;
+-	db->dma_qcount = 0;
+-	db->nextIn = db->nextOut = db->rawbuf;
+-
+-	db->user_bytes_per_sample = (db->sample_size>>3) * db->num_channels;
+-	db->dma_bytes_per_sample = 2 * ((db->num_channels == 1) ?
+-					2 : db->num_channels);
+-
+-	user_bytes_per_sec = rate * db->user_bytes_per_sample;
+-	bufs = PAGE_SIZE << db->buforder;
+-	if (db->ossfragshift) {
+-		if ((1000 << db->ossfragshift) < user_bytes_per_sec)
+-			db->fragshift = ld2(user_bytes_per_sec/1000);
+-		else
+-			db->fragshift = db->ossfragshift;
+-	} else {
+-		db->fragshift = ld2(user_bytes_per_sec / 100 /
+-				    (db->subdivision ? db->subdivision : 1));
+-		if (db->fragshift < 3)
+-			db->fragshift = 3;
+-	}
+-
+-	db->fragsize = 1 << db->fragshift;
+-	db->dma_fragsize = db->fragsize * db->cnt_factor;
+-	db->numfrag = bufs / db->dma_fragsize;
+-
+-	while (db->numfrag < 4 && db->fragshift > 3) {
+-		db->fragshift--;
+-		db->fragsize = 1 << db->fragshift;
+-		db->dma_fragsize = db->fragsize * db->cnt_factor;
+-		db->numfrag = bufs / db->dma_fragsize;
+-	}
+-
+-	if (db->ossmaxfrags >= 4 && db->ossmaxfrags < db->numfrag)
+-		db->numfrag = db->ossmaxfrags;
+-
+-	db->dmasize = db->dma_fragsize * db->numfrag;
+-	memset(db->rawbuf, 0, bufs);
+-
+-	pr_debug("prog_dmabuf: rate=%d, samplesize=%d, channels=%d\n",
+-	    rate, db->sample_size, db->num_channels);
+-	pr_debug("prog_dmabuf: fragsize=%d, cnt_factor=%d, dma_fragsize=%d\n",
+-	    db->fragsize, db->cnt_factor, db->dma_fragsize);
+-	pr_debug("prog_dmabuf: numfrag=%d, dmasize=%d\n", db->numfrag, db->dmasize);
+-
+-	db->ready = 1;
+-	return 0;
+-}
+-
+-static int
+-prog_dmabuf_adc(struct au1550_state *s)
+-{
+-	stop_adc(s);
+-	return prog_dmabuf(s, &s->dma_adc);
+-
+-}
+-
+-static int
+-prog_dmabuf_dac(struct au1550_state *s)
+-{
+-	stop_dac(s);
+-	return prog_dmabuf(s, &s->dma_dac);
+-}
+-
+-
+-static void dac_dma_interrupt(int irq, void *dev_id)
+-{
+-	struct au1550_state *s = (struct au1550_state *) dev_id;
+-	struct dmabuf  *db = &s->dma_dac;
+-	u32	ac97c_stat;
+-
+-	spin_lock(&s->lock);
+-
+-	ac97c_stat = au_readl(PSC_AC97STAT);
+-	if (ac97c_stat & (AC97C_XU | AC97C_XO | AC97C_TE))
+-		pr_debug("AC97C status = 0x%08x\n", ac97c_stat);
+-	db->dma_qcount--;
+-
+-	if (db->count >= db->fragsize) {
+-		if (au1xxx_dbdma_put_source(db->dmanr,
+-				virt_to_phys(db->nextOut), db->fragsize,
+-				DDMA_FLAGS_IE) == 0) {
+-			err("qcount < 2 and no ring room!");
+-		}
+-		db->nextOut += db->fragsize;
+-		if (db->nextOut >= db->rawbuf + db->dmasize)
+-			db->nextOut -= db->dmasize;
+-		db->count -= db->fragsize;
+-		db->total_bytes += db->dma_fragsize;
+-		db->dma_qcount++;
+-	}
+-
+-	/* wake up anybody listening */
+-	if (waitqueue_active(&db->wait))
+-		wake_up(&db->wait);
+-
+-	spin_unlock(&s->lock);
+-}
+-
+-
+-static void adc_dma_interrupt(int irq, void *dev_id)
+-{
+-	struct	au1550_state *s = (struct au1550_state *)dev_id;
+-	struct	dmabuf  *dp = &s->dma_adc;
+-	u32	obytes;
+-	char	*obuf;
+-
+-	spin_lock(&s->lock);
+-
+-	/* Pull the buffer from the dma queue.
+-	*/
+-	au1xxx_dbdma_get_dest(dp->dmanr, (void *)(&obuf), &obytes);
+-
+-	if ((dp->count + obytes) > dp->dmasize) {
+-		/* Overrun. Stop ADC and log the error
+-		*/
+-		spin_unlock(&s->lock);
+-		stop_adc(s);
+-		dp->error++;
+-		err("adc overrun");
+-		return;
+-	}
+-
+-	/* Put a new empty buffer on the destination DMA.
+-	*/
+-	au1xxx_dbdma_put_dest(dp->dmanr, virt_to_phys(dp->nextIn),
+-			      dp->dma_fragsize, DDMA_FLAGS_IE);
+-
+-	dp->nextIn += dp->dma_fragsize;
+-	if (dp->nextIn >= dp->rawbuf + dp->dmasize)
+-		dp->nextIn -= dp->dmasize;
+-
+-	dp->count += obytes;
+-	dp->total_bytes += obytes;
+-
+-	/* wake up anybody listening
+-	*/
+-	if (waitqueue_active(&dp->wait))
+-		wake_up(&dp->wait);
+-
+-	spin_unlock(&s->lock);
+-}
+-
+-static loff_t
+-au1550_llseek(struct file *file, loff_t offset, int origin)
+-{
+-	return -ESPIPE;
+-}
+-
+-
+-static int
+-au1550_open_mixdev(struct inode *inode, struct file *file)
+-{
+-	mutex_lock(&au1550_ac97_mutex);
+-	file->private_data = &au1550_state;
+-	mutex_unlock(&au1550_ac97_mutex);
+-	return 0;
+-}
+-
+-static int
+-au1550_release_mixdev(struct inode *inode, struct file *file)
+-{
+-	return 0;
+-}
+-
+-static int
+-mixdev_ioctl(struct ac97_codec *codec, unsigned int cmd,
+-                        unsigned long arg)
+-{
+-	return codec->mixer_ioctl(codec, cmd, arg);
+-}
+-
+-static long
+-au1550_ioctl_mixdev(struct file *file, unsigned int cmd, unsigned long arg)
+-{
+-	struct au1550_state *s = file->private_data;
+-	struct ac97_codec *codec = s->codec;
+-	int ret;
+-
+-	mutex_lock(&au1550_ac97_mutex);
+-	ret = mixdev_ioctl(codec, cmd, arg);
+-	mutex_unlock(&au1550_ac97_mutex);
+-
+-	return ret;
+-}
+-
+-static /*const */ struct file_operations au1550_mixer_fops = {
+-	.owner		= THIS_MODULE,
+-	.llseek		= au1550_llseek,
+-	.unlocked_ioctl	= au1550_ioctl_mixdev,
+-	.open		= au1550_open_mixdev,
+-	.release	= au1550_release_mixdev,
+-};
+-
+-static int
+-drain_dac(struct au1550_state *s, int nonblock)
+-{
+-	unsigned long   flags;
+-	int             count, tmo;
+-
+-	if (s->dma_dac.mapped || !s->dma_dac.ready || s->dma_dac.stopped)
+-		return 0;
+-
+-	for (;;) {
+-		spin_lock_irqsave(&s->lock, flags);
+-		count = s->dma_dac.count;
+-		spin_unlock_irqrestore(&s->lock, flags);
+-		if (count <= s->dma_dac.fragsize)
+-			break;
+-		if (signal_pending(current))
+-			break;
+-		if (nonblock)
+-			return -EBUSY;
+-		tmo = 1000 * count / (s->no_vra ?
+-				      48000 : s->dma_dac.sample_rate);
+-		tmo /= s->dma_dac.dma_bytes_per_sample;
+-		au1550_delay(tmo);
+-	}
+-	if (signal_pending(current))
+-		return -ERESTARTSYS;
+-	return 0;
+-}
+-
+-static inline u8 S16_TO_U8(s16 ch)
+-{
+-	return (u8) (ch >> 8) + 0x80;
+-}
+-static inline s16 U8_TO_S16(u8 ch)
+-{
+-	return (s16) (ch - 0x80) << 8;
+-}
+-
+-/*
+- * Translates user samples to dma buffer suitable for AC'97 DAC data:
+- *     If mono, copy left channel to right channel in dma buffer.
+- *     If 8 bit samples, cvt to 16-bit before writing to dma buffer.
+- *     If interpolating (no VRA), duplicate every audio frame src_factor times.
+- */
+-static int
+-translate_from_user(struct dmabuf *db, char* dmabuf, char* userbuf,
+-							       int dmacount)
+-{
+-	int             sample, i;
+-	int             interp_bytes_per_sample;
+-	int             num_samples;
+-	int             mono = (db->num_channels == 1);
+-	char            usersample[12];
+-	s16             ch, dmasample[6];
+-
+-	if (db->sample_size == 16 && !mono && db->src_factor == 1) {
+-		/* no translation necessary, just copy
+-		*/
+-		if (copy_from_user(dmabuf, userbuf, dmacount))
+-			return -EFAULT;
+-		return dmacount;
+-	}
+-
+-	interp_bytes_per_sample = db->dma_bytes_per_sample * db->src_factor;
+-	num_samples = dmacount / interp_bytes_per_sample;
+-
+-	for (sample = 0; sample < num_samples; sample++) {
+-		if (copy_from_user(usersample, userbuf,
+-				   db->user_bytes_per_sample)) {
+-			return -EFAULT;
+-		}
+-
+-		for (i = 0; i < db->num_channels; i++) {
+-			if (db->sample_size == 8)
+-				ch = U8_TO_S16(usersample[i]);
+-			else
+-				ch = *((s16 *) (&usersample[i * 2]));
+-			dmasample[i] = ch;
+-			if (mono)
+-				dmasample[i + 1] = ch;	/* right channel */
+-		}
+-
+-		/* duplicate every audio frame src_factor times
+-		*/
+-		for (i = 0; i < db->src_factor; i++)
+-			memcpy(dmabuf, dmasample, db->dma_bytes_per_sample);
+-
+-		userbuf += db->user_bytes_per_sample;
+-		dmabuf += interp_bytes_per_sample;
+-	}
+-
+-	return num_samples * interp_bytes_per_sample;
+-}
+-
+-/*
+- * Translates AC'97 ADC samples to user buffer:
+- *     If mono, send only left channel to user buffer.
+- *     If 8 bit samples, cvt from 16 to 8 bit before writing to user buffer.
+- *     If decimating (no VRA), skip over src_factor audio frames.
+- */
+-static int
+-translate_to_user(struct dmabuf *db, char* userbuf, char* dmabuf,
+-							     int dmacount)
+-{
+-	int             sample, i;
+-	int             interp_bytes_per_sample;
+-	int             num_samples;
+-	int             mono = (db->num_channels == 1);
+-	char            usersample[12];
+-
+-	if (db->sample_size == 16 && !mono && db->src_factor == 1) {
+-		/* no translation necessary, just copy
+-		*/
+-		if (copy_to_user(userbuf, dmabuf, dmacount))
+-			return -EFAULT;
+-		return dmacount;
+-	}
+-
+-	interp_bytes_per_sample = db->dma_bytes_per_sample * db->src_factor;
+-	num_samples = dmacount / interp_bytes_per_sample;
+-
+-	for (sample = 0; sample < num_samples; sample++) {
+-		for (i = 0; i < db->num_channels; i++) {
+-			if (db->sample_size == 8)
+-				usersample[i] =
+-					S16_TO_U8(*((s16 *) (&dmabuf[i * 2])));
+-			else
+-				*((s16 *) (&usersample[i * 2])) =
+-					*((s16 *) (&dmabuf[i * 2]));
+-		}
+-
+-		if (copy_to_user(userbuf, usersample,
+-				 db->user_bytes_per_sample)) {
+-			return -EFAULT;
+-		}
+-
+-		userbuf += db->user_bytes_per_sample;
+-		dmabuf += interp_bytes_per_sample;
+-	}
+-
+-	return num_samples * interp_bytes_per_sample;
+-}
+-
+-/*
+- * Copy audio data to/from user buffer from/to dma buffer, taking care
+- * that we wrap when reading/writing the dma buffer. Returns actual byte
+- * count written to or read from the dma buffer.
+- */
+-static int
+-copy_dmabuf_user(struct dmabuf *db, char* userbuf, int count, int to_user)
+-{
+-	char           *bufptr = to_user ? db->nextOut : db->nextIn;
+-	char           *bufend = db->rawbuf + db->dmasize;
+-	int             cnt, ret;
+-
+-	if (bufptr + count > bufend) {
+-		int             partial = (int) (bufend - bufptr);
+-		if (to_user) {
+-			if ((cnt = translate_to_user(db, userbuf,
+-						     bufptr, partial)) < 0)
+-				return cnt;
+-			ret = cnt;
+-			if ((cnt = translate_to_user(db, userbuf + partial,
+-						     db->rawbuf,
+-						     count - partial)) < 0)
+-				return cnt;
+-			ret += cnt;
+-		} else {
+-			if ((cnt = translate_from_user(db, bufptr, userbuf,
+-						       partial)) < 0)
+-				return cnt;
+-			ret = cnt;
+-			if ((cnt = translate_from_user(db, db->rawbuf,
+-						       userbuf + partial,
+-						       count - partial)) < 0)
+-				return cnt;
+-			ret += cnt;
+-		}
+-	} else {
+-		if (to_user)
+-			ret = translate_to_user(db, userbuf, bufptr, count);
+-		else
+-			ret = translate_from_user(db, bufptr, userbuf, count);
+-	}
+-
+-	return ret;
+-}
+-
+-
+-static ssize_t
+-au1550_read(struct file *file, char *buffer, size_t count, loff_t *ppos)
+-{
+-	struct au1550_state *s = file->private_data;
+-	struct dmabuf  *db = &s->dma_adc;
+-	DECLARE_WAITQUEUE(wait, current);
+-	ssize_t         ret;
+-	unsigned long   flags;
+-	int             cnt, usercnt, avail;
+-
+-	if (db->mapped)
+-		return -ENXIO;
+-	if (!access_ok(VERIFY_WRITE, buffer, count))
+-		return -EFAULT;
+-	ret = 0;
+-
+-	count *= db->cnt_factor;
+-
+-	mutex_lock(&s->sem);
+-	add_wait_queue(&db->wait, &wait);
+-
+-	while (count > 0) {
+-		/* wait for samples in ADC dma buffer
+-		*/
+-		do {
+-			spin_lock_irqsave(&s->lock, flags);
+-			if (db->stopped)
+-				start_adc(s);
+-			avail = db->count;
+-			if (avail <= 0)
+-				__set_current_state(TASK_INTERRUPTIBLE);
+-			spin_unlock_irqrestore(&s->lock, flags);
+-			if (avail <= 0) {
+-				if (file->f_flags & O_NONBLOCK) {
+-					if (!ret)
+-						ret = -EAGAIN;
+-					goto out;
+-				}
+-				mutex_unlock(&s->sem);
+-				schedule();
+-				if (signal_pending(current)) {
+-					if (!ret)
+-						ret = -ERESTARTSYS;
+-					goto out2;
+-				}
+-				mutex_lock(&s->sem);
+-			}
+-		} while (avail <= 0);
+-
+-		/* copy from nextOut to user
+-		*/
+-		if ((cnt = copy_dmabuf_user(db, buffer,
+-					    count > avail ?
+-					    avail : count, 1)) < 0) {
+-			if (!ret)
+-				ret = -EFAULT;
+-			goto out;
+-		}
+-
+-		spin_lock_irqsave(&s->lock, flags);
+-		db->count -= cnt;
+-		db->nextOut += cnt;
+-		if (db->nextOut >= db->rawbuf + db->dmasize)
+-			db->nextOut -= db->dmasize;
+-		spin_unlock_irqrestore(&s->lock, flags);
+-
+-		count -= cnt;
+-		usercnt = cnt / db->cnt_factor;
+-		buffer += usercnt;
+-		ret += usercnt;
+-	}			/* while (count > 0) */
+-
+-out:
+-	mutex_unlock(&s->sem);
+-out2:
+-	remove_wait_queue(&db->wait, &wait);
+-	set_current_state(TASK_RUNNING);
+-	return ret;
+-}
+-
+-static ssize_t
+-au1550_write(struct file *file, const char *buffer, size_t count, loff_t * ppos)
+-{
+-	struct au1550_state *s = file->private_data;
+-	struct dmabuf  *db = &s->dma_dac;
+-	DECLARE_WAITQUEUE(wait, current);
+-	ssize_t         ret = 0;
+-	unsigned long   flags;
+-	int             cnt, usercnt, avail;
+-
+-	pr_debug("write: count=%d\n", count);
+-
+-	if (db->mapped)
+-		return -ENXIO;
+-	if (!access_ok(VERIFY_READ, buffer, count))
+-		return -EFAULT;
+-
+-	count *= db->cnt_factor;
+-
+-	mutex_lock(&s->sem);
+-	add_wait_queue(&db->wait, &wait);
+-
+-	while (count > 0) {
+-		/* wait for space in playback buffer
+-		*/
+-		do {
+-			spin_lock_irqsave(&s->lock, flags);
+-			avail = (int) db->dmasize - db->count;
+-			if (avail <= 0)
+-				__set_current_state(TASK_INTERRUPTIBLE);
+-			spin_unlock_irqrestore(&s->lock, flags);
+-			if (avail <= 0) {
+-				if (file->f_flags & O_NONBLOCK) {
+-					if (!ret)
+-						ret = -EAGAIN;
+-					goto out;
+-				}
+-				mutex_unlock(&s->sem);
+-				schedule();
+-				if (signal_pending(current)) {
+-					if (!ret)
+-						ret = -ERESTARTSYS;
+-					goto out2;
+-				}
+-				mutex_lock(&s->sem);
+-			}
+-		} while (avail <= 0);
+-
+-		/* copy from user to nextIn
+-		*/
+-		if ((cnt = copy_dmabuf_user(db, (char *) buffer,
+-					    count > avail ?
+-					    avail : count, 0)) < 0) {
+-			if (!ret)
+-				ret = -EFAULT;
+-			goto out;
+-		}
+-
+-		spin_lock_irqsave(&s->lock, flags);
+-		db->count += cnt;
+-		db->nextIn += cnt;
+-		if (db->nextIn >= db->rawbuf + db->dmasize)
+-			db->nextIn -= db->dmasize;
+-
+-		/* If the data is available, we want to keep two buffers
+-		 * on the dma queue.  If the queue count reaches zero,
+-		 * we know the dma has stopped.
+-		 */
+-		while ((db->dma_qcount < 2) && (db->count >= db->fragsize)) {
+-			if (au1xxx_dbdma_put_source(db->dmanr,
+-				virt_to_phys(db->nextOut), db->fragsize,
+-				DDMA_FLAGS_IE) == 0) {
+-				err("qcount < 2 and no ring room!");
+-			}
+-			db->nextOut += db->fragsize;
+-			if (db->nextOut >= db->rawbuf + db->dmasize)
+-				db->nextOut -= db->dmasize;
+-			db->total_bytes += db->dma_fragsize;
+-			if (db->dma_qcount == 0)
+-				start_dac(s);
+-			db->dma_qcount++;
+-		}
+-		spin_unlock_irqrestore(&s->lock, flags);
+-
+-		count -= cnt;
+-		usercnt = cnt / db->cnt_factor;
+-		buffer += usercnt;
+-		ret += usercnt;
+-	}			/* while (count > 0) */
+-
+-out:
+-	mutex_unlock(&s->sem);
+-out2:
+-	remove_wait_queue(&db->wait, &wait);
+-	set_current_state(TASK_RUNNING);
+-	return ret;
+-}
+-
+-
+-/* No kernel lock - we have our own spinlock */
+-static unsigned int
+-au1550_poll(struct file *file, struct poll_table_struct *wait)
+-{
+-	struct au1550_state *s = file->private_data;
+-	unsigned long   flags;
+-	unsigned int    mask = 0;
+-
+-	if (file->f_mode & FMODE_WRITE) {
+-		if (!s->dma_dac.ready)
+-			return 0;
+-		poll_wait(file, &s->dma_dac.wait, wait);
+-	}
+-	if (file->f_mode & FMODE_READ) {
+-		if (!s->dma_adc.ready)
+-			return 0;
+-		poll_wait(file, &s->dma_adc.wait, wait);
+-	}
+-
+-	spin_lock_irqsave(&s->lock, flags);
+-
+-	if (file->f_mode & FMODE_READ) {
+-		if (s->dma_adc.count >= (signed)s->dma_adc.dma_fragsize)
+-			mask |= POLLIN | POLLRDNORM;
+-	}
+-	if (file->f_mode & FMODE_WRITE) {
+-		if (s->dma_dac.mapped) {
+-			if (s->dma_dac.count >=
+-			    (signed)s->dma_dac.dma_fragsize)
+-				mask |= POLLOUT | POLLWRNORM;
+-		} else {
+-			if ((signed) s->dma_dac.dmasize >=
+-			    s->dma_dac.count + (signed)s->dma_dac.dma_fragsize)
+-				mask |= POLLOUT | POLLWRNORM;
+-		}
+-	}
+-	spin_unlock_irqrestore(&s->lock, flags);
+-	return mask;
+-}
+-
+-static int
+-au1550_mmap(struct file *file, struct vm_area_struct *vma)
+-{
+-	struct au1550_state *s = file->private_data;
+-	struct dmabuf  *db;
+-	unsigned long   size;
+-	int ret = 0;
+-
+-	mutex_lock(&au1550_ac97_mutex);
+-	mutex_lock(&s->sem);
+-	if (vma->vm_flags & VM_WRITE)
+-		db = &s->dma_dac;
+-	else if (vma->vm_flags & VM_READ)
+-		db = &s->dma_adc;
+-	else {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-	if (vma->vm_pgoff != 0) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-	size = vma->vm_end - vma->vm_start;
+-	if (size > (PAGE_SIZE << db->buforder)) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-	if (remap_pfn_range(vma, vma->vm_start, page_to_pfn(virt_to_page(db->rawbuf)),
+-			     size, vma->vm_page_prot)) {
+-		ret = -EAGAIN;
+-		goto out;
+-	}
+-	vma->vm_flags &= ~VM_IO;
+-	db->mapped = 1;
+-out:
+-	mutex_unlock(&s->sem);
+-	mutex_unlock(&au1550_ac97_mutex);
+-	return ret;
+-}
+-
+-#ifdef DEBUG
+-static struct ioctl_str_t {
+-	unsigned int    cmd;
+-	const char     *str;
+-} ioctl_str[] = {
+-	{SNDCTL_DSP_RESET, "SNDCTL_DSP_RESET"},
+-	{SNDCTL_DSP_SYNC, "SNDCTL_DSP_SYNC"},
+-	{SNDCTL_DSP_SPEED, "SNDCTL_DSP_SPEED"},
+-	{SNDCTL_DSP_STEREO, "SNDCTL_DSP_STEREO"},
+-	{SNDCTL_DSP_GETBLKSIZE, "SNDCTL_DSP_GETBLKSIZE"},
+-	{SNDCTL_DSP_SAMPLESIZE, "SNDCTL_DSP_SAMPLESIZE"},
+-	{SNDCTL_DSP_CHANNELS, "SNDCTL_DSP_CHANNELS"},
+-	{SOUND_PCM_WRITE_CHANNELS, "SOUND_PCM_WRITE_CHANNELS"},
+-	{SOUND_PCM_WRITE_FILTER, "SOUND_PCM_WRITE_FILTER"},
+-	{SNDCTL_DSP_POST, "SNDCTL_DSP_POST"},
+-	{SNDCTL_DSP_SUBDIVIDE, "SNDCTL_DSP_SUBDIVIDE"},
+-	{SNDCTL_DSP_SETFRAGMENT, "SNDCTL_DSP_SETFRAGMENT"},
+-	{SNDCTL_DSP_GETFMTS, "SNDCTL_DSP_GETFMTS"},
+-	{SNDCTL_DSP_SETFMT, "SNDCTL_DSP_SETFMT"},
+-	{SNDCTL_DSP_GETOSPACE, "SNDCTL_DSP_GETOSPACE"},
+-	{SNDCTL_DSP_GETISPACE, "SNDCTL_DSP_GETISPACE"},
+-	{SNDCTL_DSP_NONBLOCK, "SNDCTL_DSP_NONBLOCK"},
+-	{SNDCTL_DSP_GETCAPS, "SNDCTL_DSP_GETCAPS"},
+-	{SNDCTL_DSP_GETTRIGGER, "SNDCTL_DSP_GETTRIGGER"},
+-	{SNDCTL_DSP_SETTRIGGER, "SNDCTL_DSP_SETTRIGGER"},
+-	{SNDCTL_DSP_GETIPTR, "SNDCTL_DSP_GETIPTR"},
+-	{SNDCTL_DSP_GETOPTR, "SNDCTL_DSP_GETOPTR"},
+-	{SNDCTL_DSP_MAPINBUF, "SNDCTL_DSP_MAPINBUF"},
+-	{SNDCTL_DSP_MAPOUTBUF, "SNDCTL_DSP_MAPOUTBUF"},
+-	{SNDCTL_DSP_SETSYNCRO, "SNDCTL_DSP_SETSYNCRO"},
+-	{SNDCTL_DSP_SETDUPLEX, "SNDCTL_DSP_SETDUPLEX"},
+-	{SNDCTL_DSP_GETODELAY, "SNDCTL_DSP_GETODELAY"},
+-	{SNDCTL_DSP_GETCHANNELMASK, "SNDCTL_DSP_GETCHANNELMASK"},
+-	{SNDCTL_DSP_BIND_CHANNEL, "SNDCTL_DSP_BIND_CHANNEL"},
+-	{OSS_GETVERSION, "OSS_GETVERSION"},
+-	{SOUND_PCM_READ_RATE, "SOUND_PCM_READ_RATE"},
+-	{SOUND_PCM_READ_CHANNELS, "SOUND_PCM_READ_CHANNELS"},
+-	{SOUND_PCM_READ_BITS, "SOUND_PCM_READ_BITS"},
+-	{SOUND_PCM_READ_FILTER, "SOUND_PCM_READ_FILTER"}
+-};
+-#endif
+-
+-static int
+-dma_count_done(struct dmabuf *db)
+-{
+-	if (db->stopped)
+-		return 0;
+-
+-	return db->dma_fragsize - au1xxx_get_dma_residue(db->dmanr);
+-}
+-
+-
+-static int
+-au1550_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-{
+-	struct au1550_state *s = file->private_data;
+-	unsigned long   flags;
+-	audio_buf_info  abinfo;
+-	count_info      cinfo;
+-	int             count;
+-	int             val, mapped, ret, diff;
+-
+-	mapped = ((file->f_mode & FMODE_WRITE) && s->dma_dac.mapped) ||
+-		((file->f_mode & FMODE_READ) && s->dma_adc.mapped);
+-
+-#ifdef DEBUG
+-	for (count = 0; count < ARRAY_SIZE(ioctl_str); count++) {
+-		if (ioctl_str[count].cmd == cmd)
+-			break;
+-	}
+-	if (count < ARRAY_SIZE(ioctl_str))
+-		pr_debug("ioctl %s, arg=0x%lxn", ioctl_str[count].str, arg);
+-	else
+-		pr_debug("ioctl 0x%x unknown, arg=0x%lx\n", cmd, arg);
+-#endif
+-
+-	switch (cmd) {
+-	case OSS_GETVERSION:
+-		return put_user(SOUND_VERSION, (int *) arg);
+-
+-	case SNDCTL_DSP_SYNC:
+-		if (file->f_mode & FMODE_WRITE)
+-			return drain_dac(s, file->f_flags & O_NONBLOCK);
+-		return 0;
+-
+-	case SNDCTL_DSP_SETDUPLEX:
+-		return 0;
+-
+-	case SNDCTL_DSP_GETCAPS:
+-		return put_user(DSP_CAP_DUPLEX | DSP_CAP_REALTIME |
+-				DSP_CAP_TRIGGER | DSP_CAP_MMAP, (int *)arg);
+-
+-	case SNDCTL_DSP_RESET:
+-		if (file->f_mode & FMODE_WRITE) {
+-			stop_dac(s);
+-			synchronize_irq();
+-			s->dma_dac.count = s->dma_dac.total_bytes = 0;
+-			s->dma_dac.nextIn = s->dma_dac.nextOut =
+-				s->dma_dac.rawbuf;
+-		}
+-		if (file->f_mode & FMODE_READ) {
+-			stop_adc(s);
+-			synchronize_irq();
+-			s->dma_adc.count = s->dma_adc.total_bytes = 0;
+-			s->dma_adc.nextIn = s->dma_adc.nextOut =
+-				s->dma_adc.rawbuf;
+-		}
+-		return 0;
+-
+-	case SNDCTL_DSP_SPEED:
+-		if (get_user(val, (int *) arg))
+-			return -EFAULT;
+-		if (val >= 0) {
+-			if (file->f_mode & FMODE_READ) {
+-				stop_adc(s);
+-				set_adc_rate(s, val);
+-			}
+-			if (file->f_mode & FMODE_WRITE) {
+-				stop_dac(s);
+-				set_dac_rate(s, val);
+-			}
+-			if (s->open_mode & FMODE_READ)
+-				if ((ret = prog_dmabuf_adc(s)))
+-					return ret;
+-			if (s->open_mode & FMODE_WRITE)
+-				if ((ret = prog_dmabuf_dac(s)))
+-					return ret;
+-		}
+-		return put_user((file->f_mode & FMODE_READ) ?
+-				s->dma_adc.sample_rate :
+-				s->dma_dac.sample_rate,
+-				(int *)arg);
+-
+-	case SNDCTL_DSP_STEREO:
+-		if (get_user(val, (int *) arg))
+-			return -EFAULT;
+-		if (file->f_mode & FMODE_READ) {
+-			stop_adc(s);
+-			s->dma_adc.num_channels = val ? 2 : 1;
+-			if ((ret = prog_dmabuf_adc(s)))
+-				return ret;
+-		}
+-		if (file->f_mode & FMODE_WRITE) {
+-			stop_dac(s);
+-			s->dma_dac.num_channels = val ? 2 : 1;
+-			if (s->codec_ext_caps & AC97_EXT_DACS) {
+-				/* disable surround and center/lfe in AC'97
+-				*/
+-				u16 ext_stat = rdcodec(s->codec,
+-						       AC97_EXTENDED_STATUS);
+-				wrcodec(s->codec, AC97_EXTENDED_STATUS,
+-					ext_stat | (AC97_EXTSTAT_PRI |
+-						    AC97_EXTSTAT_PRJ |
+-						    AC97_EXTSTAT_PRK));
+-			}
+-			if ((ret = prog_dmabuf_dac(s)))
+-				return ret;
+-		}
+-		return 0;
+-
+-	case SNDCTL_DSP_CHANNELS:
+-		if (get_user(val, (int *) arg))
+-			return -EFAULT;
+-		if (val != 0) {
+-			if (file->f_mode & FMODE_READ) {
+-				if (val < 0 || val > 2)
+-					return -EINVAL;
+-				stop_adc(s);
+-				s->dma_adc.num_channels = val;
+-				if ((ret = prog_dmabuf_adc(s)))
+-					return ret;
+-			}
+-			if (file->f_mode & FMODE_WRITE) {
+-				switch (val) {
+-				case 1:
+-				case 2:
+-					break;
+-				case 3:
+-				case 5:
+-					return -EINVAL;
+-				case 4:
+-					if (!(s->codec_ext_caps &
+-					      AC97_EXTID_SDAC))
+-						return -EINVAL;
+-					break;
+-				case 6:
+-					if ((s->codec_ext_caps &
+-					     AC97_EXT_DACS) != AC97_EXT_DACS)
+-						return -EINVAL;
+-					break;
+-				default:
+-					return -EINVAL;
+-				}
+-
+-				stop_dac(s);
+-				if (val <= 2 &&
+-				    (s->codec_ext_caps & AC97_EXT_DACS)) {
+-					/* disable surround and center/lfe
+-					 * channels in AC'97
+-					 */
+-					u16             ext_stat =
+-						rdcodec(s->codec,
+-							AC97_EXTENDED_STATUS);
+-					wrcodec(s->codec,
+-						AC97_EXTENDED_STATUS,
+-						ext_stat | (AC97_EXTSTAT_PRI |
+-							    AC97_EXTSTAT_PRJ |
+-							    AC97_EXTSTAT_PRK));
+-				} else if (val >= 4) {
+-					/* enable surround, center/lfe
+-					 * channels in AC'97
+-					 */
+-					u16             ext_stat =
+-						rdcodec(s->codec,
+-							AC97_EXTENDED_STATUS);
+-					ext_stat &= ~AC97_EXTSTAT_PRJ;
+-					if (val == 6)
+-						ext_stat &=
+-							~(AC97_EXTSTAT_PRI |
+-							  AC97_EXTSTAT_PRK);
+-					wrcodec(s->codec,
+-						AC97_EXTENDED_STATUS,
+-						ext_stat);
+-				}
+-
+-				s->dma_dac.num_channels = val;
+-				if ((ret = prog_dmabuf_dac(s)))
+-					return ret;
+-			}
+-		}
+-		return put_user(val, (int *) arg);
+-
+-	case SNDCTL_DSP_GETFMTS:	/* Returns a mask */
+-		return put_user(AFMT_S16_LE | AFMT_U8, (int *) arg);
+-
+-	case SNDCTL_DSP_SETFMT:	/* Selects ONE fmt */
+-		if (get_user(val, (int *) arg))
+-			return -EFAULT;
+-		if (val != AFMT_QUERY) {
+-			if (file->f_mode & FMODE_READ) {
+-				stop_adc(s);
+-				if (val == AFMT_S16_LE)
+-					s->dma_adc.sample_size = 16;
+-				else {
+-					val = AFMT_U8;
+-					s->dma_adc.sample_size = 8;
+-				}
+-				if ((ret = prog_dmabuf_adc(s)))
+-					return ret;
+-			}
+-			if (file->f_mode & FMODE_WRITE) {
+-				stop_dac(s);
+-				if (val == AFMT_S16_LE)
+-					s->dma_dac.sample_size = 16;
+-				else {
+-					val = AFMT_U8;
+-					s->dma_dac.sample_size = 8;
+-				}
+-				if ((ret = prog_dmabuf_dac(s)))
+-					return ret;
+-			}
+-		} else {
+-			if (file->f_mode & FMODE_READ)
+-				val = (s->dma_adc.sample_size == 16) ?
+-					AFMT_S16_LE : AFMT_U8;
+-			else
+-				val = (s->dma_dac.sample_size == 16) ?
+-					AFMT_S16_LE : AFMT_U8;
+-		}
+-		return put_user(val, (int *) arg);
+-
+-	case SNDCTL_DSP_POST:
+-		return 0;
+-
+-	case SNDCTL_DSP_GETTRIGGER:
+-		val = 0;
+-		spin_lock_irqsave(&s->lock, flags);
+-		if (file->f_mode & FMODE_READ && !s->dma_adc.stopped)
+-			val |= PCM_ENABLE_INPUT;
+-		if (file->f_mode & FMODE_WRITE && !s->dma_dac.stopped)
+-			val |= PCM_ENABLE_OUTPUT;
+-		spin_unlock_irqrestore(&s->lock, flags);
+-		return put_user(val, (int *) arg);
+-
+-	case SNDCTL_DSP_SETTRIGGER:
+-		if (get_user(val, (int *) arg))
+-			return -EFAULT;
+-		if (file->f_mode & FMODE_READ) {
+-			if (val & PCM_ENABLE_INPUT) {
+-				spin_lock_irqsave(&s->lock, flags);
+-				start_adc(s);
+-				spin_unlock_irqrestore(&s->lock, flags);
+-			} else
+-				stop_adc(s);
+-		}
+-		if (file->f_mode & FMODE_WRITE) {
+-			if (val & PCM_ENABLE_OUTPUT) {
+-				spin_lock_irqsave(&s->lock, flags);
+-				start_dac(s);
+-				spin_unlock_irqrestore(&s->lock, flags);
+-			} else
+-				stop_dac(s);
+-		}
+-		return 0;
+-
+-	case SNDCTL_DSP_GETOSPACE:
+-		if (!(file->f_mode & FMODE_WRITE))
+-			return -EINVAL;
+-		abinfo.fragsize = s->dma_dac.fragsize;
+-		spin_lock_irqsave(&s->lock, flags);
+-		count = s->dma_dac.count;
+-		count -= dma_count_done(&s->dma_dac);
+-		spin_unlock_irqrestore(&s->lock, flags);
+-		if (count < 0)
+-			count = 0;
+-		abinfo.bytes = (s->dma_dac.dmasize - count) /
+-			s->dma_dac.cnt_factor;
+-		abinfo.fragstotal = s->dma_dac.numfrag;
+-		abinfo.fragments = abinfo.bytes >> s->dma_dac.fragshift;
+-		pr_debug("ioctl SNDCTL_DSP_GETOSPACE: bytes=%d, fragments=%d\n", abinfo.bytes, abinfo.fragments);
+-		return copy_to_user((void *) arg, &abinfo,
+-				    sizeof(abinfo)) ? -EFAULT : 0;
+-
+-	case SNDCTL_DSP_GETISPACE:
+-		if (!(file->f_mode & FMODE_READ))
+-			return -EINVAL;
+-		abinfo.fragsize = s->dma_adc.fragsize;
+-		spin_lock_irqsave(&s->lock, flags);
+-		count = s->dma_adc.count;
+-		count += dma_count_done(&s->dma_adc);
+-		spin_unlock_irqrestore(&s->lock, flags);
+-		if (count < 0)
+-			count = 0;
+-		abinfo.bytes = count / s->dma_adc.cnt_factor;
+-		abinfo.fragstotal = s->dma_adc.numfrag;
+-		abinfo.fragments = abinfo.bytes >> s->dma_adc.fragshift;
+-		return copy_to_user((void *) arg, &abinfo,
+-				    sizeof(abinfo)) ? -EFAULT : 0;
+-
+-	case SNDCTL_DSP_NONBLOCK:
+-		spin_lock(&file->f_lock);
+-		file->f_flags |= O_NONBLOCK;
+-		spin_unlock(&file->f_lock);
+-		return 0;
+-
+-	case SNDCTL_DSP_GETODELAY:
+-		if (!(file->f_mode & FMODE_WRITE))
+-			return -EINVAL;
+-		spin_lock_irqsave(&s->lock, flags);
+-		count = s->dma_dac.count;
+-		count -= dma_count_done(&s->dma_dac);
+-		spin_unlock_irqrestore(&s->lock, flags);
+-		if (count < 0)
+-			count = 0;
+-		count /= s->dma_dac.cnt_factor;
+-		return put_user(count, (int *) arg);
+-
+-	case SNDCTL_DSP_GETIPTR:
+-		if (!(file->f_mode & FMODE_READ))
+-			return -EINVAL;
+-		spin_lock_irqsave(&s->lock, flags);
+-		cinfo.bytes = s->dma_adc.total_bytes;
+-		count = s->dma_adc.count;
+-		if (!s->dma_adc.stopped) {
+-			diff = dma_count_done(&s->dma_adc);
+-			count += diff;
+-			cinfo.bytes += diff;
+-			cinfo.ptr =  virt_to_phys(s->dma_adc.nextIn) + diff -
+-				virt_to_phys(s->dma_adc.rawbuf);
+-		} else
+-			cinfo.ptr = virt_to_phys(s->dma_adc.nextIn) -
+-				virt_to_phys(s->dma_adc.rawbuf);
+-		if (s->dma_adc.mapped)
+-			s->dma_adc.count &= (s->dma_adc.dma_fragsize-1);
+-		spin_unlock_irqrestore(&s->lock, flags);
+-		if (count < 0)
+-			count = 0;
+-		cinfo.blocks = count >> s->dma_adc.fragshift;
+-		return copy_to_user((void *) arg, &cinfo, sizeof(cinfo));
+-
+-	case SNDCTL_DSP_GETOPTR:
+-		if (!(file->f_mode & FMODE_READ))
+-			return -EINVAL;
+-		spin_lock_irqsave(&s->lock, flags);
+-		cinfo.bytes = s->dma_dac.total_bytes;
+-		count = s->dma_dac.count;
+-		if (!s->dma_dac.stopped) {
+-			diff = dma_count_done(&s->dma_dac);
+-			count -= diff;
+-			cinfo.bytes += diff;
+-			cinfo.ptr = virt_to_phys(s->dma_dac.nextOut) + diff -
+-				virt_to_phys(s->dma_dac.rawbuf);
+-		} else
+-			cinfo.ptr = virt_to_phys(s->dma_dac.nextOut) -
+-				virt_to_phys(s->dma_dac.rawbuf);
+-		if (s->dma_dac.mapped)
+-			s->dma_dac.count &= (s->dma_dac.dma_fragsize-1);
+-		spin_unlock_irqrestore(&s->lock, flags);
+-		if (count < 0)
+-			count = 0;
+-		cinfo.blocks = count >> s->dma_dac.fragshift;
+-		return copy_to_user((void *) arg, &cinfo, sizeof(cinfo));
+-
+-	case SNDCTL_DSP_GETBLKSIZE:
+-		if (file->f_mode & FMODE_WRITE)
+-			return put_user(s->dma_dac.fragsize, (int *) arg);
+-		else
+-			return put_user(s->dma_adc.fragsize, (int *) arg);
+-
+-	case SNDCTL_DSP_SETFRAGMENT:
+-		if (get_user(val, (int *) arg))
+-			return -EFAULT;
+-		if (file->f_mode & FMODE_READ) {
+-			stop_adc(s);
+-			s->dma_adc.ossfragshift = val & 0xffff;
+-			s->dma_adc.ossmaxfrags = (val >> 16) & 0xffff;
+-			if (s->dma_adc.ossfragshift < 4)
+-				s->dma_adc.ossfragshift = 4;
+-			if (s->dma_adc.ossfragshift > 15)
+-				s->dma_adc.ossfragshift = 15;
+-			if (s->dma_adc.ossmaxfrags < 4)
+-				s->dma_adc.ossmaxfrags = 4;
+-			if ((ret = prog_dmabuf_adc(s)))
+-				return ret;
+-		}
+-		if (file->f_mode & FMODE_WRITE) {
+-			stop_dac(s);
+-			s->dma_dac.ossfragshift = val & 0xffff;
+-			s->dma_dac.ossmaxfrags = (val >> 16) & 0xffff;
+-			if (s->dma_dac.ossfragshift < 4)
+-				s->dma_dac.ossfragshift = 4;
+-			if (s->dma_dac.ossfragshift > 15)
+-				s->dma_dac.ossfragshift = 15;
+-			if (s->dma_dac.ossmaxfrags < 4)
+-				s->dma_dac.ossmaxfrags = 4;
+-			if ((ret = prog_dmabuf_dac(s)))
+-				return ret;
+-		}
+-		return 0;
+-
+-	case SNDCTL_DSP_SUBDIVIDE:
+-		if ((file->f_mode & FMODE_READ && s->dma_adc.subdivision) ||
+-		    (file->f_mode & FMODE_WRITE && s->dma_dac.subdivision))
+-			return -EINVAL;
+-		if (get_user(val, (int *) arg))
+-			return -EFAULT;
+-		if (val != 1 && val != 2 && val != 4)
+-			return -EINVAL;
+-		if (file->f_mode & FMODE_READ) {
+-			stop_adc(s);
+-			s->dma_adc.subdivision = val;
+-			if ((ret = prog_dmabuf_adc(s)))
+-				return ret;
+-		}
+-		if (file->f_mode & FMODE_WRITE) {
+-			stop_dac(s);
+-			s->dma_dac.subdivision = val;
+-			if ((ret = prog_dmabuf_dac(s)))
+-				return ret;
+-		}
+-		return 0;
+-
+-	case SOUND_PCM_READ_RATE:
+-		return put_user((file->f_mode & FMODE_READ) ?
+-				s->dma_adc.sample_rate :
+-				s->dma_dac.sample_rate,
+-				(int *)arg);
+-
+-	case SOUND_PCM_READ_CHANNELS:
+-		if (file->f_mode & FMODE_READ)
+-			return put_user(s->dma_adc.num_channels, (int *)arg);
+-		else
+-			return put_user(s->dma_dac.num_channels, (int *)arg);
+-
+-	case SOUND_PCM_READ_BITS:
+-		if (file->f_mode & FMODE_READ)
+-			return put_user(s->dma_adc.sample_size, (int *)arg);
+-		else
+-			return put_user(s->dma_dac.sample_size, (int *)arg);
+-
+-	case SOUND_PCM_WRITE_FILTER:
+-	case SNDCTL_DSP_SETSYNCRO:
+-	case SOUND_PCM_READ_FILTER:
+-		return -EINVAL;
+-	}
+-
+-	return mixdev_ioctl(s->codec, cmd, arg);
+-}
+-
+-static long
+-au1550_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-{
+-	int ret;
+-
+-	mutex_lock(&au1550_ac97_mutex);
+-	ret = au1550_ioctl(file, cmd, arg);
+-	mutex_unlock(&au1550_ac97_mutex);
+-
+-	return ret;
+-}
+-
+-static int
+-au1550_open(struct inode *inode, struct file *file)
+-{
+-	int             minor = MINOR(inode->i_rdev);
+-	DECLARE_WAITQUEUE(wait, current);
+-	struct au1550_state *s = &au1550_state;
+-	int             ret;
+-
+-#ifdef DEBUG
+-	if (file->f_flags & O_NONBLOCK)
+-		pr_debug("open: non-blocking\n");
+-	else
+-		pr_debug("open: blocking\n");
+-#endif
+-
+-	file->private_data = s;
+-	mutex_lock(&au1550_ac97_mutex);
+-	/* wait for device to become free */
+-	mutex_lock(&s->open_mutex);
+-	while (s->open_mode & file->f_mode) {
+-		ret = -EBUSY;
+-		if (file->f_flags & O_NONBLOCK)
+-			goto out;
+-		add_wait_queue(&s->open_wait, &wait);
+-		__set_current_state(TASK_INTERRUPTIBLE);
+-		mutex_unlock(&s->open_mutex);
+-		schedule();
+-		remove_wait_queue(&s->open_wait, &wait);
+-		set_current_state(TASK_RUNNING);
+-		ret = -ERESTARTSYS;
+-		if (signal_pending(current))
+-			goto out2;
+-		mutex_lock(&s->open_mutex);
+-	}
+-
+-	stop_dac(s);
+-	stop_adc(s);
+-
+-	if (file->f_mode & FMODE_READ) {
+-		s->dma_adc.ossfragshift = s->dma_adc.ossmaxfrags =
+-			s->dma_adc.subdivision = s->dma_adc.total_bytes = 0;
+-		s->dma_adc.num_channels = 1;
+-		s->dma_adc.sample_size = 8;
+-		set_adc_rate(s, 8000);
+-		if ((minor & 0xf) == SND_DEV_DSP16)
+-			s->dma_adc.sample_size = 16;
+-	}
+-
+-	if (file->f_mode & FMODE_WRITE) {
+-		s->dma_dac.ossfragshift = s->dma_dac.ossmaxfrags =
+-			s->dma_dac.subdivision = s->dma_dac.total_bytes = 0;
+-		s->dma_dac.num_channels = 1;
+-		s->dma_dac.sample_size = 8;
+-		set_dac_rate(s, 8000);
+-		if ((minor & 0xf) == SND_DEV_DSP16)
+-			s->dma_dac.sample_size = 16;
+-	}
+-
+-	if (file->f_mode & FMODE_READ) {
+-		if ((ret = prog_dmabuf_adc(s)))
+-			goto out;
+-	}
+-	if (file->f_mode & FMODE_WRITE) {
+-		if ((ret = prog_dmabuf_dac(s)))
+-			goto out;
+-	}
+-
+-	s->open_mode |= file->f_mode & (FMODE_READ | FMODE_WRITE);
+-	mutex_init(&s->sem);
+-	ret = 0;
+-out:
+-	mutex_unlock(&s->open_mutex);
+-out2:
+-	mutex_unlock(&au1550_ac97_mutex);
+-	return ret;
+-}
+-
+-static int
+-au1550_release(struct inode *inode, struct file *file)
+-{
+-	struct au1550_state *s = file->private_data;
+-
+-	mutex_lock(&au1550_ac97_mutex);
+-
+-	if (file->f_mode & FMODE_WRITE) {
+-		mutex_unlock(&au1550_ac97_mutex);
+-		drain_dac(s, file->f_flags & O_NONBLOCK);
+-		mutex_lock(&au1550_ac97_mutex);
+-	}
+-
+-	mutex_lock(&s->open_mutex);
+-	if (file->f_mode & FMODE_WRITE) {
+-		stop_dac(s);
+-		kfree(s->dma_dac.rawbuf);
+-		s->dma_dac.rawbuf = NULL;
+-	}
+-	if (file->f_mode & FMODE_READ) {
+-		stop_adc(s);
+-		kfree(s->dma_adc.rawbuf);
+-		s->dma_adc.rawbuf = NULL;
+-	}
+-	s->open_mode &= ((~file->f_mode) & (FMODE_READ|FMODE_WRITE));
+-	mutex_unlock(&s->open_mutex);
+-	wake_up(&s->open_wait);
+-	mutex_unlock(&au1550_ac97_mutex);
+-	return 0;
+-}
+-
+-static /*const */ struct file_operations au1550_audio_fops = {
+-	.owner		= THIS_MODULE,
+-	.llseek		= au1550_llseek,
+-	.read		= au1550_read,
+-	.write		= au1550_write,
+-	.poll		= au1550_poll,
+-	.unlocked_ioctl	= au1550_unlocked_ioctl,
+-	.mmap		= au1550_mmap,
+-	.open		= au1550_open,
+-	.release	= au1550_release,
+-};
+-
+-MODULE_AUTHOR("Advanced Micro Devices (AMD), dan@embeddededge.com");
+-MODULE_DESCRIPTION("Au1550 AC97 Audio Driver");
+-MODULE_LICENSE("GPL");
+-
+-
+-static int __devinit
+-au1550_probe(void)
+-{
+-	struct au1550_state *s = &au1550_state;
+-	int             val;
+-
+-	memset(s, 0, sizeof(struct au1550_state));
+-
+-	init_waitqueue_head(&s->dma_adc.wait);
+-	init_waitqueue_head(&s->dma_dac.wait);
+-	init_waitqueue_head(&s->open_wait);
+-	mutex_init(&s->open_mutex);
+-	spin_lock_init(&s->lock);
+-
+-	s->codec = ac97_alloc_codec();
+-	if(s->codec == NULL) {
+-		err("Out of memory");
+-		return -1;
+-	}
+-	s->codec->private_data = s;
+-	s->codec->id = 0;
+-	s->codec->codec_read = rdcodec;
+-	s->codec->codec_write = wrcodec;
+-	s->codec->codec_wait = waitcodec;
+-
+-	if (!request_mem_region(CPHYSADDR(AC97_PSC_SEL),
+-			    0x30, "Au1550 AC97")) {
+-		err("AC'97 ports in use");
+-	}
+-
+-	/* Allocate the DMA Channels
+-	*/
+-	if ((s->dma_dac.dmanr = au1xxx_dbdma_chan_alloc(DBDMA_MEM_CHAN,
+-	    DBDMA_AC97_TX_CHAN, dac_dma_interrupt, (void *)s)) == 0) {
+-		err("Can't get DAC DMA");
+-		goto err_dma1;
+-	}
+-	au1xxx_dbdma_set_devwidth(s->dma_dac.dmanr, 16);
+-	if (au1xxx_dbdma_ring_alloc(s->dma_dac.dmanr,
+-					NUM_DBDMA_DESCRIPTORS) == 0) {
+-		err("Can't get DAC DMA descriptors");
+-		goto err_dma1;
+-	}
+-
+-	if ((s->dma_adc.dmanr = au1xxx_dbdma_chan_alloc(DBDMA_AC97_RX_CHAN,
+-	    DBDMA_MEM_CHAN, adc_dma_interrupt, (void *)s)) == 0) {
+-		err("Can't get ADC DMA");
+-		goto err_dma2;
+-	}
+-	au1xxx_dbdma_set_devwidth(s->dma_adc.dmanr, 16);
+-	if (au1xxx_dbdma_ring_alloc(s->dma_adc.dmanr,
+-					NUM_DBDMA_DESCRIPTORS) == 0) {
+-		err("Can't get ADC DMA descriptors");
+-		goto err_dma2;
+-	}
+-
+-	pr_info("DAC: DMA%d, ADC: DMA%d", DBDMA_AC97_TX_CHAN, DBDMA_AC97_RX_CHAN);
+-
+-	/* register devices */
+-
+-	if ((s->dev_audio = register_sound_dsp(&au1550_audio_fops, -1)) < 0)
+-		goto err_dev1;
+-	if ((s->codec->dev_mixer =
+-	     register_sound_mixer(&au1550_mixer_fops, -1)) < 0)
+-		goto err_dev2;
+-
+-	/* The GPIO for the appropriate PSC was configured by the
+-	 * board specific start up.
+-	 *
+-	 * configure PSC for AC'97
+-	 */
+-	au_writel(0, AC97_PSC_CTRL);	/* Disable PSC */
+-	au_sync();
+-	au_writel((PSC_SEL_CLK_SERCLK | PSC_SEL_PS_AC97MODE), AC97_PSC_SEL);
+-	au_sync();
+-
+-	/* cold reset the AC'97
+-	*/
+-	au_writel(PSC_AC97RST_RST, PSC_AC97RST);
+-	au_sync();
+-	au1550_delay(10);
+-	au_writel(0, PSC_AC97RST);
+-	au_sync();
+-
+-	/* need to delay around 500msec(bleech) to give
+-	   some CODECs enough time to wakeup */
+-	au1550_delay(500);
+-
+-	/* warm reset the AC'97 to start the bitclk
+-	*/
+-	au_writel(PSC_AC97RST_SNC, PSC_AC97RST);
+-	au_sync();
+-	udelay(100);
+-	au_writel(0, PSC_AC97RST);
+-	au_sync();
+-
+-	/* Enable PSC
+-	*/
+-	au_writel(PSC_CTRL_ENABLE, AC97_PSC_CTRL);
+-	au_sync();
+-
+-	/* Wait for PSC ready.
+-	*/
+-	do {
+-		val = au_readl(PSC_AC97STAT);
+-		au_sync();
+-	} while ((val & PSC_AC97STAT_SR) == 0);
+-
+-	/* Configure AC97 controller.
+-	 * Deep FIFO, 16-bit sample, DMA, make sure DMA matches fifo size.
+-	 */
+-	val = PSC_AC97CFG_SET_LEN(16);
+-	val |= PSC_AC97CFG_RT_FIFO8 | PSC_AC97CFG_TT_FIFO8;
+-
+-	/* Enable device so we can at least
+-	 * talk over the AC-link.
+-	 */
+-	au_writel(val, PSC_AC97CFG);
+-	au_writel(PSC_AC97MSK_ALLMASK, PSC_AC97MSK);
+-	au_sync();
+-	val |= PSC_AC97CFG_DE_ENABLE;
+-	au_writel(val, PSC_AC97CFG);
+-	au_sync();
+-
+-	/* Wait for Device ready.
+-	*/
+-	do {
+-		val = au_readl(PSC_AC97STAT);
+-		au_sync();
+-	} while ((val & PSC_AC97STAT_DR) == 0);
+-
+-	/* codec init */
+-	if (!ac97_probe_codec(s->codec))
+-		goto err_dev3;
+-
+-	s->codec_base_caps = rdcodec(s->codec, AC97_RESET);
+-	s->codec_ext_caps = rdcodec(s->codec, AC97_EXTENDED_ID);
+-	pr_info("AC'97 Base/Extended ID = %04x/%04x",
+-	     s->codec_base_caps, s->codec_ext_caps);
+-
+-	if (!(s->codec_ext_caps & AC97_EXTID_VRA)) {
+-		/* codec does not support VRA
+-		*/
+-		s->no_vra = 1;
+-	} else if (!vra) {
+-		/* Boot option says disable VRA
+-		*/
+-		u16 ac97_extstat = rdcodec(s->codec, AC97_EXTENDED_STATUS);
+-		wrcodec(s->codec, AC97_EXTENDED_STATUS,
+-			ac97_extstat & ~AC97_EXTSTAT_VRA);
+-		s->no_vra = 1;
+-	}
+-	if (s->no_vra)
+-		pr_info("no VRA, interpolating and decimating");
+-
+-	/* set mic to be the recording source */
+-	val = SOUND_MASK_MIC;
+-	mixdev_ioctl(s->codec, SOUND_MIXER_WRITE_RECSRC,
+-		     (unsigned long) &val);
+-
+-	return 0;
+-
+- err_dev3:
+-	unregister_sound_mixer(s->codec->dev_mixer);
+- err_dev2:
+-	unregister_sound_dsp(s->dev_audio);
+- err_dev1:
+-	au1xxx_dbdma_chan_free(s->dma_adc.dmanr);
+- err_dma2:
+-	au1xxx_dbdma_chan_free(s->dma_dac.dmanr);
+- err_dma1:
+-	release_mem_region(CPHYSADDR(AC97_PSC_SEL), 0x30);
+-
+-	ac97_release_codec(s->codec);
+-	return -1;
+-}
+-
+-static void __devinit
+-au1550_remove(void)
+-{
+-	struct au1550_state *s = &au1550_state;
+-
+-	if (!s)
+-		return;
+-	synchronize_irq();
+-	au1xxx_dbdma_chan_free(s->dma_adc.dmanr);
+-	au1xxx_dbdma_chan_free(s->dma_dac.dmanr);
+-	release_mem_region(CPHYSADDR(AC97_PSC_SEL), 0x30);
+-	unregister_sound_dsp(s->dev_audio);
+-	unregister_sound_mixer(s->codec->dev_mixer);
+-	ac97_release_codec(s->codec);
+-}
+-
+-static int __init
+-init_au1550(void)
+-{
+-	return au1550_probe();
+-}
+-
+-static void __exit
+-cleanup_au1550(void)
+-{
+-	au1550_remove();
+-}
+-
+-module_init(init_au1550);
+-module_exit(cleanup_au1550);
+-
+-#ifndef MODULE
+-
+-static int __init
+-au1550_setup(char *options)
+-{
+-	char           *this_opt;
+-
+-	if (!options || !*options)
+-		return 0;
+-
+-	while ((this_opt = strsep(&options, ","))) {
+-		if (!*this_opt)
+-			continue;
+-		if (!strncmp(this_opt, "vra", 3)) {
+-			vra = 1;
+-		}
+-	}
+-
+-	return 1;
+-}
+-
+-__setup("au1550_audio=", au1550_setup);
+-
+-#endif /* MODULE */
