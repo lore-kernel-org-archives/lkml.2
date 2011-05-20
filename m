@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab1ETAG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:06:59 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:54051 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088Ab1ETAG5 convert rfc822-to-8bit (ORCPT
+	id S932916Ab1ETAHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:07:07 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11988 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756290Ab1ETAHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:06:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LEZEUm4rW2lExc7iiqa7Dkl9OnZSfDoX7rcCf0r63TdXF6scIjYXwqSo8qE4LocjPT
-         qPBFD9kXuaLAG3s0Cf1xmUxkkBRMz9Bn0UYRa75yjc7XfLVlMTgGQLrtnePM/kANgF79
-         4mOahTFWL6HjFIzcTyq6AkghX9bQHT5IEq60Y=
+	Thu, 19 May 2011 20:07:03 -0400
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'David Brownell'" <dbrownell@users.sourceforge.net>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Cc: <qi.wang@intel.com>, <yong.y.wang@intel.com>, <joel.clark@intel.com>,
+        <kok.howg.ewe@intel.com>,
+        "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>
+References: <1303871010-8319-1-git-send-email-tomoya-linux@dsn.okisemi.com> <1E339D61A60447BF8D1726A769D08FDA@hacdom.okisemi.com>
+Subject: RE: [PATCH v4 1/2] spi_topcliff_pch: support new device ML7213 IOH
+Date: Fri, 20 May 2011 09:06:59 +0900
+Message-ID: <21D707796ECF4290AA525D28D8FF7461@hacdom.okisemi.com>
 MIME-Version: 1.0
-In-Reply-To: <1305804982.2145.6.camel@lenovo>
-References: <1305295404-12129-5-git-send-email-mgorman@suse.de>
-	<4DCFAA80.7040109@jp.fujitsu.com>
-	<1305519711.4806.7.camel@mulgrave.site>
-	<BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
-	<20110516084558.GE5279@suse.de>
-	<BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
-	<20110516102753.GF5279@suse.de>
-	<BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
-	<20110517103840.GL5279@suse.de>
-	<1305640239.2046.27.camel@lenovo>
-	<20110517161508.GN5279@suse.de>
-	<BANLkTimUJeTbWV_0BzgjrDjY=Wpc-PaG5Q@mail.gmail.com>
-	<1305804982.2145.6.camel@lenovo>
-Date: Fri, 20 May 2011 09:06:55 +0900
-Message-ID: <BANLkTin0Qdp4S8RdkAGJD0L5zvHwftvZog@mail.gmail.com>
-Subject: Re: [PATCH] mm: vmscan: Correctly check if reclaimer should schedule
- during shrink_slab
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Colin Ian King <colin.king@canonical.com>
-Cc: Mel Gorman <mgorman@suse.de>, akpm@linux-foundation.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
-        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+In-Reply-To: <1E339D61A60447BF8D1726A769D08FDA@hacdom.okisemi.com>
+Thread-Index: AcwEgfvg5BIIavUFRBOOQdpeKQi4awKVNlywAepiUiA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 8:36 PM, Colin Ian King
-<colin.king@canonical.com> wrote:
-> On Thu, 2011-05-19 at 09:09 +0900, Minchan Kim wrote:
->> Hi Colin.
->>
->> Sorry for bothering you. :(
->
-> No problem at all, I've very happy to re-test.
->
->> I hope this test is last.
->>
->> We(Mel, KOSAKI and me) finalized opinion.
->>
->> Could you test below patch with patch[1/4] of Mel's series(ie,
->> !pgdat_balanced  of sleeping_prematurely)?
->> If it is successful, we will try to merge this version instead of
->> various cond_resched sprinkling version.
->
-> tested with the patch below + patch[1/4] of Mel's series.  300 cycles,
-> 2.5 hrs of soak testing: works OK.
->
-> Colin
+ Hi Grant
 
-Thanks, Colin.
-We are approaching the conclusion for  your help. :)
+Could you review this patch ASAP?
+There is little time to be integrated to 2.6.40.
 
-Mel, KOSAKI.
-I will ask test to Andrew Lutomirski.
-If he doesn't have a problem, let's go, then.
+Thanks,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
--- 
-Kind regards,
-Minchan Kim
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org 
+> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of 
+> Tomoya MORINAGA
+> Sent: Tuesday, May 10, 2011 2:59 PM
+> To: 'David Brownell'; 'Grant Likely'; 
+> spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> Cc: qi.wang@intel.com; yong.y.wang@intel.com; 
+> joel.clark@intel.com; kok.howg.ewe@intel.com
+> Subject: RE: [PATCH v4 1/2] spi_topcliff_pch: support new 
+> device ML7213 IOH
+> 
+> Hi Grant,
+> 
+> > Sent: Wednesday, April 27, 2011 11:23 AM
+> > To: David Brownell; Grant Likely;
+> > spi-devel-general@lists.sourceforge.net; 
+> linux-kernel@vger.kernel.org
+> > Cc: qi.wang@intel.com; yong.y.wang@intel.com; joel.clark@intel.com; 
+> > kok.howg.ewe@intel.com; Tomoya MORINAGA
+> > Subject: [PATCH v4 1/2] spi_topcliff_pch: support new device
+> > ML7213 IOH
+> 
+> Could you review this patch ?
+> 
+> With Best Regards,
+> -----------------------------------------
+> Tomoya MORINAGA
+> OKI SEMICONDUCTOR CO., LTD.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in the body of a message to 
+> majordomo@vger.kernel.org More majordomo info at  
+> http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
