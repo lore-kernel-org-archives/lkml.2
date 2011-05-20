@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935536Ab1ETSi6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 14:38:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46028 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934005Ab1ETSiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 14:38:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,243,1304319600"; 
-   d="scan'208";a="4658076"
-Subject: Re: linux-next: Tree for May 20 (iwlwifi)
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Intel Linux Wireless <ilw@linux.intel.com>
-In-Reply-To: <20110520105421.3766ea12.randy.dunlap@oracle.com>
-References: <20110520165507.cba539d5.sfr@canb.auug.org.au>
-	 <20110520105421.3766ea12.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 May 2011 11:35:24 -0700
-Message-ID: <1305916524.10450.27.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S934731Ab1ETSkv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 14:40:51 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:44668 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934089Ab1ETSkt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 14:40:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=CiRbS5ixOn5QDPbc+llfCAgvml1BL4NY1/a/xoqz1Sukh3qcP0+GSPAVQTj+VeCFpe
+         CbzeI7LWvjl6YoT4I/3e1rjtxGz5vzHlX9c0nLxaEcKT/F2bGFYiapUOl4lzrS5eNcdY
+         ZdPfO4am7u050iLIpTCA2USdN1fD/vrtiALcg=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTi=4C5YAxwAFWC6dsAPMR3xv6LP1hw@mail.gmail.com>
+References: <BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com>
+ <BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com> <4DD5DC06.6010204@jp.fujitsu.com>
+ <BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com> <BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
+ <20110520140856.fdf4d1c8.kamezawa.hiroyu@jp.fujitsu.com> <20110520101120.GC11729@random.random>
+ <BANLkTikAFMvpgHR2dopd+Nvjfyw_XT5=LA@mail.gmail.com> <20110520153346.GA1843@barrios-desktop>
+ <BANLkTi=X+=Wh1MLs7Fc-v-OMtxAHbcPmxA@mail.gmail.com> <20110520161934.GA2386@barrios-desktop>
+ <BANLkTi=4C5YAxwAFWC6dsAPMR3xv6LP1hw@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 20 May 2011 14:40:29 -0400
+X-Google-Sender-Auth: j0JrUblmlKvGwxIwddhxzdY22Fg
+Message-ID: <BANLkTinEuOHNxRNQGsZSug=MRL-hGN-rvg@mail.gmail.com>
+Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
+        riel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+On Fri, May 20, 2011 at 2:09 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> I just tested 2.6.38.6 with the attached patch.  It survived dirty_ram
+> and test_mempressure without any problems other than slowness, but
+> when I hit ctrl-c to stop test_mempressure, I got the attached oom.
 
-On Fri, 2011-05-20 at 10:54 -0700, Randy Dunlap wrote:
-> On Fri, 20 May 2011 16:55:07 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
-> 
-> 
-> drivers/net/wireless/iwlwifi/iwl-agn-rs.c:351: error: 'struct iwl_lq_sta' has no member named 'dbg_fixed_rate'
-> drivers/net/wireless/iwlwifi/iwl-agn-rs.c:1076: error: 'struct iwl_lq_sta' has no member named 'dbg_fixed_rate'
-> 
-> when CONFIG_MAC80211_DEBUGFS is not enabled.
-> 
-> ---
-This was introduced by a new "SVTOOL" we have. I will push the patch to
-fix this.
+Reproduced with CONFIG_CGROUP_MEM_RES_CTLR=n.
 
-Sorry
-
-Wey 
-
+--Andy
