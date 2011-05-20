@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964795Ab1ETUEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 16:04:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54970 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751692Ab1ETUEO (ORCPT
+	id S935804Ab1ETUPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 16:15:40 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:43315 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935756Ab1ETUPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 16:04:14 -0400
-Date: Fri, 20 May 2011 13:04:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Russ Anderson <rja@sgi.com>
-Cc: Rafael Aquini <aquini@linux.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH] [BUGFIX] mm: hugepages can cause negative commitlimit
-Message-Id: <20110520130411.d1e0baef.akpm@linux-foundation.org>
-In-Reply-To: <20110519221101.GC19648@sgi.com>
-References: <20110518153445.GA18127@sgi.com>
-	<BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com>
-	<20110519045630.GA22533@sgi.com>
-	<BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com>
-	<20110519221101.GC19648@sgi.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Fri, 20 May 2011 16:15:39 -0400
+Date: Fri, 20 May 2011 16:13:01 -0400 (EDT)
+Message-Id: <20110520.161301.913577691507123777.davem@davemloft.net>
+To: daniel@gaisler.com
+Cc: sparclinux@vger.kernel.org, sfr@canb.auug.org.au, peterz@infradead.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Fix merge problem between sparc32 IPI patches and
+ schedule_ipi() callback
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1305900070-23492-1-git-send-email-daniel@gaisler.com>
+References: <1305900070-23492-1-git-send-email-daniel@gaisler.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 20 May 2011 13:13:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 May 2011 17:11:01 -0500
-Russ Anderson <rja@sgi.com> wrote:
+From: Daniel Hellstrom <daniel@gaisler.com>
+Date: Fri, 20 May 2011 16:01:09 +0200
 
-> OK, I see your point.  The root problem is hugepages allocated at boot are
-> subtracted from totalram_pages but hugepages allocated at run time are not.
-> Correct me if I've mistate it or are other conditions.
+> Fixes a merge conflict in arch/sparc/kernel/smp_32.c between commit
+> d6d048192b1d ("sparc32: implement SMP IPIs using the generic functions")
+> from the sparc tree and commit 184748cc50b2 ("sched: Provide
+> scheduler_ipi() callback in response to smp_send_reschedule()").
 > 
-> By "allocated at run time" I mean "echo 1 > /proc/sys/vm/nr_hugepages".
-> That allocation will not change totalram_pages but will change
-> hugetlb_total_pages().
+> The patch adds a call to scheduler_ipi() from the resched IPI handler in
+> sparc32.
 > 
-> How best to fix this inconsistency?  Should totalram_pages include or exclude
-> hugepages?  What are the implications?
+> Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
 
-The problem is that hugetlb_total_pages() is trying to account for two
-different things, while totalram_pages accounts for only one of those
-things, yes?
+What I did to handle this was merge in enough of the upstream commit
+by Peter such that both of these patches apply, via:
 
-One fix would be to stop accounting for huge pages in totalram_pages
-altogether.  That might break other things so careful checking would be
-needed.
+git merge --no-commit 317f394160e9beb97d19a84c39b7e5eb3d7815a8
 
-Or we stop accounting for the boot-time allocated huge pages in
-hugetlb_total_pages().  Split the two things apart altogether and
-account for boot-time allocated and runtime-allocated pages separately.  This
-souds saner to me - it reflects what's actually happening in the kernel.
+then I added patch #1 into the merge commit.
+
+Next, I applied patch #2 afterwards.
+
+So we should be all set when I push this out to Linus, thanks!
