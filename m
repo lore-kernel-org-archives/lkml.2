@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934863Ab1ETIW5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 04:22:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61982 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934688Ab1ETIWz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 04:22:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Qimp69jeytcWAVcGMnq/KSjcURQFvnEj/NUwV7Ut+s7/4gRTSrPMrP0QDWq3VGxoBD
-         e3PqR0fYq1l2dO299xfTkRBIKbCYik0A5E6ewCOXf+bU+my9l0RAOQfgGkvzvAG/dc74
-         ZYAfxDcCidLIpt295AkG7GPXaEq2HWJj5KUR8=
+	id S934872Ab1ETI0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 04:26:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44425 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934699Ab1ETI0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 04:26:38 -0400
+Date: Fri, 20 May 2011 10:26:36 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Armando Visconti <armando.visconti@st.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: Fixed a crash in hid_report_raw_event() function.
+In-Reply-To: <1305834082-14888-1-git-send-email-armando.visconti@st.com>
+Message-ID: <alpine.LNX.2.00.1105201026300.28291@pobox.suse.cz>
+References: <1305834082-14888-1-git-send-email-armando.visconti@st.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Fri, 20 May 2011 11:22:54 +0300
-Message-ID: <BANLkTi=G4PdT8v35VD9AkH0Vgj_YuOfxaw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/6] x86-64: Remove unnecessary barrier in vread_tsc
-From: Janne Blomqvist <blomqvist.janne@gmail.com>
-To: luto@mit.edu, hpa@zytor.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 19 May 2011, Armando Visconti wrote:
 
-for some further micro-optimization of clock_gettime(), one could
-consider using "rdtscp" instead of "mfence;rdtsc" on AMD platforms.
-With the patch at the bottom of the mail to linux-clock-tests.git
-(Andy: feel free to commit it to the upstream repo) I get on an
-Opteron 2435 (6-core, 2.6 GHz):
+> I'm using a Data Modul EasyTouch USB multitouch controller,
+> which is issuing a hid report with a size equals to 0. The rsize
+> value gets set to 536870912 and Linux is crashing in the memset
+> because the value is too big.
+> 
+> Signed-off-by: Armando Visconti <armando.visconti@st.com>
+> ---
+>  drivers/hid/hid-core.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index c3d6626..3e972e3 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1045,6 +1045,9 @@ void hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+>  
+>  	rsize = ((report->size - 1) >> 3) + 1;
+>  
+> +	if (rsize > HID_MAX_BUFFER_SIZE)
+> +		rsize = HID_MAX_BUFFER_SIZE;
+> +
+>  	if (csize < rsize) {
+>  		dbg_hid("report %d is too short, (%d < %d)\n", report->id,
+>  				csize, rsize);
 
-$ ./timing_test 100 mfence_rdtsc CLOCK_MONOTONIC
-100000000 loops in 3.96236s = 39.62 nsec / loop
-
-$ ./timing_test 100 rdtscp CLOCK_MONOTONIC
-100000000 loops in 2.87859s = 28.79 nsec / loop
-
-(best of 5 runs for each test)
-
-For comparison, on a Xeon X3450 (Nehalem 2.67 GHz) I get:
-
-$ ./timing_test 100 lfence_rdtsc CLOCK_MONOTONIC
-100000000 loops in 0.95337s = 9.53 nsec / loop
-
-$ ./timing_test 100 rdtscp CLOCK_MONOTONIC
-100000000 loops in 1.02148s = 10.21 nsec / loop
-
-(same as above, best of 5 runs for each test)
-
-So on Intel "lfence;rdtsc" seems slightly faster than "rdtscp".
-
-
-diff --git a/timing_test.cc b/timing_test.cc
-index 136a731..3a40d41 100644
---- a/timing_test.cc
-+++ b/timing_test.cc
-@@ -33,8 +33,12 @@ int main(int argc, char **argv)
-                printf("\nClocks are:\n");
-                describe_clock("CLOCK_REALTIME", CLOCK_REALTIME);
-                describe_clock("CLOCK_MONOTONIC", CLOCK_MONOTONIC);
-+#ifdef CLOCK_REALTIME_COARSE
-                describe_clock("CLOCK_REALTIME_COARSE", CLOCK_REALTIME_COARSE);
-+#endif
-+#ifdef CLOCK_MONOTONIC_COARSE
-                describe_clock("CLOCK_MONOTONIC_COARSE",
-CLOCK_MONOTONIC_COARSE);
-+#endif
-                return 1;
-        }
-
-@@ -73,6 +77,11 @@ int main(int argc, char **argv)
-                        asm volatile ("");
-                        asm volatile ("lfence;rdtsc;lfence" : "=a"
-(a), "=d" (d));
-                }
-+       } else if (!strcmp(mode, "mfence_rdtsc")) {
-+               for (size_t i = 0; i < loops; ++i) {
-+                       unsigned int a, d;
-+                       asm volatile ("mfence;rdtsc" : "=a" (a), "=d" (d));
-+               }
-        } else if (!strcmp(mode, "mfence_rdtsc_mfence")) {
-                for (size_t i = 0; i < loops; ++i) {
-                        unsigned int a, d;
-
+Applied, thank you.
 
 -- 
-Janne Blomqvist
+Jiri Kosina
+SUSE Labs
