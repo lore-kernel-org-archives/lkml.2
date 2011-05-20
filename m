@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935326Ab1ETFZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 01:25:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41237 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698Ab1ETFZ1 (ORCPT
+	id S935332Ab1ETF3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 01:29:06 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38329 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934850Ab1ETF3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 01:25:27 -0400
+	Fri, 20 May 2011 01:29:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=jPRkWfBp18YFiXFgFE9Qjb+XSM3QWPxaZIaVr4NFkfxym+NQ34YhM+eYwgc7CxkCxs
-         nx2IxzrLXTKu1yvmqpZg36QYpbH4SLuFsevlp/aIN/DZhALGk7qULTbHqzaJ8N033dq6
-         Sg3/ZJYioTJLUdA6A3kPPdk7VkEmaHdM2MdlA=
-MIME-Version: 1.0
-In-Reply-To: <20110520050101.GA7461@kroah.com>
-References: <cover.1305866084.git.mfm@muteddisk.com>
-	<2ecbb21cffe73acfe291c3c8e5626427ed5c5b43.1305866084.git.mfm@muteddisk.com>
-	<20110520050101.GA7461@kroah.com>
-Date: Thu, 19 May 2011 22:25:25 -0700
-Message-ID: <BANLkTi=N9tAA_gZXgwDDTijyUuLysnQQEQ@mail.gmail.com>
-Subject: Re: [PATCH 01/12] staging: usbip: replace usbip_u{dbg,err,info} and
- printk with dev_ and pr_
-From: matt mooney <mfmooney@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: matt mooney <mfm@muteddisk.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=dzmBZYcucb/fF+groy/1Ih9JmSHWqfbvCuk0gRULrxwkdBf0OhYriTzxYum0Gv4bWP
+         CglNpvvSbXkUyu6wdvIaXoUbZWw7RApqrxaBZ4qTjjvorb7StK8YAe3V+rvtd40Z5NCC
+         6Zoyr08u4zyfbbb6zF9ov4eDOpjy0v3sudEhs=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Divyesh Shah <dpshah@google.com>
+Subject: [PATCH] block: call elv_bio_merged() when merged
+Date: Fri, 20 May 2011 14:28:57 +0900
+Message-Id: <1305869337-4375-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 10:01 PM, Greg KH <greg@kroah.com> wrote:
-> On Thu, May 19, 2011 at 09:36:55PM -0700, matt mooney wrote:
->> This switches all of the usbip_u{dbg,err,info} and printk statements to
->> dev_<level>, if possible, or pr_<level> macros. And removes a few
->> unnecessary debug statements.
->>
->> Signed-off-by: matt mooney <mfm@muteddisk.com>
->
-> I've already applied this one, right?
+Commit 73c101011926 ("block: initial patch for on-stack per-task plugging")
+removed calls to elv_bio_merged() when @bio merged with @req. Re-add them.
 
-I don't think so. I never received a notification from your email bot ;)
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Divyesh Shah <dpshah@google.com>
+---
+ block/blk-core.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 3fe00a14822a..4dc02ef5fc82 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1132,6 +1132,7 @@ static bool bio_attempt_back_merge(struct request_queue *q, struct request *req,
+ 	req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
+ 
+ 	drive_stat_acct(req, 0);
++	elv_bio_merged(q, req, bio);
+ 	return true;
+ }
+ 
+@@ -1173,6 +1174,7 @@ static bool bio_attempt_front_merge(struct request_queue *q,
+ 	req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
+ 
+ 	drive_stat_acct(req, 0);
++	elv_bio_merged(q, req, bio);
+ 	return true;
+ }
+ 
 -- 
-GPG-Key: 9AFE00EA
+1.7.5
+
