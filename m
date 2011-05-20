@@ -1,196 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343Ab1ETPJy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 11:09:54 -0400
-Received: from ns5.dns-guards.com ([41.203.20.164]:23418 "EHLO
-	velocity.dns-guards.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932590Ab1ETPJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 11:09:53 -0400
-Message-ID: <sig.61215b43a3.4DD68430.1070801@radicalsystems.co.za>
-Date: Fri, 20 May 2011 17:09:36 +0200
-From: Jan Zwiegers <jan@radicalsystems.co.za>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S933468Ab1ETPLt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 11:11:49 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:34308 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933183Ab1ETPLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 11:11:48 -0400
+Date: Fri, 20 May 2011 08:11:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Stable <stable@kernel.org>
+Subject: Re: [PATCH] rcu: Fix unpaired rcu_irq_enter() from locking
+ selftests
+Message-ID: <20110520151144.GA2366@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4DD58F90.4090506@kernel.org>
+ <1305850194-8229-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Xianghua Xiao <xiaoxianghua@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: PCI BAR1 Unassigned
-References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com> <sig.512079e334.4DD57D44.50009@radicalsystems.co.za> <BANLkTikHQNQdWoDS2dXUC9gTPWvtmUM=yA@mail.gmail.com> <sig.51214cae32.4DD61B48.8010601@radicalsystems.co.za> <BANLkTi=jTKp9+_KDmTxYfGXe6Ln02GLmDA@mail.gmail.com>
-In-Reply-To: <BANLkTi=jTKp9+_KDmTxYfGXe6Ln02GLmDA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Assp-ID: velocity.dns-guards.com ()
-X-Assp-Version: 1.7.1.3(1.0.2)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - velocity.dns-guards.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - radicalsystems.co.za
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305850194-8229-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-20 04:53 PM, Bjorn Helgaas wrote:
-> On Fri, May 20, 2011 at 1:42 AM, Jan Zwiegers<jan@radicalsystems.co.za>  wrote:
->> On 2011-05-19 10:50 PM, Xianghua Xiao wrote:
->>>
->>> On Thu, May 19, 2011 at 3:27 PM, Jan Zwiegers<jan@radicalsystems.co.za>
->>>   wrote:
->>>>
->>>> On 2011-05-19 08:50 PM, Bjorn Helgaas wrote:
->>>>>
->>>>> On Thu, May 19, 2011 at 10:28 AM, Jan Zwiegers<jan@radicalsystems.co.za>
->>>>>   wrote:
->>>>>>
->>>>>> I have the problem below where my PCI card's second BAR does not get
->>>>>> assigned.
->>>>>> What can be the cause of this problem?
->>>>>> The last kernel I tested on which worked OK was 2.6.27.
->>>>>> My current problematic kernel 2.6.35.
->>>>>>
->>>>>> 05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O
->>>>>> Card
->>>>>> (rev 5c)
->>>>>>     Flags: bus master, slow devsel, latency 32, IRQ 22
->>>>>>     Memory at 93b00000 (type 3, prefetchable) [size=2K]
->>>>>>     Memory at<unassigned>      (type 3, prefetchable)
->>>>>>     Capabilities: [80] #00 [0600]
->>>>>>     Kernel modules: pci703drv
->>>>>
->>>>> Could be resource exhaustion or, more likely, we ran out because we
->>>>> now assign resource to things that don't need them, leaving none for
->>>>> things that *do* need them.  This sounds like a regression, so we
->>>>> should open a bugzilla for it and attach dmesg logs from 2.6.27 and
->>>>> 2.6.35.
->>>>>
->>>>> Does this problem keep the driver from working?  (Sometimes drivers
->>>>> don't actually use all the BARs a device supports.)
->>>>>
->>>>> Bjorn
->>>>>
->>>>
->>>> I'm the maintainer of the driver and was involved in the development of
->>>> the
->>>> board as well in 2003. The board uses two BARS and the second BAR is the
->>>> most important. The board worked fine since the 2.4 days and only
->>>> recently
->>>> became problematic. I suspect it works on even later kernels than 27,
->>>> maybe
->>>> 2.6.32.
->>>>
->>>> My knowledge is too little to actually determine if the problem is
->>>> because
->>>> the FPGA based PCI interface is not within spec or something that changed
->>>> in
->>>> the kernel, because of the post .30 releases becoming more strict to PCI
->>>> specification, i.e. BIOS / Kernel interaction.
->>>>
->>>> Jan
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>
->>>
->>> What's the size for BAR1? one reason is that no more space to
->>> align/allocate BAR1.
->>>
->>> If the board stays the same then your FPGA might be the cause, I have
->>> seen similar issues and they ended up in FPGA implementation.
->>>
->>
->> I have submitted the difference in iomem, lspci and dmesg of 2.6.27&  2.6.35
->> kernels from the same machine. The BAR size is 2K. As above BAR0 is at
->> 93b0000 and BAR1 should be at 93b00800.
->
-> Thanks for the data.
->
-> I think your FPGA is "unusual" after all.  lspci says this:
->
->    05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O
-> Card (rev 5c)
->         Flags: bus master, slow devsel, latency 32, IRQ 22
->         Memory at 93b00000 (type 3, prefetchable) [size=2K]
->         Memory at<unassigned>  (type 3, prefetchable)
->
-> The "type 3" means the BAR has both type bits set (bits 1 and 2).  The
-> spec (PCI 3.0 sec 6.2.5.1) says the type field means:
->
->    00 - Locate anywhere in 32-bit access space
->    01 - Reserved
->    10 - Locate anywhere in 64-bit access space
->    11 - Reserved
->
-> I think your BARs are using the "11 - Reserved" setting when they
-> should be "00".  The way Linux handles this did change between 2.6.27
-> and 2.6.35, and I think the change was unintentional, so we might
-> consider changing it back.
->
-> Commit e354597cce8d219d made this change to decode_bar():
->
->            res->flags = bar&  ~PCI_BASE_ADDRESS_MEM_MASK;
->
->    -       if (res->flags == PCI_BASE_ADDRESS_MEM_TYPE_64)
->    +       if (res->flags&  PCI_BASE_ADDRESS_MEM_TYPE_64)
->                    return pci_bar_mem64;
->            return pci_bar_mem32;
->
-> In 2.6.27, we treated the BAR as 64-bit only if the low four bits were
-> 0100 (non-prefetchable, 64-bit type, memory).  That was incorrect,
-> because we should ignore the prefetchable bit.  The fix was to look
-> *only* at bit 2, so now we decide the BAR is 64-bit if the low four
-> bits are x1xx.
->
-> Your BARs contain 1110 in the low four bits.  This is invalid but was
-> treated as 32-bit by 2.6.27 and as 64-bit by 2.6.35.
->
-> Here's an untested Linux change I think we might consider making to
-> restore the previous behavior.  Can you try it (gmail will probably
-> mangle it, so you'll have to apply it by hand)?
->
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 44cbbba..33894ba 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -138,15 +138,20 @@ static u64 pci_size(u64 base, u64 maxbase, u64 mask)
->
->   static inline enum pci_bar_type decode_bar(struct resource *res, u32 bar)
->   {
-> +       u32 mem_type;
-> +
->          if ((bar&  PCI_BASE_ADDRESS_SPACE) == PCI_BASE_ADDRESS_SPACE_IO) {
->                  res->flags = bar&  ~PCI_BASE_ADDRESS_IO_MASK;
->                  return pci_bar_io;
->          }
->
-> -       res->flags = bar&  ~PCI_BASE_ADDRESS_MEM_MASK;
-> +       res->flags = bar&  PCI_BASE_ADDRESS_MEM_PREFETCH;
->
-> -       if (res->flags&  PCI_BASE_ADDRESS_MEM_TYPE_64)
-> +       mem_type = bar&  PCI_BASE_ADDRESS_MEM_TYPE_MASK;
-> +       if (mem_type == PCI_BASE_ADDRESS_MEM_TYPE_64) {
-> +               res->flags |= PCI_BASE_ADDRESS_MEM_TYPE_64;
->                  return pci_bar_mem64;
-> +       }
->          return pci_bar_mem32;
->   }
+On Fri, May 20, 2011 at 02:09:54AM +0200, Frederic Weisbecker wrote:
+> HARDIRQ_ENTER() maps to irq_enter() which calls rcu_irq_enter().
+> But HARDIRQ_EXIT() maps to __irq_exit() which doesn't call
+> rcu_irq_exit().
+> 
+> So for every locking selftest that simulates hardirq disabled,
+> we create an imbalance in the rcu extended quiescent state
+> internal state.
+> 
+> As a result, after the first missing rcu_irq_exit(), subsequent
+> irqs won't exit any extended quiescent state the time of the
+> interrupt servicing. Rcu read side critical section inside irqs
+> on that CPU won't be guaranteed anymore.
+> 
+> To fix this, just use __irq_enter() to simulate the hardirq
+> context. This is sufficient for the locking selftests as we
+> don't need to exit any extended quiescent state or perform
+> any check that irqs normally do when they wake up from idle.
+> 
+> As a side effect, this patch should make it possible to
+> restore
+> "rcu: Decrease memory-barrier usage based on semi-formal proof",
+> which eventually helped finding this bug.
+> 
+> Reported-and-tested-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+You know, I looked at this code, but failed to see __irq_exit() vs
+irq_enter()...
+
+Good catch, Frederic, and thanks to Yinghai and Ingo for all the
+testing!
+
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Stable <stable@kernel.org>
+> ---
+>  lib/locking-selftest.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
+> index 619313e..507a22f 100644
+> --- a/lib/locking-selftest.c
+> +++ b/lib/locking-selftest.c
+> @@ -144,7 +144,7 @@ static void init_shared_classes(void)
+> 
+>  #define HARDIRQ_ENTER()				\
+>  	local_irq_disable();			\
+> -	irq_enter();				\
+> +	__irq_enter();				\
+>  	WARN_ON(!in_irq());
+> 
+>  #define HARDIRQ_EXIT()				\
+> -- 
+> 1.7.3.2
+> 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
-Hi Bjorn
-
-I will tested it next week and let you know. I'll also get the FPGA code 
-fixed up to conform to the PCI 3.0 spec. I know back in 2003 the board 
-only conformed to PCI spec 2.1. Has this maybe changed since then or was 
-it the same for 2.1?
-
-Thanks
-Jan
+> Please read the FAQ at  http://www.tux.org/lkml/
