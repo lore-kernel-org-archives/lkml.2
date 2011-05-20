@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934569Ab1ETAL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:11:28 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:59903 "EHLO
+	id S1756879Ab1ETATc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:19:32 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57817 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934039Ab1ETALY (ORCPT
+	by vger.kernel.org with ESMTP id S934529Ab1ETAL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:11:24 -0400
-X-Sasl-enc: lUSetBsd+lnbjBAWm2TFgLik4Df9j/N8tHxMULah3GnU 1305850283
+	Thu, 19 May 2011 20:11:26 -0400
+X-Sasl-enc: eV4mO0GhYX1suz9wE3G8WDOu6CRaIcQrb3JHw7/jNVzR 1305850285
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jie Zhou <b30303@freescale.com>, Aisheng Dong <b29396@freescale.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 11/44] uio: clean uioinfo when uninstall uio driver
-Date: Thu, 19 May 2011 17:10:29 -0700
-Message-Id: <1305850262-9575-11-git-send-email-gregkh@suse.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 12/44] printk: /dev/kmsg - properly support writev() to avoid interleaved printk() lines
+Date: Thu, 19 May 2011 17:10:30 -0700
+Message-Id: <1305850262-9575-12-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1305850262-9575-1-git-send-email-gregkh@suse.de>
 References: <20110520000821.GA9367@kroah.com>
@@ -23,34 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jie Zhou <b30303@freescale.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
 
-The uioinfo should be cleaned up when uninstall, otherwise re-install
-failure of uio_pdrv_genirq.ko will happen.
+printk: /dev/kmsg - properly support writev() to avoid interleaved printk lines
 
-Signed-off-by: Jie Zhou <b30303@freescale.com>
-Signed-off-by: Aisheng Dong <b29396@freescale.com>
-Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+We should avoid calling printk() in a loop, when we pass a single
+string to /dev/kmsg with writev().
+
+Cc: Lennart Poettering <lennart@poettering.net>
+Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/uio/uio_pdrv_genirq.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/char/mem.c |   41 ++++++++++++++++++++++++++---------------
+ 1 files changed, 26 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index 7174d51..0f424af 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -189,6 +189,10 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 436a990..78923a9 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -806,29 +806,40 @@ static const struct file_operations oldmem_fops = {
+ };
+ #endif
  
- 	uio_unregister_device(priv->uioinfo);
- 	pm_runtime_disable(&pdev->dev);
+-static ssize_t kmsg_write(struct file *file, const char __user *buf,
+-			  size_t count, loff_t *ppos)
++static ssize_t kmsg_writev(struct kiocb *iocb, const struct iovec *iv,
++			   unsigned long count, loff_t pos)
+ {
+-	char *tmp;
+-	ssize_t ret;
++	char *line, *p;
++	int len, i;
++	ssize_t ret = -EFAULT;
+ 
+-	tmp = kmalloc(count + 1, GFP_KERNEL);
+-	if (tmp == NULL)
++	len = iov_length(iv, count);
++	line = p = kmalloc(len + 1, GFP_KERNEL);
++	if (line == NULL)
+ 		return -ENOMEM;
+-	ret = -EFAULT;
+-	if (!copy_from_user(tmp, buf, count)) {
+-		tmp[count] = 0;
+-		ret = printk("%s", tmp);
+-		if (ret > count)
+-			/* printk can add a prefix */
+-			ret = count;
 +
-+	priv->uioinfo->handler = NULL;
-+	priv->uioinfo->irqcontrol = NULL;
++	/*
++	 * copy all vectors into a single string, to ensure we do
++	 * not interleave our log line with other printk calls
++	 */
++	for (i = 0; i < count; i++) {
++		if (copy_from_user(p, iv[i].iov_base, iv[i].iov_len))
++			goto out;
++		p += iv[i].iov_len;
+ 	}
+-	kfree(tmp);
++	p[0] = '\0';
 +
- 	kfree(priv);
- 	return 0;
++	ret = printk("%s", line);
++	/* printk can add a prefix */
++	if (ret > len)
++		ret = len;
++out:
++	kfree(line);
+ 	return ret;
  }
+ 
+ static const struct file_operations kmsg_fops = {
+-	.write = kmsg_write,
++	.aio_write = kmsg_writev,
+ 	.llseek = noop_llseek,
+ };
+ 
 -- 
 1.7.4.2
 
