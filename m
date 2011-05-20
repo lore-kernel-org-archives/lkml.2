@@ -1,69 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934401Ab1ETDre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:47:34 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:20208
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933367Ab1ETDrd (ORCPT
+	id S935112Ab1ETDyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:54:41 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56716 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933275Ab1ETDyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:47:33 -0400
-X-SpamScore: -16
-X-BigFish: VPS-16(zzbb2cK148cM1432N98dKzz1202hzzz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LLH6IZ-01-7YM-02
-X-M-MSG: 
-Date: Fri, 20 May 2011 05:47:24 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: sleeping while atomic warning while modprobing oprofile.
-Message-ID: <20110520034724.GA20052@erda.amd.com>
-References: <20110518191706.GA20475@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110518191706.GA20475@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Thu, 19 May 2011 23:54:40 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 20 May 2011 12:47:53 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, hannes@cmpxchg.org,
+        Michal Hocko <mhocko@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: [PATCH 7/8] memcg static scan reclaim for asyncrhonous reclaim
+Message-Id: <20110520124753.56730b37.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.05.11 15:17:06, Dave Jones wrote:
-> I just saw this when after I did a 'modprobe oprofile' on my amd64 box.
+Ostatic scan rate async memory reclaim for memcg.
 
-Thanks for reporting this. This happens in init_ibs(). We are actually
-too strict here with disabling preemption, though we still need it.
-Will change that code.
+This patch implements a routine for asynchronous memory reclaim for memory
+cgroup, which will be triggered when the usage is near to the limit.
+This patch includes only code codes for memory freeing.
 
--Robert
+Asynchronous memory reclaim can be a help for reduce latency because
+memory reclaim goes while an application need to wait or compute something.
 
-> 
-> 	Dave
-> 
-> BUG: sleeping function called from invalid context at mm/slub.c:824
-> in_atomic(): 1, irqs_disabled(): 0, pid: 32357, name: modprobe
-> INFO: lockdep is turned off.
-> Pid: 32357, comm: modprobe Not tainted 2.6.39-rc7+ #14
-> Call Trace:
->  [<ffffffff8104bdc8>] __might_sleep+0x112/0x117
->  [<ffffffff81129693>] kmem_cache_alloc_trace+0x4b/0xe7
->  [<ffffffff81278f14>] kzalloc.constprop.0+0x29/0x2b
->  [<ffffffff81278f4c>] pci_get_subsys+0x36/0x78
->  [<ffffffff81022689>] ? setup_APIC_eilvt+0xfb/0x139
->  [<ffffffff81278fa4>] pci_get_device+0x16/0x18
->  [<ffffffffa06c8b5d>] op_amd_init+0xd3/0x211 [oprofile]
->  [<ffffffffa064d000>] ? 0xffffffffa064cfff
->  [<ffffffffa064d298>] op_nmi_init+0x21e/0x26a [oprofile]
->  [<ffffffffa064d062>] oprofile_arch_init+0xe/0x26 [oprofile]
->  [<ffffffffa064d010>] oprofile_init+0x10/0x42 [oprofile]
->  [<ffffffff81002099>] do_one_initcall+0x7f/0x13a
->  [<ffffffff81096524>] sys_init_module+0x132/0x281
->  [<ffffffff814cc682>] system_call_fastpath+0x16/0x1b
-> 
-> 
+To do memory reclaim in async, we need some thread or worker.
+Unlike node or zones, memcg can be created on demand and there may be
+a system with thousands of memcgs. So, the number of jobs for memcg
+asynchronous memory reclaim can be big number in theory. So, node kswapd
+codes doesn't fit well. And some scheduling on memcg layer will be appreciated.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+This patch implements a static scan rate memory reclaim.
+When shrink_mem_cgroup_static_scan() is called, it scans pages at most
+MEMCG_STATIC_SCAN_LIMIT(2048) pages and returnes how memory shrinking
+was hard. When the function returns false, the caller can assume memory
+reclaim on the memcg seemed difficult and can add some scheduling delay
+for the job.
+
+Note:
+  - I think this concept can be used for enhancing softlimit, too.
+    But need more study.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/memcontrol.h |    2 
+ include/linux/swap.h       |    2 
+ mm/memcontrol.c            |    5 +
+ mm/vmscan.c                |  171 ++++++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 179 insertions(+), 1 deletion(-)
+
+Index: mmotm-May11/mm/vmscan.c
+===================================================================
+--- mmotm-May11.orig/mm/vmscan.c
++++ mmotm-May11/mm/vmscan.c
+@@ -106,6 +106,7 @@ struct scan_control {
+ 
+ 	/* Which cgroup do we reclaim from */
+ 	struct mem_cgroup *mem_cgroup;
++	unsigned long scan_limit; /* async reclaim uses static scan rate */
+ 
+ 	/*
+ 	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
+@@ -1717,7 +1718,7 @@ static unsigned long shrink_list(enum lr
+ static void get_scan_count(struct zone *zone, struct scan_control *sc,
+ 					unsigned long *nr, int priority)
+ {
+-	unsigned long anon, file, free;
++	unsigned long anon, file, free, total_scan;
+ 	unsigned long anon_prio, file_prio;
+ 	unsigned long ap, fp;
+ 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+@@ -1807,6 +1808,8 @@ static void get_scan_count(struct zone *
+ 	fraction[1] = fp;
+ 	denominator = ap + fp + 1;
+ out:
++	total_scan = 0;
++
+ 	for_each_evictable_lru(l) {
+ 		int file = is_file_lru(l);
+ 		unsigned long scan;
+@@ -1833,6 +1836,20 @@ out:
+ 				scan = SWAP_CLUSTER_MAX;
+ 		}
+ 		nr[l] = scan;
++		total_scan += nr[l];
++	}
++	/*
++	 * Asynchronous reclaim for memcg uses static scan rate for avoiding
++	 * too much cpu consumption in a memcg. Adjust the scan count to fit
++	 * into scan_limit.
++	 */
++	if (total_scan > sc->scan_limit) {
++		for_each_evictable_lru(l) {
++			if (!nr[l] < SWAP_CLUSTER_MAX)
++				continue;
++			nr[l] = div64_u64(nr[l] * sc->scan_limit, total_scan);
++			nr[l] = max((unsigned long)SWAP_CLUSTER_MAX, nr[l]);
++		}
+ 	}
+ }
+ 
+@@ -1938,6 +1955,11 @@ restart:
+ 		 */
+ 		if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
+ 			break;
++		/*
++		 * static scan rate memory reclaim ?
++		 */
++		if (sc->nr_scanned > sc->scan_limit)
++			break;
+ 	}
+ 	sc->nr_reclaimed += nr_reclaimed;
+ 
+@@ -2158,6 +2180,7 @@ unsigned long try_to_free_pages(struct z
+ 		.order = order,
+ 		.mem_cgroup = NULL,
+ 		.nodemask = nodemask,
++		.scan_limit = ULONG_MAX,
+ 	};
+ 	struct shrink_control shrink = {
+ 		.gfp_mask = sc.gfp_mask,
+@@ -2189,6 +2212,7 @@ unsigned long mem_cgroup_shrink_node_zon
+ 		.may_swap = !noswap,
+ 		.order = 0,
+ 		.mem_cgroup = mem,
++		.scan_limit = ULONG_MAX,
+ 	};
+ 
+ 	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+@@ -2232,6 +2256,7 @@ unsigned long try_to_free_mem_cgroup_pag
+ 		.nodemask = NULL, /* we don't care the placement */
+ 		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+ 				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
++		.scan_limit = ULONG_MAX,
+ 	};
+ 	struct shrink_control shrink = {
+ 		.gfp_mask = sc.gfp_mask,
+@@ -2257,6 +2282,147 @@ unsigned long try_to_free_mem_cgroup_pag
+ 
+ 	return nr_reclaimed;
+ }
++
++/*
++ * Routines for static scan rate memory reclaim for memory cgroup.
++ *
++ * Because asyncronous memory reclaim is served by the kernel as background
++ * service for reduce latency, we don't want to scan too much as priority=0
++ * scan of kswapd. We just scan MEMCG_ASYNCSCAN_LIMIT per iteration at most
++ * and frees MEMCG_ASYNCSCAN_LIMIT/2 of pages. Then, check our success rate
++ * and returns the information to the caller.
++ */
++
++static void shrink_mem_cgroup_node(int nid,
++		int priority, struct scan_control *sc)
++{
++	unsigned long this_scanned = 0;
++	unsigned long this_reclaimed = 0;
++	int i;
++
++	for (i = 0; i < NODE_DATA(nid)->nr_zones; i++) {
++		struct zone *zone = NODE_DATA(nid)->node_zones + i;
++
++		if (!populated_zone(zone))
++			continue;
++		if (!mem_cgroup_zone_reclaimable_pages(sc->mem_cgroup, nid, i))
++			continue;
++		/* If recent scan didn't go good, do writepate */
++		sc->nr_scanned = 0;
++		sc->nr_reclaimed = 0;
++		shrink_zone(priority, zone, sc);
++		this_scanned += sc->nr_scanned;
++		this_reclaimed += sc->nr_reclaimed;
++		if (this_reclaimed >= sc->nr_to_reclaim)
++			break;
++		if (sc->scan_limit < this_scanned)
++			break;
++		if (need_resched())
++			break;
++	}
++	sc->nr_scanned = this_scanned;
++	sc->nr_reclaimed = this_reclaimed;
++	return;
++}
++
++#define MEMCG_ASYNCSCAN_LIMIT		(2048)
++
++bool mem_cgroup_shrink_static_scan(struct mem_cgroup *mem, long required)
++{
++	int nid, priority, noscan;
++	unsigned long total_scanned, total_reclaimed, reclaim_target;
++	struct scan_control sc = {
++		.gfp_mask      = GFP_HIGHUSER_MOVABLE,
++		.may_unmap     = 1,
++		.may_swap      = 1,
++		.order         = 0,
++		/* we don't writepage in our scan. but kick flusher threads */
++		.may_writepage = 0,
++	};
++	struct mem_cgroup *victim, *check_again;
++	bool congested = true;
++
++	total_scanned = 0;
++	total_reclaimed = 0;
++	reclaim_target = min(required, MEMCG_ASYNCSCAN_LIMIT/2L);
++	sc.swappiness = mem_cgroup_swappiness(mem);
++
++	noscan = 0;
++	check_again = NULL;
++
++	do {
++		victim = mem_cgroup_select_victim(mem);
++
++		if (!mem_cgroup_test_reclaimable(victim)) {
++			mem_cgroup_release_victim(victim);
++			/*
++			 * if selected a hopeless victim again, give up.
++		 	 */
++			if (check_again == victim)
++				goto out;
++			if (!check_again)
++				check_again = victim;
++		} else
++			check_again = NULL;
++	} while (check_again);
++
++	current->flags |= PF_SWAPWRITE;
++	/*
++	 * We can use arbitrary priority for our run because we just scan
++	 * up to MEMCG_ASYNCSCAN_LIMIT and reclaim only the half of it.
++	 * But, we need to have early-give-up chance for avoid cpu hogging.
++	 * So, start from a small priority and increase it.
++	 */
++	priority = DEF_PRIORITY;
++
++	while ((total_scanned < MEMCG_ASYNCSCAN_LIMIT) &&
++		(total_reclaimed < reclaim_target)) {
++
++		/* select a node to scan */
++		nid = mem_cgroup_select_victim_node(victim);
++
++		sc.mem_cgroup = victim;
++		sc.nr_scanned = 0;
++		sc.scan_limit = MEMCG_ASYNCSCAN_LIMIT - total_scanned;
++		sc.nr_reclaimed = 0;
++		sc.nr_to_reclaim = reclaim_target - total_reclaimed;
++		shrink_mem_cgroup_node(nid, priority, &sc);
++		if (sc.nr_scanned) {
++			total_scanned += sc.nr_scanned;
++			total_reclaimed += sc.nr_reclaimed;
++			noscan = 0;
++		} else
++			noscan++;
++		mem_cgroup_release_victim(victim);
++		/* ok, check condition */
++		if (total_scanned > total_reclaimed * 2)
++			wakeup_flusher_threads(sc.nr_scanned);
++
++		if (mem_cgroup_async_should_stop(mem))
++			break;
++		/* If memory reclaim seems heavy, return that we're congested */
++		if (total_scanned > MEMCG_ASYNCSCAN_LIMIT/4 &&
++		    total_scanned > total_reclaimed*8)
++			break;
++		/*
++		 * The whole system is busy or some status update
++		 * is not synched. It's better to wait for a while.
++		 */
++		if ((noscan > 1) || (need_resched()))
++			break;
++		/* ok, we can do deeper scanning. */
++		priority--;
++	}
++	current->flags &= ~PF_SWAPWRITE;
++	/*
++	 * If we successfully freed the half of target, report that
++	 * memory reclaim went smoothly.
++	 */
++	if (total_reclaimed > reclaim_target/2)
++		congested = false;
++out:
++	return congested;
++}
+ #endif
+ 
+ /*
+@@ -2380,6 +2546,7 @@ static unsigned long balance_pgdat(pg_da
+ 		.swappiness = vm_swappiness,
+ 		.order = order,
+ 		.mem_cgroup = NULL,
++		.scan_limit = ULONG_MAX,
+ 	};
+ 	struct shrink_control shrink = {
+ 		.gfp_mask = sc.gfp_mask,
+@@ -2839,6 +3006,7 @@ unsigned long shrink_all_memory(unsigned
+ 		.hibernation_mode = 1,
+ 		.swappiness = vm_swappiness,
+ 		.order = 0,
++		.scan_limit = ULONG_MAX,
+ 	};
+ 	struct shrink_control shrink = {
+ 		.gfp_mask = sc.gfp_mask,
+@@ -3026,6 +3194,7 @@ static int __zone_reclaim(struct zone *z
+ 		.gfp_mask = gfp_mask,
+ 		.swappiness = vm_swappiness,
+ 		.order = order,
++		.scan_limit = ULONG_MAX,
+ 	};
+ 	struct shrink_control shrink = {
+ 		.gfp_mask = sc.gfp_mask,
+Index: mmotm-May11/mm/memcontrol.c
+===================================================================
+--- mmotm-May11.orig/mm/memcontrol.c
++++ mmotm-May11/mm/memcontrol.c
+@@ -3647,6 +3647,11 @@ unsigned long mem_cgroup_soft_limit_recl
+ 	return nr_reclaimed;
+ }
+ 
++bool mem_cgroup_async_should_stop(struct mem_cgroup *mem)
++{
++	return res_counter_margin(&mem->res) >= MEMCG_ASYNC_MARGIN;
++}
++
+ static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem)
+ {
+ 	if (!test_bit(USE_AUTO_ASYNC, &mem->async_flags))
+Index: mmotm-May11/include/linux/memcontrol.h
+===================================================================
+--- mmotm-May11.orig/include/linux/memcontrol.h
++++ mmotm-May11/include/linux/memcontrol.h
+@@ -124,6 +124,8 @@ extern void mem_cgroup_print_oom_info(st
+ 					struct task_struct *p);
+ struct mem_cgroup *mem_cgroup_select_victim(struct mem_cgroup *mem);
+ void mem_cgroup_release_victim(struct mem_cgroup *mem);
++bool mem_cgroup_async_should_stop(struct mem_cgroup *mem);
++
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ extern int do_swap_account;
+ #endif
+Index: mmotm-May11/include/linux/swap.h
+===================================================================
+--- mmotm-May11.orig/include/linux/swap.h
++++ mmotm-May11/include/linux/swap.h
+@@ -257,6 +257,8 @@ extern unsigned long mem_cgroup_shrink_n
+ 						gfp_t gfp_mask, bool noswap,
+ 						struct zone *zone,
+ 						unsigned long *nr_scanned);
++extern bool
++mem_cgroup_shrink_static_scan(struct mem_cgroup *mem, long required);
+ extern int __isolate_lru_page(struct page *page, int mode, int file);
+ extern unsigned long shrink_all_memory(unsigned long nr_pages);
+ extern int vm_swappiness;
 
