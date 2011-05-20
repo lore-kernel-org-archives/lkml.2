@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934544Ab1ETAr6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:47:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64010 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933236Ab1ETAr4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:47:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=o6bPSzaoAJEd82yXCmkldlo4+4+huuJSTQALq2TPtWIoHMvXbPVJb6xD+Lfi8dichR
-         fP/E6yUm0JO9PNbV5hSjM8LAfJPtikIsCiT8pQNRf/I5sAONV5eQOyrcQPY0xdVVaf48
-         8zHhWqhbjPgwx2ZzDCQJszRpTIj+sJVF+JgqE=
+	id S1756993Ab1ETAv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:51:56 -0400
+Received: from tundra.namei.org ([65.99.196.166]:36391 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756937Ab1ETAvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 20:51:55 -0400
+Date: Fri, 20 May 2011 10:51:28 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, David Safford <safford@watson.ibm.com>,
+        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH v5 00/21] EVM
+In-Reply-To: <1305769890.3304.90.camel@localhost.localdomain>
+Message-ID: <alpine.LRH.2.00.1105201041000.28923@tundra.namei.org>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>  <20110518172552.6d482c7a.akpm@linux-foundation.org> <1305769890.3304.90.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1305851769.7481.90.camel@pasglop>
-References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
-	<1305753895-24845-5-git-send-email-ericvh@gmail.com>
-	<1305851769.7481.90.camel@pasglop>
-Date: Thu, 19 May 2011 19:47:55 -0500
-Message-ID: <BANLkTimc3jQTOJdqAiqbPxGQNVWe39VqfQ@mail.gmail.com>
-Subject: Re: [PATCH 5/7] [RFC] force 32-byte aligned kmallocs
-From: Eric Van Hensbergen <ericvh@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        bg-linux@lists.anl-external.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 7:36 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Wed, 2011-05-18 at 16:24 -0500, Eric Van Hensbergen wrote:
->>
->> -#ifdef CONFIG_NOT_COHERENT_CACHE
->> +#if defined(CONFIG_NOT_COHERENT_CACHE) || defined(CONFIG_BGP)
->>  #define ARCH_DMA_MINALIGN    L1_CACHE_BYTES
->>  #endif
->
-> Is DMA cache coherent on BG/P ? That's odd for a 4xx base :-)
->
+On Wed, 18 May 2011, Mimi Zohar wrote:
 
-My understanding of things (which could be totally wrong) is that the
-DMA we care about on BG/P (namely the Torus and Collective networks)
-is coherent at the L2.  Of course the change in question is talking
-about L1_CACHE_BYTES, so my reading of this is that its a sleazy way
-of getting aligned mallocs that make interactions with the tightly
-coupled networks easier/more-efficient.  I'm open to alternative
-suggestions.
+> > Once we have a better understanding of what the feature does and why it
+> > does it and how it interfaces with the user, we can start looking at
+> > the implementation.
+> 
+> Much appreciated!
 
-      -eric
+What is the status of potential users of the feature?
+
+I recall that MeeGo were planning to use EVM, but they've since changed 
+their security plans.  Do they still plan to use it?  Are any other users 
+committing to use EVM?
+
+Also -- this was raised some time back, but I can't find the discussion -- 
+what does IMA/EVM provide over disk encryption as a protection against 
+offline attacks?
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
