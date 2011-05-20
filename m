@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935610Ab1ETSuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 14:50:52 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:34891 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934349Ab1ETSut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 14:50:49 -0400
-Message-ID: <4DD6B807.6040309@kernel.dk>
-Date: Fri, 20 May 2011 20:50:47 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: Shaohua Li <shaohua.li@intel.com>, linux-kernel@vger.kernel.org,
-        Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH] block: call elv_bio_merged() when merged
-References: <1305869337-4375-1-git-send-email-namhyung@gmail.com>	 <BANLkTik5Od9tLg1F6mDFkzpViXR2ZcRmgA@mail.gmail.com> <1305885108.1633.11.camel@leonhard>
-In-Reply-To: <1305885108.1633.11.camel@leonhard>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S935553Ab1ETSwl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 14:52:41 -0400
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:57128 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935550Ab1ETSwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 14:52:40 -0400
+Date: Fri, 20 May 2011 11:51:34 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: Greg KH <greg@kroah.com>
+Cc: matt mooney <mfmooney@gmail.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 01/12] staging: usbip: replace usbip_u{dbg,err,info} and printk with dev_ and pr_
+Message-ID: <20110520185134.GC83316@haskell.muteddisk.com>
+Mail-Followup-To: Greg KH <greg@kroah.com>,
+	matt mooney <mfmooney@gmail.com>, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <cover.1305866084.git.mfm@muteddisk.com> <2ecbb21cffe73acfe291c3c8e5626427ed5c5b43.1305866084.git.mfm@muteddisk.com> <20110520050101.GA7461@kroah.com> <BANLkTi=N9tAA_gZXgwDDTijyUuLysnQQEQ@mail.gmail.com> <20110520125359.GA9857@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110520125359.GA9857@kroah.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-20 11:51, Namhyung Kim wrote:
-> Hello,
+On 05:53 Fri 20 May     , Greg KH wrote:
+> On Thu, May 19, 2011 at 10:25:25PM -0700, matt mooney wrote:
+> > On Thu, May 19, 2011 at 10:01 PM, Greg KH <greg@kroah.com> wrote:
+> > > On Thu, May 19, 2011 at 09:36:55PM -0700, matt mooney wrote:
+> > >> This switches all of the usbip_u{dbg,err,info} and printk statements to
+> > >> dev_<level>, if possible, or pr_<level> macros. And removes a few
+> > >> unnecessary debug statements.
+> > >>
+> > >> Signed-off-by: matt mooney <mfm@muteddisk.com>
+> > >
+> > > I've already applied this one, right?
+> > 
+> > I don't think so. I never received a notification from your email bot ;)
 > 
-> 2011-05-20 (금), 16:31 +0800, Shaohua Li:
->> 2011/5/20 Namhyung Kim <namhyung@gmail.com>:
->>> Commit 73c101011926 ("block: initial patch for on-stack per-task plugging")
->>> removed calls to elv_bio_merged() when @bio merged with @req. Re-add them.
->>>
->>> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
->>> Cc: Divyesh Shah <dpshah@google.com>
->>> ---
->>>  block/blk-core.c |    2 ++
->>>  1 files changed, 2 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/block/blk-core.c b/block/blk-core.c
->>> index 3fe00a14822a..4dc02ef5fc82 100644
->>> --- a/block/blk-core.c
->>> +++ b/block/blk-core.c
->>> @@ -1132,6 +1132,7 @@ static bool bio_attempt_back_merge(struct request_queue *q, struct request *req,
->>>        req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
->>>
->>>        drive_stat_acct(req, 0);
->>> +       elv_bio_merged(q, req, bio);
->>>        return true;
->>>  }
->>>
->>> @@ -1173,6 +1174,7 @@ static bool bio_attempt_front_merge(struct request_queue *q,
->>>        req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
->>>
->>>        drive_stat_acct(req, 0);
->>> +       elv_bio_merged(q, req, bio);
->>>        return true;
->>>  }
->> Looks you should do this in __make_request. when the routine is called
->> in attempt_plug_merge, the request isn't added to elevator yet.
->>
-> 
-> Hmm.. anyway it is merged. Is there any reason why we shouldn't collect
-> the stat - or invoke the callback routine - if the @req is not in the
-> elevator? Or we need to add a separate stat item for this case?
+> Sorry, my bot went to sleep, you should have received it now.  If not,
+> please let me know and I'll see what happened.
 
-Your patch should be safe, it's essentially only for the cgroup stuff
-that does its own accounting and has appropriate protection for it. We'd
-want to do this for both the plug and not-plugged merge case.
+Your bot must still be asleep! The patch is in your tree, but I never received
+an email; it could have been a problem on my end I.
 
-It's a bit of a shame to add this though, since now we are hitting the
-cgroup lock for each merge.
-
--- 
-Jens Axboe
-
+-matt
