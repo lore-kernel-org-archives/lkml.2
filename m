@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935347Ab1ETFo6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 01:44:58 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:44051 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932930Ab1ETFo4 (ORCPT
+	id S935375Ab1ETFpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 01:45:07 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:27724 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932611Ab1ETFpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 01:44:56 -0400
-X-AuditID: cbfee61a-b7ce2ae000001a8f-d7-4dd5ffd6eaa8
-Date: Fri, 20 May 2011 14:44:47 +0900
+	Fri, 20 May 2011 01:45:03 -0400
+X-AuditID: cbfee61a-b7ce2ae000001a8f-f8-4dd5ffdc07a3
+Date: Fri, 20 May 2011 14:44:54 +0900
 From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH 1/4] Move to Samsung common GPIO library to drivers/gpio
+Subject: [PATCH 2/4] Move the exynos4 GPIO to drivers/gpio
 To: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, kgene.kim@samsung.com, linux-arm-kernel@lists.infradead.org
-Message-id: <20110520054447.GA9956@july>
+Message-id: <20110520054454.GA9960@july>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7BIT
 Content-disposition: inline
 User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 20 May 2011 05:44:53.0564 (UTC)
- FILETIME=[0AF347C0:01CC16B1]
+X-OriginalArrivalTime: 20 May 2011 05:44:59.0830 (UTC)
+ FILETIME=[0EAF6560:01CC16B1]
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,486 +28,803 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kyungmin Park <kyungmin.park@samsung.com>
 
-It's common gpiolib for recent Samsung SoCs. Move to drivers/gpio
+Move the Samsung Exynos4 series SoCs GPIO driver to drivers/gpio
 
-CC: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/plat-samsung/Makefile  |    1 -
- arch/arm/plat-samsung/gpiolib.c |  206 --------------------------------------
+ arch/arm/mach-exynos4/Makefile  |    2 +-
+ arch/arm/mach-exynos4/gpiolib.c |  365 ---------------------------------------
  drivers/gpio/Kconfig            |    6 +
  drivers/gpio/Makefile           |    1 +
- drivers/gpio/samsung-gpiolib.c  |  207 +++++++++++++++++++++++++++++++++++++++
- 5 files changed, 214 insertions(+), 207 deletions(-)
- delete mode 100644 arch/arm/plat-samsung/gpiolib.c
- create mode 100644 drivers/gpio/samsung-gpiolib.c
+ drivers/gpio/exynos4-gpio.c     |  365 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 373 insertions(+), 366 deletions(-)
+ delete mode 100644 arch/arm/mach-exynos4/gpiolib.c
+ create mode 100644 drivers/gpio/exynos4-gpio.c
 
-diff --git a/arch/arm/plat-samsung/Makefile b/arch/arm/plat-samsung/Makefile
-index e9de58a..53eb15b 100644
---- a/arch/arm/plat-samsung/Makefile
-+++ b/arch/arm/plat-samsung/Makefile
-@@ -19,7 +19,6 @@ obj-y				+= gpio.o
- obj-y				+= gpio-config.o
- obj-y				+= dev-asocdma.o
+diff --git a/arch/arm/mach-exynos4/Makefile b/arch/arm/mach-exynos4/Makefile
+index 9be104f..3bb3f57 100644
+--- a/arch/arm/mach-exynos4/Makefile
++++ b/arch/arm/mach-exynos4/Makefile
+@@ -13,7 +13,7 @@ obj-				:=
+ # Core support for EXYNOS4 system
  
--obj-$(CONFIG_SAMSUNG_GPIOLIB_4BIT)	+= gpiolib.o
- obj-$(CONFIG_SAMSUNG_CLKSRC)	+= clock-clksrc.o
+ obj-$(CONFIG_CPU_EXYNOS4210)	+= cpu.o init.o clock.o irq-combiner.o
+-obj-$(CONFIG_CPU_EXYNOS4210)	+= setup-i2c0.o gpiolib.o irq-eint.o dma.o
++obj-$(CONFIG_CPU_EXYNOS4210)	+= setup-i2c0.o irq-eint.o dma.o
+ obj-$(CONFIG_PM)		+= pm.o sleep.o
+ obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
  
- obj-$(CONFIG_SAMSUNG_IRQ_UART)	+= irq-uart.o
-diff --git a/arch/arm/plat-samsung/gpiolib.c b/arch/arm/plat-samsung/gpiolib.c
+diff --git a/arch/arm/mach-exynos4/gpiolib.c b/arch/arm/mach-exynos4/gpiolib.c
 deleted file mode 100644
-index ea37c04..0000000
---- a/arch/arm/plat-samsung/gpiolib.c
+index d54ca6a..0000000
+--- a/arch/arm/mach-exynos4/gpiolib.c
 +++ /dev/null
-@@ -1,206 +0,0 @@
--/* arch/arm/plat-samsung/gpiolib.c
+@@ -1,365 +0,0 @@
+-/* linux/arch/arm/mach-exynos4/gpiolib.c
 - *
-- * Copyright 2008 Openmoko, Inc.
-- * Copyright 2008 Simtec Electronics
-- *      Ben Dooks <ben@simtec.co.uk>
-- *      http://armlinux.simtec.co.uk/
+- * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+- *		http://www.samsung.com
 - *
-- * Copyright (c) 2009 Samsung Electronics Co., Ltd.
-- *		http://www.samsung.com/
-- *
-- * SAMSUNG - GPIOlib support
+- * EXYNOS4 - GPIOlib support
 - *
 - * This program is free software; you can redistribute it and/or modify
 - * it under the terms of the GNU General Public License version 2 as
 - * published by the Free Software Foundation.
-- */
+-*/
 -
 -#include <linux/kernel.h>
 -#include <linux/irq.h>
 -#include <linux/io.h>
 -#include <linux/gpio.h>
+-
+-#include <mach/map.h>
+-
 -#include <plat/gpio-core.h>
 -#include <plat/gpio-cfg.h>
 -#include <plat/gpio-cfg-helpers.h>
 -
--#ifndef DEBUG_GPIO
--#define gpio_dbg(x...) do { } while (0)
--#else
--#define gpio_dbg(x...) printk(KERN_DEBUG x)
--#endif
+-static struct s3c_gpio_cfg gpio_cfg = {
+-	.set_config	= s3c_gpio_setcfg_s3c64xx_4bit,
+-	.set_pull	= s3c_gpio_setpull_updown,
+-	.get_pull	= s3c_gpio_getpull_updown,
+-};
 -
--/* The samsung_gpiolib_4bit routines are to control the gpio banks where
-- * the gpio configuration register (GPxCON) has 4 bits per GPIO, as the
-- * following example:
+-static struct s3c_gpio_cfg gpio_cfg_noint = {
+-	.set_config	= s3c_gpio_setcfg_s3c64xx_4bit,
+-	.set_pull	= s3c_gpio_setpull_updown,
+-	.get_pull	= s3c_gpio_getpull_updown,
+-};
+-
+-/*
+- * Following are the gpio banks in v310.
 - *
-- * base + 0x00: Control register, 4 bits per gpio
-- *		gpio n: 4 bits starting at (4*n)
-- *		0000 = input, 0001 = output, others mean special-function
-- * base + 0x04: Data register, 1 bit per gpio
-- *		bit n: data bit n
+- * The 'config' member when left to NULL, is initialized to the default
+- * structure gpio_cfg in the init function below.
 - *
-- * Note, since the data register is one bit per gpio and is at base + 0x4
-- * we can use s3c_gpiolib_get and s3c_gpiolib_set to change the state of
-- * the output.
--*/
--
--static int samsung_gpiolib_4bit_input(struct gpio_chip *chip,
--				      unsigned int offset)
--{
--	struct s3c_gpio_chip *ourchip = to_s3c_gpio(chip);
--	void __iomem *base = ourchip->base;
--	unsigned long con;
--
--	con = __raw_readl(base + GPIOCON_OFF);
--	con &= ~(0xf << con_4bit_shift(offset));
--	__raw_writel(con, base + GPIOCON_OFF);
--
--	gpio_dbg("%s: %p: CON now %08lx\n", __func__, base, con);
--
--	return 0;
--}
--
--static int samsung_gpiolib_4bit_output(struct gpio_chip *chip,
--				       unsigned int offset, int value)
--{
--	struct s3c_gpio_chip *ourchip = to_s3c_gpio(chip);
--	void __iomem *base = ourchip->base;
--	unsigned long con;
--	unsigned long dat;
--
--	con = __raw_readl(base + GPIOCON_OFF);
--	con &= ~(0xf << con_4bit_shift(offset));
--	con |= 0x1 << con_4bit_shift(offset);
--
--	dat = __raw_readl(base + GPIODAT_OFF);
--
--	if (value)
--		dat |= 1 << offset;
--	else
--		dat &= ~(1 << offset);
--
--	__raw_writel(dat, base + GPIODAT_OFF);
--	__raw_writel(con, base + GPIOCON_OFF);
--	__raw_writel(dat, base + GPIODAT_OFF);
--
--	gpio_dbg("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
--
--	return 0;
--}
--
--/* The next set of routines are for the case where the GPIO configuration
-- * registers are 4 bits per GPIO but there is more than one register (the
-- * bank has more than 8 GPIOs.
-- *
-- * This case is the similar to the 4 bit case, but the registers are as
-- * follows:
-- *
-- * base + 0x00: Control register, 4 bits per gpio (lower 8 GPIOs)
-- *		gpio n: 4 bits starting at (4*n)
-- *		0000 = input, 0001 = output, others mean special-function
-- * base + 0x04: Control register, 4 bits per gpio (up to 8 additions GPIOs)
-- *		gpio n: 4 bits starting at (4*n)
-- *		0000 = input, 0001 = output, others mean special-function
-- * base + 0x08: Data register, 1 bit per gpio
-- *		bit n: data bit n
-- *
-- * To allow us to use the s3c_gpiolib_get and s3c_gpiolib_set routines we
-- * store the 'base + 0x4' address so that these routines see the data
-- * register at ourchip->base + 0x04.
+- * The 'base' member is also initialized in the init function below.
+- * Note: The initialization of 'base' member of s3c_gpio_chip structure
+- * uses the above macro and depends on the banks being listed in order here.
 - */
+-static struct s3c_gpio_chip exynos4_gpio_part1_4bit[] = {
+-	{
+-		.chip	= {
+-			.base	= EXYNOS4_GPA0(0),
+-			.ngpio	= EXYNOS4_GPIO_A0_NR,
+-			.label	= "GPA0",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPA1(0),
+-			.ngpio	= EXYNOS4_GPIO_A1_NR,
+-			.label	= "GPA1",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPB(0),
+-			.ngpio	= EXYNOS4_GPIO_B_NR,
+-			.label	= "GPB",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPC0(0),
+-			.ngpio	= EXYNOS4_GPIO_C0_NR,
+-			.label	= "GPC0",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPC1(0),
+-			.ngpio	= EXYNOS4_GPIO_C1_NR,
+-			.label	= "GPC1",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPD0(0),
+-			.ngpio	= EXYNOS4_GPIO_D0_NR,
+-			.label	= "GPD0",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPD1(0),
+-			.ngpio	= EXYNOS4_GPIO_D1_NR,
+-			.label	= "GPD1",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPE0(0),
+-			.ngpio	= EXYNOS4_GPIO_E0_NR,
+-			.label	= "GPE0",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPE1(0),
+-			.ngpio	= EXYNOS4_GPIO_E1_NR,
+-			.label	= "GPE1",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPE2(0),
+-			.ngpio	= EXYNOS4_GPIO_E2_NR,
+-			.label	= "GPE2",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPE3(0),
+-			.ngpio	= EXYNOS4_GPIO_E3_NR,
+-			.label	= "GPE3",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPE4(0),
+-			.ngpio	= EXYNOS4_GPIO_E4_NR,
+-			.label	= "GPE4",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPF0(0),
+-			.ngpio	= EXYNOS4_GPIO_F0_NR,
+-			.label	= "GPF0",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPF1(0),
+-			.ngpio	= EXYNOS4_GPIO_F1_NR,
+-			.label	= "GPF1",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPF2(0),
+-			.ngpio	= EXYNOS4_GPIO_F2_NR,
+-			.label	= "GPF2",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPF3(0),
+-			.ngpio	= EXYNOS4_GPIO_F3_NR,
+-			.label	= "GPF3",
+-		},
+-	},
+-};
 -
--static int samsung_gpiolib_4bit2_input(struct gpio_chip *chip,
--				       unsigned int offset)
+-static struct s3c_gpio_chip exynos4_gpio_part2_4bit[] = {
+-	{
+-		.chip	= {
+-			.base	= EXYNOS4_GPJ0(0),
+-			.ngpio	= EXYNOS4_GPIO_J0_NR,
+-			.label	= "GPJ0",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPJ1(0),
+-			.ngpio	= EXYNOS4_GPIO_J1_NR,
+-			.label	= "GPJ1",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPK0(0),
+-			.ngpio	= EXYNOS4_GPIO_K0_NR,
+-			.label	= "GPK0",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPK1(0),
+-			.ngpio	= EXYNOS4_GPIO_K1_NR,
+-			.label	= "GPK1",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPK2(0),
+-			.ngpio	= EXYNOS4_GPIO_K2_NR,
+-			.label	= "GPK2",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPK3(0),
+-			.ngpio	= EXYNOS4_GPIO_K3_NR,
+-			.label	= "GPK3",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPL0(0),
+-			.ngpio	= EXYNOS4_GPIO_L0_NR,
+-			.label	= "GPL0",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPL1(0),
+-			.ngpio	= EXYNOS4_GPIO_L1_NR,
+-			.label	= "GPL1",
+-		},
+-	}, {
+-		.chip	= {
+-			.base	= EXYNOS4_GPL2(0),
+-			.ngpio	= EXYNOS4_GPIO_L2_NR,
+-			.label	= "GPL2",
+-		},
+-	}, {
+-		.config	= &gpio_cfg_noint,
+-		.chip	= {
+-			.base	= EXYNOS4_GPY0(0),
+-			.ngpio	= EXYNOS4_GPIO_Y0_NR,
+-			.label	= "GPY0",
+-		},
+-	}, {
+-		.config	= &gpio_cfg_noint,
+-		.chip	= {
+-			.base	= EXYNOS4_GPY1(0),
+-			.ngpio	= EXYNOS4_GPIO_Y1_NR,
+-			.label	= "GPY1",
+-		},
+-	}, {
+-		.config	= &gpio_cfg_noint,
+-		.chip	= {
+-			.base	= EXYNOS4_GPY2(0),
+-			.ngpio	= EXYNOS4_GPIO_Y2_NR,
+-			.label	= "GPY2",
+-		},
+-	}, {
+-		.config	= &gpio_cfg_noint,
+-		.chip	= {
+-			.base	= EXYNOS4_GPY3(0),
+-			.ngpio	= EXYNOS4_GPIO_Y3_NR,
+-			.label	= "GPY3",
+-		},
+-	}, {
+-		.config	= &gpio_cfg_noint,
+-		.chip	= {
+-			.base	= EXYNOS4_GPY4(0),
+-			.ngpio	= EXYNOS4_GPIO_Y4_NR,
+-			.label	= "GPY4",
+-		},
+-	}, {
+-		.config	= &gpio_cfg_noint,
+-		.chip	= {
+-			.base	= EXYNOS4_GPY5(0),
+-			.ngpio	= EXYNOS4_GPIO_Y5_NR,
+-			.label	= "GPY5",
+-		},
+-	}, {
+-		.config	= &gpio_cfg_noint,
+-		.chip	= {
+-			.base	= EXYNOS4_GPY6(0),
+-			.ngpio	= EXYNOS4_GPIO_Y6_NR,
+-			.label	= "GPY6",
+-		},
+-	}, {
+-		.base	= (S5P_VA_GPIO2 + 0xC00),
+-		.config	= &gpio_cfg_noint,
+-		.irq_base = IRQ_EINT(0),
+-		.chip	= {
+-			.base	= EXYNOS4_GPX0(0),
+-			.ngpio	= EXYNOS4_GPIO_X0_NR,
+-			.label	= "GPX0",
+-			.to_irq	= samsung_gpiolib_to_irq,
+-		},
+-	}, {
+-		.base	= (S5P_VA_GPIO2 + 0xC20),
+-		.config	= &gpio_cfg_noint,
+-		.irq_base = IRQ_EINT(8),
+-		.chip	= {
+-			.base	= EXYNOS4_GPX1(0),
+-			.ngpio	= EXYNOS4_GPIO_X1_NR,
+-			.label	= "GPX1",
+-			.to_irq	= samsung_gpiolib_to_irq,
+-		},
+-	}, {
+-		.base	= (S5P_VA_GPIO2 + 0xC40),
+-		.config	= &gpio_cfg_noint,
+-		.irq_base = IRQ_EINT(16),
+-		.chip	= {
+-			.base	= EXYNOS4_GPX2(0),
+-			.ngpio	= EXYNOS4_GPIO_X2_NR,
+-			.label	= "GPX2",
+-			.to_irq	= samsung_gpiolib_to_irq,
+-		},
+-	}, {
+-		.base	= (S5P_VA_GPIO2 + 0xC60),
+-		.config	= &gpio_cfg_noint,
+-		.irq_base = IRQ_EINT(24),
+-		.chip	= {
+-			.base	= EXYNOS4_GPX3(0),
+-			.ngpio	= EXYNOS4_GPIO_X3_NR,
+-			.label	= "GPX3",
+-			.to_irq	= samsung_gpiolib_to_irq,
+-		},
+-	},
+-};
+-
+-static struct s3c_gpio_chip exynos4_gpio_part3_4bit[] = {
+-	{
+-		.chip	= {
+-			.base	= EXYNOS4_GPZ(0),
+-			.ngpio	= EXYNOS4_GPIO_Z_NR,
+-			.label	= "GPZ",
+-		},
+-	},
+-};
+-
+-static __init int exynos4_gpiolib_init(void)
 -{
--	struct s3c_gpio_chip *ourchip = to_s3c_gpio(chip);
--	void __iomem *base = ourchip->base;
--	void __iomem *regcon = base;
--	unsigned long con;
+-	struct s3c_gpio_chip *chip;
+-	int i;
+-	int group = 0;
+-	int nr_chips;
 -
--	if (offset > 7)
--		offset -= 8;
--	else
--		regcon -= 4;
+-	/* GPIO part 1 */
 -
--	con = __raw_readl(regcon);
--	con &= ~(0xf << con_4bit_shift(offset));
--	__raw_writel(con, regcon);
+-	chip = exynos4_gpio_part1_4bit;
+-	nr_chips = ARRAY_SIZE(exynos4_gpio_part1_4bit);
 -
--	gpio_dbg("%s: %p: CON %08lx\n", __func__, base, con);
+-	for (i = 0; i < nr_chips; i++, chip++) {
+-		if (chip->config == NULL) {
+-			chip->config = &gpio_cfg;
+-			/* Assign the GPIO interrupt group */
+-			chip->group = group++;
+-		}
+-		if (chip->base == NULL)
+-			chip->base = S5P_VA_GPIO1 + (i) * 0x20;
+-	}
+-
+-	samsung_gpiolib_add_4bit_chips(exynos4_gpio_part1_4bit, nr_chips);
+-
+-	/* GPIO part 2 */
+-
+-	chip = exynos4_gpio_part2_4bit;
+-	nr_chips = ARRAY_SIZE(exynos4_gpio_part2_4bit);
+-
+-	for (i = 0; i < nr_chips; i++, chip++) {
+-		if (chip->config == NULL) {
+-			chip->config = &gpio_cfg;
+-			/* Assign the GPIO interrupt group */
+-			chip->group = group++;
+-		}
+-		if (chip->base == NULL)
+-			chip->base = S5P_VA_GPIO2 + (i) * 0x20;
+-	}
+-
+-	samsung_gpiolib_add_4bit_chips(exynos4_gpio_part2_4bit, nr_chips);
+-
+-	/* GPIO part 3 */
+-
+-	chip = exynos4_gpio_part3_4bit;
+-	nr_chips = ARRAY_SIZE(exynos4_gpio_part3_4bit);
+-
+-	for (i = 0; i < nr_chips; i++, chip++) {
+-		if (chip->config == NULL) {
+-			chip->config = &gpio_cfg;
+-			/* Assign the GPIO interrupt group */
+-			chip->group = group++;
+-		}
+-		if (chip->base == NULL)
+-			chip->base = S5P_VA_GPIO3 + (i) * 0x20;
+-	}
+-
+-	samsung_gpiolib_add_4bit_chips(exynos4_gpio_part3_4bit, nr_chips);
+-	s5p_register_gpioint_bank(IRQ_GPIO_XA, 0, IRQ_GPIO1_NR_GROUPS);
+-	s5p_register_gpioint_bank(IRQ_GPIO_XB, IRQ_GPIO1_NR_GROUPS, IRQ_GPIO2_NR_GROUPS);
 -
 -	return 0;
 -}
--
--static int samsung_gpiolib_4bit2_output(struct gpio_chip *chip,
--					unsigned int offset, int value)
--{
--	struct s3c_gpio_chip *ourchip = to_s3c_gpio(chip);
--	void __iomem *base = ourchip->base;
--	void __iomem *regcon = base;
--	unsigned long con;
--	unsigned long dat;
--	unsigned con_offset = offset;
--
--	if (con_offset > 7)
--		con_offset -= 8;
--	else
--		regcon -= 4;
--
--	con = __raw_readl(regcon);
--	con &= ~(0xf << con_4bit_shift(con_offset));
--	con |= 0x1 << con_4bit_shift(con_offset);
--
--	dat = __raw_readl(base + GPIODAT_OFF);
--
--	if (value)
--		dat |= 1 << offset;
--	else
--		dat &= ~(1 << offset);
--
--	__raw_writel(dat, base + GPIODAT_OFF);
--	__raw_writel(con, regcon);
--	__raw_writel(dat, base + GPIODAT_OFF);
--
--	gpio_dbg("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
--
--	return 0;
--}
--
--void __init samsung_gpiolib_add_4bit(struct s3c_gpio_chip *chip)
--{
--	chip->chip.direction_input = samsung_gpiolib_4bit_input;
--	chip->chip.direction_output = samsung_gpiolib_4bit_output;
--	chip->pm = __gpio_pm(&s3c_gpio_pm_4bit);
--}
--
--void __init samsung_gpiolib_add_4bit2(struct s3c_gpio_chip *chip)
--{
--	chip->chip.direction_input = samsung_gpiolib_4bit2_input;
--	chip->chip.direction_output = samsung_gpiolib_4bit2_output;
--	chip->pm = __gpio_pm(&s3c_gpio_pm_4bit);
--}
--
--void __init samsung_gpiolib_add_4bit_chips(struct s3c_gpio_chip *chip,
--					   int nr_chips)
--{
--	for (; nr_chips > 0; nr_chips--, chip++) {
--		samsung_gpiolib_add_4bit(chip);
--		s3c_gpiolib_add(chip);
--	}
--}
--
--void __init samsung_gpiolib_add_4bit2_chips(struct s3c_gpio_chip *chip,
--					    int nr_chips)
--{
--	for (; nr_chips > 0; nr_chips--, chip++) {
--		samsung_gpiolib_add_4bit2(chip);
--		s3c_gpiolib_add(chip);
--	}
--}
--
--void __init samsung_gpiolib_add_2bit_chips(struct s3c_gpio_chip *chip,
--					   int nr_chips)
--{
--	for (; nr_chips > 0; nr_chips--, chip++)
--		s3c_gpiolib_add(chip);
--}
+-core_initcall(exynos4_gpiolib_init);
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index d3b2953..42376b7 100644
+index 42376b7..03e7310 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
 @@ -75,6 +75,12 @@ config GPIO_BASIC_MMIO
  	help
  	  Say yes here to support basic memory-mapped GPIO controllers.
  
-+config GPIO_SAMSUNG
-+	bool "Samsung SoCs GPIO library support"
-+	default y if SAMSUNG_GPIOLIB_4BIT
++config GPIO_EXYNOS4
++	bool "Samsung Exynos4 GPIO library support"
++	default y if CPU_EXYNOS4210
 +	help
-+	  Say yes here to support Samsung SoCs GPIO library
++	  Say yes here to support Samsung Exynos4 series SoCs GPIO library
 +
- config GPIO_IT8761E
- 	tristate "IT8761E GPIO support"
- 	depends on GPIOLIB
+ config GPIO_SAMSUNG
+ 	bool "Samsung SoCs GPIO library support"
+ 	default y if SAMSUNG_GPIOLIB_4BIT
 diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index becef59..229082d 100644
+index 229082d..978ab87 100644
 --- a/drivers/gpio/Makefile
 +++ b/drivers/gpio/Makefile
 @@ -11,6 +11,7 @@ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
  obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
  obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
  obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
-+obj-$(CONFIG_GPIO_SAMSUNG)	+= samsung-gpiolib.o
++obj-$(CONFIG_GPIO_EXYNOS4)	+= exynos4-gpio.o
+ obj-$(CONFIG_GPIO_SAMSUNG)	+= samsung-gpiolib.o
  obj-$(CONFIG_GPIO_LANGWELL)	+= langwell_gpio.o
  obj-$(CONFIG_GPIO_MAX730X)	+= max730x.o
- obj-$(CONFIG_GPIO_MAX7300)	+= max7300.o
-diff --git a/drivers/gpio/samsung-gpiolib.c b/drivers/gpio/samsung-gpiolib.c
+diff --git a/drivers/gpio/exynos4-gpio.c b/drivers/gpio/exynos4-gpio.c
 new file mode 100644
-index 0000000..925b66e
+index 0000000..d54ca6a
 --- /dev/null
-+++ b/drivers/gpio/samsung-gpiolib.c
-@@ -0,0 +1,207 @@
-+/*
-+ * drivers/gpio/samsung-gpiolib.c
++++ b/drivers/gpio/exynos4-gpio.c
+@@ -0,0 +1,365 @@
++/* linux/arch/arm/mach-exynos4/gpiolib.c
 + *
-+ * Copyright 2008 Openmoko, Inc.
-+ * Copyright 2008 Simtec Electronics
-+ *      Ben Dooks <ben@simtec.co.uk>
-+ *      http://armlinux.simtec.co.uk/
++ * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com
 + *
-+ * Copyright (c) 2009 Samsung Electronics Co., Ltd.
-+ *		http://www.samsung.com/
-+ *
-+ * SAMSUNG - GPIOlib support
++ * EXYNOS4 - GPIOlib support
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ */
++*/
 +
 +#include <linux/kernel.h>
 +#include <linux/irq.h>
 +#include <linux/io.h>
 +#include <linux/gpio.h>
++
++#include <mach/map.h>
++
 +#include <plat/gpio-core.h>
 +#include <plat/gpio-cfg.h>
 +#include <plat/gpio-cfg-helpers.h>
 +
-+#ifndef DEBUG_GPIO
-+#define gpio_dbg(x...) do { } while (0)
-+#else
-+#define gpio_dbg(x...) printk(KERN_DEBUG x)
-+#endif
++static struct s3c_gpio_cfg gpio_cfg = {
++	.set_config	= s3c_gpio_setcfg_s3c64xx_4bit,
++	.set_pull	= s3c_gpio_setpull_updown,
++	.get_pull	= s3c_gpio_getpull_updown,
++};
 +
-+/* The samsung_gpiolib_4bit routines are to control the gpio banks where
-+ * the gpio configuration register (GPxCON) has 4 bits per GPIO, as the
-+ * following example:
++static struct s3c_gpio_cfg gpio_cfg_noint = {
++	.set_config	= s3c_gpio_setcfg_s3c64xx_4bit,
++	.set_pull	= s3c_gpio_setpull_updown,
++	.get_pull	= s3c_gpio_getpull_updown,
++};
++
++/*
++ * Following are the gpio banks in v310.
 + *
-+ * base + 0x00: Control register, 4 bits per gpio
-+ *		gpio n: 4 bits starting at (4*n)
-+ *		0000 = input, 0001 = output, others mean special-function
-+ * base + 0x04: Data register, 1 bit per gpio
-+ *		bit n: data bit n
++ * The 'config' member when left to NULL, is initialized to the default
++ * structure gpio_cfg in the init function below.
 + *
-+ * Note, since the data register is one bit per gpio and is at base + 0x4
-+ * we can use s3c_gpiolib_get and s3c_gpiolib_set to change the state of
-+ * the output.
-+*/
-+
-+static int samsung_gpiolib_4bit_input(struct gpio_chip *chip,
-+				      unsigned int offset)
-+{
-+	struct s3c_gpio_chip *ourchip = to_s3c_gpio(chip);
-+	void __iomem *base = ourchip->base;
-+	unsigned long con;
-+
-+	con = __raw_readl(base + GPIOCON_OFF);
-+	con &= ~(0xf << con_4bit_shift(offset));
-+	__raw_writel(con, base + GPIOCON_OFF);
-+
-+	gpio_dbg("%s: %p: CON now %08lx\n", __func__, base, con);
-+
-+	return 0;
-+}
-+
-+static int samsung_gpiolib_4bit_output(struct gpio_chip *chip,
-+				       unsigned int offset, int value)
-+{
-+	struct s3c_gpio_chip *ourchip = to_s3c_gpio(chip);
-+	void __iomem *base = ourchip->base;
-+	unsigned long con;
-+	unsigned long dat;
-+
-+	con = __raw_readl(base + GPIOCON_OFF);
-+	con &= ~(0xf << con_4bit_shift(offset));
-+	con |= 0x1 << con_4bit_shift(offset);
-+
-+	dat = __raw_readl(base + GPIODAT_OFF);
-+
-+	if (value)
-+		dat |= 1 << offset;
-+	else
-+		dat &= ~(1 << offset);
-+
-+	__raw_writel(dat, base + GPIODAT_OFF);
-+	__raw_writel(con, base + GPIOCON_OFF);
-+	__raw_writel(dat, base + GPIODAT_OFF);
-+
-+	gpio_dbg("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
-+
-+	return 0;
-+}
-+
-+/* The next set of routines are for the case where the GPIO configuration
-+ * registers are 4 bits per GPIO but there is more than one register (the
-+ * bank has more than 8 GPIOs.
-+ *
-+ * This case is the similar to the 4 bit case, but the registers are as
-+ * follows:
-+ *
-+ * base + 0x00: Control register, 4 bits per gpio (lower 8 GPIOs)
-+ *		gpio n: 4 bits starting at (4*n)
-+ *		0000 = input, 0001 = output, others mean special-function
-+ * base + 0x04: Control register, 4 bits per gpio (up to 8 additions GPIOs)
-+ *		gpio n: 4 bits starting at (4*n)
-+ *		0000 = input, 0001 = output, others mean special-function
-+ * base + 0x08: Data register, 1 bit per gpio
-+ *		bit n: data bit n
-+ *
-+ * To allow us to use the s3c_gpiolib_get and s3c_gpiolib_set routines we
-+ * store the 'base + 0x4' address so that these routines see the data
-+ * register at ourchip->base + 0x04.
++ * The 'base' member is also initialized in the init function below.
++ * Note: The initialization of 'base' member of s3c_gpio_chip structure
++ * uses the above macro and depends on the banks being listed in order here.
 + */
++static struct s3c_gpio_chip exynos4_gpio_part1_4bit[] = {
++	{
++		.chip	= {
++			.base	= EXYNOS4_GPA0(0),
++			.ngpio	= EXYNOS4_GPIO_A0_NR,
++			.label	= "GPA0",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPA1(0),
++			.ngpio	= EXYNOS4_GPIO_A1_NR,
++			.label	= "GPA1",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPB(0),
++			.ngpio	= EXYNOS4_GPIO_B_NR,
++			.label	= "GPB",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPC0(0),
++			.ngpio	= EXYNOS4_GPIO_C0_NR,
++			.label	= "GPC0",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPC1(0),
++			.ngpio	= EXYNOS4_GPIO_C1_NR,
++			.label	= "GPC1",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPD0(0),
++			.ngpio	= EXYNOS4_GPIO_D0_NR,
++			.label	= "GPD0",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPD1(0),
++			.ngpio	= EXYNOS4_GPIO_D1_NR,
++			.label	= "GPD1",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPE0(0),
++			.ngpio	= EXYNOS4_GPIO_E0_NR,
++			.label	= "GPE0",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPE1(0),
++			.ngpio	= EXYNOS4_GPIO_E1_NR,
++			.label	= "GPE1",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPE2(0),
++			.ngpio	= EXYNOS4_GPIO_E2_NR,
++			.label	= "GPE2",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPE3(0),
++			.ngpio	= EXYNOS4_GPIO_E3_NR,
++			.label	= "GPE3",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPE4(0),
++			.ngpio	= EXYNOS4_GPIO_E4_NR,
++			.label	= "GPE4",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPF0(0),
++			.ngpio	= EXYNOS4_GPIO_F0_NR,
++			.label	= "GPF0",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPF1(0),
++			.ngpio	= EXYNOS4_GPIO_F1_NR,
++			.label	= "GPF1",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPF2(0),
++			.ngpio	= EXYNOS4_GPIO_F2_NR,
++			.label	= "GPF2",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPF3(0),
++			.ngpio	= EXYNOS4_GPIO_F3_NR,
++			.label	= "GPF3",
++		},
++	},
++};
 +
-+static int samsung_gpiolib_4bit2_input(struct gpio_chip *chip,
-+				       unsigned int offset)
++static struct s3c_gpio_chip exynos4_gpio_part2_4bit[] = {
++	{
++		.chip	= {
++			.base	= EXYNOS4_GPJ0(0),
++			.ngpio	= EXYNOS4_GPIO_J0_NR,
++			.label	= "GPJ0",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPJ1(0),
++			.ngpio	= EXYNOS4_GPIO_J1_NR,
++			.label	= "GPJ1",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPK0(0),
++			.ngpio	= EXYNOS4_GPIO_K0_NR,
++			.label	= "GPK0",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPK1(0),
++			.ngpio	= EXYNOS4_GPIO_K1_NR,
++			.label	= "GPK1",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPK2(0),
++			.ngpio	= EXYNOS4_GPIO_K2_NR,
++			.label	= "GPK2",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPK3(0),
++			.ngpio	= EXYNOS4_GPIO_K3_NR,
++			.label	= "GPK3",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPL0(0),
++			.ngpio	= EXYNOS4_GPIO_L0_NR,
++			.label	= "GPL0",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPL1(0),
++			.ngpio	= EXYNOS4_GPIO_L1_NR,
++			.label	= "GPL1",
++		},
++	}, {
++		.chip	= {
++			.base	= EXYNOS4_GPL2(0),
++			.ngpio	= EXYNOS4_GPIO_L2_NR,
++			.label	= "GPL2",
++		},
++	}, {
++		.config	= &gpio_cfg_noint,
++		.chip	= {
++			.base	= EXYNOS4_GPY0(0),
++			.ngpio	= EXYNOS4_GPIO_Y0_NR,
++			.label	= "GPY0",
++		},
++	}, {
++		.config	= &gpio_cfg_noint,
++		.chip	= {
++			.base	= EXYNOS4_GPY1(0),
++			.ngpio	= EXYNOS4_GPIO_Y1_NR,
++			.label	= "GPY1",
++		},
++	}, {
++		.config	= &gpio_cfg_noint,
++		.chip	= {
++			.base	= EXYNOS4_GPY2(0),
++			.ngpio	= EXYNOS4_GPIO_Y2_NR,
++			.label	= "GPY2",
++		},
++	}, {
++		.config	= &gpio_cfg_noint,
++		.chip	= {
++			.base	= EXYNOS4_GPY3(0),
++			.ngpio	= EXYNOS4_GPIO_Y3_NR,
++			.label	= "GPY3",
++		},
++	}, {
++		.config	= &gpio_cfg_noint,
++		.chip	= {
++			.base	= EXYNOS4_GPY4(0),
++			.ngpio	= EXYNOS4_GPIO_Y4_NR,
++			.label	= "GPY4",
++		},
++	}, {
++		.config	= &gpio_cfg_noint,
++		.chip	= {
++			.base	= EXYNOS4_GPY5(0),
++			.ngpio	= EXYNOS4_GPIO_Y5_NR,
++			.label	= "GPY5",
++		},
++	}, {
++		.config	= &gpio_cfg_noint,
++		.chip	= {
++			.base	= EXYNOS4_GPY6(0),
++			.ngpio	= EXYNOS4_GPIO_Y6_NR,
++			.label	= "GPY6",
++		},
++	}, {
++		.base	= (S5P_VA_GPIO2 + 0xC00),
++		.config	= &gpio_cfg_noint,
++		.irq_base = IRQ_EINT(0),
++		.chip	= {
++			.base	= EXYNOS4_GPX0(0),
++			.ngpio	= EXYNOS4_GPIO_X0_NR,
++			.label	= "GPX0",
++			.to_irq	= samsung_gpiolib_to_irq,
++		},
++	}, {
++		.base	= (S5P_VA_GPIO2 + 0xC20),
++		.config	= &gpio_cfg_noint,
++		.irq_base = IRQ_EINT(8),
++		.chip	= {
++			.base	= EXYNOS4_GPX1(0),
++			.ngpio	= EXYNOS4_GPIO_X1_NR,
++			.label	= "GPX1",
++			.to_irq	= samsung_gpiolib_to_irq,
++		},
++	}, {
++		.base	= (S5P_VA_GPIO2 + 0xC40),
++		.config	= &gpio_cfg_noint,
++		.irq_base = IRQ_EINT(16),
++		.chip	= {
++			.base	= EXYNOS4_GPX2(0),
++			.ngpio	= EXYNOS4_GPIO_X2_NR,
++			.label	= "GPX2",
++			.to_irq	= samsung_gpiolib_to_irq,
++		},
++	}, {
++		.base	= (S5P_VA_GPIO2 + 0xC60),
++		.config	= &gpio_cfg_noint,
++		.irq_base = IRQ_EINT(24),
++		.chip	= {
++			.base	= EXYNOS4_GPX3(0),
++			.ngpio	= EXYNOS4_GPIO_X3_NR,
++			.label	= "GPX3",
++			.to_irq	= samsung_gpiolib_to_irq,
++		},
++	},
++};
++
++static struct s3c_gpio_chip exynos4_gpio_part3_4bit[] = {
++	{
++		.chip	= {
++			.base	= EXYNOS4_GPZ(0),
++			.ngpio	= EXYNOS4_GPIO_Z_NR,
++			.label	= "GPZ",
++		},
++	},
++};
++
++static __init int exynos4_gpiolib_init(void)
 +{
-+	struct s3c_gpio_chip *ourchip = to_s3c_gpio(chip);
-+	void __iomem *base = ourchip->base;
-+	void __iomem *regcon = base;
-+	unsigned long con;
++	struct s3c_gpio_chip *chip;
++	int i;
++	int group = 0;
++	int nr_chips;
 +
-+	if (offset > 7)
-+		offset -= 8;
-+	else
-+		regcon -= 4;
++	/* GPIO part 1 */
 +
-+	con = __raw_readl(regcon);
-+	con &= ~(0xf << con_4bit_shift(offset));
-+	__raw_writel(con, regcon);
++	chip = exynos4_gpio_part1_4bit;
++	nr_chips = ARRAY_SIZE(exynos4_gpio_part1_4bit);
 +
-+	gpio_dbg("%s: %p: CON %08lx\n", __func__, base, con);
++	for (i = 0; i < nr_chips; i++, chip++) {
++		if (chip->config == NULL) {
++			chip->config = &gpio_cfg;
++			/* Assign the GPIO interrupt group */
++			chip->group = group++;
++		}
++		if (chip->base == NULL)
++			chip->base = S5P_VA_GPIO1 + (i) * 0x20;
++	}
++
++	samsung_gpiolib_add_4bit_chips(exynos4_gpio_part1_4bit, nr_chips);
++
++	/* GPIO part 2 */
++
++	chip = exynos4_gpio_part2_4bit;
++	nr_chips = ARRAY_SIZE(exynos4_gpio_part2_4bit);
++
++	for (i = 0; i < nr_chips; i++, chip++) {
++		if (chip->config == NULL) {
++			chip->config = &gpio_cfg;
++			/* Assign the GPIO interrupt group */
++			chip->group = group++;
++		}
++		if (chip->base == NULL)
++			chip->base = S5P_VA_GPIO2 + (i) * 0x20;
++	}
++
++	samsung_gpiolib_add_4bit_chips(exynos4_gpio_part2_4bit, nr_chips);
++
++	/* GPIO part 3 */
++
++	chip = exynos4_gpio_part3_4bit;
++	nr_chips = ARRAY_SIZE(exynos4_gpio_part3_4bit);
++
++	for (i = 0; i < nr_chips; i++, chip++) {
++		if (chip->config == NULL) {
++			chip->config = &gpio_cfg;
++			/* Assign the GPIO interrupt group */
++			chip->group = group++;
++		}
++		if (chip->base == NULL)
++			chip->base = S5P_VA_GPIO3 + (i) * 0x20;
++	}
++
++	samsung_gpiolib_add_4bit_chips(exynos4_gpio_part3_4bit, nr_chips);
++	s5p_register_gpioint_bank(IRQ_GPIO_XA, 0, IRQ_GPIO1_NR_GROUPS);
++	s5p_register_gpioint_bank(IRQ_GPIO_XB, IRQ_GPIO1_NR_GROUPS, IRQ_GPIO2_NR_GROUPS);
 +
 +	return 0;
 +}
-+
-+static int samsung_gpiolib_4bit2_output(struct gpio_chip *chip,
-+					unsigned int offset, int value)
-+{
-+	struct s3c_gpio_chip *ourchip = to_s3c_gpio(chip);
-+	void __iomem *base = ourchip->base;
-+	void __iomem *regcon = base;
-+	unsigned long con;
-+	unsigned long dat;
-+	unsigned con_offset = offset;
-+
-+	if (con_offset > 7)
-+		con_offset -= 8;
-+	else
-+		regcon -= 4;
-+
-+	con = __raw_readl(regcon);
-+	con &= ~(0xf << con_4bit_shift(con_offset));
-+	con |= 0x1 << con_4bit_shift(con_offset);
-+
-+	dat = __raw_readl(base + GPIODAT_OFF);
-+
-+	if (value)
-+		dat |= 1 << offset;
-+	else
-+		dat &= ~(1 << offset);
-+
-+	__raw_writel(dat, base + GPIODAT_OFF);
-+	__raw_writel(con, regcon);
-+	__raw_writel(dat, base + GPIODAT_OFF);
-+
-+	gpio_dbg("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
-+
-+	return 0;
-+}
-+
-+void __init samsung_gpiolib_add_4bit(struct s3c_gpio_chip *chip)
-+{
-+	chip->chip.direction_input = samsung_gpiolib_4bit_input;
-+	chip->chip.direction_output = samsung_gpiolib_4bit_output;
-+	chip->pm = __gpio_pm(&s3c_gpio_pm_4bit);
-+}
-+
-+void __init samsung_gpiolib_add_4bit2(struct s3c_gpio_chip *chip)
-+{
-+	chip->chip.direction_input = samsung_gpiolib_4bit2_input;
-+	chip->chip.direction_output = samsung_gpiolib_4bit2_output;
-+	chip->pm = __gpio_pm(&s3c_gpio_pm_4bit);
-+}
-+
-+void __init samsung_gpiolib_add_4bit_chips(struct s3c_gpio_chip *chip,
-+					   int nr_chips)
-+{
-+	for (; nr_chips > 0; nr_chips--, chip++) {
-+		samsung_gpiolib_add_4bit(chip);
-+		s3c_gpiolib_add(chip);
-+	}
-+}
-+
-+void __init samsung_gpiolib_add_4bit2_chips(struct s3c_gpio_chip *chip,
-+					    int nr_chips)
-+{
-+	for (; nr_chips > 0; nr_chips--, chip++) {
-+		samsung_gpiolib_add_4bit2(chip);
-+		s3c_gpiolib_add(chip);
-+	}
-+}
-+
-+void __init samsung_gpiolib_add_2bit_chips(struct s3c_gpio_chip *chip,
-+					   int nr_chips)
-+{
-+	for (; nr_chips > 0; nr_chips--, chip++)
-+		s3c_gpiolib_add(chip);
-+}
++core_initcall(exynos4_gpiolib_init);
 -- 
 1.7.5.1.300.gc565c
 
