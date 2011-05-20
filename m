@@ -1,41 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934640Ab1ETBLA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 21:11:00 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:39042 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933379Ab1ETBK7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 21:10:59 -0400
-Subject: Re: [patch 2/7] clocksource: Get rid of the hardcoded 5 seconds
- sleep time limit
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1305766655.2915.187.camel@work-vm>
-References: <20110518205713.947614271@linutronix.de>
-	 <20110518210136.109811585@linutronix.de>
-	 <1305766655.2915.187.camel@work-vm>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 May 2011 18:10:53 -0700
-Message-ID: <1305853853.2915.214.camel@work-vm>
+	id S934664Ab1ETBPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 21:15:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37980 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933379Ab1ETBPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 21:15:21 -0400
+Date: Fri, 20 May 2011 11:15:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure in Linus' tree
+Message-Id: <20110520111516.784c0c9c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-18 at 17:57 -0700, John Stultz wrote:
-> Overall it looks good. I'm doing some NTP testing with the TSC shift
-> change to make sure we don't get any odd side effects. I'll let you know
-> how those go.
+Hi Linus,
 
-So from overnight testing all looks well.
+With just Linus' tree, today's linux-next build (powerpc ppc64_defconfig)
+failed like this:
 
-thanks
--john
+In file included from arch/powerpc/mm/fault.c:18:
+include/linux/signal.h:239: error: 'struct task_struct' declared inside parameter list
+include/linux/signal.h:239: error: its scope is only this definition or declaration, which is probably not what you want
+include/linux/signal.h:240: error: 'struct task_struct' declared inside parameter list
+include/linux/signal.h:241: error: 'struct task_struct' declared inside parameter list
+include/linux/signal.h:250: error: 'struct task_struct' declared inside parameter list
+include/linux/signal.h:254: error: 'struct task_struct' declared inside parameter list
+cc1: warnings being treated as errors
 
+and so on ...
 
+reverting commit e66eed651fd1 ("list: remove prefetching from regular
+list iterators").  This is, of course, why we like to put stuff into
+linux-next before it goes into your tree :-)
+
+I have applied this patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 20 May 2011 11:11:53 +1000
+Subject: [PATCH] signal.h need a definition of struct task_struct
+
+fixes these build errors on powerpc:
+
+In file included from arch/powerpc/mm/fault.c:18:
+include/linux/signal.h:239: error: 'struct task_struct' declared inside parameter list
+include/linux/signal.h:239: error: its scope is only this definition or declaration, which is probably not what you want
+include/linux/signal.h:240: error: 'struct task_struct' declared inside parameter list
+include/linux/signal.h:241: error: 'struct task_struct' declared inside parameter list
+include/linux/signal.h:250: error: 'struct task_struct' declared inside parameter list
+include/linux/signal.h:254: error: 'struct task_struct' declared inside parameter list
+cc1: warnings being treated as errors
+
+Exposed by commit e66eed651fd1 ("list: remove prefetching from regular
+list iterators").
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/signal.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/signal.h b/include/linux/signal.h
+index fcd2b14..29a68ac 100644
+--- a/include/linux/signal.h
++++ b/include/linux/signal.h
+@@ -7,6 +7,8 @@
+ #ifdef __KERNEL__
+ #include <linux/list.h>
+ 
++struct task_struct;
++
+ /* for sysctl */
+ extern int print_fatal_signals;
+ /*
+-- 
+1.7.5.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
