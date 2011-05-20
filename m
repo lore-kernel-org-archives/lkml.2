@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935157Ab1ETIjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 04:39:06 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59761 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934797Ab1ETIjD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 04:39:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=FZDurfN8JP21eqz8weM+KdvR8xiDRhRQk1wh08OTcU3gakaZ+sT44bmPgq83eo8Ult
-         FFYu1tpDJTyNMh54lJwLzs/myqL2/PjklmrgjYEO3C0VY2X/OPxgW9ZSWKaQbhd2a/Mb
-         qJFLOb9H9VCFsY12gaYSho5WD8BW0AUpCZtnY=
+	id S935256Ab1ETIjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 04:39:33 -0400
+Received: from lucidpixels.com ([75.144.35.66]:49742 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934797Ab1ETIjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 04:39:31 -0400
+Date: Fri, 20 May 2011 04:39:29 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+cc: Alan Piszcz <ap@solarrain.com>
+Subject: 2.6.39: crash w/threadirqs option enabled
+Message-ID: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTik0oz6ppJvRpufaaiBL1pqcAxNHuA@mail.gmail.com>
-References: <201105191526.31904.toralf.foerster@gmx.de>
-	<201105192218.18261.toralf.foerster@gmx.de>
-	<20110519204342.GA10792@home.goodmis.org>
-	<201105200937.15322.toralf.foerster@gmx.de>
-	<BANLkTik0oz6ppJvRpufaaiBL1pqcAxNHuA@mail.gmail.com>
-Date: Fri, 20 May 2011 10:39:03 +0200
-Message-ID: <BANLkTikCS=LbvXSe4ok740O2ue1DQDfBmA@mail.gmail.com>
-Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/20 richard -rw- weinberger <richard.weinberger@gmail.com>:
-> Use "objdump -d -S | less" to find it.
+Hi,
 
-Ick, I meant "objdump -d -S vmlinux | less"
+I tried this in 2.6.39 and experienced crashes for the first time, when
+using: threadirqs
 
--- 
-Thanks,
-//richard
+user     pts/1                         Fri May 20 04:31   still logged in 
+reboot   system boot  2.6.39           Fri May 20 04:28 - 04:36  (00:07) 
+user     pts/2                         Thu May 19 20:01 - down   (08:24) 
+reboot   system boot  2.6.39           Thu May 19 20:01 - 04:26  (08:25) 
+user     pts/28                        Thu May 19 15:57 - crash  (04:03)
+
+Not sure I can give any useful output as there is nothing in the logs, 
+even with netconsole enabled, no useful output was produced.
+
+I've removed the threadirqs option for now, will see if there are any
+further stability issues.
+
+Justin.
