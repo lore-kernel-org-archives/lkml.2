@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934018Ab1ETASt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:18:49 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:42151 "EHLO
+	id S934625Ab1ETALg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:11:36 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46498 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755685Ab1ETALb (ORCPT
+	by vger.kernel.org with ESMTP id S1756521Ab1ETALd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:11:31 -0400
-X-Sasl-enc: J1WDPP+rqGQ+CHy6N3QDS7RkBWWGxUNDerAvB6YFDsgd 1305850290
+	Thu, 19 May 2011 20:11:33 -0400
+X-Sasl-enc: tTwI/icmMzBtMbGFmR9GJyHUVYTLqm++Pjosa1vYpsvp 1305850292
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Pavan Savoy <pavan_savoy@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 15/44] drivers:misc:ti-st: remove rfkill dependency
-Date: Thu, 19 May 2011 17:10:33 -0700
-Message-Id: <1305850262-9575-15-git-send-email-gregkh@suse.de>
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 16/44] driver-core: fix race between device_register and driver_register
+Date: Thu, 19 May 2011 17:10:34 -0700
+Message-Id: <1305850262-9575-16-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1305850262-9575-1-git-send-email-gregkh@suse.de>
 References: <20110520000821.GA9367@kroah.com>
@@ -22,31 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-rfkill is no longer used by Texas Instruments shared transport driver to
-communicate with user-space.
-This patch removes the dependency of rfkill to be enabled to build
-shared transport driver in the Kconfig.
+When a device is registered to a bus it will be a) added to the list
+of devices of the bus and b) bind to a driver (if one matches). As a
+result of a driver being registered at this bus between a) and b) this
+device could already be bound to a driver. This leads to a warning
+and incorrect refcounting.
+To fix this add a check to device_attach to identify an already bound
+device.
 
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/misc/ti-st/Kconfig |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/base/dd.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
-index 2c8c3f3..7c3e106 100644
---- a/drivers/misc/ti-st/Kconfig
-+++ b/drivers/misc/ti-st/Kconfig
-@@ -5,7 +5,6 @@
- menu "Texas Instruments shared transport line discipline"
- config TI_ST
- 	tristate "Shared transport core driver"
--	depends on RFKILL
- 	select FW_LOADER
- 	help
- 	  This enables the shared transport core driver for TI
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index da57ee9..7e9219b 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -245,6 +245,10 @@ int device_attach(struct device *dev)
+ 
+ 	device_lock(dev);
+ 	if (dev->driver) {
++		if (klist_node_attached(&dev->p->knode_driver)) {
++			ret = 1;
++			goto out_unlock;
++		}
+ 		ret = device_bind_driver(dev);
+ 		if (ret == 0)
+ 			ret = 1;
+@@ -257,6 +261,7 @@ int device_attach(struct device *dev)
+ 		ret = bus_for_each_drv(dev->bus, NULL, dev, __device_attach);
+ 		pm_runtime_put_sync(dev);
+ 	}
++out_unlock:
+ 	device_unlock(dev);
+ 	return ret;
+ }
 -- 
 1.7.4.2
 
