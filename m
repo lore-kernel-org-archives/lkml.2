@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab1ETXRA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 19:17:00 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59451 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab1ETXQv (ORCPT
+	id S1757385Ab1ETXRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 19:17:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36570 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756295Ab1ETXQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 19:16:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=W2UE4vsC6gIXvVsfMP/e3M479MJUlTxuCXAlxtzNaQEnf2WWkAF3dj9WtZPMVP40Vd
-         1c+njP/PfW4ZhgOCd49csibGut0L1vyw8g5inJm6sfBAACjXjqJ3/Lca9oyPYHriWqmx
-         VonuLHnPyBSJfhHqBvjFzjnKQDG5scNTQ3S2s=
-MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+	Fri, 20 May 2011 19:16:53 -0400
+Message-ID: <4DD6F64C.3030402@kernel.org>
 Date: Fri, 20 May 2011 16:16:28 -0700
-Message-ID: <BANLkTikTOQbyz-sTAS09Hh5Go++3qgOJDg@mail.gmail.com>
-Subject: Linux wireless support education video on YouTube
-To: linux-wireless <linux-wireless@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Quan <David.Quan@atheros.com>,
-        Kathy Giori <Kathy.Giori@atheros.com>,
-        Javier Cardona <javier@cozybit.com>
-Content-Type: text/plain; charset=UTF-8
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
+ on semi-formal proof"
+References: <tip-80d02085d99039b3b7f3a73c8896226b0cb1ba07@git.kernel.org> <4DD6D746.6070107@kernel.org> <20110520224250.GL2366@linux.vnet.ibm.com> <4DD6F4A2.1070401@kernel.org> <20110520231428.GN2366@linux.vnet.ibm.com>
+In-Reply-To: <20110520231428.GN2366@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4DD6F652.0026,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you have engineers who need to support the 802.11 Linux subsystem
-you at times see yourself needing to educate each group through some
-sessions. In hopes of reusing educational sessions I've decided to
-record my own series and post it on YouTube. I've broken down each
-logical component of the series into as small atomic pieces so we can
-add / remove / update the series into a new baked improved playlist.
-If you wish to contribute to this please feel free to send me your own
-videos so I can extend the series.
+On 05/20/2011 04:14 PM, Paul E. McKenney wrote:
+> On Fri, May 20, 2011 at 04:09:22PM -0700, Yinghai Lu wrote:
+>> On 05/20/2011 03:42 PM, Paul E. McKenney wrote:
+>>> On Fri, May 20, 2011 at 02:04:06PM -0700, Yinghai Lu wrote:
+>>>> On 05/19/2011 02:37 PM, tip-bot for Paul E. McKenney wrote:
+>>>>> Commit-ID:  80d02085d99039b3b7f3a73c8896226b0cb1ba07
+>>>>> Gitweb:     http://git.kernel.org/tip/80d02085d99039b3b7f3a73c8896226b0cb1ba07
+>>>>> Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>>>> AuthorDate: Thu, 12 May 2011 01:08:07 -0700
+>>>>> Committer:  Ingo Molnar <mingo@elte.hu>
+>>>>> CommitDate: Thu, 19 May 2011 23:25:29 +0200
+>>>>>
+>>>>> Revert "rcu: Decrease memory-barrier usage based on semi-formal proof"
+>>>>>
+>>>>> This reverts commit e59fb3120becfb36b22ddb8bd27d065d3cdca499.
+>>>>>
+>>>>> This reversion was due to (extreme) boot-time slowdowns on SPARC seen by
+>>>>> Yinghai Lu and on x86 by Ingo
+>>>>> .
+>>>>> This is a non-trivial reversion due to intervening commits.
+>>>>>
+>>>>> Conflicts:
+>>>>>
+>>>>> 	Documentation/RCU/trace.txt
+>>>>> 	kernel/rcutree.c
+>>>>>
+>>>>> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+>>>>> ---
+>>>>>  Documentation/RCU/trace.txt |   17 ++++--
+>>>>>  kernel/rcutree.c            |  130 ++++++++++++++++++++++++------------------
+>>>>>  kernel/rcutree.h            |    9 ++-
+>>>>>  kernel/rcutree_plugin.h     |    7 +-
+>>>>>  kernel/rcutree_trace.c      |   12 ++--
+>>>>>  5 files changed, 102 insertions(+), 73 deletions(-)
+>>>>>
+>>>>
+>>>> current tip/master that have this reverting and without setting DEBUG_LOCKING_API_SELFTESTS
+>>>>
+>>>> still get delay
+>>>>
+>>>> [   35.419453] cpu_dev_init done
+>>>> [  128.981770] memory_dev_init done
+>>>>
+>>>> should take only 3 or 4 seconds.
+>>>
+>>> Thank you for checking this out.
+>>>
+>>> This is with the same configuration you sent earlier?  (Other than the
+>>> DEBUG_LOCKING_API_SELFTESTS, of course.)
+>>>
+>>
+>> 8 socket westmere-ex. and compiled with gcc from opensuse 11.3.
+>>
+>> if compile kernel from fedora 14, there will be not delay.
+> 
+> Thank you for the info.  Could you please send me the .config files from
+> both builds?
 
-The hope is to education engineers as quickly as possible and then
-refer them to our wireless.kernel.org wiki for more information. The
-playlist of the 4 videos is available via:
+the same one i sent out before, but let DEBUG_LOCKING_API_SELFTESTS disabled.
 
-http://bit.ly/kYdfpg
-
-There will be Q&A Session on May 25, 2011 at 8am PST, you can poke us
-with questions on IRC:
-
-IRC server: irc.freenode.net
-Channel: #linux-wireless
-
-The breakdown of the series covers:
-
-  * Review of the 802.11 subsystem
-  * Development process review
-  * Daily snapshots / stable release of compat-wireless
-  * Debugging 802.11 drivers
-  * 802.11s review
-
-PS. Thanks to Javier for providing his own session on 802.11s support
-on mac80211
-
-  Luis
+Thanks
