@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab1ETEmS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 00:42:18 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:57630 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752488Ab1ETEmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 00:42:17 -0400
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: fix missing header file
-Date: Thu, 19 May 2011 21:36:13 -0700
-Message-Id: <ceb1d5795a2737519036960c9f726cfa@localhost>
-In-Reply-To: <bc781b295b38241533a2d90c1aea15b3@localhost>
-References: <bc781b295b38241533a2d90c1aea15b3@localhost>
-User-Agent: vim 7.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S935171Ab1ETEhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 00:37:21 -0400
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:34646 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752443Ab1ETEhT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 00:37:19 -0400
+From: matt mooney <mfm@muteddisk.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 00/12] staging: usbip
+Date: Thu, 19 May 2011 21:36:54 -0700
+Message-Id: <cover.1305866084.git.mfm@muteddisk.com>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-spin_lock_prefetch() requires <linux/prefetch.h>.  This failure was seen
-on MIPS:
+matt mooney (12):
+  staging: usbip: replace usbip_u{dbg,err,info} and printk with dev_
+    and pr_
+  staging: usbip: remove unnecessary lines and extra return statements
+  staging: usbip: stub_main.c: reorder functions
+  staging: usbip: stub_main.c: code cleanup
+  staging: usbip: stub_main.c: rename init and exit functions
+  staging: usbip: stub_main.c: use KMEM_CACHE macro
+  staging: usbip: usbip_common.c: fix misspelled function name
+  staging: usbip: usbip_common.h: reorganize and document request
+    headers
+  staging: usbip: stub_dev.c: move stub_driver definition and update
+    driver name
+  staging: usbip: userspace: bind_driver.c: update kernel module name
+  staging: usbip: usbip_common.c: rename init and exit functions
+  staging: usbip: vhci_hcd.c: rename init and exit functions
 
-  CC      fs/inode.o
-fs/inode.c: In function 'new_inode':
-fs/inode.c:894:2: error: implicit declaration of function 'spin_lock_prefetch'
-make[1]: *** [fs/inode.o] Error 1
-make: *** [fs] Error 2
+ drivers/staging/usbip/stub.h                      |    1 +
+ drivers/staging/usbip/stub_dev.c                  |   93 +++----
+ drivers/staging/usbip/stub_main.c                 |  212 +++++++---------
+ drivers/staging/usbip/stub_rx.c                   |   23 +-
+ drivers/staging/usbip/stub_tx.c                   |   30 +-
+ drivers/staging/usbip/usbip_common.c              |  257 +++++++++----------
+ drivers/staging/usbip/usbip_common.h              |  284 +++++++++-----------
+ drivers/staging/usbip/usbip_event.c               |    3 +-
+ drivers/staging/usbip/userspace/src/bind-driver.c |    4 +-
+ drivers/staging/usbip/vhci_hcd.c                  |  106 +++-----
+ drivers/staging/usbip/vhci_rx.c                   |   35 ++--
+ drivers/staging/usbip/vhci_sysfs.c                |   14 +-
+ drivers/staging/usbip/vhci_tx.c                   |    8 +-
+ 13 files changed, 479 insertions(+), 591 deletions(-)
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- fs/inode.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/fs/inode.c b/fs/inode.c
-index 33c963d..c77081f 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -26,6 +26,7 @@
- #include <linux/posix_acl.h>
- #include <linux/ima.h>
- #include <linux/cred.h>
-+#include <linux/prefetch.h>
- #include "internal.h"
- 
- /*
 -- 
-1.7.5
+1.7.5.1
 
