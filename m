@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946Ab1ETGXw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 02:23:52 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34811 "EHLO smtps.tip.net.au"
+	id S933392Ab1ETG2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 02:28:00 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33009 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab1ETGXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 02:23:51 -0400
-Date: Fri, 20 May 2011 16:23:47 +1000
+	id S933024Ab1ETG16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 02:27:58 -0400
+Date: Fri, 20 May 2011 16:27:56 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20110520162347.6c780d3b.sfr@canb.auug.org.au>
+Message-Id: <20110520162756.0ebc8d37.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,46 +25,44 @@ Hi all,
 After merging the final tree, today's linux-next build (sparc32 defconfig)
 failed like this:
 
-mm/prio_tree.c: In function 'vma_prio_tree_next':
-mm/prio_tree.c:178: error: implicit declaration of function 'prefetch'
+mm/slab.c: In function '__cache_alloc':
+mm/slab.c:3493: error: implicit declaration of function 'prefetchw'
 
-Caused by commit e66eed651fd1 ("list: remove prefetching from regular list
-iterators").
-
-I added this patch  for today:
+Applied this patch:
 
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 20 May 2011 16:19:57 +1000
+Date: Fri, 20 May 2011 16:24:17 +1000
 Subject: [PATCH] mm: include prefetch.h
 
 Commit e66eed651fd1 ("list: remove prefetching from regular list
 iterators") removed the include of prefetch.h from list.h, so include
 it explicitly.
 
-Fixes thids build error on sparc32:
+Fixes this build error on sparc32:
 
-mm/prio_tree.c: In function 'vma_prio_tree_next':
-mm/prio_tree.c:178: error: implicit declaration of function 'prefetch'
+mm/slab.c: In function '__cache_alloc':
+mm/slab.c:3493: error: implicit declaration of function 'prefetchw'
 
 Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- mm/prio_tree.c |    1 +
+ mm/slab.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/mm/prio_tree.c b/mm/prio_tree.c
-index 603ae98..799dcfd 100644
---- a/mm/prio_tree.c
-+++ b/mm/prio_tree.c
-@@ -13,6 +13,7 @@
+diff --git a/mm/slab.c b/mm/slab.c
+index 46a9c16..bcfa498 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -115,6 +115,7 @@
+ #include	<linux/debugobjects.h>
+ #include	<linux/kmemcheck.h>
+ #include	<linux/memory.h>
++#include	<linux/prefetch.h>
  
- #include <linux/mm.h>
- #include <linux/prio_tree.h>
-+#include <linux/prefetch.h>
- 
- /*
-  * See lib/prio_tree.c for details on the general radix priority search tree
+ #include	<asm/cacheflush.h>
+ #include	<asm/tlbflush.h>
 -- 
 1.7.5.1
+
 
 -- 
 Cheers,
