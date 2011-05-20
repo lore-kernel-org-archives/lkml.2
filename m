@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935072Ab1ETAMc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:12:32 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:48135 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935025Ab1ETAM0 (ORCPT
+	id S934979Ab1ETAOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:14:32 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33916 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933659Ab1ETAO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:12:26 -0400
-X-Sasl-enc: kE3ZxsJQ0XfhlTX0O++mvajt0CtzeWJO6UV8iHU9DUsB 1305850346
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 44/44] debugfs: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
-Date: Thu, 19 May 2011 17:11:02 -0700
-Message-Id: <1305850262-9575-44-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.4.2
-In-Reply-To: <1305850262-9575-1-git-send-email-gregkh@suse.de>
-References: <20110520000821.GA9367@kroah.com>
- <1305850262-9575-1-git-send-email-gregkh@suse.de>
+	Thu, 19 May 2011 20:14:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Hh9uBLg4VxNIz2jpq5D8fe1t2SBrXftFkJB4rYT+lQJoRWVBa+tuSqz2h8AePdIr2p
+         GNBBHtzYEntoY2H0GMa2c/OUh6EnLECjAh+ISD/XzOuYBHETSE/TadMEJmg+EOPaNHRi
+         86Ky/jUnraQXblaC8lkLx6s71bg+d0XrsGgWo=
+Date: Fri, 20 May 2011 02:14:23 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+Message-ID: <20110520001421.GH1956@nowhere>
+References: <20110516122329.GA29356@elte.hu>
+ <20110516212449.GJ2573@linux.vnet.ibm.com>
+ <20110517024000.GA5026@nowhere>
+ <4DD435C2.6040305@kernel.org>
+ <20110518231314.GA1723@nowhere>
+ <4DD49DAF.5080605@kernel.org>
+ <20110519144740.GC1956@nowhere>
+ <4DD574BE.7050709@kernel.org>
+ <20110519211458.GG1956@nowhere>
+ <4DD58F90.4090506@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DD58F90.4090506@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+On Thu, May 19, 2011 at 02:45:52PM -0700, Yinghai Lu wrote:
+> On 05/19/2011 02:15 PM, Frederic Weisbecker wrote:
+> > On Thu, May 19, 2011 at 12:51:26PM -0700, Yinghai Lu wrote:
+> >> [   85.194797]   <idle>-0       0d... 85152953us : rcu_irq_enter: 1 49
+> >> [   85.194808]   <idle>-0       0dN.. 85153081us : <stack trace>
+> >> [   85.194809]  => rcu_irq_exit
+> >> [   85.194810]  => irq_exit
+> >> [   85.194811]  => smp_apic_timer_interrupt
+> >> [   85.194812]  => apic_timer_interrupt
+> >> [   85.194813]  => cpu_idle
+> >> [   85.194813]  => rest_init
+> >> [   85.194814]  => start_kernel
+> >> [   85.194815]  => x86_64_start_reservations
+> > 
+> > So it's the dynticks_nesting going crazy. As if we had rcu_irq_enter()
+> > without rcu_irq_exit().
+> > 
+> > I see you have CONFIG_DEBUG_LOCKING_API_SELFTESTS=y
+> > and the locking api selftest is doing a strange thing: if we look
+> > at HARDIRQ_ENTER(), it calls irq_enter(), but HARDIRQ_EXIT() only
+> > calls __irq_exit(). Which means it lacks the rcu_irq_exit().
+> > 
+> > So, if I understood correctly the thing there, some selftests simulating
+> > the hardirq context are unbalancing the rcu state.
+> > 
+> > Does that help if you unset CONFIG_DEBUG_LOCKING_API_SELFTESTS ?
+> 
+> 
+> yes, after unset that, no warning and delay...
 
-Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following
-warning:
-
-In file included from arch/x86/include/asm/uaccess.h:573,
-                 from include/linux/uaccess.h:5,
-                 from include/linux/highmem.h:7,
-                 from include/linux/pagemap.h:10,
-                 from fs/debugfs/file.c:18:
-In function 'copy_from_user',
-    inlined from 'write_file_bool' at fs/debugfs/file.c:435:
-arch/x86/include/asm/uaccess_64.h:65: warning: call to
-'copy_from_user_overflow' declared with attribute warning:
-copy_from_user() buffer size is not provably correct
-
-presumably due to buf_size being signed causing GCC to fail to
-see that buf_size can't become negative.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- fs/debugfs/file.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index 568304d..90f7657 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -428,7 +428,7 @@ static ssize_t write_file_bool(struct file *file, const char __user *user_buf,
- 			       size_t count, loff_t *ppos)
- {
- 	char buf[32];
--	int buf_size;
-+	size_t buf_size;
- 	bool bv;
- 	u32 *val = file->private_data;
- 
--- 
-1.7.4.2
-
+Thanks a lot for all your testing! I've just proposed a fix, let's see
+how that goes.
