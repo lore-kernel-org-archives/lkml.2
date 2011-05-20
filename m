@@ -1,243 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933152Ab1ETGQA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 02:16:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64512 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932787Ab1ETGP6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 02:15:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=ufi6FvsMOg75vYrtayPRsXs2m8kAJbpsl30w4CnQ8OvCx5kE7pleoC7PJqcrkMTFKc
-         u/ywmCkh91fiMGBmRm3MNnamtd66Fw1j1s8l/XObiKfRyXTO/Gb5JaRhEHsrvdCcaNzj
-         gQUvvmcwbPXJdfnmLWkMWTqihdb/C7hwWGfOw=
-Date: Fri, 20 May 2011 09:15:55 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org
-Subject: [PATCH] kstrtox: drop kstrtol()/kstrtoul() when possible
-Message-ID: <20110520061259.GA13483@p183>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933191Ab1ETGS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 02:18:28 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35303 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751732Ab1ETGS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 02:18:26 -0400
+Date: Fri, 20 May 2011 16:18:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20110520161816.dda6f1fd.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If "long" and "long long" types are identical at runtime,
-kstrtol() can be aliased to kstrtoll().
+Hi all,
 
-Unfortunately, one can't write
+After merging the final tree, today's linux-next build (sparc32 defconfig)
+failed like this:
 
-	#if sizeof(long) == sizeof(long long) ...
+mm/page_alloc.c: In function '__free_pages_bootmem':
+mm/page_alloc.c:704: error: implicit declaration of function 'prefetchw'
+fs/dcache.c: In function '__d_lookup_rcu':
+fs/dcache.c:1810: error: implicit declaration of function 'prefetch'
+fs/inode.c: In function 'new_inode':
+fs/inode.c:894: error: implicit declaration of function 'spin_lock_prefetch'
+net/core/skbuff.c: In function '__alloc_skb':
+net/core/skbuff.c:184: error: implicit declaration of function 'prefetchw'
+In file included from net/ipv4/ip_forward.c:32:
+include/net/udp.h: In function 'udp_csum_outgoing':
+include/net/udp.h:141: error: implicit declaration of function 'prefetch'
+In file included from net/ipv6/af_inet6.c:48:
+include/net/udp.h: In function 'udp_csum_outgoing':
+include/net/udp.h:141: error: implicit declaration of function 'prefetch'
+net/unix/af_unix.c: In function 'unix_ioctl':
+net/unix/af_unix.c:2066: error: implicit declaration of function 'prefetch'
+In file included from net/sunrpc/xprtsock.c:44:
+include/net/udp.h: In function 'udp_csum_outgoing':
+include/net/udp.h:141: error: implicit declaration of function 'prefetch'
+kernel/rcutiny.c: In function 'rcu_process_callbacks':
+kernel/rcutiny.c:180: error: implicit declaration of function 'prefetch'
 
-To solve this, generate header file with sizes and alignment of
-interesting types like we do with bounds.h and asm-offsets.h.
+Caused by commit e66eed651fd1 ("list: remove prefetching from regular list
+iterators").
 
-Everything above applies to "unsigned long" and kstrtoul().
+I added the following patch for today:
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+>From 1a101eb2766057372006b1b487d05f40fe899478 Mon Sep 17 00:00:00 2001
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 20 May 2011 16:08:48 +1000
+Subject: [PATCH] include prefetch.h where needed
+
+Commit e66eed651fd1 ("list: remove prefetching from regular list
+iterators") removed the include of prefetch.h from list.h.
+
+fixes these build errors on sparc:
+
+mm/page_alloc.c: In function '__free_pages_bootmem':
+mm/page_alloc.c:704: error: implicit declaration of function 'prefetchw'
+fs/dcache.c: In function '__d_lookup_rcu':
+fs/dcache.c:1810: error: implicit declaration of function 'prefetch'
+fs/inode.c: In function 'new_inode':
+fs/inode.c:894: error: implicit declaration of function 'spin_lock_prefetch'
+net/core/skbuff.c: In function '__alloc_skb':
+net/core/skbuff.c:184: error: implicit declaration of function 'prefetchw'
+In file included from net/ipv4/ip_forward.c:32:
+include/net/udp.h: In function 'udp_csum_outgoing':
+include/net/udp.h:141: error: implicit declaration of function 'prefetch'
+In file included from net/ipv6/af_inet6.c:48:
+include/net/udp.h: In function 'udp_csum_outgoing':
+include/net/udp.h:141: error: implicit declaration of function 'prefetch'
+net/unix/af_unix.c: In function 'unix_ioctl':
+net/unix/af_unix.c:2066: error: implicit declaration of function 'prefetch'
+In file included from net/sunrpc/xprtsock.c:44:
+include/net/udp.h: In function 'udp_csum_outgoing':
+include/net/udp.h:141: error: implicit declaration of function 'prefetch'
+kernel/rcutiny.c: In function 'rcu_process_callbacks':
+kernel/rcutiny.c:180: error: implicit declaration of function 'prefetch'
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
+ fs/dcache.c            |    1 +
+ fs/inode.c             |    1 +
+ include/linux/skbuff.h |    1 +
+ kernel/rcutiny.c       |    1 +
+ mm/page_alloc.c        |    1 +
+ net/core/skbuff.c      |    1 +
+ 6 files changed, 6 insertions(+), 0 deletions(-)
 
- Kbuild                 |   45 +++++++++++++++++++++++++++++++++++++++------
- include/linux/kernel.h |   27 ++++++++-------------------
- kernel/sizeof.c        |   10 ++++++++++
- lib/kstrtox.c          |   19 +++++++++++++------
- 4 files changed, 70 insertions(+), 31 deletions(-)
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 22a0ef4..18b2a1f 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -35,6 +35,7 @@
+ #include <linux/hardirq.h>
+ #include <linux/bit_spinlock.h>
+ #include <linux/rculist_bl.h>
++#include <linux/prefetch.h>
+ #include "internal.h"
+ 
+ /*
+diff --git a/fs/inode.c b/fs/inode.c
+index 33c963d..c77081f 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -26,6 +26,7 @@
+ #include <linux/posix_acl.h>
+ #include <linux/ima.h>
+ #include <linux/cred.h>
++#include <linux/prefetch.h>
+ #include "internal.h"
+ 
+ /*
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 79aafbb..f963b8f 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -29,6 +29,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/dmaengine.h>
+ #include <linux/hrtimer.h>
++#include <linux/prefetch.h>
+ 
+ /* Don't change this without changing skb_csum_unnecessary! */
+ #define CHECKSUM_NONE 0
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 421abfd..7bbac7d 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -35,6 +35,7 @@
+ #include <linux/init.h>
+ #include <linux/time.h>
+ #include <linux/cpu.h>
++#include <linux/prefetch.h>
+ 
+ /* Controls for rcu_kthread() kthread, replacing RCU_SOFTIRQ used previously. */
+ static struct task_struct *rcu_kthread_task;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 44b3d7b..9d5498e 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -54,6 +54,7 @@
+ #include <trace/events/kmem.h>
+ #include <linux/ftrace_event.h>
+ #include <linux/memcontrol.h>
++#include <linux/prefetch.h>
+ 
+ #include <asm/tlbflush.h>
+ #include <asm/div64.h>
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 3e934fe..46cbd28 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -57,6 +57,7 @@
+ #include <linux/init.h>
+ #include <linux/scatterlist.h>
+ #include <linux/errqueue.h>
++#include <linux/prefetch.h>
+ 
+ #include <net/protocol.h>
+ #include <net/dst.h>
+-- 
+1.7.5.1
 
---- a/Kbuild
-+++ b/Kbuild
-@@ -5,13 +5,16 @@
- # 2) Generate asm-offsets.h (may need bounds.h)
- # 3) Check for missing system calls
- 
-+always :=
-+targets :=
-+
- #####
--# 1) Generate bounds.h
-+# Generate bounds.h
- 
- bounds-file := include/generated/bounds.h
- 
--always  := $(bounds-file)
--targets := $(bounds-file) kernel/bounds.s
-+always  += $(bounds-file)
-+targets += $(bounds-file) kernel/bounds.s
- 
- quiet_cmd_bounds = GEN     $@
- define cmd_bounds
-@@ -39,8 +42,38 @@ $(obj)/$(bounds-file): kernel/bounds.s Kbuild
- 	$(Q)mkdir -p $(dir $@)
- 	$(call cmd,bounds)
- 
-+# generated/sizeof.h
-+sizeof-file := include/generated/sizeof.h
-+
-+always  += $(sizeof-file)
-+targets += $(sizeof-file) kernel/sizeof.s
-+
-+quiet_cmd_sizeof = GEN     $@
-+define cmd_sizeof
-+	(	\
-+	set -e;	\
-+	echo "#ifndef _LINUX_SIZEOF_H";	\
-+	echo "#define _LINUX_SIZEOF_H";	\
-+	echo "/*";			\
-+	echo " * This file is automatically generated from kernel/sizeof.c .";\
-+	echo " * Modifying is futile.";	\
-+	echo " */";			\
-+	sed -ne $(sed-y) $<;		\
-+	echo "#endif"			\
-+	) >$@
-+endef
-+
-+# We use internal kbuild rules to avoid the "is up to date" message from make
-+kernel/sizeof.s: kernel/sizeof.c FORCE
-+	$(Q)mkdir -p $(dir $@)
-+	$(call if_changed_dep,cc_s_c)
-+
-+$(obj)/$(sizeof-file): kernel/sizeof.s Kbuild
-+	$(Q)mkdir -p $(dir $@)
-+	$(call cmd,sizeof)
-+
- #####
--# 2) Generate asm-offsets.h
-+# Generate asm-offsets.h
- #
- 
- offsets-file := include/generated/asm-offsets.h
-@@ -85,7 +118,7 @@ $(obj)/$(offsets-file): arch/$(SRCARCH)/kernel/asm-offsets.s Kbuild
- 	$(call cmd,offsets)
- 
- #####
--# 3) Check for missing system calls
-+# Check for missing system calls
- #
- 
- quiet_cmd_syscalls = CALL    $<
-@@ -96,4 +129,4 @@ missing-syscalls: scripts/checksyscalls.sh FORCE
- 	$(call cmd,syscalls)
- 
- # Keep these two files during make clean
--no-clean-files := $(bounds-file) $(offsets-file)
-+no-clean-files := $(bounds-file) $(offsets-file) $(sizeof-file)
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -8,6 +8,7 @@
- #define __ALIGN_KERNEL_MASK(x, mask)	(((x) + (mask)) & ~(mask))
- 
- #ifdef __KERNEL__
-+#include <generated/sizeof.h>
- 
- #include <stdarg.h>
- #include <linux/linkage.h>
-@@ -194,32 +195,20 @@ int __must_check _kstrtol(const char *s, unsigned int base, long *res);
- 
- int __must_check kstrtoull(const char *s, unsigned int base, unsigned long long *res);
- int __must_check kstrtoll(const char *s, unsigned int base, long long *res);
-+#if SIZEOF_LONG == SIZEOF_LONG_LONG && ALIGNOF_LONG == ALIGNOF_LONG_LONG
- static inline int __must_check kstrtoul(const char *s, unsigned int base, unsigned long *res)
- {
--	/*
--	 * We want to shortcut function call, but
--	 * __builtin_types_compatible_p(unsigned long, unsigned long long) = 0.
--	 */
--	if (sizeof(unsigned long) == sizeof(unsigned long long) &&
--	    __alignof__(unsigned long) == __alignof__(unsigned long long))
--		return kstrtoull(s, base, (unsigned long long *)res);
--	else
--		return _kstrtoul(s, base, res);
-+	return kstrtoull(s, base, (unsigned long long *)res);
- }
- 
- static inline int __must_check kstrtol(const char *s, unsigned int base, long *res)
- {
--	/*
--	 * We want to shortcut function call, but
--	 * __builtin_types_compatible_p(long, long long) = 0.
--	 */
--	if (sizeof(long) == sizeof(long long) &&
--	    __alignof__(long) == __alignof__(long long))
--		return kstrtoll(s, base, (long long *)res);
--	else
--		return _kstrtol(s, base, res);
-+	return kstrtoll(s, base, (long long *)res);
- }
--
-+#else
-+int __must_check kstrtoul(const char *s, unsigned int base, unsigned long *res);
-+int __must_check kstrtol(const char *s, unsigned int base, long *res);
-+#endif
- int __must_check kstrtouint(const char *s, unsigned int base, unsigned int *res);
- int __must_check kstrtoint(const char *s, unsigned int base, int *res);
- 
-new file mode 100644
---- /dev/null
-+++ b/kernel/sizeof.c
-@@ -0,0 +1,10 @@
-+#include <linux/kbuild.h>
-+
-+void f(void)
-+{
-+	DEFINE(SIZEOF_LONG, sizeof(long));
-+	DEFINE(ALIGNOF_LONG, __alignof__(long));
-+
-+	DEFINE(SIZEOF_LONG_LONG, sizeof(long long));
-+	DEFINE(ALIGNOF_LONG_LONG, __alignof__(long long));
-+}
---- a/lib/kstrtox.c
-+++ b/lib/kstrtox.c
-@@ -11,6 +11,7 @@
-  *
-  * If -E is returned, result is not touched.
-  */
-+#include <generated/sizeof.h>
- #include <linux/ctype.h>
- #include <linux/errno.h>
- #include <linux/kernel.h>
-@@ -101,8 +102,14 @@ int kstrtoll(const char *s, unsigned int base, long long *res)
- }
- EXPORT_SYMBOL(kstrtoll);
- 
--/* Internal, do not use. */
--int _kstrtoul(const char *s, unsigned int base, unsigned long *res)
-+#if SIZEOF_LONG == SIZEOF_LONG_LONG && ALIGNOF_LONG == ALIGNOF_LONG_LONG
-+/*
-+ * Shortcut function call if types are indistinguishable at runtime.
-+ * FYI, both __builtin_types_compatible_p(unsigned long, unsigned long long)
-+ * and __builtin_types_compatible_p(long, long long) are always 0.
-+ */
-+#else
-+int kstrtoul(const char *s, unsigned int base, unsigned long *res)
- {
- 	unsigned long long tmp;
- 	int rv;
-@@ -115,10 +122,9 @@ int _kstrtoul(const char *s, unsigned int base, unsigned long *res)
- 	*res = tmp;
- 	return 0;
- }
--EXPORT_SYMBOL(_kstrtoul);
-+EXPORT_SYMBOL(kstrtoul);
- 
--/* Internal, do not use. */
--int _kstrtol(const char *s, unsigned int base, long *res)
-+int kstrtol(const char *s, unsigned int base, long *res)
- {
- 	long long tmp;
- 	int rv;
-@@ -131,7 +137,8 @@ int _kstrtol(const char *s, unsigned int base, long *res)
- 	*res = tmp;
- 	return 0;
- }
--EXPORT_SYMBOL(_kstrtol);
-+EXPORT_SYMBOL(kstrtol);
-+#endif
- 
- int kstrtouint(const char *s, unsigned int base, unsigned int *res)
- {
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
