@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933928Ab1ETB44 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 21:56:56 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48664 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754646Ab1ETB4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 21:56:54 -0400
-Date: Fri, 20 May 2011 11:56:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the s390 tree
-Message-Id: <20110520115651.fc0fc63f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__20_May_2011_11_56_51_+1000_1Sa6lJ_2Q3NpACnh"
+	id S935360Ab1ETCCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 22:02:00 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:50021 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935391Ab1ETCBy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 22:01:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=n8kbIo27ui8xlO6VnE1d1VG2whrqWUnqd7Fio4695PfnttyVPl+N8CyglbQlawVTXS
+         S2ZDDcTKwUv6Hx047NYyHubZTK68cbqpj9LghR0LwsPEQMQENAGiVHUFkvTQtCag4hJ1
+         WiHaO+m7FunXXTDtgHpZR1heC3vc9gNYCwSn0=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTik-6wh8=jb6oMEpJvYC8+KTGGsMsw@mail.gmail.com>
+References: <1305619677.2850.11.camel@edumazet-laptop>
+	<1305715384-81716-1-git-send-email-tsunanet@gmail.com>
+	<20110518.152653.1486764697527722925.davem@davemloft.net>
+	<BANLkTik-6wh8=jb6oMEpJvYC8+KTGGsMsw@mail.gmail.com>
+Date: Thu, 19 May 2011 19:01:53 -0700
+Message-ID: <BANLkTinBm0C4ZVE=M98AtsF--y03p4Hafg@mail.gmail.com>
+Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
+From: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
+To: tsuna <tsunanet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, hkchu@google.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__20_May_2011_11_56_51_+1000_1Sa6lJ_2Q3NpACnh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 18, 2011 at 12:40 PM, tsuna <tsunanet@gmail.com> wrote:
+> On Wed, May 18, 2011 at 12:26 PM, David Miller <davem@davemloft.net> wrote:
+>> If you read the ietf draft that reduces the initial RTO down to 1
+>> second, it states that if we take a timeout during the initial
+>> connection handshake then we have to revert the RTO back up to 3
+>> seconds.
+>>
+>> This fallback logic conflicts with being able to only change the
+>> initial RTO via sysctl, I think.  Because there are actually two
+>> values at stake and they depend upon eachother, the initial RTO and
+>> the value we fallback to on initial handshake retransmissions.
+>>
+>> So I'd rather get a patch that implements the 1 second initial
+>> RTO with the 3 second fallback on SYN retransmit, than this patch.
+>>
+>> We already have too many knobs.
+>
+> I was hoping this knob would be accepted because this is such an
+> important issue that it even warrants an IETF draft to attempt to
+> change the standard.  I'm not sure how long it will take for this
+> draft to be accepted and then implemented, so I thought adding this
+> simple knob today would really help in the future.
 
-Hi all,
+As one of the co-authors of rfc2988bis I was planning to provide a patch
+as soon as the draft gets approved but it looks like you have beaten
+me to it :)
 
-After merging the s390 tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Personally I'm in favor of a knob too. We at Google has added such a
+knob for years.
 
-mm/rmap.c:788:54: error: macro "page_test_and_clear_dirty" passed 2 argumen=
-ts, but takes just 1
-mm/rmap.c: In function 'page_mkclean':
-mm/rmap.c:788: error: 'page_test_and_clear_dirty' undeclared (first use in =
-this function)
-mm/rmap.c:788: error: (Each undeclared identifier is reported only once
-mm/rmap.c:788: error: for each function it appears in.)
-mm/rmap.c:983:52: error: macro "page_test_and_clear_dirty" passed 2 argumen=
-ts, but takes just 1
-mm/rmap.c: In function 'page_remove_rmap':
-mm/rmap.c:983: error: 'page_test_and_clear_dirty' undeclared (first use in =
-this function)
+Jerry
 
-Caused by commit 4cbfc8b9f58c ("[S390] merge page_test_dirty and page_clear=
-_dirty").
-
-I have used the s390 tree from next-20110519 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__20_May_2011_11_56_51_+1000_1Sa6lJ_2Q3NpACnh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN1cpjAAoJEDMEi1NhKgbsEEEH/2ZQdFhH/gMw0EgtcMz9lH9i
-b060xn0lj+XMau9bJ6+rhaeJ0XsTzglXEd1OhZ9F3KOhQkBh8nFnVGITvwBpoe1H
-OCX4rVhCK61OBS1ksCYf/wmcP87i59vUyU8p7605nIiNwekeiTCiUNUMKFTxW+c3
-RoQgu/XzNku01fx4x6gWvFIqPGQcYcA0HgfmtNe41TTKvnD5uAjncsC0+n68rgAd
-+04FMJRlT1NUspIbyD0pCODfihu1elgZZx+J1HRbt5DIGfPCbq7mXjA30xiB/eTg
-NiC0bChRNQkZVJM1dpGQEyShoYuyCrdZ5mSTJCXuy0EYa+V0jbWpNc6HXuYjOxc=
-=ga8t
------END PGP SIGNATURE-----
-
---Signature=_Fri__20_May_2011_11_56_51_+1000_1Sa6lJ_2Q3NpACnh--
+>
+> Plus, should the draft be accepted, this knob will still be just as
+> useful (e.g. to revert back to today's behavior), and people might
+> want to consider adding another knob for the fallback initRTO (this is
+> debatable).  I don't believe this knob conflicts with the proposed
+> change to the standard, it actually goes along with it pretty well and
+> helps us prepare better for this upcoming change.
+>
+> I agree that there are too many knobs, and I hate feature creep too,
+> but I've found many of these knobs to be really useful, and the degree
+> to which Linux's TCP stack can be tuned is part of what makes it so
+> versatile.
+>
+> --
+> Benoit "tsuna" Sigoure
+> Software Engineer @ www.StumbleUpon.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
