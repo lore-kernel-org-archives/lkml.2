@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab1ETVCh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 17:02:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30831 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757075Ab1ETVCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 17:02:33 -0400
-Date: Fri, 20 May 2011 17:02:28 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Namhyung Kim <namhyung@gmail.com>, Shaohua Li <shaohua.li@intel.com>,
-        linux-kernel@vger.kernel.org, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH] block: call elv_bio_merged() when merged
-Message-ID: <20110520210228.GA6789@redhat.com>
-References: <1305869337-4375-1-git-send-email-namhyung@gmail.com>
- <BANLkTik5Od9tLg1F6mDFkzpViXR2ZcRmgA@mail.gmail.com>
- <1305885108.1633.11.camel@leonhard>
- <4DD6B807.6040309@kernel.dk>
- <20110520191907.GA6379@redhat.com>
- <4DD6BF1F.7010403@kernel.dk>
+	id S932281Ab1ETVEt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 17:04:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50766 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757459Ab1ETVEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 17:04:46 -0400
+Message-ID: <4DD6D746.6070107@kernel.org>
+Date: Fri, 20 May 2011 14:04:06 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DD6BF1F.7010403@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, mingo@elte.hu
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
+ on semi-formal proof"
+References: <tip-80d02085d99039b3b7f3a73c8896226b0cb1ba07@git.kernel.org>
+In-Reply-To: <tip-80d02085d99039b3b7f3a73c8896226b0cb1ba07@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090206.4DD6D751.010F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 09:21:03PM +0200, Jens Axboe wrote:
-> On 2011-05-20 21:19, Vivek Goyal wrote:
-> > On Fri, May 20, 2011 at 08:50:47PM +0200, Jens Axboe wrote:
-> >> On 2011-05-20 11:51, Namhyung Kim wrote:
-> >>> Hello,
-> >>>
-> >>> 2011-05-20 (금), 16:31 +0800, Shaohua Li:
-> >>>> 2011/5/20 Namhyung Kim <namhyung@gmail.com>:
-> >>>>> Commit 73c101011926 ("block: initial patch for on-stack per-task plugging")
-> >>>>> removed calls to elv_bio_merged() when @bio merged with @req. Re-add them.
-> >>>>>
-> >>>>> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> >>>>> Cc: Divyesh Shah <dpshah@google.com>
-> >>>>> ---
-> >>>>>  block/blk-core.c |    2 ++
-> >>>>>  1 files changed, 2 insertions(+), 0 deletions(-)
-> >>>>>
-> >>>>> diff --git a/block/blk-core.c b/block/blk-core.c
-> >>>>> index 3fe00a14822a..4dc02ef5fc82 100644
-> >>>>> --- a/block/blk-core.c
-> >>>>> +++ b/block/blk-core.c
-> >>>>> @@ -1132,6 +1132,7 @@ static bool bio_attempt_back_merge(struct request_queue *q, struct request *req,
-> >>>>>        req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
-> >>>>>
-> >>>>>        drive_stat_acct(req, 0);
-> >>>>> +       elv_bio_merged(q, req, bio);
-> >>>>>        return true;
-> >>>>>  }
-> >>>>>
-> >>>>> @@ -1173,6 +1174,7 @@ static bool bio_attempt_front_merge(struct request_queue *q,
-> >>>>>        req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
-> >>>>>
-> >>>>>        drive_stat_acct(req, 0);
-> >>>>> +       elv_bio_merged(q, req, bio);
-> >>>>>        return true;
-> >>>>>  }
-> >>>> Looks you should do this in __make_request. when the routine is called
-> >>>> in attempt_plug_merge, the request isn't added to elevator yet.
-> >>>>
-> >>>
-> >>> Hmm.. anyway it is merged. Is there any reason why we shouldn't collect
-> >>> the stat - or invoke the callback routine - if the @req is not in the
-> >>> elevator? Or we need to add a separate stat item for this case?
-> >>
-> >> Your patch should be safe, it's essentially only for the cgroup stuff
-> >> that does its own accounting and has appropriate protection for it. We'd
-> >> want to do this for both the plug and not-plugged merge case.
-> >>
-> >> It's a bit of a shame to add this though, since now we are hitting the
-> >> cgroup lock for each merge.
-> > 
-> > I think wer can make MERGED per cpu as I have done in my other patch
-> > series for following dispatch stats.
-> > 
-> > BLKIO_STAT_CPU_SECTORS,
-> > /* Total bytes transferred */
-> > BLKIO_STAT_CPU_SERVICE_BYTES,
-> > /* Total IOs serviced, post merge */
-> > BLKIO_STAT_CPU_SERVICED,
+On 05/19/2011 02:37 PM, tip-bot for Paul E. McKenney wrote:
+> Commit-ID:  80d02085d99039b3b7f3a73c8896226b0cb1ba07
+> Gitweb:     http://git.kernel.org/tip/80d02085d99039b3b7f3a73c8896226b0cb1ba07
+> Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> AuthorDate: Thu, 12 May 2011 01:08:07 -0700
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Thu, 19 May 2011 23:25:29 +0200
 > 
-> Yep, lets please do that and we can re-instate the merge calls with
-> that, too.
+> Revert "rcu: Decrease memory-barrier usage based on semi-formal proof"
 > 
-> > Jens are you planning to merge lockless throttling series? Once that gets
-> > merged, we can convert this MERGED stat also per cpu and get rid of need of
-> > taking blkg->stats_lock.
+> This reverts commit e59fb3120becfb36b22ddb8bd27d065d3cdca499.
 > 
-> Merged them about an hour ago :-)
+> This reversion was due to (extreme) boot-time slowdowns on SPARC seen by
+> Yinghai Lu and on x86 by Ingo
+> .
+> This is a non-trivial reversion due to intervening commits.
 > 
-> Send further updates relative to for-2.6.40/core.
+> Conflicts:
+> 
+> 	Documentation/RCU/trace.txt
+> 	kernel/rcutree.c
+> 
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  Documentation/RCU/trace.txt |   17 ++++--
+>  kernel/rcutree.c            |  130 ++++++++++++++++++++++++------------------
+>  kernel/rcutree.h            |    9 ++-
+>  kernel/rcutree_plugin.h     |    7 +-
+>  kernel/rcutree_trace.c      |   12 ++--
+>  5 files changed, 102 insertions(+), 73 deletions(-)
+> 
 
-Sure. I am working on a patch now.
+current tip/master that have this reverting and without setting DEBUG_LOCKING_API_SELFTESTS
+
+still get delay
+
+[   35.419453] cpu_dev_init done
+[  128.981770] memory_dev_init done
+
+should take only 3 or 4 seconds.
 
 Thanks
-Vivek
+
+Yinghai
