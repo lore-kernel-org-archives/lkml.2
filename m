@@ -1,98 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933944Ab1ETHNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 03:13:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50942 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933880Ab1ETHN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 03:13:28 -0400
-Message-ID: <B7F8B2D7C5D5428B911477CBC0320090@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-Cc: "Greg KH" <greg@kroah.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>, <sachi@mistralsolutions.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-References: <78EB813416554F1A973EF20AA714ADF8@subhasishg> <B85A65D85D7EB246BE421B3FB0FBB593024CF13FC2@dbde02.ent.ti.com>
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024CF13FC2@dbde02.ent.ti.com>
-Subject: Re: [PATCH v4 08/11] tty: add pruss SUART driver
-Date: Fri, 20 May 2011 12:44:00 +0530
-Organization: Mistral Solutions
+	id S934043Ab1ETHPX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 03:15:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18398 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932327Ab1ETHPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 03:15:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,241,1304319600"; 
+   d="scan'208";a="439583847"
+Date: Fri, 20 May 2011 15:15:18 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 14/18] writeback: make writeback_control.nr_to_write
+ straight
+Message-ID: <20110520071518.GA10953@localhost>
+References: <20110519214530.939830917@intel.com>
+ <20110519214746.038765568@intel.com>
+ <20110519220643.GA27247@localhost>
+ <20110519232910.GK32466@dastard>
+ <20110520040740.GA8603@localhost>
+ <20110520065207.GR32466@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110520065207.GR32466@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
+On Fri, May 20, 2011 at 02:52:07PM +0800, Dave Chinner wrote:
+> On Fri, May 20, 2011 at 12:07:40PM +0800, Wu Fengguang wrote:
+> > On Fri, May 20, 2011 at 07:29:10AM +0800, Dave Chinner wrote:
+> > > On Fri, May 20, 2011 at 06:06:44AM +0800, Wu Fengguang wrote:
+> > > > :                 writeback_single_inode(inode, wb, &wbc);
+> > > > :                 work->nr_pages -= write_chunk - wbc.nr_to_write;
+> > > > :                 wrote += write_chunk - wbc.nr_to_write;
+> > > > :                 if (wbc.pages_skipped) {
+> > > > :                         /*
+> > > > :                          * writeback is not making progress due to locked
+> > > > :                          * buffers.  Skip this inode for now.
+> > > > :                          */
+> > > > :                         redirty_tail(inode, wb);
+> > > > : -               }
+> > > > : +               } else if (!(inode->i_state & I_DIRTY))
+> > > > : +                       wrote++;
+> > > > 
+> > > > It looks a bit more clean to do
+> > > > 
+> > > > :                 wrote += write_chunk - wbc.nr_to_write;
+> > > > : +               if (!(inode->i_state & I_DIRTY))
+> > > > : +                       wrote++;
+> > > > :                 if (wbc.pages_skipped) {
+> > > > :                         /*
+> > > > :                          * writeback is not making progress due to locked
+> > > > :                          * buffers.  Skip this inode for now.
+> > > > :                          */
+> > > > :                         redirty_tail(inode, wb);
+> > > > :                 }
+> > > 
+> > > But it's still in the wrong place - such post-write inode dirty
+> > > processing is supposed to be isolated to writeback_single_inode().
+> > > Spreading it across multiple locations is not, IMO, the nicest thing
+> > > to do...
+> > 
+> > Strictly speaking, it's post inspecting :)
+> > 
+> > It does look reasonable and safe to move the pages_skipped post
+> > processing into writeback_single_inode(). See the below patch.
+> 
+> <sigh>
+> 
+> That's not what I was referring to. The wbc.pages_skipped check is
+> fine where it is.
+> 
+> > 
+> > When doing this chunk,
+> > 
+> > -			if (wbc->nr_to_write <= 0) {
+> > +			if (wbc->nr_to_write <= 0 && wbc->pages_skipped == 0) {
+> > 
+> > I wonder in general sense (without knowing enough FS internals)
+> > whether ->pages_skipped is that useful: if some locked buffer is
+> > blocking all subsequent pages, then ->nr_to_write won't be able to
+> > drop to zero.  So the (wbc->pages_skipped == 0) test seems redundant..
+> > 
+> > Thanks,
+> > Fengguang
+> > ---
+> > Subject: writeback: move pages_skipped post processing into writeback_single_inode()
+> > Date: Fri May 20 11:42:42 CST 2011
+> > 
+> > It's more logical to isolate post-write processings in writeback_single_inode().
+> > 
+> > Note that it slightly changes behavior for write_inode_now() and sync_inode(),
+> > which used to ignore pages_skipped.
+> > 
+> > Proposed-by: Dave Chinner <david@fromorbit.com>
+> 
+> No, I didn't propose the change you've made in this patch. I've been
+> asking you to fix the original patch, not proposing new changes to
+> some other code.  Please don't add my name to random tags in patches
+> without asking me first.
 
->> > ok, so what you are suggesting is that I implement some
->> > callbacks (like .fifo_alloc, .fifo_dealloc) which can allocate
->> > memory using sram_alloc.
->> > My doubt is, if already such API's are there (by Russel) or you
->> > are suggesting to implement them.
->>
->> I can add the fifo_alloc/dealloc as part of the suart platform_data,
->> Is that's what you are suggesting. If you may please point me out
->> to any example. I am just not clear with this.
->
-> Yes, that's what I am suggesting. I don't have an exact example
-> for you, but for an example of how function pointers can be passed
-> along in platform data you can look at the platform data for
-> DA8x FB driver in include/video/da8xx-fb.h.
->
+OK, sorry, I'll keep that in mind in future.
 
-Does this look ok.
-This code snippet is in the driver file.
+> So, for the third time, please fix the original patch by moving the
+> new "inode now clean" accounting to the "inode-now-clean" logic
+> branch in writeback_single_inode().
+> 
+>         if (!(inode->i_state & I_FREEING)) {
+>                 if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
+> .....
+>                 } else if (inode->i_state & I_DIRTY) {
+> .....
+>                 } else {
+> 			/*
+> 			 * account for it here with all the other
+> 			 * inode-now-clean manipulations that we need
+> 			 * to do!
+> 			 */
 
-        if (soft_uart->use_sram) {
-                soft_uart->suart_iomap.p_fifo_buff_virt_base =
-                pdata->fifo_alloc(SUART_CNTX_SZ * NR_SUART * 2,
-                (dma_addr_t *) 
-&soft_uart->suart_iomap.p_fifo_buff_phys_base);
-                if (!soft_uart->suart_iomap.p_fifo_buff_virt_base) {
-                        soft_uart->suart_iomap.p_fifo_buff_virt_base =
-                        dma_alloc_coherent(&pdev->dev,
-                        SUART_CNTX_SZ * NR_SUART * 2,
-                        (dma_addr_t *) &soft_uart->suart_iomap.
-                        p_fifo_buff_phys_base, GFP_KERNEL);
-                        soft_uart->use_sram = false;
-                        if (!soft_uart->suart_iomap.p_fifo_buff_virt_base)
-                                goto probe_exit_iounmap;
-                }
-        } else {
-                soft_uart->suart_iomap.p_fifo_buff_virt_base =
-                dma_alloc_coherent(&pdev->dev,
-                SUART_CNTX_SZ * NR_SUART * 2,
-                (dma_addr_t *) &soft_uart->suart_iomap.
-                p_fifo_buff_phys_base, GFP_KERNEL);
-                if (!soft_uart->suart_iomap.p_fifo_buff_virt_base)
-                        goto probe_exit_iounmap;
-        }
+That's what the original "writeback: introduce
+writeback_control.inodes_cleaned" does. Given that it's opposed to add
+writeback_control.inodes_cleaned, the only option remained is to add
+one more argument "long *inode_cleaned" to writeback_single_inode()
+like this.
 
-I added the fifo_alloc into the suart_data of the board file.
+Well it looks ugly and I wonder if you have any prettier version in
+mind. This ugliness is the main reason I resist to do the change.
 
-static struct da850_evm_pruss_suart_data suart_data = {
-        .version        = 1,
-        .setup          = da850_evm_pruss_suart_setup,
-        .fifo_alloc     = sram_alloc,
-        .fifo_free      = sram_free,
-};
+Thanks,
+Fengguang
+---
 
-Best Regards,
-Subhasish Ghosh
+--- linux-next.orig/fs/fs-writeback.c	2011-05-20 15:09:11.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-20 15:09:15.000000000 +0800
+@@ -359,7 +359,7 @@ static void inode_wait_for_writeback(str
+  */
+ static int
+ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
+-		       struct writeback_control *wbc)
++		       struct writeback_control *wbc, long *inode_cleaned)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
+ 	long nr_to_write = wbc->nr_to_write;
+@@ -482,6 +482,7 @@ writeback_single_inode(struct inode *ino
+ 			 * No need to add it back to the LRU.
+ 			 */
+ 			list_del_init(&inode->i_wb_list);
++			(*inode_cleaned)++;
+ 		}
+ 	}
+ 	inode_sync_complete(inode);
+@@ -604,12 +605,10 @@ static long writeback_sb_inodes(struct s
+ 		wbc.nr_to_write = write_chunk;
+ 		wbc.pages_skipped = 0;
  
-
+-		writeback_single_inode(inode, wb, &wbc);
++		writeback_single_inode(inode, wb, &wbc, &wrote);
+ 
+ 		work->nr_pages -= write_chunk - wbc.nr_to_write;
+ 		wrote += write_chunk - wbc.nr_to_write;
+-		if (!(inode->i_state & I_DIRTY))
+-			wrote++;
+ 		if (wbc.pages_skipped) {
+ 			/*
+ 			 * writeback is not making progress due to locked
+@@ -1352,6 +1351,7 @@ int write_inode_now(struct inode *inode,
+ 		.range_start = 0,
+ 		.range_end = LLONG_MAX,
+ 	};
++	long unused;
+ 
+ 	if (!mapping_cap_writeback_dirty(inode->i_mapping))
+ 		wbc.nr_to_write = 0;
+@@ -1359,7 +1359,7 @@ int write_inode_now(struct inode *inode,
+ 	might_sleep();
+ 	spin_lock(&wb->list_lock);
+ 	spin_lock(&inode->i_lock);
+-	ret = writeback_single_inode(inode, wb, &wbc);
++	ret = writeback_single_inode(inode, wb, &wbc, &unused);
+ 	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&wb->list_lock);
+ 	if (sync)
+@@ -1383,10 +1383,11 @@ int sync_inode(struct inode *inode, stru
+ {
+ 	struct bdi_writeback *wb = &inode_to_bdi(inode)->wb;
+ 	int ret;
++	long unused;
+ 
+ 	spin_lock(&wb->list_lock);
+ 	spin_lock(&inode->i_lock);
+-	ret = writeback_single_inode(inode, wb, wbc);
++	ret = writeback_single_inode(inode, wb, wbc, &unused);
+ 	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&wb->list_lock);
+ 	return ret;
