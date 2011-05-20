@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935674Ab1ETL4f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 07:56:35 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36246 "EHLO mx3.mail.elte.hu"
+	id S935677Ab1ETL6P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 07:58:15 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36474 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935641Ab1ETL4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 07:56:33 -0400
-Date: Fri, 20 May 2011 13:56:14 +0200
+	id S934469Ab1ETL6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 07:58:14 -0400
+Date: Fri, 20 May 2011 13:58:02 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
+Cc: Don Zickus <dzickus@redhat.com>, huang ying <huang.ying.caritas@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
-Message-ID: <20110520115614.GH14745@elte.hu>
-References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
- <1305619719-7480-6-git-send-email-ying.huang@intel.com>
- <20110517084622.GE22093@elte.hu>
- <4DD23750.3030606@intel.com>
- <20110517092620.GI22093@elte.hu>
- <4DD31C78.6000209@intel.com>
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
+Message-ID: <20110520115802.GI14745@elte.hu>
+References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
+ <20110513124523.GM13984@redhat.com>
+ <20110513130011.GA6474@elte.hu>
+ <BANLkTi=Z_3MZVs2CQyk82NfvZj-KdSw5kw@mail.gmail.com>
+ <20110513152033.GB3854@elte.hu>
+ <20110513160029.GD31888@redhat.com>
+ <20110516112934.GE19837@elte.hu>
+ <4DD22692.7050209@intel.com>
+ <20110517085327.GG22093@elte.hu>
+ <4DD4BC45.8050301@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DD31C78.6000209@intel.com>
+In-Reply-To: <4DD4BC45.8050301@intel.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -46,21 +45,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Huang Ying <ying.huang@intel.com> wrote:
 
-> > So why are we not working towards integrating this into our event 
-> > reporting/handling framework, as i suggested it from day one on when you 
-> > started posting these patches?
+> On 05/17/2011 04:53 PM, Ingo Molnar wrote:
+> > 
+> > * Huang Ying <ying.huang@intel.com> wrote:
+> > 
+> >> On 05/16/2011 07:29 PM, Ingo Molnar wrote:
+> >>>
+> >>> * Don Zickus <dzickus@redhat.com> wrote:
+> >>>
+> >>>> On Fri, May 13, 2011 at 05:20:33PM +0200, Ingo Molnar wrote:
+> >>>>>
+> >>>>> * huang ying <huang.ying.caritas@gmail.com> wrote:
+> >>>>>
+> >>>>>>> What should be done instead is to add an event for unknown NMIs, which can 
+> >>>>>>> then be processed by the RAS daemon to implement policy.
+> >>>>>>>
+> >>>>>>> By using 'active' event filters it could even be set on a system to panic 
+> >>>>>>> the box by default.
+> >>>>>>
+> >>>>>> If there is real fatal hardware error, maybe we have no luxury to go from NMI 
+> >>>>>> handler to user space RAS daemon to determine what to do. System may explode, 
+> >>>>>> bad data may go to disk before that.
+> >>>>>
+> >>>>> That is why i suggested:
+> >>>>>
+> >>>>>   > > By using 'active' event filters it could even be set on a system to panic 
+> >>>>>   > > the box by default.
+> >>>>>
+> >>>>> event filters are evaluated in the kernel, so the panic could be instantaneous, 
+> >>>>> without the event having to reach user-space.
+> >>>>
+> >>>> Interesting.  Question though, what do you mean by 'event filtering'.  Is 
+> >>>> that different then setting 'unknown_nmi_panic' panic on the commandline or 
+> >>>> procfs?
+> >>>>
+> >>>> Or are you suggesting something like registering another callback on the 
+> >>>> die_chain that looks for DIE_NMIUNKNOWN as the event, swallows them and 
+> >>>> implements the policy?  That way only on HEST related platforms would 
+> >>>> register them while others would keep the default of 'Dazed and confused' 
+> >>>> messages?
+> >>>
+> >>> The idea is that "event filters", which are an existing upstream feature and 
+> >>> which can be used in rather flexible ways:
+> >>>
+> >>>   http://lkml.org/lkml/2011/4/27/660
+> >>>
+> >>> Could be used to trigger non-standard policy action as well - such as to panic 
+> >>> the box.
+> >>>
+> >>> This would replace various very limited /debugfs and /sys event filtering hacks 
+> >>> (and hardcoded policies) such as arch/x86/kernel/cpu/mcheck/mce-severity.c, and 
+> >>> it would allow nonstandard behavior like 'panic the box on unknown NMIs' as 
+> >>> well.
+> >>>
+> >>> This could be set by the RAS daemon, and it could be propagated to the kernel 
+> >>> boot line as well, where event filter syntax would look like this:
+> >>>
+> >>>   events=nmi::unknown"if (reason == 0) panic();"
+> >>>
+> >>> (Where the 'reason' field of the NMI event is the current legacy 'reason' value 
+> >>> there.)
+> >>>
+> >>> The filter code would have to be modified to be able to recognize the panic() 
+> >>> bit, but that's desirable anyway and it is a one-time effort.
+> >>>
+> >>> This:
+> >>>
+> >>>   events=nmi::unknown:"if (reason == 0) ignore();"
+> >>>
+> >>> would be a possible outcome as well, on certain boxes - to skip certain events.
+> >>
+> >> We can determine whether NMI is unknown in kernel now.  If you want to push 
+> >> all unknown NMI logic into user space (although I don't think that is the 
+> >> best solution), is it not sufficient that just check system in user space 
+> >> (via PCI ID or DMI ID, etc) and set existing "unknown_nmi_panic" accordingly?
+> > 
+> > yeah - no need to push the 'reason' if it's not needed.
+> > 
+> > We want the kernel defaults to be sane - i.e. this is not to 'push' anything to 
+> > user-space in a forced way, this is to make *optional*, different policy action 
+> > possible to configure.
 > 
-> The memory_failure_queue() introduced in this patch is general, that is, it 
-> can be used not only by ACPI/APEI, but also any other hardware error 
-> handlers, including your event reporting/handling framework.
+> OK.  Then, what is the proper default behavior?  We think Linux kernel
+> should treat unknown NMI as hardware error reporting, at least on some
+> modern machines (via a white list).  Do you agree?
 
-Well, the bit you are steadfastly ignoring is what i have made clear well 
-before you started adding these facilities: THEY ALREADY EXISTS to a large 
-degree :-)
+No, i do not agree *at all*.
 
-So you were and are duplicating code instead of using and extending existing 
-event processing facilities. It does not matter one little bit that the code 
-you added is partly 'generic', it's still overlapping and duplicated.
+We are seeing cases of spurious NMIs again and again. Crashing boxes should be 
+a niche thing, something you can configure if you want to but the kernel should 
+not default it until NMI demultiplexing becomes more robust - and i doubt it 
+ever will.
 
 Thanks,
 
