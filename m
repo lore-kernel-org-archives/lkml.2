@@ -1,208 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935113Ab1ETOh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:37:59 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:41497 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934990Ab1ETOhV (ORCPT
+	id S935102Ab1ETOhb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:37:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55852 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933843Ab1ETOhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:37:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=kAqClia/M+2k3TPy53q4on/GUFegig+O5a+7Lj96RYe0qDKIIjY+RHY0c5Xz2t5Z7I
-         64xCSnBOv/xGcnQ4r31Q==
-Date: Fri, 20 May 2011 16:37:16 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, andi@firstfloor.org,
-        ming.m.lin@intel.com
-Subject: [PATCH 2/3] perf_events: fix validation of events using an extra
- reg (v2)
-Message-ID: <20110520143716.GA5381@quad>
+	Fri, 20 May 2011 10:37:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] arch/tile: add /proc/tile, /proc/sys/tile, and a sysfs cpu attribute
+Date: Fri, 20 May 2011 16:37:20 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+References: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com> <201105191722.17685.arnd@arndb.de> <4DD67A31.90802@tilera.com>
+In-Reply-To: <4DD67A31.90802@tilera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105201637.20925.arnd@arndb.de>
+X-Provags-ID: V02:K0:xELmk1ffZVhyfEX+mCPftt9JduE+2jIey7dKeIJzgFZ
+ hv2yqo++jNnUMoxwF5plD9ncBXIiC9/sZ6ihahwXq2ew7xGjPy
+ sh8vozWWXOwLHw4XF0sOXkQ1oHaE4v7gDOAlexkpfQCmlr5Gjt
+ 5ImFLffbs6x4OtHD0AkMhPOMwzZMKWfPJHOtPf0u8IIfd7BagM
+ pcgMJ2kRTRLSkgFYz+bUA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    
-The validate_group() function needs to validate events with
-extra shared regs. Within an event group, only events with
-the same value for the extra reg can co-exist. This was not
-checked by validate_group() because it was missing the
-shared_regs logic.
-    
-This patch changes the allocation of the fake cpuc used for
-validation to also point to a fake shared_regs structure such
-that group events be properly testing.
-    
-The is_fake field is necessary to avoid a lockdep issue having
-to do with interrupt masking and era->lock.
-    
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
+On Friday 20 May 2011 16:26:57 Chris Metcalf wrote:
+> >>>> /proc/tile/hardwall
+> >>>>   Information on the set of currently active hardwalls (note that
+> >>>>   the implementation is already present in arch/tile/kernel/hardwall.c;
+> >>>>   this change just enables it)
+> >> This one is not a hypervisor-related file.  It just lists information about
+> >> the set of Linux hardwalls currently active.  Again, it's not primarily
+> >> intended for programmatic use, but as a diagnostic tool.
+> > same here, I'd still put it into the hypervisor structure.
+> 
+> Since /proc/tile/hardwall has no connection to the hypervisor whatsoever,
+> I'm reluctant to put it under /sys/hypervisor.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 0f8d3ff..3918927 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -139,6 +139,7 @@ struct cpu_hw_events {
- 	struct perf_event	*event_list[X86_PMC_IDX_MAX]; /* in enabled order */
- 
- 	unsigned int		group_flag;
-+	bool			is_fake;	/* fake cpuc for validation purposes */
- 
- 	/*
- 	 * Intel DebugStore bits
-@@ -1682,6 +1683,42 @@ static int x86_pmu_commit_txn(struct pmu *pmu)
- 	perf_pmu_enable(pmu);
- 	return 0;
- }
-+/*
-+ * a fake_cpuc is used to validate event groups. Due to
-+ * the extra reg logic, we need to also allocate a fake
-+ * per_core and per_cpu structure. Otherwise, group events
-+ * using extra reg may conflict without the kernel being
-+ * able to catch this when the last event gets added to
-+ * the group.
-+ */
-+static void free_fake_cpuc(struct cpu_hw_events *cpuc)
-+{
-+	kfree(cpuc->shared_regs);
-+	kfree(cpuc);
-+}
-+
-+static struct cpu_hw_events *allocate_fake_cpuc(void)
-+{
-+	struct cpu_hw_events *cpuc;
-+	int cpu = smp_processor_id();
-+
-+	cpuc = kzalloc(sizeof(*cpuc), GFP_KERNEL);
-+	if (!cpuc)
-+		return ERR_PTR(-ENOMEM);
-+
-+	cpuc->is_fake = true;
-+
-+	/* only needed, if we have extra_regs */
-+	if (x86_pmu.extra_regs) {
-+		cpuc->shared_regs = allocate_shared_regs(cpu);
-+		if (!cpuc->shared_regs)
-+			goto error;
-+	}
-+	return cpuc;
-+error:
-+	free_fake_cpuc(cpuc);
-+	return ERR_PTR(-ENOMEM);
-+}
- 
- /*
-  * validate that we can schedule this event
-@@ -1692,9 +1729,9 @@ static int validate_event(struct perf_event *event)
- 	struct event_constraint *c;
- 	int ret = 0;
- 
--	fake_cpuc = kmalloc(sizeof(*fake_cpuc), GFP_KERNEL | __GFP_ZERO);
--	if (!fake_cpuc)
--		return -ENOMEM;
-+	fake_cpuc = allocate_fake_cpuc();
-+	if (IS_ERR(fake_cpuc))
-+		return PTR_ERR(fake_cpuc);
- 
- 	c = x86_pmu.get_event_constraints(fake_cpuc, event);
- 
-@@ -1704,7 +1741,7 @@ static int validate_event(struct perf_event *event)
- 	if (x86_pmu.put_event_constraints)
- 		x86_pmu.put_event_constraints(fake_cpuc, event);
- 
--	kfree(fake_cpuc);
-+	free_fake_cpuc(fake_cpuc);
- 
- 	return ret;
- }
-@@ -1724,35 +1761,32 @@ static int validate_group(struct perf_event *event)
- {
- 	struct perf_event *leader = event->group_leader;
- 	struct cpu_hw_events *fake_cpuc;
--	int ret, n;
-+	int ret = -ENOSPC, n;
- 
--	ret = -ENOMEM;
--	fake_cpuc = kmalloc(sizeof(*fake_cpuc), GFP_KERNEL | __GFP_ZERO);
--	if (!fake_cpuc)
--		goto out;
-+	fake_cpuc = allocate_fake_cpuc();
-+	if (IS_ERR(fake_cpuc))
-+		return PTR_ERR(fake_cpuc);
- 	/*
- 	 * the event is not yet connected with its
- 	 * siblings therefore we must first collect
- 	 * existing siblings, then add the new event
- 	 * before we can simulate the scheduling
- 	 */
--	ret = -ENOSPC;
- 	n = collect_events(fake_cpuc, leader, true);
- 	if (n < 0)
--		goto out_free;
-+		goto out;
- 
- 	fake_cpuc->n_events = n;
- 	n = collect_events(fake_cpuc, event, false);
- 	if (n < 0)
--		goto out_free;
-+		goto out;
- 
- 	fake_cpuc->n_events = n;
- 
- 	ret = x86_pmu.schedule_events(fake_cpuc, n, NULL);
- 
--out_free:
--	kfree(fake_cpuc);
- out:
-+	free_fake_cpuc(fake_cpuc);
- 	return ret;
- }
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 2d40f33..974eaf2 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1029,12 +1029,21 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
- 	struct er_account *era;
- 
- 	/* already allocated shared msr */
--	if (reg->alloc || !cpuc->shared_regs)
-+	if (reg->alloc)
- 		return &unconstrained;
- 
- 	era = &cpuc->shared_regs->regs[reg->idx];
--
--	raw_spin_lock(&era->lock);
-+	/*
-+	 * we do not lock in case we come here via validate_group(), i.e.,
-+	 * fake cpuc, otherwise we trigger a lockdep issue. Locking is not
-+	 * necessary with the fakecpu, as we are simply trying to validate
-+	 * co-scheduling within a group.
-+	 *
-+	 * Note that locking is done even when the register is not shared
-+	 * between CPUs but there will never be contention.
-+	 */
-+	if (!cpuc->is_fake)
-+		raw_spin_lock(&era->lock);
- 
- 	if (!atomic_read(&era->ref) || era->config == reg->config) {
- 
-@@ -1058,7 +1067,8 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
- 		 */
- 		c = &unconstrained;
- 	}
--	raw_spin_unlock(&era->lock);
-+	if (!cpuc->is_fake)
-+		raw_spin_unlock(&era->lock);
- 
- 	return c;
- }
+Ah, I see. I didn't notice that it was in the other file. You are
+absolutely right, this does not belong into /sys/hypervisor and
+fits well into procfs, we just need to find the right place.
+
+> Perhaps in this case it would be reasonable to just have the hardwall
+> subsystem put the file in /proc/driver/hardwall, or even /proc/hardwall? 
+> Or I could make the /dev/hardwall char device dump out the ASCII text that
+> we currently get from /proc/hardwall if you read from it, which is a little
+> weird but not inconceivable.  For example it currently shows things like this:
+> 
+> # cat /proc/tile/hardwall
+> 2x2 1,1 pids: 484@2,1 479@1,1
+> 2x2 0,3 pids:
+> 
+> In this example "2x2 1,1" is a 2x2 grid of cpus starting at grid (x,y)
+> position (1,1), with task 484 bound to the cpu at (x,y) position (2,1).
+
+Any chance you can still restructure the information? I would recommend
+making it a first-class procfs member, since the data is really per-task.
+
+You can add a conditional entry to tgid_base_stuff[] in fs/proc/base.c
+to make it show up for each pid, and then just have the per-task information
+in there to do the lookup the other way round:
+
+# cat /proc/484/hardwall
+2x2 1,1 @2,1
+
+# cat /proc/479/hardwall
+2x2 1,1 @1,1
+
+	Arnd
