@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934341Ab1ETPns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 11:43:48 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61544 "EHLO
+	id S934454Ab1ETPxa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 11:53:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60293 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933861Ab1ETPnr (ORCPT
+	with ESMTP id S933861Ab1ETPx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 11:43:47 -0400
+	Fri, 20 May 2011 11:53:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+        h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=DcYz5JiTXfgUcyGniUXeXEXSagmOPQxS/K00BtA+9dWEHNkNqE23YctmcymxZ2s/Qf
-         IDTDrtlD4MKGvinR8LRH2RTHnEuXlCsnY2tnj2Tfs1oYoiZ7hY08h3dxPk4BjHavYcr9
-         rCdGWDMr1VC7+EtlQ9Bm8SXNmfkVxoV5HdaSI=
-Date: Fri, 20 May 2011 17:43:41 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Jian Peng <jipeng2005@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jeff Garzik <jgarzik@pobox.com>,
-        Michael Leun <lkml20100708@newton.leun.net>, linux-ide@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2.6.38-rc7] Revert "libata: ahci_start_engine
- compliant to AHCI spec"
-Message-ID: <20110520154341.GL31426@htj.dyndns.org>
-References: <201105120025.34531.rjw@sisk.pl>
- <20633.1305565337@localhost>
- <BANLkTin7NgUMXSVyKn6P0TCrFZ5uaaRL1w@mail.gmail.com>
- <201105182144.37713.rjw@sisk.pl>
- <BANLkTimZ9pe-FhkJYHTG1Jx8MUPrMHSFbA@mail.gmail.com>
- <BANLkTim9_1Xt8oE4awbCO1iKUW96YUOv_A@mail.gmail.com>
- <10124.1305906020@localhost>
+        b=r3cIv+CAIXcPv3if8q0BO0KcNRoAQ1c/nPBQo/Xi07yNDlKViEmEbWfqryBuyyYRkW
+         NeMXWFGx9ssQgjlDRne9f8B/38Gfbn9UNZK8KtZP3rLUq9x/ceHuXAiBAD9v0m4dpqR3
+         0cpC/f0/cdMpDgWS7OVFzOOBACQh956e7/B2w=
+Date: Fri, 20 May 2011 19:47:24 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Paul Parsons <lost.distance@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        Dmitry Artamonow <mad_soft@inbox.ru>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [PATCH] ds2760_battery: Fix rated capacity of the hx4700
+ 1800mAh battery
+Message-ID: <20110520154724.GB18099@oksana.dev.rtsoft.ru>
+References: <E1QEM6f-0000Db-K0@outmx05.plus.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <10124.1305906020@localhost>
+In-Reply-To: <E1QEM6f-0000Db-K0@outmx05.plus.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 11:40:20AM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 18 May 2011 17:14:56 PDT, Jian Peng said:
+On Mon, Apr 25, 2011 at 01:45:40PM +0000, Paul Parsons wrote:
+> Fix rated capacity of the HP iPAQ hx4700 3.7V 1800mAh (359113-001) battery. For this battery the value of the rated capacity EEPROM register at 0x32 is 7; thus rated_capacities[7] = 1800.
 > 
-> > > @@ -1353,6 +1332,8 @@
-> > >
-> > >
-> > >   ahci_start_engine(ap);
-> > >
-> > > + msleep(5);
-> > > +
-> > >   if (online)
-> > >
-> > >    *class = ahci_dev_classify(ap);
-> > >
-> 
-> It may very well be that adding a magic msleep(5) here just Makes It Work, but
-> I have a gut feeling that it's in the wrong place (for starters, 'online' can't change
-> during the msleep() unless somebody *else* sets it - in which case the locking
-> is screwed up as we're not forcing a re-read of the value).  The msleep() probably
-> needs to be before something else further down in the code (but I have no idea
-> exactly what).
+> Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
 
-At this point, I think it would be better to simply add a flag and
-enable the check for the affected controller.
+Applied, thanks!
 
-Thanks.
+> ---
+> --- clean-2.6.39-rc4/drivers/power/ds2760_battery.c	2011-03-15 01:20:32.000000000 +0000
+> +++ linux-2.6.39-rc4/drivers/power/ds2760_battery.c	2011-04-25 13:06:29.344976841 +0100
+> @@ -86,7 +86,11 @@ static int rated_capacities[] = {
+>  	920,	/* NEC */
+>  	1440,	/* Samsung */
+>  	1440,	/* BYD */
+> +#ifdef CONFIG_MACH_H4700
+
+Note that this is OK as a temporary fix, but in general such fixups
+should be done via platform data. So, it would be great if you could
+prepare another patch on top of this one, which would do things in
+a proper way.
+
+> +	1800,	/* HP iPAQ hx4700 3.7V 1800mAh (359113-001) */
+> +#else
+>  	1440,	/* Lishen */
+> +#endif
+>  	1440,	/* NEC */
+>  	2880,	/* Samsung */
+>  	2880,	/* BYD */
 
 -- 
-tejun
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
