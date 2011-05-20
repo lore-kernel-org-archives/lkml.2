@@ -1,257 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab1ETOtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:49:41 -0400
-Received: from relay.pcl-ipout02.plus.net ([212.159.7.100]:35273 "EHLO
-	relay.pcl-ipout02.plus.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753174Ab1ETOtj (ORCPT
+	id S1755875Ab1ETOyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:54:13 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:46746 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739Ab1ETOyK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:49:39 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoYgAIN+1k3Unw4T/2dsb2JhbACCNoJpkk6OL3eyXQKHIIkeDoYLBJRAhByGKg
-Subject: [PATCH] mfd: Add ASIC3 PCMCIA/CF support
-From: "Paul Parsons" <lost.distance@yahoo.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <sameo@linux.intel.com>, <philipp.zabel@gmail.com>, <mad_soft@inbox.ru>
-Date: Fri, 20 May 2011 14:49:35 +0000
-Content-Type: text/plain
-Mime-Version: 1.0
-X-Mailer: email v2.5.0 (Linux 2.6.39 x86_64 [http://email.cleancode.org])
-Message-Id: <E1QNR1E-0003gV-IK@outmx04.plus.net>
+	Fri, 20 May 2011 10:54:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=CCV5YEr0udVgSQNNJ4w8MbegHfJ5JyY5yBvZcS/mZhCkXM4Eq5Nq14YHUaQIhZ5lrF
+         fNWHeeP89ON4jnh5+rsw==
+MIME-Version: 1.0
+In-Reply-To: <sig.51214cae32.4DD61B48.8010601@radicalsystems.co.za>
+References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
+ <sig.512079e334.4DD57D44.50009@radicalsystems.co.za> <BANLkTikHQNQdWoDS2dXUC9gTPWvtmUM=yA@mail.gmail.com>
+ <sig.51214cae32.4DD61B48.8010601@radicalsystems.co.za>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 20 May 2011 08:53:47 -0600
+Message-ID: <BANLkTi=jTKp9+_KDmTxYfGXe6Ln02GLmDA@mail.gmail.com>
+Subject: Re: PCI BAR1 Unassigned
+To: Jan Zwiegers <jan@radicalsystems.co.za>
+Cc: Xianghua Xiao <xiaoxianghua@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add PCMCIA/CF support for the HTC ASIC3. Underlying support is provided by the mfd/asic3 and pcmcia/pxa2xx-pcmcia drivers. An example configuration is provided by the pxa/hx4700 platform.
+On Fri, May 20, 2011 at 1:42 AM, Jan Zwiegers <jan@radicalsystems.co.za> wrote:
+> On 2011-05-19 10:50 PM, Xianghua Xiao wrote:
+>>
+>> On Thu, May 19, 2011 at 3:27 PM, Jan Zwiegers<jan@radicalsystems.co.za>
+>>  wrote:
+>>>
+>>> On 2011-05-19 08:50 PM, Bjorn Helgaas wrote:
+>>>>
+>>>> On Thu, May 19, 2011 at 10:28 AM, Jan Zwiegers<jan@radicalsystems.co.za>
+>>>>  wrote:
+>>>>>
+>>>>> I have the problem below where my PCI card's second BAR does not get
+>>>>> assigned.
+>>>>> What can be the cause of this problem?
+>>>>> The last kernel I tested on which worked OK was 2.6.27.
+>>>>> My current problematic kernel 2.6.35.
+>>>>>
+>>>>> 05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O
+>>>>> Card
+>>>>> (rev 5c)
+>>>>>    Flags: bus master, slow devsel, latency 32, IRQ 22
+>>>>>    Memory at 93b00000 (type 3, prefetchable) [size=2K]
+>>>>>    Memory at<unassigned>    (type 3, prefetchable)
+>>>>>    Capabilities: [80] #00 [0600]
+>>>>>    Kernel modules: pci703drv
+>>>>
+>>>> Could be resource exhaustion or, more likely, we ran out because we
+>>>> now assign resource to things that don't need them, leaving none for
+>>>> things that *do* need them.  This sounds like a regression, so we
+>>>> should open a bugzilla for it and attach dmesg logs from 2.6.27 and
+>>>> 2.6.35.
+>>>>
+>>>> Does this problem keep the driver from working?  (Sometimes drivers
+>>>> don't actually use all the BARs a device supports.)
+>>>>
+>>>> Bjorn
+>>>>
+>>>
+>>> I'm the maintainer of the driver and was involved in the development of
+>>> the
+>>> board as well in 2003. The board uses two BARS and the second BAR is the
+>>> most important. The board worked fine since the 2.4 days and only
+>>> recently
+>>> became problematic. I suspect it works on even later kernels than 27,
+>>> maybe
+>>> 2.6.32.
+>>>
+>>> My knowledge is too little to actually determine if the problem is
+>>> because
+>>> the FPGA based PCI interface is not within spec or something that changed
+>>> in
+>>> the kernel, because of the post .30 releases becoming more strict to PCI
+>>> specification, i.e. BIOS / Kernel interaction.
+>>>
+>>> Jan
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+>> What's the size for BAR1? one reason is that no more space to
+>> align/allocate BAR1.
+>>
+>> If the board stays the same then your FPGA might be the cause, I have
+>> seen similar issues and they ended up in FPGA implementation.
+>>
+>
+> I have submitted the difference in iomem, lspci and dmesg of 2.6.27 & 2.6.35
+> kernels from the same machine. The BAR size is 2K. As above BAR0 is at
+> 93b0000 and BAR1 should be at 93b00800.
 
-Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
----
+Thanks for the data.
 
-Tested on an HP iPAQ hx4700 with (1) 1Gb CF memory card (CONFIG_PATA_PCMCIA), and (2) NE2000 Compatible CF Ethernet card (CONFIG_PCMCIA_PCNET).
+I think your FPGA is "unusual" after all.  lspci says this:
 
-diff -uprN clean-2.6.39/arch/arm/mach-pxa/hx4700.c linux-2.6.39/arch/arm/mach-pxa/hx4700.c
---- clean-2.6.39/arch/arm/mach-pxa/hx4700.c	2011-05-19 05:06:34.000000000 +0100
-+++ linux-2.6.39/arch/arm/mach-pxa/hx4700.c	2011-05-20 15:22:52.333879329 +0100
-@@ -261,7 +261,6 @@ static u16 asic3_gpio_config[] = {
- 	ASIC3_GPIOC0_LED0,		/* red */
- 	ASIC3_GPIOC1_LED1,		/* green */
- 	ASIC3_GPIOC2_LED2,		/* blue */
--	ASIC3_GPIOC4_CF_nCD,
- 	ASIC3_GPIOC5_nCIOW,
- 	ASIC3_GPIOC6_nCIOR,
- 	ASIC3_GPIOC7_nPCE_1,
-@@ -275,6 +274,7 @@ static u16 asic3_gpio_config[] = {
- 	ASIC3_GPIOC15_nPIOR,
- 
- 	/* GPIOD: input GPIOs, CF */
-+	ASIC3_GPIOD4_CF_nCD,
- 	ASIC3_GPIOD11_nCIOIS16,
- 	ASIC3_GPIOD12_nCWAIT,
- 	ASIC3_GPIOD15_nPIOW,
-@@ -804,10 +804,15 @@ static struct i2c_board_info __initdata
-  * PCMCIA
-  */
- 
-+struct pcmcia_low_level;
-+extern struct pcmcia_low_level asic3_pcmcia_low_level;
-+
- static struct platform_device pcmcia = {
--	.name = "hx4700-pcmcia",
-+	.name = "pxa2xx-pcmcia",
-+	.id   = -1,
- 	.dev  = {
- 		.parent = &asic3.dev,
-+		.platform_data = &asic3_pcmcia_low_level,
- 	},
- };
- 
-diff -uprN clean-2.6.39/drivers/mfd/asic3.c linux-2.6.39/drivers/mfd/asic3.c
---- clean-2.6.39/drivers/mfd/asic3.c	2011-05-19 05:06:34.000000000 +0100
-+++ linux-2.6.39/drivers/mfd/asic3.c	2011-05-20 15:22:52.333879329 +0100
-@@ -102,7 +102,7 @@ static inline u32 asic3_read_register(st
- 			(reg >> asic->bus_shift));
- }
- 
--static void asic3_set_register(struct asic3 *asic, u32 reg, u32 bits, bool set)
-+void asic3_set_register(struct asic3 *asic, u32 reg, u32 bits, bool set)
+  05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O
+Card (rev 5c)
+       Flags: bus master, slow devsel, latency 32, IRQ 22
+       Memory at 93b00000 (type 3, prefetchable) [size=2K]
+       Memory at <unassigned> (type 3, prefetchable)
+
+The "type 3" means the BAR has both type bits set (bits 1 and 2).  The
+spec (PCI 3.0 sec 6.2.5.1) says the type field means:
+
+  00 - Locate anywhere in 32-bit access space
+  01 - Reserved
+  10 - Locate anywhere in 64-bit access space
+  11 - Reserved
+
+I think your BARs are using the "11 - Reserved" setting when they
+should be "00".  The way Linux handles this did change between 2.6.27
+and 2.6.35, and I think the change was unintentional, so we might
+consider changing it back.
+
+Commit e354597cce8d219d made this change to decode_bar():
+
+          res->flags = bar & ~PCI_BASE_ADDRESS_MEM_MASK;
+
+  -       if (res->flags == PCI_BASE_ADDRESS_MEM_TYPE_64)
+  +       if (res->flags & PCI_BASE_ADDRESS_MEM_TYPE_64)
+                  return pci_bar_mem64;
+          return pci_bar_mem32;
+
+In 2.6.27, we treated the BAR as 64-bit only if the low four bits were
+0100 (non-prefetchable, 64-bit type, memory).  That was incorrect,
+because we should ignore the prefetchable bit.  The fix was to look
+*only* at bit 2, so now we decide the BAR is 64-bit if the low four
+bits are x1xx.
+
+Your BARs contain 1110 in the low four bits.  This is invalid but was
+treated as 32-bit by 2.6.27 and as 64-bit by 2.6.35.
+
+Here's an untested Linux change I think we might consider making to
+restore the previous behavior.  Can you try it (gmail will probably
+mangle it, so you'll have to apply it by hand)?
+
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 44cbbba..33894ba 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -138,15 +138,20 @@ static u64 pci_size(u64 base, u64 maxbase, u64 mask)
+
+ static inline enum pci_bar_type decode_bar(struct resource *res, u32 bar)
  {
- 	unsigned long flags;
- 	u32 val;
-@@ -116,6 +116,7 @@ static void asic3_set_register(struct as
- 	asic3_write_register(asic, reg, val);
- 	spin_unlock_irqrestore(&asic->lock, flags);
- }
-+EXPORT_SYMBOL_GPL(asic3_set_register);
- 
- /* IRQs */
- #define MAX_ASIC_ISR_LOOPS    20
-diff -uprN clean-2.6.39/drivers/pcmcia/Kconfig linux-2.6.39/drivers/pcmcia/Kconfig
---- clean-2.6.39/drivers/pcmcia/Kconfig	2011-05-19 05:06:34.000000000 +0100
-+++ linux-2.6.39/drivers/pcmcia/Kconfig	2011-05-20 15:22:52.333879329 +0100
-@@ -216,7 +216,7 @@ config PCMCIA_PXA2XX
- 		    || MACH_ARMCORE || ARCH_PXA_PALM || TRIZEPS_PCMCIA \
- 		    || ARCOM_PCMCIA || ARCH_PXA_ESERIES || MACH_STARGATE2 \
- 		    || MACH_VPAC270 || MACH_BALLOON3 || MACH_COLIBRI \
--		    || MACH_COLIBRI320)
-+		    || MACH_COLIBRI320 || MFD_ASIC3)
- 	select PCMCIA_SOC_COMMON
- 	help
- 	  Say Y here to include support for the PXA2xx PCMCIA controller
-diff -uprN clean-2.6.39/drivers/pcmcia/Makefile linux-2.6.39/drivers/pcmcia/Makefile
---- clean-2.6.39/drivers/pcmcia/Makefile	2011-05-19 05:06:34.000000000 +0100
-+++ linux-2.6.39/drivers/pcmcia/Makefile	2011-05-20 15:22:52.333879329 +0100
-@@ -73,6 +73,7 @@ pxa2xx-obj-$(CONFIG_MACH_VPAC270)		+= px
- pxa2xx-obj-$(CONFIG_MACH_BALLOON3)		+= pxa2xx_balloon3.o
- pxa2xx-obj-$(CONFIG_MACH_COLIBRI)		+= pxa2xx_colibri.o
- pxa2xx-obj-$(CONFIG_MACH_COLIBRI320)		+= pxa2xx_colibri.o
-+pxa2xx-obj-$(CONFIG_MFD_ASIC3)			+= pxa2xx_asic3.o
- 
- obj-$(CONFIG_PCMCIA_PXA2XX)			+= pxa2xx_base.o $(pxa2xx-obj-y)
- 
-diff -uprN clean-2.6.39/drivers/pcmcia/pxa2xx_asic3.c linux-2.6.39/drivers/pcmcia/pxa2xx_asic3.c
---- clean-2.6.39/drivers/pcmcia/pxa2xx_asic3.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.39/drivers/pcmcia/pxa2xx_asic3.c	2011-05-20 15:22:52.333879329 +0100
-@@ -0,0 +1,121 @@
-+/*
-+ *  Copyright (C) 2011 Paul Parsons <lost.distance@yahoo.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
++       u32 mem_type;
 +
-+#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/irq.h>
-+
-+#include <linux/mfd/asic3.h>
-+#include <mach/hx4700.h>
-+
-+#include "soc_common.h"
-+
-+static struct gpio gpios[] = {
-+	{ GPIO60_HX4700_CF_RNB,       GPIOF_DIR_IN,         "CF ready"        },
-+	{ GPIO114_HX4700_CF_RESET,    GPIOF_OUT_INIT_LOW,   "CF reset"        },
-+	{ GPIOD4_CF_nCD,              GPIOF_DIR_IN,         "CF card detect"  },
-+	{ EGPIO4_CF_3V3_ON,           GPIOF_OUT_INIT_LOW,   "CF 3.3V enable"  },
-+};
-+
-+static struct pcmcia_irqs irqs[] = {
-+	{ 0,  IRQ_GPIO(GPIOD4_CF_nCD),              "CF card detect"  },
-+};
-+
-+static int hw_init(struct soc_pcmcia_socket *skt)
-+{
-+	struct platform_device *pdev =
-+		to_platform_device(skt->socket.dev.parent->parent);
-+	struct asic3 *asic = platform_get_drvdata(pdev);
-+	int ret;
-+
-+	ret = gpio_request_array(gpios, ARRAY_SIZE(gpios));
-+	if (ret)
-+		goto out;
-+
-+	irq_set_irq_type(IRQ_GPIO(GPIOD4_CF_nCD), IRQ_TYPE_EDGE_BOTH);
-+
-+	ret = soc_pcmcia_request_irqs(skt, irqs, ARRAY_SIZE(irqs));
-+	if (ret) {
-+		gpio_free_array(gpios, ARRAY_SIZE(gpios));
-+		goto out;
-+	}
-+
-+	skt->socket.pci_irq = IRQ_GPIO(GPIO60_HX4700_CF_RNB);
-+
-+	asic3_set_register(asic, ASIC3_OFFSET(EXTCF, SELECT),
-+		(ASIC3_EXTCF_CF0_BUF_EN|ASIC3_EXTCF_CF0_PWAIT_EN), 1);
-+
-+out:
-+	return ret;
-+}
-+
-+static void hw_shutdown(struct soc_pcmcia_socket *skt)
-+{
-+	struct platform_device *pdev =
-+		to_platform_device(skt->socket.dev.parent->parent);
-+	struct asic3 *asic = platform_get_drvdata(pdev);
-+
-+	asic3_set_register(asic, ASIC3_OFFSET(EXTCF, SELECT),
-+		(ASIC3_EXTCF_CF0_BUF_EN|ASIC3_EXTCF_CF0_PWAIT_EN), 0);
-+
-+	soc_pcmcia_free_irqs(skt, irqs, ARRAY_SIZE(irqs));
-+
-+	gpio_free_array(gpios, ARRAY_SIZE(gpios));
-+}
-+
-+static void socket_state(struct soc_pcmcia_socket *skt,
-+	struct pcmcia_state *state)
-+{
-+	state->detect = (gpio_get_value(GPIOD4_CF_nCD) == 0);
-+	state->ready = (gpio_get_value(GPIO60_HX4700_CF_RNB) != 0);
-+	state->bvd1 = 1;
-+	state->bvd2 = 1;
-+	state->wrprot = 0;
-+	state->vs_3v = 1;
-+	state->vs_Xv = 0;
-+}
-+
-+static int configure_socket(struct soc_pcmcia_socket *skt,
-+	const socket_state_t *state)
-+{
-+	switch (state->Vcc)
-+	{
-+	case 0:
-+		gpio_set_value(EGPIO4_CF_3V3_ON, 0);
-+		break;
-+	case 33:
-+		gpio_set_value(EGPIO4_CF_3V3_ON, 1);
-+		break;
-+	default:
-+		printk(KERN_ERR "pcmcia: Unsupported Vcc: %d\n", state->Vcc);
-+		return -EINVAL;
-+	}
-+
-+	gpio_set_value(GPIO114_HX4700_CF_RESET, (state->flags & SS_RESET) != 0);
-+
-+	return (0);
-+}
-+
-+static void socket_init(struct soc_pcmcia_socket *skt)
-+{
-+}
-+
-+static void socket_suspend(struct soc_pcmcia_socket *skt)
-+{
-+}
-+
-+struct pcmcia_low_level asic3_pcmcia_low_level = {
-+	.owner		= THIS_MODULE,
-+	.nr		= 1,
-+	.hw_init	= hw_init,
-+	.hw_shutdown	= hw_shutdown,
-+	.socket_state	= socket_state,
-+	.configure_socket=configure_socket,
-+	.socket_init	= socket_init,
-+	.socket_suspend	= socket_suspend,
-+};
-diff -uprN clean-2.6.39/include/linux/mfd/asic3.h linux-2.6.39/include/linux/mfd/asic3.h
---- clean-2.6.39/include/linux/mfd/asic3.h	2011-05-19 05:06:34.000000000 +0100
-+++ linux-2.6.39/include/linux/mfd/asic3.h	2011-05-20 15:22:52.333879329 +0100
-@@ -129,6 +129,7 @@ struct asic3_platform_data {
- #define ASIC3_GPIOC13_nPWAIT		ASIC3_CONFIG_GPIO(45, 1, 1, 0)
- #define ASIC3_GPIOC14_nPIOIS16		ASIC3_CONFIG_GPIO(46, 1, 1, 0)
- #define ASIC3_GPIOC15_nPIOR		ASIC3_CONFIG_GPIO(47, 1, 0, 0)
-+#define ASIC3_GPIOD4_CF_nCD		ASIC3_CONFIG_GPIO(52, 1, 0, 0)
- #define ASIC3_GPIOD11_nCIOIS16		ASIC3_CONFIG_GPIO(59, 1, 0, 0)
- #define ASIC3_GPIOD12_nCWAIT		ASIC3_CONFIG_GPIO(60, 1, 0, 0)
- #define ASIC3_GPIOD15_nPIOW		ASIC3_CONFIG_GPIO(63, 1, 0, 0)
-@@ -293,4 +294,9 @@ struct asic3_platform_data {
- #define ASIC3_MAP_SIZE_32BIT	0x2000
- #define ASIC3_MAP_SIZE_16BIT	0x1000
- 
-+/* Functions needed by pxa2xx-pcmcia */
-+
-+struct asic3;
-+extern void asic3_set_register(struct asic3 *asic, u32 reg, u32 bits, bool set);
-+
- #endif /* __ASIC3_H__ */
+        if ((bar & PCI_BASE_ADDRESS_SPACE) == PCI_BASE_ADDRESS_SPACE_IO) {
+                res->flags = bar & ~PCI_BASE_ADDRESS_IO_MASK;
+                return pci_bar_io;
+        }
 
+-       res->flags = bar & ~PCI_BASE_ADDRESS_MEM_MASK;
++       res->flags = bar & PCI_BASE_ADDRESS_MEM_PREFETCH;
+
+-       if (res->flags & PCI_BASE_ADDRESS_MEM_TYPE_64)
++       mem_type = bar & PCI_BASE_ADDRESS_MEM_TYPE_MASK;
++       if (mem_type == PCI_BASE_ADDRESS_MEM_TYPE_64) {
++               res->flags |= PCI_BASE_ADDRESS_MEM_TYPE_64;
+                return pci_bar_mem64;
++       }
+        return pci_bar_mem32;
+ }
