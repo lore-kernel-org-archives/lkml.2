@@ -1,54 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933482Ab1ETGc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 02:32:57 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:49333 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933024Ab1ETGc4 (ORCPT
+	id S933412Ab1ETGbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 02:31:32 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57902 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933024Ab1ETGbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 02:32:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=HVhn2/X/x67QeOgD16KwJ5FMPwcKI1cQHVtTu60540dAO0p3DmAjAc28yTxDyeehsC
-         uyG59VnjsrADiKHOSeqbPhaqDKQgkTRv/qsfN3Yx7O/W6HsuUIX8Mm+Qw+kz68MF0yJc
-         QxhaNvyKJ0Z3oItSCT04KouHbSjlAF1vLO0aI=
-Subject: Re: [PATCH] UBIFS: don't fail on -EBADMSG when fixing free space
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Ben Gardiner <bengardiner@nanometrics.ca>
-Cc: "Matthew L. Creech" <mlcreech@gmail.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTi=nmvdKNaNDCUUZQF3QX-jDydTSng@mail.gmail.com>
-References: <1305196419.2713.84.camel@localhost>
-	 <1305751647-3122-1-git-send-email-bengardiner@nanometrics.ca>
-	 <BANLkTi=+V7PR_29pK3ooVggPmeicCG0eWg@mail.gmail.com>
-	 <BANLkTi=nmvdKNaNDCUUZQF3QX-jDydTSng@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 May 2011 09:29:05 +0300
-Message-ID: <1305872945.2630.119.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Fri, 20 May 2011 02:31:31 -0400
+Date: Fri, 20 May 2011 00:31:28 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, kgene.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] Samsung: Move Samsung SoCs GPIO drivers to
+ drivers/gpio
+Message-ID: <20110520063128.GA21285@ponder.secretlab.ca>
+References: <20110520054441.GA9952@july>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110520054441.GA9952@july>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 09:28 -0400, Ben Gardiner wrote:
-> So, at least on my hardware, the -74 error is expected when the 0xff
-> pages are not dropped and so without the 'err != -EBADMSG' exception
-> the free space fixup will cause the volume to fail mount for me:
+On Fri, May 20, 2011 at 02:44:41PM +0900, Kyungmin Park wrote:
+> The following changes since commit 61c4f2c81c61f73549928dfd9f3e8f26aa36a8cf:
+> 
+>   Linux 2.6.39 (2011-05-18 21:06:34 -0700)
+> 
+> Kyungmin Park (4):
+>       Move to Samsung common GPIO library to drivers/gpio
+>       Move the exynos4 GPIO to drivers/gpio
+>       Move the s5pv210 GPIO to drivers/gpio
+>       Move the s5pc100 GPIO to drivers/gpio
+> 
+>  arch/arm/mach-exynos4/Makefile                     |    2 +-
+>  arch/arm/mach-s5pc100/Makefile                     |    2 +-
+>  arch/arm/mach-s5pv210/Makefile                     |    2 +-
+>  arch/arm/plat-samsung/Makefile                     |    1 -
+>  drivers/gpio/Kconfig                               |   24 ++++++++++++++++++++
+>  drivers/gpio/Makefile                              |    4 +++
+>  .../gpiolib.c => drivers/gpio/exynos4-gpio.c       |    0
+>  .../gpiolib.c => drivers/gpio/s5pc100-gpio.c       |    0
+>  .../gpiolib.c => drivers/gpio/s5pv210-gpio.c       |    0
+>  .../gpiolib.c => drivers/gpio/samsung-gpiolib.c    |    3 +-
 
-Still confused. If you have empty and erased flash, then you program it
-with all 0xFFs, you should be able to read it with no errors. If this is
-not the case for you, you should fix the driver. UBIFS cannot help in
-this case - we consider it as "broken flash driver" case.
+drivers/gpio/gpio-*.c please.  I'm starting to enforce some level of
+naming convention.
 
-I have not read your e-mail carefully because of limited amount of time,
-but with quick reading I became confused - too much information :-)
+>  10 files changed, 33 insertions(+), 5 deletions(-)
+>  rename arch/arm/mach-exynos4/gpiolib.c => drivers/gpio/exynos4-gpio.c (100%)
+>  rename arch/arm/mach-s5pc100/gpiolib.c => drivers/gpio/s5pc100-gpio.c (100%)
+>  rename arch/arm/mach-s5pv210/gpiolib.c => drivers/gpio/s5pv210-gpio.c (100%)
+>  rename arch/arm/plat-samsung/gpiolib.c => drivers/gpio/samsung-gpiolib.c (99%)
+> 
+> diff --git a/arch/arm/mach-exynos4/Makefile b/arch/arm/mach-exynos4/Makefile
+> index 9be104f..3bb3f57 100644
+> --- a/arch/arm/mach-exynos4/Makefile
+> +++ b/arch/arm/mach-exynos4/Makefile
+> @@ -13,7 +13,7 @@ obj-				:=
+>  # Core support for EXYNOS4 system
+>  
+>  obj-$(CONFIG_CPU_EXYNOS4210)	+= cpu.o init.o clock.o irq-combiner.o
+> -obj-$(CONFIG_CPU_EXYNOS4210)	+= setup-i2c0.o gpiolib.o irq-eint.o dma.o
+> +obj-$(CONFIG_CPU_EXYNOS4210)	+= setup-i2c0.o irq-eint.o dma.o
+>  obj-$(CONFIG_PM)		+= pm.o sleep.o
+>  obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
+>  
+> diff --git a/arch/arm/mach-s5pc100/Makefile b/arch/arm/mach-s5pc100/Makefile
+> index eecab57..a5e6e60 100644
+> --- a/arch/arm/mach-s5pc100/Makefile
+> +++ b/arch/arm/mach-s5pc100/Makefile
+> @@ -11,7 +11,7 @@ obj-				:=
+>  
+>  # Core support for S5PC100 system
+>  
+> -obj-$(CONFIG_CPU_S5PC100)	+= cpu.o init.o clock.o gpiolib.o
+> +obj-$(CONFIG_CPU_S5PC100)	+= cpu.o init.o clock.o
+>  obj-$(CONFIG_CPU_S5PC100)	+= setup-i2c0.o
+>  obj-$(CONFIG_CPU_S5PC100)	+= dma.o
+>  
+> diff --git a/arch/arm/mach-s5pv210/Makefile b/arch/arm/mach-s5pv210/Makefile
+> index 11f1790..50907ac 100644
+> --- a/arch/arm/mach-s5pv210/Makefile
+> +++ b/arch/arm/mach-s5pv210/Makefile
+> @@ -12,7 +12,7 @@ obj-				:=
+>  
+>  # Core support for S5PV210 system
+>  
+> -obj-$(CONFIG_CPU_S5PV210)	+= cpu.o init.o clock.o dma.o gpiolib.o
+> +obj-$(CONFIG_CPU_S5PV210)	+= cpu.o init.o clock.o dma.o
+>  obj-$(CONFIG_CPU_S5PV210)	+= setup-i2c0.o
+>  obj-$(CONFIG_S5PV210_PM)	+= pm.o sleep.o
+>  obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
+> diff --git a/arch/arm/plat-samsung/Makefile b/arch/arm/plat-samsung/Makefile
+> index e9de58a..53eb15b 100644
+> --- a/arch/arm/plat-samsung/Makefile
+> +++ b/arch/arm/plat-samsung/Makefile
+> @@ -19,7 +19,6 @@ obj-y				+= gpio.o
+>  obj-y				+= gpio-config.o
+>  obj-y				+= dev-asocdma.o
+>  
+> -obj-$(CONFIG_SAMSUNG_GPIOLIB_4BIT)	+= gpiolib.o
+>  obj-$(CONFIG_SAMSUNG_CLKSRC)	+= clock-clksrc.o
+>  
+>  obj-$(CONFIG_SAMSUNG_IRQ_UART)	+= irq-uart.o
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index d3b2953..d838f5b 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -75,6 +75,30 @@ config GPIO_BASIC_MMIO
+>  	help
+>  	  Say yes here to support basic memory-mapped GPIO controllers.
+>  
+> +config GPIO_EXYNOS4
+> +	bool "Samsung Exynos4 GPIO library support"
+> +	default y if CPU_EXYNOS4210
+> +	help
+> +	  Say yes here to support Samsung Exynos4 series SoCs GPIO library
+> +
+> +config GPIO_SAMSUNG
+> +	bool "Samsung SoCs GPIO library support"
+> +	default y if SAMSUNG_GPIOLIB_4BIT
+> +	help
+> +	  Say yes here to support Samsung SoCs GPIO library
+> +
+> +config GPIO_S5PC100
+> +	bool "Samsung S5PC100 GPIO library support"
+> +	default y if CPU_S5PC100
+> +	help
+> +	  Say yes here to support Samsung S5PC100 SoC GPIO library
+> +
+> +config GPIO_S5PV210
+> +	bool "Samsung S5PV210/S5PC110 GPIO library support"
+> +	default y if CPU_S5PV210
+> +	help
+> +	  Say yes here to support Samsung S5PV210/S5PC110 SoC GPIO library
+> +
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Is there any scenario where these drivers should be user selected?  My
+feel is that the right thing to do with gpio controllers is to just
+build them in when the platform is selected.  We can always add
+Kconfig entries later if this assumption changes.
+
+>  config GPIO_IT8761E
+>  	tristate "IT8761E GPIO support"
+>  	depends on GPIOLIB
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index becef59..738386f 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -11,6 +11,10 @@ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
+>  obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
+>  obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
+>  obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
+> +obj-$(CONFIG_GPIO_EXYNOS4)	+= exynos4-gpio.o
+> +obj-$(CONFIG_GPIO_SAMSUNG)	+= samsung-gpiolib.o
+> +obj-$(CONFIG_GPIO_S5PC100)	+= s5pc100-gpio.o
+> +obj-$(CONFIG_GPIO_S5PV210)	+= s5pv210-gpio.o
+>  obj-$(CONFIG_GPIO_LANGWELL)	+= langwell_gpio.o
+>  obj-$(CONFIG_GPIO_MAX730X)	+= max730x.o
+>  obj-$(CONFIG_GPIO_MAX7300)	+= max7300.o
+> diff --git a/arch/arm/mach-exynos4/gpiolib.c b/drivers/gpio/exynos4-gpio.c
+> similarity index 100%
+> rename from arch/arm/mach-exynos4/gpiolib.c
+> rename to drivers/gpio/exynos4-gpio.c
+> diff --git a/arch/arm/mach-s5pc100/gpiolib.c b/drivers/gpio/s5pc100-gpio.c
+> similarity index 100%
+> rename from arch/arm/mach-s5pc100/gpiolib.c
+> rename to drivers/gpio/s5pc100-gpio.c
+> diff --git a/arch/arm/mach-s5pv210/gpiolib.c b/drivers/gpio/s5pv210-gpio.c
+> similarity index 100%
+> rename from arch/arm/mach-s5pv210/gpiolib.c
+> rename to drivers/gpio/s5pv210-gpio.c
+> diff --git a/arch/arm/plat-samsung/gpiolib.c b/drivers/gpio/samsung-gpiolib.c
+> similarity index 99%
+> rename from arch/arm/plat-samsung/gpiolib.c
+> rename to drivers/gpio/samsung-gpiolib.c
+> index ea37c04..925b66e 100644
+> --- a/arch/arm/plat-samsung/gpiolib.c
+> +++ b/drivers/gpio/samsung-gpiolib.c
+> @@ -1,4 +1,5 @@
+> -/* arch/arm/plat-samsung/gpiolib.c
+> +/*
+> + * drivers/gpio/samsung-gpiolib.c
+
+My preference is to just drop the filename from the header entirely.
+A better thing here would be a single line description of what this
+file actually does.
+
+g.
 
