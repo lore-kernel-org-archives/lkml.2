@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933750Ab1ETNXx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:23:53 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52021 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756018Ab1ETNXs (ORCPT
+	id S933743Ab1ETNZb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:25:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36036 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932947Ab1ETNZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:23:48 -0400
-Date: Fri, 20 May 2011 14:24:59 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>, James.Bottomley@suse.de,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH]: Fix Ultrastor asm snippet
-Message-ID: <20110520142459.4c37d3e0@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110520130215.GB3428@infradead.org>
-References: <20110518150605.GA25262@const.bordeaux.inria.fr>
-	<20110520130215.GB3428@infradead.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 20 May 2011 09:25:29 -0400
+Date: Fri, 20 May 2011 15:25:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+cc: Jeremy Kerr <jeremy.kerr@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 1/4] clk: Add a generic clock infrastructure
+In-Reply-To: <20110520115936.GA10931@pengutronix.de>
+Message-ID: <alpine.LFD.2.02.1105201521560.3078@ionos>
+References: <1305876469.325655.313573683829.0.gpush@pororo> <1305876469.326305.518470530485.1.gpush@pororo> <20110520115936.GA10931@pengutronix.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 May 2011 09:02:15 -0400
-Christoph Hellwig <hch@infradead.org> wrote:
+On Fri, 20 May 2011, Sascha Hauer wrote:
 
-> On Wed, May 18, 2011 at 05:06:05PM +0200, Samuel Thibault wrote:
-> > Commit 1292500b replaced
-> > 
-> > "=m" (*field) : "1" (*field)
-> > 
-> > with
-> > 
-> > "=m" (*field) :
-> > 
-> > with comment "The following patch fixes it by using the '+' operator on
-> > the (*field) operand, marking it as read-write to gcc."
-> > '+' was actually forgotten.  This really puts it.
+> Hi Jeremy,
 > 
-> Do you actually have the hardware or was this just a code audit?
+> Nice to see progress in this area :)
 > 
-> I have the strong suspicion that this driver is pretty much dead and
-> bitrotting.
+> On Fri, May 20, 2011 at 03:27:49PM +0800, Jeremy Kerr wrote:
+> > +
+> > +struct clk *clk_register(struct clk_hw_ops *ops, struct clk_hw *hw,
+> > +		const char *name)
+> > +{
+> > +	struct clk *clk;
+> > +
+> > +	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
+> > +	if (!clk)
+> > +		return NULL;
+> > +
+> > +	clk->name = name;
+> > +	clk->ops = ops;
+> > +	clk->hw = hw;
+> > +	hw->clk = clk;
+> 
+> is it worth to add a CLK_REGISTERED flag here? Up to now clocks do not
+> have to be registered at all and the registering might be forgotten for
+> some clocks. I suppose funny things can happen when we operate on
+> unregistered clocks.
 
-There are a pile of scsi drivers like the Ultrastor that probably want
-retiring via staging.
+No, because not registered clocks are not accessible :)
 
-I can believe an AHA152x or two lurk around, and the odd NCR53c80 and
-clones because they were so voluminous but the rest I doubt somewhat.
+ > +
+> > +	/* Query the hardware for parent and initial rate */
+> > +
+> > +	if (clk->ops->get_parent)
+> > +		/* We don't to lock against prepare/enable here, as
+> > +		 * the clock is not yet accessible from anywhere */
+> > +		clk->parent = clk->ops->get_parent(clk->hw);
+> > +
+> > +	if (clk->ops->recalc_rate)
+> > +		clk->rate = clk->ops->recalc_rate(clk->hw);
+> 
+> This implicitely requires that we never register a clock before its
+> parent is registered. This makes perfect sense but I think we should
+> catch it here when the user tries to register a clock with a not yet
+> registered parent.
+
+We can agree on that, but we can make it more clever than that.
+ 
+> > +
+> > +
+> > +	return clk;
+> > +}
+> > +EXPORT_SYMBOL_GPL(clk_register);
+> 
+> BTW we planned to let the linker do the job of registering static
+> clocks, but this is only convenience and can be added later.
+
+Right, you just need a helper function which runs through the list of
+static stuff.
+
