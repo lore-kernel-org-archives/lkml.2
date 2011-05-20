@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab1ETXRH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 19:17:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36570 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756295Ab1ETXQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 19:16:53 -0400
-Message-ID: <4DD6F64C.3030402@kernel.org>
-Date: Fri, 20 May 2011 16:16:28 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1757355Ab1ETXXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 19:23:44 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45513 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755141Ab1ETXXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 19:23:36 -0400
+Date: Fri, 20 May 2011 16:23:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH -tip] rcu: use kthread_create_on_node()
+Message-ID: <20110520232333.GO2366@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1305793965.3028.15.camel@edumazet-laptop>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
- on semi-formal proof"
-References: <tip-80d02085d99039b3b7f3a73c8896226b0cb1ba07@git.kernel.org> <4DD6D746.6070107@kernel.org> <20110520224250.GL2366@linux.vnet.ibm.com> <4DD6F4A2.1070401@kernel.org> <20110520231428.GN2366@linux.vnet.ibm.com>
-In-Reply-To: <20110520231428.GN2366@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4DD6F652.0026,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305793965.3028.15.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2011 04:14 PM, Paul E. McKenney wrote:
-> On Fri, May 20, 2011 at 04:09:22PM -0700, Yinghai Lu wrote:
->> On 05/20/2011 03:42 PM, Paul E. McKenney wrote:
->>> On Fri, May 20, 2011 at 02:04:06PM -0700, Yinghai Lu wrote:
->>>> On 05/19/2011 02:37 PM, tip-bot for Paul E. McKenney wrote:
->>>>> Commit-ID:  80d02085d99039b3b7f3a73c8896226b0cb1ba07
->>>>> Gitweb:     http://git.kernel.org/tip/80d02085d99039b3b7f3a73c8896226b0cb1ba07
->>>>> Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->>>>> AuthorDate: Thu, 12 May 2011 01:08:07 -0700
->>>>> Committer:  Ingo Molnar <mingo@elte.hu>
->>>>> CommitDate: Thu, 19 May 2011 23:25:29 +0200
->>>>>
->>>>> Revert "rcu: Decrease memory-barrier usage based on semi-formal proof"
->>>>>
->>>>> This reverts commit e59fb3120becfb36b22ddb8bd27d065d3cdca499.
->>>>>
->>>>> This reversion was due to (extreme) boot-time slowdowns on SPARC seen by
->>>>> Yinghai Lu and on x86 by Ingo
->>>>> .
->>>>> This is a non-trivial reversion due to intervening commits.
->>>>>
->>>>> Conflicts:
->>>>>
->>>>> 	Documentation/RCU/trace.txt
->>>>> 	kernel/rcutree.c
->>>>>
->>>>> Signed-off-by: Ingo Molnar <mingo@elte.hu>
->>>>> ---
->>>>>  Documentation/RCU/trace.txt |   17 ++++--
->>>>>  kernel/rcutree.c            |  130 ++++++++++++++++++++++++------------------
->>>>>  kernel/rcutree.h            |    9 ++-
->>>>>  kernel/rcutree_plugin.h     |    7 +-
->>>>>  kernel/rcutree_trace.c      |   12 ++--
->>>>>  5 files changed, 102 insertions(+), 73 deletions(-)
->>>>>
->>>>
->>>> current tip/master that have this reverting and without setting DEBUG_LOCKING_API_SELFTESTS
->>>>
->>>> still get delay
->>>>
->>>> [   35.419453] cpu_dev_init done
->>>> [  128.981770] memory_dev_init done
->>>>
->>>> should take only 3 or 4 seconds.
->>>
->>> Thank you for checking this out.
->>>
->>> This is with the same configuration you sent earlier?  (Other than the
->>> DEBUG_LOCKING_API_SELFTESTS, of course.)
->>>
->>
->> 8 socket westmere-ex. and compiled with gcc from opensuse 11.3.
->>
->> if compile kernel from fedora 14, there will be not delay.
+On Thu, May 19, 2011 at 10:32:45AM +0200, Eric Dumazet wrote:
+> Commit a26ac2455ffc (move TREE_RCU from softirq to kthread) added
+> creation of per cpu kthreads.
 > 
-> Thank you for the info.  Could you please send me the .config files from
-> both builds?
+> Use kthread_create_on_node() NUMA friendly function, to let these
+> threads use local node for their stack/task struct.
+> 
+> We did a similar change in commit 94dcf29a11b3 (kthread: use
+> kthread_create_on_node())
+> 
+> Also change rcu torture kthread creation.
 
-the same one i sent out before, but let DEBUG_LOCKING_API_SELFTESTS disabled.
+Queued, thank you, Eric!
 
-Thanks
+							Thanx, Paul
+
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Rusty Russell <rusty@rustcorp.com.au>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Andi Kleen <ak@linux.intel.com>
+> CC: Ingo Molnar <mingo@elte.hu>
+> ---
+>  kernel/rcutorture.c |    3 ++-
+>  kernel/rcutree.c    |    5 ++++-
+>  2 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+> index 2e138db..40d9ed2 100644
+> --- a/kernel/rcutorture.c
+> +++ b/kernel/rcutorture.c
+> @@ -1282,7 +1282,8 @@ static int rcutorture_booster_init(int cpu)
+>  	/* Don't allow time recalculation while creating a new task. */
+>  	mutex_lock(&boost_mutex);
+>  	VERBOSE_PRINTK_STRING("Creating rcu_torture_boost task");
+> -	boost_tasks[cpu] = kthread_create(rcu_torture_boost, NULL,
+> +	boost_tasks[cpu] = kthread_create_on_node(rcu_torture_boost, NULL,
+> +						  cpu_to_node(cpu),
+>  					  "rcu_torture_boost");
+>  	if (IS_ERR(boost_tasks[cpu])) {
+>  		retval = PTR_ERR(boost_tasks[cpu]);
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 5616b17..b013915 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1649,7 +1649,10 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
+>  	if (!rcu_kthreads_spawnable ||
+>  	    per_cpu(rcu_cpu_kthread_task, cpu) != NULL)
+>  		return 0;
+> -	t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc%d", cpu);
+> +	t = kthread_create_on_node(rcu_cpu_kthread,
+> +				   (void *)(long)cpu,
+> +				   cpu_to_node(cpu),
+> +				   "rcuc%d", cpu);
+>  	if (IS_ERR(t))
+>  		return PTR_ERR(t);
+>  	kthread_bind(t, cpu);
+> 
+> 
