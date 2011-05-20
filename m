@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935302Ab1ETFTJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 01:19:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23770 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab1ETFTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 01:19:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,240,1304319600"; 
-   d="scan'208";a="5036766"
-Subject: Re: Perfromance drop on SCSI hard disk
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <BANLkTima6W5yAM_koArYaz57C3uzk=WwWQ@mail.gmail.com>
-References: <1305009600.21534.587.camel@debian>
-	 <4DCC4340.6000407@fusionio.com>	<1305247704.2373.32.camel@sli10-conroe>
-	 <1305255717.2373.38.camel@sli10-conroe>
-	 <1305533054.2375.45.camel@sli10-conroe>
-	 <1305535071.21534.2122.camel@debian> <1305612565.21534.2177.camel@debian>
-	 <4DD221BE.3040406@fusionio.com> <1305793580.22968.155.camel@debian>
-	 <4DD56104.6080801@fusionio.com> <1305850920.22968.1089.camel@debian>
-	 <BANLkTima6W5yAM_koArYaz57C3uzk=WwWQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 May 2011 13:17:43 +0800
-Message-ID: <1305868663.4866.8.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S935319Ab1ETFYh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 01:24:37 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:6389 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab1ETFYg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 01:24:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=CvUJmrWb9YtFm9s7P+B/IWMYpa8YpcqePo5qGXDmi5qveAJ1vUl9ff5UbyfNJaoL7K
+         mRGIc1LvWB1rhrzjjykw==
+MIME-Version: 1.0
+In-Reply-To: <20110426014741.GB28721@quad.lixom.net>
+References: <1302822031-6752-1-git-send-email-sjg@chromium.org>
+	<4DA7A914.5020804@codeaurora.org>
+	<BANLkTikcY-xzjd0W77UfWWoO8ibjKNXQGg@mail.gmail.com>
+	<BANLkTin_TpzdQS96SPKUNye6vb2b55Qc4A@mail.gmail.com>
+	<143ea9b1bb96e613d534caa7cb3a1e2d.squirrel@www.codeaurora.org>
+	<20110426014741.GB28721@quad.lixom.net>
+Date: Thu, 19 May 2011 22:24:31 -0700
+X-Google-Sender-Auth: cUXVtQY9FqMtLxfSJmqRlC00umw
+Message-ID: <BANLkTikHT2E=76jMLbzmQm_CiUw8rA3cCA@mail.gmail.com>
+Subject: Re: [PATCH v4] ARM: Use generic BUG() handler
+From: Simon Glass <sjg@chromium.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        anish singh <anish198519851985@gmail.com>,
+        lak <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Joe Perches <joe@perches.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Rabin Vincent <rabin@rab.in>, lk <linux-kernel@vger.kernel.org>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Dave Martin <dave.martin@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-20 at 08:40 +0800, Shaohua Li wrote:
-> 2011/5/20 Alex,Shi <alex.shi@intel.com>:
-> > On Fri, 2011-05-20 at 02:27 +0800, Jens Axboe wrote:
-> >> On 2011-05-19 10:26, Alex,Shi wrote:
-> >> >
-> >> >> I will queue up the combined patch, it looks fine from here as well.
-> >> >>
-> >> >
-> >> > When I have some time to study Jens and shaohua's patch today. I find a
-> >> > simpler way to resolved the re-enter issue on starved_list. Following
-> >> > Jens' idea, we can just put the starved_list device into kblockd if it
-> >> > come from __scsi_queue_insert().
-> >> > It can resolve the re-enter issue and recover performance totally, and
-> >> > need not a work_struct in every scsi_device. The logic/code also looks a
-> >> > bit simpler.
-> >> > What's your opinion of this?
-> >>
-> >> Isn't this _identical_ to my original patch, with the added async run of
-> >> the queue passed in (which is important, an oversight)?
-> >
-> > Not exactly same. It bases on your patch, but added a bypass way for
-> > starved_list device. If a starved_list device come from
-> > __scsi_queue_insert(), that may caused by our talking recursion, kblockd
-> > with take over the process.  Maybe you oversight this point in original
-> > patch. :)
-> >
-> > The different part from yours is below:
-> > ---
-> > static void __scsi_run_queue(struct request_queue *q, bool async)
-> >  {
-> >        struct scsi_device *sdev = q->queuedata;
-> >        struct Scsi_Host *shost;
-> > @@ -435,30 +437,35 @@ static void scsi_run_queue(struct request_queue
-> > *q)
-> >                                       &shost->starved_list);
-> >                        continue;
-> >                }
-> > -
-> > -               spin_unlock(shost->host_lock);
-> > -               spin_lock(sdev->request_queue->queue_lock);
-> > -               __blk_run_queue(sdev->request_queue);
-> > -               spin_unlock(sdev->request_queue->queue_lock);
-> > -               spin_lock(shost->host_lock);
-> > +               if (async)
-> > +                       blk_run_queue_async(sdev->request_queue);
-> > +               else {
-> > +                       spin_unlock(shost->host_lock);
-> > +                       spin_lock(sdev->request_queue->queue_lock);
-> > +                       __blk_run_queue(sdev->request_queue);
-> > +                       spin_unlock(sdev->request_queue->queue_lock);
-> > +                       spin_lock(shost->host_lock);
-> >>
-> I don't quite like this approach. blk_run_queue_async() could
-> introduce fairness issue as I said in previous mail, because we drop
-> the sdev from starved list but didn't run its queue immediately. The
-> issue exists before, but it's a bug to me.
+On Mon, Apr 25, 2011 at 6:47 PM, Olof Johansson <olof@lixom.net> wrote:
+> On Wed, Apr 20, 2011 at 11:01:59AM -0700, Stephen Boyd wrote:
+>
+>> It's here:
+>> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6885/1
+>>
+>> I imagine it will be added when/if Russell picks it up. Sadly it
+>> increases the LOC in ARM so Simon might need to really
+>> sell it to get it merged.
+>
+> It's core code though, and the concern today is not with ARM core code
+> as much as with the various platforms that are growing seemingly without
+> upper bounds.
 
-I understand what's your worried. But not quite clear of the trigger
-scenario. anyway, it is still a potential issue of fairness exist. So
-forget my patch. 
+Hi,
 
+Can anyone advise please what happens next with this patch? So far I
+have posted it to the list, it has been reviewed on the list and I
+have put it into the patch system. What is the next step please to get
+this into the kernel?
 
+Regards,
+Simon
+
+>
+>
+> -Olof
+>
