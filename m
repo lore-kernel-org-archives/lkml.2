@@ -1,32 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935574Ab1ETLpQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 07:45:16 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40601 "EHLO mx3.mail.elte.hu"
+	id S935637Ab1ETLqf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 07:46:35 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39341 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754523Ab1ETLpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 07:45:14 -0400
-Date: Fri, 20 May 2011 13:44:54 +0200
+	id S1754721Ab1ETLqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 07:46:34 -0400
+Date: Fri, 20 May 2011 13:46:20 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Roland Dreier <roland@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Milton Miller <miltonm@bga.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>, Len Brown <lenb@kernel.org>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] x86: Remove 32-bit versions of readq()/writeq()
-Message-ID: <20110520114454.GD14745@elte.hu>
-References: <20110519181500.GF6139@elte.hu>
- <1305849293-25437-1-git-send-email-roland@kernel.org>
+To: "Rao, Nikhil" <nikhil.rao@intel.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]  x86: Removing unnecessary check in detect_ht
+Message-ID: <20110520114620.GE14745@elte.hu>
+References: <43F901BD926A4E43B106BF17856F0755018E1CF69D@orsmsx508.amr.corp.intel.com>
+ <1305048201.2736.17.camel@sbsiddha-MOBL3.sc.intel.com>
+ <1F668163772FA946975B9466A9DFF729B5E5@ORSMSX101.amr.corp.intel.com>
+ <1F668163772FA946975B9466A9DFF729B64C@ORSMSX101.amr.corp.intel.com>
+ <20110518210754.GA28476@elte.hu>
+ <1F668163772FA946975B9466A9DFF729B6A3@ORSMSX101.amr.corp.intel.com>
+ <20110518212351.GE28476@elte.hu>
+ <1F668163772FA946975B9466A9DFF729B7E4@ORSMSX101.amr.corp.intel.com>
+ <20110519180940.GD6139@elte.hu>
+ <1F668163772FA946975B9466A9DFF729BEDD@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305849293-25437-1-git-send-email-roland@kernel.org>
+In-Reply-To: <1F668163772FA946975B9466A9DFF729BEDD@ORSMSX101.amr.corp.intel.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -40,53 +43,33 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Roland Dreier <roland@kernel.org> wrote:
+* Rao, Nikhil <nikhil.rao@intel.com> wrote:
 
-> From: Roland Dreier <roland@purestorage.com>
+> This patch removes a check that causes incorrect scheduler domain setup (SMP instead of SMT) and bootlog warning messages when cpuid extensions for topology enumeration are not supported and the number of processors reported to the OS is smaller than smp_num_siblings
 > 
-> The presense of a writeq() implementation on 32-bit x86 that splits
-> the 64-bit write into two 32-bit writes turns out to break the mpt2sas
-> driver (and in general is risky for drivers as was discussed in
-> <http://lkml.kernel.org/r/adaab6c1h7c.fsf@cisco.com>).  To fix this,
-> revert 2c5643b1c5c7 ("x86: provide readq()/writeq() on 32-bit too")
-> and follow-on cleanups.
-> 
-> This unfortunately leads to pushing non-atomic definitions of readq()
-> and write() to various x86-only drivers that in the mean time started
-> using the definitions in the x86 version of <asm/io.h>.  However as
-> discussed exhaustively, this is actually the right thing to do,
-> because the right way to split a 64-bit transaction is hardware
-> dependent and therefore belongs in the hardware driver (eg mpt2sas
-> needs a spinlock to make sure no other accesses occur in between the
-> two halves of the access).
-> 
-> Build tested on 32- and 64-bit x86 allmodconfig.
-> 
-> Link: http://lkml.kernel.org/r/x86-32-writeq-is-broken@mdm.bga.com
-> Cc: Hitoshi Mitake <h.mitake@gmail.com>
-> Cc: Kashyap Desai <Kashyap.Desai@lsi.com>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: Ravi Anand <ravi.anand@qlogic.com>
-> Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Signed-off-by: Roland Dreier <roland@purestorage.com>
+> Signed-off-by: Nikhil P Rao <nikhil.rao@intel.com>
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 > ---
->  arch/x86/Kconfig                 |    2 --
->  arch/x86/include/asm/io.h        |   24 ++----------------------
->  drivers/acpi/apei/einj.c         |    8 ++++++++
->  drivers/acpi/atomicio.c          |    4 ++++
->  drivers/edac/i3200_edac.c        |   13 +++++++++++++
->  drivers/platform/x86/ibm_rtl.c   |   13 +++++++++++++
->  drivers/platform/x86/intel_ips.c |   13 +++++++++++++
->  drivers/scsi/qla4xxx/ql4_nx.c    |   21 +++++++++++++++++++++
->  8 files changed, 74 insertions(+), 24 deletions(-)
+>  arch/x86/kernel/cpu/common.c |    7 -------
+>  1 files changed, 0 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c index cbc70a2..d2bcd54 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -477,13 +477,6 @@ void __cpuinit detect_ht(struct cpuinfo_x86 *c)
+>         if (smp_num_siblings <= 1)
+>                 goto out;
+>  
+> -       if (smp_num_siblings > nr_cpu_ids) {
+> -               pr_warning("CPU: Unsupported number of siblings %d",
+> -                          smp_num_siblings);
+> -               smp_num_siblings = 1;
+> -               return;
+> -       }
+> -
 
-Hm, this patch is wider than i thought - might be better to do this via one of 
-the driver trees or -mm?
-
-The x86 bits are:
-
-Acked-by: Ingo Molnar <mingo@elte.hu>
+Your patch does not apply because it's whitespace damaged (all tabs got 
+converted to spaces). Please see Documentation/email-clients.txt.
 
 Thanks,
 
