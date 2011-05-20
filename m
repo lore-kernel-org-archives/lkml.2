@@ -1,31 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935669Ab1ETLxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 07:53:30 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42508 "EHLO mx3.mail.elte.hu"
+	id S935674Ab1ETL4f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 07:56:35 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36246 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935640Ab1ETLx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 07:53:26 -0400
-Date: Fri, 20 May 2011 13:53:07 +0200
+	id S935641Ab1ETL4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 07:56:33 -0400
+Date: Fri, 20 May 2011 13:56:14 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@alien8.de>, Don Zickus <dzickus@redhat.com>,
-        Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [RFC] ACPI, APEI, Generic Hardware Error Source (GHES) injecting
- support
-Message-ID: <20110520115307.GG14745@elte.hu>
-References: <1304996921-24881-1-git-send-email-ying.huang@intel.com>
- <20110516193301.GF29881@redhat.com>
- <4DD218B1.7080601@intel.com>
- <20110517135027.GJ31888@redhat.com>
- <20110517191803.GC29574@elte.hu>
- <20110517195757.GA31067@liondog.tnic>
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
+Message-ID: <20110520115614.GH14745@elte.hu>
+References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
+ <1305619719-7480-6-git-send-email-ying.huang@intel.com>
+ <20110517084622.GE22093@elte.hu>
+ <4DD23750.3030606@intel.com>
+ <20110517092620.GI22093@elte.hu>
+ <4DD31C78.6000209@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110517195757.GA31067@liondog.tnic>
+In-Reply-To: <4DD31C78.6000209@intel.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,32 +44,23 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Borislav Petkov <bp@alien8.de> wrote:
+* Huang Ying <ying.huang@intel.com> wrote:
 
-> On Tue, May 17, 2011 at 09:18:03PM +0200, Ingo Molnar wrote:
-> > So for example [sufficienty privileged] user-space could inject *any*
-> > perf event - for example a PERF_COUNT_HW_CACHE_MISSES event (for test
-> > purposes) and any tooling that runs could not tell apart this injected
-> > event from a real event.
+> > So why are we not working towards integrating this into our event 
+> > reporting/handling framework, as i suggested it from day one on when you 
+> > started posting these patches?
 > 
-> Yeah about that, I was recently speculating how that would work. So do we do
-> 
-> $ perf record ...
-> 
-> in the one xterm, and, in the other,
-> 
-> $ perf inject
-> 
-> so that while recording, we can inject some events from userspace? Or
-> do we inject it, it gets buffered somewhere in the meantime and then
-> the next perf record session sees it along with the remaining injection
-> events?
+> The memory_failure_queue() introduced in this patch is general, that is, it 
+> can be used not only by ACPI/APEI, but also any other hardware error 
+> handlers, including your event reporting/handling framework.
 
-Well, for persistent events there would be interim buffering even if there's no 
-observation going on anywhere. I.e. there's always an 'observer' of events.
+Well, the bit you are steadfastly ignoring is what i have made clear well 
+before you started adding these facilities: THEY ALREADY EXISTS to a large 
+degree :-)
 
-For non-persistent events, if they are injected, then they are like trace 
-events for which nobody is interested in: they are lost.
+So you were and are duplicating code instead of using and extending existing 
+event processing facilities. It does not matter one little bit that the code 
+you added is partly 'generic', it's still overlapping and duplicated.
 
 Thanks,
 
