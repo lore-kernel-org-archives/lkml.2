@@ -1,43 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab1ETRyi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 13:54:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:30931 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab1ETRyh (ORCPT
+	id S934232Ab1ETSCd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 14:02:33 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60648 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab1ETSCc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 13:54:37 -0400
-Date: Fri, 20 May 2011 10:54:21 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>
-Subject: Re: linux-next: Tree for May 20 (iwlwifi)
-Message-Id: <20110520105421.3766ea12.randy.dunlap@oracle.com>
-In-Reply-To: <20110520165507.cba539d5.sfr@canb.auug.org.au>
-References: <20110520165507.cba539d5.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090209.4DD6AAD8.0010:SCFSTAT5015188,ss=1,fgs=0
+	Fri, 20 May 2011 14:02:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Q3Q1Ae0quhih2uRTxkxiCbRCCjj8CqWuyYVeUbVlaNgIn3UUaAdmoVkqw0zIgRF4hK
+         RzhObbgqB0qNL+IFSLW4EuVdkiHtTxFotX0IW9BElm18zqChFpZ2QnyL/aci5QfZ5Bzs
+         hZK3e5Mkxyg5Yd0g7UEQNtqoR7UsVZtBBW6Mk=
+MIME-Version: 1.0
+In-Reply-To: <20110519194908.GA26584@redhat.com>
+References: <201105152235.32073.vda.linux@googlemail.com> <20110516153122.GA15856@redhat.com>
+ <BANLkTintE-QVUJhJY-_A5nvgj7viJatZ4Q@mail.gmail.com> <20110519194908.GA26584@redhat.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Fri, 20 May 2011 20:02:11 +0200
+Message-ID: <BANLkTi=bRb+NCqqS9+ptzxHVOjKKXhZgsg@mail.gmail.com>
+Subject: Re: Ptrace documentation, draft #1
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 May 2011 16:55:07 +1000 Stephen Rothwell wrote:
+On Thu, May 19, 2011 at 9:49 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 05/18, Denys Vlasenko wrote:
+>>
+>> On Mon, May 16, 2011 at 5:31 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >
+>> > Note: currently a killed PT_TRACE_EXIT tracee can stop and report
+>> > PTRACE_EVENT_EXIT before it actually exits. I'd say this is wrong and
+>> > should be fixed.
+>>
+>> Yes, I assumed this is normal.
+>> Or do you mean that *killed* tracee (that is, by signal) also stops there?
+>
+> Yes.
 
-> Hi all,
+Thanks, noted.
+
+>> >> Tracer can kill a tracee with ptrace(PTRACE_KILL, pid, 0, 0).
+>> >
+>> > Oh, no. This is more or less equivalent to PTRACE_CONT(SIGKILL) except
+>> > PTRACE_KILL doesn't return the error if the tracee is not stopped.
+>> >
+>> > I'd say: do not use PTRACE_KILL, never. If the tracer wants to kill
+>> > the tracee - kill or tkill should be used.
+>>
+>> Regardless. We need to tell users what to expect after they do PTRACE_KILL.
+>
+> Once again, PTRACE_KILL == ptrace(PTRACE_CONT, SIGKILL), except it
+> doesn't return the error if the tracee is not stopped.
+
+Oleg, this doesn't explain the resulting behavior in terms understandable
+to mere mortals. *What will happen* when user does ptrace(PTRACE_KILL)?
+
+Yes, it's obvious that the tracee gets SIGKILLed, but will it report WIFSIGNALED
+or not? Userspace folks won't be 100.00% sure if we won't be exact about it.
+
+They may think "hmm... maybe this PTRACE_KILL thing is so powerful it makes
+it unnecessary to waitpid for the nuked process?", which actualy isn't such
+a stupid hupothesis - if tracer itself PTRACE_KILL's tracee, it doesn't want
+to know about it anymore, so why should it waitpid for it?
 
 
-drivers/net/wireless/iwlwifi/iwl-agn-rs.c:351: error: 'struct iwl_lq_sta' has no member named 'dbg_fixed_rate'
-drivers/net/wireless/iwlwifi/iwl-agn-rs.c:1076: error: 'struct iwl_lq_sta' has no member named 'dbg_fixed_rate'
+>> >> When any thread executes exit_group syscall, every tracee reports its
+>> >> death to its tracer.
+>> >>
+>> >> ??? Is it true that *every* thread reports death?
+>> >
+>> > Yes, if you mean do_wait() as above.
+>>
+>> And will PTRACE_EVENT_EXIT happen for *every* tracee (which has it configured)?
+>
+> Oh. This depends on /dev/random. Most probably the exiting tracee
+> dequeues the (implicit) SIGKILL and report PTRACE_EVENT_EXIT. Oh,
+> unless arch_ptrace_stop_needed() is true. But it can exit on its own
+> or deque another fatal signal, then it won't stop because of
+> fatal_signal_pending().
+>
+> In short: this should be fixed. We already discussed this a bit (many
+> times ;), first of all we should define the correct behaviour. If you
+> ask me, personally I think PTRACE_EVENT_EXIT should be always reported
+> unless the task was explicitly killed by SIGKILL. But this is not clear.
 
-when CONFIG_MAC80211_DEBUGFS is not enabled.
+Documented with "KNOWN BUG:" tag.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+>> >> Kernel delivers an extra SIGTRAP to tracee after execve syscall
+>> >> returns. This is an ordinary signal (similar to one generated by kill
+>> >> -TRAP), not a special kind of ptrace-stop. If PTRACE_O_TRACEEXEC option
+>> >> is in effect, a PTRACE_EVENT_EXEC-stop is generated instead.
+>> >>
+>> >> ??? can this SIGTRAP be distinguished from "real" user-generated SIGTRAP
+>> >>     by looking at its siginfo?
+>> >
+>> > Afaics no. Well, except .si_pid shows that the signal was sent by the
+>> > tracing process to itself.
+>>
+>> What about si_code? Is it set to SI_KERNEL for this signal?
+>
+> No, SI_USER.
+
+This is stupid. This signal is sent by kernel. Why is it flagged as "from user"?
+Maybe we should change it?
+
+(BTW, where is it generated in the kernel source? I found
+PTRACE_EVENT_EXEC generation, but failed to find
+"old-school SIGTRAP" generation code...)
+
+
+>> >> ??? Are syscalls interrupted by signals which are suppressed by tracer?
+>> >>     If yes, document it here
+>> >
+>> > Please reiterate, can't understand.
+>>
+>> Let's say tracee is in nanosleep. Then some signal arrives,
+>
+> note that the tracee is already interrupted here, sys_nanosleep()
+> returns ERESTART_RESTARTBLOCK.
+>
+>> but tracer decides to ignore it. In tracer:
+>>
+>> waitpid: WIFSTOPPED, WSTOPSIG = some_sig  <===
+>> ptrace(PTRACE_CONT, pid, 0, 0)  ===>
+>>
+>> will this interrupt nanosleep in tracee?
+>
+> Yes and no. Once again, the tracee already returned from sys_nanosleep,
+> but it will restart this syscall (actually, it will do sys_restart_syscall)
+> and continue to sleep.
+
+Documented as such.
+
+
+>> >>       ptrace(PTRACE_cmd, pid, 0, sig);
+>> >> where cmd is CONT, DETACH, SYSCALL, SINGLESTEP, SYSEMU,
+>> >> SYSEMU_SINGLESTEP. If tracee is in signal-delivery-stop, sig is the
+>> >> signal to be injected. Otherwise, sig is ignored.
+>> >
+>> > There is another special case. If the tracee single-stepps into the
+>> > signal handler, it reports SIGTRAP as if it recieved this SIGNAL.
+>> > But ptrace(PTRACE, ..., sig) doesn't inject after that.
+>>
+>> This is part of missing doc about PTRACE_SINGLESTEP.
+>> From what you are saying it looks like PTRACE_SINGLESTEP
+>> implies PTRACE_SYSCALL behavior: "report syscall-stops".
+>
+> Hmm. Why do you think so?
+
+I am totally unfamiliar with PTRACE_SINGLESTEP.
+
+
+Thanks! Expect draft #3 soon.
+-- 
+vda
