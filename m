@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934429Ab1ETHnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 03:43:16 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:39748 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933834Ab1ETHnP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 03:43:15 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/ziPker2TzYPLg6QWuO+aqgYuSXMe4zGDsutY2D7
-	LheNJBfe06lgzQ
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
-Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
-Date: Fri, 20 May 2011 09:43:09 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38.6; KDE/4.6.3; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-References: <201105191526.31904.toralf.foerster@gmx.de> <201105191834.56577.toralf.foerster@gmx.de> <BANLkTi=8NW9Q+8Q=kuUJY1L=FcQGapqDLA@mail.gmail.com>
-In-Reply-To: <BANLkTi=8NW9Q+8Q=kuUJY1L=FcQGapqDLA@mail.gmail.com>
+	id S933823Ab1ETHwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 03:52:50 -0400
+Received: from ozlabs.org ([203.10.76.45]:59423 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932157Ab1ETHws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 03:52:48 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCH 14/18] virtio: add api for delayed callbacks
+In-Reply-To: <20110519072412.GA31253@redhat.com>
+References: <cover.1304541918.git.mst@redhat.com> <64d47c628b3fdc0ac156aed4be182933d8bcc0db.1304541919.git.mst@redhat.com> <871v08h0vm.fsf@rustcorp.com.au> <20110515124818.GD24932@redhat.com> <87boz3dsoe.fsf@rustcorp.com.au> <20110519072412.GA31253@redhat.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Fri, 20 May 2011 17:13:29 +0930
+Message-ID: <87liy1vmu6.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105200943.10228.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-richard -rw- weinberger wrote at 08:44:39
-> > * Starting local
+On Thu, 19 May 2011 10:24:12 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Mon, May 16, 2011 at 04:43:21PM +0930, Rusty Russell wrote:
+> > On Sun, 15 May 2011 15:48:18 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > On Mon, May 09, 2011 at 03:27:33PM +0930, Rusty Russell wrote:
+> > > > On Wed, 4 May 2011 23:52:33 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > > Add an API that tells the other side that callbacks
+> > > > > should be delayed until a lot of work has been done.
+> > > > > Implement using the new used_event feature.
+> > > > 
+> > > > Since you're going to add a capacity query anyway, why not add the
+> > > > threshold argument here?
+> > > 
+> > > I thought that if we keep the API kind of generic
+> > > there might be more of a chance that future transports
+> > > will be able to implement it. For example, with an
+> > > old host we can't commit to a specific index.
+> > 
+> > No, it's always a hint anyway: you can be notified before the threshold
+> > is reached.  But best make it explicit I think.
+> > 
+> > Cheers,
+> > Rusty.
 > 
-> What is this "Starting local",
-> was UML crashing while starting your distro?
-No, that the last init script of the Gentoo, I'm using within UML.
-
-> I fear the backtrace is garbage.
-yep, maybe this helps more : 
-
-Program received signal SIGSEGV, Segmentation fault.
-0x080a9f6b in futex_wake (uaddr=<value optimized out>, flags=<value optimized out>, nr_wake=<value optimized out>, 
-    bitset=4294967295) at kernel/futex.c:958
-958             plist_for_each_entry_safe(this, next, head, list) {
-(gdb) bt
-#0  0x080a9f6b in futex_wake (uaddr=<value optimized out>, flags=<value optimized out>, nr_wake=<value optimized out>, 
-    bitset=4294967295) at kernel/futex.c:958
-#1  0x080abb1d in do_futex (uaddr=0x81efe10, op=0, val=0, timeout=0x0, uaddr2=0x81efe0c, val2=0, val3=4294967295)
-    at kernel/futex.c:2610
-#2  0x080ac184 in sys_futex (uaddr=0x81efe10, op=129, val=1, utime=0x83f89b8, uaddr2=0x81efe0c, val3=134908072)
-    at kernel/futex.c:2678
-#3  0x08060d16 in handle_syscall (r=0x19545290) at arch/um/kernel/skas/syscall.c:35
-#4  0x08074cf1 in handle_trap (regs=0x19545290) at arch/um/os-Linux/skas/process.c:201
-#5  userspace (regs=0x19545290) at arch/um/os-Linux/skas/process.c:417
-#6  0x0805e0cb in fork_handler () at arch/um/kernel/process.c:181
-#7  0x00000000 in ?? ()
-
 > 
-> Can you reproduce the issue using the default config?
-yes
+> I tried doing that and remembered the real reason I went for this API:
+> 
+> capacity is limited by descriptor table space, not
+> used ring space: each entry in the used ring frees up multiple entries
+> in the descriptor ring. Thus the ring can't provide
+> callback after capacity is N: capacity is only available
+> after we get bufs.
 
-> Are you using hostfs?
-Yes, but the issue is independend from that.
+I think this indicates a problem, but I haven't reviewed your patches
+except very cursorily.  I am slack...
 
+> We could try and make the API pass in the number of freed bufs, however:
+> - this is not really what virtio-net cares about (it cares about
+>   capacity)
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Yes, max sg elements and max requests are separate, though in the
+current virtio implementation remaining sg <= remaining request slots.
+
+That's why we currently feed back remaining descriptors to the driver,
+not the number of request slots.
+
+This implies that the thresholds should refer to descriptor numbers
+(ie. wake me when there are this many descriptors freed), not the used
+ring at all.  Which means we're barking up the wrong tree...
+
+I think this needs more thought.
+
+> - if the driver passes a number > number of outstanding bufs, it will
+>   never get a callback. So to stay correct the driver will need to
+>   track number of outstanding requests. The simpler API avoids that. 
+
+I think the driver should simply say "wake me when you have this many
+descriptors free".  And set it during initialization, rather than every
+time.  The virtio_ring code should handle it from there.
+
+Perhaps that can be done with the current technique, where the
+virtio_ring makes an educated guess on when sufficient capacity will be
+available...
+
+Cheers,
+Rusty.
