@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab1ETRlM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 13:41:12 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:60924 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab1ETRlL (ORCPT
+	id S1757200Ab1ETRlS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 13:41:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57238 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757014Ab1ETRlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 13:41:11 -0400
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, davej@redhat.com, kees.cook@canonical.com,
-        davem@davemloft.net, eranian@google.com, torvalds@linux-foundation.org,
-        adobriyan@gmail.com, penberg@kernel.org
-In-Reply-To: <20110520131108.GA17699@elte.hu>
-References: <1305292059.1949.0.camel@dan> <1305293345.1949.22.camel@dan>
-	 <20110516153527.GC21107@elte.hu> <1305852966.3005.19.camel@dan>
-	 <20110520120750.GJ14745@elte.hu> <1305896093.3005.24.camel@dan>
-	 <20110520131108.GA17699@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 May 2011 13:41:01 -0400
-Message-ID: <1305913261.20623.12.camel@dan>
+	Fri, 20 May 2011 13:41:14 -0400
+X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=TwWXrjo8ZJIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=zAx4mNOmXcsE8LHOrPsA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+In-Reply-To: <4DD6A678.6090801@linux.intel.com>
+References: <201105191526.31904.toralf.foerster@gmx.de>
+	 <201105192218.18261.toralf.foerster@gmx.de>
+	 <20110519204342.GA10792@home.goodmis.org>
+	 <201105200937.15322.toralf.foerster@gmx.de>
+	 <BANLkTik0oz6ppJvRpufaaiBL1pqcAxNHuA@mail.gmail.com>
+	 <4DD68EDF.4030301@linux.intel.com>
+	 <1305907458.1465.23.camel@gandalf.stny.rr.com>
+	 <4DD6A678.6090801@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 20 May 2011 13:41:12 -0400
+Message-ID: <1305913272.1465.30.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-20 at 15:11 +0200, Ingo Molnar wrote:
+On Fri, 2011-05-20 at 10:35 -0700, Darren Hart wrote:
 
-> We need to allocate the IDT dynamically: just kmalloc() it, update idt_descr 
-> and do a load_idt(). Double check places that modify idt_descr or use 
-> idt_table.
+> > Wait! This is where we need the WARN_ON_SMP(), do we have that patch in?
 > 
-> Note, you could do this as a side effect of a nice performance optimization: 
-> would you be interested in allocating it in the percpu area, using 
-> percpu_alloc()? That way the IDT is distributed between CPUs - this has 
-> scalability advantages on NUMA systems and maybe even on SMP.
-> 
+> Hrm, I thought he said he was on 2.6.39-rc-something. Those patches went
+> in pre 2.6.39-rc1 according to gitk.
 
-Any suggestions on when this allocation should take place?  I'm hesitant
-to touch anything in arch/x86/kernel/head_32.S, where the IDT is setup
-and lidt idt_descr is called (on x86-32 anyway).  That means at some
-point I'd have to copy the table into a region allocated with
-alloc_percpu() and set up a new descriptor.  Seems like this should
-happen before IRQ is enabled, but I'm not sure about the best place.
+A git bisect can easily stumble on this where the fix is not made.
 
-Also, I'd still welcome suggestions on generating entropy so early in
-the boot process as to randomize the location at which the kernel is
-decompressed.
+-- Steve
 
-On a related note, would there be obstacles to marking the IDT as
-read-only?
-
-Thanks,
-Dan
 
