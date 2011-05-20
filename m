@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933409Ab1ETNTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:19:39 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37580 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932176Ab1ETNTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:19:38 -0400
-Date: Fri, 20 May 2011 15:19:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v2] x86: UV uv_tlb.c cleanup
-Message-ID: <20110520131927.GB17699@elte.hu>
-References: <E1QNPH2-0006eo-8E@eag09.americas.sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1QNPH2-0006eo-8E@eag09.americas.sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S933531Ab1ETNVP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:21:15 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:35456 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932563Ab1ETNVO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 09:21:14 -0400
+Subject: Re: [PATCH v5 15/19] ARM: LPAE: Add support for
+ cpu_v7_do_(suspend|resume)
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+In-Reply-To: <20110518072737.GC6815@atomide.com>
+References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
+	 <1304859098-10760-16-git-send-email-catalin.marinas@arm.com>
+	 <20110518072737.GC6815@atomide.com>
+Organization: ARM Limited
+Date: Fri, 20 May 2011 14:21:07 +0100
+Message-ID: <1305897667.2788.98.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 20 May 2011 13:21:15.0908 (UTC) FILETIME=[CC196440:01CC16F0]
+X-MC-Unique: 111052014211006201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tony,
 
-Ok, the whole file looks a lot better now. A few small details:
+On Wed, 2011-05-18 at 08:27 +0100, Tony Lindgren wrote:
+> * Catalin Marinas <catalin.marinas@arm.com> [110508 15:52]:
+> > --- a/arch/arm/mm/proc-v7.S
+> > +++ b/arch/arm/mm/proc-v7.S
+> > @@ -260,19 +260,32 @@ cpu_v7_name:
+> > 
+> >  /* Suspend/resume support: derived from arch/arm/mach-s5pv210/sleep.S */
+> >  .globl       cpu_v7_suspend_size
+> > +#ifdef CONFIG_ARM_LPAE
+> > +.equ cpu_v7_suspend_size, 4 * 10
+> > +#else
+> >  .equ cpu_v7_suspend_size, 4 * 8
+> > +#endif
+> >  #ifdef CONFIG_PM_SLEEP
+> >  ENTRY(cpu_v7_do_suspend)
+> >       stmfd   sp!, {r4 - r11, lr}
+> >       mrc     p15, 0, r4, c13, c0, 0  @ FCSE/PID
+> >       mrc     p15, 0, r5, c13, c0, 1  @ Context ID
+> >       mrc     p15, 0, r6, c3, c0, 0   @ Domain ID
+> > +#ifdef CONFIG_ARM_LPAE
+> > +     mrrc    p15, 0, r7, r8, c2      @ TTB 0
+> > +     mrrc    p15, 1, r2, r3, c2      @ TTB 1
+> > +#else
+> >       mrc     p15, 0, r7, c2, c0, 0   @ TTB 0
+> >       mrc     p15, 0, r8, c2, c0, 1   @ TTB 1
+> > +#endif
+> >       mrc     p15, 0, r9, c1, c0, 0   @ Control register
+> >       mrc     p15, 0, r10, c1, c0, 1  @ Auxiliary control register
+> >       mrc     p15, 0, r11, c1, c0, 2  @ Co-processor access control
+> > +#ifdef CONFIG_ARM_LPAE
+> > +     stmia   r0, {r2 - r11}
+> > +#else
+> >       stmia   r0, {r4 - r11}
+> > +#endif
+> >       ldmfd   sp!, {r4 - r11, pc}
+> >  ENDPROC(cpu_v7_do_suspend)
+> > 
+> > @@ -280,12 +293,21 @@ ENTRY(cpu_v7_do_resume)
+> >       mov     ip, #0
+> >       mcr     p15, 0, ip, c8, c7, 0   @ invalidate TLBs
+> >       mcr     p15, 0, ip, c7, c5, 0   @ invalidate I cache
+> > +#ifdef CONFIG_ARM_LPAE
+> > +     ldmia   r0, {r2 - r11}
+> > +#else
+> >       ldmia   r0, {r4 - r11}
+> > +#endif
+> >       mcr     p15, 0, r4, c13, c0, 0  @ FCSE/PID
+> >       mcr     p15, 0, r5, c13, c0, 1  @ Context ID
+> >       mcr     p15, 0, r6, c3, c0, 0   @ Domain ID
+> > +#ifdef CONFIG_ARM_LPAE
+> > +     mcrr    p15, 0, r7, r8, c2      @ TTB 0
+> > +     mcrr    p15, 1, r2, r3, c2      @ TTB 1
+> > +#else
+> >       mcr     p15, 0, r7, c2, c0, 0   @ TTB 0
+> >       mcr     p15, 0, r8, c2, c0, 1   @ TTB 1
+> > +#endif
+> >       mcr     p15, 0, ip, c2, c0, 2   @ TTB control register
+> >       mcr     p15, 0, r10, c1, c0, 1  @ Auxiliary control register
+> >       mcr     p15, 0, r11, c1, c0, 2  @ Co-processor access control
+> 
+> Do we really need all this ifdef else throughout this series?
+> 
+> I think we already have things in place to do this dynamically
+> like we already do for thumb, smp_on_up, v6 vs v7 and so on.
 
-* Cliff Wickman <cpw@sgi.com> wrote:
+By dynamically, do you mean at run-time? We won't be able to compile
+both classic and LPAE in the same kernel, there is just too much
+difference between them (2 vs 3 levels of page tables - LPAE is an
+entirely new format).
 
-> +	vp = kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
-> +	uvhub_descs = (struct uvhub_desc *)vp;
-> +	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
-> +	uvhub_mask = kzalloc((nuvhubs+7)/8, GFP_KERNEL);
-> +
-> +	if (get_cpu_topology(base_part_pnode, uvhub_descs, uvhub_mask)) {
-> +		kfree(uvhub_descs);
-> +		kfree(uvhub_mask);
-> +		return 1;
-> +	}
-> +	if (summarize_uvhub_sockets(nuvhubs, uvhub_descs, uvhub_mask)) {
-> +		kfree(uvhub_descs);
-> +		kfree(uvhub_mask);
-> +		return 1;
-> +	}
-> +
->  	kfree(uvhub_descs);
->  	kfree(uvhub_mask);
-> +	init_per_cpu_tunables();
->  	return 0;
+If you mean some simpler macros like what we have for ARM/THUMB to
+reduce the number of lines, I'm fine with it though we don't always have
+a 1:1 mapping between LPAE and non-LPAE instructions.
 
-Look how the teardown of uvhub_descs and uvhub_mask is repeated 3 times (!).
+Alternatively, I'm happy to create a separate proc-v7lpae.S file.
 
-What we do in the kernel instead are:
+-- 
+Catalin
 
-	if (func())
-		goto fail;
 
-	if (func2())
-		goto fail;
-
-	ret = 0;
-out:
-	kfree(ptr1);
-	kfree(ptr2);
-
-	return ret;
-
-fail:
-	ret = 1;
-	goto out;
-}
-
-this makes it more obvious and more readable.
-
-Thanks,
-
-	Ingo
