@@ -1,133 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933680Ab1ETGwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 02:52:13 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:1984 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933375Ab1ETGwL (ORCPT
+	id S933694Ab1ETGww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 02:52:52 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41465 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933375Ab1ETGwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 02:52:11 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtADADwP1k15LCoegWdsb2JhbACmGBUBARYmJYhwvUsOgwkQgnIElzyHXA
-Date: Fri, 20 May 2011 16:52:07 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 14/18] writeback: make writeback_control.nr_to_write
- straight
-Message-ID: <20110520065207.GR32466@dastard>
-References: <20110519214530.939830917@intel.com>
- <20110519214746.038765568@intel.com>
- <20110519220643.GA27247@localhost>
- <20110519232910.GK32466@dastard>
- <20110520040740.GA8603@localhost>
+	Fri, 20 May 2011 02:52:50 -0400
+Date: Fri, 20 May 2011 00:52:48 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Barry Song <21cnbao@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>
+Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to
+ drivers/gpio
+Message-ID: <20110520065248.GB21285@ponder.secretlab.ca>
+References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
+ <BANLkTi=poU17RqAzp28CPjWHrN_+aFiyag@mail.gmail.com>
+ <BANLkTindee6UMez8HyBUwd2H6mN-DknzPw@mail.gmail.com>
+ <BANLkTik7BnJKWCsm2L3-GJPTaaiXFNSgaA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110520040740.GA8603@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTik7BnJKWCsm2L3-GJPTaaiXFNSgaA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 12:07:40PM +0800, Wu Fengguang wrote:
-> On Fri, May 20, 2011 at 07:29:10AM +0800, Dave Chinner wrote:
-> > On Fri, May 20, 2011 at 06:06:44AM +0800, Wu Fengguang wrote:
-> > > :                 writeback_single_inode(inode, wb, &wbc);
-> > > :                 work->nr_pages -= write_chunk - wbc.nr_to_write;
-> > > :                 wrote += write_chunk - wbc.nr_to_write;
-> > > :                 if (wbc.pages_skipped) {
-> > > :                         /*
-> > > :                          * writeback is not making progress due to locked
-> > > :                          * buffers.  Skip this inode for now.
-> > > :                          */
-> > > :                         redirty_tail(inode, wb);
-> > > : -               }
-> > > : +               } else if (!(inode->i_state & I_DIRTY))
-> > > : +                       wrote++;
-> > > 
-> > > It looks a bit more clean to do
-> > > 
-> > > :                 wrote += write_chunk - wbc.nr_to_write;
-> > > : +               if (!(inode->i_state & I_DIRTY))
-> > > : +                       wrote++;
-> > > :                 if (wbc.pages_skipped) {
-> > > :                         /*
-> > > :                          * writeback is not making progress due to locked
-> > > :                          * buffers.  Skip this inode for now.
-> > > :                          */
-> > > :                         redirty_tail(inode, wb);
-> > > :                 }
-> > 
-> > But it's still in the wrong place - such post-write inode dirty
-> > processing is supposed to be isolated to writeback_single_inode().
-> > Spreading it across multiple locations is not, IMO, the nicest thing
-> > to do...
+On Thu, May 19, 2011 at 02:25:47PM +0200, Linus Walleij wrote:
+> On Thu, May 19, 2011 at 1:38 PM, Barry Song <21cnbao@gmail.com> wrote:
 > 
-> Strictly speaking, it's post inspecting :)
+> >> -arch_initcall(u300_gpio_init);
+> >> -module_exit(u300_gpio_exit);
+> >>
+> > looks like the driver can't be a real module, is the module_exit
+> > suitable? it looks strange module_exit plays together with
+> > arch_initcall.
 > 
-> It does look reasonable and safe to move the pages_skipped post
-> processing into writeback_single_inode(). See the below patch.
+> It's a rather common design pattern in the kernel for early
+> platform drivers. Either the dependencies are resolved by the
+> different initlevels or they are resolved in probe order with
+> loadable modules. Module load will call all initlevels in order.
+> 
+> It is not elegant but it is common.
 
-<sigh>
+but it does need to be fixed.  Unfortunately it is not simple.  What
+is needed is a generic deferral or ability for drivers to declare
+dependences on other devices beyond their immediate parent.
 
-That's not what I was referring to. The wbc.pages_skipped check is
-fine where it is.
+I've thought about this a bit on and off over the last year, but I
+haven't actually sat down to try and hack anything out yet.
 
-> 
-> When doing this chunk,
-> 
-> -			if (wbc->nr_to_write <= 0) {
-> +			if (wbc->nr_to_write <= 0 && wbc->pages_skipped == 0) {
-> 
-> I wonder in general sense (without knowing enough FS internals)
-> whether ->pages_skipped is that useful: if some locked buffer is
-> blocking all subsequent pages, then ->nr_to_write won't be able to
-> drop to zero.  So the (wbc->pages_skipped == 0) test seems redundant..
-> 
-> Thanks,
-> Fengguang
-> ---
-> Subject: writeback: move pages_skipped post processing into writeback_single_inode()
-> Date: Fri May 20 11:42:42 CST 2011
-> 
-> It's more logical to isolate post-write processings in writeback_single_inode().
-> 
-> Note that it slightly changes behavior for write_inode_now() and sync_inode(),
-> which used to ignore pages_skipped.
-> 
-> Proposed-by: Dave Chinner <david@fromorbit.com>
+g.
 
-No, I didn't propose the change you've made in this patch. I've been
-asking you to fix the original patch, not proposing new changes to
-some other code.  Please don't add my name to random tags in patches
-without asking me first.
-
-So, for the third time, please fix the original patch by moving the
-new "inode now clean" accounting to the "inode-now-clean" logic
-branch in writeback_single_inode().
-
-        if (!(inode->i_state & I_FREEING)) {
-                if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
-.....
-                } else if (inode->i_state & I_DIRTY) {
-.....
-                } else {
-			/*
-			 * account for it here with all the other
-			 * inode-now-clean manipulations that we need
-			 * to do!
-			 */
-.....
-                }
-        }
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
