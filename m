@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933513Ab1ETNPO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:15:14 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42322 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933094Ab1ETNPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:15:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=jPW8Ks5gdYNVtFSTHeXDHCQV/JKNtESVgUMncqvjVsuISWO9VMt54f2LvHYUO0sk52
-         lVvUT5ma2laLVtTDnysCTi+dEa8RWdl4wd+6lcCtAFiVA8Q5Rk8n1SUBwnfDojJuygE1
-         XTbdHVlAkzIFAh6vIGaxjDlpjEI7i1ITeRbpc=
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Wanlong Gao <wanlong.gao@gmail.com>
-Subject: [PATCH] drivers:mtd:fix the bad format in the mtdcore.c
-Date: Fri, 20 May 2011 21:14:30 +0800
-Message-Id: <1305897270-3685-1-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S933409Ab1ETNTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:19:39 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37580 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932176Ab1ETNTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 09:19:38 -0400
+Date: Fri, 20 May 2011 15:19:27 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v2] x86: UV uv_tlb.c cleanup
+Message-ID: <20110520131927.GB17699@elte.hu>
+References: <E1QNPH2-0006eo-8E@eag09.americas.sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1QNPH2-0006eo-8E@eag09.americas.sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the spare spaces in the head of the lines.
 
-Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
----
- drivers/mtd/mtdcore.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Ok, the whole file looks a lot better now. A few small details:
 
-diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
-index 8e19091..f3c9400 100644
---- a/drivers/mtd/mtdcore.c
-+++ b/drivers/mtd/mtdcore.c
-@@ -444,7 +444,7 @@ void register_mtd_user (struct mtd_notifier *new)
- 
- 	list_add(&new->list, &mtd_notifiers);
- 
-- 	__module_get(THIS_MODULE);
-+	__module_get(THIS_MODULE);
- 
- 	mtd_for_each_device(mtd)
- 		new->add(mtd);
-@@ -707,9 +707,9 @@ static int mtd_proc_show(struct seq_file *m, void *v)
- 		seq_printf(m, "mtd%d: %8.8llx %8.8x \"%s\"\n",
- 			   mtd->index, (unsigned long long)mtd->size,
- 			   mtd->erasesize, mtd->name);
--        }
-+	}
- 	mutex_unlock(&mtd_table_mutex);
--        return 0;
-+	return 0;
- }
- 
- static int mtd_proc_open(struct inode *inode, struct file *file)
-@@ -781,7 +781,7 @@ err_reg:
- static void __exit cleanup_mtd(void)
- {
- #ifdef CONFIG_PROC_FS
--        if (proc_mtd)
-+	if (proc_mtd)
- 		remove_proc_entry( "mtd", NULL);
- #endif /* CONFIG_PROC_FS */
- 	class_unregister(&mtd_class);
--- 
-1.7.4.1
+* Cliff Wickman <cpw@sgi.com> wrote:
 
+> +	vp = kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
+> +	uvhub_descs = (struct uvhub_desc *)vp;
+> +	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
+> +	uvhub_mask = kzalloc((nuvhubs+7)/8, GFP_KERNEL);
+> +
+> +	if (get_cpu_topology(base_part_pnode, uvhub_descs, uvhub_mask)) {
+> +		kfree(uvhub_descs);
+> +		kfree(uvhub_mask);
+> +		return 1;
+> +	}
+> +	if (summarize_uvhub_sockets(nuvhubs, uvhub_descs, uvhub_mask)) {
+> +		kfree(uvhub_descs);
+> +		kfree(uvhub_mask);
+> +		return 1;
+> +	}
+> +
+>  	kfree(uvhub_descs);
+>  	kfree(uvhub_mask);
+> +	init_per_cpu_tunables();
+>  	return 0;
+
+Look how the teardown of uvhub_descs and uvhub_mask is repeated 3 times (!).
+
+What we do in the kernel instead are:
+
+	if (func())
+		goto fail;
+
+	if (func2())
+		goto fail;
+
+	ret = 0;
+out:
+	kfree(ptr1);
+	kfree(ptr2);
+
+	return ret;
+
+fail:
+	ret = 1;
+	goto out;
+}
+
+this makes it more obvious and more readable.
+
+Thanks,
+
+	Ingo
