@@ -1,75 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935102Ab1ETOhb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:37:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55852 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933843Ab1ETOhY (ORCPT
+	id S935080Ab1ETOha (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:37:30 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:27067 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935044Ab1ETOhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:37:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] arch/tile: add /proc/tile, /proc/sys/tile, and a sysfs cpu attribute
+	Fri, 20 May 2011 10:37:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Yor8qaIjFT58V1O0csfkZY6lvuqAOdAsMZWBVEapqp/GeIuMjN1474k2ABFaGW9nzQ
+         BNqHNBSWWn2Ds+oV02bQ==
 Date: Fri, 20 May 2011 16:37:20 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-References: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com> <201105191722.17685.arnd@arndb.de> <4DD67A31.90802@tilera.com>
-In-Reply-To: <4DD67A31.90802@tilera.com>
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, andi@firstfloor.org,
+        ming.m.lin@intel.com
+Subject: [PATCH 3/3] perf_events: add Intel Sandy Bridge offcore_response
+ low-level support (v2)
+Message-ID: <20110520143720.GA5398@quad>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105201637.20925.arnd@arndb.de>
-X-Provags-ID: V02:K0:xELmk1ffZVhyfEX+mCPftt9JduE+2jIey7dKeIJzgFZ
- hv2yqo++jNnUMoxwF5plD9ncBXIiC9/sZ6ihahwXq2ew7xGjPy
- sh8vozWWXOwLHw4XF0sOXkQ1oHaE4v7gDOAlexkpfQCmlr5Gjt
- 5ImFLffbs6x4OtHD0AkMhPOMwzZMKWfPJHOtPf0u8IIfd7BagM
- pcgMJ2kRTRLSkgFYz+bUA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 May 2011 16:26:57 Chris Metcalf wrote:
-> >>>> /proc/tile/hardwall
-> >>>>   Information on the set of currently active hardwalls (note that
-> >>>>   the implementation is already present in arch/tile/kernel/hardwall.c;
-> >>>>   this change just enables it)
-> >> This one is not a hypervisor-related file.  It just lists information about
-> >> the set of Linux hardwalls currently active.  Again, it's not primarily
-> >> intended for programmatic use, but as a diagnostic tool.
-> > same here, I'd still put it into the hypervisor structure.
-> 
-> Since /proc/tile/hardwall has no connection to the hypervisor whatsoever,
-> I'm reluctant to put it under /sys/hypervisor.
+    
+This patch adds Intel Sandy Bridge offcore_response support by
+providing the low-level constraint table for those events.
+    
+On Sandy Bridge, there are two offcore_response events. Each uses
+its own dedictated extra register. But those registers are NOT shared
+between sibling CPUs when HT is on unlike Nehalem/Westmere. They are
+always private to each CPU. But they still need to be controlled within
+an event group. All events within an event group must use the same
+value for the extra MSR. That's not controlled by the second patch in
+this series.
+    
+Furthermore on Sandy Bridge, the offcore_response events have NO
+counter constraints contrary to what the official documentation
+indicates, so drop the events from the contraint table.
+    
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
-Ah, I see. I didn't notice that it was in the other file. You are
-absolutely right, this does not belong into /sys/hypervisor and
-fits well into procfs, we just need to find the right place.
-
-> Perhaps in this case it would be reasonable to just have the hardwall
-> subsystem put the file in /proc/driver/hardwall, or even /proc/hardwall? 
-> Or I could make the /dev/hardwall char device dump out the ASCII text that
-> we currently get from /proc/hardwall if you read from it, which is a little
-> weird but not inconceivable.  For example it currently shows things like this:
-> 
-> # cat /proc/tile/hardwall
-> 2x2 1,1 pids: 484@2,1 479@1,1
-> 2x2 0,3 pids:
-> 
-> In this example "2x2 1,1" is a 2x2 grid of cpus starting at grid (x,y)
-> position (1,1), with task 484 bound to the cpu at (x,y) position (2,1).
-
-Any chance you can still restructure the information? I would recommend
-making it a first-class procfs member, since the data is really per-task.
-
-You can add a conditional entry to tgid_base_stuff[] in fs/proc/base.c
-to make it show up for each pid, and then just have the per-task information
-in there to do the lookup the other way round:
-
-# cat /proc/484/hardwall
-2x2 1,1 @2,1
-
-# cat /proc/479/hardwall
-2x2 1,1 @1,1
-
-	Arnd
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 3918927..406fe76 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -327,6 +327,7 @@ struct x86_pmu {
+ 	 * Extra registers for events
+ 	 */
+ 	struct extra_reg *extra_regs;
++	bool regs_no_ht_sharing;
+ };
+ 
+ static struct x86_pmu x86_pmu __read_mostly;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 974eaf2..94f611a 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -100,8 +100,6 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
+ 	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+ 	/* FIXED_EVENT_CONSTRAINT(0x013c, 2), CPU_CLK_UNHALTED.REF */
+ 	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
+-	INTEL_EVENT_CONSTRAINT(0xb7, 0x1), /* OFF_CORE_RESPONSE_0 */
+-	INTEL_EVENT_CONSTRAINT(0xbb, 0x8), /* OFF_CORE_RESPONSE_1 */
+ 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
+ 	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+ 	EVENT_CONSTRAINT_END
+@@ -122,6 +120,13 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
+ 	EVENT_CONSTRAINT_END
+ };
+ 
++static struct extra_reg intel_snb_extra_regs[] __read_mostly =
++{
++	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffffffffull, RSP_0),
++	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffffffffull, RSP_1),
++	EVENT_EXTRA_END
++};
++
+ static u64 intel_pmu_event_map(int hw_event)
+ {
+ 	return intel_perfmon_event_map[hw_event];
+@@ -1266,7 +1271,7 @@ static void intel_pmu_cpu_starting(int cpu)
+ 	 */
+ 	intel_pmu_lbr_reset();
+ 
+-	if (!cpuc->shared_regs)
++	if (!cpuc->shared_regs || x86_pmu.regs_no_ht_sharing)
+ 		return;
+ 
+ 	for_each_cpu(i, topology_thread_cpumask(cpu)) {
+@@ -1508,6 +1513,9 @@ static __init int intel_pmu_init(void)
+ 
+ 		x86_pmu.event_constraints = intel_snb_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_snb_pebs_events;
++		x86_pmu.extra_regs = intel_snb_extra_regs;
++		/* all extra regs are per-cpu when HT is on */
++		x86_pmu.regs_no_ht_sharing = true;
+ 
+ 		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x180010e;
