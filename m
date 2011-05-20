@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933694Ab1ETGww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 02:52:52 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41465 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933375Ab1ETGwu (ORCPT
+	id S933724Ab1ETGyU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 02:54:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53004 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933208Ab1ETGyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 02:52:50 -0400
-Date: Fri, 20 May 2011 00:52:48 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Barry Song <21cnbao@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
-Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to
- drivers/gpio
-Message-ID: <20110520065248.GB21285@ponder.secretlab.ca>
-References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
- <BANLkTi=poU17RqAzp28CPjWHrN_+aFiyag@mail.gmail.com>
- <BANLkTindee6UMez8HyBUwd2H6mN-DknzPw@mail.gmail.com>
- <BANLkTik7BnJKWCsm2L3-GJPTaaiXFNSgaA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTik7BnJKWCsm2L3-GJPTaaiXFNSgaA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 May 2011 02:54:19 -0400
+Date: Thu, 19 May 2011 23:54:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, mmarek@suse.cz, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] kstrtox: drop kstrtol()/kstrtoul() when possible
+Message-Id: <20110519235449.ac0ac1c4.akpm@linux-foundation.org>
+In-Reply-To: <20110520064827.GA14185@p183>
+References: <20110520061259.GA13483@p183>
+	<BANLkTi=2yReXfrr7swhys7TgkuJ5r97jqQ@mail.gmail.com>
+	<20110520064827.GA14185@p183>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 02:25:47PM +0200, Linus Walleij wrote:
-> On Thu, May 19, 2011 at 1:38 PM, Barry Song <21cnbao@gmail.com> wrote:
+On Fri, 20 May 2011 09:48:27 +0300 Alexey Dobriyan <adobriyan@gmail.com> wrote:
+
+> On Fri, May 20, 2011 at 08:20:42AM +0200, Geert Uytterhoeven wrote:
+> > On Fri, May 20, 2011 at 08:15, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+> > > If "long" and "long long" types are identical at runtime,
+> > > kstrtol() can be aliased to kstrtoll().
+> > >
+> > > Unfortunately, one can't write
+> > >
+> > > __ __ __ __#if sizeof(long) == sizeof(long long) ...
+> > 
+> > One can write #ifdef CONFIG_64BIT instead.
 > 
-> >> -arch_initcall(u300_gpio_init);
-> >> -module_exit(u300_gpio_exit);
-> >>
-> > looks like the driver can't be a real module, is the module_exit
-> > suitable? it looks strange module_exit plays together with
-> > arch_initcall.
-> 
-> It's a rather common design pattern in the kernel for early
-> platform drivers. Either the dependencies are resolved by the
-> different initlevels or they are resolved in probe order with
-> loadable modules. Module load will call all initlevels in order.
-> 
-> It is not elegant but it is common.
+> And alignment will match, on any arch, now and in future?
+> I don't think so.
 
-but it does need to be fixed.  Unfortunately it is not simple.  What
-is needed is a generic deferral or ability for drivers to declare
-dependences on other devices beyond their immediate parent.
+Don't worry about it.
 
-I've thought about this a bit on and off over the last year, but I
-haven't actually sat down to try and hack anything out yet.
+z:/usr/src/linux-2.6.39> grep -r "#[    ]*if.*CONFIG_64BIT" . | wc -l
+547
 
-g.
-
+So much other stuff will break that kstrtofoo is a drop in the bucket.
