@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935460Ab1ETJNx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 05:13:53 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40048 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935448Ab1ETJNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 05:13:51 -0400
-Date: Fri, 20 May 2011 11:13:46 +0200
-From: Marcus Meissner <meissner@suse.de>
-To: benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: PATCH: powerpc: remove unused variable assignment
-Message-ID: <20110520091346.GC29499@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendoerffer, HRB 16746 (AG Nuernberg)
-User-Agent: Mutt/1.5.9i
+	id S935456Ab1ETJTl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 05:19:41 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:45133 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933700Ab1ETJTk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 05:19:40 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/O3oVfkXfOemBaGxBh4ZQA3CFExW6xWmhW6MD3mB
+	dRpkckZY3aAdyn
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+Date: Fri, 20 May 2011 11:19:35 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.6; KDE/4.6.3; i686; ; )
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+References: <201105191526.31904.toralf.foerster@gmx.de> <201105201058.20355.toralf.foerster@gmx.de> <BANLkTim6yqMipB37Q=OJg=aC89vumCVewg@mail.gmail.com>
+In-Reply-To: <BANLkTim6yqMipB37Q=OJg=aC89vumCVewg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201105201119.36155.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi,
+richard -rw- weinberger wrote at 11:02:35
 
-gcc 4.6 with -Werror does not like setting but not using variables
-anymore.
+> I hope it's _exactly_ the same result. vmlinux and linux are hard linked...
+tfoerste@n22 ~/devel/linux-2.6 $ ls -lid vmlinux linux 
+2034205 -rwxr-xr-x 2 tfoerste users 35624874 May 20 09:28 linux
+2034205 -rwxr-xr-x 2 tfoerste users 35624874 May 20 09:28 vmlinux
 
-So remove it, it does not seem necessary.
 
-Signed-off-by: Marcus Meissner <meissner@suse.de>
-
-Ciao, Marcus
----
- arch/powerpc/include/asm/pgtable-ppc64.h |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
-index 2b09cd5..c3d39de 100644
---- a/arch/powerpc/include/asm/pgtable-ppc64.h
-+++ b/arch/powerpc/include/asm/pgtable-ppc64.h
-@@ -257,21 +257,17 @@ static inline int __ptep_test_and_clear_young(struct mm_struct *mm,
- static inline void ptep_set_wrprotect(struct mm_struct *mm, unsigned long addr,
- 				      pte_t *ptep)
- {
--	unsigned long old;
--
-        	if ((pte_val(*ptep) & _PAGE_RW) == 0)
-        		return;
--	old = pte_update(mm, addr, ptep, _PAGE_RW, 0);
-+	pte_update(mm, addr, ptep, _PAGE_RW, 0);
- }
- 
- static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
- 					   unsigned long addr, pte_t *ptep)
- {
--	unsigned long old;
--
- 	if ((pte_val(*ptep) & _PAGE_RW) == 0)
- 		return;
--	old = pte_update(mm, addr, ptep, _PAGE_RW, 1);
-+	pte_update(mm, addr, ptep, _PAGE_RW, 1);
- }
- 
- /*
 -- 
-1.7.4.1
-
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
