@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab1ETCam (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 22:30:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63255 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755945Ab1ETCal convert rfc822-to-8bit (ORCPT
+	id S1757203Ab1ETCnU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 22:43:20 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63042 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756682Ab1ETCnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 22:30:41 -0400
+	Thu, 19 May 2011 22:43:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mjtwU6gJVoug0XmorFPe5zH94Lv+PkOXp4OCYm9J0VjjMjUNZaXU5LqkxEr8nmVnC6
-         ShvUsnaTE6BPH2SSmUrPExNza3D5dxBTP4WPVNtiRHgIQyNHeuewCm4tuGd6wiW7fIxD
-         /9ZTusEhXw5s3oJCvUQ9Q5E6ZcgDUscsYuguU=
-MIME-Version: 1.0
-In-Reply-To: <20110520002401.GA17623@kroah.com>
-References: <2db81796703063c0816d0d99040c6fbd6da50007.1305847719.git.mfm@muteddisk.com>
-	<20110520000013.GA8908@kroah.com>
-	<BANLkTik=S-FRB25gNHcb0OLMW5dhqLE1eA@mail.gmail.com>
-	<20110520002401.GA17623@kroah.com>
-Date: Thu, 19 May 2011 19:30:39 -0700
-Message-ID: <BANLkTi=FZ57TrOa48qxkO6Myf0pwgtPp7g@mail.gmail.com>
-Subject: Re: [PATCH] staging: usbip: replace usbip_u{dbg,err,info} and printk
- with dev_ and pr_
-From: matt mooney <mfmooney@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: matt mooney <mfm@muteddisk.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=x3/884PM4RoWgWYGeZ6t4hsUthPQHIuofH7MJYniprALmoTHLCX2ZOeC3h9zqNxLnY
+         f6qqjMadxGlUndrv4AJUfRHWLaG+kkabaph3cpYWnph+ETlk63QEkjf8hKmO2jwJtuTu
+         /xxK2BodqUwr+1jQEmI7e7NDB1N7tdB11A1uo=
+Subject: [PATCH] block: reduce spin_lock critical region
+From: Eduardo Silva <edsiper@gmail.com>
+To: Mike Miller <mike.miller@hp.com>
+Cc: iss_storagedev@hp.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 May 2011 22:43:09 -0400
+Message-ID: <1305859389.1763.1.camel@monotop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 5:24 PM, Greg KH <greg@kroah.com> wrote:
-> On Thu, May 19, 2011 at 05:17:45PM -0700, matt mooney wrote:
->> On Thu, May 19, 2011 at 5:00 PM, Greg KH <greg@kroah.com> wrote:
->> > Also, the merge window for the .40 tree for the staging tree is now
->> > closed, so I'll only take bugfixes for the usbip code for now.
->>
->> The userspace code isn't getting merged in .40, is it? Because my
->> patch "staging: usbip: userspace: stub_driver.c: update kernel module
->> name" actually relies on a change in my own tree, so I made a mistake
->> by thinking that it was needed right away to get the userspace tools
->> working.
->
-> It's in my tree, so yes.  You can send me patches to fix the problem, as
-> I would recommend :)
+the critical region is originally composed by a conditional plus
+a memory copy, the memory copy routine don't need protection.
+Moving the memcpy() outside the conditional also help to fix the
+16 compiler warning messages generated in __u8 sn[16] def.
 
-Can I send you a 10 patch series (or 9 if you apply the patch in this
-thread)? The changes I have that fix that are towards the end. The
-problem is a lot of my changes rely on the patch sent in this thread
-and one that follows it, so to avoid any conflicts it is easiest (at
-least for me :) to just send the whole series. They have been tested
-and pretty much leave usbip in the state it was originally in.
+Signed-off-by: Eduardo Silva <edsiper@gmail.com>
+---
+ drivers/block/cciss.c |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
 
-Thanks,
-matt
-
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 9bf1398..199b35e 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -621,20 +621,19 @@ static ssize_t dev_show_unique_id(struct device *dev,
+ 	spin_lock_irqsave(&h->lock, flags);
+ 	if (h->busy_configuring)
+ 		ret = -EBUSY;
+-	else
+-		memcpy(sn, drv->serial_no, sizeof(sn));
+ 	spin_unlock_irqrestore(&h->lock, flags);
+ 
+ 	if (ret)
+ 		return ret;
+-	else
+-		return snprintf(buf, 16 * 2 + 2,
+-				"%02X%02X%02X%02X%02X%02X%02X%02X"
+-				"%02X%02X%02X%02X%02X%02X%02X%02X\n",
+-				sn[0], sn[1], sn[2], sn[3],
+-				sn[4], sn[5], sn[6], sn[7],
+-				sn[8], sn[9], sn[10], sn[11],
+-				sn[12], sn[13], sn[14], sn[15]);
++
++	memcpy(sn, drv->serial_no, sizeof(sn));
++	return snprintf(buf, 16 * 2 + 2,
++			"%02X%02X%02X%02X%02X%02X%02X%02X"
++			"%02X%02X%02X%02X%02X%02X%02X%02X\n",
++			sn[0], sn[1], sn[2], sn[3],
++			sn[4], sn[5], sn[6], sn[7],
++			sn[8], sn[9], sn[10], sn[11],
++			sn[12], sn[13], sn[14], sn[15]);
+ }
+ static DEVICE_ATTR(unique_id, S_IRUGO, dev_show_unique_id, NULL);
+ 
 -- 
-GPG-Key: 9AFE00EA
+1.7.4.1
+
+
+
