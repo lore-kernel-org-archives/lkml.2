@@ -1,176 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569Ab1ETXyZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 19:54:25 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:49589 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab1ETXyU (ORCPT
+	id S1756154Ab1ETX4x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 19:56:53 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57061 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab1ETX4s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 19:54:20 -0400
-Date: Sat, 21 May 2011 09:54:09 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Update for 2.6.40
-Message-ID: <20110520235409.GA1722@gondor.apana.org.au>
-References: <20081225002020.GA2912@gondor.apana.org.au> <20090324044932.GA18245@gondor.apana.org.au> <20091204135530.GA29371@gondor.apana.org.au> <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au> <20110315145940.GA15373@gondor.apana.org.au>
+	Fri, 20 May 2011 19:56:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NrXz8Mgoc6DmhzBdUzKAEhe+7pWfFaTPCR7zXo+nsRZ9w4OZRGzD6aZHF5ljMeLUEQ
+         D/UvUrifjDmh1cJhviyMx7QuRof2ZT8rd1lZPa7oNtfOMtRFRb0dOkL6MnFnTM19NSYX
+         xeSVfrNEjkeD46uNA7NSPwI4FXMDiB3ExoK+M=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110315145940.GA15373@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110520144935.3bfdb2e2.akpm@linux-foundation.org>
+References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110520124636.45c26cfa.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110520144935.3bfdb2e2.akpm@linux-foundation.org>
+Date: Sat, 21 May 2011 08:56:46 +0900
+Message-ID: <BANLkTi=Ap=NdZ+05UjjEsC5f5wdjo9yvew@mail.gmail.com>
+Subject: Re: [PATCH 6/8] memcg asynchronous memory reclaim interface
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, hannes@cmpxchg.org,
+        Michal Hocko <mhocko@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+2011/5/21 Andrew Morton <akpm@linux-foundation.org>:
+> On Fri, 20 May 2011 12:46:36 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+>> This patch adds a logic to keep usage margin to the limit in asynchronous way.
+>> When the usage over some threshould (determined automatically), asynchronous
+>> memory reclaim runs and shrink memory to limit - MEMCG_ASYNC_STOP_MARGIN.
+>>
+>> By this, there will be no difference in total amount of usage of cpu to
+>> scan the LRU
+>
+> This is not true if "don't writepage at all (revisit this when
+> dirty_ratio comes.)" is true.  Skipping over dirty pages can cause
+> larger amounts of CPU consumption.
+>
+>> but we'll have a chance to make use of wait time of applications
+>> for freeing memory. For example, when an application read a file or socket,
+>> to fill the newly alloated memory, it needs wait. Async reclaim can make use
+>> of that time and give a chance to reduce latency by background works.
+>>
+>> This patch only includes required hooks to trigger async reclaim and user interfaces.
+>> Core logics will be in the following patches.
+>>
+>>
+>> ...
+>>
+>>  /*
+>> + * For example, with transparent hugepages, memory reclaim scan at hitting
+>> + * limit can very long as to reclaim HPAGE_SIZE of memory. This increases
+>> + * latency of page fault and may cause fallback. At usual page allocation,
+>> + * we'll see some (shorter) latency, too. To reduce latency, it's appreciated
+>> + * to free memory in background to make margin to the limit. This consumes
+>> + * cpu but we'll have a chance to make use of wait time of applications
+>> + * (read disk etc..) by asynchronous reclaim.
+>> + *
+>> + * This async reclaim tries to reclaim HPAGE_SIZE * 2 of pages when margin
+>> + * to the limit is smaller than HPAGE_SIZE * 2. This will be enabled
+>> + * automatically when the limit is set and it's greater than the threshold.
+>> + */
+>> +#if HPAGE_SIZE != PAGE_SIZE
+>> +#define MEMCG_ASYNC_LIMIT_THRESH      (HPAGE_SIZE * 64)
+>> +#define MEMCG_ASYNC_MARGIN         (HPAGE_SIZE * 4)
+>> +#else /* make the margin as 4M bytes */
+>> +#define MEMCG_ASYNC_LIMIT_THRESH      (128 * 1024 * 1024)
+>> +#define MEMCG_ASYNC_MARGIN            (8 * 1024 * 1024)
+>> +#endif
+>
+> Document them, please.  How are they used, what are their units.
+>
 
-Here is the crypto update for 2.6.40:
-
-* New Freescale SEC4/CAAM driver.
-* New S5PV210 advanced crypto engine driver.
-* Support for EMU chips on omap.
-* SHA-128/256 support for VIA Nano.
-* Native XTS/GHASH/CTR support on s390.
-* New test vector for AES-OFB.
-* Make aesni-intel build on 32-bit again.
-* SHA1 fixes for omap.
-* Bug fixes for mv_cesa.
-* AMD RNG support on Maple PPC boards.
-* Misc fixes.
+will do.
 
 
-Please pull from
+>> +static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem);
+>> +
+>> +/*
+>>   * The memory controller data structure. The memory controller controls both
+>>   * page cache and RSS per cgroup. We would eventually like to provide
+>>   * statistics based on the statistics developed by Rik Van Riel for clock-pro,
+>> @@ -278,6 +303,12 @@ struct mem_cgroup {
+>>        */
+>>       unsigned long   move_charge_at_immigrate;
+>>       /*
+>> +      * Checks for async reclaim.
+>> +      */
+>> +     unsigned long   async_flags;
+>> +#define AUTO_ASYNC_ENABLED   (0)
+>> +#define USE_AUTO_ASYNC               (1)
+>
+> These are really confusing.  I looked at the implementation and at the
+> documentation file and I'm still scratching my head.  I can't work out
+> why they exist.  With the amount of effort I put into it ;)
+>
+> Also, AUTO_ASYNC_ENABLED and USE_AUTO_ASYNC have practically the same
+> meaning, which doesn't help things.
+>
+Ah, yes it's confusing.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+> Some careful description at this place in the code might help clear
+> things up.
+>
+yes, I'll fix and add text, consider better name.
 
-or
+> Perhaps s/USE_AUTO_ASYNC/AUTO_ASYNC_IN_USE/ is what you meant.
+>
+Ah, good name :)
 
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+>>
+>> ...
+>>
+>> +static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem)
+>> +{
+>> +     if (!test_bit(USE_AUTO_ASYNC, &mem->async_flags))
+>> +             return;
+>> +     if (res_counter_margin(&mem->res) <= MEMCG_ASYNC_MARGIN) {
+>> +             /* Fill here */
+>> +     }
+>> +}
+>
+> I'd expect a function called foo_may_bar() to return a bool.
+>
+ok,
 
+> But given the lack of documentation and no-op implementation, I have o
+> idea what's happening here!
+>
+yes. Hmm, maybe adding an empty function here and comments on the
+function will make this better.
 
-Andy Lutomirski (1):
-      crypto: aesni-intel - Merge with fpu.ko
-
-Brilly Wu (1):
-      crypto: padlock - Add SHA-1/256 module for VIA Nano
-
-Dan Carpenter (2):
-      crypto: caam - dereferencing ERR_PTR on allocation failure
-      crypto: caam - ARRAY_SIZE() vs sizeof()
-
-Dmitry Eremin-Solenikov (2):
-      hwrng: amd - manage resource allocation
-      hwrng: amd - enable AMD hw rnd driver for Maple PPC boards
-
-Dmitry Kasatkin (3):
-      crypto: omap-sham - remove debug print
-      crypto: omap-sham - enable driver for EMU chips
-      crypto: omap-sham - hmac calculation bug fix for sha1 base hash
-
-Gerald Schaefer (3):
-      crypto: s390 - add System z hardware support for XTS mode
-      crypto: s390 - add System z hardware support for GHASH
-      crypto: s390 - add System z hardware support for CTR mode
-
-Jamie Iles (1):
-      crypto: picoxcell - fix possible status FIFO overflow
-
-Jan Glauber (4):
-      crypto: s390 - extend crypto facility check
-      crypto: s390 - cleanup DES code
-      crypto: s390 - cleanup s390 Kconfig options
-      crypto: tcrypt - CTR mode speed test for AES
-
-Julia Lawall (1):
-      crypto: caam - introduce missing kfree
-
-Kim Phillips (13):
-      crypto: caam - Add support for the Freescale SEC4/CAAM
-      crypto: caam - standardize device tree naming convention to utilize '-vX.Y'
-      crypto: caam - de-CHIP-ify device tree compatibles
-      crypto: caam - handle interrupt lines shared across rings
-      crypto: caam - fix queue interface detection
-      crypto: caam - remove WAIT-FOR-COMPLETIONs from givencrypt descriptor
-      crypto: caam - remove duplicate dev_err
-      crypto: caam - remove unused keylen from session context
-      crypto: caam - fix printk recursion for long error texts
-      crypto: caam - platform_bus_type migration
-      crypto: caam - fix decryption shared vs. non-shared key setting
-      crypto: caam - remove unused authkeylen from caam_ctx
-      crypto: caam - add support for sha512 variants of existing AEAD algorithms
-
-Markku Kylanpaa (1):
-      crypto: omap-sham - fix concurrent sha1 calculations
-
-Phil Sutter (10):
-      crypto: mv_cesa - use ablkcipher_request_cast instead of the manual container_of
-      crypto: mv_cesa - the descriptor pointer register needs to be set just once
-      crypto: mv_cesa - drop this call to mv_hash_final from mv_hash_finup
-      crypto: mv_cesa - print a warning when registration of AES algos fail
-      crypto: mv_cesa - no need to save digest state after the last chunk
-      crypto: mv_cesa - refactor copy_src_to_buf()
-      crypto: mv_cesa - fill inner/outer IV fields only in HMAC case
-      crypto: mv_cesa - move digest state initialisation to a better place
-      crypto: mv_cesa - copy remaining bytes to SRAM only when needed
-      crypto: mv_cesa - make count_sgs() null-pointer proof
-
-Puneet Saxena (1):
-      crypto: testmgr - add support for aes ofb mode
-
-Randy Dunlap (1):
-      crypto: aesni-intel - fix aesni build on i386
-
-Vladimir Zapolskiy (1):
-      crypto: s5p-sss - add S5PV210 advanced crypto engine support
-
- .../devicetree/bindings/crypto/fsl-sec4.txt        |  397 +++++
- arch/powerpc/boot/dts/p4080ds.dts                  |   86 +-
- arch/s390/crypto/Makefile                          |    1 +
- arch/s390/crypto/aes_s390.c                        |  383 +++++-
- arch/s390/crypto/crypt_s390.h                      |  112 ++-
- arch/s390/crypto/des_check_key.c                   |  132 --
- arch/s390/crypto/des_s390.c                        |  370 ++++--
- arch/s390/crypto/ghash_s390.c                      |  162 ++
- arch/s390/crypto/prng.c                            |    2 +-
- arch/s390/crypto/sha1_s390.c                       |    2 +-
- arch/s390/crypto/sha256_s390.c                     |    2 +-
- arch/s390/crypto/sha512_s390.c                     |    2 +-
- arch/x86/crypto/Makefile                           |    4 +-
- arch/x86/crypto/aesni-intel_glue.c                 |    9 +
- arch/x86/crypto/fpu.c                              |   10 +-
- crypto/Kconfig                                     |    6 -
- crypto/tcrypt.c                                    |    4 +
- crypto/testmgr.c                                   |   16 +
- crypto/testmgr.h                                   |   60 +
- drivers/char/hw_random/Kconfig                     |    2 +-
- drivers/char/hw_random/amd-rng.c                   |    9 +
- drivers/crypto/Kconfig                             |   65 +-
- drivers/crypto/Makefile                            |    2 +
- drivers/crypto/caam/Kconfig                        |   72 +
- drivers/crypto/caam/Makefile                       |    8 +
- drivers/crypto/caam/caamalg.c                      | 1268 ++++++++++++++++
- drivers/crypto/caam/compat.h                       |   35 +
- drivers/crypto/caam/ctrl.c                         |  269 ++++
- drivers/crypto/caam/desc.h                         | 1605 ++++++++++++++++++++
- drivers/crypto/caam/desc_constr.h                  |  205 +++
- drivers/crypto/caam/error.c                        |  248 +++
- drivers/crypto/caam/error.h                        |   11 +
- drivers/crypto/caam/intern.h                       |  113 ++
- drivers/crypto/caam/jr.c                           |  517 +++++++
- drivers/crypto/caam/jr.h                           |   21 +
- drivers/crypto/caam/regs.h                         |  663 ++++++++
- drivers/crypto/mv_cesa.c                           |   97 +-
- drivers/crypto/omap-sham.c                         |   78 +-
- drivers/crypto/padlock-sha.c                       |  269 ++++-
- drivers/crypto/picoxcell_crypto.c                  |   64 +-
- drivers/crypto/s5p-sss.c                           |  701 +++++++++
- 41 files changed, 7660 insertions(+), 422 deletions(-)
- 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Thank you for review.
+-Kame
