@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934757Ab1ETQCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 12:02:39 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61471 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757040Ab1ETQCh (ORCPT
+	id S934884Ab1ETQEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 12:04:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:46913 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934561Ab1ETQET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 12:02:37 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.116.29]
-In-Reply-To: <1305321990-22041-2-git-send-email-balbi@ti.com>
-References: <1305321990-22041-1-git-send-email-balbi@ti.com> <1305321990-22041-2-git-send-email-balbi@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 20 May 2011 19:02:15 +0300
-Message-ID: <BANLkTinsSuDj8vMYG-40aAw0UVwLDo2KDQ@mail.gmail.com>
-Subject: Re: [RFC/PATCH 01/13] net: wl12xx: sdio: id_tables should be __devinitconst
-To: Felipe Balbi <balbi@ti.com>
-Cc: Luciano Coelho <coelho@ti.com>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 May 2011 12:04:19 -0400
+X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=TwWXrjo8ZJIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=wdCznIBjWLcPp-_LeY0A:9 a=IVAUTcJEuc1kNFJeNfEA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+In-Reply-To: <4DD68EDF.4030301@linux.intel.com>
+References: <201105191526.31904.toralf.foerster@gmx.de>
+	 <201105192218.18261.toralf.foerster@gmx.de>
+	 <20110519204342.GA10792@home.goodmis.org>
+	 <201105200937.15322.toralf.foerster@gmx.de>
+	 <BANLkTik0oz6ppJvRpufaaiBL1pqcAxNHuA@mail.gmail.com>
+	 <4DD68EDF.4030301@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 20 May 2011 12:04:17 -0400
+Message-ID: <1305907458.1465.23.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 14, 2011 at 12:26 AM, Felipe Balbi <balbi@ti.com> wrote:
-> That's only needed during init anyway, let's free
-> some space after we're done probing.
+On Fri, 2011-05-20 at 08:55 -0700, Darren Hart wrote:
 
-sdio devices are dynamically created whenever the hw is plugged into
-the mmc slot by the user. that can happen anytime while the system is
-up, not only during init.
+> I suspect Toralf is hitting the WARN_ON in __unqueue_futex:
+> 
+> 	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
+> 			|| plist_node_empty(&q->list)))
+> 
+> Toralf, can you instrument that let us know which of conditions is
+> triggering the WARN_ON? Something like the following should be adequate
+> to get you the line number. I suspect it is plist_node_empty give the
+> git bisect results you reported.
+> 
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index abd5324..7f31bca 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -782,8 +782,11 @@ static void __unqueue_futex(struct futex_q *q)
+>  {
+>  	struct futex_hash_bucket *hb;
+> 
+> -	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
+> -			|| plist_node_empty(&q->list)))
+> +	if (WARN_ON(!q->lock_ptr))
+> +		return;
+> +	if (!spin_is_locked(q->lock_ptr))
+> +		return;
+> +	if (plist_node_empty(&q->list))
+>  		return;
+> 
 
-> -static const struct sdio_device_id wl1271_devices[] = {
-> +static const struct sdio_device_id wl1271_devices[] __devinitconst = {
+Wait! This is where we need the WARN_ON_SMP(), do we have that patch in?
 
-it looks to me that sdio_match_device is going to be surprised if
-->id_table won't be valid.
+I think UML is UP, and that spin_is_locked() will always return false.
 
-i wouldn't do this, unless you have a good explanation otherwise.
+-- Steve
+
+
