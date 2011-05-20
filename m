@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935639Ab1ETS7C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 14:59:02 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61048 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934808Ab1ETS7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 14:59:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,243,1304319600"; 
-   d="scan'208";a="4665951"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [git pull] pstore and ia64 changes
-Date: Fri, 20 May 2011 11:58:41 -0700
-Message-Id: <4dd6b9e1199552af9d@agluck-desktop.sc.intel.com>
+	id S935711Ab1ETTN1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 15:13:27 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37031 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935691Ab1ETTN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 15:13:26 -0400
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <jaxboe@fusionio.com> (commit_signer:24/34=71%),
+        Christoph Hellwig <hch@lst.de> (commit_signer:15/34=44%),
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com> (commit_signer:14/34=41%),
+        Andrew Morton <akpm@linux-foundation.org> (commit_signer:4/34=12%),
+        Dave Chinner <dchinner@redhat.com> (commit_signer:3/34=9%),
+        linux-mm@kvack.org (open list:MEMORY MANAGEMENT)
+Subject: [PATCH 1/8] mm: Kill set but not used var in  bdi_debug_stats_show()
+Date: Fri, 20 May 2011 16:12:58 -0300
+Message-Id: <1305918786-7239-1-git-send-email-padovan@profusion.mobi>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+---
+ mm/backing-dev.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-please pull from:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux-2.6.git release
-
-This will update the files shown below.
-
-Thanks!
-
--Tony
-
- arch/ia64/kernel/vmlinux.lds.S |    1 +
- arch/ia64/oprofile/backtrace.c |    2 +-
- drivers/acpi/apei/Kconfig      |    1 +
- drivers/acpi/apei/erst.c       |   61 +++++++++++++++++++++++++++++----------
- fs/pstore/platform.c           |   12 ++++++--
- include/linux/pstore.h         |    4 ++-
- 6 files changed, 60 insertions(+), 21 deletions(-)
-
-Chen Gong (3):
-      pstore: fix one type of return value in pstore
-      pstore: fix pstore filesystem mount/remount issue
-      pstore: fix potential logic issue in pstore read interface
-
-Tony Luck (3):
-      [IA64] fix build warning in arch/ia64/oprofile/backtrace.c
-      pstore: Fix Kconfig dependencies for apei->pstore
-      [IA64] define "_sdata" symbol
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index befc875..f032e6e 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -63,10 +63,10 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
+ 	unsigned long background_thresh;
+ 	unsigned long dirty_thresh;
+ 	unsigned long bdi_thresh;
+-	unsigned long nr_dirty, nr_io, nr_more_io, nr_wb;
++	unsigned long nr_dirty, nr_io, nr_more_io;
+ 	struct inode *inode;
+ 
+-	nr_wb = nr_dirty = nr_io = nr_more_io = 0;
++	nr_dirty = nr_io = nr_more_io = 0;
+ 	spin_lock(&inode_wb_list_lock);
+ 	list_for_each_entry(inode, &wb->b_dirty, i_wb_list)
+ 		nr_dirty++;
+-- 
+1.7.5.1
 
