@@ -1,124 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933873Ab1ETDiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:38:05 -0400
-Received: from mailhost.anl.gov ([130.202.113.50]:42379 "EHLO mailhost.anl.gov"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932101Ab1ETDiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:38:03 -0400
-Message-ID: <4DD5E218.5030508@mcs.anl.gov>
-Date: Thu, 19 May 2011 22:38:00 -0500
-From: Kazutomo Yoshii <kazutomo@mcs.anl.gov>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S934312Ab1ETDia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:38:30 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:59895 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934258Ab1ETDi0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 23:38:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=NFAvpnWHkwXecILxrymklAu++qfVxbPlW5SAS0DHBPUNO7vfEPqG5pw3h40KuiBRQr
+         9qgr4eZt/VoWkQF/hVJCpcizYEsvePb04kzAyQb2BLTeC3YcB6OE2ZQO8eOvs8FwAXwI
+         dX+tUaxvlE6cCPLDs+0u7H/nFj1SgVLwpi62Y=
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Eric Van Hensbergen <ericvh@gmail.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, bg-linux@lists.anl-external.org
-Subject: Re: [bg-linux] [PATCH 6/7] [RFC] enable early TLBs for BG/P
-References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>	<1305753895-24845-6-git-send-email-ericvh@gmail.com>	<1305851941.7481.92.camel@pasglop>	<BANLkTinAqeu7C+U_HFrOAOctFTuSUwG-iA@mail.gmail.com> <1305856442.7481.120.camel@pasglop>
-In-Reply-To: <1305856442.7481.120.camel@pasglop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4DD5DC06.6010204@jp.fujitsu.com>
+References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
+ <20110512054631.GI6008@one.firstfloor.org> <BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
+ <BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com> <20110514165346.GV6008@one.firstfloor.org>
+ <BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com> <20110514174333.GW6008@one.firstfloor.org>
+ <BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com> <20110515152747.GA25905@localhost>
+ <BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com> <20110517060001.GC24069@localhost>
+ <BANLkTi=TOm3aLQCD6j=4va6B+Jn2nSfwAg@mail.gmail.com> <BANLkTi=9W6-JXi94rZfTtTpAt3VUiY5fNw@mail.gmail.com>
+ <BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com> <BANLkTima0hPrPwe_x06afAh+zTi-bOcRMg@mail.gmail.com>
+ <BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com> <BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com>
+ <4DD5DC06.6010204@jp.fujitsu.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 19 May 2011 23:38:06 -0400
+X-Google-Sender-Auth: JeJ6MPa3stddr_HDxcThUvhAmtw
+Message-ID: <BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com>
+Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: minchan.kim@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
+        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
+        riel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2011 08:54 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2011-05-19 at 20:21 -0500, Eric Van Hensbergen wrote:
->    
->> On Thu, May 19, 2011 at 7:39 PM, Benjamin Herrenschmidt
->> <benh@kernel.crashing.org>  wrote:
->>      
->>> On Wed, 2011-05-18 at 16:24 -0500, Eric Van Hensbergen wrote:
->>>        
->>>> BG/P maps firmware with an early TLB
->>>>          
->>> That's a bit gross. How often do you call that firmware in practice ?
->>> Aren't you better off instead inserting a TLB entry for it when you call
->>> it instead ? A simple tlbsx. + tlbwe sequence would do. That would free
->>> up a TLB entry for normal use.
->>>
->>>        
->> Well, it depends on who you talk to.  The production software BG/P
->> guys use the firmware constantly, its the primary interface to the networks, the console,
->> and the management software which runs the machine.
->>      
-> Yuck.
->    
-
-Unfortunately, the firmware is also required:
-- to configure Blue Gene Interrupt Controller(BIC)
-- to configure Torus DMA unit. e.g. fifo
-- to configure global interrupt (even we don't use, we need to disable 
-some channel correctly)
-- to access node personality information (node id, DDR size, HZ, etc) or 
-maybe we can directly access SRAM?
-etc, etc.
-
->> As such the IO Node guys, the Compute Node Kernel guys and the
->> ZeptoOS guys use it quite a bit.  The kittyhawk guys on the other hand
->> barely use it at all, in fact I believe they do all the interaction with
->> it during uboot and then shut it off.
->>      
->    
-(I'm one of the ZeptoOS guys, btw)
-
-As a regular ppc linux usage, our firmware dependency is minimum as well.
-However,  with our HPC extension, the firmware functions are called when
-it configures BGP specific network hardware.
-
-We are not planning to submit our HPC extension here anytime soon
-because our work is very special purpose and includes lots of dirty hack 
-right now.
-
-Thanks,
-Kaz
-> I would prefer that approach.
->
->    
->> IIRC, the sticky question is RAS support, there are certain things it
->> wants to jump to firmware to deal with and expects things to be mapped
->> an pinned into memory.
+On Thu, May 19, 2011 at 11:12 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> Right after that happened, I hit ctrl-c to kill test_mempressure.sh.
+>> The system was OK until I typed sync, and then everything hung.
 >>
->> Furthermore, I think it may make assumptions about where in the TLB the
->> mappings are.
->>      
-> This is gross, especially on a system with only 64 SW loaded TLB
-> entries :-(
+>> I'm really confused.  shrink_inactive_list in
+>> RECLAIM_MODE_LUMPYRECLAIM will call one of the isolate_pages functions
+>> with ISOLATE_BOTH.  The resulting list goes into shrink_page_list,
+>> which does VM_BUG_ON(PageActive(page)).
+>>
+>> How is that supposed to work?
 >
->    
->> Since the kittyhawk guys
->> obviously ignore this by shutting it down, its not clear just how
->> important this is.  I'm game to
->> try the dynamic mapping as you suggest if you would prefer it.
->>      
-> I would yes, we can sort things out later for RAS.
+> Usually clear_active_flags() clear PG_active before calling
+> shrink_page_list().
 >
->    
->> Its worth mentioning that I believe with BG/Q, the plan is to rely on
->> the firmware even more extensively, but I haven't looked at any of the code yet to verify
->> whether or not this is true.
->>      
-> This is tantamount to linking a binary blob with the kernel ... it's a
-> fine line. At some point we might refuse the patches if they go too far
-> in that direction.
+> shrink_inactive_list()
+>    isolate_pages_global()
+>    update_isolated_counts()
+>        clear_active_flags()
+>    shrink_page_list()
 >
-> Cheers,
-> Ben.
 >
->    
->>       -eric
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>      
->
-> _______________________________________________
-> bg-linux mailing list
-> bg-linux@lists.anl-external.org
-> https://lists.anl-external.org/mailman/listinfo/bg-linux
-> http://bg-linux.anl-external.org/wiki
->    
 
+That makes sense.  And I have CONFIG_COMPACTION=y, so the lumpy mode
+doesn't get set anyway.
+
+But the pages I'm seeing have flags=100000000008005D.  If I'm reading
+it right, that means locked,referenced,uptodate,dirty,active.  How
+does a page like that end up in shrink_page_list?  I don't see how a
+page that's !PageLRU can get marked Active.  Nonetheless, I'm hitting
+that VM_BUG_ON.
+
+Is there a race somewhere?
+
+--Andy
