@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934281Ab1ETAA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:00:29 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:55295 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756025Ab1ETAA0 (ORCPT
+	id S1755880Ab1ETAFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:05:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44743 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752572Ab1ETAFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:00:26 -0400
-X-Sasl-enc: mldStyBcKx7a+Nm/rbVm+9/6D0nVMejQT5GG+yJ5tNZk 1305849625
-Date: Thu, 19 May 2011 17:00:13 -0700
-From: Greg KH <greg@kroah.com>
-To: matt mooney <mfm@muteddisk.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] staging: usbip: replace usbip_u{dbg,err,info} and printk
- with dev_ and pr_
-Message-ID: <20110520000013.GA8908@kroah.com>
-References: <2db81796703063c0816d0d99040c6fbd6da50007.1305847719.git.mfm@muteddisk.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2db81796703063c0816d0d99040c6fbd6da50007.1305847719.git.mfm@muteddisk.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 May 2011 20:05:19 -0400
+Date: Thu, 19 May 2011 17:04:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: David Rientjes <rientjes@google.com>, ian.campbell@citrix.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
+        wdauchy@gmail.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH V3 2/2] mm: Extend memory hotplug API to allow memory
+ hotplug in virtual machines
+Message-Id: <20110519170446.477b39ba.akpm@linux-foundation.org>
+In-Reply-To: <20110519232520.GB28832@router-fw-old.local.net-space.pl>
+References: <20110517213858.GC30232@router-fw-old.local.net-space.pl>
+	<alpine.DEB.2.00.1105182026390.20651@chino.kir.corp.google.com>
+	<20110519204509.GD27202@router-fw-old.local.net-space.pl>
+	<20110519160143.02163f36.akpm@linux-foundation.org>
+	<20110519232520.GB28832@router-fw-old.local.net-space.pl>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 04:47:32PM -0700, matt mooney wrote:
-> This switches all of the usbip_u{dbg,err,info} and printk statements to
-> dev_<level>, if possible, or pr_<level> macros. And removes a few
-> unnecessary debug statements.
+On Fri, 20 May 2011 01:25:20 +0200 Daniel Kiper <dkiper@net-space.pl> wrote:
+
+> On Thu, May 19, 2011 at 04:01:43PM -0700, Andrew Morton wrote:
+> > On Thu, 19 May 2011 22:45:09 +0200
+> > Daniel Kiper <dkiper@net-space.pl> wrote:
+> >
+> > > On Wed, May 18, 2011 at 08:36:02PM -0700, David Rientjes wrote:
+> > > > On Tue, 17 May 2011, Daniel Kiper wrote:
+> > > >
+> > > > > This patch contains online_page_callback and apropriate functions for
+> > > > > setting/restoring online page callbacks. It allows to do some machine
+> > > > > specific tasks during online page stage which is required to implement
+> > > > > memory hotplug in virtual machines. Additionally, __online_page_set_limits(),
+> > > > > __online_page_increment_counters() and __online_page_free() function
+> > > > > was added to ease generic hotplug operation.
+> > > >
+> > > > There are several issues with this.
+> > > >
+> > > > First, this is completely racy and only allows one global callback to be
+> > > > in use at a time without looping, which is probably why you had to pass an
+> > >
+> > > One callback is allowed by design. Currently I do not see
+> > > any real usage for more than one callback.
+> >
+> > I'd suggest that you try using the notifier.h tools here and remove the
+> > restriction.  Sure, we may never use the capability but I expect the
+> > code will look nice and simple and once it's done, it's done.
 > 
-> Signed-off-by: matt mooney <mfm@muteddisk.com>
-> ---
-> Hi Greg,
-> 
-> Not as many of these could be changed to dev_* as I had initially
-> thought. A few were not changed to dev_* that could have possibly been
-> due to the struct device being deeply embedded within another
-> structure. I did not want to introduce any null pointer deferences, so
-> I played it safe for the time being. But as development continues I
-> will modify these.
+> Hmmm... I am a bit confused. Here https://lkml.org/lkml/2011/3/28/510 you
+> was against (ab)using notifiers. Here https://lkml.org/lkml/2011/3/29/313
+> you proposed currently implemented solution. Maybe I missed something...
+> What should I do now ??? I agree that the code should look nice and simple
+> and once it's done, it's done.
 
-Ok, that's fine.
+Oh, OK, the callback's role is to free a page, so there's no sens in
+there ever being more than a single registered callback.
 
-> I also wonder if anybody is currently using usbip because I get a kernel
-> crash on the remote side everytime I try to attach an exported device.
-> Of course, I am running the remote and host machines through kvm, but I
-> don't think that should make a difference. Anyway, I thought you should
-> know so that if this comes up, you know that it was in this state before
-> any of my changes ;)
-
-I have gotten a few reports of it not working right now, but no one
-stepped up and debugged it.
-
-If you could do that now, that would be great, as it would be nice to
-have a working base to go off of :)
-
-Also, the merge window for the .40 tree for the staging tree is now
-closed, so I'll only take bugfixes for the usbip code for now.
-
-thanks,
-
-greg k-h
