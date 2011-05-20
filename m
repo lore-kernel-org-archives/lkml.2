@@ -1,175 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935206Ab1ETDz1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:55:27 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38069 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933275Ab1ETDz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:55:26 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 20 May 2011 12:48:37 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, hannes@cmpxchg.org,
-        Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [PATCH 8/8] memcg asyncrhouns reclaim workqueue
-Message-Id: <20110520124837.72978344.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S935024Ab1ETDwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:52:35 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57121 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933275Ab1ETDwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 23:52:34 -0400
+Subject: Re: [bg-linux] [PATCH 6/7] [RFC] enable early TLBs for BG/P
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Kazutomo Yoshii <kazutomo@mcs.anl.gov>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, bg-linux@lists.anl-external.org
+In-Reply-To: <4DD5E218.5030508@mcs.anl.gov>
+References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
+	 <1305753895-24845-6-git-send-email-ericvh@gmail.com>
+	 <1305851941.7481.92.camel@pasglop>
+	 <BANLkTinAqeu7C+U_HFrOAOctFTuSUwG-iA@mail.gmail.com>
+	 <1305856442.7481.120.camel@pasglop>  <4DD5E218.5030508@mcs.anl.gov>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 May 2011 13:52:21 +1000
+Message-ID: <1305863541.7481.132.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-workqueue for memory cgroup asynchronous memory shrinker.
+> Unfortunately, the firmware is also required:
+> - to configure Blue Gene Interrupt Controller(BIC)
 
-This patch implements the workqueue of async shrinker routine. each
-memcg has a work and only one work can be scheduled at the same time.
+Can't we just write bare metal code for that ?
 
-If shrinking memory doesn't goes well, delay will be added to the work.
+> - to configure Torus DMA unit. e.g. fifo
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   84 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 81 insertions(+), 3 deletions(-)
+Same
 
-Index: mmotm-May11/mm/memcontrol.c
-===================================================================
---- mmotm-May11.orig/mm/memcontrol.c
-+++ mmotm-May11/mm/memcontrol.c
-@@ -302,12 +302,17 @@ struct mem_cgroup {
- 	 * mem_cgroup ? And what type of charges should we move ?
- 	 */
- 	unsigned long 	move_charge_at_immigrate;
-+
-+	/* For asynchronous memory reclaim */
-+	struct delayed_work	async_work;
- 	/*
-  	 * Checks for async reclaim.
-  	 */
- 	unsigned long	async_flags;
- #define AUTO_ASYNC_ENABLED	(0)
- #define USE_AUTO_ASYNC		(1)
-+#define ASYNC_NORESCHED		(2)	/* need to stop scanning */
-+#define ASYNC_RUNNING		(3)	/* a work is in schedule or running. */
- 	/*
- 	 * percpu counter.
- 	 */
-@@ -3647,6 +3652,78 @@ unsigned long mem_cgroup_soft_limit_recl
- 	return nr_reclaimed;
- }
- 
-+struct workqueue_struct *memcg_async_shrinker;
-+
-+static int memcg_async_shrinker_init(void)
-+{
-+	memcg_async_shrinker = alloc_workqueue("memcg_async",
-+				WQ_MEM_RECLAIM | WQ_UNBOUND | WQ_FREEZABLE, 0);
-+	return 0;
-+}
-+module_init(memcg_async_shrinker_init);
-+
-+static void mem_cgroup_async_shrink(struct work_struct *work)
-+{
-+	struct delayed_work *dw = to_delayed_work(work);
-+	struct mem_cgroup *mem = container_of(dw,
-+			struct mem_cgroup, async_work);
-+	bool congested = false;
-+	int delay = 0;
-+	unsigned long long required, usage, limit, shrink_to;
-+
-+	limit = res_counter_read_u64(&mem->res, RES_LIMIT);
-+	shrink_to = limit - MEMCG_ASYNC_MARGIN - PAGE_SIZE;
-+	usage = res_counter_read_u64(&mem->res, RES_USAGE);
-+	if (shrink_to <= usage) {
-+		required = usage - shrink_to;
-+		required = (required >> PAGE_SHIFT) + 1;
-+		/*
-+		 * This scans some number of pages and returns that memory
-+		 * reclaim was slow or now. If slow, we add a delay as
-+		 * congestion_wait() in vmscan.c
-+		 */
-+		congested = mem_cgroup_shrink_static_scan(mem, (long)required);
-+	}
-+	if (test_bit(ASYNC_NORESCHED, &mem->async_flags)
-+	    || mem_cgroup_async_should_stop(mem))
-+		goto finish_scan;
-+	/* If memory reclaim couldn't go well, add delay */
-+	if (congested)
-+		delay = HZ/10;
-+
-+	queue_delayed_work(memcg_async_shrinker, &mem->async_work, delay);
-+	return;
-+finish_scan:
-+	cgroup_release_and_wakeup_rmdir(&mem->css);
-+	clear_bit(ASYNC_RUNNING, &mem->async_flags);
-+	return;
-+}
-+
-+static void run_mem_cgroup_async_shrinker(struct mem_cgroup *mem)
-+{
-+	if (test_bit(ASYNC_NORESCHED, &mem->async_flags))
-+		return;
-+	if (test_and_set_bit(ASYNC_RUNNING, &mem->async_flags))
-+		return;
-+	cgroup_exclude_rmdir(&mem->css);
-+	/*
-+	 * start reclaim with small delay. This delay will allow us to do job
-+	 * in batch.
-+	 */
-+	if (!queue_delayed_work(memcg_async_shrinker, &mem->async_work, 1)) {
-+		cgroup_release_and_wakeup_rmdir(&mem->css);
-+		clear_bit(ASYNC_RUNNING, &mem->async_flags);
-+	}
-+	return;
-+}
-+
-+static void stop_mem_cgroup_async_shrinker(struct mem_cgroup *mem)
-+{
-+	set_bit(ASYNC_NORESCHED, &mem->async_flags);
-+	flush_delayed_work(&mem->async_work);
-+	clear_bit(ASYNC_NORESCHED, &mem->async_flags);
-+}
-+
- bool mem_cgroup_async_should_stop(struct mem_cgroup *mem)
- {
- 	return res_counter_margin(&mem->res) >= MEMCG_ASYNC_MARGIN;
-@@ -3656,9 +3733,8 @@ static void mem_cgroup_may_async_reclaim
- {
- 	if (!test_bit(USE_AUTO_ASYNC, &mem->async_flags))
- 		return;
--	if (res_counter_margin(&mem->res) <= MEMCG_ASYNC_MARGIN) {
--		/* Fill here */
--	}
-+	if (res_counter_margin(&mem->res) <= MEMCG_ASYNC_MARGIN)
-+		run_mem_cgroup_async_shrinker(mem);
- }
- 
- /*
-@@ -3743,6 +3819,7 @@ move_account:
- 		if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
- 			goto out;
- 		ret = -EINTR;
-+		stop_mem_cgroup_async_shrinker(mem);
- 		if (signal_pending(current))
- 			goto out;
- 		/* This is for making all *used* pages to be on LRU. */
-@@ -4941,6 +5018,7 @@ mem_cgroup_create(struct cgroup_subsys *
- 		mem->swappiness = mem_cgroup_swappiness(parent);
- 	atomic_set(&mem->refcnt, 1);
- 	mem->move_charge_at_immigrate = 0;
-+	INIT_DELAYED_WORK(&mem->async_work, mem_cgroup_async_shrink);
- 	mutex_init(&mem->thresholds_lock);
- 	return &mem->css;
- free_out:
+> - to configure global interrupt (even we don't use, we need to disable 
+> some channel correctly)
+
+Same
+
+> - to access node personality information (node id, DDR size, HZ, etc) or 
+> maybe we can directly access SRAM?
+
+That should be turned into device-tree at boot, possibly from a
+bootloader or from the zImage wrapper.
+
+> etc, etc.
+> 
+> >> As such the IO Node guys, the Compute Node Kernel guys and the
+> >> ZeptoOS guys use it quite a bit.  The kittyhawk guys on the other hand
+> >> barely use it at all, in fact I believe they do all the interaction with
+> >> it during uboot and then shut it off.
+> >>      
+> >    
+> (I'm one of the ZeptoOS guys, btw)
+
+Heh ok.
+
+> As a regular ppc linux usage, our firmware dependency is minimum as well.
+> However,  with our HPC extension, the firmware functions are called when
+> it configures BGP specific network hardware.
+> 
+> We are not planning to submit our HPC extension here anytime soon
+> because our work is very special purpose and includes lots of dirty hack 
+> right now.
+
+Ok.
+
+Cheers,
+Ben.
+
+> Thanks,
+> Kaz
+> > I would prefer that approach.
+> >
+> >    
+> >> IIRC, the sticky question is RAS support, there are certain things it
+> >> wants to jump to firmware to deal with and expects things to be mapped
+> >> an pinned into memory.
+> >>
+> >> Furthermore, I think it may make assumptions about where in the TLB the
+> >> mappings are.
+> >>      
+> > This is gross, especially on a system with only 64 SW loaded TLB
+> > entries :-(
+> >
+> >    
+> >> Since the kittyhawk guys
+> >> obviously ignore this by shutting it down, its not clear just how
+> >> important this is.  I'm game to
+> >> try the dynamic mapping as you suggest if you would prefer it.
+> >>      
+> > I would yes, we can sort things out later for RAS.
+> >
+> >    
+> >> Its worth mentioning that I believe with BG/Q, the plan is to rely on
+> >> the firmware even more extensively, but I haven't looked at any of the code yet to verify
+> >> whether or not this is true.
+> >>      
+> > This is tantamount to linking a binary blob with the kernel ... it's a
+> > fine line. At some point we might refuse the patches if they go too far
+> > in that direction.
+> >
+> > Cheers,
+> > Ben.
+> >
+> >    
+> >>       -eric
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> >>      
+> >
+> > _______________________________________________
+> > bg-linux mailing list
+> > bg-linux@lists.anl-external.org
+> > https://lists.anl-external.org/mailman/listinfo/bg-linux
+> > http://bg-linux.anl-external.org/wiki
+> >    
+
 
