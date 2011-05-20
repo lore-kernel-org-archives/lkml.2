@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab1ETCnU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 22:43:20 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63042 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756682Ab1ETCnT (ORCPT
+	id S932291Ab1ETDDW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:03:22 -0400
+Received: from hades.mikemestnik.net ([184.106.158.151]:46083 "EHLO
+	hades.mikemestnik.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757088Ab1ETDDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 22:43:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=x3/884PM4RoWgWYGeZ6t4hsUthPQHIuofH7MJYniprALmoTHLCX2ZOeC3h9zqNxLnY
-         f6qqjMadxGlUndrv4AJUfRHWLaG+kkabaph3cpYWnph+ETlk63QEkjf8hKmO2jwJtuTu
-         /xxK2BodqUwr+1jQEmI7e7NDB1N7tdB11A1uo=
-Subject: [PATCH] block: reduce spin_lock critical region
-From: Eduardo Silva <edsiper@gmail.com>
-To: Mike Miller <mike.miller@hp.com>
-Cc: iss_storagedev@hp.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 May 2011 22:43:09 -0400
-Message-ID: <1305859389.1763.1.camel@monotop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Thu, 19 May 2011 23:03:21 -0400
+X-Greylist: delayed 547 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 May 2011 23:03:21 EDT
+Message-ID: <4DD5D7D3.2050801@mikemestnik.net>
+Date: Thu, 19 May 2011 21:54:11 -0500
+From: Mike Mestnik <cheako@mikemestnik.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Fwd: Re: World writable pid and lock files.
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the critical region is originally composed by a conditional plus
-a memory copy, the memory copy routine don't need protection.
-Moving the memcpy() outside the conditional also help to fix the
-16 compiler warning messages generated in __u8 sn[16] def.
+Hello,
+  I'd just like to ask about /proc/$$/exe and it's potential use for pid
+to application mapping for daemon stop/restart scripts.  It's also a
+little odd to think that it might not be suitable for debuggers, for
+example "gdb /proc/1234/exe 1234".  I believe that it currently
+functions for daemon stop/restart scripts because the script matches the
+device/inode numbers against the path it would execute.  As long as
+there is a file in this location, any file, the test would pass. 
+However as my test demonstrates if there was no file at that location
+the test would fail.
 
-Signed-off-by: Eduardo Silva <edsiper@gmail.com>
----
- drivers/block/cciss.c |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
+It works, but it's also broken...  or maybe it isn't?  What do I know. 
+I received no response to my posting to debian-security and I believe
+this merits some discussion.  I understand that this has vary little to
+do with the Linux kernel and is instead a distribution issue, however
+I'd like clarification of the purpose and correct usage of /proc/$$/exe.
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 9bf1398..199b35e 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -621,20 +621,19 @@ static ssize_t dev_show_unique_id(struct device *dev,
- 	spin_lock_irqsave(&h->lock, flags);
- 	if (h->busy_configuring)
- 		ret = -EBUSY;
--	else
--		memcpy(sn, drv->serial_no, sizeof(sn));
- 	spin_unlock_irqrestore(&h->lock, flags);
- 
- 	if (ret)
- 		return ret;
--	else
--		return snprintf(buf, 16 * 2 + 2,
--				"%02X%02X%02X%02X%02X%02X%02X%02X"
--				"%02X%02X%02X%02X%02X%02X%02X%02X\n",
--				sn[0], sn[1], sn[2], sn[3],
--				sn[4], sn[5], sn[6], sn[7],
--				sn[8], sn[9], sn[10], sn[11],
--				sn[12], sn[13], sn[14], sn[15]);
-+
-+	memcpy(sn, drv->serial_no, sizeof(sn));
-+	return snprintf(buf, 16 * 2 + 2,
-+			"%02X%02X%02X%02X%02X%02X%02X%02X"
-+			"%02X%02X%02X%02X%02X%02X%02X%02X\n",
-+			sn[0], sn[1], sn[2], sn[3],
-+			sn[4], sn[5], sn[6], sn[7],
-+			sn[8], sn[9], sn[10], sn[11],
-+			sn[12], sn[13], sn[14], sn[15]);
- }
- static DEVICE_ATTR(unique_id, S_IRUGO, dev_show_unique_id, NULL);
- 
--- 
-1.7.4.1
+-------- Original Message --------
+Subject: 	Re: World writable pid and lock files.
+Resent-Date: 	Sun, 15 May 2011 18:00:25 +0000 (UTC)
+Resent-From: 	debian-security@lists.debian.org
+Date: 	Sun, 15 May 2011 12:44:11 -0500
+From: 	Mike Mestnik <cheako@mikemestnik.net>
+To: 	Henrique de Moraes Holschuh <hmh@debian.org>,
+debian-security@lists.debian.org
+
+
+
+Henrique de Moraes Holschuh wrote:
+> You know, it would help if you actually read what you replied to.
+>
+>   
+start-stop-daemon(8) says
+/proc/pid/exe is used.  On my system that is a symbolic link.  What I 
+wold do if I was to write start-stop-daemon is read the link and match 
+that value with the name passed to --exec.  This would have nothing to do
+with inode numbers.  However start-stop-daemon might look at the inode 
+number of the dereferenced link and match that to the inode number of 
+the name passed to --exec.  This should also match, though there is a 
+race condition here.  I'm a bit confused as /proc/pid/exe should be 
+usable for debuggers like gdb.
+
+cheako@www:~$ cp /bin/bash .
+cheako@www:~$ ./bash
+cheako@www:~$ ls -arlt /proc/$$/exe
+lrwxrwxrwx 1 cheako cheako 0 May 15 12:42 /proc/30288/exe -> 
+/home/cheako/bash
+cheako@www:~$ rm bash
+cheako@www:~$ ls -arlt /proc/$$/exe
+lrwxrwxrwx 1 cheako cheako 0 May 15 12:42 /proc/30288/exe -> 
+/home/cheako/bash (deleted)
+
+So /proc/$$/exe has some implementation issues.
 
 
 
