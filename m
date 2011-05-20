@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935389Ab1ETIyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 04:54:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57300 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934991Ab1ETIyJ (ORCPT
+	id S935407Ab1ETI43 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 04:56:29 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:59962 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933897Ab1ETI40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 04:54:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=szeredi.hu; s=google;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=Ape04pPXBxhWBR2tNAZ2i5dh/0wyTJZqaJuod7dotHMB6K84hJN2TwUmBfkhXPTYs5
-         Z+McZDFhIwfZCTQHpyaApT93p1fZxfZyQiP5kSixHie2r6dtRk51kYLA1OSEcxXwiFdo
-         R/0c3E4omKQoR1LWM6sEsFvOGRncCtZ7fghYE=
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Erez Zadok <ezk@fsl.cs.sunysb.edu>
-Cc: "viro\@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "apw\@canonical.com" <apw@canonical.com>,
-        "nbd\@openwrt.org" <nbd@openwrt.org>, "neilb\@suse.de" <neilb@suse.de>,
-        "hramrach\@centrum.cz" <hramrach@centrum.cz>,
-        "jordipujolp\@gmail.com" <jordipujolp@gmail.com>
-Subject: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
-References: <1305635452-14835-1-git-send-email-miklos@szeredi.hu>
-	<103d3f78e2d3478d8bb93f5dda3a4a08@HUBCAS1.cs.stonybrook.edu>
-	<D8301738-5094-4666-8C4D-E26425F1AD66@fsl.cs.sunysb.edu>
-Date: Fri, 20 May 2011 10:54:21 +0200
-In-Reply-To: <D8301738-5094-4666-8C4D-E26425F1AD66@fsl.cs.sunysb.edu> (Erez
-	Zadok's message of "Fri, 20 May 2011 01:39:37 -0400")
-Message-ID: <87wrhlah1e.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Fri, 20 May 2011 04:56:26 -0400
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+Date: Fri, 20 May 2011 09:56:22 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-28-generic; KDE/4.6.2; x86_64; ; )
+Cc: Tejun Heo <tj@kernel.org>, oleg@redhat.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <201105200000.18310.pedro@codesourcery.com> <201105200344.44520.vda.linux@googlemail.com>
+In-Reply-To: <201105200344.44520.vda.linux@googlemail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105200956.23320.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Erez Zadok <ezk@fsl.cs.sunysb.edu> writes:
+On Friday 20 May 2011 02:44:44, Denys Vlasenko wrote:
+> > > > In GDBs case, GDB will want to poke at memory
+> > > > right after attaching
+> > > 
+> > > ...where "right after attaching" is defined as "when the first ptrace-stop
+> > > is reported". Which will happen very soon.
+> > 
+> > Hmm?  Why would it happen very soon?
+> > Isn't the point of SEIZE not 
+> > interrupting that you'd not get any INTERRUPT or stop at all?
+> > Where is the ptrace-stop coming from?
+> 
+> From PTRACE_INTERRUPT. Without it, tracee is running. 
 
-> I tried your overlayfs.v9 git repo w/ racer, using two separate ext3
-> filesystems (one for lowerdir and another for upperdir).  I got the
-> WARN_ON in ovl_permission to trigger within about 10 minutes of
-> testing.  Looking at the code, I see a problem in returning w/o
-> cleaning up an dput-ing the alias dentry.  Simple patch enclosed
-> below.
+> Ptrace API never allowed poking of running tracees.
 
-Hmm, thanks.  The more interesting question is: why does that WARN_ON
-trigger?  I'll look into it.
+Which is a bit lame.
 
-Thanks,
-Miklos
+> You need to stop it first.
+
+That was my point...  I was just pointing out that GDB will end
+up PTRACE_INTERRUPTing the target anyway.  Maybe we could extend
+GDB's "observer" mode to be even more observer-only, and delay
+reading the DSO list and whatever else GDB does on attach until
+the first stop, or to user request.  Some archs need reading
+registers as soon as possible in order to actually know which
+arch variant we've attached to.  Anyway, this is GDBs business.
+SEIZE not interrupting won't hurt GDB, and is obviously useful for
+some use cases and tracers, _provided the race with SETOPTS is fixed_.
+
+-- 
+Pedro Alves
