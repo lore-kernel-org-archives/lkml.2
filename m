@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933391Ab1ETNEc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:04:32 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:53544 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932176Ab1ETNEa (ORCPT
+	id S1755934Ab1ETNHA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:07:00 -0400
+Received: from igw2.watson.ibm.com ([129.34.20.6]:58003 "EHLO
+	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab1ETNG6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:04:30 -0400
-X-Sasl-enc: HcJMGgHECzHqsRvgRtOuXomc0T2b3D31LAnQGjv5VHVD 1305896669
-Date: Fri, 20 May 2011 06:05:27 -0700
-From: Greg KH <greg@kroah.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Subject: Re: vmbus driver
-Message-ID: <20110520130527.GB10033@kroah.com>
-References: <1305842785-30206-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305842785-30206-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 May 2011 09:06:58 -0400
+Subject: Re: [PATCH v5 00/21] EVM
+From: David Safford <safford@watson.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <1305853626.2528.50.camel@localhost.localdomain>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <20110518172552.6d482c7a.akpm@linux-foundation.org>
+	 <1305769890.3304.90.camel@localhost.localdomain>
+	 <alpine.LRH.2.00.1105201041000.28923@tundra.namei.org>
+	 <1305853626.2528.50.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 20 May 2011 09:06:11 -0400
+Message-ID: <1305896771.15245.11.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 03:06:25PM -0700, K. Y. Srinivasan wrote:
->  
-> Greg,
+On Thu, 2011-05-19 at 21:07 -0400, Mimi Zohar wrote:
+> On Fri, 2011-05-20 at 10:51 +1000, James Morris wrote:
+> > On Wed, 18 May 2011, Mimi Zohar wrote:
+> > 
+> > > > Once we have a better understanding of what the feature does and why it
+> > > > does it and how it interfaces with the user, we can start looking at
+> > > > the implementation.
+> > > 
+> > > Much appreciated!
+> > 
+> > What is the status of potential users of the feature?
+> > 
+> > I recall that MeeGo were planning to use EVM, but they've since changed 
+> > their security plans.  Do they still plan to use it?  Are any other users 
+> > committing to use EVM?
+> > 
+> > Also -- this was raised some time back, but I can't find the discussion -- 
+> > what does IMA/EVM provide over disk encryption as a protection against 
+> > offline attacks?
+> > 
+> > - James
 > 
-> A few days ago you applied all the outstanding patches for the Hyper-V
-> drivers. With these patches, I have addressed all of the known review 
-> comments for the  vmbus driver (and a lot of comments/issues in other
-> drivers as well). I am still hoping I can address 
-> whatever other issues/comments there might be with the intention to 
-> get the vmbus driver out of staging in the current window. What is your 
-> sense in terms of how feasible this is. From my side, I can assure you 
-> that I will address all legitimate issues in a very timely manner and this
-> will not be dependent upon the location of the drivers (staging or 
-> outside staging). Looking forward to hearing from you.
+> Dave Safford's whitepaper discusses this.
+> http://downloads.sf.net/project/linux-ima/linux-ima/Integrity_overview.pdf
+> 
+> Mimi
 
-The merge window is closed now, and I'm on the road in asia for about 3
-weeks, so doing this, at this point in the development cycle, is going
-to be hard.
+The short answer is that encryption provides confidentiality, but does
+not provide integrity, authenticity, or immutability. 
 
-I'll go review the bus code again after the code is all merged with
-Linus, which should take a week or so depending on my schedule, and let
-you know what's left to do (I think there still is something wierd with
-the way the hv_driver is structured, but I could be wrong.)
+The easiest way to think about it is to consider a one time pad, which
+provides perfect confidentiality, but is trivially bit-twiddled. Yes,
+AES is better in this respect, and encrypted file systems can combine
+integrity (as long as you encrypt-then-authenticate), but usually they
+don't. 
 
-In the mean time, I'm sure the block and network driver still need a lot
-of work, and merging the bus code doesn't make much sense without them
-as a user as that is what people really want to use, so you can continue
-to work on them.
+If you want policy driven integrity, authenticity, and immutability,
+(and we have two IBM customers wanting them this year), then you want
+the combination IMA, IMA-Appraisal, EVM, and Dmitry's digital signature
+extensions.
 
-thanks,
-
-greg k-h
+dave
