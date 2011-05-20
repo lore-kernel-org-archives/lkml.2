@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934569Ab1ETOBa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:01:30 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:45370 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933765Ab1ETOB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:01:27 -0400
-Date: Fri, 20 May 2011 07:00:45 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-        Dajun Chen <Dajun.Chen@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCHv3 6/11] HWMON: Fixed point conversion gives linktime
- error
-Message-ID: <20110520140045.GC23076@ericsson.com>
-References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BDC3D33@KCINPUNHJCMS01.kpit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BDC3D33@KCINPUNHJCMS01.kpit.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934463Ab1ETOCh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:02:37 -0400
+Received: from mail201c2.megamailservers.com ([69.49.111.102]:57975 "EHLO
+	mail201c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933407Ab1ETOCf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 10:02:35 -0400
+X-POP-User: ekergarn.gaisler.com
+From: Daniel Hellstrom <daniel@gaisler.com>
+To: davem@davemloft.net
+Cc: sparclinux@vger.kernel.org, sfr@canb.auug.org.au, peterz@infradead.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] Fix merge problem between sparc32 IPI patches and schedule_ipi() callback
+Date: Fri, 20 May 2011 16:01:09 +0200
+Message-Id: <1305900070-23492-1-git-send-email-daniel@gaisler.com>
+X-Mailer: git-send-email 1.5.4
+X-CSC: 0
+X-CHA: v=1.1 cv=Ma2F9VxktdrohpwE1Ldo3j5zboDzDSax3kyf6Hawm04= c=1 sm=1
+		a=2QoJ5Ut_8lUA:10 a=U62ajLuCel8A:10 a=jXKJviUpWSOlMmIvGrHOfw==:17
+		a=ebG-ZW-8AAAA:8 a=Ity87KJWW3mdQWvLj-MA:9 a=tPjFfGPRH6rT9vyXfKUA:7
+		a=cCYF7-FHeg4A:10 a=jXKJviUpWSOlMmIvGrHOfw==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 06:57:18AM -0400, Ashish Jangam wrote:
-> Hi,
-> 
-> As requested approximation of battery temperature calculation with fixed point conversion is tried but it causes couple of link time errors, like undefined reference to __aeabi_i2d at sprintf(). Have a look at the function da9052_read_tbat(); we feel that this function should not be supported else there will be a prerequisite to the support the required floating point library. Enabling FPE_NWFPE support in the kernel gives the same link time errors.
-> 
-You have defined
+Fixes a merge conflict in arch/sparc/kernel/smp_32.c between commit
+d6d048192b1d ("sparc32: implement SMP IPIs using the generic functions")
+from the sparc tree and commit 184748cc50b2 ("sched: Provide
+scheduler_ipi() callback in response to smp_send_reschedule()").
 
-#define LOGN2          0.693147181
+The patch adds a call to scheduler_ipi() from the resched IPI handler in
+sparc32.
 
-and use it, which makes the entire calculation a floating point calculation
-and defeats the purpose. The idea would have been to define something like 
+Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
+---
+ arch/sparc/kernel/smp_32.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-#define CAL_LOG2(nr)	((int)((ilog2(nr) - ilog2(100)) * 693147181LL / 1000000000LL))
+diff --git a/arch/sparc/kernel/smp_32.c b/arch/sparc/kernel/smp_32.c
+index 41102c5..d5b3958 100644
+--- a/arch/sparc/kernel/smp_32.c
++++ b/arch/sparc/kernel/smp_32.c
+@@ -156,11 +156,11 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+ 
+ void smp_resched_interrupt(void)
+ {
++	irq_enter();
++	scheduler_ipi();
+ 	local_cpu_data().irq_resched_count++;
+-	/*
+-	 * do nothing, since it all was about calling re-schedule
+-	 * routine called by interrupt return code.
+-	 */
++	irq_exit();
++	/* re-schedule routine called by interrupt return code. */
+ }
+ 
+ void smp_call_function_single_interrupt(void)
+-- 
+1.6.0.3
 
-Also, there is no need for rounding, say, 0.003355705 to 0.0034, or 2.5 to 3.
-Add a few digits, like above, and remove them afterwards.
-
-	x * 2.5 = x * 5 / 2.
-	x * 33.55705 = x * 3355705 / 100000
-
-Just be careful that you don't get overflows.
-
-Guenter
