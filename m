@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441Ab1ETGch (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 02:32:37 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41934 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933024Ab1ETGcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 02:32:35 -0400
-Date: Fri, 20 May 2011 16:32:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20110520163233.abcabd67.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933484Ab1ETGfv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 02:35:51 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:49793 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933375Ab1ETGfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 02:35:50 -0400
+Date: Fri, 20 May 2011 07:34:19 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
+        "JamesE.J.Bottomley" <jejb@parisc-linux.org>
+Subject: Re: [RFC][PATCH] extable: Make sure all archs define _sdata
+Message-ID: <20110520063419.GA27802@linux-mips.org>
+References: <1305855298.1465.19.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305855298.1465.19.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, May 19, 2011 at 09:34:58PM -0400, Steven Rostedt wrote:
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+> Can I get an Acked-by (or comment) from the following Maintainers:
+> 
+>   alpha
+>   m32r
+>   m68k
+>   mips
+>   parisc
+> 
+> Ingo has discovered that one of my patches broke the builds of these
+> architectures. Although he added a quick fix, this patch supplies the
+> proper fix and touches the affected architectures. Please review and Ack
+> (or NACK with guidance) this patch.
+> 
+> -- Steve
+> 
+> A new utility function is used to determine if a passed in address is
+> part of core kernel data or not. It may or may not return true for RO
+> data, but this utility must work for RW data. Thus both _sdata and
+> _edata must be defined and continuous, without .init sections that may
+> later be freed and replaced by volatile memory (memory that can be
+> freed).
+> 
+> This utility function is used to determine if data is safe from ever
+> being freed. Thus it should return true for all RW global data that is
+> not in a module or has been allocated, or false otherwise.
 
-drivers/video/udlfb.c: In function 'dlfb_compress_hline':
-drivers/video/udlfb.c:421: error: implicit declaration of function 'prefetch_range'
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
-Presumably caused by commit e66eed651fd1 ("list: remove prefetching from
-regular list iterators").  We need to include preempt.h explictly, now.
+Thanks,
 
-I have included this patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 20 May 2011 16:29:01 +1000
-Subject: [PATCH] udlfb: include prefetch.h explicitly
-
-Commit e66eed651fd1 ("list: remove prefetching from
-regular list iterators") removed the include of prefetch.h from list.h,
-so we need to include it explicitly, now.
-
-fixes this build error on powerpc:
-
-drivers/video/udlfb.c: In function 'dlfb_compress_hline':
-drivers/video/udlfb.c:421: error: implicit declaration of function 'prefetch_range'
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/video/udlfb.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/video/udlfb.c b/drivers/video/udlfb.c
-index 68041d9..4c299cc 100644
---- a/drivers/video/udlfb.c
-+++ b/drivers/video/udlfb.c
-@@ -28,6 +28,7 @@
- #include <linux/vmalloc.h>
- #include <linux/slab.h>
- #include <linux/delay.h>
-+#include <linux/prefetch.h>
- #include <video/udlfb.h>
- #include "edid.h"
- 
--- 
-1.7.5.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+  Ralf
