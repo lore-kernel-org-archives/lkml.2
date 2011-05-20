@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934050Ab1ETPSD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 11:18:03 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:48319 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933917Ab1ETPSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 11:18:02 -0400
-Date: Fri, 20 May 2011 08:17:31 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
-        Eugene Teo <eugeneteo@gmail.com>
-Subject: Re: [RFC] add mount options to sysfs
-Message-ID: <20110520151731.GT25448@outflux.net>
-References: <20110518163951.GA24143@suse.de>
- <20110518170545.GA4435@albatros>
- <20110518191727.GA26741@suse.de>
- <20110519062622.GA4418@albatros>
- <20110519171227.GB22019@suse.de>
- <20110520095920.GA4489@albatros>
- <20110520133044.GC10225@suse.de>
- <20110520133451.GA8112@albatros>
- <20110520133615.GB8112@albatros>
- <20110520135424.GA10878@suse.de>
+	id S933745Ab1ETPV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 11:21:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49252 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754293Ab1ETPV0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 11:21:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TXM6gzoxRAUwAs3oq9oFiAFHzOoq5CUw0smo43EMstjHUJAj6fmLrGqIceLj5xfm97
+         pHp2QvMCFL/TRSd9VKk0l2qtQ5UKv7/f2uTJ89OWfZUEVvounE50AnGG+oQY7+mzOHx/
+         /CLuWY6X0oPepwv9PphiNiLiKLA0ijNRsQMXg=
+Date: Fri, 20 May 2011 19:21:18 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Daniel Drake <dsd@laptop.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        dwmw2@infradead.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        dilinger@queued.net, dmitry.torokhov@gmail.com
+Subject: Re: [PATCH] olpc_battery: bind to device tree
+Message-ID: <20110520152118.GA10699@oksana.dev.rtsoft.ru>
+References: <20110219150644.681D59D401D@zog.reactivated.net>
+ <AANLkTi=29myerzgH6WRCSOPKpaDnGgEtQacVHvxRoQT_@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110520135424.GA10878@suse.de>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <AANLkTi=29myerzgH6WRCSOPKpaDnGgEtQacVHvxRoQT_@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Wed, Feb 23, 2011 at 01:34:30PM -0700, Grant Likely wrote:
+> [cc'ing devicetree-discuss@lists.ozlabs.org.  Please cc this list for
+> any dt-related patches]
+> 
+> On Sat, Feb 19, 2011 at 8:06 AM, Daniel Drake <dsd@laptop.org> wrote:
+> > Move from being statically probed by platform presence to binding to
+> > the battery node of the device tree.
+> >
+> > This is cleaner and allows suspend/resume (wakeup) support to be added
+> > in a later patch.
+> >
+> > Signed-off-by: Daniel Drake <dsd@laptop.org>
+> 
+> Hi Daniel, comments below.
 
-On Fri, May 20, 2011 at 06:54:24AM -0700, Greg KH wrote:
-> That's the question for you, we would be changing the kernel/user api
-> here, and odds are, something will break.
+Daniel,
 
-I feel like this is going in circles. :)
+I just wondering what happened with this patch?..
 
-Adding this feature (with no changes to the defaults) will:
- - not break anything in the standard case
- - allow a system owner to locally choose the DAC perms on the mounts
-
-The question is about providing a temporal buffer between when a flaw is
-found in sysfs or debugfs and when the fix for it gets to the system owner.
-This, of course, presupposes that flaws are even publicly discovered in the
-first place. It gives paranoid system owners the option to lock down sysfs
-and debugfs from non-root users while still having them mounted without
-needing to make rather non-standard changes to boot time scripts beyond
-changing the fstab.
-
-Given that things like tmpfs support these options, it seems only sane to
-suppor them here too.
-
--Kees
+Thanks!
 
 -- 
-Kees Cook
-Ubuntu Security Team
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
