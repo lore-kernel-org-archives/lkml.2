@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426Ab1ETDOB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:14:01 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46207 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932096Ab1ETDN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:13:58 -0400
-Subject: Re: [bg-linux] [PATCH 5/7] [RFC] force 32-byte aligned kmallocs
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Kazutomo Yoshii <kazutomo@mcs.anl.gov>
-Cc: Kazutomo Yoshii <kazutomo.yoshii@gmail.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, bg-linux@lists.anl-external.org
-In-Reply-To: <4DD5D9C9.3020000@mcs.anl.gov>
-References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
-	 <1305753895-24845-5-git-send-email-ericvh@gmail.com>
-	 <1305851769.7481.90.camel@pasglop>  <4DD5C49E.4050103@gmail.com>
-	 <1305857301.7481.121.camel@pasglop> <1305857610.7481.124.camel@pasglop>
-	 <4DD5D9C9.3020000@mcs.anl.gov>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 May 2011 13:13:41 +1000
-Message-ID: <1305861221.7481.126.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932901Ab1ETDNy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:13:54 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:18683 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096Ab1ETDNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 23:13:53 -0400
+X-SpamScore: -21
+X-BigFish: VS-21(zz9371O1521M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Fri, 20 May 2011 11:18:18 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Sascha Hauer <s.hauer@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to
+ drivers/gpio
+Message-ID: <20110520031818.GB27251@S2100-06.ap.freescale.net>
+References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
+ <20110519085638.GA26816@S2100-06.ap.freescale.net>
+ <BANLkTinD9rAipfwNnh6QpgbcogckdtQ=OQ@mail.gmail.com>
+ <20110519135631.GB26816@S2100-06.ap.freescale.net>
+ <20110519191156.GE2429@pengutronix.de>
+ <alpine.LFD.2.00.1105191527440.14430@xanadu.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1105191527440.14430@xanadu.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 22:02 -0500, Kazutomo Yoshii wrote:
-> On 05/19/2011 09:13 PM, Benjamin Herrenschmidt wrote:
-> > On Fri, 2011-05-20 at 12:08 +1000, Benjamin Herrenschmidt wrote:
-> >    
-> >> On Thu, 2011-05-19 at 20:32 -0500, Kazutomo Yoshii wrote:
-> >>      
-> >>> Actually DMA sends invalidate requests to the snoop unit(L2 level).
-> >>> BGP SoC is a bit different from other 4xx base.
-> >>>        
-> >> Well, some other 44x also have a snooping L2 (more or less), but L1 is
-> >> usually the problem.
-> >>      
-> > Hrm... looking at the doco you pointed me to, it looks like the L1 -is-
-> > coherent, it gets snoop kills from the L2.
-> >    
-> Right, L1D is coherent if write throug is set.
-> L1I(virtually tagged) is not coherent, btw.
+On Thu, May 19, 2011 at 03:30:36PM -0400, Nicolas Pitre wrote:
+> On Thu, 19 May 2011, Sascha Hauer wrote:
+> 
+> > On Thu, May 19, 2011 at 09:56:32PM +0800, Shawn Guo wrote:
+> > > On Thu, May 19, 2011 at 02:21:27PM +0200, Linus Walleij wrote:
+> > > > On Thu, May 19, 2011 at 10:56 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> > > > 
+> > > > > I start working on moving mxs gpio (arch/arm/mach-mxs/gpio.c) into
+> > > > > driver/gpio, and I see the possibility to go a different approach
+> > > > > from U300 one posted here.
+> > > > 
+> > > > I've tried to figure out what relation the mail has to the U300 driver
+> > > > but cannot find any, more than that it's moving a driver... Please
+> > > > start a new mail thread.
+> > > > 
+> > > I will post mxs-gpio driver once I get it done.  Then please review
+> > > the code and see the difference between mxs-gpio and u300-gpio,
+> > > though these hardwares have something in common.
+> > 
+> > I'm pretty sure they have something in common and even more that *all*
+> > gpio drivers have something in common. I wonder if it really makes sense
+> > to move the gpio driver to drivers/gpio without creating a common
+> > mmio_gpio_chip beforehand. This can't be very hard.
+> 
+> I do think that performing the move first will make a subsequent 
+> conversion easier.  And since a move is a no-op from a functional point 
+> of view, it is the safest thing to do first.
+> 
+That's also what I heard on UDS week.  Move stuff into driver/gpio
+first, then try to find the pattern in those drivers and come up with
+some framework.
 
-Yes, I wrote the horrid hack to ping pong the pages between writable and
-executable afaik :-)
-
-> > Ok so we do need to make this non-coherent cache stuff a runtime option
-> > (well, we need that for 440+476 too anyways so may as well do it now).
-> >    
-> What sort of runtime option do you mean?
-
-I've asked Tony to give it a go since he's taking over the 476 stuff.
-The idea is to make it a MMU feature and call into the cache flush
-conditionally on it rather than under the control of a ifdef.
-
-I want it to be possible to build a unified kernel that supports
-multiple 44x and 47x platforms including BGP if we can make it happen.
-
-There's still some roadblocks to support 47x and 44x in the same kernel,
-most notably the cache line size, but I have hopes I'll get Tony to fix
-them soon :-)
-
-Cheers,
-Ben.
-
-> - kaz
-> > As for the alignment of kmalloc, it looks like a hack that should be
-> > done in the torus code itself.
-> >
-> > Cheers,
-> > Ben.
-> >
-> > _______________________________________________
-> > bg-linux mailing list
-> > bg-linux@lists.anl-external.org
-> > https://lists.anl-external.org/mailman/listinfo/bg-linux
-> > http://bg-linux.anl-external.org/wiki
-> >    
-
+-- 
+Regards,
+Shawn
 
