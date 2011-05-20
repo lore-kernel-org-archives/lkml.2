@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934767Ab1ETOXu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:23:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54090 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932563Ab1ETOXs (ORCPT
+	id S934282Ab1ETOZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:25:24 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48483 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab1ETOZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:23:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH 2/3] ARM: mxs: add gpio-mxs platform devices
-Date: Fri, 20 May 2011 16:23:40 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linus.walleij@linaro.org, grant.likely@secretlab.ca,
-        kernel@pengutronix.de
-References: <1305885446-27404-1-git-send-email-shawn.guo@linaro.org> <201105201223.00427.arnd@arndb.de> <20110520140316.GA27551@S2100-06.ap.freescale.net>
-In-Reply-To: <20110520140316.GA27551@S2100-06.ap.freescale.net>
+	Fri, 20 May 2011 10:25:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=szeredi.hu; s=google;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=a4sGq1rna0NSiV5q3JE8Ckd2qIlG43MAs+SQIDBfDo/F2SaNuaqecgJoJP/3ouIoOz
+         BP7GQoBM5u9N0oZiW4Pq/OUEyrdaToQEPd6EPdeIhvFQZu5dkdpnRMq6poFbC+ycCCM9
+         fqniKYNXjQ30icybk3bLYc0jAAMRWWu8njGo0=
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Erez Zadok <ezk@fsl.cs.sunysb.edu>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
+        jordipujolp@gmail.com
+Subject: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
+References: <1305635452-14835-1-git-send-email-miklos@szeredi.hu>
+	<103d3f78e2d3478d8bb93f5dda3a4a08@HUBCAS1.cs.stonybrook.edu>
+	<D8301738-5094-4666-8C4D-E26425F1AD66@fsl.cs.sunysb.edu>
+	<B0729E4C-D581-4EAB-A175-A6B8B34692B5@fsl.cs.sunysb.edu>
+Date: Fri, 20 May 2011 16:25:38 +0200
+In-Reply-To: <B0729E4C-D581-4EAB-A175-A6B8B34692B5@fsl.cs.sunysb.edu> (Erez
+	Zadok's message of "Fri, 20 May 2011 01:55:12 -0400")
+Message-ID: <87ipt5mot9.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105201623.40990.arnd@arndb.de>
-X-Provags-ID: V02:K0:N7y4DcnqFoq6gLGonTAEsbcx8kCq9huCp7lcB8LKXxj
- XUwPh/AzFN+fo4kZTN/DRPmgu9MbgOhMLQY1lz9X4CFh0x/AOF
- Pgi9ZXLigZ2Np4ZdDHC2lZipMm2PsuGwbc3DKNBh+sc08Hxra/
- oFopmAt70DMSI1T9msICj53wQThW4HnKhBNK86XYZ+sh+7ZOdZ
- 4JpKb2InexmiGacCjQsEg==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 May 2011 16:03:17 Shawn Guo wrote:
-> On Fri, May 20, 2011 at 12:23:00PM +0200, Arnd Bergmann wrote:
-> > 
-> > I know it's tempting to use macros for these, but I think it obscures
-> > the code a lot, especially when you use them to concatenate identifier
-> > names. Why not just do:
-> > 
-> The pattern is being widely used in mxc/mxs platform device codes.
-> If you are not extremely unhappy about this, I would leave it as it
-> is to keep consistency.
+Erez Zadok <ezk@fsl.cs.sunysb.edu> writes:
+> Niklos, I forgot to mention that I had to apply a small fix to a VFS
+> bug in fs/namei.c:1362, where a mix of symlinks and renames, using
+> racer, triggers an BUG_ON at the VFS layer (very reproducible).
+> Without this fix, racer oopses in the VFS well before it gets to
+> trigger overlayfs bugs.  It's a pity 2.6.39 was released with this
+> very reproducible *VFS* level bug (doesn't anyone run racer+fsx+ltp
+> before releasing a new kernel?)
+>
+> Anyway, here's the small patch here.  Clearly viro/hch need to review
+> this "fix" b/c I'm not sure it's really the right one
 
-I think it's a real pain to do it like this, and we need to start
-at some point cleaning up the mess. Why not start now?
+Patch looks good to me.
 
-> > > +
-> > > +	return mxs_add_platform_device("mxs-gpio", data->id,
-> > > +					res, ARRAY_SIZE(res), NULL, 0);
-> > > +}
-> > 
-> > mxs_add_platform_device doesn't set the parent pointer correctly, I think you
-> > should either fix that or open-code the platform device creation to do it
-> > right.
-> > 
-> I see the following in drivers/base/platform.c, function
-> platform_device_add():
-> 
->         if (!pdev->dev.parent)
->                 pdev->dev.parent = &platform_bus;
-> 
-> So we are fine?
+Acked-by: Miklos Szeredi <mszeredi@suse.cz>
 
-No, this would put all gpio devices below the top-level /sys/devices/platform
-directory, where they certainly don't belong. Please find a proper
-place and put them there.
+If you've got a patch fixing a serious bug, you'd better send it to
+Linus and Andrew (as well as the VFS maintainers), where it'll get more
+prompt evaluation.
 
-	Arnd
+You can still do that, also adding "CC: stable@kernel.org" to the SOB
+block in the patch so that the fix quickly makes it into the 2.6.39
+stable series.
+
+Thanks,
+Miklos
+
+
+>
+> VFS: move BUG_ON test for symlink nd->depth after current->link_count test
+>
+> This solves a bug in nested_symlink (which was rewritten from
+> do_follow_link), and follows the order of depth tests that existed before.
+> The bug triggers a BUG_ON in fs/namei.c:1346, when running racer with
+> symlink and rename ops.
+>
+> Signed-off-by: Erez Zadok <ezk@cs.sunysb.edu>
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 017c3fa..7a93387 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -1343,12 +1343,12 @@ static inline int nested_symlink(struct path *path, struct nameidata *nd)
+>  {
+>  	int res;
+>  
+> -	BUG_ON(nd->depth >= MAX_NESTED_LINKS);
+>  	if (unlikely(current->link_count >= MAX_NESTED_LINKS)) {
+>  		path_put_conditional(path, nd);
+>  		path_put(&nd->path);
+>  		return -ELOOP;
+>  	}
+> +	BUG_ON(nd->depth >= MAX_NESTED_LINKS);
+>  
+>  	nd->depth++;
+>  	current->link_count++;
