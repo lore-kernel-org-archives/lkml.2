@@ -1,84 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935315Ab1ETFOi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 01:14:38 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46640 "EHLO smtps.tip.net.au"
+	id S935302Ab1ETFTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 01:19:09 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23770 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935215Ab1ETFOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 01:14:36 -0400
-Date: Fri, 20 May 2011 15:14:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: build warning after merge of the final tree
- (tip/powerpc tree related)
-Message-Id: <20110520151431.465d11f4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1751287Ab1ETFTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 01:19:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,240,1304319600"; 
+   d="scan'208";a="5036766"
+Subject: Re: Perfromance drop on SCSI hard disk
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTima6W5yAM_koArYaz57C3uzk=WwWQ@mail.gmail.com>
+References: <1305009600.21534.587.camel@debian>
+	 <4DCC4340.6000407@fusionio.com>	<1305247704.2373.32.camel@sli10-conroe>
+	 <1305255717.2373.38.camel@sli10-conroe>
+	 <1305533054.2375.45.camel@sli10-conroe>
+	 <1305535071.21534.2122.camel@debian> <1305612565.21534.2177.camel@debian>
+	 <4DD221BE.3040406@fusionio.com> <1305793580.22968.155.camel@debian>
+	 <4DD56104.6080801@fusionio.com> <1305850920.22968.1089.camel@debian>
+	 <BANLkTima6W5yAM_koArYaz57C3uzk=WwWQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 May 2011 13:17:43 +0800
+Message-ID: <1305868663.4866.8.camel@debian>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__20_May_2011_15_14_31_+1000_5U+o0j1aFoqgAidv"
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__20_May_2011_15_14_31_+1000_5U+o0j1aFoqgAidv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2011-05-20 at 08:40 +0800, Shaohua Li wrote:
+> 2011/5/20 Alex,Shi <alex.shi@intel.com>:
+> > On Fri, 2011-05-20 at 02:27 +0800, Jens Axboe wrote:
+> >> On 2011-05-19 10:26, Alex,Shi wrote:
+> >> >
+> >> >> I will queue up the combined patch, it looks fine from here as well.
+> >> >>
+> >> >
+> >> > When I have some time to study Jens and shaohua's patch today. I find a
+> >> > simpler way to resolved the re-enter issue on starved_list. Following
+> >> > Jens' idea, we can just put the starved_list device into kblockd if it
+> >> > come from __scsi_queue_insert().
+> >> > It can resolve the re-enter issue and recover performance totally, and
+> >> > need not a work_struct in every scsi_device. The logic/code also looks a
+> >> > bit simpler.
+> >> > What's your opinion of this?
+> >>
+> >> Isn't this _identical_ to my original patch, with the added async run of
+> >> the queue passed in (which is important, an oversight)?
+> >
+> > Not exactly same. It bases on your patch, but added a bypass way for
+> > starved_list device. If a starved_list device come from
+> > __scsi_queue_insert(), that may caused by our talking recursion, kblockd
+> > with take over the process.  Maybe you oversight this point in original
+> > patch. :)
+> >
+> > The different part from yours is below:
+> > ---
+> > static void __scsi_run_queue(struct request_queue *q, bool async)
+> >  {
+> >        struct scsi_device *sdev = q->queuedata;
+> >        struct Scsi_Host *shost;
+> > @@ -435,30 +437,35 @@ static void scsi_run_queue(struct request_queue
+> > *q)
+> >                                       &shost->starved_list);
+> >                        continue;
+> >                }
+> > -
+> > -               spin_unlock(shost->host_lock);
+> > -               spin_lock(sdev->request_queue->queue_lock);
+> > -               __blk_run_queue(sdev->request_queue);
+> > -               spin_unlock(sdev->request_queue->queue_lock);
+> > -               spin_lock(shost->host_lock);
+> > +               if (async)
+> > +                       blk_run_queue_async(sdev->request_queue);
+> > +               else {
+> > +                       spin_unlock(shost->host_lock);
+> > +                       spin_lock(sdev->request_queue->queue_lock);
+> > +                       __blk_run_queue(sdev->request_queue);
+> > +                       spin_unlock(sdev->request_queue->queue_lock);
+> > +                       spin_lock(shost->host_lock);
+> >>
+> I don't quite like this approach. blk_run_queue_async() could
+> introduce fairness issue as I said in previous mail, because we drop
+> the sdev from starved list but didn't run its queue immediately. The
+> issue exists before, but it's a bug to me.
 
-Hi all,
+I understand what's your worried. But not quite clear of the trigger
+scenario. anyway, it is still a potential issue of fairness exist. So
+forget my patch. 
 
-After merging the final tree, today's linux-next build (powerpc allnoconfig)
-produced these warnings:
 
-kernel/time/clocksource.c: In function '__clocksource_updatefreq_scale':
-kernel/time/clocksource.c:655: warning: comparison of distinct pointer type=
-s lacks a cast
-kernel/time/clocksource.c:655: warning: right shift count >=3D width of type
-kernel/time/clocksource.c:655: warning: passing argument 1 of '__div64_32' =
-from incompatible pointer type
-include/asm-generic/div64.h:35: note: expected 'uint64_t *' but argument is=
- of type 'long unsigned int *'
-kernel/time/clocksource.c:656: warning: comparison of distinct pointer type=
-s lacks a cast
-kernel/time/clocksource.c:656: warning: right shift count >=3D width of type
-kernel/time/clocksource.c:656: warning: passing argument 1 of '__div64_32' =
-from incompatible pointer type
-include/asm-generic/div64.h:35: note: expected 'uint64_t *' but argument is=
- of type 'long unsigned int *'
-kernel/time/clockevents.c: In function 'clockevents_config':
-kernel/time/clockevents.c:211: warning: comparison of distinct pointer type=
-s lacks a cast
-kernel/time/clockevents.c:211: warning: right shift count >=3D width of type
-kernel/time/clockevents.c:211: warning: passing argument 1 of '__div64_32' =
-from incompatible pointer type
-include/asm-generic/div64.h:35: note: expected 'uint64_t *' but argument is=
- of type 'long unsigned int *'
-
-This is a 32 bit build.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__20_May_2011_15_14_31_+1000_5U+o0j1aFoqgAidv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN1fi3AAoJEDMEi1NhKgbsP48IAJaR84HEt22QdHsKL+BwcG1t
-+yhK+RrrVIesHQfUZl8UzuLRaBFQxp7FtO8HJ9wK0hPkqi96BAzU3MKFN0E6uI1n
-bGUEnOwLDpwO3491ecoJwoR+pjtyyrJeO/h7ehT4OpY66CcCFBvoPOiA0uNx7Vxy
-5rHGOAl773T6o2KBXai63MbC2aeI6bxaucWLH3rhhX9Iyw5Q0MvSUtUbpYNleINX
-Fs0/dNnojbkVHI/jpzNFyu1+CCQGnvM4C+L5F506PEnxwB1Bz5AOtVWVu6chfIEt
-zsv0+0DJ0BsvklhaSGa+d8zTT8h4ai/yzHKORhE9uIY91h1jZpSKlNUBmaMR8Uw=
-=03S+
------END PGP SIGNATURE-----
-
---Signature=_Fri__20_May_2011_15_14_31_+1000_5U+o0j1aFoqgAidv--
