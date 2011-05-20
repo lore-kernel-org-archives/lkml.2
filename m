@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934840Ab1ETALx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:11:53 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58239 "EHLO
+	id S934859Ab1ETAL5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:11:57 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:42784 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934715Ab1ETALr (ORCPT
+	by vger.kernel.org with ESMTP id S1756038Ab1ETALt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:11:47 -0400
-X-Sasl-enc: HcIxZSJF7yzSBoE6+TbtEHpovbtnHVtmWFOTgODFTUyy 1305850306
+	Thu, 19 May 2011 20:11:49 -0400
+X-Sasl-enc: ySzdFXQ8dj5/spQO8yqxdLMvx1LHGo+NvaoevCflsBAW 1305850308
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: Jonathan Cameron <jic23@cam.ac.uk>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 24/44] Add a strtobool function matching semantics of existing in kernel equivalents
-Date: Thu, 19 May 2011 17:10:42 -0700
-Message-Id: <1305850262-9575-24-git-send-email-gregkh@suse.de>
+Subject: [PATCH 25/44] debugfs: move to new strtobool
+Date: Thu, 19 May 2011 17:10:43 -0700
+Message-Id: <1305850262-9575-25-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1305850262-9575-1-git-send-email-gregkh@suse.de>
 References: <20110520000821.GA9367@kroah.com>
@@ -24,68 +24,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jonathan Cameron <jic23@cam.ac.uk>
 
-This is a rename of the usr_strtobool proposal, which was a renamed,
-relocated and fixed version of previous kstrtobool RFC
+No functional changes requires that we eat errors from strtobool.
+If people want to not do this, then it should be fixed at a later date.
+
+V2: Simplification suggested by Rusty Russell removes the need for
+additional variable ret.
 
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/string.h |    1 +
- lib/string.c           |   29 +++++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+), 0 deletions(-)
+ fs/debugfs/file.c |   17 ++++-------------
+ 1 files changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/string.h b/include/linux/string.h
-index a716ee2..a176db2 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -123,6 +123,7 @@ extern char **argv_split(gfp_t gfp, const char *str, int *argcp);
- extern void argv_free(char **argv);
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index 89d394d..568304d 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -429,25 +429,16 @@ static ssize_t write_file_bool(struct file *file, const char __user *user_buf,
+ {
+ 	char buf[32];
+ 	int buf_size;
++	bool bv;
+ 	u32 *val = file->private_data;
  
- extern bool sysfs_streq(const char *s1, const char *s2);
-+extern int strtobool(const char *s, bool *res);
+ 	buf_size = min(count, (sizeof(buf)-1));
+ 	if (copy_from_user(buf, user_buf, buf_size))
+ 		return -EFAULT;
  
- #ifdef CONFIG_BINARY_PRINTF
- int vbin_printf(u32 *bin_buf, size_t size, const char *fmt, va_list args);
-diff --git a/lib/string.c b/lib/string.c
-index f71bead..01fad9b 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -535,6 +535,35 @@ bool sysfs_streq(const char *s1, const char *s2)
- }
- EXPORT_SYMBOL(sysfs_streq);
- 
-+/**
-+ * strtobool - convert common user inputs into boolean values
-+ * @s: input string
-+ * @res: result
-+ *
-+ * This routine returns 0 iff the first character is one of 'Yy1Nn0'.
-+ * Otherwise it will return -EINVAL.  Value pointed to by res is
-+ * updated upon finding a match.
-+ */
-+int strtobool(const char *s, bool *res)
-+{
-+	switch (s[0]) {
-+	case 'y':
-+	case 'Y':
-+	case '1':
-+		*res = true;
-+		break;
-+	case 'n':
-+	case 'N':
-+	case '0':
-+		*res = false;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL(strtobool);
+-	switch (buf[0]) {
+-	case 'y':
+-	case 'Y':
+-	case '1':
+-		*val = 1;
+-		break;
+-	case 'n':
+-	case 'N':
+-	case '0':
+-		*val = 0;
+-		break;
+-	}
+-	
++	if (strtobool(buf, &bv) == 0)
++		*val = bv;
 +
- #ifndef __HAVE_ARCH_MEMSET
- /**
-  * memset - Fill a region of memory with the given value
+ 	return count;
+ }
+ 
 -- 
 1.7.4.2
 
