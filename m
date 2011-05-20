@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934453Ab1ETIAg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 04:00:36 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48968 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933712Ab1ETIAe (ORCPT
+	id S934489Ab1ETIBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 04:01:17 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34141 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934212Ab1ETIBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 04:00:34 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DD61F80.1020505@jp.fujitsu.com>
-Date: Fri, 20 May 2011 17:00:00 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Fri, 20 May 2011 04:01:16 -0400
+Date: Fri, 20 May 2011 10:01:14 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Milton Miller <miltonm@bga.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [22/44] driver core: let dev_set_drvdata return int instead of
+ void as it can fail
+Message-ID: <20110520080114.GC29843@pengutronix.de>
+References: <1305850262-9575-22-git-send-email-gregkh@suse.de>
+ <please-do-not-merge-driver-set-data-fail@mdm.bga.com>
 MIME-Version: 1.0
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
-        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com,
-        minchan.kim@gmail.com, oleg@redhat.com
-CC: kosaki.motohiro@jp.fujitsu.com
-Subject: [PATCH v2 0/5] Fix oom killer doesn't work at all if system have
- > gigabytes memory  (aka CAI founded issue)
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <please-do-not-merge-driver-set-data-fail@mdm.bga.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 20, 2011 at 02:53:30AM -0500, Milton Miller wrote:
+> On Fri, 20 May 2011 about 00:10:40 -0000, Greg Kroah-Hartman wrote:
+> > 
+> > From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > 
+> > Before commit
+> > 
+> > 	b402843 (Driver core: move dev_get/set_drvdata to drivers/base/dd.c)
+> > 
+> > calling dev_set_drvdata with dev=NULL was an unchecked error. After some
+> > discussion about what to return in this case removing the check (and so
+> > producing a null pointer exception) seems fine.
+> > 
+> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > 
+> 
+> I obviously didn't follow the discussions close enough and got
+> confused[1], but I don't like the anticipated fallout of pushing this
+> change though all the drivers.  Let alone see the arguments that not
+> being able to free the device when it fails is no reason to fail.
+> 
+> So, my first question is:  When is it legal for a driver to set driver
+> data before a device is registered?
+A driver cannot set driver data on an unregistered device because it
+doesn't get it's hands on it before. So it's only the code that
+registers a device that has a chance to do so.
 
-CAI Qian reported current oom logic doesn't work at all on his 16GB RAM
-machine. oom killer killed all system daemon at first and his system
-stopped responding.
+A while back I thought about breaking these constructs by setting
+driver_data to NULL before a device is handed to a driver. Never came
+around to make a patch tough.
 
-The brief log is below.
-
-> Out of memory: Kill process 1175 (dhclient) score 1 or sacrifice child
-> Out of memory: Kill process 1247 (rsyslogd) score 1 or sacrifice child
-> Out of memory: Kill process 1284 (irqbalance) score 1 or sacrifice child
-> Out of memory: Kill process 1303 (rpcbind) score 1 or sacrifice child
-> Out of memory: Kill process 1321 (rpc.statd) score 1 or sacrifice child
-> Out of memory: Kill process 1333 (mdadm) score 1 or sacrifice child
-> Out of memory: Kill process 1365 (rpc.idmapd) score 1 or sacrifice child
-> Out of memory: Kill process 1403 (dbus-daemon) score 1 or sacrifice child
-> Out of memory: Kill process 1438 (acpid) score 1 or sacrifice child
-> Out of memory: Kill process 1447 (hald) score 1 or sacrifice child
-> Out of memory: Kill process 1447 (hald) score 1 or sacrifice child
-> Out of memory: Kill process 1487 (hald-addon-inpu) score 1 or sacrifice child
-> Out of memory: Kill process 1488 (hald-addon-acpi) score 1 or sacrifice child
-> Out of memory: Kill process 1507 (automount) score 1 or sacrifice child
-
-
-The problems are three.
-
-1) if two processes have the same oom score, we should kill younger process.
-but current logic kill older. Typically oldest processes are system daemons.
-2) Current logic use 'unsigned int' for internal score calculation. (exactly says,
-it only use 0-1000 value). its very low precision calculation makes a lot of
-same oom score and kill an ineligible process.
-3) Current logic give 3% of SystemRAM to root processes. It obviously too big
-if you have plenty memory. Now, your fork-bomb processes have 500MB OOM immune
-bonus. then your fork-bomb never ever be killed.
-
-
-KOSAKI Motohiro (5):
-  oom: improve dump_tasks() show items
-  oom: kill younger process first
-  oom: oom-killer don't use proportion of system-ram internally
-  oom: don't kill random process
-  oom: merge oom_kill_process() with oom_kill_task()
-
- fs/proc/base.c        |   13 ++-
- include/linux/oom.h   |   10 +--
- include/linux/sched.h |   11 +++
- mm/oom_kill.c         |  201 +++++++++++++++++++++++++++----------------------
- 4 files changed, 135 insertions(+), 100 deletions(-)
+Best regards
+Uwe
 
 -- 
-1.7.3.1
-
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
