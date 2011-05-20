@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935422Ab1ETI5C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 04:57:02 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59913 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933897Ab1ETI47 convert rfc822-to-8bit (ORCPT
+	id S935430Ab1ETI60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 04:58:26 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41576 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S935216Ab1ETI6Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 04:56:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=OCFZ30Abr/s7UGKCtQWK8ipOYH+kljOePXrY0MUA+jqqksMKUuyFvDWuZmB5nGWnM6
-         1F/PCHuYHkFPITcYXE21Ro9nIuQlhBUKOVmiFfFso9XIslFKaVNos8V5bmpTLa57lWeH
-         Vl+Ze/WL25b92tVNpXmX8+ybM+f3zyVdgMbA4=
+	Fri, 20 May 2011 04:58:24 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18V+JtYZeEVCCk0quT4OhndxxIBSW4o8ZpmIQVuGV
+	lWFUCsLvA4soxp
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+Date: Fri, 20 May 2011 10:58:19 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.6; KDE/4.6.3; i686; ; )
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+References: <201105191526.31904.toralf.foerster@gmx.de> <BANLkTik0oz6ppJvRpufaaiBL1pqcAxNHuA@mail.gmail.com> <BANLkTikCS=LbvXSe4ok740O2ue1DQDfBmA@mail.gmail.com>
+In-Reply-To: <BANLkTikCS=LbvXSe4ok740O2ue1DQDfBmA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110519163709.GH3702@shadowen.org>
-References: <1305635452-14835-1-git-send-email-miklos@szeredi.hu> <20110519163709.GH3702@shadowen.org>
-From: Michal Suchanek <hramrach@centrum.cz>
-Date: Fri, 20 May 2011 10:56:38 +0200
-X-Google-Sender-Auth: Fnld_s5UBDk99ouut3ptIt-Z6SI
-Message-ID: <BANLkTikeZmS=xX0hBizwQ49k8uTOQh3BAA@mail.gmail.com>
-Subject: Re: [PATCH 0/7] overlay filesystem v9
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, nbd@openwrt.org, neilb@suse.de,
-        jordipujolp@gmail.com, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201105201058.20355.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
 
-On 19 May 2011 18:37, Andy Whitcroft <apw@canonical.com> wrote:
-> On Tue, May 17, 2011 at 02:30:45PM +0200, Miklos Szeredi wrote:
->
->> Here's an updated version of the overlay filesystem.
->>
->> Git tree is here:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v9
->
-> Ok I pulled this into the Ubuntu kernel and made an Ubuntu Live CD
-> for testing.  Overall it worked pretty well, no hangs, no crashes,
-> performance seemed reasonable.  We hit one issue with hard links which
-> fail to be possible on overlayfs mounts when the Yama LSM (out of tree)
-> is enabled.  This module applies more aggressive checks on hard-links
-> preventing links to files you cannot read.
->
-> The bug seems to be related to the way we handle user and group owners for
-> the overlayfs inodes, which we do not initialise (and they remain as 0,0).
-> While these ownerships are never exposed to userspace they are exposed
-> to the LSM layer, and the LSM module checks the wrong owner and fails
-> to allow the links.
->
-> From what I can see it is completly reasonable to initialise the ownership
-> fields in the overlayfs inode from the underlying inode, or for new files
-> ones initialise it in the normal way based on the containing directory.
+richard -rw- weinberger wrote at 10:39:03
+> 2011/5/20 richard -rw- weinberger <richard.weinberger@gmail.com>:
+> > Use "objdump -d -S | less" to find it.
+> 
+> Ick, I meant "objdump -d -S vmlinux | less"
+Well (BTW nearly similar to the result of "objdump -d -S linux" ), but anyway 
+here it is :
 
-If the ownership recorded in the inode is not user visible then the
-ownership must be taken elsewhere (the lower filesystem?) . Since
-deconstructing, modifying and reconstructing the overlay is supported
-initializing the inode to some default gives you two possibly
-inconsistent ownerships - one seen by LSM, the other by userspace.
+        spin_lock(&hb->lock);
+        head = &hb->chain;
 
-So in general LSM should check whatever userspace would I guess.
+        plist_for_each_entry_safe(this, next, head, list) {
+ 80a9f48:       8b 48 08                mov    0x8(%eax),%ecx
+ 80a9f4b:       83 c2 08                add    $0x8,%edx
+ 80a9f4e:       8d 41 f4                lea    -0xc(%ecx),%eax
+ 80a9f51:       39 ca                   cmp    %ecx,%edx
+ 80a9f53:       8b 70 0c                mov    0xc(%eax),%esi
+ 80a9f56:       74 6a                   je     80a9fc2 <futex_wake+0xd2>
+ 80a9f58:       89 d9                   mov    %ebx,%ecx
+ 80a9f5a:       83 ee 0c                sub    $0xc,%esi
+ 80a9f5d:       89 d3                   mov    %edx,%ebx
+ 80a9f5f:       89 fa                   mov    %edi,%edx
+ 80a9f61:       89 cf                   mov    %ecx,%edi
+ 80a9f63:       eb 12                   jmp    80a9f77 <futex_wake+0x87>
+ 80a9f65:       8d 76 00                lea    0x0(%esi),%esi
+ 80a9f68:       8d 46 0c                lea    0xc(%esi),%eax
+ 80a9f6b:       8b 4e 0c                mov    0xc(%esi),%ecx
+ 80a9f6e:       39 c3                   cmp    %eax,%ebx
+ 80a9f70:       74 4e                   je     80a9fc0 <futex_wake+0xd0>
+ 80a9f72:       89 f0                   mov    %esi,%eax
+ 80a9f74:       8d 71 f4                lea    -0xc(%ecx),%esi
+                if (match_futex (&this->key, &key)) {
+ 80a9f77:       83 f8 e4                cmp    $0xffffffe4,%eax
+ 80a9f7a:       74 ec                   je     80a9f68 <futex_wake+0x78>
+ 80a9f7c:       8b 48 1c                mov    0x1c(%eax),%ecx
+ 80a9f7f:       3b 4d e8                cmp    -0x18(%ebp),%ecx
+ 80a9f82:       75 e4                   jne    80a9f68 <futex_wake+0x78>
+/*
+ * Return 1 if two futex_keys are equal, 0 otherwise.
+ */
 
-Thanks
 
-Michal
+-- 
+MfG/Sincerely
+Toralf F�rster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
