@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab1ETWKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 18:10:30 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37781 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab1ETWKX (ORCPT
+	id S1754173Ab1ETWNW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 18:13:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39513 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752228Ab1ETWNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 18:10:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1305502624-32418-1-git-send-email-linus.walleij@linaro.org>
-References: <1305502624-32418-1-git-send-email-linus.walleij@linaro.org>
-Date: Sat, 21 May 2011 00:10:22 +0200
-Message-ID: <BANLkTimr+ebtvnpKvSWBo3BgNp+_+ACyoA@mail.gmail.com>
-Subject: Re: [PATCH 00/13] Ux500 PRCMU into MFD v3
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Arnd Bergmann <arnd@arndb.de>, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 May 2011 18:13:16 -0400
+Date: Fri, 20 May 2011 15:11:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] check_signature depends on CONFIG_CHECK_SIGNATURE
+Message-Id: <20110520151113.645dbbe7.akpm@linux-foundation.org>
+In-Reply-To: <20110520161448.375eb634@endymion.delvare>
+References: <20110520161448.375eb634@endymion.delvare>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 1:37 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+On Fri, 20 May 2011 16:14:48 +0200
+Jean Delvare <khali@linux-fr.org> wrote:
 
-> This moves the DB8500 PRCMU core driver from the
-> arch/arm/mach-ux500/ dir to MFD, updates it, adds the missing
-> DB5500 PRCMU driver, updates some dependent register files etc,
-> and also updates the CPUfreq driver that use the PRCMU and moves
-> it to drivers/cpufreq as discussed recently.
+> check_signature() is only available if CONFIG_CHECK_SIGNATURE has been
+> selected. Don't declare the function if it won't be available at link
+> time. That way, any failure to select CONFIG_CHECK_SIGNATURE as needed
+> will show up immediately at build time.
+> 
+> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+> ---
+>  include/linux/io.h |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> --- linux-2.6.40-rc0.orig/include/linux/io.h	2011-05-20 10:41:02.000000000 +0200
+> +++ linux-2.6.40-rc0/include/linux/io.h	2011-05-20 16:00:31.000000000 +0200
+> @@ -63,8 +63,11 @@ void __iomem *devm_ioremap(struct device
+>  void __iomem *devm_ioremap_nocache(struct device *dev, resource_size_t offset,
+>  				    unsigned long size);
+>  void devm_iounmap(struct device *dev, void __iomem *addr);
+> +void devm_ioremap_release(struct device *dev, void *res);
+> +
+> +#ifdef CONFIG_CHECK_SIGNATURE
+>  int check_signature(const volatile void __iomem *io_addr,
+>  			const unsigned char *signature, int length);
+> -void devm_ioremap_release(struct device *dev, void *res);
+> +#endif
 
-Hi Sam, is this patchset OK?
+We usually avoid doing this.  Detecting the error at link time is
+sufficient.
 
-If I need to do any final adjustments for this merge window a good
-time to tell me is now :-)
+Yes, that will very occasionally cost a small number of people a little
+additional time.  But we must balance that against permanently messing
+up the header files.
 
-It's at the beginning of a large dependency chain for assorted
-Ux500 drivers, that's why I'm so keen on getting this in place.
-
-Linus Walleij
