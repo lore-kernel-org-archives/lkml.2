@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935515Ab1ETKCr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 06:02:47 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46037 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934699Ab1ETKCp (ORCPT
+	id S935551Ab1ETKFH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 06:05:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:49939 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935394Ab1ETKFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 06:02:45 -0400
-Date: Fri, 20 May 2011 12:02:42 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org
-Subject: Re: [PATCH 0/4] add gpio driver gpio-mxs
-Message-ID: <20110520100242.GA10403@pengutronix.de>
-References: <1305885089-27343-1-git-send-email-shawn.guo@linaro.org>
+	Fri, 20 May 2011 06:05:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: mxs: remove gpio driver from mach-mxs
+Date: Fri, 20 May 2011 12:04:59 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linus.walleij@linaro.org,
+        grant.likely@secretlab.ca, kernel@pengutronix.de
+References: <1305885446-27404-1-git-send-email-shawn.guo@linaro.org> <1305885446-27404-2-git-send-email-shawn.guo@linaro.org>
+In-Reply-To: <1305885446-27404-2-git-send-email-shawn.guo@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305885089-27343-1-git-send-email-shawn.guo@linaro.org>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:57:25 up  3:37,  6 users,  load average: 0.02, 0.07, 0.04
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:219:66ff:fe5b:d076
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105201204.59237.arnd@arndb.de>
+X-Provags-ID: V02:K0:E6wYubSUI90WIG0CjNX9cBq7jV9GwZwZ4vGaHi7PGe+
+ kjeks31NXOpxMGUktT15oNYXnpR5VjdgJhzEFZdY1KeK2ohpT7
+ GSb+R5kTX5OKuFCNmagi5ed+25mVuSphwUq4Qo7hiXkDh+GxCq
+ FXhn5VCqAdJYztV6lLZUY/JQiDN/AOGUzFTZ32I1KJaadf06tj
+ QtEyrbJOirwTZKrDofMdQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shawn,
+On Friday 20 May 2011 11:57:24 Shawn Guo wrote:
+> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> ---
+>  arch/arm/mach-mxs/Makefile       |    2 +-
+>  arch/arm/mach-mxs/gpio.c         |  331 --------------------------------------
+>  arch/arm/mach-mxs/gpio.h         |   34 ----
+>  arch/arm/mach-mxs/mach-mx28evk.c |    1 -
+>  arch/arm/mach-mxs/mm-mx23.c      |    1 -
+>  arch/arm/mach-mxs/mm-mx28.c      |    1 -
+>  6 files changed, 1 insertions(+), 369 deletions(-)
+>  delete mode 100644 arch/arm/mach-mxs/gpio.c
+>  delete mode 100644 arch/arm/mach-mxs/gpio.h
 
-On Fri, May 20, 2011 at 05:51:25PM +0800, Shawn Guo wrote:
-> The patch set is to move Freescale MXS gpio driver from mach-mxs
-> into drivers/gpio.  Different from u300 gpio driver that all gpio
-> ports are registered as one device, gpio-mxs expects every single
-> port is a gpio device.
-> 
-> The first 3 patches are just to ease review and can be squashed into
-> the last one.
-> 
-> Shawn Guo (4):
->       gpio: gpio-mxs: add file gpio-mxs.c
->       gpio: gpio-mxs: drop mach-specific accessors
->       gpio: gpio-mxs: remove gpio port definition and registration
->       gpio: gpio-mxs: add gpio driver for Freescale MXS architecture
+The patch looks good (removing stuff often is), but
+you are missing a changelog. Please explain why it's
+not used any more so that people can find it later
+when they only look at git but not at your original
+mail 0/3 or the entire series.
 
-Your series should be bisectible. So please either:
-
-- Add the driver the way you want it (no need to modify a new file in
-  four steps)
-- atomically switch to the new driver
-- remove old driver
-
-or:
-
-- work on old file until it's suitable for drivers/gpio
-- move old file to drivers/gpio and adjust the makefiles in one step.
-
-
-There may be different variations on this depending on the actual code,
-but whatever you do, each step should be able to compile and working.
-
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+	Arnd
