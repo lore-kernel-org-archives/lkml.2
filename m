@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933880Ab1ETNeg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:34:36 -0400
-Received: from mailgw10.se.ericsson.net ([193.180.251.61]:61421 "EHLO
-	mailgw10.se.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab1ETNef convert rfc822-to-8bit (ORCPT
+	id S933929Ab1ETNe4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:34:56 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39586 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933851Ab1ETNez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:34:35 -0400
-X-AuditID: c1b4fb3d-b7c17ae00000262e-36-4dd66dea2c29
-From: Bertil Engelholm <bertil.engelholm@ericsson.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 20 May 2011 15:34:33 +0200
-Subject: PROBLEM: zone_reclaim is hanging high priority real time user
- pthreads
-Thread-Topic: PROBLEM: zone_reclaim is hanging high priority real time user
- pthreads
-Thread-Index: AcwW6+x7V9oOyumnStmBILDD2XpyRgAAcezg
-Message-ID: <980E20D8E719A84BBF593FDE6AEC23DA0AEB3CFAA7@ESESSCMS0351.eemea.ericsson.se>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 May 2011 09:34:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dmgKN4hov+O/Miad6qW59U83XRublkIow85Mo+9KYePxVSu1s7wpNm19NWvR0/K+Qn
+         95k2Bx6L+jVHBW/LB/o3zCn2nmZ5lVBDoyKa9U6ot1r+VsE1bbkwzeTEqLUrwVysRY+w
+         e8fYgpCeFzV16NPwOO3mRFLUCGB9vEeO2gz10=
+Date: Fri, 20 May 2011 17:34:51 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <kees.cook@canonical.com>,
+        Eugene Teo <eugeneteo@gmail.com>
+Subject: Re: [RFC] add mount options to sysfs
+Message-ID: <20110520133451.GA8112@albatros>
+References: <20110518163142.GA3367@albatros>
+ <20110518163951.GA24143@suse.de>
+ <20110518170545.GA4435@albatros>
+ <20110518191727.GA26741@suse.de>
+ <20110519062622.GA4418@albatros>
+ <20110519171227.GB22019@suse.de>
+ <20110520095920.GA4489@albatros>
+ <20110520133044.GC10225@suse.de>
 MIME-Version: 1.0
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110520133044.GC10225@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 20, 2011 at 06:30 -0700, Greg KH wrote:
+> > > > Here https://lkml.org/lkml/2011/2/25/300 you, not aware of usefull
+> > > > applications of world-writable debugfs file, agreeded to statically
+> > > > restrict permissions of all files.  I suggest more flexible and
+> > > > configurable in runtime solution.  It doesn't break anything - default
+> > > > behaviour doesn't differ from current one.  What has changed in your
+> > > > mind since 2/25?
+> > > 
+> > > That's debugfs, not sysfs, which we are talking about here, right?
+> > 
+> > Correct.  So, if I understood you, you are OK with adding mount options
+> > for debugfs, but not sysfs, right?  What is the difference between them
+> > in sense of permissions?
+> 
+> debugfs is "there are no rules", so changing the permissions on it
+> shouldn't break anything as no userspace tools "should" rely on it.  Now
+> that really isn't true (see the perf stuff), but overall it is, so I
+> don't worry about changing things there as much as sysfs, which has
+> hundreds of tools relying on it.
 
-Hi,
+What would break if the default behaviour is not changed?
 
-I have been investigating a problem for several weeks now and at last I 
-beleave I'm on to something. So now I'm hoping that someone has the time to 
-help me answer some questions.
-The problem has been seen in kernel 2.6.16 and I now wonder if this is solved
-in later kernels. I have looked in the 2.6.39 source code and there was a 
-comment in that code indicating that this could still be a problem even though
-it's not as serious as in 2.6.16.
+Thanks,
 
-The actual problem I have seen in 2.6.16 is that the zone_reclaim function can
-execute on several CPU's in parallell in a multi core system. There is a check
-for the reclaim_in_progress counter in zone_reclaim but it takes some time
-until this counter is increased in shrink_zone so if several CPU's start
-executing zone_reclaim at the same time they will continue executing
-shrink_zone etc. in parallell. With a test program we have seen up to 4 CPU's
-do this in parallell. I have seen two CPU's execute zone_reclaim in parallell 
-in a panic dump that I triggered using sysrq-trigger when our pthread was 
-"hanging". However, this is not a problem functionally wise, it looks like 
-they all do what they are supposed to do. 
-
-The problem is that the execution time goes up quite a lot when several CPU's
-execute zone_reclaim. Most likely I guess because they will compete for the
-same locks etc. Since this is executed in the "context" of any user
-process/pthread it can "hang" this process/pthread for several seconds while
-other pthreads etc. continue to execute as normal. 
-If you have enough allocated memory e.g. 40GB, we have seen hangings for 16 
-seconds. And this is even though the pthread is a high priority real time 
-scheduled pthread that is suppose to execute every 10 ms (testprogram). Even 
-if you get rid of the parallell execution, I suppose zone_reclaim can still 
-hang a user pthread for some time if you have many active pages and this is 
-what I wonder if it's still valid.
-
-In later versions of vmscan.c I can see that a lot has changed regarding this
-code but in shrink_zone in 2.6.39 this comment can be found :
-
-/*
-* On large memory systems, scan >> priority can become
-* really large. This is fine for the starting priority;
-* we want to put equal scanning pressure on each zone.
-* However, if the VM has a harder time of freeing pages,
-* with multiple processes reclaiming pages, the total
-* freeing target can get unreasonably large.
-*/
-
-This indicates to me that the execution time for shrink_zone can still be
-relativly long if you have a lot of pages. 
-
-So the question is : Can todays kernel also "hang" high priority user pthreads
-due to zone_reclaim if you have a large system with lots of allocated memory ? 
-I.e. is this function still executed in a user pthread context risking to
-hang it for some time ? 
-If this has changed so it's executed in another way (background thread or
-some other way), when was this changed (which kernel version) ? 
-
-OK, that's it. I hope I have managed to make myself understandable.
-As I started I have spent several weeks on this and I just want to make
-shure that if we recommend a new kernel version to our users that the
-problem is actually solved in that version. I have searched the internet
-for many hours for this problem but not been able to find anything that
-looks like this specific problem. The reason we have such a problem is 
-because the pthreads that are hanging is important supervision pthreads
-(that's why they are high priority real time pthreads) so they must execute
-at certain intervals otherwise other pthreads will think something is wrong
-and trigger recovery actions. 
-
-Since I'm not subscribing to this mailing list I would appreciate if you 
-could CC me any response.
-
-thanx
-/Bertil
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
