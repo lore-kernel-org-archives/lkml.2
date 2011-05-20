@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934060Ab1ETCNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 22:13:55 -0400
-Received: from gate.crashing.org ([63.228.1.57]:60118 "EHLO gate.crashing.org"
+	id S933765Ab1ETCSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 22:18:10 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44667 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754851Ab1ETCNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 22:13:54 -0400
-Subject: Re: [bg-linux] [PATCH 5/7] [RFC] force 32-byte aligned kmallocs
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, bg-linux@lists.anl-external.org
-In-Reply-To: <1305857301.7481.121.camel@pasglop>
-References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
-	 <1305753895-24845-5-git-send-email-ericvh@gmail.com>
-	 <1305851769.7481.90.camel@pasglop>  <4DD5C49E.4050103@gmail.com>
-	 <1305857301.7481.121.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 May 2011 12:13:30 +1000
-Message-ID: <1305857610.7481.124.camel@pasglop>
+	id S1756951Ab1ETCSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 22:18:08 -0400
+Date: Fri, 20 May 2011 12:18:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Hellstrom <daniel@gaisler.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: manual merge of the tip tree with the sparc tree
+Message-Id: <20110520121802.f0bf0fea.sfr@canb.auug.org.au>
+In-Reply-To: <4DD51D37.3010907@gaisler.com>
+References: <20110517131435.aceca54e.sfr@canb.auug.org.au>
+	<4DD51D37.3010907@gaisler.com>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__20_May_2011_12_18_02_+1000_nAKRV0.ug=jjf0er"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-20 at 12:08 +1000, Benjamin Herrenschmidt wrote:
-> On Thu, 2011-05-19 at 20:32 -0500, Kazutomo Yoshii wrote:
-> > 
-> > Actually DMA sends invalidate requests to the snoop unit(L2 level).
-> > BGP SoC is a bit different from other 4xx base. 
-> 
-> Well, some other 44x also have a snooping L2 (more or less), but L1 is
-> usually the problem.
+--Signature=_Fri__20_May_2011_12_18_02_+1000_nAKRV0.ug=jjf0er
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hrm... looking at the doco you pointed me to, it looks like the L1 -is-
-coherent, it gets snoop kills from the L2.
+Hi Daniel,
 
-Ok so we do need to make this non-coherent cache stuff a runtime option
-(well, we need that for 440+476 too anyways so may as well do it now).
+On Thu, 19 May 2011 15:37:59 +0200 Daniel Hellstrom <daniel@gaisler.com> wr=
+ote:
+>
+> I looked at linux-next and I think the call to the scheduler_ipi is=20
+> missing in the resched interrupt routine. I believe that the below patch=
+=20
+> should be applied ontop of linux-next. Could you include it in the merge=
+=20
+> or what do you suggest I do?
 
-As for the alignment of kmalloc, it looks like a hack that should be
-done in the torus code itself.
+That patch (if correct) needs to be applied to some tree, linux-next just
+takes what it is given.  That patch is really beyond a merge fix as that
+code exists on neither tree.
 
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Fri__20_May_2011_12_18_02_+1000_nAKRV0.ug=jjf0er
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN1c9aAAoJEDMEi1NhKgbsbckH/0PavaBiWw5MwFtaQVp3ETer
++i7P0XHCU6kSdciKwtLjjyKMaSh7gtU/AIMu630pw/DLXRE+wgEJNN127PNCAk4/
+yKP+nCbP4BgAsJ0lDscIY3y1kqZH2jST/4445PGmH/oXtGPyDXRqRyVi7n5rabtT
+4Nf7vPO/OAJeOigju+nxrywkYf5sVe9pKXNJEv6RfABkYh1UerzTWXoU9EZoidib
+65HxnXP95jAV3ZuqPWEu2MFHsJtQf+O0GLmoDjQC4dG+re6AqeMgwZ5rPEJ7zkpn
+kzxUj8wI62MVtAwhrVNOo3j+ShJ6aiZkrePu8LKq0Dh/Ft4ldXmxD1mKGSW3ZYE=
+=BwDC
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__20_May_2011_12_18_02_+1000_nAKRV0.ug=jjf0er--
