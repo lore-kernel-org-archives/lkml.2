@@ -1,111 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935186Ab1ETQ20 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 12:28:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934587Ab1ETQ2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 12:28:24 -0400
-Date: Fri, 20 May 2011 18:27:09 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: David Stevens <dlstevens@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, jmorris@namei.org, kaber@trash.net,
-        kuznet@ms2.inr.ac.ru, linux-kernel@vger.kernel.org, mmarek@suse.cz,
-        netdev@vger.kernel.org, pekkas@netcore.fi, yoshfuji@linux-ipv6.org
-Subject: Re: [PATCH v3 1/1] igmp: call ip_mc_clear_src() only when we have no
- users of ip_mc_list
-Message-ID: <20110520162709.GA3497@darkmag.usersys.redhat.com>
-References: <20110515165945.GA20024@darkmag.usersys.redhat.com>
- <20110516.140359.111037536766782557.davem@davemloft.net>
- <OF948388D5.90B3F5A7-ON88257892.006C3228-88257892.0071B9D5@us.ibm.com>
- <20110517133801.GC30366@darkmag.usersys.redhat.com>
- <20110517143756.GE30366@darkmag.usersys.redhat.com>
- <OF11F57B2A.6B43B7E6-ON88257893.005490B0-88257893.00615176@us.ibm.com>
+	id S935192Ab1ETQaE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 12:30:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33413 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934587Ab1ETQaC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 12:30:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <OF11F57B2A.6B43B7E6-ON88257893.005490B0-88257893.00615176@us.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1105201806340.3078@ionos>
+References: <20110520161210.81bbef3a.sfr@canb.auug.org.au> <BANLkTi=Dn_jvJ8mLY0Bc6C1Ptoqa-kJrCg@mail.gmail.com>
+ <alpine.LFD.2.02.1105201806340.3078@ionos>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 20 May 2011 09:29:37 -0700
+Message-ID: <BANLkTi=qP3ttri7MseabgJHzx1JYfOyLaw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 10:42:59AM -0700, David Stevens wrote:
-> Veaceslav,
->         It looks to me like this will leak the source filters if we are 
-> called from ip_mc_destroy_dev(),
-> Even with your previous patch, you're assuming that we don't free the 
-> ip_mc_list and so we have the
-> same one when we up the device, but if there are no timers running, it 
-> looks like refcnt canl go to 0 and free
-> it. If we can ever free the ip_mc_list when users != 0 (or going to 0 
-> immediately after the drop), we
-> have to do the ip_mc_clear_src() or leak the list. I haven't looked at 
-> this code in years, so I'll need
-> to refresh my memory.
->         So, I'll look at that a bit more; at a minimum, I think you need 
-> to do the clear_src
-> also in the destroy case. We could lose the filters and set the exclude 
-> count to users, instead
-> of 1; but I like the idea of keeping the source filters across a down/up, 
-> if we can be sure there
-> are no cases where we free the ip_mc_list without first freeing all the 
-> filters.
-> 
->                                                                 +-DLS
+On Fri, May 20, 2011 at 9:16 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> Removed it, but it does not break anything on x86 because
+> linux/thread_info.h includes asm/thread_info.h which includes
+> asm/processor.h on x86 for non obvious reasons.
 
-Yes, you are completely right, we can leak the sources on
-ip_mc_destroy_dev() when we've ip_ma_put() it inside all the timers. Also,
-I've seen that we called igmp_group_dropped() for every mc in dev->mc_list,
-however we've done it already in ip_mc_down() before, which wouldn't lead
-to anything (cause the device is already ->dead, and all timers are
-stopped), but just would be a waste of time.
+Ahh. "mm_segment_t".
 
-So, does this patch seem ok? If yes, I'll send it with the changelog.
+Some other architectures do it in their <asm/segment.h>
 
----
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index 1fd3d9c..57ca93a 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -1169,20 +1169,18 @@ static void igmp_group_dropped(struct ip_mc_list *im)
- 
- 	if (!in_dev->dead) {
- 		if (IGMP_V1_SEEN(in_dev))
--			goto done;
-+			return;
- 		if (IGMP_V2_SEEN(in_dev)) {
- 			if (reporter)
- 				igmp_send_report(in_dev, im, IGMP_HOST_LEAVE_MESSAGE);
--			goto done;
-+			return;
- 		}
- 		/* IGMPv3 */
- 		igmpv3_add_delrec(in_dev, im);
- 
- 		igmp_ifc_event(in_dev);
- 	}
--done:
- #endif
--	ip_mc_clear_src(im);
- }
- 
- static void igmp_group_added(struct ip_mc_list *im)
-@@ -1319,6 +1317,7 @@ void ip_mc_dec_group(struct in_device *in_dev, __be32 addr)
- 				*ip = i->next_rcu;
- 				in_dev->mc_count--;
- 				igmp_group_dropped(i);
-+				ip_mc_clear_src(i);
- 
- 				if (!in_dev->dead)
- 					ip_rt_multicast_event(in_dev);
-@@ -1428,7 +1427,8 @@ void ip_mc_destroy_dev(struct in_device *in_dev)
- 		in_dev->mc_list = i->next_rcu;
- 		in_dev->mc_count--;
- 
--		igmp_group_dropped(i);
-+		/* We've dropped the groups in ip_mc_down already */
-+		ip_mc_clear_src(i);
- 		ip_ma_put(i);
- 	}
- }
+And looking at it, we could just do it in thread_info.h itself. I dunno.
+
+At *some* point it would be really nice to try to minimize the header
+files, I suspect we spend a lot of time compiling just parsing the
+crud most people never need.
+
+(In fact, from my sparse days, I pretty much guarantee that is the case)
+
+                Linus
