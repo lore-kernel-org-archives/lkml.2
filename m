@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933777Ab1ETG6Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 02:58:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40839 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933380Ab1ETG6W (ORCPT
+	id S1753666Ab1ETHBb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 03:01:31 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:43567 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab1ETHBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 02:58:22 -0400
-Date: Fri, 20 May 2011 00:58:20 -0600
+	Fri, 20 May 2011 03:01:30 -0400
+Date: Fri, 20 May 2011 01:01:27 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Barry Song <21cnbao@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@freescale.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
 Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to
  drivers/gpio
-Message-ID: <20110520065820.GC21285@ponder.secretlab.ca>
+Message-ID: <20110520070127.GD21285@ponder.secretlab.ca>
 References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
- <BANLkTi=poU17RqAzp28CPjWHrN_+aFiyag@mail.gmail.com>
- <BANLkTindee6UMez8HyBUwd2H6mN-DknzPw@mail.gmail.com>
- <BANLkTik7BnJKWCsm2L3-GJPTaaiXFNSgaA@mail.gmail.com>
- <BANLkTim2rv9QHDd2zjBfyVqG9dSGCM=PAw@mail.gmail.com>
- <BANLkTinABWucqESqSRYJV+-frm6vDmpxFQ@mail.gmail.com>
- <BANLkTim=iwHY2NhWuK6qmhAdez-5AiJDBw@mail.gmail.com>
+ <20110519085638.GA26816@S2100-06.ap.freescale.net>
+ <BANLkTinD9rAipfwNnh6QpgbcogckdtQ=OQ@mail.gmail.com>
+ <20110519135631.GB26816@S2100-06.ap.freescale.net>
+ <20110519191156.GE2429@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTim=iwHY2NhWuK6qmhAdez-5AiJDBw@mail.gmail.com>
+In-Reply-To: <20110519191156.GE2429@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 10:05:25PM +0800, Barry Song wrote:
-> 2011/5/19 Linus Walleij <linus.walleij@linaro.org>:
-> > On Thu, May 19, 2011 at 2:35 PM, Barry Song <21cnbao@gmail.com> wrote:
-> >> 2011/5/19 Linus Walleij <linus.walleij@linaro.org>:
-> >>> On Thu, May 19, 2011 at 1:38 PM, Barry Song <21cnbao@gmail.com> wrote:
-> >>>>
-> >>>> looks like the driver can't be a real module, is the module_exit
-> >>>> suitable? it looks strange module_exit plays together with
-> >>>> arch_initcall.
-> >>>
-> >>> It's a rather common design pattern in the kernel for early
-> >>> platform drivers. Either the dependencies are resolved by the
-> >>> different initlevels or they are resolved in probe order with
-> >>> loadable modules. Module load will call all initlevels in order.
-> >>>
-> >>> It is not elegant but it is common.
-> >>
-> >> Linus, thanks for your reply. module_exit and related functions are
-> >> really useless codes. but people have done that before, then we have
-> >> no way except following.
-> >> u300_gpio_exit never gets chance to run and when we disassemble
-> >> vmlinux, u300_gpio_exit()  function should be not in the final binary
-> >> at all, just a symbol name is left.
-> >
-> > I know. I can make the Kconfig options tristate if it makes you feel
-> > better...
-> what i feel headache is that it is really difficult and unpredicted
-> for an internal gpio driver to be removable in lots of read products
-> because gpio is probably the last bottom module other drivers need.
-> even it can be called in arch/arm/plat(mach).
+On Thu, May 19, 2011 at 09:11:56PM +0200, Sascha Hauer wrote:
+> On Thu, May 19, 2011 at 09:56:32PM +0800, Shawn Guo wrote:
+> > On Thu, May 19, 2011 at 02:21:27PM +0200, Linus Walleij wrote:
+> > > On Thu, May 19, 2011 at 10:56 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> > > 
+> > > > I start working on moving mxs gpio (arch/arm/mach-mxs/gpio.c) into
+> > > > driver/gpio, and I see the possibility to go a different approach
+> > > > from U300 one posted here.
+> > > 
+> > > I've tried to figure out what relation the mail has to the U300 driver
+> > > but cannot find any, more than that it's moving a driver... Please
+> > > start a new mail thread.
+> > > 
+> > I will post mxs-gpio driver once I get it done.  Then please review
+> > the code and see the difference between mxs-gpio and u300-gpio,
+> > though these hardwares have something in common.
 > 
-> i am not sure whether  i am thinking right. gpio and pinmux are more
-> things of bottom level APIs like dma/clock tree but not like device
-> drivers.  but i really think you have sent a great pinmux core
-> framework.
-> 
+> I'm pretty sure they have something in common and even more that *all*
+> gpio drivers have something in common. I wonder if it really makes sense
+> to move the gpio driver to drivers/gpio without creating a common
+> mmio_gpio_chip beforehand. This can't be very hard.
 
-No, gpio controllers are just another set of devices, albeit really
-low level devices that lots of other things depend on.  The Linux
-model does and should support loading/unloading of GPIO drivers
-providing there is nothing using them.
+already done and queued for 2.6.39.  It may not be in it's final form,
+and I'll possibly change the name, but take a look at the bgpio_chip
+patches that were circulated on the list, and will be in my gpio/next
+branch on git://git.secretlab.ca/git/linux-2.6
 
-So, yes, in a lot of cases unloading them is simply not possible
-because board support code depends on them at some point in early
-boot, but that doesn't mean that they should be treated differently
-than any other drivers.
-
-Oh, and just to be clear, there are also use cases where really low
-level code has to go and poke GPIO devices directly before any of the
-driver model subsystems are up and running.  That is a different
-use-case and it is not what I'm talking about here.
+That said, I don't mind moving stuff into drivers/gpio first and
+consolidating it after.
 
 g.
 
-
-> we once thought we could have a plat-common above all
-> plat-xxx/mach-xxx, and let the plat-common provide the cores of dma,
-> clk, gpio, pinmux(pinmux core from you), for example, all common API
-> and abstract level codes like gpio_request can be there, and SoCs just
-> implement some hardware-related callbacks required by plat-common in
-> themselves plat-xxx .
-> 
-> >
-> > Linus Walleij
-> >
