@@ -1,293 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935062Ab1ETDxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:53:36 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38029 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933275Ab1ETDxe (ORCPT
+	id S934401Ab1ETDre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:47:34 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:20208
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933367Ab1ETDrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:53:34 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 20 May 2011 12:46:36 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, hannes@cmpxchg.org,
-        Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [PATCH 6/8] memcg asynchronous memory reclaim interface
-Message-Id: <20110520124636.45c26cfa.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 May 2011 23:47:33 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zzbb2cK148cM1432N98dKzz1202hzzz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LLH6IZ-01-7YM-02
+X-M-MSG: 
+Date: Fri, 20 May 2011 05:47:24 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: sleeping while atomic warning while modprobing oprofile.
+Message-ID: <20110520034724.GA20052@erda.amd.com>
+References: <20110518191706.GA20475@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110518191706.GA20475@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a logic to keep usage margin to the limit in asynchronous way.
-When the usage over some threshould (determined automatically), asynchronous
-memory reclaim runs and shrink memory to limit - MEMCG_ASYNC_STOP_MARGIN.
+On 18.05.11 15:17:06, Dave Jones wrote:
+> I just saw this when after I did a 'modprobe oprofile' on my amd64 box.
 
-By this, there will be no difference in total amount of usage of cpu to
-scan the LRU but we'll have a chance to make use of wait time of applications
-for freeing memory. For example, when an application read a file or socket,
-to fill the newly alloated memory, it needs wait. Async reclaim can make use
-of that time and give a chance to reduce latency by background works.
+Thanks for reporting this. This happens in init_ibs(). We are actually
+too strict here with disabling preemption, though we still need it.
+Will change that code.
 
-This patch only includes required hooks to trigger async reclaim and user interfaces.
-Core logics will be in the following patches.
+-Robert
 
-Changelog v1 -> v2:
-  - avoid async reclaim check when num_online_cpus() < 2.
-  - changed MEMCG_ASYNC_START_MARGIN to be 6 * HPAGE_SIZE.
+> 
+> 	Dave
+> 
+> BUG: sleeping function called from invalid context at mm/slub.c:824
+> in_atomic(): 1, irqs_disabled(): 0, pid: 32357, name: modprobe
+> INFO: lockdep is turned off.
+> Pid: 32357, comm: modprobe Not tainted 2.6.39-rc7+ #14
+> Call Trace:
+>  [<ffffffff8104bdc8>] __might_sleep+0x112/0x117
+>  [<ffffffff81129693>] kmem_cache_alloc_trace+0x4b/0xe7
+>  [<ffffffff81278f14>] kzalloc.constprop.0+0x29/0x2b
+>  [<ffffffff81278f4c>] pci_get_subsys+0x36/0x78
+>  [<ffffffff81022689>] ? setup_APIC_eilvt+0xfb/0x139
+>  [<ffffffff81278fa4>] pci_get_device+0x16/0x18
+>  [<ffffffffa06c8b5d>] op_amd_init+0xd3/0x211 [oprofile]
+>  [<ffffffffa064d000>] ? 0xffffffffa064cfff
+>  [<ffffffffa064d298>] op_nmi_init+0x21e/0x26a [oprofile]
+>  [<ffffffffa064d062>] oprofile_arch_init+0xe/0x26 [oprofile]
+>  [<ffffffffa064d010>] oprofile_init+0x10/0x42 [oprofile]
+>  [<ffffffff81002099>] do_one_initcall+0x7f/0x13a
+>  [<ffffffff81096524>] sys_init_module+0x132/0x281
+>  [<ffffffff814cc682>] system_call_fastpath+0x16/0x1b
+> 
+> 
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- Documentation/cgroups/memory.txt |   46 ++++++++++++++++++-
- mm/memcontrol.c                  |   94 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 139 insertions(+), 1 deletion(-)
-
-Index: mmotm-May11/mm/memcontrol.c
-===================================================================
---- mmotm-May11.orig/mm/memcontrol.c
-+++ mmotm-May11/mm/memcontrol.c
-@@ -115,10 +115,12 @@ enum mem_cgroup_events_index {
- enum mem_cgroup_events_target {
- 	MEM_CGROUP_TARGET_THRESH,
- 	MEM_CGROUP_TARGET_SOFTLIMIT,
-+	MEM_CGROUP_TARGET_ASYNC,
- 	MEM_CGROUP_NTARGETS,
- };
- #define THRESHOLDS_EVENTS_TARGET (128)
- #define SOFTLIMIT_EVENTS_TARGET (1024)
-+#define ASYNC_EVENTS_TARGET	(512)	/* assume x86-64's hpagesize */
- 
- struct mem_cgroup_stat_cpu {
- 	long count[MEM_CGROUP_STAT_NSTATS];
-@@ -211,6 +213,29 @@ static void mem_cgroup_threshold(struct 
- static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
- 
- /*
-+ * For example, with transparent hugepages, memory reclaim scan at hitting
-+ * limit can very long as to reclaim HPAGE_SIZE of memory. This increases
-+ * latency of page fault and may cause fallback. At usual page allocation,
-+ * we'll see some (shorter) latency, too. To reduce latency, it's appreciated
-+ * to free memory in background to make margin to the limit. This consumes
-+ * cpu but we'll have a chance to make use of wait time of applications
-+ * (read disk etc..) by asynchronous reclaim.
-+ *
-+ * This async reclaim tries to reclaim HPAGE_SIZE * 2 of pages when margin
-+ * to the limit is smaller than HPAGE_SIZE * 2. This will be enabled
-+ * automatically when the limit is set and it's greater than the threshold.
-+ */
-+#if HPAGE_SIZE != PAGE_SIZE
-+#define MEMCG_ASYNC_LIMIT_THRESH      (HPAGE_SIZE * 64)
-+#define MEMCG_ASYNC_MARGIN	      (HPAGE_SIZE * 4)
-+#else /* make the margin as 4M bytes */
-+#define MEMCG_ASYNC_LIMIT_THRESH      (128 * 1024 * 1024)
-+#define MEMCG_ASYNC_MARGIN            (8 * 1024 * 1024)
-+#endif
-+
-+static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem);
-+
-+/*
-  * The memory controller data structure. The memory controller controls both
-  * page cache and RSS per cgroup. We would eventually like to provide
-  * statistics based on the statistics developed by Rik Van Riel for clock-pro,
-@@ -278,6 +303,12 @@ struct mem_cgroup {
- 	 */
- 	unsigned long 	move_charge_at_immigrate;
- 	/*
-+ 	 * Checks for async reclaim.
-+ 	 */
-+	unsigned long	async_flags;
-+#define AUTO_ASYNC_ENABLED	(0)
-+#define USE_AUTO_ASYNC		(1)
-+	/*
- 	 * percpu counter.
- 	 */
- 	struct mem_cgroup_stat_cpu *stat;
-@@ -722,6 +753,9 @@ static void __mem_cgroup_target_update(s
- 	case MEM_CGROUP_TARGET_SOFTLIMIT:
- 		next = val + SOFTLIMIT_EVENTS_TARGET;
- 		break;
-+	case MEM_CGROUP_TARGET_ASYNC:
-+		next = val + ASYNC_EVENTS_TARGET;
-+		break;
- 	default:
- 		return;
- 	}
-@@ -745,6 +779,11 @@ static void memcg_check_events(struct me
- 			__mem_cgroup_target_update(mem,
- 				MEM_CGROUP_TARGET_SOFTLIMIT);
- 		}
-+		if (__memcg_event_check(mem, MEM_CGROUP_TARGET_ASYNC)) {
-+			mem_cgroup_may_async_reclaim(mem);
-+			__mem_cgroup_target_update(mem,
-+				MEM_CGROUP_TARGET_ASYNC);
-+		}
- 	}
- }
- 
-@@ -3365,6 +3404,23 @@ void mem_cgroup_print_bad_page(struct pa
- 
- static DEFINE_MUTEX(set_limit_mutex);
- 
-+/* When limit is changed, check async reclaim switch again */
-+static void mem_cgroup_set_auto_async(struct mem_cgroup *mem, u64 val)
-+{
-+	if (!test_bit(AUTO_ASYNC_ENABLED, &mem->async_flags))
-+		goto clear;
-+	if (num_online_cpus() < 2)
-+		goto clear;
-+	if (val < MEMCG_ASYNC_LIMIT_THRESH)
-+		goto clear;
-+
-+	set_bit(USE_AUTO_ASYNC, &mem->async_flags);
-+	return;
-+clear:
-+	clear_bit(USE_AUTO_ASYNC, &mem->async_flags);
-+	return;
-+}
-+
- static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
- 				unsigned long long val)
- {
-@@ -3413,6 +3469,7 @@ static int mem_cgroup_resize_limit(struc
- 				memcg->memsw_is_minimum = true;
- 			else
- 				memcg->memsw_is_minimum = false;
-+			mem_cgroup_set_auto_async(memcg, val);
- 		}
- 		mutex_unlock(&set_limit_mutex);
- 
-@@ -3590,6 +3647,15 @@ unsigned long mem_cgroup_soft_limit_recl
- 	return nr_reclaimed;
- }
- 
-+static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem)
-+{
-+	if (!test_bit(USE_AUTO_ASYNC, &mem->async_flags))
-+		return;
-+	if (res_counter_margin(&mem->res) <= MEMCG_ASYNC_MARGIN) {
-+		/* Fill here */
-+	}
-+}
-+
- /*
-  * This routine traverse page_cgroup in given list and drop them all.
-  * *And* this routine doesn't reclaim page itself, just removes page_cgroup.
-@@ -4149,6 +4215,29 @@ static int mem_control_stat_show(struct 
- 	return 0;
- }
- 
-+static u64 mem_cgroup_async_read(struct cgroup *cgrp, struct cftype *cft)
-+{
-+	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
-+
-+	return mem->async_flags;
-+}
-+
-+static int
-+mem_cgroup_async_write(struct cgroup *cgrp, struct cftype *cft, u64 val)
-+{
-+	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
-+
-+	if (val & (1 << AUTO_ASYNC_ENABLED))
-+		set_bit(AUTO_ASYNC_ENABLED, &mem->async_flags);
-+	else
-+		clear_bit(AUTO_ASYNC_ENABLED, &mem->async_flags);
-+
-+	val = res_counter_read_u64(&mem->res, RES_LIMIT);
-+	mem_cgroup_set_auto_async(mem, val);
-+	return 0;
-+}
-+
-+
- static u64 mem_cgroup_swappiness_read(struct cgroup *cgrp, struct cftype *cft)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
-@@ -4580,6 +4669,11 @@ static struct cftype mem_cgroup_files[] 
- 		.unregister_event = mem_cgroup_oom_unregister_event,
- 		.private = MEMFILE_PRIVATE(_OOM_TYPE, OOM_CONTROL),
- 	},
-+	{
-+		.name = "async_control",
-+		.read_u64 = mem_cgroup_async_read,
-+		.write_u64 = mem_cgroup_async_write,
-+	},
- };
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-Index: mmotm-May11/Documentation/cgroups/memory.txt
-===================================================================
---- mmotm-May11.orig/Documentation/cgroups/memory.txt
-+++ mmotm-May11/Documentation/cgroups/memory.txt
-@@ -70,6 +70,7 @@ Brief summary of control files.
- 				 (See sysctl's vm.swappiness)
-  memory.move_charge_at_immigrate # set/show controls of moving charges
-  memory.oom_control		 # set/show oom controls.
-+ memory.async_control		 # set control for asynchronous memory reclaim
- 
- 1. History
- 
-@@ -664,7 +665,50 @@ At reading, current status of OOM is sho
- 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
- 				 be stopped.)
- 
--11. TODO
-+11. Asynchronous memory reclaim
-+
-+In some kind of applications which uses many file caches, once memory cgroup
-+hit limit, following allocation of pages will hit limit again and the
-+application may see huge latency because of memory reclaim.
-+
-+Memory cgroup provides a method for asynchronous memory reclaim for freeing
-+memory before hitting limit. By this, some class of application can avoid
-+memory reclaim latency effectively and show good performance. For example,
-+if an application reads data from files bigger than limit, freeing memory
-+in asynchrnous will reduce latency of read. But please note, even if
-+latency decreased, the amount of total usage of CPU is unchanged. So,
-+asynchronous memory reclaim works effectively only when you have extra unused
-+CPU, applications tend to sleep. So, this feature only works on SMP.
-+
-+So, if you see this feature doesn't help your application, please let it
-+turned off.
-+
-+
-+11.1 memory.async_control
-+
-+memory.async_control is a control for asynchronous memory reclaim and
-+represented as bitmask of controls.
-+
-+ bit 0 ....user control of automatic asynchronous memory reclaim(see below)
-+ bit 1 ....indicate automatic asynchronous memory reclaim is really used.
-+
-+ * Automatic asynchronous memory reclaim is a feature to free pages to
-+   some extent below the limit in background. When this runs, applications
-+   can reduce latency at hit limit. (but please note, background reclaim
-+   use cpu.)
-+
-+   This feature can be enabled by
-+
-+   echo 1 > memory.async_control
-+
-+   If successfully enabled, bit 1 of memory.async_control is set. Bit 1 may
-+   not be set when the number of cpu is 1 or when the limit is too small.
-+
-+   Note: This feature is not propageted to childrens in automatic. This
-+   may be conservative but required limitation to avoid using too much
-+   cpus.
-+
-+12. TODO
- 
- 1. Add support for accounting huge pages (as a separate controller)
- 2. Make per-cgroup scanner reclaim not-shared pages first
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
