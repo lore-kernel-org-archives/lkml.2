@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934109Ab1ETP2r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 11:28:47 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:60576 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933507Ab1ETP2q (ORCPT
+	id S934270Ab1ETP3L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 11:29:11 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:31152 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S934082Ab1ETP3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 11:28:46 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: d.g.jansen@googlemail.com
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, tytso@mit.edu
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-In-Reply-To: Your message of "Thu, 19 May 2011 15:34:46 +0200."
-             <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1305905293_2669P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 20 May 2011 11:28:13 -0400
-Message-ID: <9534.1305905293@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4DD6888E.009A,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Fri, 20 May 2011 11:29:08 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: u67qr4oVM1nzpqnCMrUU3CpaWJamRhHzc0ScRfq483EHPgt
+ 9.U3Lany.CVxhUHnghJyXPAvnQ4L6VFvsjefbbs_z5X10J60sFc3F5e17kDz
+ rESy8tfT.8iCBp7oTdso4WPZX4GQu_7_ei8IloCcx9R52KR6mkovt5T5oWSo
+ 174beIy.bakT6t0IynJn2pM08aztrIdOciSvCMdXPYnhmOHGAHN7jN..AiSf
+ FsXXGIsXd7SQERRX_Ax8ENCASXevzZn.kRaD.lQKXTMCler95EwUJTk2d48h
+ 63d68n3G3YMzsEcdPl4yrmLl9kY3xLHI3jv8AUXKSsb_8zipLKuAW70Pq2p0
+ AFHL_nmX29zz7Mn.DULO9Zonm
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 20 May 2011 10:29:06 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: linux-kernel@vger.kernel.org
+Subject: percpu: Fixup __this_cpu_xchg* operations
+Message-ID: <alpine.DEB.2.00.1105201027000.5610@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1305905293_2669P
-Content-Type: text/plain; charset=us-ascii
-
-On Thu, 19 May 2011 15:34:46 +0200, Dennis Jansen said:
-
-> Testing:
-> I've been using this workaround on my netbook for over six months now.
-> It works as expected for me with all software in a Ubuntu 9.10
-> environment and saves me at least 0.5 Watt or roughly 10 % battery
-> time - without destroying my hard disk. I have seen no negative side
-> effects.
-> 
-> What I didn't test:
-> I didn't test this on different platforms and environments. But as
-> it's generic code I expect no different behavior. I didn't benchmark
-> how this might affect performance due to the additional if() check for
-> every fsync call. But as the fsync is rather expensive and not used
-> *that* much, I think it should have not noticeable impact.
-
-How much destructive testing did you do?  In the 6 months, how many times did
-the system crash (or had the battery pulled out, or whatever) while large
-amounts of data were still pending after apps thought they were fsync'ed? How
-much crash testing was done against apps that use fsync for ordering or
-correctness reasons?
-
-> In short: That it makes laptop_mode work as advertised IHO is no valid
-> point against this solution. And if, we could consider a sending a
-> printk the first time an fsync is skipped.
-
-That would be the same printk that the user never actually *sees* because your
-patch suppressed syslogd's fsync to guarantee it made it to disk, so it was
-lost when the system crashed soon thereafter, along with the user's work? ;)
+This patch has been in my tree for awhile now.
 
 
+Subject: percpu: Fixup __this_cpu_xchg* operations
 
---==_Exmh_1305905293_2669P
-Content-Type: application/pgp-signature
+Somehow we got into a situation where the __this_cpu_xchg() operations were
+not defined in the same way as this_cpu_xchg() and friends. I had some build
+failures under 32 bit that were addressed by these fixes.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-iD8DBQFN1oiNcC3lWbTT17ARAgm4AKCQRATeS6Ziz/jCKzCfiRpVTQ1oxACg1X1c
-LrU/oHb+Ckb2PJfF4B5yuqk=
-=R0PL
------END PGP SIGNATURE-----
 
---==_Exmh_1305905293_2669P--
+---
+ arch/x86/include/asm/percpu.h |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
+Index: linux-2.6/arch/x86/include/asm/percpu.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/percpu.h	2011-03-30 14:09:28.000000000 -0500
++++ linux-2.6/arch/x86/include/asm/percpu.h	2011-03-30 14:10:16.000000000 -0500
+@@ -388,12 +388,9 @@ do {									\
+ #define __this_cpu_xor_1(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define __this_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define __this_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
+-/*
+- * Generic fallback operations for __this_cpu_xchg_[1-4] are okay and much
+- * faster than an xchg with forced lock semantics.
+- */
+-#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
+-#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
++#define __this_cpu_xchg_1(pcp, val)	percpu_xchg_op(pcp, val)
++#define __this_cpu_xchg_2(pcp, val)	percpu_xchg_op(pcp, val)
++#define __this_cpu_xchg_4(pcp, val)	percpu_xchg_op(pcp, val)
+
+ #define this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+ #define this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+@@ -471,6 +468,7 @@ do {									\
+ #define __this_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)		percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
+ #define this_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)		percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
+ #define irqsafe_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)	percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
++
+ #endif /* CONFIG_X86_CMPXCHG64 */
+
+ /*
+@@ -485,6 +483,8 @@ do {									\
+ #define __this_cpu_or_8(pcp, val)	percpu_to_op("or", (pcp), val)
+ #define __this_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define __this_cpu_add_return_8(pcp, val) percpu_add_return_op(pcp, val)
++#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
++#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
+
+ #define this_cpu_read_8(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+ #define this_cpu_write_8(pcp, val)	percpu_to_op("mov", (pcp), val)
