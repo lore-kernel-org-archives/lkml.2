@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933616Ab1ETOmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:42:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54237 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933123Ab1ETOmg convert rfc822-to-8bit (ORCPT
+	id S934922Ab1ETOqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:46:46 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:38360 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab1ETOqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:42:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ifJUHvUAwQRRp9ix6WXu3lACJD95cjMVN82f5G0/zKEWw/tZxQ3uuEhlklaFCsICax
-         uWoctH6n1lPeAuxYdZH7uvDeKrR3QrtJW8K1weyd2jCENPaPpU2L3GzPJrBwBoi1epPE
-         bgQDje8W9EwYkfORifY7EEYCZDbG/ry0vA5bk=
+	Fri, 20 May 2011 10:46:45 -0400
+Date: Fri, 20 May 2011 10:46:53 -0400
+From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] Please pull powerpc.git merge branch
+Message-ID: <20110520144653.GH25179@zod.rchland.ibm.com>
+References: <1305777978.7481.37.camel@pasglop>
+ <20110520132328.GA5785@riccoc20.at.omicron.at>
+ <20110520135845.GG25179@zod.rchland.ibm.com>
+ <20110520143259.GB5785@riccoc20.at.omicron.at>
 MIME-Version: 1.0
-In-Reply-To: <1305855298.1465.19.camel@gandalf.stny.rr.com>
-References: <1305855298.1465.19.camel@gandalf.stny.rr.com>
-Date: Fri, 20 May 2011 16:42:34 +0200
-X-Google-Sender-Auth: rf_SPIosn9lsYbvybl5XerrVEMY
-Message-ID: <BANLkTim0jCi-aE2fQ84HfwpD9mAZzfwfaw@mail.gmail.com>
-Subject: Re: [RFC][PATCH] extable: Make sure all archs define _sdata
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, Kyle McMartin <kyle@mcmartin.ca>,
-        Helge Deller <deller@gmx.de>,
-        "JamesE.J.Bottomley" <jejb@parisc-linux.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110520143259.GB5785@riccoc20.at.omicron.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 03:34, Steven Rostedt <rostedt@goodmis.org> wrote:
-> Can I get an Acked-by (or comment) from the following Maintainers:
+On Fri, May 20, 2011 at 04:32:59PM +0200, Richard Cochran wrote:
+>On Fri, May 20, 2011 at 09:58:45AM -0400, Josh Boyer wrote:
+>> On Fri, May 20, 2011 at 03:23:29PM +0200, Richard Cochran wrote:
+>> >When I try to build 'next' (now at 208b3a4c), it does not compile due
+>> >to a change from the following commit.
+>> >
+>> >> Benjamin Herrenschmidt (1):
+>> >>       powerpc/smp: Make start_secondary_resume available to all CPU variants
+>> >
+>> >I would appreciate your help in getting this fixed...
+>> 
+>> Could you try the patch below?
+>
+>Yes, and it both compiles and boots.
 
->  m68k
+Thanks for testing!
 
->  arch/m68k/kernel/vmlinux-std.lds  |    2 ++
->  arch/m68k/kernel/vmlinux-sun3.lds |    1 +
+Ben, can you pull this patch in as-is (fixing up the Subject), or do you
+need me to resubmit it?
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+josh
+>> 
+>> Commit 69e3cea8d5fd526 introduced start_secondary_resume to misc_32.S,
+>> however it uses a 64-bit instruction which is not valid on 32-bit
+>> platforms.  Use 'stw' instead.
+>> 
+>> Reported-by: Richard Cochran <richardcochran@gmail.com>
+>> Signed-off-by: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+>> 
+>> ---
+>> 
+>> diff --git a/arch/powerpc/kernel/misc_32.S
+>> b/arch/powerpc/kernel/misc_32.S
+>> index 402560e..998a100 100644
+>> --- a/arch/powerpc/kernel/misc_32.S
+>> +++ b/arch/powerpc/kernel/misc_32.S
+>> @@ -700,7 +700,7 @@ _GLOBAL(start_secondary_resume)
+>> 	rlwinm  r1,r1,0,0,(31-THREAD_SHIFT)     /* current_thread_info() */
+>> 	addi    r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
+>> 	li      r3,0
+>> -	std     r3,0(r1)                /* Zero the stack frame pointer */
+>> +	stw     r3,0(r1)                /* Zero the stack frame pointer */
+>> 	bl      start_secondary
+>> 	b       .
+>>  #endif /* CONFIG_SMP */
+>> 
