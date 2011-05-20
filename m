@@ -1,83 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933629Ab1ETGsp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 02:48:45 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41067 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933375Ab1ETGsn (ORCPT
+	id S933680Ab1ETGwN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 02:52:13 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:1984 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933375Ab1ETGwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 02:48:43 -0400
-X-Sasl-enc: i+7rjbSr0vpuujEVDrCAuyENrYQ4y65mnZ1wpyIcfxfs 1305874122
-Message-ID: <4DD60F57.8030000@ladisch.de>
-Date: Fri, 20 May 2011 08:51:03 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Fri, 20 May 2011 02:52:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtADADwP1k15LCoegWdsb2JhbACmGBUBARYmJYhwvUsOgwkQgnIElzyHXA
+Date: Fri, 20 May 2011 16:52:07 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 14/18] writeback: make writeback_control.nr_to_write
+ straight
+Message-ID: <20110520065207.GR32466@dastard>
+References: <20110519214530.939830917@intel.com>
+ <20110519214746.038765568@intel.com>
+ <20110519220643.GA27247@localhost>
+ <20110519232910.GK32466@dastard>
+ <20110520040740.GA8603@localhost>
 MIME-Version: 1.0
-To: Leon Woestenberg <leon.woestenberg@gmail.com>
-CC: Takashi Iwai <tiwai@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-pci@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mmap() implementation for pci_alloc_consistent() memory?
-References: <BANLkTi==cinS1bZc_ARRbnYT3YD+FQr8gA@mail.gmail.com>	<20110519145921.GE9854@dumpdata.com>	<4DD53E2B.2090002@ladisch.de> <BANLkTinO1xR4XTN2B325pKCpJ3AjC9YidA@mail.gmail.com>
-In-Reply-To: <BANLkTinO1xR4XTN2B325pKCpJ3AjC9YidA@mail.gmail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20110520040740.GA8603@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leon Woestenberg wrote:
-> On Thu, May 19, 2011 at 5:58 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
->>> On Thu, May 19, 2011 at 12:14:40AM +0200, Leon Woestenberg wrote:
->>> >     vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
->>
->> So is this an architecture without coherent caches?
+On Fri, May 20, 2011 at 12:07:40PM +0800, Wu Fengguang wrote:
+> On Fri, May 20, 2011 at 07:29:10AM +0800, Dave Chinner wrote:
+> > On Fri, May 20, 2011 at 06:06:44AM +0800, Wu Fengguang wrote:
+> > > :                 writeback_single_inode(inode, wb, &wbc);
+> > > :                 work->nr_pages -= write_chunk - wbc.nr_to_write;
+> > > :                 wrote += write_chunk - wbc.nr_to_write;
+> > > :                 if (wbc.pages_skipped) {
+> > > :                         /*
+> > > :                          * writeback is not making progress due to locked
+> > > :                          * buffers.  Skip this inode for now.
+> > > :                          */
+> > > :                         redirty_tail(inode, wb);
+> > > : -               }
+> > > : +               } else if (!(inode->i_state & I_DIRTY))
+> > > : +                       wrote++;
+> > > 
+> > > It looks a bit more clean to do
+> > > 
+> > > :                 wrote += write_chunk - wbc.nr_to_write;
+> > > : +               if (!(inode->i_state & I_DIRTY))
+> > > : +                       wrote++;
+> > > :                 if (wbc.pages_skipped) {
+> > > :                         /*
+> > > :                          * writeback is not making progress due to locked
+> > > :                          * buffers.  Skip this inode for now.
+> > > :                          */
+> > > :                         redirty_tail(inode, wb);
+> > > :                 }
+> > 
+> > But it's still in the wrong place - such post-write inode dirty
+> > processing is supposed to be isolated to writeback_single_inode().
+> > Spreading it across multiple locations is not, IMO, the nicest thing
+> > to do...
 > 
-> My aim is to have an architecture independent driver.
-
-Please note that most MMU architectures forbid mapping the same memory
-with different attributes, so you must use pgprot_noncached if and only
-if dma_alloc_coherent actually uses it.  Something like the code below.
-
-And I'm not sure if you have to do some additional cache flushes when
-mapping on some architectures.
-
->> Or would you want to use pgprot_dmacoherent, if available?
+> Strictly speaking, it's post inspecting :)
 > 
-> Hmm, let me check that.
+> It does look reasonable and safe to move the pages_skipped post
+> processing into writeback_single_inode(). See the below patch.
 
-It's available only on ARM and Unicore32.
+<sigh>
 
-There's also dma_mmap_coherent(), which does exactly what you want if
-your buffer is physically contiguous, but it's ARM only.
-Takashi tried to implement it for other architectures; I don't know
-what came of it.
+That's not what I was referring to. The wbc.pages_skipped check is
+fine where it is.
 
+> 
+> When doing this chunk,
+> 
+> -			if (wbc->nr_to_write <= 0) {
+> +			if (wbc->nr_to_write <= 0 && wbc->pages_skipped == 0) {
+> 
+> I wonder in general sense (without knowing enough FS internals)
+> whether ->pages_skipped is that useful: if some locked buffer is
+> blocking all subsequent pages, then ->nr_to_write won't be able to
+> drop to zero.  So the (wbc->pages_skipped == 0) test seems redundant..
+> 
+> Thanks,
+> Fengguang
+> ---
+> Subject: writeback: move pages_skipped post processing into writeback_single_inode()
+> Date: Fri May 20 11:42:42 CST 2011
+> 
+> It's more logical to isolate post-write processings in writeback_single_inode().
+> 
+> Note that it slightly changes behavior for write_inode_now() and sync_inode(),
+> which used to ignore pages_skipped.
+> 
+> Proposed-by: Dave Chinner <david@fromorbit.com>
 
-Regards,
-Clemens
+No, I didn't propose the change you've made in this patch. I've been
+asking you to fix the original patch, not proposing new changes to
+some other code.  Please don't add my name to random tags in patches
+without asking me first.
 
+So, for the third time, please fix the original patch by moving the
+new "inode now clean" accounting to the "inode-now-clean" logic
+branch in writeback_single_inode().
 
-#ifndef pgprot_dmacoherent
-/* determine whether coherent mappings need to be uncached */
-#if defined(CONFIG_ALPHA) || \
-    defined(CONFIG_CRIS) || \
-    defined(CONFIG_IA64) || \
-    (defined(CONFIG_MIPS) && defined(CONFIG_DMA_COHERENT)) || \
-    (defined(CONFIG_PPC) && !defined(CONFIG_NOT_COHERENT_CACHE)) || \
-    defined(CONFIG_SPARC64) || \
-    defined(CONFIG_X86)
-#define ARCH_HAS_DMA_COHERENT_CACHE
-#endif
-#endif
+        if (!(inode->i_state & I_FREEING)) {
+                if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
+.....
+                } else if (inode->i_state & I_DIRTY) {
+.....
+                } else {
+			/*
+			 * account for it here with all the other
+			 * inode-now-clean manipulations that we need
+			 * to do!
+			 */
+.....
+                }
+        }
 
-	...
-#ifdef pgprot_dmacoherent
-	vma->vm_page_prot = pgprot_dmacoherent(vma->vm_page_prot);
-#elif !defined(ARCH_HAS_DMA_COHERENT_CACHE)
-#ifdef CONFIG_MIPS
-	if (!plat_device_is_coherent(device))
-#endif
-		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-#endif
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
