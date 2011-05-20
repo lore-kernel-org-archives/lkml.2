@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751004Ab1ETWqU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 18:46:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45764 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752699Ab1ETWqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 18:46:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,244,1304319600"; 
-   d="scan'208";a="440039325"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>, "Yinghai Lu" <yinghai@kernel.org>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH 1/1] x86/kernel/cpu/common.c: Fix section mismatch warnings
-Date: Fri, 20 May 2011 15:33:17 -0700
-Message-Id: <1305930797-11409-1-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
+	id S1755608Ab1ETWkM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 18:40:12 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34806 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab1ETWkH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 18:40:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <201105202046.40696.arnd@arndb.de>
+References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com>
+	<201105050841.40576.arnd@arndb.de>
+	<4DD6AD51.7090900@tilera.com>
+	<201105202046.40696.arnd@arndb.de>
+Date: Fri, 20 May 2011 15:40:06 -0700
+Message-ID: <BANLkTimMndGzjZJ0xUNgStY7kwM0aW7Ojg@mail.gmail.com>
+Subject: Re: [PATCH] arch/tile: add arch/tile/drivers/ directory with SROM driver
+From: Eric Biederman <ebiederm@aristanetworks.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+        Chris Wright <chrisw@sous-sol.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+On Fri, May 20, 2011 at 11:46 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 20 May 2011 20:05:05 Chris Metcalf wrote:
+>> This works well, except for the fact that we take advantage of the fact
+>> that the hypervisor driver internally buffers up writes to the current
+>> EEPROM sector, and flushes it to hardware only when explicitly told to do
+>> so, or when we start writing to another sector.  This avoids excessive wear
+>> on the EEPROM and also handles detection of whether we need to do a sector
+>> erase before the re-write.  However, it also means that we need to be able
+>> to issue the final explicit flush, or else the last write just sits in the
+>> hypervisor buffer indefinitely.  To make that happen I think I need to
+>> extend the bin_attribute structure, and the bin.c release() function, slightly:
+>
+> Yes, that would work. Another option would be to add a flush() callback
+> to the bin_attribute. Since filp_close calls both fops->flush and
+> fops->release, that would also make it possible to flush the buffer
+> without closing it, if necessary.
 
-Fix kernel compilation warnings from commit:
-de5397ad5b9ad22e2401c4dacdf1bb3b19c05679
+Ouch!
 
-WARNING: arch/x86/built-in.o(.cpuinit.text+0x1e07): Section mismatch in reference from the function generic_identify() to the variable .init.data:disable_smep
-The function __cpuinit generic_identify() references
-a variable __initdata disable_smep.
-If disable_smep is only used by generic_identify then
-annotate disable_smep with a matching annotation.
+Please do not make sysfs the direct access method to your device.
 
-WARNING: arch/x86/built-in.o(.cpuinit.text+0x1b10): Section mismatch in reference from the function identify_cpu() to the function .init.text:setup_smep() The function __cpuinit identify_cpu() references a function __init setup_smep().
-If setup_smep is only used by identify_cpu then annotate setup_smep with a matching annotation.
+I may be wrong but I don't think any other driver relies exclusively on sysfs.
+Certainly with the introduction of a flush you are introducing an completely
+different usage paradigm from current users and will need an entirely different
+set of tools.
 
-Change disable_smep from __initdata to __cpuinitdata.
+You are vastly exceeding the one value per file rule of sysfs.
 
-Change setup_smep() from __init to __cpuinit.
+Please look at the i2c core and if at all possible build a proper interface to
+your eeprom, that existing programs have a chance of utilizing rather than
+extending sysfs in ways that means cli tools can not work with it.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-
----
- arch/x86/kernel/cpu/common.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index cbc70a2..c8b4162 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -254,7 +254,7 @@ static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
- }
- #endif
- 
--static int disable_smep __initdata;
-+static int disable_smep __cpuinitdata;
- static __init int setup_disable_smep(char *arg)
- {
- 	disable_smep = 1;
-@@ -262,7 +262,7 @@ static __init int setup_disable_smep(char *arg)
- }
- __setup("nosmep", setup_disable_smep);
- 
--static __init void setup_smep(struct cpuinfo_x86 *c)
-+static __cpuinit void setup_smep(struct cpuinfo_x86 *c)
- {
- 	if (cpu_has(c, X86_FEATURE_SMEP)) {
- 		if (unlikely(disable_smep)) {
--- 
-1.7.2
-
+Eric
