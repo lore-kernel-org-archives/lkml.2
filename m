@@ -1,80 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935567Ab1ETKLf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 06:11:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54566 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935436Ab1ETKLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 06:11:34 -0400
-Date: Fri, 20 May 2011 12:11:20 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Andrew Lutomirski <luto@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
-        riel@redhat.com
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
- vmlinux)
-Message-ID: <20110520101120.GC11729@random.random>
-References: <BANLkTi=TOm3aLQCD6j=4va6B+Jn2nSfwAg@mail.gmail.com>
- <BANLkTi=9W6-JXi94rZfTtTpAt3VUiY5fNw@mail.gmail.com>
- <BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com>
- <BANLkTima0hPrPwe_x06afAh+zTi-bOcRMg@mail.gmail.com>
- <BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com>
- <BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com>
- <4DD5DC06.6010204@jp.fujitsu.com>
- <BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com>
- <BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
- <20110520140856.fdf4d1c8.kamezawa.hiroyu@jp.fujitsu.com>
+	id S935585Ab1ETKMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 06:12:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63830 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935523Ab1ETKMU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 06:12:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=k9c3DKxCUoBTTEM1yUi674knEct3kUHo1VjVpwqzDRpJICmavA1RZWBc+DZewHHcQ1
+         vnynSlBuo8fvE7JviDDuMybPCwS/Go9m9KNK1E0KuKw+spEuT2YxJrcYPzbczuxfRHyy
+         figDPT/NV69zdLfyB6KY0aWm+Rx731JvOlyAY=
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid-multitouch: Add support for Lumio panels
+References: <1305725244-5327-1-git-send-email-benjamin.tissoires@enac.fr>
+	<87boyyo0gr.fsf@macbook.be.48ers.dk>
+	<BANLkTikPXHswWQqQHqd8fegotqoZPLErsQ@mail.gmail.com>
+Date: Fri, 20 May 2011 12:12:14 +0200
+In-Reply-To: <BANLkTikPXHswWQqQHqd8fegotqoZPLErsQ@mail.gmail.com> (Benjamin
+	Tissoires's message of "Fri, 20 May 2011 00:37:05 +0200")
+Message-ID: <87mxihd6kh.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110520140856.fdf4d1c8.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 02:08:56PM +0900, KAMEZAWA Hiroyuki wrote:
-> +	if (!PageCompound(page)) {
-> +		compound_unlock(page);
-> +		spin_unlock_irq(&zone->lru_lock);
-> +		return false;
-> +	}
+>>>>> "Benjamin" == Benjamin Tissoires <benjamin.tissoires@enac.fr> writes:
 
-If you turn this into a BUG_ON(!PageCompound)) I'm ok with it. But it
-wasn't supposed to ever happen so the above shouldn't be needed.
+Hi,
 
-This very check is done in split_huge_page after taking the root
-anon_vma lock. And every other thread or process sharing the page has
-to take the anon_vma lock, and then check PageCompound too before it
-can proceed into __split_huge_page. So I don't see a problem but
-please add the BUG_ON if you are concerned. A BUG_ON definitely can't
-hurt. Also note, __split_huge_page is static and is only called by
-split_huge_page which does the check after proper locking.
+ Benjamin> your device presents Contact ID, Tip Switch, In Range and
+ Benjamin> Confidence.  I would say that Win 7 would treat it as a
+ Benjamin> multitouch screen, so this might work with
+ Benjamin> hid-multitouch. Please note that's the first time I see a
+ Benjamin> report descriptor with only one touch reported for a
+ Benjamin> multitouch screen.
 
-    if (!PageCompound(page))
-       goto out_unlock;
+ Benjamin> For the configuration, the device may emulate a mouse by
+ Benjamin> default, and hid-multitouch is able to switch to the
+ Benjamin> multitouch mode. You will loose the right click, but it can
+ Benjamin> be enabled in gnome at least (accessibility settings).
 
-I figure it's not easily reproducible but you can easily rule out THP
-issues by reproducing at least once after booting with
-transparent_hugepage=never or by building the kernel with
-CONFIG_TRANSPARENT_HUGEPAGE=n.
+ Benjamin> Can you just replace in hid-ids.h:
+ Benjamin> - #define USB_DEVICE_ID_CRYSTALTOUCH  0x0006
+ Benjamin> + #define USB_DEVICE_ID_CRYSTALTOUCH  0x0005
 
-I'm afraid we might have some lru active/inactive/isolated vmstat.c
-related issue so that's the part of the code I'd recommend to review
-(I checked it and I didn't see wrong stuff yet, not even in THP
-context yet but I'm still worried we have a statistic issue
-somewhere). I had a bugreport during -rc by two people (one was UP
-build and one was SMP build) not easily reproducible too, that hinted
-a possible nr_inactive* or nr_inactive* (or both) being wrong (not
-sure if _anon or _file, could be just one lru type or both). If stats
-are off, that may also trigger oom killer by making the VM shrinking
-(which also activates the swapping) bail out early thinking it can't
-shrink no more. It could be the same statistic problem that sometime
-makes the VM think it can't shrink no more and lead into early oom
-killing, and at other times it loops indefinitely in too_many_isolated
-if nr_isolated_X > nr_inactive_X indefinitely for __GFP_NO_KSWAPD
-allocations (kswapd is immune from such loop, so if kswapd is allowed
-to run, it probably kswapd then increases nr_inactive by deactivating
-enough pages to make it unblock). Just a wild guess...
+ Benjamin> and see if it's working?  If you prefer, I can make a new
+ Benjamin> patch, but I'll need to know which kernel you are running
+ Benjamin> (tree and branch). A 2.6.39 and above would be great.
+
+I'm on 2.6.39. The patch doesn't apply cleanly, but I've fixed it up
+manually (http://peter.korsgaard.com/lumio-2.6.29.patch).
+
+hid-multitouch does get loaded, and everything looks OK:
+
+usb 2-1.1: new full speed USB device number 4 using uhci_hcd
+hid-multitouch 0003:202E:0005.0008: hiddev0: USB HID v1.10 Device [LUMIO Inc LUMIO CrystalTouch ver 1.1C] on usb-0000:00:1d.0-1.1/input0
+input: LUMIO Inc LUMIO CrystalTouch ver 1.1C as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.1/input/input18
+hid-multitouch 0003:202E:0005.0009: input: USB HID v1.11 Keyboard [LUMIO Inc LUMIO CrystalTouch ver 1.1C] on usb-0000:00:1d.0-1.1/input1
+input: LUMIO Inc LUMIO CrystalTouch ver 1.1C as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.2/input/input19
+hid-multitouch 0003:202E:0005.000A: input: USB HID v1.11 Mouse [LUMIO Inc LUMIO CrystalTouch ver 1.1C] on usb-0000:00:1d.0-1.1/input2
+input: LUMIO Inc LUMIO CrystalTouch ver 1.1C as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.3/input/input20
+hid-multitouch 0003:202E:0005.000B: input: USB HID v1.11 Device [LUMIO Inc LUMIO CrystalTouch ver 1.1C] on usb-0000:00:1d.0-1.1/input3
+
+Evdev output is also different, but it doesn't seem to ever generate any
+events when I touch the screen.
+
+Before I had:
+
+I: Bus=0003 Vendor=202e Product=0005 Version=0111
+N: Name="LUMIO Inc LUMIO CrystalTouch ver 1.1C"
+P: Phys=usb-0000:00:1d.0-1.1/input1
+S: Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.1/input/input28
+U: Uniq=
+H: Handlers=mac-button-emul sysrq kbd event16 
+B: PROP=0
+B: EV=100013
+B: KEY=e080ffdf01cfffff fffffffffffffffe
+B: MSC=10
+
+I: Bus=0003 Vendor=202e Product=0005 Version=0111
+N: Name="LUMIO Inc LUMIO CrystalTouch ver 1.1C"
+P: Phys=usb-0000:00:1d.0-1.1/input2
+S: Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.2/input/input29
+U: Uniq=
+H: Handlers=mac-button-emul event17 
+B: PROP=0
+B: EV=1f
+B: KEY=70000 0 0 0 0
+B: REL=200
+B: ABS=3
+B: MSC=10
+
+I: Bus=0003 Vendor=202e Product=0005 Version=0111
+N: Name="LUMIO Inc LUMIO CrystalTouch ver 1.1C"
+P: Phys=usb-0000:00:1d.0-1.1/input3
+S: Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.3/input/input30
+U: Uniq=
+H: Handlers=mac-button-emul event18 
+B: PROP=0
+B: EV=1b
+B: KEY=420 1 0 0 0 0
+B: ABS=10000000003
+B: MSC=10
+
+With event16 + event18 never generating any events, and event17 giving:
+
+Input driver version is 1.0.1
+Input device ID: bus 0x3 vendor 0x202e product 0x5 version 0x111
+Input device name: "LUMIO Inc LUMIO CrystalTouch ver 1.1C"
+Supported events:
+  Event type 0 (Sync)
+  Event type 1 (Key)
+    Event code 272 (LeftBtn)
+    Event code 273 (RightBtn)
+    Event code 274 (MiddleBtn)
+  Event type 2 (Relative)
+    Event code 9 (Misc)
+  Event type 3 (Absolute)
+    Event code 0 (X)
+      Value    650
+      Min        0
+      Max     4095
+    Event code 1 (Y)
+      Value   3221
+      Min        0
+      Max     4095
+  Event type 4 (Misc)
+    Event code 4 (ScanCode)
+Testing ... (interrupt to exit)
+Event: time 1305882024.934011, type 4 (Misc), code 4 (ScanCode), value 90001
+Event: time 1305882024.934017, type 1 (Key), code 272 (LeftBtn), value 1
+Event: time 1305882024.934029, type 3 (Absolute), code 0 (X), value 270
+Event: time 1305882024.934034, type 3 (Absolute), code 1 (Y), value 1513
+Event: time 1305882024.934039, type 2 (Relative), code 9 (Misc), value 1
+Event: time 1305882024.934043, -------------- Report Sync ------------
+Event: time 1305882024.943019, type 2 (Relative), code 9 (Misc), value 1
+Event: time 1305882024.943025, -------------- Report Sync ------------
+Event: time 1305882024.951998, type 3 (Absolute), code 0 (X), value 275
+Event: time 1305882024.952006, type 3 (Absolute), code 1 (Y), value 1519
+Event: time 1305882024.952010, type 2 (Relative), code 9 (Misc), value 1
+Event: time 1305882024.952014, -------------- Report Sync ------------
+
+
+Now with hid-multitouch I have:
+
+I: Bus=0003 Vendor=202e Product=0005 Version=0111
+N: Name="LUMIO Inc LUMIO CrystalTouch ver 1.1C"
+P: Phys=usb-0000:00:1d.0-1.1/input1
+S: Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.1/input/input18
+U: Uniq=
+H: Handlers=mac-button-emul event16 
+B: PROP=0
+B: EV=100003
+B: KEY=0
+
+I: Bus=0003 Vendor=202e Product=0005 Version=0111
+N: Name="LUMIO Inc LUMIO CrystalTouch ver 1.1C"
+P: Phys=usb-0000:00:1d.0-1.1/input2
+S: Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.2/input/input19
+U: Uniq=
+H: Handlers=mac-button-emul event17 
+B: PROP=0
+B: EV=b
+B: KEY=0
+B: ABS=60000000000003
+
+I: Bus=0003 Vendor=202e Product=0005 Version=0111
+N: Name="LUMIO Inc LUMIO CrystalTouch ver 1.1C"
+P: Phys=usb-0000:00:1d.0-1.1/input3
+S: Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.3/input/input20
+U: Uniq=
+H: Handlers=mac-button-emul event18 
+B: PROP=0
+B: EV=b
+B: KEY=400 0 0 0 0 0
+B: ABS=60000000000003
+
+And event17:
+
+Input driver version is 1.0.1
+Input device ID: bus 0x3 vendor 0x202e product 0x5 version 0x111
+Input device name: "LUMIO Inc LUMIO CrystalTouch ver 1.1C"
+Supported events:
+  Event type 0 (Sync)
+  Event type 1 (Key)
+  Event type 3 (Absolute)
+    Event code 0 (X)
+      Value      0
+      Min        0
+      Max     4095
+    Event code 1 (Y)
+      Value      0
+      Min        0
+      Max     4095
+    Event code 53 (?)
+      Value      0
+      Min        0
+      Max     4095
+    Event code 54 (?)
+      Value      0
+      Min        0
+      Max     4095
+Testing ... (interrupt to exit)
+Event: time 1305886175.641112, -------------- Report Sync ------------
+
+And then nothing. Any idea about how to progress?
+
+-- 
+Bye, Peter Korsgaard
