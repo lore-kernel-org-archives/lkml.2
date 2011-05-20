@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935456Ab1ETJTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 05:19:41 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:45133 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933700Ab1ETJTk convert rfc822-to-8bit (ORCPT
+	id S935482Ab1ETJY6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 05:24:58 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:60810 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935441Ab1ETJY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 05:19:40 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/O3oVfkXfOemBaGxBh4ZQA3CFExW6xWmhW6MD3mB
-	dRpkckZY3aAdyn
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
-Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
-Date: Fri, 20 May 2011 11:19:35 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38.6; KDE/4.6.3; i686; ; )
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-References: <201105191526.31904.toralf.foerster@gmx.de> <201105201058.20355.toralf.foerster@gmx.de> <BANLkTim6yqMipB37Q=OJg=aC89vumCVewg@mail.gmail.com>
-In-Reply-To: <BANLkTim6yqMipB37Q=OJg=aC89vumCVewg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105201119.36155.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+	Fri, 20 May 2011 05:24:56 -0400
+Date: Fri, 20 May 2011 11:24:52 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the s390 tree
+Message-ID: <20110520112452.13cd62a3@mschwide>
+In-Reply-To: <20110520115651.fc0fc63f.sfr@canb.auug.org.au>
+References: <20110520115651.fc0fc63f.sfr@canb.auug.org.au>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 20 May 2011 11:56:51 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-richard -rw- weinberger wrote at 11:02:35
+> After merging the s390 tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> mm/rmap.c:788:54: error: macro "page_test_and_clear_dirty" passed 2 arguments, but takes just 1
+> mm/rmap.c: In function 'page_mkclean':
+> mm/rmap.c:788: error: 'page_test_and_clear_dirty' undeclared (first use in this function)
+> mm/rmap.c:788: error: (Each undeclared identifier is reported only once
+> mm/rmap.c:788: error: for each function it appears in.)
+> mm/rmap.c:983:52: error: macro "page_test_and_clear_dirty" passed 2 arguments, but takes just 1
+> mm/rmap.c: In function 'page_remove_rmap':
+> mm/rmap.c:983: error: 'page_test_and_clear_dirty' undeclared (first use in this function)
+> 
+> Caused by commit 4cbfc8b9f58c ("[S390] merge page_test_dirty and page_clear_dirty").
+> 
+> I have used the s390 tree from next-20110519 for today.
 
-> I hope it's _exactly_ the same result. vmlinux and linux are hard linked...
-tfoerste@n22 ~/devel/linux-2.6 $ ls -lid vmlinux linux 
-2034205 -rwxr-xr-x 2 tfoerste users 35624874 May 20 09:28 linux
-2034205 -rwxr-xr-x 2 tfoerste users 35624874 May 20 09:28 vmlinux
-
+Oops, sorry about that. Fixed the patch and updated git390.
 
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
