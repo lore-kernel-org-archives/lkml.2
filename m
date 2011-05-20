@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934575Ab1ETQBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 12:01:33 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:46517 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934464Ab1ETQBc convert rfc822-to-8bit (ORCPT
+	id S934598Ab1ETQCO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 12:02:14 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:54244 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757003Ab1ETQCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 12:01:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=VCNe9S4I0Irn5LPDS3TaHt2E9UZ6Q9bZj5K+4UHs8Z5qnNMEXWhFRcvV6eNW4yOv2J
-         s/ZzQhyiBYZdUkUW27dJMXc5ry4mTlnZAd8eCTYKRAXCPHUdYdYf+1nqF7HmbkmIIDlP
-         Kfcaf2CD3QtIb3pXgkD7R09CRdpxpXp9SmJXE=
-MIME-Version: 1.0
-In-Reply-To: <20110520153346.GA1843@barrios-desktop>
-References: <BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com>
- <BANLkTima0hPrPwe_x06afAh+zTi-bOcRMg@mail.gmail.com> <BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com>
- <BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com> <4DD5DC06.6010204@jp.fujitsu.com>
- <BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com> <BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
- <20110520140856.fdf4d1c8.kamezawa.hiroyu@jp.fujitsu.com> <20110520101120.GC11729@random.random>
- <BANLkTikAFMvpgHR2dopd+Nvjfyw_XT5=LA@mail.gmail.com> <20110520153346.GA1843@barrios-desktop>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 20 May 2011 12:01:12 -0400
-X-Google-Sender-Auth: x0kTDzS5p5ta2t3UgetLjtAHcpY
-Message-ID: <BANLkTi=X+=Wh1MLs7Fc-v-OMtxAHbcPmxA@mail.gmail.com>
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
-        riel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 May 2011 12:02:12 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Armando Visconti <armando.visconti@st.com>
+Cc: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: Fixed a crash in hid_report_raw_event() function.
+In-Reply-To: Your message of "Thu, 19 May 2011 21:41:22 +0200."
+             <1305834082-14888-1-git-send-email-armando.visconti@st.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1305834082-14888-1-git-send-email-armando.visconti@st.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1305907324_2669P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 20 May 2011 12:02:04 -0400
+Message-ID: <11173.1305907324@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020205.4DD6907E.0048,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 11:33 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+--==_Exmh_1305907324_2669P
+Content-Type: text/plain; charset=us-ascii
 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 8bfd450..a5c01e9 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1430,7 +1430,10 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+On Thu, 19 May 2011 21:41:22 +0200, Armando Visconti said:
+> I'm using a Data Modul EasyTouch USB multitouch controller,
+> which is issuing a hid report with a size equals to 0. The rsize
+> value gets set to 536870912 and Linux is crashing in the memset
+> because the value is too big.
 >
->        /* Check if we should syncronously wait for writeback */
->        if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
-> +               unsigned long nr_active;
->                set_reclaim_mode(priority, sc, true);
-> +               nr_active = clear_active_flags(&page_list, NULL);
-> +               count_vm_events(PGDEACTIVATE, nr_active);
->                nr_reclaimed += shrink_page_list(&page_list, zone, sc);
->        }
+> Signed-off-by: Armando Visconti <armando.visconti@st.com>
+> ---
+>  drivers/hid/hid-core.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 >
-> --
-
-I'm now running that patch *without* the pgdat_balanced fix or the
-need_resched check.  The VM_BUG_ON doesn't happen but I still get
-incorrect OOM kills.
-
-However, if I replace the check with:
-
-	if (false &&should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
-
-then my system lags under bad memory pressure but recovers without
-OOMs or oopses.
-
-Is that expected?
-
---Andy
-
-> 1.7.1
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index c3d6626..3e972e3 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1045,6 +1045,9 @@ void hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
 >
-> --
-> Kind regards,
-> Minchan Kim
+>  	rsize = ((report->size - 1) >> 3) + 1;
 >
+> +	if (rsize > HID_MAX_BUFFER_SIZE)
+> +		rsize = HID_MAX_BUFFER_SIZE;
+> +
+>  	if (csize < rsize) {
+>  		dbg_hid("report %d is too short, (%d < %d)\n", report->id,
+>  				csize, rsize);
+
+I'm thinking this is papering over the bug, and causing us to process a max-sized
+buffer when the other end gave *zero* bytes back - this can't be good.
+
+Probably should be more like this:
+
+	if (!report->size) then	/* 
+		rsize = MIN_VALID_SIZE; /* whatever it should be here */
+	else {
+		rsize = ((report->size - 1) >> 3) + 1;
+		if (rsize > HID_MAX_BUFFER_SIZE)
+			rsize = HID_MAX_BUFFER_SIZE;
+	}
+
+	if (csize < rsize) {
+
+
+That last if() still looks squirrely - if we have an effectively zero rsize,
+the report is short and the dbg_hid should fire.  Did we want "csize > rsize"
+instead?
+
+
+
+--==_Exmh_1305907324_2669P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFN1pB8cC3lWbTT17ARArqCAKCQWd9lr6+pYPGwFS/gBUyvELvLPgCfRoi3
+iB+t44ebO5hAkXs65hSK+Gs=
+=drIg
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1305907324_2669P--
+
