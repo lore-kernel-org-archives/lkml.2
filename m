@@ -1,85 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab1ETRwh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 13:52:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48604 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab1ETRwg (ORCPT
+	id S1757231Ab1ETRyi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 13:54:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30931 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab1ETRyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 13:52:36 -0400
-Date: Fri, 20 May 2011 19:52:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [GIT pull] timer fixes
-Message-ID: <alpine.LFD.2.02.1105201951150.3078@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 20 May 2011 13:54:37 -0400
+Date: Fri, 20 May 2011 10:54:21 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>
+Subject: Re: linux-next: Tree for May 20 (iwlwifi)
+Message-Id: <20110520105421.3766ea12.randy.dunlap@oracle.com>
+In-Reply-To: <20110520165507.cba539d5.sfr@canb.auug.org.au>
+References: <20110520165507.cba539d5.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090209.4DD6AAD8.0010:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, 20 May 2011 16:55:07 +1000 Stephen Rothwell wrote:
 
-Please pull the latest timers-fixes-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
-
-Thanks,
-
-	tglx
-
------------------->
-Thomas Gleixner (2):
-      clockevents/source: Use u64 to make 32bit happy
-      MAINTAINERS: Add drivers/clocksource to TIMEKEEPING
+> Hi all,
 
 
- MAINTAINERS               |    1 +
- kernel/time/clockevents.c |    2 +-
- kernel/time/clocksource.c |    2 +-
- 3 files changed, 3 insertions(+), 2 deletions(-)
+drivers/net/wireless/iwlwifi/iwl-agn-rs.c:351: error: 'struct iwl_lq_sta' has no member named 'dbg_fixed_rate'
+drivers/net/wireless/iwlwifi/iwl-agn-rs.c:1076: error: 'struct iwl_lq_sta' has no member named 'dbg_fixed_rate'
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8df8d2d..e20c974 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5431,6 +5431,7 @@ F:	include/linux/timex.h
- F:	kernel/time/clocksource.c
- F:	kernel/time/time*.c
- F:	kernel/time/ntp.c
-+F:	drivers/clocksource
- 
- TLG2300 VIDEO4LINUX-2 DRIVER
- M:	Huang Shijie <shijie8@gmail.com>
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 22a9da9..c027d4f 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -197,7 +197,7 @@ EXPORT_SYMBOL_GPL(clockevents_register_device);
- static void clockevents_config(struct clock_event_device *dev,
- 			       u32 freq)
- {
--	unsigned long sec;
-+	u64 sec;
- 
- 	if (!(dev->features & CLOCK_EVT_FEAT_ONESHOT))
- 		return;
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index d9d5f8c..1c95fd6 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -639,7 +639,7 @@ static void clocksource_enqueue(struct clocksource *cs)
-  */
- void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
- {
--	unsigned long sec;
-+	u64 sec;
- 
- 	/*
- 	 * Calc the maximum number of seconds which we can run before
+when CONFIG_MAC80211_DEBUGFS is not enabled.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
