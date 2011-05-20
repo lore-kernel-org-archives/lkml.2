@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933982Ab1ETAfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:35:25 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52844 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932460Ab1ETAfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:35:24 -0400
-Subject: Re: [PATCH 2/7] [RFC] add bluegene entry to cputable
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        bg-linux@lists.anl-external.org
-In-Reply-To: <1305753895-24845-2-git-send-email-ericvh@gmail.com>
-References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
-	 <1305753895-24845-2-git-send-email-ericvh@gmail.com>
+	id S934448Ab1ETAgN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:36:13 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:64215 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932665Ab1ETAgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 20:36:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=g9/DJ1Qy2a7bRiD0SrVGH1LTL4d7RzhBoxAllVq1IzIuyQJcidYdDiW+Z68uX6a9hc
+         K7ioYS8B5qYh3ini3SI/g8pxsO2ZHUxuMx6iKp6V7PguDLISKjLk6s6qlV/0gysEU5y5
+         UarYlxcmh+PidL0qAge2j00h23EIt/SAzWdNw=
+Subject: [PATCH v2] regulator: Fix _regulator_get_voltage if get_voltage
+ callback is NULL
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 May 2011 10:35:09 +1000
-Message-ID: <1305851709.7481.89.camel@pasglop>
+Date: Fri, 20 May 2011 08:36:06 +0800
+Message-ID: <1305851766.2244.2.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -24,42 +30,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-18 at 16:24 -0500, Eric Van Hensbergen wrote:
-> Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
-> ---
->  arch/powerpc/kernel/cputable.c |   14 ++++++++++++++
->  1 files changed, 14 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/cputable.c b/arch/powerpc/kernel/cputable.c
-> index b9602ee..0eb245e 100644
-> --- a/arch/powerpc/kernel/cputable.c
-> +++ b/arch/powerpc/kernel/cputable.c
-> @@ -1732,6 +1732,20 @@ static struct cpu_spec __initdata cpu_specs[] = {
->  		.machine_check		= machine_check_440A,
->  		.platform		= "ppc440",
->  	},
-> +	{ /* Blue Gene/P */
-> +		.pvr_mask		= 0xfffffff0,
-> +		.pvr_value		= 0x52131880,
-> +		.cpu_name		= "450 Blue Gene/P",
-> +		.cpu_features		= CPU_FTRS_440x6,
-> +		.cpu_user_features	= COMMON_USER_BOOKE |
-> +						PPC_FEATURE_HAS_FPU,
-> +		.mmu_features		= MMU_FTR_TYPE_44x,
-> +		.icache_bsize		= 32,
-> +		.dcache_bsize		= 32,
-> +		.cpu_setup		= __setup_cpu_460gt,
-                                            ^^^^^^^^^^^^^^^^^^
-Are you sure ?
+In the case of get_voltage callback is NULL, current implementation in
+_regulator_get_voltage will return -EINVAL.
 
-Cheers,
-Ben.
+Also returns proper error if ret is negative value.
 
-> +		.machine_check		= machine_check_440A,
-> +		.platform		= "ppc440",
-> +	},
->  	{ /* 460EX */
->  		.pvr_mask		= 0xffff0006,
->  		.pvr_value		= 0x13020002,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+v2: remove unneeded goto.
+
+ drivers/regulator/core.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 9493f61..f11b0ba 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1886,13 +1886,13 @@ static int _regulator_get_voltage(struct regulator_dev *rdev)
+ 		if (sel < 0)
+ 			return sel;
+ 		ret = rdev->desc->ops->list_voltage(rdev, sel);
+-	}
+-	if (rdev->desc->ops->get_voltage)
++	} else if (rdev->desc->ops->get_voltage) {
+ 		ret = rdev->desc->ops->get_voltage(rdev);
+-	else
++	} else {
+ 		return -EINVAL;
++	}
+ 
+-	return ret - rdev->constraints->uV_offset;
++	return ret < 0 ? ret : ret - rdev->constraints->uV_offset;
+ }
+ 
+ /**
+-- 
+1.7.1
+
 
 
