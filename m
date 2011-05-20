@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757267Ab1ETDTY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:19:24 -0400
-Received: from nm14.access.bullet.mail.mud.yahoo.com ([66.94.237.215]:29536
-	"HELO nm14.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754321Ab1ETDTW (ORCPT
+	id S1757293Ab1ETDTa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:19:30 -0400
+Received: from nm27.access.bullet.mail.mud.yahoo.com ([66.94.237.92]:32340
+	"HELO nm27.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755783Ab1ETDT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:19:22 -0400
-X-Yahoo-Newman-Id: 594622.5829.bm@omp1025.access.mail.mud.yahoo.com
+	Thu, 19 May 2011 23:19:26 -0400
+X-Yahoo-Newman-Id: 261559.91296.bm@omp1027.access.mail.mud.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: InIf7.kVM1nxGQTfmjCv_j3TxLE0pjWnjhSp_8yGZmjT5x4
- Crv20JITf8UnwilTWV6jwki5N75a.IthrTJV5R1wSveTUtIPeDGXRD6efG4I
- G2QkOlR0dJqWTpqPGU_Npb_1xoXguSoIV9YHJg8mxjwTo4GwAi9i0EoPTJRx
- ov2x4Z9eA9ZMdmBxxmqjVDfKlNMIP28D0_vI3z2hR0W2DOisBdeirOkBpVoh
- Uh8UT7uRq2HLh0Iunb8aic7y4On5sIBnLFT_FgtzuLZKhb_Lk2D0YHmc7oqO
- UmE9cUyLtQ8gvPaX5F4EPg0izfvudpH6lc3fcmbPkTHg8600ZywqbxcxA7dr
- CcSbm5_9.1fRiDf5s0dKm6LkbPotz3yzixu6MJM3fs6T.3k73ctFFNgUKPJv
- exeRgPNIuJuNGmuEKb59n8SugpTjI_2WLGh9TAJQVuoz_JkftjGgSSZ0dM2y
- yNcDqRVUKrKCC_mW0otpqSs9xopMd_4f1PEnB0gyRU.d2._Lo8_el.yQ4weq
- 4I9TqjGtqcvJwxvuFrYhKHbceCva.iqi21EA-
+X-YMail-OSG: QkSdivkVM1mr3F_zm77G584zTu5hmSAi2tNL_n0NMaJyaVN
+ DpBdGRodof8T0fYTcmPHaut8hwpbti9iZmn9UKBUGw5cpD9n7qRlSVxzlPUf
+ AmN2S3V_LZr_7JoYDeP9kALDPrh38m2Vd_e85KhIqPxK6sjzvKQ0yuVNHP2H
+ 3mT2C68fjKm2VA8WH9DosuBo6Co1z80wkF60sSQW0Wo43prhGqp1ihKWhDLH
+ xHUmpw2i5Z9Q5Iz7IK_yDUT95cBEd2rfOQjUmVDSdSP0Nul..TKh_mOfsgAn
+ oUr9Vu15HC9K3epb_J33IniOIPA_oDrq.b_loZRzprhReXR9ng2XNkcD9OVT
+ Q6jUFaNHjj1plPK398O2ASG7K2ip4P3mozIfZbcuTKVH6xmmtLE0J9qszZg5
+ 2N60qhVjDxMJB6FLVnq5dA9Qk6A--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-kernel <linux-kernel@vger.kernel.org>,
@@ -31,81 +29,106 @@ Cc: Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Martin Svec <martin.svec@zoner.cz>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 0/6] target: .40 bugfixes+changes (round 1)
-Date: Thu, 19 May 2011 20:19:08 -0700
-Message-Id: <1305861554-29960-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 1/6] target: Fix multi task->task_sg[] chaining logic bug
+Date: Thu, 19 May 2011 20:19:09 -0700
+Message-Id: <1305861554-29960-2-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1305861554-29960-1-git-send-email-nab@linux-iscsi.org>
+References: <1305861554-29960-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Hi James & Co,
+This patch fixes a bug in transport_do_task_sg_chain() used by HW target
+mode modules with sg_chain() to provide a single sg_next() walkable memory
+layout for use with pci_map_sg() and friends.  This patch addresses an
+issue with mapping multiple small block max_sector tasks across multiple
+struct se_task->task_sg[] mappings for HW target mode operation.
 
-This series is the first round of target core .v40 changes containing
-the four original bugfixes for .39 required for tcm_fc(openfcoe) HW
-offload and other in-flight HW drivers to function properly.  This
-series was originally posted here:
+This was causing OOPs with (cmd->t_task->t_tasks_no > 1) I/O traffic for
+HW target drivers using transport_do_task_sg_chain(), and has been tested
+so far with tcm_fc(openfcoe), tcm_qla2xxx, and ib_srpt fabrics with
+t_tasks_no > 1 IBLOCK backends using a smaller max_sectors to trigger the
+original issue.
 
-[PATCH-v2 0/4] Bugfixes for .39-rc8
-http://marc.info/?l=linux-scsi&m=130514011321906&w=2
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Acked-by: Kiran Patil <kiran.patil@intel.com>
+---
+ drivers/target/target_core_transport.c |   26 +++++++++++++++-----------
+ 1 files changed, 15 insertions(+), 11 deletions(-)
 
-As before, the first four patches should be backported to
-.39.y and 38.y..
-
-For your convience, this original four part series has been merged
-with two other conversion patches requested by Mike and Christoph
-to be fixed ahead of the iscsi-target merge.  This includes dropping
-the legacy target_core_fabric_ops->pack_lun() call for REPORT_LUNs
-in favor of int_to_scsilun(), and converting from libsas.h:TASK_ATTR
-usage to proper scsi_tcq.h:MSG_*_TAG for target core.
-
-The latter two patches also include conversion for the two current
-scsi-misc upstream fabric modules: tcm_loop and tcm_fc(openfcoe).
-
-This patch has been made against the latest scsi-misc HEAD:
-
-commit 6ad11eaa8a689a27e0c99905bcf800a37cd432a0
-Author: Joe Carnuccio <joe.carnuccio@qlogic.com>
-Date:   Tue May 10 11:30:16 2011 -0700
-
-    [SCSI] qla2xxx: Refactor call to qla2xxx_read_sfp for thermal temperature.
-    
-
-This series is available directly from git here:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-40-target
-
-Please review and merge.
-
-Thanks!
-
---nab
-
-Nicholas Bellinger (6):
-  target: Fix multi task->task_sg[] chaining logic bug
-  target: Fix interrupt context bug with stats_lock and
-    core_tmr_alloc_req
-  target: Fix bug with task_sg chained transport_free_dev_tasks release
-  target: Fix task->task_execute_queue=1 clear bug + LUN_RESET OOPs
-  target: Convert REPORT_LUNs to use int_to_scsilun
-  target: Convert TASK_ATTR to scsi_tcq.h definitions
-
- drivers/target/loopback/tcm_loop.c      |   25 +++---------
- drivers/target/target_core_configfs.c   |    4 --
- drivers/target/target_core_device.c     |   29 +++----------
- drivers/target/target_core_pscsi.c      |    4 +-
- drivers/target/target_core_tmr.c        |    7 ++-
- drivers/target/target_core_transport.c  |   68 ++++++++++++++++++++----------
- drivers/target/tcm_fc/tfc_cmd.c         |   20 +++++++++-
- drivers/target/tcm_fc/tfc_conf.c        |    8 ----
- include/scsi/scsi_tcq.h                 |    1 +
- include/target/target_core_base.h       |    1 +
- include/target/target_core_fabric_ops.h |    1 -
- include/target/target_core_transport.h  |    1 +
- 12 files changed, 86 insertions(+), 83 deletions(-)
-
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 9583b23..fefe10a 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -4776,18 +4776,20 @@ void transport_do_task_sg_chain(struct se_cmd *cmd)
+ 				sg_end_cur->page_link &= ~0x02;
+ 
+ 				sg_chain(sg_head, task_sg_num, sg_head_cur);
+-				sg_count += (task->task_sg_num + 1);
+-			} else
+ 				sg_count += task->task_sg_num;
++				task_sg_num = (task->task_sg_num + 1);
++			} else {
++				sg_chain(sg_head, task_sg_num, sg_head_cur);
++				sg_count += task->task_sg_num;
++				task_sg_num = task->task_sg_num;
++			}
+ 
+ 			sg_head = sg_head_cur;
+ 			sg_link = sg_link_cur;
+-			task_sg_num = task->task_sg_num;
+ 			continue;
+ 		}
+ 		sg_head = sg_first = &task->task_sg[0];
+ 		sg_link = &task->task_sg[task->task_sg_num];
+-		task_sg_num = task->task_sg_num;
+ 		/*
+ 		 * Check for single task..
+ 		 */
+@@ -4798,9 +4800,12 @@ void transport_do_task_sg_chain(struct se_cmd *cmd)
+ 			 */
+ 			sg_end = &task->task_sg[task->task_sg_num - 1];
+ 			sg_end->page_link &= ~0x02;
+-			sg_count += (task->task_sg_num + 1);
+-		} else
+ 			sg_count += task->task_sg_num;
++			task_sg_num = (task->task_sg_num + 1);
++		} else {
++			sg_count += task->task_sg_num;
++			task_sg_num = task->task_sg_num;
++		}
+ 	}
+ 	/*
+ 	 * Setup the starting pointer and total t_tasks_sg_linked_no including
+@@ -4809,21 +4814,20 @@ void transport_do_task_sg_chain(struct se_cmd *cmd)
+ 	T_TASK(cmd)->t_tasks_sg_chained = sg_first;
+ 	T_TASK(cmd)->t_tasks_sg_chained_no = sg_count;
+ 
+-	DEBUG_CMD_M("Setup T_TASK(cmd)->t_tasks_sg_chained: %p and"
+-		" t_tasks_sg_chained_no: %u\n", T_TASK(cmd)->t_tasks_sg_chained,
++	DEBUG_CMD_M("Setup cmd: %p T_TASK(cmd)->t_tasks_sg_chained: %p and"
++		" t_tasks_sg_chained_no: %u\n", cmd, T_TASK(cmd)->t_tasks_sg_chained,
+ 		T_TASK(cmd)->t_tasks_sg_chained_no);
+ 
+ 	for_each_sg(T_TASK(cmd)->t_tasks_sg_chained, sg,
+ 			T_TASK(cmd)->t_tasks_sg_chained_no, i) {
+ 
+-		DEBUG_CMD_M("SG: %p page: %p length: %d offset: %d\n",
+-			sg, sg_page(sg), sg->length, sg->offset);
++		DEBUG_CMD_M("SG[%d]: %p page: %p length: %d offset: %d, magic: 0x%08x\n",
++			i, sg, sg_page(sg), sg->length, sg->offset, sg->sg_magic);
+ 		if (sg_is_chain(sg))
+ 			DEBUG_CMD_M("SG: %p sg_is_chain=1\n", sg);
+ 		if (sg_is_last(sg))
+ 			DEBUG_CMD_M("SG: %p sg_is_last=1\n", sg);
+ 	}
+-
+ }
+ EXPORT_SYMBOL(transport_do_task_sg_chain);
+ 
 -- 
 1.7.5.1
 
