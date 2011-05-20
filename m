@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935654Ab1ETLv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 07:51:29 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42282 "EHLO mx3.mail.elte.hu"
+	id S935669Ab1ETLxa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 07:53:30 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:42508 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935491Ab1ETLv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 07:51:28 -0400
-Date: Fri, 20 May 2011 13:51:18 +0200
+	id S935640Ab1ETLx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 07:53:26 -0400
+Date: Fri, 20 May 2011 13:53:07 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 1/4] watchdog: fix rounding issues in get_sample_period()
-Message-ID: <20110520115118.GF14745@elte.hu>
-References: <1305588901-8141-1-git-send-email-msb@chromium.org>
- <20110518135302.GM29881@redhat.com>
- <20110519162631.GJ11023@google.com>
+To: Borislav Petkov <bp@alien8.de>, Don Zickus <dzickus@redhat.com>,
+        Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [RFC] ACPI, APEI, Generic Hardware Error Source (GHES) injecting
+ support
+Message-ID: <20110520115307.GG14745@elte.hu>
+References: <1304996921-24881-1-git-send-email-ying.huang@intel.com>
+ <20110516193301.GF29881@redhat.com>
+ <4DD218B1.7080601@intel.com>
+ <20110517135027.GJ31888@redhat.com>
+ <20110517191803.GC29574@elte.hu>
+ <20110517195757.GA31067@liondog.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110519162631.GJ11023@google.com>
+In-Reply-To: <20110517195757.GA31067@liondog.tnic>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,17 +39,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Mandeep Singh Baines <msb@chromium.org> wrote:
+* Borislav Petkov <bp@alien8.de> wrote:
 
-> Ingo, since Don is out, would you mind acking the patches (assuming you're 
-> happy). It simplifies pushing these patches into our local ChromiumOS tree if 
-> I have an upstream ack.
+> On Tue, May 17, 2011 at 09:18:03PM +0200, Ingo Molnar wrote:
+> > So for example [sufficienty privileged] user-space could inject *any*
+> > perf event - for example a PERF_COUNT_HW_CACHE_MISSES event (for test
+> > purposes) and any tooling that runs could not tell apart this injected
+> > event from a real event.
+> 
+> Yeah about that, I was recently speculating how that would work. So do we do
+> 
+> $ perf record ...
+> 
+> in the one xterm, and, in the other,
+> 
+> $ perf inject
+> 
+> so that while recording, we can inject some events from userspace? Or
+> do we inject it, it gets buffered somewhere in the meantime and then
+> the next perf record session sees it along with the remaining injection
+> events?
 
-I suspect it would simplify things even more for you if they were all upstream, 
-right?
+Well, for persistent events there would be interim buffering even if there's no 
+observation going on anywhere. I.e. there's always an 'observer' of events.
 
-To get that process underway please send an updated series with (delta) patches 
-against -tip.
+For non-persistent events, if they are injected, then they are like trace 
+events for which nobody is interested in: they are lost.
 
 Thanks,
 
