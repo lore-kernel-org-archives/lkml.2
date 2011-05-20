@@ -1,81 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916Ab1ETAHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:07:07 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11988 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756290Ab1ETAHD (ORCPT
+	id S933137Ab1ETAI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:08:29 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57253 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752300Ab1ETAI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:07:03 -0400
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'David Brownell'" <dbrownell@users.sourceforge.net>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Cc: <qi.wang@intel.com>, <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>,
-        "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>
-References: <1303871010-8319-1-git-send-email-tomoya-linux@dsn.okisemi.com> <1E339D61A60447BF8D1726A769D08FDA@hacdom.okisemi.com>
-Subject: RE: [PATCH v4 1/2] spi_topcliff_pch: support new device ML7213 IOH
-Date: Fri, 20 May 2011 09:06:59 +0900
-Message-ID: <21D707796ECF4290AA525D28D8FF7461@hacdom.okisemi.com>
+	Thu, 19 May 2011 20:08:28 -0400
+X-Sasl-enc: YKwlznJ9SaU8pWD67qWKh+2tbwkXDWfG2lxf6QUh0Yx8 1305850106
+Date: Thu, 19 May 2011 17:08:21 -0700
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] driver core merge for .40
+Message-ID: <20110520000821.GA9367@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-In-Reply-To: <1E339D61A60447BF8D1726A769D08FDA@hacdom.okisemi.com>
-Thread-Index: AcwEgfvg5BIIavUFRBOOQdpeKQi4awKVNlywAepiUiA=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hi Grant
+Here's the "big" driver core merge for the .40 tree.
 
-Could you review this patch ASAP?
-There is little time to be integrated to 2.6.40.
+Not much for the driver core itself, but there is some firmware driver
+work, documentation updates and a new translation added.  Nothing major.
 
-Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git/ driver-core-next
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org 
-> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of 
-> Tomoya MORINAGA
-> Sent: Tuesday, May 10, 2011 2:59 PM
-> To: 'David Brownell'; 'Grant Likely'; 
-> spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> Cc: qi.wang@intel.com; yong.y.wang@intel.com; 
-> joel.clark@intel.com; kok.howg.ewe@intel.com
-> Subject: RE: [PATCH v4 1/2] spi_topcliff_pch: support new 
-> device ML7213 IOH
-> 
-> Hi Grant,
-> 
-> > Sent: Wednesday, April 27, 2011 11:23 AM
-> > To: David Brownell; Grant Likely;
-> > spi-devel-general@lists.sourceforge.net; 
-> linux-kernel@vger.kernel.org
-> > Cc: qi.wang@intel.com; yong.y.wang@intel.com; joel.clark@intel.com; 
-> > kok.howg.ewe@intel.com; Tomoya MORINAGA
-> > Subject: [PATCH v4 1/2] spi_topcliff_pch: support new device
-> > ML7213 IOH
-> 
-> Could you review this patch ?
-> 
-> With Best Regards,
-> -----------------------------------------
-> Tomoya MORINAGA
-> OKI SEMICONDUCTOR CO., LTD.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-kernel" in the body of a message to 
-> majordomo@vger.kernel.org More majordomo info at  
-> http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+All of these patches have been in the linux-next and mm trees for a
+while now.
+
+The patches will be sent as a follow-on to this message to lkml for
+people to see.
+
+thanks,
+
+greg k-h
+
+------------
+
+ Documentation/ABI/testing/sysfs-firmware-dmi  |   18 +-
+ Documentation/ABI/testing/sysfs-firmware-gsmi |   58 ++
+ Documentation/ABI/testing/sysfs-firmware-log  |    7 +
+ Documentation/ABI/testing/sysfs-kernel-fscaps |    8 +
+ Documentation/DocBook/device-drivers.tmpl     |    6 +-
+ Documentation/driver-model/bus.txt            |   19 +-
+ Documentation/driver-model/class.txt          |   17 +-
+ Documentation/driver-model/device.txt         |   91 +---
+ Documentation/driver-model/driver.txt         |   18 +-
+ Documentation/ja_JP/HOWTO                     |  129 ++---
+ Documentation/zh_CN/email-clients.txt         |  210 ++++++
+ arch/arm/kernel/traps.c                       |    1 -
+ arch/powerpc/kernel/traps.c                   |    1 -
+ arch/sh/kernel/traps_32.c                     |    1 -
+ arch/unicore32/kernel/traps.c                 |    1 -
+ arch/x86/include/asm/bios_ebda.h              |   28 +-
+ arch/x86/kernel/dumpstack.c                   |    1 -
+ drivers/base/core.c                           |    7 +-
+ drivers/base/dd.c                             |   12 +-
+ drivers/base/memory.c                         |   29 +-
+ drivers/base/platform.c                       |   38 +-
+ drivers/char/Kconfig                          |    2 +-
+ drivers/char/mem.c                            |   42 +-
+ drivers/char/raw.c                            |   34 +-
+ drivers/firmware/Kconfig                      |    2 +
+ drivers/firmware/Makefile                     |    2 +
+ drivers/firmware/efivars.c                    |   21 +-
+ drivers/firmware/google/Kconfig               |   31 +
+ drivers/firmware/google/Makefile              |    3 +
+ drivers/firmware/google/gsmi.c                |  940 +++++++++++++++++++++++++
+ drivers/firmware/google/memconsole.c          |  166 +++++
+ drivers/misc/ti-st/Kconfig                    |    2 +-
+ drivers/misc/ti-st/st_core.c                  |   23 +-
+ drivers/misc/ti-st/st_kim.c                   |    1 +
+ drivers/uio/uio.c                             |   16 +-
+ drivers/uio/uio_netx.c                        |   19 +
+ drivers/uio/uio_pdrv_genirq.c                 |    4 +
+ fs/debugfs/file.c                             |   19 +-
+ fs/sysfs/file.c                               |   12 -
+ fs/sysfs/group.c                              |    6 +-
+ include/linux/device.h                        |  164 +++++-
+ include/linux/string.h                        |    1 +
+ include/linux/sysfs.h                         |    5 -
+ include/linux/ti_wilink_st.h                  |    3 +-
+ kernel/ksysfs.c                               |   10 +
+ kernel/params.c                               |   14 +-
+ kernel/sys.c                                  |    2 +
+ lib/string.c                                  |   29 +
+ 48 files changed, 1885 insertions(+), 388 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-firmware-gsmi
+ create mode 100644 Documentation/ABI/testing/sysfs-firmware-log
+ create mode 100644 Documentation/ABI/testing/sysfs-kernel-fscaps
+ create mode 100644 Documentation/zh_CN/email-clients.txt
+ create mode 100644 drivers/firmware/google/Kconfig
+ create mode 100644 drivers/firmware/google/Makefile
+ create mode 100644 drivers/firmware/google/gsmi.c
+ create mode 100644 drivers/firmware/google/memconsole.c
+
+---------------
+
+Andrew Morton (2):
+      kmsg: properly support writev to avoid interleaved printk lines fix
+      drivers/base/memory.c: fix warning due to "memory hotplug: Speed up add/remove when blocks are larger than PAGES_PER_SECTION"
+
+Anton Blanchard (1):
+      memory hotplug: Speed up add/remove when blocks are larger than PAGES_PER_SECTION
+
+Dan Carpenter (2):
+      efivars: memory leak on error in create_efivars_bin_attributes()
+      efivars: handle errors from register_efivars()
+
+Daniel Trautmann (1):
+      uio_netx: Add support for netPLC cards
+
+Felipe Balbi (1):
+      device: add dev_WARN_ONCE
+
+Greg Kroah-Hartman (1):
+      sysfs: remove "last sysfs file:" line from the oops messages
+
+Harry Wei (1):
+      Translated Documentation/email-clients.txt
+
+Hillf Danton (2):
+      uio: fix finding mm index for vma
+      uio: fix allocating minor id for uio device
+
+Jan Kara (1):
+      Allow setting of number of raw devices as a module parameter
+
+Jie Zhou (1):
+      uio: clean uioinfo when uninstall uio driver
+
+Jonathan Cameron (3):
+      Add a strtobool function matching semantics of existing in kernel equivalents
+      debugfs: move to new strtobool
+      params.c: Use new strtobool function to process boolean inputs
+
+Karthigan Srinivasan (1):
+      drivers/base/core.c: Fixed brace coding style issue.
+
+Kay Sievers (2):
+      printk: /dev/kmsg - properly support writev() to avoid interleaved printk() lines
+      reboot: disable usermodehelper to prevent fs access
+
+Ludwig Nussel (1):
+      kernel/ksysfs.c: expose file_caps_enabled in sysfs
+
+Mike Waychison (6):
+      firmware: Fix grammar in sysfs-firmware-dmi doc
+      x86: get_bios_ebda_length()
+      x86: Better comments for get_bios_ebda()
+      driver: Google EFI SMI
+      driver: Google Memory Console
+      Introduce CONFIG_GOOGLE_FIRMWARE
+
+Pavan Savoy (2):
+      drivers:misc:ti-st: handle delayed tty receive
+      drivers:misc:ti-st: remove rfkill dependency
+
+Randy Dunlap (2):
+      misc: fix ti-st build issues
+      efivars: prevent oops on unload when efi is not enabled
+
+Robert P. J. Day (2):
+      RAW driver: Remove call to kobject_put().
+      SYSFS: Fix erroneous comments for sysfs_update_group().
+
+Sebastian Ott (1):
+      driver-core: fix race between device_register and driver_register
+
+Stephen Boyd (1):
+      debugfs: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
+
+Stephen Hemminger (1):
+      drivers: make device_type const
+
+Tsugikazu Shibata (1):
+      HOWTO: sync up Documentaion/ja_JP/HOWTO
+
+Uwe Kleine-König (5):
+      driver core/platform_device_add_data: set platform_data to NULL if !data
+      driver core/platform_device_add_data: free platform data before overwriting
+      driver core/platform_device_add_resources: set resource to NULL if !res
+      driver core/platform_device_add_resources: free resource before overwriting
+      driver core: let dev_set_drvdata return int instead of void as it can fail
+
+Wanlong Gao (3):
+      drivers:base:fix the coding format of memory.c
+      driver core: Add the device driver-model structures to kerneldoc
+      driver core: remove the driver-model structures from the documentation
 
