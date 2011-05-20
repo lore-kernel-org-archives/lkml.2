@@ -1,181 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933191Ab1ETGS2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 02:18:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35303 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751732Ab1ETGS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 02:18:26 -0400
-Date: Fri, 20 May 2011 16:18:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20110520161816.dda6f1fd.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933300Ab1ETGUq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 02:20:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35054 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab1ETGUo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 02:20:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=OiD5ioQ+YMgKpBxB+nMNvqb90xWb2OcvZ5XdyTuh//fRnj+g/DkxkNVZtG6FjfY69I
+         EPyj7SDclZkKoKNfuMlB3YQeb/BP1udVgo2pncCeclg9R8WUf1Jkk/IDbq0nIzJiOXnD
+         TkqWkTAUamCTy3yJiLTA4OfFf6wuP+KS/GLTY=
+MIME-Version: 1.0
+In-Reply-To: <20110520061259.GA13483@p183>
+References: <20110520061259.GA13483@p183>
+Date: Fri, 20 May 2011 08:20:42 +0200
+X-Google-Sender-Auth: VT42vZuAIfItkQe4zIMafx_VJps
+Message-ID: <BANLkTi=2yReXfrr7swhys7TgkuJ5r97jqQ@mail.gmail.com>
+Subject: Re: [PATCH] kstrtox: drop kstrtol()/kstrtoul() when possible
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        mmarek@suse.cz, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Fri, May 20, 2011 at 08:15, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+> If "long" and "long long" types are identical at runtime,
+> kstrtol() can be aliased to kstrtoll().
+>
+> Unfortunately, one can't write
+>
+>        #if sizeof(long) == sizeof(long long) ...
 
-After merging the final tree, today's linux-next build (sparc32 defconfig)
-failed like this:
+One can write #ifdef CONFIG_64BIT instead.
 
-mm/page_alloc.c: In function '__free_pages_bootmem':
-mm/page_alloc.c:704: error: implicit declaration of function 'prefetchw'
-fs/dcache.c: In function '__d_lookup_rcu':
-fs/dcache.c:1810: error: implicit declaration of function 'prefetch'
-fs/inode.c: In function 'new_inode':
-fs/inode.c:894: error: implicit declaration of function 'spin_lock_prefetch'
-net/core/skbuff.c: In function '__alloc_skb':
-net/core/skbuff.c:184: error: implicit declaration of function 'prefetchw'
-In file included from net/ipv4/ip_forward.c:32:
-include/net/udp.h: In function 'udp_csum_outgoing':
-include/net/udp.h:141: error: implicit declaration of function 'prefetch'
-In file included from net/ipv6/af_inet6.c:48:
-include/net/udp.h: In function 'udp_csum_outgoing':
-include/net/udp.h:141: error: implicit declaration of function 'prefetch'
-net/unix/af_unix.c: In function 'unix_ioctl':
-net/unix/af_unix.c:2066: error: implicit declaration of function 'prefetch'
-In file included from net/sunrpc/xprtsock.c:44:
-include/net/udp.h: In function 'udp_csum_outgoing':
-include/net/udp.h:141: error: implicit declaration of function 'prefetch'
-kernel/rcutiny.c: In function 'rcu_process_callbacks':
-kernel/rcutiny.c:180: error: implicit declaration of function 'prefetch'
+Gr{oetje,eeting}s,
 
-Caused by commit e66eed651fd1 ("list: remove prefetching from regular list
-iterators").
+                        Geert
 
-I added the following patch for today:
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
->From 1a101eb2766057372006b1b487d05f40fe899478 Mon Sep 17 00:00:00 2001
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 20 May 2011 16:08:48 +1000
-Subject: [PATCH] include prefetch.h where needed
-
-Commit e66eed651fd1 ("list: remove prefetching from regular list
-iterators") removed the include of prefetch.h from list.h.
-
-fixes these build errors on sparc:
-
-mm/page_alloc.c: In function '__free_pages_bootmem':
-mm/page_alloc.c:704: error: implicit declaration of function 'prefetchw'
-fs/dcache.c: In function '__d_lookup_rcu':
-fs/dcache.c:1810: error: implicit declaration of function 'prefetch'
-fs/inode.c: In function 'new_inode':
-fs/inode.c:894: error: implicit declaration of function 'spin_lock_prefetch'
-net/core/skbuff.c: In function '__alloc_skb':
-net/core/skbuff.c:184: error: implicit declaration of function 'prefetchw'
-In file included from net/ipv4/ip_forward.c:32:
-include/net/udp.h: In function 'udp_csum_outgoing':
-include/net/udp.h:141: error: implicit declaration of function 'prefetch'
-In file included from net/ipv6/af_inet6.c:48:
-include/net/udp.h: In function 'udp_csum_outgoing':
-include/net/udp.h:141: error: implicit declaration of function 'prefetch'
-net/unix/af_unix.c: In function 'unix_ioctl':
-net/unix/af_unix.c:2066: error: implicit declaration of function 'prefetch'
-In file included from net/sunrpc/xprtsock.c:44:
-include/net/udp.h: In function 'udp_csum_outgoing':
-include/net/udp.h:141: error: implicit declaration of function 'prefetch'
-kernel/rcutiny.c: In function 'rcu_process_callbacks':
-kernel/rcutiny.c:180: error: implicit declaration of function 'prefetch'
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/dcache.c            |    1 +
- fs/inode.c             |    1 +
- include/linux/skbuff.h |    1 +
- kernel/rcutiny.c       |    1 +
- mm/page_alloc.c        |    1 +
- net/core/skbuff.c      |    1 +
- 6 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 22a0ef4..18b2a1f 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -35,6 +35,7 @@
- #include <linux/hardirq.h>
- #include <linux/bit_spinlock.h>
- #include <linux/rculist_bl.h>
-+#include <linux/prefetch.h>
- #include "internal.h"
- 
- /*
-diff --git a/fs/inode.c b/fs/inode.c
-index 33c963d..c77081f 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -26,6 +26,7 @@
- #include <linux/posix_acl.h>
- #include <linux/ima.h>
- #include <linux/cred.h>
-+#include <linux/prefetch.h>
- #include "internal.h"
- 
- /*
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 79aafbb..f963b8f 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -29,6 +29,7 @@
- #include <linux/rcupdate.h>
- #include <linux/dmaengine.h>
- #include <linux/hrtimer.h>
-+#include <linux/prefetch.h>
- 
- /* Don't change this without changing skb_csum_unnecessary! */
- #define CHECKSUM_NONE 0
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 421abfd..7bbac7d 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -35,6 +35,7 @@
- #include <linux/init.h>
- #include <linux/time.h>
- #include <linux/cpu.h>
-+#include <linux/prefetch.h>
- 
- /* Controls for rcu_kthread() kthread, replacing RCU_SOFTIRQ used previously. */
- static struct task_struct *rcu_kthread_task;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 44b3d7b..9d5498e 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -54,6 +54,7 @@
- #include <trace/events/kmem.h>
- #include <linux/ftrace_event.h>
- #include <linux/memcontrol.h>
-+#include <linux/prefetch.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 3e934fe..46cbd28 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -57,6 +57,7 @@
- #include <linux/init.h>
- #include <linux/scatterlist.h>
- #include <linux/errqueue.h>
-+#include <linux/prefetch.h>
- 
- #include <net/protocol.h>
- #include <net/dst.h>
--- 
-1.7.5.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
