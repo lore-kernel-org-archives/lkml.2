@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935430Ab1ETI60 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 04:58:26 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:41576 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S935216Ab1ETI6Y convert rfc822-to-8bit (ORCPT
+	id S935433Ab1ETI72 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 04:59:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35339 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934991Ab1ETI70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 04:58:24 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX18V+JtYZeEVCCk0quT4OhndxxIBSW4o8ZpmIQVuGV
-	lWFUCsLvA4soxp
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
-Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
-Date: Fri, 20 May 2011 10:58:19 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38.6; KDE/4.6.3; i686; ; )
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-References: <201105191526.31904.toralf.foerster@gmx.de> <BANLkTik0oz6ppJvRpufaaiBL1pqcAxNHuA@mail.gmail.com> <BANLkTikCS=LbvXSe4ok740O2ue1DQDfBmA@mail.gmail.com>
-In-Reply-To: <BANLkTikCS=LbvXSe4ok740O2ue1DQDfBmA@mail.gmail.com>
+	Fri, 20 May 2011 04:59:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qRuxU75GOfUXsRI5ZTD4tWwvCK8hCqHtX1ugdiR7XUuoJvgpgKwndX7eUp7AFijQ8l
+         LOpeo38GYPbcSr6GzgzqoR+PsrAna4rf+x+uPMu0LeVE3STebs9lK7el+2PH0GMOPYu6
+         O4do/kocTunRK5ZCkqLlocD5ynWj/zwxndqkY=
+Date: Fri, 20 May 2011 10:59:21 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 10/10] ptrace: implement group stop notification for
+ ptracer
+Message-ID: <20110520085921.GB31426@htj.dyndns.org>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org>
+ <20110519165722.GP627@htj.dyndns.org>
+ <20110519171327.GA19698@redhat.com>
+ <201105200048.07942.vda.linux@googlemail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105201058.20355.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105200048.07942.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Denys.
 
-richard -rw- weinberger wrote at 10:39:03
-> 2011/5/20 richard -rw- weinberger <richard.weinberger@gmail.com>:
-> > Use "objdump -d -S | less" to find it.
+On Fri, May 20, 2011 at 12:48:07AM +0200, Denys Vlasenko wrote:
+> > Hmm. At least now I understand the meaining what "sticky" means in
+> > this discussion ;) I was confused.
 > 
-> Ick, I meant "objdump -d -S vmlinux | less"
-Well (BTW nearly similar to the result of "objdump -d -S linux" ), but anyway 
-here it is :
+> I still don't see why is it needed. Userspace API doesn't require it.
+> 
+> Are you trying to solve/simplify something on the kernel side with it?
 
-        spin_lock(&hb->lock);
-        head = &hb->chain;
+No, no.  Please consider the following scenario.
 
-        plist_for_each_entry_safe(this, next, head, list) {
- 80a9f48:       8b 48 08                mov    0x8(%eax),%ecx
- 80a9f4b:       83 c2 08                add    $0x8,%edx
- 80a9f4e:       8d 41 f4                lea    -0xc(%ecx),%eax
- 80a9f51:       39 ca                   cmp    %ecx,%edx
- 80a9f53:       8b 70 0c                mov    0xc(%eax),%esi
- 80a9f56:       74 6a                   je     80a9fc2 <futex_wake+0xd2>
- 80a9f58:       89 d9                   mov    %ebx,%ecx
- 80a9f5a:       83 ee 0c                sub    $0xc,%esi
- 80a9f5d:       89 d3                   mov    %edx,%ebx
- 80a9f5f:       89 fa                   mov    %edi,%edx
- 80a9f61:       89 cf                   mov    %ecx,%edi
- 80a9f63:       eb 12                   jmp    80a9f77 <futex_wake+0x87>
- 80a9f65:       8d 76 00                lea    0x0(%esi),%esi
- 80a9f68:       8d 46 0c                lea    0xc(%esi),%eax
- 80a9f6b:       8b 4e 0c                mov    0xc(%esi),%ecx
- 80a9f6e:       39 c3                   cmp    %eax,%ebx
- 80a9f70:       74 4e                   je     80a9fc0 <futex_wake+0xd0>
- 80a9f72:       89 f0                   mov    %esi,%eax
- 80a9f74:       8d 71 f4                lea    -0xc(%ecx),%esi
-                if (match_futex (&this->key, &key)) {
- 80a9f77:       83 f8 e4                cmp    $0xffffffe4,%eax
- 80a9f7a:       74 ec                   je     80a9f68 <futex_wake+0x78>
- 80a9f7c:       8b 48 1c                mov    0x1c(%eax),%ecx
- 80a9f7f:       3b 4d e8                cmp    -0x18(%ebp),%ecx
- 80a9f82:       75 e4                   jne    80a9f68 <futex_wake+0x78>
-/*
- * Return 1 if two futex_keys are equal, 0 otherwise.
- */
+1. A process has two threads t1 and t2.  t1 is ptraced by p1.  Both t1
+   and t2 are running.
 
+2. p1 INTERRUPTs t1.  t1 enters TRAP_STOP and p1 notices it.
+
+3. Something else sends SIGSTOP to t2 which initiates group stop.
+
+4. As t1 re-traps to notify p1 of group stop, p1 issues PTRACE_CONT.
+
+5. PTRACE_CONT succeeds right after t1 re-traps for notification and
+   t1 resumes execution.
+
+6. p1 has no way to find out the group stop which is now in effect.
+
+And vice-versa for SIGCONT.  When an event needs to be delivered, the
+event should remain pending until the target the event is destined to
+has fetched the event; otherwise, the event can be lost.  Here, the
+event to be delivered is change of group stop state and fetching
+mechanism is GETSIGINFO.  The event should remain pending until
+GETSIGINFO is called.
+
+The only requirement is for the ptracer to call PTRACE_GETSIGINFO on
+PTRACE_EVENT_STOP's which can be determined from the wait(2) exit
+code.  If ptracer does that, there won't be any unnecessary trap.
+
+Thanks.
 
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+tejun
