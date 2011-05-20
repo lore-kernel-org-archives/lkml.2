@@ -1,44 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935198Ab1ETDy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:54:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24351 "EHLO mx1.redhat.com"
+	id S1751600Ab1ETEHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 00:07:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15350 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933275Ab1ETDy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:54:56 -0400
-Subject: Re: linux-next: manual merge of the tip tree with the kbuild tree
-From: Steven Rostedt <srostedt@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-        Michal Marek <mmarek@suse.cz>
-In-Reply-To: <20110520133631.d663013a.sfr@canb.auug.org.au>
-References: <20110520133631.d663013a.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Thu, 19 May 2011 23:54:26 -0400
-Message-ID: <1305863666.2886.0.camel@fedora>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751198Ab1ETEHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 00:07:44 -0400
+X-ExtLoop1: 1
+Date: Fri, 20 May 2011 12:07:40 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 14/18] writeback: make writeback_control.nr_to_write
+ straight
+Message-ID: <20110520040740.GA8603@localhost>
+References: <20110519214530.939830917@intel.com>
+ <20110519214746.038765568@intel.com>
+ <20110519220643.GA27247@localhost>
+ <20110519232910.GK32466@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110519232910.GK32466@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-20 at 13:36 +1000, Stephen Rothwell wrote:
-> Hi all,
+On Fri, May 20, 2011 at 07:29:10AM +0800, Dave Chinner wrote:
+> On Fri, May 20, 2011 at 06:06:44AM +0800, Wu Fengguang wrote:
+> > :                 writeback_single_inode(inode, wb, &wbc);
+> > :                 work->nr_pages -= write_chunk - wbc.nr_to_write;
+> > :                 wrote += write_chunk - wbc.nr_to_write;
+> > :                 if (wbc.pages_skipped) {
+> > :                         /*
+> > :                          * writeback is not making progress due to locked
+> > :                          * buffers.  Skip this inode for now.
+> > :                          */
+> > :                         redirty_tail(inode, wb);
+> > : -               }
+> > : +               } else if (!(inode->i_state & I_DIRTY))
+> > : +                       wrote++;
+> > 
+> > It looks a bit more clean to do
+> > 
+> > :                 wrote += write_chunk - wbc.nr_to_write;
+> > : +               if (!(inode->i_state & I_DIRTY))
+> > : +                       wrote++;
+> > :                 if (wbc.pages_skipped) {
+> > :                         /*
+> > :                          * writeback is not making progress due to locked
+> > :                          * buffers.  Skip this inode for now.
+> > :                          */
+> > :                         redirty_tail(inode, wb);
+> > :                 }
 > 
-> Today's linux-next merge of the tip tree got a conflict in Makefile
-> between commit 28bc20dccadc ("kbuild: implement several W= levels") from
-> the kbuild tree and commit 85356f802225 ("kbuild/recordmcount: Add
-> RECORDMCOUNT_WARN to warn about mcount callers") from the tip tree.
-> 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+> But it's still in the wrong place - such post-write inode dirty
+> processing is supposed to be isolated to writeback_single_inode().
+> Spreading it across multiple locations is not, IMO, the nicest thing
+> to do...
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Strictly speaking, it's post inspecting :)
 
--- Steve
+It does look reasonable and safe to move the pages_skipped post
+processing into writeback_single_inode(). See the below patch.
 
+When doing this chunk,
 
+-			if (wbc->nr_to_write <= 0) {
++			if (wbc->nr_to_write <= 0 && wbc->pages_skipped == 0) {
+
+I wonder in general sense (without knowing enough FS internals)
+whether ->pages_skipped is that useful: if some locked buffer is
+blocking all subsequent pages, then ->nr_to_write won't be able to
+drop to zero.  So the (wbc->pages_skipped == 0) test seems redundant..
+
+Thanks,
+Fengguang
+---
+Subject: writeback: move pages_skipped post processing into writeback_single_inode()
+Date: Fri May 20 11:42:42 CST 2011
+
+It's more logical to isolate post-write processings in writeback_single_inode().
+
+Note that it slightly changes behavior for write_inode_now() and sync_inode(),
+which used to ignore pages_skipped.
+
+Proposed-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/fs-writeback.c |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
+
+--- linux-next.orig/fs/fs-writeback.c	2011-05-20 11:26:19.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-20 11:42:30.000000000 +0800
+@@ -404,6 +404,7 @@ writeback_single_inode(struct inode *ino
+ 	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&wb->list_lock);
+ 
++	wbc->pages_skipped = 0;
+ 	ret = do_writepages(mapping, wbc);
+ 
+ 	/*
+@@ -443,7 +444,7 @@ writeback_single_inode(struct inode *ino
+ 			 * sometimes bales out without doing anything.
+ 			 */
+ 			inode->i_state |= I_DIRTY_PAGES;
+-			if (wbc->nr_to_write <= 0) {
++			if (wbc->nr_to_write <= 0 && wbc->pages_skipped == 0) {
+ 				/*
+ 				 * slice used up: queue for next turn
+ 				 */
+@@ -602,7 +603,6 @@ static long writeback_sb_inodes(struct s
+ 		__iget(inode);
+ 		write_chunk = writeback_chunk_size(work);
+ 		wbc.nr_to_write = write_chunk;
+-		wbc.pages_skipped = 0;
+ 
+ 		writeback_single_inode(inode, wb, &wbc);
+ 
+@@ -610,13 +610,6 @@ static long writeback_sb_inodes(struct s
+ 		wrote += write_chunk - wbc.nr_to_write;
+ 		if (!(inode->i_state & I_DIRTY))
+ 			wrote++;
+-		if (wbc.pages_skipped) {
+-			/*
+-			 * writeback is not making progress due to locked
+-			 * buffers.  Skip this inode for now.
+-			 */
+-			redirty_tail(inode, wb);
+-		}
+ 		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&wb->list_lock);
+ 		iput(inode);
