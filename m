@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933823Ab1ETHwu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 03:52:50 -0400
-Received: from ozlabs.org ([203.10.76.45]:59423 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932157Ab1ETHws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 03:52:48 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCH 14/18] virtio: add api for delayed callbacks
-In-Reply-To: <20110519072412.GA31253@redhat.com>
-References: <cover.1304541918.git.mst@redhat.com> <64d47c628b3fdc0ac156aed4be182933d8bcc0db.1304541919.git.mst@redhat.com> <871v08h0vm.fsf@rustcorp.com.au> <20110515124818.GD24932@redhat.com> <87boz3dsoe.fsf@rustcorp.com.au> <20110519072412.GA31253@redhat.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Fri, 20 May 2011 17:13:29 +0930
-Message-ID: <87liy1vmu6.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S933639Ab1ETHus (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 03:50:48 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53719 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932489Ab1ETHur (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 03:50:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 20 May 2011 16:43:54 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Andrew Lutomirski <luto@mit.edu>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
+        riel@redhat.com
+Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
+ vmlinux)
+Message-Id: <20110520164354.d43be406.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <BANLkTinJbYrQoye7qjPzPxP8_deCSK0g7w@mail.gmail.com>
+References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
+	<20110514165346.GV6008@one.firstfloor.org>
+	<BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
+	<20110514174333.GW6008@one.firstfloor.org>
+	<BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
+	<20110515152747.GA25905@localhost>
+	<BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
+	<20110517060001.GC24069@localhost>
+	<BANLkTi=TOm3aLQCD6j=4va6B+Jn2nSfwAg@mail.gmail.com>
+	<BANLkTi=9W6-JXi94rZfTtTpAt3VUiY5fNw@mail.gmail.com>
+	<BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com>
+	<BANLkTima0hPrPwe_x06afAh+zTi-bOcRMg@mail.gmail.com>
+	<BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com>
+	<BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com>
+	<4DD5DC06.6010204@jp.fujitsu.com>
+	<BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com>
+	<BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
+	<20110520140856.fdf4d1c8.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTinJbYrQoye7qjPzPxP8_deCSK0g7w@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 May 2011 10:24:12 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> On Mon, May 16, 2011 at 04:43:21PM +0930, Rusty Russell wrote:
-> > On Sun, 15 May 2011 15:48:18 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > On Mon, May 09, 2011 at 03:27:33PM +0930, Rusty Russell wrote:
-> > > > On Wed, 4 May 2011 23:52:33 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > > Add an API that tells the other side that callbacks
-> > > > > should be delayed until a lot of work has been done.
-> > > > > Implement using the new used_event feature.
-> > > > 
-> > > > Since you're going to add a capacity query anyway, why not add the
-> > > > threshold argument here?
-> > > 
-> > > I thought that if we keep the API kind of generic
-> > > there might be more of a chance that future transports
-> > > will be able to implement it. For example, with an
-> > > old host we can't commit to a specific index.
-> > 
-> > No, it's always a hint anyway: you can be notified before the threshold
-> > is reached.  But best make it explicit I think.
-> > 
-> > Cheers,
-> > Rusty.
+On Fri, 20 May 2011 14:36:13 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
+
+> On Fri, May 20, 2011 at 2:08 PM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Fri, 20 May 2011 13:20:15 +0900
+> > Minchan Kim <minchan.kim@gmail.com> wrote:
+> >
+> >> So I want to resolve your problem asap.
+> >> We don't have see report about that. Could you do git-bisect?
+> >> FYI, Recently, big change of mm is compaction,transparent huge pages.
+> >> Kame, could you point out thing related to memcg if you have a mind?
+> >>
+> >
+> > I don't doubt memcg at this stage because it never modify page->flags.
+> > Consdering the case, PageActive() is set against off-LRU pages after
+> > clear_active_flags() clears it.
+> >
+> > Hmm, I think I don't understand the lock system fully but...how do you
+> > think this ?
+> >
+> > ==
+> >
+> > At splitting a hugepage, the routine marks all pmd as "splitting".
+> >
+> > But assume a racy case where 2 threads run into spit at the
+> > same time, one thread wins compound_lock() and do split, another
+> > thread should not touch splitted pages.
 > 
+> Sorry. Now I don't have a time to review in detail.
+> When I look it roughly,  page_lock_anon_vma have to prevent it.
+> But Andrea needs current this problem and he will catch something we lost. :)
 > 
-> I tried doing that and remembered the real reason I went for this API:
-> 
-> capacity is limited by descriptor table space, not
-> used ring space: each entry in the used ring frees up multiple entries
-> in the descriptor ring. Thus the ring can't provide
-> callback after capacity is N: capacity is only available
-> after we get bufs.
+Hmm, maybe I miss something...need to build a test environ on my side.
+But I'm not sure I can reproduce it..
 
-I think this indicates a problem, but I haven't reviewed your patches
-except very cursorily.  I am slack...
+Thanks,
+-Kame
 
-> We could try and make the API pass in the number of freed bufs, however:
-> - this is not really what virtio-net cares about (it cares about
->   capacity)
-
-Yes, max sg elements and max requests are separate, though in the
-current virtio implementation remaining sg <= remaining request slots.
-
-That's why we currently feed back remaining descriptors to the driver,
-not the number of request slots.
-
-This implies that the thresholds should refer to descriptor numbers
-(ie. wake me when there are this many descriptors freed), not the used
-ring at all.  Which means we're barking up the wrong tree...
-
-I think this needs more thought.
-
-> - if the driver passes a number > number of outstanding bufs, it will
->   never get a callback. So to stay correct the driver will need to
->   track number of outstanding requests. The simpler API avoids that. 
-
-I think the driver should simply say "wake me when you have this many
-descriptors free".  And set it during initialization, rather than every
-time.  The virtio_ring code should handle it from there.
-
-Perhaps that can be done with the current technique, where the
-virtio_ring makes an educated guess on when sufficient capacity will be
-available...
-
-Cheers,
-Rusty.
