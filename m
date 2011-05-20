@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671Ab1ETNxb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:53:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50140 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932916Ab1ETNxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:53:30 -0400
-Date: Fri, 20 May 2011 06:54:24 -0700
-From: Greg KH <gregkh@suse.de>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, Kees Cook <kees.cook@canonical.com>,
-        Eugene Teo <eugeneteo@gmail.com>
-Subject: Re: [RFC] add mount options to sysfs
-Message-ID: <20110520135424.GA10878@suse.de>
-References: <20110518163142.GA3367@albatros>
- <20110518163951.GA24143@suse.de>
- <20110518170545.GA4435@albatros>
- <20110518191727.GA26741@suse.de>
- <20110519062622.GA4418@albatros>
- <20110519171227.GB22019@suse.de>
- <20110520095920.GA4489@albatros>
- <20110520133044.GC10225@suse.de>
- <20110520133451.GA8112@albatros>
- <20110520133615.GB8112@albatros>
+	id S933579Ab1ETN5q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:57:46 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:48018 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab1ETN5p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 09:57:45 -0400
+Date: Fri, 20 May 2011 09:58:45 -0400
+From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] Please pull powerpc.git merge branch
+Message-ID: <20110520135845.GG25179@zod.rchland.ibm.com>
+References: <1305777978.7481.37.camel@pasglop>
+ <20110520132328.GA5785@riccoc20.at.omicron.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110520133615.GB8112@albatros>
+In-Reply-To: <20110520132328.GA5785@riccoc20.at.omicron.at>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 05:36:15PM +0400, Vasiliy Kulikov wrote:
-> On Fri, May 20, 2011 at 17:34 +0400, Vasiliy Kulikov wrote:
-> > On Fri, May 20, 2011 at 06:30 -0700, Greg KH wrote:
-> > > > Correct.  So, if I understood you, you are OK with adding mount options
-> > > > for debugfs, but not sysfs, right?  What is the difference between them
-> > > > in sense of permissions?
-> > > 
-> > > debugfs is "there are no rules", so changing the permissions on it
-> > > shouldn't break anything as no userspace tools "should" rely on it.  Now
-> > > that really isn't true (see the perf stuff), but overall it is, so I
-> > > don't worry about changing things there as much as sysfs, which has
-> > > hundreds of tools relying on it.
-> > 
-> > What would break if the default behaviour is not changed?
-> 
-> Err... sorry, s/would break/would it break/
+On Fri, May 20, 2011 at 03:23:29PM +0200, Richard Cochran wrote:
+>When I try to build 'next' (now at 208b3a4c), it does not compile due
+>to a change from the following commit.
+>
+>> Benjamin Herrenschmidt (1):
+>>       powerpc/smp: Make start_secondary_resume available to all CPU variants
+>
+>I would appreciate your help in getting this fixed...
 
-That's the question for you, we would be changing the kernel/user api
-here, and odds are, something will break.
+Could you try the patch below?
 
-thansk,
+Commit 69e3cea8d5fd526 introduced start_secondary_resume to misc_32.S,
+however it uses a 64-bit instruction which is not valid on 32-bit
+platforms.  Use 'stw' instead.
 
-greg k-h
+Reported-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+
+---
+
+diff --git a/arch/powerpc/kernel/misc_32.S
+b/arch/powerpc/kernel/misc_32.S
+index 402560e..998a100 100644
+--- a/arch/powerpc/kernel/misc_32.S
++++ b/arch/powerpc/kernel/misc_32.S
+@@ -700,7 +700,7 @@ _GLOBAL(start_secondary_resume)
+	rlwinm  r1,r1,0,0,(31-THREAD_SHIFT)     /* current_thread_info() */
+	addi    r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
+	li      r3,0
+-	std     r3,0(r1)                /* Zero the stack frame pointer */
++	stw     r3,0(r1)                /* Zero the stack frame pointer */
+	bl      start_secondary
+	b       .
+ #endif /* CONFIG_SMP */
+
