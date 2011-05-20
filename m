@@ -1,121 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab1ETW15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 18:27:57 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54386 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751646Ab1ETW1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 18:27:51 -0400
-Subject: Re: [PATCH]powerpc: Force page alignment for early reserved memory
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Dave Carroll <dcarroll@astekcorp.com>
-Cc: "Paul Mackerras (E-mail)" <paulus@samba.org>,
-        "Grant Likely (E-mail)" <grant.likely@secretlab.ca>,
-        "LPPC (E-mail)" <linuxppc-dev@lists.ozlabs.org>,
-        "LKML (E-mail)" <linux-kernel@vger.kernel.org>
-In-Reply-To: <522F24EF533FC546962ECFA2054FF777373072AB71@MAILSERVER2.cos.astekcorp.com>
-References: <522F24EF533FC546962ECFA2054FF777373072AB71@MAILSERVER2.cos.astekcorp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 21 May 2011 08:27:39 +1000
-Message-ID: <1305930459.7481.194.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757319Ab1ETWeY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 18:34:24 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35199 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab1ETWeT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 18:34:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:reply-to:references
+         :mime-version:content-type:content-disposition:in-reply-to:x-pgp-key
+         :user-agent;
+        b=bnw6XtkGm1EBdALlowue1OT8EUUKGmcoDPgca41pHKliav6AizDSbi0ZC6tJXg5ylf
+         eaUkU6uGtQcZCCdWwd9jJ2TzVg7nluw90bmvLDEmCwdI/wu/2oMc/rByOk6J8WM0HQUT
+         UxAiJRuBcwyYtK9MAYJIKv6WLJi9Jk2A4oOIg=
+Date: Fri, 20 May 2011 19:30:34 -0300
+From: Rafael Aquini <aquini@linux.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Russ Anderson <rja@sgi.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH] [BUGFIX] mm: hugepages can cause negative commitlimit
+Message-ID: <20110520223032.GA15192@x61.tchesoft.com>
+Reply-To: aquini@linux.com
+References: <20110518153445.GA18127@sgi.com>
+ <BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com>
+ <20110519045630.GA22533@sgi.com>
+ <BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com>
+ <20110519221101.GC19648@sgi.com>
+ <20110520130411.d1e0baef.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110520130411.d1e0baef.akpm@linux-foundation.org>
+X-PGP-Key: http://aquini.fedorapeople.org/AQUINI-GPG-KEY
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-20 at 15:26 -0600, Dave Carroll wrote:
-> When using 64K pages with a separate cpio rootfs, U-Boot will align the rootfs on a 4K
-> page boundary. When the memory is reserved, and subsequent early memblock_alloc
-> is called, it will allocate memory between the 64K page alignment and reserved
-> memory. When the reserved memory is subsequently freed, it is done so by pages,
-> causing the early memblock_alloc requests to be re-used, which in my case, caused
-> the device-tree to be clobbered.
+On Fri, May 20, 2011 at 01:04:11PM -0700, Andrew Morton wrote:
+> On Thu, 19 May 2011 17:11:01 -0500
+> Russ Anderson <rja@sgi.com> wrote:
 > 
-> This patch forces all early reserved memory to be kernel page aligned, to match
-> the mechanism used to free reserved memory.
-
-Hrm...
-
-Reserved memory isn't normally freed. The rootfs is a special case here,
-shouldn't we special case it and thus align that specific reserve at the
-call site ?
-
-Not a huge deal either way now that I fixed memblock_reserve() to cope
-with overlaps but could be a problem if we want to backport your patch.
-
-Cheers,
-Ben.
-
-> Signed-off-by: Dave Carroll <dcarroll@astekcorp.com>
-> ---
->  arch/powerpc/kernel/prom.c |   21 +++++++++++++++++----
->  1 files changed, 17 insertions(+), 4 deletions(-)
+> > OK, I see your point.  The root problem is hugepages allocated at boot are
+> > subtracted from totalram_pages but hugepages allocated at run time are not.
+> > Correct me if I've mistate it or are other conditions.
+> > 
+> > By "allocated at run time" I mean "echo 1 > /proc/sys/vm/nr_hugepages".
+> > That allocation will not change totalram_pages but will change
+> > hugetlb_total_pages().
+> > 
+> > How best to fix this inconsistency?  Should totalram_pages include or exclude
+> > hugepages?  What are the implications?
 > 
-> diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-> index e74fa12..2744792 100644
-> --- a/arch/powerpc/kernel/prom.c
-> +++ b/arch/powerpc/kernel/prom.c
-> @@ -534,6 +534,19 @@ void __init early_init_dt_setup_initrd_arch(unsigned long start,
->  }
->  #endif
+> The problem is that hugetlb_total_pages() is trying to account for two
+> different things, while totalram_pages accounts for only one of those
+> things, yes?
 > 
-> +static void __init reserve_mem(u64 base, u64 size)
-> +{
-> +       u64 top = base + size;
-> +       if (size == 0)
-> +               return;
-> +
-> +       base = _ALIGN_DOWN(base, PAGE_SIZE);
-> +       top = _ALIGN_UP(top, PAGE_SIZE);
-> +       size = top - base;
-> +       memblock_reserve(base, size);
-> +
-> +}
-> +
->  static void __init early_reserve_mem(void)
->  {
->         u64 base, size;
-> @@ -547,12 +560,12 @@ static void __init early_reserve_mem(void)
->         /* before we do anything, lets reserve the dt blob */
->         self_base = __pa((unsigned long)initial_boot_params);
->         self_size = initial_boot_params->totalsize;
-> -       memblock_reserve(self_base, self_size);
-> +       reserve_mem(self_base, self_size);
+> One fix would be to stop accounting for huge pages in totalram_pages
+> altogether.  That might break other things so careful checking would be
+> needed.
 > 
->  #ifdef CONFIG_BLK_DEV_INITRD
->         /* then reserve the initrd, if any */
->         if (initrd_start && (initrd_end > initrd_start))
-> -               memblock_reserve(__pa(initrd_start), initrd_end - initrd_start);
-> +               reserve_mem(__pa(initrd_start), initrd_end - initrd_start);
->  #endif /* CONFIG_BLK_DEV_INITRD */
-> 
->  #ifdef CONFIG_PPC32
-> @@ -573,7 +586,7 @@ static void __init early_reserve_mem(void)
->                         if (base_32 == self_base && size_32 == self_size)
->                                 continue;
->                         DBG("reserving: %x -> %x\n", base_32, size_32);
-> -                       memblock_reserve(base_32, size_32);
-> +                       reserve_mem(base_32, size_32);
->                 }
->                 return;
->         }
-> @@ -584,7 +597,7 @@ static void __init early_reserve_mem(void)
->                 if (size == 0)
->                         break;
->                 DBG("reserving: %llx -> %llx\n", base, size);
-> -               memblock_reserve(base, size);
-> +               reserve_mem(base, size);
->         }
->  }
-> 
-> --
-> 1.7.4
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Or we stop accounting for the boot-time allocated huge pages in
+> hugetlb_total_pages().  Split the two things apart altogether and
+> account for boot-time allocated and runtime-allocated pages separately.  This
+> souds saner to me - it reflects what's actually happening in the kernel.
 
+Perhaps we can just reinstate the # of pages "stealed" at early boot allocation
+later, when hugetlb_init() calls gather_bootmem_prealloc()
 
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 8ee3bd8..d606c9c 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1111,6 +1111,7 @@ static void __init gather_bootmem_prealloc(void)
+                WARN_ON(page_count(page) != 1);
+                prep_compound_huge_page(page, h->order);
+                prep_new_huge_page(h, page, page_to_nid(page));
++               totalram_pages += 1 << h->order;
+        }
+ }
+
+-- 
+Rafael Aquini <aquini@linux.com>
