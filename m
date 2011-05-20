@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab1ETEOW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 00:14:22 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35581 "EHLO smtps.tip.net.au"
+	id S934642Ab1ETEOb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 00:14:31 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35244 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab1ETEOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 00:14:20 -0400
-Date: Fri, 20 May 2011 14:14:17 +1000
+	id S932090Ab1ETEO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 00:14:29 -0400
+Date: Fri, 20 May 2011 14:14:25 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Peter Zijlstra <peterz@infradead.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: linux-next: build failure after merge of the tip tree (net tree
- interaction)
-Message-Id: <20110520141417.f49bf364.sfr@canb.auug.org.au>
+        Milton Miller <miltonm@bga.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: manual merge of the tip tree with the powerpc tree
+Message-Id: <20110520141425.dd38cb7d.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__20_May_2011_14_14_25_+1000_xAAV=6AbXkTTvSll"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Fri__20_May_2011_14_14_25_+1000_xAAV=6AbXkTTvSll
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi all,
 
-After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+Today's linux-next merge of the tip tree got a conflict in
+arch/powerpc/kernel/smp.c between commit 23d72bfd8f9f ("powerpc:
+Consolidate ipi message mux and demux") from the powerpc tree and commit
+184748cc50b2 ("sched: Provide scheduler_ipi() callback in response to
+smp_send_reschedule()") from the tip tree.
 
-net/sctp/bind_addr.c: In function 'sctp_bind_addr_clean':
-net/sctp/bind_addr.c:148: error: 'sctp_local_addr_free' undeclared (first use in this function)
-
-Caused by commit 1231f0baa547 ("net,rcu: convert call_rcu
-(sctp_local_addr_free) to kfree_rcu()") interacting with commit
-c182f90bc1f2 ("SCTP: fix race between sctp_bind_addr_free() and
-sctp_bind_addr_conflict()") from the net tree.
-
-I applied the following patch as a merge fix:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 20 May 2011 14:11:11 +1000
-Subject: [PATCH] net,rcu: convert another call to call_rcu(sctp_local_addr_free)
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/sctp/bind_addr.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/net/sctp/bind_addr.c b/net/sctp/bind_addr.c
-index 6338413..83e3011 100644
---- a/net/sctp/bind_addr.c
-+++ b/net/sctp/bind_addr.c
-@@ -145,7 +145,7 @@ static void sctp_bind_addr_clean(struct sctp_bind_addr *bp)
- 	/* Empty the bind address list. */
- 	list_for_each_entry_safe(addr, temp, &bp->address_list, list) {
- 		list_del_rcu(&addr->list);
--		call_rcu(&addr->rcu, sctp_local_addr_free);
-+		kfree_rcu(addr, rcu);
- 		SCTP_DBG_OBJCNT_DEC(addr);
- 	}
- }
--- 
-1.7.5.1
-
-
--- 
+The former superceded part of the latter's changes, so I just used the
+former for that.
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__20_May_2011_14_14_25_+1000_xAAV=6AbXkTTvSll
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN1eqhAAoJEDMEi1NhKgbsR+IIAKKfRcS7sd8JgO2z23qr7Z/w
+41pG3hRdtEco7wvvL5j0dwyRbBqHINt4bq5g54PZvdke1ztH4acXfdPN9B933Izf
+l+wijwxpcq2O33goFwYdIe2iZRvSLF8a4mwFNLOUG2avr3Uhyy6AXGZPYWPwt5eo
+qUM1mjogl4i/r3Z3upi07Uee9pUMDwlk6g4mzDI02tWKIE+kGoUNnGbjXnxO4tvR
+mco7/rxHYywgnxW1PiMM/hj/LqhQFOLpldRG6RxYLkjqLr8PstRmLkXL3z2KJ5AD
+BBwMZOfdXNiYaIFxyldLw6KYjiayqLwi/bQsg0GLts1kovwDIQydh0SEbre5Q4k=
+=vlAW
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__20_May_2011_14_14_25_+1000_xAAV=6AbXkTTvSll--
