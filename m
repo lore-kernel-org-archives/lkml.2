@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933566Ab1ETNXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:23:40 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33389 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355Ab1ETNXj (ORCPT
+	id S1756612Ab1ETNZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:25:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40420 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104Ab1ETNZX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:23:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Twtso/ZaP7N0edFtUWE3G04vJOiP4xFShBzAUYreTWuWyuU0p3rjFUx/IbdeLumiER
-         aRsLt+Bb6g5mLd6YOucEkIvYlJ2VSA7oncd8doijS9SVB8s2UZ3YHhJkyYNhKZ4S1d9n
-         2szZcVatCNj63D/Zdzs99CDQge4hKOnD+EDC4=
-Date: Fri, 20 May 2011 15:23:29 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] Please pull powerpc.git merge branch
-Message-ID: <20110520132328.GA5785@riccoc20.at.omicron.at>
-References: <1305777978.7481.37.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305777978.7481.37.camel@pasglop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 20 May 2011 09:25:23 -0400
+Subject: Re: linux-next: manual merge of the tip tree with the sparc tree
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Hellstrom <daniel@gaisler.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <4DD66328.4010603@gaisler.com>
+References: <20110517131435.aceca54e.sfr@canb.auug.org.au>
+	 <4DD51D37.3010907@gaisler.com> <1305819306.2466.7228.camel@twins>
+	 <4DD60530.6090900@gaisler.com> <1305879113.2466.7231.camel@twins>
+	 <4DD66328.4010603@gaisler.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 20 May 2011 15:24:56 +0200
+Message-ID: <1305897896.2466.7235.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 02:06:18PM +1000, Benjamin Herrenschmidt wrote:
-> are available in the git repository at:
+On Fri, 2011-05-20 at 14:48 +0200, Daniel Hellstrom wrote:
+> Subject: [PATCH] SCHED_TTWU_QUEUE is not longer needed since sparc32 now implements IPI
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+> Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
+> Reported-by: Peter Zijlstra <peterz@infradead.org>
 
-When I try to build 'next' (now at 208b3a4c), it does not compile due
-to a change from the following commit.
+Yep, this looks fine, please merge this patch through whatever tree
+carries the sparc32-smp work.
 
-> Benjamin Herrenschmidt (1):
->       powerpc/smp: Make start_secondary_resume available to all CPU variants
+Acked-by: Peter Zijlstra <peterz@infradead.org>
 
-I would appreciate your help in getting this fixed...
-
-Thanks,
-Richard
-
-PS the error looks like this:
-
-  AS      arch/powerpc/kernel/misc_32.o
-arch/powerpc/kernel/misc_32.S: Assembler messages:
-arch/powerpc/kernel/misc_32.S:703: Error: Unrecognized opcode: `std'
-make[2]: *** [arch/powerpc/kernel/misc_32.o] Error 1
-make[1]: *** [arch/powerpc/kernel] Error 2
-
-> ${CROSS_COMPILE}gcc -v
-Using built-in specs.
-Target: powerpc-none-linux-gnuspe
-Configured with: ../gcc-4.3.2/configure --target=powerpc-none-linux-gnuspe --host=i686-pc-linux-gnu --prefix=/opt/freescale/usr/local/gcc-4.3.74-eglibc-2.8.74-dp-2/powerpc-none-linux-gnuspe --with-sysroot=/opt/freescale/usr/local/gcc-4.3.74-eglibc-2.8.74-dp-2/powerpc-none-linux-gnuspe/powerpc-none-linux-gnuspe/libc --disable-libssp --disable-libmudflap --disable-libstdcxx-pch --enable-libgomp --enable-shared --enable-threads --enable-languages=c,c++ --with-gmp=/usr/src/redhat/BUILD/csl-tc-4.3.74/host-libs/usr --with-mpfr=/usr/src/redhat/BUILD/csl-tc-4.3.74/host-libs/usr --with-cpu=8548 --with-gnu-as --with-gnu-ld --enable-symvers=gnu --enable-__cxa_atexit --enable-cxx-flags=-mcpu=8548 --disable-multilib --with-long-double-128 --disable-nls --enable-e500_double
-Thread model: posix
-gcc version 4.3.2 (GCC) 
+> ---
+>  init/Kconfig   |    5 -----
+>  kernel/sched.c |    2 +-
+>  2 files changed, 1 insertions(+), 6 deletions(-)
+> 
+> diff --git a/init/Kconfig b/init/Kconfig
+> index df64627..a66b656 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -827,11 +827,6 @@ config SCHED_AUTOGROUP
+>           desktop applications.  Task group autogeneration is currently 
+> based
+>           upon task session.
+> 
+> -config SCHED_TTWU_QUEUE
+> -       bool
+> -       depends on !SPARC32
+> -       default y
+> -
+>  config MM_OWNER
+>         bool
+> 
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index c62acf4..0516af4 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -2564,7 +2564,7 @@ static void ttwu_queue(struct task_struct *p, int cpu)
+>  {
+>         struct rq *rq = cpu_rq(cpu);
+> 
+> -#if defined(CONFIG_SMP) && defined(CONFIG_SCHED_TTWU_QUEUE)
+> +#if defined(CONFIG_SMP)
+>         if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
+>                 ttwu_queue_remote(p, cpu);
+>                 return;
+> -- 
