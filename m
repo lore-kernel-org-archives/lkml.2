@@ -1,64 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934642Ab1ETEOb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 00:14:31 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35244 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932090Ab1ETEO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 00:14:29 -0400
-Date: Fri, 20 May 2011 14:14:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Milton Miller <miltonm@bga.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: manual merge of the tip tree with the powerpc tree
-Message-Id: <20110520141425.dd38cb7d.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__20_May_2011_14_14_25_+1000_xAAV=6AbXkTTvSll"
+	id S934287Ab1ETEUR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 00:20:17 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:41822 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab1ETEUQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 00:20:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DR9h81/Nr5alepy8U4pihvwtlnKNRHcFXCkAIEPe7WZMt9Gli/Z7iX5Uxgd18W0uBT
+         GSpSWXiX04PFFtm1RlfD+kLGO8pnJLf5BffbdnEhJWbThdP2QnL5FIOB2MnFVX8oCd7m
+         My3sR+1dlM2StqxAsP6qW+PEHqKuZgl3YxlLI=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com>
+References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
+	<20110512054631.GI6008@one.firstfloor.org>
+	<BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
+	<BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
+	<20110514165346.GV6008@one.firstfloor.org>
+	<BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
+	<20110514174333.GW6008@one.firstfloor.org>
+	<BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
+	<20110515152747.GA25905@localhost>
+	<BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
+	<20110517060001.GC24069@localhost>
+	<BANLkTi=TOm3aLQCD6j=4va6B+Jn2nSfwAg@mail.gmail.com>
+	<BANLkTi=9W6-JXi94rZfTtTpAt3VUiY5fNw@mail.gmail.com>
+	<BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com>
+	<BANLkTima0hPrPwe_x06afAh+zTi-bOcRMg@mail.gmail.com>
+	<BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com>
+	<BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com>
+	<4DD5DC06.6010204@jp.fujitsu.com>
+	<BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com>
+Date: Fri, 20 May 2011 13:20:15 +0900
+Message-ID: <BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
+Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        kamezawa.hiroyu@jp.fujitsu.com, fengguang.wu@intel.com,
+        andi@firstfloor.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mgorman@suse.de, hannes@cmpxchg.org, riel@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__20_May_2011_14_14_25_+1000_xAAV=6AbXkTTvSll
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, May 20, 2011 at 12:38 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Thu, May 19, 2011 at 11:12 PM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>>> Right after that happened, I hit ctrl-c to kill test_mempressure.sh.
+>>> The system was OK until I typed sync, and then everything hung.
+>>>
+>>> I'm really confused.  shrink_inactive_list in
+>>> RECLAIM_MODE_LUMPYRECLAIM will call one of the isolate_pages functions
+>>> with ISOLATE_BOTH.  The resulting list goes into shrink_page_list,
+>>> which does VM_BUG_ON(PageActive(page)).
+>>>
+>>> How is that supposed to work?
+>>
+>> Usually clear_active_flags() clear PG_active before calling
+>> shrink_page_list().
+>>
+>> shrink_inactive_list()
+>>    isolate_pages_global()
+>>    update_isolated_counts()
+>>        clear_active_flags()
+>>    shrink_page_list()
+>>
+>>
+>
+> That makes sense.  And I have CONFIG_COMPACTION=y, so the lumpy mode
+> doesn't get set anyway.
 
-Hi all,
+Could you see the problem with disabling CONFIG_COMPACTION?
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/powerpc/kernel/smp.c between commit 23d72bfd8f9f ("powerpc:
-Consolidate ipi message mux and demux") from the powerpc tree and commit
-184748cc50b2 ("sched: Provide scheduler_ipi() callback in response to
-smp_send_reschedule()") from the tip tree.
+>
+> But the pages I'm seeing have flags=100000000008005D.  If I'm reading
+> it right, that means locked,referenced,uptodate,dirty,active.  How
+> does a page like that end up in shrink_page_list?  I don't see how a
+> page that's !PageLRU can get marked Active.  Nonetheless, I'm hitting
+> that VM_BUG_ON.
 
-The former superceded part of the latter's changes, so I just used the
-former for that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks for proving that it's not a problem of latest my patch.
 
---Signature=_Fri__20_May_2011_14_14_25_+1000_xAAV=6AbXkTTvSll
-Content-Type: application/pgp-signature
+>
+> Is there a race somewhere?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+First of all, let's finish your first problem about hang. :)
+And let's make another thread to fix this problem.
 
-iQEcBAEBAgAGBQJN1eqhAAoJEDMEi1NhKgbsR+IIAKKfRcS7sd8JgO2z23qr7Z/w
-41pG3hRdtEco7wvvL5j0dwyRbBqHINt4bq5g54PZvdke1ztH4acXfdPN9B933Izf
-l+wijwxpcq2O33goFwYdIe2iZRvSLF8a4mwFNLOUG2avr3Uhyy6AXGZPYWPwt5eo
-qUM1mjogl4i/r3Z3upi07Uee9pUMDwlk6g4mzDI02tWKIE+kGoUNnGbjXnxO4tvR
-mco7/rxHYywgnxW1PiMM/hj/LqhQFOLpldRG6RxYLkjqLr8PstRmLkXL3z2KJ5AD
-BBwMZOfdXNiYaIFxyldLw6KYjiayqLwi/bQsg0GLts1kovwDIQydh0SEbre5Q4k=
-=vlAW
------END PGP SIGNATURE-----
+I think this is a severe problem because 2.6.39 includes my deactivate_pages
+(http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=315601809d124d046abd6c3ffa346d0dbd7aa29d)
 
---Signature=_Fri__20_May_2011_14_14_25_+1000_xAAV=6AbXkTTvSll--
+It touches page states more and more. (2.6.38.6 doesn't include it so
+it's not a problem of my deactivate_pages problem)
+And now inorder-putback series which I will push for 2.6.40 touches it
+more and more.
+
+So I want to resolve your problem asap.
+We don't have see report about that. Could you do git-bisect?
+FYI, Recently, big change of mm is compaction,transparent huge pages.
+Kame, could you point out thing related to memcg if you have a mind?
+
+>
+> --Andy
+>
+
+
+
+-- 
+Kind regards,
+Minchan Kim
