@@ -1,34 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935604Ab1ETK1k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 06:27:40 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:38587 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414Ab1ETK1i convert rfc822-to-8bit (ORCPT
+	id S935617Ab1ETKc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 06:32:26 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53240 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935523Ab1ETKcY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 06:27:38 -0400
+	Fri, 20 May 2011 06:32:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=JSn7A69v2kQMI2z4j7NHNfFkw+hiEySXXRTlUTU9mW84u1/w0KXX4KGFgLQ5XYaU8N
-         3U99F4RUS6t6wfrNPvo2JPMfyei0ntzyBMBurMNj2CRk63Ea5+cJRW0Ci7R0JmSSrzQ4
-         sU6WfiagnzOlPCZIVeMLqRj6gLfR0xxA6P3ZY=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=xqwtJTt5YnppQc3asNIwX7hnDW00SDTJfznXt3KN7bZ/CrPmuMn/cGYSEkkszlLQbR
+         Ud8IbuingYVG5m+jzW2u0ipQXUhzGay9WNNBrWeh7P+YKzijujXTxF6vEk86WWYAPXPI
+         3WSG9EEX5CA6Bt3CpVd401hmC2z4cJhmwU/o0=
 MIME-Version: 1.0
-In-Reply-To: <20110518202025.GC4175@nuttenaction>
-References: <1305715384-81716-1-git-send-email-tsunanet@gmail.com>
-	<20110518.152653.1486764697527722925.davem@davemloft.net>
-	<BANLkTik-6wh8=jb6oMEpJvYC8+KTGGsMsw@mail.gmail.com>
-	<20110518.155200.801089483916944725.davem@davemloft.net>
-	<20110518202025.GC4175@nuttenaction>
-Date: Fri, 20 May 2011 03:27:37 -0700
-Message-ID: <BANLkTimtA9BB7g5cOm8c9sGChQjf1P0Q-Q@mail.gmail.com>
-Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
-From: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: David Miller <davem@davemloft.net>, tsunanet@gmail.com,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+In-Reply-To: <alpine.LNX.2.00.1105201031560.28291@pobox.suse.cz>
+References: <1305807498-8785-1-git-send-email-benjamin.tissoires@enac.fr>
+	<1305807498-8785-7-git-send-email-benjamin.tissoires@enac.fr>
+	<alpine.LNX.2.00.1105201031560.28291@pobox.suse.cz>
+Date: Fri, 20 May 2011 12:32:23 +0200
+X-Google-Sender-Auth: R9wpKE0YdqwzxcCuFQx2_7Tc5iY
+Message-ID: <BANLkTim1nGEbBo2Zf6gfTzAAZJK5vmpy6A@mail.gmail.com>
+Subject: Re: [PATCH 6/6] hid-multitouch: class MT_CLS_STANTUM is redundant
+ with MT_CLS_CONFIDENCE
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
@@ -36,61 +37,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 1:20 PM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
-> * David Miller | 2011-05-18 15:52:00 [-0400]:
+On Fri, May 20, 2011 at 10:35, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Thu, 19 May 2011, Benjamin Tissoires wrote:
 >
->>I've already changed the initial TCP congestion window in Linux to 10
->>without some stupid draft being fully accepted.
+>> Stantum devices used to work with MT_CLS_STANTUM but MT_CLS_CONFIDENCE
+>> is exactly the same. This patch switches them to this generic class,
+>> and remove the unused MT_CLS_STANTUM.
 >>
->>I'll just as easily accept right now a patch right now which lowers
->>the initial RTO to 1 second and adds the 3 second RTO fallback.
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+>> ---
+>>  drivers/hid/hid-multitouch.c |    9 +++------
+>>  1 files changed, 3 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+>> index feeb0b7..65b92d2 100644
+>> --- a/drivers/hid/hid-multitouch.c
+>> +++ b/drivers/hid/hid-multitouch.c
+>> @@ -88,7 +88,6 @@ struct mt_class {
+>>  #define MT_CLS_DUAL_INRANGE_CONTACTNUMBER    3
+>>  #define MT_CLS_CYPRESS                               4
+>>  #define MT_CLS_EGALAX                                5
+>> -#define MT_CLS_STANTUM                               6
+>>  #define MT_CLS_3M                            7
+>>  #define MT_CLS_CONFIDENCE                    8
+>>  #define MT_CLS_CONFIDENCE_MINUS_ONE          9
 >
-> I like the idea to make the initial RTO a knob because we in a isolated MANET
-> environment have a RTT larger then 1 second. Especially the link layer setup
-> procedure over several hops demand some time-costly setup time. After that the
-> RTT is <1 second. The current algorithm works great for us. So this RTO change
-> will be counterproductive: it will always trigger a needless timeout.
+> Benjamin,
 >
-> The main problem for us is that Google at all pushing their view of Internet
-> with a lot of pressure. The same is true for the IETF IW adjustments, which is
-> unsuitable for networks which operates at a bandwidth characteristic some
-> years ago. The _former_ conservative principle "TCP over everything" is
-> forgotten.
+> is it intentional that you are leaving the hole in the numbering here?
+>
+> I don't think there would be any issue with re-numbering 7-10, would it?
 
-Not sure how our various parameter tuning proposals deviate from the "TCP over
-everything" principle?
+Well, the first time I tried to renumber those classes (to keep them
+alphabetically sorted), I've been told not to do it. That's why I let
+the hole in this case.
+There won't be any issue in renumbering those classes (and we could sort them).
+Maybe I can just send a new patch on top of this to sort them.
 
-Note that the design goal of rfc2988bis is to try to benefit 98% of
-traffic while
-keeping any negative impact to the remaining 2% at a minimum. This is why we
-limit the use of < 3sec initRTO to at most once. This way the negative impact
-of the 1sec initRTO to a path with RTT > 1sec is limited mostly to one
-additional,
-small, spuriously retransmitted SYN or SYN-ACK pkt, and the unnecessary
-reduction of IW to 1 segment.
+Cheers,
+Benjamin
 
-We actually thought about removing the IW reduction part but unfortunately the
-text belongs to a different rfc5681, which is at a higher maturity
-level ("draft-standard")
-than rfc2988 hence can't be done as part of rfc2988bis. Anyway I have
-since added
-the recommendation to the IW10 draft. See draft-ietf-tcpm-initcwnd-01.txt.
-
-The bottom line is the damage of rfc2988bis to any network with
-initRTT > 1sec is
-limited to one spurious retransmitted SYN/SYN-ACK. In the current Linux code,
-the SYN/SYN-ACK retransmit is forgotten on the passive open side by the time
-3WHS is completed so there is nothing needed to be done. But for the active
-open side SYN retransmit will cause not long IW to be reduced to 1, but also
-reduction of ssthresh, which is not part of rfc5681 so some more work is needed.
-I can provide a patch (or work with tsuna) to ensure a correct fix is made.
-
-Jerry
+PS: and thank you very much for applying so quickly the last patches I sent.
 
 >
-> Hagen
 > --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Jiri Kosina
+> SUSE Labs
 >
