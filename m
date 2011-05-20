@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934872Ab1ETI0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 04:26:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44425 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934699Ab1ETI0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 04:26:38 -0400
-Date: Fri, 20 May 2011 10:26:36 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Armando Visconti <armando.visconti@st.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Fixed a crash in hid_report_raw_event() function.
-In-Reply-To: <1305834082-14888-1-git-send-email-armando.visconti@st.com>
-Message-ID: <alpine.LNX.2.00.1105201026300.28291@pobox.suse.cz>
-References: <1305834082-14888-1-git-send-email-armando.visconti@st.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S934926Ab1ETIb7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 04:31:59 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48361 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934559Ab1ETIb5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 04:31:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=l3JvSpGRuO/X7m+OzC/LOUf/mDD2sHZHDxzt3Y14DGlUQIaupFo0AKqc1JUzHsA0dH
+         b8vwX3LbP8B2lJb92AWNU8eLw1igsIcLJV4Y8xC7F5hg932M/GcsVxIcKSuynva8EXn7
+         7W88RKGYKBIWBKG7NazijIP8XiIYm7QvEDi3U=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1305869337-4375-1-git-send-email-namhyung@gmail.com>
+References: <1305869337-4375-1-git-send-email-namhyung@gmail.com>
+Date: Fri, 20 May 2011 16:31:56 +0800
+X-Google-Sender-Auth: yYXGoFGZlNoGMilNX8dTZ8907b4
+Message-ID: <BANLkTik5Od9tLg1F6mDFkzpViXR2ZcRmgA@mail.gmail.com>
+Subject: Re: [PATCH] block: call elv_bio_merged() when merged
+From: Shaohua Li <shaohua.li@intel.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Divyesh Shah <dpshah@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 May 2011, Armando Visconti wrote:
-
-> I'm using a Data Modul EasyTouch USB multitouch controller,
-> which is issuing a hid report with a size equals to 0. The rsize
-> value gets set to 536870912 and Linux is crashing in the memset
-> because the value is too big.
-> 
-> Signed-off-by: Armando Visconti <armando.visconti@st.com>
+2011/5/20 Namhyung Kim <namhyung@gmail.com>:
+> Commit 73c101011926 ("block: initial patch for on-stack per-task plugging")
+> removed calls to elv_bio_merged() when @bio merged with @req. Re-add them.
+>
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> Cc: Divyesh Shah <dpshah@google.com>
 > ---
->  drivers/hid/hid-core.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index c3d6626..3e972e3 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1045,6 +1045,9 @@ void hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
->  
->  	rsize = ((report->size - 1) >> 3) + 1;
->  
-> +	if (rsize > HID_MAX_BUFFER_SIZE)
-> +		rsize = HID_MAX_BUFFER_SIZE;
-> +
->  	if (csize < rsize) {
->  		dbg_hid("report %d is too short, (%d < %d)\n", report->id,
->  				csize, rsize);
+>  block/blk-core.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 3fe00a14822a..4dc02ef5fc82 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -1132,6 +1132,7 @@ static bool bio_attempt_back_merge(struct request_queue *q, struct request *req,
+>        req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
+>
+>        drive_stat_acct(req, 0);
+> +       elv_bio_merged(q, req, bio);
+>        return true;
+>  }
+>
+> @@ -1173,6 +1174,7 @@ static bool bio_attempt_front_merge(struct request_queue *q,
+>        req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
+>
+>        drive_stat_acct(req, 0);
+> +       elv_bio_merged(q, req, bio);
+>        return true;
+>  }
+Looks you should do this in __make_request. when the routine is called
+in attempt_plug_merge, the request isn't added to elevator yet.
 
-Applied, thank you.
-
--- 
-Jiri Kosina
-SUSE Labs
+Thanks,
+Shaohua
