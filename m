@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935575Ab1ETSuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 14:50:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38889 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934439Ab1ETSug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 14:50:36 -0400
-X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=wom5GMh1gUkA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=cTMKPreQetIPn50ovP8A:9 a=CjuIK1q_8ugA:10 a=g3F5VGk0NOMZWSIEWMgijA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.158.191
-Date: Fri, 20 May 2011 13:50:34 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-Subject: Re: [PATCH v5 00/21] EVM
-Message-ID: <20110520185034.GA8920@mail.hallyn.com>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	id S935610Ab1ETSuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 14:50:52 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:34891 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934349Ab1ETSut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 14:50:49 -0400
+Message-ID: <4DD6B807.6040309@kernel.dk>
+Date: Fri, 20 May 2011 20:50:47 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@gmail.com>
+CC: Shaohua Li <shaohua.li@intel.com>, linux-kernel@vger.kernel.org,
+        Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH] block: call elv_bio_merged() when merged
+References: <1305869337-4375-1-git-send-email-namhyung@gmail.com>	 <BANLkTik5Od9tLg1F6mDFkzpViXR2ZcRmgA@mail.gmail.com> <1305885108.1633.11.camel@leonhard>
+In-Reply-To: <1305885108.1633.11.camel@leonhard>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mimi,
+On 2011-05-20 11:51, Namhyung Kim wrote:
+> Hello,
+> 
+> 2011-05-20 (금), 16:31 +0800, Shaohua Li:
+>> 2011/5/20 Namhyung Kim <namhyung@gmail.com>:
+>>> Commit 73c101011926 ("block: initial patch for on-stack per-task plugging")
+>>> removed calls to elv_bio_merged() when @bio merged with @req. Re-add them.
+>>>
+>>> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+>>> Cc: Divyesh Shah <dpshah@google.com>
+>>> ---
+>>>  block/blk-core.c |    2 ++
+>>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/block/blk-core.c b/block/blk-core.c
+>>> index 3fe00a14822a..4dc02ef5fc82 100644
+>>> --- a/block/blk-core.c
+>>> +++ b/block/blk-core.c
+>>> @@ -1132,6 +1132,7 @@ static bool bio_attempt_back_merge(struct request_queue *q, struct request *req,
+>>>        req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
+>>>
+>>>        drive_stat_acct(req, 0);
+>>> +       elv_bio_merged(q, req, bio);
+>>>        return true;
+>>>  }
+>>>
+>>> @@ -1173,6 +1174,7 @@ static bool bio_attempt_front_merge(struct request_queue *q,
+>>>        req->ioprio = ioprio_best(req->ioprio, bio_prio(bio));
+>>>
+>>>        drive_stat_acct(req, 0);
+>>> +       elv_bio_merged(q, req, bio);
+>>>        return true;
+>>>  }
+>> Looks you should do this in __make_request. when the routine is called
+>> in attempt_plug_merge, the request isn't added to elevator yet.
+>>
+> 
+> Hmm.. anyway it is merged. Is there any reason why we shouldn't collect
+> the stat - or invoke the callback routine - if the @req is not in the
+> elevator? Or we need to add a separate stat item for this case?
 
-just fyi I think I'm done with the patches where my reviews might be
-useful.  I'll give them another look-over when you repost.  You said
-something about ltp testcases - please let me know if you'd like any
-help, otherwise if they're not yet upstream when you repost, please
-point me to them, and i'll build a test kernel and exercise it
-somewhere.
+Your patch should be safe, it's essentially only for the cgroup stuff
+that does its own accounting and has appropriate protection for it. We'd
+want to do this for both the plug and not-plugged merge case.
 
-thanks,
--serge
+It's a bit of a shame to add this though, since now we are hitting the
+cgroup lock for each merge.
+
+-- 
+Jens Axboe
+
