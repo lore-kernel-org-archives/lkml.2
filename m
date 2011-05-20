@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab1ETDAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:00:18 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53403 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757081Ab1ETDAQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:00:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DD5D92B.8030209@jp.fujitsu.com>
-Date: Fri, 20 May 2011 11:59:55 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1757275Ab1ETDVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:21:31 -0400
+Received: from mailhost.anl.gov ([130.202.113.50]:41534 "EHLO mailhost.anl.gov"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752595Ab1ETDVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 23:21:30 -0400
+X-Greylist: delayed 1133 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 May 2011 23:21:30 EDT
+Message-ID: <4DD5D9C9.3020000@mcs.anl.gov>
+Date: Thu, 19 May 2011 22:02:33 -0500
+From: Kazutomo Yoshii <kazutomo@mcs.anl.gov>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: linux-mm@kvack.org, yinghan@google.com, linux-kernel@vger.kernel.org
-CC: kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [PATCH V2 2/2] change shrinker API by passing shrink_control
- struct
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Kazutomo Yoshii <kazutomo.yoshii@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, bg-linux@lists.anl-external.org
+Subject: Re: [bg-linux] [PATCH 5/7] [RFC] force 32-byte aligned kmallocs
+References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>	<1305753895-24845-5-git-send-email-ericvh@gmail.com>	<1305851769.7481.90.camel@pasglop>  <4DD5C49E.4050103@gmail.com>	<1305857301.7481.121.camel@pasglop> <1305857610.7481.124.camel@pasglop>
+In-Reply-To: <1305857610.7481.124.camel@pasglop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hmm, got Nick's email wrong.
-> 
-> --Ying
+On 05/19/2011 09:13 PM, Benjamin Herrenschmidt wrote:
+> On Fri, 2011-05-20 at 12:08 +1000, Benjamin Herrenschmidt wrote:
+>    
+>> On Thu, 2011-05-19 at 20:32 -0500, Kazutomo Yoshii wrote:
+>>      
+>>> Actually DMA sends invalidate requests to the snoop unit(L2 level).
+>>> BGP SoC is a bit different from other 4xx base.
+>>>        
+>> Well, some other 44x also have a snooping L2 (more or less), but L1 is
+>> usually the problem.
+>>      
+> Hrm... looking at the doco you pointed me to, it looks like the L1 -is-
+> coherent, it gets snoop kills from the L2.
+>    
+Right, L1D is coherent if write throug is set.
+L1I(virtually tagged) is not coherent, btw.
 
-Ping.
-Can you please explain current status? When I can see your answer?
+> Ok so we do need to make this non-coherent cache stuff a runtime option
+> (well, we need that for 440+476 too anyways so may as well do it now).
+>    
+What sort of runtime option do you mean?
 
-
-
-> 
-> On Tue, Apr 26, 2011 at 6:15 PM, Ying Han <yinghan@google.com> wrote:
->> On Tue, Apr 26, 2011 at 5:47 PM, KOSAKI Motohiro
->> <kosaki.motohiro@jp.fujitsu.com> wrote:
->>>> > > {
->>>> > >    struct xfs_mount *mp;
->>>> > >    struct xfs_perag *pag;
->>>> > >    xfs_agnumber_t ag;
->>>> > >    int       reclaimable;
->>>> > > +   int nr_to_scan = sc->nr_slab_to_reclaim;
->>>> > > +   gfp_t gfp_mask = sc->gfp_mask;
->>>> >
->>>> > And, this very near meaning field .nr_scanned and .nr_slab_to_reclaim
->>>> > poped up new question.
->>>> > Why don't we pass more clever slab shrinker target? Why do we need pass
->>>> > similar two argument?
->>>> >
->>>>
->>>> I renamed the nr_slab_to_reclaim and nr_scanned in shrink struct.
->>>
->>> Oh no. that's not naming issue. example, Nick's previous similar patch pass
->>> zone-total-pages and how-much-scanned-pages. (ie shrink_slab don't calculate
->>> current magical target scanning objects anymore)
->>>    ie, "4 * max_pass * (scanned / nr- lru_pages-in-zones)"
->>>
->>> Instead, individual shrink_slab callback calculate this one.
->>> see git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
->>>
->>> I'm curious why you change the design from another guy's previous very similar effort and
->>> We have to be convinced which is better.
->>
->> Thank you for the pointer. My patch is intended to consolidate all
->> existing parameters passed from reclaim code
->> to the shrinker.
->>
->> Talked w/ Nick and Andrew from last LSF, we agree that this patch
->> will be useful for other extensions later which allows us easily
->> adding extensions to the shrinkers without shrinker files. Nick and I
->> talked about the effort later to pass the nodemask down to the
->> shrinker. He is cc-ed in the thread. Another thing I would like to
->> repost is to add the reclaim priority down to the shrinker, which we
->> won't throw tons of page caches pages by reclaiming one inode slab
->> object.
->>
->> --Ying
-
+- kaz
+> As for the alignment of kmalloc, it looks like a hack that should be
+> done in the torus code itself.
+>
+> Cheers,
+> Ben.
+>
+> _______________________________________________
+> bg-linux mailing list
+> bg-linux@lists.anl-external.org
+> https://lists.anl-external.org/mailman/listinfo/bg-linux
+> http://bg-linux.anl-external.org/wiki
+>    
 
