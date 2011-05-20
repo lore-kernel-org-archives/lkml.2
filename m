@@ -1,78 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934922Ab1ETOqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:46:46 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:38360 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab1ETOqp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:46:45 -0400
-Date: Fri, 20 May 2011 10:46:53 -0400
-From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] Please pull powerpc.git merge branch
-Message-ID: <20110520144653.GH25179@zod.rchland.ibm.com>
-References: <1305777978.7481.37.camel@pasglop>
- <20110520132328.GA5785@riccoc20.at.omicron.at>
- <20110520135845.GG25179@zod.rchland.ibm.com>
- <20110520143259.GB5785@riccoc20.at.omicron.at>
+	id S934513Ab1ETOtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:49:24 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:35382 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751254Ab1ETOtX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 10:49:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110520143259.GB5785@riccoc20.at.omicron.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1305743570-12074-2-git-send-email-gg@slimlogic.co.uk>
+References: <1305743570-12074-1-git-send-email-gg@slimlogic.co.uk>
+	<1305743570-12074-2-git-send-email-gg@slimlogic.co.uk>
+Date: Fri, 20 May 2011 20:19:21 +0530
+Message-ID: <BANLkTi=jccSDyG9R2pESN9XCwnViLh5tpg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] REGULATOR: TWL6025: add support to twl-regulator
+From: "T Krishnamoorthy, Balaji" <balajitk@ti.com>
+To: Graeme Gregory <gg@slimlogic.co.uk>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, balbi@ti.com, lrg@slimlogic.co.uk,
+        broonie@opensource.wolfsonmicro.com, linux@slimlogic.co.uk, lrg@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 04:32:59PM +0200, Richard Cochran wrote:
->On Fri, May 20, 2011 at 09:58:45AM -0400, Josh Boyer wrote:
->> On Fri, May 20, 2011 at 03:23:29PM +0200, Richard Cochran wrote:
->> >When I try to build 'next' (now at 208b3a4c), it does not compile due
->> >to a change from the following commit.
->> >
->> >> Benjamin Herrenschmidt (1):
->> >>       powerpc/smp: Make start_secondary_resume available to all CPU variants
->> >
->> >I would appreciate your help in getting this fixed...
->> 
->> Could you try the patch below?
+On Thu, May 19, 2011 at 12:02 AM, Graeme Gregory <gg@slimlogic.co.uk> wrote:
+> Adding support for the twl6025. Major difference in the twl6025 is the
+> group functionality has been removed from the chip so this affects how
+> regulators are enabled and disabled.
 >
->Yes, and it both compiles and boots.
+> The names of the regulators also changed.
+>
+> The DCDCs of the 6025 are software controllable as well.
+>
+> Since V1
+>
+> Use the features variable passed via platform data instead of calling
+> global function.
+>
+> Change the very switch like if statements to be a more readable
+> switch statement.
+>
+> Since V2
+>
+> twl6025 doesn't use remap so remove it from the macros.
+>
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> ---
+>  drivers/regulator/twl-regulator.c |  410 +++++++++++++++++++++++++++++++++---
+>  1 files changed, 375 insertions(+), 35 deletions(-)
+>
 
-Thanks for testing!
+<snip>
 
-Ben, can you pull this patch in as-is (fixing up the Subject), or do you
-need me to resubmit it?
+> +
+> +static int twl6030dcdc_list_voltage(struct regulator_dev *rdev, unsigned index)
+> +{
+> +       struct twlreg_info      *info = rdev_get_drvdata(rdev);
+> +
+> +       int voltage = 0;
+> +
+> +       switch (info->flags) {
+> +       case 0:
+> +               switch (index) {
+> +               case 0:
+> +                       voltage = 0;
+> +                       break;
+> +               case 58:
 
-josh
->> 
->> Commit 69e3cea8d5fd526 introduced start_secondary_resume to misc_32.S,
->> however it uses a 64-bit instruction which is not valid on 32-bit
->> platforms.  Use 'stw' instead.
->> 
->> Reported-by: Richard Cochran <richardcochran@gmail.com>
->> Signed-off-by: Josh Boyer <jwboyer@linux.vnet.ibm.com>
->> 
->> ---
->> 
->> diff --git a/arch/powerpc/kernel/misc_32.S
->> b/arch/powerpc/kernel/misc_32.S
->> index 402560e..998a100 100644
->> --- a/arch/powerpc/kernel/misc_32.S
->> +++ b/arch/powerpc/kernel/misc_32.S
->> @@ -700,7 +700,7 @@ _GLOBAL(start_secondary_resume)
->> 	rlwinm  r1,r1,0,0,(31-THREAD_SHIFT)     /* current_thread_info() */
->> 	addi    r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
->> 	li      r3,0
->> -	std     r3,0(r1)                /* Zero the stack frame pointer */
->> +	stw     r3,0(r1)                /* Zero the stack frame pointer */
->> 	bl      start_secondary
->> 	b       .
->>  #endif /* CONFIG_SMP */
->> 
+Not sure if hex 0x3A is better here, TRM gives in binary though.
+
+> +                       voltage = 1350 * 1000;
+> +                       break;
+> +               case 59:
+> +                       voltage = 1500 * 1000;
+> +                       break;
+> +               case 60:
+> +                       voltage = 1800 * 1000;
+> +                       break;
+> +               case 61:
+> +                       voltage = 1900 * 1000;
+> +                       break;
+> +               case 62:
+> +                       voltage = 2100 * 1000;
+> +                       break;
+> +               default:
+> +                       voltage = (600000 + (12500 * (index - 1)));
+> +               }
+> +               break;
+> +       case DCDC_OFFSET_EN:
+> +               switch (index) {
+> +               case 0:
+> +                       voltage = 0;
+> +                       break;
+> +               case 58:
+> +                       voltage = 1350 * 1000;
+> +                       break;
+> +               case 59:
+> +                       voltage = 1500 * 1000;
+> +                       break;
+> +               case 60:
+> +                       voltage = 1800 * 1000;
+> +                       break;
+> +               case 61:
+> +                       voltage = 1900 * 1000;
+> +                       break;
+> +               case 62:
+> +                       voltage = 2100 * 1000;
+> +                       break;
+> +               default:
+> +                       voltage = (700000 + (12500 * (index - 1)));
+
+Between DCDC_OFFSET_EN and case 0
+700000 and 600000 is the only difference,
+can it be handled via additional 100000 in case DCDC_OFFSET_EN?
+like
++	case DCDC_OFFSET_EN:
+	voltage = 100000;
+	/* fall through */
++	case 0:
+	voltage += (600000 + (12500 * (index - 1)));
+
+> +               }
+> +               break;
+> +       case DCDC_EXTENDED_EN:
+> +               switch (index) {
+> +               case 0:
+> +                       voltage = 0;
+> +                       break;
+> +               case 58:
+> +                       voltage = 2084 * 1000;
+> +                       break;
+> +               case 59:
+> +                       voltage = 2315 * 1000;
+> +                       break;
+> +               case 60:
+> +                       voltage = 2778 * 1000;
+> +                       break;
+> +               case 61:
+> +                       voltage = 2932 * 1000;
+> +                       break;
+> +               case 62:
+> +                       voltage = 3241 * 1000;
+> +                       break;
+> +               default:
+> +                       voltage = (1852000 + (38600 * (index - 1)));
+> +               }
+> +               break;
+> +       case DCDC_OFFSET_EN|DCDC_EXTENDED_EN:
+
+space between |
+
+> +               switch (index) {
+
+> +
+> +static int
+> +twl6030dcdc_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
+> +                       unsigned int *selector)
+> +{
+> +       struct twlreg_info      *info = rdev_get_drvdata(rdev);
+> +       int     vsel = 0;
+> +
+> +       switch (info->flags) {
+> +       case 0:
+> +               if (min_uV == 0)
+> +                       vsel = 0;
+> +               else if ((min_uV >= 600000) && (max_uV <= 1300000)) {
+> +                       vsel = (min_uV - 600000) / 125;
+> +                       if (vsel % 100)
+> +                               vsel += 100;
+> +                       vsel /= 100;
+> +                       vsel++;
+> +               }
+> +               /* Values 1..57 for vsel are linear and can be calculated
+> +                * values 58..62 are non linear.
+> +                */
+> +               else if ((min_uV > 1900000) && (max_uV >= 2100000))
+> +                       vsel = 62;
+> +               else if ((min_uV > 1800000) && (max_uV >= 1900000))
+> +                       vsel = 61;
+> +               else if ((min_uV > 1500000) && (max_uV >= 1800000))
+> +                       vsel = 60;
+> +               else if ((min_uV > 1350000) && (max_uV >= 1500000))
+> +                       vsel = 59;
+> +               else if ((min_uV > 1300000) && (max_uV >= 1350000))
+> +                       vsel = 58;
+> +               else
+> +                       return -EINVAL;
+> +               break;
+> +       case DCDC_OFFSET_EN:
+> +               if (min_uV == 0)
+> +                       vsel = 0;
+> +               else if ((min_uV >= 700000) && (max_uV <= 1420000)) {
+> +                       vsel = (min_uV - 600000) / 125;
+
+s/600000/700000 ?
+
+> +                       if (vsel % 100)
+> +                               vsel += 100;
+> +                       vsel /= 100;
+> +                       vsel++;
+> +               }
+
+> +static struct regulator_ops twldcdc_ops = {
+> +       .list_voltage           = twl6030dcdc_list_voltage,
+> +
+> +       .set_voltage            = twl6030dcdc_set_voltage,
+> +       .get_voltage_sel        = twl6030dcdc_get_voltage_sel,
+
+In 6030 TRM, dcdc is mentioned as SMPS
+Is it different it in 6025 TRM?
