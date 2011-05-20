@@ -1,142 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935677Ab1ETL6P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 07:58:15 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36474 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934469Ab1ETL6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 07:58:14 -0400
-Date: Fri, 20 May 2011 13:58:02 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Don Zickus <dzickus@redhat.com>, huang ying <huang.ying.caritas@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-Message-ID: <20110520115802.GI14745@elte.hu>
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
- <20110513124523.GM13984@redhat.com>
- <20110513130011.GA6474@elte.hu>
- <BANLkTi=Z_3MZVs2CQyk82NfvZj-KdSw5kw@mail.gmail.com>
- <20110513152033.GB3854@elte.hu>
- <20110513160029.GD31888@redhat.com>
- <20110516112934.GE19837@elte.hu>
- <4DD22692.7050209@intel.com>
- <20110517085327.GG22093@elte.hu>
- <4DD4BC45.8050301@intel.com>
+	id S935683Ab1ETL7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 07:59:38 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58297 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935643Ab1ETL7h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 07:59:37 -0400
+Date: Fri, 20 May 2011 13:59:36 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/4] clk: Add a generic clock infrastructure
+Message-ID: <20110520115936.GA10931@pengutronix.de>
+References: <1305876469.325655.313573683829.0.gpush@pororo>
+ <1305876469.326305.518470530485.1.gpush@pororo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DD4BC45.8050301@intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1305876469.326305.518470530485.1.gpush@pororo>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 13:39:32 up  5:19,  6 users,  load average: 0.09, 0.04, 0.01
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:219:66ff:fe5b:d076
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jeremy,
 
-* Huang Ying <ying.huang@intel.com> wrote:
+Nice to see progress in this area :)
 
-> On 05/17/2011 04:53 PM, Ingo Molnar wrote:
-> > 
-> > * Huang Ying <ying.huang@intel.com> wrote:
-> > 
-> >> On 05/16/2011 07:29 PM, Ingo Molnar wrote:
-> >>>
-> >>> * Don Zickus <dzickus@redhat.com> wrote:
-> >>>
-> >>>> On Fri, May 13, 2011 at 05:20:33PM +0200, Ingo Molnar wrote:
-> >>>>>
-> >>>>> * huang ying <huang.ying.caritas@gmail.com> wrote:
-> >>>>>
-> >>>>>>> What should be done instead is to add an event for unknown NMIs, which can 
-> >>>>>>> then be processed by the RAS daemon to implement policy.
-> >>>>>>>
-> >>>>>>> By using 'active' event filters it could even be set on a system to panic 
-> >>>>>>> the box by default.
-> >>>>>>
-> >>>>>> If there is real fatal hardware error, maybe we have no luxury to go from NMI 
-> >>>>>> handler to user space RAS daemon to determine what to do. System may explode, 
-> >>>>>> bad data may go to disk before that.
-> >>>>>
-> >>>>> That is why i suggested:
-> >>>>>
-> >>>>>   > > By using 'active' event filters it could even be set on a system to panic 
-> >>>>>   > > the box by default.
-> >>>>>
-> >>>>> event filters are evaluated in the kernel, so the panic could be instantaneous, 
-> >>>>> without the event having to reach user-space.
-> >>>>
-> >>>> Interesting.  Question though, what do you mean by 'event filtering'.  Is 
-> >>>> that different then setting 'unknown_nmi_panic' panic on the commandline or 
-> >>>> procfs?
-> >>>>
-> >>>> Or are you suggesting something like registering another callback on the 
-> >>>> die_chain that looks for DIE_NMIUNKNOWN as the event, swallows them and 
-> >>>> implements the policy?  That way only on HEST related platforms would 
-> >>>> register them while others would keep the default of 'Dazed and confused' 
-> >>>> messages?
-> >>>
-> >>> The idea is that "event filters", which are an existing upstream feature and 
-> >>> which can be used in rather flexible ways:
-> >>>
-> >>>   http://lkml.org/lkml/2011/4/27/660
-> >>>
-> >>> Could be used to trigger non-standard policy action as well - such as to panic 
-> >>> the box.
-> >>>
-> >>> This would replace various very limited /debugfs and /sys event filtering hacks 
-> >>> (and hardcoded policies) such as arch/x86/kernel/cpu/mcheck/mce-severity.c, and 
-> >>> it would allow nonstandard behavior like 'panic the box on unknown NMIs' as 
-> >>> well.
-> >>>
-> >>> This could be set by the RAS daemon, and it could be propagated to the kernel 
-> >>> boot line as well, where event filter syntax would look like this:
-> >>>
-> >>>   events=nmi::unknown"if (reason == 0) panic();"
-> >>>
-> >>> (Where the 'reason' field of the NMI event is the current legacy 'reason' value 
-> >>> there.)
-> >>>
-> >>> The filter code would have to be modified to be able to recognize the panic() 
-> >>> bit, but that's desirable anyway and it is a one-time effort.
-> >>>
-> >>> This:
-> >>>
-> >>>   events=nmi::unknown:"if (reason == 0) ignore();"
-> >>>
-> >>> would be a possible outcome as well, on certain boxes - to skip certain events.
-> >>
-> >> We can determine whether NMI is unknown in kernel now.  If you want to push 
-> >> all unknown NMI logic into user space (although I don't think that is the 
-> >> best solution), is it not sufficient that just check system in user space 
-> >> (via PCI ID or DMI ID, etc) and set existing "unknown_nmi_panic" accordingly?
-> > 
-> > yeah - no need to push the 'reason' if it's not needed.
-> > 
-> > We want the kernel defaults to be sane - i.e. this is not to 'push' anything to 
-> > user-space in a forced way, this is to make *optional*, different policy action 
-> > possible to configure.
-> 
-> OK.  Then, what is the proper default behavior?  We think Linux kernel
-> should treat unknown NMI as hardware error reporting, at least on some
-> modern machines (via a white list).  Do you agree?
+On Fri, May 20, 2011 at 03:27:49PM +0800, Jeremy Kerr wrote:
+> +
+> +struct clk *clk_register(struct clk_hw_ops *ops, struct clk_hw *hw,
+> +		const char *name)
+> +{
+> +	struct clk *clk;
+> +
+> +	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
+> +	if (!clk)
+> +		return NULL;
+> +
+> +	clk->name = name;
+> +	clk->ops = ops;
+> +	clk->hw = hw;
+> +	hw->clk = clk;
 
-No, i do not agree *at all*.
+is it worth to add a CLK_REGISTERED flag here? Up to now clocks do not
+have to be registered at all and the registering might be forgotten for
+some clocks. I suppose funny things can happen when we operate on
+unregistered clocks.
 
-We are seeing cases of spurious NMIs again and again. Crashing boxes should be 
-a niche thing, something you can configure if you want to but the kernel should 
-not default it until NMI demultiplexing becomes more robust - and i doubt it 
-ever will.
+> +
+> +	/* Query the hardware for parent and initial rate */
+> +
+> +	if (clk->ops->get_parent)
+> +		/* We don't to lock against prepare/enable here, as
+> +		 * the clock is not yet accessible from anywhere */
+> +		clk->parent = clk->ops->get_parent(clk->hw);
+> +
+> +	if (clk->ops->recalc_rate)
+> +		clk->rate = clk->ops->recalc_rate(clk->hw);
 
-Thanks,
+This implicitely requires that we never register a clock before its
+parent is registered. This makes perfect sense but I think we should
+catch it here when the user tries to register a clock with a not yet
+registered parent.
 
-	Ingo
+> +
+> +
+> +	return clk;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_register);
+
+BTW we planned to let the linker do the job of registering static
+clocks, but this is only convenience and can be added later.
+
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
