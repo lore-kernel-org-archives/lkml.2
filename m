@@ -1,143 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934103Ab1ETH00 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 03:26:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64173 "EHLO mga09.intel.com"
+	id S934283Ab1ETH2E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 03:28:04 -0400
+Received: from ozlabs.org ([203.10.76.45]:45050 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933738Ab1ETH0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 03:26:25 -0400
-X-ExtLoop1: 1
-Date: Fri, 20 May 2011 15:26:22 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 14/18] writeback: make writeback_control.nr_to_write
- straight
-Message-ID: <20110520072622.GA14117@localhost>
-References: <20110519214530.939830917@intel.com>
- <20110519214746.038765568@intel.com>
- <20110519220643.GA27247@localhost>
- <20110519232910.GK32466@dastard>
- <20110520040740.GA8603@localhost>
- <20110520065207.GR32466@dastard>
- <20110520071518.GA10953@localhost>
+	id S934059Ab1ETH16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 03:27:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110520071518.GA10953@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Subject: [PATCH 0/4] Add a generic struct clk
+Message-Id: <1305876469.325655.313573683829.0.gpush@pororo>
+In-Reply-To: <1305876469.325655.313573683829.0.gpush@pororo>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+Date: Fri, 20 May 2011 15:27:49 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 03:15:18PM +0800, Wu Fengguang wrote:
-> On Fri, May 20, 2011 at 02:52:07PM +0800, Dave Chinner wrote:
-> > On Fri, May 20, 2011 at 12:07:40PM +0800, Wu Fengguang wrote:
-> > > On Fri, May 20, 2011 at 07:29:10AM +0800, Dave Chinner wrote:
-> > > > On Fri, May 20, 2011 at 06:06:44AM +0800, Wu Fengguang wrote:
-> > > > > :                 writeback_single_inode(inode, wb, &wbc);
-> > > > > :                 work->nr_pages -= write_chunk - wbc.nr_to_write;
-> > > > > :                 wrote += write_chunk - wbc.nr_to_write;
-> > > > > :                 if (wbc.pages_skipped) {
-> > > > > :                         /*
-> > > > > :                          * writeback is not making progress due to locked
-> > > > > :                          * buffers.  Skip this inode for now.
-> > > > > :                          */
-> > > > > :                         redirty_tail(inode, wb);
-> > > > > : -               }
-> > > > > : +               } else if (!(inode->i_state & I_DIRTY))
-> > > > > : +                       wrote++;
-> > > > > 
-> > > > > It looks a bit more clean to do
-> > > > > 
-> > > > > :                 wrote += write_chunk - wbc.nr_to_write;
-> > > > > : +               if (!(inode->i_state & I_DIRTY))
-> > > > > : +                       wrote++;
-> > > > > :                 if (wbc.pages_skipped) {
-> > > > > :                         /*
-> > > > > :                          * writeback is not making progress due to locked
-> > > > > :                          * buffers.  Skip this inode for now.
-> > > > > :                          */
-> > > > > :                         redirty_tail(inode, wb);
-> > > > > :                 }
-> > > > 
-> > > > But it's still in the wrong place - such post-write inode dirty
-> > > > processing is supposed to be isolated to writeback_single_inode().
-> > > > Spreading it across multiple locations is not, IMO, the nicest thing
-> > > > to do...
-> > > 
-> > > Strictly speaking, it's post inspecting :)
-> > > 
-> > > It does look reasonable and safe to move the pages_skipped post
-> > > processing into writeback_single_inode(). See the below patch.
-> > 
-> > <sigh>
-> > 
-> > That's not what I was referring to. The wbc.pages_skipped check is
-> > fine where it is.
-> > 
-> > > 
-> > > When doing this chunk,
-> > > 
-> > > -			if (wbc->nr_to_write <= 0) {
-> > > +			if (wbc->nr_to_write <= 0 && wbc->pages_skipped == 0) {
-> > > 
-> > > I wonder in general sense (without knowing enough FS internals)
-> > > whether ->pages_skipped is that useful: if some locked buffer is
-> > > blocking all subsequent pages, then ->nr_to_write won't be able to
-> > > drop to zero.  So the (wbc->pages_skipped == 0) test seems redundant..
-> > > 
-> > > Thanks,
-> > > Fengguang
-> > > ---
-> > > Subject: writeback: move pages_skipped post processing into writeback_single_inode()
-> > > Date: Fri May 20 11:42:42 CST 2011
-> > > 
-> > > It's more logical to isolate post-write processings in writeback_single_inode().
-> > > 
-> > > Note that it slightly changes behavior for write_inode_now() and sync_inode(),
-> > > which used to ignore pages_skipped.
-> > > 
-> > > Proposed-by: Dave Chinner <david@fromorbit.com>
-> > 
-> > No, I didn't propose the change you've made in this patch. I've been
-> > asking you to fix the original patch, not proposing new changes to
-> > some other code.  Please don't add my name to random tags in patches
-> > without asking me first.
-> 
-> OK, sorry, I'll keep that in mind in future.
-> 
-> > So, for the third time, please fix the original patch by moving the
-> > new "inode now clean" accounting to the "inode-now-clean" logic
-> > branch in writeback_single_inode().
-> > 
-> >         if (!(inode->i_state & I_FREEING)) {
-> >                 if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
-> > .....
-> >                 } else if (inode->i_state & I_DIRTY) {
-> > .....
-> >                 } else {
-> > 			/*
-> > 			 * account for it here with all the other
-> > 			 * inode-now-clean manipulations that we need
-> > 			 * to do!
-> > 			 */
-> 
-> That's what the original "writeback: introduce
-> writeback_control.inodes_cleaned" does. Given that it's opposed to add
-> writeback_control.inodes_cleaned, the only option remained is to add
-> one more argument "long *inode_cleaned" to writeback_single_inode()
-> like this.
-> 
-> Well it looks ugly and I wonder if you have any prettier version in
-> mind. This ugliness is the main reason I resist to do the change.
+[This series was originally titled 'Add a common struct clk', but
+the goals have changed since that first set of patches. We're now aiming
+for a more complete generic clock infrastructure, rather than just
+abstracting struct clk]
 
-The other option is to make use of a *bit* field wbc->inode_cleaned.
-It still adds one more writeback_control field *logically* and several
-new lines of code, but kills a bit stack overheads.
+[This series still needs work, see the TODO section below]
 
-Thanks,
-Fengguang
+[Totally RFC at the moment]
+
+Hi all,
+
+These patches are an attempt to allow platforms to share clock code. At
+present, the definitions of 'struct clk' are local to platform code,
+which makes allocating and initialising cross-platform clock sources
+difficult, and makes it impossible to compile a single image containing
+support for two ARM platforms with different struct clks.
+
+The three patches are for the architecture-independent kernel code,
+introducing the common clk infrastructure. The changelog for the first
+patch includes details about the new clock definitions.
+
+The second patch implements clk_set_rate, and in doing so adds
+functionality to walk the clock tree in both directions.
+
+clk_set_parent is left unimplemented, see TODO below for why.
+
+The third and fourth patches provide some basic clocks (fixed-rate and
+gated), mostly to serve as an example of the hardware implementation.
+I'm intending to later provide similar base clocks for mux and divider
+hardware clocks.
+
+Many thanks to the following for their input:
+ * Benjamin Herrenschmidt <benh@kernel.crashing.org>
+ * Thomas Gleixner <tglx@linutronix.de>
+ * Ben Dooks <ben-linux@fluff.org>
+ * Baruch Siach <baruch@tkos.co.il>
+ * Russell King <linux@arm.linux.org.uk>
+ * Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+ * Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
+ * Vincent Guittot <vincent.guittot@linaro.org>
+ * Sascha Hauer <s.hauer@pengutronix.de>
+ * Ryan Mallon <ryan@bluewatersys.com>
+ * Colin Cross <ccross@google.com>
+ * Jassi Brar <jassisinghbrar@gmail.com>
+ * Saravana Kannan <skannan@codeaurora.org>
+
+TODO:
+
+ * Need to figure out the locking around clk_set_parent. Changing the in-kernel 
+   clock topology requires acquiring both the mutex (to prevent against races
+   with clk_prepare, which may propagate to the parent clock) and the spinlock
+   (to prevent the same race with clk_enable).
+
+   However, we should also be changing the hardware clock topology in sync with
+   the in-kernel clock topology, which would imply that both locks *also* need
+   to be held while updating the parent in the hardware (ie, in
+   clk_hw_ops->set_parent) too.  However, I believe some platform clock
+   implementations may require this callback to be able to sleep. Comments?
+
+ * tglx and I have been discussing different ways of passing clock information
+   to the clock hardware implementation. I'm proposing providing a base 'struct
+   clk_hw', which implementations subclass by wrapping in their own structure
+   (or one of a set of simple 'library' structures, like clk_hw_mux or
+   clk_hw_gate).  The clk_hw base is passed as the first argument to all
+   clk_hw_ops callbacks.
+
+   tglx's plan is to create a separate struct clk_hwdata, which contains a
+   union of base data structures for common clocks: div, mux, gate, etc. The
+   ops callbacks are passed a clk_hw, plus a clk_hwdata, and most of the base
+   hwdata fields are handled within the core clock code. This means less
+   encapsulation of clock implementation logic, but more coverage of
+   clock basics through the core code.
+
+   tglx, could you send some details about your approach? I'm aiming to refine
+   this series with the good bits from each technique.
+
+ * The clock registration code probably needs work. This is the domain
+   of the platform/board maintainers, any wishes here?
+
+Cheers,
+
+
+Jeremy
+
+--
+
+---
+Jeremy Kerr (4):
+      clk: Add a generic clock infrastructure
+      clk: Implement clk_set_rate
+      clk: Add fixed-rate clock
+      clk: Add simple gated clock
+
