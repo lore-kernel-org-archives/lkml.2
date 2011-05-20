@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934489Ab1ETIBR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 04:01:17 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34141 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934212Ab1ETIBQ (ORCPT
+	id S934493Ab1ETIBx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 04:01:53 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49010 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934212Ab1ETIBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 04:01:16 -0400
-Date: Fri, 20 May 2011 10:01:14 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Milton Miller <miltonm@bga.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [22/44] driver core: let dev_set_drvdata return int instead of
- void as it can fail
-Message-ID: <20110520080114.GC29843@pengutronix.de>
-References: <1305850262-9575-22-git-send-email-gregkh@suse.de>
- <please-do-not-merge-driver-set-data-fail@mdm.bga.com>
+	Fri, 20 May 2011 04:01:51 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DD61FE2.1020303@jp.fujitsu.com>
+Date: Fri, 20 May 2011 17:01:38 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <please-do-not-merge-driver-set-data-fail@mdm.bga.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: kosaki.motohiro@jp.fujitsu.com
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
+        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com,
+        minchan.kim@gmail.com, oleg@redhat.com
+Subject: [PATCH 1/5] oom: improve dump_tasks() show items
+References: <4DD61F80.1020505@jp.fujitsu.com>
+In-Reply-To: <4DD61F80.1020505@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 02:53:30AM -0500, Milton Miller wrote:
-> On Fri, 20 May 2011 about 00:10:40 -0000, Greg Kroah-Hartman wrote:
-> > 
-> > From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > 
-> > Before commit
-> > 
-> > 	b402843 (Driver core: move dev_get/set_drvdata to drivers/base/dd.c)
-> > 
-> > calling dev_set_drvdata with dev=NULL was an unchecked error. After some
-> > discussion about what to return in this case removing the check (and so
-> > producing a null pointer exception) seems fine.
-> > 
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > 
-> 
-> I obviously didn't follow the discussions close enough and got
-> confused[1], but I don't like the anticipated fallout of pushing this
-> change though all the drivers.  Let alone see the arguments that not
-> being able to free the device when it fails is no reason to fail.
-> 
-> So, my first question is:  When is it legal for a driver to set driver
-> data before a device is registered?
-A driver cannot set driver data on an unregistered device because it
-doesn't get it's hands on it before. So it's only the code that
-registers a device that has a chance to do so.
+Recently, oom internal logic was dramatically changed. Thus
+dump_tasks() doesn't show enough information for bug report
+analysis. it has some meaningless items and don't have some
+oom score related items.
 
-A while back I thought about breaking these constructs by setting
-driver_data to NULL before a device is handed to a driver. Never came
-around to make a patch tough.
+This patch adapt displaying fields to new oom logic.
 
-Best regards
-Uwe
+details
+--------
+removed: pid (we always kill process. don't need thread id),
+         signal->oom_adj (we no longer uses it internally)
+	 cpu (we no longer uses it)
+added:  ppid (we often kill sacrifice child process)
+        swap (it's accounted)
+modify: RSS (account mm->nr_ptes too)
 
+<old>
+[ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
+[ 3886]     0  3886     2893      441   1       0             0 bash
+[ 3905]     0  3905    29361    25833   0       0             0 memtoy
+
+<new>
+[   pid]   ppid   uid total_vm      rss     swap score_adj name
+[   417]      1     0     3298       12      184     -1000 udevd
+[   830]      1     0     1776       11       16         0 system-setup-ke
+[   973]      1     0    61179       35      116         0 rsyslogd
+[  1733]   1732     0  1052337   958582        0         0 memtoy
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/oom_kill.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index f52e85c..43d32ae 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -355,7 +355,7 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
+ 	struct task_struct *p;
+ 	struct task_struct *task;
+
+-	pr_info("[ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name\n");
++	pr_info("[   pid]   ppid   uid total_vm      rss     swap score_adj name\n");
+ 	for_each_process(p) {
+ 		if (oom_unkillable_task(p, mem, nodemask))
+ 			continue;
+@@ -370,11 +370,14 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
+ 			continue;
+ 		}
+
+-		pr_info("[%5d] %5d %5d %8lu %8lu %3u     %3d         %5d %s\n",
+-			task->pid, task_uid(task), task->tgid,
+-			task->mm->total_vm, get_mm_rss(task->mm),
+-			task_cpu(task), task->signal->oom_adj,
+-			task->signal->oom_score_adj, task->comm);
++		pr_info("[%6d] %6d %5d %8lu %8lu %8lu %9d %s\n",
++			task_tgid_nr(task), task_tgid_nr(task->real_parent),
++			task_uid(task),
++			task->mm->total_vm,
++			get_mm_rss(task->mm) + p->mm->nr_ptes,
++			get_mm_counter(p->mm, MM_SWAPENTS),
++			task->signal->oom_score_adj,
++			task->comm);
+ 		task_unlock(task);
+ 	}
+ }
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.3.1
+
+
+
