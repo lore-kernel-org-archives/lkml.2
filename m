@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab1ETNZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:25:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40420 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756104Ab1ETNZX convert rfc822-to-8bit (ORCPT
+	id S933750Ab1ETNXx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:23:53 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52021 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756018Ab1ETNXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:25:23 -0400
-Subject: Re: linux-next: manual merge of the tip tree with the sparc tree
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Hellstrom <daniel@gaisler.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <4DD66328.4010603@gaisler.com>
-References: <20110517131435.aceca54e.sfr@canb.auug.org.au>
-	 <4DD51D37.3010907@gaisler.com> <1305819306.2466.7228.camel@twins>
-	 <4DD60530.6090900@gaisler.com> <1305879113.2466.7231.camel@twins>
-	 <4DD66328.4010603@gaisler.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 20 May 2011 15:24:56 +0200
-Message-ID: <1305897896.2466.7235.camel@twins>
+	Fri, 20 May 2011 09:23:48 -0400
+Date: Fri, 20 May 2011 14:24:59 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>, James.Bottomley@suse.de,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH]: Fix Ultrastor asm snippet
+Message-ID: <20110520142459.4c37d3e0@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110520130215.GB3428@infradead.org>
+References: <20110518150605.GA25262@const.bordeaux.inria.fr>
+	<20110520130215.GB3428@infradead.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-20 at 14:48 +0200, Daniel Hellstrom wrote:
-> Subject: [PATCH] SCHED_TTWU_QUEUE is not longer needed since sparc32 now implements IPI
-> 
-> Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
-> Reported-by: Peter Zijlstra <peterz@infradead.org>
+On Fri, 20 May 2011 09:02:15 -0400
+Christoph Hellwig <hch@infradead.org> wrote:
 
-Yep, this looks fine, please merge this patch through whatever tree
-carries the sparc32-smp work.
+> On Wed, May 18, 2011 at 05:06:05PM +0200, Samuel Thibault wrote:
+> > Commit 1292500b replaced
+> > 
+> > "=m" (*field) : "1" (*field)
+> > 
+> > with
+> > 
+> > "=m" (*field) :
+> > 
+> > with comment "The following patch fixes it by using the '+' operator on
+> > the (*field) operand, marking it as read-write to gcc."
+> > '+' was actually forgotten.  This really puts it.
+> 
+> Do you actually have the hardware or was this just a code audit?
+> 
+> I have the strong suspicion that this driver is pretty much dead and
+> bitrotting.
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+There are a pile of scsi drivers like the Ultrastor that probably want
+retiring via staging.
 
-> ---
->  init/Kconfig   |    5 -----
->  kernel/sched.c |    2 +-
->  2 files changed, 1 insertions(+), 6 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index df64627..a66b656 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -827,11 +827,6 @@ config SCHED_AUTOGROUP
->           desktop applications.  Task group autogeneration is currently 
-> based
->           upon task session.
-> 
-> -config SCHED_TTWU_QUEUE
-> -       bool
-> -       depends on !SPARC32
-> -       default y
-> -
->  config MM_OWNER
->         bool
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index c62acf4..0516af4 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2564,7 +2564,7 @@ static void ttwu_queue(struct task_struct *p, int cpu)
->  {
->         struct rq *rq = cpu_rq(cpu);
-> 
-> -#if defined(CONFIG_SMP) && defined(CONFIG_SCHED_TTWU_QUEUE)
-> +#if defined(CONFIG_SMP)
->         if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
->                 ttwu_queue_remote(p, cpu);
->                 return;
-> -- 
+I can believe an AHA152x or two lurk around, and the odd NCR53c80 and
+clones because they were so voluminous but the rest I doubt somewhat.
