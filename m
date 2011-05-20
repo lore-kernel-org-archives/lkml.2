@@ -1,141 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab1ETWZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 18:25:58 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:2101 "EHLO
+	id S1757332Ab1ETW0H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 18:26:07 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:2106 "EHLO
 	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646Ab1ETWZx (ORCPT
+	with ESMTP id S1757293Ab1ETWZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 18:25:53 -0400
+	Fri, 20 May 2011 18:25:56 -0400
 From: David Daney <ddaney@caviumnetworks.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org,
         devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
         linux-kernel@vger.kernel.org
 Cc: David Daney <ddaney@caviumnetworks.com>
-Subject: [RFC PATCH v4 0/6] MIPS: Octeon: Use Device Tree.
-Date: Fri, 20 May 2011 15:25:37 -0700
-Message-Id: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com>
+Subject: [RFC PATCH v4 1/6] of: Allow scripts/dtc/libfdt to be used from kernel code
+Date: Fri, 20 May 2011 15:25:38 -0700
+Message-Id: <1305930343-31259-2-git-send-email-ddaney@caviumnetworks.com>
 X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 20 May 2011 22:25:52.0235 (UTC) FILETIME=[E0B533B0:01CC173C]
+In-Reply-To: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com>
+References: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com>
+X-OriginalArrivalTime: 20 May 2011 22:25:54.0392 (UTC) FILETIME=[E1FE5580:01CC173C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New in v4:
+To use it you need to do this in your Kconfig:
 
-Cleanup and error checking suggested by Sergei Shtylyov.
+	select LIBFDT
 
-Use device tree passed by bootloader if present.
+And in the Makefile of the code using libfdt something like:
 
-New in v3:
+ccflags-y := -include linux/libfdt_env.h -I$(src)/../../../scripts/dtc/libfdt
 
-More updates to device tree bindings, and perhaps more importantly
-descriptions/definitions of the bindings
-
-libfdt building moved to devices/of/libfdt.
-
-Cleanup and style improvements as suggested by Grant Likley.
-
-Omitted all the driver changes, as they are unchanged from the last
-set, and at this stage the patches are just an RFC.
-
-New in v2:
-
-Changed many device tree bindings.  They should be closer to the
-standard naming scheme now.
-
-Editing of the template device tree is done in the flattened form
-using libfdt.
-
-Standard platform driver functions used in preference to the
-of_platform variety.
-
-v1:
-
-Background: The Octeon family of SOCs has a variety of on-chip
-controllers for Ethernet, MDIO, I2C, and several other I/O devices.
-These chips are used on boards with a great variety of different
-configurations.  To date, the configuration and bus topology
-information has been hard coded in the drivers and support code.
-
-To facilitate supporting new chips and boards, we would like to make
-use use the Device Tree to encode the configuration information.
-
-I would like to get some feedback on the current code I am working
-with.  The migration approach is as follows:
-
-o Several device tree templates are statically linked into the kernel
-  image.  Based on SOC type and board type one of these is selected in
-  early boot.  Legacy configuration probing code is used to prune and
-  patch the device tree template.
-
-o New SOCs and boards will directly use a device tree passed by the
-  bootloader (This patch set doesn't actually implement this, but it
-  is trivial to add).
-
-
-
-1/6 -  Infrastructure to allow scripts/dtc/libfdt to be used in the
-       kernel.
-
-2/6 - OF patch to simplify of_find_node_by_path().
-
-3/6 - Add the statically linked Device Tree templates and bindings
-      descriptions.
-
-4/6 - Remove unused arch/mips/prom.c code that conflicts with
-      following patches.
-
-5/6 - irq_create_of_mapping() function.
-
-6/6 - Fix up Device Tree template for current environment.
-
-David Daney (6):
-  of: Allow scripts/dtc/libfdt to be used from kernel code
-  of: Make of_find_node_by_path() traverse /aliases for relative paths.
-  MIPS: Octeon: Add device tree source files.
-  MIPS: Prune some target specific code out of prom.c
-  MIPS: Octeon: Add irq_create_of_mapping() and GPIO interrupts.
-  MIPS: Octeon: Initialize and fixup device tree.
-
- .../devicetree/bindings/mips/cavium/bootbus.txt    |   37 ++
- .../devicetree/bindings/mips/cavium/ciu.txt        |   26 ++
- .../devicetree/bindings/mips/cavium/gpio.txt       |   48 +++
- .../devicetree/bindings/mips/cavium/mdio.txt       |   27 ++
- .../devicetree/bindings/mips/cavium/mix.txt        |   40 ++
- .../devicetree/bindings/mips/cavium/pip.txt        |   98 +++++
- .../devicetree/bindings/mips/cavium/twsi.txt       |   34 ++
- .../devicetree/bindings/mips/cavium/uart.txt       |   19 +
- .../devicetree/bindings/mips/cavium/uctl.txt       |   47 +++
- arch/mips/Kconfig                                  |    1 +
- arch/mips/cavium-octeon/.gitignore                 |    2 +
- arch/mips/cavium-octeon/Makefile                   |   16 +
- arch/mips/cavium-octeon/octeon-irq.c               |  183 ++++++++++-
- arch/mips/cavium-octeon/octeon-platform.c          |  295 +++++++++++++++
- arch/mips/cavium-octeon/octeon_3xxx.dts            |  375 ++++++++++++++++++++
- arch/mips/cavium-octeon/setup.c                    |   39 ++
- arch/mips/kernel/prom.c                            |   49 ---
- drivers/of/Kconfig                                 |    3 +
- drivers/of/Makefile                                |    2 +
- drivers/of/base.c                                  |   48 +++-
- drivers/of/libfdt/Makefile                         |    3 +
- drivers/of/libfdt/fdt.c                            |    2 +
- drivers/of/libfdt/fdt_ro.c                         |    2 +
- drivers/of/libfdt/fdt_wip.c                        |    2 +
- include/linux/libfdt.h                             |    8 +
- include/linux/libfdt_env.h                         |   13 +
- 26 files changed, 1366 insertions(+), 53 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/bootbus.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/ciu.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/gpio.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/mdio.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/mix.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/pip.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/twsi.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/uart.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/uctl.txt
- create mode 100644 arch/mips/cavium-octeon/.gitignore
- create mode 100644 arch/mips/cavium-octeon/octeon_3xxx.dts
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+---
+ drivers/of/Kconfig          |    3 +++
+ drivers/of/Makefile         |    2 ++
+ drivers/of/libfdt/Makefile  |    3 +++
+ drivers/of/libfdt/fdt.c     |    2 ++
+ drivers/of/libfdt/fdt_ro.c  |    2 ++
+ drivers/of/libfdt/fdt_wip.c |    2 ++
+ include/linux/libfdt.h      |    8 ++++++++
+ include/linux/libfdt_env.h  |   13 +++++++++++++
+ 8 files changed, 35 insertions(+), 0 deletions(-)
  create mode 100644 drivers/of/libfdt/Makefile
  create mode 100644 drivers/of/libfdt/fdt.c
  create mode 100644 drivers/of/libfdt/fdt_ro.c
@@ -143,6 +49,96 @@ David Daney (6):
  create mode 100644 include/linux/libfdt.h
  create mode 100644 include/linux/libfdt_env.h
 
+diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+index d06a637..9b0474e 100644
+--- a/drivers/of/Kconfig
++++ b/drivers/of/Kconfig
+@@ -4,6 +4,9 @@ config DTC
+ config OF
+ 	bool
+ 
++config LIBFDT
++	bool
++
+ menu "Device Tree and Open Firmware support"
+ 	depends on OF
+ 
+diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+index f7861ed..a8dec2f 100644
+--- a/drivers/of/Makefile
++++ b/drivers/of/Makefile
+@@ -10,3 +10,5 @@ obj-$(CONFIG_OF_NET)	+= of_net.o
+ obj-$(CONFIG_OF_SPI)	+= of_spi.o
+ obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
+ obj-$(CONFIG_OF_PCI)	+= of_pci.o
++
++obj-$(CONFIG_LIBFDT) += libfdt/
+diff --git a/drivers/of/libfdt/Makefile b/drivers/of/libfdt/Makefile
+new file mode 100644
+index 0000000..f6bc1c90
+--- /dev/null
++++ b/drivers/of/libfdt/Makefile
+@@ -0,0 +1,3 @@
++ccflags-y := -I$(src)/../../../scripts/dtc/libfdt
++
++obj-y = fdt.o fdt_wip.o fdt_ro.o
+diff --git a/drivers/of/libfdt/fdt.c b/drivers/of/libfdt/fdt.c
+new file mode 100644
+index 0000000..91495cd
+--- /dev/null
++++ b/drivers/of/libfdt/fdt.c
+@@ -0,0 +1,2 @@
++#include <linux/libfdt_env.h>
++#include "../../../scripts/dtc/libfdt/fdt.c"
+diff --git a/drivers/of/libfdt/fdt_ro.c b/drivers/of/libfdt/fdt_ro.c
+new file mode 100644
+index 0000000..547e723
+--- /dev/null
++++ b/drivers/of/libfdt/fdt_ro.c
+@@ -0,0 +1,2 @@
++#include <linux/libfdt_env.h>
++#include "../../../scripts/dtc/libfdt/fdt_ro.c"
+diff --git a/drivers/of/libfdt/fdt_wip.c b/drivers/of/libfdt/fdt_wip.c
+new file mode 100644
+index 0000000..bbe19ec
+--- /dev/null
++++ b/drivers/of/libfdt/fdt_wip.c
+@@ -0,0 +1,2 @@
++#include <linux/libfdt_env.h>
++#include "../../../scripts/dtc/libfdt/fdt_wip.c"
+diff --git a/include/linux/libfdt.h b/include/linux/libfdt.h
+new file mode 100644
+index 0000000..4c0306c
+--- /dev/null
++++ b/include/linux/libfdt.h
+@@ -0,0 +1,8 @@
++#ifndef _INCLUDE_LIBFDT_H_
++#define _INCLUDE_LIBFDT_H_
++
++#include <linux/libfdt_env.h>
++#include "../../scripts/dtc/libfdt/fdt.h"
++#include "../../scripts/dtc/libfdt/libfdt.h"
++
++#endif /* _INCLUDE_LIBFDT_H_ */
+diff --git a/include/linux/libfdt_env.h b/include/linux/libfdt_env.h
+new file mode 100644
+index 0000000..01508c7
+--- /dev/null
++++ b/include/linux/libfdt_env.h
+@@ -0,0 +1,13 @@
++#ifndef _LIBFDT_ENV_H
++#define _LIBFDT_ENV_H
++
++#include <linux/string.h>
++
++#include <asm/byteorder.h>
++
++#define fdt32_to_cpu(x) be32_to_cpu(x)
++#define cpu_to_fdt32(x) cpu_to_be32(x)
++#define fdt64_to_cpu(x) be64_to_cpu(x)
++#define cpu_to_fdt64(x) cpu_to_be64(x)
++
++#endif /* _LIBFDT_ENV_H */
 -- 
 1.7.2.3
 
