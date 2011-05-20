@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935463Ab1ETRTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 13:19:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:51202 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935236Ab1ETRTQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 13:19:16 -0400
-X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=TwWXrjo8ZJIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=tslaVK8-jnGl-umQihYA:9 a=PUjeQqilurYA:10 a=_RhRFcbxBZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-In-Reply-To: <BANLkTikfaKJfnDwQoFi9WLX6q+2HHe90HQ@mail.gmail.com>
-References: <201105191526.31904.toralf.foerster@gmx.de>
-	 <201105200937.15322.toralf.foerster@gmx.de>
-	 <BANLkTik0oz6ppJvRpufaaiBL1pqcAxNHuA@mail.gmail.com>
-	 <201105201042.15410.toralf.foerster@gmx.de>
-	 <BANLkTikfaKJfnDwQoFi9WLX6q+2HHe90HQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 20 May 2011 13:19:13 -0400
-Message-ID: <1305911953.1465.29.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1757151Ab1ETRXU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 13:23:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35015 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751956Ab1ETRXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 13:23:19 -0400
+Date: Fri, 20 May 2011 18:23:14 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Barry <abarry@cray.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Unending loop in __alloc_pages_slowpath following OOM-kill; rfc:
+ patch.
+Message-ID: <20110520172314.GW5279@suse.de>
+References: <4DCDA347.9080207@cray.com>
+ <BANLkTikiXUzbsUkzaKZsZg+5ugruA2JdMA@mail.gmail.com>
+ <4DD2991B.5040707@cray.com>
+ <BANLkTimYEs315jjY9OZsL6--mRq3O_zbDA@mail.gmail.com>
+ <20110520164924.GB2386@barrios-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110520164924.GB2386@barrios-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-20 at 18:24 +0200, richard -rw- weinberger wrote:
-> 2011/5/20 Toralf Förster <toralf.foerster@gmx.de>:
-> >
-
-> Here in futex_wake() happens a NULL pointer dereference.
-> Steve, any ideas?
+On Sat, May 21, 2011 at 01:49:24AM +0900, Minchan Kim wrote:
+> <SNIP>
 > 
+> From 8bd3f16736548375238161d1bd85f7d7c381031f Mon Sep 17 00:00:00 2001
+> From: Minchan Kim <minchan.kim@gmail.com>
+> Date: Sat, 21 May 2011 01:37:41 +0900
+> Subject: [PATCH] Prevent unending loop in __alloc_pages_slowpath
+> 
+> From: Andrew Barry <abarry@cray.com>
+> 
+> I believe I found a problem in __alloc_pages_slowpath, which allows a process to
+> get stuck endlessly looping, even when lots of memory is available.
+> 
+> Running an I/O and memory intensive stress-test I see a 0-order page allocation
+> with __GFP_IO and __GFP_WAIT, running on a system with very little free memory.
+> Right about the same time that the stress-test gets killed by the OOM-killer,
+> the utility trying to allocate memory gets stuck in __alloc_pages_slowpath even
+> though most of the systems memory was freed by the oom-kill of the stress-test.
+> 
+> The utility ends up looping from the rebalance label down through the
+> wait_iff_congested continiously. Because order=0, __alloc_pages_direct_compact
+> skips the call to get_page_from_freelist. Because all of the reclaimable memory
+> on the system has already been reclaimed, __alloc_pages_direct_reclaim skips the
+> call to get_page_from_freelist. Since there is no __GFP_FS flag, the block with
+> __alloc_pages_may_oom is skipped. The loop hits the wait_iff_congested, then
+> jumps back to rebalance without ever trying to get_page_from_freelist. This loop
+> repeats infinitely.
+> 
+> The test case is pretty pathological. Running a mix of I/O stress-tests that do
+> a lot of fork() and consume all of the system memory, I can pretty reliably hit
+> this on 600 nodes, in about 12 hours. 32GB/node.
+> 
+> Signed-off-by: Andrew Barry <abarry@cray.com>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Cc: Mel Gorman <mgorman@suse.de>
 
-Yes, if this is from the bisect, and does not contain the two commits
-that I've posted in another email. Without those fixes, the futex code
-will error and return without doing the proper work and cause all sorts
-of bugs.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
--- Steve
-
-
+-- 
+Mel Gorman
+SUSE Labs
