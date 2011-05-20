@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964812Ab1ETUNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 16:13:24 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51031 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935756Ab1ETUNX convert rfc822-to-8bit (ORCPT
+	id S964831Ab1ETUVv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 16:21:51 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:57735 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934278Ab1ETUVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 16:13:23 -0400
-Subject: Re: [git pull] Please pull powerpc.git merge branch
-Mime-Version: 1.0 (Apple Message framework v1084)
+	Fri, 20 May 2011 16:21:51 -0400
+Date: Fri, 20 May 2011 22:21:47 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Richard Henderson <rth@twiddle.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>, Kyle McMartin <kyle@mcmartin.ca>,
+        Helge Deller <deller@gmx.de>,
+        "JamesE.J.Bottomley" <jejb@parisc-linux.org>
+Subject: Re: [RFC][PATCH] extable: Make sure all archs define _sdata
+Message-ID: <20110520202147.GA24378@merkur.ravnborg.org>
+References: <1305855298.1465.19.camel@gandalf.stny.rr.com> <4DD67A90.7010908@twiddle.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <20110520144653.GH25179@zod.rchland.ibm.com>
-Date: Fri, 20 May 2011 15:13:05 -0500
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EBEB3CA6-696B-4411-8E62-0795A9BC1FD7@kernel.crashing.org>
-References: <1305777978.7481.37.camel@pasglop> <20110520132328.GA5785@riccoc20.at.omicron.at> <20110520135845.GG25179@zod.rchland.ibm.com> <20110520143259.GB5785@riccoc20.at.omicron.at> <20110520144653.GH25179@zod.rchland.ibm.com>
-To: Josh Boyer <jwboyer@linux.vnet.ibm.com>
-X-Mailer: Apple Mail (2.1084)
+Content-Disposition: inline
+In-Reply-To: <4DD67A90.7010908@twiddle.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On May 20, 2011, at 9:46 AM, Josh Boyer wrote:
-
-> On Fri, May 20, 2011 at 04:32:59PM +0200, Richard Cochran wrote:
->> On Fri, May 20, 2011 at 09:58:45AM -0400, Josh Boyer wrote:
->>> On Fri, May 20, 2011 at 03:23:29PM +0200, Richard Cochran wrote:
->>>> When I try to build 'next' (now at 208b3a4c), it does not compile due
->>>> to a change from the following commit.
->>>> 
->>>>> Benjamin Herrenschmidt (1):
->>>>>      powerpc/smp: Make start_secondary_resume available to all CPU variants
->>>> 
->>>> I would appreciate your help in getting this fixed...
->>> 
->>> Could you try the patch below?
->> 
->> Yes, and it both compiles and boots.
 > 
-> Thanks for testing!
+> Acked-by: Richard Henderson <rth@twiddle.net>
 > 
-> Ben, can you pull this patch in as-is (fixing up the Subject), or do you
-> need me to resubmit it?
+> Although I suppose if we're supposedly standardizing on _sdata,
+> the two uses of _data in arch/alpha/mm/ could be transitioned.
 
+>From include/asm-generic/vmlinux.lds.h:
 
-Yeah, we need this all so we can send it to stable for 2.6.39.1
+ *
+ *      _sdata = .;
+ *      RO_DATA_SECTION(PAGE_SIZE)
+ *      RW_DATA_SECTION(...)
+ *      _edata = .;
+ *
 
-- k
+So yes - we do standardize on _sdata.
+Other symbols for the same ought to be replaced...
+
+	Sam
