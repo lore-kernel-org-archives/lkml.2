@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964828Ab1ETM0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 08:26:54 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59111 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964804Ab1ETM0x (ORCPT
+	id S1752970Ab1ETM3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 08:29:16 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:43226 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab1ETM3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 08:26:53 -0400
-Date: Fri, 20 May 2011 08:26:49 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Subject: Re: vmbus driver
-Message-ID: <20110520122649.GA550@infradead.org>
-References: <1305842785-30206-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305842785-30206-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 20 May 2011 08:29:13 -0400
+Subject: Re: [PATCH v5 03/21] evm: re-release
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <20110519213754.GA10072@mail.hallyn.com>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305557115-15652-4-git-send-email-zohar@linux.vnet.ibm.com>
+	 <20110519213754.GA10072@mail.hallyn.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 May 2011 08:29:05 -0400
+Message-ID: <1305894545.3247.43.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 03:06:25PM -0700, K. Y. Srinivasan wrote:
-> A few days ago you applied all the outstanding patches for the Hyper-V
-> drivers. With these patches, I have addressed all of the known review 
-> comments for the  vmbus driver (and a lot of comments/issues in other
-> drivers as well). I am still hoping I can address 
-> whatever other issues/comments there might be with the intention to 
-> get the vmbus driver out of staging in the current window. What is your 
-> sense in terms of how feasible this is. From my side, I can assure you 
-> that I will address all legitimate issues in a very timely manner and this
-> will not be dependent upon the location of the drivers (staging or 
-> outside staging). Looking forward to hearing from you.
+On Thu, 2011-05-19 at 16:37 -0500, Serge E. Hallyn wrote: 
+> Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
+> ...
+> > +extern int evm_hmac_size;
+> ...
+> > +int evm_hmac_size = SHA1_DIGEST_SIZE;
+> 
+> I think I object to having both MAX_DIGEST_SIZE and evm_hmac_size, both
+> of which are set to SHA1_DIGEST_SIZE throughout this patchset.  Especially
+> because of the comment I was about to make on patch 4/21, where you
+> then prepend the hmac with a 'type' byte, and start passing around
+> MAX_DIGEST_SIZE+1 and evm_hmac_size+1.
+> 
+> Even if you're going to be using those differently in a later patchset,
+> let's focus on this set for now and keep things simpler.  One constant
+> for the hmac size, and then please define a new one (in patch 4) for
+> the annotated digest size.  I can't think think of a good name.  Which
+> suggests that perhaps you should define a nicely typed struct to contain
+> the header+hmac...
+> 
+> I see no other problems, so presuming that these are nicely addressed
+> I expect to happily ack.
+> 
+> thanks,
+> -serge
 
-There's no point in merging it without a user.  Make sure either
-the network or storage driver is in a good enough shape to move with it,
-to make sure the APIs it exports are actually sanely usable.
+Ok, MAX_DIGEST_SIZE was defined in the first patch of this patchset,
+which moves the iint from IMA to integrity, but it seems to be
+unnecessary for any of the additional EVM or IMA extensions, including
+support for additional IMA hash sizes.  I'll remove MAX_DIGEST_SIZE.
 
-On the other hand the HV clocksource looks mostly mergeable and doesn't
-depend on vmbus.  Send a patch to add it to drivers/clocksource to the
-maintainer and it should be mergeable with very little remaining
-cleanup.
+The reason for introducing the extra byte at this point in the patch
+set, as opposed to waiting to do so in the digital signature patches, is
+to permit existing labeled systems to continue to run properly (and be
+bisect safe).  Defining a structure is a good idea.
+
+thanks,
+
+Mimi
 
