@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935137Ab1ETQWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 12:22:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41739 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934587Ab1ETQWh (ORCPT
+	id S935151Ab1ETQY6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 12:24:58 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35911 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934561Ab1ETQY4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 12:22:37 -0400
-Date: Fri, 20 May 2011 18:22:35 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 2.6.39: crash w/threadirqs option enabled
-In-Reply-To: <alpine.DEB.2.02.1105201210030.19553@p34.internal.lan>
-Message-ID: <alpine.LFD.2.02.1105201819310.3078@ionos>
-References: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan> <alpine.LFD.2.02.1105201445300.3078@ionos> <alpine.DEB.2.02.1105200850080.19553@p34.internal.lan> <alpine.LFD.2.02.1105201528500.3078@ionos> <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
- <alpine.LFD.2.02.1105201712501.3078@ionos> <alpine.DEB.2.02.1105201210030.19553@p34.internal.lan>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 20 May 2011 12:24:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wXnwGSvmYpxuh4lxtcVpMypIAbr3C2/3CIlMaGpxDxTLu3Wcntg3fJxipKdtg5SPW2
+         XVbf6BXvwMn3GdEoE/jMd2QJu5mI2EdPwFXzhleFyAD+w+D/w7ZAMoUj3cWPJEt4k2p/
+         zFS8Lc5IFCH7mBV6URhvfgU0vNKonfaukzMg4=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <201105201042.15410.toralf.foerster@gmx.de>
+References: <201105191526.31904.toralf.foerster@gmx.de>
+	<201105200937.15322.toralf.foerster@gmx.de>
+	<BANLkTik0oz6ppJvRpufaaiBL1pqcAxNHuA@mail.gmail.com>
+	<201105201042.15410.toralf.foerster@gmx.de>
+Date: Fri, 20 May 2011 18:24:56 +0200
+Message-ID: <BANLkTikfaKJfnDwQoFi9WLX6q+2HHe90HQ@mail.gmail.com>
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 May 2011, Justin Piszcz wrote:
-> On Fri, 20 May 2011, Thomas Gleixner wrote:
-> 
-> > On Fri, 20 May 2011, Justin Piszcz wrote:
-> > > On Fri, 20 May 2011, Thomas Gleixner wrote:
-> > > > Does it crash right away or just when doing something particular?
-> > > It crashed at 2100, this is when I run a few I/O intensive processes:
-> > > - backup (dump ext4 filesystem -> to a separate raid device)
-> > > - backup (dump ext4 on remote host -> to separate raid device)
-> > > - backup (dump xfs on remote host -> to separate raid device)
-> > > 
-> > > This looks like it is what caused it to crash.
-> > 
-> > That narrows it down somewhat, but does not give us a clue at all :(
-> > 
-> > > > Is the box fully dead after the crash ?
-> > > The host was online and I went away for awhile, when I came back the
-> > > system
-> > > had rebooted on its own (as I lost all of my X windows/etc).
-> > 
-> > Hmm. Did you have panic_timeout set ?
-> 
-> Hi,
-> 
-> No, I do not use panic_timeout or any type of watchdog that would reboot
-> the system upon a lockup/crash.
+2011/5/20 Toralf Förster <toralf.foerster@gmx.de>:
+>
+> richard -rw- weinberger wrote at 09:56:02
+>> 2011/5/20 Toralf Förster <toralf.foerster@gmx.de>:
+>> > ...
+>> > Kernel panic - not syncing: Kernel mode fault at addr 0x0, ip 0x80a9f6b
+>>
+>> Looks like a NULL-pointer bug.
+>> What code is at address 80a9f6b?
+>> Use "objdump -d -S | less" to find it.
+>        if (unlikely(ret != 0))
+>  80a9f3a:       85 c0                   test   %eax,%eax
+>  80a9f3c:       75 ca                   jne    80a9f08 <futex_wake+0x18>
+>                goto out;
+>
+>        hb = hash_futex(&key);
+>  80a9f3e:       8d 45 e8                lea    -0x18(%ebp),%eax
+>  80a9f41:       e8 aa f6 ff ff          call   80a95f0 <hash_futex>
+>  80a9f46:       89 c2                   mov    %eax,%edx
+>        spin_lock(&hb->lock);
+>        head = &hb->chain;
+>
+>        plist_for_each_entry_safe(this, next, head, list) {
+>  80a9f48:       8b 48 08                mov    0x8(%eax),%ecx
+>  80a9f4b:       83 c2 08                add    $0x8,%edx
+>  80a9f4e:       8d 41 f4                lea    -0xc(%ecx),%eax
+>  80a9f51:       39 ca                   cmp    %ecx,%edx
+>  80a9f53:       8b 70 0c                mov    0xc(%eax),%esi
+>  80a9f56:       74 6a                   je     80a9fc2 <futex_wake+0xd2>
+>  80a9f58:       89 d9                   mov    %ebx,%ecx
+>  80a9f5a:       83 ee 0c                sub    $0xc,%esi
+>  80a9f5d:       89 d3                   mov    %edx,%ebx
+>  80a9f5f:       89 fa                   mov    %edi,%edx
+>  80a9f61:       89 cf                   mov    %ecx,%edi
+>  80a9f63:       eb 12                   jmp    80a9f77 <futex_wake+0x87>
+>  80a9f65:       8d 76 00                lea    0x0(%esi),%esi
+>  80a9f68:       8d 46 0c                lea    0xc(%esi),%eax
+>  80a9f6b:       8b 4e 0c                mov    0xc(%esi),%ecx
 
-Yuck, that means it ran into a triple fault. Nasty. I have no idea how
-to debug that at the moment and I was not able to reproduce on one of
-my test systems. Maybe I need to try harder.
 
+Here in futex_wake() happens a NULL pointer dereference.
+Steve, any ideas?
+
+-- 
 Thanks,
-
-	tglx
-
-
-
-
+//richard
