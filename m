@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934639Ab1ETAMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:12:00 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:45855 "EHLO
+	id S934842Ab1ETAP4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:15:56 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:35546 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934842Ab1ETALy (ORCPT
+	by vger.kernel.org with ESMTP id S934850Ab1ETAL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:11:54 -0400
-X-Sasl-enc: pEMdGg1RLUzZ2iuuicp00BS0+UVKyUDfL3+A7isOoii0 1305850313
+	Thu, 19 May 2011 20:11:56 -0400
+X-Sasl-enc: d29SzfPgA059UwSEkji/N89iNVNePx3+4+BzGWCMlEOv 1305850315
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: Mike Waychison <mikew@google.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 28/44] x86: get_bios_ebda_length()
-Date: Thu, 19 May 2011 17:10:46 -0700
-Message-Id: <1305850262-9575-28-git-send-email-gregkh@suse.de>
+Subject: [PATCH 29/44] x86: Better comments for get_bios_ebda()
+Date: Thu, 19 May 2011 17:10:47 -0700
+Message-Id: <1305850262-9575-29-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1305850262-9575-1-git-send-email-gregkh@suse.de>
 References: <20110520000821.GA9367@kroah.com>
@@ -24,48 +24,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mike Waychison <mikew@google.com>
 
-Add a wrapper routine that tells us the length of the EBDA if it is
-present.  This guy also ensures that the returned length doesn't let the
-EBDA run past the 640KiB mark.
+Make the comments a bit clearer for get_bios_ebda so that it actually
+tells us what it is returning.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/include/asm/bios_ebda.h |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/bios_ebda.h |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/include/asm/bios_ebda.h b/arch/x86/include/asm/bios_ebda.h
-index 3c75210..5174cf0 100644
+index 5174cf0..aa6a317 100644
 --- a/arch/x86/include/asm/bios_ebda.h
 +++ b/arch/x86/include/asm/bios_ebda.h
-@@ -14,6 +14,27 @@ static inline unsigned int get_bios_ebda(void)
+@@ -4,11 +4,14 @@
+ #include <asm/io.h>
+ 
+ /*
+- * there is a real-mode segmented pointer pointing to the
+- * 4K EBDA area at 0x40E.
++ * Returns physical address of EBDA.  Returns 0 if there is no EBDA.
+  */
+ static inline unsigned int get_bios_ebda(void)
+ {
++	/*
++	 * There is a real-mode segmented pointer pointing to the
++	 * 4K EBDA area at 0x40E.
++	 */
+ 	unsigned int address = *(unsigned short *)phys_to_virt(0x40E);
+ 	address <<= 4;
  	return address;	/* 0 means none */
- }
- 
-+/*
-+ * Return the sanitized length of the EBDA in bytes, if it exists.
-+ */
-+static inline unsigned int get_bios_ebda_length(void)
-+{
-+	unsigned int address;
-+	unsigned int length;
-+
-+	address = get_bios_ebda();
-+	if (!address)
-+		return 0;
-+
-+	/* EBDA length is byte 0 of the EBDA (stored in KiB) */
-+	length = *(unsigned char *)phys_to_virt(address);
-+	length <<= 10;
-+
-+	/* Trim the length if it extends beyond 640KiB */
-+	length = min_t(unsigned int, (640 * 1024) - address, length);
-+	return length;
-+}
-+
- void reserve_ebda_region(void);
- 
- #ifdef CONFIG_X86_CHECK_BIOS_CORRUPTION
 -- 
 1.7.4.2
 
