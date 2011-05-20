@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751004Ab1ETEG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 00:06:57 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:41678 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab1ETEG4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 00:06:56 -0400
-Date: Thu, 19 May 2011 23:54:12 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Kyungmin Park <kmpark@infradead.org>
-cc: Shawn Guo <shawn.guo@freescale.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to
- drivers/gpio
-In-Reply-To: <BANLkTikonewi-fxCxoxx=ARsTs-CPvfoTg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1105192351360.14430@xanadu.home>
-References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com> <20110519085638.GA26816@S2100-06.ap.freescale.net> <BANLkTinD9rAipfwNnh6QpgbcogckdtQ=OQ@mail.gmail.com> <20110519135631.GB26816@S2100-06.ap.freescale.net> <20110519191156.GE2429@pengutronix.de>
- <alpine.LFD.2.00.1105191527440.14430@xanadu.home> <20110520031818.GB27251@S2100-06.ap.freescale.net> <BANLkTikonewi-fxCxoxx=ARsTs-CPvfoTg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S935198Ab1ETDy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:54:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24351 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933275Ab1ETDy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 23:54:56 -0400
+Subject: Re: linux-next: manual merge of the tip tree with the kbuild tree
+From: Steven Rostedt <srostedt@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
+        Michal Marek <mmarek@suse.cz>
+In-Reply-To: <20110520133631.d663013a.sfr@canb.auug.org.au>
+References: <20110520133631.d663013a.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Thu, 19 May 2011 23:54:26 -0400
+Message-ID: <1305863666.2886.0.camel@fedora>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 May 2011, Kyungmin Park wrote:
+On Fri, 2011-05-20 at 13:36 +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the tip tree got a conflict in Makefile
+> between commit 28bc20dccadc ("kbuild: implement several W= levels") from
+> the kbuild tree and commit 85356f802225 ("kbuild/recordmcount: Add
+> RECORDMCOUNT_WARN to warn about mcount callers") from the tip tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-> BTW, how do you think the GPIO interrupt routine. If it uses the
-> drivers/gpio drivers, it also cover the gpio interrupt codes at
-> drivers/gpio? or separate it?
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Let's just do the move for now.  I don't think it is worth splitting out 
-the IRQ code just yet, unless there is a common pattern to be seen 
-there.
+-- Steve
 
 
-Nicolas
