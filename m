@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964794Ab1ETMBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 08:01:12 -0400
-Received: from wrar.name ([109.74.195.39]:37879 "EHLO haley.wrar.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935661Ab1ETMBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 08:01:11 -0400
-X-Greylist: delayed 2435 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 May 2011 08:01:11 EDT
-Date: Fri, 20 May 2011 17:20:18 +0600
-From: Andrey Rahmatullin <wrar@altlinux.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
-        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
-        Dave Chinner <dchinner@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.39-rc3, 2.6.39-rc4: XFS lockup - regression since 2.6.38
-Message-ID: <20110520112018.GB3867@belkar.wrar.name>
-References: <20110423224403.5fd1136a@neptune.home>
- <20110427050850.GG12436@dastard>
- <20110427182622.05a068a2@neptune.home>
- <20110428194528.GA1627@x4.trippels.de>
- <20110429011929.GA13542@dastard>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="XF85m9dhOBO43t/C"
-Content-Disposition: inline
-In-Reply-To: <20110429011929.GA13542@dastard>
-X-Operating-System: Debian Sid
-X-Jabber-Id: wrar@altlinux.org
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935542Ab1ETLV6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 07:21:58 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51541 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934203Ab1ETLV4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 07:21:56 -0400
+Subject: Re: [PATCH v5 03/21] evm: re-release
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Harald Hoyer <harald.hoyer@gmail.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <4DD64CA7.7090307@gmail.com>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305557115-15652-4-git-send-email-zohar@linux.vnet.ibm.com>
+	 <20110519060543.GA10320@mail.hallyn.com>
+	 <1305845343.2528.3.camel@localhost.localdomain>
+	 <4DD64CA7.7090307@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 May 2011 07:21:25 -0400
+Message-ID: <1305890485.3247.6.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-05-20 at 13:12 +0200, Harald Hoyer wrote:
+> Am 20.05.2011 00:49, schrieb Mimi Zohar:
+> > On Thu, 2011-05-19 at 01:05 -0500, Serge E. Hallyn wrote: 
+> >> Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
+> >>> EVM protects a file's security extended attributes(xattrs) against integrity
+> >>> attacks.  This patchset provides the framework and an initial method.  The
+> >>> initial method maintains an HMAC-sha1 value across the security extended
+> >>> attributes, storing the HMAC value as the extended attribute 'security.evm'.
+> >>> Other methods of validating the integrity of a file's metadata will be posted
+> >>> separately (eg. EVM-digital-signatures).
+> >>>
+> >>> While this patchset does authenticate the security xattrs, and
+> >>> cryptographically binds them to the inode, coming extensions will bind other
+> >>> directory and inode metadata for more complete protection.  To help simplify
+> >>> the review and upstreaming process, each extension will be posted separately
+> >>> (eg. IMA-appraisal, IMA-appraisal-directory).  For a general overview of the
+> >>> proposed Linux integrity subsystem, refer to Dave Safford's whitepaper:
+> >>> http://downloads.sf.net/project/linux-ima/linux-ima/Integrity_overview.pdf.
+> >>>
+> >>> EVM depends on the Kernel Key Retention System to provide it with a
+> >>> trusted/encrypted key for the HMAC-sha1 operation. The key is loaded onto the
+> >>> root's keyring using keyctl.  Until EVM receives notification that the key has
+> >>> been successfully loaded onto the keyring (echo 1 > <securityfs>/evm), EVM can
+> >>> not create or validate the 'security.evm' xattr, but returns INTEGRITY_UNKNOWN.
+> >>> Loading the key and signaling EVM should be done as early as possible. Normally
+> >>> this is done in the initramfs, which has already been measured as part of the
+> >>> trusted boot.  For more information on creating and loading existing
+> >>> trusted/encrypted keys, refer to Documentation/keys-trusted-encrypted.txt.  A
+> >>> sample dracut patch, which loads the trusted/encrypted key and enables EVM, is
+> >>> available from http://linu-ima.sourceforge.net/#EVM.
+> >>
+> >> That should read http://linux-ima.sourceforge.net/#EVM.
+> > 
+> > Thanks for catching that.
+> 
+> The dracut patch, could easily turned into a separate dracut module with its own
+> files, without patching. Somebody did not understand the modular nature of
+> dracut. While you are at it, I happily integrate that module in upstream, if you
+> submit it to the initramfs mailing list.
 
---XF85m9dhOBO43t/C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+thanks!
 
-On Fri, Apr 29, 2011 at 11:19:29AM +1000, Dave Chinner wrote:
-> > x4 ~ # xfs_info /
-> > meta-data=3D/dev/root              isize=3D256    agcount=3D4, agsize=
-=3D1949824 blks
-> >          =3D                       sectsz=3D512   attr=3D2
-> > data     =3D                       bsize=3D4096   blocks=3D7799296, ima=
-xpct=3D25
-> >          =3D                       sunit=3D128    swidth=3D128 blks
-> > naming   =3Dversion 2              bsize=3D4096   ascii-ci=3D0
-> > log      =3Dinternal               bsize=3D4096   blocks=3D3808, versio=
-n=3D2
-> >          =3D                       sectsz=3D512   sunit=3D8 blks, lazy-=
-count=3D1
-> > realtime =3Dnone                   extsz=3D4096   blocks=3D0, rtextents=
-=3D0
-> OK, so the common elements here appears to be root filesystems
-> with small log sizes, which means they are tail pushing all the
-> time metadata operations are in progress.=20
-Does that mean that such filesystems are not optimal in terms of
-performance and/or reliability and should have larger log sizes?
+Mimi
 
---=20
-WBR, wRAR
-
---XF85m9dhOBO43t/C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJN1k5yAAoJEDNi9wMaSZLh8YkQAKjzB4at+kizRbI1dL2KqGwp
-teIgc4x6aF3NCXdRUHHJvRr9zCIFwUUf0D3Tf1LAgmDsHhZ1cJSjwKHnPPR48giS
-SVXA2O0JI1lr4D0jWtcd6FQfS9E2cw2wrwswZqc3zvAihN1G1dfe+kEfLV0AVRCE
-Iim/Kqsd0aB3Ua/+01K87aPbA50EGhPkwO5SRu4upn8H86bvj3Yg0Out5dnvMYjX
-j5WXT6Ywu/xQkfhG7hQkJXdqs6SDGleqaAE2GFMI5q5FLs+ENUwlo8pgl4pvXAa5
-kbThH5ZzJkwEo4b+W5j6JfnOKfqLl78YL/WnFXghYkaVb5Fkc1AkcRZ1C0HeTZeV
-Ssqt79wAWwMinpZBo2YVr+LgztQo582m7ZBEVnTOsae93jBTjryWyOSpMH1x5BYn
-z+U6d+Nd1/tjYLn2NjTFLLaq9Q7Y2gT0qGg/eEupNEzHeLOgQCBhMDJ87ZkEHDpz
-UepYDQFFhh0TNUC5pzPwS8k5yIQFWWF7XRvU1IH4jwpRFQTau4yEeKWDvVdi0CiN
-KHDgAK15kWmrpZ+y+I0Khq5sTRFLryIZmWS3p4NqRaMnKVoelTj/+6njZchAYuW5
-D/APtuxNg9gOloUIb8wN5qQNDSojit0mkIYh7PDA4GtrYQZhWEuFQLuLQ2oLUQkw
-hizcs7YQb2IJrpsnmt69
-=d5hH
------END PGP SIGNATURE-----
-
---XF85m9dhOBO43t/C--
