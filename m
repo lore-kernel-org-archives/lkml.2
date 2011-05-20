@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935553Ab1ETSwl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 14:52:41 -0400
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:57128 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935550Ab1ETSwk (ORCPT
+	id S935666Ab1ETS4m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 14:56:42 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50681 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935041Ab1ETS4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 14:52:40 -0400
-Date: Fri, 20 May 2011 11:51:34 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Greg KH <greg@kroah.com>
-Cc: matt mooney <mfmooney@gmail.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 01/12] staging: usbip: replace usbip_u{dbg,err,info} and printk with dev_ and pr_
-Message-ID: <20110520185134.GC83316@haskell.muteddisk.com>
-Mail-Followup-To: Greg KH <greg@kroah.com>,
-	matt mooney <mfmooney@gmail.com>, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-References: <cover.1305866084.git.mfm@muteddisk.com> <2ecbb21cffe73acfe291c3c8e5626427ed5c5b43.1305866084.git.mfm@muteddisk.com> <20110520050101.GA7461@kroah.com> <BANLkTi=N9tAA_gZXgwDDTijyUuLysnQQEQ@mail.gmail.com> <20110520125359.GA9857@kroah.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110520125359.GA9857@kroah.com>
-User-Agent: Mutt/1.4.2.3i
+	Fri, 20 May 2011 14:56:41 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] fs/9p: Don't clunk dentry fid when we fail to get a writeback inode
+Date: Sat, 21 May 2011 00:25:51 +0530
+Message-Id: <1305917752-16539-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05:53 Fri 20 May     , Greg KH wrote:
-> On Thu, May 19, 2011 at 10:25:25PM -0700, matt mooney wrote:
-> > On Thu, May 19, 2011 at 10:01 PM, Greg KH <greg@kroah.com> wrote:
-> > > On Thu, May 19, 2011 at 09:36:55PM -0700, matt mooney wrote:
-> > >> This switches all of the usbip_u{dbg,err,info} and printk statements to
-> > >> dev_<level>, if possible, or pr_<level> macros. And removes a few
-> > >> unnecessary debug statements.
-> > >>
-> > >> Signed-off-by: matt mooney <mfm@muteddisk.com>
-> > >
-> > > I've already applied this one, right?
-> > 
-> > I don't think so. I never received a notification from your email bot ;)
-> 
-> Sorry, my bot went to sleep, you should have received it now.  If not,
-> please let me know and I'll see what happened.
+The dentry fid get clunked via the dput.
 
-Your bot must still be asleep! The patch is in your tree, but I never received
-an email; it could have been a problem on my end I.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/9p/vfs_inode_dotl.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
--matt
+diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+index 82a7c38..691c78f 100644
+--- a/fs/9p/vfs_inode_dotl.c
++++ b/fs/9p/vfs_inode_dotl.c
+@@ -259,7 +259,7 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 		if (IS_ERR(inode_fid)) {
+ 			err = PTR_ERR(inode_fid);
+ 			mutex_unlock(&v9inode->v_mutex);
+-			goto error;
++			goto err_clunk_old_fid;
+ 		}
+ 		v9inode->writeback_fid = (void *) inode_fid;
+ 	}
+@@ -267,8 +267,8 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 	/* Since we are opening a file, assign the open fid to the file */
+ 	filp = lookup_instantiate_filp(nd, dentry, generic_file_open);
+ 	if (IS_ERR(filp)) {
+-		p9_client_clunk(ofid);
+-		return PTR_ERR(filp);
++		err = PTR_ERR(filp);
++		goto err_clunk_old_fid;
+ 	}
+ 	filp->private_data = ofid;
+ #ifdef CONFIG_9P_FSCACHE
+@@ -278,10 +278,11 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 	return 0;
+ 
+ error:
+-	if (ofid)
+-		p9_client_clunk(ofid);
+ 	if (fid)
+ 		p9_client_clunk(fid);
++err_clunk_old_fid:
++	if (ofid)
++		p9_client_clunk(ofid);
+ 	return err;
+ }
+ 
+-- 
+1.7.4.1
+
