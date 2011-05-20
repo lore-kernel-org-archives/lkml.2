@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935151Ab1ETQY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 12:24:58 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35911 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934561Ab1ETQY4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 12:24:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wXnwGSvmYpxuh4lxtcVpMypIAbr3C2/3CIlMaGpxDxTLu3Wcntg3fJxipKdtg5SPW2
-         XVbf6BXvwMn3GdEoE/jMd2QJu5mI2EdPwFXzhleFyAD+w+D/w7ZAMoUj3cWPJEt4k2p/
-         zFS8Lc5IFCH7mBV6URhvfgU0vNKonfaukzMg4=
+	id S935186Ab1ETQ20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 12:28:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47298 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934587Ab1ETQ2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 12:28:24 -0400
+Date: Fri, 20 May 2011 18:27:09 +0200
+From: Veaceslav Falico <vfalico@redhat.com>
+To: David Stevens <dlstevens@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, jmorris@namei.org, kaber@trash.net,
+        kuznet@ms2.inr.ac.ru, linux-kernel@vger.kernel.org, mmarek@suse.cz,
+        netdev@vger.kernel.org, pekkas@netcore.fi, yoshfuji@linux-ipv6.org
+Subject: Re: [PATCH v3 1/1] igmp: call ip_mc_clear_src() only when we have no
+ users of ip_mc_list
+Message-ID: <20110520162709.GA3497@darkmag.usersys.redhat.com>
+References: <20110515165945.GA20024@darkmag.usersys.redhat.com>
+ <20110516.140359.111037536766782557.davem@davemloft.net>
+ <OF948388D5.90B3F5A7-ON88257892.006C3228-88257892.0071B9D5@us.ibm.com>
+ <20110517133801.GC30366@darkmag.usersys.redhat.com>
+ <20110517143756.GE30366@darkmag.usersys.redhat.com>
+ <OF11F57B2A.6B43B7E6-ON88257893.005490B0-88257893.00615176@us.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <201105201042.15410.toralf.foerster@gmx.de>
-References: <201105191526.31904.toralf.foerster@gmx.de>
-	<201105200937.15322.toralf.foerster@gmx.de>
-	<BANLkTik0oz6ppJvRpufaaiBL1pqcAxNHuA@mail.gmail.com>
-	<201105201042.15410.toralf.foerster@gmx.de>
-Date: Fri, 20 May 2011 18:24:56 +0200
-Message-ID: <BANLkTikfaKJfnDwQoFi9WLX6q+2HHe90HQ@mail.gmail.com>
-Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OF11F57B2A.6B43B7E6-ON88257893.005490B0-88257893.00615176@us.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/20 Toralf Förster <toralf.foerster@gmx.de>:
->
-> richard -rw- weinberger wrote at 09:56:02
->> 2011/5/20 Toralf Förster <toralf.foerster@gmx.de>:
->> > ...
->> > Kernel panic - not syncing: Kernel mode fault at addr 0x0, ip 0x80a9f6b
->>
->> Looks like a NULL-pointer bug.
->> What code is at address 80a9f6b?
->> Use "objdump -d -S | less" to find it.
->        if (unlikely(ret != 0))
->  80a9f3a:       85 c0                   test   %eax,%eax
->  80a9f3c:       75 ca                   jne    80a9f08 <futex_wake+0x18>
->                goto out;
->
->        hb = hash_futex(&key);
->  80a9f3e:       8d 45 e8                lea    -0x18(%ebp),%eax
->  80a9f41:       e8 aa f6 ff ff          call   80a95f0 <hash_futex>
->  80a9f46:       89 c2                   mov    %eax,%edx
->        spin_lock(&hb->lock);
->        head = &hb->chain;
->
->        plist_for_each_entry_safe(this, next, head, list) {
->  80a9f48:       8b 48 08                mov    0x8(%eax),%ecx
->  80a9f4b:       83 c2 08                add    $0x8,%edx
->  80a9f4e:       8d 41 f4                lea    -0xc(%ecx),%eax
->  80a9f51:       39 ca                   cmp    %ecx,%edx
->  80a9f53:       8b 70 0c                mov    0xc(%eax),%esi
->  80a9f56:       74 6a                   je     80a9fc2 <futex_wake+0xd2>
->  80a9f58:       89 d9                   mov    %ebx,%ecx
->  80a9f5a:       83 ee 0c                sub    $0xc,%esi
->  80a9f5d:       89 d3                   mov    %edx,%ebx
->  80a9f5f:       89 fa                   mov    %edi,%edx
->  80a9f61:       89 cf                   mov    %ecx,%edi
->  80a9f63:       eb 12                   jmp    80a9f77 <futex_wake+0x87>
->  80a9f65:       8d 76 00                lea    0x0(%esi),%esi
->  80a9f68:       8d 46 0c                lea    0xc(%esi),%eax
->  80a9f6b:       8b 4e 0c                mov    0xc(%esi),%ecx
+On Tue, May 17, 2011 at 10:42:59AM -0700, David Stevens wrote:
+> Veaceslav,
+>         It looks to me like this will leak the source filters if we are 
+> called from ip_mc_destroy_dev(),
+> Even with your previous patch, you're assuming that we don't free the 
+> ip_mc_list and so we have the
+> same one when we up the device, but if there are no timers running, it 
+> looks like refcnt canl go to 0 and free
+> it. If we can ever free the ip_mc_list when users != 0 (or going to 0 
+> immediately after the drop), we
+> have to do the ip_mc_clear_src() or leak the list. I haven't looked at 
+> this code in years, so I'll need
+> to refresh my memory.
+>         So, I'll look at that a bit more; at a minimum, I think you need 
+> to do the clear_src
+> also in the destroy case. We could lose the filters and set the exclude 
+> count to users, instead
+> of 1; but I like the idea of keeping the source filters across a down/up, 
+> if we can be sure there
+> are no cases where we free the ip_mc_list without first freeing all the 
+> filters.
+> 
+>                                                                 +-DLS
 
+Yes, you are completely right, we can leak the sources on
+ip_mc_destroy_dev() when we've ip_ma_put() it inside all the timers. Also,
+I've seen that we called igmp_group_dropped() for every mc in dev->mc_list,
+however we've done it already in ip_mc_down() before, which wouldn't lead
+to anything (cause the device is already ->dead, and all timers are
+stopped), but just would be a waste of time.
 
-Here in futex_wake() happens a NULL pointer dereference.
-Steve, any ideas?
+So, does this patch seem ok? If yes, I'll send it with the changelog.
 
--- 
-Thanks,
-//richard
+---
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index 1fd3d9c..57ca93a 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -1169,20 +1169,18 @@ static void igmp_group_dropped(struct ip_mc_list *im)
+ 
+ 	if (!in_dev->dead) {
+ 		if (IGMP_V1_SEEN(in_dev))
+-			goto done;
++			return;
+ 		if (IGMP_V2_SEEN(in_dev)) {
+ 			if (reporter)
+ 				igmp_send_report(in_dev, im, IGMP_HOST_LEAVE_MESSAGE);
+-			goto done;
++			return;
+ 		}
+ 		/* IGMPv3 */
+ 		igmpv3_add_delrec(in_dev, im);
+ 
+ 		igmp_ifc_event(in_dev);
+ 	}
+-done:
+ #endif
+-	ip_mc_clear_src(im);
+ }
+ 
+ static void igmp_group_added(struct ip_mc_list *im)
+@@ -1319,6 +1317,7 @@ void ip_mc_dec_group(struct in_device *in_dev, __be32 addr)
+ 				*ip = i->next_rcu;
+ 				in_dev->mc_count--;
+ 				igmp_group_dropped(i);
++				ip_mc_clear_src(i);
+ 
+ 				if (!in_dev->dead)
+ 					ip_rt_multicast_event(in_dev);
+@@ -1428,7 +1427,8 @@ void ip_mc_destroy_dev(struct in_device *in_dev)
+ 		in_dev->mc_list = i->next_rcu;
+ 		in_dev->mc_count--;
+ 
+-		igmp_group_dropped(i);
++		/* We've dropped the groups in ip_mc_down already */
++		ip_mc_clear_src(i);
+ 		ip_ma_put(i);
+ 	}
+ }
