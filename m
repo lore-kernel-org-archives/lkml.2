@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935292Ab1ETFPr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 01:15:47 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39876 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab1ETFPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 01:15:45 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 20 May 2011 14:08:56 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Lutomirski <luto@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
-        riel@redhat.com
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
- vmlinux)
-Message-Id: <20110520140856.fdf4d1c8.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
-References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
-	<BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
-	<BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
-	<20110514165346.GV6008@one.firstfloor.org>
-	<BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
-	<20110514174333.GW6008@one.firstfloor.org>
-	<BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
-	<20110515152747.GA25905@localhost>
-	<BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
-	<20110517060001.GC24069@localhost>
-	<BANLkTi=TOm3aLQCD6j=4va6B+Jn2nSfwAg@mail.gmail.com>
-	<BANLkTi=9W6-JXi94rZfTtTpAt3VUiY5fNw@mail.gmail.com>
-	<BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com>
-	<BANLkTima0hPrPwe_x06afAh+zTi-bOcRMg@mail.gmail.com>
-	<BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com>
-	<BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com>
-	<4DD5DC06.6010204@jp.fujitsu.com>
-	<BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com>
-	<BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S935315Ab1ETFOi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 01:14:38 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46640 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935215Ab1ETFOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 01:14:36 -0400
+Date: Fri, 20 May 2011 15:14:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: build warning after merge of the final tree
+ (tip/powerpc tree related)
+Message-Id: <20110520151431.465d11f4.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__20_May_2011_15_14_31_+1000_5U+o0j1aFoqgAidv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 May 2011 13:20:15 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+--Signature=_Fri__20_May_2011_15_14_31_+1000_5U+o0j1aFoqgAidv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> So I want to resolve your problem asap.
-> We don't have see report about that. Could you do git-bisect?
-> FYI, Recently, big change of mm is compaction,transparent huge pages.
-> Kame, could you point out thing related to memcg if you have a mind?
-> 
+Hi all,
 
-I don't doubt memcg at this stage because it never modify page->flags.
-Consdering the case, PageActive() is set against off-LRU pages after
-clear_active_flags() clears it.
+After merging the final tree, today's linux-next build (powerpc allnoconfig)
+produced these warnings:
 
-Hmm, I think I don't understand the lock system fully but...how do you
-think this ?
+kernel/time/clocksource.c: In function '__clocksource_updatefreq_scale':
+kernel/time/clocksource.c:655: warning: comparison of distinct pointer type=
+s lacks a cast
+kernel/time/clocksource.c:655: warning: right shift count >=3D width of type
+kernel/time/clocksource.c:655: warning: passing argument 1 of '__div64_32' =
+from incompatible pointer type
+include/asm-generic/div64.h:35: note: expected 'uint64_t *' but argument is=
+ of type 'long unsigned int *'
+kernel/time/clocksource.c:656: warning: comparison of distinct pointer type=
+s lacks a cast
+kernel/time/clocksource.c:656: warning: right shift count >=3D width of type
+kernel/time/clocksource.c:656: warning: passing argument 1 of '__div64_32' =
+from incompatible pointer type
+include/asm-generic/div64.h:35: note: expected 'uint64_t *' but argument is=
+ of type 'long unsigned int *'
+kernel/time/clockevents.c: In function 'clockevents_config':
+kernel/time/clockevents.c:211: warning: comparison of distinct pointer type=
+s lacks a cast
+kernel/time/clockevents.c:211: warning: right shift count >=3D width of type
+kernel/time/clockevents.c:211: warning: passing argument 1 of '__div64_32' =
+from incompatible pointer type
+include/asm-generic/div64.h:35: note: expected 'uint64_t *' but argument is=
+ of type 'long unsigned int *'
 
-==
+This is a 32 bit build.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-At splitting a hugepage, the routine marks all pmd as "splitting".
+--Signature=_Fri__20_May_2011_15_14_31_+1000_5U+o0j1aFoqgAidv
+Content-Type: application/pgp-signature
 
-But assume a racy case where 2 threads run into spit at the
-same time, one thread wins compound_lock() and do split, another
-thread should not touch splitted pages.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Index: mmotm-May11/mm/huge_memory.c
-===================================================================
---- mmotm-May11.orig/mm/huge_memory.c
-+++ mmotm-May11/mm/huge_memory.c
-@@ -1150,7 +1150,7 @@ static int __split_huge_page_splitting(s
- 	return ret;
- }
- 
--static void __split_huge_page_refcount(struct page *page)
-+static bool __split_huge_page_refcount(struct page *page)
- {
- 	int i;
- 	unsigned long head_index = page->index;
-@@ -1161,6 +1161,11 @@ static void __split_huge_page_refcount(s
- 	spin_lock_irq(&zone->lru_lock);
- 	compound_lock(page);
- 
-+	if (!PageCompound(page)) {
-+		compound_unlock(page);
-+		spin_unlock_irq(&zone->lru_lock);
-+		return false;
-+	}
- 	for (i = 1; i < HPAGE_PMD_NR; i++) {
- 		struct page *page_tail = page + i;
- 
-@@ -1258,6 +1263,7 @@ static void __split_huge_page_refcount(s
- 	 * to be pinned by the caller.
- 	 */
- 	BUG_ON(page_count(page) <= 0);
-+	return true;
- }
- 
- static int __split_huge_page_map(struct page *page,
-@@ -1367,7 +1373,8 @@ static void __split_huge_page(struct pag
- 		       mapcount, page_mapcount(page));
- 	BUG_ON(mapcount != page_mapcount(page));
- 
--	__split_huge_page_refcount(page);
-+	if (!__split_huge_page_refcount(page))
-+		return;
- 
- 	mapcount2 = 0;
- 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
+iQEcBAEBAgAGBQJN1fi3AAoJEDMEi1NhKgbsP48IAJaR84HEt22QdHsKL+BwcG1t
++yhK+RrrVIesHQfUZl8UzuLRaBFQxp7FtO8HJ9wK0hPkqi96BAzU3MKFN0E6uI1n
+bGUEnOwLDpwO3491ecoJwoR+pjtyyrJeO/h7ehT4OpY66CcCFBvoPOiA0uNx7Vxy
+5rHGOAl773T6o2KBXai63MbC2aeI6bxaucWLH3rhhX9Iyw5Q0MvSUtUbpYNleINX
+Fs0/dNnojbkVHI/jpzNFyu1+CCQGnvM4C+L5F506PEnxwB1Bz5AOtVWVu6chfIEt
+zsv0+0DJ0BsvklhaSGa+d8zTT8h4ai/yzHKORhE9uIY91h1jZpSKlNUBmaMR8Uw=
+=03S+
+-----END PGP SIGNATURE-----
 
+--Signature=_Fri__20_May_2011_15_14_31_+1000_5U+o0j1aFoqgAidv--
