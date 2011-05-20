@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935355Ab1ETFlx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 01:41:53 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:65126 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935321Ab1ETFlw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 01:41:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=vBOWIr/Xew1T6vBeq5tHBIafGWvDqx6uHHiGa959c9Kzxg+xA4lTmaHhkGwbANx78L
-         +ltCd7cJXLaU24hwfejnJGuLDf96FRThsF7H7yA74e2kZholjLbYiVlqNTcRZK6N8Gm9
-         U+hQJroq2spSjahAjJrA1ctuDfKENzELYKD60=
-Subject: Re: [PATCH 2/2] driver:mtd:fix the bad format in the mtdcore.c
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Wanlong Gao <wanlong.gao@gmail.com>
-Cc: dwmw2@infradead.org, akpm@linux-foundation.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1305642979-7419-2-git-send-email-wanlong.gao@gmail.com>
-References: <1305642979-7419-1-git-send-email-wanlong.gao@gmail.com>
-	 <1305642979-7419-2-git-send-email-wanlong.gao@gmail.com>
+	id S935366Ab1ETFjE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 01:39:04 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53052 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935321Ab1ETFjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 01:39:01 -0400
+Subject: Re: linux-next: manual merge of the tip tree with the powerpc tree
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Milton Miller <miltonm@bga.com>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <20110520141425.dd38cb7d.sfr@canb.auug.org.au>
+References: <20110520141425.dd38cb7d.sfr@canb.auug.org.au>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 May 2011 08:38:00 +0300
-Message-ID: <1305869880.2630.88.camel@localhost>
+Date: Fri, 20 May 2011 15:38:24 +1000
+Message-ID: <1305869904.7481.145.camel@pasglop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 22:36 +0800, Wanlong Gao wrote:
-> From: Wanlong Gao <wanlong.gao@gmail.com>
+On Fri, 2011-05-20 at 14:14 +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Fix the bad format in the mtdcore.c.
+> Today's linux-next merge of the tip tree got a conflict in
+> arch/powerpc/kernel/smp.c between commit 23d72bfd8f9f ("powerpc:
+> Consolidate ipi message mux and demux") from the powerpc tree and commit
+> 184748cc50b2 ("sched: Provide scheduler_ipi() callback in response to
+> smp_send_reschedule()") from the tip tree.
 > 
-> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
-> ---
->  drivers/mtd/mtdcore.c |   34 +++++++++++++++++-----------------
->  1 files changed, 17 insertions(+), 17 deletions(-)
+> The former superceded part of the latter's changes, so I just used the
+> former for that.
 
-This patch does not apply to my l2 tree because proc-related functions
-have been re-worked recently, see
+I've done the merge and resolved the conflict properly (it's actually
+non trivial due to some other changes) in the powerpc tree, I'll send a
+pull request to Linus later today.
 
-http://git.infradead.org/users/dedekind/l2-mtd-2.6.git/commit/b930b5a0cee30792579a1893a732a485c1f1f0ba
+Cheers,
+Ben.
 
-Please, send a patch on top of l2-mtd-2.6.git:
-
-git://git.infradead.org/users/dedekind/l2-mtd-2.6.git
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
 
