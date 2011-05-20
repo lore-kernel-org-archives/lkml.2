@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934795Ab1ETAOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:14:18 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:38122 "EHLO
+	id S934986Ab1ETAMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:12:15 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46904 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934968Ab1ETAMH (ORCPT
+	by vger.kernel.org with ESMTP id S934741Ab1ETAMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:12:07 -0400
-X-Sasl-enc: L3LAFNFjJ6JVTuhCsk8ax//9xtBdzDZtDKp9xkmbnEqU 1305850326
+	Thu, 19 May 2011 20:12:09 -0400
+X-Sasl-enc: gY/k7kBsKv/5Oa/t17mX+w1vnQ2jMFnNA9quhS51Yj20 1305850328
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Tejun Heo <htejun@gmail.com>,
+Cc: "Robert P. J. Day" <rpjday@crashcourse.ca>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 35/44] reboot: disable usermodehelper to prevent fs access
-Date: Thu, 19 May 2011 17:10:53 -0700
-Message-Id: <1305850262-9575-35-git-send-email-gregkh@suse.de>
+Subject: [PATCH 36/44] RAW driver: Remove call to kobject_put().
+Date: Thu, 19 May 2011 17:10:54 -0700
+Message-Id: <1305850262-9575-36-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1305850262-9575-1-git-send-email-gregkh@suse.de>
 References: <20110520000821.GA9367@kroah.com>
@@ -23,46 +23,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kay Sievers <kay.sievers@vrfy.org>
+From: Robert P. J. Day <rpjday@crashcourse.ca>
 
-In case CONFIG_UEVENT_HELPER_PATH is not set to "", which it
-should be on every system, the kernel forks processes during
-shutdown, which try to access the rootfs, even when the
-binary does not exist. It causes exceptions and long delays in
-the disk driver, which gets read requests at the time it tries
-to shut down the disk.
+If cdev_add() fails, there is no justification for subsequently
+calling kobject_put().
 
-This patch disables all kernel-forked processes during reboot to
-allow a clean poweroff.
-
-Cc: Tejun Heo <htejun@gmail.com>
-Tested-By: Anton Guda <atu@dmeti.dp.ua>
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sys.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/char/raw.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index af468ed..70c4c51 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -314,6 +314,7 @@ void kernel_restart_prepare(char *cmd)
- {
- 	blocking_notifier_call_chain(&reboot_notifier_list, SYS_RESTART, cmd);
- 	system_state = SYSTEM_RESTART;
-+	usermodehelper_disable();
- 	device_shutdown();
- 	sysdev_shutdown();
- 	syscore_shutdown();
-@@ -344,6 +345,7 @@ static void kernel_shutdown_prepare(enum system_states state)
- 	blocking_notifier_call_chain(&reboot_notifier_list,
- 		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
- 	system_state = state;
-+	usermodehelper_disable();
- 	device_shutdown();
- }
- /**
+diff --git a/drivers/char/raw.c b/drivers/char/raw.c
+index 6f9db62..b33e8ea 100644
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -339,7 +339,6 @@ static int __init raw_init(void)
+ 	cdev_init(&raw_cdev, &raw_fops);
+ 	ret = cdev_add(&raw_cdev, dev, max_raw_minors);
+ 	if (ret) {
+-		kobject_put(&raw_cdev.kobj);
+ 		goto error_region;
+ 	}
+ 
 -- 
 1.7.4.2
 
