@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933068Ab1ETF7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 01:59:06 -0400
-Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:39994 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab1ETF7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753231Ab1ETF7D (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 20 May 2011 01:59:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=wn7WPvjvsPs9jLMbMc0qmWGRFrzLnR4vDzP/YF1rYcMMxRnxvCaY6+o7
-	rRKjSUtkEz4tzSWo2y0PUKVxlfh5rP8xB3w31l3lB+SidtmfWwwa9O3Xug/pCSxB
-	pWwOCCXEr+WZkAThBkqcJSxzmtiB3bXcRJNxAiR9UPQqJJr9am4=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git 1.7.5.2
-Date: Thu, 19 May 2011 22:58:52 -0700
-Message-ID: <7voc2x52w3.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 8CDAC838-82A6-11E0-A1D6-BBB7F5B2FB1A-77302942!a-pb-sasl-sd.pobox.com
+Received: from barracuda.fsl.cs.sunysb.edu ([130.245.126.20]:46063 "EHLO
+	barracuda.fsl.cs.sunysb.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752944Ab1ETF7A convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 01:59:00 -0400
+X-ASG-Debug-ID: 1305871138-01c65a06b0169360001-xx1T2L
+X-Barracuda-Envelope-From: ezk@fsl.cs.sunysb.edu
+X-Barracuda-RBL-Trusted-Forwarder: 130.245.126.16
+Subject: Re: [PATCH 5/7] overlay filesystem (negative dentries cause OOPS on NULL inode)
+X-Barracuda-BWL-IP: 192.168.1.133
+X-Barracuda-BBL-IP: 192.168.1.133
+X-Barracuda-RBL-IP: 192.168.1.133
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-ASG-Orig-Subj: Re: [PATCH 5/7] overlay filesystem (negative dentries cause OOPS on NULL inode)
+Content-Type: text/plain; charset=windows-1252
+From: Erez Zadok <ezk@fsl.cs.sunysb.edu>
+In-Reply-To: <103d3f78e2d3478d8bb93f5dda3a4a08@HUBCAS1.cs.stonybrook.edu>
+Date: Fri, 20 May 2011 01:58:57 -0400
+Cc: "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "nbd@openwrt.org" <nbd@openwrt.org>, "neilb@suse.de" <neilb@suse.de>,
+        "hramrach@centrum.cz" <hramrach@centrum.cz>,
+        "jordipujolp@gmail.com" <jordipujolp@gmail.com>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C72E7C64-5283-4707-9623-A372710115AD@fsl.cs.sunysb.edu>
+References: <1305635452-14835-1-git-send-email-miklos@szeredi.hu> <103d3f78e2d3478d8bb93f5dda3a4a08@HUBCAS1.cs.stonybrook.edu>
+To: Miklos Szeredi <miklos@szeredi.hu>
+X-Mailer: Apple Mail (2.1084)
+X-Barracuda-Connect: avatar.fsl.cs.sunysb.edu[130.245.126.16]
+X-Barracuda-Start-Time: 1305871138
+X-Barracuda-URL: http://130.245.126.20:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64258
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.5.2 is available at the
-usual places:
+Miklos,
 
-  http://www.kernel.org/pub/software/scm/git/
+I  continued to test your overlayfs.v9 git repo w/ racer, using two separate empty ext3 filesystems (one for lowerdir and another for upperdir).  I got a couple of NULL derefs in different places.  Both appear to be due to negative dentries being passed around, where the code using them assumes a positive dentry.
 
-  git-1.7.5.2.tar.{gz,bz2}			(source tarball)
-  git-htmldocs-1.7.5.2.tar.{gz,bz2}		(preformatted docs)
-  git-manpages-1.7.5.2.tar.{gz,bz2}		(preformatted docs)
+The first is in ovl_getattr().  The realpath.dentry->d_inode can apparently be NULL after calling ovl_path_real, and when  that's passed to vfs_getattr, the NULL inode is deref'ed in security_inode_getattr (calling IS_PRIVATE on the inode).  I verified it by sticking the BUG_ON(!inode), seeing it triggered, and then replaced it with "if (!inode) return -ENOENT".  After that, racer didn't trigger this bug, but I don't know if returning ENOENT is correct there.  There may be a more fundamental problem in that the lower dentry in ovl_getattr should never be negative.
 
-The RPM binary packages for a few architectures are found in:
+The second instance of a similar problem is in ovl_follow_link.  Again, here realinode can be NULL, causing the WARN_ON(!realinode->…) to oops.  I verified this by placing a BUG_ON, triggering it, and then adding some code to return NULL if the realinode is NULL.  As with the first instance, I don't know if this is correct either.  But I include a simple patch below.
 
-  RPMS/$arch/git-*-1.7.5.2-1.fc13.$arch.rpm	(RPM)
+With these two fixes, the error-path bug in ovl_permission, and the fs/namei.c:1362 bug, racer ran for 60 minutes without triggering an OOPS.
 
-Git v1.7.5.2 Release Notes
-==========================
+Cheers,
+Erez.
 
-The release notes to 1.7.5.1 forgot to mention:
 
- * "git stash -p --no-keep-index" and "git stash --no-keep-index -p" now
-   mean the same thing.
+diff --git a/fs/overlayfs/inode.c b/fs/overlayfs/inode.c
+index 3c15d54..6c70f57 100644
+--- a/fs/overlayfs/inode.c
++++ b/fs/overlayfs/inode.c
+@@ -42,6 +42,8 @@ static int ovl_getattr(struct vfsmount *mnt, struct dentry *dentry,
+ 	struct path realpath;
+ 
+ 	ovl_path_real(dentry, &realpath);
++	if (!realpath.dentry->d_inode)
++		return -ENOENT;
+ 	return vfs_getattr(realpath.mnt, realpath.dentry, stat);
+ }
+ 
+@@ -127,6 +130,9 @@ static void *ovl_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 
+ 	realdentry = ovl_dentry_real(dentry);
+ 	realinode = realdentry->d_inode;
++	if (!realinode)
++		return NULL;
+ 
+ 	if (WARN_ON(!realinode->i_op->follow_link))
+ 		return ERR_PTR(-EPERM);
 
- * "git upload-pack" (hence "git push" over git native protocol) had a
-   subtle race condition that could lead to a deadlock.
-
-Fixes since v1.7.5.1
---------------------
-
- * "git add -p" did not work correctly when a hunk is split and then
-   one of them was given to the editor.
-
- * "git add -u" did not resolve a conflict where our history deleted and
-   their history modified the same file, and the working tree resolved to
-   keep a file.
-
- * "git cvsimport" did not know that CVSNT stores its password file in a
-   location different from the traditional CVS.
-
- * "git diff-files" did not show the mode information from the working
-   tree side of an unmerged path correctly.
-
- * "git diff -M --cached" used to use unmerged path as a possible rename
-   source candidate, which made no sense.
-
- * The option name parser in "git fast-import" used prefix matches for
-   some options where it shouldn't, and accepted non-existent options,
-   e.g. "--relative-marksmith" or "--forceps".
-
- * "git format-patch" did not quote RFC822 special characters in the
-   email address (e.g From: Junio C. Hamano <jch@example.com>, not
-   From: "Junio C. Hamano" <jch@example.com>).
-
- * "git format-patch" when run with "--quiet" option used to produce a
-   nonsense result that consists of alternating empty output.
-
- * In "git merge", per-branch branch.<name>.mergeoptions configuration
-   variables did not override the fallback default merge.<option>
-   configuration variables such as merge.ff, merge.log, etc.
-
- * "git merge-one-file" did not honor GIT_WORK_TREE settings when
-   handling a "both sides added, differently" conflict.
-
- * "git mergetool" did not handle conflicted submoudules gracefully.
-
- * "git-p4" (in contrib) used a wrong base image while merge a file that
-   was added on both branches differently.
-
- * "git rebase -i -p" failed to preserve the history when there is a
-   redundant merge created with the --no-ff option.
-
-And other minor fixes and documentation updates.
