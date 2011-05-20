@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256Ab1ETNtM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:49:12 -0400
-Received: from lucidpixels.com ([75.144.35.66]:59565 "EHLO lucidpixels.com"
+	id S933671Ab1ETNxb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:53:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50140 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932291Ab1ETNtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:49:10 -0400
-Date: Fri, 20 May 2011 09:49:08 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
-Subject: Re: 2.6.39: crash w/threadirqs option enabled
-In-Reply-To: <alpine.LFD.2.02.1105201528500.3078@ionos>
-Message-ID: <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
-References: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan> <alpine.LFD.2.02.1105201445300.3078@ionos> <alpine.DEB.2.02.1105200850080.19553@p34.internal.lan> <alpine.LFD.2.02.1105201528500.3078@ionos>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932916Ab1ETNxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 09:53:30 -0400
+Date: Fri, 20 May 2011 06:54:24 -0700
+From: Greg KH <gregkh@suse.de>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <kees.cook@canonical.com>,
+        Eugene Teo <eugeneteo@gmail.com>
+Subject: Re: [RFC] add mount options to sysfs
+Message-ID: <20110520135424.GA10878@suse.de>
+References: <20110518163142.GA3367@albatros>
+ <20110518163951.GA24143@suse.de>
+ <20110518170545.GA4435@albatros>
+ <20110518191727.GA26741@suse.de>
+ <20110519062622.GA4418@albatros>
+ <20110519171227.GB22019@suse.de>
+ <20110520095920.GA4489@albatros>
+ <20110520133044.GC10225@suse.de>
+ <20110520133451.GA8112@albatros>
+ <20110520133615.GB8112@albatros>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110520133615.GB8112@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 20, 2011 at 05:36:15PM +0400, Vasiliy Kulikov wrote:
+> On Fri, May 20, 2011 at 17:34 +0400, Vasiliy Kulikov wrote:
+> > On Fri, May 20, 2011 at 06:30 -0700, Greg KH wrote:
+> > > > Correct.  So, if I understood you, you are OK with adding mount options
+> > > > for debugfs, but not sysfs, right?  What is the difference between them
+> > > > in sense of permissions?
+> > > 
+> > > debugfs is "there are no rules", so changing the permissions on it
+> > > shouldn't break anything as no userspace tools "should" rely on it.  Now
+> > > that really isn't true (see the perf stuff), but overall it is, so I
+> > > don't worry about changing things there as much as sysfs, which has
+> > > hundreds of tools relying on it.
+> > 
+> > What would break if the default behaviour is not changed?
+> 
+> Err... sorry, s/would break/would it break/
 
+That's the question for you, we would be changing the kernel/user api
+here, and odds are, something will break.
 
-On Fri, 20 May 2011, Thomas Gleixner wrote:
+thansk,
 
-> On Fri, 20 May 2011, Justin Piszcz wrote:
->> On Fri, 20 May 2011, Thomas Gleixner wrote:
->>
->> Correct, no serial port or header, config:
->> http://home.comcast.net/~jpiszcz/20110520/config-2.6.39-3.txt
->
-
-Hello Thomas,
-
-> Does it crash right away or just when doing something particular?
-It crashed at 2100, this is when I run a few I/O intensive processes:
-- backup (dump ext4 filesystem -> to a separate raid device)
-- backup (dump ext4 on remote host -> to separate raid device)
-- backup (dump xfs on remote host -> to separate raid device)
-
-This looks like it is what caused it to crash.
-
-> Is the box fully dead after the crash ?
-The host was online and I went away for awhile, when I came back the system
-had rebooted on its own (as I lost all of my X windows/etc).
-
-Justin.
-
+greg k-h
