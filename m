@@ -1,93 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934282Ab1ETOZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:25:24 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48483 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab1ETOZW (ORCPT
+	id S934384Ab1ETO03 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:26:29 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39610 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933715Ab1ETO01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:25:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=szeredi.hu; s=google;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=a4sGq1rna0NSiV5q3JE8Ckd2qIlG43MAs+SQIDBfDo/F2SaNuaqecgJoJP/3ouIoOz
-         BP7GQoBM5u9N0oZiW4Pq/OUEyrdaToQEPd6EPdeIhvFQZu5dkdpnRMq6poFbC+ycCCM9
-         fqniKYNXjQ30icybk3bLYc0jAAMRWWu8njGo0=
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Erez Zadok <ezk@fsl.cs.sunysb.edu>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
-        jordipujolp@gmail.com
-Subject: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
-References: <1305635452-14835-1-git-send-email-miklos@szeredi.hu>
-	<103d3f78e2d3478d8bb93f5dda3a4a08@HUBCAS1.cs.stonybrook.edu>
-	<D8301738-5094-4666-8C4D-E26425F1AD66@fsl.cs.sunysb.edu>
-	<B0729E4C-D581-4EAB-A175-A6B8B34692B5@fsl.cs.sunysb.edu>
-Date: Fri, 20 May 2011 16:25:38 +0200
-In-Reply-To: <B0729E4C-D581-4EAB-A175-A6B8B34692B5@fsl.cs.sunysb.edu> (Erez
-	Zadok's message of "Fri, 20 May 2011 01:55:12 -0400")
-Message-ID: <87ipt5mot9.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Fri, 20 May 2011 10:26:27 -0400
+Message-ID: <4DD679F8.10002@kernel.org>
+Date: Fri, 20 May 2011 07:26:00 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, steiner@sgi.com,
+        linux-kernel@vger.kernel.org, gorcunov@openvz.org
+Subject: Re: [patch 6/6] x86, apic: use .apicdrivers section to find the list
+ of apic drivers
+References: <20110519234545.700125442@sbsiddha-MOBL3.sc.intel.com> <20110519234637.671736436@sbsiddha-MOBL3.sc.intel.com>
+In-Reply-To: <20110519234637.671736436@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090204.4DD67A04.0062,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Erez Zadok <ezk@fsl.cs.sunysb.edu> writes:
-> Niklos, I forgot to mention that I had to apply a small fix to a VFS
-> bug in fs/namei.c:1362, where a mix of symlinks and renames, using
-> racer, triggers an BUG_ON at the VFS layer (very reproducible).
-> Without this fix, racer oopses in the VFS well before it gets to
-> trigger overlayfs bugs.  It's a pity 2.6.39 was released with this
-> very reproducible *VFS* level bug (doesn't anyone run racer+fsx+ltp
-> before releasing a new kernel?)
->
-> Anyway, here's the small patch here.  Clearly viro/hch need to review
-> this "fix" b/c I'm not sure it's really the right one
-
-Patch looks good to me.
-
-Acked-by: Miklos Szeredi <mszeredi@suse.cz>
-
-If you've got a patch fixing a serious bug, you'd better send it to
-Linus and Andrew (as well as the VFS maintainers), where it'll get more
-prompt evaluation.
-
-You can still do that, also adding "CC: stable@kernel.org" to the SOB
-block in the patch so that the fix quickly makes it into the 2.6.39
-stable series.
-
-Thanks,
-Miklos
-
-
->
-> VFS: move BUG_ON test for symlink nd->depth after current->link_count test
->
-> This solves a bug in nested_symlink (which was rewritten from
-> do_follow_link), and follows the order of depth tests that existed before.
-> The bug triggers a BUG_ON in fs/namei.c:1346, when running racer with
-> symlink and rename ops.
->
-> Signed-off-by: Erez Zadok <ezk@cs.sunysb.edu>
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 017c3fa..7a93387 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -1343,12 +1343,12 @@ static inline int nested_symlink(struct path *path, struct nameidata *nd)
+On 05/19/2011 04:45 PM, Suresh Siddha wrote:
+> --- linux-2.6-tip.orig/arch/x86/kernel/apic/apic_flat_64.c
+> +++ linux-2.6-tip/arch/x86/kernel/apic/apic_flat_64.c
+> @@ -24,6 +24,8 @@
+>  #include <acpi/acpi_bus.h>
+>  #endif
+>  
+> +static struct apic apic_physflat;
+> +
+>  static int flat_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
 >  {
->  	int res;
+>  	return 1;
+> @@ -164,7 +166,7 @@ static int flat_phys_pkg_id(int initial_
+>  	return initial_apic_id >> index_msb;
+>  }
 >  
-> -	BUG_ON(nd->depth >= MAX_NESTED_LINKS);
->  	if (unlikely(current->link_count >= MAX_NESTED_LINKS)) {
->  		path_put_conditional(path, nd);
->  		path_put(&nd->path);
->  		return -ELOOP;
+> -struct apic apic_flat =  {
+> +static struct apic apic_flat =  {
+>  	.name				= "flat",
+>  	.probe				= NULL,
+>  	.acpi_madt_oem_check		= flat_acpi_madt_oem_check,
+> @@ -320,7 +322,7 @@ static int physflat_probe(void)
+>  	return 0;
+>  }
+>  
+> -struct apic apic_physflat =  {
+> +static struct apic apic_physflat =  {
+>  
+>  	.name				= "physical flat",
+>  	.probe				= physflat_probe,
+> @@ -377,3 +379,8 @@ struct apic apic_physflat =  {
+>  	.wait_icr_idle			= native_apic_wait_icr_idle,
+>  	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
+>  };
+> +
+> +/*
+> + * We need to check for physflat first, so this order is important.
+> + */
+> +apic_drivers(apic_physflat, apic_flat);
+> Index: linux-2.6-tip/arch/x86/kernel/apic/probe_64.c
+> ===================================================================
+> --- linux-2.6-tip.orig/arch/x86/kernel/apic/probe_64.c
+> +++ linux-2.6-tip/arch/x86/kernel/apic/probe_64.c
+> @@ -23,27 +23,9 @@
+>  #include <asm/ipi.h>
+>  #include <asm/setup.h>
+>  
+> -extern struct apic apic_flat;
+> -extern struct apic apic_physflat;
+> -extern struct apic apic_x2xpic_uv_x;
+> -extern struct apic apic_x2apic_phys;
+> -extern struct apic apic_x2apic_cluster;
+> -
+> -struct apic __read_mostly *apic = &apic_flat;
+> +struct apic __read_mostly *apic;
+>  EXPORT_SYMBOL_GPL(apic);
+>  
+> -static struct apic *apic_probe[] __initdata = {
+> -#ifdef CONFIG_X86_UV
+> -	&apic_x2apic_uv_x,
+> -#endif
+> -#ifdef CONFIG_X86_X2APIC
+> -	&apic_x2apic_phys,
+> -	&apic_x2apic_cluster,
+> -#endif
+> -	&apic_physflat,
+> -	NULL,
+> -};
+> -
+>  static int apicid_phys_pkg_id(int initial_apic_id, int index_msb)
+>  {
+>  	return hard_smp_processor_id() >> index_msb;
+> @@ -54,19 +36,19 @@ static int apicid_phys_pkg_id(int initia
+>   */
+>  void __init default_setup_apic_routing(void)
+>  {
+> -	int i;
+> +	struct apic **drv;
+>  
+>  	enable_IR_x2apic();
+>  
+> -	for (i = 0; apic_probe[i]; ++i) {
+> -		if (apic_probe[i]->probe()) {
+> -			apic = apic_probe[i];
+> +	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
+> +		if ((*drv)->probe()) {
+> +			apic = *drv;
+> +			printk(KERN_INFO "APIC routing finalized to %s.\n",
+> +			       apic->name);
+>  			break;
+>  		}
 >  	}
-> +	BUG_ON(nd->depth >= MAX_NESTED_LINKS);
->  
->  	nd->depth++;
->  	current->link_count++;
+
+can you change to:
+
++	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
++		if ((*drv)->probe()) {
++			if (apic != *drv) {
++				apic = *drv;				
++				printk(KERN_INFO "Changing APIC routing to %s.\n",
++				       apic->name);
++			}
+ 			break;
+ 		}
+ 	}
+
+Thanks
+
+Yinghai
