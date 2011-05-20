@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964837Ab1ETTNz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 15:13:55 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37031 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964821Ab1ETTNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 15:13:52 -0400
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: linux-kernel@vger.kernel.org
-Cc: John Johansen <john.johansen@canonical.com> (supporter:APPARMOR
-	SECURITY...),
-        James Morris <jmorris@namei.org> (supporter:SECURITY SUBSYSTEM),
-        linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
-Subject: [PATCH 8/8] apparmor: Kill set but no used warning in common_mmap()
-Date: Fri, 20 May 2011 16:13:05 -0300
-Message-Id: <1305918786-7239-8-git-send-email-padovan@profusion.mobi>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <1305918786-7239-7-git-send-email-padovan@profusion.mobi>
-References: <1305918786-7239-1-git-send-email-padovan@profusion.mobi>
- <1305918786-7239-2-git-send-email-padovan@profusion.mobi>
- <1305918786-7239-3-git-send-email-padovan@profusion.mobi>
- <1305918786-7239-4-git-send-email-padovan@profusion.mobi>
- <1305918786-7239-5-git-send-email-padovan@profusion.mobi>
- <1305918786-7239-6-git-send-email-padovan@profusion.mobi>
- <1305918786-7239-7-git-send-email-padovan@profusion.mobi>
+	id S964849Ab1ETTOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 15:14:32 -0400
+Received: from smtp15.mail.ru ([94.100.176.133]:54155 "EHLO smtp15.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964781Ab1ETTO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 15:14:29 -0400
+Date: Fri, 20 May 2011 23:14:27 +0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Paul Parsons <lost.distance@yahoo.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [PATCH] ds2760_battery: Fix rated capacity of the hx4700 1800mAh
+ battery
+Message-ID: <20110520191427.GA28601@rainbow>
+References: <20110520174546.GA27734@rainbow>
+ <931974.15363.qm@web29013.mail.ird.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <931974.15363.qm@web29013.mail.ird.yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
----
- security/apparmor/lsm.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+On 19:34 Fri 20 May     , Paul Parsons wrote:
+> 
+> If anybody here does have an hx4700 with the 3600mAh battery and is able to run Linux on it, it would be a big help if they could apply the following patch to discover the rated capacity register value via dmesg:
 
-diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-index ae3a698..4c1e4ca 100644
---- a/security/apparmor/lsm.c
-+++ b/security/apparmor/lsm.c
-@@ -470,7 +470,6 @@ static int apparmor_file_lock(struct file *file, unsigned int cmd)
- static int common_mmap(int op, struct file *file, unsigned long prot,
- 		       unsigned long flags)
- {
--	struct dentry *dentry;
- 	int mask = 0;
- 
- 	if (!file || !file->f_security)
-@@ -487,7 +486,6 @@ static int common_mmap(int op, struct file *file, unsigned long prot,
- 	if (prot & PROT_EXEC)
- 		mask |= AA_EXEC_MMAP;
- 
--	dentry = file->f_path.dentry;
- 	return common_file_perm(op, file, mask);
- }
- 
+Yes, thanks! I'll try to revive my extended battery soon and test it. And
+will test standard one too - just to make coverage a bit wider. Who
+knows if HP produced more than one kind of standard capacity batteries
+which have different value in capacity register?
+
+> Or perhaps HaRET has some means of dumping the register?
+
+No, I don't think HaRET have any one-wire functions, so it's very unlikely
+that it can read registers on DS2760.
+
 -- 
-1.7.5.1
+Best regards,
+Dmitry "MAD" Artamonow
 
