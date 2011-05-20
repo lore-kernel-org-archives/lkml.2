@@ -1,87 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934832Ab1ETSSA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 14:18:00 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57578 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933693Ab1ETSR7 (ORCPT
+	id S934948Ab1ETSVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 14:21:35 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55567 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934748Ab1ETSVc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 14:17:59 -0400
-Date: Fri, 20 May 2011 11:17:33 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: linux-doc@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        Eric Paris <eparis@parisplace.org>,
-        John Johansen <john.johansen@canonical.com>,
-        David Howells <dhowells@redhat.com>,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: [PATCH for-next] Documentation: add Documentation/security/
-Message-Id: <20110520111733.b5319a02.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4DD6B04C.01F9:SCFMA922111,ss=1,fgs=0
+	Fri, 20 May 2011 14:21:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=yHUnGGJzdTXaDyqBDS8yT3Pj4AATaScNSPrKTzHPlQWeypgJBqSsqGIDxxv4kfZUAo
+         TKpubeUUqJQzsNKkZMvknijTISaA1VErkG0IWxvN8MfQr8bBu/T3/ujUSM03u+i/Ra2l
+         hiiYxeiqkBzAOaW5GWgue/1We7SNfLeop0B/o=
+MIME-Version: 1.0
+In-Reply-To: <20110520154341.GL31426@htj.dyndns.org>
+References: <201105120025.34531.rjw@sisk.pl>
+	<20633.1305565337@localhost>
+	<BANLkTin7NgUMXSVyKn6P0TCrFZ5uaaRL1w@mail.gmail.com>
+	<201105182144.37713.rjw@sisk.pl>
+	<BANLkTimZ9pe-FhkJYHTG1Jx8MUPrMHSFbA@mail.gmail.com>
+	<BANLkTim9_1Xt8oE4awbCO1iKUW96YUOv_A@mail.gmail.com>
+	<10124.1305906020@localhost>
+	<20110520154341.GL31426@htj.dyndns.org>
+Date: Fri, 20 May 2011 11:21:31 -0700
+Message-ID: <BANLkTik0WV4+p+YWEKC0XataCh0Po_cEPg@mail.gmail.com>
+Subject: Re: [PATCH v2.6.38-rc7] Revert "libata: ahci_start_engine compliant
+ to AHCI spec"
+From: Jian Peng <jipeng2005@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Valdis.Kletnieks@vt.edu, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jeff Garzik <jgarzik@pobox.com>,
+        Michael Leun <lkml20100708@newton.leun.net>, linux-ide@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-added to
-  git://git.kernel.org/pub/scm/linux/kernel/git/rdunlap/linux-docs.git  docs-move
+Sorry that I need fix my gmail setting to make it show up in LKML.
+
+Hi, Tejun/Valdis,
+
+Since this is an interoperability issue of SATA host controller, the
+first step I want to try it to make sure the tweak that MAKE my
+controller WORK does not break other controllers.
+You are both right that adding this majic 5ms delay at this place
+should not be the final solution.
+
+If this magic 5ms delay works on other affected systems, I plan to
+post a new patch that inside ahci_start_engine(), still perform same
+check, and show warning message if failed, but will set a flag, then
+still set START bit, and if there is such failure flag, add 5ms delay.
+
+Valdis, could you apply the following patch and retest it?
+
+Tejun, please review it.
+
+--- a/drivers/ata/libahci.c 2011-05-18 14:23:36.564665643 -0700
+
++++ c/drivers/ata/libahci.c 2011-05-20 09:48:06.194663506 -0700
+@@ -540,6 +540,7 @@
+
+  void __iomem *port_mmio = ahci_port_base(ap);
+  u32 tmp;
+  u8 status;
+
++ int err = 0;
 
 
-commit d410fa4ef99112386de5f218dd7df7b4fca910b4
-Author: Randy Dunlap <randy.dunlap@oracle.com>
-Date:   Thu May 19 15:59:38 2011 -0700
-
-    Create Documentation/security/,
-    move LSM-, credentials-, and keys-related files from Documentation/
-      to Documentation/security/,
-    add Documentation/security/00-INDEX, and
-    update all occurrences of Documentation/<moved_file>
-      to Documentation/security/<moved_file>.
+  status = readl(port_mmio + PORT_TFDATA) & 0xFF;
 
 
- Documentation/00-INDEX                             |    6 ++----
- Documentation/filesystems/nfs/idmapper.txt         |    4 ++--
- Documentation/networking/dns_resolver.txt          |    4 ++--
- Documentation/security/00-INDEX                    |   18 ++++++++++++++++++
- Documentation/{ => security}/SELinux.txt           |    0
- Documentation/{ => security}/Smack.txt             |    0
- Documentation/{ => security}/apparmor.txt          |    0
- Documentation/{ => security}/credentials.txt       |    2 +-
- Documentation/{ => security}/keys-request-key.txt  |    4 ++--
- .../{ => security}/keys-trusted-encrypted.txt      |    0
- Documentation/{ => security}/keys.txt              |    4 ++--
- Documentation/{ => security}/tomoyo.txt            |    0
- MAINTAINERS                                        |    6 +++---
- include/linux/cred.h                               |    2 +-
- include/linux/key.h                                |    2 +-
- kernel/cred.c                                      |    2 +-
- scripts/selinux/README                             |    2 +-
- security/apparmor/match.c                          |    2 +-
- security/apparmor/policy_unpack.c                  |    4 ++--
- security/keys/encrypted.c                          |    2 +-
- security/keys/request_key.c                        |    2 +-
- security/keys/request_key_auth.c                   |    2 +-
- security/keys/trusted.c                            |    2 +-
- 23 files changed, 43 insertions(+), 27 deletions(-)
- create mode 100644 Documentation/security/00-INDEX
- rename Documentation/{ => security}/SELinux.txt (100%)
- rename Documentation/{ => security}/Smack.txt (100%)
- rename Documentation/{ => security}/apparmor.txt (100%)
- rename Documentation/{ => security}/credentials.txt (99%)
- rename Documentation/{ => security}/keys-request-key.txt (98%)
- rename Documentation/{ => security}/keys-trusted-encrypted.txt (100%)
- rename Documentation/{ => security}/keys.txt (99%)
- rename Documentation/{ => security}/tomoyo.txt (100%)
+@@ -553,12 +554,12 @@
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+   * specific controller will fail under this condition
+   */
+  if (status & (ATA_BUSY | ATA_DRQ))
+-  return;
+
++  err = 1;
+
+  else {
+   ahci_scr_read(&ap->link, SCR_STATUS, &tmp);
+
+   if ((tmp & 0xf) != 0x3)
+-   return;
+
++   err = 1;
+  }
+
+  /* start DMA */
+@@ -566,6 +567,13 @@
+  tmp |= PORT_CMD_START;
+  writel(tmp, port_mmio + PORT_CMD);
+  readl(port_mmio + PORT_CMD); /* flush */
++
++ /* Some controllers need longer time to be ready */
++ if(err) {
++  printk(KERN_WARNING
++   "Controller in wrong state when setting START bit\n");
++  msleep(5);
++ }
+ }
+ EXPORT_SYMBOL_GPL(ahci_start_engine);
+
+On Fri, May 20, 2011 at 8:43 AM, Tejun Heo <tj@kernel.org> wrote:
+>
+> On Fri, May 20, 2011 at 11:40:20AM -0400, Valdis.Kletnieks@vt.edu wrote:
+> > On Wed, 18 May 2011 17:14:56 PDT, Jian Peng said:
+> >
+> > > > @@ -1353,6 +1332,8 @@
+> > > >
+> > > >
+> > > >   ahci_start_engine(ap);
+> > > >
+> > > > + msleep(5);
+> > > > +
+> > > >   if (online)
+> > > >
+> > > >    *class = ahci_dev_classify(ap);
+> > > >
+> >
+> > It may very well be that adding a magic msleep(5) here just Makes It Work, but
+> > I have a gut feeling that it's in the wrong place (for starters, 'online' can't change
+> > during the msleep() unless somebody *else* sets it - in which case the locking
+> > is screwed up as we're not forcing a re-read of the value).  The msleep() probably
+> > needs to be before something else further down in the code (but I have no idea
+> > exactly what).
+>
+> At this point, I think it would be better to simply add a flag and
+> enable the check for the affected controller.
+>
+> Thanks.
+>
+> --
+> tejun
