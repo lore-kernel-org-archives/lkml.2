@@ -1,162 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934528Ab1ETNlv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:41:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36131 "EHLO hera.kernel.org"
+	id S934553Ab1ETNmQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:42:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36152 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934137Ab1ETNls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:41:48 -0400
-Date: Fri, 20 May 2011 13:41:37 GMT
+	id S934137Ab1ETNmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 09:42:13 -0400
+Date: Fri, 20 May 2011 13:42:02 GMT
 From: tip-bot for Cyrill Gorcunov <gorcunov@openvz.org>
-Message-ID: <tip-a39d1f3f67f6a3d72b24f0d8bf9a295a27ea448e@git.kernel.org>
+Message-ID: <tip-9d0fa6c5f43f2d9c6966dcab7af96a717682fdec@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         gorcunov@openvz.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         gorcunov@openvz.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <20110519234637.421800999@sbsiddha-MOBL3.sc.intel.com>
-References: <20110519234637.421800999@sbsiddha-MOBL3.sc.intel.com>
+In-Reply-To: <20110519234637.512271057@sbsiddha-MOBL3.sc.intel.com>
+References: <20110519234637.512271057@sbsiddha-MOBL3.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, x2apic: Track the x2apic cluster sibling map
-Git-Commit-ID: a39d1f3f67f6a3d72b24f0d8bf9a295a27ea448e
+Subject: [tip:x86/apic] x86, x2apic: Minimize IPI register writes using cluster groups
+Git-Commit-ID: 9d0fa6c5f43f2d9c6966dcab7af96a717682fdec
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 May 2011 13:41:38 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 May 2011 13:42:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a39d1f3f67f6a3d72b24f0d8bf9a295a27ea448e
-Gitweb:     http://git.kernel.org/tip/a39d1f3f67f6a3d72b24f0d8bf9a295a27ea448e
+Commit-ID:  9d0fa6c5f43f2d9c6966dcab7af96a717682fdec
+Gitweb:     http://git.kernel.org/tip/9d0fa6c5f43f2d9c6966dcab7af96a717682fdec
 Author:     Cyrill Gorcunov <gorcunov@openvz.org>
-AuthorDate: Thu, 19 May 2011 16:45:48 -0700
+AuthorDate: Thu, 19 May 2011 16:45:49 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 20 May 2011 13:41:08 +0200
+CommitDate: Fri, 20 May 2011 13:41:09 +0200
 
-x86, x2apic: Track the x2apic cluster sibling map
+x86, x2apic: Minimize IPI register writes using cluster groups
 
-In the case of x2apic cluster mode, we can group IPI register
+In the case of x2apic cluster mode we can group IPI register
 writes based on the cluster group instead of individual per-cpu
 destination messages.
 
-For this purpose, track the cpu's that belong to the same x2apic
-cluster.
+This reduces the apic register writes and reduces the amount of
+IPI messages (in the best case we can reduce it by a factor of
+16).
+
+With this change, the cost of flush_tlb_others(), with the flush
+tlb IPI being sent from a cpu in the socket-1 to all the logical
+cpus in socket-2 (on a Westmere-EX system that has 20 logical
+cpus in a socket) is 3x times better now (compared to the former
+'send one-by-one' algorithm).
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Cc: steiner@sgi.com
 Cc: yinghai@kernel.org
-Link: http://lkml.kernel.org/r/20110519234637.421800999@sbsiddha-MOBL3.sc.intel.com
+Link: http://lkml.kernel.org/r/20110519234637.512271057@sbsiddha-MOBL3.sc.intel.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/apic/x2apic_cluster.c |   72 ++++++++++++++++++++++++++++++++-
- 1 files changed, 70 insertions(+), 2 deletions(-)
+ arch/x86/kernel/apic/x2apic_cluster.c |   58 +++++++++++++++++++++++++--------
+ 1 files changed, 44 insertions(+), 14 deletions(-)
 
 diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index b261799..4b2bb13 100644
+index 4b2bb13..4dfe936 100644
 --- a/arch/x86/kernel/apic/x2apic_cluster.c
 +++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -11,6 +11,7 @@
- #include <asm/ipi.h>
+@@ -5,6 +5,7 @@
+ #include <linux/ctype.h>
+ #include <linux/init.h>
+ #include <linux/dmar.h>
++#include <linux/cpu.h>
+ 
+ #include <asm/smp.h>
+ #include <asm/apic.h>
+@@ -12,6 +13,7 @@
  
  static DEFINE_PER_CPU(u32, x86_cpu_to_logical_apicid);
-+static DEFINE_PER_CPU(cpumask_var_t, cpus_in_cluster);
+ static DEFINE_PER_CPU(cpumask_var_t, cpus_in_cluster);
++static DEFINE_PER_CPU(cpumask_var_t, ipi_mask);
  
  static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
  {
-@@ -48,6 +49,11 @@ static void
- 	native_x2apic_icr_write(cfg, apicid);
+@@ -54,30 +56,52 @@ static inline u32 x2apic_cluster(int cpu)
+ 	return per_cpu(x86_cpu_to_logical_apicid, cpu) >> 16;
  }
  
-+static inline u32 x2apic_cluster(int cpu)
-+{
-+	return per_cpu(x86_cpu_to_logical_apicid, cpu) >> 16;
-+}
-+
- /*
-  * for now, we send the IPI's one by one in the cpumask.
-  * TBD: Based on the cpu mask, we can send the IPI's to the cluster group
-@@ -163,14 +169,76 @@ static void x2apic_send_IPI_self(int vector)
- 
- static void init_x2apic_ldr(void)
+-/*
+- * for now, we send the IPI's one by one in the cpumask.
+- * TBD: Based on the cpu mask, we can send the IPI's to the cluster group
+- * at once. We have 16 cpu's in a cluster. This will minimize IPI register
+- * writes.
+- */
+ static void
+ __x2apic_send_IPI_mask(const struct cpumask *mask, int vector, int apic_dest)
  {
-+	unsigned int this_cpu = smp_processor_id();
-+	unsigned int cpu;
+-	unsigned long query_cpu;
+-	unsigned long this_cpu;
++	struct cpumask *cpus_in_cluster_ptr;
++	struct cpumask *ipi_mask_ptr;
++	unsigned int cpu, this_cpu;
+ 	unsigned long flags;
++	u32 dest;
+ 
+ 	x2apic_wrmsr_fence();
+ 
+ 	local_irq_save(flags);
+ 
+ 	this_cpu = smp_processor_id();
+-	for_each_cpu(query_cpu, mask) {
+-		if (apic_dest == APIC_DEST_ALLBUT && query_cpu == this_cpu)
 +
-+	per_cpu(x86_cpu_to_logical_apicid, this_cpu) = apic_read(APIC_LDR);
++	/*
++	 * We are to modify mask, so we need an own copy
++	 * and be sure it's manipulated with irq off.
++	 */
++	ipi_mask_ptr = __raw_get_cpu_var(ipi_mask);
++	cpumask_copy(ipi_mask_ptr, mask);
 +
-+	__cpu_set(this_cpu, per_cpu(cpus_in_cluster, this_cpu));
-+	for_each_online_cpu(cpu) {
-+		if (x2apic_cluster(this_cpu) != x2apic_cluster(cpu))
-+			continue;
-+		__cpu_set(this_cpu, per_cpu(cpus_in_cluster, cpu));
-+		__cpu_set(cpu, per_cpu(cpus_in_cluster, this_cpu));
-+	}
-+}
++	/*
++	 * The idea is to send one IPI per cluster.
++	 */
++	for_each_cpu(cpu, ipi_mask_ptr) {
++		unsigned long i;
 +
-+ /*
-+  * At CPU state changes, update the x2apic cluster sibling info.
-+  */
-+static int __cpuinit
-+update_clusterinfo(struct notifier_block *nfb, unsigned long action, void *hcpu)
-+{
-+	unsigned int this_cpu = (unsigned long)hcpu;
-+	unsigned int cpu;
-+	int err = 0;
++		cpus_in_cluster_ptr = per_cpu(cpus_in_cluster, cpu);
++		dest = 0;
 +
-+	switch (action) {
-+	case CPU_UP_PREPARE:
-+		if (!zalloc_cpumask_var(&per_cpu(cpus_in_cluster, this_cpu),
-+					GFP_KERNEL)) {
++		/* Collect cpus in cluster. */
++		for_each_cpu_and(i, ipi_mask_ptr, cpus_in_cluster_ptr) {
++			if (apic_dest == APIC_DEST_ALLINC || i != this_cpu)
++				dest |= per_cpu(x86_cpu_to_logical_apicid, i);
++		}
++
++		if (!dest)
+ 			continue;
+-		__x2apic_send_IPI_dest(
+-			per_cpu(x86_cpu_to_logical_apicid, query_cpu),
+-			vector, apic->dest_logical);
++
++		__x2apic_send_IPI_dest(dest, vector, apic->dest_logical);
++		/*
++		 * Cluster sibling cpus should be discared now so
++		 * we would not send IPI them second time.
++		 */
++		cpumask_andnot(ipi_mask_ptr, ipi_mask_ptr, cpus_in_cluster_ptr);
+ 	}
+ 
+ 	local_irq_restore(flags);
+@@ -198,6 +222,10 @@ update_clusterinfo(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		if (!zalloc_cpumask_var(&per_cpu(cpus_in_cluster, this_cpu),
+ 					GFP_KERNEL)) {
+ 			err = -ENOMEM;
++		} else if (!zalloc_cpumask_var(&per_cpu(ipi_mask, this_cpu),
++					       GFP_KERNEL)) {
++			free_cpumask_var(per_cpu(cpus_in_cluster, this_cpu));
 +			err = -ENOMEM;
-+		}
-+		break;
-+	case CPU_UP_CANCELED:
-+	case CPU_UP_CANCELED_FROZEN:
-+	case CPU_DEAD:
-+		for_each_online_cpu(cpu) {
-+			if (x2apic_cluster(this_cpu) != x2apic_cluster(cpu))
-+				continue;
-+			__cpu_clear(this_cpu, per_cpu(cpus_in_cluster, cpu));
-+			__cpu_clear(cpu, per_cpu(cpus_in_cluster, this_cpu));
-+		}
-+		free_cpumask_var(per_cpu(cpus_in_cluster, this_cpu));
-+		break;
-+	}
-+
-+	return notifier_from_errno(err);
-+}
-+
-+static struct notifier_block __refdata x2apic_cpu_notifier = {
-+	.notifier_call = update_clusterinfo,
-+};
-+
-+static int x2apic_init_cpu_notifier(void)
-+{
+ 		}
+ 		break;
+ 	case CPU_UP_CANCELED:
+@@ -210,6 +238,7 @@ update_clusterinfo(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 			__cpu_clear(cpu, per_cpu(cpus_in_cluster, this_cpu));
+ 		}
+ 		free_cpumask_var(per_cpu(cpus_in_cluster, this_cpu));
++		free_cpumask_var(per_cpu(ipi_mask, this_cpu));
+ 		break;
+ 	}
+ 
+@@ -225,8 +254,9 @@ static int x2apic_init_cpu_notifier(void)
  	int cpu = smp_processor_id();
  
--	per_cpu(x86_cpu_to_logical_apicid, cpu) = apic_read(APIC_LDR);
-+	zalloc_cpumask_var(&per_cpu(cpus_in_cluster, cpu), GFP_KERNEL);
-+
-+	BUG_ON(!per_cpu(cpus_in_cluster, cpu));
-+
-+	__cpu_set(cpu, per_cpu(cpus_in_cluster, cpu));
-+	register_hotcpu_notifier(&x2apic_cpu_notifier);
-+	return 1;
- }
+ 	zalloc_cpumask_var(&per_cpu(cpus_in_cluster, cpu), GFP_KERNEL);
++	zalloc_cpumask_var(&per_cpu(ipi_mask, cpu), GFP_KERNEL);
  
- static int x2apic_cluster_probe(void)
- {
--	return x2apic_mode;
-+	if (x2apic_mode)
-+		return x2apic_init_cpu_notifier();
-+	else
-+		return 0;
- }
+-	BUG_ON(!per_cpu(cpus_in_cluster, cpu));
++	BUG_ON(!per_cpu(cpus_in_cluster, cpu) || !per_cpu(ipi_mask, cpu));
  
- struct apic apic_x2apic_cluster = {
+ 	__cpu_set(cpu, per_cpu(cpus_in_cluster, cpu));
+ 	register_hotcpu_notifier(&x2apic_cpu_notifier);
