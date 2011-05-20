@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236Ab1ETDMV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:12:21 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59770 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396Ab1ETDMU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:12:20 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DD5DC06.6010204@jp.fujitsu.com>
-Date: Fri, 20 May 2011 12:12:06 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: luto@mit.edu
-CC: minchan.kim@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
-        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
-        riel@redhat.com
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
- vmlinux)
-References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com> <20110512054631.GI6008@one.firstfloor.org> <BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com> <BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com> <20110514165346.GV6008@one.firstfloor.org> <BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com> <20110514174333.GW6008@one.firstfloor.org> <BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com> <20110515152747.GA25905@localhost> <BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com> <20110517060001.GC24069@localhost> <BANLkTi=TOm3aLQCD6j=4va6B+Jn2nSfwAg@mail.gmail.com> <BANLkTi=9W6-JXi94rZfTtTpAt3VUiY5fNw@mail.gmail.com> <BANLkTikHMUru=w4zzRmosrg2bDbsFWrkTQ@mail.gmail.com> <BANLkTima0hPrPwe_x06afAh+zTi-bOcRMg@mail.gmail.com> <BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com> <BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com>
-In-Reply-To: <BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S933426Ab1ETDOB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:14:01 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46207 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932096Ab1ETDN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 23:13:58 -0400
+Subject: Re: [bg-linux] [PATCH 5/7] [RFC] force 32-byte aligned kmallocs
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Kazutomo Yoshii <kazutomo@mcs.anl.gov>
+Cc: Kazutomo Yoshii <kazutomo.yoshii@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, bg-linux@lists.anl-external.org
+In-Reply-To: <4DD5D9C9.3020000@mcs.anl.gov>
+References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
+	 <1305753895-24845-5-git-send-email-ericvh@gmail.com>
+	 <1305851769.7481.90.camel@pasglop>  <4DD5C49E.4050103@gmail.com>
+	 <1305857301.7481.121.camel@pasglop> <1305857610.7481.124.camel@pasglop>
+	 <4DD5D9C9.3020000@mcs.anl.gov>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 May 2011 13:13:41 +1000
+Message-ID: <1305861221.7481.126.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Right after that happened, I hit ctrl-c to kill test_mempressure.sh.
-> The system was OK until I typed sync, and then everything hung.
->
-> I'm really confused.  shrink_inactive_list in
-> RECLAIM_MODE_LUMPYRECLAIM will call one of the isolate_pages functions
-> with ISOLATE_BOTH.  The resulting list goes into shrink_page_list,
-> which does VM_BUG_ON(PageActive(page)).
->
-> How is that supposed to work?
+On Thu, 2011-05-19 at 22:02 -0500, Kazutomo Yoshii wrote:
+> On 05/19/2011 09:13 PM, Benjamin Herrenschmidt wrote:
+> > On Fri, 2011-05-20 at 12:08 +1000, Benjamin Herrenschmidt wrote:
+> >    
+> >> On Thu, 2011-05-19 at 20:32 -0500, Kazutomo Yoshii wrote:
+> >>      
+> >>> Actually DMA sends invalidate requests to the snoop unit(L2 level).
+> >>> BGP SoC is a bit different from other 4xx base.
+> >>>        
+> >> Well, some other 44x also have a snooping L2 (more or less), but L1 is
+> >> usually the problem.
+> >>      
+> > Hrm... looking at the doco you pointed me to, it looks like the L1 -is-
+> > coherent, it gets snoop kills from the L2.
+> >    
+> Right, L1D is coherent if write throug is set.
+> L1I(virtually tagged) is not coherent, btw.
 
-Usually clear_active_flags() clear PG_active before calling shrink_page_list().
+Yes, I wrote the horrid hack to ping pong the pages between writable and
+executable afaik :-)
 
-shrink_inactive_list()
-     isolate_pages_global()
-     update_isolated_counts()
-         clear_active_flags()
-     shrink_page_list()
+> > Ok so we do need to make this non-coherent cache stuff a runtime option
+> > (well, we need that for 440+476 too anyways so may as well do it now).
+> >    
+> What sort of runtime option do you mean?
 
+I've asked Tony to give it a go since he's taking over the 476 stuff.
+The idea is to make it a MMU feature and call into the cache flush
+conditionally on it rather than under the control of a ifdef.
+
+I want it to be possible to build a unified kernel that supports
+multiple 44x and 47x platforms including BGP if we can make it happen.
+
+There's still some roadblocks to support 47x and 44x in the same kernel,
+most notably the cache line size, but I have hopes I'll get Tony to fix
+them soon :-)
+
+Cheers,
+Ben.
+
+> - kaz
+> > As for the alignment of kmalloc, it looks like a hack that should be
+> > done in the torus code itself.
+> >
+> > Cheers,
+> > Ben.
+> >
+> > _______________________________________________
+> > bg-linux mailing list
+> > bg-linux@lists.anl-external.org
+> > https://lists.anl-external.org/mailman/listinfo/bg-linux
+> > http://bg-linux.anl-external.org/wiki
+> >    
 
 
