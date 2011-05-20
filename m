@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab1ETByP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 21:54:15 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44768 "EHLO gate.crashing.org"
+	id S933928Ab1ETB44 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 21:56:56 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48664 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757054Ab1ETByO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 21:54:14 -0400
-Subject: Re: [PATCH 6/7] [RFC] enable early TLBs for BG/P
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        bg-linux@lists.anl-external.org
-In-Reply-To: <BANLkTinAqeu7C+U_HFrOAOctFTuSUwG-iA@mail.gmail.com>
-References: <1305753895-24845-1-git-send-email-ericvh@gmail.com>
-	 <1305753895-24845-6-git-send-email-ericvh@gmail.com>
-	 <1305851941.7481.92.camel@pasglop>
-	 <BANLkTinAqeu7C+U_HFrOAOctFTuSUwG-iA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 May 2011 11:54:02 +1000
-Message-ID: <1305856442.7481.120.camel@pasglop>
+	id S1754646Ab1ETB4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 21:56:54 -0400
+Date: Fri, 20 May 2011 11:56:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the s390 tree
+Message-Id: <20110520115651.fc0fc63f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__20_May_2011_11_56_51_+1000_1Sa6lJ_2Q3NpACnh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 20:21 -0500, Eric Van Hensbergen wrote:
-> On Thu, May 19, 2011 at 7:39 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> > On Wed, 2011-05-18 at 16:24 -0500, Eric Van Hensbergen wrote:
-> >> BG/P maps firmware with an early TLB
-> >
-> > That's a bit gross. How often do you call that firmware in practice ?
-> > Aren't you better off instead inserting a TLB entry for it when you call
-> > it instead ? A simple tlbsx. + tlbwe sequence would do. That would free
-> > up a TLB entry for normal use.
-> >
-> 
-> Well, it depends on who you talk to.  The production software BG/P
-> guys use the firmware constantly, its the primary interface to the networks, the console,
-> and the management software which runs the machine.
+--Signature=_Fri__20_May_2011_11_56_51_+1000_1Sa6lJ_2Q3NpACnh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yuck.
+Hi all,
 
-> As such the IO Node guys, the Compute Node Kernel guys and the
-> ZeptoOS guys use it quite a bit.  The kittyhawk guys on the other hand
-> barely use it at all, in fact I believe they do all the interaction with
-> it during uboot and then shut it off.
+After merging the s390 tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-I would prefer that approach.
+mm/rmap.c:788:54: error: macro "page_test_and_clear_dirty" passed 2 argumen=
+ts, but takes just 1
+mm/rmap.c: In function 'page_mkclean':
+mm/rmap.c:788: error: 'page_test_and_clear_dirty' undeclared (first use in =
+this function)
+mm/rmap.c:788: error: (Each undeclared identifier is reported only once
+mm/rmap.c:788: error: for each function it appears in.)
+mm/rmap.c:983:52: error: macro "page_test_and_clear_dirty" passed 2 argumen=
+ts, but takes just 1
+mm/rmap.c: In function 'page_remove_rmap':
+mm/rmap.c:983: error: 'page_test_and_clear_dirty' undeclared (first use in =
+this function)
 
-> IIRC, the sticky question is RAS support, there are certain things it
-> wants to jump to firmware to deal with and expects things to be mapped
-> an pinned into memory.
->
-> Furthermore, I think it may make assumptions about where in the TLB the
-> mappings are.  
+Caused by commit 4cbfc8b9f58c ("[S390] merge page_test_dirty and page_clear=
+_dirty").
 
-This is gross, especially on a system with only 64 SW loaded TLB
-entries :-(
-
-> Since the kittyhawk guys
-> obviously ignore this by shutting it down, its not clear just how
-> important this is.  I'm game to
-> try the dynamic mapping as you suggest if you would prefer it.
-
-I would yes, we can sort things out later for RAS.
-
-> Its worth mentioning that I believe with BG/Q, the plan is to rely on
-> the firmware even more extensively, but I haven't looked at any of the code yet to verify
-> whether or not this is true.
-
-This is tantamount to linking a binary blob with the kernel ... it's a
-fine line. At some point we might refuse the patches if they go too far
-in that direction.
-
+I have used the s390 tree from next-20110519 for today.
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
->      -eric
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--Signature=_Fri__20_May_2011_11_56_51_+1000_1Sa6lJ_2Q3NpACnh
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJN1cpjAAoJEDMEi1NhKgbsEEEH/2ZQdFhH/gMw0EgtcMz9lH9i
+b060xn0lj+XMau9bJ6+rhaeJ0XsTzglXEd1OhZ9F3KOhQkBh8nFnVGITvwBpoe1H
+OCX4rVhCK61OBS1ksCYf/wmcP87i59vUyU8p7605nIiNwekeiTCiUNUMKFTxW+c3
+RoQgu/XzNku01fx4x6gWvFIqPGQcYcA0HgfmtNe41TTKvnD5uAjncsC0+n68rgAd
++04FMJRlT1NUspIbyD0pCODfihu1elgZZx+J1HRbt5DIGfPCbq7mXjA30xiB/eTg
+NiC0bChRNQkZVJM1dpGQEyShoYuyCrdZ5mSTJCXuy0EYa+V0jbWpNc6HXuYjOxc=
+=ga8t
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__20_May_2011_11_56_51_+1000_1Sa6lJ_2Q3NpACnh--
