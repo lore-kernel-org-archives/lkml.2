@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935444Ab1ETJNB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 05:13:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37297 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934436Ab1ETJNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 05:13:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WZS1bt8nrkWsfbVGlbcQlYce5pgXxzXaf/FgV+mHSnLJNInlOA0mS2+g3vmhb/LuEc
-         iQVplguUNl4aBCAi6yiDgkiqFT2eYSLJdcNfuGjoba1Rgfy2xibRDMNvuKaztJMOmVJE
-         E/hON6VbHZ9kAzRoiHYnvSxXTVIsXeouKiuz8=
-Date: Fri, 20 May 2011 11:12:56 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Pedro Alves <pedro@codesourcery.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, oleg@redhat.com,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
-        bdonlan@gmail.com
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Message-ID: <20110520091256.GD31426@htj.dyndns.org>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org>
- <201105200000.18310.pedro@codesourcery.com>
- <201105200344.44520.vda.linux@googlemail.com>
- <201105200956.23320.pedro@codesourcery.com>
-MIME-Version: 1.0
+	id S935460Ab1ETJNx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 05:13:53 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40048 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935448Ab1ETJNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 05:13:51 -0400
+Date: Fri, 20 May 2011 11:13:46 +0200
+From: Marcus Meissner <meissner@suse.de>
+To: benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: PATCH: powerpc: remove unused variable assignment
+Message-ID: <20110520091346.GC29499@suse.de>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201105200956.23320.pedro@codesourcery.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Organization: SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendoerffer, HRB 16746 (AG Nuernberg)
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Fri, May 20, 2011 at 09:56:22AM +0100, Pedro Alves wrote:
-> > Ptrace API never allowed poking of running tracees.
-> 
-> Which is a bit lame.
+Hi,
 
-Lame as it may be, it would be quite challenging to change that.
+gcc 4.6 with -Werror does not like setting but not using variables
+anymore.
 
-> > You need to stop it first.
-> 
-> That was my point...  I was just pointing out that GDB will end
-> up PTRACE_INTERRUPTing the target anyway.  Maybe we could extend
-> GDB's "observer" mode to be even more observer-only, and delay
-> reading the DSO list and whatever else GDB does on attach until
-> the first stop, or to user request.  Some archs need reading
-> registers as soon as possible in order to actually know which
-> arch variant we've attached to.  Anyway, this is GDBs business.
-> SEIZE not interrupting won't hurt GDB, and is obviously useful for
-> some use cases and tracers, _provided the race with SETOPTS is fixed_.
+So remove it, it does not seem necessary.
 
-Other than the to-be-removed SIGTRAP, I don't think the trace is
-observable from userland.  Do you have anything specific on mind?
+Signed-off-by: Marcus Meissner <meissner@suse.de>
 
-Thanks.
+Ciao, Marcus
+---
+ arch/powerpc/include/asm/pgtable-ppc64.h |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
+diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
+index 2b09cd5..c3d39de 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc64.h
++++ b/arch/powerpc/include/asm/pgtable-ppc64.h
+@@ -257,21 +257,17 @@ static inline int __ptep_test_and_clear_young(struct mm_struct *mm,
+ static inline void ptep_set_wrprotect(struct mm_struct *mm, unsigned long addr,
+ 				      pte_t *ptep)
+ {
+-	unsigned long old;
+-
+        	if ((pte_val(*ptep) & _PAGE_RW) == 0)
+        		return;
+-	old = pte_update(mm, addr, ptep, _PAGE_RW, 0);
++	pte_update(mm, addr, ptep, _PAGE_RW, 0);
+ }
+ 
+ static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
+ 					   unsigned long addr, pte_t *ptep)
+ {
+-	unsigned long old;
+-
+ 	if ((pte_val(*ptep) & _PAGE_RW) == 0)
+ 		return;
+-	old = pte_update(mm, addr, ptep, _PAGE_RW, 1);
++	pte_update(mm, addr, ptep, _PAGE_RW, 1);
+ }
+ 
+ /*
 -- 
-tejun
+1.7.4.1
+
