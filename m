@@ -1,197 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934925Ab1ETDuD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:50:03 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58289 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933275Ab1ETDuB (ORCPT
+	id S934299Ab1ETDnu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:43:50 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65324 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933275Ab1ETDns convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:50:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 20 May 2011 12:43:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, hannes@cmpxchg.org,
-        Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/8] memcg: clean up, export swapiness
-Message-Id: <20110520124312.5928aa92.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 May 2011 23:43:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=oEZE1ef7TaTZzAWxO3saz8QSlv8xPRKUmqRp8nvs/JbUTijjCbiF8Qfkn1Ff9intR6
+         0nKZ6U5ufEntpPLSXH7nMBBSFDnw7CVG8KlIUVNVp76U4PZcPOMxSW32NnFHtZ8OvYFB
+         /+wWkm/d1YLlNPPdo+1Y1yWRWVVBEDMTZ1ag4=
+MIME-Version: 1.0
+In-Reply-To: <20110520031818.GB27251@S2100-06.ap.freescale.net>
+References: <1303910002-3333-1-git-send-email-linus.walleij@stericsson.com>
+	<20110519085638.GA26816@S2100-06.ap.freescale.net>
+	<BANLkTinD9rAipfwNnh6QpgbcogckdtQ=OQ@mail.gmail.com>
+	<20110519135631.GB26816@S2100-06.ap.freescale.net>
+	<20110519191156.GE2429@pengutronix.de>
+	<alpine.LFD.2.00.1105191527440.14430@xanadu.home>
+	<20110520031818.GB27251@S2100-06.ap.freescale.net>
+Date: Fri, 20 May 2011 12:43:46 +0900
+X-Google-Sender-Auth: n29nHsrYZhDvQKPeXdXFmty_Qw8
+Message-ID: <BANLkTikonewi-fxCxoxx=ARsTs-CPvfoTg@mail.gmail.com>
+Subject: Re: [PATCH 02/10] mach-u300: rewrite gpio driver, move to drivers/gpio
+From: Kyungmin Park <kmpark@infradead.org>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ying Han <yinghan@google.com>
-change mem_cgroup's swappiness interface.
+On Fri, May 20, 2011 at 12:18 PM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> On Thu, May 19, 2011 at 03:30:36PM -0400, Nicolas Pitre wrote:
+>> On Thu, 19 May 2011, Sascha Hauer wrote:
+>>
+>> > On Thu, May 19, 2011 at 09:56:32PM +0800, Shawn Guo wrote:
+>> > > On Thu, May 19, 2011 at 02:21:27PM +0200, Linus Walleij wrote:
+>> > > > On Thu, May 19, 2011 at 10:56 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+>> > > >
+>> > > > > I start working on moving mxs gpio (arch/arm/mach-mxs/gpio.c) into
+>> > > > > driver/gpio, and I see the possibility to go a different approach
+>> > > > > from U300 one posted here.
+>> > > >
+>> > > > I've tried to figure out what relation the mail has to the U300 driver
+>> > > > but cannot find any, more than that it's moving a driver... Please
+>> > > > start a new mail thread.
+>> > > >
+>> > > I will post mxs-gpio driver once I get it done.  Then please review
+>> > > the code and see the difference between mxs-gpio and u300-gpio,
+>> > > though these hardwares have something in common.
+>> >
+>> > I'm pretty sure they have something in common and even more that *all*
+>> > gpio drivers have something in common. I wonder if it really makes sense
+>> > to move the gpio driver to drivers/gpio without creating a common
+>> > mmio_gpio_chip beforehand. This can't be very hard.
+>>
+>> I do think that performing the move first will make a subsequent
+>> conversion easier.  And since a move is a no-op from a functional point
+>> of view, it is the safest thing to do first.
+>>
+> That's also what I heard on UDS week.  Move stuff into driver/gpio
+> first, then try to find the pattern in those drivers and come up with
+> some framework.
 
-Now, memcg's swappiness interface is defined as 'static' and
-the value is passed as an argument to try_to_free_xxxx...
+I agree, I reviewed the mmio_gpio_chip, but it's too simple to cover
+current implementation.
+So first move to the drivers/gpio and make more common mmio_gpio
+instead of basic.
 
-This patch adds an function mem_cgroup_swappiness() and export it,
-reduce arguments. This interface will be used in async reclaim, later.
+BTW, how do you think the GPIO interrupt routine. If it uses the
+drivers/gpio drivers, it also cover the gpio interrupt codes at
+drivers/gpio? or separate it?
 
-I think an function is better than passing arguments because it's
-clearer where the swappiness comes from to scan_control.
-
-Signed-off-by: Ying Han <yinghan@google.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/memcontrol.h |    1 +
- include/linux/swap.h       |    4 +---
- mm/memcontrol.c            |   14 ++++++--------
- mm/vmscan.c                |    9 ++++-----
- 4 files changed, 12 insertions(+), 16 deletions(-)
-
-Index: mmotm-May11/include/linux/memcontrol.h
-===================================================================
---- mmotm-May11.orig/include/linux/memcontrol.h
-+++ mmotm-May11/include/linux/memcontrol.h
-@@ -112,6 +112,7 @@ unsigned long
- mem_cgroup_zone_reclaimable_pages(struct mem_cgroup *memcg, int nid, int zid);
- bool mem_cgroup_test_reclaimable(struct mem_cgroup *memcg);
- int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
-+unsigned int mem_cgroup_swappiness(struct mem_cgroup *memcg);
- unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
- 				       struct zone *zone,
- 				       enum lru_list lru);
-Index: mmotm-May11/mm/memcontrol.c
-===================================================================
---- mmotm-May11.orig/mm/memcontrol.c
-+++ mmotm-May11/mm/memcontrol.c
-@@ -1285,7 +1285,7 @@ static unsigned long mem_cgroup_margin(s
- 	return margin >> PAGE_SHIFT;
- }
- 
--static unsigned int get_swappiness(struct mem_cgroup *memcg)
-+unsigned int mem_cgroup_swappiness(struct mem_cgroup *memcg)
- {
- 	struct cgroup *cgrp = memcg->css.cgroup;
- 
-@@ -1687,14 +1687,13 @@ static int mem_cgroup_hierarchical_recla
- 		/* we use swappiness of local cgroup */
- 		if (check_soft) {
- 			ret = mem_cgroup_shrink_node_zone(victim, gfp_mask,
--				noswap, get_swappiness(victim), zone,
--				&nr_scanned);
-+				noswap, zone, &nr_scanned);
- 			*total_scanned += nr_scanned;
- 			mem_cgroup_soft_steal(victim, is_kswapd, ret);
- 			mem_cgroup_soft_scan(victim, is_kswapd, nr_scanned);
- 		} else
- 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
--						noswap, get_swappiness(victim));
-+					noswap);
- 		css_put(&victim->css);
- 		/*
- 		 * At shrinking usage, we can't check we should stop here or
-@@ -3717,8 +3716,7 @@ try_to_free:
- 			ret = -EINTR;
- 			goto out;
- 		}
--		progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL,
--						false, get_swappiness(mem));
-+		progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL, false);
- 		if (!progress) {
- 			nr_retries--;
- 			/* maybe some writeback is necessary */
-@@ -4150,7 +4148,7 @@ static u64 mem_cgroup_swappiness_read(st
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 
--	return get_swappiness(memcg);
-+	return mem_cgroup_swappiness(memcg);
- }
- 
- static int mem_cgroup_swappiness_write(struct cgroup *cgrp, struct cftype *cft,
-@@ -4836,7 +4834,7 @@ mem_cgroup_create(struct cgroup_subsys *
- 	INIT_LIST_HEAD(&mem->oom_notify);
- 
- 	if (parent)
--		mem->swappiness = get_swappiness(parent);
-+		mem->swappiness = mem_cgroup_swappiness(parent);
- 	atomic_set(&mem->refcnt, 1);
- 	mem->move_charge_at_immigrate = 0;
- 	mutex_init(&mem->thresholds_lock);
-Index: mmotm-May11/include/linux/swap.h
-===================================================================
---- mmotm-May11.orig/include/linux/swap.h
-+++ mmotm-May11/include/linux/swap.h
-@@ -252,11 +252,9 @@ static inline void lru_cache_add_file(st
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
- extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
--						  gfp_t gfp_mask, bool noswap,
--						  unsigned int swappiness);
-+						  gfp_t gfp_mask, bool noswap);
- extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
--						unsigned int swappiness,
- 						struct zone *zone,
- 						unsigned long *nr_scanned);
- extern int __isolate_lru_page(struct page *page, int mode, int file);
-Index: mmotm-May11/mm/vmscan.c
-===================================================================
---- mmotm-May11.orig/mm/vmscan.c
-+++ mmotm-May11/mm/vmscan.c
-@@ -2178,7 +2178,6 @@ unsigned long try_to_free_pages(struct z
- 
- unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
--						unsigned int swappiness,
- 						struct zone *zone,
- 						unsigned long *nr_scanned)
- {
-@@ -2188,7 +2187,6 @@ unsigned long mem_cgroup_shrink_node_zon
- 		.may_writepage = !laptop_mode,
- 		.may_unmap = 1,
- 		.may_swap = !noswap,
--		.swappiness = swappiness,
- 		.order = 0,
- 		.mem_cgroup = mem,
- 	};
-@@ -2196,6 +2194,8 @@ unsigned long mem_cgroup_shrink_node_zon
- 	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
- 			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
- 
-+	sc.swappiness = mem_cgroup_swappiness(mem);
-+
- 	trace_mm_vmscan_memcg_softlimit_reclaim_begin(0,
- 						      sc.may_writepage,
- 						      sc.gfp_mask);
-@@ -2217,8 +2217,7 @@ unsigned long mem_cgroup_shrink_node_zon
- 
- unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 					   gfp_t gfp_mask,
--					   bool noswap,
--					   unsigned int swappiness)
-+					   bool noswap)
- {
- 	struct zonelist *zonelist;
- 	unsigned long nr_reclaimed;
-@@ -2228,7 +2227,6 @@ unsigned long try_to_free_mem_cgroup_pag
- 		.may_unmap = 1,
- 		.may_swap = !noswap,
- 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
--		.swappiness = swappiness,
- 		.order = 0,
- 		.mem_cgroup = mem_cont,
- 		.nodemask = NULL, /* we don't care the placement */
-@@ -2245,6 +2243,7 @@ unsigned long try_to_free_mem_cgroup_pag
- 	 * scan does not need to be the current node.
- 	 */
- 	nid = mem_cgroup_select_victim_node(mem_cont);
-+	sc.swappiness = mem_cgroup_swappiness(mem_cont);
- 
- 	zonelist = NODE_DATA(nid)->node_zonelists;
- 
-
+Thank you,
+Kyungmin Park
