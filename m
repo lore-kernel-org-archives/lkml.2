@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934616Ab1ETNnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:43:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36186 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934097Ab1ETNnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:43:20 -0400
-Date: Fri, 20 May 2011 13:43:00 GMT
-From: tip-bot for Nikhil Rao <ncrao@google.com>
-Message-ID: <tip-f05998d4b80632f2cc00f108da503066ef5d38d5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@redhat.com, ncrao@google.com, efault@gmx.de,
-        peterz@infradead.org, nikunj@linux.vnet.ibm.com,
-        stephan.baerwolf@tu-ilmenau.de, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, ncrao@google.com, peterz@infradead.org,
-        efault@gmx.de, nikunj@linux.vnet.ibm.com,
-        stephan.baerwolf@tu-ilmenau.de, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1305738580-9924-2-git-send-email-ncrao@google.com>
-References: <1305738580-9924-2-git-send-email-ncrao@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Cleanup set_load_weight()
-Git-Commit-ID: f05998d4b80632f2cc00f108da503066ef5d38d5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S934712Ab1ETNna (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:43:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:65009 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934097Ab1ETNn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 09:43:28 -0400
+X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=wom5GMh1gUkA:10 a=Aqo3SY2G75cA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=VnNF1IyMAAAA:8 a=gNh8QkzFK_f-MC8n5qsA:9 a=KCmLCGBx06_n19HiDPkA:7 a=CjuIK1q_8ugA:10 a=g3F5VGk0NOMZWSIEWMgijA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.158.191
+Date: Fri, 20 May 2011 08:43:27 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH v5 03/21] evm: re-release
+Message-ID: <20110520134327.GB27466@mail.hallyn.com>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <1305557115-15652-4-git-send-email-zohar@linux.vnet.ibm.com>
+ <20110519213754.GA10072@mail.hallyn.com>
+ <1305894545.3247.43.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 May 2011 13:43:01 +0000 (UTC)
+In-Reply-To: <1305894545.3247.43.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f05998d4b80632f2cc00f108da503066ef5d38d5
-Gitweb:     http://git.kernel.org/tip/f05998d4b80632f2cc00f108da503066ef5d38d5
-Author:     Nikhil Rao <ncrao@google.com>
-AuthorDate: Wed, 18 May 2011 10:09:38 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 20 May 2011 14:16:49 +0200
+Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
+> On Thu, 2011-05-19 at 16:37 -0500, Serge E. Hallyn wrote: 
+> > Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
+> > ...
+> > > +extern int evm_hmac_size;
+> > ...
+> > > +int evm_hmac_size = SHA1_DIGEST_SIZE;
+> > 
+> > I think I object to having both MAX_DIGEST_SIZE and evm_hmac_size, both
+> > of which are set to SHA1_DIGEST_SIZE throughout this patchset.  Especially
+> > because of the comment I was about to make on patch 4/21, where you
+> > then prepend the hmac with a 'type' byte, and start passing around
+> > MAX_DIGEST_SIZE+1 and evm_hmac_size+1.
+> > 
+> > Even if you're going to be using those differently in a later patchset,
+> > let's focus on this set for now and keep things simpler.  One constant
+> > for the hmac size, and then please define a new one (in patch 4) for
+> > the annotated digest size.  I can't think think of a good name.  Which
+> > suggests that perhaps you should define a nicely typed struct to contain
+> > the header+hmac...
+> > 
+> > I see no other problems, so presuming that these are nicely addressed
+> > I expect to happily ack.
+> > 
+> > thanks,
+> > -serge
+> 
+> Ok, MAX_DIGEST_SIZE was defined in the first patch of this patchset,
+> which moves the iint from IMA to integrity, but it seems to be
+> unnecessary for any of the additional EVM or IMA extensions, including
+> support for additional IMA hash sizes.  I'll remove MAX_DIGEST_SIZE.
+> 
+> The reason for introducing the extra byte at this point in the patch
 
-sched: Cleanup set_load_weight()
+Right, just to be clear, I had no complaints about introducing the extra
+byte now.
 
-Avoid using long repetitious names; make this simpler and nicer
-to read. No functional change introduced in this patch.
+> set, as opposed to waiting to do so in the digital signature patches, is
+> to permit existing labeled systems to continue to run properly (and be
+> bisect safe).  Defining a structure is a good idea.
+> 
+> thanks,
+> 
+> Mimi
 
-Signed-off-by: Nikhil Rao <ncrao@google.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
-Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>
-Cc: Mike Galbraith <efault@gmx.de>
-Link: http://lkml.kernel.org/r/1305738580-9924-2-git-send-email-ncrao@google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+Sorry to be adding work.  I just fear misinterpretations of the +1 will
+cause hard to debug maintenance snafus.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index c62acf4..d036048 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1778,17 +1778,20 @@ static void dec_nr_running(struct rq *rq)
- 
- static void set_load_weight(struct task_struct *p)
- {
-+	int prio = p->static_prio - MAX_RT_PRIO;
-+	struct load_weight *load = &p->se.load;
-+
- 	/*
- 	 * SCHED_IDLE tasks get minimal weight:
- 	 */
- 	if (p->policy == SCHED_IDLE) {
--		p->se.load.weight = WEIGHT_IDLEPRIO;
--		p->se.load.inv_weight = WMULT_IDLEPRIO;
-+		load->weight = WEIGHT_IDLEPRIO;
-+		load->inv_weight = WMULT_IDLEPRIO;
- 		return;
- 	}
- 
--	p->se.load.weight = prio_to_weight[p->static_prio - MAX_RT_PRIO];
--	p->se.load.inv_weight = prio_to_wmult[p->static_prio - MAX_RT_PRIO];
-+	load->weight = prio_to_weight[prio];
-+	load->inv_weight = prio_to_wmult[prio];
- }
- 
- static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
+thanks,
+-serge
