@@ -1,58 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934329Ab1ETDod (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:44:33 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:53254 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932101Ab1ETDoc (ORCPT
+	id S934866Ab1ETDvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:51:17 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58316 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933275Ab1ETDvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:44:32 -0400
-Message-ID: <4DD5E38D.8010709@st.com>
-Date: Fri, 20 May 2011 09:14:13 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dw_dmac: Replace subsys_init() with arch_initcall()
-References: <f06f05e982c6182565a7fee1f7d6396cae895133.1305521318.git.viresh.kumar@st.com>	 <1305561993.28926.73.camel@vkoul-udesk3>	<4DD1F443.1040205@st.com>	 <1305603818.28926.82.camel@vkoul-udesk3>	<4DD20D89.9020402@st.com>	 <BANLkTi=zrr4==Uatq3zbdE1K+1_9ELOBZQ@mail.gmail.com>	 <4DD4A8D8.2040109@st.com> <1305804238.28926.302.camel@vkoul-udesk3>
-In-Reply-To: <1305804238.28926.302.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 19 May 2011 23:51:15 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 20 May 2011 12:44:30 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, hannes@cmpxchg.org,
+        Michal Hocko <mhocko@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: [PATCH 4/8] memcg: export release victim
+Message-Id: <20110520124430.6f463803.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2011 04:53 PM, Koul, Vinod wrote:
-> On Thu, 2011-05-19 at 10:51 +0530, viresh kumar wrote:
->> On 05/18/2011 05:51 PM, Linus Walleij wrote:
->>>>> @Linus: What do you say? Can we get back to module_init() for amba-pl022?
->>>>> And subsys_initcall() for DMA.
->>> No, but I sent a patch that will make it possible to have both
->>> as subsys_init(), check it out, it seems to work for me.
-> I am okay with this approach...
-> 
-> Linus, though I am still not convinced why st-dma would need to be
-> arch_init?
-> 
+Later change will call mem_cgroup_select_victim() from vmscan.c
+Need to export an interface and add release_victim().
 
-I think you missed this. In Linus's patch following is also done.
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/memcontrol.h |    2 ++
+ mm/memcontrol.c            |   13 +++++++++----
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index fab68a5..7d3e93d 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -2951,4 +2951,4 @@ int __init stedma40_init(void)
+Index: mmotm-May11/mm/memcontrol.c
+===================================================================
+--- mmotm-May11.orig/mm/memcontrol.c
++++ mmotm-May11/mm/memcontrol.c
+@@ -1487,7 +1487,7 @@ u64 mem_cgroup_get_limit(struct mem_cgro
+  * of the cgroup list, since we track last_scanned_child) of @mem and use
+  * that to reclaim free pages from.
+  */
+-static struct mem_cgroup *
++struct mem_cgroup *
+ mem_cgroup_select_victim(struct mem_cgroup *root_mem)
  {
-        return platform_driver_probe(&d40_driver, d40_probe);
+ 	struct mem_cgroup *ret = NULL;
+@@ -1519,6 +1519,11 @@ mem_cgroup_select_victim(struct mem_cgro
+ 	return ret;
  }
--arch_initcall(stedma40_init);
-+subsys_initcall(stedma40_init);
+ 
++void mem_cgroup_release_victim(struct mem_cgroup *mem)
++{
++	css_put(&mem->css);
++}
++
+ #if MAX_NUMNODES > 1
+ 
+ /*
+@@ -1663,7 +1668,7 @@ static int mem_cgroup_hierarchical_recla
+ 				 * no reclaimable pages under this hierarchy
+ 				 */
+ 				if (!check_soft || !total) {
+-					css_put(&victim->css);
++					mem_cgroup_release_victim(victim);
+ 					break;
+ 				}
+ 				/*
+@@ -1674,14 +1679,14 @@ static int mem_cgroup_hierarchical_recla
+ 				 */
+ 				if (total >= (excess >> 2) ||
+ 					(loop > MEM_CGROUP_MAX_RECLAIM_LOOPS)) {
+-					css_put(&victim->css);
++					mem_cgroup_release_victim(victim);
+ 					break;
+ 				}
+ 			}
+ 		}
+ 		if (!mem_cgroup_local_usage(victim)) {
+ 			/* this cgroup's local usage == 0 */
+-			css_put(&victim->css);
++			mem_cgroup_release_victim(victim);
+ 			continue;
+ 		}
+ 		/* we use swappiness of local cgroup */
+@@ -1694,7 +1699,7 @@ static int mem_cgroup_hierarchical_recla
+ 		} else
+ 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
+ 					noswap);
+-		css_put(&victim->css);
++		mem_cgroup_release_victim(victim);
+ 		/*
+ 		 * At shrinking usage, we can't check we should stop here or
+ 		 * reclaim more. It's depends on callers. last_scanned_child
+Index: mmotm-May11/include/linux/memcontrol.h
+===================================================================
+--- mmotm-May11.orig/include/linux/memcontrol.h
++++ mmotm-May11/include/linux/memcontrol.h
+@@ -122,6 +122,8 @@ struct zone_reclaim_stat*
+ mem_cgroup_get_reclaim_stat_from_page(struct page *page);
+ extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+ 					struct task_struct *p);
++struct mem_cgroup *mem_cgroup_select_victim(struct mem_cgroup *mem);
++void mem_cgroup_release_victim(struct mem_cgroup *mem);
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ extern int do_swap_account;
+ #endif
 
--- 
-viresh
