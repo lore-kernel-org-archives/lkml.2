@@ -1,105 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934505Ab1ETAk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:40:59 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50247 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932618Ab1ETAk5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:40:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=qdbisMOKPWmFbm1Zh0Egm/WQbEaYZaI4rwT3qCfsZLdizJwYV9/G/BFMmIYTG/tmZ+
-         H2LS+cz3zhb7EdZvwbFS0BewAoeIrhvKnFX2V+LTQ6GdjemymTuC8KvvHLH1AOyvVSoN
-         728xncmzP3lvq0egzVqvjxh87cxQcMGWUeOy4=
-MIME-Version: 1.0
-In-Reply-To: <1305850920.22968.1089.camel@debian>
-References: <1305009600.21534.587.camel@debian>
-	<4DCC4340.6000407@fusionio.com>
-	<1305247704.2373.32.camel@sli10-conroe>
-	<1305255717.2373.38.camel@sli10-conroe>
-	<1305533054.2375.45.camel@sli10-conroe>
-	<1305535071.21534.2122.camel@debian>
-	<1305612565.21534.2177.camel@debian>
-	<4DD221BE.3040406@fusionio.com>
-	<1305793580.22968.155.camel@debian>
-	<4DD56104.6080801@fusionio.com>
-	<1305850920.22968.1089.camel@debian>
-Date: Fri, 20 May 2011 08:40:56 +0800
-X-Google-Sender-Auth: ORfcDkvYLRIm2Kg-_VwOc4aeZj0
-Message-ID: <BANLkTima6W5yAM_koArYaz57C3uzk=WwWQ@mail.gmail.com>
-Subject: Re: Perfromance drop on SCSI hard disk
-From: Shaohua Li <shaohua.li@intel.com>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S934482Ab1ETAnm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:43:42 -0400
+Received: from ozlabs.org ([203.10.76.45]:45090 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932618Ab1ETAnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 20:43:41 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        bg-linux@lists.anl-external.org
+Subject: Re: [PATCH 3/7] [RFC] add support for BlueGene/P FPU
+In-reply-to: <BANLkTindzEFRjEGkc9bLccrFUdVtvbA73A@mail.gmail.com>
+References: <1305753895-24845-1-git-send-email-ericvh@gmail.com> <1305753895-24845-3-git-send-email-ericvh@gmail.com> <425.1305784718@neuling.org> <BANLkTimKhApFW8G1-pG0u_9Kv2YB0R1O0w@mail.gmail.com> <29601.1305840992@neuling.org> <BANLkTi=rc5vZm3xAXHpHSxSH1wBWKhv92A@mail.gmail.com> <6241.1305847001@neuling.org> <BANLkTindzEFRjEGkc9bLccrFUdVtvbA73A@mail.gmail.com>
+Comments: In-reply-to Eric Van Hensbergen <ericvh@gmail.com>
+   message dated "Thu, 19 May 2011 19:30:20 -0500."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
+Date: Fri, 20 May 2011 10:43:40 +1000
+Message-ID: <17455.1305852220@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/20 Alex,Shi <alex.shi@intel.com>:
-> On Fri, 2011-05-20 at 02:27 +0800, Jens Axboe wrote:
->> On 2011-05-19 10:26, Alex,Shi wrote:
->> >
->> >> I will queue up the combined patch, it looks fine from here as well.
->> >>
->> >
->> > When I have some time to study Jens and shaohua's patch today. I find a
->> > simpler way to resolved the re-enter issue on starved_list. Following
->> > Jens' idea, we can just put the starved_list device into kblockd if it
->> > come from __scsi_queue_insert().
->> > It can resolve the re-enter issue and recover performance totally, and
->> > need not a work_struct in every scsi_device. The logic/code also looks a
->> > bit simpler.
->> > What's your opinion of this?
->>
->> Isn't this _identical_ to my original patch, with the added async run of
->> the queue passed in (which is important, an oversight)?
->
-> Not exactly same. It bases on your patch, but added a bypass way for
-> starved_list device. If a starved_list device come from
-> __scsi_queue_insert(), that may caused by our talking recursion, kblockd
-> with take over the process.  Maybe you oversight this point in original
-> patch. :)
->
-> The different part from yours is below:
-> ---
-> static void __scsi_run_queue(struct request_queue *q, bool async)
->  {
->        struct scsi_device *sdev = q->queuedata;
->        struct Scsi_Host *shost;
-> @@ -435,30 +437,35 @@ static void scsi_run_queue(struct request_queue
-> *q)
->                                       &shost->starved_list);
->                        continue;
->                }
-> -
-> -               spin_unlock(shost->host_lock);
-> -               spin_lock(sdev->request_queue->queue_lock);
-> -               __blk_run_queue(sdev->request_queue);
-> -               spin_unlock(sdev->request_queue->queue_lock);
-> -               spin_lock(shost->host_lock);
-> +               if (async)
-> +                       blk_run_queue_async(sdev->request_queue);
-> +               else {
-> +                       spin_unlock(shost->host_lock);
-> +                       spin_lock(sdev->request_queue->queue_lock);
-> +                       __blk_run_queue(sdev->request_queue);
-> +                       spin_unlock(sdev->request_queue->queue_lock);
-> +                       spin_lock(shost->host_lock);
->>
-I don't quite like this approach. blk_run_queue_async() could
-introduce fairness issue as I said in previous mail, because we drop
-the sdev from starved list but didn't run its queue immediately. The
-issue exists before, but it's a bug to me.
-Alex, is there any real advantage of your patch?
+> >> >> > Eric,
+> >> >> >
+> >> >> >> This patch adds save/restore register support for the BlueGene/P
+> >> >> >> double hummer FPU.
+> >> >> >
+> >> >> > What does this mean? =3DA0Needs more details here.
+> >> >> >
+> >>
+> >> okay, I've changed it a bit in [V2], if you want more I can do my best.
+> >
+> > If you can describe the whole primary and secondary registers that'd be
+> > cool. =A0ASCII art would be awesome! :-)
+> >
+> 
+> You sure you don't just want a bitfield.conf? :)  
 
-Thanks,
-Shaohua
+hehe, maybe an interpretive dance video posted on youtube?
+
+> I'll do my best, but my ASCII art isn't what it used to be.  I'll also
+> include a reference to the PDF.
+
+Something self contained in the comments would be great as external
+links tend to disappear.  
+
+> >> > Ok, sounds like there is 32*8*2 bytes of data, rather than the normal
+> >> > 32*8 bytes for FP only (ignoring VSX). If this is the case, then you'll
+> >> > need make 'fpr' in the thread struct bigger which you can do by setting
+> >> > TS_FPRWIDTH = 2 like we do for VSX.
+> >> >
+> 
+> Okay - so basically what I have now and TS_FPRWIDTH=2 ?
+
+Yes.
+
+> >>
+> >> Since it isn't available on other chips, shoudl it just be PPC_BGP_FPU
+> >> or PPC_BGP_DOUBLE_FPU?
+> >
+> > I'd probably still prefer it disassociated with the CPU name, but we are
+> > really bike shedding here. =A0I'm not too fussed.
+> >
+> 
+> I'll leave it separate and switch it to PPC_FP2 (or would you prefer
+> PPC_FP2_FPU to make it clear) since the public PDF refers to it this
+> way.
+
+PPC_FPU_FP2 would be my vote.
+
+> If that all sounds good, I'll spin [V3] tomorrow.
+
+Thanks!
+
+Mikey
