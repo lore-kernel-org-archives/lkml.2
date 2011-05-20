@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933771Ab1ETAUM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 20:20:12 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:65139 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756808Ab1ETAUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 20:20:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=CMNM5P9M9bYyHZ9egLsolh3X/RYh/dzs9IIBt04vy3NKHDVGrhCB6FxuSCkMtfrCPy
-         wTePVTjcOn7OZC4vVDufIeFLteaSxVtYOl8tVJBfdfsHlpcLWke9mFx4cxWfVEtnpzx4
-         EiR2qt8nou6vwkJULlVj1DCkNnzYpFcpHAVrU=
-MIME-Version: 1.0
-In-Reply-To: <20110519145147.GA14658@localhost>
-References: <BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
-	<20110514165346.GV6008@one.firstfloor.org>
-	<BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
-	<20110514174333.GW6008@one.firstfloor.org>
-	<BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
-	<20110515152747.GA25905@localhost>
-	<BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
-	<20110517060001.GC24069@localhost>
-	<BANLkTi=TOm3aLQCD6j=4va6B+Jn2nSfwAg@mail.gmail.com>
-	<BANLkTi=9W6-JXi94rZfTtTpAt3VUiY5fNw@mail.gmail.com>
-	<20110519145147.GA14658@localhost>
-Date: Fri, 20 May 2011 09:20:07 +0900
-Message-ID: <BANLkTi=cPRffdaPO9tOfgpLe7W_W3V71tg@mail.gmail.com>
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Lutomirski <luto@mit.edu>, Andi Kleen <andi@firstfloor.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S933276Ab1ETAXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 20:23:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45389 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754822Ab1ETAXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 May 2011 20:23:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,239,1304319600"; 
+   d="scan'208";a="1247640"
+Subject: Re: Perfromance drop on SCSI hard disk
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "Li, Shaohua" <shaohua.li@intel.com>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4DD56104.6080801@fusionio.com>
+References: <1305009600.21534.587.camel@debian>
+	 <4DCC4340.6000407@fusionio.com>  <1305247704.2373.32.camel@sli10-conroe>
+	 <1305255717.2373.38.camel@sli10-conroe>
+	 <1305533054.2375.45.camel@sli10-conroe>
+	 <1305535071.21534.2122.camel@debian> <1305612565.21534.2177.camel@debian>
+	 <4DD221BE.3040406@fusionio.com> <1305793580.22968.155.camel@debian>
+	 <4DD56104.6080801@fusionio.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 May 2011 08:22:00 +0800
+Message-ID: <1305850920.22968.1089.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 11:51 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
->> > I had 6GB swap available, so there shouldn't have
->> > been any OOM.
->>
->> Yes. It's strange but we have seen such case several times, AFAIR.
->
-> I noticed that the test script mounted a "ramfs" not "tmpfs", hence
-> the 1.4G pages won't be swapped?
+On Fri, 2011-05-20 at 02:27 +0800, Jens Axboe wrote:
+> On 2011-05-19 10:26, Alex,Shi wrote:
+> > 
+> >> I will queue up the combined patch, it looks fine from here as well.
+> >>
+> > 
+> > When I have some time to study Jens and shaohua's patch today. I find a
+> > simpler way to resolved the re-enter issue on starved_list. Following
+> > Jens' idea, we can just put the starved_list device into kblockd if it
+> > come from __scsi_queue_insert(). 
+> > It can resolve the re-enter issue and recover performance totally, and
+> > need not a work_struct in every scsi_device. The logic/code also looks a
+> > bit simpler. 
+> > What's your opinion of this? 
+> 
+> Isn't this _identical_ to my original patch, with the added async run of
+> the queue passed in (which is important, an oversight)?
 
-Right. ramfs pages can not be swapped out.
-But in log, anon 200M in DMA32 doesn't include unevictable 1.4GB.
-So we can swap out 200M, still.
+Not exactly same. It bases on your patch, but added a bypass way for
+starved_list device. If a starved_list device come from
+__scsi_queue_insert(), that may caused by our talking recursion, kblockd
+with take over the process.  Maybe you oversight this point in original
+patch. :) 
 
->
-> Thanks,
-> Fengguang
->
+The different part from yours is below:
+---
+static void __scsi_run_queue(struct request_queue *q, bool async)
+ {
+        struct scsi_device *sdev = q->queuedata;
+        struct Scsi_Host *shost;
+@@ -435,30 +437,35 @@ static void scsi_run_queue(struct request_queue
+*q)
+                                       &shost->starved_list);
+                        continue;
+                }
+-
+-               spin_unlock(shost->host_lock);
+-               spin_lock(sdev->request_queue->queue_lock);
+-               __blk_run_queue(sdev->request_queue);
+-               spin_unlock(sdev->request_queue->queue_lock);
+-               spin_lock(shost->host_lock);
++               if (async)
++                       blk_run_queue_async(sdev->request_queue);
++               else {
++                       spin_unlock(shost->host_lock);
++                       spin_lock(sdev->request_queue->queue_lock);
++                       __blk_run_queue(sdev->request_queue);
++                       spin_unlock(sdev->request_queue->queue_lock);
++                       spin_lock(shost->host_lock);
+> 
 
 
-
--- 
-Kind regards,
-Minchan Kim
