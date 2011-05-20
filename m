@@ -1,90 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933977Ab1ETRlh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 13:41:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:60141 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757205Ab1ETRlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 13:41:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,243,1304319600"; 
-   d="scan'208";a="439892014"
-Subject: Re: [patch 6/6] x86, apic: use .apicdrivers section to find the
- list of apic drivers
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>, "hpa@zytor.com" <hpa@zytor.com>,
-        "steiner@sgi.com" <steiner@sgi.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gorcunov@openvz.org" <gorcunov@openvz.org>
-In-Reply-To: <20110520130135.GA15248@elte.hu>
-References: <20110519234545.700125442@sbsiddha-MOBL3.sc.intel.com>
-	 <20110519234637.671736436@sbsiddha-MOBL3.sc.intel.com>
-	 <20110520130135.GA15248@elte.hu>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Fri, 20 May 2011 10:41:35 -0700
-Message-Id: <1305913295.13584.4303.camel@sbsiddha-MOBL3.sc.intel.com>
+	id S1755905Ab1ETRoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 13:44:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59411 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab1ETRoE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 13:44:04 -0400
+X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=TwWXrjo8ZJIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=qit9uHNWZye_G0qQhvYA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+In-Reply-To: <201105201910.13095.toralf.foerster@gmx.de>
+References: <201105191526.31904.toralf.foerster@gmx.de>
+	 <1305907458.1465.23.camel@gandalf.stny.rr.com>
+	 <1305907896.1465.27.camel@gandalf.stny.rr.com>
+	 <201105201910.13095.toralf.foerster@gmx.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 20 May 2011 13:44:02 -0400
+Message-ID: <1305913442.1465.32.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-20 at 06:01 -0700, Ingo Molnar wrote:
-> * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> 
-> > This will enable each apic driver to be self-contained and eliminate the need
-> > for apic_probe[].
-> > 
-> > Apic probe will now depend on the order in which apic drivers are listed in
-> > the .apicdrivers section. Ordering of apic driver files in the Makefile
-> > and the macros apic_driver()/apic_drivers() help enforce the desired order.
-> > 
-> > Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> > ---
-> >  arch/x86/include/asm/apic.h           |   25 ++++++++++---
-> >  arch/x86/kernel/apic/Makefile         |   17 +++++---
-> >  arch/x86/kernel/apic/apic_flat_64.c   |   11 ++++-
-> >  arch/x86/kernel/apic/bigsmp_32.c      |    2 +
-> >  arch/x86/kernel/apic/es7000_32.c      |    9 +++-
-> >  arch/x86/kernel/apic/numaq_32.c       |    7 ++-
-> >  arch/x86/kernel/apic/probe_32.c       |   65 ++++++++++++----------------------
-> >  arch/x86/kernel/apic/probe_64.c       |   43 ++++++----------------
-> >  arch/x86/kernel/apic/summit_32.c      |    4 +-
-> >  arch/x86/kernel/apic/x2apic_cluster.c |    4 +-
-> >  arch/x86/kernel/apic/x2apic_phys.c    |    6 ++-
-> >  arch/x86/kernel/apic/x2apic_uv_x.c    |    6 ++-
-> >  arch/x86/kernel/vmlinux.lds.S         |    6 +++
-> >  13 files changed, 111 insertions(+), 94 deletions(-)
-> 
-> This patch crashes one of my testboxes (AMD X2 whitebox, config attached). No 
-> crashlog.
+On Fri, 2011-05-20 at 19:10 +0200, Toralf Förster wrote:
 
-oops. obviously just testing on small and big servers was not enough :(
+> Is there's an easy way to check, whether a given checked out git tree contains 
+> a specific commit id ?
 
-flat mode was broken, as it had null probe routine. Old code didn't have
-flat mode listed in the apic probe array (as the flat mode was the
-default option). Will fix it and split it into multiple patches.
+You can try:
 
-thanks.
-> 
-> The patch is also clearly too large and should be split up into 4 pieces:
-> 
->  - there should be a patch adding the whole driver section thing and marking 
->    all the existing APIC drivers with it
-> 
->  - one patch adding the functions doing the new-style probing.
-> 
->  - one patch flipping over from old-style to new-style probing
-> 
->  - a final patch removing all the stale functions and marking the APIC driver
->    probe functions static.
-> 
-> Thanks,
-> 
-> 	Ingo
+git log --pretty=oneline | grep <SHA1>
+
+-- Steve
+
+
 
