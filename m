@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935482Ab1ETJY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 05:24:58 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:60810 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935441Ab1ETJY4 (ORCPT
+	id S935494Ab1ETJ1k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 05:27:40 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:38505 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935470Ab1ETJ1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 05:24:56 -0400
-Date: Fri, 20 May 2011 11:24:52 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the s390 tree
-Message-ID: <20110520112452.13cd62a3@mschwide>
-In-Reply-To: <20110520115651.fc0fc63f.sfr@canb.auug.org.au>
-References: <20110520115651.fc0fc63f.sfr@canb.auug.org.au>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 20 May 2011 05:27:39 -0400
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+Date: Fri, 20 May 2011 10:27:35 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-28-generic; KDE/4.6.2; x86_64; ; )
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, oleg@redhat.com,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
+        bdonlan@gmail.com
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <201105200000.18310.pedro@codesourcery.com> <20110520090718.GC31426@htj.dyndns.org>
+In-Reply-To: <20110520090718.GC31426@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105201027.36688.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 May 2011 11:56:51 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Friday 20 May 2011 10:07:18, Tejun Heo wrote:
+> Hello, Pedro.
+> 
+> On Fri, May 20, 2011 at 12:00:17AM +0100, Pedro Alves wrote:
+> > > > UUIC, that opens a race where between SEIZEing and
+> > > > SETOPTIONS(O_TRACE FORK|VFORK|EXEC...), the tracee can
+> > > > fork/vfork/clone/exec, without the tracer getting the
+> > > > nice corresponding PTRACE_EVENT_ events.
+> 
+> Does it matter?  The order of execution isn't even well defined
+> without synchronization border.  If you want full synchronization, you
+> can INTERRUPT tracee.
 
-> After merging the s390 tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> mm/rmap.c:788:54: error: macro "page_test_and_clear_dirty" passed 2 arguments, but takes just 1
-> mm/rmap.c: In function 'page_mkclean':
-> mm/rmap.c:788: error: 'page_test_and_clear_dirty' undeclared (first use in this function)
-> mm/rmap.c:788: error: (Each undeclared identifier is reported only once
-> mm/rmap.c:788: error: for each function it appears in.)
-> mm/rmap.c:983:52: error: macro "page_test_and_clear_dirty" passed 2 arguments, but takes just 1
-> mm/rmap.c: In function 'page_remove_rmap':
-> mm/rmap.c:983: error: 'page_test_and_clear_dirty' undeclared (first use in this function)
-> 
-> Caused by commit 4cbfc8b9f58c ("[S390] merge page_test_dirty and page_clear_dirty").
-> 
-> I have used the s390 tree from next-20110519 for today.
+The point I was trying to raise was not about the order of
+execution, but about letting the old pre-nice PTRACE_EVENT_
+events quirks stick through.
 
-Oops, sorry about that. Fixed the patch and updated git390.
+> 
+> >  SEIZE,execvd,INTERRUPT (SETOPTS on interrupt)
+> > 
+> > will make the tracer see a SIGTRAP that 
+> > 
+> >  execvd,SEIZE,INTERRUPT
+> > 
+> > nor
+> > 
+> >  SEIZE,SETOPTS,execvd (SETOPTS on interrupt)
+> > 
+> > would cause, isn't it?
+> 
+> Yes, SIGTRAP on exec(2) is nasty but also is scheduled to be removed
+> if SEIZED.
+
+Okay, good to hear that.  Looks like the tracer can do:
+
+ SEIZE,execve,SETOPTS,'readlink /proc/pid/exe'
+
+and pretend it SEIZED after the execve.
+
+I'm happy for now.
+
+Thanks.
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Pedro Alves
