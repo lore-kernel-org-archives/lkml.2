@@ -1,73 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934967Ab1ETEbw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 00:31:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40285 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932898Ab1ETEbv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 00:31:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=olhlBrBJgNCgWBFqow59T0LGMlGt5rSd883KSpothXMbPaW5VEA1VW5zLJp5N3iwgZ
-         +Rd4dO6Vm/Gb2H0WTQkn7LBZk1wVyug/IPe8QRpatQuD4LcUcrkDGS0hYGdVN84ICmk/
-         wGU40+QW4DPd1AdJraEFO44+IBnfOl+SRKJv4=
+	id S935194Ab1ETElz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 00:41:55 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:57549 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932090Ab1ETEly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 00:41:54 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, <netfilter-devel@vger.kernel.org>,
+        <netfilter@vger.kernel.org>, <coreteam@netfilter.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: [PATCH v3 resend] netfilter: nf_conntrack_sip: Handle Cisco 7941/7945 IP phones
+Date: Thu, 19 May 2011 21:36:12 -0700
+Message-Id: <bc781b295b38241533a2d90c1aea15b3@localhost>
+User-Agent: vim 7.2
 MIME-Version: 1.0
-In-Reply-To: <20110520041244.GA986@kroah.com>
-References: <2db81796703063c0816d0d99040c6fbd6da50007.1305847719.git.mfm@muteddisk.com>
-	<20110520000013.GA8908@kroah.com>
-	<BANLkTik=S-FRB25gNHcb0OLMW5dhqLE1eA@mail.gmail.com>
-	<20110520002401.GA17623@kroah.com>
-	<BANLkTi=FZ57TrOa48qxkO6Myf0pwgtPp7g@mail.gmail.com>
-	<20110520041244.GA986@kroah.com>
-Date: Thu, 19 May 2011 21:31:49 -0700
-Message-ID: <BANLkTimJr=SXCs+0u4wutHz9TawVcvkcVg@mail.gmail.com>
-Subject: Re: [PATCH] staging: usbip: replace usbip_u{dbg,err,info} and printk
- with dev_ and pr_
-From: matt mooney <mfmooney@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: matt mooney <mfm@muteddisk.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 9:12 PM, Greg KH <greg@kroah.com> wrote:
-> On Thu, May 19, 2011 at 07:30:39PM -0700, matt mooney wrote:
->> On Thu, May 19, 2011 at 5:24 PM, Greg KH <greg@kroah.com> wrote:
->> > On Thu, May 19, 2011 at 05:17:45PM -0700, matt mooney wrote:
->> >> On Thu, May 19, 2011 at 5:00 PM, Greg KH <greg@kroah.com> wrote:
->> >> > Also, the merge window for the .40 tree for the staging tree is now
->> >> > closed, so I'll only take bugfixes for the usbip code for now.
->> >>
->> >> The userspace code isn't getting merged in .40, is it? Because my
->> >> patch "staging: usbip: userspace: stub_driver.c: update kernel module
->> >> name" actually relies on a change in my own tree, so I made a mistake
->> >> by thinking that it was needed right away to get the userspace tools
->> >> working.
->> >
->> > It's in my tree, so yes.  You can send me patches to fix the problem, as
->> > I would recommend :)
->>
->> Can I send you a 10 patch series (or 9 if you apply the patch in this
->> thread)? The changes I have that fix that are towards the end. The
->> problem is a lot of my changes rely on the patch sent in this thread
->> and one that follows it, so to avoid any conflicts it is easiest (at
->> least for me :) to just send the whole series. They have been tested
->> and pretty much leave usbip in the state it was originally in.
->
-> I don't know, I would have to see the patches.  Please send them on.
+Most SIP devices use a source port of 5060/udp on SIP requests, so the
+response automatically comes back to port 5060:
 
-You probably won't like it; there is quite a bit of change. Maybe
-reverting that patch would be easiest for both of us. I will send them
-anyway, so you can make the decision.
+phone_ip:5060 -> proxy_ip:5060   REGISTER
+proxy_ip:5060 -> phone_ip:5060   100 Trying
 
+The newer Cisco IP phones, however, use a randomly chosen high source
+port for the SIP request but expect the response on port 5060:
 
--matt
+phone_ip:49173 -> proxy_ip:5060  REGISTER
+proxy_ip:5060 -> phone_ip:5060   100 Trying
 
+Standard Linux NAT, with or without nf_nat_sip, will send the reply back
+to port 49173, not 5060:
+
+phone_ip:49173 -> proxy_ip:5060  REGISTER
+proxy_ip:5060 -> phone_ip:49173  100 Trying
+
+But the phone is not listening on 49173, so it will never see the reply.
+
+This patch modifies nf_*_sip to work around this quirk by extracting
+the SIP response port from the Via: header, iff the source IP in the
+packet header matches the source IP in the SIP request.
+
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Patrick McHardy <kaber@trash.net>
+---
+ include/linux/netfilter/nf_conntrack_sip.h |    3 +++
+ net/ipv4/netfilter/nf_nat_sip.c            |   26 +++++++++++++++++++++++---
+ net/netfilter/nf_conntrack_sip.c           |   17 +++++++++++++++++
+ 3 files changed, 43 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/netfilter/nf_conntrack_sip.h b/include/linux/netfilter/nf_conntrack_sip.h
+index 0ce91d5..feda699 100644
+--- a/include/linux/netfilter/nf_conntrack_sip.h
++++ b/include/linux/netfilter/nf_conntrack_sip.h
+@@ -2,12 +2,15 @@
+ #define __NF_CONNTRACK_SIP_H__
+ #ifdef __KERNEL__
+ 
++#include <linux/types.h>
++
+ #define SIP_PORT	5060
+ #define SIP_TIMEOUT	3600
+ 
+ struct nf_ct_sip_master {
+ 	unsigned int	register_cseq;
+ 	unsigned int	invite_cseq;
++	__be16		forced_dport;
+ };
+ 
+ enum sip_expectation_classes {
+diff --git a/net/ipv4/netfilter/nf_nat_sip.c b/net/ipv4/netfilter/nf_nat_sip.c
+index e40cf78..e5856b0 100644
+--- a/net/ipv4/netfilter/nf_nat_sip.c
++++ b/net/ipv4/netfilter/nf_nat_sip.c
+@@ -73,6 +73,7 @@ static int map_addr(struct sk_buff *skb, unsigned int dataoff,
+ 	enum ip_conntrack_info ctinfo;
+ 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
++	struct nf_conn_help *help = nfct_help(ct);
+ 	char buffer[sizeof("nnn.nnn.nnn.nnn:nnnnn")];
+ 	unsigned int buflen;
+ 	__be32 newaddr;
+@@ -85,7 +86,8 @@ static int map_addr(struct sk_buff *skb, unsigned int dataoff,
+ 	} else if (ct->tuplehash[dir].tuple.dst.u3.ip == addr->ip &&
+ 		   ct->tuplehash[dir].tuple.dst.u.udp.port == port) {
+ 		newaddr = ct->tuplehash[!dir].tuple.src.u3.ip;
+-		newport = ct->tuplehash[!dir].tuple.src.u.udp.port;
++		newport = help->help.ct_sip_info.forced_dport ? :
++			  ct->tuplehash[!dir].tuple.src.u.udp.port;
+ 	} else
+ 		return 1;
+ 
+@@ -121,6 +123,7 @@ static unsigned int ip_nat_sip(struct sk_buff *skb, unsigned int dataoff,
+ 	enum ip_conntrack_info ctinfo;
+ 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
++	struct nf_conn_help *help = nfct_help(ct);
+ 	unsigned int coff, matchoff, matchlen;
+ 	enum sip_header_types hdr;
+ 	union nf_inet_addr addr;
+@@ -229,6 +232,20 @@ next:
+ 	    !map_sip_addr(skb, dataoff, dptr, datalen, SIP_HDR_TO))
+ 		return NF_DROP;
+ 
++	/* Mangle destination port for Cisco phones, then fix up checksums */
++	if (dir == IP_CT_DIR_REPLY && help->help.ct_sip_info.forced_dport) {
++		struct udphdr *uh;
++
++		if (!skb_make_writable(skb, skb->len))
++			return NF_DROP;
++
++		uh = (struct udphdr *)(skb->data + ip_hdrlen(skb));
++		uh->dest = help->help.ct_sip_info.forced_dport;
++
++		if (!nf_nat_mangle_udp_packet(skb, ct, ctinfo, 0, 0, NULL, 0))
++			return NF_DROP;
++	}
++
+ 	return NF_ACCEPT;
+ }
+ 
+@@ -280,8 +297,10 @@ static unsigned int ip_nat_sip_expect(struct sk_buff *skb, unsigned int dataoff,
+ 	enum ip_conntrack_info ctinfo;
+ 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
++	struct nf_conn_help *help = nfct_help(ct);
+ 	__be32 newip;
+ 	u_int16_t port;
++	__be16 srcport;
+ 	char buffer[sizeof("nnn.nnn.nnn.nnn:nnnnn")];
+ 	unsigned buflen;
+ 
+@@ -294,8 +313,9 @@ static unsigned int ip_nat_sip_expect(struct sk_buff *skb, unsigned int dataoff,
+ 	/* If the signalling port matches the connection's source port in the
+ 	 * original direction, try to use the destination port in the opposite
+ 	 * direction. */
+-	if (exp->tuple.dst.u.udp.port ==
+-	    ct->tuplehash[dir].tuple.src.u.udp.port)
++	srcport = help->help.ct_sip_info.forced_dport ? :
++		  ct->tuplehash[dir].tuple.src.u.udp.port;
++	if (exp->tuple.dst.u.udp.port == srcport)
+ 		port = ntohs(ct->tuplehash[!dir].tuple.dst.u.udp.port);
+ 	else
+ 		port = ntohs(exp->tuple.dst.u.udp.port);
+diff --git a/net/netfilter/nf_conntrack_sip.c b/net/netfilter/nf_conntrack_sip.c
+index 237cc19..b0c16b0 100644
+--- a/net/netfilter/nf_conntrack_sip.c
++++ b/net/netfilter/nf_conntrack_sip.c
+@@ -1363,8 +1363,25 @@ static int process_sip_request(struct sk_buff *skb, unsigned int dataoff,
+ {
+ 	enum ip_conntrack_info ctinfo;
+ 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
++	struct nf_conn_help *help = nfct_help(ct);
++	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
+ 	unsigned int matchoff, matchlen;
+ 	unsigned int cseq, i;
++	union nf_inet_addr addr;
++	__be16 port;
++
++	/* Many Cisco IP phones use a high source port for SIP requests, but
++	 * listen for the response on port 5060.  If we are the local
++	 * router for one of these phones, save the port number from the
++	 * Via: header so that nf_nat_sip can redirect the responses to
++	 * the correct port.
++	 */
++	if (ct_sip_parse_header_uri(ct, *dptr, NULL, *datalen,
++				    SIP_HDR_VIA_UDP, NULL, &matchoff,
++				    &matchlen, &addr, &port) > 0 &&
++	    port != ct->tuplehash[dir].tuple.src.u.udp.port &&
++	    nf_inet_addr_cmp(&addr, &ct->tuplehash[dir].tuple.src.u3))
++		help->help.ct_sip_info.forced_dport = port;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(sip_handlers); i++) {
+ 		const struct sip_handler *handler;
 -- 
-GPG-Key: 9AFE00EA
+1.7.5
+
