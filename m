@@ -1,84 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab1ETDTB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 May 2011 23:19:01 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:53095 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab1ETDTA (ORCPT
+	id S1757267Ab1ETDTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 May 2011 23:19:24 -0400
+Received: from nm14.access.bullet.mail.mud.yahoo.com ([66.94.237.215]:29536
+	"HELO nm14.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754321Ab1ETDTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 May 2011 23:19:00 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zzbb2cK936eK1432N98dK4015Lzz1202hzz8275dhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LLH57H-01-6J2-02
-X-M-MSG: 
-Date: Fri, 20 May 2011 05:18:55 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] perf, x86: Fix event scheduler for constraints with
- overlapping counters
-Message-ID: <20110520031855.GA17196@erda.amd.com>
-References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
- <1302913676-14352-5-git-send-email-robert.richter@amd.com>
- <20110419102600.GU31407@erda.amd.com>
- <1305753398.2466.7180.camel@twins>
- <20110518212054.GC28476@elte.hu>
- <1305754613.2466.7190.camel@twins>
- <20110519180650.GC6139@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110519180650.GC6139@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Thu, 19 May 2011 23:19:22 -0400
+X-Yahoo-Newman-Id: 594622.5829.bm@omp1025.access.mail.mud.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: InIf7.kVM1nxGQTfmjCv_j3TxLE0pjWnjhSp_8yGZmjT5x4
+ Crv20JITf8UnwilTWV6jwki5N75a.IthrTJV5R1wSveTUtIPeDGXRD6efG4I
+ G2QkOlR0dJqWTpqPGU_Npb_1xoXguSoIV9YHJg8mxjwTo4GwAi9i0EoPTJRx
+ ov2x4Z9eA9ZMdmBxxmqjVDfKlNMIP28D0_vI3z2hR0W2DOisBdeirOkBpVoh
+ Uh8UT7uRq2HLh0Iunb8aic7y4On5sIBnLFT_FgtzuLZKhb_Lk2D0YHmc7oqO
+ UmE9cUyLtQ8gvPaX5F4EPg0izfvudpH6lc3fcmbPkTHg8600ZywqbxcxA7dr
+ CcSbm5_9.1fRiDf5s0dKm6LkbPotz3yzixu6MJM3fs6T.3k73ctFFNgUKPJv
+ exeRgPNIuJuNGmuEKb59n8SugpTjI_2WLGh9TAJQVuoz_JkftjGgSSZ0dM2y
+ yNcDqRVUKrKCC_mW0otpqSs9xopMd_4f1PEnB0gyRU.d2._Lo8_el.yQ4weq
+ 4I9TqjGtqcvJwxvuFrYhKHbceCva.iqi21EA-
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Svec <martin.svec@zoner.cz>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 0/6] target: .40 bugfixes+changes (round 1)
+Date: Thu, 19 May 2011 20:19:08 -0700
+Message-Id: <1305861554-29960-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.05.11 14:06:50, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Wed, 2011-05-18 at 23:20 +0200, Ingo Molnar wrote:
-> > > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > > 
-> > > > >                         if (c->weight != w)
-> > > > >                                 continue;
-> > > > >  
-> > > > > -                       for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
-> > > > > -                               if (!test_bit(j, used_mask))
-> > > > > +                       /* for each bit in idxmsk starting from idx */
-> > > > > +                       while (idx < X86_PMC_IDX_MAX) {
-> > > > > +                               idx = find_next_bit(c->idxmsk, X86_PMC_IDX_MAX,
-> > > > > +                                                   idx);
-> > > > 
-> > > > I'd be mighty tempted to ignore that 80 column rule here ;-)
-> > > 
-> > > Please put the body of the loop into a helper function, the function is large 
-> > > and there are countless col80 uglinesses in it!
-> > 
-> > I just tried that, its real ugly due to the amount of state you need to
-> > pass around.
-> 
-> Does it help if you put that state into a helper structure?
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Yes, this is what I have in mind too. We could iterate on such a state
-stucture instead of a couple of single variables. Storing and
-restoring the state will then just copying the structure.
+Hi James & Co,
 
--Robert
+This series is the first round of target core .v40 changes containing
+the four original bugfixes for .39 required for tcm_fc(openfcoe) HW
+offload and other in-flight HW drivers to function properly.  This
+series was originally posted here:
 
+[PATCH-v2 0/4] Bugfixes for .39-rc8
+http://marc.info/?l=linux-scsi&m=130514011321906&w=2
 
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+As before, the first four patches should be backported to
+.39.y and 38.y..
+
+For your convience, this original four part series has been merged
+with two other conversion patches requested by Mike and Christoph
+to be fixed ahead of the iscsi-target merge.  This includes dropping
+the legacy target_core_fabric_ops->pack_lun() call for REPORT_LUNs
+in favor of int_to_scsilun(), and converting from libsas.h:TASK_ATTR
+usage to proper scsi_tcq.h:MSG_*_TAG for target core.
+
+The latter two patches also include conversion for the two current
+scsi-misc upstream fabric modules: tcm_loop and tcm_fc(openfcoe).
+
+This patch has been made against the latest scsi-misc HEAD:
+
+commit 6ad11eaa8a689a27e0c99905bcf800a37cd432a0
+Author: Joe Carnuccio <joe.carnuccio@qlogic.com>
+Date:   Tue May 10 11:30:16 2011 -0700
+
+    [SCSI] qla2xxx: Refactor call to qla2xxx_read_sfp for thermal temperature.
+    
+
+This series is available directly from git here:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-40-target
+
+Please review and merge.
+
+Thanks!
+
+--nab
+
+Nicholas Bellinger (6):
+  target: Fix multi task->task_sg[] chaining logic bug
+  target: Fix interrupt context bug with stats_lock and
+    core_tmr_alloc_req
+  target: Fix bug with task_sg chained transport_free_dev_tasks release
+  target: Fix task->task_execute_queue=1 clear bug + LUN_RESET OOPs
+  target: Convert REPORT_LUNs to use int_to_scsilun
+  target: Convert TASK_ATTR to scsi_tcq.h definitions
+
+ drivers/target/loopback/tcm_loop.c      |   25 +++---------
+ drivers/target/target_core_configfs.c   |    4 --
+ drivers/target/target_core_device.c     |   29 +++----------
+ drivers/target/target_core_pscsi.c      |    4 +-
+ drivers/target/target_core_tmr.c        |    7 ++-
+ drivers/target/target_core_transport.c  |   68 ++++++++++++++++++++----------
+ drivers/target/tcm_fc/tfc_cmd.c         |   20 +++++++++-
+ drivers/target/tcm_fc/tfc_conf.c        |    8 ----
+ include/scsi/scsi_tcq.h                 |    1 +
+ include/target/target_core_base.h       |    1 +
+ include/target/target_core_fabric_ops.h |    1 -
+ include/target/target_core_transport.h  |    1 +
+ 12 files changed, 86 insertions(+), 83 deletions(-)
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+1.7.5.1
 
