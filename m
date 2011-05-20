@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935063Ab1ETOnG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:43:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48979 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933322Ab1ETOnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:43:03 -0400
-Date: Fri, 20 May 2011 10:37:46 -0400
-From: Chuck Ebbert <cebbert@redhat.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Greg Kroah-Hartman <greg@kroah.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        =?UTF-8?B?SsO2cmctVm9sa2Vy?= Peetz <jvpeetz@web.de>,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] AMD ARAT fixes
-Message-ID: <20110520103746.70caaf3c@katamari>
-In-Reply-To: <20110518155017.GA14324@gere.osrc.amd.com>
-References: <1305636919-31165-1-git-send-email-bp@amd64.org>
-	<20110518155017.GA14324@gere.osrc.amd.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934983Ab1ETOff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:35:35 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:35454 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933843Ab1ETOfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 10:35:34 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Fri, 20 May 2011 22:40:00 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, Shawn Guo <shawn.guo@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <patches@linaro.org>,
+        <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>,
+        <kernel@pengutronix.de>
+Subject: Re: [PATCH 2/3] ARM: mxs: add gpio-mxs platform devices
+Message-ID: <20110520143959.GC27551@S2100-06.ap.freescale.net>
+References: <1305885446-27404-1-git-send-email-shawn.guo@linaro.org>
+ <201105201223.00427.arnd@arndb.de>
+ <20110520140316.GA27551@S2100-06.ap.freescale.net>
+ <201105201623.40990.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <201105201623.40990.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 May 2011 17:50:17 +0200
-Borislav Petkov <bp@amd64.org> wrote:
-
-> Hi Greg,
+On Fri, May 20, 2011 at 04:23:40PM +0200, Arnd Bergmann wrote:
+> On Friday 20 May 2011 16:03:17 Shawn Guo wrote:
+> > On Fri, May 20, 2011 at 12:23:00PM +0200, Arnd Bergmann wrote:
+> > > 
+> > > I know it's tempting to use macros for these, but I think it obscures
+> > > the code a lot, especially when you use them to concatenate identifier
+> > > names. Why not just do:
+> > > 
+> > The pattern is being widely used in mxc/mxs platform device codes.
+> > If you are not extremely unhappy about this, I would leave it as it
+> > is to keep consistency.
 > 
-> Ingo just confirmed that the following two fixes went upstream. I
-> haven't tagged them for stable so I'd appreciate if you could take them
-> for the next cycle. AFAICT, the relevant trees should be .38-stable,
-> 32-longterm and 33-longterm.
+> I think it's a real pain to do it like this, and we need to start
+> at some point cleaning up the mess. Why not start now?
 > 
-> There should be no problem cherry-picking them but if there is, please
-> let me know and I'll give you rebased versions.
+OK
+
+> > > > +
+> > > > +	return mxs_add_platform_device("mxs-gpio", data->id,
+> > > > +					res, ARRAY_SIZE(res), NULL, 0);
+> > > > +}
+> > > 
+> > > mxs_add_platform_device doesn't set the parent pointer correctly, I think you
+> > > should either fix that or open-code the platform device creation to do it
+> > > right.
+> > > 
+> > I see the following in drivers/base/platform.c, function
+> > platform_device_add():
+> > 
+> >         if (!pdev->dev.parent)
+> >                 pdev->dev.parent = &platform_bus;
+> > 
+> > So we are fine?
 > 
-> Here the commit ids again, for reference:
+> No, this would put all gpio devices below the top-level /sys/devices/platform
+> directory, where they certainly don't belong. Please find a proper
+> place and put them there.
 > 
-> http://git.kernel.org/tip/14fb57dccb6e1defe9f89a66f548fcb24c374c1d
-> http://git.kernel.org/tip/328935e6348c6a7cb34798a68c326f4b8372e68a
-> 
+Understood.  Will do.
 
-This still leaves family 10h model 6 stepping 2 (and possibly others)
-broken in -stable as well as 2.6.39.
+-- 
+Regards,
+Shawn
 
-Looking at -stable, this whole mess was caused by:
-
-  commit b87cf80af3ba4b4c008b4face3c68d604e1715c6
-  x86, AMD: Set ARAT feature on AMD processors
-
-That caused stalls on family 0fh and family 10h processors, and then
-the (partial) fix for that in 2.6.38.6:
-
-  commit e20a2d205c05cef6b5783df339a7d54adeb50962
-  x86, AMD: Fix APIC timer erratum 400 affecting K8 Rev.A-E processors
-
-caused instant crashes on boot on older family 0fh processors.
-
-Now it looks like family 0fh is finally fixed in 2.6.38.7.
-
-But I can't find any reason for the original commit that went in 2.6.38.4
-to be there in the first place. It doesn't fix any bug whatsoever and
-appears to be just a performance enhancement. So how did it get there?
-
-I came up with this (untested) hack for now to fix the remaining bug,
-should something like this go in -stable to fix family 10h until a
-better way is found?
-
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -724,6 +724,15 @@ bool cpu_has_amd_erratum(const int *erra
- 		return false;
- 
- 	/*
-+	 * Temporary workaround for ARAT bug on Sempron.
-+	 * The BIOS clears the bit in OSVW, so the check
-+	 * fails, then ARAT gets set and when the processor
-+	 * uses C3 it hangs. Always return true for that CPU.
-+	 */
-+	if (cpu->x86 == 0x10 && cpu->x86_model == 6 && cpu->x86_mask == 2)
-+		return true;
-+
-+	/*
- 	 * Must match family-model-stepping range first so that the
- 	 * range checks will override OSVW checking.
- 	 */
