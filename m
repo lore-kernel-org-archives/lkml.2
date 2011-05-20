@@ -1,138 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934384Ab1ETO03 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:26:29 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39610 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933715Ab1ETO01 (ORCPT
+	id S934849Ab1ETO0p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:26:45 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48262 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933356Ab1ETO0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:26:27 -0400
-Message-ID: <4DD679F8.10002@kernel.org>
-Date: Fri, 20 May 2011 07:26:00 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, steiner@sgi.com,
-        linux-kernel@vger.kernel.org, gorcunov@openvz.org
-Subject: Re: [patch 6/6] x86, apic: use .apicdrivers section to find the list
- of apic drivers
-References: <20110519234545.700125442@sbsiddha-MOBL3.sc.intel.com> <20110519234637.671736436@sbsiddha-MOBL3.sc.intel.com>
-In-Reply-To: <20110519234637.671736436@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090204.4DD67A04.0062,ss=1,fgs=0
+	Fri, 20 May 2011 10:26:43 -0400
+From: Michael Williamson <michael.williamson@criticallink.com>
+To: alsa-devel@alsa-project.org
+Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
+        lrg@slimlogic.co.uk, tiwai@suse.de,
+        Michael Williamson <michael.williamson@criticallink.com>
+Subject: [PATCH v1 RESEND] audio: tlv320aic26: fix PLL register configuration
+Date: Fri, 20 May 2011 10:26:06 -0400
+Message-Id: <1305901566-8125-1-git-send-email-michael.williamson@criticallink.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2011 04:45 PM, Suresh Siddha wrote:
-> --- linux-2.6-tip.orig/arch/x86/kernel/apic/apic_flat_64.c
-> +++ linux-2.6-tip/arch/x86/kernel/apic/apic_flat_64.c
-> @@ -24,6 +24,8 @@
->  #include <acpi/acpi_bus.h>
->  #endif
->  
-> +static struct apic apic_physflat;
-> +
->  static int flat_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
->  {
->  	return 1;
-> @@ -164,7 +166,7 @@ static int flat_phys_pkg_id(int initial_
->  	return initial_apic_id >> index_msb;
->  }
->  
-> -struct apic apic_flat =  {
-> +static struct apic apic_flat =  {
->  	.name				= "flat",
->  	.probe				= NULL,
->  	.acpi_madt_oem_check		= flat_acpi_madt_oem_check,
-> @@ -320,7 +322,7 @@ static int physflat_probe(void)
->  	return 0;
->  }
->  
-> -struct apic apic_physflat =  {
-> +static struct apic apic_physflat =  {
->  
->  	.name				= "physical flat",
->  	.probe				= physflat_probe,
-> @@ -377,3 +379,8 @@ struct apic apic_physflat =  {
->  	.wait_icr_idle			= native_apic_wait_icr_idle,
->  	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
->  };
-> +
-> +/*
-> + * We need to check for physflat first, so this order is important.
-> + */
-> +apic_drivers(apic_physflat, apic_flat);
-> Index: linux-2.6-tip/arch/x86/kernel/apic/probe_64.c
-> ===================================================================
-> --- linux-2.6-tip.orig/arch/x86/kernel/apic/probe_64.c
-> +++ linux-2.6-tip/arch/x86/kernel/apic/probe_64.c
-> @@ -23,27 +23,9 @@
->  #include <asm/ipi.h>
->  #include <asm/setup.h>
->  
-> -extern struct apic apic_flat;
-> -extern struct apic apic_physflat;
-> -extern struct apic apic_x2xpic_uv_x;
-> -extern struct apic apic_x2apic_phys;
-> -extern struct apic apic_x2apic_cluster;
-> -
-> -struct apic __read_mostly *apic = &apic_flat;
-> +struct apic __read_mostly *apic;
->  EXPORT_SYMBOL_GPL(apic);
->  
-> -static struct apic *apic_probe[] __initdata = {
-> -#ifdef CONFIG_X86_UV
-> -	&apic_x2apic_uv_x,
-> -#endif
-> -#ifdef CONFIG_X86_X2APIC
-> -	&apic_x2apic_phys,
-> -	&apic_x2apic_cluster,
-> -#endif
-> -	&apic_physflat,
-> -	NULL,
-> -};
-> -
->  static int apicid_phys_pkg_id(int initial_apic_id, int index_msb)
->  {
->  	return hard_smp_processor_id() >> index_msb;
-> @@ -54,19 +36,19 @@ static int apicid_phys_pkg_id(int initia
->   */
->  void __init default_setup_apic_routing(void)
->  {
-> -	int i;
-> +	struct apic **drv;
->  
->  	enable_IR_x2apic();
->  
-> -	for (i = 0; apic_probe[i]; ++i) {
-> -		if (apic_probe[i]->probe()) {
-> -			apic = apic_probe[i];
-> +	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
-> +		if ((*drv)->probe()) {
-> +			apic = *drv;
-> +			printk(KERN_INFO "APIC routing finalized to %s.\n",
-> +			       apic->name);
->  			break;
->  		}
->  	}
+The current PLL configuration code for the tlc320aic26 codec appears to assume a
+hardcoded system clock of 12 MHz.  Use the clock value provided by the DAI_OPS
+API for the calculation.
 
-can you change to:
+Tested using a MityDSP-L138 platform providing a 24.576 MHz clock.
 
-+	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
-+		if ((*drv)->probe()) {
-+			if (apic != *drv) {
-+				apic = *drv;				
-+				printk(KERN_INFO "Changing APIC routing to %s.\n",
-+				       apic->name);
-+			}
- 			break;
- 		}
+Signed-off-by: Michael Williamson <michael.williamson@criticallink.com>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+This got bounced by the alsa-devel list (I wasn't on list).  I'm not sure 
+whose tree this needs to go through, but given the lack of response
+I'm guessing alsa-devel. If I'm missing a list, any advice would be 
+appreciated.
+
+Changes from V0:
+  - Added some parens for clarification
+  - Added some comments to describe what the computations were attempting to do
+
+ sound/soc/codecs/tlv320aic26.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/sound/soc/codecs/tlv320aic26.c b/sound/soc/codecs/tlv320aic26.c
+index e2a7608..7859bdc 100644
+--- a/sound/soc/codecs/tlv320aic26.c
++++ b/sound/soc/codecs/tlv320aic26.c
+@@ -161,10 +161,18 @@ static int aic26_hw_params(struct snd_pcm_substream *substream,
+ 		dev_dbg(&aic26->spi->dev, "bad format\n"); return -EINVAL;
  	}
+ 
+-	/* Configure PLL */
++	/**
++	 * Configure PLL
++	 * fsref = (mclk * PLLM) / 2048
++	 * where PLLM = J.DDDD (DDDD register ranges from 0 to 9999, decimal)
++	 */
+ 	pval = 1;
+-	jval = (fsref == 44100) ? 7 : 8;
+-	dval = (fsref == 44100) ? 5264 : 1920;
++	/* compute J portion of multiplier */
++	jval = fsref / (aic26->mclk / 2048);
++	/* compute fractional DDDD component of multiplier */
++	dval = fsref - (jval * (aic26->mclk / 2048));
++	dval = (10000 * dval) / (aic26->mclk / 2048);
++	dev_dbg(&aic26->spi->dev, "Setting PLLM to %d.%04d\n", jval, dval);
+ 	qval = 0;
+ 	reg = 0x8000 | qval << 11 | pval << 8 | jval << 2;
+ 	aic26_reg_write(codec, AIC26_REG_PLL_PROG1, reg);
+-- 
+1.7.0.4
 
-Thanks
-
-Yinghai
