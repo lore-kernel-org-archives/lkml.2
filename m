@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934126Ab1ETNhA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 09:37:00 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:50525 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933877Ab1ETNg7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 09:36:59 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: vmbus driver
-Thread-Topic: vmbus driver
-Thread-Index: AQHMFm8184rvumQ7c0KLvy9LhTr6cJSWGtyA//+adbA=
-Date: Fri, 20 May 2011 13:36:53 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481FC2ED@TK5EX14MBXC122.redmond.corp.microsoft.com>
-References: <1305842785-30206-1-git-send-email-kys@microsoft.com>
- <20110520122649.GA550@infradead.org>
-In-Reply-To: <20110520122649.GA550@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S934181Ab1ETNhT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 09:37:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56446 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933851Ab1ETNhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 09:37:14 -0400
+Date: Fri, 20 May 2011 13:36:58 GMT
+From: tip-bot for Daniel J Blueman <daniel.blueman@gmail.com>
+Message-ID: <tip-b64ce24daffb634b5b3133a2e411bd4de50654e8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        daniel.blueman@gmail.com, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        daniel.blueman@gmail.com, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110518233157.385970138@sbsiddha-MOBL3.sc.intel.com>
+References: <20110518233157.385970138@sbsiddha-MOBL3.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, ioapic: Fix potential resume deadlock
+Git-Commit-ID: b64ce24daffb634b5b3133a2e411bd4de50654e8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 20 May 2011 13:36:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  b64ce24daffb634b5b3133a2e411bd4de50654e8
+Gitweb:     http://git.kernel.org/tip/b64ce24daffb634b5b3133a2e411bd4de50654e8
+Author:     Daniel J Blueman <daniel.blueman@gmail.com>
+AuthorDate: Wed, 18 May 2011 16:31:31 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 20 May 2011 13:40:41 +0200
 
+x86, ioapic: Fix potential resume deadlock
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Friday, May 20, 2011 8:27 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: Re: vmbus driver
-> 
-> On Thu, May 19, 2011 at 03:06:25PM -0700, K. Y. Srinivasan wrote:
-> > A few days ago you applied all the outstanding patches for the Hyper-V
-> > drivers. With these patches, I have addressed all of the known review
-> > comments for the  vmbus driver (and a lot of comments/issues in other
-> > drivers as well). I am still hoping I can address
-> > whatever other issues/comments there might be with the intention to
-> > get the vmbus driver out of staging in the current window. What is your
-> > sense in terms of how feasible this is. From my side, I can assure you
-> > that I will address all legitimate issues in a very timely manner and this
-> > will not be dependent upon the location of the drivers (staging or
-> > outside staging). Looking forward to hearing from you.
-> 
-> There's no point in merging it without a user.  Make sure either
-> the network or storage driver is in a good enough shape to move with it,
-> to make sure the APIs it exports are actually sanely usable.
-> 
-> On the other hand the HV clocksource looks mostly mergeable and doesn't
-> depend on vmbus.  Send a patch to add it to drivers/clocksource to the
-> maintainer and it should be mergeable with very little remaining
-> cleanup.
+Fix a potential deadlock when resuming; here the calling
+function has disabled interrupts, so we cannot sleep.
 
-I see maintainers for each of the clocksource drivers and I see John Stultz and
-Thomas  Gleixner listed as the maintainers for Timekeeping. Who should sign-off
-on the Hyper-V clocksource.
+Change the memory allocation flag from GFP_KERNEL to GFP_ATOMIC.
 
-Regards,
+TODO: We can do away with this memory allocation during resume
+      by reusing the ioapic suspend/resume code that uses boot time
+      allocated buffers, but we want to keep this -stable patch
+      simple.
 
-K. Y
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: <stable@kernel.org> # v2.6.38/39
+Link: http://lkml.kernel.org/r/20110518233157.385970138@sbsiddha-MOBL3.sc.intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/apic/io_apic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 45fd33d..df63620 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -621,14 +621,14 @@ struct IO_APIC_route_entry **alloc_ioapic_entries(void)
+ 	struct IO_APIC_route_entry **ioapic_entries;
+ 
+ 	ioapic_entries = kzalloc(sizeof(*ioapic_entries) * nr_ioapics,
+-				GFP_KERNEL);
++				GFP_ATOMIC);
+ 	if (!ioapic_entries)
+ 		return 0;
+ 
+ 	for (apic = 0; apic < nr_ioapics; apic++) {
+ 		ioapic_entries[apic] =
+ 			kzalloc(sizeof(struct IO_APIC_route_entry) *
+-				nr_ioapic_registers[apic], GFP_KERNEL);
++				nr_ioapic_registers[apic], GFP_ATOMIC);
+ 		if (!ioapic_entries[apic])
+ 			goto nomem;
+ 	}
