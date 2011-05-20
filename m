@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578Ab1ETPNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 11:13:32 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:65023 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933183Ab1ETPNb (ORCPT
+	id S933981Ab1ETPR0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 11:17:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36571 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932590Ab1ETPRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 11:13:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] arch/tile: add /proc/tile, /proc/sys/tile, and a sysfs cpu attribute
-Date: Fri, 20 May 2011 17:13:25 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-References: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com> <201105201637.20925.arnd@arndb.de> <4DD6821F.6060707@tilera.com>
-In-Reply-To: <4DD6821F.6060707@tilera.com>
+	Fri, 20 May 2011 11:17:25 -0400
+Date: Fri, 20 May 2011 17:17:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+cc: linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
+Subject: Re: 2.6.39: crash w/threadirqs option enabled
+In-Reply-To: <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
+Message-ID: <alpine.LFD.2.02.1105201712501.3078@ionos>
+References: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan> <alpine.LFD.2.02.1105201445300.3078@ionos> <alpine.DEB.2.02.1105200850080.19553@p34.internal.lan> <alpine.LFD.2.02.1105201528500.3078@ionos>
+ <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105201713.25364.arnd@arndb.de>
-X-Provags-ID: V02:K0:hHtM5rQaD4W/kfmtHN+iFeqFbrnmseR7/WcaGlmMPkI
- 7jeqV8+0SGYwXre5DO58LwuHfEBsKYjm5lcjZhgYxU79PXbRw9
- dc/ztLQtXWH4UDQ0YmHlNNPqzutDbmcXkZN1PoYDmEoPP5u3Jx
- VPVgu74/4sqamr1PiD8hJyQctaK9mOkgU1eeZE+al6vOQvZVuG
- 9t6XwnQtAEiRWmJRW83Wg==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 May 2011 17:00:47 Chris Metcalf wrote:
-> > Any chance you can still restructure the information? I would recommend
-> > making it a first-class procfs member, since the data is really per-task.
-> >
-> > You can add a conditional entry to tgid_base_stuff[] in fs/proc/base.c
-> > to make it show up for each pid, and then just have the per-task information
-> > in there to do the lookup the other way round:
-> >
-> > # cat /proc/484/hardwall
-> > 2x2 1,1 @2,1
-> >
-> > # cat /proc/479/hardwall
-> > 2x2 1,1 @1,1
+On Fri, 20 May 2011, Justin Piszcz wrote:
+> On Fri, 20 May 2011, Thomas Gleixner wrote:
+> > Does it crash right away or just when doing something particular?
+> It crashed at 2100, this is when I run a few I/O intensive processes:
+> - backup (dump ext4 filesystem -> to a separate raid device)
+> - backup (dump ext4 on remote host -> to separate raid device)
+> - backup (dump xfs on remote host -> to separate raid device)
 > 
-> It's not unreasonable to do what you're suggesting, i.e. "what's this
-> task's hardwall?", but it's not something that we've come up with any kind
-> of use case for in the past, so I'm not currently planning to implement
-> this.  If we did, I agree, your solution looks like the right one.
+> This looks like it is what caused it to crash.
 
-It's fairly easy to aggregate in user space though, we do similar
-things for 'lsof' and 'top', which walk all of procfs in order
-to show the complete picture. This is obviously more overhead than
-walking the lists in the kernel, but still not an expensive
-operation, and it keeps the data format much simpler.
+That narrows it down somewhat, but does not give us a clue at all :(
+ 
+> > Is the box fully dead after the crash ?
+> The host was online and I went away for awhile, when I came back the system
+> had rebooted on its own (as I lost all of my X windows/etc).
 
-	Arnd
+Hmm. Did you have panic_timeout set ?
+
+Thanks,
+
+	tglx
