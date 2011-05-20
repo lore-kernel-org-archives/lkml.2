@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964808Ab1ETMIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 08:08:07 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38487 "EHLO mx2.mail.elte.hu"
+	id S964817Ab1ETMJD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 08:09:03 -0400
+Received: from purkki.adurom.net ([80.68.90.206]:44856 "EHLO purkki.adurom.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935666Ab1ETMIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 08:08:04 -0400
-Date: Fri, 20 May 2011 14:07:50 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org, davej@redhat.com, kees.cook@canonical.com,
-        davem@davemloft.net, eranian@google.com, torvalds@linux-foundation.org,
-        adobriyan@gmail.com, penberg@kernel.org
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-Message-ID: <20110520120750.GJ14745@elte.hu>
-References: <1305292059.1949.0.camel@dan>
- <1305293345.1949.22.camel@dan>
- <20110516153527.GC21107@elte.hu>
- <1305852966.3005.19.camel@dan>
+	id S935666Ab1ETMJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 08:09:00 -0400
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] Fix uevent race in register_netdevice()
+References: <20110516143913.13838.85357.stgit@localhost6.localdomain6>
+	<20110516.141158.1777924960833804150.davem@davemloft.net>
+From: Kalle Valo <kvalo@adurom.com>
+Date: Fri, 20 May 2011 15:08:58 +0300
+In-Reply-To: <20110516.141158.1777924960833804150.davem@davemloft.net> (David Miller's message of "Mon\, 16 May 2011 14\:11\:58 -0400 \(EDT\)")
+Message-ID: <87oc2xd15x.fsf@purkki.adurom.net>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305852966.3005.19.camel@dan>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+David Miller <davem@davemloft.net> writes:
 
-* Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+> From: Kalle Valo <kvalo@adurom.com>
+> Date: Mon, 16 May 2011 17:46:30 +0300
+>
+>> I'm trying to fix a race in register_netdevice(). The problem is that
+>> there's a uevent to userspace before the netdevice is ready for use. The
+>> problem is described here:
+>> 
+>> https://bugzilla.kernel.org/show_bug.cgi?id=15606
+>> 
+>> I have sent few different ways to fix this, but none of them have been
+>> really usable. Now I came up with a way which changes the driver core
+>> to make it possible send the uevent in a separate call. This is a clean
+>> and safe way to fix the race. Downside is that two new functions are
+>> added to the driver core interface.
+>> 
+>> Please comment.
+>
+> This doesn't work.
+>
+> The sysfs file will still be there before the uevent, so any
+> process can go in there, and see the inconsistent state.
 
-> I was able to boot a relocatable kernel with the decompression location at a 
-> hard-coded offset without too much trouble.  Everything seems to work fine.
+I considered that user space would not notice the device until the
+uevent is emitted so that wouldn't matter that much.
 
-Nice!
+But it's back to the drawing board again. I'm running out of options
+how to do this in a not so intrusive way. Do you have any tips how to
+fix the race for good?
 
-> However, it occurred to me that even if the kernel image's base address were 
-> randomized at boot, assuming a binary distro kernel it would still be 
-> possible to sidt the address of the IDT and calculate symbol offsets relative 
-> to that.  Any thoughts on how to avoid that?  Seems difficult. Another hurdle 
-> will be to find a reasonable source of entropy that early in the boot 
-> process.
-
-I do not think it's an issue.
-
-If an attacker can execute arbitrary privileged instructions like SIDT then 
-it's game over. There's plenty of CPU state, the IDT, GDT, various MSRs that 
-would tell roughly where the kernel is, etc.
-
-The attack randomization protects against is when the attacker has a limited 
-amount of control over a stack return address (due to a buffer overflow for 
-example) and can redirect kernel execution to some 'interesting' place that 
-allows more control. With SMEP and kernel image randomization this would be 
-rather difficult to pull off: the kernel wont jump to a pre-prepared user-space 
-shellcode buffer (due to SMEP) while the location of already existing, 
-executable, supervisor-privileged pages is randomized.
-
-So when you have implemented this i'd suggest enabling CONFIG_X86_PTDUMP=y to 
-get access to a dump of all pagetables, in the /debug/kernel_page_tables file. 
-There you can check every single executable, kernel-privileged mapping on a 
-live system and make sure it's not easily discovered.
-
-Thanks,
-
-	Ingo
+-- 
+Kalle Valo
