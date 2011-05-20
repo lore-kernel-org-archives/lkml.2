@@ -1,214 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934920Ab1ETO1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:27:14 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:59157 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab1ETO1L (ORCPT
+	id S934882Ab1ETOdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 10:33:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42646 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932916Ab1ETOdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:27:11 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 20 May 2011 22:31:38 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Shawn Guo <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>,
-        <kernel@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
-        <patches@linaro.org>
-Subject: Re: [PATCH 4/4] gpio: gpio-mxs: add gpio driver for Freescale MXS
- architecture
-Message-ID: <20110520143137.GB27551@S2100-06.ap.freescale.net>
-References: <1305885089-27343-1-git-send-email-shawn.guo@linaro.org>
- <1305885089-27343-5-git-send-email-shawn.guo@linaro.org>
- <20110520112455.GB10403@pengutronix.de>
+	Fri, 20 May 2011 10:33:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hi1ACq3oqOqe7OgfmBy1gT/sj7yeG2J3EJR1Px8R49+AFoo44ufmNpyIeq1CA2wh/N
+         yRUk4/iLITOkj1pVIzbl+mc6v83lwqnb/rpSSRRR+DnYKpcFnGUmLYFlsbhydetaEzV5
+         cSybafP0G56djbWmngozIP8AwVudJHpXploYg=
+Date: Fri, 20 May 2011 16:32:59 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] Please pull powerpc.git merge branch
+Message-ID: <20110520143259.GB5785@riccoc20.at.omicron.at>
+References: <1305777978.7481.37.camel@pasglop>
+ <20110520132328.GA5785@riccoc20.at.omicron.at>
+ <20110520135845.GG25179@zod.rchland.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110520112455.GB10403@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20110520135845.GG25179@zod.rchland.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 01:24:55PM +0200, Sascha Hauer wrote:
-> On Fri, May 20, 2011 at 05:51:29PM +0800, Shawn Guo wrote:
-> > Add gpio-mxs driver by moving arch/arm/mach-mxs/gpio.c into
-> > drivers/gpio.
-> > 
-> > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> > ---
-> >  drivers/gpio/Kconfig    |    3 +
-> >  drivers/gpio/Makefile   |    1 +
-> >  drivers/gpio/gpio-mxs.c |  168 ++++++++++++++++++++++++++++++++++-------------
-> >  3 files changed, 125 insertions(+), 47 deletions(-)
-> > 
-> > diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> > index d3b2953..ccca658 100644
-> > --- a/drivers/gpio/Kconfig
-> > +++ b/drivers/gpio/Kconfig
-> > @@ -81,6 +81,9 @@ config GPIO_IT8761E
-> >  	help
-> >  	  Say yes here to support GPIO functionality of IT8761E super I/O chip.
-> >  
-> > +config GPIO_MXS
-> > +	bool
-> > +
-> >  config GPIO_PL061
-> >  	bool "PrimeCell PL061 GPIO support"
-> >  	depends on ARM_AMBA
-> > diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> > index becef59..b06a335 100644
-> > --- a/drivers/gpio/Makefile
-> > +++ b/drivers/gpio/Makefile
-> > @@ -18,6 +18,7 @@ obj-$(CONFIG_GPIO_MAX7301)	+= max7301.o
-> >  obj-$(CONFIG_GPIO_MAX732X)	+= max732x.o
-> >  obj-$(CONFIG_GPIO_MC33880)	+= mc33880.o
-> >  obj-$(CONFIG_GPIO_MCP23S08)	+= mcp23s08.o
-> > +obj-$(CONFIG_GPIO_MXS)		+= gpio-mxs.o
-> >  obj-$(CONFIG_GPIO_74X164)	+= 74x164.o
-> >  obj-$(CONFIG_GPIO_PCA953X)	+= pca953x.o
-> >  obj-$(CONFIG_GPIO_PCF857X)	+= pcf857x.o
-> > diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
-> > index 6a59bf2..b33b2bc 100644
-> > --- a/drivers/gpio/gpio-mxs.c
-> > +++ b/drivers/gpio/gpio-mxs.c
-> > @@ -25,14 +25,18 @@
-> >  #include <linux/io.h>
-> >  #include <linux/irq.h>
-> >  #include <linux/gpio.h>
-> > -#include <mach/mx23.h>
-> > -#include <mach/mx28.h>
-> > -#include <asm-generic/bug.h>
-> > -
-> > -#include "gpio.h"
-> > -
-> > -static struct mxs_gpio_port *mxs_gpio_ports;
-> > -static int gpio_table_size;
-> > +#include <linux/platform_device.h>
-> > +#include <linux/slab.h>
-> > +#include <mach/mxs.h>
-> > +
-> > +struct mxs_gpio_port {
-> > +	void __iomem *base;
-> > +	int id;
-> > +	int irq;
-> > +	int irq_high;
-> > +	int virtual_irq_start;
-> > +	struct gpio_chip chip;
-> > +};
-> >  
-> >  #define MXS_SET		0x4
-> >  #define MXS_CLR		0x8
-> > @@ -76,20 +80,23 @@ static void set_gpio_irqenable(struct mxs_gpio_port *port, u32 index,
-> >  
-> >  static void mxs_gpio_ack_irq(struct irq_data *d)
-> >  {
-> > +	struct mxs_gpio_port *port = irq_data_get_irq_chip_data(d);
-> >  	u32 gpio = irq_to_gpio(d->irq);
-> > -	clear_gpio_irqstatus(&mxs_gpio_ports[gpio / 32], gpio & 0x1f);
-> > +	clear_gpio_irqstatus(port, gpio & 0x1f);
-> >  }
-> >  
-> >  static void mxs_gpio_mask_irq(struct irq_data *d)
-> >  {
-> > +	struct mxs_gpio_port *port = irq_data_get_irq_chip_data(d);
-> >  	u32 gpio = irq_to_gpio(d->irq);
-> > -	set_gpio_irqenable(&mxs_gpio_ports[gpio / 32], gpio & 0x1f, 0);
-> > +	set_gpio_irqenable(port, gpio & 0x1f, 0);
-> >  }
-> >  
-> >  static void mxs_gpio_unmask_irq(struct irq_data *d)
-> >  {
-> > +	struct mxs_gpio_port *port = irq_data_get_irq_chip_data(d);
-> >  	u32 gpio = irq_to_gpio(d->irq);
-> > -	set_gpio_irqenable(&mxs_gpio_ports[gpio / 32], gpio & 0x1f, 1);
-> > +	set_gpio_irqenable(port, gpio & 0x1f, 1);
-> >  }
-> >  
-> >  static int mxs_gpio_get(struct gpio_chip *chip, unsigned offset);
-> > @@ -98,7 +105,7 @@ static int mxs_gpio_set_irq_type(struct irq_data *d, unsigned int type)
-> >  {
-> >  	u32 gpio = irq_to_gpio(d->irq);
-> >  	u32 pin_mask = 1 << (gpio & 31);
-> > -	struct mxs_gpio_port *port = &mxs_gpio_ports[gpio / 32];
-> > +	struct mxs_gpio_port *port = irq_data_get_irq_chip_data(d);
-> >  	void __iomem *pin_addr;
-> >  	int edge;
-> >  
-> > @@ -142,7 +149,7 @@ static int mxs_gpio_set_irq_type(struct irq_data *d, unsigned int type)
-> >  static void mxs_gpio_irq_handler(u32 irq, struct irq_desc *desc)
-> >  {
-> >  	u32 irq_stat;
-> > -	struct mxs_gpio_port *port = (struct mxs_gpio_port *)irq_get_handler_data(irq);
-> > +	struct mxs_gpio_port *port = irq_get_handler_data(irq);
-> >  	u32 gpio_irq_no_base = port->virtual_irq_start;
-> >  
-> >  	desc->irq_data.chip->irq_ack(&desc->irq_data);
-> > @@ -170,7 +177,7 @@ static int mxs_gpio_set_wake_irq(struct irq_data *d, unsigned int enable)
-> >  {
-> >  	u32 gpio = irq_to_gpio(d->irq);
-> >  	u32 gpio_idx = gpio & 0x1f;
-> > -	struct mxs_gpio_port *port = &mxs_gpio_ports[gpio / 32];
-> > +	struct mxs_gpio_port *port = irq_data_get_irq_chip_data(d);
-> >  
-> >  	if (enable) {
-> >  		if (port->irq_high && (gpio_idx >= 16))
-> > @@ -251,47 +258,114 @@ static int mxs_gpio_direction_output(struct gpio_chip *chip,
-> >  	return 0;
-> >  }
-> >  
-> > -int __init mxs_gpio_init(struct mxs_gpio_port *port, int cnt)
-> > +static int __devinit mxs_gpio_probe(struct platform_device *pdev)
-> >  {
-> > -	int i, j;
-> > +	static void __iomem *base;
-> > +	struct mxs_gpio_port *port;
-> > +	struct resource *iores = NULL;
-> > +	int err, i;
-> > +
-> > +	port = kzalloc(sizeof(struct mxs_gpio_port), GFP_KERNEL);
-> > +	if (!port)
-> > +		return -ENOMEM;
-> > +
-> > +	port->id = pdev->id;
-> > +	port->virtual_irq_start = MXS_GPIO_IRQ_START + port->id * 32;
-> > +
-> > +	/*
-> > +	 * map memory region only once, as all the gpio ports
-> > +	 * share the same one
-> > +	 */
-> > +	if (!base) {
+On Fri, May 20, 2011 at 09:58:45AM -0400, Josh Boyer wrote:
+> On Fri, May 20, 2011 at 03:23:29PM +0200, Richard Cochran wrote:
+> >When I try to build 'next' (now at 208b3a4c), it does not compile due
+> >to a change from the following commit.
+> >
+> >> Benjamin Herrenschmidt (1):
+> >>       powerpc/smp: Make start_secondary_resume available to all CPU variants
+> >
+> >I would appreciate your help in getting this fixed...
 > 
-> If the different ports share the same address and can't be seperated I
-> wonder whether it's better to register only one platform device for all
-> ports.
+> Could you try the patch below?
 
-gpio-u300 is one example that register one platform device for all
-ports.  Comparing to it, the gpio-mxs driver looks simpler and
-cleaner, and there is no platform data.
+Yes, and it both compiles and boots.
 
-We may agree that every single port should register its own platform
-device, if the ports are all independent to each other with their own
-base address.  Then same base address could be special case of
-different base address, so that we can make driver implementation
-a little common for both cases.
+Thanks,
+Richard
 
-If people think these two cases (sharing ports vs. independent ports)
-will be sorted into two different patterns, yes, gpio-mxs should go
-the way that gpio-u300 is going.
-
-So please comment, people (Grant? :)
-
-> (classic) i.MX has a similar problem where one single interrupt is
-> shared by all gpio ports. Ok, this could be worked around with another
-> chained handler which dispatches the single interrupt to each port.
 > 
-
--- 
-Regards,
-Shawn
-
+> Commit 69e3cea8d5fd526 introduced start_secondary_resume to misc_32.S,
+> however it uses a 64-bit instruction which is not valid on 32-bit
+> platforms.  Use 'stw' instead.
+> 
+> Reported-by: Richard Cochran <richardcochran@gmail.com>
+> Signed-off-by: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+> 
+> ---
+> 
+> diff --git a/arch/powerpc/kernel/misc_32.S
+> b/arch/powerpc/kernel/misc_32.S
+> index 402560e..998a100 100644
+> --- a/arch/powerpc/kernel/misc_32.S
+> +++ b/arch/powerpc/kernel/misc_32.S
+> @@ -700,7 +700,7 @@ _GLOBAL(start_secondary_resume)
+> 	rlwinm  r1,r1,0,0,(31-THREAD_SHIFT)     /* current_thread_info() */
+> 	addi    r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
+> 	li      r3,0
+> -	std     r3,0(r1)                /* Zero the stack frame pointer */
+> +	stw     r3,0(r1)                /* Zero the stack frame pointer */
+> 	bl      start_secondary
+> 	b       .
+>  #endif /* CONFIG_SMP */
+> 
