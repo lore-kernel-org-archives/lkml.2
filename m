@@ -1,178 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab1ETOyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 10:54:13 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:46746 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab1ETOyK convert rfc822-to-8bit (ORCPT
+	id S1756659Ab1ETPA4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 11:00:56 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:23562 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755408Ab1ETPAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 10:54:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=CCV5YEr0udVgSQNNJ4w8MbegHfJ5JyY5yBvZcS/mZhCkXM4Eq5Nq14YHUaQIhZ5lrF
-         fNWHeeP89ON4jnh5+rsw==
+	Fri, 20 May 2011 11:00:55 -0400
+Message-ID: <4DD6821F.6060707@tilera.com>
+Date: Fri, 20 May 2011 11:00:47 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <sig.51214cae32.4DD61B48.8010601@radicalsystems.co.za>
-References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
- <sig.512079e334.4DD57D44.50009@radicalsystems.co.za> <BANLkTikHQNQdWoDS2dXUC9gTPWvtmUM=yA@mail.gmail.com>
- <sig.51214cae32.4DD61B48.8010601@radicalsystems.co.za>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 20 May 2011 08:53:47 -0600
-Message-ID: <BANLkTi=jTKp9+_KDmTxYfGXe6Ln02GLmDA@mail.gmail.com>
-Subject: Re: PCI BAR1 Unassigned
-To: Jan Zwiegers <jan@radicalsystems.co.za>
-Cc: Xianghua Xiao <xiaoxianghua@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <virtualization@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/tile: add /proc/tile, /proc/sys/tile, and a sysfs
+ cpu attribute
+References: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com> <201105191722.17685.arnd@arndb.de> <4DD67A31.90802@tilera.com> <201105201637.20925.arnd@arndb.de>
+In-Reply-To: <201105201637.20925.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 1:42 AM, Jan Zwiegers <jan@radicalsystems.co.za> wrote:
-> On 2011-05-19 10:50 PM, Xianghua Xiao wrote:
+On 5/20/2011 10:37 AM, Arnd Bergmann wrote:
+> On Friday 20 May 2011 16:26:57 Chris Metcalf wrote:
+>>>>>> /proc/tile/hardwall
+>>>>>>   Information on the set of currently active hardwalls (note that
+>>>>>>   the implementation is already present in arch/tile/kernel/hardwall.c;
+>>>>>>   this change just enables it)
+> Ah, I see. I didn't notice that it was in the other file. You are
+> absolutely right, this does not belong into /sys/hypervisor and
+> fits well into procfs, we just need to find the right place.
+>> Perhaps in this case it would be reasonable to just have the hardwall
+>> subsystem put the file in /proc/driver/hardwall, or even /proc/hardwall? 
+>> Or I could make the /dev/hardwall char device dump out the ASCII text that
+>> we currently get from /proc/hardwall if you read from it, which is a little
+>> weird but not inconceivable.  For example it currently shows things like this:
 >>
->> On Thu, May 19, 2011 at 3:27 PM, Jan Zwiegers<jan@radicalsystems.co.za>
->>  wrote:
->>>
->>> On 2011-05-19 08:50 PM, Bjorn Helgaas wrote:
->>>>
->>>> On Thu, May 19, 2011 at 10:28 AM, Jan Zwiegers<jan@radicalsystems.co.za>
->>>>  wrote:
->>>>>
->>>>> I have the problem below where my PCI card's second BAR does not get
->>>>> assigned.
->>>>> What can be the cause of this problem?
->>>>> The last kernel I tested on which worked OK was 2.6.27.
->>>>> My current problematic kernel 2.6.35.
->>>>>
->>>>> 05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O
->>>>> Card
->>>>> (rev 5c)
->>>>>    Flags: bus master, slow devsel, latency 32, IRQ 22
->>>>>    Memory at 93b00000 (type 3, prefetchable) [size=2K]
->>>>>    Memory at<unassigned>    (type 3, prefetchable)
->>>>>    Capabilities: [80] #00 [0600]
->>>>>    Kernel modules: pci703drv
->>>>
->>>> Could be resource exhaustion or, more likely, we ran out because we
->>>> now assign resource to things that don't need them, leaving none for
->>>> things that *do* need them.  This sounds like a regression, so we
->>>> should open a bugzilla for it and attach dmesg logs from 2.6.27 and
->>>> 2.6.35.
->>>>
->>>> Does this problem keep the driver from working?  (Sometimes drivers
->>>> don't actually use all the BARs a device supports.)
->>>>
->>>> Bjorn
->>>>
->>>
->>> I'm the maintainer of the driver and was involved in the development of
->>> the
->>> board as well in 2003. The board uses two BARS and the second BAR is the
->>> most important. The board worked fine since the 2.4 days and only
->>> recently
->>> became problematic. I suspect it works on even later kernels than 27,
->>> maybe
->>> 2.6.32.
->>>
->>> My knowledge is too little to actually determine if the problem is
->>> because
->>> the FPGA based PCI interface is not within spec or something that changed
->>> in
->>> the kernel, because of the post .30 releases becoming more strict to PCI
->>> specification, i.e. BIOS / Kernel interaction.
->>>
->>> Jan
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
+>> # cat /proc/tile/hardwall
+>> 2x2 1,1 pids: 484@2,1 479@1,1
+>> 2x2 0,3 pids:
 >>
->> What's the size for BAR1? one reason is that no more space to
->> align/allocate BAR1.
->>
->> If the board stays the same then your FPGA might be the cause, I have
->> seen similar issues and they ended up in FPGA implementation.
->>
+>> In this example "2x2 1,1" is a 2x2 grid of cpus starting at grid (x,y)
+>> position (1,1), with task 484 bound to the cpu at (x,y) position (2,1).
+> Any chance you can still restructure the information? I would recommend
+> making it a first-class procfs member, since the data is really per-task.
 >
-> I have submitted the difference in iomem, lspci and dmesg of 2.6.27 & 2.6.35
-> kernels from the same machine. The BAR size is 2K. As above BAR0 is at
-> 93b0000 and BAR1 should be at 93b00800.
+> You can add a conditional entry to tgid_base_stuff[] in fs/proc/base.c
+> to make it show up for each pid, and then just have the per-task information
+> in there to do the lookup the other way round:
+>
+> # cat /proc/484/hardwall
+> 2x2 1,1 @2,1
+>
+> # cat /proc/479/hardwall
+> 2x2 1,1 @1,1
 
-Thanks for the data.
+It's not unreasonable to do what you're suggesting, i.e. "what's this
+task's hardwall?", but it's not something that we've come up with any kind
+of use case for in the past, so I'm not currently planning to implement
+this.  If we did, I agree, your solution looks like the right one.
 
-I think your FPGA is "unusual" after all.  lspci says this:
+The proposed /proc/tile/hardwall really is intended as system-wide
+information.  Each hardwall (one line in the output file example above)
+corresponds to a "struct file" that may be shared by multiple processes (or
+threads).  Processes may pass the "struct file" to other processes via fork
+(and maybe exec), or by passing it over Unix sockets.  Then those processes
+can choose a cpu within a hardwall rectangle, affinitize to that cpu only,
+"activate" the hardwall fd with an ioctl(), and then get access from the OS
+so they can work together within a hardwall to exchange data across the
+Tilera "user dynamic network" (a wormhole routed grid network that moves
+data at 32 bits/cycle with almost no latency).  Processes can create a new
+hardwall as long as it doesn't overlap geometrically with any other
+existing hardwall on the system.
 
-  05:01.0 Unassigned class [ff00]: Eagle Technology PCI-703 Analog I/O
-Card (rev 5c)
-       Flags: bus master, slow devsel, latency 32, IRQ 22
-       Memory at 93b00000 (type 3, prefetchable) [size=2K]
-       Memory at <unassigned> (type 3, prefetchable)
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-The "type 3" means the BAR has both type bits set (bits 1 and 2).  The
-spec (PCI 3.0 sec 6.2.5.1) says the type field means:
 
-  00 - Locate anywhere in 32-bit access space
-  01 - Reserved
-  10 - Locate anywhere in 64-bit access space
-  11 - Reserved
-
-I think your BARs are using the "11 - Reserved" setting when they
-should be "00".  The way Linux handles this did change between 2.6.27
-and 2.6.35, and I think the change was unintentional, so we might
-consider changing it back.
-
-Commit e354597cce8d219d made this change to decode_bar():
-
-          res->flags = bar & ~PCI_BASE_ADDRESS_MEM_MASK;
-
-  -       if (res->flags == PCI_BASE_ADDRESS_MEM_TYPE_64)
-  +       if (res->flags & PCI_BASE_ADDRESS_MEM_TYPE_64)
-                  return pci_bar_mem64;
-          return pci_bar_mem32;
-
-In 2.6.27, we treated the BAR as 64-bit only if the low four bits were
-0100 (non-prefetchable, 64-bit type, memory).  That was incorrect,
-because we should ignore the prefetchable bit.  The fix was to look
-*only* at bit 2, so now we decide the BAR is 64-bit if the low four
-bits are x1xx.
-
-Your BARs contain 1110 in the low four bits.  This is invalid but was
-treated as 32-bit by 2.6.27 and as 64-bit by 2.6.35.
-
-Here's an untested Linux change I think we might consider making to
-restore the previous behavior.  Can you try it (gmail will probably
-mangle it, so you'll have to apply it by hand)?
-
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 44cbbba..33894ba 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -138,15 +138,20 @@ static u64 pci_size(u64 base, u64 maxbase, u64 mask)
-
- static inline enum pci_bar_type decode_bar(struct resource *res, u32 bar)
- {
-+       u32 mem_type;
-+
-        if ((bar & PCI_BASE_ADDRESS_SPACE) == PCI_BASE_ADDRESS_SPACE_IO) {
-                res->flags = bar & ~PCI_BASE_ADDRESS_IO_MASK;
-                return pci_bar_io;
-        }
-
--       res->flags = bar & ~PCI_BASE_ADDRESS_MEM_MASK;
-+       res->flags = bar & PCI_BASE_ADDRESS_MEM_PREFETCH;
-
--       if (res->flags & PCI_BASE_ADDRESS_MEM_TYPE_64)
-+       mem_type = bar & PCI_BASE_ADDRESS_MEM_TYPE_MASK;
-+       if (mem_type == PCI_BASE_ADDRESS_MEM_TYPE_64) {
-+               res->flags |= PCI_BASE_ADDRESS_MEM_TYPE_64;
-                return pci_bar_mem64;
-+       }
-        return pci_bar_mem32;
- }
