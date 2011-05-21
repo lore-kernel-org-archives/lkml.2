@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932412Ab1EUACi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 20:02:38 -0400
+	id S932480Ab1EUACY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 20:02:24 -0400
 Received: from mga09.intel.com ([134.134.136.24]:33151 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756094Ab1EUACJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 20:02:09 -0400
+	id S1755858Ab1EUACI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 20:02:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,244,1304319600"; 
-   d="scan'208";a="1807296"
+   d="scan'208";a="1807297"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, airlied@linux.ie,
-        Andi Kleen <ak@linux.intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH 05/12] I915: Move i915 register accesses out of line.
-Date: Fri, 20 May 2011 17:01:15 -0700
-Message-Id: <1305936082-21304-5-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 06/12] RADEON: Remove now unused functions in radeon driver
+Date: Fri, 20 May 2011 17:01:16 -0700
+Message-Id: <1305936082-21304-6-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1305936082-21304-1-git-send-email-andi@firstfloor.org>
 References: <1305936082-21304-1-git-send-email-andi@firstfloor.org>
@@ -26,107 +25,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With the tracing code in there they are too big to inline.
+With the dropped inlines gccs starts warning about genuinely unused
+functions. Remove r600_bpe_from_format, evergreen_cs_track_validate_cb,
+evergreen-cs_packet_next_is_pkt3_nop which are all unused.
 
-Fixes compared to a non force inline kernel:
-
-i915_restore_display                        4393   12036   +7643
-i915_save_display                           4295   11459   +7164
-i915_handle_error                           2979    6666   +3687
-i915_driver_irq_handler                     2923    5086   +2163
-i915_ringbuffer_info                         458    1661   +1203
-i915_save_vga                                  -    1200   +1200
-i915_driver_irq_uninstall                    453    1624   +1171
-i915_driver_irq_postinstall                  913    2078   +1165
-ironlake_enable_drps                         719    1872   +1153
-i915_restore_vga                               -    1142   +1142
-intel_display_capture_error_state            784    2030   +1246
-intel_init_emon                              719    2016   +1297
-
-and more ...
-
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/gpu/drm/i915/Makefile   |    1 +
- drivers/gpu/drm/i915/i915_drv.h |   12 ++----------
- drivers/gpu/drm/i915/i915_reg.c |   24 ++++++++++++++++++++++++
- 3 files changed, 27 insertions(+), 10 deletions(-)
- create mode 100644 drivers/gpu/drm/i915/i915_reg.c
+ drivers/gpu/drm/radeon/evergreen_cs.c |   28 ----------------------------
+ drivers/gpu/drm/radeon/r600_cs.c      |   19 -------------------
+ 2 files changed, 0 insertions(+), 47 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/Makefile b/drivers/gpu/drm/i915/Makefile
-index 0ae6a7c..4a27280 100644
---- a/drivers/gpu/drm/i915/Makefile
-+++ b/drivers/gpu/drm/i915/Makefile
-@@ -13,6 +13,7 @@ i915-y := i915_drv.o i915_dma.o i915_irq.o i915_mem.o \
- 	  i915_gem_gtt.o \
- 	  i915_gem_tiling.o \
- 	  i915_trace_points.o \
-+	  i915_reg.o \
- 	  intel_display.o \
- 	  intel_crt.o \
- 	  intel_lvds.o \
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 1c1b27c..9afbd5f 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1312,13 +1312,8 @@ extern void intel_display_print_error_state(struct seq_file *m,
- 		LOCK_TEST_WITH_RETURN(dev, file);			\
- } while (0)
+diff --git a/drivers/gpu/drm/radeon/evergreen_cs.c b/drivers/gpu/drm/radeon/evergreen_cs.c
+index 5175c65..1d46c95 100644
+--- a/drivers/gpu/drm/radeon/evergreen_cs.c
++++ b/drivers/gpu/drm/radeon/evergreen_cs.c
+@@ -122,12 +122,6 @@ static void evergreen_cs_track_init(struct evergreen_cs_track *track)
+ 	track->db_s_write_bo = NULL;
+ }
  
+-static int evergreen_cs_track_validate_cb(struct radeon_cs_parser *p, int i)
+-{
+-	/* XXX fill in */
+-	return 0;
+-}
 -
- #define __i915_read(x, y) \
--static inline u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
--	u##x val = read##y(dev_priv->regs + reg); \
--	trace_i915_reg_rw(false, reg, val, sizeof(val)); \
--	return val; \
--}
-+	u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg);
- __i915_read(8, b)
- __i915_read(16, w)
- __i915_read(32, l)
-@@ -1326,10 +1321,7 @@ __i915_read(64, q)
- #undef __i915_read
+ static int evergreen_cs_track_check(struct radeon_cs_parser *p)
+ {
+ 	struct evergreen_cs_track *track = p->track;
+@@ -236,28 +230,6 @@ static int evergreen_cs_packet_next_reloc(struct radeon_cs_parser *p,
+ }
  
- #define __i915_write(x, y) \
--static inline void i915_write##x(struct drm_i915_private *dev_priv, u32 reg, u##x val) { \
--	trace_i915_reg_rw(true, reg, val, sizeof(val)); \
--	write##y(val, dev_priv->regs + reg); \
+ /**
+- * evergreen_cs_packet_next_is_pkt3_nop() - test if next packet is packet3 nop for reloc
+- * @parser:		parser structure holding parsing context.
+- *
+- * Check next packet is relocation packet3, do bo validation and compute
+- * GPU offset using the provided start.
+- **/
+-static int evergreen_cs_packet_next_is_pkt3_nop(struct radeon_cs_parser *p)
+-{
+-	struct radeon_cs_packet p3reloc;
+-	int r;
+-
+-	r = evergreen_cs_packet_parse(p, &p3reloc, p->idx);
+-	if (r) {
+-		return 0;
+-	}
+-	if (p3reloc.type != PACKET_TYPE3 || p3reloc.opcode != PACKET3_NOP) {
+-		return 0;
+-	}
+-	return 1;
 -}
-+	void i915_write##x(struct drm_i915_private *dev_priv, u32 reg, u##x val);
- __i915_write(8, b)
- __i915_write(16, w)
- __i915_write(32, l)
-diff --git a/drivers/gpu/drm/i915/i915_reg.c b/drivers/gpu/drm/i915/i915_reg.c
-new file mode 100644
-index 0000000..8f56b14
---- /dev/null
-+++ b/drivers/gpu/drm/i915/i915_reg.c
-@@ -0,0 +1,24 @@
-+#include "i915_drv.h"
-+
-+#define __i915_read(x, y) \
-+u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
-+	u##x val = read##y(dev_priv->regs + reg); \
-+	trace_i915_reg_rw(false, reg, val, sizeof(val)); \
-+	return val; \
-+}
-+__i915_read(8, b)
-+__i915_read(16, w)
-+__i915_read(32, l)
-+__i915_read(64, q)
-+#undef __i915_read
-+
-+#define __i915_write(x, y) \
-+void i915_write##x(struct drm_i915_private *dev_priv, u32 reg, u##x val) { \
-+	trace_i915_reg_rw(true, reg, val, sizeof(val)); \
-+	write##y(val, dev_priv->regs + reg); \
-+}
-+__i915_write(8, b)
-+__i915_write(16, w)
-+__i915_write(32, l)
-+__i915_write(64, q)
-+#undef __i915_write
+-
+-/**
+  * evergreen_cs_packet_next_vline() - parse userspace VLINE packet
+  * @parser:		parser structure holding parsing context.
+  *
+diff --git a/drivers/gpu/drm/radeon/r600_cs.c b/drivers/gpu/drm/radeon/r600_cs.c
+index 8782dd6..6f71b32 100644
+--- a/drivers/gpu/drm/radeon/r600_cs.c
++++ b/drivers/gpu/drm/radeon/r600_cs.c
+@@ -215,25 +215,6 @@ static int fmt_get_nblocksy(u32 format, u32 h)
+ 	return (h + bh - 1) / bh;
+ }
+ 
+-static int r600_bpe_from_format(u32 *bpe, u32 format)
+-{
+- 	unsigned res;
+-
+-	if (format >= ARRAY_SIZE(color_formats_table))
+-		goto fail;
+-
+-	res = color_formats_table[format].blocksize;
+-	if (res == 0)
+-		goto fail;
+-
+-	*bpe = res;
+-	return 0;
+-
+-fail:
+-	*bpe = 16;
+-	return -EINVAL;
+-}
+-
+ struct array_mode_checker {
+ 	int array_mode;
+ 	u32 group_size;
 -- 
 1.7.4.4
 
