@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab1EUEsn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 00:48:43 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:4151 "EHLO
+	id S1751627Ab1EUExD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 00:53:03 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50553 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926Ab1EUEsh (ORCPT
+	with ESMTP id S1750862Ab1EUEw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 00:48:37 -0400
+	Sat, 21 May 2011 00:52:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=vAh0rv70bS5Io1L9bRG9/kcFMRNHONH1UZhGImzwK4jENsJYZjn7j628jneWbW5uMO
-         UYkfykLWcxijYBxyfCnA==
-Date: Fri, 20 May 2011 21:48:26 -0700 (PDT)
+        b=w8VtvrM/wyZ5nL36t+vM/CwEo4690ZDqmax13urG98J4phxG8LVBQwAJAPFCc5VIGu
+         y2kSHeP1wtupgjEw3dZA==
+Date: Fri, 20 May 2011 21:52:58 -0700 (PDT)
 From: Hugh Dickins <hughd@google.com>
 X-X-Sender: hugh@sister.anvils
 To: Greg KH <gregkh@suse.de>
@@ -23,10 +23,10 @@ cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
         Konstantin Khlebnikov <khlebnikov@openvz.org>,
         Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
         Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [23/71] tmpfs: fix race between umount and swapoff
-In-Reply-To: <20110519180556.482988919@clark.kroah.org>
-Message-ID: <alpine.LSU.2.00.1105202139001.1847@sister.anvils>
-References: <20110519180556.482988919@clark.kroah.org>
+Subject: Re: [07/24] tmpfs: fix race between umount and swapoff
+In-Reply-To: <20110519183126.302147055@clark.kroah.org>
+Message-ID: <alpine.LSU.2.00.1105202148500.1847@sister.anvils>
+References: <20110519183126.302147055@clark.kroah.org>
 User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -36,17 +36,19 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 19 May 2011, Greg KH wrote:
-> 2.6.38-stable review patch.  If anyone has any objections, please let us know.
+> 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 Witold has found that I screwed up the highmem case in this patch.
 Please add the commit appended at the bottom - or else delay both
-until the next 2.6.38-stable if you prefer.
+until the next 2.6.33-longterm if you prefer.
 
 Thanks,
 Hugh
 
 > 
 > ------------------
+> Content-Length: 6159
+> Lines: 197
 > 
 > From: Hugh Dickins <hughd@google.com>
 > 
@@ -85,7 +87,7 @@ Hugh
 > 
 > --- a/mm/shmem.c
 > +++ b/mm/shmem.c
-> @@ -852,7 +852,7 @@ static inline int shmem_find_swp(swp_ent
+> @@ -850,7 +850,7 @@ static inline int shmem_find_swp(swp_ent
 >  
 >  static int shmem_unuse_inode(struct shmem_inode_info *info, swp_entry_t entry, struct page *page)
 >  {
@@ -94,7 +96,7 @@ Hugh
 >  	unsigned long idx;
 >  	unsigned long size;
 >  	unsigned long limit;
-> @@ -875,8 +875,10 @@ static int shmem_unuse_inode(struct shme
+> @@ -873,8 +873,10 @@ static int shmem_unuse_inode(struct shme
 >  	if (size > SHMEM_NR_DIRECT)
 >  		size = SHMEM_NR_DIRECT;
 >  	offset = shmem_find_swp(entry, ptr, ptr+size);
@@ -106,7 +108,7 @@ Hugh
 >  	if (!info->i_indirect)
 >  		goto lost2;
 >  
-> @@ -914,11 +916,11 @@ static int shmem_unuse_inode(struct shme
+> @@ -912,11 +914,11 @@ static int shmem_unuse_inode(struct shme
 >  			if (size > ENTRIES_PER_PAGE)
 >  				size = ENTRIES_PER_PAGE;
 >  			offset = shmem_find_swp(entry, ptr, ptr+size);
@@ -119,7 +121,7 @@ Hugh
 >  		}
 >  	}
 >  lost1:
-> @@ -928,8 +930,7 @@ lost2:
+> @@ -926,8 +928,7 @@ lost2:
 >  	return 0;
 >  found:
 >  	idx += offset;
@@ -129,7 +131,7 @@ Hugh
 >  
 >  	/*
 >  	 * Move _head_ to start search for next from here.
-> @@ -940,37 +941,18 @@ found:
+> @@ -938,37 +939,18 @@ found:
 >  	 */
 >  	if (shmem_swaplist.next != &info->swaplist)
 >  		list_move_tail(&shmem_swaplist, &info->swaplist);
@@ -174,7 +176,7 @@ Hugh
 >  		error = 1;
 >  		if (filepage) {
 >  			/*
-> @@ -990,14 +972,8 @@ found:
+> @@ -988,14 +970,8 @@ found:
 >  		swap_free(entry);
 >  		error = 1;	/* not an error, but entry was found */
 >  	}
@@ -190,7 +192,7 @@ Hugh
 >  	return error;
 >  }
 >  
-> @@ -1009,6 +985,26 @@ int shmem_unuse(swp_entry_t entry, struc
+> @@ -1007,6 +983,26 @@ int shmem_unuse(swp_entry_t entry, struc
 >  	struct list_head *p, *next;
 >  	struct shmem_inode_info *info;
 >  	int found = 0;
@@ -217,7 +219,7 @@ Hugh
 >  
 >  	mutex_lock(&shmem_swaplist_mutex);
 >  	list_for_each_safe(p, next, &shmem_swaplist) {
-> @@ -1016,17 +1012,19 @@ int shmem_unuse(swp_entry_t entry, struc
+> @@ -1014,17 +1010,19 @@ int shmem_unuse(swp_entry_t entry, struc
 >  		found = shmem_unuse_inode(info, entry, page);
 >  		cond_resched();
 >  		if (found)
