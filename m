@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab1EUP1l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 11:27:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60773 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406Ab1EUP1j (ORCPT
+	id S1756146Ab1EUP2Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 11:28:24 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55491 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab1EUP2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 11:27:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: X32 project status update
-Date: Sat, 21 May 2011 17:27:35 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
-Cc: GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com,
-        "H. Peter Anvin" <h.peter.anvin@intel.com>
-References: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
-In-Reply-To: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
+	Sat, 21 May 2011 11:28:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=UzUWT/vv//5f5aQDjsSPLJu9Of7KEPgUg+jLLQbBpQ9ZreNpaNZjDi+61WBr1LafRq
+         WssAjWyJJweiWOj7NM08EpKvrCM3S/popS+4BsEKauIbsJcIpb0WDdN/nV7DI8Z9+3q0
+         HpzMxwVPIoOPBx25WWs0xeWYGyTnM5/QwiQaM=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105211727.35985.arnd@arndb.de>
-X-Provags-ID: V02:K0:TfZi+Bfl8dbFtRpFcWUBTdObynB5wEPUKOHwTLhjRuA
- 8orcjHqZxOBk+6kXobv0yMC9ng8Fabj+nFlZLuL1j+/OXJ7ov9
- 0PV0s/4JowAEj0S239xLHWgSYZ1jW7CptLFR1V1fEZCSWwIC26
- J/uPS/Dw4XPZsg5CRcPEhxqzw6Iuj175T9K+KwrhEXwY5DT17r
- 5oY8MH6vGeXOdFej+L6OA==
+Date: Sat, 21 May 2011 23:28:19 +0800
+Message-ID: <BANLkTimF2d93VVGKHDdFTn=V-1h9nWrs_w@mail.gmail.com>
+Subject: [PATCH v0] sched: change how run-queue is selected for RT task
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 21 May 2011 17:01:33 H.J. Lu wrote:
-> This is the x32 project status update:
-> 
-> https://sites.google.com/site/x32abi/
-> 
+When selecting run-queue for a given RT task, we have to take a few
+factors, such as task priority and CPU cache affinity, into
+consideration. In this work, a simpler method is proposed, which is
+focusing on the relation between the current run-queue of the given
+task and the given run-queue.
 
-I've had another look at the kernel patch. It basically
-looks all good, but the system call table appears to
-diverge from the x86_64 list for no (documented) reason,
-in the calls above 302. Is that intentional?
+If the current run-queue of task is the given run-queue, the run-queue
+of task keeps unchanged, so the CPU cache affinities of both task and
+the current task of run-queue remain unchanged. Then there are at
+least two tasks competing one CPU, and in the worst case that both
+competitors are RT tasks the victim will be selected and processed by
+pusher later.
 
-I can see why you might want to keep the numbers identical,
-but if they are already different, why not use the generic
-system call table from asm-generic/unistd.h for the new
-ABI?
+On other hand, if the current run-queue of task is different from the
+given run-queue, task is simply delivered to its current run-queue,
+since pusher is always willing to do hard works.
 
-	Arnd
+In summary, the burden of RT task is always processed first by the
+pusher of its current run-queue.
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+
+--- a/kernel/sched_rt.c	2011-04-27 11:48:50.000000000 +0800
++++ b/kernel/sched_rt.c	2011-05-21 22:19:52.000000000 +0800
+@@ -998,14 +998,12 @@ select_task_rq_rt(struct rq *rq, struct
+ 	 *
+ 	 * For equal prio tasks, we just let the scheduler sort it out.
+ 	 */
+-	if (unlikely(rt_task(rq->curr)) &&
+-	    (rq->curr->rt.nr_cpus_allowed < 2 ||
+-	     rq->curr->prio < p->prio) &&
+-	    (p->rt.nr_cpus_allowed > 1)) {
+-		int cpu = find_lowest_rq(p);
+
+-		return (cpu == -1) ? task_cpu(p) : cpu;
+-	}
++	if (task_cpu(p) == rq->cpu)
++		return rq->cpu;
++
++	if (likely(!rt_task(rq->curr)))
++		return rq->cpu;
+
+ 	/*
+ 	 * Otherwise, just let it ride on the affined RQ and the
