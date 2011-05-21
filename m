@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab1EURs4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 13:48:56 -0400
-Received: from mail.perches.com ([173.55.12.10]:1828 "EHLO mail.perches.com"
+	id S1755658Ab1EUR4i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 13:56:38 -0400
+Received: from lo.gmane.org ([80.91.229.12]:47349 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755552Ab1EURsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 13:48:45 -0400
-From: Joe Perches <joe@perches.com>
-To: Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org
-Subject: [PATCH 2/2] net: filter: Use WARN_RATELIMIT
-Date: Sat, 21 May 2011 10:48:40 -0700
-Message-Id: <efa062542c692c3f7743bf2d97b5987ab989e27e.1305999731.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.5.rc3.dirty
-In-Reply-To: <1305666832.1722.62.camel@Joe-Laptop>
-References: <1305666832.1722.62.camel@Joe-Laptop>
-In-Reply-To: <cover.1305999731.git.joe@perches.com>
-References: <cover.1305999731.git.joe@perches.com>
+	id S1752647Ab1EUR4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 13:56:36 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Milan Oravec <moravec@ukf.sk>
+Subject: Re: Linux 2.6.39
+Date: Sat, 21 May 2011 17:56:20 +0000 (UTC)
+Message-ID: <loom.20110521T194736-595@post.gmane.org>
+References: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 88.80.241.150 (Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1) Gecko/20100101 Firefox/4.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A mis-configured filter can spam the logs with lots of stack traces.
+Hi Linus, I'm sorry bothering you, but my usb-bluetooth dongle stop working in
+2.6.39 kernel series. 
+I know it is nothing ground breaking but it is bug. 
+I'm using this hardware from 2.6.11 kernel series. 
+Details are included in this thread:
 
-Rate-limit the warnings and add printout of the bogus filter information.
+https://lkml.org/lkml/2011/4/18/481
 
-Original-patch-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/core/filter.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+I hope I'm doing nothing false writing this email. 
 
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 0eb8c44..0e3622f 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -350,7 +350,9 @@ load_b:
- 			continue;
- 		}
- 		default:
--			WARN_ON(1);
-+			WARN_RATELIMIT(1, "Unknown code:%u jt:%u tf:%u k:%u\n",
-+				       fentry->code, fentry->jt,
-+				       fentry->jf, fentry->k);
- 			return 0;
- 		}
- 	}
--- 
-1.7.5.rc3.dirty
+With best greetings
+
+Milan
+
+
+
 
