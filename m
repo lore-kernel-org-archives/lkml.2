@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab1EUKIS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 06:08:18 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:51965 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab1EUKIP (ORCPT
+	id S1754686Ab1EUKMb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 06:12:31 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38761 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681Ab1EUKM2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 06:08:15 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 21 May 2011 12:07:18 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: [git pull] FireWire updates post 2.6.39
-Message-ID: <20110521120718.6a67029e@stein>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 21 May 2011 06:12:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=obP30HZLVh57yW+ce6cM5sHicsO+gO2AHZQnEW/rWLZxAuScgHcr0/YVXVzNmsLFwJ
+         wHOSa247NSwhv5daIy9A/buzrkENTGLPEmaLra8G9rI1zHfrEKP4xTI0bkryZ2Zx8cyt
+         AXpzIdPFeMD/foqC6A5j0wbH9oaswI6CjOFSc=
+MIME-Version: 1.0
+In-Reply-To: <201105210053.51314.toralf.foerster@gmx.de>
+References: <201105191526.31904.toralf.foerster@gmx.de>
+	<1305907458.1465.23.camel@gandalf.stny.rr.com>
+	<1305907896.1465.27.camel@gandalf.stny.rr.com>
+	<201105210053.51314.toralf.foerster@gmx.de>
+Date: Sat, 21 May 2011 12:12:27 +0200
+Message-ID: <BANLkTinvtfpPr3GxKA49MN4y1q66HETorQ@mail.gmail.com>
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Darren Hart <dvhart@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from the for-linus branch at
+2011/5/21 Toralf Förster <toralf.foerster@gmx.de>:
+> Bisecting gave :
+>
+>
+> git bisect badd123375425d7df4b6081a631fc1203fceafa59b2 is the first bad commit
+> commit d123375425d7df4b6081a631fc1203fceafa59b2
+> Author: Thomas Gleixner <tglx@linutronix.de>
+> Date:   Wed Jan 26 21:32:01 2011 +0100
+>
+>    rwsem: Remove redundant asmregparm annotation
+>
+>    Peter Zijlstra pointed out, that the only user of asmregparm (x86) is
+>    compiling the kernel already with -mregparm=3. So the annotation of
+>    the rwsem functions is redundant. Remove it.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
+Ok, this bisect makes much more sense.
 
-to receive the following updates for the IEEE 1394 (FireWire) subsystem.
-They contain small fixes and some optimizations, e.g. to CPU utilization
-during isochronous I/O.
+Thomas, Peter, please revert d123375425d7df4b6081a631fc1203fceafa59b2.
+We cannot compile UML with -mregparm=3 it would cause a lot of trouble.
+It would break 32bit UML on 64bit and also on older 32bit systems like RHEL5.
 
-The changes in {drivers/media/dvb,sound}/firewire/ have been Cc'd to
-linux-media and alsa-devel but I did not request explicit Acks.  There
-are no conflicts yet and are unlikely to arise during the merge window.
-
-Thanks.
-
-Clemens Ladisch (4):
-      firewire: ohci: do not start DMA contexts before link is enabled
-      firewire: ohci: avoid separate DMA mapping for small AT payloads
-      firewire: ohci: optimize find_branch_descriptor()
-      firewire: optimize iso queueing by setting wake only after the last packet
-
-Stefan Richter (6):
-      Merge tag 'v2.6.39-rc7'
-      firewire: octlet AT payloads can be stack-allocated
-      firewire: core: use non-reentrant workqueue with rescuer
-      firewire: sbp2: omit Scsi_Host lock from queuecommand
-      firewire: sbp2: octlet AT payloads can be stack-allocated
-      firewire: sbp2: parallelize login, reconnect, logout
-
- drivers/firewire/core-card.c             |   27 +++++++-----
- drivers/firewire/core-cdev.c             |    7 +--
- drivers/firewire/core-device.c           |   31 +++++++++-----
- drivers/firewire/core-iso.c              |   27 ++++++++-----
- drivers/firewire/core-transaction.c      |   19 +++++++--
- drivers/firewire/core.h                  |    2 +
- drivers/firewire/net.c                   |    4 +-
- drivers/firewire/ohci.c                  |   64 +++++++++++++++++++----------
- drivers/firewire/sbp2.c                  |   37 +++++------------
- drivers/media/dvb/firewire/firedtv-avc.c |   15 +------
- drivers/media/dvb/firewire/firedtv-fw.c  |    1 +
- include/linux/firewire.h                 |    6 ++-
- sound/firewire/amdtp.c                   |    1 +
- sound/firewire/cmp.c                     |    3 +-
- sound/firewire/iso-resources.c           |   12 +----
- sound/firewire/iso-resources.h           |    1 -
- 16 files changed, 140 insertions(+), 117 deletions(-)
 -- 
-Stefan Richter
--=====-==-== -=-= =-=-=
-http://arcgraph.de/sr/
+Thanks,
+//richard
