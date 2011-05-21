@@ -1,77 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab1EUIdA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 04:33:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49569 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091Ab1EUIc5 (ORCPT
+	id S1753554Ab1EUImI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 04:42:08 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:52390 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752938Ab1EUImD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 04:32:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eric Biederman <ebiederm@aristanetworks.com>
-Subject: Re: [PATCH] arch/tile: add arch/tile/drivers/ directory with SROM driver
-Date: Sat, 21 May 2011 10:32:51 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
-        Chris Wright <chrisw@sous-sol.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Benjamin Thery <benjamin.thery@bull.net>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>
-References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com> <4DD6FB9E.2050604@tilera.com> <BANLkTin5cE-u-J_88UC6ROxvwiMxR6Ro-Q@mail.gmail.com>
-In-Reply-To: <BANLkTin5cE-u-J_88UC6ROxvwiMxR6Ro-Q@mail.gmail.com>
+	Sat, 21 May 2011 04:42:03 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 00/13] Ux500 PRCMU into MFD v4
+Date: Sat, 21 May 2011 10:41:40 +0200
+Message-ID: <1305967300-16337-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105211032.51222.arnd@arndb.de>
-X-Provags-ID: V02:K0:MnHBfv09uLlbUvSGIstpqU2Oq2GZFzU4CxGAg7AyrQz
- J+KhQfzNVaozfKm3SEIAi5YAaG17yINjZ4uy2ISYouM+ifv19r
- tSIrUEK7XWFlhR0Qtaurv09RYJd9PIi5U6d8LsKNzCdT81pqr/
- 4INBzEiXFn2Aehl0Tm4oM8wxTMmShmcWykKym4ZpVa26xCCJHp
- T8PbVfiAtGOYYcQpUjgPw==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 21 May 2011 09:46:55 Eric Biederman wrote:
-> On Fri, May 20, 2011 at 4:39 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> > On 5/20/2011 6:40 PM, Eric Biederman wrote:
-> > The direct motivation for this case is to "impedance match" to the
-> > hypervisor driver for this device, which handles sector management
-> > internally, so the Linux device doesn't have to.  Having a 'flush' method
-> > avoids excessive re-writes of the same sector for certain access patterns.
-> > The only alternatives that I see are to rewrite the tile userspace tools,
-> > but they are the way they are because the current model gives good
-> > consistency guarantees for writing the boot rom in the presence of
-> > arbitrary failure modes; or, to add something like a delayed timer event
-> > that allows the Linux driver to notify the hypervisor driver that writes
-> > are likely complete and it can write out the last sector.  Neither of these
-> > are particularly attractive.
-> 
-> What is wrong with an mtd driver?
-> 
-> Looking a bit back into the conversation it appears clear that you are
-> talking about something that resembles NOR flash with multiple sectors,
-> etc.
-> 
-> eeproms have random byte access and are typically 256 bytes.  You devices
-> doesn't sound anything like an eeprom.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-MTD implies that you have low-level access to the NOR flash registers,
-which this one doesn't. It's certainly not the right Linux interface
-for a high-level flash device, and there is no precedent for this at
-all in Linux.
+This is mainly a rebase to Torvald's HEAD to rid the merge
+conflict in drivers/cpufreq.
 
-We do have precedent for multiple interfaces that have the same
-purpose as this one:
+All but the last patch can be merged into Sam's MFD tree I
+believe, but ACKs from MFD work just as fine and I'll request
+pull.
 
-drivers/misc/eeprom/*
-drivers/char/ps3flash.c
-drivers/char/nwflash.c
-drivers/char/bfin-otp.c
-arch/powerpc/kernel/rtas_flash.c
-drivers/sbus/char/jsflash.c
+This moves the DB8500 PRCMU core driver from the
+arch/arm/mach-ux500/ dir to MFD, updates it, adds the missing
+DB5500 PRCMU driver, updates some dependent register files etc,
+and also updates the CPUfreq driver that use the PRCMU and moves
+it to drivers/cpufreq as discussed recently.
 
-And then some more that I missed, plus the ones that use MTD.
+The PRCMU driver does not do anything but mediate calls to
+sub-drivers really, and later parts of the patch set breaks
+out the CPUfreq and on-chip regulators to their own respective
+subsystems.
 
-	Arnd
+We cannot avoid doing some updates to the mach-ux500/* files in
+the process, but I think this turns out on the positive side
+anyway, removing some 500+ lines and 6 whole files from arch/arm/*
+and a much more appealing architecture.
+
+All but the last patch have been pushed to -next for testing.
+
+13/13 collides with changes in the regulator tree and also use
+the mfd_data per cell, so will need adjusting in or after the
+merge window.
+
+Bengt Jonsson (1):
+  mach-ux500: voltage domain regulators for DB8500
+
+Linus Walleij (10):
+  mach-ux500: update the DB8500 register file
+  mach-ux500: update the DB5500 register file
+  mach-ux500: update ASIC version detection
+  mach-ux500: rename PRCMU driver per SoC
+  mach-ux500: make PRCMU base address dynamic
+  mach-ux500: move the DB8500 PRCMU driver to MFD
+  mfd: add DB5500 PRCMU driver
+  mach-ux500: move CPUfreq driver to cpufreq subsystem
+  cpufreq: update DB8500 cpufreq driver
+  cpufreq: make DB8500 cpufreq driver compile
+
+Mattias Nilsson (1):
+  mfd: update DB8500 PRCMU driver
+
+Rabin Vincent (1):
+  mach-ux500: update SoC and board IRQ handling
+
+ arch/arm/mach-ux500/Kconfig                        |    3 +
+ arch/arm/mach-ux500/Makefile                       |    4 +-
+ arch/arm/mach-ux500/cpu-db5500.c                   |    2 +
+ arch/arm/mach-ux500/cpu-db8500.c                   |    7 +
+ arch/arm/mach-ux500/cpu.c                          |    7 +-
+ arch/arm/mach-ux500/cpufreq.c                      |  211 --
+ arch/arm/mach-ux500/include/mach/db5500-regs.h     |   20 +-
+ arch/arm/mach-ux500/include/mach/db8500-regs.h     |   37 +-
+ arch/arm/mach-ux500/include/mach/hardware.h        |    1 +
+ arch/arm/mach-ux500/include/mach/id.h              |   20 +
+ .../mach-ux500/include/mach/irqs-board-mop500.h    |    5 +
+ .../arm/mach-ux500/include/mach/irqs-board-u5500.h |   21 +
+ arch/arm/mach-ux500/include/mach/irqs-db5500.h     |   27 +
+ arch/arm/mach-ux500/include/mach/irqs-db8500.h     |   54 +
+ arch/arm/mach-ux500/include/mach/irqs.h            |   46 +-
+ arch/arm/mach-ux500/include/mach/prcmu-defs.h      |   30 -
+ arch/arm/mach-ux500/include/mach/prcmu-regs.h      |   96 -
+ arch/arm/mach-ux500/include/mach/prcmu.h           |   28 -
+ arch/arm/mach-ux500/prcmu.c                        |  394 ----
+ drivers/cpufreq/Makefile                           |    2 +
+ drivers/cpufreq/db8500-cpufreq.c                   |  169 ++
+ drivers/mfd/Kconfig                                |   22 +-
+ drivers/mfd/Makefile                               |    5 +-
+ drivers/mfd/ab8500-i2c.c                           |    3 +-
+ drivers/mfd/db5500-prcmu-regs.h                    |  115 ++
+ drivers/mfd/db5500-prcmu.c                         |  448 +++++
+ drivers/mfd/db8500-prcmu-regs.h                    |  166 ++
+ drivers/mfd/db8500-prcmu.c                         | 2069 ++++++++++++++++++++
+ drivers/regulator/Kconfig                          |    7 +
+ drivers/regulator/Makefile                         |    1 +
+ drivers/regulator/db8500-prcmu.c                   |  558 ++++++
+ include/linux/mfd/db5500-prcmu.h                   |   45 +
+ include/linux/mfd/db8500-prcmu.h                   |  978 +++++++++
+ include/linux/regulator/db8500-prcmu.h             |   45 +
+ 34 files changed, 4847 insertions(+), 799 deletions(-)
+ delete mode 100644 arch/arm/mach-ux500/cpufreq.c
+ create mode 100644 arch/arm/mach-ux500/include/mach/irqs-board-u5500.h
+ delete mode 100644 arch/arm/mach-ux500/include/mach/prcmu-defs.h
+ delete mode 100644 arch/arm/mach-ux500/include/mach/prcmu-regs.h
+ delete mode 100644 arch/arm/mach-ux500/include/mach/prcmu.h
+ delete mode 100644 arch/arm/mach-ux500/prcmu.c
+ create mode 100644 drivers/cpufreq/db8500-cpufreq.c
+ create mode 100644 drivers/mfd/db5500-prcmu-regs.h
+ create mode 100644 drivers/mfd/db5500-prcmu.c
+ create mode 100644 drivers/mfd/db8500-prcmu-regs.h
+ create mode 100644 drivers/mfd/db8500-prcmu.c
+ create mode 100644 drivers/regulator/db8500-prcmu.c
+ create mode 100644 include/linux/mfd/db5500-prcmu.h
+ create mode 100644 include/linux/mfd/db8500-prcmu.h
+ create mode 100644 include/linux/regulator/db8500-prcmu.h
+
+-- 
+1.7.3.2
+
