@@ -1,82 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372Ab1EUFP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 01:15:56 -0400
-Received: from barracuda.fsl.cs.sunysb.edu ([130.245.126.20]:50797 "EHLO
-	barracuda.fsl.cs.sunysb.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751229Ab1EUFPu (ORCPT
+	id S1751406Ab1EUFVR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 01:21:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50273 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab1EUFVL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 01:15:50 -0400
-X-ASG-Debug-ID: 1305954948-01c65a06b01704f0001-xx1T2L
-X-Barracuda-Envelope-From: ezk@fsl.cs.sunysb.edu
-X-Barracuda-RBL-Trusted-Forwarder: 130.245.126.16
-Subject: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
-X-Barracuda-BWL-IP: 192.168.1.136
-X-Barracuda-BBL-IP: 192.168.1.136
-X-Barracuda-RBL-IP: 192.168.1.136
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-ASG-Orig-Subj: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
-Content-Type: text/plain; charset=us-ascii
-From: Erez Zadok <ezk@fsl.cs.sunysb.edu>
-In-Reply-To: <efad20cd4c664cd78e153b0fda2de605@HUBCAS2.cs.stonybrook.edu>
-Date: Sat, 21 May 2011 01:15:46 -0400
-Cc: "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "nbd@openwrt.org" <nbd@openwrt.org>, "neilb@suse.de" <neilb@suse.de>,
-        "hramrach@centrum.cz" <hramrach@centrum.cz>,
-        "jordipujolp@gmail.com" <jordipujolp@gmail.com>
-Content-Transfer-Encoding: 7bit
-Message-Id: <B61DE78E-D7DB-4EB3-B8B3-64912D8BB212@fsl.cs.sunysb.edu>
-References: <1305635452-14835-1-git-send-email-miklos@szeredi.hu> <103d3f78e2d3478d8bb93f5dda3a4a08@HUBCAS1.cs.stonybrook.edu> <D8301738-5094-4666-8C4D-E26425F1AD66@fsl.cs.sunysb.edu> <B0729E4C-D581-4EAB-A175-A6B8B34692B5@fsl.cs.sunysb.edu> <efad20cd4c664cd78e153b0fda2de605@HUBCAS2.cs.stonybrook.edu>
-To: Miklos Szeredi <miklos@szeredi.hu>
-X-Mailer: Apple Mail (2.1084)
-X-Barracuda-Connect: avatar.fsl.cs.sunysb.edu[130.245.126.16]
-X-Barracuda-Start-Time: 1305954948
-X-Barracuda-URL: http://130.245.126.20:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64350
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	Sat, 21 May 2011 01:21:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type
+         :content-transfer-encoding;
+        b=bQDQpD0NgHz7OfDnaDFw79gjbTGiBIJ3cprXqq767uCtomQhwkL1iL6ywQSDhowgGq
+         ooNX5WrUS+6M5KhpiUX805Jl4ZZjCSJdLi7gdd6/xLY0hqRG5g1mda56WsC/10JflTmH
+         cUmUCiKzd0LoTz4mQ5/Q/2eToxj8tfeLbMdzU=
+MIME-Version: 1.0
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Fri, 20 May 2011 23:20:40 -0600
+Message-ID: <BANLkTim=7dsHXtpP0Cpeg56dmNxx4_aG9Q@mail.gmail.com>
+Subject: MAINTAINERS out of date
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 20, 2011, at 10:25 AM, Miklos Szeredi wrote:
+anyone know where    anil_ravindranath@pmc-sierra.com  is ?
 
-> Erez Zadok <ezk@fsl.cs.sunysb.edu> writes:
->> Niklos, I forgot to mention that I had to apply a small fix to a VFS
->> bug in fs/namei.c:1362, where a mix of symlinks and renames, using
->> racer, triggers an BUG_ON at the VFS layer (very reproducible).
->> Without this fix, racer oopses in the VFS well before it gets to
->> trigger overlayfs bugs.  It's a pity 2.6.39 was released with this
->> very reproducible *VFS* level bug (doesn't anyone run racer+fsx+ltp
->> before releasing a new kernel?)
->> 
->> Anyway, here's the small patch here.  Clearly viro/hch need to review
->> this "fix" b/c I'm not sure it's really the right one
-> 
-> Patch looks good to me.
-> 
-> Acked-by: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> If you've got a patch fixing a serious bug, you'd better send it to
-> Linus and Andrew (as well as the VFS maintainers), where it'll get more
-> prompt evaluation.
-> 
-> You can still do that, also adding "CC: stable@kernel.org" to the SOB
-> block in the patch so that the fix quickly makes it into the 2.6.39
-> stable series.
-> 
-> Thanks,
-> Miklos
 
-Thanks.  I'll do that.
+---------- Forwarded message ----------
+From: Mail Delivery Subsystem <mailer-daemon@googlemail.com>
+Date: Fri, May 20, 2011 at 10:21 PM
+Subject: Delivery Status Notification (Failure)
+To: jim.cromie@gmail.com
 
-Erez.
 
+Delivery to the following recipient failed permanently:
+
+    anil_ravindranath@pmc-sierra.com
+
+Technical details of permanent failure:
+Google tried to deliver your message, but it was rejected by the
+recipient domain. We recommend contacting the other email provider for
+further information about the cause of this error. The error that the
+other server returned was: 550 550 5.1.1
+<anil_ravindranath@pmc-sierra.com>: Recipient address rejected: User
+unknown in local recipient table (state 14).
+
+----- Original message -----
+
+Received: by 10.142.215.18 with SMTP id n18mr81103wfg.332.1305951690117; Fri,
+ 20 May 2011 21:21:30 -0700 (PDT)
+MIME-Version: 1.0
+Received: by 10.143.59.18 with HTTP; Fri, 20 May 2011 21:21:00 -0700 (PDT)
+In-Reply-To: <4DD68BE0.6030003@panasas.com>
+References: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com>
+ <1305840792-25877-9-git-send-email-jim.cromie@gmail.com>
+<4DD68BE0.6030003@panasas.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Fri, 20 May 2011 22:21:00 -0600
+Message-ID: <BANLkTi=6qWpUX6wMi5egRhi+qigaGPgnFQ@mail.gmail.com>
+Subject: Re: [PATCH 08/23] use register_chrdev_ids in drivers/scsi/
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de,
+       Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
+       Benny Halevy <bhalevy@panasas.com>, osd-dev@open-osd.org,
+       Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, May 20, 2011 at 9:42 AM, Boaz Harrosh <bharrosh@panasas.com> wrote:
+> On 05/20/2011 12:33 AM, Jim Cromie wrote:
+>> cc: Doug Gilbert <dgilbert@interlog.com>
+>> cc: linux-scsi@vger.kernel.org
+>> cc: Benny Halevy <bhalevy@panasas.com>
+>> cc: Boaz Harrosh <bharrosh@panasas.com>
+>> cc: osd-dev@open-osd.org
+>> cc: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
+>> cc: linux-scsi@vger.kernel.org
+>> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+>> ---
+>>  drivers/scsi/osd/osd_uld.c |    6 +++---
+>>  drivers/scsi/pmcraid.c     |    3 +--
+>>  drivers/scsi/sg.c          |    6 +++---
+>>  drivers/scsi/st.c          |    7 +++----
+>>  4 files changed, 10 insertions(+), 12 deletions(-)
+>
+> Do you have a git tree with all these that I can pull
+> and test?
+>
+
+I do, its at git://github.com/jimc/linux-2.6.git  chrdev-pub1 branch
+
+For you, I think there are 3 patches of interest
+1 - adds new call, deprecates old.
+if you build with this applied and CONFIG_ENABLE_WARN_DEPRECATED=y
+you should get a deprecated warning
+2 - reimplements alloc_chardev_region() with register_chardev_ids()
+your driver may be using register_chardev_region(), if so this is uninteresting.
+3 - patch that adapts your scsi parts.
+
+> Thanks
+> Boaz
+>
+
+no, thank you
+Jim Cromie
