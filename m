@@ -1,179 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757478Ab1EUA7o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 20:59:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46992 "EHLO mga02.intel.com"
+	id S1757503Ab1EUA7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 20:59:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59145 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755199Ab1EUA7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 20:59:17 -0400
+	id S1755302Ab1EUA7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 20:59:16 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,245,1304319600"; 
-   d="scan'208";a="1824591"
-Message-Id: <20110521005526.164277071@sbsiddha-MOBL3.sc.intel.com>
+X-IronPort-AV: E=Sophos;i="4.65,244,1304319600"; 
+   d="scan'208";a="5534118"
+Message-Id: <20110521005526.252703851@sbsiddha-MOBL3.sc.intel.com>
 User-Agent: quilt/0.47-1
-Date: Fri, 20 May 2011 17:51:18 -0700
+Date: Fri, 20 May 2011 17:51:19 -0700
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, steiner@sgi.com,
         gorcunov@openvz.org, yinghai@kernel.org
 Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com
-Subject: [patch 2/4] x86, apic: use .apicdrivers section for the apic drivers list
+Subject: [patch 3/4] x86, apic: cleanup bigsmp apic selection code
 References: <20110521005116.136357574@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=probe_apic_using_apicdriver_section.patch
+Content-Disposition: inline; filename=cleanup_generic_bigsmp_probe.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will eliminate the need for apic_probe[], as the probing now will
-happen based on the apic drivers order in the .apcidrivers section.
+Make generic_bigsmp_probe() return struct apic *. This will avoid
+exporting apic_bigsmp, which will be consistent with others.
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
- arch/x86/kernel/apic/probe_32.c |   39 ++++++++++++++++++++-------------------
- arch/x86/kernel/apic/probe_64.c |   28 ++++++++++++++++------------
- 2 files changed, 36 insertions(+), 31 deletions(-)
+ arch/x86/include/asm/apic.h      |    2 -
+ arch/x86/kernel/apic/bigsmp_32.c |    8 ++++++
+ arch/x86/kernel/apic/probe_32.c  |   52 +++++++++++++++++----------------------
+ 3 files changed, 32 insertions(+), 30 deletions(-)
 
-Index: linux-2.6-tip/arch/x86/kernel/apic/probe_64.c
+Index: linux-2.6-tip/arch/x86/include/asm/apic.h
 ===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/probe_64.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/probe_64.c
-@@ -54,19 +54,21 @@ static int apicid_phys_pkg_id(int initia
-  */
- void __init default_setup_apic_routing(void)
- {
--	int i;
-+	struct apic **drv;
+--- linux-2.6-tip.orig/arch/x86/include/asm/apic.h
++++ linux-2.6-tip/arch/x86/include/asm/apic.h
+@@ -500,7 +500,7 @@ static inline void default_wait_for_init
+ 	return;
+ }
  
- 	enable_IR_x2apic();
+-extern void generic_bigsmp_probe(void);
++extern struct apic *generic_bigsmp_probe(void);
  
--	for (i = 0; apic_probe[i]; ++i) {
--		if (apic_probe[i]->probe()) {
--			apic = apic_probe[i];
-+	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
-+		if ((*drv)->probe && (*drv)->probe()) {
-+			if (apic != *drv) {
-+				apic = *drv;
-+				pr_info("Switched APIC routing to %s.\n",
-+					apic->name);
-+			}
- 			break;
- 		}
- 	}
  
--	printk(KERN_INFO "APIC routing finalized to %s.\n", apic->name);
--
- 	if (is_vsmp_box()) {
- 		/* need to update phys_pkg_id */
- 		apic->phys_pkg_id = apicid_phys_pkg_id;
-@@ -82,13 +84,15 @@ void apic_send_IPI_self(int vector)
+ #ifdef CONFIG_X86_LOCAL_APIC
+Index: linux-2.6-tip/arch/x86/kernel/apic/bigsmp_32.c
+===================================================================
+--- linux-2.6-tip.orig/arch/x86/kernel/apic/bigsmp_32.c
++++ linux-2.6-tip/arch/x86/kernel/apic/bigsmp_32.c
+@@ -255,4 +255,12 @@ struct apic apic_bigsmp = {
+ 	.x86_32_early_logical_apicid	= bigsmp_early_logical_apicid,
+ };
  
- int __init default_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
- {
--	int i;
-+	struct apic **drv;
- 
--	for (i = 0; apic_probe[i]; ++i) {
--		if (apic_probe[i]->acpi_madt_oem_check(oem_id, oem_table_id)) {
--			apic = apic_probe[i];
--			printk(KERN_INFO "Setting APIC routing to %s.\n",
--				apic->name);
-+	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
-+		if ((*drv)->acpi_madt_oem_check(oem_id, oem_table_id)) {
-+			if (apic != *drv) {
-+				apic = *drv;
-+				pr_info("Setting APIC routing to %s.\n",
-+					apic->name);
-+			}
- 			return 1;
- 		}
- 	}
++struct apic * __init generic_bigsmp_probe(void)
++{
++	if (probe_bigsmp())
++		return &apic_bigsmp;
++
++	return NULL;
++}
++
+ apic_driver(apic_bigsmp);
 Index: linux-2.6-tip/arch/x86/kernel/apic/probe_32.c
 ===================================================================
 --- linux-2.6-tip.orig/arch/x86/kernel/apic/probe_32.c
 +++ linux-2.6-tip/arch/x86/kernel/apic/probe_32.c
-@@ -206,14 +206,14 @@ static struct apic *apic_probe[] __initd
- static int cmdline_apic __initdata;
- static int __init parse_apic(char *arg)
- {
--	int i;
-+	struct apic **drv;
+@@ -52,31 +52,6 @@ static int __init print_ipi_mode(void)
+ }
+ late_initcall(print_ipi_mode);
  
- 	if (!arg)
- 		return -EINVAL;
- 
--	for (i = 0; apic_probe[i]; i++) {
--		if (!strcmp(apic_probe[i]->name, arg)) {
--			apic = apic_probe[i];
-+	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
-+		if (!strcmp((*drv)->name, arg)) {
-+			apic = *drv;
- 			cmdline_apic = 1;
- 			return 0;
- 		}
-@@ -247,15 +247,16 @@ void __init generic_bigsmp_probe(void)
- void __init generic_apic_probe(void)
+-void __init default_setup_apic_routing(void)
+-{
+-	int version = apic_version[boot_cpu_physical_apicid];
+-
+-	if (num_possible_cpus() > 8) {
+-		switch (boot_cpu_data.x86_vendor) {
+-		case X86_VENDOR_INTEL:
+-			if (!APIC_XAPIC(version)) {
+-				def_to_bigsmp = 0;
+-				break;
+-			}
+-			/* If P4 and above fall through */
+-		case X86_VENDOR_AMD:
+-			def_to_bigsmp = 1;
+-		}
+-	}
+-
+-#ifdef CONFIG_X86_BIGSMP
+-	generic_bigsmp_probe();
+-#endif
+-
+-	if (apic->setup_apic_routing)
+-		apic->setup_apic_routing();
+-}
+-
+ static int default_x86_32_early_logical_apicid(int cpu)
  {
- 	if (!cmdline_apic) {
--		int i;
--		for (i = 0; apic_probe[i]; i++) {
--			if (apic_probe[i]->probe()) {
--				apic = apic_probe[i];
-+		struct apic **drv;
+ 	return 1 << cpu;
+@@ -224,24 +199,43 @@ static int __init parse_apic(char *arg)
+ }
+ early_param("apic", parse_apic);
+ 
+-void __init generic_bigsmp_probe(void)
++void __init default_setup_apic_routing(void)
+ {
++	int version = apic_version[boot_cpu_physical_apicid];
 +
-+		for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
-+			if ((*drv)->probe()) {
-+				apic = *drv;
- 				break;
- 			}
++	if (num_possible_cpus() > 8) {
++		switch (boot_cpu_data.x86_vendor) {
++		case X86_VENDOR_INTEL:
++			if (!APIC_XAPIC(version)) {
++				def_to_bigsmp = 0;
++				break;
++			}
++			/* If P4 and above fall through */
++		case X86_VENDOR_AMD:
++			def_to_bigsmp = 1;
++		}
++	}
++
+ #ifdef CONFIG_X86_BIGSMP
+ 	/*
+-	 * This routine is used to switch to bigsmp mode when
++	 * This is used to switch to bigsmp mode when
+ 	 * - There is no apic= option specified by the user
+ 	 * - generic_apic_probe() has chosen apic_default as the sub_arch
+ 	 * - we find more than 8 CPUs in acpi LAPIC listing with xAPIC support
+ 	 */
+ 
+ 	if (!cmdline_apic && apic == &apic_default) {
+-		if (apic_bigsmp.probe()) {
+-			apic = &apic_bigsmp;
++		struct apic *bigsmp = generic_bigsmp_probe();
++		if (bigsmp) {
++			apic = bigsmp;
+ 			printk(KERN_INFO "Overriding APIC driver with %s\n",
+ 			       apic->name);
  		}
- 		/* Not visible without early console */
--		if (!apic_probe[i])
-+		if (drv == __apicdrivers_end)
- 			panic("Didn't find an APIC driver");
  	}
- 	printk(KERN_INFO "Using APIC driver %s\n", apic->name);
-@@ -266,16 +267,16 @@ void __init generic_apic_probe(void)
- int __init
- generic_mps_oem_check(struct mpc_table *mpc, char *oem, char *productid)
- {
--	int i;
-+	struct apic **drv;
+ #endif
++
++	if (apic->setup_apic_routing)
++		apic->setup_apic_routing();
+ }
  
--	for (i = 0; apic_probe[i]; ++i) {
--		if (!apic_probe[i]->mps_oem_check)
-+	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
-+		if (!((*drv)->mps_oem_check))
- 			continue;
--		if (!apic_probe[i]->mps_oem_check(mpc, oem, productid))
-+		if (!(*drv)->mps_oem_check(mpc, oem, productid))
- 			continue;
- 
- 		if (!cmdline_apic) {
--			apic = apic_probe[i];
-+			apic = *drv;
- 			printk(KERN_INFO "Switched to APIC driver `%s'.\n",
- 			       apic->name);
- 		}
-@@ -286,16 +287,16 @@ generic_mps_oem_check(struct mpc_table *
- 
- int __init default_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
- {
--	int i;
-+	struct apic **drv;
- 
--	for (i = 0; apic_probe[i]; ++i) {
--		if (!apic_probe[i]->acpi_madt_oem_check)
-+	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
-+		if (!(*drv)->acpi_madt_oem_check)
- 			continue;
--		if (!apic_probe[i]->acpi_madt_oem_check(oem_id, oem_table_id))
-+		if (!(*drv)->acpi_madt_oem_check(oem_id, oem_table_id))
- 			continue;
- 
- 		if (!cmdline_apic) {
--			apic = apic_probe[i];
-+			apic = *drv;
- 			printk(KERN_INFO "Switched to APIC driver `%s'.\n",
- 			       apic->name);
- 		}
+ void __init generic_apic_probe(void)
 
 
