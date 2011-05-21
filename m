@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab1EUJnd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 05:43:33 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:54767 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754484Ab1EUJnb (ORCPT
+	id S1754670Ab1EUKIS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 06:08:18 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:51965 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681Ab1EUKIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 05:43:31 -0400
-Date: Sat, 21 May 2011 11:43:26 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>
-Subject: Disable CF during suspend
-Message-ID: <20110521094326.GB26323@elf.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 21 May 2011 06:08:15 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 21 May 2011 12:07:18 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: [git pull] FireWire updates post 2.6.39
+Message-ID: <20110521120718.6a67029e@stein>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus, please pull from the for-linus branch at
 
-Disable SPITZ_SCP_CF_POWER during suspend. Otherwise it eats battery,
-fast. Thanks to Stanislav Brabec.
-    
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-    
-diff --git a/arch/arm/mach-pxa/include/mach/spitz.h b/arch/arm/mach-pxa/include/mach/spitz.h
-index 685749a..06b7cbc 100644
---- a/arch/arm/mach-pxa/include/mach/spitz.h
-+++ b/arch/arm/mach-pxa/include/mach/spitz.h
-@@ -96,7 +96,7 @@
- #define SPITZ_SCP_CHRG_ON       SCOOP_GPCR_PA13  /* Keep */
- #define SPITZ_SCP_MUTE_L        SCOOP_GPCR_PA14  /* Low */
- #define SPITZ_SCP_MUTE_R        SCOOP_GPCR_PA15  /* Low */
--#define SPITZ_SCP_CF_POWER      SCOOP_GPCR_PA16  /* Keep */
-+#define SPITZ_SCP_CF_POWER      SCOOP_GPCR_PA16  /* Low, CF card eats power */
- #define SPITZ_SCP_LED_ORANGE    SCOOP_GPCR_PA17  /* Keep */
- #define SPITZ_SCP_JK_A          SCOOP_GPCR_PA18  /* Low */
- #define SPITZ_SCP_ADC_TEMP_ON   SCOOP_GPCR_PA19  /* Low */
-@@ -105,7 +105,7 @@
-                                SPITZ_SCP_MUTE_L | SPITZ_SCP_MUTE_R | \
-                                SPITZ_SCP_CF_POWER | SPITZ_SCP_JK_A | SPITZ_SCP_ADC_TEMP_ON)
- #define SPITZ_SCP_IO_OUT      (SPITZ_SCP_CHRG_ON | SPITZ_SCP_MUTE_L | SPITZ_SCP_MUTE_R)
--#define SPITZ_SCP_SUS_CLR     (SPITZ_SCP_MUTE_L | SPITZ_SCP_MUTE_R | SPITZ_SCP_JK_A | SPITZ_SCP_ADC_TEMP_ON)
-+#define SPITZ_SCP_SUS_CLR     (SPITZ_SCP_MUTE_L | SPITZ_SCP_MUTE_R | SPITZ_SCP_JK_A | SPITZ_SCP_ADC_TEMP_ON | SPITZ_SCP_CF_POWER)
- #define SPITZ_SCP_SUS_SET     0
- 
- #define SPITZ_SCP_GPIO_BASE	(NR_BUILTIN_GPIO)
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
 
+to receive the following updates for the IEEE 1394 (FireWire) subsystem.
+They contain small fixes and some optimizations, e.g. to CPU utilization
+during isochronous I/O.
+
+The changes in {drivers/media/dvb,sound}/firewire/ have been Cc'd to
+linux-media and alsa-devel but I did not request explicit Acks.  There
+are no conflicts yet and are unlikely to arise during the merge window.
+
+Thanks.
+
+Clemens Ladisch (4):
+      firewire: ohci: do not start DMA contexts before link is enabled
+      firewire: ohci: avoid separate DMA mapping for small AT payloads
+      firewire: ohci: optimize find_branch_descriptor()
+      firewire: optimize iso queueing by setting wake only after the last packet
+
+Stefan Richter (6):
+      Merge tag 'v2.6.39-rc7'
+      firewire: octlet AT payloads can be stack-allocated
+      firewire: core: use non-reentrant workqueue with rescuer
+      firewire: sbp2: omit Scsi_Host lock from queuecommand
+      firewire: sbp2: octlet AT payloads can be stack-allocated
+      firewire: sbp2: parallelize login, reconnect, logout
+
+ drivers/firewire/core-card.c             |   27 +++++++-----
+ drivers/firewire/core-cdev.c             |    7 +--
+ drivers/firewire/core-device.c           |   31 +++++++++-----
+ drivers/firewire/core-iso.c              |   27 ++++++++-----
+ drivers/firewire/core-transaction.c      |   19 +++++++--
+ drivers/firewire/core.h                  |    2 +
+ drivers/firewire/net.c                   |    4 +-
+ drivers/firewire/ohci.c                  |   64 +++++++++++++++++++----------
+ drivers/firewire/sbp2.c                  |   37 +++++------------
+ drivers/media/dvb/firewire/firedtv-avc.c |   15 +------
+ drivers/media/dvb/firewire/firedtv-fw.c  |    1 +
+ include/linux/firewire.h                 |    6 ++-
+ sound/firewire/amdtp.c                   |    1 +
+ sound/firewire/cmp.c                     |    3 +-
+ sound/firewire/iso-resources.c           |   12 +----
+ sound/firewire/iso-resources.h           |    1 -
+ 16 files changed, 140 insertions(+), 117 deletions(-)
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Stefan Richter
+-=====-==-== -=-= =-=-=
+http://arcgraph.de/sr/
