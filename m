@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106Ab1EUO2D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 10:28:03 -0400
-Received: from ns.penguin.cz ([84.21.108.25]:38640 "EHLO ns.penguin.cz"
+	id S1753382Ab1EUO26 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 10:28:58 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60598 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751365Ab1EUO2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 10:28:01 -0400
-Subject: Re: Disable CF during suspend
-From: Stanislav Brabec <utx@penguin.cz>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        zaurus-devel@www.linuxtogo.org, Marek Vasut <marek.vasut@gmail.com>
-In-Reply-To: <20110521094326.GB26323@elf.ucw.cz>
-References: <20110521094326.GB26323@elf.ucw.cz>
-Content-Type: text/plain; charset="ISO-8859-2"
-Date: Sat, 21 May 2011 16:27:58 +0200
-Message-ID: <1305988078.5824.14.camel@utx.lan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1752315Ab1EUO24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 10:28:56 -0400
+Date: Sat, 21 May 2011 16:28:44 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
+        Valdis.Kletnieks@vt.edu, a.p.zijlstra@chello.nl
+Subject: Re: [GIT PULL rcu/next] fixes and breakup of memory-barrier-decrease
+ patch
+Message-ID: <20110521142844.GA29813@elte.hu>
+References: <20110521140613.GA13062@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110521140613.GA13062@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek wrote:
-> Disable SPITZ_SCP_CF_POWER during suspend. Otherwise it eats battery,
-> fast. Thanks to Stanislav Brabec.
 
-If you can verify that your card turns off on suspend, then you have my:
-Acked-by: Stanislav Brabec <utx@penguin.cz>
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-But I would line to see more aggressive power control, something like
-spitz_card_pwr_ctrl() in old kernels - if there is no CF and no
-(external) CF card inserted, then SPITZ_SCP_CF_POWER card be turned off.
-If they are memory cards, they can be turned off even while idle.
+> Hello, Ingo,
+> 
+> This pull requests covers some RCU bug fixes and one patch rework.
+> 
+> The first group breaks up the infamous now-reverted (but ultimately
+> vindicated) "Decrease memory-barrier usage based on semi-formal proof"
+> commit into five commits.  These five commits immediately follow the
+> revert, and the diff across all six of these commits is empty, so that
+> the effect of the five commits is to revert the revert.
 
--- 
+But ... the regression that was observed with that commit needs to be fixed 
+first, or not? In what way was the barrier commit vindicated?
 
-________________________________________________________________________
-Stanislav Brabec
-http://www.penguin.cz/~utx, ICQ 116020046, xmpp:utx@jabber.cz
+Thanks,
 
+	Ingo
