@@ -1,114 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab1EUNfK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 09:35:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50082 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab1EUNfH convert rfc822-to-8bit (ORCPT
+	id S1756314Ab1EUNwo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 09:52:44 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:13585 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756146Ab1EUNwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 09:35:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=XanyBtIzKyubXQU9U2HmC+3QS216XQJKs9QTdluy6BUPe5Ido19EyF1wHcS7FRKxtp
-         cnQQDzNfHj4/FqQwNqxT0YJRAWDu68V1OXf6JK/xsB/gkMlzxK4c9M3cbtAbxOI23Iqa
-         UVQ0Q0gmzkp6E5YvIW6l4zVK1yUVLNp8BiWHU=
+	Sat, 21 May 2011 09:52:42 -0400
+Message-ID: <4DD7C3A7.5010402@tilera.com>
+Date: Sat, 21 May 2011 09:52:39 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimThVw7-PN6ypBBarqXJa1xxYA_Ow@mail.gmail.com>
-References: <BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com>
- <BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com> <4DD5DC06.6010204@jp.fujitsu.com>
- <BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com> <BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
- <20110520140856.fdf4d1c8.kamezawa.hiroyu@jp.fujitsu.com> <20110520101120.GC11729@random.random>
- <BANLkTikAFMvpgHR2dopd+Nvjfyw_XT5=LA@mail.gmail.com> <20110520153346.GA1843@barrios-desktop>
- <BANLkTi=X+=Wh1MLs7Fc-v-OMtxAHbcPmxA@mail.gmail.com> <20110520161934.GA2386@barrios-desktop>
- <BANLkTi=4C5YAxwAFWC6dsAPMR3xv6LP1hw@mail.gmail.com> <BANLkTimThVw7-PN6ypBBarqXJa1xxYA_Ow@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sat, 21 May 2011 09:34:47 -0400
-X-Google-Sender-Auth: -Y1dW8X0TQNC_8lPXeKB-UNt_sQ
-Message-ID: <BANLkTint+Qs+cO+wKUJGytnVY3X1bp+8rQ@mail.gmail.com>
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
-        riel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg KH <gregkh@suse.de>, Eric Biederman <ebiederm@aristanetworks.com>,
+        <linux-kernel@vger.kernel.org>, Chris Wright <chrisw@sous-sol.org>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: Re: [PATCH] arch/tile: add arch/tile/drivers/ directory with SROM
+ driver
+References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com> <4DD6FB9E.2050604@tilera.com> <20110521032102.GD19907@suse.de> <201105211133.50238.arnd@arndb.de>
+In-Reply-To: <201105211133.50238.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 21, 2011 at 8:04 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 3f44b81..d1dabc9 100644
->> @@ -1426,8 +1437,13 @@ shrink_inactive_list(unsigned long nr_to_scan,
->> struct zone *zone,
->>
->>        /* Check if we should syncronously wait for writeback */
->>        if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
->> +               unsigned long nr_active, old_nr_scanned;
->>                set_reclaim_mode(priority, sc, true);
->> +               nr_active = clear_active_flags(&page_list, NULL);
->> +               count_vm_events(PGDEACTIVATE, nr_active);
->> +               old_nr_scanned = sc->nr_scanned;
->>                nr_reclaimed += shrink_page_list(&page_list, zone, sc);
->> +               sc->nr_scanned = old_nr_scanned;
->>        }
->>
->>        local_irq_disable();
->>
->> I just tested 2.6.38.6 with the attached patch.  It survived dirty_ram
->> and test_mempressure without any problems other than slowness, but
->> when I hit ctrl-c to stop test_mempressure, I got the attached oom.
->
-> Minchan,
->
-> I'm confused now.
-> If pages got SetPageActive(), should_reclaim_stall() should never return true.
-> Can you please explain which bad scenario was happen?
->
-> -----------------------------------------------------------------------------------------------------
-> static void reset_reclaim_mode(struct scan_control *sc)
-> {
->        sc->reclaim_mode = RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC;
-> }
->
-> shrink_page_list()
-> {
->  (snip)
->  activate_locked:
->                SetPageActive(page);
->                pgactivate++;
->                unlock_page(page);
->                reset_reclaim_mode(sc);                  /// here
->                list_add(&page->lru, &ret_pages);
->        }
-> -----------------------------------------------------------------------------------------------------
->
->
-> -----------------------------------------------------------------------------------------------------
-> bool should_reclaim_stall()
-> {
->  (snip)
->
->        /* Only stall on lumpy reclaim */
->        if (sc->reclaim_mode & RECLAIM_MODE_SINGLE)   /// and here
->                return false;
-> -----------------------------------------------------------------------------------------------------
->
+(Resending since Thunderbird "helpfully" made the previous attempt include
+an HTML portion, for no obvious reason.)
 
-I did some tracing and the oops happens from the second call to
-shrink_page_list after should_reclaim_stall returns true and it hits
-the same pages in the same order that the earlier call just finished
-calling SetPageActive on.  I have *not* confirmed that the two calls
-happened from the same call to shrink_inactive_list, but something's
-certainly wrong in there.
+On 5/20/2011 11:21 PM, Greg KH wrote:
+> On Fri, May 20, 2011 at 07:39:10PM -0400, Chris Metcalf wrote:
+>> This driver is a paravirtualized hypervisor driver, so not really an I2C
+>> driver at all (in fact it handles both SPI and I2C eeproms almost
+>> identically within the Linux driver).  And I think the driver's "eeprom"
+>> file should be compatible with userspace cli tools, assuming they close
+>> their file descriptor when they're done writing.
+> Big assumption.
 
-This is very easy to reproduce on my laptop.
+Interesting!  I did in fact assume that most tools that read or write
+eeproms would tend to be "batch" tools, i.e. they would read or write
+whatever it was they wanted, then exit; the tool we have that modifies this
+EEPROM is written like that, for example.  It sounds like you're saying
+there are (or may be) tools that open the file descriptor and do writes to
+it, then don't exit or close the file descriptor, but expect the last write
+to have hit the device immediately.  It's fair to say that since my
+suggested API does defer the last sector's worth of writes until the app
+exits, it potentially violates that assumption, so it's a bad idea.
 
---Andy
+On 5/21/2011 3:46 AM, Eric Biederman wrote:
+> What is wrong with an mtd driver?
+
+More backstory: we actually have an MTD driver for this device (in our
+local tree as drivers/mtd/devices/tile_srom.c) but we haven't yet tried to
+push it back to the community.  But it doesn't work for the most important
+purpose of this device, namely to serve as one of the possible boot streams
+at power-on.  For this, we have to control exactly what data is on what
+sector, which means a character (or sysfs) device.
+
+> Looking a bit back into the conversation it appears clear that you are
+> talking about something that resembles NOR flash with multiple sectors,
+> etc.
+>
+> eeproms have random byte access and are typically 256 bytes.  You devices
+> doesn't sound anything like an eeprom.
+
+Yes and no.  As Arnd points out in his followup, the hypervisor driver for
+this SPI ROM makes it look a lot like a typical eeprom.  But, perhaps, not
+quite close enough to count as a "real" eeprom.
+
+On 5/21/2011 5:33 AM, Arnd Bergmann wrote:
+> What I only now noticed is that the other eeprom drivers only support
+> reading the eeprom, not writing it, so there is a significant difference.
+
+However, this point isn't quite correct.  Both the at24 (I2C) and at25
+(SPI) sysfs drivers support the "write" callback for at least some of their
+supported hardware.  It's true that all the other drivers are read-only.
+
+> Using the bin_attribute doesn't sound completely wrong to me, especially
+> if you put it in your /sys/hypervisor/* direcory together with the
+> regular attributes we talked about. The character device would also
+> be an option (better than /proc/ppc/update_flash that is used on pSeries),
+> but if we do that, I would group it together with the other similar
+> files (ps3flash, nwflash, ...) in a new subdirectory.
+
+Sounds like the consensus is that a character driver is in fact the best
+option here.
+
+> We do have precedent for multiple interfaces that have the same
+> purpose as this one:
+>
+> drivers/misc/eeprom/*
+> drivers/char/ps3flash.c
+> drivers/char/nwflash.c
+> drivers/char/bfin-otp.c
+> arch/powerpc/kernel/rtas_flash.c
+> drivers/sbus/char/jsflash.c
+
+I'm certainly happy to push the original SPI ROM character device as
+drivers/platform/tile/srom.c.  I'm not sure there's enough value in trying
+to group that device together with other devices that are sort of similar
+but with pretty variant ancestry and not a lot of need for commonality --
+other than all have a file_operations structure :-)  In this case I think
+grouping it with other paravirtualized tile drivers may be the closer
+connection.
+
+Having gone through the process of creating a sysfs driver, I will also go
+ahead and remove the SPI support from it (since that's the part that
+requires "flush") and post the remaining pure-EEPROM I2C paravirtualized
+driver to LKML.  Since it has no need for flushes, it ends up exactly
+parallel to at24.c.
+
+So here's my thought.  How does this sound?
+
+- Add drivers/platform/tile
+- Put the original character device there as srom.c
+- Drop the bin_attribute "flush" changes
+- Add drivers/misc/eeprom/tile.c for our "pure" I2C EEPROM driver
+
+I appreciate everyone's feedback and help on this!
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
+
