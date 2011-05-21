@@ -1,112 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437Ab1EUE06 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 00:26:58 -0400
-Received: from barracuda.fsl.cs.sunysb.edu ([130.245.126.20]:50634 "EHLO
-	barracuda.fsl.cs.sunysb.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750894Ab1EUE0v convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 00:26:51 -0400
-X-ASG-Debug-ID: 1305952008-01c65a06b016fef0001-xx1T2L
-X-Barracuda-Envelope-From: ezk@fsl.cs.sunysb.edu
-X-Barracuda-RBL-Trusted-Forwarder: 130.245.126.16
-Subject: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
-X-Barracuda-BWL-IP: 192.168.1.136
-X-Barracuda-BBL-IP: 192.168.1.136
-X-Barracuda-RBL-IP: 192.168.1.136
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-ASG-Orig-Subj: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
-Content-Type: text/plain; charset=windows-1252
-From: Erez Zadok <ezk@fsl.cs.sunysb.edu>
-In-Reply-To: <7dcd9c4e62864bc6aae66f5a4e3f3752@HUBCAS1.cs.stonybrook.edu>
-Date: Sat, 21 May 2011 00:26:47 -0400
-Cc: "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "nbd@openwrt.org" <nbd@openwrt.org>, "neilb@suse.de" <neilb@suse.de>,
-        "hramrach@centrum.cz" <hramrach@centrum.cz>,
-        "jordipujolp@gmail.com" <jordipujolp@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2983EA36-BB3B-4AE3-9CAA-5A3C2D884DCF@fsl.cs.sunysb.edu>
-References: <1305635452-14835-1-git-send-email-miklos@szeredi.hu> <103d3f78e2d3478d8bb93f5dda3a4a08@HUBCAS1.cs.stonybrook.edu> <D8301738-5094-4666-8C4D-E26425F1AD66@fsl.cs.sunysb.edu> <87wrhlah1e.fsf@tucsk.pomaz.szeredi.hu> <7dcd9c4e62864bc6aae66f5a4e3f3752@HUBCAS1.cs.stonybrook.edu>
-To: Miklos Szeredi <miklos@szeredi.hu>
-X-Mailer: Apple Mail (2.1084)
-X-Barracuda-Connect: avatar.fsl.cs.sunysb.edu[130.245.126.16]
-X-Barracuda-Start-Time: 1305952008
-X-Barracuda-URL: http://130.245.126.20:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -1.52
-X-Barracuda-Spam-Status: No, SCORE=-1.52 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_RULE_7582B
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64348
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.50 BSF_RULE_7582B         Custom Rule 7582B
+	id S1751500Ab1EUEsn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 00:48:43 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:4151 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab1EUEsh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 00:48:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=vAh0rv70bS5Io1L9bRG9/kcFMRNHONH1UZhGImzwK4jENsJYZjn7j628jneWbW5uMO
+         UYkfykLWcxijYBxyfCnA==
+Date: Fri, 20 May 2011 21:48:26 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Greg KH <gregkh@suse.de>
+cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [23/71] tmpfs: fix race between umount and swapoff
+In-Reply-To: <20110519180556.482988919@clark.kroah.org>
+Message-ID: <alpine.LSU.2.00.1105202139001.1847@sister.anvils>
+References: <20110519180556.482988919@clark.kroah.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 20, 2011, at 10:17 AM, Miklos Szeredi wrote:
+On Thu, 19 May 2011, Greg KH wrote:
+> 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-> Miklos Szeredi <miklos@szeredi.hu> writes:
-> 
->> Erez Zadok <ezk@fsl.cs.sunysb.edu> writes:
->> 
->>> I tried your overlayfs.v9 git repo w/ racer, using two separate ext3
->>> filesystems (one for lowerdir and another for upperdir).  I got the
->>> WARN_ON in ovl_permission to trigger within about 10 minutes of
->>> testing.  Looking at the code, I see a problem in returning w/o
->>> cleaning up an dput-ing the alias dentry.  Simple patch enclosed
->>> below.
->> 
->> Hmm, thanks.  The more interesting question is: why does that WARN_ON
->> trigger?  I'll look into it.
-> 
-> I think I found the cause of all the bug and oopsen you are seeing.
-> 
-> Overlayfs expects upper and lower dentries to be always positive, it
-> never stores negative dentries there, there's no point, instead it
-> stores NULL.
-> 
-> There are basically two ways a positive dentry can become negative:
-> 
-> A) dentry becomes unhashed with d_count == 0
-> 
-> B) d_delete with d_count == 1
-> 
-> Case A is not possible in our case, since overlayfs keeps a ref on the
-> upper/lower dentries for the lifetime of the overlayfs dentry.
-> 
-> Case B is however possible, since no extra ref is taken before calling
-> vfs_unlink/vfs_rmdir.  So it looks like this is being triggered.
-> 
-> This is easy to solve, just grab a ref to upperdentry before
-> unlink/rmdir.  Equivalent is if we grab an extra reference from the
-> start.  The below patch does this.
-> 
-> With the patch I can't trigger the bugs anymore.
-> 
-> Erez, could you please also check if reverting your patches and applying
-> this one fixes all the bugs?
-
-Done: reverted my ovl patches and applied yours.  And indeed, the NULL oopses don't show up after 10 minutes of running.  Just to be sure, I ran overlayfs on top of ext2, ext3, xfs, reiserfs, and tmps — no oopses.  And I wasn't able to reproduce the WARN_ON in ovl_permission.
-
-Are you interested in testing overlayfs on top of NFS at this time? You need xattr support right? Stacking over NFS takes extra effort, esp. b/c of the pesky silly deleted files and needing a nameidata everywhere (but I managed after a while to get Wrapfs working stably over nfs3).
-
-> Thanks,
-> Miklos
-> 
-> commit 9192816148e2c6b1d610226b1fc1c04c36216370
-> Author: Miklos Szeredi <mszeredi@suse.cz>
-> Date:   Fri May 20 16:07:34 2011 +0200
-> 
->    ovl: don't allow upperdentry to go negative
-[...]
-
-Do you commit such patches to a master branch, the v9 branch, or some other one; I'd like to be able to git pull
+Witold has found that I screwed up the highmem case in this patch.
+Please add the commit appended at the bottom - or else delay both
+until the next 2.6.38-stable if you prefer.
 
 Thanks,
-Erez.
+Hugh
 
+> 
+> ------------------
+> 
+> From: Hugh Dickins <hughd@google.com>
+> 
+> commit 778dd893ae785c5fd505dac30b5fc40aae188bf1 upstream.
+> 
+> The use of igrab() in swapoff's shmem_unuse_inode() is just as vulnerable
+> to umount as that in shmem_writepage().
+> 
+> Fix this instance by extending the protection of shmem_swaplist_mutex
+> right across shmem_unuse_inode(): while it's on the list, the inode cannot
+> be evicted (and the filesystem cannot be unmounted) without
+> shmem_evict_inode() taking that mutex to remove it from the list.
+> 
+> But since shmem_writepage() might take that mutex, we should avoid making
+> memory allocations or memcg charges while holding it: prepare them at the
+> outer level in shmem_unuse().  When mem_cgroup_cache_charge() was
+> originally placed, we didn't know until that point that the page from swap
+> was actually a shmem page; but nowadays it's noted in the swap_map, so
+> we're safe to charge upfront.  For the radix_tree, do as is done in
+> shmem_getpage(): preload upfront, but don't pin to the cpu; so we make a
+> habit of refreshing the node pool, but might dip into GFP_NOWAIT reserves
+> on occasion if subsequently preempted.
+> 
+> With the allocation and charge moved out from shmem_unuse_inode(),
+> we can also hold index map and info->lock over from finding the entry.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  mm/shmem.c |   88 +++++++++++++++++++++++++++++--------------------------------
+>  1 file changed, 43 insertions(+), 45 deletions(-)
+> 
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -852,7 +852,7 @@ static inline int shmem_find_swp(swp_ent
+>  
+>  static int shmem_unuse_inode(struct shmem_inode_info *info, swp_entry_t entry, struct page *page)
+>  {
+> -	struct inode *inode;
+> +	struct address_space *mapping;
+>  	unsigned long idx;
+>  	unsigned long size;
+>  	unsigned long limit;
+> @@ -875,8 +875,10 @@ static int shmem_unuse_inode(struct shme
+>  	if (size > SHMEM_NR_DIRECT)
+>  		size = SHMEM_NR_DIRECT;
+>  	offset = shmem_find_swp(entry, ptr, ptr+size);
+> -	if (offset >= 0)
+> +	if (offset >= 0) {
+> +		shmem_swp_balance_unmap();
+>  		goto found;
+> +	}
+>  	if (!info->i_indirect)
+>  		goto lost2;
+>  
+> @@ -914,11 +916,11 @@ static int shmem_unuse_inode(struct shme
+>  			if (size > ENTRIES_PER_PAGE)
+>  				size = ENTRIES_PER_PAGE;
+>  			offset = shmem_find_swp(entry, ptr, ptr+size);
+> -			shmem_swp_unmap(ptr);
+>  			if (offset >= 0) {
+>  				shmem_dir_unmap(dir);
+>  				goto found;
+>  			}
+> +			shmem_swp_unmap(ptr);
+>  		}
+>  	}
+>  lost1:
+> @@ -928,8 +930,7 @@ lost2:
+>  	return 0;
+>  found:
+>  	idx += offset;
+> -	inode = igrab(&info->vfs_inode);
+> -	spin_unlock(&info->lock);
+> +	ptr += offset;
+>  
+>  	/*
+>  	 * Move _head_ to start search for next from here.
+> @@ -940,37 +941,18 @@ found:
+>  	 */
+>  	if (shmem_swaplist.next != &info->swaplist)
+>  		list_move_tail(&shmem_swaplist, &info->swaplist);
+> -	mutex_unlock(&shmem_swaplist_mutex);
+>  
+> -	error = 1;
+> -	if (!inode)
+> -		goto out;
+>  	/*
+> -	 * Charge page using GFP_KERNEL while we can wait.
+> -	 * Charged back to the user(not to caller) when swap account is used.
+> -	 * add_to_page_cache() will be called with GFP_NOWAIT.
+> +	 * We rely on shmem_swaplist_mutex, not only to protect the swaplist,
+> +	 * but also to hold up shmem_evict_inode(): so inode cannot be freed
+> +	 * beneath us (pagelock doesn't help until the page is in pagecache).
+>  	 */
+> -	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL);
+> -	if (error)
+> -		goto out;
+> -	error = radix_tree_preload(GFP_KERNEL);
+> -	if (error) {
+> -		mem_cgroup_uncharge_cache_page(page);
+> -		goto out;
+> -	}
+> -	error = 1;
+> -
+> -	spin_lock(&info->lock);
+> -	ptr = shmem_swp_entry(info, idx, NULL);
+> -	if (ptr && ptr->val == entry.val) {
+> -		error = add_to_page_cache_locked(page, inode->i_mapping,
+> -						idx, GFP_NOWAIT);
+> -		/* does mem_cgroup_uncharge_cache_page on error */
+> -	} else	/* we must compensate for our precharge above */
+> -		mem_cgroup_uncharge_cache_page(page);
+> +	mapping = info->vfs_inode.i_mapping;
+> +	error = add_to_page_cache_locked(page, mapping, idx, GFP_NOWAIT);
+> +	/* which does mem_cgroup_uncharge_cache_page on error */
+>  
+>  	if (error == -EEXIST) {
+> -		struct page *filepage = find_get_page(inode->i_mapping, idx);
+> +		struct page *filepage = find_get_page(mapping, idx);
+>  		error = 1;
+>  		if (filepage) {
+>  			/*
+> @@ -990,14 +972,8 @@ found:
+>  		swap_free(entry);
+>  		error = 1;	/* not an error, but entry was found */
+>  	}
+> -	if (ptr)
+> -		shmem_swp_unmap(ptr);
+> +	shmem_swp_unmap(ptr);
+>  	spin_unlock(&info->lock);
+> -	radix_tree_preload_end();
+> -out:
+> -	unlock_page(page);
+> -	page_cache_release(page);
+> -	iput(inode);		/* allows for NULL */
+>  	return error;
+>  }
+>  
+> @@ -1009,6 +985,26 @@ int shmem_unuse(swp_entry_t entry, struc
+>  	struct list_head *p, *next;
+>  	struct shmem_inode_info *info;
+>  	int found = 0;
+> +	int error;
+> +
+> +	/*
+> +	 * Charge page using GFP_KERNEL while we can wait, before taking
+> +	 * the shmem_swaplist_mutex which might hold up shmem_writepage().
+> +	 * Charged back to the user (not to caller) when swap account is used.
+> +	 * add_to_page_cache() will be called with GFP_NOWAIT.
+> +	 */
+> +	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL);
+> +	if (error)
+> +		goto out;
+> +	/*
+> +	 * Try to preload while we can wait, to not make a habit of
+> +	 * draining atomic reserves; but don't latch on to this cpu,
+> +	 * it's okay if sometimes we get rescheduled after this.
+> +	 */
+> +	error = radix_tree_preload(GFP_KERNEL);
+> +	if (error)
+> +		goto uncharge;
+> +	radix_tree_preload_end();
+>  
+>  	mutex_lock(&shmem_swaplist_mutex);
+>  	list_for_each_safe(p, next, &shmem_swaplist) {
+> @@ -1016,17 +1012,19 @@ int shmem_unuse(swp_entry_t entry, struc
+>  		found = shmem_unuse_inode(info, entry, page);
+>  		cond_resched();
+>  		if (found)
+> -			goto out;
+> +			break;
+>  	}
+>  	mutex_unlock(&shmem_swaplist_mutex);
+> -	/*
+> -	 * Can some race bring us here?  We've been holding page lock,
+> -	 * so I think not; but would rather try again later than BUG()
+> -	 */
+> +
+> +uncharge:
+> +	if (!found)
+> +		mem_cgroup_uncharge_cache_page(page);
+> +	if (found < 0)
+> +		error = found;
+> +out:
+>  	unlock_page(page);
+>  	page_cache_release(page);
+> -out:
+> -	return (found < 0) ? found : 0;
+> +	return error;
+>  }
+>  
+>  /*
+
+commit e6c9366b2adb52cba64b359b3050200743c7568c
+Author: Hugh Dickins <hughd@google.com>
+Date:   Fri May 20 15:47:33 2011 -0700
+
+    tmpfs: fix highmem swapoff crash regression
+    
+    Commit 778dd893ae78 ("tmpfs: fix race between umount and swapoff")
+    forgot the new rules for strict atomic kmap nesting, causing
+    
+      WARNING: at arch/x86/mm/highmem_32.c:81
+    
+    from __kunmap_atomic(), then
+    
+      BUG: unable to handle kernel paging request at fffb9000
+    
+    from shmem_swp_set() when shmem_unuse_inode() is handling swapoff with
+    highmem in use.  My disgrace again.
+    
+    See
+      https://bugzilla.kernel.org/show_bug.cgi?id=35352
+    
+    Reported-by: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+    Signed-off-by: Hugh Dickins <hughd@google.com>
+    Cc: stable@kernel.org
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+diff --git a/mm/shmem.c b/mm/shmem.c
+index dfc7069..ba4ad28 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -916,11 +916,12 @@ static int shmem_unuse_inode(struct shmem_inode_info *info, swp_entry_t entry, s
+ 			if (size > ENTRIES_PER_PAGE)
+ 				size = ENTRIES_PER_PAGE;
+ 			offset = shmem_find_swp(entry, ptr, ptr+size);
++			shmem_swp_unmap(ptr);
+ 			if (offset >= 0) {
+ 				shmem_dir_unmap(dir);
++				ptr = shmem_swp_map(subdir);
+ 				goto found;
+ 			}
+-			shmem_swp_unmap(ptr);
+ 		}
+ 	}
+ lost1:
