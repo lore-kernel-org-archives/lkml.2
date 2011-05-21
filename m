@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab1EUTj2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 15:39:28 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:42128 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757099Ab1EUTjZ (ORCPT
+	id S1757335Ab1EUTjg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 15:39:36 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:49161 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757271Ab1EUTj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 15:39:25 -0400
+	Sat, 21 May 2011 15:39:28 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
         linux-m68k@vger.kernel.org
-Subject: [PATCH 0/4] resources: Add lookup_resource()
-Date: Sat, 21 May 2011 21:39:12 +0200
-Message-Id: <1306006756-32009-1-git-send-email-geert@linux-m68k.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 1/4] sparc: _sparc_find_resource() should check for exact matches
+Date: Sat, 21 May 2011 21:39:13 +0200
+Message-Id: <1306006756-32009-2-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1306006756-32009-1-git-send-email-geert@linux-m68k.org>
+References: <1306006756-32009-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The resource system is a nice existing subsystem to implement simple allocators
-on top of.
-Unfortunately, there's no official method to find an existing resource by a
-resource start address, which is needed for a freeing function that just takes
-the start address of the region to free.
-        
-Currently there are 3 users of the resource subsystem that implement this by
-traversing the resource tree theirselves:
-  - The Amiga Chip RAM allocator on m68k,
-  - iomap()/iounmap() on sparc,
-  - DMA allocation API on sparc.
-They all lack locking of the resource tree, as resource_lock is static in
-kernel/resource.c.
+The address that's passed to _sparc_find_resource() should always be the
+start address of a resource:
+  - iounmap() passes a page-aligned virtual address, while the original
+    address was created by adding the in-page offset to the resource's
+    start address,
+  - sbus_free_coherent() and pci32_free_coherent() should be passed an
+    address obtained from sbus_alloc_coherent() resp. pci32_alloc_coherent(),
+    which is always a resource's start address.
 
-Hence this patchset adds lookup_resource() and converts the above users to it.
+Hence replace the range check by a check for an exact match.
 
-  [1/4] sparc: _sparc_find_resource() should check for exact matches
-  [2/4] resources: Add lookup_resource()
-  [3/4] m68k/amiga: Chip RAM - Use lookup_resource()
-  [4/4] sparc: iounmap() and *_free_coherent() - Use lookup_resource()
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/sparc/kernel/ioport.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Gr{oetje,eeting}s,
+diff --git a/arch/sparc/kernel/ioport.c b/arch/sparc/kernel/ioport.c
+index c6ce9a6..91e8c76 100644
+--- a/arch/sparc/kernel/ioport.c
++++ b/arch/sparc/kernel/ioport.c
+@@ -733,12 +733,12 @@ static const struct file_operations sparc_io_proc_fops = {
+  * This probably warrants some sort of hashing.
+  */
+ static struct resource *_sparc_find_resource(struct resource *root,
+-					     unsigned long hit)
++					     unsigned long start)
+ {
+ 	struct resource *tmp;
+ 
+ 	for (tmp = root->child; tmp != 0; tmp = tmp->sibling) {
+-		if (tmp->start <= hit && tmp->end >= hit)
++		if (tmp->start == start)
+ 			return tmp;
+ 	}
+ 	return NULL;
+-- 
+1.7.0.4
 
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
