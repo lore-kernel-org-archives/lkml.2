@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab1EUKnY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 06:43:24 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39381 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab1EUKnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 06:43:22 -0400
-Date: Sat, 21 May 2011 12:43:10 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/smep] x86, cpu: Enable/disable Supervisor Mode
- Execution Protection
-Message-ID: <20110521104310.GC26447@elte.hu>
-References: <1305157865-31727-1-git-send-email-fenghua.yu@intel.com>
- <tip-de5397ad5b9ad22e2401c4dacdf1bb3b19c05679@git.kernel.org>
- <4DD6D965.4010606@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD6D965.4010606@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754781Ab1EUKxZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 06:53:25 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58820 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab1EUKxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 06:53:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ioLhy5PLPbg3wEioLG630j2QAa/8jfiYGWhzl07C/WEKx8Ea0+t8S9iKcXCsGvMCZn
+         LHRtjabiweS0CRhj4MwBtIxGVELaluX18aYm8B1bCG3j8aue+YCIcm3oYuDtUvE2TxPd
+         sZr/I//Z6jemPWfZMr7oERajpu1kuDlFVzmaY=
+Subject: Re: [PATCHv4 0/4] Initial support for TPS65912 PMIC
+From: Liam Girdwood <lrg@kernel.org>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Margarita Olaya <magi@slimlogic.co.uk>
+In-Reply-To: <BANLkTim56oPzQ_knGc6ezg+9_CY2kqshqQ@mail.gmail.com>
+References: <BANLkTi=5MY7Lr4KU4vtOFSQiOedKGXxZLw@mail.gmail.com>
+	 <BANLkTim56oPzQ_knGc6ezg+9_CY2kqshqQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 21 May 2011 11:53:17 +0100
+Message-ID: <1305975198.3317.1.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Yinghai Lu <yinghai@kernel.org> wrote:
-
-> > +static __init void setup_smep(struct cpuinfo_x86 *c)
-> > +{
-> > +	if (cpu_has(c, X86_FEATURE_SMEP)) {
-> > +		if (unlikely(disable_smep)) {
-> > +			setup_clear_cpu_cap(X86_FEATURE_SMEP);
-> > +			clear_in_cr4(X86_CR4_SMEP);
-> > +		} else
-> > +			set_in_cr4(X86_CR4_SMEP);
-> > +	}
-> > +}
+On Thu, 2011-05-19 at 13:51 -0500, Margarita Olaya wrote:
+> Hi,
 > 
-> should be __cpuinit for this function.
+> On Mon, May 16, 2011 at 6:02 PM, Margarita Olaya <magi@slimlogic.co.uk> wrote:
+> > Hi,
+> >
+> > This is the initial version of the TPS65912 PMIC, a power management IC
+> > for multimedia products.
+> >
+> > The tps65912 consists of 4 DCDCs and 10 LDOs, that are able to supply
+> > voltage to main processor and other components. The chip includes a
+> > GPIO module.
+> >
+> > Changes from V3:
+> > - split core driver into tps65912-spi and tps65912-i2c
+> > - create new function in regulator with common code in set/get mode
+> >
 > 
-> otherwise got:
+> Do you have any comments on this version of the driver? Please let me know them.
 > 
-> WARNING: arch/x86/built-in.o(.cpuinit.text+0x1b10): Section mismatch in reference from the function identify_cpu() to the function .init.text:setup_smep()
-> The function __cpuinit identify_cpu() references
-> a function __init setup_smep().
-> If setup_smep is only used by identify_cpu then
-> annotate setup_smep with a matching annotation.
 
-Yeah, indeed, and it might in fact crash with certain .config's. Mind sending a 
-tested patch?
+Grant, Samuel,  If the mfd/gpio sections are fine with you I can take
+via regulator. I plan to do the regulator pull request on Monday or
+Tuesday.
 
-Thanks,
+Thanks !
 
-	Ingo
+Liam
+
