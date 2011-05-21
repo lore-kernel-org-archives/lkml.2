@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab1EUTjg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 15:39:36 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:49161 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757271Ab1EUTj2 (ORCPT
+	id S1757322Ab1EUTjd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 15:39:33 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:46607 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757280Ab1EUTj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 21 May 2011 15:39:28 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
         linux-m68k@vger.kernel.org
 Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 1/4] sparc: _sparc_find_resource() should check for exact matches
-Date: Sat, 21 May 2011 21:39:13 +0200
-Message-Id: <1306006756-32009-2-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 2/4] resources: Add lookup_resource()
+Date: Sat, 21 May 2011 21:39:14 +0200
+Message-Id: <1306006756-32009-3-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1306006756-32009-1-git-send-email-geert@linux-m68k.org>
 References: <1306006756-32009-1-git-send-email-geert@linux-m68k.org>
@@ -21,41 +21,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address that's passed to _sparc_find_resource() should always be the
-start address of a resource:
-  - iounmap() passes a page-aligned virtual address, while the original
-    address was created by adding the in-page offset to the resource's
-    start address,
-  - sbus_free_coherent() and pci32_free_coherent() should be passed an
-    address obtained from sbus_alloc_coherent() resp. pci32_alloc_coherent(),
-    which is always a resource's start address.
-
-Hence replace the range check by a check for an exact match.
+Add a function to find an existing resource by a resource start address.
+This allows to implement simple allocators (with a malloc/free-alike API)
+on top of the resource system.
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/sparc/kernel/ioport.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/ioport.h |    1 +
+ kernel/resource.c      |   21 +++++++++++++++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/arch/sparc/kernel/ioport.c b/arch/sparc/kernel/ioport.c
-index c6ce9a6..91e8c76 100644
---- a/arch/sparc/kernel/ioport.c
-+++ b/arch/sparc/kernel/ioport.c
-@@ -733,12 +733,12 @@ static const struct file_operations sparc_io_proc_fops = {
-  * This probably warrants some sort of hashing.
-  */
- static struct resource *_sparc_find_resource(struct resource *root,
--					     unsigned long hit)
-+					     unsigned long start)
- {
- 	struct resource *tmp;
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index e9bb22c..63eb429 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -132,6 +132,7 @@ extern int allocate_resource(struct resource *root, struct resource *new,
+ 						       resource_size_t,
+ 						       resource_size_t),
+ 			     void *alignf_data);
++struct resource *lookup_resource(struct resource *root, resource_size_t start);
+ int adjust_resource(struct resource *res, resource_size_t start,
+ 		    resource_size_t size);
+ resource_size_t resource_alignment(struct resource *res);
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 798e2fa..8d0b479 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -473,6 +473,27 @@ int allocate_resource(struct resource *root, struct resource *new,
  
- 	for (tmp = root->child; tmp != 0; tmp = tmp->sibling) {
--		if (tmp->start <= hit && tmp->end >= hit)
-+		if (tmp->start == start)
- 			return tmp;
- 	}
- 	return NULL;
+ EXPORT_SYMBOL(allocate_resource);
+ 
++/**
++ * lookup_resource - find an existing resource by a resource start address
++ * @root: root resource descriptor
++ * @start: resource start address
++ *
++ * Returns a pointer to the resource if found, NULL otherwise
++ */
++struct resource *lookup_resource(struct resource *root, resource_size_t start)
++{
++	struct resource *res;
++
++	read_lock(&resource_lock);
++	for (res = root->child; res; res = res->sibling) {
++		if (res->start == start)
++			break;
++	}
++	read_unlock(&resource_lock);
++
++	return res;
++}
++
+ /*
+  * Insert a resource into the resource tree. If successful, return NULL,
+  * otherwise return the conflicting resource (compare to __request_resource())
 -- 
 1.7.0.4
 
