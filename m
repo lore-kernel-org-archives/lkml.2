@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab1EUKda (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 06:33:30 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50511 "EHLO mx2.mail.elte.hu"
+	id S1754543Ab1EUKe0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 06:34:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:33522 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753727Ab1EUKd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 06:33:26 -0400
-Date: Sat, 21 May 2011 12:33:15 +0200
+	id S1753913Ab1EUKeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 06:34:24 -0400
+Date: Sat, 21 May 2011 12:34:18 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Jim Cromie <jim.cromie@gmail.com>
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
         acme@ghostprotocols.net
-Subject: Re: [PATCH 2/2] dont commify big numbers by default, let -B do it
-Message-ID: <20110521103315.GA23651@elte.hu>
+Subject: Re: [PATCH 1/2] perf stat: add -l <N> option to redirect stderr
+ elsewhere
+Message-ID: <20110521103418.GB23651@elte.hu>
 References: <1305968203-14240-1-git-send-email-jim.cromie@gmail.com>
- <1305968203-14240-3-git-send-email-jim.cromie@gmail.com>
+ <1305968203-14240-2-git-send-email-jim.cromie@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305968203-14240-3-git-send-email-jim.cromie@gmail.com>
+In-Reply-To: <1305968203-14240-2-git-send-email-jim.cromie@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -34,29 +35,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Jim Cromie <jim.cromie@gmail.com> wrote:
 
-> Currently, big numbers get commas by default, which complicates parsing
-> by automation. [...]
+> This perf stat option emulates valgrind's --log-fd option, allowing the
+> user to send perf results elsewhere, and leaving stderr for use by the
+> program under test.
+> 
+>   3>results perf stat -l 3 -- <cmd>
+> 
+> The perl distro's make test.valgrind target uses valgrinds --log-fd
+> option, I've adapted it to invoke perf also, and tested this patch there.
+> 
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 
-Well, automation can turn it off via --no-big-num, right?
+Makes sense!
 
-Also, i think for automation we'd also like to have a 'simple output' mode, 
-would you like to add that?
+Arnaldo, if you are fine with it, do you want to pick it up - or should i? If 
+you pick it up:
 
-Something a bit like what you can see in 'perf stat -v true':
-
- $ perf stat -v --no-big-num true
- task-clock: 164545 164545 164545
- context-switches: 0 164545 164545
- CPU-migrations: 0 164545 164545
- page-faults: 83 164545 164545
- cycles: 518743 169550 169550
- stalled-cycles-frontend: 326178 169550 169550
- stalled-cycles-backend: 269753 169550 169550
- instructions: 326864 169550 169550
- branches: 67886 169550 169550
- branch-misses: 3874 169550 169550
-
-Without the human output later on, and with elapsed time added as well.
+Acked-by: Ingo Molnar <mingo@elte.hu>
 
 Thanks,
 
