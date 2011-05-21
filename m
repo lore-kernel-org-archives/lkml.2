@@ -1,293 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751627Ab1EUExD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 00:53:03 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:50553 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab1EUEw5 (ORCPT
+	id S1751095Ab1EUFPh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 01:15:37 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38548 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab1EUFPe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 00:52:57 -0400
+	Sat, 21 May 2011 01:15:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=w8VtvrM/wyZ5nL36t+vM/CwEo4690ZDqmax13urG98J4phxG8LVBQwAJAPFCc5VIGu
-         y2kSHeP1wtupgjEw3dZA==
-Date: Fri, 20 May 2011 21:52:58 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Greg KH <gregkh@suse.de>
-cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [07/24] tmpfs: fix race between umount and swapoff
-In-Reply-To: <20110519183126.302147055@clark.kroah.org>
-Message-ID: <alpine.LSU.2.00.1105202148500.1847@sister.anvils>
-References: <20110519183126.302147055@clark.kroah.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=x1Dl1WmwQVHD9oOVDZsqZoITDqq1Cy8pIoCVoviu605nif56OKFLMIw9Ki2iZIuHb/
+         efbbBVyUWg3ELZpQNeDKAZnI63tVyOf2f4brx/6yMzVhEAnr0OXP2kfZiU+QvoCQwdZt
+         hlcIn40t2r6O+Qlnkiwcnjd0Uwyqld3T7f6lg=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <20110519224445.GA9885@suse.de>
+References: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com> <20110519224445.GA9885@suse.de>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Fri, 20 May 2011 23:15:04 -0600
+Message-ID: <BANLkTik6QHxzXoC-xAgkfw3-O_fzorLGww@mail.gmail.com>
+Subject: Re: [PATCH 00/23] add register_chrdev_ids() to char_dev.c, API
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 May 2011, Greg KH wrote:
-> 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+On Thu, May 19, 2011 at 4:44 PM, Greg KH <gregkh@suse.de> wrote:
+> On Thu, May 19, 2011 at 03:33:03PM -0600, Jim Cromie wrote:
+>> over on kernelnewbies, gregkh said:
+>>
+>>      The chardev stuff is a mess, I keep meaning for years to clean it
+>>      up.  Any proposals on a sane interface for this stuff is greatly
+>>      appreciated.
+>>
+>> this is a 1st step.
+>>
+>> register_chrdev_ids() replaces and deprecates register_chrdev_region()
+>> and alloc_chrdev_region() with a single function that works for both
+>> dynamic and static major numbers.
+>>
+>> Like alloc_chrdev_region(), 1st arg is a dev_t*, but its an in/out
+>> parameter, and expects both major and minor to be preset, and thus the
+>> separate minor arg is dropped.  If major == 0, a dynamic major is
+>> reserved, saved into 1st arg, and thus available to caller afterwards.
+>>
+>> [PATCH 01/23] add register_chrdev_ids() to char_dev.c, API
+>> [PATCH 02/23] reimplement alloc_chrdev_region with
+>> [PATCH 03/23] use register_chrdev_ids to replace
+>> [PATCH 04/23] use register_chrdev_ids in drivers/tty/
+>> [PATCH 05/23] use register_chrdev_ids in drivers/infiniband/
+>> [PATCH 06/23] use register_chrdev_ids in drivers/media/
+>> [PATCH 07/23] use register_chrdev_ids in drivers/s390/
+>> [PATCH 08/23] use register_chrdev_ids in drivers/scsi/
+>> [PATCH 09/23] use register_chrdev_ids in drivers/staging/
+>>
+>> Ive held back the rest, no point in spamming.
+>
+> It's a nice first step, but that's the easy part, what is your 2nd
+> through 4th one going to be?  :)
+>
+> I'd also like to sanatize the function namespace a bit as well, how
+> about chrdev_register_ids() instead?
 
-Witold has found that I screwed up the highmem case in this patch.
-Please add the commit appended at the bottom - or else delay both
-until the next 2.6.33-longterm if you prefer.
+that seems sensible, modern.
+also have register_chrdev(), which I presume should also be fixed.
 
-Thanks,
-Hugh
+> Ideally, we could drop down to a single register/unregister pair of
+> functions, that are easy to use and understand.
 
-> 
-> ------------------
-> Content-Length: 6159
-> Lines: 197
-> 
-> From: Hugh Dickins <hughd@google.com>
-> 
-> commit 778dd893ae785c5fd505dac30b5fc40aae188bf1 upstream.
-> 
-> The use of igrab() in swapoff's shmem_unuse_inode() is just as vulnerable
-> to umount as that in shmem_writepage().
-> 
-> Fix this instance by extending the protection of shmem_swaplist_mutex
-> right across shmem_unuse_inode(): while it's on the list, the inode cannot
-> be evicted (and the filesystem cannot be unmounted) without
-> shmem_evict_inode() taking that mutex to remove it from the list.
-> 
-> But since shmem_writepage() might take that mutex, we should avoid making
-> memory allocations or memcg charges while holding it: prepare them at the
-> outer level in shmem_unuse().  When mem_cgroup_cache_charge() was
-> originally placed, we didn't know until that point that the page from swap
-> was actually a shmem page; but nowadays it's noted in the swap_map, so
-> we're safe to charge upfront.  For the radix_tree, do as is done in
-> shmem_getpage(): preload upfront, but don't pin to the cpu; so we make a
-> habit of refreshing the node pool, but might dip into GFP_NOWAIT reserves
-> on occasion if subsequently preempted.
-> 
-> With the allocation and charge moved out from shmem_unuse_inode(),
-> we can also hold index map and info->lock over from finding the entry.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  mm/shmem.c |   88 +++++++++++++++++++++++++++++--------------------------------
->  1 file changed, 43 insertions(+), 45 deletions(-)
-> 
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -850,7 +850,7 @@ static inline int shmem_find_swp(swp_ent
->  
->  static int shmem_unuse_inode(struct shmem_inode_info *info, swp_entry_t entry, struct page *page)
->  {
-> -	struct inode *inode;
-> +	struct address_space *mapping;
->  	unsigned long idx;
->  	unsigned long size;
->  	unsigned long limit;
-> @@ -873,8 +873,10 @@ static int shmem_unuse_inode(struct shme
->  	if (size > SHMEM_NR_DIRECT)
->  		size = SHMEM_NR_DIRECT;
->  	offset = shmem_find_swp(entry, ptr, ptr+size);
-> -	if (offset >= 0)
-> +	if (offset >= 0) {
-> +		shmem_swp_balance_unmap();
->  		goto found;
-> +	}
->  	if (!info->i_indirect)
->  		goto lost2;
->  
-> @@ -912,11 +914,11 @@ static int shmem_unuse_inode(struct shme
->  			if (size > ENTRIES_PER_PAGE)
->  				size = ENTRIES_PER_PAGE;
->  			offset = shmem_find_swp(entry, ptr, ptr+size);
-> -			shmem_swp_unmap(ptr);
->  			if (offset >= 0) {
->  				shmem_dir_unmap(dir);
->  				goto found;
->  			}
-> +			shmem_swp_unmap(ptr);
->  		}
->  	}
->  lost1:
-> @@ -926,8 +928,7 @@ lost2:
->  	return 0;
->  found:
->  	idx += offset;
-> -	inode = igrab(&info->vfs_inode);
-> -	spin_unlock(&info->lock);
-> +	ptr += offset;
->  
->  	/*
->  	 * Move _head_ to start search for next from here.
-> @@ -938,37 +939,18 @@ found:
->  	 */
->  	if (shmem_swaplist.next != &info->swaplist)
->  		list_move_tail(&shmem_swaplist, &info->swaplist);
-> -	mutex_unlock(&shmem_swaplist_mutex);
->  
-> -	error = 1;
-> -	if (!inode)
-> -		goto out;
->  	/*
-> -	 * Charge page using GFP_KERNEL while we can wait.
-> -	 * Charged back to the user(not to caller) when swap account is used.
-> -	 * add_to_page_cache() will be called with GFP_NOWAIT.
-> +	 * We rely on shmem_swaplist_mutex, not only to protect the swaplist,
-> +	 * but also to hold up shmem_evict_inode(): so inode cannot be freed
-> +	 * beneath us (pagelock doesn't help until the page is in pagecache).
->  	 */
-> -	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL);
-> -	if (error)
-> -		goto out;
-> -	error = radix_tree_preload(GFP_KERNEL);
-> -	if (error) {
-> -		mem_cgroup_uncharge_cache_page(page);
-> -		goto out;
-> -	}
-> -	error = 1;
-> -
-> -	spin_lock(&info->lock);
-> -	ptr = shmem_swp_entry(info, idx, NULL);
-> -	if (ptr && ptr->val == entry.val) {
-> -		error = add_to_page_cache_locked(page, inode->i_mapping,
-> -						idx, GFP_NOWAIT);
-> -		/* does mem_cgroup_uncharge_cache_page on error */
-> -	} else	/* we must compensate for our precharge above */
-> -		mem_cgroup_uncharge_cache_page(page);
-> +	mapping = info->vfs_inode.i_mapping;
-> +	error = add_to_page_cache_locked(page, mapping, idx, GFP_NOWAIT);
-> +	/* which does mem_cgroup_uncharge_cache_page on error */
->  
->  	if (error == -EEXIST) {
-> -		struct page *filepage = find_get_page(inode->i_mapping, idx);
-> +		struct page *filepage = find_get_page(mapping, idx);
->  		error = 1;
->  		if (filepage) {
->  			/*
-> @@ -988,14 +970,8 @@ found:
->  		swap_free(entry);
->  		error = 1;	/* not an error, but entry was found */
->  	}
-> -	if (ptr)
-> -		shmem_swp_unmap(ptr);
-> +	shmem_swp_unmap(ptr);
->  	spin_unlock(&info->lock);
-> -	radix_tree_preload_end();
-> -out:
-> -	unlock_page(page);
-> -	page_cache_release(page);
-> -	iput(inode);		/* allows for NULL */
->  	return error;
->  }
->  
-> @@ -1007,6 +983,26 @@ int shmem_unuse(swp_entry_t entry, struc
->  	struct list_head *p, *next;
->  	struct shmem_inode_info *info;
->  	int found = 0;
-> +	int error;
-> +
-> +	/*
-> +	 * Charge page using GFP_KERNEL while we can wait, before taking
-> +	 * the shmem_swaplist_mutex which might hold up shmem_writepage().
-> +	 * Charged back to the user (not to caller) when swap account is used.
-> +	 * add_to_page_cache() will be called with GFP_NOWAIT.
-> +	 */
-> +	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL);
-> +	if (error)
-> +		goto out;
-> +	/*
-> +	 * Try to preload while we can wait, to not make a habit of
-> +	 * draining atomic reserves; but don't latch on to this cpu,
-> +	 * it's okay if sometimes we get rescheduled after this.
-> +	 */
-> +	error = radix_tree_preload(GFP_KERNEL);
-> +	if (error)
-> +		goto uncharge;
-> +	radix_tree_preload_end();
->  
->  	mutex_lock(&shmem_swaplist_mutex);
->  	list_for_each_safe(p, next, &shmem_swaplist) {
-> @@ -1014,17 +1010,19 @@ int shmem_unuse(swp_entry_t entry, struc
->  		found = shmem_unuse_inode(info, entry, page);
->  		cond_resched();
->  		if (found)
-> -			goto out;
-> +			break;
->  	}
->  	mutex_unlock(&shmem_swaplist_mutex);
-> -	/*
-> -	 * Can some race bring us here?  We've been holding page lock,
-> -	 * so I think not; but would rather try again later than BUG()
-> -	 */
-> +
-> +uncharge:
-> +	if (!found)
-> +		mem_cgroup_uncharge_cache_page(page);
-> +	if (found < 0)
-> +		error = found;
-> +out:
->  	unlock_page(page);
->  	page_cache_release(page);
-> -out:
-> -	return (found < 0) ? found : 0;
-> +	return error;
->  }
->  
->  /*
+__register_chrdev() does more stuff, mainly around cdevs, fops.
+If fops was passed as NULL, we just do the __register_chardev_region()
+and return early, skipping the cdev_alloc() and everything afterwards,
+thus yielding register_chrdev_ids() behavior.
 
-commit e6c9366b2adb52cba64b359b3050200743c7568c
-Author: Hugh Dickins <hughd@google.com>
-Date:   Fri May 20 15:47:33 2011 -0700
+> Do you think you can
+> get there with this intermediate step or do you want to step back and
+> rethink this?
 
-    tmpfs: fix highmem swapoff crash regression
-    
-    Commit 778dd893ae78 ("tmpfs: fix race between umount and swapoff")
-    forgot the new rules for strict atomic kmap nesting, causing
-    
-      WARNING: at arch/x86/mm/highmem_32.c:81
-    
-    from __kunmap_atomic(), then
-    
-      BUG: unable to handle kernel paging request at fffb9000
-    
-    from shmem_swp_set() when shmem_unuse_inode() is handling swapoff with
-    highmem in use.  My disgrace again.
-    
-    See
-      https://bugzilla.kernel.org/show_bug.cgi?id=35352
-    
-    Reported-by: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
-    Signed-off-by: Hugh Dickins <hughd@google.com>
-    Cc: stable@kernel.org
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+hmm.  If above is right, theres no need for the new api fn I added,
+and probably should also drop the __ on both (un)?register_chardev.
+So thats step 2 :)  Any ideas for 3 ?
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index dfc7069..ba4ad28 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -916,11 +916,12 @@ static int shmem_unuse_inode(struct shmem_inode_info *info, swp_entry_t entry, s
- 			if (size > ENTRIES_PER_PAGE)
- 				size = ENTRIES_PER_PAGE;
- 			offset = shmem_find_swp(entry, ptr, ptr+size);
-+			shmem_swp_unmap(ptr);
- 			if (offset >= 0) {
- 				shmem_dir_unmap(dir);
-+				ptr = shmem_swp_map(subdir);
- 				goto found;
- 			}
--			shmem_swp_unmap(ptr);
- 		}
- 	}
- lost1:
+btw, I think theres a major/minor error in the linuxdoc for the count
+param in some of these register-* functions.  I'll take a closer look,
+and send a patch RSN if needed, even if fn is going away later.
+
+
+> thanks,
+>
+> greg k-h
+>
