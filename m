@@ -1,127 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab1EUB04 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 21:26:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47268 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755190Ab1EUB0t (ORCPT
+	id S1756952Ab1EUB5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 21:57:14 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:17489 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755850Ab1EUB5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 21:26:49 -0400
-Date: Fri, 20 May 2011 18:26:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, hannes@cmpxchg.org,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH 8/8] memcg asyncrhouns reclaim workqueue
-Message-Id: <20110520182640.7e71af33.akpm@linux-foundation.org>
-In-Reply-To: <BANLkTinwmtgh+p=aeZux3NuC2ftbR5OMgQ@mail.gmail.com>
-References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110520124837.72978344.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110520145115.d52f3693.akpm@linux-foundation.org>
-	<BANLkTinwmtgh+p=aeZux3NuC2ftbR5OMgQ@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 20 May 2011 21:57:12 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAOAa101Ld/sX/2dsb2JhbAAMhFDVFpB5gSuDZ4EHBJ8i
+X-IronPort-AV: E=Sophos;i="4.65,245,1304308800"; 
+   d="scan'208";a="114381760"
+Message-ID: <4DD71BF3.5030906@teksavvy.com>
+Date: Fri, 20 May 2011 21:57:07 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: Linux 2.6.39 -- *ERROR* Attempting to mmap a purgeable buffer
+References: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com> <4DD5369B.1010601@teksavvy.com> <BANLkTim-u1_ixT517dWd-p4zXgaU=LLg1A@mail.gmail.com>
+In-Reply-To: <BANLkTim-u1_ixT517dWd-p4zXgaU=LLg1A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 May 2011 09:41:50 +0900 Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com> wrote:
-
-> 2011/5/21 Andrew Morton <akpm@linux-foundation.org>:
-> > On Fri, 20 May 2011 12:48:37 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >
-> >> workqueue for memory cgroup asynchronous memory shrinker.
-> >>
-> >> This patch implements the workqueue of async shrinker routine. each
-> >> memcg has a work and only one work can be scheduled at the same time.
-> >>
-> >> If shrinking memory doesn't goes well, delay will be added to the work.
-> >>
-> >
-> > When this code explodes (as it surely will), users will see large
-> > amounts of CPU consumption in the work queue thread. __We want to make
-> > this as easy to debug as possible, so we should try to make the
-> > workqueue's names mappable back onto their memcg's. __And anything else
-> > we can think of to help?
-> >
+On 11-05-20 06:00 PM, Linus Torvalds wrote:
+> On Thu, May 19, 2011 at 8:26 AM, Mark Lord <kernel@teksavvy.com> wrote:
+>>
+>> Just got weird stuff in the syslog this morning from rc7-git12:
+>>
+>> [43190.824700] [drm:i915_gem_mmap_gtt] *ERROR* Attempting to mmap a purgeable buffer
+>> [43190.827426] [drm:i915_gem_mmap_gtt] *ERROR* Attempting to mmap a purgeable buffer
+>> [43190.827506] [drm:i915_gem_mmap_gtt] *ERROR* Attempting to mmap a purgeable buffer
+>> [43190.827568] [drm:i915_gem_mmap_gtt] *ERROR* Attempting to mmap a purgeable buffer
+>> [43190.828685] [drm:i915_gem_mmap_gtt] *ERROR* Attempting to mmap a purgeable buffer
+>> [43190.830498] [drm:i915_gem_mmap_gtt] *ERROR* Attempting to mmap a purgeable buffer
+>> [43190.830603] [drm:i915_gem_mmap_gtt] *ERROR* Attempting to mmap a purgeable buffer
+>> [43190.831055] [drm:i915_gem_mmap_gtt] *ERROR* Attempting to mmap a purgeable buffer
+>> [43190.832580] [drm:i915_gem_mmap_gtt] *ERROR* Attempting to mmap a purgeable buffer
+>> [43190.832788] [drm:i915_gem_mmap_gtt] *ERROR* Attempting to mmap a purgeable buffer
 > 
-> I had a patch for showing per-memcg reclaim latency stats. It will be help.
-> I'll add it again to this set. I just dropped it because there are many patches
-> onto memory.stat in flight..
-
-Will that patch help us when users report the memcg equivalent of
-"kswapd uses 99% of CPU"?
-
-> >
-> >> + __ __ limit = res_counter_read_u64(&mem->res, RES_LIMIT);
-> >> + __ __ shrink_to = limit - MEMCG_ASYNC_MARGIN - PAGE_SIZE;
-> >> + __ __ usage = res_counter_read_u64(&mem->res, RES_USAGE);
-> >> + __ __ if (shrink_to <= usage) {
-> >> + __ __ __ __ __ __ required = usage - shrink_to;
-> >> + __ __ __ __ __ __ required = (required >> PAGE_SHIFT) + 1;
-> >> + __ __ __ __ __ __ /*
-> >> + __ __ __ __ __ __ __* This scans some number of pages and returns that memory
-> >> + __ __ __ __ __ __ __* reclaim was slow or now. If slow, we add a delay as
-> >> + __ __ __ __ __ __ __* congestion_wait() in vmscan.c
-> >> + __ __ __ __ __ __ __*/
-> >> + __ __ __ __ __ __ congested = mem_cgroup_shrink_static_scan(mem, (long)required);
-> >> + __ __ }
-> >> + __ __ if (test_bit(ASYNC_NORESCHED, &mem->async_flags)
-> >> + __ __ __ __ || mem_cgroup_async_should_stop(mem))
-> >> + __ __ __ __ __ __ goto finish_scan;
-> >> + __ __ /* If memory reclaim couldn't go well, add delay */
-> >> + __ __ if (congested)
-> >> + __ __ __ __ __ __ delay = HZ/10;
-> >
-> > Another magic number.
-> >
-> > If Moore's law holds, we need to reduce this number by 1.4 each year.
-> > Is this good?
-> >
+> Quoting from an earlier mail about this issue from the DRM people:
 > 
-> not good.  I just used the same magic number now used with wait_iff_congested.
-> Other than timer, I can use pagein/pageout event counter. If we have
-> dirty_ratio,
-> I may able to link this to dirty_ratio and wait until dirty_ratio is enough low.
-> Or, wake up again hit limit.
+>   "Userspace is attempting to write to/read from a buffer it has
+> marked as being no longer required, so some rendering is going amiss.
+> And it does not rule out the possibility that at some point it will
+> catch the error later and result in a SIGBUS being sent to the
+> application (probably X).
 > 
-> Do you have suggestion ?
+>   However since it is not a kernel error nor is it fatal, that and a
+> lot of similar messages can be demoted to debug."
 > 
+> So it's basically user space trying to access something stale, but it
+> should be harmless.
 
-mm..  It would be pretty easy to generate an estimate of "pages scanned
-per second" from the contents of (and changes in) the scan_control. 
-Konwing that datum and knowing the number of pages in the memcg, we
-should be able to come up with a delay period which scales
-appropriately with CPU speed and with memory size?
+Peachy.  I suspect the messages get generated when I run gmplayer or vlc
+(not sure which, don't really care much either).
 
-Such a thing could be used to rationalise magic delays in other places,
-hopefully.
-
-> 
-> >> + __ __ queue_delayed_work(memcg_async_shrinker, &mem->async_work, delay);
-> >> + __ __ return;
-> >> +finish_scan:
-> >> + __ __ cgroup_release_and_wakeup_rmdir(&mem->css);
-> >> + __ __ clear_bit(ASYNC_RUNNING, &mem->async_flags);
-> >> + __ __ return;
-> >> +}
-> >> +
-> >> +static void run_mem_cgroup_async_shrinker(struct mem_cgroup *mem)
-> >> +{
-> >> + __ __ if (test_bit(ASYNC_NORESCHED, &mem->async_flags))
-> >> + __ __ __ __ __ __ return;
-> >
-> > I can't work out what ASYNC_NORESCHED does. __Is its name well-chosen?
-> >
-> how about BLOCK/STOP_ASYNC_RECLAIM ?
-
-I can't say - I don't know what it does!  Or maybe I did, and immediately
-forgot ;)
+Thanks.
