@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab1EUMno (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 08:43:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60525 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029Ab1EUMnn (ORCPT
+	id S1756029Ab1EUN3X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 09:29:23 -0400
+Received: from raptor.ism.com.br ([200.215.129.13]:59798 "EHLO
+	ocelot.ism.com.br" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751004Ab1EUN3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 08:43:43 -0400
-Message-ID: <4DD7B374.7040907@infradead.org>
-Date: Sat, 21 May 2011 09:43:32 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	Sat, 21 May 2011 09:29:21 -0400
+X-Greylist: delayed 1676 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 May 2011 09:29:21 EDT
+Message-ID: <20110521094542.172911a9nnecyody@webmail.ism.com.br>
+Date: Sat, 21 May 2011 09:45:42 -0300
+From: "western101@algish.com" <bybrasil@ism.com.br>
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [git pull] FireWire updates post 2.6.39
-References: <20110521120718.6a67029e@stein>
-In-Reply-To: <20110521120718.6a67029e@stein>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+User-Agent: Internet Messaging Program (IMP) 4.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 21-05-2011 07:07, Stefan Richter escreveu:
-> Linus, please pull from the for-linus branch at
-> 
->     git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
-> 
-> to receive the following updates for the IEEE 1394 (FireWire) subsystem.
-> They contain small fixes and some optimizations, e.g. to CPU utilization
-> during isochronous I/O.
-> 
-> The changes in {drivers/media/dvb,sound}/firewire/ have been Cc'd to
-> linux-media and alsa-devel but I did not request explicit Acks.  There
-> are no conflicts yet and are unlikely to arise during the merge window.
-> 
 
->  drivers/media/dvb/firewire/firedtv-avc.c |   15 +------
->  drivers/media/dvb/firewire/firedtv-fw.c  |    1 +
+My associate has helped me to send your first payment
+of $7,500 USD to you as instructed by Mr. David Cameron
+the United Kingdom prime minister after the last G20
+meeting that was held in United Kingdom, making you one
+of the beneficiaries. Here is the information below.
 
-The changes on the above dvb stuff are due to the API changes and looks fine
-for me.
+MTCN Numbers: 6096147516
+Sender First Name Is = Johannes
+Second Name = Davis
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+I told him to keep sending you $7,500 USD twice a week
+until the FULL payment of ($820000.00 United State Dollars)
+is completed.
+
+A certificate will be made to change the Receiver Name as
+stated by the British prime minister, send your Full Names
+and address via Email to: Mr Garry Moore
+
+You cannot pickup the money until the certificate is issued to you.
+
+Regards
+Mr. Garry Moore.
+
+
+
+
+
