@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab1EUP2Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 11:28:24 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55491 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab1EUP2U (ORCPT
+	id S1756373Ab1EUPfw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 11:35:52 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37161 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406Ab1EUPfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 11:28:20 -0400
+	Sat, 21 May 2011 11:35:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=UzUWT/vv//5f5aQDjsSPLJu9Of7KEPgUg+jLLQbBpQ9ZreNpaNZjDi+61WBr1LafRq
-         WssAjWyJJweiWOj7NM08EpKvrCM3S/popS+4BsEKauIbsJcIpb0WDdN/nV7DI8Z9+3q0
-         HpzMxwVPIoOPBx25WWs0xeWYGyTnM5/QwiQaM=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=GIoQcjM/qw4GOlWhekqAzTDnPn60Y3GYzY0iUgPrCTAyNzKKrYFByauBRrQmKnoTwk
+         jKbHnrFc8BTA4zKVkRjXuTVeQv/cLGPteDhXmTih50CNZCZBWu8F6g7jIlWaG1uCjYcz
+         iFeRNgGyRKIeSwn7EasJdmMNKTLDkNA1l27Cw=
 MIME-Version: 1.0
-Date: Sat, 21 May 2011 23:28:19 +0800
-Message-ID: <BANLkTimF2d93VVGKHDdFTn=V-1h9nWrs_w@mail.gmail.com>
-Subject: [PATCH v0] sched: change how run-queue is selected for RT task
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <BANLkTikp9ZV4w1E8NNsGBkftGh=jRDx5fw@mail.gmail.com>
+References: <BANLkTikp9ZV4w1E8NNsGBkftGh=jRDx5fw@mail.gmail.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Sat, 21 May 2011 23:31:05 +0800
+Message-ID: <BANLkTikt_N-1HJfcFu241WX4+XuNVDF+5w@mail.gmail.com>
+Subject: Re: [PATCH] netfilter: nf_conntrack_ftp: prevent integer overflows in get_port()
+To: Mansour Moufid <mansourmoufid@gmail.com>
+Cc: kaber@trash.net, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When selecting run-queue for a given RT task, we have to take a few
-factors, such as task priority and CPU cache affinity, into
-consideration. In this work, a simpler method is proposed, which is
-focusing on the relation between the current run-queue of the given
-task and the given run-queue.
+On Thu, May 5, 2011 at 6:31 AM, Mansour Moufid <mansourmoufid@gmail.com> wrote:
+> From: Mansour Moufid <mansourmoufid@gmail.com>
+>
+> This patch prevents potential integer overflows from occurring in the
+> port number parsing function `get_port', in the file
+> net/netfilter/nf_conntrack_ftp.c; related constants are defined in
+> include/linux/kernel.h. This applies to stable version 2.6.38.5.
+>
+> The concern is a firewall could be made to open an otherwise closed
+> port. For example, get_port("65558?", 0, 6, '?', foo) currently
+> returns 22 in *foo.
+>
 
-If the current run-queue of task is the given run-queue, the run-queue
-of task keeps unchanged, so the CPU cache affinities of both task and
-the current task of run-queue remain unchanged. Then there are at
-least two tasks competing one CPU, and in the worst case that both
-competitors are RT tasks the victim will be selected and processed by
-pusher later.
+It isn't a serious problem. If an attacker can control the contents,
+he can just give a valid port 22 instead of utilizing this integer
+overflow.
 
-On other hand, if the current run-queue of task is different from the
-given run-queue, task is simply delivered to its current run-queue,
-since pusher is always willing to do hard works.
-
-In summary, the burden of RT task is always processed first by the
-pusher of its current run-queue.
-
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
-
---- a/kernel/sched_rt.c	2011-04-27 11:48:50.000000000 +0800
-+++ b/kernel/sched_rt.c	2011-05-21 22:19:52.000000000 +0800
-@@ -998,14 +998,12 @@ select_task_rq_rt(struct rq *rq, struct
- 	 *
- 	 * For equal prio tasks, we just let the scheduler sort it out.
- 	 */
--	if (unlikely(rt_task(rq->curr)) &&
--	    (rq->curr->rt.nr_cpus_allowed < 2 ||
--	     rq->curr->prio < p->prio) &&
--	    (p->rt.nr_cpus_allowed > 1)) {
--		int cpu = find_lowest_rq(p);
-
--		return (cpu == -1) ? task_cpu(p) : cpu;
--	}
-+	if (task_cpu(p) == rq->cpu)
-+		return rq->cpu;
-+
-+	if (likely(!rt_task(rq->curr)))
-+		return rq->cpu;
-
- 	/*
- 	 * Otherwise, just let it ride on the affined RQ and the
+-- 
+Regards,
+Changli Gao(xiaosuo@gmail.com)
