@@ -1,98 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab1EURFo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 13:05:44 -0400
-Received: from 173-160-34-133-colorado.hfc.comcastbusiness.net ([173.160.34.133]:6457
-	"EHLO ether.astekcorp.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753164Ab1EURFm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 13:05:42 -0400
-From: Dave Carroll <dcarroll@astekcorp.com>
-To: "'Milton Miller'" <miltonm@bga.com>,
-        "Benjamin Herrenschmidt (E-mail)" <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>, LPPC <linuxppc-dev@lists.ozlabs.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 21 May 2011 11:05:27 -0600
-Subject: [PATCH v3] powerpc: Force page alignment for initrd reserved memory
-Thread-Topic: [PATCH v3] powerpc: Force page alignment for initrd reserved
- memory
-Thread-Index: AcwXovyT9L9qTwxwRMyXth1uG991OgAL4uCA
-Message-ID: <522F24EF533FC546962ECFA2054FF777373072AB73@MAILSERVER2.cos.astekcorp.com>
-In-Reply-To: <initrd-reserve-alignment@mdm.bga.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754310Ab1EURKc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 13:10:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:65077 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753164Ab1EURK3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 13:10:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH] arch/c6x: new architecture port for linux
+Date: Sat, 21 May 2011 19:10:25 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <1305144843-5058-1-git-send-email-msalter@redhat.com>
+In-Reply-To: <1305144843-5058-1-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105211910.26025.arnd@arndb.de>
+X-Provags-ID: V02:K0:wxC98mgfK0Qcl84jDqqgGiCEpMPNmurCgc9FhcMEr1/
+ 2ijOXY5ywY9Xo9KLAcjqPiE0RfgMQbUK8qW5sURo+SsgJXUxwn
+ 9MPrMl/cGkexVaEVYdgzKeNFOBjTa5Ki9S/sXgqlTFmngjbC5I
+ 7wDQjVEfK/IjQ+7rKPvcciUJ2LfIELPXMXl9Ad77/duMai8qVM
+ Pzt90+OWpeKC+sbvq4EYg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 11 May 2011 22:13:47 Mark Salter wrote:
+> and the GIT tree holding the attached patches is at:
+> 
+>   git@linux-c6x.org:/git/projects/linux-c6x-upstreaming.git
+> 
+> TIA for any feedback and/or guidance on this port.
+> 
 
-When using 64K pages with a separate cpio rootfs, U-Boot will align
-the rootfs on a 4K page boundary. When the memory is reserved, and
-subsequent early memblock_alloc is called, it will allocate memory
-between the 64K page alignment and reserved memory. When the reserved
-memory is subsequently freed, it is done so by pages, causing the
-early memblock_alloc requests to be re-used, which in my case, caused
-the device-tree to be clobbered.
+I've taken a very brief look at the repository. These
+are the things that stood out at first, in no particular
+order:
 
-This patch forces the reserved memory for initrd to be kernel page
-aligned, and adds the same range extension when freeing initrd.
+- You need to reduce the size of the defconfig files using
+  'make gendefconfig'
 
+- arch/c6x/drivers/ should not exist, just move the drivers
+  into the respective driver hierarchy (drivers/gpio, ...)
 
-Signed-off-by: Dave Carroll <dcarroll@astekcorp.com>
----
- arch/powerpc/kernel/prom.c |    4 +++-
- arch/powerpc/mm/init_32.c  |    3 +++
- arch/powerpc/mm/init_64.c  |    3 +++
- 3 files changed, 9 insertions(+), 1 deletions(-)
+- Do not register static platform devices, they are deprecated.
+  For devices that are always there, use platform_device_create_simple.
+  For devices that depend on the specific SoC, use a flattened
+  device tree to describe the hierarchy of devices.
 
-diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-index 48aeb55..397d4a0 100644
---- a/arch/powerpc/kernel/prom.c
-+++ b/arch/powerpc/kernel/prom.c
-@@ -555,7 +555,9 @@ static void __init early_reserve_mem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
-        /* then reserve the initrd, if any */
-        if (initrd_start && (initrd_end > initrd_start))
--               memblock_reserve(__pa(initrd_start), initrd_end - initrd_start);
-+               memblock_reserve(_ALIGN_DOWN(__pa(initrd_start), PAGE_SIZE),
-+                       _ALIGN_UP(initrd_end, PAGE_SIZE) -
-+                       _ALIGN_DOWN(initrd_start, PAGE_SIZE));
- #endif /* CONFIG_BLK_DEV_INITRD */
+- Replace your board files with device tree files written
+  in DTS language as on powerpc, microblaze, etc. Hardcoding
+  board stuff in the kernel is not the way to go for new
+  architectures, as we are migrating the existing ones away
+  from that.
 
- #ifdef CONFIG_PPC32
-diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
-index d65b591..b0791cb 100644
---- a/arch/powerpc/mm/init_32.c
-+++ b/arch/powerpc/mm/init_32.c
-@@ -226,6 +226,9 @@ void free_initmem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
-+       start = _ALIGN_DOWN(start, PAGE_SIZE);
-+       end = _ALIGN_UP(end, PAGE_SIZE);
-+
-        if (start < end)
-                printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
-        for (; start < end; start += PAGE_SIZE) {
-diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
-index 6374b21..07ae936 100644
---- a/arch/powerpc/mm/init_64.c
-+++ b/arch/powerpc/mm/init_64.c
-@@ -102,6 +102,9 @@ void free_initmem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
-+       start = _ALIGN_DOWN(start, PAGE_SIZE);
-+       end = _ALIGN_UP(end, PAGE_SIZE);
-+
-        if (start < end)
-                printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
-        for (; start < end; start += PAGE_SIZE) {
---
-1.7.4
+- The CIO console driver should be coverted to use hvc_console.
+
+- Any header file that only includes the asm-generic version
+  can now use generic infrastructure to generate the header,
+  so you can remove these files.
+
+- arch/c6x/lib/misc.c appears to be misplaced. Why would you
+  define abort(), exit() and alloca()? Leftover from the
+  proprietary compiler?
+
+- Do you really need a.out.h?
+
+- your asm/atomic.h and asm/bitops.h look like they should use
+  the generic version.
+
+- struct clk support is currently undergoing a rewrite, you should
+  use the new version once it shows up. If it doesn't work for
+  you, complain now so we can fix it before it gets merged.
+
+- I would guess that you don't support ISA dma, so don't try to use
+  asm/dma.h.
+
+- gemac.h and gmdio.h should probably live in the same directory
+  as the driver using them, not in asm/.
+
+- You are rather inconsistent using MMIO pointer access. You should
+  always use proper accessors like readl/writel, and use sparse
+  to check that all mmio pointers are marked as __iomem.
+  Check all uses of 'volatile' in the code, most of them are wrong
+  and should be '__iomem' instead. See 
+  Documentation/volatile-considered-harmful.txt
+
+- Fix your readl/writel implementations to do the correct casts
+  from __iomem pointers.
+
+- Do not use __raw_readl/__raw_writel.
+
+- Remove your IO_ADDRESS(), __REG, VULP, __SYSREG and __SYSREGA.
+  Replace them with proper use of ioremap().
+
+- Your inb/outb implementations are completely wrong. If you don't
+  support PCI, best just replace them with BUG(). Set IO_SPACE_LIMIT
+  to zero to enforce that no driver uses them.
+
+- Go through your machdep.h and make sure that all pointers are
+  actually used, e.g. mach_floppy_eject /sounds/ like you wouldn't
+  need it in 2011.
+
+- You have an asm/pci.h but no host implementation. Why is that?
+
+- Why do you have both pll.h and clk.h? Don't they do the same thing?
+
+- Use the common asm-generic/unistd.h instead of your own! A significant
+  number of the syscalls you define are not needed at all. This will
+  also simplify merging into glibc.
+
+- Rewrite your ptrace.c to use regsets and the common infrastructure
+  from kernel/ptrace.c.
+
+- I recommend to split your device drivers into separate git branches
+  in your repository, to make it easier to see what is coming up,
+  and to allow merging branches at a time. Not required, but it will
+  make your life easier.
+
+That's all from me for now. When we have resolved these issues, the
+next step would be to create a multi-patch series (e.g. ~20 patches
+for arch/c6x/*) split into one patch per topic, and review them
+on the linux-arch and linux-kernel mailing lists. 
+
+	Arnd
