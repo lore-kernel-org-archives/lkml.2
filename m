@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751095Ab1EUFPh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 01:15:37 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38548 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab1EUFPe convert rfc822-to-8bit (ORCPT
+	id S1751372Ab1EUFP4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 01:15:56 -0400
+Received: from barracuda.fsl.cs.sunysb.edu ([130.245.126.20]:50797 "EHLO
+	barracuda.fsl.cs.sunysb.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751229Ab1EUFPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 01:15:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=x1Dl1WmwQVHD9oOVDZsqZoITDqq1Cy8pIoCVoviu605nif56OKFLMIw9Ki2iZIuHb/
-         efbbBVyUWg3ELZpQNeDKAZnI63tVyOf2f4brx/6yMzVhEAnr0OXP2kfZiU+QvoCQwdZt
-         hlcIn40t2r6O+Qlnkiwcnjd0Uwyqld3T7f6lg=
-MIME-Version: 1.0
-In-Reply-To: <20110519224445.GA9885@suse.de>
-References: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com> <20110519224445.GA9885@suse.de>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Fri, 20 May 2011 23:15:04 -0600
-Message-ID: <BANLkTik6QHxzXoC-xAgkfw3-O_fzorLGww@mail.gmail.com>
-Subject: Re: [PATCH 00/23] add register_chrdev_ids() to char_dev.c, API
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 21 May 2011 01:15:50 -0400
+X-ASG-Debug-ID: 1305954948-01c65a06b01704f0001-xx1T2L
+X-Barracuda-Envelope-From: ezk@fsl.cs.sunysb.edu
+X-Barracuda-RBL-Trusted-Forwarder: 130.245.126.16
+Subject: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
+X-Barracuda-BWL-IP: 192.168.1.136
+X-Barracuda-BBL-IP: 192.168.1.136
+X-Barracuda-RBL-IP: 192.168.1.136
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-ASG-Orig-Subj: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
+Content-Type: text/plain; charset=us-ascii
+From: Erez Zadok <ezk@fsl.cs.sunysb.edu>
+In-Reply-To: <efad20cd4c664cd78e153b0fda2de605@HUBCAS2.cs.stonybrook.edu>
+Date: Sat, 21 May 2011 01:15:46 -0400
+Cc: "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "nbd@openwrt.org" <nbd@openwrt.org>, "neilb@suse.de" <neilb@suse.de>,
+        "hramrach@centrum.cz" <hramrach@centrum.cz>,
+        "jordipujolp@gmail.com" <jordipujolp@gmail.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <B61DE78E-D7DB-4EB3-B8B3-64912D8BB212@fsl.cs.sunysb.edu>
+References: <1305635452-14835-1-git-send-email-miklos@szeredi.hu> <103d3f78e2d3478d8bb93f5dda3a4a08@HUBCAS1.cs.stonybrook.edu> <D8301738-5094-4666-8C4D-E26425F1AD66@fsl.cs.sunysb.edu> <B0729E4C-D581-4EAB-A175-A6B8B34692B5@fsl.cs.sunysb.edu> <efad20cd4c664cd78e153b0fda2de605@HUBCAS2.cs.stonybrook.edu>
+To: Miklos Szeredi <miklos@szeredi.hu>
+X-Mailer: Apple Mail (2.1084)
+X-Barracuda-Connect: avatar.fsl.cs.sunysb.edu[130.245.126.16]
+X-Barracuda-Start-Time: 1305954948
+X-Barracuda-URL: http://130.245.126.20:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64350
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 4:44 PM, Greg KH <gregkh@suse.de> wrote:
-> On Thu, May 19, 2011 at 03:33:03PM -0600, Jim Cromie wrote:
->> over on kernelnewbies, gregkh said:
->>
->>      The chardev stuff is a mess, I keep meaning for years to clean it
->>      up.  Any proposals on a sane interface for this stuff is greatly
->>      appreciated.
->>
->> this is a 1st step.
->>
->> register_chrdev_ids() replaces and deprecates register_chrdev_region()
->> and alloc_chrdev_region() with a single function that works for both
->> dynamic and static major numbers.
->>
->> Like alloc_chrdev_region(), 1st arg is a dev_t*, but its an in/out
->> parameter, and expects both major and minor to be preset, and thus the
->> separate minor arg is dropped.  If major == 0, a dynamic major is
->> reserved, saved into 1st arg, and thus available to caller afterwards.
->>
->> [PATCH 01/23] add register_chrdev_ids() to char_dev.c, API
->> [PATCH 02/23] reimplement alloc_chrdev_region with
->> [PATCH 03/23] use register_chrdev_ids to replace
->> [PATCH 04/23] use register_chrdev_ids in drivers/tty/
->> [PATCH 05/23] use register_chrdev_ids in drivers/infiniband/
->> [PATCH 06/23] use register_chrdev_ids in drivers/media/
->> [PATCH 07/23] use register_chrdev_ids in drivers/s390/
->> [PATCH 08/23] use register_chrdev_ids in drivers/scsi/
->> [PATCH 09/23] use register_chrdev_ids in drivers/staging/
->>
->> Ive held back the rest, no point in spamming.
->
-> It's a nice first step, but that's the easy part, what is your 2nd
-> through 4th one going to be?  :)
->
-> I'd also like to sanatize the function namespace a bit as well, how
-> about chrdev_register_ids() instead?
+On May 20, 2011, at 10:25 AM, Miklos Szeredi wrote:
 
-that seems sensible, modern.
-also have register_chrdev(), which I presume should also be fixed.
+> Erez Zadok <ezk@fsl.cs.sunysb.edu> writes:
+>> Niklos, I forgot to mention that I had to apply a small fix to a VFS
+>> bug in fs/namei.c:1362, where a mix of symlinks and renames, using
+>> racer, triggers an BUG_ON at the VFS layer (very reproducible).
+>> Without this fix, racer oopses in the VFS well before it gets to
+>> trigger overlayfs bugs.  It's a pity 2.6.39 was released with this
+>> very reproducible *VFS* level bug (doesn't anyone run racer+fsx+ltp
+>> before releasing a new kernel?)
+>> 
+>> Anyway, here's the small patch here.  Clearly viro/hch need to review
+>> this "fix" b/c I'm not sure it's really the right one
+> 
+> Patch looks good to me.
+> 
+> Acked-by: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> If you've got a patch fixing a serious bug, you'd better send it to
+> Linus and Andrew (as well as the VFS maintainers), where it'll get more
+> prompt evaluation.
+> 
+> You can still do that, also adding "CC: stable@kernel.org" to the SOB
+> block in the patch so that the fix quickly makes it into the 2.6.39
+> stable series.
+> 
+> Thanks,
+> Miklos
 
-> Ideally, we could drop down to a single register/unregister pair of
-> functions, that are easy to use and understand.
+Thanks.  I'll do that.
 
-__register_chrdev() does more stuff, mainly around cdevs, fops.
-If fops was passed as NULL, we just do the __register_chardev_region()
-and return early, skipping the cdev_alloc() and everything afterwards,
-thus yielding register_chrdev_ids() behavior.
+Erez.
 
-> Do you think you can
-> get there with this intermediate step or do you want to step back and
-> rethink this?
-
-hmm.  If above is right, theres no need for the new api fn I added,
-and probably should also drop the __ on both (un)?register_chardev.
-So thats step 2 :)  Any ideas for 3 ?
-
-btw, I think theres a major/minor error in the linuxdoc for the count
-param in some of these register-* functions.  I'll take a closer look,
-and send a patch RSN if needed, even if fn is going away later.
-
-
-> thanks,
->
-> greg k-h
->
