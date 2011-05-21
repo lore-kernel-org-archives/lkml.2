@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab1EUCek (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 22:34:40 -0400
-Received: from ozlabs.org ([203.10.76.45]:37216 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755302Ab1EUCeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 22:34:00 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-Cc: Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCHv2 06/14] virtio: add api for delayed callbacks
-In-Reply-To: <8f343dcaa996f6b10499468c49508ba9d6fb6f5a.1305846412.git.mst@redhat.com>
-References: <cover.1305846412.git.mst@redhat.com> <8f343dcaa996f6b10499468c49508ba9d6fb6f5a.1305846412.git.mst@redhat.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Sat, 21 May 2011 12:03:35 +0930
-Message-ID: <87mxigu6io.fsf@rustcorp.com.au>
+	id S1757481Ab1EUDGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 23:06:42 -0400
+Received: from snt0-omc3-s26.snt0.hotmail.com ([65.55.90.165]:2215 "EHLO
+	snt0-omc3-s26.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757411Ab1EUDGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 23:06:39 -0400
+Message-ID: <SNT104-W34C570E7AB5B451569B495BA700@phx.gbl>
+X-Originating-IP: [125.71.231.216]
+From: ym cheng <yongmingcheng@hotmail.com>
+To: <geoff@geoffthorpe.net>, <linux-kernel@vger.kernel.org>
+Subject: yaff2 support
+Date: Sat, 21 May 2011 03:06:38 +0000
+Importance: Normal
+In-Reply-To: <1305923374-13274-1-git-send-email-geoff@geoffthorpe.net>
+References: <1305923374-13274-1-git-send-email-geoff@geoffthorpe.net>
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-OriginalArrivalTime: 21 May 2011 03:06:39.0631 (UTC) FILETIME=[1A89D1F0:01CC1764]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4L36r5E019924
 
-On Fri, 20 May 2011 02:11:14 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> Add an API that tells the other side that callbacks
-> should be delayed until a lot of work has been done.
-> Implement using the new event_idx feature.
-> 
-> Note: it might seem advantageous to let the drivers
-> ask for a callback after a specific capacity has
-> been reached. However, as a single head can
-> free many entries in the descriptor table,
-> we don't really have a clue about capacity
-> until get_buf is called. The API is the simplest
-> to implement at the moment, we'll see what kind of
-> hints drivers can pass when there's more than one
-> user of the feature.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Yes, I've applied this (and the next one which uses it in virtio_net),
-despite my reservations about the API.  But that is fixable...
+In file included from /home/ymcheng/linux-2.6.39/arch/arm/include/asm/thread_info.h:28,
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  from include/linux/thread_info.h:53,
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  from include/linux/preempt.h:9,
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  from include/linux/spinlock.h:50,
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  from include/linux/seqlock.h:29,
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  from include/linux/time.h:8,
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  from include/linux/stat.h:60,
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  from include/linux/module.h:10,
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  from fs/yaffs2/yaffs_fs.c:48:
+/home/ymcheng/linux-2.6.39/arch/arm/include/asm/domain.h:86:1: warning: this is the location of the previous definition
+fs/yaffs2/yaffs_fs.c:310: warning: initialization from incompatible pointer type
+fs/yaffs2/yaffs_fs.c:380: warning: initialization from incompatible pointer type
+fs/yaffs2/yaffs_fs.c:393: error: unknown field 'delete_inode' specified in initializer
+fs/yaffs2/yaffs_fs.c:393: warning: initialization from incompatible pointer type
+fs/yaffs2/yaffs_fs.c:394: error: unknown field 'clear_inode' specified in initializer
+fs/yaffs2/yaffs_fs.c:394: warning: initialization from incompatible pointer type
+fs/yaffs2/yaffs_fs.c: In function 'yaffs_delete_inode':
+fs/yaffs2/yaffs_fs.c:725: error: implicit declaration of function 'clear_inode'
+fs/yaffs2/yaffs_fs.c: In function 'yaffs_setattr':
+fs/yaffs2/yaffs_fs.c:1703: error: implicit declaration of function 'inode_setattr'
+fs/yaffs2/yaffs_fs.c: In function 'yaffs_internal_read_super':
+fs/yaffs2/yaffs_fs.c:2498: error: implicit declaration of function 'init_MUTEX'
+fs/yaffs2/yaffs_fs.c: In function 'yaffs_read_super':
+fs/yaffs2/yaffs_fs.c:2562: error: implicit declaration of function 'get_sb_bdev'
+fs/yaffs2/yaffs_fs.c: At top level:
+fs/yaffs2/yaffs_fs.c:2579: error: unknown field 'get_sb' specified in initializer
+fs/yaffs2/yaffs_fs.c:2579: warning: initialization makes integer from pointer without a cast
+fs/yaffs2/yaffs_fs.c:2626: error: unknown field 'get_sb' specified in initializer
+fs/yaffs2/yaffs_fs.c:2626: warning: initialization makes integer from pointer without a cast
+make[2]: *** [fs/yaffs2/yaffs_fs.o] é”™è¯¯ 1
+make[1]: *** [fs/yaffs2] é”™è¯¯ 2
 
-Thanks,
-Rusty.
+
+
+My board is 23c2440 kernel version:2.6.39.
+
+ 		 	   		  ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
