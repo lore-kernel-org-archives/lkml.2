@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab1EUVht (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 17:37:49 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56897 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab1EUVhr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 17:37:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=YCHcaJsFozmE9Fpmj8hSvG+GDtOjN2rJ4tpN69xIHfAU7Fn0PAdCILWBu24Cke1qmi
-         2D/mDSC+1NCaFMu/lW6ZyM8IzRU1fElo2rsJalh275L9yI5JA/ToF8syU+a7AJDjkW4N
-         AmNd7PxymEEceKPVlCfhNMpk3GjyUwuACGtqA=
-Message-ID: <4DD830A7.80507@openvz.org>
-Date: Sun, 22 May 2011 01:37:43 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1757340Ab1EUVoX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 17:44:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39601 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753544Ab1EUVoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 17:44:22 -0400
+Date: Sat, 21 May 2011 14:43:52 -0700
+From: Greg KH <gregkh@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [23/71] tmpfs: fix race between umount and swapoff
+Message-ID: <20110521214352.GA5912@suse.de>
+References: <20110519180556.482988919@clark.kroah.org>
+ <alpine.LSU.2.00.1105202139001.1847@sister.anvils>
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, steiner@sgi.com,
-        yinghai@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/4] x86, apic: apicdriver probe cleanups - V2
-References: <20110521005116.136357574@sbsiddha-MOBL3.sc.intel.com>
-In-Reply-To: <20110521005116.136357574@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1105202139001.1847@sister.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2011 04:51 AM, Suresh Siddha wrote:
-> Updated patchset for cleaning up apic probe sequence by using apicdriver
-> section.
+On Fri, May 20, 2011 at 09:48:26PM -0700, Hugh Dickins wrote:
+> On Thu, 19 May 2011, Greg KH wrote:
+> > 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 > 
-> Changes from V1:
->  * split up the patch into four small patches
->  * misc cleanups, specifying section alignment, removing duplicate messages
->    (from Cyrill and Yinghai's review comments)
->  * fixed a crash on smaller x64 systems
-> 
+> Witold has found that I screwed up the highmem case in this patch.
+> Please add the commit appended at the bottom - or else delay both
+> until the next 2.6.38-stable if you prefer.
 
-FWIW it runs fine on my Core 2 machine, setting apic driver to flat as expected.
-For flat apic mode
+Ok, I've queued this one up as well.
 
-Tested-by: Cyrill Gorcunov <gorcunov@openvz.org>
+thanks,
 
-Thanks a lot Suresh!
--- 
-    Cyrill
+greg k-h
