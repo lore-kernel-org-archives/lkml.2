@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab1EUKMb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 06:12:31 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:38761 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab1EUKM2 convert rfc822-to-8bit (ORCPT
+	id S1755193Ab1EULQQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 07:16:16 -0400
+Received: from rehue.uct.cl ([164.77.114.3]:40675 "EHLO rehue.uct.cl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752455Ab1EULQO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 06:12:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=obP30HZLVh57yW+ce6cM5sHicsO+gO2AHZQnEW/rWLZxAuScgHcr0/YVXVzNmsLFwJ
-         wHOSa247NSwhv5daIy9A/buzrkENTGLPEmaLra8G9rI1zHfrEKP4xTI0bkryZ2Zx8cyt
-         AXpzIdPFeMD/foqC6A5j0wbH9oaswI6CjOFSc=
+	Sat, 21 May 2011 07:16:14 -0400
+X-Greylist: delayed 2816 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 May 2011 07:16:14 EDT
+Date: Sat, 21 May 2011 07:17:36 -0300 (ART)
+From: WEBMAIL SERVICIOS DE MANTENIMIENTO <mmellado@uct.cl>
+Reply-To: WEBMAIL SERVICIOS DE MANTENIMIENTO 
+	  <accountuserhelpdesk@publichot.net>
+Message-ID: <354711042.1724491305973056231.JavaMail.root@rehue.uct.cl>
+Subject: AVISO FINAL!
 MIME-Version: 1.0
-In-Reply-To: <201105210053.51314.toralf.foerster@gmx.de>
-References: <201105191526.31904.toralf.foerster@gmx.de>
-	<1305907458.1465.23.camel@gandalf.stny.rr.com>
-	<1305907896.1465.27.camel@gandalf.stny.rr.com>
-	<201105210053.51314.toralf.foerster@gmx.de>
-Date: Sat, 21 May 2011 12:12:27 +0200
-Message-ID: <BANLkTinvtfpPr3GxKA49MN4y1q66HETorQ@mail.gmail.com>
-Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Darren Hart <dvhart@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [64.31.40.137]
+X-Mailer: Zimbra 5.0.12_GA_2789.RHEL5_64 (zclient/5.0.12_GA_2789.RHEL5_64)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/21 Toralf Fˆrster <toralf.foerster@gmx.de>:
-> Bisecting gave :
->
->
-> git bisect badd123375425d7df4b6081a631fc1203fceafa59b2 is the first bad commit
-> commit d123375425d7df4b6081a631fc1203fceafa59b2
-> Author: Thomas Gleixner <tglx@linutronix.de>
-> Date: † Wed Jan 26 21:32:01 2011 +0100
->
-> † †rwsem: Remove redundant asmregparm annotation
->
-> † †Peter Zijlstra pointed out, that the only user of asmregparm (x86) is
-> † †compiling the kernel already with -mregparm=3. So the annotation of
-> † †the rwsem functions is redundant. Remove it.
+Estimado suscriptor Webmail,
 
-Ok, this bisect makes much more sense.
+ Equipo de Mantenimiento de base de datos se encuentra actualmente en nuestro Webmail
+ Centro de mensajes. Nuestro centro de mensajes debe volver a configurar
+ debido a la gran cantidad de correos spam que recibimos diariamente. Un
+ Cuarentena de mantenimiento nos ayudar√° a evitar este dilema cada d√≠a.
+ El nuevo software de correo Web de Hannover ofrecen un pop - fuera del bloque de algunos
+ palabras restringidas, los t√©rminos de spam.
 
-Thomas, Peter, please revert d123375425d7df4b6081a631fc1203fceafa59b2.
-We cannot compile UML with -mregparm=3 it would cause a lot of trouble.
-It would break 32bit UML on 64bit and also on older 32bit systems like RHEL5.
+ Para revalidar su buz√≥n de correo Por favor, Rellene el siguiente enlace:
 
--- 
-Thanks,
-//richard
+ Nombre de usuario: ....................................
+ Contrase√±a anterior :.......................................
+ Nueva contrase√±a :.......................................
+
+ ¬°ATENCION! E-MAIL PROPIETARIOS que se niega a actualizar su cuenta en
+ Cinco d√≠as despu√©s de la notificaci√≥n de esta actualizaci√≥n de forma permanente ser√°n eliminados
+ de nuestra base de datos y tambi√©n puede conducir a un mal funcionamiento del cliente o
+ cuenta de usuario y no seremos responsables de perder su correo web
+ cuenta.
+
+ Su respuesta debe ser enviado al jefe de administraci√≥n
