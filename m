@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957Ab1EUG3o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 02:29:44 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:50897 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751258Ab1EUG3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 02:29:38 -0400
-Message-ID: <4DD75BC9.8040004@ti.com>
-Date: Sat, 21 May 2011 11:59:29 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1752520Ab1EUHmD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 03:42:03 -0400
+Received: from ozlabs.org ([203.10.76.45]:58597 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752264Ab1EUHmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 03:42:01 -0400
+Date: Sat, 21 May 2011 16:33:45 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/6] of: Allow scripts/dtc/libfdt to be used from
+ kernel code
+Message-ID: <20110521063345.GB14828@yookeroo.fritz.box>
+Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
+	David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
+	ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
+	grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
+References: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com>
+ <1305930343-31259-2-git-send-email-ddaney@caviumnetworks.com>
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: smp_twd: Reconfigure clockevents after cpufreq
- change
-References: <1305851091-10096-1-git-send-email-ccross@android.com>
-In-Reply-To: <1305851091-10096-1-git-send-email-ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305930343-31259-2-git-send-email-ddaney@caviumnetworks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/20/2011 5:54 AM, Colin Cross wrote:
-> The localtimer's clock changes with the cpu clock.  After a
-> cpufreq transition, update the clockevent's frequency and
-> reprogram the next clock event.
->
-> Adds a clock called "smp_twd" that is used to determine the
-> twd frequency, which can also be used at init time to
-> avoid calibrating the twd frequency.
->
-> Clock changes are based on Rob Herring's work.
->
-> Change-Id: I413b5cd07fb2b79bc9fad8b4bf257332d1da7bcd
-> Signed-off-by: Colin Cross<ccross@android.com>
-> Cc: Thomas Gleixner<tglx@linutronix.de>
-> Cc: Russell King<linux@arm.linux.org.uk>
-> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
-> Cc: Rob Herring<robherring2@gmail.com>
-> Tested-by: Linus Walleij<linus.walleij@linaro.org>
+On Fri, May 20, 2011 at 03:25:38PM -0700, David Daney wrote:
+> To use it you need to do this in your Kconfig:
+> 
+> 	select LIBFDT
+> 
+> And in the Makefile of the code using libfdt something like:
+> 
+> ccflags-y := -include linux/libfdt_env.h -I$(src)/../../../scripts/dtc/libfdt
+> 
+> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
 > ---
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>  drivers/of/Kconfig          |    3 +++
+>  drivers/of/Makefile         |    2 ++
+>  drivers/of/libfdt/Makefile  |    3 +++
+>  drivers/of/libfdt/fdt.c     |    2 ++
+>  drivers/of/libfdt/fdt_ro.c  |    2 ++
+>  drivers/of/libfdt/fdt_wip.c |    2 ++
 
-What about the clock-node patches?
-Do you want those to get merged via sub-arch tree's once this
-patch + Thomas's new API gets merged ?
+No fdt_sw.c or fdt_rw.c?
 
-Regards
-Santosh
+>  include/linux/libfdt.h      |    8 ++++++++
+>  include/linux/libfdt_env.h  |   13 +++++++++++++
+>  8 files changed, 35 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/of/libfdt/Makefile
+>  create mode 100644 drivers/of/libfdt/fdt.c
+>  create mode 100644 drivers/of/libfdt/fdt_ro.c
+
+-- 
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
