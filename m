@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab1EUPfG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 11:35:06 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:58137 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab1EUPfB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 11:35:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=E4D0Jn3UOlGcxVqRijO4AuGpTM7zeZo+3y8VRdel4GNJNeGWEF5LNtg6InLFI3q67/
-         DNdva9/c5ClcyRfjOpZdTbGJHDF21yuJ3QaD5P9rKY7+RK1n+7HulQ9QER9JEFSCJU8j
-         LOkcbVVUPh9xDpYi85rbF4Er7Yd1EkhD1kTU8=
-MIME-Version: 1.0
-In-Reply-To: <201105211727.35985.arnd@arndb.de>
-References: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
-	<201105211727.35985.arnd@arndb.de>
-Date: Sat, 21 May 2011 08:34:59 -0700
-Message-ID: <BANLkTi=tdfG3jpCJQpozpxjBmR7ZicgV9g@mail.gmail.com>
-Subject: Re: X32 project status update
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com,
-        "H. Peter Anvin" <h.peter.anvin@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756414Ab1EUPkY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 11:40:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22844 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756160Ab1EUPkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 11:40:22 -0400
+Message-Id: <aefc95$1usaq@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,247,1304319600"; 
+   d="scan'208";a="2060634"
+Date: Sat, 21 May 2011 16:40:17 +0100
+To: Luke-Jr <luke@dashjr.org>
+Subject: Re: Major 2.6.38 regression ignored?
+Cc: Ray Lee <ray-lk@madrabbit.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201105201306.31204.luke@dashjr.org> <BANLkTimOqhNEsBEg6f=nMiMJqYGNyFJmeQ@mail.gmail.com> <013811$4lfs6@fmsmga002.fm.intel.com> <201105211123.56053.luke@dashjr.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <201105211123.56053.luke@dashjr.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 21, 2011 at 8:27 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Saturday 21 May 2011 17:01:33 H.J. Lu wrote:
->> This is the x32 project status update:
->>
->> https://sites.google.com/site/x32abi/
->>
->
-> I've had another look at the kernel patch. It basically
-> looks all good, but the system call table appears to
-> diverge from the x86_64 list for no (documented) reason,
-> in the calls above 302. Is that intentional?
->
-> I can see why you might want to keep the numbers identical,
-> but if they are already different, why not use the generic
-> system call table from asm-generic/unistd.h for the new
-> ABI?
+On Sat, 21 May 2011 11:23:53 -0400, "Luke-Jr" <luke@dashjr.org> wrote:
+> On Saturday, May 21, 2011 4:41:45 AM Chris Wilson wrote:
+> > On Fri, 20 May 2011 11:08:56 -0700, Ray Lee <ray-lk@madrabbit.org> wrote:
+> > > [ Adding Chris Wilson (author of the problematic patch) and Rafael
+> > > Wysocki to the message ]
+> > > 
+> > > On Fri, May 20, 2011 at 10:06 AM, Luke-Jr <luke@dashjr.org> wrote:
+> > > > I submitted https://bugzilla.kernel.org/show_bug.cgi?id=33662 a month
+> > > > ago against 2.6.38. Now 2.6.39 was just released without the
+> > > > regression being addressed. This bug makes the system unusable... Some
+> > > > guys on IRC suggested I
+> > > > email, so here it is.
+> > > 
+> > > See the bugzilla entry for the bisection history.
+> > 
+> > Which has nothing to do with Luke's bug. Considering the thousand things
+> > that can go wrong during X starting, without a hint as to which it is nigh
+> > on impossible to debug except by trial and error. If you set up
+> > netconsole, does the kernel emit an OOPS with it's last dying breath?
+> 
+> Why assume it's a different bug? I would almost wonder if it might affect 
+> all Sandy Bridge GPUs. In any case, I no longer have the original 
+> motherboard (it was recalled, as I said in the first post), nor even the 
+> revision of it (it had other issues that weren't being fixed). I *assume* I 
+> will have the same problem with my new motherboard (Intel DQ67SW), but I 
+> haven't verified that yet. I'll be sure to try a netconsole when I have to 
+> reboot next and get a chance to try the most recent 2.6.38 and .39 kernels, 
+> but at the moment it seems reasonable to address the problem bisected in the 
+> bug, even if it turns out to be different.
 
-We can sort it out when we start merging x32 kernel changes.
-
+The bisection is into an old DRI1 bug on 945GM. That DRI has inadequate
+locking between release and IRQ and so is prone to such races as befell
+Kirill should not surprise anyone. As neither UMS nor DRI supported SNB,
+I can quite confidently state they are separate bugs.
+-Chris
 
 -- 
-H.J.
+Chris Wilson, Intel Open Source Technology Centre
