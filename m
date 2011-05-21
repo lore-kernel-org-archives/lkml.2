@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952Ab1EURtO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 13:49:14 -0400
-Received: from mail.perches.com ([173.55.12.10]:1824 "EHLO mail.perches.com"
+	id S1756883Ab1EURs4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 13:48:56 -0400
+Received: from mail.perches.com ([173.55.12.10]:1828 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755412Ab1EURso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 13:48:44 -0400
+	id S1755552Ab1EURsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 13:48:45 -0400
 From: Joe Perches <joe@perches.com>
-To: Ben Greear <greearb@candelatech.com>, Arnd Bergmann <arnd@arndb.de>
+To: Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] bug.h: Add WARN_RATELIMIT
-Date: Sat, 21 May 2011 10:48:39 -0700
-Message-Id: <2dfb6f4e8110e5b09dbf4c8a1502bdf8955bb6ff.1305999731.git.joe@perches.com>
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org
+Subject: [PATCH 2/2] net: filter: Use WARN_RATELIMIT
+Date: Sat, 21 May 2011 10:48:40 -0700
+Message-Id: <efa062542c692c3f7743bf2d97b5987ab989e27e.1305999731.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.5.rc3.dirty
 In-Reply-To: <1305666832.1722.62.camel@Joe-Laptop>
 References: <1305666832.1722.62.camel@Joe-Laptop>
@@ -22,44 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a generic mechanism to ratelimit WARN(foo, fmt, ...) messages
-using a hidden per call site static struct ratelimit_state.
+A mis-configured filter can spam the logs with lots of stack traces.
 
-Also add an __WARN_RATELIMIT variant to be able to use a specific
-struct ratelimit_state.
+Rate-limit the warnings and add printout of the bogus filter information.
 
+Original-patch-by: Ben Greear <greearb@candelatech.com>
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/asm-generic/bug.h |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
+ net/core/filter.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-index e5a3f58..12b250c 100644
---- a/include/asm-generic/bug.h
-+++ b/include/asm-generic/bug.h
-@@ -165,6 +165,22 @@ extern void warn_slowpath_null(const char *file, const int line);
- #define WARN_ON_RATELIMIT(condition, state)			\
- 		WARN_ON((condition) && __ratelimit(state))
- 
-+#define __WARN_RATELIMIT(condition, state, format...)		\
-+({								\
-+	int rtn = 0;						\
-+	if (unlikely(__ratelimit(state)))			\
-+		rtn = WARN(condition, format);			\
-+	rtn;							\
-+})
-+
-+#define WARN_RATELIMIT(condition, format...)			\
-+({								\
-+	static DEFINE_RATELIMIT_STATE(_rs,			\
-+				      DEFAULT_RATELIMIT_INTERVAL,	\
-+				      DEFAULT_RATELIMIT_BURST);	\
-+	__WARN_RATELIMIT(condition, &_rs, format);		\
-+})
-+
- /*
-  * WARN_ON_SMP() is for cases that the warning is either
-  * meaningless for !SMP or may even cause failures.
+diff --git a/net/core/filter.c b/net/core/filter.c
+index 0eb8c44..0e3622f 100644
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -350,7 +350,9 @@ load_b:
+ 			continue;
+ 		}
+ 		default:
+-			WARN_ON(1);
++			WARN_RATELIMIT(1, "Unknown code:%u jt:%u tf:%u k:%u\n",
++				       fentry->code, fentry->jt,
++				       fentry->jf, fentry->k);
+ 			return 0;
+ 		}
+ 	}
 -- 
 1.7.5.rc3.dirty
 
