@@ -1,79 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab1EUXGt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 19:06:49 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:50895 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553Ab1EUXGr convert rfc822-to-8bit (ORCPT
+	id S1757380Ab1EUXj0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 19:39:26 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:44415 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab1EUXjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 19:06:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=glSOIX7Df9W3esRsovtomG+1esCKJ7Xcte8zEmx8OGnPCiaVwLXQcWax+9GKkwY5YH
-         0wuI0IHN7WJt/s/T5nBNKbB9wZ69So0SL0PyDpHQ7thhqs7QEub++ngtu4j2mWtzhJ4y
-         +AbPaVKAqm53HBkCcVeBUT3B3ncWyPdiPxy98=
+	Sat, 21 May 2011 19:39:24 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.osdl.org>, <netdev@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [GIT PULL] Namespace file descriptors for 2.6.40
+Date: Sat, 21 May 2011 16:39:13 -0700
+Message-ID: <m11uzrvd26.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1306017456.18455.1.camel@twins>
-References: <201105191526.31904.toralf.foerster@gmx.de>
-	<1305907458.1465.23.camel@gandalf.stny.rr.com>
-	<1305907896.1465.27.camel@gandalf.stny.rr.com>
-	<201105210053.51314.toralf.foerster@gmx.de>
-	<BANLkTinvtfpPr3GxKA49MN4y1q66HETorQ@mail.gmail.com>
-	<1306017456.18455.1.camel@twins>
-Date: Sun, 22 May 2011 01:06:46 +0200
-Message-ID: <BANLkTinswk09M7bOup01EnrTNQycNbUMDw@mail.gmail.com>
-Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+EMLZxfES+DRmrswsMmbiAGeIOKDaySak=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 22, 2011 at 12:37 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Sat, 2011-05-21 at 12:12 +0200, richard -rw- weinberger wrote:
->> 2011/5/21 Toralf Förster <toralf.foerster@gmx.de>:
->> > Bisecting gave :
->> >
->> >
->> > git bisect badd123375425d7df4b6081a631fc1203fceafa59b2 is the first bad commit
->> > commit d123375425d7df4b6081a631fc1203fceafa59b2
->> > Author: Thomas Gleixner <tglx@linutronix.de>
->> > Date:   Wed Jan 26 21:32:01 2011 +0100
->> >
->> >    rwsem: Remove redundant asmregparm annotation
->> >
->> >    Peter Zijlstra pointed out, that the only user of asmregparm (x86) is
->> >    compiling the kernel already with -mregparm=3. So the annotation of
->> >    the rwsem functions is redundant. Remove it.
->>
->> Ok, this bisect makes much more sense.
->>
->> Thomas, Peter, please revert d123375425d7df4b6081a631fc1203fceafa59b2.
->> We cannot compile UML with -mregparm=3 it would cause a lot of trouble.
->> It would break 32bit UML on 64bit and also on older 32bit systems like RHEL5.
->
-> But why?
 
-Why reverting?
-d123375 effectively reverts commit d50efc6c (x86: fix UML and -regparm=3).
+Please pull the namespace file descriptor git tree from:
 
-> Also, having to carry that asmregparm notation just for uml doesn't seem
-> worth the trouble.
->
+   git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/linux-2.6-nsfd.git
 
-Frankly, I don't know why exactly UML breaks without having asmregparm.
-I've seen this -regparm=3 thing today the very first time, I'll dig into it...
+In a hopeless quest to avoid conflicts when merging a new system call
+and wiring it up I have pulled in bits of net-next and the parisc tree.
+You have already pulled the net-next bits.  The parisc bits in my tree
+are:
 
--- 
+James Bottomley (4):
+      [PARISC] wire up fanotify syscalls
+      [PARISC] wire up clock_adjtime syscall
+      [PARISC] wire up the fhandle syscalls
+      [PARISC] wire up syncfs syscall
+
+Meelis Roos (1):
+      [PARISC] fix pacache .size with new binutils
+
+Since then I have gained conflicts in alpha and m68k.
+For alpha all that is needed is a simple incrementing of
+the syscall number in my tree and adding of my syscall to
+the end of the list.
+
+For m68k please just delete all of the syscall entries the conflict will
+add to arch/m68k/kernel/entry_mm.S.  The m68k tree has consolidated
+everything in arch/m68k/kernel/syscalltable.S
+
+
+This tree adds the files /proc/<pid>/ns/net, /proc/<pid>/ns/ipc,
+/proc/<pid>/ns/uts that can be opened to refer to the namespaces of a
+process at the time those files are opened, and can be bind mounted to
+keep the specified namespace alive without a process.
+
+This tree adds the setns system call that can be used to change the
+specified namespace of a process to the namespace specified by a system
+call.
+
+This tree adds a new rtnetlink attribute that allows for moving a
+network device into a network namespace specified by a file descriptor.
+
+Support for the other namespaces is planned but is not ready for 2.6.40.
+
+These changes dramatically simplify what a userspace process has to do
+to keep a namespace alive, and to execute system calls in it.
+
+The shortlog:
+
+Stephen Rothwell (1):
+      net: fix get_net_ns_by_fd for !CONFIG_NET_NS
+
+Eric W. Biederman (11):
+      ns: proc files for namespace naming policy.
+      ns: Introduce the setns syscall
+      ns proc: Add support for the network namespace.
+      ns proc: Add support for the uts namespace
+      ns proc: Add support for the ipc namespace
+      net: Allow setting the network namespace by fd
+      Merge commit '2e7bad5f34b5beed47542490c760ed26574e38ba' into HEAD
+      Merge commit '7143b7d41218d4fc2ea33e6056c73609527ae687' into HEAD
+      ns: Wire up the setns system call
+      ns: Declare sys_setns in syscalls.h
+      ns proc: Return -ENOENT for a nonexistent /proc/self/ns/ entry.
+
+The diffstat:
+
+ arch/alpha/include/asm/unistd.h        |    3 +-
+ arch/alpha/kernel/systbls.S            |    1 +
+ arch/arm/include/asm/unistd.h          |    1 +
+ arch/arm/kernel/calls.S                |    1 +
+ arch/avr32/include/asm/unistd.h        |    3 +-
+ arch/avr32/kernel/syscall_table.S      |    1 +
+ arch/blackfin/include/asm/unistd.h     |    3 +-
+ arch/blackfin/mach-common/entry.S      |    1 +
+ arch/cris/arch-v10/kernel/entry.S      |    1 +
+ arch/cris/arch-v32/kernel/entry.S      |    1 +
+ arch/cris/include/asm/unistd.h         |    3 +-
+ arch/frv/include/asm/unistd.h          |    3 +-
+ arch/frv/kernel/entry.S                |    1 +
+ arch/h8300/include/asm/unistd.h        |    3 +-
+ arch/h8300/kernel/syscalls.S           |    1 +
+ arch/ia64/include/asm/unistd.h         |    3 +-
+ arch/ia64/kernel/entry.S               |    1 +
+ arch/m32r/include/asm/unistd.h         |    3 +-
+ arch/m32r/kernel/syscall_table.S       |    1 +
+ arch/m68k/include/asm/unistd.h         |    3 +-
+ arch/m68k/kernel/syscalltable.S        |    1 +
+ arch/microblaze/include/asm/unistd.h   |    3 +-
+ arch/microblaze/kernel/syscall_table.S |    1 +
+ arch/mips/include/asm/unistd.h         |   15 ++-
+ arch/mips/kernel/scall32-o32.S         |    1 +
+ arch/mips/kernel/scall64-64.S          |    1 +
+ arch/mips/kernel/scall64-n32.S         |    1 +
+ arch/mips/kernel/scall64-o32.S         |    1 +
+ arch/mn10300/include/asm/unistd.h      |    3 +-
+ arch/mn10300/kernel/entry.S            |    1 +
+ arch/parisc/include/asm/unistd.h       |   10 ++-
+ arch/parisc/kernel/pacache.S           |    6 +-
+ arch/parisc/kernel/sys_parisc32.c      |    8 ++
+ arch/parisc/kernel/syscall_table.S     |    7 +
+ arch/powerpc/include/asm/systbl.h      |    1 +
+ arch/powerpc/include/asm/unistd.h      |    3 +-
+ arch/s390/include/asm/unistd.h         |    3 +-
+ arch/s390/kernel/syscalls.S            |    1 +
+ arch/sh/include/asm/unistd_32.h        |    3 +-
+ arch/sh/include/asm/unistd_64.h        |    3 +-
+ arch/sh/kernel/syscalls_32.S           |    1 +
+ arch/sh/kernel/syscalls_64.S           |    1 +
+ arch/sparc/include/asm/unistd.h        |    3 +-
+ arch/sparc/kernel/systbls_32.S         |    2 +-
+ arch/sparc/kernel/systbls_64.S         |    4 +-
+ arch/x86/ia32/ia32entry.S              |    1 +
+ arch/x86/include/asm/unistd_32.h       |    3 +-
+ arch/x86/include/asm/unistd_64.h       |    2 +
+ arch/x86/kernel/syscall_table_32.S     |    1 +
+ arch/xtensa/include/asm/unistd.h       |    4 +-
+ fs/proc/Makefile                       |    1 +
+ fs/proc/base.c                         |   20 ++--
+ fs/proc/inode.c                        |    7 +
+ fs/proc/internal.h                     |   18 +++
+ fs/proc/namespaces.c                   |  198 ++++++++++++++++++++++++++++++++
+ include/asm-generic/unistd.h           |    4 +-
+ include/linux/if_link.h                |    1 +
+ include/linux/proc_fs.h                |   21 ++++
+ include/linux/syscalls.h               |    1 +
+ include/net/net_namespace.h            |    1 +
+ ipc/namespace.c                        |   37 ++++++
+ kernel/nsproxy.c                       |   42 +++++++
+ kernel/utsname.c                       |   39 ++++++
+ net/core/net_namespace.c               |   65 +++++++++++
+ net/core/rtnetlink.c                   |    5 +-
+ 65 files changed, 547 insertions(+), 46 deletions(-)
+
 Thanks,
-//richard
+Eric
