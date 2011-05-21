@@ -1,132 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab1EUQKm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 12:10:42 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:51323 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756529Ab1EUQKk (ORCPT
+	id S1756802Ab1EUQ1I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 12:27:08 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:62731 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756580Ab1EUQ1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 12:10:40 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=YjoYsNq2LDnLCYSTUmBp6jk7eW/Na7ztpow+M3jjB5mtqQbpj3l7bnLtAvuNA3+qfDPAoxybGb3DusiQIwinumxsQPZHgQ1yAWBL6MqUWhReSe9o1YNP63bJnX7VNqAT;
-Date: Sat, 21 May 2011 09:10:37 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v4 1/3] PCI: Track the size of each saved capability
- data area
-Message-ID: <20110521091037.6d2d78a9@jbarnes-e6510>
-In-Reply-To: <20110510160204.3490.81034.stgit@s20.home>
-References: <20110510155642.3490.61935.stgit@s20.home>
-	<20110510160204.3490.81034.stgit@s20.home>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Sat, 21 May 2011 12:27:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=fLljc361R4SVqt6U7V2n5KN1rVQesrK0qyExuRyY6Vdf2GnLgduzSjVUt5K36JE1/l
+         AKsHD57MOIBbKMM8Olbt2rPQUOXe/Uy8v5+Mb72zP2fUyfpBu+z/u1aMVX23WSRk4Uz7
+         iEpUBX/QfJmtTuKgo7szSjBqqrHcaFl/HDlnY=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTi=tdfG3jpCJQpozpxjBmR7ZicgV9g@mail.gmail.com>
+References: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
+	<201105211727.35985.arnd@arndb.de>
+	<BANLkTi=tdfG3jpCJQpozpxjBmR7ZicgV9g@mail.gmail.com>
+Date: Sat, 21 May 2011 09:27:05 -0700
+Message-ID: <BANLkTikyg-SDtU9Z8KdCAeOkGR67ihVUkQ@mail.gmail.com>
+Subject: Re: X32 project status update
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: GCC Development <gcc@gcc.gnu.org>,
+        GNU C Library <libc-alpha@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com,
+        "H. Peter Anvin" <h.peter.anvin@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 May 2011 10:02:11 -0600
-Alex Williamson <alex.williamson@redhat.com> wrote:
+On Sat, May 21, 2011 at 8:34 AM, H.J. Lu <hjl.tools@gmail.com> wrote:
+> On Sat, May 21, 2011 at 8:27 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Saturday 21 May 2011 17:01:33 H.J. Lu wrote:
+>>> This is the x32 project status update:
+>>>
+>>> https://sites.google.com/site/x32abi/
+>>>
+>>
+>> I've had another look at the kernel patch. It basically
+>> looks all good, but the system call table appears to
+>> diverge from the x86_64 list for no (documented) reason,
+>> in the calls above 302. Is that intentional?
+>>
+>> I can see why you might want to keep the numbers identical,
+>> but if they are already different, why not use the generic
+>> system call table from asm-generic/unistd.h for the new
+>> ABI?
+>
+> We can sort it out when we start merging x32 kernel changes.
+>
 
-> This will allow us to store and load it later.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
->  drivers/pci/pci.c   |   12 +++++++-----
->  include/linux/pci.h |   11 ++++++++---
->  2 files changed, 15 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 2472e71..416930a 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -830,7 +830,7 @@ static int pci_save_pcie_state(struct pci_dev
-> *dev) dev_err(&dev->dev, "buffer not found in %s\n", __func__);
->  		return -ENOMEM;
->  	}
-> -	cap = (u16 *)&save_state->data[0];
-> +	cap = (u16 *)&save_state->cap.data[0];
->  
->  	pci_read_config_word(dev, pos + PCI_EXP_FLAGS, &flags);
->  
-> @@ -863,7 +863,7 @@ static void pci_restore_pcie_state(struct pci_dev
-> *dev) pos = pci_find_capability(dev, PCI_CAP_ID_EXP);
->  	if (!save_state || pos <= 0)
->  		return;
-> -	cap = (u16 *)&save_state->data[0];
-> +	cap = (u16 *)&save_state->cap.data[0];
->  
->  	pci_read_config_word(dev, pos + PCI_EXP_FLAGS, &flags);
->  
-> @@ -899,7 +899,8 @@ static int pci_save_pcix_state(struct pci_dev
-> *dev) return -ENOMEM;
->  	}
->  
-> -	pci_read_config_word(dev, pos + PCI_X_CMD, (u16
-> *)save_state->data);
-> +	pci_read_config_word(dev, pos + PCI_X_CMD,
-> +			     (u16 *)save_state->cap.data);
->  
->  	return 0;
->  }
-> @@ -914,7 +915,7 @@ static void pci_restore_pcix_state(struct pci_dev
-> *dev) pos = pci_find_capability(dev, PCI_CAP_ID_PCIX);
->  	if (!save_state || pos <= 0)
->  		return;
-> -	cap = (u16 *)&save_state->data[0];
-> +	cap = (u16 *)&save_state->cap.data[0];
->  
->  	pci_write_config_word(dev, pos + PCI_X_CMD, cap[i++]);
->  }
-> @@ -1771,7 +1772,8 @@ static int pci_add_cap_save_buffer(
->  	if (!save_state)
->  		return -ENOMEM;
->  
-> -	save_state->cap_nr = cap;
-> +	save_state->cap.cap_nr = cap;
-> +	save_state->cap.size = size;
->  	pci_add_saved_cap(dev, save_state);
->  
->  	return 0;
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 96f70d7..4dcb429 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -214,12 +214,17 @@ enum pci_bus_speed {
->  	PCI_SPEED_UNKNOWN		= 0xff,
->  };
->  
-> -struct pci_cap_saved_state {
-> -	struct hlist_node next;
-> +struct pci_cap_saved_data {
->  	char cap_nr;
-> +	unsigned int size;
->  	u32 data[0];
->  };
->  
-> +struct pci_cap_saved_state {
-> +	struct hlist_node next;
-> +	struct pci_cap_saved_data cap;
-> +};
-> +
->  struct pcie_link_state;
->  struct pci_vpd;
->  struct pci_sriov;
-> @@ -366,7 +371,7 @@ static inline struct pci_cap_saved_state
-> *pci_find_saved_cap( struct hlist_node *pos;
->  
->  	hlist_for_each_entry(tmp, pos, &pci_dev->saved_cap_space,
-> next) {
-> -		if (tmp->cap_nr == cap)
-> +		if (tmp->cap.cap_nr == cap)
->  			return tmp;
->  	}
->  	return NULL;
+Peter, is that possible to use the single syscall table for
+both x86-64 and x32 system calls? Out of 300+ system
+calls, only 84 are different for x86-64 and x32.  That
+is additional 8*84 == 672 bytes in syscall table.
 
-Applied these, thanks.
+
+-- 
+H.J.
