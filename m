@@ -1,306 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab1EUBAN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 May 2011 21:00:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46992 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756707Ab1EUA7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 May 2011 20:59:17 -0400
-X-ExtLoop1: 1
-Message-Id: <20110521005526.341718626@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: quilt/0.47-1
-Date: Fri, 20 May 2011 17:51:20 -0700
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, steiner@sgi.com,
-        gorcunov@openvz.org, yinghai@kernel.org
-Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com
-Subject: [patch 4/4] x86, apic: make apic drivers static
-References: <20110521005116.136357574@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=make_apic_drivers_confined.patch
+	id S1756356Ab1EUB04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 May 2011 21:26:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47268 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755190Ab1EUB0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 May 2011 21:26:49 -0400
+Date: Fri, 20 May 2011 18:26:40 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, hannes@cmpxchg.org,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH 8/8] memcg asyncrhouns reclaim workqueue
+Message-Id: <20110520182640.7e71af33.akpm@linux-foundation.org>
+In-Reply-To: <BANLkTinwmtgh+p=aeZux3NuC2ftbR5OMgQ@mail.gmail.com>
+References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110520124837.72978344.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110520145115.d52f3693.akpm@linux-foundation.org>
+	<BANLkTinwmtgh+p=aeZux3NuC2ftbR5OMgQ@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apic probe now looks at the apic drivers listed in the .apicdrivers section.
-Remove apic_probe[] and make each apic driver static.
+On Sat, 21 May 2011 09:41:50 +0900 Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com> wrote:
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/include/asm/apic.h           |    7 -------
- arch/x86/kernel/apic/apic_flat_64.c   |   10 ++++++++--
- arch/x86/kernel/apic/bigsmp_32.c      |    2 +-
- arch/x86/kernel/apic/es7000_32.c      |    4 ++--
- arch/x86/kernel/apic/numaq_32.c       |    4 ++--
- arch/x86/kernel/apic/probe_32.c       |   28 ++--------------------------
- arch/x86/kernel/apic/probe_64.c       |   21 ---------------------
- arch/x86/kernel/apic/summit_32.c      |    2 +-
- arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
- arch/x86/kernel/apic/x2apic_phys.c    |    4 +++-
- arch/x86/kernel/apic/x2apic_uv_x.c    |    4 +++-
- 11 files changed, 23 insertions(+), 65 deletions(-)
+> 2011/5/21 Andrew Morton <akpm@linux-foundation.org>:
+> > On Fri, 20 May 2011 12:48:37 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >
+> >> workqueue for memory cgroup asynchronous memory shrinker.
+> >>
+> >> This patch implements the workqueue of async shrinker routine. each
+> >> memcg has a work and only one work can be scheduled at the same time.
+> >>
+> >> If shrinking memory doesn't goes well, delay will be added to the work.
+> >>
+> >
+> > When this code explodes (as it surely will), users will see large
+> > amounts of CPU consumption in the work queue thread. __We want to make
+> > this as easy to debug as possible, so we should try to make the
+> > workqueue's names mappable back onto their memcg's. __And anything else
+> > we can think of to help?
+> >
+> 
+> I had a patch for showing per-memcg reclaim latency stats. It will be help.
+> I'll add it again to this set. I just dropped it because there are many patches
+> onto memory.stat in flight..
 
-Index: linux-2.6-tip/arch/x86/include/asm/apic.h
-===================================================================
---- linux-2.6-tip.orig/arch/x86/include/asm/apic.h
-+++ linux-2.6-tip/arch/x86/include/asm/apic.h
-@@ -478,15 +478,10 @@ static inline unsigned default_get_apic_
- #define DEFAULT_TRAMPOLINE_PHYS_HIGH		0x469
- 
- #ifdef CONFIG_X86_64
--extern struct apic apic_flat;
--extern struct apic apic_physflat;
--extern struct apic apic_x2apic_cluster;
--extern struct apic apic_x2apic_phys;
- extern int default_acpi_madt_oem_check(char *, char *);
- 
- extern void apic_send_IPI_self(int vector);
- 
--extern struct apic apic_x2apic_uv_x;
- DECLARE_PER_CPU(int, x2apic_extra_bits);
- 
- extern int default_cpu_present_to_apicid(int mps_cpu);
-@@ -536,8 +531,6 @@ extern struct apic apic_noop;
- 
- #ifdef CONFIG_X86_32
- 
--extern struct apic apic_default;
--
- static inline int noop_x86_32_early_logical_apicid(int cpu)
- {
- 	return BAD_APICID;
-Index: linux-2.6-tip/arch/x86/kernel/apic/apic_flat_64.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/apic_flat_64.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/apic_flat_64.c
-@@ -24,6 +24,12 @@
- #include <acpi/acpi_bus.h>
- #endif
- 
-+static struct apic apic_physflat;
-+static struct apic apic_flat;
-+
-+struct apic __read_mostly *apic = &apic_flat;
-+EXPORT_SYMBOL_GPL(apic);
-+
- static int flat_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
- {
- 	return 1;
-@@ -164,7 +170,7 @@ static int flat_phys_pkg_id(int initial_
- 	return initial_apic_id >> index_msb;
- }
- 
--struct apic apic_flat =  {
-+static struct apic apic_flat =  {
- 	.name				= "flat",
- 	.probe				= NULL,
- 	.acpi_madt_oem_check		= flat_acpi_madt_oem_check,
-@@ -320,7 +326,7 @@ static int physflat_probe(void)
- 	return 0;
- }
- 
--struct apic apic_physflat =  {
-+static struct apic apic_physflat =  {
- 
- 	.name				= "physical flat",
- 	.probe				= physflat_probe,
-Index: linux-2.6-tip/arch/x86/kernel/apic/probe_64.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/probe_64.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/probe_64.c
-@@ -23,27 +23,6 @@
- #include <asm/ipi.h>
- #include <asm/setup.h>
- 
--extern struct apic apic_flat;
--extern struct apic apic_physflat;
--extern struct apic apic_x2xpic_uv_x;
--extern struct apic apic_x2apic_phys;
--extern struct apic apic_x2apic_cluster;
--
--struct apic __read_mostly *apic = &apic_flat;
--EXPORT_SYMBOL_GPL(apic);
--
--static struct apic *apic_probe[] __initdata = {
--#ifdef CONFIG_X86_UV
--	&apic_x2apic_uv_x,
--#endif
--#ifdef CONFIG_X86_X2APIC
--	&apic_x2apic_phys,
--	&apic_x2apic_cluster,
--#endif
--	&apic_physflat,
--	NULL,
--};
--
- static int apicid_phys_pkg_id(int initial_apic_id, int index_msb)
- {
- 	return hard_smp_processor_id() >> index_msb;
-Index: linux-2.6-tip/arch/x86/kernel/apic/x2apic_cluster.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/x2apic_cluster.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -208,7 +208,7 @@ static int x2apic_cluster_probe(void)
- 		return 0;
- }
- 
--struct apic apic_x2apic_cluster = {
-+static struct apic apic_x2apic_cluster = {
- 
- 	.name				= "cluster x2apic",
- 	.probe				= x2apic_cluster_probe,
-Index: linux-2.6-tip/arch/x86/kernel/apic/x2apic_phys.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/x2apic_phys.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/x2apic_phys.c
-@@ -11,6 +11,8 @@
- 
- int x2apic_phys;
- 
-+static struct apic apic_x2apic_phys;
-+
- static int set_x2apic_phys_mode(char *arg)
- {
- 	x2apic_phys = 1;
-@@ -112,7 +114,7 @@ static int x2apic_phys_probe(void)
- 	return apic == &apic_x2apic_phys;
- }
- 
--struct apic apic_x2apic_phys = {
-+static struct apic apic_x2apic_phys = {
- 
- 	.name				= "physical x2apic",
- 	.probe				= x2apic_phys_probe,
-Index: linux-2.6-tip/arch/x86/kernel/apic/x2apic_uv_x.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -58,6 +58,8 @@ unsigned int uv_apicid_hibits;
- EXPORT_SYMBOL_GPL(uv_apicid_hibits);
- static DEFINE_SPINLOCK(uv_nmi_lock);
- 
-+static struct apic apic_x2apic_uv_x;
-+
- static unsigned long __init uv_early_read_mmr(unsigned long addr)
- {
- 	unsigned long val, *mmr;
-@@ -331,7 +333,7 @@ static int uv_probe(void)
- 	return apic == &apic_x2apic_uv_x;
- }
- 
--struct apic __refdata apic_x2apic_uv_x = {
-+static struct apic __refdata apic_x2apic_uv_x = {
- 
- 	.name				= "UV large system",
- 	.probe				= uv_probe,
-Index: linux-2.6-tip/arch/x86/kernel/apic/es7000_32.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/es7000_32.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/es7000_32.c
-@@ -620,7 +620,7 @@ static int es7000_mps_oem_check_cluster(
- }
- 
- /* We've been warned by a false positive warning.Use __refdata to keep calm. */
--struct apic __refdata apic_es7000_cluster = {
-+static struct apic __refdata apic_es7000_cluster = {
- 
- 	.name				= "es7000",
- 	.probe				= probe_es7000,
-@@ -685,7 +685,7 @@ struct apic __refdata apic_es7000_cluste
- 	.x86_32_early_logical_apicid	= es7000_early_logical_apicid,
- };
- 
--struct apic __refdata apic_es7000 = {
-+static struct apic __refdata apic_es7000 = {
- 
- 	.name				= "es7000",
- 	.probe				= probe_es7000,
-Index: linux-2.6-tip/arch/x86/kernel/apic/numaq_32.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/numaq_32.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/numaq_32.c
-@@ -472,8 +472,8 @@ static void numaq_setup_portio_remap(voi
- 		(u_long) xquad_portio, (u_long) num_quads*XQUAD_PORTIO_QUAD);
- }
- 
--/* Use __refdata to keep false positive warning calm.	*/
--struct apic __refdata apic_numaq = {
-+/* Use __refdata to keep false positive warning calm.  */
-+static struct apic __refdata apic_numaq = {
- 
- 	.name				= "NUMAQ",
- 	.probe				= probe_numaq,
-Index: linux-2.6-tip/arch/x86/kernel/apic/probe_32.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/probe_32.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/probe_32.c
-@@ -87,7 +87,7 @@ static int probe_default(void)
- 	return 1;
- }
- 
--struct apic apic_default = {
-+static struct apic apic_default = {
- 
- 	.name				= "default",
- 	.probe				= probe_default,
-@@ -151,33 +151,9 @@ struct apic apic_default = {
- 
- apic_driver(apic_default);
- 
--extern struct apic apic_numaq;
--extern struct apic apic_summit;
--extern struct apic apic_bigsmp;
--extern struct apic apic_es7000;
--extern struct apic apic_es7000_cluster;
--
- struct apic *apic = &apic_default;
- EXPORT_SYMBOL_GPL(apic);
- 
--static struct apic *apic_probe[] __initdata = {
--#ifdef CONFIG_X86_NUMAQ
--	&apic_numaq,
--#endif
--#ifdef CONFIG_X86_SUMMIT
--	&apic_summit,
--#endif
--#ifdef CONFIG_X86_BIGSMP
--	&apic_bigsmp,
--#endif
--#ifdef CONFIG_X86_ES7000
--	&apic_es7000,
--	&apic_es7000_cluster,
--#endif
--	&apic_default,	/* must be last */
--	NULL,
--};
--
- static int cmdline_apic __initdata;
- static int __init parse_apic(char *arg)
- {
-Index: linux-2.6-tip/arch/x86/kernel/apic/summit_32.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/summit_32.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/summit_32.c
-@@ -491,7 +491,7 @@ void setup_summit(void)
- }
- #endif
- 
--struct apic apic_summit = {
-+static struct apic apic_summit = {
- 
- 	.name				= "summit",
- 	.probe				= probe_summit,
-Index: linux-2.6-tip/arch/x86/kernel/apic/bigsmp_32.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/bigsmp_32.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/bigsmp_32.c
-@@ -193,7 +193,7 @@ static int probe_bigsmp(void)
- 	return dmi_bigsmp;
- }
- 
--struct apic apic_bigsmp = {
-+static struct apic apic_bigsmp = {
- 
- 	.name				= "bigsmp",
- 	.probe				= probe_bigsmp,
+Will that patch help us when users report the memcg equivalent of
+"kswapd uses 99% of CPU"?
 
+> >
+> >> + __ __ limit = res_counter_read_u64(&mem->res, RES_LIMIT);
+> >> + __ __ shrink_to = limit - MEMCG_ASYNC_MARGIN - PAGE_SIZE;
+> >> + __ __ usage = res_counter_read_u64(&mem->res, RES_USAGE);
+> >> + __ __ if (shrink_to <= usage) {
+> >> + __ __ __ __ __ __ required = usage - shrink_to;
+> >> + __ __ __ __ __ __ required = (required >> PAGE_SHIFT) + 1;
+> >> + __ __ __ __ __ __ /*
+> >> + __ __ __ __ __ __ __* This scans some number of pages and returns that memory
+> >> + __ __ __ __ __ __ __* reclaim was slow or now. If slow, we add a delay as
+> >> + __ __ __ __ __ __ __* congestion_wait() in vmscan.c
+> >> + __ __ __ __ __ __ __*/
+> >> + __ __ __ __ __ __ congested = mem_cgroup_shrink_static_scan(mem, (long)required);
+> >> + __ __ }
+> >> + __ __ if (test_bit(ASYNC_NORESCHED, &mem->async_flags)
+> >> + __ __ __ __ || mem_cgroup_async_should_stop(mem))
+> >> + __ __ __ __ __ __ goto finish_scan;
+> >> + __ __ /* If memory reclaim couldn't go well, add delay */
+> >> + __ __ if (congested)
+> >> + __ __ __ __ __ __ delay = HZ/10;
+> >
+> > Another magic number.
+> >
+> > If Moore's law holds, we need to reduce this number by 1.4 each year.
+> > Is this good?
+> >
+> 
+> not good.  I just used the same magic number now used with wait_iff_congested.
+> Other than timer, I can use pagein/pageout event counter. If we have
+> dirty_ratio,
+> I may able to link this to dirty_ratio and wait until dirty_ratio is enough low.
+> Or, wake up again hit limit.
+> 
+> Do you have suggestion ?
+> 
 
+mm..  It would be pretty easy to generate an estimate of "pages scanned
+per second" from the contents of (and changes in) the scan_control. 
+Konwing that datum and knowing the number of pages in the memcg, we
+should be able to come up with a delay period which scales
+appropriately with CPU speed and with memory size?
+
+Such a thing could be used to rationalise magic delays in other places,
+hopefully.
+
+> 
+> >> + __ __ queue_delayed_work(memcg_async_shrinker, &mem->async_work, delay);
+> >> + __ __ return;
+> >> +finish_scan:
+> >> + __ __ cgroup_release_and_wakeup_rmdir(&mem->css);
+> >> + __ __ clear_bit(ASYNC_RUNNING, &mem->async_flags);
+> >> + __ __ return;
+> >> +}
+> >> +
+> >> +static void run_mem_cgroup_async_shrinker(struct mem_cgroup *mem)
+> >> +{
+> >> + __ __ if (test_bit(ASYNC_NORESCHED, &mem->async_flags))
+> >> + __ __ __ __ __ __ return;
+> >
+> > I can't work out what ASYNC_NORESCHED does. __Is its name well-chosen?
+> >
+> how about BLOCK/STOP_ASYNC_RECLAIM ?
+
+I can't say - I don't know what it does!  Or maybe I did, and immediately
+forgot ;)
