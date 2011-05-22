@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab1EVTbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 15:31:09 -0400
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:44245 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab1EVTbF (ORCPT
+	id S1754287Ab1EVTgU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 15:36:20 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36895 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab1EVTgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 15:31:05 -0400
-Subject: Re: Mysterious CFQ crash and RCU
-From: Paul Bolle <pebolle@tiscali.nl>
-To: paulmck@linux.vnet.ibm.com
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110521235408.GK2271@linux.vnet.ibm.com>
-References: <20110519222404.GG12600@redhat.com>
-	 <20110521210013.GJ2271@linux.vnet.ibm.com>
-	 <1306016630.2066.44.camel@x61.thuisdomein>
-	 <20110521235408.GK2271@linux.vnet.ibm.com>
+	Sun, 22 May 2011 15:36:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=lvquSDHwQUPb7Eun5MrFBQ4cPh8xKJRAbmwIMGLkSG9CzLvCPhoUTzua7GwCok8Src
+         pvRn1Ot2zSAv3Q+YjemKk7JQ171j8MgovVBc/LWZpl/xx0N0RjrSKEKtW8Juu9HtQBRQ
+         zeKEpli2YiAIvEtvTZo6HPOoouA1EQ90Hm8Vk=
+Subject: [PATCH] fs: add missing prefetch header to inode.c
+From: Eduardo Silva <edsiper@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 22 May 2011 21:30:57 +0200
-Message-ID: <1306092657.2066.53.camel@x61.thuisdomein>
+Date: Sun, 22 May 2011 15:34:39 -0400
+Message-ID: <1306092879.16902.1.camel@monotop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-05-21 at 16:54 -0700, Paul E. McKenney wrote:
-> On Sun, May 22, 2011 at 12:23:50AM +0200, Paul Bolle wrote: 
-> > Is anyone able to spot one or more commits in v2.6.39-rc7..v2.6.39 that
-> > might have fixed this Oops? Or did my chance of hitting this Oops,
-> > somehow, just got a lot smaller in v.2.6.39?
+inode.c fails in the compilation process due to the missing
+include of linux/prefetch.h.
 
-As I just discovered, Fedora Rawhide ships release candidates configured
-with a lot more debugging options set than it ships final releases. So,
-sadly, this didn't get fixed in v2.6.39. It just didn't show up because
-one or more configuration options weren't set while they used to be set
-in the preceding release candidates kernels.
+Signed-off-by: Eduardo Silva <edsiper@gmail.com>
+---
+ fs/inode.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> 5f45c69589b7d ("read_lock() does not always imply rcu_read_lock()") might
-> well be a fix.
+diff --git a/fs/inode.c b/fs/inode.c
+index 33c963d..c77081f 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -26,6 +26,7 @@
+ #include <linux/posix_acl.h>
+ #include <linux/ima.h>
+ #include <linux/cred.h>
++#include <linux/prefetch.h>
+ #include "internal.h"
+ 
+ /*
+-- 
+1.7.4.1
 
-It doesn't really matter anymore, but that one was actually already
-included in v2.6.39-rc5.
 
-
-Paul Bolle
 
