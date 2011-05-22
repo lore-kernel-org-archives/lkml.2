@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab1EVRFo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 13:05:44 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41833 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab1EVRF1 (ORCPT
+	id S1754032Ab1EVRF5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 13:05:57 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40645 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874Ab1EVRF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 13:05:27 -0400
+	Sun, 22 May 2011 13:05:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=StXuAxHQykUW+GXIrVdfotTBpyxHSXQDcubmopDplXYSJ34wwZzv+eVjdp9nMYmKQQ
-         SodlT/IOCvt9KdHcEAgcNH1wQVCXzLIxJ5bi6U/oNCZamy3kLwtTltCcmrtlhanhorvY
-         2Tf/jZpah4A/QzqZ16DACY1n4VPg3xrbCAmoE=
+        b=vgYMYEfp+fRlCu2MDFLOLqqhDNe6StuuCRdAptMOGrOwEn5W81XEQXf5svn76ad8Qn
+         Wfkh5a2UvMfTUXIKn6KA0eiTFfAWokOKeRz5y6EYQ2OAiVfruk28UT1ucuEOn9FDPQN4
+         5c71R2yk63KqffJXX7N9j1trj38rkwCfpscmM=
 From: Mika Westerberg <mika.westerberg@iki.fi>
 To: linux-arm-kernel@lists.infradead.org
 Cc: hsweeten@visionengravers.com, ryan@bluewatersys.com,
-        linux-kernel@vger.kernel.org, Mika Westerberg <mika.westerberg@iki.fi>
-Subject: [PATCH 2/5] ep93xx: add dmaengine platform code
-Date: Sun, 22 May 2011 20:03:05 +0300
-Message-Id: <e903b474448f984f024682b1f565e8ef23c3b842.1306082097.git.mika.westerberg@iki.fi>
+        linux-kernel@vger.kernel.org, Mika Westerberg <mika.westerberg@iki.fi>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/5] ASoC: ep93xx: convert to use the DMA engine API
+Date: Sun, 22 May 2011 20:03:06 +0300
+Message-Id: <9f8dd1eb40a6cb44d8207c84f244345a98bb9c0f.1306082097.git.mika.westerberg@iki.fi>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <cover.1306082097.git.mika.westerberg@iki.fi>
 References: <cover.1306082097.git.mika.westerberg@iki.fi>
@@ -30,142 +32,276 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add platform support code for the new EP93xx dmaengine driver.
+Now that we have the EP93xx DMA engine driver in place, we convert the ASoC
+drivers (I2S, AC97 and PCM) to take advantage of this new API. There are no
+functional changes.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- arch/arm/mach-ep93xx/Makefile |    2 +-
- arch/arm/mach-ep93xx/dma.c    |  108 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 109 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-ep93xx/dma.c
+ sound/soc/ep93xx/ep93xx-ac97.c |    4 +-
+ sound/soc/ep93xx/ep93xx-i2s.c  |    4 +-
+ sound/soc/ep93xx/ep93xx-pcm.c  |  137 ++++++++++++++++++++++-----------------
+ 3 files changed, 81 insertions(+), 64 deletions(-)
 
-diff --git a/arch/arm/mach-ep93xx/Makefile b/arch/arm/mach-ep93xx/Makefile
-index 33ee2c8..928362a 100644
---- a/arch/arm/mach-ep93xx/Makefile
-+++ b/arch/arm/mach-ep93xx/Makefile
-@@ -1,7 +1,7 @@
- #
- # Makefile for the linux kernel.
- #
--obj-y			:= core.o clock.o dma-m2p.o gpio.o
-+obj-y			:= core.o clock.o dma-m2p.o dma.o gpio.o
- obj-m			:=
- obj-n			:=
- obj-			:=
-diff --git a/arch/arm/mach-ep93xx/dma.c b/arch/arm/mach-ep93xx/dma.c
-new file mode 100644
-index 0000000..fadd29c
---- /dev/null
-+++ b/arch/arm/mach-ep93xx/dma.c
-@@ -0,0 +1,108 @@
-+/*
-+ * arch/arm/mach-ep93xx/dma.c
-+ *
-+ * Platform support code for the EP93xx dmaengine driver.
-+ *
-+ * Copyright (C) 2011 Mika Westerberg
-+ *
-+ * This work is based on the original dma-m2p implementation with
-+ * following copyrights:
-+ *
-+ *   Copyright (C) 2006 Lennert Buytenhek <buytenh@wantstofly.org>
-+ *   Copyright (C) 2006 Applied Data Systems
-+ *   Copyright (C) 2009 Ryan Mallon <ryan@bluewatersys.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or (at
-+ * your option) any later version.
-+ */
-+
+diff --git a/sound/soc/ep93xx/ep93xx-ac97.c b/sound/soc/ep93xx/ep93xx-ac97.c
+index 104e95c..c7417c7 100644
+--- a/sound/soc/ep93xx/ep93xx-ac97.c
++++ b/sound/soc/ep93xx/ep93xx-ac97.c
+@@ -106,12 +106,12 @@ static struct ep93xx_ac97_info *ep93xx_ac97_info;
+ 
+ static struct ep93xx_pcm_dma_params ep93xx_ac97_pcm_out = {
+ 	.name		= "ac97-pcm-out",
+-	.dma_port	= EP93XX_DMA_M2P_PORT_AAC1,
++	.dma_port	= EP93XX_DMA_AAC1,
+ };
+ 
+ static struct ep93xx_pcm_dma_params ep93xx_ac97_pcm_in = {
+ 	.name		= "ac97-pcm-in",
+-	.dma_port	= EP93XX_DMA_M2P_PORT_AAC1,
++	.dma_port	= EP93XX_DMA_AAC1,
+ };
+ 
+ static inline unsigned ep93xx_ac97_read_reg(struct ep93xx_ac97_info *info,
+diff --git a/sound/soc/ep93xx/ep93xx-i2s.c b/sound/soc/ep93xx/ep93xx-i2s.c
+index 042f4e9..30df425 100644
+--- a/sound/soc/ep93xx/ep93xx-i2s.c
++++ b/sound/soc/ep93xx/ep93xx-i2s.c
+@@ -70,11 +70,11 @@ struct ep93xx_i2s_info {
+ struct ep93xx_pcm_dma_params ep93xx_i2s_dma_params[] = {
+ 	[SNDRV_PCM_STREAM_PLAYBACK] = {
+ 		.name		= "i2s-pcm-out",
+-		.dma_port	= EP93XX_DMA_M2P_PORT_I2S1,
++		.dma_port	= EP93XX_DMA_I2S1,
+ 	},
+ 	[SNDRV_PCM_STREAM_CAPTURE] = {
+ 		.name		= "i2s-pcm-in",
+-		.dma_port	= EP93XX_DMA_M2P_PORT_I2S1,
++		.dma_port	= EP93XX_DMA_I2S1,
+ 	},
+ };
+ 
+diff --git a/sound/soc/ep93xx/ep93xx-pcm.c b/sound/soc/ep93xx/ep93xx-pcm.c
+index a456e49..a07f99c 100644
+--- a/sound/soc/ep93xx/ep93xx-pcm.c
++++ b/sound/soc/ep93xx/ep93xx-pcm.c
+@@ -16,6 +16,7 @@
+ #include <linux/init.h>
+ #include <linux/device.h>
+ #include <linux/slab.h>
 +#include <linux/dmaengine.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/platform_device.h>
+ #include <linux/dma-mapping.h>
+ 
+ #include <sound/core.h>
+@@ -53,43 +54,34 @@ static const struct snd_pcm_hardware ep93xx_pcm_hardware = {
+ 
+ struct ep93xx_runtime_data
+ {
+-	struct ep93xx_dma_m2p_client	cl;
+-	struct ep93xx_pcm_dma_params	*params;
+ 	int				pointer_bytes;
+-	struct tasklet_struct		period_tasklet;
+ 	int				periods;
+-	struct ep93xx_dma_buffer	buf[32];
++	int				period_bytes;
++	struct dma_chan			*dma_chan;
++	struct ep93xx_dma_data		dma_data;
+ };
+ 
+-static void ep93xx_pcm_period_elapsed(unsigned long data)
++static void ep93xx_pcm_dma_callback(void *data)
+ {
+-	struct snd_pcm_substream *substream = (struct snd_pcm_substream *)data;
+-	snd_pcm_period_elapsed(substream);
+-}
++	struct snd_pcm_substream *substream = data;
++	struct ep93xx_runtime_data *rtd = substream->runtime->private_data;
+ 
+-static void ep93xx_pcm_buffer_started(void *cookie,
+-				      struct ep93xx_dma_buffer *buf)
+-{
++	rtd->pointer_bytes += rtd->period_bytes;
++	rtd->pointer_bytes %= rtd->period_bytes * rtd->periods;
 +
-+#include <mach/dma.h>
-+#include <mach/hardware.h>
++	snd_pcm_period_elapsed(substream);
+ }
+ 
+-static void ep93xx_pcm_buffer_finished(void *cookie, 
+-				       struct ep93xx_dma_buffer *buf, 
+-				       int bytes, int error)
++static bool ep93xx_pcm_dma_filter(struct dma_chan *chan, void *filter_param)
+ {
+-	struct snd_pcm_substream *substream = cookie;
+-	struct ep93xx_runtime_data *rtd = substream->runtime->private_data;
+-
+-	if (buf == rtd->buf + rtd->periods - 1)
+-		rtd->pointer_bytes = 0;
+-	else
+-		rtd->pointer_bytes += buf->size;
++	struct ep93xx_dma_data *data = filter_param;
+ 
+-	if (!error) {
+-		ep93xx_dma_m2p_submit_recursive(&rtd->cl, buf);
+-		tasklet_schedule(&rtd->period_tasklet);
+-	} else {
+-		snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
++	if (data->direction == ep93xx_dma_chan_direction(chan)) {
++		chan->private = data;
++		return true;
+ 	}
 +
-+#define DMA_CHANNEL(_name, _base, _irq) \
-+	{ .name = (_name), .base = (_base), .irq = (_irq) }
++	return false;
+ }
+ 
+ static int ep93xx_pcm_open(struct snd_pcm_substream *substream)
+@@ -98,30 +90,38 @@ static int ep93xx_pcm_open(struct snd_pcm_substream *substream)
+ 	struct snd_soc_dai *cpu_dai = soc_rtd->cpu_dai;
+ 	struct ep93xx_pcm_dma_params *dma_params;
+ 	struct ep93xx_runtime_data *rtd;    
++	dma_cap_mask_t mask;
+ 	int ret;
+ 
+-	dma_params = snd_soc_dai_get_dma_data(cpu_dai, substream);
++	ret = snd_pcm_hw_constraint_integer(substream->runtime,
++					    SNDRV_PCM_HW_PARAM_PERIODS);
++	if (ret < 0)
++		return ret;
 +
-+/*
-+ * DMA M2P channels.
-+ *
-+ * On the EP93xx chip the following peripherals my be allocated to the 10
-+ * Memory to Internal Peripheral (M2P) channels (5 transmit + 5 receive).
-+ *
-+ *	I2S	contains 3 Tx and 3 Rx DMA Channels
-+ *	AAC	contains 3 Tx and 3 Rx DMA Channels
-+ *	UART1	contains 1 Tx and 1 Rx DMA Channels
-+ *	UART2	contains 1 Tx and 1 Rx DMA Channels
-+ *	UART3	contains 1 Tx and 1 Rx DMA Channels
-+ *	IrDA	contains 1 Tx and 1 Rx DMA Channels
-+ *
-+ * Registers are mapped statically in ep93xx_map_io().
-+ */
-+static struct ep93xx_dma_chan_data ep93xx_dma_m2p_channels[] = {
-+	DMA_CHANNEL("m2p0", EP93XX_DMA_BASE + 0x0000, IRQ_EP93XX_DMAM2P0),
-+	DMA_CHANNEL("m2p1", EP93XX_DMA_BASE + 0x0040, IRQ_EP93XX_DMAM2P1),
-+	DMA_CHANNEL("m2p2", EP93XX_DMA_BASE + 0x0080, IRQ_EP93XX_DMAM2P2),
-+	DMA_CHANNEL("m2p3", EP93XX_DMA_BASE + 0x00c0, IRQ_EP93XX_DMAM2P3),
-+	DMA_CHANNEL("m2p4", EP93XX_DMA_BASE + 0x0240, IRQ_EP93XX_DMAM2P4),
-+	DMA_CHANNEL("m2p5", EP93XX_DMA_BASE + 0x0200, IRQ_EP93XX_DMAM2P5),
-+	DMA_CHANNEL("m2p6", EP93XX_DMA_BASE + 0x02c0, IRQ_EP93XX_DMAM2P6),
-+	DMA_CHANNEL("m2p7", EP93XX_DMA_BASE + 0x0280, IRQ_EP93XX_DMAM2P7),
-+	DMA_CHANNEL("m2p8", EP93XX_DMA_BASE + 0x0340, IRQ_EP93XX_DMAM2P8),
-+	DMA_CHANNEL("m2p9", EP93XX_DMA_BASE + 0x0300, IRQ_EP93XX_DMAM2P9),
-+};
+ 	snd_soc_set_runtime_hwparams(substream, &ep93xx_pcm_hardware);
+ 
+ 	rtd = kmalloc(sizeof(*rtd), GFP_KERNEL);
+ 	if (!rtd) 
+ 		return -ENOMEM;
+ 
+-	memset(&rtd->period_tasklet, 0, sizeof(rtd->period_tasklet));
+-	rtd->period_tasklet.func = ep93xx_pcm_period_elapsed;
+-	rtd->period_tasklet.data = (unsigned long)substream;
+-
+-	rtd->cl.name = dma_params->name;
+-	rtd->cl.flags = dma_params->dma_port | EP93XX_DMA_M2P_IGNORE_ERROR |
+-		((substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ?
+-		 EP93XX_DMA_M2P_TX : EP93XX_DMA_M2P_RX);
+-	rtd->cl.cookie = substream;
+-	rtd->cl.buffer_started = ep93xx_pcm_buffer_started;
+-	rtd->cl.buffer_finished = ep93xx_pcm_buffer_finished;
+-	ret = ep93xx_dma_m2p_client_register(&rtd->cl);
+-	if (ret < 0) {
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_SLAVE, mask);
++	dma_cap_set(DMA_CYCLIC, mask);
 +
-+static struct ep93xx_dma_platform_data ep93xx_dma_m2p_data = {
-+	.channels		= ep93xx_dma_m2p_channels,
-+	.num_channels		= ARRAY_SIZE(ep93xx_dma_m2p_channels),
-+};
++	dma_params = snd_soc_dai_get_dma_data(cpu_dai, substream);
++	rtd->dma_data.port = dma_params->dma_port;
++	rtd->dma_data.name = dma_params->name;
 +
-+static struct platform_device ep93xx_dma_m2p_device = {
-+	.name			= "ep93xx-dma-m2p",
-+	.id			= -1,
-+	.dev			= {
-+		.platform_data	= &ep93xx_dma_m2p_data,
-+	},
-+};
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++		rtd->dma_data.direction = DMA_TO_DEVICE;
++	else
++		rtd->dma_data.direction = DMA_FROM_DEVICE;
 +
-+/*
-+ * DMA M2M channels.
-+ *
-+ * There are 2 M2M channels which support memcpy/memset and in addition simple
-+ * hardware requests from/to SSP and IDE. We do not implement an external
-+ * hardware requests.
-+ *
-+ * Registers are mapped statically in ep93xx_map_io().
-+ */
-+static struct ep93xx_dma_chan_data ep93xx_dma_m2m_channels[] = {
-+	DMA_CHANNEL("m2m0", EP93XX_DMA_BASE + 0x0100, IRQ_EP93XX_DMAM2M0),
-+	DMA_CHANNEL("m2m1", EP93XX_DMA_BASE + 0x0140, IRQ_EP93XX_DMAM2M1),
-+};
-+
-+static struct ep93xx_dma_platform_data ep93xx_dma_m2m_data = {
-+	.channels		= ep93xx_dma_m2m_channels,
-+	.num_channels		= ARRAY_SIZE(ep93xx_dma_m2m_channels),
-+};
-+
-+static struct platform_device ep93xx_dma_m2m_device = {
-+	.name			= "ep93xx-dma-m2m",
-+	.id			= -1,
-+	.dev			= {
-+		.platform_data	= &ep93xx_dma_m2m_data,
-+	},
-+};
-+
-+static int __init ep93xx_dma_init(void)
++	rtd->dma_chan = dma_request_channel(mask, ep93xx_pcm_dma_filter,
++					    &rtd->dma_data);
++	if (!rtd->dma_chan) {
+ 		kfree(rtd);
+-		return ret;
++		return -EINVAL;
+ 	}
+ 	
+ 	substream->runtime->private_data = rtd;
+@@ -132,31 +132,52 @@ static int ep93xx_pcm_close(struct snd_pcm_substream *substream)
+ {
+ 	struct ep93xx_runtime_data *rtd = substream->runtime->private_data;
+ 
+-	ep93xx_dma_m2p_client_unregister(&rtd->cl);
++	dma_release_channel(rtd->dma_chan);
+ 	kfree(rtd);
+ 	return 0;
+ }
+ 
++static int ep93xx_pcm_dma_submit(struct snd_pcm_substream *substream)
 +{
-+	platform_device_register(&ep93xx_dma_m2p_device);
-+	platform_device_register(&ep93xx_dma_m2m_device);
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct ep93xx_runtime_data *rtd = runtime->private_data;
++	struct dma_chan *chan = rtd->dma_chan;
++	struct dma_device *dma_dev = chan->device;
++	struct dma_async_tx_descriptor *desc;
++
++	rtd->pointer_bytes = 0;
++	desc = dma_dev->device_prep_dma_cyclic(chan, runtime->dma_addr,
++					       rtd->period_bytes * rtd->periods,
++					       rtd->period_bytes,
++					       rtd->dma_data.direction);
++	if (!desc)
++		return -EINVAL;
++
++	desc->callback = ep93xx_pcm_dma_callback;
++	desc->callback_param = substream;
++
++	dmaengine_submit(desc);
 +	return 0;
 +}
-+arch_initcall(ep93xx_dma_init);
++
++static void ep93xx_pcm_dma_flush(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct ep93xx_runtime_data *rtd = runtime->private_data;
++
++	dmaengine_terminate_all(rtd->dma_chan);
++}
++
+ static int ep93xx_pcm_hw_params(struct snd_pcm_substream *substream,
+ 				struct snd_pcm_hw_params *params)
+ {
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	struct ep93xx_runtime_data *rtd = runtime->private_data;
+-	size_t totsize = params_buffer_bytes(params);
+-	size_t period = params_period_bytes(params);
+-	int i;
+ 
+ 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
+-	runtime->dma_bytes = totsize;
+-
+-	rtd->periods = (totsize + period - 1) / period;
+-	for (i = 0; i < rtd->periods; i++) {
+-		rtd->buf[i].bus_addr = runtime->dma_addr + (i * period);
+-		rtd->buf[i].size = period;
+-		if ((i + 1) * period > totsize)
+-			rtd->buf[i].size = totsize - (i * period);
+-	}
+ 
++	rtd->periods = params_periods(params);
++	rtd->period_bytes = params_period_bytes(params);
+ 	return 0;
+ }
+ 
+@@ -168,24 +189,20 @@ static int ep93xx_pcm_hw_free(struct snd_pcm_substream *substream)
+ 
+ static int ep93xx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+ {
+-	struct ep93xx_runtime_data *rtd = substream->runtime->private_data;
+ 	int ret;
+-	int i;
+ 
+ 	ret = 0;
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+ 	case SNDRV_PCM_TRIGGER_RESUME:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+-		rtd->pointer_bytes = 0;
+-		for (i = 0; i < rtd->periods; i++)
+-			ep93xx_dma_m2p_submit(&rtd->cl, rtd->buf + i);
++		ret = ep93xx_pcm_dma_submit(substream);
+ 		break;
+ 
+ 	case SNDRV_PCM_TRIGGER_STOP:
+ 	case SNDRV_PCM_TRIGGER_SUSPEND:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+-		ep93xx_dma_m2p_flush(&rtd->cl);
++		ep93xx_pcm_dma_flush(substream);
+ 		break;
+ 
+ 	default:
 -- 
 1.7.4.4
 
