@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab1EVOQT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 10:16:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:1844 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754479Ab1EVOQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 10:16:14 -0400
-Subject: Re: [patch v2] checkpatch: Signature format verification
-From: Joe Perches <joe@perches.com>
-To: anish <anish198519851985@gmail.com>
-Cc: davej@redhat.com, rostedt@goodmis.org, apw@shadowen.org,
-        akpm@linux-foundation.org, vapier@gentoo.org,
-        linux-kernel@vger.kernel.org, man.k1983@gmail.com
-In-Reply-To: <1306059528.2761.3.camel@anish-desktop>
-References: <1306006721.1622.18.camel@anish-desktop>
-	 <1306059528.2761.3.camel@anish-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 22 May 2011 07:16:12 -0700
-Message-ID: <1306073772.1681.6.camel@Joe-Laptop>
+	id S1755015Ab1EVOTL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 10:19:11 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43291 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754479Ab1EVOTF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 10:19:05 -0400
+Date: Sun, 22 May 2011 15:19:59 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Arend van Spriel" <arend@broadcom.com>
+Cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Dan Carpenter" <error27@gmail.com>
+Subject: Re: [RFC] lib: crc8: add new library module providing crc8
+ algorithm
+Message-ID: <20110522151959.7fd6e87e@lxorguk.ukuu.org.uk>
+In-Reply-To: <4DD905CC.8040407@broadcom.com>
+References: <1306010973-5625-1-git-send-email-arend@broadcom.com>
+	<20110522122325.108b1c86@lxorguk.ukuu.org.uk>
+	<4DD905CC.8040407@broadcom.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-05-22 at 15:48 +0530, anish wrote:
-> This patch generates warning when there is no space between
-> the patch submitter and successive mail-id.
-[]
-> Signed-off-by: anish kumar <anish198519851985@gmail.com>
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index d867081..0622f41 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -29,6 +29,8 @@ my $summary_file = 0;
->  my $root;
->  my %debug;
->  my $help = 0;
-> +my ($sign,$loop_brk);
+Is it just used for wireless in this form ?
 
-These 2 variables don't need to be at this scope.
-
-> @@ -1365,20 +1367,30 @@ sub process {
-[]
-> +#check the patch for a signoff/Reviewed/Acked/Tested:
-> +foreach $sign (@signs) {
-
-Please use the appropriate indentation or add a new function.
-
-
+See the n_gsm and bluetooth code for what I think is the same crc
+algorithm but in reverse bit order .
