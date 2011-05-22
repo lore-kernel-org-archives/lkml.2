@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab1EVMnZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 08:43:25 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45477 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab1EVMnW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 08:43:22 -0400
-Message-ID: <4DD904B6.4010700@ru.mvista.com>
-Date: Sun, 22 May 2011 16:42:30 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1755175Ab1EVMrd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 08:47:33 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:1082 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754780Ab1EVMr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 08:47:26 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Message-ID: <4DD905CC.8040407@broadcom.com>
+Date: Sun, 22 May 2011 14:47:08 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
+ Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>
-Subject: Re: spitz pm: adjust messages
-References: <20110521122450.GA6954@elf.ucw.cz>
-In-Reply-To: <20110521122450.GA6954@elf.ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Dan Carpenter" <error27@gmail.com>
+Subject: Re: [RFC] lib: crc8: add new library module providing crc8
+ algorithm
+References: <1306010973-5625-1-git-send-email-arend@broadcom.com>
+ <20110522122325.108b1c86@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110522122325.108b1c86@lxorguk.ukuu.org.uk>
+X-WSS-ID: 61C7D93E3IC4283403-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 21-05-2011 16:24, Pavel Machek wrote:
-
-> Charger error is something that should be reported to the syslog; do
-> it. If temperature reading fails, we do not want to charge the
-> battery, anyway.
-
-> Signed-off-by: Pavel Machek <pavel@ucw.cz>
-
-> diff --git a/arch/arm/mach-pxa/sharpsl_pm.c b/arch/arm/mach-pxa/sharpsl_pm.c
-> index 785880f..513588c 100644
-> --- a/arch/arm/mach-pxa/sharpsl_pm.c
-> +++ b/arch/arm/mach-pxa/sharpsl_pm.c
-[...]
-> @@ -513,8 +500,10 @@ static int sharpsl_check_battery_temp(void)
->   	val = get_select_val(buff);
+On 05/22/2011 01:23 PM, Alan Cox wrote:
+> On Sat, 21 May 2011 22:49:33 +0200
+> "Arend van Spriel"<arend@broadcom.com>  wrote:
 >
->   	dev_dbg(sharpsl_pm.dev, "Temperature: %d\n", val);
-> -	if (val>  sharpsl_pm.machinfo->charge_on_temp) {
-> -		printk(KERN_WARNING "Not charging: temperature out of limits.\n");
-> +	/* FIXME: this should catch battery read errors, but we should
-> +	   probably avoid charging in<0C temperatures, too. */
+>> The brcm80211 driver in staging tree uses a crc8 function. Based on
+>> feedback from John Linville to move this to lib directory, the linux
+>> source has been searched. Although there is currently only one other
+>> kernel driver using this algorithm (ie. drivers/ssb) we are providing
+>> this as a library function for others to use.
+> Can we find a better name for it - there seem to be lots of CRC8 variants
+> that are different - eg bit direction and it's going to be confusing to
+> just call it 'crc8'
 
-    The preferred style of the multi-line comments is this:
+No problem. I just had a look at the lib directory and noticed the crc7 
+function and module is called crc7. I can imagine there are enough 
+variants of that as well. Another variation is probably the polynomial 
+used. Not sure how to factor in bit direction and polynomial into the name.
 
-/*
-  * bla
-  * bla
-  */
+suggestions from my thumb:
+- rnw_crc8: refers to Ross N. Williams who wrote the paper used for 
+implementing this function.
+- painless_crc8: refers to title of the paper "A Painless Guide to CRC 
+Error Detection Algorithms".
+- brcm_crc8: indicates where the function came from.
 
-WBR, Sergei
+Other suggestions are welcome.
+
+Gr. AvS
+
+-- 
+Almost nobody dances sober, unless they happen to be insane.
+-- H.P. Lovecraft --
+
+
