@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab1EVPDf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 11:03:35 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54509 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751326Ab1EVPDa (ORCPT
+	id S1751606Ab1EVPZK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 11:25:10 -0400
+Received: from science.horizon.com ([71.41.210.146]:36301 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750982Ab1EVPZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 11:03:30 -0400
-X-Sasl-enc: RwefmnU6q+Fi09/XpPFPYEJ4T1KFZzgAMI4mFgMpHQ/J 1306076609
-Date: Sun, 22 May 2011 07:55:03 -0700
-From: Greg KH <greg@kroah.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Jim Cromie <jim.cromie@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/23] add register_chrdev_ids() to char_dev.c, API
-Message-ID: <20110522145503.GA14822@kroah.com>
-References: <1305840792-25877-1-git-send-email-jim.cromie@gmail.com>
- <20110519224445.GA9885@suse.de>
- <BANLkTik6QHxzXoC-xAgkfw3-O_fzorLGww@mail.gmail.com>
- <20110521211423.GA24330@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110521211423.GA24330@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 22 May 2011 11:25:06 -0400
+Date: 22 May 2011 11:25:03 -0400
+Message-ID: <20110522152503.16429.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: arend@broadcom.com, johannes@sipsolutions.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] lib: crc8: add new library module providing crc8
+Cc: linux@horizon.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 21, 2011 at 02:14:23PM -0700, Greg KH wrote:
-> On Fri, May 20, 2011 at 11:15:04PM -0600, Jim Cromie wrote:
-> > On Thu, May 19, 2011 at 4:44 PM, Greg KH <gregkh@suse.de> wrote:
-> > > On Thu, May 19, 2011 at 03:33:03PM -0600, Jim Cromie wrote:
-> > >> over on kernelnewbies, gregkh said:
-> > >>
-> > >>      The chardev stuff is a mess, I keep meaning for years to clean it
-> > >>      up.  Any proposals on a sane interface for this stuff is greatly
-> > >>      appreciated.
-> > >>
-> > >> this is a 1st step.
-> > >>
-> > >> register_chrdev_ids() replaces and deprecates register_chrdev_region()
-> > >> and alloc_chrdev_region() with a single function that works for both
-> > >> dynamic and static major numbers.
-> > >>
-> > >> Like alloc_chrdev_region(), 1st arg is a dev_t*, but its an in/out
-> > >> parameter, and expects both major and minor to be preset, and thus the
-> > >> separate minor arg is dropped.  If major == 0, a dynamic major is
-> > >> reserved, saved into 1st arg, and thus available to caller afterwards.
-> > >>
-> > >> [PATCH 01/23] add register_chrdev_ids() to char_dev.c, API
-> > >> [PATCH 02/23] reimplement alloc_chrdev_region with
-> > >> [PATCH 03/23] use register_chrdev_ids to replace
-> > >> [PATCH 04/23] use register_chrdev_ids in drivers/tty/
-> > >> [PATCH 05/23] use register_chrdev_ids in drivers/infiniband/
-> > >> [PATCH 06/23] use register_chrdev_ids in drivers/media/
-> > >> [PATCH 07/23] use register_chrdev_ids in drivers/s390/
-> > >> [PATCH 08/23] use register_chrdev_ids in drivers/scsi/
-> > >> [PATCH 09/23] use register_chrdev_ids in drivers/staging/
-> > >>
-> > >> Ive held back the rest, no point in spamming.
-> > >
-> > > It's a nice first step, but that's the easy part, what is your 2nd
-> > > through 4th one going to be?  :)
-> > >
-> > > I'd also like to sanatize the function namespace a bit as well, how
-> > > about chrdev_register_ids() instead?
-> > 
-> > that seems sensible, modern.
-> > also have register_chrdev(), which I presume should also be fixed.
-> > 
-> > > Ideally, we could drop down to a single register/unregister pair of
-> > > functions, that are easy to use and understand.
-> > 
-> > __register_chrdev() does more stuff, mainly around cdevs, fops.
-> > If fops was passed as NULL, we just do the __register_chardev_region()
-> > and return early, skipping the cdev_alloc() and everything afterwards,
-> > thus yielding register_chrdev_ids() behavior.
-> > 
-> > > Do you think you can
-> > > get there with this intermediate step or do you want to step back and
-> > > rethink this?
-> > 
-> > hmm.  If above is right, theres no need for the new api fn I added,
-> > and probably should also drop the __ on both (un)?register_chardev.
-> > So thats step 2 :)  Any ideas for 3 ?
-> 
-> Well, what do you think the end result should look like?  That will
-> determine the steps needed here.
+> True, a different init value likely results in a different good value.
 
-Oh, I also forgot, you need to look at the cdev_* api as well, that all
-needs to be merged together with what you decide on here.
+Actually, it doesn't.  The good value is only non-zero to compensate
+for the final byte inversion.  You'll notice that it's equal to
+crc8_table[0xff], where oxff is the XOR of the final result.
 
-good luck,
+This is a little-endian CRC, so x^8+x^7+x^6+x^4+x^2+1 is encoded with
+the x^7 coefficient in bit 0, and the x^0 coefficient in bit 7.  (And the
+x^8 coefficient is implicit and suppressed.)
 
-greg k-h
+You can fill in a CRC table for an arbitrary polynomial with
+
+#define POLY 0xAB	/* 1 + x^2 + x^4 + x^6 + x^7 (+ x^8) */
+typedef uint8_t crc_type;	/* Must be an unsigned type */
+
+void
+crc_init_le(crc_type table[256], crc_type poly)
+{
+	int i, j;
+	crc_type t = 1;
+
+	table[0] = 0;
+
+	for (i = 128; i; i >>= 1) {
+		t = (t >> 1) ^ (t & 1 ? poly : 0);
+		for (j = 0; j < 256; j += 2*i)
+			table[i+j] = table[j] ^ t;
+	}
+}
+
+void
+crc_le(crc_type const table[256], crc_type crc, u8 const *buf, size_t len)
+{
+	while (len--)
+		crc = (crc >> 8) ^ table[(crc ^ *buf++) & 0xff];
+	return crc;
+}
+
+If you care, the corresponding code for a big-endian CRC
+(data and CRC transmitted msbit-first) is:
+
+void
+crc_init_be(crc_type table[256], crc_type poly)
+{
+	int i, j;
+	crc_type const msbit = ~(~(crc_type)0 >> 1);	/* Must be unsigned */
+	crc_type t = msbit;
+
+	table[0] = 0;
+
+	for (i = 1; i < 256; i *= 2) {
+		t = (t << 1) ^ (t & msbit ? poly : 0);
+		for (j = 0; j < i; j++)
+			table[i+j] = table[j] ^ t;
+	}
+}
+
+void
+crc_be(crc_type const table[256], crc_type crc, u8 const *buf, size_t len)
+{
+	while (len--)
+		crc = (crc << 8) ^ table[(crc >> (8*sizeof crc - 8)) ^ *buf++];
+	return crc;
+}
+
+This uses a left-justified CRC; the CRC is in the most significant bits
+of the state variable.  To match the current crc7 code's result, it
+must be right-shifted one bit.  (That would actually simplify all the
+current users of the code, namely drivers/mmc/host/mmc_spi.c and
+drivers/net/wireless/wl12??/spi.c, as well as the computation loop.)
+
+The only other differences are the variable types and the actual polynomials.
