@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab1EVOnC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 10:43:02 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47505 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755018Ab1EVOm5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 10:42:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=W8AKkGSO4qr92QvGSBnmnL2L1EJr8f3PbhsSWOq8ZgrU40zgu+6b9V0xY6QMqrGYPk
-         t+EGZDksqvA815ga0FxUsc/KHST/gZ9x9WLmNk9gPGeU6dNLXyIFKMju/GP1zfWUe+p6
-         Pnm7E63vzz1MvW0yvDxQfRX/VSHZ1GdBxYfaA=
-MIME-Version: 1.0
-Date: Sun, 22 May 2011 22:42:56 +0800
-Message-ID: <BANLkTimdog_wi+7_Vx7Qzpc0ZYor_RHg2g@mail.gmail.com>
-Subject: [Patch] cris: add missing declaration of kgdb_init() and breakpoint()
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: linux-cris-kernel@axis.com, LKML <linux-kernel@vger.kernel.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mikael Starvik <starvik@axis.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Content-Type: multipart/mixed; boundary=000325576392dd9d7b04a3de5e22
+	id S1755259Ab1EVOuj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 10:50:39 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:45089 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753034Ab1EVOud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 10:50:33 -0400
+From: Richard Weinberger <richard@nod.at>
+To: akpm@linux-foundation.org
+Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/7] um: fix UML_LIB_PATH
+Date: Sun, 22 May 2011 16:48:30 +0200
+Message-Id: <1306075716-20042-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000325576392dd9d7b04a3de5e22
-Content-Type: text/plain; charset=UTF-8
+UML_LIB_PATH is hardcoded to /usr/lib/uml/,
+on 64bit systems UML_LIB_PATH needs to be /usr/lib64/uml/.
 
-This patch fixes such a build error on cris:
-
-arch/cris/arch-v10/kernel/irq.c:239: error: implicit declaration of
-function 'kgdb_init'
-arch/cris/arch-v10/kernel/irq.c:240: error: implicit declaration of
-function 'breakpoint'
-
-So, just declare these two functions.
-
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-
+Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
+ arch/um/drivers/xterm.c     |    2 +-
+ arch/um/include/shared/os.h |    6 ++++++
+ arch/um/os-Linux/main.c     |    2 +-
+ 3 files changed, 8 insertions(+), 2 deletions(-)
 
---000325576392dd9d7b04a3de5e22
-Content-Type: text/x-patch; charset=US-ASCII; name="cris-fix-build-error-kgdb_init.diff"
-Content-Disposition: attachment; 
-	filename="cris-fix-build-error-kgdb_init.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_go03ikfv1
+diff --git a/arch/um/drivers/xterm.c b/arch/um/drivers/xterm.c
+index da2caa5..8ac7146 100644
+--- a/arch/um/drivers/xterm.c
++++ b/arch/um/drivers/xterm.c
+@@ -90,7 +90,7 @@ static int xterm_open(int input, int output, int primary, void *d,
+ 	int pid, fd, new, err;
+ 	char title[256], file[] = "/tmp/xterm-pipeXXXXXX";
+ 	char *argv[] = { terminal_emulator, title_switch, title, exec_switch,
+-			 "/usr/lib/uml/port-helper", "-uml-socket",
++			 OS_LIB_PATH "/uml/port-helper", "-uml-socket",
+ 			 file, NULL };
+ 
+ 	if (access(argv[4], X_OK) < 0)
+diff --git a/arch/um/include/shared/os.h b/arch/um/include/shared/os.h
+index c4617ba..f06a5da 100644
+--- a/arch/um/include/shared/os.h
++++ b/arch/um/include/shared/os.h
+@@ -29,6 +29,12 @@
+ #define OS_ACC_R_OK    4       /* Test for read permission.  */
+ #define OS_ACC_RW_OK   (OS_ACC_W_OK | OS_ACC_R_OK) /* Test for RW permission */
+ 
++#ifdef CONFIG_64BIT
++#define OS_LIB_PATH	"/usr/lib64/"
++#else
++#define OS_LIB_PATH	"/usr/lib/"
++#endif
++
+ /*
+  * types taken from stat_file() in hostfs_user.c
+  * (if they are wrong here, they are wrong there...).
+diff --git a/arch/um/os-Linux/main.c b/arch/um/os-Linux/main.c
+index eee69b9..39613ea 100644
+--- a/arch/um/os-Linux/main.c
++++ b/arch/um/os-Linux/main.c
+@@ -78,7 +78,7 @@ static void install_fatal_handler(int sig)
+ 	}
+ }
+ 
+-#define UML_LIB_PATH	":/usr/lib/uml"
++#define UML_LIB_PATH	":" OS_LIB_PATH "/uml"
+ 
+ static void setup_env_path(void)
+ {
+-- 
+1.7.4.2
 
-ZGlmZiAtLWdpdCBhL2FyY2gvY3Jpcy9hcmNoLXYxMC9rZXJuZWwvaXJxLmMgYi9hcmNoL2NyaXMv
-YXJjaC12MTAva2VybmVsL2lycS5jCmluZGV4IDkwN2NmYjUuLmJhMGU1OTYgMTAwNjQ0Ci0tLSBh
-L2FyY2gvY3Jpcy9hcmNoLXYxMC9rZXJuZWwvaXJxLmMKKysrIGIvYXJjaC9jcmlzL2FyY2gtdjEw
-L2tlcm5lbC9pcnEuYwpAQCAtMjAsNiArMjAsOSBAQAogI2RlZmluZSBjcmlzdjEwX21hc2tfaXJx
-KGlycV9ucikgKCpSX1ZFQ1RfTUFTS19DTFIgPSAxIDw8IChpcnFfbnIpKTsKICNkZWZpbmUgY3Jp
-c3YxMF91bm1hc2tfaXJxKGlycV9ucikgKCpSX1ZFQ1RfTUFTS19TRVQgPSAxIDw8IChpcnFfbnIp
-KTsKIAorZXh0ZXJuIHZvaWQga2dkYl9pbml0KHZvaWQpOworZXh0ZXJuIHZvaWQgYnJlYWtwb2lu
-dCh2b2lkKTsKKwogLyogZG9uJ3QgdXNlIHNldF9pbnRfdmVjdG9yLCBpdCBieXBhc3NlcyB0aGUg
-bGludXggaW50ZXJydXB0IGhhbmRsZXJzLiBpdCBpcwogICogZ2xvYmFsIGp1c3Qgc28gdGhhdCB0
-aGUga2VybmVsIGdkYiBjYW4gdXNlIGl0LgogICovCg==
---000325576392dd9d7b04a3de5e22--
