@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1EVUJD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 16:09:03 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59065 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab1EVUIz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 16:08:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ArBrSKROUQhS/H+XmTf2XOXERizwbBiyXuraHKndjahaXyc9KpTLKuXoDoxLoMfRHg
-         MHpwktk2p0Fra0kdB4MjZgd2WLNWOx18P/gfgdnHVq572e/OlQBouY3It7r3P5J9ArF3
-         r4lvzTV+pRKQZ8RUabZfKUaWRRfrvCwidKCUQ=
+	id S1754265Ab1EVUNN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 16:13:13 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:48822 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752791Ab1EVUNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 16:13:06 -0400
+Date: Sun, 22 May 2011 13:13:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Mysterious CFQ crash and RCU
+Message-ID: <20110522201302.GM2271@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110519222404.GG12600@redhat.com>
+ <20110521210013.GJ2271@linux.vnet.ibm.com>
+ <1306016630.2066.44.camel@x61.thuisdomein>
+ <20110521235408.GK2271@linux.vnet.ibm.com>
+ <1306092657.2066.53.camel@x61.thuisdomein>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin6=3rpchVFHi9P=6Cp31uL=vMM0w@mail.gmail.com>
-References: <1306092879.16902.1.camel@monotop>
-	<BANLkTin6=3rpchVFHi9P=6Cp31uL=vMM0w@mail.gmail.com>
-Date: Sun, 22 May 2011 16:08:54 -0400
-Message-ID: <BANLkTinRJ12Jc4u1OpB67cc3T3Trhci3dw@mail.gmail.com>
-Subject: Re: [PATCH] fs: add missing prefetch header to inode.c
-From: Eduardo Silva <edsiper@gmail.com>
-To: sedat.dilek@gmail.com
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306092657.2066.53.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-oh, yep, it was in UM arch :)
+On Sun, May 22, 2011 at 09:30:57PM +0200, Paul Bolle wrote:
+> On Sat, 2011-05-21 at 16:54 -0700, Paul E. McKenney wrote:
+> > On Sun, May 22, 2011 at 12:23:50AM +0200, Paul Bolle wrote: 
+> > > Is anyone able to spot one or more commits in v2.6.39-rc7..v2.6.39 that
+> > > might have fixed this Oops? Or did my chance of hitting this Oops,
+> > > somehow, just got a lot smaller in v.2.6.39?
+> 
+> As I just discovered, Fedora Rawhide ships release candidates configured
+> with a lot more debugging options set than it ships final releases. So,
+> sadly, this didn't get fixed in v2.6.39. It just didn't show up because
+> one or more configuration options weren't set while they used to be set
+> in the preceding release candidates kernels.
+> 
+> > 5f45c69589b7d ("read_lock() does not always imply rcu_read_lock()") might
+> > well be a fix.
+> 
+> It doesn't really matter anymore, but that one was actually already
+> included in v2.6.39-rc5.
 
-On Sun, May 22, 2011 at 4:04 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> On Sun, May 22, 2011 at 9:34 PM, Eduardo Silva <edsiper@gmail.com> wrote:
->> inode.c fails in the compilation process due to the missing
->> include of linux/prefetch.h.
->>
->> Signed-off-by: Eduardo Silva <edsiper@gmail.com>
->> ---
->>  fs/inode.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/inode.c b/fs/inode.c
->> index 33c963d..c77081f 100644
->> --- a/fs/inode.c
->> +++ b/fs/inode.c
->> @@ -26,6 +26,7 @@
->>  #include <linux/posix_acl.h>
->>  #include <linux/ima.h>
->>  #include <linux/cred.h>
->> +#include <linux/prefetch.h>
->>  #include "internal.h"
->>
->>  /*
->> --
->> 1.7.4.1
->>
->
-> Just FYI:
-> "fs: add missing prefetch.h include" is in Linus tree [1].
->
-> - Sedat -
->
-> [1] http://git.us.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=9ce6e0be0626a5de2aca8b769a4aa57086257156
->
+OK, so maybe time to try out the debug approaches I called out earlier?
 
-
-
--- 
-Eduardo Silva
-http://edsiper.linuxchile.cl
-http://www.monkey-project.com
+							Thanx, Paul
