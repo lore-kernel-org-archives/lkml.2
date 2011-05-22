@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab1EVJBq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 05:01:46 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:37019 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752008Ab1EVJBk (ORCPT
+	id S1753353Ab1EVJCm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 05:02:42 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45556 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab1EVJCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 05:01:40 -0400
-Date: Sun, 22 May 2011 10:59:56 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: "Arend van Spriel" <arend@broadcom.com>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Dan Carpenter" <error27@gmail.com>
-Subject: Re: [RFC] lib: crc8: add new library module providing crc8
- algorithm
-Message-ID: <20110522105956.3b7a9fa2@absol.kitzblitz>
-In-Reply-To: <1306051680-2354-1-git-send-email-arend@broadcom.com>
-References: <1306051680-2354-1-git-send-email-arend@broadcom.com>
-Organization: -
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
- AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
- T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
- ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
- BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 22 May 2011 05:02:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:sender:from:date:x-google-sender-auth
+         :message-id:subject:to:cc:content-type;
+        b=viHesIntl3HfVmR9pXHQd3qTZQIvAFdZo605kb26xxxQCNyg4fdWwCGlPR9dqyMjsh
+         qoYRnshMqNi3FHK8GDjYCSPHPriLez+ZLXFnaFJSoZIsQOJnTZj8qXBFa2n7wy9I1AjL
+         sThbfuYGd+OUtgiDpxwAx9d+MdEQB+GQ9Bchw=
+MIME-Version: 1.0
+Reply-To: d.g.jansen@googlemail.com
+From: Dennis Jansen <Dennis.Jansen@web.de>
+Date: Sun, 22 May 2011 11:01:57 +0200
+X-Google-Sender-Auth: 3mqmPq7j5W-KPRxETcrSiEZUlns
+Message-ID: <BANLkTikXpjCpTPDsk2cff-p0cmu69kAg3g@mail.gmail.com>
+Subject: Response Summary Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, tytso@mit.edu
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* "Arend van Spriel" <arend@broadcom.com>:
-> +/**
-> + * crc8() - calculate a crc8 over the given input data
-> + *
-> + * @pdata:	pointer to data buffer.
-> + * @nbytes:	number of bytes in data buffer.
-> + * @crc:	previous returned crc8 value.
-> + *
-> + * The CRC8 is calculated using the polynomial given below.
-> + *
-> + * x^8 + x^7 +x^6 + x^4 + x^2 + 1
-                 ^
-Could you possibly add a space here ...
+So just to summarize - correct me if I'm wrong:
 
-> +/*
-> + * table for crc8 calculation based on following polynomial:
-> + *	x^8 + x^7 +x^6 + x^4 + x^2 + 1
-                   ^
-           ... and here?
+There is general opposition to the idea of disabling fsync:
+- whether automatically while in laptop mode or by user's choice, e.g.
+via a special setting
+- no matter what the fsync call would return - whether any error code or success
+-> at all and in any form or context
+in kernel space.
 
-Best regards,
-Nicolas Kaiser
+The reason seems to be mainly:
+ - data security (esp. destruction of existing data in case of
+ordering problems)
+ - application compatibility (e.g. mailserver able to work according
+to standards)
+ - misuse potential (users not knowing what they're doing and/or how)
+ - "Changing a generic, widely used kernel option"
+
+There is a general distinction made between using laptop mode ("soft"
+increased data loss risk) and disabling fsync (not providing a
+guaranteed write when specificly asked for it).
+
+There is no agreement:
+- whether ordering guarantees would be an issue (in a "properly
+implemented filesystem").
+
+There was no response to:
+- whether something like featherstick
+(http://lwn.net/Articles/354861/) would make sense (in kernel space)
+in this context.
+- flame war suggestions ;)
+
+The proposed solution is:
+- to implement this in user space.
+
+Thanks for everyone for their feedback!
