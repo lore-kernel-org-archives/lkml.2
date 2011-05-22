@@ -1,114 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab1EVLx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 07:53:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38212 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab1EVLxX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 07:53:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=BPBeYNvv5KRWLyzMpmd5HQu5E+nE1TSTFMVx3ta0F7tDiDfpVtnKBgsXoqbW/LqipO
-         eSQTXDBRt7a3fqzuzdSlmdv4iqiZ1jR1hY6zy1ZLHcJaaRUHDwqBClmzq6B8OgYsPvLV
-         ms4hdo9/ghGsliGvgsD2PJ+WI9L0pnelCuvHE=
+	id S1754503Ab1EVMAt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 08:00:49 -0400
+Received: from mail.avalus.com ([89.16.176.221]:46170 "EHLO mail.avalus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753767Ab1EVMAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 08:00:45 -0400
+Date: Sun, 22 May 2011 13:00:41 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: Christoph Hellwig <hch@infradead.org>
+cc: linux-kernel@vger.kernel.org, Alex Bligh <alex@alex.org.uk>
+Subject: Re: REQ_FLUSH, REQ_FUA and open/close of block devices
+Message-ID: <3A79A7FE44AE1DC20A2DB90D@nimrod.local>
+In-Reply-To: <20110522112629.GA26586@infradead.org>
+References: <10C5890F8F477E959B993BFA@nimrod.local>
+ <20110520122010.GA25628@infradead.org>
+ <60FB7C5F40961417F1605595@nimrod.local>
+ <20110522104448.GA20241@infradead.org>
+ <A0329D810FA7795CEDDA5C70@nimrod.local>
+ <20110522112629.GA26586@infradead.org>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimF2d93VVGKHDdFTn=V-1h9nWrs_w@mail.gmail.com>
-References: <BANLkTimF2d93VVGKHDdFTn=V-1h9nWrs_w@mail.gmail.com>
-Date: Sun, 22 May 2011 19:53:21 +0800
-Message-ID: <BANLkTinZcna-34zETqhR0h0G9CYvAn+-0w@mail.gmail.com>
-Subject: Re: [PATCH v0] sched: change how run-queue is selected for RT task
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 21, 2011 at 11:28 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> When selecting run-queue for a given RT task, we have to take a few
-> factors, such as task priority and CPU cache affinity, into
-> consideration. In this work, a simpler method is proposed, which is
-> focusing on the relation between the current run-queue of the given
-> task and the given run-queue.
+Christoph,
+
+> ext3 without barriers does not gurantee any data integrity and will lose
+> your data in an eye blink if you have a large enough cache.
+
+This doesn't appear to stop people using it :-)
+
+> fdatasync is equivalent to fsync except that it does not flush
+> non-essential metadata (basically just timestamps in practice), but it
+> does flush metadata requried to find the data again, e.g. allocation
+> information and extent maps.  sync_file_range does nothing but flush
+> out pagecache content - it means you basically won't get your data
+> back in case of a crash if you either:
 >
-> If the current run-queue of task is the given run-queue, the run-queue
-> of task keeps unchanged, so the CPU cache affinities of both task and
-> the current task of run-queue remain unchanged. Then there are at
-> least two tasks competing one CPU, and in the worst case that both
-> competitors are RT tasks the victim will be selected and processed by
-> pusher later.
+>  a) have a volatile write cache in your disk (e.g. any normal SATA disk)
+>  b) are using a sparse file on a filesystem
+>  c) are using a fallocate-preallocated file on a filesystem
+>  d) use any file on a COW filesystem like btrfs
 >
-> On other hand, if the current run-queue of task is different from the
-> given run-queue, task is simply delivered to its current run-queue,
-> since pusher is always willing to do hard works.
+> e.g. it only does anything useful for you if you do not have a volatile
+> write cache, and either use a raw block device node, or just overwrite
+> an already fully allocated (and not preallocated) file on a non-COW
+> filesystem.
+
+Thanks, that's really useful.
+
+>> But rather than trying to justify myself: what is the best way to
+>> emulate FUA, i.e. ensure a specific portion of a file is synced before
+>> returning, without ensuring the whole lot is synced (which is far too
+>> slow)? The only other option I can see is to open the file with a second
+>> fd, mmap the chunk of the file (it may be larger than the available
+>> virtual address space), mysnc it with MS_SYNC, then fsync, then munmap
+>> and close, and hope the fsync doesn't spit anything else out. This
+>> seems a little excessive, and I don't even know whether it would work.
 >
-> In summary, the burden of RT task is always processed first by the
-> pusher of its current run-queue.
+> You can have a second FD with O_DSYNC open and write to that.
+
+Fantastic - I shall do that in the long term.
+
+> But for
+> NBD and Linux guest that won't make any different yet.
+
+As far as I know, nbd only has linux clients. It certainly only has
+linux clients that transmit flush and FUA because I only added that to
+the protocol last week :-)
+
+> While REQ_FUA
+> is a separate flag so far it's only used in combination with REQ_FLUSH,
+> so the only pattern you'll see REQ_FUA used in is:
 >
+>  REQ_FLUSH
+>  REQ_FUA
+>
+> which means there's no data but the one just written in the cache.
 
-If only the run-queue of task is concerned, a simpler version is prepared,
-in which the current run-queue of task is fine.
+I think what you are saying is that when the request with REQ_FUA arrives,
+it will have been immediately preceded by a REQ_FLUSH. Therefore, I will
+only have the data attached to the request with REQ_FUA to flush anyway, so
+an fdatasync() does no harm performance wise. That's what I'm currently
+doing if sync_file_range() is not supported. It sounds like that's what I
+should be doing all the time. If you don't mind, I shall borrow your
+text above and put it in the source.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
-
- kernel/sched_rt.c |   27 ++-------------------------
- 1 files changed, 2 insertions(+), 25 deletions(-)
-
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 19ecb31..3e97a94 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -979,19 +979,9 @@ static int find_lowest_rq(struct task_struct *task);
- static int
- select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- {
--	struct task_struct *curr;
--	struct rq *rq;
--	int cpu;
--
- 	if (sd_flag != SD_BALANCE_WAKE)
- 		return smp_processor_id();
-
--	cpu = task_cpu(p);
--	rq = cpu_rq(cpu);
--
--	rcu_read_lock();
--	curr = ACCESS_ONCE(rq->curr); /* unlocked access */
--
- 	/*
- 	 * If the current task on @p's runqueue is an RT task, then
- 	 * try to see if we can wake this RT task up on another
-@@ -1009,23 +999,10 @@ select_task_rq_rt(struct task_struct *p, int
-sd_flag, int flags)
- 	 * For equal prio tasks, we just let the scheduler sort it out.
- 	 *
- 	 * Otherwise, just let it ride on the affined RQ and the
--	 * post-schedule router will push the preempted task away
--	 *
--	 * This test is optimistic, if we get it wrong the load-balancer
--	 * will have to sort it out.
-+	 * post-schedule router will select and push the victim task away.
- 	 */
--	if (curr && unlikely(rt_task(curr)) &&
--	    (curr->rt.nr_cpus_allowed < 2 ||
--	     curr->prio < p->prio) &&
--	    (p->rt.nr_cpus_allowed > 1)) {
--		int target = find_lowest_rq(p);
--
--		if (target != -1)
--			cpu = target;
--	}
--	rcu_read_unlock();
-
--	return cpu;
-+	return task_cpu(p);
- }
-
- static void check_preempt_equal_prio(struct rq *rq, struct task_struct *p)
+-- 
+Alex Bligh
