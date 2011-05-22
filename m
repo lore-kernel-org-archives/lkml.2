@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab1EVIX4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 04:23:56 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:3422 "EHLO MMS3.broadcom.com"
+	id S1752796Ab1EVImr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 04:42:47 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40260 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450Ab1EVIXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 04:23:49 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Message-ID: <4DD8C80A.5060700@broadcom.com>
-Date: Sun, 22 May 2011 10:23:38 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
- Gecko/20110424 Thunderbird/3.1.10
+	id S1751625Ab1EVIml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 04:42:41 -0400
+Date: Sun, 22 May 2011 10:42:24 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
+Message-ID: <20110522084224.GA12279@elte.hu>
+References: <m11uzrvd26.fsf@fess.ebiederm.org>
+ <BANLkTim4q5dK6nOb=pVKbk1c8b-Nh_hBfA@mail.gmail.com>
+ <m1boyvpo9r.fsf@fess.ebiederm.org>
+ <1306048393.4092.8.camel@mulgrave.site>
 MIME-Version: 1.0
-To: "Johannes Berg" <johannes@sipsolutions.net>
-cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Dan Carpenter" <error27@gmail.com>
-Subject: Re: [RFC] lib: crc8: add new library module providing crc8
- algorithm
-References: <1306010973-5625-1-git-send-email-arend@broadcom.com> (
- sfid-20110521_225033_074451_F0976112)
- <1306017455.3389.0.camel@jlt3.sipsolutions.net>
-In-Reply-To: <1306017455.3389.0.camel@jlt3.sipsolutions.net>
-X-WSS-ID: 61C617634NS10622227-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306048393.4092.8.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2011 12:37 AM, Johannes Berg wrote:
-> On Sat, 2011-05-21 at 22:49 +0200, Arend van Spriel wrote:
->
->> +/**
->> + * enum - CRC8 constants
->> + *
->> + * @CRC8_INIT_VALUE: Initial CRC8 checksum value
->> + * @CRC8_GOOD_VALUE: Good final CRC8 checksum value
->> + *
->> + * Constants for the crc8() function. Refer to its
->> + * documentation how to use these values.
->> + */
->> +enum CRC8 {
->> +	CRC8_INIT_VALUE	= 0xff,
->> +	CRC8_GOOD_VALUE	= 0x9f
->> +};
-> These seem a little out of place, wouldn't that be specific to how the
-> algorithm is used?
 
-True, a different init value likely results in a different good value. 
-However, the documentation of the crc8() function provides one possible 
-use which makes use of these values. So it is provided as a convenience. 
-Removal is easy of course, but I tend to keep it for those who are 
-content with the proposed usage (not necessarily Broadcom :-D ).
+* James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
 
-Gr. AvS
+> Traditionally, the arch trees tend to go a bit later because they wait to see 
+> if there's any fallout from x86; [...]
 
--- 
-Almost nobody dances sober, unless they happen to be insane.
--- H.P. Lovecraft --
+Not really - most of the arch trees 'traditionally' went late even when the x86 
+tree itself was monolithic and was itself sent late in the merge window (with 
+the notable exception of the powerpc tree).
 
+> [...] but this time, I think it looks OK, [...]
 
+That's not really a surprise, there hasn't been a serious 'problem' with the 
+x86 tree for a long time, roughly since we switched to the finegrained Git 
+topical split-up maintenance model about two years ago.
+
+[ That split-up also means that there is no 'x86 tree' anymore as such: if you 
+  check lkml we send roughly 20-30 independent trees in the merge window and 
+  have done that for the past ~10 kernel cycles. ]
+
+In fact exactly *because* there's few problems with the x86 topic trees can we 
+push them so soon: if problems were frequent then 1) we would not be able to be 
+ready on time and 2) i suspect we'd be pulled in later in the window as well as 
+a maintainer generally wants to pull low risk items first, high risk items 
+last, to maximize the utilization of testing capacity.
+
+I agree with Linus's notion in this thread though, a core kernel change should 
+generally not worry about hooking up rare-arch system calls (concentrate on the 
+architectures that get tested most) - those are better enabled gradually 
+anyway.
+
+Also, system call table conflicts are trivial to resolve. Merging in net-next 
+to avoid such a conflict is like cracking a nut with a sledgehammer.
+
+Thanks,
+
+	Ingo
