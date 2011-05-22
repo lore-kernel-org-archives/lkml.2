@@ -1,73 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab1EVUAi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 16:00:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37002 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754564Ab1EVUAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 16:00:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,252,1304319600"; 
-   d="scan'208";a="440949230"
-Date: Sun, 22 May 2011 22:00:27 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>, linux-kernel@vger.kernel.org,
-        dmitry.torokhov@gmail.com, a.zummo@towertech.it, johnpol@2ka.mipt.ru,
-        cbou@mail.ru, dwmw2@infradead.org, lrg@slimlogic.co.uk,
-        broonie@opensource.wolfsonmicro.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 06/14] mfd: pxa-w1: MFD driver for PXA 1wire control +
- DS1WM chip
-Message-ID: <20110522200026.GC18610@sortiz-mobl>
-References: <1303135451-26362-7-git-send-email-haojian.zhuang@marvell.com>
- <20110426094836.GD2659@sortiz-mobl>
- <BANLkTinpFBfOEOR6Ox1ufEHZo3qwRq8zhA@mail.gmail.com>
+	id S1753942Ab1EVUCQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 16:02:16 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:63915 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531Ab1EVUCK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 16:02:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=crNZ5FE4lrW0p9f9bDz4NLiEOqpLMQHhAbe7Nh6iuBhdg1T8uYqHG8p7zTEdIXe1Lx
+         LAoNrPET/O8Evo8E+HLuBuutvzPXoFYpbbt7Gs31Sldjo6mRKO+W6KXUVfESq1klr+md
+         hW6W3NZGRYS/Qomq+4e/fYvoCQgDX+VUOPtvE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinpFBfOEOR6Ox1ufEHZo3qwRq8zhA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTikGQ-enRmWOFRGw-yJ=omeQZCrppw@mail.gmail.com>
+References: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
+	<201105211727.35985.arnd@arndb.de>
+	<BANLkTi=tdfG3jpCJQpozpxjBmR7ZicgV9g@mail.gmail.com>
+	<BANLkTikyg-SDtU9Z8KdCAeOkGR67ihVUkQ@mail.gmail.com>
+	<4DD80A91.5070302@intel.com>
+	<ADDEBCD9C145E542A8688C29F1FBDCB9012FD2C719@orsmsx502.amr.corp.intel.com>
+	<BANLkTikGQ-enRmWOFRGw-yJ=omeQZCrppw@mail.gmail.com>
+Date: Sun, 22 May 2011 13:02:08 -0700
+Message-ID: <BANLkTin+fgYpZ1LwNXg2OKeQJattLqQBhg@mail.gmail.com>
+Subject: Re: X32 project status update
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "Anvin, H Peter" <h.peter.anvin@intel.com>
+Cc: "x32-abi@googlegroups.com" <x32-abi@googlegroups.com>,
+        "arnd@arndb.de" <arnd@arndb.de>, "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>,
+        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Haojian,
+On Sat, May 21, 2011 at 4:48 PM, H.J. Lu <hjl.tools@gmail.com> wrote:
+> On Sat, May 21, 2011 at 1:01 PM, Anvin, H Peter <h.peter.anvin@intel.com> wrote:
+>> I'll look at it but possibly not until the weekend.
+>
+> I checked it into hjl/x32/syscall branch at
+>
+> http://git.kernel.org/?p=linux/kernel/git/hjl/linux-2.6.38.y.git;a=summary
+>
 
-On Sat, May 14, 2011 at 10:21:25PM +0800, Haojian Zhuang wrote:
-> On Tue, Apr 26, 2011 at 5:48 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> > Hi Haojian,
-> >
-> > On Mon, Apr 18, 2011 at 10:04:03PM +0800, Haojian Zhuang wrote:
-> >> This driver provides registers and IRQ of PXA3xx chips to the ds1wm driver.
-> > I see why this is needed, but I really think the ds1wm driver should be
-> > converted to a regular platform device. The MFD driver below is just adding a
-> > useless middle layer between your platform code and the ds1wm one.
-> >
-> I'm OK to use the regulator platform device for ds1wm driver except
-> for one concern.
-> ds1wm driver is designed for mfd cell driver. I need to update it as
-> regulator platform
-> driver first. cell->enable() / cell->disable() is used to enable clock
-> for ds1wm driver.
-> So I need to change the API from cell->enable/disable to clk_enable()
-> / clk_disable().
-> 
-> But the key issue is that there's no common structure for clkdev. Now
-> clkdev is only
-> designed for deeply machine depend.
-> 
-> From my view is that we need a common structure for clkdev. Then mfd driver can
-> get benefit from this. Some client driver can be written as regulator
-> platform device.
-> And mfd driver can use them seamless. What's your opinion?
-I may be missing your point, but what is preventing you from calling the clock
-API from drivers/w1/masters/ds1wm.c, the same way you're calling it from this
-patch ?
+We need to investigate if we need to have different x32 syscalls for
 
-Cheers,
-Samuel.
+        .quad sys32_fanotify_mark
+        .quad compat_sys_open_by_handle_at
+        .quad compat_sys_clock_adjtime
+        .quad compat_sys_sendmmsg       /* 345 */
+
+My guess is yes for the last 3 and unsure for fanotify_mark.
+
+H.J.
+> ---
+>> -----Original Message-----
+>> From: H.J. Lu [hjl.tools@gmail.com]
+>> Sent: Saturday, May 21, 2011 12:39 PM Pacific Standard Time
+>> To: Anvin, H Peter
+>> Cc: x32-abi@googlegroups.com; Arnd Bergmann; GCC Development; GNU C Library;
+>> LKML
+>> Subject: Re: X32 project status update
+>>
+>> On Sat, May 21, 2011 at 11:55 AM, H. Peter Anvin
+>> <h.peter.anvin@intel.com> wrote:
+>>> On 05/21/2011 09:27 AM, H.J. Lu wrote:
+>>>> On Sat, May 21, 2011 at 8:34 AM, H.J. Lu <hjl.tools@gmail.com> wrote:
+>>>>> On Sat, May 21, 2011 at 8:27 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>>> On Saturday 21 May 2011 17:01:33 H.J. Lu wrote:
+>>>>>>> This is the x32 project status update:
+>>>>>>>
+>>>>>>> https://sites.google.com/site/x32abi/
+>>>>>>>
+>>>>>>
+>>>>>> I've had another look at the kernel patch. It basically
+>>>>>> looks all good, but the system call table appears to
+>>>>>> diverge from the x86_64 list for no (documented) reason,
+>>>>>> in the calls above 302. Is that intentional?
+>>>>>>
+>>>>>> I can see why you might want to keep the numbers identical,
+>>>>>> but if they are already different, why not use the generic
+>>>>>> system call table from asm-generic/unistd.h for the new
+>>>>>> ABI?
+>>>>>
+>>>>> We can sort it out when we start merging x32 kernel changes.
+>>>>>
+>>>>
+>>>> Peter, is that possible to use the single syscall table for
+>>>> both x86-64 and x32 system calls? Out of 300+ system
+>>>> calls, only 84 are different for x86-64 and x32.  That
+>>>> is additional 8*84 == 672 bytes in syscall table.
+>>>>
+>>>
+>>> Sort of... remember we talked about merging system calls at the tail
+>>> end?  The problem with that is that some system calls (like read()!)
+>>> actually are different system calls in very subtle situations, due to
+>>> abuse in some subsystems of the is_compat() construct.  I think that may
+>>> mean we have to have an unambiguous flag after all...
+>>>
+>>> Now, perhaps we can use a high bit for that and mask it before dispatch,
+>>> then we don't need the additional table.  A bit of a hack, but it should
+>>> work.
+>>
+>> How about this patch?
+>>
+>>    Merge x32 system calls with x86-64 system calls
+>>
+>>     Implemented with
+>>
+>>     1. Mark all x86-64 specific system calls with __NR_64_.
+>>     2. Mark all x32 specific system calls with __NR_x32_.
+>>     3. Include unistd_64_compat.h, instead of unistd_x32.h for kernel
+>>     build, which provides __NR_ versions of x86-64 specific system calls.
+>>     4. Append x32 specific system calls after the current x86-64 system
+>>     calls.
+>>     5. Generate unistd_x32.h from unistd_64.h, replacing __NR_x32_ with
+>>     _NR_.
+>>     6. Install user-space unistd_64.h, replacing __NR_64_ with _NR_.
+>>
+>> --
+>> H.J.
+>>
+>
+>
+>
+> --
+> H.J.
+>
+
+
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+H.J.
