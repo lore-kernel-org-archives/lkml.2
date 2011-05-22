@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab1EVCYu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 22:24:50 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:42333 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab1EVCYs (ORCPT
+	id S1751112Ab1EVETR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 00:19:17 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:65486 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab1EVETI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 22:24:48 -0400
-Date: Sun, 22 May 2011 04:24:45 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        npiggin@kernel.dk, tim.c.chen@intel.com
-Subject: Re: [PATCH] VFS: Add VFS event counter infrastructure
-Message-ID: <20110522022445.GU12317@one.firstfloor.org>
-References: <1305332052-15633-1-git-send-email-andi@firstfloor.org> <20110522022126.GJ19987@ZenIV.linux.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110522022126.GJ19987@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.4.2.2i
+	Sun, 22 May 2011 00:19:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=AF05iul38zbenEs9wUWKNWlXQ3LDwwn0+23gTUaNL2JxLvKZ3m6wrEL4/VNJfx9myx
+         TDm8kU6NlXswac0E0EFE5UgBELQlONGtbqxYCRGvMWXqnLmYSQSULF/EW9RRa54gRz38
+         jKPB+ttpKqbNdcso/+fcCwaT39mevS4WzSZUA=
+MIME-Version: 1.0
+In-Reply-To: <20110517153546.GB3762520@jupiter.n2.diac24.net>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+	<3A54AB469A0294933EAC2257@nimrod.local>
+	<m1fwoqoapn.fsf@fess.ebiederm.org>
+	<20110517111148.GA3762520@jupiter.n2.diac24.net>
+	<m1mxil9z2p.fsf@fess.ebiederm.org>
+	<20110517153546.GB3762520@jupiter.n2.diac24.net>
+Date: Sun, 22 May 2011 01:19:07 -0300
+Message-ID: <BANLkTingC=uR2dh=oo4=K7xDj9D7WjF2YA@mail.gmail.com>
+Subject: Re: [PATCH 0/7] Network namespace manipulation with file descriptors
+From: Renato Westphal <renatowestphal@gmail.com>
+To: David Lamparter <equinox@diac24.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Alex Bligh <alex@alex.org.uk>,
+        linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Eric,
 
-Any comments on where I placed the counters?
+I'm happy to see that these patches have been integrated into the
+mainstream kernel, as you know I'm using them for a while and they are
+a essential part of my MPLS/BGP VPN solution, which I will release to
+the open-source community anytime soon.
 
-> > This patch implements a simple per CPU counter framework for the VFS.
-> > The counters are per CPU and are very little overhead. The counters
-> > are output in debugfs (/sys/kernel/fs/vfsstat)
-> 
-> WTF?  Since when had debugfs become mandatory?
-
-What do you mean? It's not mandatory of course.
-
-I had it originally in /proc, but then moved it to debugfs.
-
-> 
-> > +	fs = debugfs_create_dir("fs", NULL);
-> > +	if (fs)
-> > +		debugfs_create_file("vfsstat", 0444, fs, NULL, &vfsstat_fops);
-> > +	return 0;
-> 
-> Note that if that FPOS is configured away debugfs_create_dir() does _NOT_
-> return NULL - you get ERR_PTR(-ENODEV).
-
-That's fine because debugfs_create_file is a noop then too
-and fs isn't used anywhere else.
-
--Andi
+It would also be good if the MPLS core get integrated into mainstream,
+but that's another discussion ;)
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Renato Westphal
