@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab1EVL0f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 07:26:35 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:56257 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab1EVL0a (ORCPT
+	id S1754719Ab1EVLms (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 07:42:48 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:65085 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890Ab1EVLmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 07:26:30 -0400
-Date: Sun, 22 May 2011 07:26:29 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Alex Bligh <alex@alex.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: REQ_FLUSH, REQ_FUA and open/close of block devices
-Message-ID: <20110522112629.GA26586@infradead.org>
-References: <10C5890F8F477E959B993BFA@nimrod.local>
- <20110520122010.GA25628@infradead.org>
- <60FB7C5F40961417F1605595@nimrod.local>
- <20110522104448.GA20241@infradead.org>
- <A0329D810FA7795CEDDA5C70@nimrod.local>
+	Sun, 22 May 2011 07:42:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Bt3AJc4r9NoqprZ4jApqvzAxqPqKJPYIVkyivuBtjPWuDEK1O5jdW8DqAJ67QqEknn
+         HYp76+aTWMf4srMCNnMNO6TNTLGdHTsqZkQzQaGBE+Ih74F+6mAnHDeBwvxzTfBRQ4Sy
+         8W9ouYV8iPT9nu8DzV980rB5g/gPlR20ioBxA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A0329D810FA7795CEDDA5C70@nimrod.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Date: Sun, 22 May 2011 19:42:41 +0800
+Message-ID: <BANLkTinMt_Mh=fy5GOpx6G0TpWmyTn2d3g@mail.gmail.com>
+Subject: [Patch] cris: fix a build error in sync_serial_open()
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: linux-cris-kernel@axis.com, LKML <linux-kernel@vger.kernel.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Content-Type: multipart/mixed; boundary=20cf30363929441bad04a3dbdac6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So, the file in question is not mmap'd (it's an nbd disk). fsync() /
-> fdatasync() is too expensive as it will sync everything. As far as I can
-> tell, this is no more dangerous re metadata than fdatasync() which also
-> does not sync metadata. I had read the last sentence as "this system
-> call does not *necessarily* flush disk write caches" (meaning "if you
-> haven't mounted e.g. ext3 with barriers=1, then you can't ensure write
-> caches write through"), as opposed to "will not ever flush disk write
-> caches", and given mounting ext3 without barriers=1 produces no FUA or
-> FLUSH commands in normal operation anyway (as far as light debugging
-> can see) that's not much of a loss.
+--20cf30363929441bad04a3dbdac6
+Content-Type: text/plain; charset=UTF-8
 
-ext3 without barriers does not gurantee any data integrity and will lose
-your data in an eye blink if you have a large enough cache.
+This patch fixes such a build error on cris:
 
-fdatasync is equivalent to fsync except that it does not flush
-non-essential metadata (basically just timestamps in practice), but it
-does flush metadata requried to find the data again, e.g. allocation
-information and extent maps.  sync_file_range does nothing but flush
-out pagecache content - it means you basically won't get your data
-back in case of a crash if you either:
+arch/cris/arch-v10/drivers/sync_serial.c:628: error: 'ret' undeclared
+(first use in this function)
 
- a) have a volatile write cache in your disk (e.g. any normal SATA disk)
- b) are using a sparse file on a filesystem
- c) are using a fallocate-preallocated file on a filesystem
- d) use any file on a COW filesystem like btrfs
+'ret' should be 'err'.
 
-e.g. it only does anything useful for you if you do not have a volatile
-write cache, and either use a raw block device node, or just overwrite
-an already fully allocated (and not preallocated) file on a non-COW
-filesystem.
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+---
 
-> But rather than trying to justify myself: what is the best way to
-> emulate FUA, i.e. ensure a specific portion of a file is synced before
-> returning, without ensuring the whole lot is synced (which is far too
-> slow)? The only other option I can see is to open the file with a second
-> fd, mmap the chunk of the file (it may be larger than the available
-> virtual address space), mysnc it with MS_SYNC, then fsync, then munmap
-> and close, and hope the fsync doesn't spit anything else out. This
-> seems a little excessive, and I don't even know whether it would work.
+--20cf30363929441bad04a3dbdac6
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="cris-fix-build-error-in-sync_serial_open.diff"
+Content-Disposition: attachment; 
+	filename="cris-fix-build-error-in-sync_serial_open.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gnzx1kge1
 
-You can have a second FD with O_DSYNC open and write to that.  But for
-NBD and Linux guest that won't make any different yet.  While REQ_FUA
-is a separate flag so far it's only used in combination with REQ_FLUSH,
-so the only pattern you'll see REQ_FUA used in is:
-
- REQ_FLUSH
- REQ_FUA
-
-which means there's no data but the one just written in the cache.
-
+ZGlmZiAtLWdpdCBhL2FyY2gvY3Jpcy9hcmNoLXYxMC9kcml2ZXJzL3N5bmNfc2VyaWFsLmMgYi9h
+cmNoL2NyaXMvYXJjaC12MTAvZHJpdmVycy9zeW5jX3NlcmlhbC5jCmluZGV4IDg1MDI2NTM3Li5k
+MmFkOWU3IDEwMDY0NAotLS0gYS9hcmNoL2NyaXMvYXJjaC12MTAvZHJpdmVycy9zeW5jX3Nlcmlh
+bC5jCisrKyBiL2FyY2gvY3Jpcy9hcmNoLXYxMC9kcml2ZXJzL3N5bmNfc2VyaWFsLmMKQEAgLTYy
+NSwxMSArNjI1LDExIEBAIHN0YXRpYyBpbnQgc3luY19zZXJpYWxfb3BlbihzdHJ1Y3QgaW5vZGUg
+Kmlub2RlLCBzdHJ1Y3QgZmlsZSAqZmlsZSkKIAkJCSpSX0lSUV9NQVNLMV9TRVQgPSAxIDw8IHBv
+cnQtPmRhdGFfYXZhaWxfYml0OwogCQlERUJVRyhwcmludGsoS0VSTl9ERUJVRyAic3NlciVkIHJl
+YyBzdGFydGVkXG4iLCBkZXYpKTsKIAl9Ci0JcmV0ID0gMDsKKwllcnIgPSAwOwogCQogb3V0Ogog
+CW11dGV4X3VubG9jaygmc3luY19zZXJpYWxfbXV0ZXgpOwotCXJldHVybiByZXQ7CisJcmV0dXJu
+IGVycjsKIH0KIAogc3RhdGljIGludCBzeW5jX3NlcmlhbF9yZWxlYXNlKHN0cnVjdCBpbm9kZSAq
+aW5vZGUsIHN0cnVjdCBmaWxlICpmaWxlKQo=
+--20cf30363929441bad04a3dbdac6--
