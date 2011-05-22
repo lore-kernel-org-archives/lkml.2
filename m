@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab1EVLAs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 07:00:48 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46562 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753446Ab1EVLAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 07:00:43 -0400
-Date: Sun, 22 May 2011 13:00:35 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+	id S1754586Ab1EVLA6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 07:00:58 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50470 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754315Ab1EVLAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 07:00:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=W7fvaLgj4ValvER9o0p/IXByUf2r3pEisCjAIGeUKE9S68BKxrsl3wGILMgnJD1bCB
+         dih4V7xmrqO4p4A+Nv9jnF5SHvyWeeGr7dhAyWAU9//894e+77iZOduoeOC9CKLEBXNV
+         AurbTD0zCLaNP+SYDyEDxog4hTfYLGCdy7AY8=
+Message-ID: <4DD8ECD9.6080300@gmail.com>
+Date: Sun, 22 May 2011 15:00:41 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
         heil@terminal-consulting.de, penberg@kernel.org, tglx@linutronix.de,
-        gorcunov@gmail.com
-Cc: linux-tip-commits@vger.kernel.org,
+        linux-tip-commits@vger.kernel.org,
         KVM devel mailing list <kvm@vger.kernel.org>
 Subject: Re: [tip:tools/kvm] kvm tools: Add conditional compilation of symbol
  resolving
-Message-ID: <20110522110035.GA14865@elte.hu>
-References: <tip-c474e3fec70bcacd5b24a24838c653e5a13e7b58@git.kernel.org>
- <20110522105816.GA13373@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+References: <tip-c474e3fec70bcacd5b24a24838c653e5a13e7b58@git.kernel.org> <20110522105816.GA13373@elte.hu>
 In-Reply-To: <20110522105816.GA13373@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@elte.hu> wrote:
-
+On 05/22/2011 02:58 PM, Ingo Molnar wrote:
 > 
 > * tip-bot for Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 > 
-> > diff --git a/tools/perf/feature-tests.mak b/tools/kvm/config/feature-tests.mak
-> > similarity index 83%
-> > copy from tools/perf/feature-tests.mak
-> > copy to tools/kvm/config/feature-tests.mak
+>> diff --git a/tools/perf/feature-tests.mak b/tools/kvm/config/feature-tests.mak
+>> similarity index 83%
+>> copy from tools/perf/feature-tests.mak
+>> copy to tools/kvm/config/feature-tests.mak
 > 
 > Btw, now that we have feature-tests.mak it would be nice to populate the checks 
 > for the various assumptions.
@@ -59,14 +57,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > make: *** [bios/bios-rom.bin] Error 1
 > 
 > that's a dependency on glibc-dev[el].
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Another detail: on 64-bit hosts the dependency is on gibc-dev[el].i686, i.e. 
-the 32-bit package.
+  Ouch. I've been hitting this lack of gnu/stubs-32.h on Fedora 15 too and eventually
+I had to install i686 packages for devel. I'll try to resolve this issue tonight, I
+suppose it's not absolutely urgent, right?
 
-Would it be simple to remove this dependency? It's not typically installed by 
-default on distros and it would be nice to make most of the kvm code build by 
-default almost everywhere.
-
-Thanks,
-
-	Ingo
+-- 
+    Cyrill
