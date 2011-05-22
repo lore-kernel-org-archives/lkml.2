@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab1EVUiC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 16:38:02 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55050 "EHLO mga11.intel.com"
+	id S1754598Ab1EVUlL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 16:41:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:22592 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755018Ab1EVUh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 16:37:56 -0400
+	id S1753788Ab1EVUlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 16:41:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,253,1304319600"; 
-   d="scan'208";a="6424298"
-Date: Sun, 22 May 2011 22:37:51 +0200
+   d="scan'208";a="6425334"
+Date: Sun, 22 May 2011 22:40:57 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Liam Girdwood <lrg@kernel.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Margarita Olaya <magi@slimlogic.co.uk>
-Subject: Re: [PATCHv4 0/4] Initial support for TPS65912 PMIC
-Message-ID: <20110522203750.GG18610@sortiz-mobl>
-References: <BANLkTi=5MY7Lr4KU4vtOFSQiOedKGXxZLw@mail.gmail.com>
- <BANLkTim56oPzQ_knGc6ezg+9_CY2kqshqQ@mail.gmail.com>
- <1305975198.3317.1.camel@odin>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        linux-kernel@vger.kernel.org, lrg@ti.com,
+        Graeme Gregory <gg@slimlogic.co.uk>, grant.likely@secretlab.ca
+Subject: Re: [PATCHv2 5/5] TPS65911: Comparator: Add comparator driver
+Message-ID: <20110522204056.GH18610@sortiz-mobl>
+References: <A9ADABDA-9D43-44CC-92D8-113C42AA5EE0@slimlogic.co.uk>
+ <20110513165931.GK8970@sortiz-mobl>
+ <20110514222944.GD21792@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305975198.3317.1.camel@odin>
+In-Reply-To: <20110514222944.GD21792@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Liam,
-
-On Sat, May 21, 2011 at 11:53:17AM +0100, Liam Girdwood wrote:
-> On Thu, 2011-05-19 at 13:51 -0500, Margarita Olaya wrote:
-> > Hi,
-> > 
-> > On Mon, May 16, 2011 at 6:02 PM, Margarita Olaya <magi@slimlogic.co.uk> wrote:
-> > > Hi,
-> > >
-> > > This is the initial version of the TPS65912 PMIC, a power management IC
-> > > for multimedia products.
-> > >
-> > > The tps65912 consists of 4 DCDCs and 10 LDOs, that are able to supply
-> > > voltage to main processor and other components. The chip includes a
-> > > GPIO module.
-> > >
-> > > Changes from V3:
-> > > - split core driver into tps65912-spi and tps65912-i2c
-> > > - create new function in regulator with common code in set/get mode
-> > >
-> > 
-> > Do you have any comments on this version of the driver? Please let me know them.
-> > 
+On Sat, May 14, 2011 at 03:29:45PM -0700, Mark Brown wrote:
+> On Fri, May 13, 2011 at 06:59:32PM +0200, Samuel Ortiz wrote:
+> > On Wed, May 04, 2011 at 07:21:46PM -0500, Jorge Eduardo Candelaria wrote:
 > 
-> Grant, Samuel,  If the mfd/gpio sections are fine with you I can take
-> via regulator. I plan to do the regulator pull request on Monday or
-> Tuesday.
-I'm fine with it. Please add my:
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-
-to patches #1 and #2 of this serie. Thanks for taking it.
+> > > +config TPS65911_COMPARATOR
+> > > +	tristate "TPS65911 Comparator"
+> > > +	depends on MFD_TPS65910
+> > > +	help
+> > > +	  if you say yes here you get support for the TPS65910 comparator
+> > > +	  module.
+> 
+> > I still don't know what it compares and why I would want to enable that.
+> 
+> It'll be comparing two voltages - it's quite a common feature for PMICs
+> with auxadcs.  I think I said in one of my previous reviews that it
+> probably shouldn't be user visible in Kconfig as some other driver will
+> need to be written to call it so that driver could just select the
+> symbol.
+> 
+> > This driver really looks like it could belong to drivers/regulator.
+> 
+> It's measuring rather than producing.
+Sure, but I still don't see how it belongs to drivers/mfd/.
 
 Cheers,
 Samuel.
-
-
-> Thanks !
-> 
-> Liam
-> 
 
 -- 
 Intel Open Source Technology Centre
