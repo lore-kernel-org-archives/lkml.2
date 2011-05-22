@@ -1,291 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab1EVNBl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 09:01:41 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:55774 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754896Ab1EVNBe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 09:01:34 -0400
-X-Authenticated: #12510340
-X-Provags-ID: V01U2FsdGVkX18yamIHRjcyDtO3dOfwQXZe9uq1nXTZoJ7ksEZWe9
-	jkoG8lDJpgKaBr
-Message-ID: <4DD9092A.4080507@gmx.net>
-Date: Sun, 22 May 2011 15:01:30 +0200
-From: Olaf Freyer <aaron667@gmx.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110430 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1755324Ab1EVNZn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 09:25:43 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34640 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754805Ab1EVNZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 09:25:37 -0400
+Date: Sun, 22 May 2011 15:25:15 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
+Message-ID: <20110522132515.GA13078@elte.hu>
+References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
+ <1305619719-7480-6-git-send-email-ying.huang@intel.com>
+ <20110517084622.GE22093@elte.hu>
+ <4DD23750.3030606@intel.com>
+ <20110517092620.GI22093@elte.hu>
+ <4DD31C78.6000209@intel.com>
+ <20110520115614.GH14745@elte.hu>
+ <BANLkTi=5Y0fqsmhsoPm8si=nQBc-tCwtrw@mail.gmail.com>
+ <20110522100021.GA28177@elte.hu>
+ <BANLkTi=VDQMOfWe5tP7nXSv2AEsiUUEteg@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Erroneous package power limit notification since kernel 2.6.39
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+In-Reply-To: <BANLkTi=VDQMOfWe5tP7nXSv2AEsiUUEteg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-since using kernel-2.6.39 I recieve those reports right after rebooting
-my system when it's still "warm".
-(Sensors reporting about 50°C. I don't see those on a cold boot early in
-the morning.)
-I don't get any such reports with 2.6.38.7 or any earlier kernel I used
-before.
+* huang ying <huang.ying.caritas@gmail.com> wrote:
 
-May 22 14:41:34 localhost kernel: [   57.525844] CPU4: Package power
-limit notification (total events = 1)
-May 22 14:41:34 localhost kernel: [   57.525848] CPU0: Package power
-limit notification (total events = 1)
-May 22 14:41:34 localhost kernel: [   57.525851] CPU1: Package power
-limit notification (total events = 1)
-May 22 14:41:34 localhost kernel: [   57.525854] CPU2: Package power
-limit notification (total events = 1)
-May 22 14:41:34 localhost kernel: [   57.525856] CPU5: Package power
-limit notification (total events = 1)
-May 22 14:41:34 localhost kernel: [   57.525859] CPU3: Package power
-limit notification (total events = 1)
-May 22 14:41:34 localhost kernel: [   57.525861] Disabling lock
-debugging due to kernel taint
-May 22 14:41:34 localhost kernel: [   57.525869] CPU6: Package power
-limit notification (total events = 1)
-May 22 14:41:34 localhost kernel: [   57.525872] CPU7: Package power
-limit notification (total events = 1)
-May 22 14:41:34 localhost kernel: [   57.536890] CPU1: Package power
-limit normal
-May 22 14:41:34 localhost kernel: [   57.536893] CPU4: Package power
-limit normal
-May 22 14:41:34 localhost kernel: [   57.536896] CPU2: Package power
-limit normal
-May 22 14:41:34 localhost kernel: [   57.536899] CPU3: Package power
-limit normal
-May 22 14:41:34 localhost kernel: [   57.536901] CPU5: Package power
-limit normal
-May 22 14:41:34 localhost kernel: [   57.536904] CPU0: Package power
-limit normal
-May 22 14:41:34 localhost kernel: [   57.536915] CPU6: Package power
-limit normal
-May 22 14:41:34 localhost kernel: [   57.536918] CPU7: Package power
-limit normal
+> On Sun, May 22, 2011 at 6:00 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * huang ying <huang.ying.caritas@gmail.com> wrote:
+> >
+> >> On Fri, May 20, 2011 at 7:56 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >> >
+> >> > * Huang Ying <ying.huang@intel.com> wrote:
+> >> >
+> >> >> > So why are we not working towards integrating this into our event
+> >> >> > reporting/handling framework, as i suggested it from day one on when you
+> >> >> > started posting these patches?
+> >> >>
+> >> >> The memory_failure_queue() introduced in this patch is general, that is, it
+> >> >> can be used not only by ACPI/APEI, but also any other hardware error
+> >> >> handlers, including your event reporting/handling framework.
+> >> >
+> >> > Well, the bit you are steadfastly ignoring is what i have made clear well
+> >> > before you started adding these facilities: THEY ALREADY EXISTS to a large
+> >> > degree :-)
+> >> >
+> >> > So you were and are duplicating code instead of using and extending existing
+> >> > event processing facilities. It does not matter one little bit that the code
+> >> > you added is partly 'generic', it's still overlapping and duplicated.
+> >>
+> >> How to do hardware error recovering in your perf framework?  IMHO, it can be
+> >> something as follow:
+> >>
+> >> - NMI handler run for the hardware error, where hardware error
+> >> information is collected and put into a ring buffer, an irq_work is
+> >> triggered for further work
+> >> - In irq_work handler, memory_failure_queue() is called to do the real
+> >> recovering work for recoverable memory error in ring buffer.
+> >>
+> >> What's your idea about hardware error recovering in perf?
+> >
+> > The first step, the whole irq_work and ring buffer already looks largely
+> > duplicated: you can collect into a perf event ring-buffer from NMI context like
+> > the regular perf events do.
+> 
+> Why duplicated? perf uses the general irq_work too.
 
-On executing "mcelog --syslog" I recieve those reports in /var/log/messages
+Yes, of course, because - if you still remember - Peter split irq_work out of 
+perf events:
 
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 0
-May 22 14:41:55 localhost mcelog: CPU 1 THERMAL EVENT TSC 263055cdd1
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 1 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260c00 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 1 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 1
-May 22 14:41:55 localhost mcelog: CPU 2 THERMAL EVENT TSC 263055e95d
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 2 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260c00 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 2 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 2
-May 22 14:41:55 localhost mcelog: CPU 5 THERMAL EVENT TSC 263055fe7b
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 5 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260c00 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 5 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 3
-May 22 14:41:55 localhost mcelog: CPU 3 THERMAL EVENT TSC 2630561550
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 3 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260c00 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 3 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 4
-May 22 14:41:55 localhost mcelog: CPU 0 THERMAL EVENT TSC 26305627e1
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 0 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260c00 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 0 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 5
-May 22 14:41:55 localhost mcelog: CPU 4 THERMAL EVENT TSC 2630562c03
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 4 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260c00 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 4 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 6
-May 22 14:41:55 localhost mcelog: CPU 7 THERMAL EVENT TSC 2630568665
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 7 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260c00 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 7 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 7
-May 22 14:41:55 localhost mcelog: CPU 6 THERMAL EVENT TSC 2630568af6
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 6 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260c00 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 6 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 8
-May 22 14:41:55 localhost mcelog: CPU 4 THERMAL EVENT TSC 2631c812ca
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 4 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260800 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 4 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 9
-May 22 14:41:55 localhost mcelog: CPU 2 THERMAL EVENT TSC 2631c82b05
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 2 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260800 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 2 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 10
-May 22 14:41:55 localhost mcelog: CPU 3 THERMAL EVENT TSC 2631c83eb2
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 3 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260800 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 3 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 11
-May 22 14:41:55 localhost mcelog: CPU 5 THERMAL EVENT TSC 2631c852d5
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 5 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260800 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 5 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 12
-May 22 14:41:55 localhost mcelog: CPU 0 THERMAL EVENT TSC 2631c8668e
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 0 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260800 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 0 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 13
-May 22 14:41:55 localhost mcelog: CPU 1 THERMAL EVENT TSC 2631c86895
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 1 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260800 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 1 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 14
-May 22 14:41:55 localhost mcelog: CPU 7 THERMAL EVENT TSC 2631c8df4e
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 7 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260800 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 7 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
-May 22 14:41:55 localhost mcelog: Unsupported new Family 6 Model 2a CPU:
-only decoding architectural errors
-May 22 14:41:55 localhost mcelog: HARDWARE ERROR. This is *NOT* a
-software problem!
-May 22 14:41:55 localhost mcelog: Please contact your hardware vendor
-May 22 14:41:55 localhost mcelog: MCE 15
-May 22 14:41:55 localhost mcelog: CPU 6 THERMAL EVENT TSC 2631c8e40f
-May 22 14:41:55 localhost mcelog: TIME 1306068115 Sun May 22 14:41:55 2011
-May 22 14:41:55 localhost mcelog: Processor 6 below trip temperature.
-Throttling disabled
-May 22 14:41:55 localhost mcelog: STATUS c000000088260800 MCGSTATUS 0
-May 22 14:41:55 localhost mcelog: MCGCAP c09 APICID 6 SOCKETID 0
-May 22 14:41:55 localhost mcelog: CPUID Vendor Intel Family 6 Model 42
+ e360adbe2924: irq_work: Add generic hardirq context callbacks
 
-I haven't dealt with any kernel issues before, so I'm somewhat lost what
-to do next.
-If there is anything I can do to track down the cause or any additional
-information I need to provide,
-just tell me what to.
+ |
+ | Perf currently has such a mechanism, so extract that and provide it as a 
+ | generic feature, independent of perf so that others may also benefit.
+ |
 
-Best regards,
-Olaf Freyer
+:-)
 
+But in hindsight the level of abstraction (for this usecase) was set too low, 
+because we lose wider access to the actual events themselves:
 
+> > The generalization that *would* make sense is not at the irq_work level 
+> > really, instead we could generalize a 'struct event' for kernel internal 
+> > producers and consumers of events that have no explicit PMU connection.
+> >
+> > This new 'struct event' would be slimmer and would only contain the fields 
+> > and features that generic event consumers and producers need. Tracing 
+> > events could be updated to use these kinds of slimmer events.
+> >
+> > It would still plug nicely into existing event ABIs, would work with event 
+> > filters, etc. so the tooling side would remain focused and unified.
+> >
+> > Something like that. It is rather clear by now that splitting out irq_work 
+> > was a mistake. But mistakes can be fixed and some really nice code could 
+> > come out of it! Would you be interested in looking into this?
+> 
+> Yes.  This can transfer hardware error data from kernel to user space. Then, 
+> how to do hardware error recovering in this big picture?  IMHO, we will need 
+> to call something like memory_failure_queue() in IRQ context for memory 
+> error.
+
+That's where 'active filters' come into the picture - see my other mail (that 
+was in the context of unidentified NMI errors/events) where i outlined how they 
+would work in this case and elsewhere. Via active filters we could share most 
+of the code, gain access to the events and still have kernel driven policy 
+action.
+
+Thanks,
+
+	Ingo
