@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab1EVTOx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 15:14:53 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42185 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab1EVTOo (ORCPT
+	id S1754173Ab1EVTbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 15:31:09 -0400
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:44245 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab1EVTbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 15:14:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=BoIM6v1rU/HbfDkrUJbT3UQq04r9NI172dJi5SotqkT40y4RKHUidrw6vRJFXOPYSW
-         guZ5AkGNohHJbiwslMMfjJsp5AOMgpw5KVXSXVQJWLTzl7oczQhKhwz0AP4DnZj6yEEw
-         TC7ShQ1VXhjd8xR4TNqRSaVxNXQOgOt5ej3D4=
-MIME-Version: 1.0
-In-Reply-To: <20110519184113.GE12525@obsidianresearch.com>
-References: <1305682604-21383-1-git-send-email-nab@linux-iscsi.org>
- <BANLkTi=e+v7PLcSc8GNov-TOXFF7rurXew@mail.gmail.com> <20110518170556.GB2595@obsidianresearch.com>
- <BANLkTikOCeNcDvoCM=BOSxQaSECFhJ05Gg@mail.gmail.com> <20110519174420.GD12525@obsidianresearch.com>
- <BANLkTikOsqazAE-mHFrM+=4GTs+249Ae5Q@mail.gmail.com> <20110519184113.GE12525@obsidianresearch.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Sun, 22 May 2011 21:14:23 +0200
-X-Google-Sender-Auth: yyfFpyq4IryDRwlqDood-ruWLvo
-Message-ID: <BANLkTimK+da8N1uTyCmYqggHzd-+yZSTig@mail.gmail.com>
-Subject: Re: [RFC] ib_srpt: initial .40-rc1 drivers/infiniband/ulp/srpt merge
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-rmda <linux-rdma@vger.kernel.org>,
-        Roland Dreier <roland@purestorage.com>, Vu Pham <vu@mellanox.com>,
-        David Dillow <dillowda@ornl.gov>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 22 May 2011 15:31:05 -0400
+Subject: Re: Mysterious CFQ crash and RCU
+From: Paul Bolle <pebolle@tiscali.nl>
+To: paulmck@linux.vnet.ibm.com
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110521235408.GK2271@linux.vnet.ibm.com>
+References: <20110519222404.GG12600@redhat.com>
+	 <20110521210013.GJ2271@linux.vnet.ibm.com>
+	 <1306016630.2066.44.camel@x61.thuisdomein>
+	 <20110521235408.GK2271@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 22 May 2011 21:30:57 +0200
+Message-ID: <1306092657.2066.53.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 8:41 PM, Jason Gunthorpe
-<jgunthorpe@obsidianresearch.com> wrote:
-> This is why in the IB verbs architecture nearly everything is tied to
-> a *device*, not a port.
+On Sat, 2011-05-21 at 16:54 -0700, Paul E. McKenney wrote:
+> On Sun, May 22, 2011 at 12:23:50AM +0200, Paul Bolle wrote: 
+> > Is anyone able to spot one or more commits in v2.6.39-rc7..v2.6.39 that
+> > might have fixed this Oops? Or did my chance of hitting this Oops,
+> > somehow, just got a lot smaller in v.2.6.39?
 
-LIO has a feature called "access control lists" that allows to define
-which initiators are allowed to log in to a target. For a single-rail
-HCA it makes most sense to configure that information per HCA. For a
-dual-rail HCA the most flexible approach is to allow the user to
-configure ACLs per HCA port. That made me wonder whether it is
-possible to find out from software whether a dual-port HCA is
-single-rail or dual-rail. A quick glance at struct ib_device_attr and
-struct ib_port_attr in <rdma/ib_verbs.h> didn't yield any field usable
-for this purpose. Did I overlook something ?
+As I just discovered, Fedora Rawhide ships release candidates configured
+with a lot more debugging options set than it ships final releases. So,
+sadly, this didn't get fixed in v2.6.39. It just didn't show up because
+one or more configuration options weren't set while they used to be set
+in the preceding release candidates kernels.
 
-Bart.
+> 5f45c69589b7d ("read_lock() does not always imply rcu_read_lock()") might
+> well be a fix.
+
+It doesn't really matter anymore, but that one was actually already
+included in v2.6.39-rc5.
+
+
+Paul Bolle
+
