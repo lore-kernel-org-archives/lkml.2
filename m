@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab1EVKTO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 06:19:14 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45312 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab1EVKTD (ORCPT
+	id S1753818Ab1EVKbW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 06:31:22 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60886 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab1EVKbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 06:19:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=KRNHeW+TsvsbfX5vdYGRBAuS6jNQSyJPjahuo9xZCqs6/VLhZcrFuNM4BOqlbAi3Wc
-         8omjpZ5rE9NpOGLjkobopCflQ5PRb4dJv5duTz7/Nvdd1jdGjg5kZ38ZymcQSKGsvp/x
-         HmQVLWHJohyK5rcczpD7a1/ZdrixX9BASikas=
-Subject: [patch v2] checkpatch: Signature format verification
-From: anish <anish198519851985@gmail.com>
-To: joe@perches.com
-Cc: davej@redhat.com, rostedt@goodmis.org, apw@shadowen.org,
-        akpm@linux-foundation.org, vapier@gentoo.org,
-        linux-kernel@vger.kernel.org, man.k1983@gmail.com
-In-Reply-To: <1306006721.1622.18.camel@anish-desktop>
-References: <1306006721.1622.18.camel@anish-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 22 May 2011 15:48:48 +0530
-Message-ID: <1306059528.2761.3.camel@anish-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sun, 22 May 2011 06:31:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Oliver Hartkopp <socketcan@hartkopp.net>
+Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
+Date: Sun, 22 May 2011 12:30:56 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        Wolfgang Grandegger <wg@grandegger.com>, sachi@mistralsolutions.com,
+        davinci-linux-open-source@linux.davincidsp.com, nsekhar@ti.com,
+        open list <linux-kernel@vger.kernel.org>,
+        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, Netdev@vger.kernel.org,
+        m-watkins@ti.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com> <4DCB88A4.2010901@grandegger.com> <4DCBF1B6.6000104@hartkopp.net>
+In-Reply-To: <4DCBF1B6.6000104@hartkopp.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105221230.56243.arnd@arndb.de>
+X-Provags-ID: V02:K0:W9vATK90e/+73Z+qnKobesf0Ju0zYOGa9drImb3A6uK
+ PyGxWPm6zpGaYAZtl6hNREyHfP9X2jGmkJ3oWfSDvz6AFOGRmo
+ BKVuOFjjhOWqRq/eyVF851eNFAmoMDBmS6Bw4aGRFkF1KQyvwP
+ yteuGQjJVgb8e47Mna2aAOgOWKNIeY+A0XPP9TV8Q+WTMBZQOz
+ jRaCHecpwNe7ltLjKgTag==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: anish kumar <anish198519851985@gmail.com>
+On Thursday 12 May 2011 16:41:58 Oliver Hartkopp wrote:
+> E.g. assume you need the CAN-IDs 0x100, 0x200 and 0x300 in your application
+> and for that reason you configure these IDs in the pruss CAN driver.
+> 
+> What if someone generates a 100% CAN busload exactly on CAN-ID 0x100 then?
+> 
+> Worst case (1MBit/s, DLC=0) you would need to handle about 21.000 irqs/s for
+> the correctly received CAN frames with the filtered CAN-ID 0x100 ...
 
-This patch generates warning when there is no space between
-the patch submitter and successive mail-id.
+Then I guess the main thing that a "smart" CAN implementation like pruss
+should do is interrupt mitigation. When you have a constant flow of
+packets coming in, the hardware should be able to DMA a lot of
+them into kernel memory before the driver is required to pick them up,
+and only get into interrupt driven mode when the kernel has managed
+to process all outstanding packets.
 
-Modification:Suggested by Joe Perches(joe@perches.com) that
-we can add this check for all signature types so added that
-change and added logic to remove the inefficent looping so
-that it can come out as soon as signature type is matched.
+> This all depends heavily on Linux networking (skb handling, caching, etc) and
+> is pretty fast and optimized!! That was also the reason why it ran on the old
+> PowerPC that smoothly. The mostly seen effect if anything drops is when the
+> application (holding the socket) was not fast enough to handle the incoming
+> data. NB: For that reason we implemented a CAN content filter (CAN_BCM) that
+> is able to do content filtering and timeout monitoring in Kernelspace - all
+> performed in the SoftIRQ.
 
-Signed-off-by: anish kumar <anish198519851985@gmail.com>
----
- scripts/checkpatch.pl |   30 +++++++++++++++++++++---------
- 1 files changed, 21 insertions(+), 9 deletions(-)
+Right, dropping packets that no process is waiting for should be done as
+early as possible. In pruss-can, the idea was to do it in hardware, which
+doesn't really work all that well for the reasons discussed before.
+Dropping the frames in the NAPI poll function (softirq time) seems like a
+logical choice.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d867081..0622f41 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -29,6 +29,8 @@ my $summary_file = 0;
- my $root;
- my %debug;
- my $help = 0;
-+my ($sign,$loop_brk);
-+my @signs = ("Reviewed-by:","Acked-by:","Signed-off-by:","Tested-by:");
- 
- sub help {
- 	my ($exitcode) = @_;
-@@ -1365,20 +1367,30 @@ sub process {
- 			}
- 		}
- 
--#check the patch for a signoff:
--		if ($line =~ /^\s*signed-off-by:/i) {
--			# This is a signoff, if ugly, so do not double report.
--			$signoff++;
--			if (!($line =~ /^\s*Signed-off-by:/)) {
--				WARN("Signed-off-by: is the preferred form\n" .
-+#check the patch for a signoff/Reviewed/Acked/Tested:
-+foreach $sign (@signs) {
-+	$loop_brk=0;
-+	if ($line =~ /^\s*$sign/i) {
-+		# This is a signoff, if ugly, so do not double report.
-+		$signoff++;
-+		$loop_brk++;
-+		if (!($line =~ /^\s*$sign/)) {
-+			WARN("$sign is the preferred form\n" .
-+				$herecurr);
-+		}
-+		if ($line =~ /^\s*$sign(.*)/i) {
-+			if($1 !~ /^\s*(\s[a-zA-Z]*.*)/i) {
-+				WARN("Space required after $sign\n" .
- 					$herecurr);
- 			}
--			if ($line =~ /^\s*signed-off-by:\S/i) {
--				WARN("space required after Signed-off-by:\n" .
-+			if($1 !~ /[\sa-zA-Z]+\s<.*>/i) {
-+				WARN("Space required b/w Full Name & Mail-id:\n" .
- 					$herecurr);
- 			}
- 		}
--
-+	}
-+last if ($loop_brk == 1);
-+}
- # Check for wrappage within a valid hunk of the file
- 		if ($realcnt != 0 && $line !~ m{^(?:\+|-| |\\ No newline|$)}) {
- 			ERROR("patch seems to be corrupt (line wrapped?)\n" .
--- 
-1.7.0.4
+> Having 'Mailboxes' bound to CAN-IDs is something that's useful for 8/16 bit
+> CPUs where an application is tightly bound to the embedded ECUs functionality.
 
+Makes sense.
 
+	Arnd
