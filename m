@@ -1,39 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab1EVK7s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 06:59:48 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42015 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab1EVK7o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 06:59:44 -0400
-Date: Sun, 22 May 2011 06:59:41 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Christoph Hellwig <hch@infradead.org>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: vmbus driver
-Message-ID: <20110522105941.GB8346@infradead.org>
-References: <1305842785-30206-1-git-send-email-kys@microsoft.com>
- <20110520122649.GA550@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481FC2ED@TK5EX14MBXC122.redmond.corp.microsoft.com>
+	id S1754469Ab1EVLAs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 07:00:48 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46562 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753446Ab1EVLAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 07:00:43 -0400
+Date: Sun, 22 May 2011 13:00:35 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        heil@terminal-consulting.de, penberg@kernel.org, tglx@linutronix.de,
+        gorcunov@gmail.com
+Cc: linux-tip-commits@vger.kernel.org,
+        KVM devel mailing list <kvm@vger.kernel.org>
+Subject: Re: [tip:tools/kvm] kvm tools: Add conditional compilation of symbol
+ resolving
+Message-ID: <20110522110035.GA14865@elte.hu>
+References: <tip-c474e3fec70bcacd5b24a24838c653e5a13e7b58@git.kernel.org>
+ <20110522105816.GA13373@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481FC2ED@TK5EX14MBXC122.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110522105816.GA13373@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I see maintainers for each of the clocksource drivers and I see John Stultz and
-> Thomas  Gleixner listed as the maintainers for Timekeeping. Who should sign-off
-> on the Hyper-V clocksource.
 
-just send it to both of the with linux-kernel in Cc, and either of them
-will probably put it in.
+* Ingo Molnar <mingo@elte.hu> wrote:
 
+> 
+> * tip-bot for Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> 
+> > diff --git a/tools/perf/feature-tests.mak b/tools/kvm/config/feature-tests.mak
+> > similarity index 83%
+> > copy from tools/perf/feature-tests.mak
+> > copy to tools/kvm/config/feature-tests.mak
+> 
+> Btw, now that we have feature-tests.mak it would be nice to populate the checks 
+> for the various assumptions.
+> 
+> One i recently ran into on a new box where i tried to install tools/kvm was:
+> 
+> In file included from /usr/include/features.h:387:0,
+>                  from /usr/include/unistd.h:26,
+>                  from include/kvm/util.h:12,
+>                  from bios/e820.c:5:
+> /usr/include/gnu/stubs.h:7:27: fatal error: gnu/stubs-32.h: No such file or directory
+> compilation terminated.
+> make: *** [bios/bios-rom.bin] Error 1
+> 
+> that's a dependency on glibc-dev[el].
+
+Another detail: on 64-bit hosts the dependency is on gibc-dev[el].i686, i.e. 
+the 32-bit package.
+
+Would it be simple to remove this dependency? It's not typically installed by 
+default on distros and it would be nice to make most of the kvm code build by 
+default almost everywhere.
+
+Thanks,
+
+	Ingo
