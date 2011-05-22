@@ -1,93 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab1EVHN0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 03:13:26 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38078 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751528Ab1EVHNV (ORCPT
+	id S1752366Ab1EVHTF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 03:19:05 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:8966 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab1EVHS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 03:13:21 -0400
-Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-In-Reply-To: <m1boyvpo9r.fsf@fess.ebiederm.org>
-References: <m11uzrvd26.fsf@fess.ebiederm.org>
-	 <BANLkTim4q5dK6nOb=pVKbk1c8b-Nh_hBfA@mail.gmail.com>
-	 <m1boyvpo9r.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 22 May 2011 11:13:13 +0400
-Message-ID: <1306048393.4092.8.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Sun, 22 May 2011 03:18:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6353"; a="92601441"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>
+Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <ablay@codeaurora.org>, <linux-arm-msm@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1305805417-31750-1-git-send-email-tlinder@codeaurora.org> <1305805417-31750-5-git-send-email-tlinder@codeaurora.org> <20110520164924.GC31929@linutronix.de>
+In-Reply-To: <20110520164924.GC31929@linutronix.de>
+Subject: RE: [PATCH v11 4/7] usb:gadget: Add SuperSpeed support to the Gadget Framework
+Date: Sun, 22 May 2011 10:20:42 +0300
+Message-ID: <002401cc1850$c4cd7030$4e685090$@org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcwXDdfV4OyUe18gR/S0ZucMjIuSlgBQfGNg
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-05-21 at 17:33 -0700, Eric W. Biederman wrote:
-> Linus Torvalds <torvalds@linux-foundation.org> writes:
+Hi Sebastian
+
+> >@@ -157,7 +167,35 @@ ep_found:
+> > 	/* commit results */
+> > 	_ep->maxpacket = le16_to_cpu(chosen_desc->wMaxPacketSize);
+> > 	_ep->desc = chosen_desc;
+> >-
+> >+	_ep->comp_desc = NULL;
+> >+	_ep->maxburst = 0;
+> >+	_ep->mult = 0;
+> >+	if (want_comp_desc) {
 > 
-> > On Sat, May 21, 2011 at 4:39 PM, Eric W. Biederman
-> > <ebiederm@xmission.com> wrote:
-> >>
-> >> In a hopeless quest to avoid conflicts when merging a new system call
-> >> and wiring it up I have pulled in bits of net-next and the parisc tree.
-> >> You have already pulled the net-next bits.  The parisc bits in my tree
-> >> are:
-> >
-> > Ok, this just means that I won't pull from you.
+>     if (!want_comp_desc)
+>         return 0;
 > 
-> Sure.  I will try to be a little more patient and resend the pull
-> request after James has sent the pull request for the parisc tree.
-> At which point the only unique changes in my tree will be mine.
+> I have one ident level less :)
+Done :)
 
-Right ... effectively you're running a postmerge tree, since you now
-depend on bits I have in the parisc tree.
-
-Traditionally, the arch trees tend to go a bit later because they wait
-to see if there's any fallout from x86; but this time, I think it looks
-OK, so I've sent the pull request:
-
-http://marc.info/?l=linux-parisc&m=130604805417277
-
-As soon as that's in, you should be good to go.
-
-James
-
-
-> > It's that simple. We don't do this. Ever.
+> >+/**
+> >+ * bos_desc() - prepares the BOS descriptor.
+> >+ * @cdev: pointer to usb_composite device to generate the bos
+> >+ *	descriptor for
+> >+ *
+> >+ * This function generates the BOS (Binary Device Object)
+> >+ * descriptor and its device capabilities descriptors. The BOS
+> >+ * descriptor should be supported by a SuperSpeed device.
+> >+ */
+> >+static int bos_desc(struct usb_composite_dev *cdev)
+> >+{
+> >+	struct usb_ext_cap_descriptor	*usb_ext;
+> >+	struct usb_ss_cap_descriptor	*ss_cap;
+> >+	struct usb_dcd_config_params	dcd_config_params;
+> >+	struct usb_bos_descriptor	*bos = cdev->req->buf;
+> >+
+> >+	bos->bLength = USB_DT_BOS_SIZE;
+> >+	bos->bDescriptorType = USB_DT_BOS;
+> >+
+> >+	bos->wTotalLength = cpu_to_le16(USB_DT_BOS_SIZE);
+> >+	bos->bNumDeviceCaps = 0;
+> >+
+> >+	/*
+> >+	 * A SuperSpeed device shall include the USB2.0 extension
+> descriptor
+> >+	 * and shall support LPM when operating in USB2.0 HS mode.
+> >+	 */
+> >+	usb_ext = (struct usb_ext_cap_descriptor *)
+> cdev->req->buf is (void *) so you can skip that cast.
 > 
-> Hah. I seem to remember bits of pulling from non-rebasing trees being ok
-> in well defined contexts.  This seems like one.  Especially when you
-> have checked with the maintainers.
+> >+			(cdev->req->buf+bos->wTotalLength);
+> a space between + please. bos->wTotalLength is le16 so you can't simply
+> do that way.
 > 
-> Plus all of the parisc bits in addition to being in the linux-next
-> are trivially correct.
+> What about something like
 > 
-> > Why the hell did you even worry about wiring up parisc system calls?
-> > That's not your job.
+>   usb_ext = (struct usb_ext_cap_descriptor *)(bos + 1)
 > 
-> Because in general it is the job of he who changes something to fix up
-> every possible place.
-> 
-> Now maybe I went a little too far in trying to resolve the conflicts,
-> but I did check with the David Miller and James Bottomley and they knew
-> what I was doing.
-> 
-> Quite honestly adding system calls is a mess that know one seems to
-> know how to do right.  So I flipped a coin and took a stab at it.
+> ?
 
-Right, the solution is reasonable and means linux-next doesn't have to
-carry a conflict resolution patch for this.  It also means we agree on
-the syscall numbering ...
+Added the spaces and the le16_to_cpu(bos->wTotalLength). 
+It seems clearer to me to leave it as 
+	usb_ext = cdev->req->buf + le16_to_cpu(bos->wTotalLength);
+if that's ok with you.
 
-The only real mistake was not waiting for the merge sequence: the base
-trees have to go first before you can push a postmerge tree.
+> >@@ -499,6 +633,9 @@ static int set_config(struct usb_composite_dev
+> *cdev,
+> > 		case USB_SPEED_LOW:	speed = "low"; break;
+> > 		case USB_SPEED_FULL:	speed = "full"; break;
+> > 		case USB_SPEED_HIGH:	speed = "high"; break;
+> >+		case USB_SPEED_SUPER:
+> >+			speed = "super";
+> >+			break;
+> 
+> This is not my favorite style either but please do it the way the other
+> three are done.
 
-James
+Well here is the dilemma: if I do it the other tree were done - I get
+checkpatch error. 
+You're right, adding this the way it's above doesn't look too good but when
+I fixed the other three I was asked not to do so in this patch, which also
+makes sense since it has nothing to do with SS support...
+So what do I do? Submit with a checkpatch error?
+
+
+Best regards,
+Tanya Brokhman
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
+
 
 
