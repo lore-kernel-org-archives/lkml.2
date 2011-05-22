@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab1EVUVq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 16:21:46 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:44446 "EHLO slimlogic.co.uk"
+	id S1755319Ab1EVUV5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 16:21:57 -0400
+Received: from mga01.intel.com ([192.55.52.88]:61012 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754585Ab1EVUVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 16:21:13 -0400
-From: Graeme Gregory <gg@slimlogic.co.uk>
-To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: balbi@ti.com, lrg@slimlogic.co.uk, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, linux@slimlogic.co.uk,
-        balajitk@ti.com, Graeme Gregory <gg@slimlogic.co.uk>
-Subject: [PATCH v4 2/2] USB: TWL6025 allow different regulator name
-Date: Sun, 22 May 2011 21:21:24 +0100
-Message-Id: <1306095684-7732-3-git-send-email-gg@slimlogic.co.uk>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1306095684-7732-1-git-send-email-gg@slimlogic.co.uk>
-References: <1306095684-7732-1-git-send-email-gg@slimlogic.co.uk>
+	id S1755203Ab1EVUVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 16:21:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,252,1304319600"; 
+   d="scan'208";a="5579090"
+Date: Sun, 22 May 2011 22:21:31 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>, linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        sachi@mistralsolutions.com, open list <linux-kernel@vger.kernel.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>
+Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
+Message-ID: <20110522202129.GE18610@sortiz-mobl>
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com>
+ <201105102344.58598.arnd@arndb.de>
+ <82D549BB195345A1A189D569952B387C@subhasishg>
+ <201105112203.54838.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105112203.54838.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The twl6025 uses a different regulator for USB than the 6030 so select
-the correct regulator name depending on the subclass of device.
+Hi Arnd,
 
-Since V1
+On Wed, May 11, 2011 at 10:03:54PM +0200, Arnd Bergmann wrote:
+> On Wednesday 11 May 2011, Subhasish Ghosh wrote:
+> > > Please look into implementing one of the three I suggested before
+> > > you go off in another direction. In case of the third one, the idea
+> > > was to configure the name of the device for each pru using sysfs,
+> > > which then gets bound to the driver, which loads its own firmware
+> > > as you do today. Only in the first two suggestions, the mfd driver
+> > > would be responsible for loading the firmware.
+> > 
+> > Ok, thanks for the clarification.
+> > Instead of passing the device name, will it be ok to pass the mfd_id.
+> > The benefit will be that I can use the ID directly as an array
+> > index for the mfd_cell entries.
+> 
+> I think a device name would be clearer here, especially in order
+> to avoid conflicts when the list gets extended in different ways
+> depending on which kernel runs.
+> 
+> We had a little discussion at the Linaro Developer Summit about your
+> driver and mfd drivers in general. There was a general feeling among
+> some people (including me) that by the point you dynamically create
+> the subdevices, MFD is probably not the right abstraction any more,
+> as it does not provide any service that you need.
+I agree it's not what it's been designed for.
 
-Use features passed via platform data instead of global variable.
 
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
----
- drivers/usb/otg/twl6030-usb.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+> Instead, maybe you can simply call platform_device_register
+> at that stage to create the children and not use MFD at all.
+The MFD APIs are slightly easier to use though, imho.
 
-diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
-index 3f2e070..cfb5aa7 100644
---- a/drivers/usb/otg/twl6030-usb.c
-+++ b/drivers/usb/otg/twl6030-usb.c
-@@ -100,6 +100,7 @@ struct twl6030_usb {
- 	u8			linkstat;
- 	u8			asleep;
- 	bool			irq_enabled;
-+	unsigned long		features;
- };
- 
- #define xceiv_to_twl(x)		container_of((x), struct twl6030_usb, otg)
-@@ -204,6 +205,12 @@ static int twl6030_start_srp(struct otg_transceiver *x)
- 
- static int twl6030_usb_ldo_init(struct twl6030_usb *twl)
- {
-+	char *regulator_name;
-+
-+	if (twl->features & TWL6025_SUBCLASS)
-+		regulator_name = "ldousb";
-+	else
-+		regulator_name = "vusb";
- 
- 	/* Set to OTG_REV 1.3 and turn on the ID_WAKEUP_COMP */
- 	twl6030_writeb(twl, TWL6030_MODULE_ID0 , 0x1, TWL6030_BACKUP_REG);
-@@ -214,7 +221,7 @@ static int twl6030_usb_ldo_init(struct twl6030_usb *twl)
- 	/* Program MISC2 register and set bit VUSB_IN_VBAT */
- 	twl6030_writeb(twl, TWL6030_MODULE_ID0 , 0x10, TWL6030_MISC2);
- 
--	twl->usb3v3 = regulator_get(twl->dev, "vusb");
-+	twl->usb3v3 = regulator_get(twl->dev, regulator_name);
- 	if (IS_ERR(twl->usb3v3))
- 		return -ENODEV;
- 
-@@ -409,6 +416,7 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	twl->dev		= &pdev->dev;
- 	twl->irq1		= platform_get_irq(pdev, 0);
- 	twl->irq2		= platform_get_irq(pdev, 1);
-+	twl->features		= pdata->features;
- 	twl->otg.dev		= twl->dev;
- 	twl->otg.label		= "twl6030";
- 	twl->otg.set_host	= twl6030_set_host;
+
+> Samuel, can you comment on this as well? Do you still see pruss
+> as an MFD driver when the uses are completely dynamic and determined
+> by the firmware loaded into it?
+Even though that is definitely not a typical MFD use case, I wouldn't object
+strongly against it. Right now mfd is probably the least worst choice for this
+kind of drivers, which still doesn't make it an ideal situation.
+
+Cheers,
+Samuel.
+
 -- 
-1.7.4.1
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
