@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab1EVOOU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 10:14:20 -0400
-Received: from lo.gmane.org ([80.91.229.12]:39985 "EHLO lo.gmane.org"
+	id S1755425Ab1EVOQT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 10:16:19 -0400
+Received: from mail.perches.com ([173.55.12.10]:1844 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754479Ab1EVOOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 10:14:14 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: PA-RISC: compile error in include/net/dst.h
-Date: Sun, 22 May 2011 14:13:58 +0000 (UTC)
-Message-ID: <irb5n6$vn3$1@dough.gmane.org>
-References: <2612811.b2htuyZy9x@donald.sf-tec.de>
+	id S1754479Ab1EVOQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 10:16:14 -0400
+Subject: Re: [patch v2] checkpatch: Signature format verification
+From: Joe Perches <joe@perches.com>
+To: anish <anish198519851985@gmail.com>
+Cc: davej@redhat.com, rostedt@goodmis.org, apw@shadowen.org,
+        akpm@linux-foundation.org, vapier@gentoo.org,
+        linux-kernel@vger.kernel.org, man.k1983@gmail.com
+In-Reply-To: <1306059528.2761.3.camel@anish-desktop>
+References: <1306006721.1622.18.camel@anish-desktop>
+	 <1306059528.2761.3.camel@anish-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 22 May 2011 07:16:12 -0700
+Message-ID: <1306073772.1681.6.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 123.124.21.91
-User-Agent: Pan/0.133 (House of Butterflies)
-Cc: linux-parisc@vger.kernel.org, stable@linux.kernel.org,
-        netdev@vger.kernel.org
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Cc netdev as well)
+On Sun, 2011-05-22 at 15:48 +0530, anish wrote:
+> This patch generates warning when there is no space between
+> the patch submitter and successive mail-id.
+[]
+> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+[]
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index d867081..0622f41 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -29,6 +29,8 @@ my $summary_file = 0;
+>  my $root;
+>  my %debug;
+>  my $help = 0;
+> +my ($sign,$loop_brk);
 
-On Sun, 22 May 2011 10:15:19 +0200, Rolf Eike Beer wrote:
+These 2 variables don't need to be at this scope.
 
-> from include/net/ipv6.h:16,
->                  from include/linux/sunrpc/clnt.h:25,
->                  from include/linux/nfs_fs.h:50,
->                  from init/do_mounts.c:20:
-> include/net/dst.h: In function 'dst_hold': include/net/dst.h:238:2:
-> error: size of unnamed array is negative In file included from
-> include/linux/nfs_fs.h:59:0,
->                  from init/do_mounts.c:20:
+> @@ -1365,20 +1367,30 @@ sub process {
+[]
+> +#check the patch for a signoff/Reviewed/Acked/Tested:
+> +foreach $sign (@signs) {
 
-
-Seems someone touched struct dst_entry...
-
-> include/linux/mempool.h: In function 'mempool_create_kmalloc_pool':
-> include/linux/mempool.h:58:10: warning: cast to pointer from integer of
-> different size
-> 
-> This is both in 2.6.38.6 and 2.6.39, but is not in 2.6.38.4 when
-> compiling for my C8000.
-> 
-> pioneer src #  hppa64-unknown-linux-gnu-gcc --version
-> hppa64-unknown-linux-gnu-gcc (Gentoo 4.5.2 p1.1) 4.5.2
-> 
-> Greetings,
-> 
-> Eike
+Please use the appropriate indentation or add a new function.
 
 
