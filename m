@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab1EVHmm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 03:42:42 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:34518 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab1EVHmg (ORCPT
+	id S1752685Ab1EVIGZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 04:06:25 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39906 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab1EVIGN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 03:42:36 -0400
-Message-ID: <f21331d6ac687d28aa7f9b7f0f5b7620.squirrel@www.firstfloor.org>
-In-Reply-To: <alpine.DEB.2.00.1105220816480.12897@skynet.skynet.ie>
-References: <1305936082-21304-1-git-send-email-andi@firstfloor.org>
-    <alpine.DEB.2.00.1105220816480.12897@skynet.skynet.ie>
-Date: Sun, 22 May 2011 09:42:33 +0200
-Subject: Re: [PATCH 01/12] Force always inline for gcc 4.5 when optimizing
- for size
-From: "Andi Kleen" <andi@firstfloor.org>
-To: "Dave Airlie" <airlied@linux.ie>
-Cc: "Andi Kleen" <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, "Andi Kleen" <ak@linux.intel.com>
-User-Agent: SquirrelMail/1.4.21
+	Sun, 22 May 2011 04:06:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Bk3LilcF/dFgXwk40ExN+XRyFQqpwkDVJwXUuVcxKpFJiW+H/shVqXG3nHgXEa06he
+         lWuftMkB8WJV56nT69ot9Txk6Bff3UYZVQNgBI697DG20iRIsAYfeAB8F6j+/uAfNMoV
+         +VhPO6Xs2gi3zrfAYBvc5ohdB9tSEoZWQrEfs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+In-Reply-To: <20110519182702.GA3337@maxin>
+References: <20110519182702.GA3337@maxin>
+Date: Sun, 22 May 2011 11:06:12 +0300
+Message-ID: <BANLkTikQayxQ5HYyqFwgVSDZgzBmwVO_hA@mail.gmail.com>
+Subject: Re: [PATCH] drivers: video: Remove useless checks
+From: Maxin B John <maxin.john@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, tim.gardner@canonical.com, airlied@redhat.com,
+        lethal@linux-sh.org, james@albanarts.com, error27@gmail.com,
+        randy.dunlap@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Paul,
 
+Please let me know your comments on this patch.
+
+Best Regards,
+Maxin
+
+On Thu, May 19, 2011 at 9:27 PM, Maxin B John <maxin.john@gmail.com> wrote:
+> Comparing unsigned less than zero will never be true.
+> Removing similar checks from 'fbmem.c' and 'fbcmap.c'.
 >
-> Oh these look like a good plan, one of our contributors has an inline
-> fetish and it got cut-n-pasted into a few places particular in radeon.
+> Please let me know your comments.
 >
-> But we won't be turning DRM debugging off, its what we use to debug things
-> in the field, I did get a patch recently to reduce some of its overhead
-
-Why can't it be a CONFIG option like all other debugging code?
-
-If you want to keep it on would need to drop even more inlines to get
-the 50k overhead down.
-
--Andi
-
+> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+> ---
+> diff --git a/drivers/video/fbcmap.c b/drivers/video/fbcmap.c
+> index 5c3960d..15cf8fc 100644
+> --- a/drivers/video/fbcmap.c
+> +++ b/drivers/video/fbcmap.c
+> @@ -285,8 +285,7 @@ int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *info)
+>                rc = -ENODEV;
+>                goto out;
+>        }
+> -       if (cmap->start < 0 || (!info->fbops->fb_setcolreg &&
+> -                               !info->fbops->fb_setcmap)) {
+> +       if (!info->fbops->fb_setcolreg && !info->fbops->fb_setcmap) {
+>                rc = -EINVAL;
+>                goto out1;
+>        }
+> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> index 5aac00e..9edca4d 100644
+> --- a/drivers/video/fbmem.c
+> +++ b/drivers/video/fbmem.c
+> @@ -1143,7 +1143,7 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
+>                        return -EFAULT;
+>                if (con2fb.console < 1 || con2fb.console > MAX_NR_CONSOLES)
+>                        return -EINVAL;
+> -               if (con2fb.framebuffer < 0 || con2fb.framebuffer >= FB_MAX)
+> +               if (con2fb.framebuffer >= FB_MAX)
+>                        return -EINVAL;
+>                if (!registered_fb[con2fb.framebuffer])
+>                        request_module("fb%d", con2fb.framebuffer);
+>
