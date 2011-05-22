@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab1EVOl7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 10:41:59 -0400
-Received: from fep22.mx.upcmail.net ([62.179.121.42]:50783 "EHLO
-	fep22.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133Ab1EVOlu (ORCPT
+	id S1755559Ab1EVObn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 10:31:43 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:55566 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755133Ab1EVObg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 10:41:50 -0400
-X-SourceIP: 178.83.226.131
-Message-ID: <4DD91E16.1070300@odi.ch>
-Date: Sun, 22 May 2011 16:30:46 +0200
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+	Sun, 22 May 2011 10:31:36 -0400
+X-Sasl-enc: 3oLTXHhH0oCxrT61O3N+wAR+ohKrg8LUG1ikfjYkQDKF 1306074695
+Date: Sun, 22 May 2011 07:32:22 -0700
+From: Greg KH <greg@kroah.com>
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org
+Subject: Re: [stable] PA-RISC: compile error in include/net/dst.h
+Message-ID: <20110522143222.GB14556@kroah.com>
+References: <2612811.b2htuyZy9x@donald.sf-tec.de>
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: is UDP broadcast over wlan broken?
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=DCRP0ZtmJUK9xCJAWyBxphtxfaK97vUsdrClCjRuegE= c=1 sm=0 a=c6weS0ZJO8EA:10 a=6ADSKvGKGmgA:10 a=8nJEP1OIZ-IA:10 a=IgoJPhe-ptZliA7j7BYA:9 a=6A5DQxPQWumEsGAqfdwA:7 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2612811.b2htuyZy9x@donald.sf-tec.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, May 22, 2011 at 10:15:19AM +0200, Rolf Eike Beer wrote:
+>                  from include/net/ipv6.h:16,
+>                  from include/linux/sunrpc/clnt.h:25,
+>                  from include/linux/nfs_fs.h:50,
+>                  from init/do_mounts.c:20:
+> include/net/dst.h: In function 'dst_hold':
+> include/net/dst.h:238:2: error: size of unnamed array is negative
+> In file included from include/linux/nfs_fs.h:59:0,
+>                  from init/do_mounts.c:20:
+> include/linux/mempool.h: In function 'mempool_create_kmalloc_pool':
+> include/linux/mempool.h:58:10: warning: cast to pointer from integer of 
+> different size
+> 
+> This is both in 2.6.38.6 and 2.6.39, but is not in 2.6.38.4 when compiling for 
+> my C8000.
 
-On 2.6.38.6 I can no longer receive UDP broadcasts over wireless interfaces.
-This affects CUPS zeroconf (port 631 broadcasts). Other UDP traffic (like DNS
-lookups) works fine.
+Could you bisect it down to the patch that causes the problem in
+2.6.38.6?
 
-I can see UDP broadcasts originate fine on 192.168.111.11/24 (my router):
-# uname -a
-Linux gandalf 2.6.38.6 #11 SMP PREEMPT Tue May 10 13:42:44 CEST 2011 x86_64
-Intel(R) Core(TM) i3 CPU 540 @ 3.07GHz GenuineIntel GNU/Linux
-# tcpdump -np -i wlan0 udp and port 631
-tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-listening on wlan0, link-type EN10MB (Ethernet), capture size 96 bytes
-16:15:21.695230 IP 192.168.111.11.631 > 192.168.111.255.631: UDP, length 151
+thanks,
 
-
-But these packets are not received on 192.168.111.10/24 (the client):
-# uname -a
-Linux mithril 2.6.39 #2 SMP PREEMPT Sun May 22 14:22:23 CEST 2011 i686 Intel(R)
-Core(TM)2 CPU T7600 @ 2.33GHz GenuineIntel GNU/Linux
-# tcpdump -n -i wlan0 udp and port 631
-tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-listening on wlan0, link-type EN10MB (Ethernet), capture size 96 bytes
-^C
-0 packets captured
-0 packets received by filter
-0 packets dropped by kernel
-
-I made very sure that nothing is dropped by netfilter on either side.
-Both sides use ath9k as their wifi driver.
-
-Ortwin
+greg k-h
