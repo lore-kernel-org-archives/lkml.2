@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab1EVJCm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 05:02:42 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:45556 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab1EVJCh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 05:02:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:sender:from:date:x-google-sender-auth
-         :message-id:subject:to:cc:content-type;
-        b=viHesIntl3HfVmR9pXHQd3qTZQIvAFdZo605kb26xxxQCNyg4fdWwCGlPR9dqyMjsh
-         qoYRnshMqNi3FHK8GDjYCSPHPriLez+ZLXFnaFJSoZIsQOJnTZj8qXBFa2n7wy9I1AjL
-         sThbfuYGd+OUtgiDpxwAx9d+MdEQB+GQ9Bchw=
+	id S1753484Ab1EVJFA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 05:05:00 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58732 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751774Ab1EVJE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 05:04:56 -0400
+Date: Sun, 22 May 2011 11:04:40 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
+        Valdis.Kletnieks@vt.edu, a.p.zijlstra@chello.nl
+Subject: Re: [GIT PULL rcu/next] fixes and breakup of memory-barrier-decrease
+ patch
+Message-ID: <20110522090440.GD27167@elte.hu>
+References: <20110521140613.GA13062@linux.vnet.ibm.com>
+ <20110521142844.GA29813@elte.hu>
+ <20110521190830.GH2271@linux.vnet.ibm.com>
+ <20110521191418.GA30688@elte.hu>
+ <20110521203922.GI2271@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Reply-To: d.g.jansen@googlemail.com
-From: Dennis Jansen <Dennis.Jansen@web.de>
-Date: Sun, 22 May 2011 11:01:57 +0200
-X-Google-Sender-Auth: 3mqmPq7j5W-KPRxETcrSiEZUlns
-Message-ID: <BANLkTikXpjCpTPDsk2cff-p0cmu69kAg3g@mail.gmail.com>
-Subject: Response Summary Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, tytso@mit.edu
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110521203922.GI2271@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So just to summarize - correct me if I'm wrong:
 
-There is general opposition to the idea of disabling fsync:
-- whether automatically while in laptop mode or by user's choice, e.g.
-via a special setting
-- no matter what the fsync call would return - whether any error code or success
--> at all and in any form or context
-in kernel space.
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-The reason seems to be mainly:
- - data security (esp. destruction of existing data in case of
-ordering problems)
- - application compatibility (e.g. mailserver able to work according
-to standards)
- - misuse potential (users not knowing what they're doing and/or how)
- - "Changing a generic, widely used kernel option"
+> > I mean, without Frederic's patch we are getting very long hangs due to the 
+> > barrier patch, right?
+> 
+> Yes.  The reason we are seeing these hangs is that HARDIRQ_ENTER() invoked 
+> irq_enter(), which calls rcu_irq_enter() but that the matching HARDIRQ_EXIT() 
+> invoked __irq_exit(), which does not call rcu_irq_exit(). This resulted in 
+> calls to rcu_irq_enter() that were not balanced by matching calls to 
+> rcu_irq_exit().  Therefore, after these tests completed, RCU's dyntick-idle 
+> nesting count was a large number, which caused RCU to conclude that the 
+> affected CPU was not in dyntick-idle mode when in fact it was.
+> 
+> RCU would therefore incorrectly wait for this dyntick-idle CPU.
+> 
+> With Frederic's patch, these tests don't ever call either rcu_irq_enter() or 
+> rcu_irq_exit(), which works because the CPU running the test is already 
+> marked as not being in dyntick-idle mode.
+> 
+> So, with Frederic's patch, the rcu_irq_enter() and rcu_irq_exit() calls are 
+> balanced and things work.
+> 
+> The reason that the imbalance was not noticed before the barrier patch was 
+> applied is that the old implementation of rcu_enter_nohz() ignored the 
+> nesting depth.  This could still result in delays, but much shorter ones.  
+> Whenever there was a delay, RCU would IPI the CPU with the unbalanced nesting 
+> level, which would eventually result in rcu_enter_nohz() being called, which 
+> in turn would force RCU to see that the CPU was in dyntick-idle mode.
+> 
+> Hmmm...  I should add this line of reasoning to one of the commit logs, 
+> shouldn't I?  (Added it.  Which of course invalidates my pull request.)
 
-There is a general distinction made between using laptop mode ("soft"
-increased data loss risk) and disabling fsync (not providing a
-guaranteed write when specificly asked for it).
+Well, the thing i was missing from the tree was Frederic's fix patch. Or was 
+that included in one of the commits?
 
-There is no agreement:
-- whether ordering guarantees would be an issue (in a "properly
-implemented filesystem").
+I mean, if we just revert the revert, we reintroduce the delay, no matter who 
+is to blame - not good! :-)
 
-There was no response to:
-- whether something like featherstick
-(http://lwn.net/Articles/354861/) would make sense (in kernel space)
-in this context.
-- flame war suggestions ;)
+> > Even if the barrier patch is not to blame - somehow it still managed to 
+> > produce these hangs - and we do not understand it yet.
+> 
+> >From Yinghai's message https://lkml.org/lkml/2011/5/12/465, I believe
+> that the residual delay he is seeing is not due to the barrier patch,
+> but rather due to a26ac2455 (move TREE_RCU from softirq to kthrea).
+> 
+> More on this below.
 
-The proposed solution is:
-- to implement this in user space.
+Ok - we can treat that regression differently. Also, that seems like a much 
+shorter delay, correct? The delays fixed by Frederic's patch were huge (i think 
+i saw a 1 hour delay once) - they were essentially not delays but hangs.
 
-Thanks for everyone for their feedback!
+Thanks,
+
+	Ingo
