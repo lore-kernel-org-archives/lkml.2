@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab1EVKoz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 06:44:55 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39138 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457Ab1EVKou (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 06:44:50 -0400
-Date: Sun, 22 May 2011 06:44:49 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Alex Bligh <alex@alex.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: REQ_FLUSH, REQ_FUA and open/close of block devices
-Message-ID: <20110522104448.GA20241@infradead.org>
-References: <10C5890F8F477E959B993BFA@nimrod.local>
- <20110520122010.GA25628@infradead.org>
- <60FB7C5F40961417F1605595@nimrod.local>
+	id S1753930Ab1EVK6e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 06:58:34 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:50141 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753511Ab1EVK61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 06:58:27 -0400
+Date: Sun, 22 May 2011 12:58:16 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        heil@terminal-consulting.de, penberg@kernel.org, tglx@linutronix.de,
+        gorcunov@gmail.com
+Cc: linux-tip-commits@vger.kernel.org,
+        KVM devel mailing list <kvm@vger.kernel.org>
+Subject: Re: [tip:tools/kvm] kvm tools: Add conditional compilation of symbol
+ resolving
+Message-ID: <20110522105816.GA13373@elte.hu>
+References: <tip-c474e3fec70bcacd5b24a24838c653e5a13e7b58@git.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <60FB7C5F40961417F1605595@nimrod.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <tip-c474e3fec70bcacd5b24a24838c653e5a13e7b58@git.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 21, 2011 at 09:42:45AM +0100, Alex Bligh wrote:
-> What I am concerned about is that relatively normal actions (e.g. unmount
-> a filing system) do not appear to be flushing all data, even though I
-> did "sync" then "umount". I suspect the sync is generating the FLUSH here,
-> and nothing is flushing the umount writes. How can I know as a block
-> device that I have to write out a (long lasting) writeback cache if
-> I don't receive anything beyond the last WRITE?
 
-In your case it seems like ext3 is doing something wrong.  If you
-run the same on XFS, you should not only see the last real write
-having FUA and FLUSH as it's a transaction commit, but also an
-explicit cache flush when devices are closed from the filesystem
-to work around issues like that.  But the raw block device node
-really doesn't behave different from a file and shouldn't cause
-any fsync on close.
+* tip-bot for Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-Btw, using sync_file_range is a really bad idea.  It will not actually
-flush the disk cache on the server, nor make sure metadata is commited in
-case of a sparse or preallocated file, and thus does not implement
-the FLUSH or FUA semantics correctly.
+> diff --git a/tools/perf/feature-tests.mak b/tools/kvm/config/feature-tests.mak
+> similarity index 83%
+> copy from tools/perf/feature-tests.mak
+> copy to tools/kvm/config/feature-tests.mak
 
-And btw, I'd like to know what makes sync_file_range so tempting,
-even after I added documentation explaining why it's almost always
-wrong to use it to the man page.
+Btw, now that we have feature-tests.mak it would be nice to populate the checks 
+for the various assumptions.
+
+One i recently ran into on a new box where i tried to install tools/kvm was:
+
+In file included from /usr/include/features.h:387:0,
+                 from /usr/include/unistd.h:26,
+                 from include/kvm/util.h:12,
+                 from bios/e820.c:5:
+/usr/include/gnu/stubs.h:7:27: fatal error: gnu/stubs-32.h: No such file or directory
+compilation terminated.
+make: *** [bios/bios-rom.bin] Error 1
+
+that's a dependency on glibc-dev[el].
+
+Thanks,
+
+	Ingo
