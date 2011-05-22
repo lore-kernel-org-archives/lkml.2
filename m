@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab1EVIP3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 04:15:29 -0400
-Received: from mail-bw0-f52.google.com ([209.85.214.52]:52263 "EHLO
-	mail-bw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab1EVIPZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 04:15:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type:content-transfer-encoding;
-        b=O6kJZ2487FIP1GB8APajFvtntUfU7xGv7HLJjDq5qpPShBzY/4HDcfaNHWK9QbEYng
-         9ajoOH4wynZgdIRhjUaDHMsfqUArsCjQe7ZJrgWSkjLfcIrpFXOIjAO5+ihM3HMEGmC/
-         REkO31r/uyttCBbYDgOYsXnREYaEKjWJWm6CQ=
+	id S1753262Ab1EVIX4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 04:23:56 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3422 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752450Ab1EVIXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 04:23:49 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Message-ID: <4DD8C80A.5060700@broadcom.com>
+Date: Sun, 22 May 2011 10:23:38 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
+ Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Date: Sun, 22 May 2011 10:15:23 +0200
-X-Google-Sender-Auth: 5cecRRmdtJhxmHrHpnT9BqfrqTc
-Message-ID: <BANLkTikf7M_yTFe2fZx63HSDYFjhT_+soA@mail.gmail.com>
-Subject: Adding syscalls (was: Re: [GIT PULL] Namespace file descriptors for 2.6.40)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Johannes Berg" <johannes@sipsolutions.net>
+cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Dan Carpenter" <error27@gmail.com>
+Subject: Re: [RFC] lib: crc8: add new library module providing crc8
+ algorithm
+References: <1306010973-5625-1-git-send-email-arend@broadcom.com> (
+ sfid-20110521_225033_074451_F0976112)
+ <1306017455.3389.0.camel@jlt3.sipsolutions.net>
+In-Reply-To: <1306017455.3389.0.camel@jlt3.sipsolutions.net>
+X-WSS-ID: 61C617634NS10622227-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 22, 2011 at 02:33, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Linus Torvalds <torvalds@linux-foundation.org> writes:
->> On Sat, May 21, 2011 at 4:39 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>> In a hopeless quest to avoid conflicts when merging a new system call
->>> and wiring it up I have pulled in bits of net-next and the parisc tree.
->>> You have already pulled the net-next bits.  The parisc bits in my tree
->>> are:
->>
->> Ok, this just means that I won't pull from you.
+On 05/22/2011 12:37 AM, Johannes Berg wrote:
+> On Sat, 2011-05-21 at 22:49 +0200, Arend van Spriel wrote:
 >
-> Sure.  I will try to be a little more patient and resend the pull
-> request after James has sent the pull request for the parisc tree.
-> At which point the only unique changes in my tree will be mine.
->
->> It's that simple. We don't do this. Ever.
->
-> Hah. I seem to remember bits of pulling from non-rebasing trees being ok
-> in well defined contexts.  This seems like one.  Especially when you
-> have checked with the maintainers.
->
-> Plus all of the parisc bits in addition to being in the linux-next
-> are trivially correct.
->
->> Why the hell did you even worry about wiring up parisc system calls?
->> That's not your job.
->
-> Because in general it is the job of he who changes something to fix up
-> every possible place.
->
-> Now maybe I went a little too far in trying to resolve the conflicts,
-> but I did check with the David Miller and James Bottomley and they knew
-> what I was doing.
->
-> Quite honestly adding system calls is a mess that know one seems to
-> know how to do right.  So I flipped a coin and took a stab at it.
+>> +/**
+>> + * enum - CRC8 constants
+>> + *
+>> + * @CRC8_INIT_VALUE: Initial CRC8 checksum value
+>> + * @CRC8_GOOD_VALUE: Good final CRC8 checksum value
+>> + *
+>> + * Constants for the crc8() function. Refer to its
+>> + * documentation how to use these values.
+>> + */
+>> +enum CRC8 {
+>> +	CRC8_INIT_VALUE	= 0xff,
+>> +	CRC8_GOOD_VALUE	= 0x9f
+>> +};
+> These seem a little out of place, wouldn't that be specific to how the
+> algorithm is used?
 
-At first, I was delighted to see that somebody took care of adding
-syscalls to the
-non-popular architectures.
+True, a different init value likely results in a different good value. 
+However, the documentation of the crc8() function provides one possible 
+use which makes use of these values. So it is provided as a convenience. 
+Removal is easy of course, but I tend to keep it for those who are 
+content with the proposed usage (not necessarily Broadcom :-D ).
 
-At second, I saw the conflicts in e.g. parisc and m68k due to this.
+Gr. AvS
 
-Hence now I think it's better to leave the wiring up to the
-architecture maintainers, as
-before.
-I'm even thinking to suggest to first let go in the syscall (without
-any wiring up, not
-even on x86), and let all wiring up be handled afterwards. This would
-enforce that
-syscalls numbers are not cast in stone, until they hit mainline.
+-- 
+Almost nobody dances sober, unless they happen to be insane.
+-- H.P. Lovecraft --
 
-This does mean that scripts/checksyscalls.sh needs to be changed, as initially
-new syscalls aren't wired up there neither. The implementation of the
-syscalls needs
-to announce somehow that it's there and that it's a syscall.
 
-What do you think?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
