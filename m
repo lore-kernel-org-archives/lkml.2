@@ -1,63 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab1EVVJy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 17:09:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34535 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab1EVVJs (ORCPT
+	id S1754774Ab1EVVP5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 17:15:57 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:64103 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927Ab1EVVPt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 17:09:48 -0400
+	Sun, 22 May 2011 17:15:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=JZX2dJ17qRf0STmbq8/SVb8brhSyZ5WBeSKN+ruVLPs+Q4E9O+rTvLxtF5hjhSrLn9
-         jsyu/Q1X92HyIGdTpsli0+XA4cUQEbtqr8/deLN0V3lLbKjfIJ8MegcDTftybxLmhhFc
-         2SXTtM58bQXLi0/xTactzPzLqexy6Pz+Q6NZU=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Fkam3Dpo8mNa59cDJec2HlXKH6Jlcu3YeKvfZqLtzgo5z2cOXZHID4NH6CktHkahb2
+         YsmW/9TBVduLio0An5putfUlfdAntTqE1IA7kWH0qLxhRtlZLw/FKtGOXvb3Zm5O80Nw
+         PyACZ4W6P6U1nnhGaAvJ6XArExEm3BDvqA4/A=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1105201407480.14430@xanadu.home>
-References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
-	<1304859098-10760-16-git-send-email-catalin.marinas@arm.com>
-	<20110518072737.GC6815@atomide.com>
-	<1305897667.2788.98.camel@e102109-lin.cambridge.arm.com>
-	<alpine.LFD.2.00.1105201407480.14430@xanadu.home>
-Date: Sun, 22 May 2011 22:09:47 +0100
-X-Google-Sender-Auth: 8yGjzj9W650hkR1BMswfQov4NUA
-Message-ID: <BANLkTimC7dC3P9NQC8BuED9HbdmP1nbZhQ@mail.gmail.com>
-Subject: Re: [PATCH v5 15/19] ARM: LPAE: Add support for cpu_v7_do_(suspend|resume)
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
+In-Reply-To: <BANLkTin+fgYpZ1LwNXg2OKeQJattLqQBhg@mail.gmail.com>
+References: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
+	<201105211727.35985.arnd@arndb.de>
+	<BANLkTi=tdfG3jpCJQpozpxjBmR7ZicgV9g@mail.gmail.com>
+	<BANLkTikyg-SDtU9Z8KdCAeOkGR67ihVUkQ@mail.gmail.com>
+	<4DD80A91.5070302@intel.com>
+	<ADDEBCD9C145E542A8688C29F1FBDCB9012FD2C719@orsmsx502.amr.corp.intel.com>
+	<BANLkTikGQ-enRmWOFRGw-yJ=omeQZCrppw@mail.gmail.com>
+	<BANLkTin+fgYpZ1LwNXg2OKeQJattLqQBhg@mail.gmail.com>
+Date: Sun, 22 May 2011 14:15:48 -0700
+Message-ID: <BANLkTimS8zAddgzFCBuR-EvnkbWyo38-jQ@mail.gmail.com>
+Subject: Re: X32 project status update
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "Anvin, H Peter" <h.peter.anvin@intel.com>
+Cc: "x32-abi@googlegroups.com" <x32-abi@googlegroups.com>,
+        "arnd@arndb.de" <arnd@arndb.de>, "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>,
+        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 May 2011 19:09, Nicolas Pitre <nico@fluxnic.net> wrote:
-> On Fri, 20 May 2011, Catalin Marinas wrote:
->> On Wed, 2011-05-18 at 08:27 +0100, Tony Lindgren wrote:
->> > Do we really need all this ifdef else throughout this series?
->> >
->> > I think we already have things in place to do this dynamically
->> > like we already do for thumb, smp_on_up, v6 vs v7 and so on.
+On Sun, May 22, 2011 at 1:02 PM, H.J. Lu <hjl.tools@gmail.com> wrote:
+> On Sat, May 21, 2011 at 4:48 PM, H.J. Lu <hjl.tools@gmail.com> wrote:
+>> On Sat, May 21, 2011 at 1:01 PM, Anvin, H Peter <h.peter.anvin@intel.com> wrote:
+>>> I'll look at it but possibly not until the weekend.
 >>
->> By dynamically, do you mean at run-time? We won't be able to compile
->> both classic and LPAE in the same kernel, there is just too much
->> difference between them (2 vs 3 levels of page tables - LPAE is an
->> entirely new format).
+>> I checked it into hjl/x32/syscall branch at
 >>
->> If you mean some simpler macros like what we have for ARM/THUMB to
->> reduce the number of lines, I'm fine with it though we don't always have
->> a 1:1 mapping between LPAE and non-LPAE instructions.
+>> http://git.kernel.org/?p=linux/kernel/git/hjl/linux-2.6.38.y.git;a=summary
 >>
->> Alternatively, I'm happy to create a separate proc-v7lpae.S file.
 >
-> That would probably be the best option.
+> We need to investigate if we need to have different x32 syscalls for
+>
+>        .quad sys32_fanotify_mark
+>        .quad compat_sys_open_by_handle_at
+>        .quad compat_sys_clock_adjtime
+>        .quad compat_sys_sendmmsg       /* 345 */
+>
+> My guess is yes for the last 3 and unsure for fanotify_mark.
 
-OK, I'll move this code to a separate file. The v7 setup code got
-pretty hard to read.
+There is no need for x32 fanotify_mark.  I updated hjl/x32/syscall branch
+for the other 3 system calls.  Should we regroup x32 system calls?
+
+I added
+
+/* Need it before vDSO is enabled.  */
+#define __NR_x32_getcpu                         402
+
+since vDSO isn't enabled for x32.  It should be removed/disabled after
+x32 vDSO is supported.
+
+H.J.
+>> ---
+>>> -----Original Message-----
+>>> From: H.J. Lu [hjl.tools@gmail.com]
+>>> Sent: Saturday, May 21, 2011 12:39 PM Pacific Standard Time
+>>> To: Anvin, H Peter
+>>> Cc: x32-abi@googlegroups.com; Arnd Bergmann; GCC Development; GNU C Library;
+>>> LKML
+>>> Subject: Re: X32 project status update
+>>>
+>>> On Sat, May 21, 2011 at 11:55 AM, H. Peter Anvin
+>>> <h.peter.anvin@intel.com> wrote:
+>>>> On 05/21/2011 09:27 AM, H.J. Lu wrote:
+>>>>> On Sat, May 21, 2011 at 8:34 AM, H.J. Lu <hjl.tools@gmail.com> wrote:
+>>>>>> On Sat, May 21, 2011 at 8:27 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>>>> On Saturday 21 May 2011 17:01:33 H.J. Lu wrote:
+>>>>>>>> This is the x32 project status update:
+>>>>>>>>
+>>>>>>>> https://sites.google.com/site/x32abi/
+>>>>>>>>
+>>>>>>>
+>>>>>>> I've had another look at the kernel patch. It basically
+>>>>>>> looks all good, but the system call table appears to
+>>>>>>> diverge from the x86_64 list for no (documented) reason,
+>>>>>>> in the calls above 302. Is that intentional?
+>>>>>>>
+>>>>>>> I can see why you might want to keep the numbers identical,
+>>>>>>> but if they are already different, why not use the generic
+>>>>>>> system call table from asm-generic/unistd.h for the new
+>>>>>>> ABI?
+>>>>>>
+>>>>>> We can sort it out when we start merging x32 kernel changes.
+>>>>>>
+>>>>>
+>>>>> Peter, is that possible to use the single syscall table for
+>>>>> both x86-64 and x32 system calls? Out of 300+ system
+>>>>> calls, only 84 are different for x86-64 and x32.  That
+>>>>> is additional 8*84 == 672 bytes in syscall table.
+>>>>>
+>>>>
+>>>> Sort of... remember we talked about merging system calls at the tail
+>>>> end?  The problem with that is that some system calls (like read()!)
+>>>> actually are different system calls in very subtle situations, due to
+>>>> abuse in some subsystems of the is_compat() construct.  I think that may
+>>>> mean we have to have an unambiguous flag after all...
+>>>>
+>>>> Now, perhaps we can use a high bit for that and mask it before dispatch,
+>>>> then we don't need the additional table.  A bit of a hack, but it should
+>>>> work.
+>>>
+>>> How about this patch?
+>>>
+>>>    Merge x32 system calls with x86-64 system calls
+>>>
+>>>     Implemented with
+>>>
+>>>     1. Mark all x86-64 specific system calls with __NR_64_.
+>>>     2. Mark all x32 specific system calls with __NR_x32_.
+>>>     3. Include unistd_64_compat.h, instead of unistd_x32.h for kernel
+>>>     build, which provides __NR_ versions of x86-64 specific system calls.
+>>>     4. Append x32 specific system calls after the current x86-64 system
+>>>     calls.
+>>>     5. Generate unistd_x32.h from unistd_64.h, replacing __NR_x32_ with
+>>>     _NR_.
+>>>     6. Install user-space unistd_64.h, replacing __NR_64_ with _NR_.
+>>>
+>>> --
+>>> H.J.
+>>>
+>>
+>>
+>>
+>> --
+>> H.J.
+>>
+>
+>
+>
+> --
+> H.J.
+>
+
+
 
 -- 
-Catalin
+H.J.
