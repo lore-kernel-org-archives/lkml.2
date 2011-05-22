@@ -1,286 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab1EVBMh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 May 2011 21:12:37 -0400
-Received: from smtp.getmail.no ([84.208.15.66]:41930 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750698Ab1EVBMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 May 2011 21:12:36 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: linux-kernel@vger.kernel.org
-Subject: Re: Linux 2.6.39
-References: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
-Date: Sun, 22 May 2011 03:12:33 +0200
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.vvuyy7sm6426ze@cm-84.211.32.31.getinternet.no>
-In-reply-to: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
-User-Agent: Opera Mail/11.11 (MacIntel)
+	id S1753314Ab1EVBp5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 May 2011 21:45:57 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45810 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab1EVBpz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 May 2011 21:45:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=xz1eMcu6CfoKuv5YemBgrhUvqq1v1VWLQYWX60fqnsWNALTSw3bY2UBMBNXwdQujUe
+         Km2I6ufPKXBnomhklyVBQxj+fjOISLq7RhLBtcw4S/gwjjAgeV/ccwK+fqB1Wq5JdR6U
+         kf1h6o+/dhVK8TyDrF0DO+BDA7kt84ZcxIMCQ=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] perf tools updates
+Date: Sun, 22 May 2011 03:45:38 +0200
+Message-Id: <1306028744-10603-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.39 first observations: The framerate jitter in games that seem to  
-depend on kernel for low-jitter, like doom 3, is almost completely gone  
-now. (Tested with latest nvidia driver something 75 something)
-I decided to try threadirqs from grub, but that did not work. Looks like  
-the same error as I get when I tried the rt kernels, which was this one:
+Ingo, Arnaldo,
 
-http://www.paradoxuncreated.com/tmp/rterror.jpg
+Please pull the perf/core branch that can be found at:
 
-Peace Be With You,
-Uwaysi.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/core
+
+Thanks,
+	Frederic
+---
+
+Frederic Weisbecker (6):
+      perf tools: Check we are able to read the event size on mmap
+      perf tools: Remove junk code in mmap size handling
+      perf tools: Move evlist sample helpers to evlist area
+      perf tools: Pre-check sample size before parsing
+      perf tools: Robustify dynamic sample content fetch
+      perf tools: Propagate event parse error handling
 
 
-http://www.paradoxuncreated.com/tmp/.config39
-
-Pentium(R) Dual-Core  CPU      E5200  @ 2.50GHz
-
-uwaysi@Millennium:~$ lspci -v
-00:00.0 Host bridge: nVidia Corporation C55 Host Bridge (rev a2)
-	Flags: bus master, 66MHz, fast devsel, latency 0
-	Capabilities: <access denied>
-
-00:00.1 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:00.2 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:00.3 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: bus master, 66MHz, fast devsel, latency 0
-
-00:00.4 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: bus master, 66MHz, fast devsel, latency 0
-
-00:00.5 RAM memory: nVidia Corporation C55 Memory Controller (rev a2)
-	Flags: bus master, 66MHz, fast devsel, latency 0
-
-00:00.6 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:00.7 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:01.0 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:01.1 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:01.2 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:01.3 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:01.4 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:01.5 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:01.6 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:02.0 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:02.1 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: bus master, 66MHz, fast devsel, latency 0
-
-00:02.2 RAM memory: nVidia Corporation C55 Memory Controller (rev a1)
-	Flags: 66MHz, fast devsel
-
-00:03.0 PCI bridge: nVidia Corporation C55 PCI Express bridge (rev a1)  
-(prog-if 00 [Normal decode])
-	Flags: bus master, fast devsel, latency 0
-	Bus: primary=00, secondary=01, subordinate=05, sec-latency=0
-	I/O behind bridge: 0000d000-0000dfff
-	Memory behind bridge: fa000000-feafffff
-	Prefetchable memory behind bridge: 00000000d0000000-00000000dfffffff
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:06.0 PCI bridge: nVidia Corporation C55 PCI Express bridge (rev a1)  
-(prog-if 00 [Normal decode])
-	Flags: bus master, fast devsel, latency 0
-	Bus: primary=00, secondary=06, subordinate=06, sec-latency=0
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:07.0 PCI bridge: nVidia Corporation C55 PCI Express bridge (rev a1)  
-(prog-if 00 [Normal decode])
-	Flags: bus master, fast devsel, latency 0
-	Bus: primary=00, secondary=07, subordinate=07, sec-latency=0
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:09.0 RAM memory: nVidia Corporation MCP51 Host Bridge (rev a2)
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: bus master, 66MHz, fast devsel, latency 0
-	Capabilities: <access denied>
-
-00:0a.0 ISA bridge: nVidia Corporation MCP51 LPC Bridge (rev a3)
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: bus master, 66MHz, fast devsel, latency 0
-	I/O ports at 4f00 [size=128]
-
-00:0a.1 SMBus: nVidia Corporation MCP51 SMBus (rev a3)
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: 66MHz, fast devsel, IRQ 11
-	I/O ports at 5000 [size=64]
-	I/O ports at 6000 [size=64]
-	Capabilities: <access denied>
-	Kernel driver in use: nForce2_smbus
-	Kernel modules: i2c-nforce2
-
-00:0a.2 RAM memory: nVidia Corporation MCP51 Memory Controller 0 (rev a3)
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: 66MHz, fast devsel
-
-00:0b.0 USB Controller: nVidia Corporation MCP51 USB Controller (rev a3)  
-(prog-if 10 [OHCI])
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: bus master, 66MHz, fast devsel, latency 0, IRQ 20
-	Memory at f9fff000 (32-bit, non-prefetchable) [size=4K]
-	Capabilities: <access denied>
-	Kernel driver in use: ohci_hcd
-
-00:0b.1 USB Controller: nVidia Corporation MCP51 USB Controller (rev a3)  
-(prog-if 20 [EHCI])
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: bus master, 66MHz, fast devsel, latency 0, IRQ 21
-	Memory at f9ffec00 (32-bit, non-prefetchable) [size=256]
-	Capabilities: <access denied>
-	Kernel driver in use: ehci_hcd
-
-00:0d.0 IDE interface: nVidia Corporation MCP51 IDE (rev a1) (prog-if 8a  
-[Master SecP PriP])
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: bus master, 66MHz, fast devsel, latency 0
-	[virtual] Memory at 000001f0 (32-bit, non-prefetchable) [size=8]
-	[virtual] Memory at 000003f0 (type 3, non-prefetchable) [size=1]
-	[virtual] Memory at 00000170 (32-bit, non-prefetchable) [size=8]
-	[virtual] Memory at 00000370 (type 3, non-prefetchable) [size=1]
-	I/O ports at ffa0 [size=16]
-	Capabilities: <access denied>
-	Kernel driver in use: pata_amd
-	Kernel modules: pata_amd
-
-00:0e.0 IDE interface: nVidia Corporation MCP51 Serial ATA Controller (rev  
-a1) (prog-if 85 [Master SecO PriO])
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: bus master, 66MHz, fast devsel, latency 0, IRQ 23
-	I/O ports at c800 [size=8]
-	I/O ports at c480 [size=4]
-	I/O ports at c400 [size=8]
-	I/O ports at c080 [size=4]
-	I/O ports at c000 [size=16]
-	Memory at f9ffd000 (32-bit, non-prefetchable) [size=4K]
-	Capabilities: <access denied>
-	Kernel driver in use: sata_nv
-	Kernel modules: sata_nv
-
-00:0f.0 IDE interface: nVidia Corporation MCP51 Serial ATA Controller (rev  
-a1) (prog-if 85 [Master SecO PriO])
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: bus master, 66MHz, fast devsel, latency 0, IRQ 22
-	I/O ports at bc00 [size=8]
-	I/O ports at b880 [size=4]
-	I/O ports at b800 [size=8]
-	I/O ports at b480 [size=4]
-	I/O ports at b400 [size=16]
-	Memory at f9ffc000 (32-bit, non-prefetchable) [size=4K]
-	Capabilities: <access denied>
-	Kernel driver in use: sata_nv
-	Kernel modules: sata_nv
-
-00:10.0 PCI bridge: nVidia Corporation MCP51 PCI Bridge (rev a2) (prog-if  
-01 [Subtractive decode])
-	Flags: bus master, 66MHz, fast devsel, latency 0
-	Bus: primary=00, secondary=08, subordinate=08, sec-latency=32
-	I/O behind bridge: 0000e000-0000efff
-	Memory behind bridge: feb00000-febfffff
-	Capabilities: <access denied>
-
-00:10.1 Audio device: nVidia Corporation MCP51 High Definition Audio (rev  
-a2)
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: bus master, 66MHz, fast devsel, latency 0, IRQ 22
-	Memory at f9ff8000 (32-bit, non-prefetchable) [size=16K]
-	Capabilities: <access denied>
-	Kernel driver in use: HDA Intel
-	Kernel modules: snd-hda-intel
-
-00:14.0 Bridge: nVidia Corporation MCP51 Ethernet Controller (rev a3)
-	Subsystem: Micro-Star International Co., Ltd. Device 380c
-	Flags: bus master, 66MHz, fast devsel, latency 0, IRQ 23
-	Memory at f9ff7000 (32-bit, non-prefetchable) [size=4K]
-	I/O ports at b080 [size=8]
-	Capabilities: <access denied>
-	Kernel driver in use: forcedeth
-	Kernel modules: forcedeth
-
-01:00.0 PCI bridge: nVidia Corporation NF200 PCIe 2.0 switch for  
-mainboards (rev a2) (prog-if 00 [Normal decode])
-	Flags: bus master, fast devsel, latency 0
-	Bus: primary=01, secondary=02, subordinate=05, sec-latency=0
-	I/O behind bridge: 0000d000-0000dfff
-	Memory behind bridge: fa000000-feafffff
-	Prefetchable memory behind bridge: 00000000d0000000-00000000dfffffff
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-02:00.0 PCI bridge: nVidia Corporation NF200 PCIe 2.0 switch for  
-mainboards (rev a2) (prog-if 00 [Normal decode])
-	Flags: bus master, fast devsel, latency 0
-	Bus: primary=02, secondary=03, subordinate=03, sec-latency=0
-	I/O behind bridge: 0000d000-0000dfff
-	Memory behind bridge: fa000000-feafffff
-	Prefetchable memory behind bridge: 00000000d0000000-00000000dfffffff
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-02:02.0 PCI bridge: nVidia Corporation NF200 PCIe 2.0 switch for  
-mainboards (rev a2) (prog-if 00 [Normal decode])
-	Flags: bus master, fast devsel, latency 0
-	Bus: primary=02, secondary=04, subordinate=04, sec-latency=0
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-02:03.0 PCI bridge: nVidia Corporation NF200 PCIe 2.0 switch for  
-mainboards (rev a2) (prog-if 00 [Normal decode])
-	Flags: bus master, fast devsel, latency 0
-	Bus: primary=02, secondary=05, subordinate=05, sec-latency=0
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-03:00.0 VGA compatible controller: nVidia Corporation GT200 [GeForce GTX  
-280] (rev a1) (prog-if 00 [VGA controller])
-	Subsystem: eVga.com. Corp. Device 1280
-	Flags: bus master, fast devsel, latency 0, IRQ 19
-	Memory at fd000000 (32-bit, non-prefetchable) [size=16M]
-	Memory at d0000000 (64-bit, prefetchable) [size=256M]
-	Memory at fa000000 (64-bit, non-prefetchable) [size=32M]
-	I/O ports at dc00 [size=128]
-	[virtual] Expansion ROM at fea80000 [disabled] [size=512K]
-	Capabilities: <access denied>
-	Kernel driver in use: nvidia
-	Kernel modules: nvidia, nvidiafb
-
-08:09.0 FireWire (IEEE 1394): VIA Technologies, Inc. VT6306/7/8 [Fire  
-II(M)] IEEE 1394 OHCI Controller (rev c0) (prog-if 10 [OHCI])
-	Subsystem: Micro-Star International Co., Ltd. Device 380d
-	Flags: bus master, medium devsel, latency 32, IRQ 10
-	Memory at febff800 (32-bit, non-prefetchable) [size=2K]
-	I/O ports at ec00 [size=128]
-	Capabilities: <access denied>
+ tools/perf/builtin-test.c |    9 ++++++++-
+ tools/perf/builtin-top.c  |    7 ++++++-
+ tools/perf/util/event.c   |   16 ++++++++++++++++
+ tools/perf/util/event.h   |   12 +++++++++++-
+ tools/perf/util/evlist.c  |   31 +++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.h  |    3 +++
+ tools/perf/util/evsel.c   |   32 +++++++++++++++++++++++++++++++-
+ tools/perf/util/header.c  |   31 -------------------------------
+ tools/perf/util/header.h  |    2 --
+ tools/perf/util/python.c  |   13 ++++++++++---
+ tools/perf/util/session.c |   25 ++++++++++++++++++-------
+ tools/perf/util/session.h |    2 ++
+ 12 files changed, 136 insertions(+), 47 deletions(-)
