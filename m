@@ -1,28 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab1EVJFA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 05:05:00 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58732 "EHLO mx3.mail.elte.hu"
+	id S1753546Ab1EVKAw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 06:00:52 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52126 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774Ab1EVJE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 05:04:56 -0400
-Date: Sun, 22 May 2011 11:04:40 +0200
+	id S1751401Ab1EVKAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 06:00:46 -0400
+Date: Sun, 22 May 2011 12:00:21 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
-        Valdis.Kletnieks@vt.edu, a.p.zijlstra@chello.nl
-Subject: Re: [GIT PULL rcu/next] fixes and breakup of memory-barrier-decrease
- patch
-Message-ID: <20110522090440.GD27167@elte.hu>
-References: <20110521140613.GA13062@linux.vnet.ibm.com>
- <20110521142844.GA29813@elte.hu>
- <20110521190830.GH2271@linux.vnet.ibm.com>
- <20110521191418.GA30688@elte.hu>
- <20110521203922.GI2271@linux.vnet.ibm.com>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
+Message-ID: <20110522100021.GA28177@elte.hu>
+References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
+ <1305619719-7480-6-git-send-email-ying.huang@intel.com>
+ <20110517084622.GE22093@elte.hu>
+ <4DD23750.3030606@intel.com>
+ <20110517092620.GI22093@elte.hu>
+ <4DD31C78.6000209@intel.com>
+ <20110520115614.GH14745@elte.hu>
+ <BANLkTi=5Y0fqsmhsoPm8si=nQBc-tCwtrw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110521203922.GI2271@linux.vnet.ibm.com>
+In-Reply-To: <BANLkTi=5Y0fqsmhsoPm8si=nQBc-tCwtrw@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -36,56 +46,57 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+* huang ying <huang.ying.caritas@gmail.com> wrote:
 
-> > I mean, without Frederic's patch we are getting very long hangs due to the 
-> > barrier patch, right?
+> On Fri, May 20, 2011 at 7:56 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Huang Ying <ying.huang@intel.com> wrote:
+> >
+> >> > So why are we not working towards integrating this into our event
+> >> > reporting/handling framework, as i suggested it from day one on when you
+> >> > started posting these patches?
+> >>
+> >> The memory_failure_queue() introduced in this patch is general, that is, it
+> >> can be used not only by ACPI/APEI, but also any other hardware error
+> >> handlers, including your event reporting/handling framework.
+> >
+> > Well, the bit you are steadfastly ignoring is what i have made clear well
+> > before you started adding these facilities: THEY ALREADY EXISTS to a large
+> > degree :-)
+> >
+> > So you were and are duplicating code instead of using and extending existing
+> > event processing facilities. It does not matter one little bit that the code
+> > you added is partly 'generic', it's still overlapping and duplicated.
 > 
-> Yes.  The reason we are seeing these hangs is that HARDIRQ_ENTER() invoked 
-> irq_enter(), which calls rcu_irq_enter() but that the matching HARDIRQ_EXIT() 
-> invoked __irq_exit(), which does not call rcu_irq_exit(). This resulted in 
-> calls to rcu_irq_enter() that were not balanced by matching calls to 
-> rcu_irq_exit().  Therefore, after these tests completed, RCU's dyntick-idle 
-> nesting count was a large number, which caused RCU to conclude that the 
-> affected CPU was not in dyntick-idle mode when in fact it was.
+> How to do hardware error recovering in your perf framework?  IMHO, it can be 
+> something as follow:
 > 
-> RCU would therefore incorrectly wait for this dyntick-idle CPU.
+> - NMI handler run for the hardware error, where hardware error
+> information is collected and put into a ring buffer, an irq_work is
+> triggered for further work
+> - In irq_work handler, memory_failure_queue() is called to do the real
+> recovering work for recoverable memory error in ring buffer.
 > 
-> With Frederic's patch, these tests don't ever call either rcu_irq_enter() or 
-> rcu_irq_exit(), which works because the CPU running the test is already 
-> marked as not being in dyntick-idle mode.
-> 
-> So, with Frederic's patch, the rcu_irq_enter() and rcu_irq_exit() calls are 
-> balanced and things work.
-> 
-> The reason that the imbalance was not noticed before the barrier patch was 
-> applied is that the old implementation of rcu_enter_nohz() ignored the 
-> nesting depth.  This could still result in delays, but much shorter ones.  
-> Whenever there was a delay, RCU would IPI the CPU with the unbalanced nesting 
-> level, which would eventually result in rcu_enter_nohz() being called, which 
-> in turn would force RCU to see that the CPU was in dyntick-idle mode.
-> 
-> Hmmm...  I should add this line of reasoning to one of the commit logs, 
-> shouldn't I?  (Added it.  Which of course invalidates my pull request.)
+> What's your idea about hardware error recovering in perf?
 
-Well, the thing i was missing from the tree was Frederic's fix patch. Or was 
-that included in one of the commits?
+The first step, the whole irq_work and ring buffer already looks largely 
+duplicated: you can collect into a perf event ring-buffer from NMI context like 
+the regular perf events do.
 
-I mean, if we just revert the revert, we reintroduce the delay, no matter who 
-is to blame - not good! :-)
+The generalization that *would* make sense is not at the irq_work level really, 
+instead we could generalize a 'struct event' for kernel internal producers and 
+consumers of events that have no explicit PMU connection.
 
-> > Even if the barrier patch is not to blame - somehow it still managed to 
-> > produce these hangs - and we do not understand it yet.
-> 
-> >From Yinghai's message https://lkml.org/lkml/2011/5/12/465, I believe
-> that the residual delay he is seeing is not due to the barrier patch,
-> but rather due to a26ac2455 (move TREE_RCU from softirq to kthrea).
-> 
-> More on this below.
+This new 'struct event' would be slimmer and would only contain the fields and 
+features that generic event consumers and producers need. Tracing events could 
+be updated to use these kinds of slimmer events.
 
-Ok - we can treat that regression differently. Also, that seems like a much 
-shorter delay, correct? The delays fixed by Frederic's patch were huge (i think 
-i saw a 1 hour delay once) - they were essentially not delays but hangs.
+It would still plug nicely into existing event ABIs, would work with event 
+filters, etc. so the tooling side would remain focused and unified.
+
+Something like that. It is rather clear by now that splitting out irq_work was 
+a mistake. But mistakes can be fixed and some really nice code could come out 
+of it! Would you be interested in looking into this?
 
 Thanks,
 
