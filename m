@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab1EVHW3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 03:22:29 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:56403 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751528Ab1EVHWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 03:22:23 -0400
-Date: Sun, 22 May 2011 08:21:47 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: Andi Kleen <andi@firstfloor.org>
-cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 01/12] Force always inline for gcc 4.5 when optimizing
- for size
-In-Reply-To: <1305936082-21304-1-git-send-email-andi@firstfloor.org>
-Message-ID: <alpine.DEB.2.00.1105220816480.12897@skynet.skynet.ie>
-References: <1305936082-21304-1-git-send-email-andi@firstfloor.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752574Ab1EVHvR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 03:51:17 -0400
+Received: from nessie.weebeastie.net ([220.233.7.36]:60835 "EHLO
+	bunyip.billabong.weebeastie.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751826Ab1EVHvO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 03:51:14 -0400
+X-Greylist: delayed 1725 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 May 2011 03:51:13 EDT
+Date: Sun, 22 May 2011 17:22:21 +1000
+From: CaT <cat@zip.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>, netdev@vger.kernel.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.39
+Message-ID: <20110522072221.GK3956@zip.com.au>
+References: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
+Organisation: Furball Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Um. Should my routing table be being displayed in reverse order all of
+a sudden?
 
-> some subsystems (in my kernel) had a real problem. The biggest
-> offender was DRM. I fixed those up manually by removing
-> inlines. With these changes (and disabling DRM debugging, which is on
-> by default) I get a kernel with force inline that is a few KB smaller.
-> With DRM debugging enabled it's about 50k larger (nearly
-> all of it in DRM, mostly radeon). I hope the default for this
-> can be changed.
+$ route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         192.168.1.1     0.0.0.0         UG    0      0        0 eth1
+192.168.1.0     0.0.0.0         255.255.255.0   U     1      0        0 eth1
 
-Oh these look like a good plan, one of our contributors has an inline 
-fetish and it got cut-n-pasted into a few places particular in radeon.
+ip route list is similar. I'm sure this is going to break a script or two
+(and, perhaps, a mind or two :).
 
-But we won't be turning DRM debugging off, its what we use to debug things 
-in the field, I did get a patch recently to reduce some of its overhead
-
-5ad3d8831f0c97257460c11ddcc1cc0466c762d4 in my drm-next branch,
-drm: Create and use drm_err from Joe Perches.
-
-Dave.
+-- 
+  "A search of his car uncovered pornography, a homemade sex aid, women's 
+  stockings and a Jack Russell terrier."
+    - http://www.dailytelegraph.com.au/news/wacky/indeed/story-e6frev20-1111118083480
