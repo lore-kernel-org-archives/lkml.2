@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab1EVUNV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 16:13:21 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:64079 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315Ab1EVUNP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 16:13:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=k4nDHzf+a/eRjBSE31j+aOYB1bNOE691tqz2ZFOstwkRRVPvG7slALQMVA4uXZzHF/
-         f7oVVJvvHvH2VnwvOJhQls+1pckJfrbIGftGUplGBExFIAyiDXQPV4IUn4CvnSMoJqxK
-         G4Xm5ujZ6nuGUhwy5A/pyD+1q9XifjkPgfJZg=
+	id S1755175Ab1EVUVh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 16:21:37 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:41115 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754815Ab1EVUVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 16:21:19 -0400
+Date: Sun, 22 May 2011 21:20:42 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: Andi Kleen <andi@firstfloor.org>
+cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 01/12] Force always inline for gcc 4.5 when optimizing
+ for size
+In-Reply-To: <f21331d6ac687d28aa7f9b7f0f5b7620.squirrel@www.firstfloor.org>
+Message-ID: <alpine.DEB.2.00.1105222115270.8205@skynet.skynet.ie>
+References: <1305936082-21304-1-git-send-email-andi@firstfloor.org>    <alpine.DEB.2.00.1105220816480.12897@skynet.skynet.ie> <f21331d6ac687d28aa7f9b7f0f5b7620.squirrel@www.firstfloor.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinRJ12Jc4u1OpB67cc3T3Trhci3dw@mail.gmail.com>
-References: <1306092879.16902.1.camel@monotop>
-	<BANLkTin6=3rpchVFHi9P=6Cp31uL=vMM0w@mail.gmail.com>
-	<BANLkTinRJ12Jc4u1OpB67cc3T3Trhci3dw@mail.gmail.com>
-Date: Sun, 22 May 2011 22:13:13 +0200
-Message-ID: <BANLkTimWZx+2BdtzVQfKk+fPAJ8eHRwF9Q@mail.gmail.com>
-Subject: Re: [PATCH] fs: add missing prefetch header to inode.c
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Eduardo Silva <edsiper@gmail.com>
-Cc: sedat.dilek@gmail.com, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 22, 2011 at 10:08 PM, Eduardo Silva <edsiper@gmail.com> wrote:
-> oh, yep, it was in UM arch :)
 
-I've already submitted a patch for UML.
-fs/inode.c is not the only place which needs the prefetch stuff...
+> > Oh these look like a good plan, one of our contributors has an inline
+> > fetish and it got cut-n-pasted into a few places particular in radeon.
+> >
+> > But we won't be turning DRM debugging off, its what we use to debug things
+> > in the field, I did get a patch recently to reduce some of its overhead
+> 
+> Why can't it be a CONFIG option like all other debugging code?
 
--- 
-Thanks,
-//richard
+Not sure which part of debug things in the field doesn't explain it, 
+having people remove the debugging code would sort of work against fixing 
+problems. Having a config option might be possible, but then I'd have to 
+deal with people who think they know what they are doing turning it off, 
+so I'd rather not. Next think you know some distro turns it off and you 
+have users who you can't help anymore.
+
+> If you want to keep it on would need to drop even more inlines to get
+> the 50k overhead down.
+
+Dave.
