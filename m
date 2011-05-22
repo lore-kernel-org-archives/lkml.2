@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab1EVLYy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 07:24:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62436 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858Ab1EVLYs (ORCPT
+	id S1754322Ab1EVL0f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 07:26:35 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:56257 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab1EVL0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 07:24:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=ECN7swQkZfQsMs2qK4MrNUjIv8YQqBIJnbSAl3hBuxYrfrmrR+R+taDElUSNmtWyAN
-         RH5eS51PuNGCshCiNxZC0Ci/j3+KmCFDP1CpX+14mCrvxSuKJbkRsSC0ejRj/BoldVzJ
-         jo3XI/fx9iJT+c0KmmC+v3EK+rLLAkGJf94bQ=
+	Sun, 22 May 2011 07:26:30 -0400
+Date: Sun, 22 May 2011 07:26:29 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Alex Bligh <alex@alex.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: REQ_FLUSH, REQ_FUA and open/close of block devices
+Message-ID: <20110522112629.GA26586@infradead.org>
+References: <10C5890F8F477E959B993BFA@nimrod.local>
+ <20110520122010.GA25628@infradead.org>
+ <60FB7C5F40961417F1605595@nimrod.local>
+ <20110522104448.GA20241@infradead.org>
+ <A0329D810FA7795CEDDA5C70@nimrod.local>
 MIME-Version: 1.0
-Date: Sun, 22 May 2011 19:24:47 +0800
-Message-ID: <BANLkTin4p+bjYPw9TYeqFpUXPDByZNd9GQ@mail.gmail.com>
-Subject: [Patch] cris: fix a build error in kernel/fork.c
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: linux-cris-kernel@axis.com, LKML <linux-kernel@vger.kernel.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mikael Starvik <starvik@axis.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: multipart/mixed; boundary=20cf303b426d3fb18304a3db9af2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A0329D810FA7795CEDDA5C70@nimrod.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf303b426d3fb18304a3db9af2
-Content-Type: text/plain; charset=UTF-8
+> So, the file in question is not mmap'd (it's an nbd disk). fsync() /
+> fdatasync() is too expensive as it will sync everything. As far as I can
+> tell, this is no more dangerous re metadata than fdatasync() which also
+> does not sync metadata. I had read the last sentence as "this system
+> call does not *necessarily* flush disk write caches" (meaning "if you
+> haven't mounted e.g. ext3 with barriers=1, then you can't ensure write
+> caches write through"), as opposed to "will not ever flush disk write
+> caches", and given mounting ext3 without barriers=1 produces no FUA or
+> FLUSH commands in normal operation anyway (as far as light debugging
+> can see) that's not much of a loss.
 
-On cris we got a build error,
+ext3 without barriers does not gurantee any data integrity and will lose
+your data in an eye blink if you have a large enough cache.
 
-kernel/fork.c:267: error: implicit declaration of function
-'alloc_thread_info_node'
+fdatasync is equivalent to fsync except that it does not flush
+non-essential metadata (basically just timestamps in practice), but it
+does flush metadata requried to find the data again, e.g. allocation
+information and extent maps.  sync_file_range does nothing but flush
+out pagecache content - it means you basically won't get your data
+back in case of a crash if you either:
 
-this is due to that we renamed alloc_thread_info() to alloc_thread_info_node().
+ a) have a volatile write cache in your disk (e.g. any normal SATA disk)
+ b) are using a sparse file on a filesystem
+ c) are using a fallocate-preallocated file on a filesystem
+ d) use any file on a COW filesystem like btrfs
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+e.g. it only does anything useful for you if you do not have a volatile
+write cache, and either use a raw block device node, or just overwrite
+an already fully allocated (and not preallocated) file on a non-COW
+filesystem.
 
----
+> But rather than trying to justify myself: what is the best way to
+> emulate FUA, i.e. ensure a specific portion of a file is synced before
+> returning, without ensuring the whole lot is synced (which is far too
+> slow)? The only other option I can see is to open the file with a second
+> fd, mmap the chunk of the file (it may be larger than the available
+> virtual address space), mysnc it with MS_SYNC, then fsync, then munmap
+> and close, and hope the fsync doesn't spit anything else out. This
+> seems a little excessive, and I don't even know whether it would work.
 
---20cf303b426d3fb18304a3db9af2
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="cris-fix-alloc_thread_info_node-build-error.diff"
-Content-Disposition: attachment; 
-	filename="cris-fix-alloc_thread_info_node-build-error.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gnzwc1dh0
+You can have a second FD with O_DSYNC open and write to that.  But for
+NBD and Linux guest that won't make any different yet.  While REQ_FUA
+is a separate flag so far it's only used in combination with REQ_FLUSH,
+so the only pattern you'll see REQ_FUA used in is:
 
-ZGlmZiAtLWdpdCBhL2FyY2gvY3Jpcy9pbmNsdWRlL2FzbS90aHJlYWRfaW5mby5oIGIvYXJjaC9j
-cmlzL2luY2x1ZGUvYXNtL3RocmVhZF9pbmZvLmgKaW5kZXggMjliNzRhMS4uZDVhN2I0ZiAxMDA2
-NDQKLS0tIGEvYXJjaC9jcmlzL2luY2x1ZGUvYXNtL3RocmVhZF9pbmZvLmgKKysrIGIvYXJjaC9j
-cmlzL2luY2x1ZGUvYXNtL3RocmVhZF9pbmZvLmgKQEAgLTExLDggKzExLDYgQEAKIAogI2lmZGVm
-IF9fS0VSTkVMX18KIAotI2RlZmluZSBfX0hBVkVfQVJDSF9USFJFQURfSU5GT19BTExPQ0FUT1IK
-LQogI2lmbmRlZiBfX0FTU0VNQkxZX18KICNpbmNsdWRlIDxhc20vdHlwZXMuaD4KICNpbmNsdWRl
-IDxhc20vcHJvY2Vzc29yLmg+CkBAIC02Nyw4ICs2NSw5IEBAIHN0cnVjdCB0aHJlYWRfaW5mbyB7
-CiAKICNkZWZpbmUgaW5pdF90aHJlYWRfaW5mbwkoaW5pdF90aHJlYWRfdW5pb24udGhyZWFkX2lu
-Zm8pCiAKKyNkZWZpbmUgX19IQVZFX0FSQ0hfVEhSRUFEX0lORk9fQUxMT0NBVE9SCiAvKiB0aHJl
-YWQgaW5mb3JtYXRpb24gYWxsb2NhdGlvbiAqLwotI2RlZmluZSBhbGxvY190aHJlYWRfaW5mbyh0
-c2ssIG5vZGUpICgoc3RydWN0IHRocmVhZF9pbmZvICopIF9fZ2V0X2ZyZWVfcGFnZXMoR0ZQX0tF
-Uk5FTCwxKSkKKyNkZWZpbmUgYWxsb2NfdGhyZWFkX2luZm9fbm9kZSh0c2ssIG5vZGUpICgoc3Ry
-dWN0IHRocmVhZF9pbmZvICopIF9fZ2V0X2ZyZWVfcGFnZXMoR0ZQX0tFUk5FTCwxKSkKICNkZWZp
-bmUgZnJlZV90aHJlYWRfaW5mbyh0aSkgZnJlZV9wYWdlcygodW5zaWduZWQgbG9uZykgKHRpKSwg
-MSkKIAogI2VuZGlmIC8qICFfX0FTU0VNQkxZX18gKi8K
---20cf303b426d3fb18304a3db9af2--
+ REQ_FLUSH
+ REQ_FUA
+
+which means there's no data but the one just written in the cache.
+
