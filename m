@@ -1,74 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757751Ab1EWWyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 18:54:17 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34555 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab1EWWyP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 18:54:15 -0400
-Date: Mon, 23 May 2011 15:53:43 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>, x86@kernel.org
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Harald Welte <laforge@gnufiish.org>,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: Re: linux-next: Tree for May 23 (sound/soc/codecs)
-Message-Id: <20110523155343.2e68c265.randy.dunlap@oracle.com>
-In-Reply-To: <20110523224659.GB19533@opensource.wolfsonmicro.com>
-References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au>
-	<20110523134815.fb87933a.randy.dunlap@oracle.com>
-	<20110523224659.GB19533@opensource.wolfsonmicro.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
+	id S1757850Ab1EWWyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 18:54:43 -0400
+Received: from 173-160-34-133-colorado.hfc.comcastbusiness.net ([173.160.34.133]:56862
+	"EHLO ether.astekcorp.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1755210Ab1EWWyj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 18:54:39 -0400
+From: Dave Carroll <dcarroll@astekcorp.com>
+To: "'Milton Miller'" <miltonm@bga.com>
+CC: LPPC <linuxppc-dev@lists.ozlabs.org>, Paul Mackerras <paulus@samba.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Mon, 23 May 2011 16:54:25 -0600
+Subject: [PATCH  v5] powerpc: Force page alignment for initrd reserved memory
+Thread-Topic: [PATCH  v5] powerpc: Force page alignment for initrd reserved
+ memory
+Thread-Index: AcwZcFh+5VZUVdjdQa+TutYV+wnzbAAKYEnQ
+Message-ID: <522F24EF533FC546962ECFA2054FF777373072AB79@MAILSERVER2.cos.astekcorp.com>
+In-Reply-To: <initrd-align-withdrawn@mdm.bga.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090204.4DDAE585.001C:SCFSTAT5015188,ss=1,fgs=0
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011 06:47:28 +0800 Mark Brown wrote:
+When using 64K pages with a separate cpio rootfs, U-Boot will align
+the rootfs on a 4K page boundary. When the memory is reserved, and
+subsequent early memblock_alloc is called, it will allocate memory
+between the 64K page alignment and reserved memory. When the reserved
+memory is subsequently freed, it is done so by pages, causing the
+early memblock_alloc requests to be re-used, which in my case, caused
+the device-tree to be clobbered.
 
-> On Mon, May 23, 2011 at 01:48:15PM -0700, Randy Dunlap wrote:
-> > On Mon, 23 May 2011 15:45:18 +1000 Stephen Rothwell wrote:
-> 
-> > when CONFIG_GPIOLIB is not enabled
-> > and CONFIG_GENERIC_GPIO is not enabled:
-> 
-> > sound/soc/codecs/ak4641.c:524: error: 'GPIOF_OUT_INIT_LOW' undeclared (first use in this function)
-> > sound/soc/codecs/wm8915.c:2857: error: 'GPIOF_OUT_INIT_LOW' undeclared (first use in this function)
-> 
-> What architecture is this on (you should always include information like
-> this anyway so people can try to reproduce what you're seeing)?  In any
+This patch forces the reserved memory for initrd to be kernel page
+aligned, and adds the same range extension when freeing initrd. It
+will also move the device tree if it overlaps with the reserved memory
+for initrd.
 
-on x86_64  [adding x86@kernel.org == arch maintainers]
+Many thanks to Milton Miller for his input on this patch.
 
-> case, please talk to the architecture maintainers about this - it's an
-> issue in the architecture GPIO support (or lack thereof) rather than a
-> driver problem.
-
-except that a driver should not assume that defines like
-GPIOF_OUT_INIT_LOW are always available.
-
-> Also adding Dmitry who submitted the driver - Randy, please try to
-> remember to CC relevant people.
-
-Which driver did Dmitry submit?  how would I know that?
-I don't download every linux-next git tree -- just linux-next tarballs.
-
-
-ak4641.c says:
-MODULE_AUTHOR("Harald Welte <laforge@gnufiish.org>");
-  [which bounces]
-
-and wm8915.c says:
-MODULE_AUTHOR("Mark Brown <broonie@opensource.wolfsonmicro.com>");
-
-
+Signed-off-by: Dave Carroll <dcarroll@astekcorp.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ * This patch is based on Linus' current tree
+
+ arch/powerpc/kernel/prom.c |   11 ++++++++---
+ arch/powerpc/mm/init_32.c  |    5 ++++-
+ arch/powerpc/mm/init_64.c  |    5 ++++-
+ 3 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+index 48aeb55..58871df 100644
+--- a/arch/powerpc/kernel/prom.c
++++ b/arch/powerpc/kernel/prom.c
+@@ -86,7 +86,8 @@ early_param("mem", early_parse_mem);
+  * move_device_tree - move tree to an unused area, if needed.
+  *
+  * The device tree may be allocated beyond our memory limit, or inside the
+- * crash kernel region for kdump. If so, move it out of the way.
++ * crash kernel region for kdump, or within the page aligned range of initrd.
++ * If so, move it out of the way.
+  */
+ static void __init move_device_tree(void)
+ {
+@@ -99,7 +100,9 @@ static void __init move_device_tree(void)
+        size = be32_to_cpu(initial_boot_params->totalsize);
+
+        if ((memory_limit && (start + size) > PHYSICAL_START + memory_limit) ||
+-                       overlaps_crashkernel(start, size)) {
++                       overlaps_crashkernel(start, size) ||
++                       ((start + size) > _ALIGN_DOWN(initrd_start, PAGE_SIZE)
++                       && start <= _ALIGN_UP(initrd_end, PAGE_SIZE))) {
+                p = __va(memblock_alloc(size, PAGE_SIZE));
+                memcpy(p, initial_boot_params, size);
+                initial_boot_params = (struct boot_param_header *)p;
+@@ -555,7 +558,9 @@ static void __init early_reserve_mem(void)
+ #ifdef CONFIG_BLK_DEV_INITRD
+        /* then reserve the initrd, if any */
+        if (initrd_start && (initrd_end > initrd_start))
+-               memblock_reserve(__pa(initrd_start), initrd_end - initrd_start);
++               memblock_reserve(_ALIGN_DOWN(__pa(initrd_start), PAGE_SIZE),
++                       _ALIGN_UP(initrd_end, PAGE_SIZE) -
++                       _ALIGN_DOWN(initrd_start, PAGE_SIZE));
+ #endif /* CONFIG_BLK_DEV_INITRD */
+
+ #ifdef CONFIG_PPC32
+diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
+index d65b591..4835c4f 100644
+--- a/arch/powerpc/mm/init_32.c
++++ b/arch/powerpc/mm/init_32.c
+@@ -226,8 +226,11 @@ void free_initmem(void)
+ #ifdef CONFIG_BLK_DEV_INITRD
+ void free_initrd_mem(unsigned long start, unsigned long end)
+ {
+-       if (start < end)
++       if (start < end) {
++               start = _ALIGN_DOWN(start, PAGE_SIZE);
++               end = _ALIGN_UP(end, PAGE_SIZE);
+                printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
++       }
+        for (; start < end; start += PAGE_SIZE) {
+                ClearPageReserved(virt_to_page(start));
+                init_page_count(virt_to_page(start));
+diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+index 6374b21..060c952 100644
+--- a/arch/powerpc/mm/init_64.c
++++ b/arch/powerpc/mm/init_64.c
+@@ -102,8 +102,11 @@ void free_initmem(void)
+ #ifdef CONFIG_BLK_DEV_INITRD
+ void free_initrd_mem(unsigned long start, unsigned long end)
+ {
+-       if (start < end)
++       if (start < end) {
++               start = _ALIGN_DOWN(start, PAGE_SIZE);
++               end = _ALIGN_UP(end, PAGE_SIZE);
+                printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
++       }
+        for (; start < end; start += PAGE_SIZE) {
+                ClearPageReserved(virt_to_page(start));
+                init_page_count(virt_to_page(start));
+--
+1.7.4
+
+
