@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560Ab1EWCQU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 22:16:20 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:36278 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755370Ab1EWCQS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 22:16:18 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Message-ID:In-Reply-To:References:Date:Subject:From:To:Cc:User-Agent:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Priority:Importance:X-Identified-User;
-	b=E0DMq4MI5VrQLDenu1Bwnt57XEAifsJ6QOY4bB/WdhPSckeOvqHtyZ+KNDCbeu950KxoHV62iTOo4n8Hsgw0QaGF6fAPDLjf5Bk4tm1h9QrGvsEWM49Fb57WcC70tCka;
-Message-ID: <f3b1b41cec770d7cca99849e22fa9946.squirrel@xenotime.net>
-In-Reply-To: <1305966108-13399-2-git-send-email-jim.cromie@gmail.com>
-References: <1305966108-13399-1-git-send-email-jim.cromie@gmail.com>
-    <1305966108-13399-2-git-send-email-jim.cromie@gmail.com>
-Date: Sun, 22 May 2011 19:16:17 -0700
-Subject: Re: [PATCH 1/3] do collectcfiles work in perl itself, eschew shell
- pipeline
-From: "Randy Dunlap" <rdunlap@xenotime.net>
-To: "Jim Cromie" <jim.cromie@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        "Jim Cromie" <jim.cromie@gmail.com>
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:program running on server}
+	id S1755610Ab1EWCVX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 22:21:23 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37720 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755211Ab1EWCVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 22:21:19 -0400
+Date: Mon, 23 May 2011 12:21:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>, Daniel Hellstrom <daniel@gaisler.com>
+Subject: linux-next: manual merge of the sparc tree with the fixes tree
+Message-Id: <20110523122116.a1fa2aca.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__23_May_2011_12_21_16_+1000_5T++CkKVDg5wwnDM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 21, 2011 1:21 am, Jim Cromie wrote:
+--Signature=_Mon__23_May_2011_12_21_16_+1000_5T++CkKVDg5wwnDM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  sub collectcfiles {
-> -    my @file
-> -	= `cat .tmp_versions/*.mod | grep '.*\.ko\$' | sed s/\.ko$/.mod.c/`;
-> +    my @file;
-> +    while (<.tmp_versions/*.mod>) {
-> +	open my $fh, '<', $_ or die "cant open $_: $!\n";
+Hi David,
 
-Use either "can't" or "cannot".  "cant" is a different word.
+Today's linux-next merge of the sparc tree got conflicts in
+arch/sparc/include/asm/smp_32.h and arch/sparc/kernel/smp_32.c between
+commit 951d04e4ef43 ("sparc32: fix build, move inline function to .c
+file") from the fixes tree and commit d6d048192b1d ("sparc32: implement
+SMP IPIs using the generic functions") from the sparc tree.
 
-> +	push (@file,
-> +	      grep s/\.ko/.mod.c/,	# change the suffix
-> +	      grep m/.+\.ko/,		# find the .ko path
-> +	      <$fh>);			# lines in opened file
-> +    }
->      chomp @file;
->      return @file;
->  }
+The latter seems to supercede to former, so I used the latter.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Mon__23_May_2011_12_21_16_+1000_5T++CkKVDg5wwnDM
+Content-Type: application/pgp-signature
 
--- 
-~Randy
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJN2cScAAoJEDMEi1NhKgbscDkH/3n/jPX97RJ0pFPiwUvBw7xp
+6sWW0zCclRzmnDPn45YPy4PJo6R8D2DVXAVuBuHN39Crrxl8Zs/w8PGuaHxk7g6I
+usoBPRWohcSwvKel6PsunhWXNFN3+En+b1VFqAM0a2qfvENUxn+1lNiNv4ervA0G
+h6NGeaCvSX8dK+mCgwS6jdAVAYXb4xpnOqAtJ/KoMMEkQ30G6rrq4E+U0J1Bplpx
+E6ZbjyA5iaXlhfNp23s4dFqp/K5gH8/r4sqXtEUdDQRfIVpK1/mEMEBL+zEyefhr
+tg16UbahJiANhHA3WcZB8gXtMqxbeuL2Kz8BTr+j6N18Qv/dyiX4pb/P1qSnyrQ=
+=A1av
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__23_May_2011_12_21_16_+1000_5T++CkKVDg5wwnDM--
