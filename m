@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab1EWI3f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 04:29:35 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19122 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab1EWI3e (ORCPT
+	id S1753737Ab1EWIX0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 04:23:26 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36376 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab1EWIXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 04:29:34 -0400
-Date: Mon, 23 May 2011 10:22:02 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "D. Jansen" <d.g.jansen@googlemail.com>
-cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, tytso@mit.edu
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-In-Reply-To: <BANLkTikCivzqf5OJEa=ouKSvaLMTS3ayng@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1105231019440.3148@swampdragon.chaosbits.net>
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <9534.1305905293@localhost> <BANLkTikCivzqf5OJEa=ouKSvaLMTS3ayng@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 23 May 2011 04:23:25 -0400
+Message-ID: <4DDA1973.4090309@pengutronix.de>
+Date: Mon, 23 May 2011 10:23:15 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2085992460-1306138922=:3148"
+To: Oliver Hartkopp <socketcan@hartkopp.net>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        Wolfgang Grandegger <wg@grandegger.com>, sachi@mistralsolutions.com,
+        davinci-linux-open-source@linux.davincidsp.com, nsekhar@ti.com,
+        open list <linux-kernel@vger.kernel.org>,
+        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
+        linux-arm-kernel@lists.infradead.org, Netdev@vger.kernel.org,
+        m-watkins@ti.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
+References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com> <4DCB88A4.2010901@grandegger.com> <4DCBF1B6.6000104@hartkopp.net> <201105221230.56243.arnd@arndb.de> <4DD9FCFC.10803@hartkopp.net>
+In-Reply-To: <4DD9FCFC.10803@hartkopp.net>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigC295372533A9F99782DE402D"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigC295372533A9F99782DE402D
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
---8323328-2085992460-1306138922=:3148
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+On 05/23/2011 08:21 AM, Oliver Hartkopp wrote:
 
-On Fri, 20 May 2011, D. Jansen wrote:
+[...]
 
-> On Fri, May 20, 2011 at 5:28 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> > On Thu, 19 May 2011 15:34:46 +0200, Dennis Jansen said:
-> >
-> >> Testing:
-> >> I've been using this workaround on my netbook for over six months now.
-> >> It works as expected for me with all software in a Ubuntu 9.10
-> >> environment and saves me at least 0.5 Watt or roughly 10 % battery
-> >> time - without destroying my hard disk. I have seen no negative side
-> >> effects.
-> >
-> > How much destructive testing did you do?  In the 6 months, how many times did
-> > the system crash (or had the battery pulled out, or whatever) while large
-> > amounts of data were still pending after apps thought they were fsync'ed? How
-> > much crash testing was done against apps that use fsync for ordering or
-> > correctness reasons?
-> 
-> I don't see the point in verifying the obvious. Of course applications
-> that rely on fsync will lose data.
-> The real problem comes with ordering correctness, which could actually
-> _destroy previous data_ as well.
-> In my scenario (office applications, browsing) I have not hit such a problem.
-> 
-> Does anyone know a Linux app that actually does rely on ordering
-> correctness? Is that one which is used on a laptop? In laptop mode?
-> (-> when on battery?) Because so far the discussion seems to be
-> running in circles around Alan's mailer daemon. I would just shut that
-> down on enabling laptop mode. Problem solved. But I don't run that on
-> my laptop, anyway, esp. in laptop mode. I wonder who would, too.
-> 
+> In 'real world' CAN setups you'll never see 21.000 CAN frames per secon=
+d (and
+> therefore 21.000 irqs/s) - you are usually designing CAN network traffi=
+c with
+> less than 60% busload. So interrupt rates somewhere below 1000 irqs/s c=
+an be
+> assumed.
+>=20
+> From what i've seen so far a 3-4 messages rx FIFO and NAPI support just=
+ make it.
+>=20
+> @Marc/Wolfgang: Would this be also your recommendation for a CAN contro=
+ller
+> design that supports SocketCAN in the best way?
 
-PostgreSQL's Write Ahead Log (WAL) would be one such example as far as I 
-can see ( http://www.westnet.com/~gsmith/content/postgresql/TuningPGWAL.htm ).
-And yes, people run that on laptops while on battery (I know that for a 
-fact since I do that myself).
+If you have a rx FIFO NAPI is the way to go. For a single mailbox it
+adds overhead, if you can read the CAN frame in the interrupt handler.
+The error messages should probably generated from NAPI, too. Especially
+the I'm-the-only-CAN-node-on-the-net-and-get-no-ACK error message.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+However IIRC David said that every new driver should implement NAPI.
 
---8323328-2085992460-1306138922=:3148--
+> As the Linux network stack supports hardware timestamps too, this could=
+ be an
+> additional (optional!) feature.
+
+regards, Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enigC295372533A9F99782DE402D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk3aGXYACgkQjTAFq1RaXHOi6ACfQ4kY0ukWKfqwYANq0x5mV3gD
+lt8AoJjkRhJ0UWdPQ/dpzOA6WC4zJk6w
+=v0Gq
+-----END PGP SIGNATURE-----
+
+--------------enigC295372533A9F99782DE402D--
