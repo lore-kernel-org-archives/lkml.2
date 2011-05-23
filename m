@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab1EWPYP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 11:24:15 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50294 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821Ab1EWPYO convert rfc822-to-8bit (ORCPT
+	id S1755648Ab1EWPYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 11:24:44 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:35312 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755498Ab1EWPYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 11:24:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110521234725.GB17672@n2100.arm.linux.org.uk>
-References: <1305829704-11774-1-git-send-email-robherring2@gmail.com>
- <20110519233958.GB18181@ponder.secretlab.ca> <4DD66B8A.5040404@gmail.com>
- <201105201621.03801.arnd@arndb.de> <4DD68614.6090209@gmail.com>
- <a42f0c27-2811-4b68-bedf-7dfaa7bff6ff@VA3EHSMHS025.ehs.local>
- <BANLkTi=8vX1Cs_fzpQXZBuuDuLYLu1FGmg@mail.gmail.com> <20110521234725.GB17672@n2100.arm.linux.org.uk>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 23 May 2011 09:23:54 -0600
-X-Google-Sender-Auth: -gUfmxgt8UMpgBjzq-IaC-2AcJk
-Message-ID: <BANLkTi=3vQHoUaUmaDsrton_DrckDcHJ4w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] drivers/amba: probe via device tree
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Segher Boessenkool <segher@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 May 2011 11:24:42 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=oVaZ/u4YZtC2tqyHnbUUGRgoChyOcLhJXB/fjmApRAnTPtEdh/d8w6eYX7CRGPXa39tBtKbzyKKzHY7RATvN6Xwy9IRmU0BvWqdwRCHOoXpZDb6IOhLHFcCmJqBA84Hh;
+Date: Mon, 23 May 2011 08:24:40 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: markgross@thegnar.org
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the suspend tree
+Message-Id: <20110523082440.d417688c.rdunlap@xenotime.net>
+In-Reply-To: <20110523141846.GA8122@gvim.org>
+References: <20110523150636.ccd83777.sfr@canb.auug.org.au>
+	<20110523141846.GA8122@gvim.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 21, 2011 at 5:47 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sat, May 21, 2011 at 11:42:34AM -0600, Grant Likely wrote:
->> Russell, it seems to me that the primary behaviour that amba_bus has
->> over platform_bus is the clock management, and secondarily
->> verification of the type of device by the device id.  Am I correct, or
->> am I missing something?
->
-> It matches by vendor/device ID just like PCI does, and does the bus
-> clock management and power management in a really nice way, which I
-> doubt platform devices will ever do.
->
-> The way this discussion is going, I'm going to suggest that we also
-> convert PCI stuff to being platform devices too.  I don't see the
-> point of PCI existing for all the same reasons being given in this
-> thread.
+On Mon, 23 May 2011 07:18:46 -0700 mark gross wrote:
 
-I certainly don't see that as being the direction this discussion is going.
+> On Mon, May 23, 2011 at 03:06:36PM +1000, Stephen Rothwell wrote:
+> > Hi Rafael,
+> > 
+> > After merging the suspend tree, today's linux-next build (i386 defconfig
+> > among others) produced this warning:
+> > 
+> > kernel/pm_qos_params.c: In function 'pm_qos_power_write':
+> > kernel/pm_qos_params.c:420: warning: passing argument 3 of 'kstrtol' from incompatible pointer type
+> > include/linux/kernel.h:210: note: expected 'long int *' but argument is of type 's32 *'
+> > 
+> > Intreoduced by commit 365daa955e03 ("PM: Correct PM QOS's user mode
+> > interface to work with ascii input per").
+> 
+> Gah!  I'm sorry about that.
+> 
+> attached is a fix.
+> 
+> 
+> --mark
+> 
+> signed-off-by:markgross <markgross@thegnar.org>
 
-I see a serious question about how best to model AMBA primecell
-devices in the device tree, and a similarly serious question about
-whether to instantiate them as platform_devices or amba_devices.
-Modelled behaviour in this case (clock/power management) is
-particularly important, and you're right, platform_devices will never
-implement that behaviour in the core code (this issue has already been
-pushed back on; see discussions about omap_device).
+Not in correct format.
 
-g.
+> 
+> From a8f0587b9ae598be5ca4c3cdda4e0ced6ca9baaf Mon Sep 17 00:00:00 2001
+> From: mgross <mgross@cr48>
+
+what is cr48?  conference room 48?
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
