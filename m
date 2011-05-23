@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030721Ab1EWVGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 17:06:44 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:46086 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030683Ab1EWVGh convert rfc822-to-8bit
+	id S1030974Ab1EWVJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 17:09:33 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:7897
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030942Ab1EWVJL convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 17:06:37 -0400
-Subject: Re: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Felipe Balbi <balbi@ti.com>
-In-Reply-To: <Pine.LNX.4.44L0.1105231220230.2020-100000@iolanthe.rowland.org>
-Date: Tue, 24 May 2011 00:06:29 +0300
-Cc: Felipe Balbi <balbi@ti.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Tanya Brokhman <tlinder@codeaurora.org>, <greg@kroah.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
+	Mon, 23 May 2011 17:09:11 -0400
+X-SpamScore: -5
+X-BigFish: VS-5(z3c23mz9371O98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Gala Kumar-B11780 <B11780@freescale.com>
+CC: Tabi Timur-B04825 <B04825@freescale.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "greg@kroah.com" <greg@kroah.com>, "akpm@kernel.org" <akpm@kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-console@vger.kernel.org" <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 0/7] This patchset adds support for running Linux under
+ the Freescale hypervisor,
+Thread-Topic: [PATCH 0/7] This patchset adds support for running Linux under
+ the Freescale hypervisor,
+Thread-Index: AQHMGY2nKu1HG1LlU0CUqq+o67zeCw==
+Date: Mon, 23 May 2011 21:09:07 +0000
+Message-ID: <BANLkTinqOb1UH=keRtZ9=454NDrzcjYV7g@mail.gmail.com>
+References: <1305813272-31826-1-git-send-email-timur@freescale.com>
+ <A221B293-A4DD-4223-AEEA-F3E5243D2C0A@freescale.com>
+In-Reply-To: <A221B293-A4DD-4223-AEEA-F3E5243D2C0A@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.56.112.32]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-ID: <0E853193E336754AA3CD2F381FE36838@freescale.net>
 Content-Transfer-Encoding: 8BIT
-Message-Id: <BD27AEAC-1E6D-480C-9E18-A970B992AD75@ti.com>
-References: <Pine.LNX.4.44L0.1105231220230.2020-100000@iolanthe.rowland.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-X-Mailer: Apple Mail (2.1084)
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, May 20, 2011 at 3:29 PM, Kumar Gala <kumar.gala@freescale.com> wrote:
 
-(replying from another PC, not sure if formatting
-will be broken, hopefully not)
+> Applied to 'test' branch.  (grabbed 'v2' of tty patch).  Fixed merged conflicts.
 
-On May 23, 2011, at 7:28 PM, Alan Stern wrote:
->>> Since in dummy_hcd all of this is much simpler I think that the device speed
->>> should be determined by driver->speed and "which type of cable the
->>> connection was made over - SS or HS". The "cable type" is exactly what the
->>> module parameter is.
->> 
->> I really don't understand this.  You're going to have a module parameter
->> for what type of cable is plugged in?
-> 
-> It would be more accurate to say the module parameter will be used to
-> force the connection to run at a lower speed than the maximum possible.  
-> This is kind of like what happens when you plug in a SuperSpeed device 
-> using a USB-2 cable -- the connection runs at a lower speed than it 
-> could have.
+I don't think you pushed this branch to git.kernel.org
 
-if it's something like that, for sure we can have the module parameter. But
-plugging a USB2 gadget/function to a USB3-capable UDC/HCD should
-work fine.
-
-With Tatyana's patches, if we load a USB2 g_zero to dummy_hcd, enumeration
-will fail where it shouldn't. This has been my whole point ;-) Maybe I wasn't
-clear enough.
-
->> What about the case where SuperSpeed enumeration
->> fails and you have to fall back to high speed?
-> 
-> If SuperSpeed enumeration fails, say because the device doesn't have 
-> any SuperSpeed descriptors, xhci-hcd doesn't fall back to high speed, 
-> does it?  dummy-hcd should behave the same way.
-
-it should at least. Isn't that what happens between EHCI/OHCI ? HS Chirp
-sequencing fails, then we fall back to FullSpeed.
-
->> It seems like you really
->> need to handle both speeds and the speed fall back parameter in the same
->> driver.  Isn't there some other gadget driver that has a fall back to
->> full or low speed when high speed enumeration fails?
-> 
-> That's a property of the gadget driver, not the UDC driver.  dummy-hcd 
-> is a UDC driver (and an HCD too).
-
-USB3.0 dummy_hcd should still enumerate USB2.0 gadget drivers.
+http://git.kernel.org/?p=linux/kernel/git/galak/powerpc.git;a=shortlog;h=refs/heads/test
 
 -- 
-balbi
-
+Timur Tabi
+Linux kernel developer at Freescale
