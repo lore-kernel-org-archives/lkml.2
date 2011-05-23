@@ -1,148 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab1EWRfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 13:35:43 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38969 "EHLO mx1.suse.de"
+	id S932384Ab1EWRgH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:36:07 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:50185 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932080Ab1EWRfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 13:35:43 -0400
-Date: Mon, 23 May 2011 18:35:35 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Andrew Lutomirski <luto@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, hannes@cmpxchg.org, riel@redhat.com
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
- vmlinux)
-Message-ID: <20110523173535.GZ5279@suse.de>
-References: <20110520153346.GA1843@barrios-desktop>
- <BANLkTi=X+=Wh1MLs7Fc-v-OMtxAHbcPmxA@mail.gmail.com>
- <20110520161934.GA2386@barrios-desktop>
- <BANLkTi=4C5YAxwAFWC6dsAPMR3xv6LP1hw@mail.gmail.com>
- <BANLkTimThVw7-PN6ypBBarqXJa1xxYA_Ow@mail.gmail.com>
- <BANLkTint+Qs+cO+wKUJGytnVY3X1bp+8rQ@mail.gmail.com>
- <BANLkTinx+oPJFQye7T+RMMGzg9E7m28A=Q@mail.gmail.com>
- <BANLkTik29nkn-DN9ui6XV4sy5Wo2jmeS9w@mail.gmail.com>
- <BANLkTikQd34QZnQVSn_9f_Mxc8wtJMHY0w@mail.gmail.com>
- <20110523164225.GA14734@random.random>
+	id S932080Ab1EWRgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 13:36:05 -0400
+X-ASG-Debug-ID: 1306172163-01de28096b5bd10001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DDA9AFF.3080400@fusionio.com>
+Date: Mon, 23 May 2011 19:35:59 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110523164225.GA14734@random.random>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH] blk-cgroup: Initialize ioc->cgroup_changed at ioc creation
+  time
+References: <20110523145539.GA4019@redhat.com>
+X-ASG-Orig-Subj: Re: [PATCH] blk-cgroup: Initialize ioc->cgroup_changed at ioc creation
+  time
+In-Reply-To: <20110523145539.GA4019@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1306172163
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64593
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 06:42:25PM +0200, Andrea Arcangeli wrote:
-> On Mon, May 23, 2011 at 08:12:50AM +0900, Minchan Kim wrote:
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 292582c..1663d24 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -231,8 +231,11 @@ unsigned long shrink_slab(struct shrink_control *shrink,
-> >        if (scanned == 0)
-> >                scanned = SWAP_CLUSTER_MAX;
-> > 
-> > -       if (!down_read_trylock(&shrinker_rwsem))
-> > -               return 1;       /* Assume we'll be able to shrink next time */
-> > +       if (!down_read_trylock(&shrinker_rwsem)) {
-> > +               /* Assume we'll be able to shrink next time */
-> > +               ret = 1;
-> > +               goto out;
-> > +       }
+On 2011-05-23 16:55, Vivek Goyal wrote:
+> If we don't explicitly initialize it to zero, CFQ might think that
+> cgroup of ioc has changed and it generates lots of unnecessary calls
+> to call_for_each_cic(changed_cgroup). Fix it.
 > 
-> It looks cleaner to return -1 here to differentiate the failure in
-> taking the lock from when we take the lock and just 1 object is
-> freed. Callers seems to be ok with -1 already and more intuitive for
-> the while (nr > 10) loops too (those loops could be changed to "while
-> (nr > 0)" if all shrinkers are accurate and not doing something
-> inaccurate like the above code did, the shrinkers retvals I didn't
-> check yet).
-> 
+> cfq_get_io_context()
+>   cfq_ioc_set_cgroup()
+>      call_for_each_cic(ioc, changed_cgroup)
 
-Only one caller reads the value of shrink_slab() and while it would
-survive -1 being returned, it gains nothing. I don't see it as being
-much clearer than the existing return value of 1.
-
-> >        up_read(&shrinker_rwsem);
-> > +out:
-> > +       cond_resched();
-> >        return ret;
-> >  }
-> 
-> If we enter the loop some of the shrinkers will reschedule but it
-> looks good for the last iteration that may have still run for some
-> time before returning.
-
-Yes.
-
-> The actual failure of shrinker_rwsem seems only
-> theoretical though (but ok to cover it too with the cond_resched, but
-> in practice this should be more for the case where shrinker_rwsem
-> doesn't fail).
-> 
-
-Profiles from some users imply that this condition is being hit. I
-can't 100% prove it as I can't reproduce the problem locally
-(seems to require a sandybridge laptop for some reason). Tests did
-show that kswapd CPU usage was reduced as well as the liklihood
-of hanging when shrink_slab used cond_resched() like this. See
-https://lkml.org/lkml/2011/5/17/274 .
-
-> > @@ -2331,7 +2336,7 @@ static bool sleeping_prematurely(pg_data_t
-> > *pgdat, int order, long remaining,
-> >         * must be balanced
-> >         */
-> >        if (order)
-> > -               return pgdat_balanced(pgdat, balanced, classzone_idx);
-> > +               return !pgdat_balanced(pgdat, balanced, classzone_idx);
-> >        else
-> >                return !all_zones_ok;
-> >  }
-> 
-> I now wonder if this is why compaction in kswapd didn't work out well
-> and kswapd would spin at 100% load so much when compaction was added,
-
-It's possible.
-
-> plus with kswapd-compaction patch I think this code should be changed
-> to:
-> 
->  if (!COMPACTION_BUILD && order)
->   return !pgdat_balanced();
->  else
->   return !all_zones_ok;
-> 
-> (but only with kswapd-compaction)
-> 
-
-Why? kswapd can enter lumpy reclaim when !COMPACTION_BUILD. While this
-is hardly desirable, I don't see why kswapd should use different logic
-for balancing depending on whether compaction is used or not.
-
-> I should probably give kswapd-compaction another spin after fixing
-> this, because with compaction kswapd should be super successful at
-> satisfying zone_watermark_ok_safe(zone, _order_...) in the
-> sleeping_prematurely high watermark check, leading to pgdat_balanced
-> returning true most of the time (which would make kswapd go crazy spin
-> instead of stopping as it was supposed to). Mel, do you also think
-> it's worth another try with a fixed sleeping_prematurely like above?
-> 
-
-It's worth a try anyway although I think it's more important to figure
-out if all_unreclaimable is being improperly set or not.
-
-> Another thing, I'm not excited of the schedule_timeout(HZ/10) in
-> kswapd_try_to_sleep(), it seems all for the statistics.
-
-It's to catch where kswapd balances a zone but continual allocations put
-the zone under the high watermark quickly. It's to keep kswapd awake to
-reduce the likelihood that processes get hit the min watermark and
-stall.
+Thanks Vivek, applied.
 
 -- 
-Mel Gorman
-SUSE Labs
+Jens Axboe
+
