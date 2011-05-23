@@ -1,109 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab1EWQNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:13:07 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:19078 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576Ab1EWQNB (ORCPT
+	id S1756183Ab1EWQQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:16:48 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37858 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab1EWQQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:13:01 -0400
+	Mon, 23 May 2011 12:16:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=d4gMvUBhL489uhZAJh+Z7AhVVIeTyS2aHTHbq5xmw2ctpfVcnfKay7UGjG7NVFJ1eN
-         GYrH0U10k7tRy1fRdX1g==
-Date: Mon, 23 May 2011 18:12:56 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, andi@firstfloor.org,
-        ming.m.lin@intel.com
-Subject: [PATCH 3/3] perf_events: add Intel Sandy Bridge offcore_response
- low-level support (v3)
-Message-ID: <20110523161256.GA11624@quad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=PqBwwLTvKKDoAYGEozDdbdf8mHSEQoewrWTGrztD7cvY3VbIWWmq0t0btm1ixkg25/
+         ue/Mld8sqJ8Pv8C3I3+UJ8k1jQTkgp2EOkmk0IvfzwXJy4HY/u6i8PLeZ/5DYlKQvcat
+         1MPsTpSWai/Y9tKsvGuYanKga0Np/z4l33ZfY=
+Subject: [PATCH] Kconfig: add warning about permission of config file
+From: hiromu <hiromu1996@gmail.com>
+To: llinux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, zippel@linux-m68k.org, mmarek@suse.cz,
+        lacombar@gmail.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 01:16:41 +0900
+Message-ID: <1306167401.18840.8.camel@hiromu-MacBook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    
-This patch adds Intel Sandy Bridge offcore_response support by
-providing the low-level constraint table for those events.
-    
-On Sandy Bridge, there are two offcore_response events. Each uses
-its own dedictated extra register. But those registers are NOT shared
-between sibling CPUs when HT is on unlike Nehalem/Westmere. They are
-always private to each CPU. But they still need to be controlled within
-an event group. All events within an event group must use the same
-value for the extra MSR. That's not controlled by the second patch in
-this series.
-    
-Furthermore on Sandy Bridge, the offcore_response events have NO
-counter constraints contrary to what the official documentation
-indicates, so drop the events from the contraint table.
-    
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
+Some kbuild targets don't warn us about permission of the configure.
+If you don't set write permission, you lose changes.
+So I added warning and error.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index ed6af75..d6ad9c2 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -326,6 +326,7 @@ struct x86_pmu {
- 	 * Extra registers for events
- 	 */
- 	struct extra_reg *extra_regs;
-+	bool regs_no_ht_sharing;
- };
+Cc: Roman Zippel <zippel@linux-m68k.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Arnaud Lacombe <lacombar@gmail.com>
+
+Signed-off-by: Hiromu Yakura <hiromu1996@gmail.com>
+---
+ scripts/kconfig/conf.c     |    6 ++++++
+ scripts/kconfig/confdata.c |   17 +++++++++++++++++
+ scripts/kconfig/gconf.c    |    4 ++++
+ scripts/kconfig/lkc.h      |    1 +
+ scripts/kconfig/mconf.c    |    4 ++++
+ scripts/kconfig/nconf.c    |    4 ++++
+ scripts/kconfig/qconf.cc   |    4 ++++
+ 7 files changed, 40 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+index 006ad81..d93e351 100644
+--- a/scripts/kconfig/conf.c
++++ b/scripts/kconfig/conf.c
+@@ -466,6 +466,12 @@ int main(int ac, char **av)
+ 	bindtextdomain(PACKAGE, LOCALEDIR);
+ 	textdomain(PACKAGE);
  
- static struct x86_pmu x86_pmu __read_mostly;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 4ae1e99..9904205 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -100,8 +100,6 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
- 	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
- 	/* FIXED_EVENT_CONSTRAINT(0x013c, 2), CPU_CLK_UNHALTED.REF */
- 	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
--	INTEL_EVENT_CONSTRAINT(0xb7, 0x1), /* OFF_CORE_RESPONSE_0 */
--	INTEL_EVENT_CONSTRAINT(0xbb, 0x8), /* OFF_CORE_RESPONSE_1 */
- 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
- 	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
- 	EVENT_CONSTRAINT_END
-@@ -122,6 +120,13 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
- 	EVENT_CONSTRAINT_END
- };
- 
-+static struct extra_reg intel_snb_extra_regs[] __read_mostly =
-+{
-+	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffffffffull, RSP_0),
-+	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffffffffull, RSP_1),
-+	EVENT_EXTRA_END
-+};
++	if (conf_check_permission()) {
++		fprintf(stderr,
++			"*** Permission denied to write the configuration.\n\n");
++		exit(1);
++	}
 +
- static u64 intel_pmu_event_map(int hw_event)
- {
- 	return intel_perfmon_event_map[hw_event];
-@@ -1260,7 +1265,7 @@ static void intel_pmu_cpu_starting(int cpu)
- 	 */
- 	intel_pmu_lbr_reset();
+ 	while ((opt = getopt_long(ac, av, "", long_opts, NULL)) != -1) {
+ 		input_mode = (enum input_mode)opt;
+ 		switch (opt) {
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 61c35bf..3de1fbe 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -7,6 +7,7 @@
+ #include <ctype.h>
+ #include <errno.h>
+ #include <fcntl.h>
++#include <libgen.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -1051,3 +1052,19 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
+ 			set_all_choice_values(csym);
+ 	}
+ }
++
++int conf_check_permission(void)
++{
++	int ret, retval = 0;
++	const char *name;
++	char *dir;
++
++	name = conf_get_configname();
++	dir = dirname((char *)name);
++
++	ret = access(dir, W_OK);
++	if (ret < 0)
++		retval = -errno;
++
++	return retval;
++}
+diff --git a/scripts/kconfig/gconf.c b/scripts/kconfig/gconf.c
+index 4558961..3567a23 100644
+--- a/scripts/kconfig/gconf.c
++++ b/scripts/kconfig/gconf.c
+@@ -1510,6 +1510,10 @@ int main(int ac, char *av[])
+ 	bind_textdomain_codeset(PACKAGE, "UTF-8");
+ 	textdomain(PACKAGE);
  
--	if (!cpuc->shared_regs)
-+	if (!cpuc->shared_regs || x86_pmu.regs_no_ht_sharing)
- 		return;
++	if (conf_check_permission())
++		fprintf(stderr,
++			"Warning: Permission denied to write the configuration.\n");
++
+ 	/* GTK stuffs */
+ 	gtk_set_locale();
+ 	gtk_init(&ac, &av);
+diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+index febf0c9..4d20841 100644
+--- a/scripts/kconfig/lkc.h
++++ b/scripts/kconfig/lkc.h
+@@ -91,6 +91,7 @@ char *conf_get_default_confname(void);
+ void sym_set_change_count(int count);
+ void sym_add_change_count(int count);
+ void conf_set_all_new_symbols(enum conf_def_mode mode);
++int conf_check_permission(void);
  
- 	for_each_cpu(i, topology_thread_cpumask(cpu)) {
-@@ -1502,6 +1507,9 @@ static __init int intel_pmu_init(void)
+ /* confdata.c and expr.c */
+ static inline void xfwrite(const void *str, size_t len, size_t count, FILE *out)
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index d433c7a..c820e05 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -803,6 +803,10 @@ int main(int ac, char **av)
+ 	bindtextdomain(PACKAGE, LOCALEDIR);
+ 	textdomain(PACKAGE);
  
- 		x86_pmu.event_constraints = intel_snb_event_constraints;
- 		x86_pmu.pebs_constraints = intel_snb_pebs_events;
-+		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		/* all extra regs are per-cpu when HT is on */
-+		x86_pmu.regs_no_ht_sharing = true;
++	if (conf_check_permission())
++		fprintf(stderr,
++			"Warning: Permission denied to write the configuration.\n");
++
+ 	conf_parse(av[1]);
+ 	conf_read(NULL);
  
- 		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
- 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x180010e;
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index db56377..1cea031 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -1491,6 +1491,10 @@ int main(int ac, char **av)
+ 	bindtextdomain(PACKAGE, LOCALEDIR);
+ 	textdomain(PACKAGE);
+ 
++	if (conf_check_permission())
++		fprintf(stderr,
++			"Warning: Permission denied to write the configuration.\n");
++
+ 	conf_parse(av[1]);
+ 	conf_read(NULL);
+ 
+diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
+index 06dd2e3..7dca7ac 100644
+--- a/scripts/kconfig/qconf.cc
++++ b/scripts/kconfig/qconf.cc
+@@ -1746,6 +1746,10 @@ int main(int ac, char** av)
+ 	bindtextdomain(PACKAGE, LOCALEDIR);
+ 	textdomain(PACKAGE);
+ 
++	if (conf_check_permission())
++		fprintf(stderr,
++			"Warning: Permission denied to write the configuration.\n");
++
+ #ifndef LKC_DIRECT_LINK
+ 	kconfig_load();
+ #endif
+-- 
+1.7.4.1
+
+
+
