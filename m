@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030203Ab1EWUGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 16:06:34 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:38636 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932909Ab1EWUGb (ORCPT
+	id S934108Ab1EWUHr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 16:07:47 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36247 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932909Ab1EWUHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 16:06:31 -0400
-Date: Mon, 23 May 2011 22:06:22 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: kernel list <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org
-Subject: Re: select() on /dev/input/eventX not level-triggered?
-Message-ID: <20110523200622.GA1590@ucw.cz>
-References: <20110519235051.GA9782@elf.ucw.cz>
- <20110523181312.GA20438@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110523181312.GA20438@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 23 May 2011 16:07:44 -0400
+Subject: Re: [PATCH 2/2] mm: vmscan: Correctly check if reclaimer should
+ schedule during shrink_slab
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, stable <stable@kernel.org>
+In-Reply-To: <20110523130303.6b7dad1c.akpm@linux-foundation.org>
+References: <1306144435-2516-1-git-send-email-mgorman@suse.de>
+	 <1306144435-2516-3-git-send-email-mgorman@suse.de>
+	 <20110523130303.6b7dad1c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 00:07:36 +0400
+Message-ID: <1306181256.2442.4.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2011-05-23 11:13:12, Dmitry Torokhov wrote:
-> On Fri, May 20, 2011 at 01:50:51AM +0200, Pavel Machek wrote:
-> > Hi!
+On Mon, 2011-05-23 at 13:03 -0700, Andrew Morton wrote:
+> On Mon, 23 May 2011 10:53:55 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > It has been reported on some laptops that kswapd is consuming large
+> > amounts of CPU and not being scheduled when SLUB is enabled during
+> > large amounts of file copying. It is expected that this is due to
+> > kswapd missing every cond_resched() point because;
 > > 
-> > I'm debugging strange behaviour on /dev/input/eventX ... it seems that
-> > select is not behaving level-triggered as it apparently should. I can
-> > reproduce it when hitting windows & alt keys.
+> > shrink_page_list() calls cond_resched() if inactive pages were isolated
+> >         which in turn may not happen if all_unreclaimable is set in
+> >         shrink_zones(). If for whatver reason, all_unreclaimable is
+> >         set on all zones, we can miss calling cond_resched().
 > > 
-> > Now, I really should rewrite it into C, first, but perhaps someone has
-> > an idea?
+> > balance_pgdat() only calls cond_resched if the zones are not
+> >         balanced. For a high-order allocation that is balanced, it
+> >         checks order-0 again. During that window, order-0 might have
+> >         become unbalanced so it loops again for order-0 and returns
+> >         that it was reclaiming for order-0 to kswapd(). It can then
+> >         find that a caller has rewoken kswapd for a high-order and
+> >         re-enters balance_pgdat() without ever calling cond_resched().
+> > 
+> > shrink_slab only calls cond_resched() if we are reclaiming slab
+> > 	pages. If there are a large number of direct reclaimers, the
+> > 	shrinker_rwsem can be contended and prevent kswapd calling
+> > 	cond_resched().
+> > 
+> > This patch modifies the shrink_slab() case. If the semaphore is
+> > contended, the caller will still check cond_resched(). After each
+> > successful call into a shrinker, the check for cond_resched() remains
+> > in case one shrinker is particularly slow.
+> 
+> So CONFIG_PREEMPT=y kernels don't exhibit this problem?
 
-(Ok, so  we agree that select()  should mark descriptor as ready as
-long as data are available... right?)
+Yes, they do.  They just don't hang on my sandybridge system in the same
+way than non-PREEMPT kernels do.  I'm still sure it's got something to
+do with rescheduling kswapd onto a different CPU ...
 
-> Is this with next or with mainline? In next we try not to signal that FD
-> is ready unless we have full packet in the buffer...
+> I'm still unconvinced that we know what's going on here.  What's kswapd
+> *doing* with all those cycles?  And if kswapd is now scheduling away,
+> who is doing that work instead?  Direct reclaim?
 
-2.6.39-rcX mainline.
+Still in the dark about this one, too.
 
-> FWIW I see python indeed not reading the tail of events (btw the format
-> should be 'llhhi' and the size on 64 bit arches is 24, not 16) but when
-> I hacked evtest to use select and non-blockign read it all worked
-> properly.
+James
 
-It  was on x32, but I'll fix that, thanks.
 
-Difference was I'm not using non-blocking read(). It is unusual but
-should work AFAICT. Just read one packet when select shows its ready;
-if there's more than one, don't loop around read, but rely on select
-returning immediately.
-
-I did verify it on strace, so it should not  be python artefact.
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
