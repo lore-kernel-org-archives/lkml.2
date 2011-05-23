@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab1EWRdy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 13:33:54 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41722 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756404Ab1EWRdx (ORCPT
+	id S932387Ab1EWRgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:36:53 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58763 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932252Ab1EWRgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 13:33:53 -0400
-Date: Mon, 23 May 2011 13:33:50 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Alex Bligh <alex@alex.org.uk>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: BUG: Failure to send REQ_FLUSH on unmount on ext3, ext4, and FS
- in general
-Message-ID: <20110523173350.GA10554@infradead.org>
-References: <959E4E25EAEC544D31199E6F@nimrod.local>
- <20110523155550.GE4716@quack.suse.cz>
- <EC63F9E077B362A0FDCF3527@Ximines.local>
- <20110523172906.GH4716@quack.suse.cz>
+	Mon, 23 May 2011 13:36:52 -0400
+Date: Mon, 23 May 2011 13:33:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Randy Dunlap <rdunlap@xenotime.net>
+cc: Jens Axboe <axboe@kernel.dk>, TejunHeo <tj@kernel.org>,
+        Micha Nelissen <micha@neli.hopto.org>, lud <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: USB stick as root device does not work
+In-Reply-To: <20110523101405.e3ccafe9.rdunlap@xenotime.net>
+Message-ID: <Pine.LNX.4.44L0.1105231332090.2020-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110523172906.GH4716@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 07:29:06PM +0200, Jan Kara wrote:
->   Yes, but that's rather a deficiency in default mount options of ext3
-> which is kept for backward buggy-for-performance compatibility. Anywone who
-> seriously cares about the data should use barrier=1 and BTW SUSE or RH
-> distros change the default to be barrier=1. Anyway, this is a seperate
-> issue.
+On Mon, 23 May 2011, Randy Dunlap wrote:
 
-It really should be changed.  The previous (bad) excuse was that the
-ordering barrier code was too much overhead.  Making a filesystem
-non-safe by default is already a bad sin, but having the code to make
-it safe around and not enabling it is plain criminal.
+> [adding cc: of linux-usb mailing list]
 
-> > Would there be any interested in these patches if I cooked them up,
-> > or did they die because of opposition before rather than apathy?
->   I guess you might come with some proposal and post it to linux-fsdevel
-> (include Al Viro and Christoph Hellwig in CC) and see what happens...
+Better to ask people familiar with the block layer (CC'ed).
 
-There's no way to make it generic.  Fortunately adding support to a
-filesystem is generally trivial, take a look at my recently added
-cache flushing support for hfsplus for example.
+Alan Stern
+
+> On Sun, 22 May 2011 16:13:17 +0200 Micha Nelissen wrote:
+> 
+> > Hi,
+> > 
+> > Using USB stick as root device does not work for me. I specify
+> > 'root=/dev/sdb1 rootwait' on the kernel commandline, but the kernel does
+> > not wait for the USB stick to be scanned and its partitions found. I
+> > have a harddisk which is /dev/sda, and this USB stick would be /dev/sdb.
+> > 
+> > I think blk_lookup_devt returns the block device number even if it does
+> > not exist yet, and init/do_mounts.c:473 therefore skips waiting:
+> > 
+> >         if ((ROOT_DEV == 0) && root_wait) {
+> > 
+> > due to ROOT_DEV having become non-zero already.
+> > 
+> > If I use the commandline: 'root=/dev/sdb1 rootdelay=5' then it does
+> > mount and boot properly. However, using rootwait seems safer and faster
+> > to me, that it's meant for this use case.
+> > 
+> > Thanks for any pointers,
+> > 
+> > Micha
+> > --
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 
