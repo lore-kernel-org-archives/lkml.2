@@ -1,66 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1EWLHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 07:07:31 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:40962 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713Ab1EWLH3 (ORCPT
+	id S1753925Ab1EWLIL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 07:08:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36149 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218Ab1EWLIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 07:07:29 -0400
+	Mon, 23 May 2011 07:08:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=LkS1F9IrzUQOzB5eTgL2f82GuPxz/H8lo33vBkGx9aVrKwTpQjXSl33RTz5jkgpann
-         /IsTydxj4QEnjbUuMGC0RwydqJ96YpJhwvtVfvkZZWG8ycOVbCiOzhth0sttNkxj+nU7
-         PNLdSCM+riwVqw0yyrx3eIVcqYDXgx6UaNlt8=
-Subject: Re: [PATCH 0/3] block: Per cpu merge stats and cfq fix
-From: Namhyung Kim <namhyung@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, dpshah@google.com
-In-Reply-To: <20110521000650.GA8026@redhat.com>
-References: <1305936167-8932-1-git-send-email-vgoyal@redhat.com>
-	 <20110521000650.GA8026@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 May 2011 20:07:20 +0900
-Message-ID: <1306148840.1498.1.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=VMwFeEsxJlUolCW7ozTeMhh0oXSL4UDlIyQW9ZjLgl+HJT5eD1mgMbSr2/iOdRT5qG
+         cqUJ3OX3KZd6wW4j7P9zh95QmVJN/H1TIVyFKWf9SsTpMGqhB+hWRm9V0y+Fhtz6DFuR
+         IluUgCCxOmnXtf0sNcq7y3X/7jhR7kPgS6ot0=
+MIME-Version: 1.0
+Date: Mon, 23 May 2011 19:08:08 +0800
+Message-ID: <BANLkTinLvqa0DiayLOwvxE9zBmqb4Y7Rww@mail.gmail.com>
+Subject: [Patch] mm: remove noswapaccount kernel parameter
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>
+Content-Type: multipart/mixed; boundary=20cf303639298c816304a3ef7c47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011-05-20 (금), 20:06 -0400, Vivek Goyal:
-> On Fri, May 20, 2011 at 08:02:44PM -0400, Vivek Goyal wrote:
-> > Hi Jens,
-> > 
-> > Here is the patch for making merge stats per cpu. While scanning the code
-> > I also noticed that in one case I was not freeing up per cpu stats. First
-> > patch fixes it. I also included Namhyung Kim's bio merge fix.
-> > 
-> > Thanks
-> > Vivek
-> > 
-> > Vivek Goyal (3):
-> >   cfq-iosched: Fix a memory leak of per cpu stats for root group
-> >   cfq-iosched: Make IO merge related stats per cpu
-> 
-> Minor correction. Following patch author is Namhyung Kim.
-> 
-> Namhyung Kim(1)
-> 
-> >   block: call elv_bio_merged() when merged
-> 
-> Thanks
-> Vivek
-> 
+--20cf303639298c816304a3ef7c47
+Content-Type: text/plain; charset=UTF-8
 
-Hi, Vivek. Thanks a lot for your work. :)
+noswapaccount is deprecated by swapaccount=0, and it is scheduled
+to be removed in 2.6.40.
 
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
 
--- 
-Regards,
-Namhyung Kim
+---
 
+--20cf303639298c816304a3ef7c47
+Content-Type: text/x-patch; charset=US-ASCII; name="mm-remove-noswapaccount.diff"
+Content-Disposition: attachment; filename="mm-remove-noswapaccount.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_go1bb68c0
 
+IERvY3VtZW50YXRpb24vZmVhdHVyZS1yZW1vdmFsLXNjaGVkdWxlLnR4dCB8ICAgMTYgLS0tLS0t
+LS0tLS0tLS0tLQogRG9jdW1lbnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQgICAgICAgIHwg
+ICAgMyAtLS0KIGluaXQvS2NvbmZpZyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB8ICAg
+IDQgKystLQogbW0vbWVtY29udHJvbC5jICAgICAgICAgICAgICAgICAgICAgICAgICAgIHwgICAg
+OCAtLS0tLS0tLQogbW0vcGFnZV9jZ3JvdXAuYyAgICAgICAgICAgICAgICAgICAgICAgICAgIHwg
+ICAgMiArLQogNSBmaWxlcyBjaGFuZ2VkLCAzIGluc2VydGlvbnMoKyksIDMwIGRlbGV0aW9ucygt
+KQoKZGlmZiAtLWdpdCBhL0RvY3VtZW50YXRpb24vZmVhdHVyZS1yZW1vdmFsLXNjaGVkdWxlLnR4
+dCBiL0RvY3VtZW50YXRpb24vZmVhdHVyZS1yZW1vdmFsLXNjaGVkdWxlLnR4dAppbmRleCA0Y2Jh
+MjYwLi42ODgzMjhhIDEwMDY0NAotLS0gYS9Eb2N1bWVudGF0aW9uL2ZlYXR1cmUtcmVtb3ZhbC1z
+Y2hlZHVsZS50eHQKKysrIGIvRG9jdW1lbnRhdGlvbi9mZWF0dXJlLXJlbW92YWwtc2NoZWR1bGUu
+dHh0CkBAIC01MTksMjIgKzUxOSw2IEBAIEZpbGVzOgluZXQvbmV0ZmlsdGVyL3h0X2Nvbm5saW1p
+dC5jCiAKIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIAotV2hhdDoJbm9zd2FwYWNjb3Vu
+dCBrZXJuZWwgY29tbWFuZCBsaW5lIHBhcmFtZXRlcgotV2hlbjoJMi42LjQwCi1XaHk6CVRoZSBv
+cmlnaW5hbCBpbXBsZW1lbnRhdGlvbiBvZiBtZW1zdyBmZWF0dXJlIGVuYWJsZWQgYnkKLQlDT05G
+SUdfQ0dST1VQX01FTV9SRVNfQ1RMUl9TV0FQIGNvdWxkIGJlIGRpc2FibGVkIGJ5IHRoZSBub3N3
+YXBhY2NvdW50Ci0Ja2VybmVsIHBhcmFtZXRlciAoaW50cm9kdWNlZCBpbiAyLjYuMjktcmMxKS4g
+TGF0ZXIgb24sIHRoaXMgZGVjaXNpb24KLQl0dXJuZWQgb3V0IHRvIGJlIG5vdCBpZGVhbCBiZWNh
+dXNlIHdlIGNhbm5vdCBoYXZlIHRoZSBmZWF0dXJlIGNvbXBpbGVkCi0JaW4gYW5kIGRpc2FibGVk
+IGJ5IGRlZmF1bHQgYW5kIGxldCBvbmx5IGludGVyZXN0ZWQgdG8gZW5hYmxlIGl0Ci0JKGUuZy4g
+Z2VuZXJhbCBkaXN0cmlidXRpb24ga2VybmVscyBtaWdodCBuZWVkIGl0KS4gVGhlcmVmb3JlIHdl
+IGhhdmUKLQlhZGRlZCBzd2FwYWNjb3VudFs9MHwxXSBwYXJhbWV0ZXIgKGludHJvZHVjZWQgaW4g
+Mi42LjM3KSB3aGljaCBwcm92aWRlcwotCXRoZSBib3RoIHBvc3NpYmlsaXRpZXMuIElmIHdlIHJl
+bW92ZSBub3N3YXBhY2NvdW50IHdlIHdpbGwgaGF2ZQotCWxlc3MgY29tbWFuZCBsaW5lIHBhcmFt
+ZXRlcnMgd2l0aCB0aGUgc2FtZSBmdW5jdGlvbmFsaXR5IGFuZCB3ZQotCWNhbiBhbHNvIGNsZWFu
+dXAgdGhlIHBhcmFtZXRlciBoYW5kbGluZyBhIGJpdCAoKS4KLVdobzoJTWljaGFsIEhvY2tvIDxt
+aG9ja29Ac3VzZS5jej4KLQotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQotCiBXaGF0Oglp
+cHRfYWRkcnR5cGUgbWF0Y2ggaW5jbHVkZSBmaWxlCiBXaGVuOgkyMDEyCiBXaHk6CXN1cGVyc2Vk
+ZWQgYnkgeHRfYWRkcnR5cGUKZGlmZiAtLWdpdCBhL0RvY3VtZW50YXRpb24va2VybmVsLXBhcmFt
+ZXRlcnMudHh0IGIvRG9jdW1lbnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQKaW5kZXggYzYw
+M2VmNy4uMTkzMTQ1MCAxMDA2NDQKLS0tIGEvRG9jdW1lbnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVy
+cy50eHQKKysrIGIvRG9jdW1lbnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQKQEAgLTE3Nzcs
+OSArMTc3Nyw2IEBAIGJ5dGVzIHJlc3BlY3RpdmVseS4gU3VjaCBsZXR0ZXIgc3VmZml4ZXMgY2Fu
+IGFsc28gYmUgZW50aXJlbHkgb21pdHRlZC4KIAogCW5vc29mdGxvY2t1cAlbS05MXSBEaXNhYmxl
+IHRoZSBzb2Z0LWxvY2t1cCBkZXRlY3Rvci4KIAotCW5vc3dhcGFjY291bnQJW0tOTF0gRGlzYWJs
+ZSBhY2NvdW50aW5nIG9mIHN3YXAgaW4gbWVtb3J5IHJlc291cmNlCi0JCQljb250cm9sbGVyLiAo
+U2VlIERvY3VtZW50YXRpb24vY2dyb3Vwcy9tZW1vcnkudHh0KQotCiAJbm9zeW5jCQlbSFcsTTY4
+S10gRGlzYWJsZXMgc3luYyBuZWdvdGlhdGlvbiBmb3IgYWxsIGRldmljZXMuCiAKIAlub3RzYwkJ
+W0JVR1M9WDg2LTMyXSBEaXNhYmxlIFRpbWUgU3RhbXAgQ291bnRlcgpkaWZmIC0tZ2l0IGEvaW5p
+dC9LY29uZmlnIGIvaW5pdC9LY29uZmlnCmluZGV4IGM4YjE3MmUuLmVmNDZjMGQgMTAwNjQ0Ci0t
+LSBhL2luaXQvS2NvbmZpZworKysgYi9pbml0L0tjb25maWcKQEAgLTY3Myw3ICs2NzMsNyBAQCBj
+b25maWcgQ0dST1VQX01FTV9SRVNfQ1RMUl9TV0FQCiAJICBiZSBjYXJlZnVsIGFib3V0IGVuYWJs
+aW5nIHRoaXMuIFdoZW4gbWVtb3J5IHJlc291cmNlIGNvbnRyb2xsZXIKIAkgIGlzIGRpc2FibGVk
+IGJ5IGJvb3Qgb3B0aW9uLCB0aGlzIHdpbGwgYmUgYXV0b21hdGljYWxseSBkaXNhYmxlZCBhbmQK
+IAkgIHRoZXJlIHdpbGwgYmUgbm8gb3ZlcmhlYWQgZnJvbSB0aGlzLiBFdmVuIHdoZW4geW91IHNl
+dCB0aGlzIGNvbmZpZz15LAotCSAgaWYgYm9vdCBvcHRpb24gIm5vc3dhcGFjY291bnQiIGlzIHNl
+dCwgc3dhcCB3aWxsIG5vdCBiZSBhY2NvdW50ZWQuCisJICBpZiBib290IG9wdGlvbiAic3dhcGFj
+Y291bnQ9MCIgaXMgc2V0LCBzd2FwIHdpbGwgbm90IGJlIGFjY291bnRlZC4KIAkgIE5vdywgbWVt
+b3J5IHVzYWdlIG9mIHN3YXBfY2dyb3VwIGlzIDIgYnl0ZXMgcGVyIGVudHJ5LiBJZiBzd2FwIHBh
+Z2UKIAkgIHNpemUgaXMgNDA5NmJ5dGVzLCA1MTJrIHBlciAxR2J5dGVzIG9mIHN3YXAuCiBjb25m
+aWcgQ0dST1VQX01FTV9SRVNfQ1RMUl9TV0FQX0VOQUJMRUQKQEAgLTY4OCw3ICs2ODgsNyBAQCBj
+b25maWcgQ0dST1VQX01FTV9SRVNfQ1RMUl9TV0FQX0VOQUJMRUQKIAkgIHBhcmFtZXRlciBzaG91
+bGQgaGF2ZSB0aGlzIG9wdGlvbiB1bnNlbGVjdGVkLgogCSAgRm9yIHRob3NlIHdobyB3YW50IHRv
+IGhhdmUgdGhlIGZlYXR1cmUgZW5hYmxlZCBieSBkZWZhdWx0IHNob3VsZAogCSAgc2VsZWN0IHRo
+aXMgb3B0aW9uIChpZiwgZm9yIHNvbWUgcmVhc29uLCB0aGV5IG5lZWQgdG8gZGlzYWJsZSBpdAot
+CSAgdGhlbiBub3N3YXBhY2NvdW50IGRvZXMgdGhlIHRyaWNrKS4KKwkgIHRoZW4gc3dhcGFjY291
+bnQ9MCBkb2VzIHRoZSB0cmljaykuCiAKIGNvbmZpZyBDR1JPVVBfUEVSRgogCWJvb2wgIkVuYWJs
+ZSBwZXJmX2V2ZW50IHBlci1jcHUgcGVyLWNvbnRhaW5lciBncm91cCAoY2dyb3VwKSBtb25pdG9y
+aW5nIgpkaWZmIC0tZ2l0IGEvbW0vbWVtY29udHJvbC5jIGIvbW0vbWVtY29udHJvbC5jCmluZGV4
+IDAxMGY5MTYuLmU5OTJmZGYgMTAwNjQ0Ci0tLSBhL21tL21lbWNvbnRyb2wuYworKysgYi9tbS9t
+ZW1jb250cm9sLmMKQEAgLTUxNzYsMTIgKzUxNzYsNCBAQCBzdGF0aWMgaW50IF9faW5pdCBlbmFi
+bGVfc3dhcF9hY2NvdW50KGNoYXIgKnMpCiAJcmV0dXJuIDE7CiB9CiBfX3NldHVwKCJzd2FwYWNj
+b3VudCIsIGVuYWJsZV9zd2FwX2FjY291bnQpOwotCi1zdGF0aWMgaW50IF9faW5pdCBkaXNhYmxl
+X3N3YXBfYWNjb3VudChjaGFyICpzKQotewotCXByaW50a19vbmNlKCJub3N3YXBhY2NvdW50IGlz
+IGRlcHJlY2F0ZWQgYW5kIHdpbGwgYmUgcmVtb3ZlZCBpbiAyLjYuNDAuIFVzZSBzd2FwYWNjb3Vu
+dD0wIGluc3RlYWRcbiIpOwotCWVuYWJsZV9zd2FwX2FjY291bnQoIj0wIik7Ci0JcmV0dXJuIDE7
+Ci19Ci1fX3NldHVwKCJub3N3YXBhY2NvdW50IiwgZGlzYWJsZV9zd2FwX2FjY291bnQpOwogI2Vu
+ZGlmCmRpZmYgLS1naXQgYS9tbS9wYWdlX2Nncm91cC5jIGIvbW0vcGFnZV9jZ3JvdXAuYwppbmRl
+eCAyZGFhZGMzLi5iN2JjOGMwIDEwMDY0NAotLS0gYS9tbS9wYWdlX2Nncm91cC5jCisrKyBiL21t
+L3BhZ2VfY2dyb3VwLmMKQEAgLTUwMiw3ICs1MDIsNyBAQCBpbnQgc3dhcF9jZ3JvdXBfc3dhcG9u
+KGludCB0eXBlLCB1bnNpZ25lZCBsb25nIG1heF9wYWdlcykKIG5vbWVtOgogCXByaW50ayhLRVJO
+X0lORk8gImNvdWxkbid0IGFsbG9jYXRlIGVub3VnaCBtZW1vcnkgZm9yIHN3YXBfY2dyb3VwLlxu
+Iik7CiAJcHJpbnRrKEtFUk5fSU5GTwotCQkic3dhcF9jZ3JvdXAgY2FuIGJlIGRpc2FibGVkIGJ5
+IG5vc3dhcGFjY291bnQgYm9vdCBvcHRpb25cbiIpOworCQkic3dhcF9jZ3JvdXAgY2FuIGJlIGRp
+c2FibGVkIGJ5IHN3YXBhY2NvdW50PTAgYm9vdCBvcHRpb25cbiIpOwogCXJldHVybiAtRU5PTUVN
+OwogfQogCg==
+--20cf303639298c816304a3ef7c47--
