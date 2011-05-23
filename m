@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab1EWCVX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 22:21:23 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37720 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755211Ab1EWCVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 22:21:19 -0400
-Date: Mon, 23 May 2011 12:21:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sam Ravnborg <sam@ravnborg.org>, Daniel Hellstrom <daniel@gaisler.com>
-Subject: linux-next: manual merge of the sparc tree with the fixes tree
-Message-Id: <20110523122116.a1fa2aca.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__23_May_2011_12_21_16_+1000_5T++CkKVDg5wwnDM"
+	id S1755596Ab1EWC1h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 22:27:37 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56493 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909Ab1EWC1f convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 22:27:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TVYYOE3dsQ6LIAgLbohuGbBNsbgUIpWsFEmmmDhj0ynEuaUqwEAFQSrMhSPO8gbRQ4
+         cnoqZzEEXwwdvAXKak8SJoAcDI5vR9NH80d2CbXMlMr064rj4fJwm7DevpDC9sz1lpKS
+         +H6gfE+g8GFwheyBTaGR/2Frd/5qfKIiohrhY=
+MIME-Version: 1.0
+In-Reply-To: <4DD9BA2F.9000303@zytor.com>
+References: <1306113548.29789.2.camel@monotop>
+	<4DD9BA2F.9000303@zytor.com>
+Date: Sun, 22 May 2011 22:27:35 -0400
+Message-ID: <BANLkTi=fuEzCUnK0Vuc-2WAnKUxEyG_VWw@mail.gmail.com>
+Subject: Re: [PATCH] kernel: Fix ftrace.c compiler warning when calling ftrace_nop_replace()
+From: Eduardo Silva <edsiper@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__23_May_2011_12_21_16_+1000_5T++CkKVDg5wwnDM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, May 22, 2011 at 9:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 05/22/2011 06:19 PM, Eduardo Silva wrote:
+>> the function ftrace_nop_replace() returns a 'static const unsigned char *'
+>> value, so when the caller perform a direct assignment to a
+>> 'static unsigned char *', the compiler raise the following warning message:
+>>
+>>  ftrace.c:308:6: warning: assignment discards qualifiers from pointer target type
+>>  ftrace.c:318:6: warning: assignment discards qualifiers from pointer target type
+>>
+>> Adding the proper casts the message goes away.
+>>
+>> Signed-off-by: Eduardo Silva <edsiper@gmail.com>
+>
+> This quiets a warning of something that potentially looks like a real
+> bug.  Perhaps "new" should be const?
 
-Hi David,
+The value is returned in the following function:
 
-Today's linux-next merge of the sparc tree got conflicts in
-arch/sparc/include/asm/smp_32.h and arch/sparc/kernel/smp_32.c between
-commit 951d04e4ef43 ("sparc32: fix build, move inline function to .c
-file") from the fixes tree and commit d6d048192b1d ("sparc32: implement
-SMP IPIs using the generic functions") from the sparc tree.
+static const unsigned char *ftrace_nop_replace(void)
+{
+	return ideal_nops[NOP_ATOMIC5];
+}
 
-The latter seems to supercede to former, so I used the latter.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ideal_nops seems to be constant and architecture dependent, so make
+sense to return it as a constant pointer... i think that we need more
+comments about it.
 
---Signature=_Mon__23_May_2011_12_21_16_+1000_5T++CkKVDg5wwnDM
-Content-Type: application/pgp-signature
+regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJN2cScAAoJEDMEi1NhKgbscDkH/3n/jPX97RJ0pFPiwUvBw7xp
-6sWW0zCclRzmnDPn45YPy4PJo6R8D2DVXAVuBuHN39Crrxl8Zs/w8PGuaHxk7g6I
-usoBPRWohcSwvKel6PsunhWXNFN3+En+b1VFqAM0a2qfvENUxn+1lNiNv4ervA0G
-h6NGeaCvSX8dK+mCgwS6jdAVAYXb4xpnOqAtJ/KoMMEkQ30G6rrq4E+U0J1Bplpx
-E6ZbjyA5iaXlhfNp23s4dFqp/K5gH8/r4sqXtEUdDQRfIVpK1/mEMEBL+zEyefhr
-tg16UbahJiANhHA3WcZB8gXtMqxbeuL2Kz8BTr+j6N18Qv/dyiX4pb/P1qSnyrQ=
-=A1av
------END PGP SIGNATURE-----
 
---Signature=_Mon__23_May_2011_12_21_16_+1000_5T++CkKVDg5wwnDM--
+>
+>        -hpa
+>
+>
+> --
+> H. Peter Anvin, Intel Open Source Technology Center
+> I work for Intel.  I don't speak on their behalf.
+>
+>
+
+
+
+-- 
+Eduardo Silva
+http://edsiper.linuxchile.cl
+http://www.monkey-project.com
