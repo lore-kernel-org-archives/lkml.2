@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab1EWRH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 13:07:59 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:49958 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756324Ab1EWRH6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 13:07:58 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=er5uLM9hXWGi9lwQ/euHRKaNvN8MGPd2Q5VBSE48i6qJGeFHuyI7qRG1DnwnreH/qFIM8j4qXdBwQLEuaTiT2vzHCWCRNFmFlHJwCjPW3DhCugLSuSMsga9PQZY+TH9J;
-Date: Mon, 23 May 2011 10:07:55 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Joe Perches <joe@perches.com>, davej@redhat.com, rostedt@goodmis.org,
-        apw@shadowen.org, akpm@linux-foundation.org, vapier@gentoo.org,
-        linux-kernel@vger.kernel.org, man.k1983@gmail.com
-Subject: Re: [patch v3] checkpatch: Signature format verification
-Message-Id: <20110523100755.9e77d043.rdunlap@xenotime.net>
-In-Reply-To: <BANLkTik8coVxt=Z92NQBNH_=4yRhTtexzA@mail.gmail.com>
-References: <1306006721.1622.18.camel@anish-desktop>
-	<1306059528.2761.3.camel@anish-desktop>
-	<1306164094.2292.25.camel@anish-desktop>
-	<1306167105.8687.11.camel@Joe-Laptop>
-	<BANLkTi=9nzMbxU0=P+pOaHcebqhL=bd2HQ@mail.gmail.com>
-	<1306168598.8687.27.camel@Joe-Laptop>
-	<20110523093920.8f1e5cd0.rdunlap@xenotime.net>
-	<1306168975.8687.29.camel@Joe-Laptop>
-	<BANLkTik8coVxt=Z92NQBNH_=4yRhTtexzA@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756831Ab1EWRJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:09:23 -0400
+Received: from mail.avalus.com ([89.16.176.221]:38415 "EHLO mail.avalus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756324Ab1EWRJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 13:09:22 -0400
+Date: Mon, 23 May 2011 18:09:17 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: Jan Kara <jack@suse.cz>
+cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>, Alex Bligh <alex@alex.org.uk>
+Subject: Re: BUG: Failure to send REQ_FLUSH on unmount on ext3, ext4, and FS
+ in general
+Message-ID: <EC63F9E077B362A0FDCF3527@Ximines.local>
+In-Reply-To: <20110523155550.GE4716@quack.suse.cz>
+References: <959E4E25EAEC544D31199E6F@nimrod.local>
+ <20110523155550.GE4716@quack.suse.cz>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 May 2011 22:36:12 +0530 anish singh wrote:
+Jan,
 
-> On Mon, May 23, 2011 at 10:12 PM, Joe Perches <joe@perches.com> wrote:
-> 
-> > On Mon, 2011-05-23 at 09:39 -0700, Randy Dunlap wrote:
-> > > On Mon, 23 May 2011 09:36:38 -0700 Joe Perches wrote:
-> > > > On Mon, 2011-05-23 at 22:03 +0530, anish singh wrote:
-> > > > > \s[a-zA-Z]* => this is a regular expression for name & space b/w
-> > > > > Last/First name
-> > > > >                     Ex: anish kumar
-> > > > > .* => It is used to grep whatever follows name...in our context
-> > > > > mail-id
-> > > > >         Ex: abc@bbc.com.
-> > > > > So, $1 will contain ...'anish kumar <anish@gmail.com>'
-> > > > Unless the email contains a quote or a period like:
-> > > > Signed-off-by: "J. Random Contributor" <jrc@domain.tld>
-> > > and quotes are not required (i.e., are optional) AFAIK.
-> >
-> > And still should be accepted.
-> >
-> if ($1 !~ /^\s+([a-zA-Z\s\"]*.*)/i) {
->             WARN("Space required after $sign\n" .
->             $herecurr);
->   }
->  if ($1 !~ /[\sa-zA-Z\"]*\s<.*>/i) {
->  WARN("Space required b/w Full Name & Mail-id:\n" .
+--On 23 May 2011 17:55:50 +0200 Jan Kara <jack@suse.cz> wrote:
 
-"b/w" is not a good abbreviation (for "between" ???).
+>> But quite aside from the question of whether the FS supports barriers,
+>> should the kernel itself (rather than the FS) not be sending REQ_FLUSH on
+>> an unmount as the last thing that happens? IE shouldn't we see a flush
+>> even on (say) ext2 which is never going to support barriers. If the
+>> kernel itself generated a REQ_FLUSH for the block device, this would keep
+>> filesystems that don't support barriers safe provided the unmount
+>> completed successfully and would have no impact on ones that had already
+>> flushed the write-behind cache.
+>
+>   Yes, I think that generic VFS helpers should send barriers in cases
+> where it makes sense and umount is one of them. There even have been some
+> attempts to do so if I recall right but they didn't go anywhere.
 
->                                                         $herecurr);
->                                         }
-> Qoute has been taken care too now.
+Indeed I think even doing sync() on ext3 with default options does not
+send a flush to the write cache. I had a quick look at the code (which
+has got rather more complicated since the umount syscall moved from
+super.c to namespace.c) and it seemed to me the best thing to do would
+be for sync() on a block device to send a REQ_FLUSH to that device at
+the end (assuming the comment about sync actually completing I/O rather
+than merely initiating it still holds), and to ensure umount is calling
+sync.
 
+Would there be any interested in these patches if I cooked them up,
+or did they die because of opposition before rather than apathy?
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Alex Bligh
