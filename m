@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab1EWQa3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:30:29 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:39832 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755526Ab1EWQa2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:30:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=AGtXurghLt76vf6nCJdrLmQFeknPRNJVvAczAqjuAUGz6dMG6Ph767qImJW0LyUFZQ
-         /k9KQMT74jndTZF4WQ4g==
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimX1KG-BZ98LH_NweOUOaUbQtZirg@mail.gmail.com>
-References: <334319B2EBE0B144BAE1402B79D82DC5CE13B056@srvpegasus>
- <BANLkTimNSe5JjM2+_-XzS7D8XPeZrPL0oA@mail.gmail.com> <334319B2EBE0B144BAE1402B79D82DC5CE13B05A@srvpegasus>
- <BANLkTimX1KG-BZ98LH_NweOUOaUbQtZirg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 23 May 2011 10:29:55 -0600
-Message-ID: <BANLkTimrpnCdzRArjAn2NOZMu0Bhf6Pn8Q@mail.gmail.com>
-Subject: Re: Kernel > 2.6.30: PCI issue causes Kernel freeze at booting
-To: "Hornung, Michael" <mhornung@init-ka.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1756387Ab1EWQat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:30:49 -0400
+Received: from mail.perches.com ([173.55.12.10]:1869 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756321Ab1EWQar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:30:47 -0400
+Subject: Re: [patch v2] checkpatch: Signature format verification
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: anish singh <anish198519851985@gmail.com>, davej@redhat.com,
+        apw@shadowen.org, akpm@linux-foundation.org, vapier@gentoo.org,
+        linux-kernel@vger.kernel.org, man.k1983@gmail.com
+In-Reply-To: <1306167729.1465.39.camel@gandalf.stny.rr.com>
+References: <1306006721.1622.18.camel@anish-desktop>
+	 <1306059528.2761.3.camel@anish-desktop>
+	 <1306073772.1681.6.camel@Joe-Laptop>
+	 <BANLkTimMPvn87E0EEqT4vhox4_8nQ4pMug@mail.gmail.com>
+	 <1306124078.1681.10.camel@Joe-Laptop>
+	 <1306167729.1465.39.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 May 2011 09:30:45 -0700
+Message-ID: <1306168245.8687.25.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 7:56 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Wed, May 18, 2011 at 1:44 AM, Hornung, Michael <mhornung@init-ka.de> wrote:
->>>> There is an UART (FPGA IP Core) in that system located at address 1900h using interrupt 3. In order to get Kernel messages at boot time,
->>>> I changed file arch/x86/include/asm/serial.h as follows:
->>>>
->>>> -        { 0, BASE_BAUD, 0x3F8, 4, STD_COM_FLAGS },      /* ttyS0 */     \
->>>> +        { 0, BASE_BAUD, 0x1900, 3, STD_COM_FLAGS },     /* ttyS0 */    \
->>>>
->>>> that is the only change I made to the kernel sources.
->>
->>> Is this UART connected via PCI?  I don't think so, because I don't see
->>> any I/O BARs that include 0x1900.
->>
->> The UART is connected via LPC bus.
->
-> Makes sense; that's a common way for attaching UARTs, and they are
-> normally described via ACPI.  When you do that, I think it will show
-> up as ttyS4 (be sure you build with CONFIG_SERIAL_8250_PNP=y), so
-> you'll have to use "console=ttyS4" when you boot.  ttyS0-ttyS3 are
-> taken by the hard-coded ports in serial.h, even though they may not
-> exist on your platform.
+On Mon, 2011-05-23 at 12:22 -0400, Steven Rostedt wrote:
+> On Sun, 2011-05-22 at 21:14 -0700, Joe Perches wrote:
+> > On Mon, 2011-05-23 at 08:26 +0530, anish singh wrote:
+> > > On Sun, May 22, 2011 at 7:46 PM, Joe Perches <joe@perches.com> wrote:
+> > >         []
+> > > What does this mean?
+> > It means I didn't quote all of your original message.
+> Of course, we usually do "[...]" or "[..]". Without the dots, it just
+> looks like some kind of uninitialized array.
 
-Hi Michael,
+Email isn't C and I'm a trendsetter.
+(Either that or I'm alone again in right field...)
 
-Any update on this problem?  Did it make any difference to put the
-UART in the ACPI namespace?
+cheers, Joe
 
-Bjorn
