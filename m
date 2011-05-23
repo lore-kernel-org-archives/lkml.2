@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab1EWSJL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 14:09:11 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:36788 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112Ab1EWSJJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 14:09:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=TK18yWz4mIT1EpZfF3jzV7W0UZ3fUH3kHj1V111IdzxCu5qv2Dqi15awbSOtsuP0J0
-         TVEscVNCnsZwMNUzuBaZcTnopT1gjEt5cL5EVQRvXeyXYAFO/sMljqGH/mVb9rM+TXko
-         RBElypFRdsCw8DTAhF5tbaVGpSHDchaAAoTsI=
-Message-ID: <4DDAA2C0.7080108@gmail.com>
-Date: Mon, 23 May 2011 22:09:04 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH -next] x86: apic_flat_64.c needs module.h
-References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au> <20110523104300.dd532a99.randy.dunlap@oracle.com> <4DDA9EAB.40304@gmail.com>
-In-Reply-To: <4DDA9EAB.40304@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757232Ab1EWSJc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 14:09:32 -0400
+Received: from mail.perches.com ([173.55.12.10]:1902 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932112Ab1EWSJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 14:09:28 -0400
+Subject: Re: [patch v3] checkpatch: Signature format verification
+From: Joe Perches <joe@perches.com>
+To: anish singh <anish198519851985@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, davej@redhat.com, rostedt@goodmis.org,
+        apw@shadowen.org, akpm@linux-foundation.org, vapier@gentoo.org,
+        linux-kernel@vger.kernel.org, man.k1983@gmail.com
+In-Reply-To: <BANLkTikqezyJMy1_i-woTVM9bvVL750iew@mail.gmail.com>
+References: <1306006721.1622.18.camel@anish-desktop>
+	 <1306059528.2761.3.camel@anish-desktop>
+	 <1306164094.2292.25.camel@anish-desktop>
+	 <1306167105.8687.11.camel@Joe-Laptop>
+	 <BANLkTi=9nzMbxU0=P+pOaHcebqhL=bd2HQ@mail.gmail.com>
+	 <1306168598.8687.27.camel@Joe-Laptop>
+	 <20110523093920.8f1e5cd0.rdunlap@xenotime.net>
+	 <1306168975.8687.29.camel@Joe-Laptop>
+	 <BANLkTik8coVxt=Z92NQBNH_=4yRhTtexzA@mail.gmail.com>
+	 <1306171117.8687.34.camel@Joe-Laptop>
+	 <BANLkTikqezyJMy1_i-woTVM9bvVL750iew@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 May 2011 11:09:26 -0700
+Message-ID: <1306174166.8687.49.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2011 09:51 PM, Cyrill Gorcunov wrote:
-> On 05/23/2011 09:43 PM, Randy Dunlap wrote:
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> apic_flat_64.c needs to include module.h to fix these warnings:
->>
->> arch/x86/kernel/apic/apic_flat_64.c:31: warning: data definition has no type or storage class
->> arch/x86/kernel/apic/apic_flat_64.c:31: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
->> arch/x86/kernel/apic/apic_flat_64.c:31: warning: parameter names (without types) in function declaration
->>
->> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
->> ---
->>  arch/x86/kernel/apic/apic_flat_64.c |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> --- linux-next-20110523.orig/arch/x86/kernel/apic/apic_flat_64.c
->> +++ linux-next-20110523/arch/x86/kernel/apic/apic_flat_64.c
->> @@ -16,6 +16,7 @@
->>  #include <linux/ctype.h>
->>  #include <linux/init.h>
->>  #include <linux/hardirq.h>
->> +#include <linux/module.h>
->>  #include <asm/smp.h>
->>  #include <asm/apic.h>
->>  #include <asm/ipi.h>
-> 
-> Thanks Randy! For some reason I didn't hit this problem while
-> were compiling the kernel and testing it (I usually do not use
-> modules though).
-> 
-> I've CC'ed Ingo and Suresh.
-> 
+On Mon, 2011-05-23 at 23:07 +0530, anish singh wrote:
+> On Mon, May 23, 2011 at 10:48 PM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2011-05-23 at 22:36 +0530, anish singh wrote:
+> > >  if ($1 !~ /[\sa-zA-Z\"]*\s<.*>/i) {
+> > >  WARN("Space required b/w Full Name & Mail-id:\n" .
+> > >       $herecurr);
+> > > Quote has been taken care too now.
+> > If you're going to try to validate email addresses,
+> > please do it reasonably correctly or not at all.
+> > At a minimum you need to add digits, single quote,
+> > period, and comma.
+> I think there is a confusion.Let me state it once again.
+> This patch is used to check space between "signs" & name/ name &
+> mail-id.
 
-Randy, while adding module.h here is correct I fail to see why I didn't
-hit this problem before, could you please post your config?
+I'm not confused.
 
--- 
-    Cyrill
+You are only checking names with this form (without quotes)
+"First Last <fl@domain.tld>", now quoted as well.
+
+Names can have many forms.
+
+8 bit chars, commas, quotes, apostrophes, all sorts of things.
+
+for instance:
+
+$ git log v2.6.36.. | grep -P "by:.*" | \
+	grep -vP "by:[\sa-zA-Z\"]*\s<.*>" | \
+	sort | uniq -c | sort -rn | head -20
+   3421     Signed-off-by: David S. Miller <davem@davemloft.net>
+   3137     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+   2232     Signed-off-by: John W. Linville <linville@tuxdriver.com>
+    386     Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+    292     Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+    257     Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+    223     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+    193     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+    167     Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+    166     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+    159     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+    126     Signed-off-by: Jean-François Moine <moinejf@free.fr>
+    121     Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+    107     Signed-off-by: Michał Mirosław <mirq-linux@rere.qmqm.pl>
+    106     Acked-by: David S. Miller <davem@davemloft.net>
+    103     Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+     76     Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+     69     Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+     66     Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+     63     Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+I still think what I suggested after your first patch
+attempt is simple and appropriate.
+
+our $Valid_Signatures "(?:Signed-off-by:|Reviewed-by:|Acked-by:)"
+...
+        if ($line =~ /^(\s*)($ValidSignatures)(\s*)(.*)$/i) {
+                my $space_before = $1;
+                my $sign_off = $2;
+                my $space_after = $3;
+                my $email = $4;
+                if (defined $space_before && $space_before ne "") {
+                        warning (no space before...)
+                }
+                if ($sign_off !~ /$Valid_Signature/) {
+                        warning (signature case...)
+                }
+                if (!defined $space_after || $space_after ne " ") {
+                        warning (need only one space after colon...)
+                }
+                if (!validate_email($4)) {
+                        warning (bad email...)
+
+
