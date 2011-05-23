@@ -1,56 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab1EWJ66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 05:58:58 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59702 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab1EWJ6y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 05:58:54 -0400
-Date: Mon, 23 May 2011 10:58:29 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kristoffer Glembo <kristoffer@gaisler.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Kevin Hilman <khilman@ti.com>,
-        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] drivers/amba: probe via device tree
-Message-ID: <20110523095829.GG17672@n2100.arm.linux.org.uk>
-References: <1305829704-11774-1-git-send-email-robherring2@gmail.com> <20110519233958.GB18181@ponder.secretlab.ca> <4DD66B8A.5040404@gmail.com> <201105201621.03801.arnd@arndb.de> <4DD68614.6090209@gmail.com> <a42f0c27-2811-4b68-bedf-7dfaa7bff6ff@VA3EHSMHS025.ehs.local> <BANLkTi=8vX1Cs_fzpQXZBuuDuLYLu1FGmg@mail.gmail.com> <4DDA2AC0.1060406@gaisler.com>
+	id S1753331Ab1EWKKu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 06:10:50 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58029 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098Ab1EWKKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 06:10:49 -0400
+Date: Mon, 23 May 2011 12:10:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Parag Warudkar <parag.lkml@gmail.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Resume Issues :Exec of NX page, Synaptics Botchup
+Message-ID: <20110523101036.GC28562@elte.hu>
+References: <alpine.DEB.2.02.1105221720040.2065@natty-nar>
+ <BANLkTik9ZmQz1A0PBC4P-9XF-hB6Ywr3uQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105221817100.1868@natty-nar>
+ <BANLkTimt0ozTCSarTVwkOpvgLoW-pizMvA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DDA2AC0.1060406@gaisler.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <BANLkTimt0ozTCSarTVwkOpvgLoW-pizMvA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 11:37:04AM +0200, Kristoffer Glembo wrote:
-> Grant Likely wrote:
-> > In the case we're talking about the bus really is an AMBA bus, and all
-> > the devices on it are in some sense real amba devices.  The problem is
-> > that not all of the devices on the bus implement peripheral ID
-> > registers or other mechanisms that good upstanding AMBA devices are
-> > expected to have.  
+
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Sun, May 22, 2011 at 3:22 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
+> >
+> > Now I get a different call trace for the same NX error. (And Synaptics is
+> > completely dead this time - not attributable to the patch, it was dumb
+> > luck perhaps that it wored last time.)
 > 
-> Before we go hardware bashing of non primecell AMBA devices I would just
-> want to point out that the primecell stuff is not part of the AMBA
-> specification.
+> Just because I'm crazy, can you double-check that you applied my patch
+> and booted the right kernel?
+> 
+> Because that NX error *really* looks like the call to setup_smep(),
+> and the eip still very much looks like something jumped to the
+> "__init" region, not the "__cpuinit" region.
+> 
+> That backtrace really still looks like the same thing.
+> 
+> Oh, and you should do
+> 
+> -static int disable_smep __initdata;
+> +static int disable_smep __cpuinitdata;
+> 
+> too, I guess. Not that it should matter for this particular oops.
 
-And before we go down that route, let me point out that the 'amba bus'
-stuff in the kernel is there to support primecells, rather than all
-devices which the AMBA specification covers.
+We have a fix for this queued up in x86/urgent:
 
-The reason it's called 'amba' is because back in 2001 or so when the
-first primecell drivers were created, there was little information
-available as to what AMBA, AHB, or APB even covered.  All I had to go
-on were the primecell documents themselves.  The higher level documents
-were not available to me.
+ 1d487624fcc1: x86, SMEP: Fix section mismatch warnings
 
-So, despite it being called 'amba', it really is just for primecells
-and if we didn't have the exposure to userspace, I'd have renamed it to
-'apb' or similar instead.
+which got delayed by weekend latency ... will send these fixes in a couple of 
+minutes.
+
+Thanks,
+
+	Ingo
+
+-------------->
+>From 1d487624fcc17a40aa67acaa9e8f3815fb7cd0f0 Mon Sep 17 00:00:00 2001
+From: Fenghua Yu <fenghua.yu@intel.com>
+Date: Fri, 20 May 2011 15:33:17 -0700
+Subject: [PATCH] x86, SMEP: Fix section mismatch warnings
+
+Fix these kernel compilation warnings:
+
+ WARNING: arch/x86/built-in.o(.cpuinit.text+0x1e07): Section mismatch ...
+ WARNING: arch/x86/built-in.o(.cpuinit.text+0x1b10): Section mismatch ...
+
+introduced by:
+
+  de5397ad5b9a: x86, cpu: Enable/disable Supervisor Mode Execution Protection
+
+Change disable_smep from __initdata to __cpuinitdata.
+Change setup_smep() from __init to __cpuinit.
+
+Reported-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Asit K Mallick <asit.k.mallick@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1305930797-11409-1-git-send-email-fenghua.yu@intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/common.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index cbc70a2..c8b4162 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -254,7 +254,7 @@ static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
+ }
+ #endif
+ 
+-static int disable_smep __initdata;
++static int disable_smep __cpuinitdata;
+ static __init int setup_disable_smep(char *arg)
+ {
+ 	disable_smep = 1;
+@@ -262,7 +262,7 @@ static __init int setup_disable_smep(char *arg)
+ }
+ __setup("nosmep", setup_disable_smep);
+ 
+-static __init void setup_smep(struct cpuinfo_x86 *c)
++static __cpuinit void setup_smep(struct cpuinfo_x86 *c)
+ {
+ 	if (cpu_has(c, X86_FEATURE_SMEP)) {
+ 		if (unlikely(disable_smep)) {
