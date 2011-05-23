@@ -1,112 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab1EWQmp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:42:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22849 "EHLO mx1.redhat.com"
+	id S1756610Ab1EWQm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:42:59 -0400
+Received: from mail.perches.com ([173.55.12.10]:1883 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932112Ab1EWQmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:42:44 -0400
-Date: Mon, 23 May 2011 18:42:25 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Lutomirski <luto@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
-        riel@redhat.com
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
- vmlinux)
-Message-ID: <20110523164225.GA14734@random.random>
-References: <BANLkTikAFMvpgHR2dopd+Nvjfyw_XT5=LA@mail.gmail.com>
- <20110520153346.GA1843@barrios-desktop>
- <BANLkTi=X+=Wh1MLs7Fc-v-OMtxAHbcPmxA@mail.gmail.com>
- <20110520161934.GA2386@barrios-desktop>
- <BANLkTi=4C5YAxwAFWC6dsAPMR3xv6LP1hw@mail.gmail.com>
- <BANLkTimThVw7-PN6ypBBarqXJa1xxYA_Ow@mail.gmail.com>
- <BANLkTint+Qs+cO+wKUJGytnVY3X1bp+8rQ@mail.gmail.com>
- <BANLkTinx+oPJFQye7T+RMMGzg9E7m28A=Q@mail.gmail.com>
- <BANLkTik29nkn-DN9ui6XV4sy5Wo2jmeS9w@mail.gmail.com>
- <BANLkTikQd34QZnQVSn_9f_Mxc8wtJMHY0w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikQd34QZnQVSn_9f_Mxc8wtJMHY0w@mail.gmail.com>
+	id S1756562Ab1EWQm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:42:57 -0400
+Subject: Re: [patch v3] checkpatch: Signature format verification
+From: Joe Perches <joe@perches.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: anish singh <anish198519851985@gmail.com>, davej@redhat.com,
+        rostedt@goodmis.org, apw@shadowen.org, akpm@linux-foundation.org,
+        vapier@gentoo.org, linux-kernel@vger.kernel.org, man.k1983@gmail.com
+In-Reply-To: <20110523093920.8f1e5cd0.rdunlap@xenotime.net>
+References: <1306006721.1622.18.camel@anish-desktop>
+	 <1306059528.2761.3.camel@anish-desktop>
+	 <1306164094.2292.25.camel@anish-desktop>
+	 <1306167105.8687.11.camel@Joe-Laptop>
+	 <BANLkTi=9nzMbxU0=P+pOaHcebqhL=bd2HQ@mail.gmail.com>
+	 <1306168598.8687.27.camel@Joe-Laptop>
+	 <20110523093920.8f1e5cd0.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 May 2011 09:42:55 -0700
+Message-ID: <1306168975.8687.29.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 08:12:50AM +0900, Minchan Kim wrote:
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 292582c..1663d24 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -231,8 +231,11 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->        if (scanned == 0)
->                scanned = SWAP_CLUSTER_MAX;
-> 
-> -       if (!down_read_trylock(&shrinker_rwsem))
-> -               return 1;       /* Assume we'll be able to shrink next time */
-> +       if (!down_read_trylock(&shrinker_rwsem)) {
-> +               /* Assume we'll be able to shrink next time */
-> +               ret = 1;
-> +               goto out;
-> +       }
+On Mon, 2011-05-23 at 09:39 -0700, Randy Dunlap wrote:
+> On Mon, 23 May 2011 09:36:38 -0700 Joe Perches wrote:
+> > On Mon, 2011-05-23 at 22:03 +0530, anish singh wrote:
+> > > \s[a-zA-Z]* => this is a regular expression for name & space b/w
+> > > Last/First name
+> > >                     Ex: anish kumar
+> > > .* => It is used to grep whatever follows name...in our context
+> > > mail-id
+> > >         Ex: abc@bbc.com.
+> > > So, $1 will contain ...'anish kumar <anish@gmail.com>'
+> > Unless the email contains a quote or a period like:
+> > Signed-off-by: "J. Random Contributor" <jrc@domain.tld>
+> and quotes are not required (i.e., are optional) AFAIK.
 
-It looks cleaner to return -1 here to differentiate the failure in
-taking the lock from when we take the lock and just 1 object is
-freed. Callers seems to be ok with -1 already and more intuitive for
-the while (nr > 10) loops too (those loops could be changed to "while
-(nr > 0)" if all shrinkers are accurate and not doing something
-inaccurate like the above code did, the shrinkers retvals I didn't
-check yet).
+And still should be accepted.
 
->        up_read(&shrinker_rwsem);
-> +out:
-> +       cond_resched();
->        return ret;
->  }
-
-If we enter the loop some of the shrinkers will reschedule but it
-looks good for the last iteration that may have still run for some
-time before returning. The actual failure of shrinker_rwsem seems only
-theoretical though (but ok to cover it too with the cond_resched, but
-in practice this should be more for the case where shrinker_rwsem
-doesn't fail).
-
-> @@ -2331,7 +2336,7 @@ static bool sleeping_prematurely(pg_data_t
-> *pgdat, int order, long remaining,
->         * must be balanced
->         */
->        if (order)
-> -               return pgdat_balanced(pgdat, balanced, classzone_idx);
-> +               return !pgdat_balanced(pgdat, balanced, classzone_idx);
->        else
->                return !all_zones_ok;
->  }
-
-I now wonder if this is why compaction in kswapd didn't work out well
-and kswapd would spin at 100% load so much when compaction was added,
-plus with kswapd-compaction patch I think this code should be changed
-to:
-
- if (!COMPACTION_BUILD && order)
-  return !pgdat_balanced();
- else
-  return !all_zones_ok;
-
-(but only with kswapd-compaction)
-
-I should probably give kswapd-compaction another spin after fixing
-this, because with compaction kswapd should be super successful at
-satisfying zone_watermark_ok_safe(zone, _order_...) in the
-sleeping_prematurely high watermark check, leading to pgdat_balanced
-returning true most of the time (which would make kswapd go crazy spin
-instead of stopping as it was supposed to). Mel, do you also think
-it's worth another try with a fixed sleeping_prematurely like above?
-
-Another thing, I'm not excited of the schedule_timeout(HZ/10) in
-kswapd_try_to_sleep(), it seems all for the statistics.
-
-Thanks,
-Andrea
