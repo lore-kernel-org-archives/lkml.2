@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab1EWTN4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 15:13:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44212 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756560Ab1EWTNy (ORCPT
+	id S932911Ab1EWTRh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 15:17:37 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:41717 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932747Ab1EWTRd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 15:13:54 -0400
+	Mon, 23 May 2011 15:17:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HVejH6jryFf7ZZs/L8Mfuv+riotH5AfipwB9d/XyWE5on3k/968twnDUe87PsOm29C
+         RNfacVPbo6G3lDX2bhnHCd3A6IYl/pXiI+e2ZbdSMTrhQwSNkuL+jk1if9iWfUf+FXfL
+         sH7TzEouRS1YO4J++Sf0CkXph2Ayi5eltUpXs=
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 23 May 2011 12:13:29 -0700
-Message-ID: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
-Subject: (Short?) merge window reminder
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <201105211054.00553.toralf.foerster@gmx.de>
+References: <201105191526.31904.toralf.foerster@gmx.de>
+	<1305907896.1465.27.camel@gandalf.stny.rr.com>
+	<201105210053.51314.toralf.foerster@gmx.de>
+	<201105211054.00553.toralf.foerster@gmx.de>
+Date: Mon, 23 May 2011 21:17:31 +0200
+Message-ID: <BANLkTikQozc+rr9Meihft_avOJf=iMAGdw@mail.gmail.com>
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Darren Hart <dvhart@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I've been busily merging stuff, and just wanted to send out a quick
-reminder that I warned people in the 39 announcement that this might
-be a slightly shorter merge window than usual, so that I can avoid
-having to make the -rc1 release from Japan using my slow laptop (doing
-"allyesconfig" builds on that thing really isn't in the cards, and I
-like to do those to verify things - even if we've already had a few
-cases where arch include differences made it less than effective in
-finding problems).
+2011/5/21 Toralf Förster <toralf.foerster@gmx.de>:
+>
+> Toralf Förster wrote at 00:53:50
+>> Bisecting gave :
+>>
+>>
+>> git bisect badd123375425d7df4b6081a631fc1203fceafa59b2 is the first bad
+>> commit commit d123375425d7df4b6081a631fc1203fceafa59b2
+>> Author: Thomas Gleixner <tglx@linutronix.de>
+>> Date:   Wed Jan 26 21:32:01 2011 +0100
+>>
+>>     rwsem: Remove redundant asmregparm annotation
+>>
+>>     Peter Zijlstra pointed out, that the only user of asmregparm (x86) is
+>>     compiling the kernel already with -mregparm=3. So the annotation of
+>>     the rwsem functions is redundant. Remove it.
+>
+> BTW I double checked that this commit is the culprit of the hang - it is.
+> Furthermore I added these kernel config options :
 
-And judging by the merge window so far, that early close (probably
-Sunday - I'll be on airplanes next Monday) looks rather likely. I
-already seem to have a fairly sizable portion of linux-next in my
-tree, and there haven't been any huge upsets.
+Toralf,
 
-So anybody who was planning a last-minute "please pull" - this is a
-heads-up. Don't do it, you might miss the window entirely.
+does this patch fix your problem?
+http://userweb.kernel.org/~rw/rwsem.diff
 
-Did I miss any major development mailing lists with stuff pending?
+Please do a make clean before rebuilding...
 
-                       Linus
-
-PS. The voices in my head also tell me that the numbers are getting
-too big. I may just call the thing 2.8.0. And I almost guarantee that
-this PS is going to result in more discussion than the rest, but when
-the voices tell me to do things, I listen.
+-- 
+Thanks,
+//richard
