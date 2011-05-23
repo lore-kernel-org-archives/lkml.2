@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab1EWPuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 11:50:40 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:41264
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1756109Ab1EWPuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 11:50:12 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:56434
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754837Ab1EWPuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 11:50:39 -0400
+	id S1755576Ab1EWPuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 11:50:09 -0400
 From: Haiyang Zhang <haiyangz@microsoft.com>
 To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
         v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Subject: [PATCH 1/6] staging: hv: remove unnecessary code in netvsc_probe().
-Date: Mon, 23 May 2011 09:03:45 -0700
-Message-Id: <1306166630-17336-1-git-send-email-haiyangz@microsoft.com>
+Subject: [PATCH 2/6] staging: hv: remove commented out code from netvsc_drv.c
+Date: Mon, 23 May 2011 09:03:46 -0700
+Message-Id: <1306166630-17336-2-git-send-email-haiyangz@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1306166630-17336-1-git-send-email-haiyangz@microsoft.com>
+References: <1306166630-17336-1-git-send-email-haiyangz@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-netif_carrier_off() was called earlier in this function, and there is
-no other thread access this device yet. The status checking code is not
-necessary here.
 
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
@@ -29,31 +27,22 @@ Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 
 ---
- drivers/staging/hv/netvsc_drv.c |   12 +-----------
- 1 files changed, 1 insertions(+), 11 deletions(-)
+ drivers/staging/hv/netvsc_drv.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 7b9c229..456d3df 100644
+index 456d3df..e716d4d 100644
 --- a/drivers/staging/hv/netvsc_drv.c
 +++ b/drivers/staging/hv/netvsc_drv.c
-@@ -364,17 +364,7 @@ static int netvsc_probe(struct hv_device *dev)
- 		return ret;
- 	}
+@@ -156,9 +156,6 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 	/* Setup the rndis header */
+ 	packet->page_buf_cnt = num_pages;
  
--	/*
--	 * If carrier is still off ie we did not get a link status callback,
--	 * update it if necessary
--	 */
--	/*
--	 * FIXME: We should use a atomic or test/set instead to avoid getting
--	 * out of sync with the device's link status
--	 */
--	if (!netif_carrier_ok(net))
--		if (!device_info.link_state)
--			netif_carrier_on(net);
-+	netif_carrier_on(net);
- 
- 	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
+-	/* TODO: Flush all write buffers/ memory fence ??? */
+-	/* wmb(); */
+-
+ 	/* Initialize it from the skb */
+ 	packet->total_data_buflen	= skb->len;
  
 -- 
 1.6.3.2
