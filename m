@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab1EWNDD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 09:03:03 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:48330 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753301Ab1EWNDB (ORCPT
+	id S1754833Ab1EWNGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 09:06:32 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60719 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab1EWNGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 09:03:01 -0400
+	Mon, 23 May 2011 09:06:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type;
-        b=Hh13foS1N4lNDnVMs7feOHZd+fbfmlJzfyBxHZRNZ//tm03ruqFRqXMGDNBmi2q327
-         Fw8cBTJUykmu+i9mhKlSvSjDqGDrvhVomF/SEkE4QUZ1DDGOz+YzUUNdC+d1u67DH7ww
-         /Eos+W3YMQgEnwAKmxefHfWW5F69m87fbhoLc=
+        b=Fpx3TM5pGfNuP4oZBlok/2fbhAHw3MJeMFd/2nAw/mkwkgCdI6Y2txjqjpHztsDLvI
+         wClcHKcDe/iYvyJKi0+ucRpg/5GrXhrhk3WvCUjE6vgvqD73EfJloLUMsex3FVKhXA9r
+         8GS/5tCFLoHzHDnPL3x4W0haVIl5pJOU8QEl4=
 MIME-Version: 1.0
-In-Reply-To: <20110511225557.2c8f6649@lxorguk.ukuu.org.uk>
-References: <20110511204609.GA6059@patrik-macbook>
-	<20110511225557.2c8f6649@lxorguk.ukuu.org.uk>
-Date: Mon, 23 May 2011 15:03:00 +0200
-Message-ID: <BANLkTi=tB+22Xen9StHkCdoEa8A2hqA2aA@mail.gmail.com>
-Subject: Re: [PATCH] gma500: Skip bogus LVDS VBT mode and check for LVDS
- before adding backlight (try 2)
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <201105231012.06928.oneukum@suse.de>
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
+ <BANLkTikVLFMX_U6brQ5OALbvJkOGuz6++Q@mail.gmail.com> <20110522004833.GY32466@dastard>
+ <201105231012.06928.oneukum@suse.de>
+From: "D. Jansen" <d.g.jansen@googlemail.com>
+Date: Mon, 23 May 2011 15:05:50 +0200
+Message-ID: <BANLkTiks7U28D1896318rK0j=W-tux1uJA@mail.gmail.com>
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tytso@mit.edu
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 11:55 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Wed, 11 May 2011 22:46:09 +0200
-> Patrik Jakobsson <patrik.r.jakobsson@gmail.com> wrote:
->
->> On the Fit-PC2 the VBT reports an invalid fixed panel mode for LVDS, this gets
->> in the way for SDVO. This patch makes VBT parsing skip the invalid mode. When
->> there is no LVDS output the backlight support crashes so the patch also checks
->> for this before enabling it.
+On Mon, May 23, 2011 at 10:12 AM, Oliver Neukum <oneukum@suse.de> wrote:
+>> > 3. A lib doesn't fix the ordering guarantee problem.
 >>
->> Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+>> A properly implemented filesystem will not have ordering problems
+>> just because fsyncs are not issued.
 >
-> Looks good to me. I'll add that to the pile.
->
-> Alan
->
+> But user space will have this problem. A single task's sequence of
+> write(); fsync(); write(); does give an implicit guarantee of ordering
+> to user space. To keep that guarantee, you need kernel support,
+> because only the kernel can issue the necessary barrier/flush commands.
+> A filesystem is not required to make sure your writes hit the disk
+> in the order you issued them, unless you use fsync, which gives
+> an even larger guarantee, but also implies ordering.
 
-Thanks Alan
+If this is correct, we do need some form of kernel support. To ensure
+that one fsync means the write comes before another. Because how would
+it be implemented in user space to ensure write ordering without
+fsync? The library could only request the kernel to enforce write
+ordering. Otherwise it would have to catch and buffer all writes
+itself and then commit them with fsyncs in between. _That_ doesn't
+sound like a good idea at all...
 
-Will it go into 2.6.40-rc1?
+And the alternative would be that a write of
+1. XXXXXXXXXXXXXXXX (file)
+2. XXHHHHHXXXXXXX (write H)
+3. XXHHHNNNNXXXX (write N)
 
-Now that output it somewhat working on the Fit-PC2 I've been looking
-deeper into the SDVO code trying to understand why I'm not getting
-proper modes for my display. At the moment it just defaults to
-standard modes like 1024x768, 800x600 etc...
+would become
+1. XXXXXXXXXXXXXXXX (file)
+2. XXXXXXNNNNXXXX (write N)
+3. XXHHHHHNNXXXX (write H)
 
-The issue is that I'm not getting any EDID from the display. Could be
-the GMBus getting in the way or that the SDVO IO mapping isn't set up
-properly before sending the SDVO_CMD_SET_CONTROL_BUS_SWITCH command.
-I've been fiddling quite a lot with it but nothing seems to work, so
-instead I took the current SDVO code (and large parts of the output
-handling) from the i915 driver and crammed it into gma500. That did
-the trick (though it's not currently talking to crtc abstraction
-properly).
-
-So my question is, do you think we should incorporate the new and more
-feature complete output handling from the i915 into gma500? We might
-even start sharing that code between gma500 and i915. If that is
-something you like to avoid we can of course keep working on our
-current output code.
-
-Thanks
-Patrik Jakobsson
+And we have data that was never supposed to be on disk this way...
