@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757451Ab1EWUwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 16:52:17 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50395 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab1EWUwP (ORCPT
+	id S1757462Ab1EWUxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 16:53:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57659 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824Ab1EWUxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 16:52:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lv96eKgFBDAGyHJmKAUp4tUAX0Dhk0CpsC0l+Yy09qqFHZD2lL4Y/eAwDrPkV+FeDF
-         bCjl8KUZdSCkCXSTvrjzBHLjjRENOdfI5A8A2Cxzpe14YDvhoO8cNYJs49VEQIwbGSZM
-         K/z2VEIweCgQXiUItUFSRGc+oGja0IutbPk48=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
-References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
-	<20110523192056.GC23629@elte.hu>
-	<BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
-Date: Tue, 24 May 2011 00:52:14 +0400
-Message-ID: <BANLkTinbrtzY66p+1NALP8BDfjXLx=Qp-A@mail.gmail.com>
-Subject: Re: (Short?) merge window reminder
-From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 23 May 2011 16:53:17 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=opAHw_AlxjwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=iQi6EvK5La-UFNIFbdoA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCHv3] jump_label,x86: make batch update of jump_label
+ entries
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110523164541.GE2052@jolsa.brq.redhat.com>
+References: <1304023961-12741-1-git-send-email-jolsa@redhat.com>
+	 <1304502103-3228-1-git-send-email-jolsa@redhat.com>
+	 <20110509183816.GF3981@jolsa.brq.redhat.com>
+	 <20110509192726.GB2524@redhat.com>
+	 <20110523164541.GE2052@jolsa.brq.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 23 May 2011 16:53:15 -0400
+Message-ID: <1306183995.1465.48.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 00:33, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, May 23, 2011 at 12:20 PM, Ingo Molnar <mingo@elte.hu> wrote:
->>
->> I really hope there's also a voice that tells you to wait until .42 before
->> cutting 3.0.0! :-)
->
-> So I'm toying with 3.0 (and in that case, it really would be "3.0",
-> not "3.0.0" - the stable team would get the third digit rather than
-> the fourth one.
->
-> But no, it wouldn't be for 42. Despite THHGTTG, I think "40" is a
-> fairly nice round number.
->
-> There's also the timing issue - since we no longer do version numbers
-> based on features, but based on time, just saying "we're about to
-> start the third decade" works as well as any other excuse.
->
-> But we'll see.
+On Mon, 2011-05-23 at 18:45 +0200, Jiri Olsa wrote:
+> hi,
+> any feedback?
+> 
 
-Maybe, 2011.x, or 11.x, x increasing for every merge window started this year?
-This would better reflect the steady nature of the releases, but would
-certainly break a lot of scripts. ;)
+Hi Jiri,
+
+I'm just dealing with some bugs people reported related to some of my
+work I recently done. I'll start working on this after that. This may
+not make it into this merge window, but I'll make sure I push this off
+to Ingo for 2.6.41.
+
+Thanks,
+
+-- Steve
+
+
