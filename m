@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab1EWJyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 05:54:15 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50542 "EHLO mx1.suse.de"
+	id S1753913Ab1EWJyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 05:54:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54786 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab1EWJyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 05:54:04 -0400
+	id S1750803Ab1EWJyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 05:54:02 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
@@ -20,54 +20,43 @@ Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         linux-ext4 <linux-ext4@vger.kernel.org>, stable <stable@kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/2] Eliminate hangs when using frequent high-order allocations V4
-Date: Mon, 23 May 2011 10:53:53 +0100
-Message-Id: <1306144435-2516-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 1/2] mm: vmscan: Correct use of pgdat_balanced in sleeping_prematurely
+Date: Mon, 23 May 2011 10:53:54 +0100
+Message-Id: <1306144435-2516-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1306144435-2516-1-git-send-email-mgorman@suse.de>
+References: <1306144435-2516-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Resending as the updated patch 2 appears to have gotten lost in a
-"twisty maze of threads all similar" while questing towards mmotm)
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-Changelog since V3
-  o cond_resched in shrink_slab when it does nothing rather than
-    having kswapd sleep for HZ/10 when it needs to schedule
+Johannes Weiner poined out that the logic in commit [1741c877: mm:
+kswapd: keep kswapd awake for high-order allocations until a percentage
+of the node is balanced] is backwards. Instead of allowing kswapd to go
+to sleep when balancing for high order allocations, it keeps it kswapd
+running uselessly.
 
-Changelog since V2
-  o Drop all SLUB latency-reducing patches.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+---
+ mm/vmscan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Changelog since V1
-  o kswapd should sleep if need_resched
-  o Remove __GFP_REPEAT from GFP flags when speculatively using high
-    orders so direct/compaction exits earlier
-  o Remove __GFP_NORETRY for correctness
-  o Correct logic in sleeping_prematurely
-  o Leave SLUB using the default slub_max_order
-
-There are a few reports of people experiencing hangs when copying
-large amounts of data with kswapd using a large amount of CPU which
-appear to be due to recent reclaim changes. SLUB using high orders
-is the trigger but not the root cause as SLUB has been using high
-orders for a while. The root cause was bugs introduced into reclaim
-which are addressed by the following two patches.
-
-Patch 1 corrects logic introduced by commit [1741c877: mm:
-	kswapd: keep kswapd awake for high-order allocations until
-	a percentage of the node is balanced] to allow kswapd to
-	go to sleep when balanced for high orders.
-
-Patch 2 notes that it is possible for kswapd to miss every
-	cond_resched() and updates shrink_slab() so it'll at least
-	reach that scheduling point.
-
-Chris Wood reports that these two patches in isolation are sufficient
-to prevent the system hanging. AFAIK, they should also resolve similar
-hangs experienced by James Bottomley.
-
-These should be also considered for -stable for both 2.6.38 and 2.6.39.
-
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 8bfd450..1aa262b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2286,7 +2286,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+ 	 * must be balanced
+ 	 */
+ 	if (order)
+-		return pgdat_balanced(pgdat, balanced, classzone_idx);
++		return !pgdat_balanced(pgdat, balanced, classzone_idx);
+ 	else
+ 		return !all_zones_ok;
+ }
 -- 
 1.7.3.4
 
