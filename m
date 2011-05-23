@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab1EWWld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 18:41:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53873 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751777Ab1EWWla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 18:41:30 -0400
-Date: Mon, 23 May 2011 15:21:21 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+	id S1031065Ab1EWWWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 18:22:12 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47582 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030378Ab1EWWWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 18:22:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qtanyFNo22cnlenekf2GtvYCcPJX7srDdBQXGT976Kz01ap/sfwdbkolW/w3KZVike
+         xflsItWj8Gll7UXM3r+EZl4Vo27YQ0yhUWEz7UvAgDF+UMU2XsIWjeSTKIB4esNqiJDE
+         szkE4OEUS/5CCYT7Rwg9SrQXeFT+nuz6A6xLE=
+Subject: Re: [GIT PULL] perf fixes
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: (Short?) merge window reminder
-Message-ID: <20110523222121.GD12777@suse.de>
-References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
- <20110523192056.GC23629@elte.hu>
- <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110523221916.GA8033@nowhere>
+References: <20110523134125.GA23518@elte.hu>
+	 <1306188648.2638.17.camel@edumazet-laptop>  <20110523221916.GA8033@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 00:22:04 +0200
+Message-ID: <1306189324.2638.18.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 01:33:48PM -0700, Linus Torvalds wrote:
-> On Mon, May 23, 2011 at 12:20 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > I really hope there's also a voice that tells you to wait until .42 before
-> > cutting 3.0.0! :-)
+Le mardi 24 mai 2011 à 00:19 +0200, Frederic Weisbecker a écrit :
+> On Tue, May 24, 2011 at 12:10:48AM +0200, Eric Dumazet wrote:
+> > Le lundi 23 mai 2011 à 15:41 +0200, Ingo Molnar a écrit :
+> > > Linus,
+> > > 
+> > > Please pull the latest perf-urgent-for-linus git tree from:
+> > > 
+> > >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-urgent-for-linus
+> > > 
+> > >  Thanks,
+> > > 
+> > 
+> > Hi Ingo
+> > 
+> > I just tried latest "perf top" from linux-2.6 tree on my 32bit x86 host.
+> > 
+> > It outputs endless errors, I dont know if you guys already are aware of
+> > this ?
+> > 
+> > Can't parse sample, err = -14
+> > Can't parse sample, err = -14
+> > Can't parse sample, err = -14
+> > Can't parse sample, err = -14
+> > Can't parse sample, err = -14
+> > Can't parse sample, err = -14
+> > Can't parse sample, err = -14
+> > Can't parse sample, err = -14
 > 
-> So I'm toying with 3.0 (and in that case, it really would be "3.0",
-> not "3.0.0" - the stable team would get the third digit rather than
-> the fourth one.
-
-I like that, it would make things much easier for me to keep track of
-stuff.
-
-> But no, it wouldn't be for 42. Despite THHGTTG, I think "40" is a
-> fairly nice round number.
+> Hi Eric,
 > 
-> There's also the timing issue - since we no longer do version numbers
-> based on features, but based on time, just saying "we're about to
-> start the third decade" works as well as any other excuse.
+> Does that fix the issue?
+> 
+> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> index 252b72a..6635fcd 100644
+> --- a/tools/perf/util/event.c
+> +++ b/tools/perf/util/event.c
+> @@ -42,7 +42,7 @@ int perf_sample_size(u64 sample_type)
+>  	int i;
+>  
+>  	for (i = 0; i < 64; i++) {
+> -		if (mask & (1UL << i))
+> +		if (mask & (1ULL << i))
+>  			size++;
+>  	}
+>  
+> 
 
-That sounds reasonable as well.
+It does, thanks Frederic !
 
-greg k-h
+
