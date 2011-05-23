@@ -1,318 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab1EWQqG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:46:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35407 "EHLO mx1.redhat.com"
+	id S1756648Ab1EWQpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:45:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20002 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756603Ab1EWQpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:45:53 -0400
-Date: Mon, 23 May 2011 18:45:41 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org
-Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3] jump_label,x86: make batch update of jump_label entries
-Message-ID: <20110523164541.GE2052@jolsa.brq.redhat.com>
-References: <1304023961-12741-1-git-send-email-jolsa@redhat.com>
- <1304502103-3228-1-git-send-email-jolsa@redhat.com>
- <20110509183816.GF3981@jolsa.brq.redhat.com>
- <20110509192726.GB2524@redhat.com>
+	id S1755225Ab1EWQpw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:45:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,257,1304319600"; 
+   d="scan'208";a="6167387"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>
+CC: huang ying <huang.ying.caritas@gmail.com>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@alien8.de>
+Date: Mon, 23 May 2011 09:45:50 -0700
+Subject: RE: [PATCH 5/9] HWPoison: add memory_failure_queue()
+Thread-Topic: [PATCH 5/9] HWPoison: add memory_failure_queue()
+Thread-Index: AcwZONv90LFc5ZBhRSie905s4oTWowALKNFA
+Message-ID: <987664A83D2D224EAE907B061CE93D5301D5BF823C@orsmsx505.amr.corp.intel.com>
+References: <20110517084622.GE22093@elte.hu> <4DD23750.3030606@intel.com>
+ <20110517092620.GI22093@elte.hu> <4DD31C78.6000209@intel.com>
+ <20110520115614.GH14745@elte.hu>
+ <BANLkTi=5Y0fqsmhsoPm8si=nQBc-tCwtrw@mail.gmail.com>
+ <20110522100021.GA28177@elte.hu>
+ <BANLkTi=VDQMOfWe5tP7nXSv2AEsiUUEteg@mail.gmail.com>
+ <20110522132515.GA13078@elte.hu> <4DD9C8B9.5070004@intel.com>
+ <20110523110151.GD24674@elte.hu>
+In-Reply-To: <20110523110151.GD24674@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110509192726.GB2524@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-any feedback?
+>> - NMI handler run for the hardware error, where hardware error
+>>   information is collected and put into perf ring buffer as 'event'.
+>
+> Correct.
+>
+> Note that for MCE errors we want the 'persistent event' framework Boris has 
+> posted: we want these events to be buffered up to a point even if there is no 
+> tool listening in on them:
 
-thanks,
-jirka
+This is a very opportune time to have this discussion. I've been working
+on getting "in context" recoverable errors working. Sandybridge Server
+platforms will allow for recovery for both instruction and data fetches
+in the current execution context. These are flagged in the machine check
+bank with the "AR" (Action Required) set to 1 (along with several other
+bits making up a recognizable signature).
 
-On Mon, May 09, 2011 at 03:27:26PM -0400, Jason Baron wrote:
-> On Mon, May 09, 2011 at 08:38:16PM +0200, Jiri Olsa wrote:
-> > On Wed, May 04, 2011 at 11:41:41AM +0200, Jiri Olsa wrote:
-> > > hi,
-> > > 
-> > > I'm changing the jump label update code to use batch processing
-> > > for x86 architectures. 
-> > > 
-> > > Currently each jump label update calls text_poke_smp for each
-> > > jump label key entry. Thus one key update ends up calling stop
-> > > machine multiple times.
-> > > 
-> > > This patch is using text_poke_smp_batch, which is called for
-> > > all the key's entries. Thus ensuring the stop machine is called
-> > > only once per jump_label key.
-> > > 
-> > > attached patches:
-> > > 1/2 - jump_label,x86: use text_poke_smp_batch for entries update
-> > > 	- added jump_label_update_end function which is paired with
-> > > 	the key's entries update
-> > > 	- jump_label_update_end calls arch_jump_label_update_end which
-> > > 	is overloaded by x86 arch and makes the batch update of all the
-> > > 	entries queued by arch_jump_label_transform function.
-> > > 
-> > > 2/2 - jump_label,x86: using static arrays before dynamic allocation is needed
-> > > 	- in the first patch, the queue array, which stores jump_label
-> > > 	entries is allocated/resized dynamically.
-> > > 	- due to the fact that many jump_label entries have low number
-> > > 	of callers, it seems appropriate to use static sized array
-> > > 	when the update starts and if needed (in case of high number
-> > > 	of jump_label entries) allocate/use the dynamic array
-> > > 
-> > > 
-> > > Patch 2/2 and could be ommited if the benefit/complexity ratio
-> > > would seem too low.. ;)
-> > > 
-> > > I tested this on x86 and s390 archs.
-> > > 
-> > > v2 changes:
-> > >  - queueing all entries for single key and process them
-> > >    all at one time
-> > > 
-> > > wrb,
-> > > jirka
-> > > ---
-> > >  arch/x86/kernel/jump_label.c |  177 +++++++++++++++++++++++++++++++++++++++--
-> > >  include/linux/jump_label.h   |    1 +
-> > >  kernel/jump_label.c          |   16 ++++-
-> > >  3 files changed, 183 insertions(+), 11 deletions(-)
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> > hi,
-> > 
-> > I did jump_label entries statistics on allyesconfig kernel
-> > and got following numbers:
-> > 
-> > callers - keys
-> >       1 - 964
-> >       2 - 28
-> >       3 - 5
-> >       4 - 1
-> >       6 - 1
-> >      11 - 2
-> >      12 - 1
-> >      14 - 2
-> >      17 - 2
-> >      21 - 1
-> >     170 - 1
-> > 
-> > 
-> > So the maximum is 170 callers and just for one key,
-> > which is the key used in trace_module_get function.
-> > 
-> > Jason suggested we might stay with the static way because for most
-> > of the entries the maximum number of callers is up to 21.
-> > 
-> > I'm attaching the static version for consideration.
-> > 
-> > wbr,
-> > jirka
-> > 
-> > ---
-> > Changing the jump label update code to use batch processing
-> > for x86 architectures.
-> > 
-> > Currently each jump label update calls text_poke_smp for each
-> > jump label key entry. Thus one key update ends up calling stop
-> > machine multiple times.
-> > 
-> > This patch is using text_poke_smp_batch, which is called for
-> > mmultiple entries at a time.
-> > 
-> > Added jump_label_update_end function which is paired with
-> > the key's entries update.
-> > 
-> > The jump_label_update_end calls arch_jump_label_update_end
-> > (with generic weak definition) which is overloaded by x86
-> > arch and makes the batch update of all the entries queued
-> > by arch_jump_label_transform function.
-> > 
-> > The number of entries that can be updated at a single time
-> > is set to 30. This number is based on statistics from allyesconfig
-> > kernel showing most of the keys having upto 30 callers.
-> > 
-> > callers - keys
-> >       1 - 964
-> >       2 - 28
-> >       3 - 5
-> >       4 - 1
-> >       6 - 1
-> >      11 - 2
-> >      12 - 1
-> >      14 - 2
-> >      17 - 2
-> >      21 - 1
-> >     170 - 1
-> > 
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com> 
-> > ---
-> >  arch/x86/kernel/jump_label.c |   68 ++++++++++++++++++++++++++++++++++++-----
-> >  include/linux/jump_label.h   |    1 +
-> >  kernel/jump_label.c          |   16 ++++++++-
-> >  3 files changed, 74 insertions(+), 11 deletions(-)
-> > 
-> 
-> For me, this version is much simpler (less than half the code size of
-> the original patch), while being optimal for 1007/1008 of the keys.
-> 
-> Acked-by: Jason Baron <jbaron@redhat.com> 
-> 
-> 
-> Thanks.
-> 
-> > diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-> > index 3fee346..bbde5db 100644
-> > --- a/arch/x86/kernel/jump_label.c
-> > +++ b/arch/x86/kernel/jump_label.c
-> > @@ -24,24 +24,74 @@ union jump_code_union {
-> >  	} __attribute__((packed));
-> >  };
-> >  
-> > -void arch_jump_label_transform(struct jump_entry *entry,
-> > -			       enum jump_label_type type)
-> > +struct text_poke_buffer {
-> > +	u8 code[JUMP_LABEL_NOP_SIZE];
-> > +};
-> > +
-> > +#define POKE_CNT_MAX 30
-> > +
-> > +static struct text_poke_param  poke_pars[POKE_CNT_MAX];
-> > +static struct text_poke_buffer poke_bufs[POKE_CNT_MAX];
-> > +static int poke_cnt;
-> > +
-> > +static void poke_setup(struct text_poke_param *param, u8 *buf,
-> > +		       int enable,
-> > +		       struct jump_entry *entry)
-> >  {
-> > -	union jump_code_union code;
-> > +	union jump_code_union *code = (union jump_code_union *) buf;
-> >  
-> > -	if (type == JUMP_LABEL_ENABLE) {
-> > -		code.jump = 0xe9;
-> > -		code.offset = entry->target -
-> > -				(entry->code + JUMP_LABEL_NOP_SIZE);
-> > +	if (enable == JUMP_LABEL_ENABLE) {
-> > +		code->jump = 0xe9;
-> > +		code->offset = entry->target -
-> > +			       (entry->code + JUMP_LABEL_NOP_SIZE);
-> >  	} else
-> > -		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
-> > +		memcpy(code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
-> > +
-> > +	param->addr = (void *) entry->code;
-> > +	param->opcode = code;
-> > +	param->len = JUMP_LABEL_NOP_SIZE;
-> > +}
-> > +
-> > +static void poke_process(void)
-> > +{
-> >  	get_online_cpus();
-> >  	mutex_lock(&text_mutex);
-> > -	text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-> > +
-> > +	text_poke_smp_batch(poke_pars, poke_cnt);
-> > +	poke_cnt = 0;
-> > +
-> >  	mutex_unlock(&text_mutex);
-> >  	put_online_cpus();
-> >  }
-> >  
-> > +static void poke_end(void)
-> > +{
-> > +	if (!poke_cnt)
-> > +		return;
-> > +
-> > +	poke_process();
-> > +}
-> > +
-> > +void arch_jump_label_transform(struct jump_entry *entry,
-> > +			       enum jump_label_type enable)
-> > +{
-> > +	if (poke_cnt == POKE_CNT_MAX)
-> > +		poke_process();
-> > +
-> > +	poke_setup(&poke_pars[poke_cnt], poke_bufs[poke_cnt].code,
-> > +		   enable, entry);
-> > +	poke_cnt++;
-> > +}
-> > +
-> > +/*
-> > + * Called after arch_jump_label_transform is called for
-> > + * all entries of a single key.
-> > + */
-> > +void arch_jump_label_update_end(void)
-> > +{
-> > +	poke_end();
-> > +}
-> > +
-> >  void arch_jump_label_text_poke_early(jump_label_t addr)
-> >  {
-> >  	text_poke_early((void *)addr, ideal_nops[NOP_ATOMIC5],
-> > diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> > index 83e745f..e7a8fa3 100644
-> > --- a/include/linux/jump_label.h
-> > +++ b/include/linux/jump_label.h
-> > @@ -46,6 +46,7 @@ extern void jump_label_unlock(void);
-> >  extern void arch_jump_label_transform(struct jump_entry *entry,
-> >  				 enum jump_label_type type);
-> >  extern void arch_jump_label_text_poke_early(jump_label_t addr);
-> > +extern void arch_jump_label_update_end(void);
-> >  extern int jump_label_text_reserved(void *start, void *end);
-> >  extern void jump_label_inc(struct jump_label_key *key);
-> >  extern void jump_label_dec(struct jump_label_key *key);
-> > diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> > index 74d1c09..6657a37 100644
-> > --- a/kernel/jump_label.c
-> > +++ b/kernel/jump_label.c
-> > @@ -125,6 +125,15 @@ void __weak arch_jump_label_text_poke_early(jump_label_t addr)
-> >  {
-> >  }
-> >  
-> > +void __weak arch_jump_label_update_end(void)
-> > +{
-> > +}
-> > +
-> > +void jump_label_update_end(void)
-> > +{
-> > +	arch_jump_label_update_end();
-> > +}
-> > +
-> >  static __init int jump_label_init(void)
-> >  {
-> >  	struct jump_entry *iter_start = __start___jump_table;
-> > @@ -244,10 +253,11 @@ static int jump_label_add_module(struct module *mod)
-> >  		jlm->next = key->next;
-> >  		key->next = jlm;
-> >  
-> > -		if (jump_label_enabled(key))
-> > +		if (jump_label_enabled(key)) {
-> >  			__jump_label_update(key, iter, JUMP_LABEL_ENABLE);
-> > +			jump_label_update_end();
-> > +		}
-> >  	}
-> > -
-> >  	return 0;
-> >  }
-> >  
-> > @@ -376,6 +386,8 @@ static void jump_label_update(struct jump_label_key *key, int enable)
-> >  #ifdef CONFIG_MODULES
-> >  	__jump_label_mod_update(key, enable);
-> >  #endif
-> > +
-> > +	jump_label_update_end();
-> >  }
-> >  
-> >  #endif
-> > -- 
-> > 1.7.1
-> > 
+The critical feature here is that we must not return from the machine
+check handler to the context that tripped over the error. In the case
+of the data fault, we'll just re-execute the same access and take
+another machine check. In the case of the instruction fault there is
+no valid context to return to (MCGSTATUS.RIPV is zero).
+
+There are a couple of cases where recovery is possible:
+
+1) The memory error was found while executing user mode code.
+
+The code I have now for recovery makes use of TIF_MCE_NOTIFY to
+make sure that we don't return to the user, but instead end up
+in arch/x86/kernel/signal.c:do_notify_resume() where we arrange
+to have the process handle its own recovery (using mm/memory-failure.c
+to figure out the type of page, and probably resulting in the mapping
+out of the page and sending SIGBUS to the process).
+
+In your proposed solution, we'd generate an event that would be handled
+by some process/daemon ... but how would we ensure that the affected
+process does not run in the mean time? Could we create some analogous
+method to the ptrace stopped state, and hand control of the affected
+process to the daemon that gets the event?
+
+2) The memory error was found in certain special sections of the
+   kernel for which recovery is possible (e.g. while copying to/from
+   user memory, perhaps also page copy and page clear).
+
+Here I don't have a solution. TIF_MCE_NOTIFY isn't checked when returning
+from do_machine_check() to kernel code.
+
+In a CONFIG_PREEMPT=y kernel, all of the recoverable cases ought to be
+in places where pre-emption is allowed ... so perhaps we can also use
+the stop-and-switch option here?
+
+-Tony
+
