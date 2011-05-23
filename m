@@ -1,101 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab1EWCiz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 22:38:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54800 "EHLO mga09.intel.com"
+	id S1756011Ab1EWCvc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 22:51:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48053 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754602Ab1EWCiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 22:38:52 -0400
+	id S1753110Ab1EWCva convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 22:51:30 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,254,1304319600"; 
-   d="scan'208";a="2800934"
-Message-ID: <4DD9C8B9.5070004@intel.com>
-Date: Mon, 23 May 2011 10:38:49 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Iceowl/1.0b2 Icedove/3.1.9
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Parag Warudkar <parag.lkml@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Dmitry Torokhov <dtor@mail.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 22 May 2011 19:49:18 -0700
+Subject: RE: Resume Issues :Exec of NX page, Synaptics Botchup
+Thread-Topic: Resume Issues :Exec of NX page, Synaptics Botchup
+Thread-Index: AcwY0VXQ2gYE2FqwTAGr32aNZRidZgAIfCvg
+Message-ID: <493994B35A117E4F832F97C4719C4C04011E13400F@orsmsx505.amr.corp.intel.com>
+References: <alpine.DEB.2.02.1105221720040.2065@natty-nar>
+ <BANLkTik9ZmQz1A0PBC4P-9XF-hB6Ywr3uQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105221817100.1868@natty-nar>
+ <201105230041.14729.rjw@sisk.pl>
+In-Reply-To: <201105230041.14729.rjw@sisk.pl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: huang ying <huang.ying.caritas@gmail.com>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
-References: <1305619719-7480-1-git-send-email-ying.huang@intel.com> <1305619719-7480-6-git-send-email-ying.huang@intel.com> <20110517084622.GE22093@elte.hu> <4DD23750.3030606@intel.com> <20110517092620.GI22093@elte.hu> <4DD31C78.6000209@intel.com> <20110520115614.GH14745@elte.hu> <BANLkTi=5Y0fqsmhsoPm8si=nQBc-tCwtrw@mail.gmail.com> <20110522100021.GA28177@elte.hu> <BANLkTi=VDQMOfWe5tP7nXSv2AEsiUUEteg@mail.gmail.com> <20110522132515.GA13078@elte.hu>
-In-Reply-To: <20110522132515.GA13078@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2011 09:25 PM, Ingo Molnar wrote:
->>> The generalization that *would* make sense is not at the irq_work level 
->>> really, instead we could generalize a 'struct event' for kernel internal 
->>> producers and consumers of events that have no explicit PMU connection.
->>>
->>> This new 'struct event' would be slimmer and would only contain the fields 
->>> and features that generic event consumers and producers need. Tracing 
->>> events could be updated to use these kinds of slimmer events.
->>>
->>> It would still plug nicely into existing event ABIs, would work with event 
->>> filters, etc. so the tooling side would remain focused and unified.
->>>
->>> Something like that. It is rather clear by now that splitting out irq_work 
->>> was a mistake. But mistakes can be fixed and some really nice code could 
->>> come out of it! Would you be interested in looking into this?
->>
->> Yes.  This can transfer hardware error data from kernel to user space. Then, 
->> how to do hardware error recovering in this big picture?  IMHO, we will need 
->> to call something like memory_failure_queue() in IRQ context for memory 
->> error.
+> On Monday, May 23, 2011, Parag Warudkar wrote:
+> >
+> > On Sun, 22 May 2011, Linus Torvalds wrote:
+> >
+> > >
+> > > Hmm. The "Code: " line is just full of complete garbage, so I think
+> > > the real issue is that you really are trying to execute data.
+> > >
+> > > And that in turn seems to be because "setup_disablecpuid()" has
+> > > actually been free'd, because it is marked as __init.
+> > >
+> > > Which is fine at the initial bootup, but not so fine at resume
+> time,
+> > > since it was free'd long long ago by then.
+> > >
+> > > And it definitely shouldn' t be called at resume time. There's
+> > > something wrong there. That call trace is odd:
+> > >
+> > >   Call Trace:
+> > >    [<ffffffff8148a119>] ? identify_cpu+0xd8/0x2d8
+> > >    [<ffffffff8148a32d>] identify_secondary_cpu+0x14/0x1b
+> > >    [<ffffffff8148bf0f>] smp_store_cpu_info+0x3c/0x3e
+> > >    [<ffffffff8148c2ef>] start_secondary+0xf7/0x1d2
+> > >
+> > > because none of those should be calling "setup_disablecpuid()" at
+> all.
+> > >
+> > > Hmm. In fact, RIP is "setup_disablecpuid+0x40/0x40", ie it is one
+> past
+> > > the _end_ of setup_disablecpuid.
+> > >
+> > > I suspect that is actually "setup_smep()" that got called, an dthat
+> > > there was some garbage data in there that caused it to jump back a
+> > > bit.
+> > >
+> > > Does the attached patch fix it?
+> > >
+> >
+> > Now I get a different call trace for the same NX error. (And
+> Synaptics is
+> > completely dead this time - not attributable to the patch, it was
+> dumb
+> > luck perhaps that it wored last time.)
 > 
-> That's where 'active filters' come into the picture - see my other mail (that 
-> was in the context of unidentified NMI errors/events) where i outlined how they 
-> would work in this case and elsewhere. Via active filters we could share most 
-> of the code, gain access to the events and still have kernel driven policy 
-> action.
+> Any chance to try with commit de5397ad5b9ad22e2401c4dacdf1bb3b19c05679
+> (x86, cpu: Enable/disable Supervisor Mode Execution Protection)
+> reverted?
+> 
+> Rafael
 
-Is that something as follow?
+de5397ad5b9ad22e2401c4dacdf1bb3b19c05679 shouldn't affect a system unless the CPU has SMEP feature which is unlikely available out there.
 
-- NMI handler run for the hardware error, where hardware error
-information is collected and put into perf ring buffer as 'event'.
+You can check if your CPU has "smep" feature in /proc/cpuinfo. Unlikely you will see the feature on your machine. Then the commit shouldn't cause the problem.
 
-- Some 'active filters' are run for each 'event' in NMI context.
+You can unconditionally disable SMEP by kernel option "nosmep".
 
-- Some operations can not be done in NMI handler, so they are delayed to
-an IRQ handler (can be done with something like irq_work).
+Thanks.
 
-- Some other 'active filters' are run for each 'event' in IRQ context.
-(For memory error, we can call memory_failure_queue() here).
-
-Where some 'active filters' are kernel built-in, some 'active filters'
-can be customized via kernel command line or by user space.
-
-
-If my understanding as above is correct, I think this is a general and
-complex solution.  It is a little hard for user to understand which
-'active filters' are in effect.  He may need some runtime assistant to
-understand the code (maybe /sys/events/active_filters, which list all
-filters in effect now), because that is hard only by reading the source
-code.  Anyway, this is a design style choice.
-
-There are still some issues, I don't know how to solve in above framework.
-
-- If there are two processes request the same type of hardware error
-events.  One hardware error event will be copied to two ring buffers
-(each for one process),  but the 'active filters' should be run only
-once for each hardware error event.
-
-- How to deal with ring-buffer overflow?  For example, there is full of
-corrected memory error in ring-buffer, and now a recoverable memory
-error occurs but it can not be put into perf ring buffer because of
-ring-buffer overflow, how to deal with the recoverable memory error?
-
-Best Regards,
-Huang Ying
+-Fenghua
