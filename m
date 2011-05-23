@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab1EWT0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 15:26:39 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38146 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932649Ab1EWT0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 15:26:34 -0400
-Date: Mon, 23 May 2011 21:26:23 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH -next] x86: apic_flat_64.c needs module.h
-Message-ID: <20110523192623.GA6194@elte.hu>
-References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au>
- <20110523104300.dd532a99.randy.dunlap@oracle.com>
- <4DDA9EAB.40304@gmail.com>
- <4DDAA2C0.7080108@gmail.com>
- <4DDAA384.2000203@oracle.com>
- <20110523191043.GB23629@elte.hu>
+	id S933518Ab1EWT2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 15:28:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34748 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932307Ab1EWT2b convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 15:28:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110523191043.GB23629@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110523190539.GA17519@kroah.com>
+References: <20110523190539.GA17519@kroah.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 23 May 2011 12:27:35 -0700
+Message-ID: <BANLkTi=jGtVjJEY9aE2SPJCHhbpXfgsFTg@mail.gmail.com>
+Subject: Re: [GIT PATCH] TTY/serial driver patches for .40
+To: Greg KH <gregkh@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 23, 2011 at 12:05 PM, Greg KH <gregkh@suse.de> wrote:
+>
+> Some api cleanups, and driver updates, nothing really major.  You will
+> get two conflicts when you merge this to your tree (one in the tty
+> Makefile and one in the bluetooth driver), but they should be "obvious"
+> as to what to do.
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+I went a bit beyond "obvious", and actually fixed in the merge what
+looked to be some missed things:
 
-> 
-> * Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> 
-> > >>>  arch/x86/kernel/apic/apic_flat_64.c |    1 +
-> > >>>  1 file changed, 1 insertion(+)
-> > >>>
-> > >>> --- linux-next-20110523.orig/arch/x86/kernel/apic/apic_flat_64.c
-> > >>> +++ linux-next-20110523/arch/x86/kernel/apic/apic_flat_64.c
-> > >>> @@ -16,6 +16,7 @@
-> > >>>  #include <linux/ctype.h>
-> > >>>  #include <linux/init.h>
-> > >>>  #include <linux/hardirq.h>
-> > >>> +#include <linux/module.h>
-> > >>>  #include <asm/smp.h>
-> > >>>  #include <asm/apic.h>
-> > >>>  #include <asm/ipi.h>
-> > >>
-> > >> Thanks Randy! For some reason I didn't hit this problem while
-> > >> were compiling the kernel and testing it (I usually do not use
-> > >> modules though).
-> > >>
-> > >> I've CC'ed Ingo and Suresh.
-> > >>
-> > > 
-> > > Randy, while adding module.h here is correct I fail to see why I didn't
-> > > hit this problem before, could you please post your config?
-> > 
-> > Certainly, it's attached.  It's a randconfig file.
-> > I saw this build error on roughly 5 out of 15 randconfig builds.
-> > 
-> > CONFIG_SMP is disabled...
-> 
-> Your config builds just fine here, using latest -tip:
+ - the hci_uart_tty_receive "Return value" comment was stale
 
-oh, stupid me, it's a warning, not a build failure.
+ - it really looked to me like the 'stat.byte_rx' increment should use
+the new 'received' count that we return.
 
-Applied your fix, thanks Randy!
+So anybody who cares should probably check the end result.
 
-	Ingo
+                         Linus
