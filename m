@@ -1,35 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab1EWLSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 07:18:45 -0400
-Received: from email.mps.k12.al.us ([68.190.16.70]:11463 "HELO
-	blocker.mps.k12.al.us" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with SMTP id S1750982Ab1EWLSn convert rfc822-to-8bit (ORCPT
+	id S1753999Ab1EWLHb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 07:07:31 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40962 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713Ab1EWLH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 07:18:43 -0400
-X-Greylist: delayed 678 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 May 2011 07:18:32 EDT
-From: "whittle, denise" <denise.whittle@mps.k12.al.us>
-To: "info@update.org" <info@update.org>
-Date: Mon, 23 May 2011 06:07:11 -0500
-Subject: Your mailbox has exceeded the storage limit
-Thread-Topic: Your mailbox has exceeded the storage limit
-Thread-Index: AQHMGTmQ4jxO/lO2qUiHrnXW0tBO5A==
-Message-ID: <A7806CD820CF8148BF29E2D74ADE9A56D79A94F595@mps-mx-02.MPS.K12.AL.US>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Mon, 23 May 2011 07:07:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LkS1F9IrzUQOzB5eTgL2f82GuPxz/H8lo33vBkGx9aVrKwTpQjXSl33RTz5jkgpann
+         /IsTydxj4QEnjbUuMGC0RwydqJ96YpJhwvtVfvkZZWG8ycOVbCiOzhth0sttNkxj+nU7
+         PNLdSCM+riwVqw0yyrx3eIVcqYDXgx6UaNlt8=
+Subject: Re: [PATCH 0/3] block: Per cpu merge stats and cfq fix
+From: Namhyung Kim <namhyung@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, dpshah@google.com
+In-Reply-To: <20110521000650.GA8026@redhat.com>
+References: <1305936167-8932-1-git-send-email-vgoyal@redhat.com>
+	 <20110521000650.GA8026@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 May 2011 20:07:20 +0900
+Message-ID: <1306148840.1498.1.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2011-05-20 (금), 20:06 -0400, Vivek Goyal:
+> On Fri, May 20, 2011 at 08:02:44PM -0400, Vivek Goyal wrote:
+> > Hi Jens,
+> > 
+> > Here is the patch for making merge stats per cpu. While scanning the code
+> > I also noticed that in one case I was not freeing up per cpu stats. First
+> > patch fixes it. I also included Namhyung Kim's bio merge fix.
+> > 
+> > Thanks
+> > Vivek
+> > 
+> > Vivek Goyal (3):
+> >   cfq-iosched: Fix a memory leak of per cpu stats for root group
+> >   cfq-iosched: Make IO merge related stats per cpu
+> 
+> Minor correction. Following patch author is Namhyung Kim.
+> 
+> Namhyung Kim(1)
+> 
+> >   block: call elv_bio_merged() when merged
+> 
+> Thanks
+> Vivek
+> 
+
+Hi, Vivek. Thanks a lot for your work. :)
 
 
-This is to inform you that Your mailbox has exceeded the storage limit which is 20GB as set up by our administrator service center, you are currently running on 20.9GB,To re-validate your mailbox  please Clickhere<https://spreadsheets.google.com/spreadsheet/viewform?formkey=dHRrY1RQdXVSU0htQVBlZ1B1a0UzY1E6MQ>  to verify.
-We apologize for any inconvenience. Thank you for your anticipated  co-operation.
-Note: Failure to comply may result lose of your account within 24 hours.
-Thanks. System Administrator center
+-- 
+Regards,
+Namhyung Kim
+
+
