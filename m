@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab1EWPaW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 11:30:22 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:50268 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347Ab1EWPaV (ORCPT
+	id S1756078Ab1EWPbB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 11:31:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56909 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755087Ab1EWPbA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 11:30:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
-Date: Mon, 23 May 2011 17:30:06 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>, linux-arm-kernel@lists.infradead.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        sachi@mistralsolutions.com, "Samuel Ortiz" <sameo@linux.intel.com>,
-        "open list" <linux-kernel@vger.kernel.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <201105151133.23870.arnd@arndb.de> <B876E8072D52496DB747D5CCCF64826D@subhasishg>
-In-Reply-To: <B876E8072D52496DB747D5CCCF64826D@subhasishg>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105231730.06564.arnd@arndb.de>
-X-Provags-ID: V02:K0:478RQWIMiM93dEbI5P6QC8iY/5RIzLZBhVeQNLa84iT
- 85ojAXJCpX22tmLo0VMJkBsLfND7QypGHt1NHwWNDsd4v+/Oy5
- IGWUYYw43cG696FcTyEVWfOvYWVlUeOM/4zrztgZYSxV8WRaPR
- 6a3cxTwzxbl5lE6wtSJjZ1rIZzjCGA2UkOv8MdqBINlqAtoImA
- TWwUjzWvZVKvzIiKfAHMg==
+	Mon, 23 May 2011 11:31:00 -0400
+Subject: Re: [PATCH 0/3] perf_events: update extra shared registers
+ management (v2)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, Lin Ming <ming.m.lin@intel.com>
+In-Reply-To: <BANLkTimNhkdu_QcJqPjV5QLW8+G8E54jww@mail.gmail.com>
+References: <20110520143707.GA5347@quad> <1306141897.18455.8.camel@twins>
+	 <1306143168.18455.10.camel@twins>
+	 <BANLkTimVM2XvpJ1d9SbmAh7xZ+qSjukX+A@mail.gmail.com>
+	 <BANLkTinN92UpxU85r17zB+Khba8k59nJTA@mail.gmail.com>
+	 <1306149026.18455.11.camel@twins>
+	 <BANLkTik5v7WGygmZqjbh6_iwJ35S9upReg@mail.gmail.com>
+	 <1306163700.18455.16.camel@twins>
+	 <BANLkTimNhkdu_QcJqPjV5QLW8+G8E54jww@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 23 May 2011 17:30:29 +0200
+Message-ID: <1306164629.18455.19.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 May 2011, Subhasish Ghosh wrote:
-> I earlier had an implementation where I used a pruss_devices structure
-> in the board file.
-> 
-> http://linux.omap.com/pipermail/davinci-linux-open-source/
-> 2011-March/022339.html.
-> 
-> We can use this implementation along with the sysfs to load the devices
-> runtime. 
+On Mon, 2011-05-23 at 17:27 +0200, Stephane Eranian wrote:
+> Ok, my fault. That's because I tweaked your patch a bit and
+> I did not keep track of idx. 
 
-Possibly, but the actual data structures might end up differently
-when they are built around a sysfs interface. If you have a sysfs
-interface, it is more important to have that in a clean way than
-the board file, so we should first discuss the set of sysfs
-attributes that you are going to need, and then see how to
-represent that in platform data for predefined boards.
+AH! Ok, at least its not my brain that's broken, was starting to doubt
+my sanity there for a moment ;-)
 
-> The configs that I have in the board_file for the devices 
-> structure, are fixed for a board. To swap the boards, we do not need to re-compile
-> the kernel.
+> I guess the logic is not obvious.
+> I think you should rename idx to orig_idx.
 
-The other point to consider is that we are definitely moving
-towards the flattened device tree for these definitions now.
-It's probably good to make the sysfs attributes directly correspond
-to fdt device properties. I'm not sure if we also need to allow platform
-data. The easiest way could be to just require the use of device tree
-for predefined pruss devices.
+Indeed, that would clarify things.
 
-I'm sorry that this is moving in a different direction now, you
-had an unfortunate timing here.
-
-Let's first discuss the exact properties that are really required
-to define the differences between PRU backends, as those will
-be required in any case. What do you need for PRU specific
-data besides the firmware and the name of the device?
-
-	Arnd
+Thanks!
