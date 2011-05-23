@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab1EWIX0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 04:23:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36376 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587Ab1EWIXZ (ORCPT
+	id S1752450Ab1EWI6d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 04:58:33 -0400
+Received: from [46.170.108.42] ([46.170.108.42]:4367 "EHLO
+	krak.alatek.krakow.pl" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab1EWI6c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 04:23:25 -0400
-Message-ID: <4DDA1973.4090309@pengutronix.de>
-Date: Mon, 23 May 2011 10:23:15 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Mon, 23 May 2011 04:58:32 -0400
+X-Greylist: delayed 1984 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 May 2011 04:58:31 EDT
+From: Pawel Sikora <pluto@agmk.net>
+To: linux-kernel@vger.kernel.org
+Subject: [2.6.37.6] warn_slowpath at fs/dcache.c:1996 prepend_path+0x150/0x160()
+Date: Mon, 23 May 2011 10:25:24 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-2; KDE/4.6.3; x86_64; ; )
 MIME-Version: 1.0
-To: Oliver Hartkopp <socketcan@hartkopp.net>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        Wolfgang Grandegger <wg@grandegger.com>, sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com, nsekhar@ti.com,
-        open list <linux-kernel@vger.kernel.org>,
-        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-        linux-arm-kernel@lists.infradead.org, Netdev@vger.kernel.org,
-        m-watkins@ti.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
-References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com> <4DCB88A4.2010901@grandegger.com> <4DCBF1B6.6000104@hartkopp.net> <201105221230.56243.arnd@arndb.de> <4DD9FCFC.10803@hartkopp.net>
-In-Reply-To: <4DD9FCFC.10803@hartkopp.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigC295372533A9F99782DE402D"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201105231025.24501.pluto@agmk.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigC295372533A9F99782DE402D
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On 05/23/2011 08:21 AM, Oliver Hartkopp wrote:
+on quite heavy loaded (~20) dual opteron i'm observing from time to time a slow path warning:
 
-[...]
+May 19 19:33:42 odra kernel: [105977.220094] ------------[ cut here ]------------
+May 19 19:33:42 odra kernel: [105977.220102] WARNING: at /home/users/builder/rpm/BUILD/kernel-2.6.37.6/linux-2.6.37/fs/dcache.c:1996 prepend_path+0x150/0x160()
+May 19 19:33:42 odra kernel: [105977.220105] Hardware name: H8DGU
+May 19 19:33:42 odra kernel: [105977.220106] Root dentry has weird name <>
+May 19 19:33:42 odra kernel: [105977.220108] Modules linked in: nfs fscache binfmt_misc nfsd lockd nfs_acl auth_rpcgss sunrpc exportfs ipmi_si ipmi_devintf ipmi_msghandler sch_sfq iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter xt_TCPMSS xt_tcpudp iptable_mangle ip_tables ip6table_filter ip6_tables x_tables ext4 jbd2 crc16 raid0 dm_mod uvesafb autofs4 dummy aoe usbhid hid sr_mod cdrom ohci_hcd ide_pci_generic pata_acpi ata_generic atiixp ide_core i2c_piix4 psmouse amd64_edac_mod ssb igb mmc_core ehci_hcd edac_core evdev pcmcia usbcore i2c_core pcspkr k10temp serio_raw pcmcia_core dca edac_mce_amd pata_atiixp hwmon processor sg shpchp pci_hotplug ghes hed button sd_mod crc_t10dif raid1 md_mod ext3 jbd mbcache ahci libahci libata scsi_mod [last unloaded: scsi_wait_scan]
+May 19 19:33:42 odra kernel: [105977.220165] Pid: 27482, comm: pidof xid: #0 Not tainted 2.6.37.6-2 #1
+May 19 19:33:42 odra kernel: [105977.220167] Call Trace:
+May 19 19:33:42 odra kernel: [105977.220175]  [<ffffffff81049e8a>] warn_slowpath_common+0x7a/0xb0
+May 19 19:33:42 odra kernel: [105977.220179]  [<ffffffff81049f61>] warn_slowpath_fmt+0x41/0x50
+May 19 19:33:42 odra kernel: [105977.220183]  [<ffffffff81163860>] prepend_path+0x150/0x160
+May 19 19:33:42 odra kernel: [105977.220186]  [<ffffffff811638ea>] path_with_deleted+0x7a/0x90
+May 19 19:33:42 odra kernel: [105977.220189]  [<ffffffff811639b9>] d_path+0xb9/0xf0
+May 19 19:33:42 odra kernel: [105977.220193]  [<ffffffff811aefff>] proc_pid_readlink+0x8f/0x1c0
+May 19 19:33:42 odra kernel: [105977.220197]  [<ffffffff811661bc>] ? touch_atime+0x6c/0x1a0
+May 19 19:33:42 odra kernel: [105977.220201]  [<ffffffff81151861>] sys_readlinkat+0xb1/0xc0
+May 19 19:33:42 odra kernel: [105977.220205]  [<ffffffff81151886>] sys_readlink+0x16/0x20
+May 19 19:33:42 odra kernel: [105977.220209]  [<ffffffff81002e3b>] system_call_fastpath+0x16/0x1b
+May 19 19:33:42 odra kernel: [105977.220212] ---[ end trace 6e6e81a31199f8f8 ]---
+May 19 19:33:42 odra kernel: [105977.221291] ------------[ cut here ]------------
 
-> In 'real world' CAN setups you'll never see 21.000 CAN frames per secon=
-d (and
-> therefore 21.000 irqs/s) - you are usually designing CAN network traffi=
-c with
-> less than 60% busload. So interrupt rates somewhere below 1000 irqs/s c=
-an be
-> assumed.
->=20
-> From what i've seen so far a 3-4 messages rx FIFO and NAPI support just=
- make it.
->=20
-> @Marc/Wolfgang: Would this be also your recommendation for a CAN contro=
-ller
-> design that supports SocketCAN in the best way?
+i'm not sure that is a vanilla kernel problem becuase the vendor applies vserver/grsecurity patches.
+maybe this backtrace will be useful for developers.
 
-If you have a rx FIFO NAPI is the way to go. For a single mailbox it
-adds overhead, if you can read the CAN frame in the interrupt handler.
-The error messages should probably generated from NAPI, too. Especially
-the I'm-the-only-CAN-node-on-the-net-and-get-no-ACK error message.
-
-However IIRC David said that every new driver should implement NAPI.
-
-> As the Linux network stack supports hardware timestamps too, this could=
- be an
-> additional (optional!) feature.
-
-regards, Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enigC295372533A9F99782DE402D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk3aGXYACgkQjTAFq1RaXHOi6ACfQ4kY0ukWKfqwYANq0x5mV3gD
-lt8AoJjkRhJ0UWdPQ/dpzOA6WC4zJk6w
-=v0Gq
------END PGP SIGNATURE-----
-
---------------enigC295372533A9F99782DE402D--
+BR,
+Paweł.
