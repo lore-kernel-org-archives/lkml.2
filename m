@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab1EWHn5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 03:43:57 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:38610 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751485Ab1EWHnz (ORCPT
+	id S1753359Ab1EWHsb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 03:48:31 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:43711 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab1EWHsa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 03:43:55 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19y+a0hd79ywUJsY+5Dl/MChgLgO38SUPtXTNXHFM
-	uTwoS6qyg1vQuh
-Subject: Re: question about blk_schedule_flush_plug
-From: Mike Galbraith <efault@gmx.de>
-To: Con Kolivas <kernel@kolivas.org>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, mingo@elte.hu,
-        peterz@infradead.org
-In-Reply-To: <201105231705.20168.kernel@kolivas.org>
-References: <201105231705.20168.kernel@kolivas.org>
+	Mon, 23 May 2011 03:48:30 -0400
+Subject: Re: [PATCH 2/3] perf_events: fix validation of events using an
+ extra reg (v2)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, andi@firstfloor.org,
+        ming.m.lin@intel.com
+In-Reply-To: <BANLkTimZhpfgKoEki16r5zabNCrvK-GsUw@mail.gmail.com>
+References: <20110520143716.GA5381@quad> <1305903917.2466.7237.camel@twins>
+	 <BANLkTimZhpfgKoEki16r5zabNCrvK-GsUw@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 May 2011 09:43:49 +0200
-Message-ID: <1306136629.4876.13.camel@marge.simson.net>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 23 May 2011 09:47:58 +0200
+Message-ID: <1306136878.18455.4.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 17:05 +1000, Con Kolivas wrote:
-> I was looking at the scheduler changes going into 2.6.39 again and wondered 
-> about the use of blk_schedule_flush_plug smack in the middle of schedule()
-> 
-> It looks like this:
-> 			if (blk_needs_flush_plug(prev)) {
-> 				raw_spin_unlock(&rq->lock);
-> 				blk_schedule_flush_plug(prev);
-> 				raw_spin_lock(&rq->lock);
-> 			}
-> 
-> Now call me suspicious but to my eyes it looks really dubious unlocking the 
-> runqueue like that right in the heart of schedule().
-> 
-> Comments?
+On Fri, 2011-05-20 at 18:45 +0200, Stephane Eranian wrote:
+> On Fri, May 20, 2011 at 5:05 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Fri, 2011-05-20 at 16:37 +0200, Stephane Eranian wrote:
+> >> The is_fake field is necessary to avoid a lockdep issue having
+> >> to do with interrupt masking and era->lock.
+> >
+> > Why not simply disable IRQs in both validate_* functions?
+> >
+> Could do that too if you think that's cleaner.
 
-Releasing/retaking rq->lock is nothing new:
-
-static void idle_balance(int this_cpu, struct rq *this_rq)
-{
-...
-        /*
-         * Drop the rq->lock, but keep IRQ/preempt disabled.
-         */
-        raw_spin_unlock(&this_rq->lock);
-
-See also need_resched, and double_lock_balance() instances.
-
-	-Mike
-
+Its saner than making that code path conditional, but an alternative
+solution is to give the fake thing a different lock class.
