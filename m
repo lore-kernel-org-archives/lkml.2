@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab1EWKtz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 06:49:55 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:49760 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751813Ab1EWKty convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 06:49:54 -0400
-Subject: Re: Linux 2.6.39
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110519092318.1a946dce.randy.dunlap@oracle.com>
-References: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
-	 <4DD53AE5.8020103@teksavvy.com>
-	 <BANLkTi=7v40xpM6-jQ2CS09fEb0noFLYPg@mail.gmail.com>
-	 <20110519092318.1a946dce.randy.dunlap@oracle.com>
-Organization: ARM Limited
-Date: Mon, 23 May 2011 11:49:41 +0100
-Message-ID: <1306147781.7196.2.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 23 May 2011 10:49:54.0328 (UTC) FILETIME=[264B8180:01CC1937]
-X-MC-Unique: 111052311494507701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753818Ab1EWKzk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 06:55:40 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53601 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751711Ab1EWKzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 06:55:38 -0400
+Date: Mon, 23 May 2011 12:55:22 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Miller <davem@davemloft.net>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [bloat] Measuring header file bloat effects on kernel build
+ performance: a more than 2x slowdown ...
+Message-ID: <20110523105522.GC24674@elte.hu>
+References: <20110520161210.81bbef3a.sfr@canb.auug.org.au>
+ <BANLkTi=Dn_jvJ8mLY0Bc6C1Ptoqa-kJrCg@mail.gmail.com>
+ <20110523090918.GA5474@elte.hu>
+ <BANLkTi=Vbr+DRBy6sa7omGpvAb0uGunYMA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=Vbr+DRBy6sa7omGpvAb0uGunYMA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 17:23 +0100, Randy Dunlap wrote:
-> On Thu, 19 May 2011 17:16:32 +0100 Catalin Marinas wrote:
-> > On 19 May 2011 16:44, Mark Lord <kernel@teksavvy.com> wrote:
-> > > Here's some more funny business that was new after rc7-git12:
-> > >
-> > > warning: (AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI &&
-> > > RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has
-> > > unmet direct dependencies (MISC_DEVICES)
-> > > warning: (ACPI_APEI) selects PSTORE which has unmet direct dependencies
-> > > (MISC_FILESYSTEMS)
-> > >
-> > > The exact same .config didn't do that with rc7-git12,
-> > > but does do it with 2.6.39 final.
-> > >
-> > > Odd thing is, if I select both MISC_DEVICES and MISC_FILESYSTEMS,
-> > > but do NOT select anything from under either of those,
-> > > the warnings go away.
-> > >
-> > > Which likely means the warnings are totally bogus.
+
+* Alexey Dobriyan <adobriyan@gmail.com> wrote:
+
+> On Mon, May 23, 2011 at 12:09 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >      24594a2bfcaa: [PATCH] x86-64 merge
 > >
-> > The problem is:
+> >     - Remove some unneeded prefetches.  Just two are enough to kickstart
+> >       the hardware prefetcher.
 > >
-> > AX88796_93CX6 selects EEPROM_93CX6
-> > EEPROM_93CX6 depends on MISC_DEVICES (as part of the EEPROM menu which
-> > is only included if MISC_DEVICES)
-> >
-> > By enabling MISC_DEVICES, you allow AX88796_93CX6 to select
-> > EEPROM_93CX6 without any warning as it has the dependencies met.
-> >
-> > The issue here is that EEPROM_93CX6 doesn't really depend on any
-> > MISC_DEVICES infrastructure. That's just a directory for various
-> > drivers and MISC_DEVICES only has a visibility role. There was a
-> > proposal last year for kbuild to differentiate between dependency and
-> > visibility but I don't know what happened to it.
+> >   But despite touching prefetches explicitly, this too sloppily left the (now
+> >   dangling) prefetch.h include file around.
 > 
-> fwiw, there is a VISIBLE attribute now.  It defaults to yes/on.
+> Well, developer removes include, developer risks compile breakage.
 
-OK. It helps but only if all the misc devices have "visible if
-MISC_DEVICES" in their config options and entirely eliminate the
-"if/endif" block.
+If developer removes the final prefetch() from an unrelated header he might as 
+well think of removing the prefetch.h header. If there's compile breakage we 
+want to fix the breakage.
 
-Alternatively, maybe the if/endif block could generate a visibility
-expression rather than a dependency. It works for MISC_DEVICES but I'm
-not sure whether this is applicable across the kernel.
+But yes, this is easily forgotten and the basic psychology is for header file 
+dependencies to grow, almost never to shrink.
 
--- 
-Catalin
+To counteract that in a really good way we need tooling help - we are fighting 
+entropy here ...
 
+> > Anway, what i tried to demonstrate with this mail how much *real* slowdown 
+> > in the kernel build our current header file bloat is causing. We could 
+> > literally halve our kernel build times if we fixed this!
+> 
+> News at 11!
 
+I have not seen *actual hard numbers* measured before, so how exactly is this 
+news at 11? So i think your condescending reply is neither fair nor justified.
+
+Yes, we all knew that there's build time costs of header bloat - but it was 
+never AFAIK measured and posted to lkml in such a clear way.
+
+Thanks,
+
+	Ingo
