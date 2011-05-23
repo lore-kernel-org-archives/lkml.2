@@ -1,84 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab1EWOMI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 10:12:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53006 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754091Ab1EWOMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 10:12:06 -0400
-Date: Mon, 23 May 2011 16:10:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: ptrace_resume->wake_up_process (Was: Ptrace documentation, draft
-	#1)
-Message-ID: <20110523141034.GA11866@redhat.com>
-References: <201105152235.32073.vda.linux@googlemail.com> <20110516153122.GA15856@redhat.com> <BANLkTintE-QVUJhJY-_A5nvgj7viJatZ4Q@mail.gmail.com> <20110519194908.GA26584@redhat.com> <BANLkTi=bRb+NCqqS9+ptzxHVOjKKXhZgsg@mail.gmail.com> <20110523121011.GA5799@redhat.com>
+	id S1755816Ab1EWOv5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 10:51:57 -0400
+Received: from fall-curlleaf.atl.sa.earthlink.net ([207.69.195.105]:47959 "EHLO
+	fall-curlleaf.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752363Ab1EWOv4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 10:51:56 -0400
+X-Greylist: delayed 2003 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 May 2011 10:51:56 EDT
+thread-index: AcwZU75kbj+RPrOyTtC72oBuj1+HXQ==
+Thread-Topic: I thought you would enjoy this page on villasitalia.com!
+From: <easyincome@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: I thought you would enjoy this page on villasitalia.com!
+Date: Mon, 23 May 2011 10:14:35 -0400
+Message-ID: <D00519854B554AE08087ECC900F621CB@g27.win.smewh.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110523121011.GA5799@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4657
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23, Oleg Nesterov wrote:
->
-> "does nothing" is not 100% true, it does wake_up_process() but this shouldn't
-> be documented, this should be fixed.
+"easyincome@gmail.com" <easyincome@gmail.com> has recommended that you visit this page:
 
-In fact ptrace_resume()->wake_up_process() is obviously wrong anyway,
-I think the patch below makes sense even for 2.6.40.
 
-But it is much worse in PTRACE_KILL case. Just for example,
 
-	int main(void)
-	{
-		int child, status;
 
-		child = fork();
-		if (!child) {
-			int ret;
 
-			assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
+Hi Friend,
 
-			ret = pause();
-			printf("pause: %d %m\n", ret);
+COMMISSION CRUSHER 2011!!! 
 
-			return 0x23;
-		}
+Secret Software CRACKS Open A $283,191 Per Month By Legally Exploiting
+"The System" Where I Made Up To $500  $600 & Even $1,000 Per Day...
+Believe It Or Not I could Care Less What You Do Next..
 
-		sleep(1);
-		assert(ptrace(PTRACE_KILL, child, 0,0) == 0);
+Congratulation: Get your $973.83 Guaranted Commissions Now!!!
 
-		assert(child == wait(&status));
-		printf("wait: %x\n", status);
+It Doesn't Matter If You've Never Even Earned A Single Cent Online Before...
+If A Total Beginner Can Make $973.83 In His First Month Then Anyone Can Do This...
 
-		return 0;
-	}
+Imagine waking up at 10 in the morning.. doing your short workout routine..opening your 
+computer..and finding out you made up to $200  $300 or more - while you were a sleep!
 
-leaks -ERESTARTNOHAND. Yes, we should probably fix sys_pause() as well,
-it should check signal_pending(). But we shouldn't allow to wake up the
-tracee in unknown state/path.
+We Start putting 39 Members in your team for MAY 17 to 24/2011 WEEKLY Commission Cycle.
+YOU ALREADY HAVE 8,898 Pre-Enrollee\'s and 38 PAID Member\'s today in your TEAM.
+AND IT IS STILL GROWING! Only 8 Spot\'s remaining before Commission Cycle Ends.
 
-Can't understand why this wasn't fixed before... I always knew this looks
-wrong, but I never sent the patch. Probably because I never understood
-the original reason for wake_up_process...
+IMPORTANT: ORDER NOW or Before MAY 24,2011 is the Cut-Off Date!To lock in your 
+Commission!Be sure to\"Order Now\"only $24.97 Lifetime Membership.To secure your 
+$973.83 Commission \"ORDER NOW\" Hurry Grab it Now!You Get-Paid on JUNE 20,2011
+direct to your Paypal Account At the Time & Transfer Online To Your ATM Account ...
 
-Oleg.
+Be Sure to Copy the link below & Paste into your browser
+and press enter: To Secure your $973.83 commission!
 
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -706,7 +706,7 @@ static int ptrace_resume(struct task_str
- 	}
+This program is hands free, once you have it setup you never need to touch it again. 
+Just wait for the $973.83 commissions to come every End of the month and enjoy!
+
+After you Process Of $24.97 You are Secure to access the $973.83 Commission in any ATM MACHINE ...
+
+https://www.plimus.com/jsp/redirect.jsp?contractId=2962840&referrer=earneasy2011
+
+TYPE ===== Date & Time = New PAID Members ===== Country
+
+M MAY.22  @ 04:40  PM  = Arman Ronwood    =====  United States
+M MAY.22  @ 04:40  PM  ==  George Harper   =====  Germany
+M MAY.22  @ 11:19  PM  ===  Ronald Lewis    =====  United States
+M MAY.22  @ 06:23  PM  ====  James Allen     =====  Canada
+M MAY.21  @ 12:39  AM  =====  Sheryl McArthor =====  United States
+M MAY.21  @ 08:26  AM  ======  Renee Jenkins   =====  Australia
+P MAY.21  @ 02:31  PM  =======  Elizabeth Rios  =====  Portugal
+M MAY.21  @ 02:37  PM  ========  Karen Schiller  =====  United Kingdom
+M MAY.20  @ 04:21  PM  =========  Mark Raines     =====  Denmark
+P MAY.20  @ 09:38  PM  ==========  David Grogan    =====  Sri Lanka
+P MAY.20  @ 10:45  PM  ===========  Josh Dalton     =====  United States
+M MAY.19  @ 10:19  AM  ============  Victor Chavar   =====  Italy
+P MAY.19  @ 08:32  PM  ============  Gaynell Bailey  =====  South Africa
+M MAY.19  @ 09:40  PM  ===========  Barb Sharp      =====  Netherlands
+P MAY.18  @ 10:21  AM  ==========  James Williams  =====  North Carolina
+P MAY.18  @ 11:08  PM  =========  David Baxter    =====  United States
+M MAY.18  @ 12:39  AM  ========  Carolyn Smith   =====  Singapore
+M MAY.18  @ 02:30  AM  =======  Andrew Scott    =====  New Zealand
+P MAY.17  @ 02:42  AM  ======  Matthew Evan    =====  Portugal
+M MAY.17  @ 08:18  AM  =====  Steven Hopkins  =====  United States
+P MAY.17  @ 2:38   AM  ====  Jenny Regan     =====  United States
+P MAY.17  @ 2:53   AM  ===  Andy McLarry    =====  United Kingdom
+P MAY.16  @ 2:56   AM  == Jeffrey Segail   =====  Germany
+M MAY.16  @ 4:19   AM  = Mayeth Barkley   =====  United States
+
+39= Paid Members join everyday are Waiting each Coming Commissions....
+
+Therefore, you have a GUARANTEED $973.83 Commission 
+every month from now on!. Earn $24.97 Per Process!
+
+Each $24.97 x 39 Members = $973.83 Commission will be yours...!
+
+Be Sure to Copy the link below & Paste into your browser
+and press enter: To Secure your $973.83 commission!
+
+After Your Membership are Finish set up Don't Forget To Claim Your Commissions ..
  
- 	child->exit_code = data;
--	wake_up_process(child);
-+	wake_up_state(child, TASK_TRACED);
- 
- 	return 0;
- }
+Click Below!! And Join Now  
 
+https://www.plimus.com/jsp/redirect.jsp?contractId=2962840&referrer=earneasy2011
+
+Please do realize that if you don\'t ORDER NOW, ALL Commission that
+are currently is yours to take. As soon as I receive the confirmation
+of your ORDER, I will be in touch with you to help you get started.
+
+I personally recommend it and endorse it 100%, with all my reputation.
+
+(Hurry, Price May Increase Without Notice!)
+
+Here's To Your Success,
+
+Steve Iser 
+
+PS. Hey, why waste time trying to research this topic when all  this work 
+has already been done for you and offered to you at a crazy low price. 
+  
+PPPS. You'll never seen an opportunity like this one ever again.This is a  
+full sales and marketing strategy handed directly to you.You don't need  
+to change or customize a single thing. You don't even have to think about it. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Site privacy policy: This page was sent using the villasitalia.com send-to-a-friend link. Your email has not been added to any list and has not been recorded at our site.
