@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462Ab1EWUxS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 16:53:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57659 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab1EWUxR (ORCPT
+	id S1757421Ab1EWU5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 16:57:10 -0400
+Received: from nm5-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.112]:24543
+	"HELO nm5-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753052Ab1EWU5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 16:53:17 -0400
-X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=opAHw_AlxjwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=iQi6EvK5La-UFNIFbdoA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCHv3] jump_label,x86: make batch update of jump_label
- entries
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110523164541.GE2052@jolsa.brq.redhat.com>
-References: <1304023961-12741-1-git-send-email-jolsa@redhat.com>
-	 <1304502103-3228-1-git-send-email-jolsa@redhat.com>
-	 <20110509183816.GF3981@jolsa.brq.redhat.com>
-	 <20110509192726.GB2524@redhat.com>
-	 <20110523164541.GE2052@jolsa.brq.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 23 May 2011 16:53:15 -0400
-Message-ID: <1306183995.1465.48.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 23 May 2011 16:57:07 -0400
+X-Yahoo-Newman-Id: 158044.93591.bm@omp1019.access.mail.sp2.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: VAnXkckVM1koLz5aee81odoEbnyli2pu3scdxSv_iRcXdwK
+ 4VIhw93VccW.AgrV6XjFIkIzA4pBuH8pIYs76V7gB66PTIqWT5Cwlcc289a6
+ u7Qw.zWC8EqgMYFYhilmgDgTyoxCxyItSVyU.7zIzGLUhTUrQE6.Uwm92cnB
+ 4O.8QZkYj1HicQM.tvUg0z92LpnUMRuuWcArAHk_3H44V9u.w0gAJ0SHszY7
+ gsMf2XfHwHSOiJzmZb2098wUpCfqVbIjpUgr5LOjX6lp_APOH7oNFrqXoR0o
+ 6PmXewTzjF467fsLUrwlpDaJEPSCXf0ADuh1vQEgRYRd1b8M2Auwz5E6wMrL
+ UfMBZgKXBGGn2LyL.mcrM4N9vtUmej3u_XCgukyWz9yTL_dLb6JORSExCIBQ
+ IZDV7f6o3HmbGsGZc376Sc9BMUgqngE_ScSHRCzWZPHJpsmUaW8LSS0KqDyn
+ 308uP
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH] MAINTAINERS: Add drivers/target/ entry
+Date: Mon, 23 May 2011 13:56:26 -0700
+Message-Id: <1306184186-11551-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 18:45 +0200, Jiri Olsa wrote:
-> hi,
-> any feedback?
-> 
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Hi Jiri,
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ MAINTAINERS |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-I'm just dealing with some bugs people reported related to some of my
-work I recently done. I'll start working on this after that. This may
-not make it into this merge window, but I'll make sure I push this off
-to Ingo for 2.6.41.
-
-Thanks,
-
--- Steve
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 20be668..a831859 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6039,6 +6039,16 @@ F:	Documentation/accounting/taskstats*
+ F:	include/linux/taskstats*
+ F:	kernel/taskstats.c
+ 
++TARGET SUBSYSTEM
++M:	Nicholas A. Bellinger <nab@linux-iscsi.org>
++L:	linux-scsi@vger.kernel.org
++L:	http://groups.google.com/group/linux-iscsi-target-dev
++W:	http://www.linux-iscsi.org
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/nab/lio-core-2.6.git master
++S:	Supported
++F:	drivers/target/
++F:	include/target/
++
+ TC CLASSIFIER
+ M:	Jamal Hadi Salim <hadi@cyberus.ca>
+ L:	netdev@vger.kernel.org
+-- 
+1.7.5.2
 
