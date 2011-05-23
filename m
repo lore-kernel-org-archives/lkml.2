@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033Ab1EWNdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 09:33:15 -0400
-Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:52535 "EHLO
-	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754947Ab1EWNdL (ORCPT
+	id S1755257Ab1EWNdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 09:33:42 -0400
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:60841 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754929Ab1EWNdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 09:33:11 -0400
-X-AuditID: 1209190c-b7c65ae00000117c-07-4dda621ed9d6
+	Mon, 23 May 2011 09:33:13 -0400
+X-AuditID: 12074423-b7babae000007c6b-5a-4dda621aaa3e
 From: Andy Lutomirski <luto@MIT.EDU>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
@@ -18,70 +18,107 @@ Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@amd64.org>,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v5 6/8] x86-64: Turn off -pg and turn on -foptimize-sibling-calls for vDSO
-Date: Mon, 23 May 2011 09:31:29 -0400
-Message-Id: <23087b738c037342abb53f2f07b9bef89ceaeea3.1306156808.git.luto@mit.edu>
+Subject: [PATCH v5 7/8] x86-64: Add time to vDSO
+Date: Mon, 23 May 2011 09:31:30 -0400
+Message-Id: <bf963bac5207de4b29613f27c42705e4371812a8.1306156808.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1306156808.git.luto@mit.edu>
 References: <cover.1306156808.git.luto@mit.edu>
 In-Reply-To: <cover.1306156808.git.luto@mit.edu>
 References: <cover.1306156808.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsUixCmqrSuXdMvXYPIbQYuLbRfZLPquHGW3
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsUixG6noiuVdMvX4NZGIYuLbRfZLPquHGW3
 	OHLtO7vFxcZtLBZzzrewWOx7f5bN4vKuOWwWWy41s1ps3jSV2eJR31t2ix8bHrM6cHt0P/rE
 	6HHlKYfHlpU3mTxutf1h9pi/8yOjx85Zd9k9Nq3qZPN4d+4cu8eJGb9ZPD5vkgvgiuKySUnN
-	ySxLLdK3S+DKWN6/g7mggati5poTbA2Mizi6GDk5JARMJJ6e2MAOYYtJXLi3nq2LkYtDSGAf
-	o8T9DVOhnA2MEptOdUA5z5gkzu5bC9bCJqAi0bH0AVMXIweHiICQxNK7dSA1zAJrmSX2dS9m
-	AqkRFoiSOHxkGiuIzSKgKrHz3CNGkHpegSCJviUVEJsVJK5cmccCYnMKGEjM330SzBYS0JeY
-	dHQpTvEJjAILGBlWMcqm5Fbp5iZm5hSnJusWJyfm5aUW6Rrq5WaW6KWmlG5iBMeBJM8OxjcH
-	lQ4xCnAwKvHwLtK86SvEmlhWXJl7iFGSg0lJlNcl/pavEF9SfkplRmJxRnxRaU5q8SFGCQ5m
-	JRHeBu0bvkK8KYmVValF+TApaQ4WJXHeGZLqvkIC6YklqdmpqQWpRTBZGQ4OJQneRYlAQwWL
-	UtNTK9Iyc0oQ0kwcnCDDeYCG94LU8BYXJOYWZ6ZD5E8x6nJMvf37AKMQS15+XqqUOG8cSJEA
-	SFFGaR7cHFj6esUoDvSWMO9EkCoeYOqDm/QKaAkT0BKJvzdBlpQkIqSkGhiz3zw9eH8Dz5bX
-	ahH2y40FwsR2WX51qDdIKjk1b43AjVeVUi5eM5p/5p8Q/ymetvWV2a43e5KzZlyI61i5kCff
-	Yk2lXbXFoidym3l8fCwTpv5sYv8oH5khd/KhcPO+24V1538mNUQ0M/i2rNmvuLzppFdt283q
-	rG6NYEnn2RUaWo+YCpXWT1BiKc5INNRiLipOBAChiYwkOgMAAA==
+	ySxLLdK3S+DKuHfXu2CyUEX/ktNMDYxP+LoYOTkkBEwkXi85xARhi0lcuLeerYuRi0NIYB+j
+	xLEvu5kgnA2MEjca3jJDOM+YJK5N7wRrYRNQkehY+gDI5uAQERCSWHq3DqSGWWAts8S+7sVg
+	NcICBhJrL75kA7FZBFQlvkx5yQJi8woESbxvesMCsVpB4sqVeWA2J1D9/N0nwWwhAX2JSUeX
+	4hSfwCiwgJFhFaNsSm6Vbm5iZk5xarJucXJiXl5qka6ZXm5miV5qSukmRnAcuCjvYPxzUOkQ
+	owAHoxIP72LNm75CrIllxZW5hxglOZiURHld4m/5CvEl5adUZiQWZ8QXleakFh9ilOBgVhLh
+	bdC+4SvEm5JYWZValA+TkuZgURLnnSup7iskkJ5YkpqdmlqQWgSTleHgUJLgXZQINFSwKDU9
+	tSItM6cEIc3EwQkynAdoeC9IDW9xQWJucWY6RP4Uoy7H1Nu/DzAKseTl56VKifPOAykSACnK
+	KM2DmwNLX68YxYHeEuadCFLFA0x9cJNeAS1hAloi8fcmyJKSRISUVANjhaWsv6axi/gl067S
+	5Gt3174xLN9/tUT3W7HR1RdVZfK/6nZdWr+6Jih7xzKeRsbK/8duh6wIUNvX3/HVQK2AoStH
+	qdr4ocEc9f33P61PfX3Bro97mvXGhYvPbHtm6+npbqzgwfn/bXa4+x9ekb1/zhR6dq1T15qu
+	yKYq+u/FHlXm/3ca5BiVWIozEg21mIuKEwEk1PTmOgMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vDSO isn't part of the kernel, so profiling and kernel
-backtraces don't really matter.
+The only fast implementation of time(2) we expose is through the
+vsyscall page and we want to get userspace to stop using the
+vsyscall page.  So make it available through the vDSO as well.
+
+This is essentially a cut-n-paste job.
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/vdso/Makefile |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+ arch/x86/vdso/vclock_gettime.c |   35 ++++++++++++++++++++++++++++++++++-
+ arch/x86/vdso/vdso.lds.S       |    2 ++
+ 2 files changed, 36 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index a651861..bef0bc9 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -37,11 +37,24 @@ $(obj)/%.so: OBJCOPYFLAGS := -S
- $(obj)/%.so: $(obj)/%.so.dbg FORCE
- 	$(call if_changed,objcopy)
- 
-+#
-+# Don't omit frame pointers for ease of userspace debugging, but do
-+# optimize sibling calls.
-+#
- CFL := $(PROFILING) -mcmodel=small -fPIC -O2 -fasynchronous-unwind-tables -m64 \
--       $(filter -g%,$(KBUILD_CFLAGS)) $(call cc-option, -fno-stack-protector)
-+       $(filter -g%,$(KBUILD_CFLAGS)) $(call cc-option, -fno-stack-protector) \
-+       -fno-omit-frame-pointer -foptimize-sibling-calls
- 
- $(vobjs): KBUILD_CFLAGS += $(CFL)
- 
-+#
-+# vDSO code runs in userspace and -pg doesn't help with profiling anyway.
-+#
-+CFLAGS_REMOVE_vdso-note.o = -pg
-+CFLAGS_REMOVE_vclock_gettime.o = -pg
-+CFLAGS_REMOVE_vgetcpu.o = -pg
-+CFLAGS_REMOVE_vvar.o = -pg
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index 28b2c00..e6e9f90 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -2,7 +2,7 @@
+  * Copyright 2006 Andi Kleen, SUSE Labs.
+  * Subject to the GNU Public License, v.2
+  *
+- * Fast user context implementation of clock_gettime and gettimeofday.
++ * Fast user context implementation of clock_gettime, gettimeofday, and time.
+  *
+  * The code should have no internal unresolved relocations.
+  * Check with readelf after changing.
+@@ -160,3 +160,36 @@ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+ }
+ int gettimeofday(struct timeval *, struct timezone *)
+ 	__attribute__((weak, alias("__vdso_gettimeofday")));
 +
- targets += vdso-syms.lds
- obj-$(VDSO64-y)			+= vdso-syms.lds
- 
++/* This will break when the xtime seconds get inaccurate, but that is
++ * unlikely */
++
++static __always_inline long time_syscall(long *t)
++{
++	long secs;
++	asm volatile("syscall"
++		     : "=a" (secs)
++		     : "0" (__NR_time), "D" (t) : "cc", "r11", "cx", "memory");
++	return secs;
++}
++
++notrace time_t __vdso_time(time_t *t)
++{
++	unsigned seq;
++	time_t result;
++	if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled))
++		return time_syscall(t);
++
++	do {
++		seq = read_seqbegin(&VVAR(vsyscall_gtod_data).lock);
++
++		result = VVAR(vsyscall_gtod_data).wall_time_sec;
++
++	} while (read_seqretry(&VVAR(vsyscall_gtod_data).lock, seq));
++
++	if (t)
++		*t = result;
++	return result;
++}
++int time(time_t *t)
++	__attribute__((weak, alias("__vdso_time")));
+diff --git a/arch/x86/vdso/vdso.lds.S b/arch/x86/vdso/vdso.lds.S
+index 81f2500..b96b267 100644
+--- a/arch/x86/vdso/vdso.lds.S
++++ b/arch/x86/vdso/vdso.lds.S
+@@ -23,6 +23,8 @@ VERSION {
+ 		__vdso_gettimeofday;
+ 		getcpu;
+ 		__vdso_getcpu;
++		time;
++		__vdso_time;
+ 	local: *;
+ 	};
+ }
 -- 
 1.7.5.1
 
