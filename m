@@ -1,107 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab1EWLbl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 07:31:41 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34815 "EHLO hera.kernel.org"
+	id S1754358Ab1EWLh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 07:37:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18743 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752076Ab1EWLbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 07:31:40 -0400
-Date: Mon, 23 May 2011 11:31:22 GMT
-From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
-Message-ID: <tip-3cb6d1540880e767d911b79eb49578de2190f428@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1306148788-6179-2-git-send-email-fweisbec@gmail.com>
-References: <1306148788-6179-2-git-send-email-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Fix sample size bit operations
-Git-Commit-ID: 3cb6d1540880e767d911b79eb49578de2190f428
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753138Ab1EWLhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 07:37:55 -0400
+Message-ID: <4DDA46FD.904@redhat.com>
+Date: Mon, 23 May 2011 13:37:33 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 23 May 2011 11:31:23 +0000 (UTC)
+To: Mike Miller <mike.miller@hp.com>
+CC: Valdis.Kletnieks@vt.edu, scameron@beardog.cce.hp.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 01/16] hpsa: do readl after writel in main i/o path to
+ ensure commands don't get lost.
+References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com> <20110503195849.5478.13229.stgit@beardog.cce.hp.com> <4DC13566.5070203@redhat.com> <20110504125212.GC5997@beardog.cce.hp.com> <10639.1304530101@localhost> <20110504173735.GB22953@parisc-linux.org> <11821.1304531662@localhost> <20110505183515.GA14193@beardog.cce.hp.com>
+In-Reply-To: <20110505183515.GA14193@beardog.cce.hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3cb6d1540880e767d911b79eb49578de2190f428
-Gitweb:     http://git.kernel.org/tip/3cb6d1540880e767d911b79eb49578de2190f428
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Mon, 23 May 2011 13:06:27 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 23 May 2011 13:26:36 +0200
+On 05/05/2011 08:35 PM, Mike Miller wrote:
+> On Wed, May 04, 2011 at 01:54:22PM -0400, Valdis.Kletnieks@vt.edu wrote:
+>   
+>> On Wed, 04 May 2011 11:37:35 MDT, Matthew Wilcox said:
+>>     
+>>>> This probably needs a comment like
+>>>> 	/* don't care - dummy read just to force write posting to chipset */
+>>>> or similar.  I'm assuming it's just functioning as a barrier-type flush of some sort?
+>>>>         
+>>> It's a PCI write flush.  It's not clear to me why it's needed here,
+>>> though.  The write will eventually get to the device; why we need to
+>>> make the CPU wait around for it to actually get there doesn't make sense.
+>>>       
+>> Exactly why I think it needs a one-liner comment. :)
+>>
+>>     
+> So we're not exactly sure why it's needed either. We've had reports of
+> commands getting "lost" or "stuck" under some workloads. The extra readl
+> works around the issue but certainly may have negative side effects.
+>
+> I'm not sure I understand how writel works.
+>
+> From linux-2.6/arch/x86/include/asm/io.h:
+>
+> #define build_mmio_write(name, size, type, reg, barrier) \
+> static inline void name(type val, volatile void __iomem *addr) \
+> { asm volatile("mov" size " %0,%1": :reg (val), \
+> "m" (*(volatile type __force *)addr) barrier); }
+>
+> This implies (at least to me) that a barrier is part of writel. I don't know
+> why a write operation needs a barrier but thats essentially what we've done
+> by adding the extra readl. Can someone confirm or deny that a barrier is
+> actually built into writel? Or used by writel? If so, does this indicate
+> that barrier is broken?
+>
+> At this point we (the software guys) are pretty much at a loss as to how to
+> continue debugging. We don't know what to trigger on for the PCIe analyzer.
+> If we track outstanding commands then trigger on one that doesn't complete in
+> some amount of time the problem could conceivably be far in the past and
+> difficult to correlate to the data in the trace.
+>   
+I'd look at the firmware part, you could check what happens for example when
+the firmware gets send a command it doesn't understand.
+You could also change the communication with the fw by adding a count field, which can
+be then checked for the !(next_value == previous_value + 1) and raise an event.
+tomas
 
-perf tools: Fix sample size bit operations
 
-What we want is to count the number of bits in the mask,
-not some other random operation written in the middle
-of the night.
+> If anyone has any thoughts, suggestions, or flames they would be greatly
+> appreciated.
+>
+> -- mikem
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1306148788-6179-2-git-send-email-fweisbec@gmail.com
-[ Fixed perf_event__names[] alignment which was nearby and hurting my eyes ... ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- tools/perf/util/event.c |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
-
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 17c1c3c..252b72a 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -9,21 +9,21 @@
- #include "thread_map.h"
- 
- static const char *perf_event__names[] = {
--	[0]			 = "TOTAL",
--	[PERF_RECORD_MMAP]	 = "MMAP",
--	[PERF_RECORD_LOST]	 = "LOST",
--	[PERF_RECORD_COMM]	 = "COMM",
--	[PERF_RECORD_EXIT]	 = "EXIT",
--	[PERF_RECORD_THROTTLE]	 = "THROTTLE",
--	[PERF_RECORD_UNTHROTTLE] = "UNTHROTTLE",
--	[PERF_RECORD_FORK]	 = "FORK",
--	[PERF_RECORD_READ]	 = "READ",
--	[PERF_RECORD_SAMPLE]	 = "SAMPLE",
--	[PERF_RECORD_HEADER_ATTR]	 = "ATTR",
--	[PERF_RECORD_HEADER_EVENT_TYPE]	 = "EVENT_TYPE",
--	[PERF_RECORD_HEADER_TRACING_DATA]	 = "TRACING_DATA",
--	[PERF_RECORD_HEADER_BUILD_ID]	 = "BUILD_ID",
--	[PERF_RECORD_FINISHED_ROUND]	 = "FINISHED_ROUND",
-+	[0]					= "TOTAL",
-+	[PERF_RECORD_MMAP]			= "MMAP",
-+	[PERF_RECORD_LOST]			= "LOST",
-+	[PERF_RECORD_COMM]			= "COMM",
-+	[PERF_RECORD_EXIT]			= "EXIT",
-+	[PERF_RECORD_THROTTLE]			= "THROTTLE",
-+	[PERF_RECORD_UNTHROTTLE]		= "UNTHROTTLE",
-+	[PERF_RECORD_FORK]			= "FORK",
-+	[PERF_RECORD_READ]			= "READ",
-+	[PERF_RECORD_SAMPLE]			= "SAMPLE",
-+	[PERF_RECORD_HEADER_ATTR]		= "ATTR",
-+	[PERF_RECORD_HEADER_EVENT_TYPE]		= "EVENT_TYPE",
-+	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
-+	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
-+	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
- };
- 
- const char *perf_event__name(unsigned int id)
-@@ -42,7 +42,7 @@ int perf_sample_size(u64 sample_type)
- 	int i;
- 
- 	for (i = 0; i < 64; i++) {
--		if ((mask << i) & 1)
-+		if (mask & (1UL << i))
- 			size++;
- 	}
- 
