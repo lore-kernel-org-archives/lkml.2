@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab1EWRBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 13:01:49 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:45844
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932143Ab1EWRBq (ORCPT
+	id S932152Ab1EWRDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:03:47 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:19059
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755940Ab1EWRDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 13:01:46 -0400
+	Mon, 23 May 2011 13:03:46 -0400
 X-SpamScore: -16
 X-BigFish: VPS-16(zzbb2cK148cM1432N98dKzz1202hzz8275bh8275dhz32i668h839h62h)
 X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LLNRAP-01-1A0-02
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LLNRE2-02-FMJ-02
 X-M-MSG: 
-Date: Mon, 23 May 2011 19:01:36 +0200
+Date: Mon, 23 May 2011 19:03:38 +0200
 From: Robert Richter <robert.richter@amd.com>
 To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: sleeping while atomic warning while modprobing oprofile.
-Message-ID: <20110523170136.GO20052@erda.amd.com>
+Subject: [PATCH] oprofile, x86: Enable preemption during pci device setup in
+ IBS init
+Message-ID: <20110523170338.GP20052@erda.amd.com>
 References: <20110518191706.GA20475@redhat.com>
  <20110520034724.GA20052@erda.amd.com>
 MIME-Version: 1.0
@@ -29,6 +30,8 @@ X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+(modified subject)
 
 On 20.05.11 05:47:24, Robert Richter wrote:
 > On 18.05.11 15:17:06, Dave Jones wrote:
