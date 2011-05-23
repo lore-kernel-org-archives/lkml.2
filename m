@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab1EWRSk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 13:18:40 -0400
-Received: from mail.perches.com ([173.55.12.10]:1891 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755850Ab1EWRSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 13:18:39 -0400
-Subject: Re: [patch v3] checkpatch: Signature format verification
-From: Joe Perches <joe@perches.com>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, davej@redhat.com, rostedt@goodmis.org,
-        apw@shadowen.org, akpm@linux-foundation.org, vapier@gentoo.org,
-        linux-kernel@vger.kernel.org, man.k1983@gmail.com
-In-Reply-To: <BANLkTik8coVxt=Z92NQBNH_=4yRhTtexzA@mail.gmail.com>
-References: <1306006721.1622.18.camel@anish-desktop>
-	 <1306059528.2761.3.camel@anish-desktop>
-	 <1306164094.2292.25.camel@anish-desktop>
-	 <1306167105.8687.11.camel@Joe-Laptop>
-	 <BANLkTi=9nzMbxU0=P+pOaHcebqhL=bd2HQ@mail.gmail.com>
-	 <1306168598.8687.27.camel@Joe-Laptop>
-	 <20110523093920.8f1e5cd0.rdunlap@xenotime.net>
-	 <1306168975.8687.29.camel@Joe-Laptop>
-	 <BANLkTik8coVxt=Z92NQBNH_=4yRhTtexzA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 May 2011 10:18:37 -0700
-Message-ID: <1306171117.8687.34.camel@Joe-Laptop>
+	id S932248Ab1EWRWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:22:42 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:60857 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932076Ab1EWRWl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 13:22:41 -0400
+Subject: Re: [PATCH v5 00/19] ARM: Add support for the Large Physical
+ Address Extensions
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110523165412.GF15138@n2100.arm.linux.org.uk>
+References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
+	 <20110523165412.GF15138@n2100.arm.linux.org.uk>
+Organization: ARM Limited
+Date: Mon, 23 May 2011 18:22:34 +0100
+Message-ID: <1306171354.7196.30.camel@e102109-lin.cambridge.arm.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 23 May 2011 17:22:47.0314 (UTC) FILETIME=[08E3B720:01CC196E]
+X-MC-Unique: 111052318223800801
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 22:36 +0530, anish singh wrote:
->  if ($1 !~ /[\sa-zA-Z\"]*\s<.*>/i) {
->  WARN("Space required b/w Full Name & Mail-id:\n" .
->                                                         $herecurr);
->                                         }
-> Quote has been taken care too now.
+On Mon, 2011-05-23 at 17:54 +0100, Russell King - ARM Linux wrote:
+> On Sun, May 08, 2011 at 01:51:19PM +0100, Catalin Marinas wrote:
+> > This set of patches adds support for the Large Physical Extensions on
+> > the ARM architecture (available with the Cortex-A15 processor). LPAE
+> > comes with a 3-level page table format (compared to 2-level for the
+> > classic one), allowing up to 40-bit physical address space.
+> >
+> > The ARM LPAE documentation is available from (free registration needed):
+> >
+> > http://infocenter.arm.com/help/topic/com.arm.doc.ddi0406b_virtualization_extns/index.html
+> >
+> > The full set of patches on top of linux-next (LPAE, support for an
+> > emulated Versatile Express with Cortex-A15 tile and generic timers) is
+> > available on this branch:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-2.6-cm.git arm-lpae-next
+> 
+> FYI, I'm going to drop the pgt patch because the warnings are still there
+> and I _still_ don't feel happy about pushing that into mainline and then
+> being endlessly bugged about it.
 
-If you're going to try to validate email addresses,
-please do it reasonably correctly or not at all.
+I haven't seen the warnings but probably because I applied the LPAE
+patches on top. I'll have a look as well.
 
-At a minimum you need to add digits, single quote,
-period, and comma.
+> So I'll drop it from my tree again and re-merge that branch after this
+> window has closed.
 
-Look at git-send-email.perl or scripts/get_maintainer.pl
-for email address validation samples.
+OK. In the meantime I'll cherry-pick it into my LPAE branch based on
+mainline. As we discussed, after -rc1 I plan to push the LPAE patches to
+-next. Your patch would come from two different sources but I'm not sure
+whether git can cope with it (given that I rename files like pgtable.h).
+The alternative would be to base my patches on your branch as long as
+you don't rebase it.
+
+-- 
+Catalin
 
 
