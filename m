@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933483Ab1EWTpj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 15:45:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52439 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932209Ab1EWTph (ORCPT
+	id S933611Ab1EWTsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 15:48:32 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:43209 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932223Ab1EWTsb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 15:45:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=k3jm4iKwmwJ59HobSIDBaum0lFhg821UJ/FnRsmPYNifuZMKyuLQgtAZqhFlslsTMQ
-         +SFAClfnYApIhRDVRYcA==
+	Mon, 23 May 2011 15:48:31 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+k4/JdED+kq7FzfQquFeeyLc4wAZmzlY6l6ddn65
+	bx4/uxXEjVAxR4
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
+Subject: Re: kernel 2.6.39 (user mode linux) crashes (2.6.38 works fine)
+Date: Mon, 23 May 2011 21:48:25 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.7; KDE/4.6.3; i686; ; )
+Cc: Steven Rostedt <rostedt@goodmis.org>, Darren Hart <dvhart@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+References: <201105191526.31904.toralf.foerster@gmx.de> <201105211054.00553.toralf.foerster@gmx.de> <BANLkTikQozc+rr9Meihft_avOJf=iMAGdw@mail.gmail.com>
+In-Reply-To: <BANLkTikQozc+rr9Meihft_avOJf=iMAGdw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1305806316.2466.7221.camel@twins>
-References: <1305674470-23727-1-git-send-email-john.stultz@linaro.org>
-	<1305806316.2466.7221.camel@twins>
-Date: Mon, 23 May 2011 12:45:32 -0700
-X-Google-Sender-Auth: tTLRQHPddY8Qs5dmx1zqx_ZsadY
-Message-ID: <BANLkTikPs35QJk7q8MtWaSq9fBKbYSJ4bA@mail.gmail.com>
-Subject: Re: [RFC][PATCH] sched: Fix min_vruntime calculation in dequeue_entity
-From: Dima Zavin <dima@android.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201105232148.25650.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
 
-My apologies for the very delayed response, mail filter fail.
+richard -rw- weinberger wrote at 21:17:31
+> 
+> does this patch fix your problem?
+> http://userweb.kernel.org/~rw/rwsem.diff
+yes :-)
+ 
+> Please do a make clean before rebuilding...
+of course
 
-Your patch looks equivalent to what we use today, so...
-
-Acked-by: Dima Zavin <dima@android.com>
-
-
-On Thu, May 19, 2011 at 4:58 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2011-05-17 at 16:21 -0700, John Stultz wrote:
->> While Dima never replied publicly, I bugged him a few weeks ago
->> and he said that this fix should address his original issue.
->
-> Should or does? :-)
->
-> I was really hoping for a tested-by tag..
->
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
