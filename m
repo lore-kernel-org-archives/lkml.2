@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab1EWUoo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 16:44:44 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44889 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751922Ab1EWUon (ORCPT
+	id S1757374Ab1EWUph (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 16:45:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37448 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab1EWUpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 16:44:43 -0400
-Date: Mon, 23 May 2011 13:44:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: Consistency of loops in mm/truncate.c?
-Message-Id: <20110523134439.22582eee.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1105221526020.17400@sister.anvils>
-References: <alpine.LSU.2.00.1105221526020.17400@sister.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Mon, 23 May 2011 16:45:35 -0400
+X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=1fwwzz_40skA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=XrPVtCNe9J9qHYjOOGEA:9 a=rvsHsgzfDi8ne0YKXRYA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: st_kim: Handle case of no device found for ID 0
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Pavan Savoy <pavan_savoy@ti.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 23 May 2011 16:45:32 -0400
+Message-ID: <1306183532.1465.46.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 May 2011 15:27:41 -0700 (PDT)
-Hugh Dickins <hughd@google.com> wrote:
+Running ktest.pl, I hit this bug:
 
-> Andrew,
-> 
-> I have a series aimed at 2.6.41 to remove mm/shmem.c's peculiar radix
-> tree of swap entries, using slots in the file's standard radix_tree
-> instead - prompted in part by https://lkml.org/lkml/2011/1/22/110
-> 
-> There's a patch to give shmem its own truncation loop, handling pages
-> and swap entries in the same pass.  For that I want to start from a
-> copy of truncate_inode_page_range(), but notice some discrepancies
-> between the different loops in mm/truncate.c, so want to standardize
-> them first before copying.
-> 
-> The advancement of index is hard to follow: we rely upon page->index
-> of an unlocked page persisting, yet we're ashamed of doing so, sometimes
-> reading it again once locked.  invalidate_mapping_pages() apologizes for
-> this, but I think we should now just document that page->index is not
-> modified until the page is freed.
+[   19.780654] BUG: unable to handle kernel NULL pointer dereference at 0000000c
+[   19.780660] IP: [<c112efcd>] dev_get_drvdata+0xc/0x46
+[   19.780669] *pdpt = 0000000031daf001 *pde = 0000000000000000 
+[   19.780673] Oops: 0000 [#1] SMP 
+[   19.780680] Dumping ftrace buffer:^M
+[   19.780685]    (ftrace buffer empty)
+[   19.780687] Modules linked in: ide_pci_generic firewire_ohci firewire_core evbug crc_itu_t e1000 ide_core i2c_i801 iTCO_wdt
+[   19.780697] 
+[   19.780700] Pid: 346, comm: v4l_id Not tainted 2.6.39-test-02740-gcaebc16-dirty #4                  /DG965MQ
+[   19.780706] EIP: 0060:[<c112efcd>] EFLAGS: 00010202 CPU: 0
+[   19.780709] EIP is at dev_get_drvdata+0xc/0x46
+[   19.780712] EAX: 00000008 EBX: f1e37da4 ECX: 00000000 EDX: 00000000
+[   19.780715] ESI: f1c3f200 EDI: c33ec95c EBP: f1e37d80 ESP: f1e37d80
+[   19.780718]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[   19.780721] Process v4l_id (pid: 346, ti=f1e36000 task=f2bc2a60 task.ti=f1e36000)
+[   19.780723] Stack:
+[   19.780725]  f1e37d8c c117d395 c33ec93c f1e37db4 c117a0f9 00000002 00000000 c1725e54
+[   19.780732]  00000001 00000007 f2918c90 f1c3f200 c33ec95c f1e37dd4 c1789d3d 22222222
+[   19.780740]  22222222 22222222 f2918c90 f1c3f200 f29194f4 f1e37de8 c178d5c4 c1725e54
+[   19.780747] Call Trace:
+[   19.780752]  [<c117d395>] st_kim_ref+0x28/0x41
+[   19.780756]  [<c117a0f9>] st_register+0x29/0x562
+[   19.780761]  [<c1725e54>] ? v4l2_open+0x111/0x1e3
+[   19.780766]  [<c1789d3d>] fmc_prepare+0x97/0x424
+[   19.780770]  [<c178d5c4>] fm_v4l2_fops_open+0x70/0x106
+[   19.780773]  [<c1725e54>] ? v4l2_open+0x111/0x1e3
+[   19.780777]  [<c1725e9b>] v4l2_open+0x158/0x1e3
+[   19.780782]  [<c065173b>] chrdev_open+0x22c/0x276
+[   19.780787]  [<c0647c4e>] __dentry_open+0x35c/0x581
+[   19.780792]  [<c06498f9>] nameidata_to_filp+0x7c/0x96
+[   19.780795]  [<c065150f>] ? cdev_put+0x57/0x57
+[   19.780800]  [<c0660cad>] do_last+0x743/0x9d4
+[   19.780804]  [<c065d5fc>] ? path_init+0x1ee/0x596
+[   19.780808]  [<c0661481>] path_openat+0x10c/0x597
+[   19.780813]  [<c05204a1>] ? trace_hardirqs_off+0x27/0x37
+[   19.780817]  [<c0509651>] ? local_clock+0x78/0xc7
+[   19.780821]  [<c0661945>] do_filp_open+0x39/0xc2
+[   19.780827]  [<c1cabc76>] ? _raw_spin_unlock+0x4c/0x5d^M
+[   19.780831]  [<c0674ccd>] ? alloc_fd+0x19e/0x1b7
+[   19.780836]  [<c06499ca>] do_sys_open+0xb7/0x1bd
+[   19.780840]  [<c0608eea>] ? sys_munmap+0x78/0x8d
+[   19.780844]  [<c0649b06>] sys_open+0x36/0x58
+[   19.780849]  [<c1cb809f>] sysenter_do_call+0x12/0x38
+[   19.780852] Code: d8 2f 20 c3 01 83 15 dc 2f 20 c3 00 f0 ff 00 83 05 e0 2f 20 c3 01 83 15 e4 2f 20 c3 00 5d c3 55 89 e5 3e 8d 74 26 00 85 c0 74 28 <8b> 40 04 83 05 e8 2f 20 c3 01 83 15 ec 2f 20 c3 00 85 c0 74 13 ^M
+[   19.780889] EIP: [<c112efcd>] dev_get_drvdata+0xc/0x46 SS:ESP 0068:f1e37d80
+[   19.780894] CR2: 000000000000000c
+[   19.780898] ---[ end trace e7d1d0f6a2d1d390 ]---
 
-That should be true under i_mutex and perhaps other external locking. 
-We could put some debug checks in there to catch any situation where
-->index changed after the page was locked.
+The id of 0 passed to st_kim_ref() found no device, keeping pdev null,
+and causing pdev->dev cause a NULL pointer dereference. After having
+st_kim_ref() check for NULL, the st_unregister() function needed to be
+updated to handle the case that st_gdata was not set by the
+st_kim_ref().
 
-> invalidate_inode_pages2_range() has two sophistications not seen
-> elsewhere, which 7afadfdc says were folded in by akpm (along with
-> a page->index one):
-> 
-> - Don't look up more pages than we're going to use:
->   seems a good thing for me to fold into truncate_inode_pages_range()
->   and invalidate_mapping_pages() too.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-I guess so.  I doubt if it makes a measurable performance difference
-(except maybe in the case of small direct-io's?) but consistency is
-good.
 
-> - Check for the cursor wrapping at the end of the mapping:
->   but with
-> 
-> #if BITS_PER_LONG==32
-> #define MAX_LFS_FILESIZE (((u64)PAGE_CACHE_SIZE << (BITS_PER_LONG-1))-1) 
-> #elif BITS_PER_LONG==64
-> #define MAX_LFS_FILESIZE 0x7fffffffffffffffUL
-> #endif
-> 
->   I don't see how page->index + 1 would ever be 0, even if one or
->   other of those "-1"s went away; so may I delete the "wrapped" case?
+---
+ drivers/misc/ti-st/st_core.c |    2 +-
+ drivers/misc/ti-st/st_kim.c  |    4 ++++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-err yes, that seems bogus now and was bogus at the time.  I never
-trusted that s_maxbytes thing :)
+Index: linux-test.git/drivers/misc/ti-st/st_core.c
+===================================================================
+--- linux-test.git.orig/drivers/misc/ti-st/st_core.c	2011-05-23 15:30:37.287951016 -0400
++++ linux-test.git/drivers/misc/ti-st/st_core.c	2011-05-23 16:04:40.422367907 -0400
+@@ -605,7 +605,7 @@ long st_unregister(struct st_proto_s *pr
+ 	pr_debug("%s: %d ", __func__, proto->chnl_id);
+ 
+ 	st_kim_ref(&st_gdata, 0);
+-	if (proto->chnl_id >= ST_MAX_CHANNELS) {
++	if (!st_gdata || proto->chnl_id >= ST_MAX_CHANNELS) {
+ 		pr_err(" chnl_id %d not supported", proto->chnl_id);
+ 		return -EPROTONOSUPPORT;
+ 	}
+Index: linux-test.git/drivers/misc/ti-st/st_kim.c
+===================================================================
+--- linux-test.git.orig/drivers/misc/ti-st/st_kim.c	2011-05-23 15:30:37.303951943 -0400
++++ linux-test.git/drivers/misc/ti-st/st_kim.c	2011-05-23 16:04:40.434368603 -0400
+@@ -604,6 +604,10 @@ void st_kim_ref(struct st_data_s **core_
+ 	struct kim_data_s	*kim_gdata;
+ 	/* get kim_gdata reference from platform device */
+ 	pdev = st_get_plat_device(id);
++	if (!pdev) {
++		*core_data = NULL;
++		return;
++	}
+ 	kim_gdata = dev_get_drvdata(&pdev->dev);
+ 	*core_data = kim_gdata->core_data;
+ }
+
 
