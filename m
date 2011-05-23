@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab1EWAif (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 20:38:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23028 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab1EWAib (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 20:38:31 -0400
-Date: Sun, 22 May 2011 17:38:02 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Mike Waychison <mikew@google.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        gregkh <greg@kroah.com>
-Subject: [PATCH -next] firmware: fix GOOGLE_SMI kconfig dependency warning
-Message-Id: <20110522173802.c0766c64.randy.dunlap@oracle.com>
-In-Reply-To: <20110520165507.cba539d5.sfr@canb.auug.org.au>
-References: <20110520165507.cba539d5.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1755958Ab1EWAmp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 20:42:45 -0400
+Received: from waste.org ([173.11.57.241]:42659 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755608Ab1EWAmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 20:42:43 -0400
+Subject: Re: Regression with i915 and suspend on Thinkpad x220
+From: Matt Mackall <mpm@selenic.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <yunipt2730l.fsf@aiko.keithp.com>
+References: <1306040157.3322.11.camel@calx>
+	 <yunlixz6yop.fsf@aiko.keithp.com> <1306078089.4204.1.camel@calx>
+	 <yunipt2730l.fsf@aiko.keithp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 22 May 2011 19:42:42 -0500
+Message-ID: <1306111362.4204.17.camel@calx>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DD9AC80.00E3:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Sun, 2011-05-22 at 16:02 -0700, Keith Packard wrote:
+> On Sun, 22 May 2011 10:28:09 -0500, Matt Mackall <mpm@selenic.com> wrote:
+> 
+> > Appears to work, thanks.
+> 
+> Thanks for testing this.
+> 
+> Jesse and Chris: would be best to figure out what's going on here if
+> possible, otherwise we should consider submitting an FBC disable patch
+> for SNB to stable@
+> 
+> Matt: sounds like your machine can reliably reproduce this problem; if
+> we come up with an alternate patch which re-enables FBC, would you be
+> willing to give it a try?
 
-Is it meaningful/useful to enable EFI_VARS but not EFI?
-That's what GOOGLE_SMI does.  Make it enable EFI also.
+Sure.
 
-Fixes this kconfig dependency warning:
 
-warning: (GOOGLE_SMI) selects EFI_VARS which has unmet direct dependencies (EFI)
+-- 
+Mathematics is the supreme nostalgia of our time.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Mike Waychison <mikew@google.com>
----
- drivers/firmware/google/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
 
---- linux-next-20110520.orig/drivers/firmware/google/Kconfig
-+++ linux-next-20110520/drivers/firmware/google/Kconfig
-@@ -13,6 +13,7 @@ menu "Google Firmware Drivers"
- config GOOGLE_SMI
- 	tristate "SMI interface for Google platforms"
- 	depends on ACPI && DMI
-+	select EFI
- 	select EFI_VARS
- 	help
- 	  Say Y here if you want to enable SMI callbacks for Google
