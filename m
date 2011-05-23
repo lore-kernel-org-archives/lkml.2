@@ -1,143 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab1EWGn1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 02:43:27 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:4188 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab1EWGnZ (ORCPT
+	id S1753537Ab1EWGrM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 02:47:12 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51085 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925Ab1EWGrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 02:43:25 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6354"; a="92929417"
-From: Tatyana Brokhman <tlinder@codeaurora.org>
-To: greg@kroah.com
-Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
-        ablay@codeaurora.org, Tatyana Brokhman <tlinder@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v12 8/8] usb:gadget: coding style fixes
-Date: Mon, 23 May 2011 09:41:17 +0300
-Message-Id: <1306132882-9668-9-git-send-email-tlinder@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.3
-In-Reply-To: <1306132882-9668-1-git-send-email-tlinder@codeaurora.org>
-References: <1306132882-9668-1-git-send-email-tlinder@codeaurora.org>
+	Mon, 23 May 2011 02:47:10 -0400
+Date: Mon, 23 May 2011 02:45:58 -0400 (EDT)
+Message-Id: <20110523.024558.1625882862305082516.davem@davemloft.net>
+To: geert@linux-m68k.org
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-m68k@vger.kernel.org
+Subject: Re: [PATCH 1/4] sparc: _sparc_find_resource() should check for
+ exact matches
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1306006756-32009-2-git-send-email-geert@linux-m68k.org>
+References: <1306006756-32009-1-git-send-email-geert@linux-m68k.org>
+	<1306006756-32009-2-git-send-email-geert@linux-m68k.org>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 22 May 2011 23:46:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Sat, 21 May 2011 21:39:13 +0200
 
----
- drivers/usb/gadget/composite.c |   20 +++++++++++----
- drivers/usb/gadget/dummy_hcd.c |   52 ++++++++++++++++++++++++++++++----------
- 2 files changed, 54 insertions(+), 18 deletions(-)
+> The address that's passed to _sparc_find_resource() should always be the
+> start address of a resource:
+>   - iounmap() passes a page-aligned virtual address, while the original
+>     address was created by adding the in-page offset to the resource's
+>     start address,
+>   - sbus_free_coherent() and pci32_free_coherent() should be passed an
+>     address obtained from sbus_alloc_coherent() resp. pci32_alloc_coherent(),
+>     which is always a resource's start address.
+> 
+> Hence replace the range check by a check for an exact match.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index 7738302..bee33d2 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -629,11 +629,21 @@ static int set_config(struct usb_composite_dev *cdev,
- 	INFO(cdev, "%s speed config #%d: %s\n",
- 		({ char *speed;
- 		switch (gadget->speed) {
--		case USB_SPEED_LOW:	speed = "low"; break;
--		case USB_SPEED_FULL:	speed = "full"; break;
--		case USB_SPEED_HIGH:	speed = "high"; break;
--		case USB_SPEED_SUPER:	speed = "super"; break;
--		default:		speed = "?"; break;
-+		case USB_SPEED_LOW:
-+			speed = "low";
-+			break;
-+		case USB_SPEED_FULL:
-+			speed = "full";
-+			break;
-+		case USB_SPEED_HIGH:
-+			speed = "high";
-+			break;
-+		case USB_SPEED_SUPER:
-+			speed = "super";
-+			break;
-+		default:
-+			speed = "?";
-+			break;
- 		} ; speed; }), number, c ? c->label : "unconfigured");
- 
- 	if (!c)
-diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-index c2731d3..abfafd6 100644
---- a/drivers/usb/gadget/dummy_hcd.c
-+++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -546,10 +546,18 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
- 		(desc->bEndpointAddress & USB_DIR_IN) ? "in" : "out",
- 		({ char *val;
- 		 switch (desc->bmAttributes & 0x03) {
--		 case USB_ENDPOINT_XFER_BULK: val = "bulk"; break;
--		 case USB_ENDPOINT_XFER_ISOC: val = "iso"; break;
--		 case USB_ENDPOINT_XFER_INT: val = "intr"; break;
--		 default: val = "ctrl"; break;
-+		 case USB_ENDPOINT_XFER_BULK:
-+			 val = "bulk";
-+			 break;
-+		 case USB_ENDPOINT_XFER_ISOC:
-+			 val = "iso";
-+			 break;
-+		 case USB_ENDPOINT_XFER_INT:
-+			 val = "intr";
-+			 break;
-+		 default:
-+			 val = "ctrl";
-+			 break;
- 		 }; val; }),
- 		max);
- 
-@@ -2151,19 +2159,37 @@ show_urb (char *buf, size_t size, struct urb *urb)
- 		urb,
- 		({ char *s;
- 		 switch (urb->dev->speed) {
--		 case USB_SPEED_LOW:	s = "ls"; break;
--		 case USB_SPEED_FULL:	s = "fs"; break;
--		 case USB_SPEED_HIGH:	s = "hs"; break;
--		 case USB_SPEED_SUPER:	s = "ss"; break;
--		 default:		s = "?"; break;
-+		 case USB_SPEED_LOW:
-+			s = "ls";
-+			break;
-+		 case USB_SPEED_FULL:
-+			s = "fs";
-+			break;
-+		 case USB_SPEED_HIGH:
-+			s = "hs";
-+			break;
-+		 case USB_SPEED_SUPER:
-+			s = "ss";
-+			break;
-+		 default:
-+			s = "?";
-+			break;
- 		 }; s; }),
- 		ep, ep ? (usb_pipein (urb->pipe) ? "in" : "out") : "",
- 		({ char *s; \
- 		 switch (usb_pipetype (urb->pipe)) { \
--		 case PIPE_CONTROL:	s = ""; break; \
--		 case PIPE_BULK:	s = "-bulk"; break; \
--		 case PIPE_INTERRUPT:	s = "-int"; break; \
--		 default: 		s = "-iso"; break; \
-+		 case PIPE_CONTROL: \
-+			s = ""; \
-+			break; \
-+		 case PIPE_BULK: \
-+			s = "-bulk"; \
-+			break; \
-+		 case PIPE_INTERRUPT: \
-+			s = "-int"; \
-+			break; \
-+		 default: \
-+			s = "-iso"; \
-+			break; \
- 		}; s;}),
- 		urb->actual_length, urb->transfer_buffer_length);
- }
--- 
-1.7.3.3
-
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Acked-by: David S. Miller <davem@davemloft.net>
