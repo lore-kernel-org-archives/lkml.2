@@ -1,75 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933130Ab1EWTgW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 15:36:22 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41188 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756494Ab1EWTgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 15:36:17 -0400
-Date: Mon, 23 May 2011 21:35:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Ray Lee <ray-lk@madrabbit.org>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
-        hpa@zytor.com, Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-Message-ID: <20110523193554.GA10975@elte.hu>
-References: <20110516153527.GC21107@elte.hu>
- <1305852966.3005.19.camel@dan>
- <20110520120750.GJ14745@elte.hu>
- <1305896093.3005.24.camel@dan>
- <20110520131108.GA17699@elte.hu>
- <1306089922.1806.27.camel@dan>
- <BANLkTik1SK_kWVvGsKk0SqdByQ5-0b5nFg@mail.gmail.com>
- <1306110336.25049.7.camel@dan>
- <20110523104902.GB24674@elte.hu>
- <BANLkTimOycEf5ZyH64Bee-b1ZkbBKXNGzg@mail.gmail.com>
+	id S933560Ab1EWThl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 15:37:41 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64932 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932209Ab1EWThk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 15:37:40 -0400
+Date: Mon, 23 May 2011 15:37:36 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: benh@kernel.crashing.org
+Cc: robert.richter@amd.com, paulus@samba.org, oprofile-list@lists.sf.net,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oprofile, powerpc: Handle events that raise an exception
+ without overflowing
+Message-ID: <20110523193736.GA2997@mgebm.net>
+References: <1306160560-5309-1-git-send-email-emunson@mgebm.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimOycEf5ZyH64Bee-b1ZkbBKXNGzg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1306160560-5309-1-git-send-email-emunson@mgebm.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ray Lee <ray-lk@madrabbit.org> wrote:
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, May 23, 2011 at 3:49 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> > Well, since entropy does not get reduced on addition of independent variables
-> > the right sequence is (pseudocode):
-> >
-> >        rnd  = entropy_cycles();
-> >        rnd += entropy_rdrand();
-> >        rnd += entropy_RTC();
-> >        rnd += entropy_system();
-> 
-> I think you mean concatenation rather than addition? Or perhaps XOR, or a 
-> hash? [...]
+On Mon, 23 May 2011, Eric B Munson wrote:
 
-Yeah.
+> Commit 0837e3242c73566fc1c0196b4ec61779c25ffc93 fixes a situation on POWE=
+R7
+> where events can roll back if a specualtive event doesn't actually comple=
+te.
+> This can raise a performance monitor exception.  We need to catch this to=
+ ensure
+> that we reset the PMC.  In all cases the PMC will be less than 256 cycles=
+ from
+> overflow.
+>=20
+> This patch lifts Anton's fix for the problem in perf and applies it to op=
+rofile
+> as well.
+>=20
+> Signed-off-by: Eric B Munson <emunson@mgebm.net>
+> Cc: <stable@kernel.org> # as far back as it applies cleanly
 
-In this special case probably concatenation works the best: the above 4 random 
-variables have total randomness probably less than 32 bits, so we want to 
-create 4 tight random numbers and concatenate them.
+I'd like to get this patch into mainline this merge window if at all possib=
+le.
 
-[ XOR would destroy some fair amount of entropy because most of these random 
-  variables have their randomness in their low bits, and a hash would probably
-  lose about 2 bits and would also be slower. A hash would probably be safer
-  and more robust though, if we mis-identify any of the random variables. ]
+> ---
+>  arch/powerpc/oprofile/op_model_power4.c |   24 +++++++++++++++++++++++-
+>  1 files changed, 23 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/arch/powerpc/oprofile/op_model_power4.c b/arch/powerpc/oprof=
+ile/op_model_power4.c
+> index 8ee51a2..e6bec74 100644
+> --- a/arch/powerpc/oprofile/op_model_power4.c
+> +++ b/arch/powerpc/oprofile/op_model_power4.c
+> @@ -261,6 +261,28 @@ static int get_kernel(unsigned long pc, unsigned lon=
+g mmcra)
+>  	return is_kernel;
+>  }
+> =20
+> +static bool pmc_overflow(unsigned long val)
+> +{
+> +	if ((int)val < 0)
+> +		return true;
+> +
+> +	/*
+> +	 * Events on POWER7 can roll back if a speculative event doesn't
+> +	 * eventually complete. Unfortunately in some rare cases they will
+> +	 * raise a performance monitor exception. We need to catch this to
+> +	 * ensure we reset the PMC. In all cases the PMC will be 256 or less
+> +	 * cycles from overflow.
+> +	 *
+> +	 * We only do this if the first pass fails to find any overflowing
+> +	 * PMCs because a user might set a period of less than 256 and we
+> +	 * don't want to mistakenly reset them.
+> +	 */
+> +	if (__is_processor(PV_POWER7) && ((0x80000000 - val) <=3D 256))
+> +		return true;
+> +
+> +	return false;
+> +}
+> +
+>  static void power4_handle_interrupt(struct pt_regs *regs,
+>  				    struct op_counter_config *ctr)
+>  {
+> @@ -281,7 +303,7 @@ static void power4_handle_interrupt(struct pt_regs *r=
+egs,
+> =20
+>  	for (i =3D 0; i < cur_cpu_spec->num_pmcs; ++i) {
+>  		val =3D classic_ctr_read(i);
+> -		if (val < 0) {
+> +		if (pmc_overflow(val)) {
+>  			if (oprofile_running && ctr[i].enabled) {
+>  				oprofile_add_ext_sample(pc, regs, i, is_kernel);
+>  				classic_ctr_write(i, reset_value[i]);
+> --=20
+> 1.7.4.1
+>=20
 
-Thanks,
+--YZ5djTAD1cGYuMQK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	Ingo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN2reAAAoJEH65iIruGRnNmAEH/RPIb6YpEtIf2/d1y6+mkJK1
+97f5dWPZ8wmausN9IY1jkoSY0Jp7NNj+jHME33H54m0xPoHpScTRMvv9peUenihS
+BBYDBFlIBP7HakAV1JD6i960l1/SMw8ILUo2rutou3cPKKwU0RJxQucU04UcvLUI
+fcDjXLHnRooNbmp/42TZIepDSvPQQS8EXgFgxlXtoEWUTk3cD6RGjDUJcg0fswHG
+He0GXeLCc0QQo6wMx+pZAmXZYhIkCDwb2+FOCUF4plyUH2Bpc3xDIOuxAhghcvRs
+QkBz8Z57YF4QAB4HRTJvEj2a0uQBjYxvrLSX1kbpJtWXvcaKBKgxwR7hX9fH9rM=
+=x9or
+-----END PGP SIGNATURE-----
+
+--YZ5djTAD1cGYuMQK--
