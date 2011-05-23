@@ -1,96 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab1EWNO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 09:14:29 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57154 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753015Ab1EWNO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 09:14:28 -0400
-Date: Mon, 23 May 2011 15:14:24 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/17] writeback: update dirtied_when for synced inode
- to prevent livelock
-Message-ID: <20110523131424.GA4716@quack.suse.cz>
-References: <20110512135706.937596128@intel.com>
- <20110512140030.883635923@intel.com>
- <20110512224211.GI19446@dastard>
- <20110513030810.GB8016@localhost>
- <20110519213119.GA19782@localhost>
+	id S1754280Ab1EWN1J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 09:27:09 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51044 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab1EWN1H convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 09:27:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=PBiSsD7zgHf4gaGLCBXBy/9FqYKCkhLNxxPWFZFJUnWNOKwOx1ygcrCJCZmIyyQVbD
+         D7Fnez9PLZzkQ+tU1jmEbN7YuIuEvGlOnYX6rjwLc6EVH5XTN/UGlelCbNGPFQLKxtva
+         gi/1DxrP+9R8otqZ4ADdUXp4pjgxTpCJ+69pk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110519213119.GA19782@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <m1mxid7of6.fsf@fess.ebiederm.org>
+References: <BANLkTim7xn8tM4wTyd_m_nwUQg_CUTapeA@mail.gmail.com>
+ <m14o4mavod.fsf@fess.ebiederm.org> <BANLkTinqX_=TLU3TuKJFFTJBBxm1scZ3Ew@mail.gmail.com>
+ <m1mxid7of6.fsf@fess.ebiederm.org>
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Mon, 23 May 2011 16:26:47 +0300
+Message-ID: <BANLkTinH7h2+Vj6o=c03FoPt3nAZ3VU0oQ@mail.gmail.com>
+Subject: Re: [v3 00/39] faster tree-based sysctl implementation
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Octavian Purdila <tavi@cs.pub.ro>,
+        "David S . Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 20-05-11 05:31:19, Wu Fengguang wrote:
-> > > > @@ -419,6 +419,15 @@ writeback_single_inode(struct inode *ino
-> > > >  	spin_lock(&inode->i_lock);
-> > > >  	inode->i_state &= ~I_SYNC;
-> > > >  	if (!(inode->i_state & I_FREEING)) {
-> > > > +		/*
-> > > > +		 * Sync livelock prevention. Each inode is tagged and synced in
-> > > > +		 * one shot, so we can unconditionally update its dirty time to
-> > > > +		 * prevent syncing it again. Note that time ordering of b_dirty
-> > > > +		 * list will be kept because the following code either removes
-> > > > +		 * the inode from b_dirty or calls redirty_tail().
-> > > > +		 */
-> > > > +		if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_sync)
-> > > > +			inode->dirtied_when = jiffies;
-> > > 
-> > > Shouldn't this  update only ocur if the inode is still dirty?
-> > 
-> > Yeah, that would be better even though the current form won't lead to
-> > errors.
-> > 
-> > Let's add one more test (inode->i_state & I_DIRTY)?
-> > (I was actually aware of the trade offs and didn't bother to add it..)
-> 
-> Oops, the (inode->i_state & I_DIRTY) test is not enough because
-> when the inode is actively dirtied, I_DIRTY_PAGES won't be set when
-> the flusher is writing out the pages with I_SYNC set...
-  Well, rather on contrary I_DIRTY_PAGES won't be set when noone dirtied
-any page after we cleared I_DIRTY_PAGES.
+On Mon, May 23, 2011 at 12:32 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Mostly it is simplicity.  There is also the fact that the spin lock is
+> used in the implementation of something that is essentially a
+> reader/writer lock already.
 
-> Well it would look clumsy to add another mapping_tagged(mapping,
-> PAGECACHE_TAG_DIRTY) test. So I tend to revert to the original scheme
-> of updating ->dirtied_when only on newly dirtied pages. It's the
-> simplest form that can avoid unnecessarily polluting ->dirtied_when.
-  Hmm, but won't now something like:
-while true; do touch f; done
-  livelock sync? We always manage to write something - 1 inode - and the
-inode will never be clean (before the IO completes, the other process
-manages to dirty the inode again with very high probability).
 
-								Honza
-> 
-> @@ -432,6 +432,15 @@ writeback_single_inode(struct inode *ino
->  				requeue_io(inode);
->  			} else {
->  				/*
-> +				 * Sync livelock prevention. Each inode is
-> +				 * tagged and synced in one shot, so we can
-> +				 * unconditionally update its dirty time to
-> +				 * prevent syncing it again.
-> +				 */
-> +				if (wbc->sync_mode == WB_SYNC_ALL ||
-> +				    wbc->tagged_writepages)
-> +					inode->dirtied_when = jiffies;
-> +				/*
->  				 * Writeback blocked by something other than
->  				 * congestion. Delay the inode for some time to
->  				 * avoid spinning on the CPU (100% iowait)
-> 
-> Thanks,
-> Fengguang
+The amount of time in which the spin lock is held in the current
+implementation can be quite large: in __register_sysctl_paths:
+
+https://github.com/mirrors/linux-2.6/blob/v2.6.39/kernel/sysctl.c#L1887
+
+	spin_lock(&sysctl_lock);
+	for (set = header->set; set; set = set->parent)
+		list_for_each_entry(p, &set->list, ctl_entry)
+			try_attach(p, header);
+	spin_unlock(&sysctl_lock);
+
+
+For N=10^5 headers and try_attach=O(N) it's not a very good locking mechanism.
+
+That's why I opted for a rwlock for each dir's subdirs/tables.
+
+
+> In that context I'm not certain I am comfortable with separating proc
+> inode usage from other proc usage. But I haven't read through that
+> section of your code well enough yet to tell if you are making sense.
+
+
+Proc inode usage (->count) was already separate from other proc usage (->use).
+It was not separate from other header references (shared in ->count).
+
+I separated the two because when I call unregister on a header I need
+to decide whether to really unregister it (->unregistering=true and no
+one can see this header and anything under it any more) or just
+decrement a reference.
+
+In the current implementation a header is only created by a
+__register_sysctl_paths call and it's clear that at unregister we have
+to set ->unregistering.
+In my implementation headers are created dynamically to create new
+directory elements. I need to know when to unregister such a header
+regardless of any possible procfs inode references.
+
+https://github.com/luciang/linux-2.6-new-sysctl/blob/v4-new-sysctl-alg/kernel/sysctl.c#L2390
+
+
+
+I pushed a new version:
+git://github.com/luciang/linux-2.6-new-sysctl.git v4-new-sysctl-alg
+
+I undid int->u8 for ctl_procfs_refs.
+
+I left the ->permissions hook get it's namespace form current->
+because rewriting history for that change trips on too many patches
+and a new parameter can be very easily added later when needed. Hope
+this is ok with you.
+
+
+I'd like to send patches for review to archs/drivers/etc. that
+register only tables of files, not whole sysctl trees.
+The patches don't depend on anything from this series.
+
+Examples:
+* http://thread.gmane.org/gmane.linux.kernel/1137032/focus=1137089
+* http://thread.gmane.org/gmane.linux.kernel/1137032/focus=1137087
+
+
+I'd like an OK-GO from you.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+ .
+..: Lucian
