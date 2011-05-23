@@ -1,219 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab1EWEjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 00:39:24 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:52381 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab1EWEjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 00:39:20 -0400
-Date: Sun, 22 May 2011 21:37:11 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "sdevrien@cisco.com" <sdevrien@cisco.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lm-sensors] [PATCH] Add support for the Philips SA56004
- temperature sensor.
-Message-ID: <20110523043711.GA4890@ericsson.com>
-References: <1305814253-12528-1-git-send-email-sdevrien@cisco.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1305814253-12528-1-git-send-email-sdevrien@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751947Ab1EWExC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 00:53:02 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:44978 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857Ab1EWExA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 00:53:00 -0400
+Date: Mon, 23 May 2011 00:52:24 -0400 (EDT)
+Message-Id: <20110523.005224.414763201716030727.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 22 May 2011 21:52:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 19, 2011 at 10:10:53AM -0400, sdevrien@cisco.com wrote:
-> From: Stijn Devriendt <sdevrien@cisco.com>
-> 
-> Add support for the Philips SA56004, an LM86
-> compatible temperature sensor.
-> 
-> Signed-off-by: Stijn Devriendt <sdevrien@cisco.com>
-> ---
->  drivers/hwmon/Kconfig |    2 +-
->  drivers/hwmon/lm90.c  |   47 ++++++++++++++++++++++++++++++++++++++++++++---
->  2 files changed, 45 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> index 50e40db..11c9339 100644
-> --- a/drivers/hwmon/Kconfig
-> +++ b/drivers/hwmon/Kconfig
-> @@ -620,7 +620,7 @@ config SENSORS_LM90
->  	  LM86, LM89 and LM99, Analog Devices ADM1032, ADT7461, and ADT7461A,
->  	  Maxim MAX6646, MAX6647, MAX6648, MAX6649, MAX6657, MAX6658, MAX6659,
->  	  MAX6680, MAX6681, MAX6692, MAX6695, MAX6696, ON Semiconductor NCT1008,
-> -	  and Winbond/Nuvoton W83L771W/G/AWG/ASG sensor chips.
-> +	  Winbond/Nuvoton W83L771W/G/AWG/ASG and Philips SA56004 sensor chips.
->  
-Please also update Documentation/hwmon/lm90.
 
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called lm90.
-> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-> index 2f94f95..2910791 100644
-> --- a/drivers/hwmon/lm90.c
-> +++ b/drivers/hwmon/lm90.c
-> @@ -54,6 +54,9 @@
->   * and extended mode. They are mostly compatible with LM90 except for a data
->   * format difference for the temperature value registers.
->   *
-> + * This driver also supports the SA56004 from Philips. This device is
-> + * pin-compatible with the LM86, the ED/EDP parts are also address-compatible.
-> + *
->   * Since the LM90 was the first chipset supported by this driver, most
->   * comments will refer to this chipset, but are actually general and
->   * concern all supported chipsets, unless mentioned otherwise.
-> @@ -96,13 +99,15 @@
->   * MAX6659 can have address 0x4c, 0x4d or 0x4e.
->   * MAX6680 and MAX6681 can have address 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x2b,
->   * 0x4c, 0x4d or 0x4e.
-> + * SA56004 can have address 0x48 through 0x4F.
->   */
->  
->  static const unsigned short normal_i2c[] = {
-> -	0x18, 0x19, 0x1a, 0x29, 0x2a, 0x2b, 0x4c, 0x4d, 0x4e, I2C_CLIENT_END };
-> +	0x18, 0x19, 0x1a, 0x29, 0x2a, 0x2b, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 
-> +	0x4d, 0x4e, 0x4f, I2C_CLIENT_END };
->  
->  enum chips { lm90, adm1032, lm99, lm86, max6657, max6659, adt7461, max6680,
-> -	max6646, w83l771, max6696 };
-> +	max6646, w83l771, max6696, sa56004 };
->  
->  /*
->   * The LM90 registers
-> @@ -152,6 +157,10 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, max6659, adt7461, max6680,
->  #define MAX6659_REG_R_LOCAL_EMERG	0x17
->  #define MAX6659_REG_W_LOCAL_EMERG	0x17
->  
-> +/*  SA56004 registers */
-> +
-> +#define SA56004_REG_R_LOCAL_TEMPL 0x22
-> +
->  #define LM90_DEF_CONVRATE_RVAL	6	/* Def conversion rate register value */
->  #define LM90_MAX_CONVRATE_MS	16000	/* Maximum conversion rate in ms */
->  
-> @@ -192,6 +201,7 @@ static const struct i2c_device_id lm90_id[] = {
->  	{ "max6696", max6696 },
->  	{ "nct1008", adt7461 },
->  	{ "w83l771", w83l771 },
-> +	{ "sa56004", sa56004 },
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(i2c, lm90_id);
-> @@ -204,6 +214,8 @@ struct lm90_params {
->  	u16 alert_alarms;	/* Which alarm bits trigger ALERT# */
->  				/* Upper 8 bits for max6695/96 */
->  	u8 max_convrate;	/* Maximum conversion rate register value */
-> +	u8 local_ext_offset;	/* Local extension register if 
-> +				   LM90_HAVE_LOCAL_EXT is set*/
+Sparc32 enters the modern age thanks to Sam Ravnborg and
+Daniel Hellstrom.
 
-I really dislike this variable name. "offset" is used as "temperature offset"
-in the driver, and means a temperature offset, not a register offset (from 0).
-Something like reg_local_ext or reg_local_templ would be better.
+Sparc32 now supports genirq, and it now properly generates
+IPIs.
 
->  };
->  
->  static const struct lm90_params lm90_params[] = {
-> @@ -238,6 +250,7 @@ static const struct lm90_params lm90_params[] = {
->  		.flags = LM90_HAVE_LOCAL_EXT,
->  		.alert_alarms = 0x7c,
->  		.max_convrate = 6,
-> +		.local_ext_offset = MAX6657_REG_R_LOCAL_TEMPL,
->  	},
->  	[max6657] = {
->  		.flags = LM90_HAVE_LOCAL_EXT,
-> @@ -248,6 +261,7 @@ static const struct lm90_params lm90_params[] = {
->  		.flags = LM90_HAVE_LOCAL_EXT | LM90_HAVE_EMERGENCY,
->  		.alert_alarms = 0x7c,
->  		.max_convrate = 8,
-> +		.local_ext_offset = MAX6657_REG_R_LOCAL_TEMPL,
->  	},
->  	[max6680] = {
->  		.flags = LM90_HAVE_OFFSET,
-> @@ -259,12 +273,20 @@ static const struct lm90_params lm90_params[] = {
->  		  | LM90_HAVE_EMERGENCY_ALARM | LM90_HAVE_TEMP3,
->  		.alert_alarms = 0x187c,
->  		.max_convrate = 6,
-> +		.local_ext_offset = MAX6657_REG_R_LOCAL_TEMPL,
->  	},
->  	[w83l771] = {
->  		.flags = LM90_HAVE_OFFSET | LM90_HAVE_REM_LIMIT_EXT,
->  		.alert_alarms = 0x7c,
->  		.max_convrate = 8,
->  	},
-> +	[sa56004] = {
-> +		.flags = LM90_HAVE_OFFSET | LM90_HAVE_REM_LIMIT_EXT
-> +		  | LM90_HAVE_LOCAL_EXT,
-> +		.alert_alarms = 0x7b,
-> +		.max_convrate = 9,
-> +		.local_ext_offset = SA56004_REG_R_LOCAL_TEMPL,
-> +	},
->  };
->  
->  /*
-> @@ -286,6 +308,7 @@ struct lm90_data {
->  	u16 alert_alarms;	/* Which alarm bits trigger ALERT# */
->  				/* Upper 8 bits for max6695/96 */
->  	u8 max_convrate;	/* Maximum conversion rate */
-> +	u8 local_ext_offset;	/* local extension register offset */
->  
-Same here (variable name).
+Plus some LEON updates from Daniel Hellstrom as well.
 
->  	/* registers values */
->  	s8 temp8[8];	/* 0: local low limit
-> @@ -454,7 +477,7 @@ static struct lm90_data *lm90_update_device(struct device *dev)
->  
->  		if (data->flags & LM90_HAVE_LOCAL_EXT) {
->  			lm90_read16(client, LM90_REG_R_LOCAL_TEMP,
-> -				    MAX6657_REG_R_LOCAL_TEMPL,
-> +				    data->local_ext_offset,
->  				    &data->temp11[4]);
->  		} else {
->  			if (lm90_read_reg(client, LM90_REG_R_LOCAL_TEMP,
-> @@ -1263,6 +1286,12 @@ static int lm90_detect(struct i2c_client *new_client,
->  				name = "w83l771";
->  			}
->  		}
-> +	} else
-> +	if (man_id == 0xA1) { /*  NXP Semiconductor/Philips */
-> +		if (chip_id == 0x00
-> +		 && address >= 0x48 && address <= 0x4F) {
+Please pull, thanks a lot!
 
-This multi-line split is unnecessary.
+The following changes since commit 71a8638480eb8fb6cfabe2ee9ca3fbc6e3453a14:
 
-> +			name = "sa56004";
-> +		}
->  	}
->  
->  	if (!name) { /* identification failed */
-> @@ -1372,6 +1401,18 @@ static int lm90_probe(struct i2c_client *new_client,
->  	/* Set maximum conversion rate */
->  	data->max_convrate = lm90_params[data->kind].max_convrate;
->  
-> +	if (data->flags & LM90_HAVE_LOCAL_EXT) {
-> +		if (lm90_params[data->kind].local_ext_offset > 0)
-> +			data->local_ext_offset = 
-> +				lm90_params[data->kind].local_ext_offset;
-> +		else {
-> +			dev_err(&new_client->dev,
-> +			  "Invalid temperature extension register. "
-> +			  "Accuracy may be limited.\n");
-> +			data->flags &= (~LM90_HAVE_LOCAL_EXT);
-> +		}
+  Merge branch 'viafb-next' of git://github.com/schandinat/linux-2.6 (2011-05-22 12:39:58 -0700)
 
-Either { } in both branches of the if statement, or none.
-( ) around ~LM90_HAVE_LOCAL_EXT is unnecessary.
+are available in the git repository at:
 
-I see it as BUG if LM90_HAVE_LOCAL_EXT is set but local_ext_offset isn't.
-That should be found during coding (or code review), and not be exported
-to the user. So, from my perspective, the check is unnecessary. I'll leave
-that up to Jean to decide, though.
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-next-2.6.git master
 
-In addition to the above, your patch generates several checkpatch errors
-(trailing whitespace). Please fix.
+Daniel Hellstrom (17):
+      sparc32, leon: must protect IRQ controller register with spinlock
+      sparc32,leon: add support for extended interrupt controller
+      sparc32,leon: per-cpu ticker use genirq per-cpu handler
+      sparc32,leon: cleaned away code from the LEON2 days
+      sparc32, leon: code cleanup of timer/IRQ controller initialization
+      sparc32,leon: implement genirq CPU affinity
+      sparc32: removed unused code, implemented by generic code
+      sparc32: always define boot_cpu_id
+      sparc32,leon: operate on boot-cpu IRQ controller registers
+      sparc32,leon: don't rely on bootloader to mask IRQs
+      sparc32,leon: added some SMP comments
+      sparc32,leon: SMP power down implementation
+      sparc32: implement SMP IPIs using the generic functions
+      sparc32,leon: Implemented SMP IPIs for LEON CPU
+      sparc32, sun4m: Implemented SMP IPIs support for SUN4M machines
+      sparc32, sun4d: Implemented SMP IPIs support for SUN4D machines
+      SCHED_TTWU_QUEUE is not longer needed since sparc32 now implements IPI
 
-Thanks,
-Guenter
+David S. Miller (2):
+      Merge branch 'master' of master.kernel.org:/.../davem/sparc-2.6
+      Merge commit '317f394160e9beb97d19a84c39b7e5eb3d7815a8'
+
+Jan Andersson (1):
+      sparc: add {read,write}*_be routines
+
+KOSAKI Motohiro (1):
+      sparc: convert old cpumask API into new one
+
+Kristoffer Glembo (1):
+      sparc32,leon: Remove unnecessary page_address calls in LEON DMA API.
+
+Sam Ravnborg (8):
+      sparc32,sun4d: rename sbus_tid to board_to_cpu in irq support
+      sparc32: cleanup code for pci init
+      sparc32: genirq support
+      sparc: consolidate show_cpuinfo in cpu.c
+      sparc32: probe for cpu info only during startup
+      sparc32: always register a PROM based early console
+      sparc32: avoid build warning at mm/percpu.c:1647
+      sparc32: fix build, fix missing cpu_relax declaration
+
+ arch/alpha/kernel/smp.c              |    3 +-
+ arch/arm/kernel/smp.c                |    5 +-
+ arch/blackfin/mach-common/smp.c      |    3 +
+ arch/cris/arch-v32/kernel/smp.c      |   13 +-
+ arch/ia64/kernel/irq_ia64.c          |    2 +
+ arch/ia64/xen/irq_xen.c              |   10 +-
+ arch/m32r/kernel/smp.c               |    4 +-
+ arch/mips/cavium-octeon/smp.c        |    2 +
+ arch/mips/kernel/smtc.c              |    2 +-
+ arch/mips/mti-malta/malta-int.c      |    2 +
+ arch/mips/pmc-sierra/yosemite/smp.c  |    4 +
+ arch/mips/sgi-ip27/ip27-irq.c        |    2 +
+ arch/mips/sibyte/bcm1480/smp.c       |    7 +-
+ arch/mips/sibyte/sb1250/smp.c        |    7 +-
+ arch/mn10300/kernel/smp.c            |    5 +-
+ arch/parisc/kernel/smp.c             |    5 +-
+ arch/powerpc/kernel/smp.c            |    4 +-
+ arch/s390/kernel/smp.c               |    6 +-
+ arch/sh/kernel/smp.c                 |    2 +
+ arch/sparc/Kconfig                   |    7 +-
+ arch/sparc/include/asm/cpudata_32.h  |    5 +
+ arch/sparc/include/asm/floppy_32.h   |   40 ++-
+ arch/sparc/include/asm/io.h          |   13 +
+ arch/sparc/include/asm/irq_32.h      |    6 +-
+ arch/sparc/include/asm/leon.h        |   41 +--
+ arch/sparc/include/asm/pcic.h        |   12 +-
+ arch/sparc/include/asm/pgtable_32.h  |    6 +-
+ arch/sparc/include/asm/pgtable_64.h  |    3 +
+ arch/sparc/include/asm/setup.h       |   12 +
+ arch/sparc/include/asm/smp_32.h      |   37 +-
+ arch/sparc/include/asm/smp_64.h      |    4 +
+ arch/sparc/include/asm/spinlock_32.h |    1 +
+ arch/sparc/include/asm/system_32.h   |    5 -
+ arch/sparc/include/asm/system_64.h   |    4 -
+ arch/sparc/include/asm/winmacro.h    |    9 +
+ arch/sparc/kernel/Makefile           |    4 -
+ arch/sparc/kernel/cpu.c              |  139 +++++++-
+ arch/sparc/kernel/cpumap.c           |    4 +-
+ arch/sparc/kernel/devices.c          |    4 +-
+ arch/sparc/kernel/ds.c               |   14 +-
+ arch/sparc/kernel/entry.S            |   41 ++-
+ arch/sparc/kernel/head_32.S          |   51 ++--
+ arch/sparc/kernel/ioport.c           |   42 +--
+ arch/sparc/kernel/irq.h              |   51 ++--
+ arch/sparc/kernel/irq_32.c           |  513 +++++++---------------------
+ arch/sparc/kernel/irq_64.c           |    6 +-
+ arch/sparc/kernel/kernel.h           |    5 +-
+ arch/sparc/kernel/leon_kernel.c      |  365 +++++++++++++-------
+ arch/sparc/kernel/leon_smp.c         |  148 +++++++--
+ arch/sparc/kernel/mdesc.c            |    2 +-
+ arch/sparc/kernel/of_device_64.c     |    3 +-
+ arch/sparc/kernel/pci_msi.c          |    3 +-
+ arch/sparc/kernel/pcic.c             |   83 +++--
+ arch/sparc/kernel/perf_event.c       |    1 +
+ arch/sparc/kernel/process_32.c       |   12 +-
+ arch/sparc/kernel/prom_32.c          |    1 -
+ arch/sparc/kernel/setup_32.c         |   87 +----
+ arch/sparc/kernel/setup_64.c         |   78 -----
+ arch/sparc/kernel/smp_32.c           |  105 ++++--
+ arch/sparc/kernel/smp_64.c           |   59 ++--
+ arch/sparc/kernel/sun4c_irq.c        |  150 +++++----
+ arch/sparc/kernel/sun4d_irq.c        |  494 ++++++++++-----------------
+ arch/sparc/kernel/sun4d_smp.c        |   93 +++++-
+ arch/sparc/kernel/sun4m_irq.c        |  179 ++++++-----
+ arch/sparc/kernel/sun4m_smp.c        |   51 ++-
+ arch/sparc/kernel/sysfs.c            |    3 +-
+ arch/sparc/kernel/time_32.c          |   10 +-
+ arch/sparc/kernel/us2e_cpufreq.c     |    4 +-
+ arch/sparc/kernel/us3_cpufreq.c      |    4 +-
+ arch/sparc/lib/Makefile              |    1 -
+ arch/sparc/lib/rwsem_32.S            |  204 -----------
+ arch/sparc/mm/init_64.c              |   14 +-
+ arch/tile/kernel/smp.c               |    6 +-
+ arch/um/kernel/smp.c                 |    2 +-
+ arch/x86/kernel/smp.c                |    5 +-
+ arch/x86/xen/smp.c                   |    5 +-
+ include/linux/mutex.h                |    2 +-
+ include/linux/sched.h                |   24 +-
+ kernel/mutex-debug.c                 |    2 +-
+ kernel/mutex-debug.h                 |    2 +-
+ kernel/mutex.c                       |    2 +-
+ kernel/mutex.h                       |    2 +-
+ kernel/sched.c                       |  627 +++++++++++++++++++---------------
+ kernel/sched_debug.c                 |    2 +-
+ kernel/sched_fair.c                  |   28 ++-
+ kernel/sched_features.h              |    6 +
+ kernel/sched_idletask.c              |    2 +-
+ kernel/sched_rt.c                    |   54 ++--
+ kernel/sched_stoptask.c              |    5 +-
+ 89 files changed, 2046 insertions(+), 2051 deletions(-)
+ delete mode 100644 arch/sparc/lib/rwsem_32.S
