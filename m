@@ -1,98 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab1EWPR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 11:17:58 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:37988 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905Ab1EWPR5 (ORCPT
+	id S1756118Ab1EWPVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 11:21:08 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:54800 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755405Ab1EWPVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 11:17:57 -0400
-X-IronPort-AV: E=Sophos;i="4.65,257,1304294400"; 
-   d="scan'208";a="5901237"
-Date: Mon, 23 May 2011 16:20:15 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: Xen MMU's requirement to pin pages RO and
- initial_memory_mapping.
-In-Reply-To: <20110517180520.GC13706@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1105231541020.12963@kaball-desktop>
-References: <20110513153010.GB16519@dumpdata.com> <alpine.DEB.2.00.1105131650550.8972@kaball-desktop> <20110516154132.GA12486@dumpdata.com> <alpine.DEB.2.00.1105171745300.12963@kaball-desktop> <20110517180520.GC13706@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Mon, 23 May 2011 11:21:06 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=kbDePleI+HF46/wQO2ASl9n2U4NS7XaR4s8WT0uOWzfhYf6CZ9bMwSF8yoh3LEgBm2Wecj/iE0WfHeLLtnaH1Jqi/TW4SYOdmPb9difjVy3uqZqkg5lf0njB/XHD0OO8;
+Date: Mon, 23 May 2011 08:21:03 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 3/3] in scripts/export_report.pl use warn() to issue
+ WARNING, so they go to stderr.
+Message-Id: <20110523082103.ccced65c.rdunlap@xenotime.net>
+In-Reply-To: <1305966108-13399-4-git-send-email-jim.cromie@gmail.com>
+References: <1305966108-13399-1-git-send-email-jim.cromie@gmail.com>
+	<1305966108-13399-4-git-send-email-jim.cromie@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 May 2011, Konrad Rzeszutek Wilk wrote:
-> On Tue, May 17, 2011 at 06:50:55PM +0100, Stefano Stabellini wrote:
-> > On Mon, 16 May 2011, Konrad Rzeszutek Wilk wrote:
-> > > > They become pagetable pages when:
-> > > > 
-> > > > - they are explicitly pinned by pin_pagetable_pfn
-> > > > 
-> > > > - they are hooked into the current pagetable
-> > > 
-> > > Ok, so could we use those two calls to trigger the pagetable walk
-> > > and mark them RO as appropiate? Which call sites are those? The
-> > > xen_set_pgd/xen_set_pud/xen_set_pmd ?
-> > 
-> > xen_alloc_pte_init and xen_alloc_pmd_init are the ones that mark the
-> > pagetable pages RO and pin them, calling make_lowmem_page_readonly and
-> > pin_pagetable_pfn.
-> > 
-> > alloc_pte/pmd are called right before hooking them into the pagetable;
-> > unfortunately that means that they fail at marking the pagetable pages
-> > RO: make_lowmem_page_readonly uses lookup_address to find the pte
-> > corresponding to a page, however at this point the pagetable pages are
-> > not mapped yet (usually they are not hooked but when they are hooked, the
-> > upper level pagetable page is not hooked), so lookup_address fails.
+On Sat, 21 May 2011 02:21:48 -0600 Jim Cromie wrote:
+
+> Also count CONFIG_MODVERSION warnings, and print an NB message at
+
+CONFIG_MODVERSIONS
+
+NB?  as in Note Well?
+
+Please just use NOTE:
+
+> start of SECTION 2 if any were issued.  Section 2 will be empty
+> if the build is lacking this CONFIG_ item, and user may have missed
+> the warnings, as they're off screen.
 > 
-> Right. We don't have to walk the hooked pagetable, I think. We are passed
-> in the PMD/PGD of the PFN and we could look at the content of that PFN.
-> Walk each entry in there and for those that are present, determine
-> if the page table it points to (whatever level it is) is RO. If not, mark
-> it RO. And naturally do it recursively to cover all levels.
- 
-I am not sure what you mean.
-The interface is the following:
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> ---
+>  scripts/export_report.pl |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/export_report.pl b/scripts/export_report.pl
+> index 16bd240..14c1638 100644
+> --- a/scripts/export_report.pl
+> +++ b/scripts/export_report.pl
+> @@ -102,6 +102,8 @@ close($module_symvers);
+>  #
+>  # collect the usage count of each symbol.
+>  #
+> +my $modversion_warnings = 0;
+> +
+>  foreach my $thismod (@allcfiles) {
+>  	my $module;
+>  
+> @@ -132,7 +134,8 @@ foreach my $thismod (@allcfiles) {
+>  		}
+>  	}
+>  	if ($state != 2) {
+> -		print "WARNING:$thismod is not built with CONFIG_MODVERSION enabled\n";
+> +		warn "WARNING:$thismod is not built with CONFIG_MODVERSION enabled\n";
 
-void alloc_pte(struct mm_struct *mm, unsigned long pfn);
+should be CONFIG_MODVERSIONS
 
-pfn is the pagetable page's pfn, that has to be marked RO in all his mappings;
-mm is the mm_struct where this pagetable page is mapped.
-Except it is not true anymore because the pagetable page is not mapped
-yet in mm; so we cannot walk anything here, unfortunately.
+> +		$modversion_warnings++;
+>  	}
+>  	close($module);
+>  }
+> @@ -166,6 +169,9 @@ printf("SECTION 2:\n\tThis section reports export-symbol-usage of in-kernel
+>  modules. Each module lists the modules, and the symbols from that module that
+>  it uses.  Each listed symbol reports the number of modules using it\n");
+>  
+> +print "\nNB: Got $modversion_warnings CONFIG_MODVERSION warnings\n\n"
 
+should be CONFIG_MODVERSIONS
 
-We could remember that we failed to mark this page RO so that the next
-time we try to write a pte that contains that address we know we have to
-mark it RO.
-But this approach is basically equivalent to the one we had before
-2.6.39: we consider the range pgt_buf_start-pgt_buf_end a "published"
-range of pagetable pages that we have to mark RO.
-In fact it is affected by the same problem: after writing the ptes that
-map the range pgt_buf_start-pgt_buf_end, if we try to allocate a new
-pagetable page incrementing pgt_buf_end we fail because the new page is
-already marked RW in a pinned page.
-At the same time we cannot modify the pte to change the mapping to RO
-because lookup_address doesn't find it (the pagetable page containing
-the pte in question is not reachable from init_mm yet).
+and NOTE:
 
 
-Unfortunately I cannot see an easy way to fix alloc_pte without making
-sure that the pfn passed as an argument is already mapped and the pte is
-reachable using lookup_address.
+> +    if $modversion_warnings;
+> +
+>  print "~"x80 , "\n";
+>  for my $thismod (sort keys %MODULE) {
+>  	my $list = $MODULE{$thismod};
+> -- 
 
-Alternatively we could come up with a new interface that properly
-publishes the pgt_buf_start-pgt_buf_top range, but it would still need a
-"free" function for the pgt_buf_end-pgt_buf_top range to be called after
-the initial mapping is complete.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
