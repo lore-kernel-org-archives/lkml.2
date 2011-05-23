@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030720Ab1EWWT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 18:19:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37634 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934318Ab1EWWT0 (ORCPT
+	id S1030977Ab1EWWUv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 18:20:51 -0400
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:50794 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197Ab1EWWUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 18:19:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=HH9IoSqpwqBSbZEv8PclIvL4naA9279uqiodl3P/tGYDBWezhQyp+mRMon+u6E1hnG
-         XYkvoOweZRRz+JOFtTf2sS73v3SGQV8BdiqQWD4FAtgvTwluMcZFhsarGUrAmKCqb/sb
-         NAwvOCyrVX9qC3d9E6tIKK4P5I2xnN6O/Pgu0=
-Date: Tue, 24 May 2011 00:19:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20110523221916.GA8033@nowhere>
-References: <20110523134125.GA23518@elte.hu>
- <1306188648.2638.17.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1306188648.2638.17.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 23 May 2011 18:20:50 -0400
+Subject: Re: Mysterious CFQ crash and RCU
+From: Paul Bolle <pebolle@tiscali.nl>
+To: paulmck@linux.vnet.ibm.com
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Tue, 24 May 2011 00:20:40 +0200
+In-Reply-To: <20110523153848.GC2310@linux.vnet.ibm.com>
+References: <20110519222404.GG12600@redhat.com>
+	 <20110521210013.GJ2271@linux.vnet.ibm.com>
+	 <20110523152141.GB4019@redhat.com>
+	 <20110523153848.GC2310@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.1 (3.1.1-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1306189249.15900.10.camel@t41.thuisdomein>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 12:10:48AM +0200, Eric Dumazet wrote:
-> Le lundi 23 mai 2011 à 15:41 +0200, Ingo Molnar a écrit :
-> > Linus,
-> > 
-> > Please pull the latest perf-urgent-for-linus git tree from:
-> > 
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-urgent-for-linus
-> > 
-> >  Thanks,
-> > 
-> 
-> Hi Ingo
-> 
-> I just tried latest "perf top" from linux-2.6 tree on my 32bit x86 host.
-> 
-> It outputs endless errors, I dont know if you guys already are aware of
-> this ?
-> 
-> Can't parse sample, err = -14
-> Can't parse sample, err = -14
-> Can't parse sample, err = -14
-> Can't parse sample, err = -14
-> Can't parse sample, err = -14
-> Can't parse sample, err = -14
-> Can't parse sample, err = -14
-> Can't parse sample, err = -14
+On Mon, 2011-05-23 at 08:38 -0700, Paul E. McKenney wrote:
+> Running under CONFIG_PREEMPT=y (along with CONFIG_TREE_PREEMPT_RCU=y)
+> could be very helpful in and of itself.  CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+> can also be helpful.  In post-2.6.39 mainline, it should be possible
+> to set CONFIG_DEBUG_OBJECTS_RCU_HEAD=y without CONFIG_PREEMPT=y, but
+> again, CONFIG_PREEMPT=y can help find problems.
 
-Hi Eric,
+0) The first thing I tried (from your suggestions) was
+CONFIG_DEBUG_OBJECTS_RCU_HEAD=y. Given its dependencies (and, well, the
+build system I used) I ended up with:
 
-Does that fix the issue?
+    $ grep -e PREEMPT -e RCU /boot/config-2.6.39-0.local3.fc16.i686 |
+    grep -v "^#"
+    CONFIG_TREE_PREEMPT_RCU=y
+    CONFIG_PREEMPT_RCU=y
+    CONFIG_RCU_FANOUT=32
+    CONFIG_PREEMPT_NOTIFIERS=y
+    CONFIG_PREEMPT=y
+    CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+    CONFIG_DEBUG_PREEMPT=y
+    CONFIG_PROVE_RCU=y
+    CONFIG_SPARSE_RCU_POINTER=y
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 252b72a..6635fcd 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -42,7 +42,7 @@ int perf_sample_size(u64 sample_type)
- 	int i;
- 
- 	for (i = 0; i < 64; i++) {
--		if (mask & (1UL << i))
-+		if (mask & (1ULL << i))
- 			size++;
- 	}
- 
+It looks like I am unable to trigger the issue we're talking about here
+when using that config.
+
+1) For reference, the config of a kernel that does trigger it had:
+
+    $ grep -e PREEMPT -e RCU /boot/config-2.6.39-0.local2.fc16.i686 |
+    grep -v "^#"
+    CONFIG_TREE_RCU=y
+    CONFIG_RCU_FANOUT=32
+    CONFIG_RCU_FAST_NO_HZ=y
+    CONFIG_PREEMPT_NOTIFIERS=y
+    CONFIG_PREEMPT_VOLUNTARY=y
+    CONFIG_PROVE_RCU=y
+    CONFIG_SPARSE_RCU_POINTER=y
+
+> > Again CONFIG_TREE_PREEMPT_RCU is available only if PREEMPT=y. So should
+> > we enable preemtion and CONFIG_TREE_PREEMPT_RCU=y and try to reproduce
+> > the issue?
+> 
+> Please!
+
+2) It appears I can't reproduce with those options enabled (see above).
+
+> Polling is fine.  Please see attached for a script to poll at 15-second
+> intervals.  Please also feel free to adjust, just tell me what you
+> adjusted.
+
+And should I now try to run that script on a config that triggers this
+issue (such as the config under 1) above)?
+
+
+Paul Bolle
 
