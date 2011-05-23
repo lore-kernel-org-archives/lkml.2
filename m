@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab1EWNB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 09:01:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62840 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754179Ab1EWNBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 09:01:49 -0400
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 2/2] GFS2: Wait properly when flushing the ail list
-Date: Mon, 23 May 2011 13:39:19 +0100
-Message-Id: <1306154359-7046-3-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1306154359-7046-1-git-send-email-swhiteho@redhat.com>
-References: <1306154359-7046-1-git-send-email-swhiteho@redhat.com>
+	id S1754442Ab1EWMj2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 08:39:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35257 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754085Ab1EWMj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 08:39:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YYSxobZW7hHHt1NTnMCR9hCk42rIkqZ1q0Ctm3N6W/X/mAeLF65CVXJGPUGeNgBip3
+         +mdxV64W2ZwdUM25hsklsuGXWp8yf3tda+MisG76IZ04++GUiKQYW/ulGNiNOjixunOZ
+         +zHwctQqaCCI+YaVp74CO9+eXI5oUXH2Zwm5M=
+Date: Mon, 23 May 2011 14:39:21 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf tools: Fix sample size bit operations
+Message-ID: <20110523123919.GF1728@nowhere>
+References: <1306148788-6179-1-git-send-email-fweisbec@gmail.com>
+ <1306148788-6179-2-git-send-email-fweisbec@gmail.com>
+ <20110523112815.GA4042@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110523112815.GA4042@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ail flush code has always relied upon log flushing to prevent
-it from spinning needlessly. This fixes it to wait on the last
-I/O request submitted (we don't need to wait for all of it)
-instead of either spinning with io_schedule or sleeping.
+On Mon, May 23, 2011 at 01:28:15PM +0200, Ingo Molnar wrote:
+> 
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > What we want is to count the number of bits in the mask,
+> > not some other random operation written in the middle
+> > of the night.
+> > 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > Cc: Stephane Eranian <eranian@google.com>
+> > ---
+> >  tools/perf/util/event.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> > index 17c1c3c..d3fa7e4 100644
+> > --- a/tools/perf/util/event.c
+> > +++ b/tools/perf/util/event.c
+> > @@ -42,7 +42,7 @@ int perf_sample_size(u64 sample_type)
+> >  	int i;
+> >  
+> >  	for (i = 0; i < 64; i++) {
+> > -		if ((mask << i) & 1)
+> > +		if (mask & (1 << i))
+> >  			size++;
+> >  	}
+> 
+> I fixed this to be 1UL and applied your fixes out of email - perf top and perf 
+> report works fine now, so this was a 64-bitness bug (you probably used a 32-bit 
+> system for testing?).
 
-As a result cpu usage of gfs2_logd is much reduced with certain
-workloads.
+Nope I was using a 64 machine for testing, but I only tested sched_switch
+events with callchains on perf report and perf script.
 
-Reported-by: Abhijith Das <adas@redhat.com>
-Tested-by: Abhijith Das <adas@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Perhaps that bug triggered only on perf top or with default cpu-cycle events.
 
-diff --git a/fs/gfs2/log.c b/fs/gfs2/log.c
-index cec26c0..903115f 100644
---- a/fs/gfs2/log.c
-+++ b/fs/gfs2/log.c
-@@ -228,6 +228,27 @@ static int gfs2_ail1_empty(struct gfs2_sbd *sdp)
- 	return ret;
- }
- 
-+static void gfs2_ail1_wait(struct gfs2_sbd *sdp)
-+{
-+	struct gfs2_ail *ai;
-+	struct gfs2_bufdata *bd;
-+	struct buffer_head *bh;
-+
-+	spin_lock(&sdp->sd_ail_lock);
-+	list_for_each_entry_reverse(ai, &sdp->sd_ail1_list, ai_list) {
-+		list_for_each_entry(bd, &ai->ai_ail1_list, bd_ail_st_list) {
-+			bh = bd->bd_bh;
-+			if (!buffer_locked(bh))
-+				continue;
-+			get_bh(bh);
-+			spin_unlock(&sdp->sd_ail_lock);
-+			wait_on_buffer(bh);
-+			brelse(bh);
-+			return;
-+		}
-+	}
-+	spin_unlock(&sdp->sd_ail_lock);
-+}
- 
- /**
-  * gfs2_ail2_empty_one - Check whether or not a trans in the AIL has been synced
-@@ -878,9 +899,9 @@ void gfs2_meta_syncfs(struct gfs2_sbd *sdp)
- 	gfs2_log_flush(sdp, NULL);
- 	for (;;) {
- 		gfs2_ail1_start(sdp);
-+		gfs2_ail1_wait(sdp);
- 		if (gfs2_ail1_empty(sdp))
- 			break;
--		msleep(10);
- 	}
- }
- 
-@@ -920,12 +941,14 @@ int gfs2_logd(void *data)
- 
- 		if (gfs2_ail_flush_reqd(sdp)) {
- 			gfs2_ail1_start(sdp);
--			io_schedule();
-+			gfs2_ail1_wait(sdp);
- 			gfs2_ail1_empty(sdp);
- 			gfs2_log_flush(sdp, NULL);
- 		}
- 
--		wake_up(&sdp->sd_log_waitq);
-+		if (!gfs2_ail_flush_reqd(sdp))
-+			wake_up(&sdp->sd_log_waitq);
-+
- 		t = gfs2_tune_get(sdp, gt_logd_secs) * HZ;
- 		if (freezing(current))
- 			refrigerator();
--- 
-1.7.4
+> 
+> Btw., shouldnt this use hweight() or such?
 
+A real proper way would better have that yeah :)
