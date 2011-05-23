@@ -1,230 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab1EWP5m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 11:57:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1030 "EHLO mx1.redhat.com"
+	id S1756249Ab1EWP51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 11:57:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51784 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756213Ab1EWP5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 11:57:25 -0400
+	id S1756223Ab1EWP50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 11:57:26 -0400
 From: David Teigland <teigland@redhat.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] dlm: remove shared message stub for recovery
-Date: Mon, 23 May 2011 10:57:19 -0500
-Message-Id: <1306166240-3359-4-git-send-email-teigland@redhat.com>
+Subject: [PATCH 4/4] dlm: make plock operation killable
+Date: Mon, 23 May 2011 10:57:20 -0500
+Message-Id: <1306166240-3359-5-git-send-email-teigland@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kmalloc a stub message struct during recovery instead of sharing the
-struct in the lockspace.  This leaves the lockspace stub_ms only for
-faking downconvert replies, where it is never modified and sharing
-is not a problem.
+Allow processes blocked on plock requests to be interrupted
+when they are killed.  This leaves the problem of cleaning
+up the lock state in userspace.  This has three parts:
 
-Also improve the debug messages in the same recovery function.
+1. Add a flag to unlock operations sent to userspace
+indicating the file is being closed.  Userspace will
+then look for and clear any waiting plock operations that
+were abandoned by an interrupted process.
+
+2. Queue an unlock-close operation (like in 1) to clean up
+userspace from an interrupted plock request.  This is needed
+because the vfs will not send a cleanup-unlock if it sees no
+locks on the file, which it won't if the interrupted operation
+was the only one.
+
+3. Do not use replies from userspace for unlock-close operations
+because they are unnecessary (they are just cleaning up for the
+process which did not make an unlock call).  This also simplifies
+the new unlock-close generated from point 2.
 
 Signed-off-by: David Teigland <teigland@redhat.com>
 ---
- fs/dlm/dlm_internal.h |    1 +
- fs/dlm/lock.c         |   82 +++++++++++++++++++++++++++++-------------------
- 2 files changed, 50 insertions(+), 33 deletions(-)
+ fs/dlm/plock.c            |   65 ++++++++++++++++++++++++++++++++++++++++++---
+ include/linux/dlm_plock.h |    6 +++-
+ 2 files changed, 65 insertions(+), 6 deletions(-)
 
-diff --git a/fs/dlm/dlm_internal.h b/fs/dlm/dlm_internal.h
-index 6a92478..0262451 100644
---- a/fs/dlm/dlm_internal.h
-+++ b/fs/dlm/dlm_internal.h
-@@ -209,6 +209,7 @@ struct dlm_args {
- #define DLM_IFL_WATCH_TIMEWARN	0x00400000
- #define DLM_IFL_TIMEOUT_CANCEL	0x00800000
- #define DLM_IFL_DEADLOCK_CANCEL	0x01000000
-+#define DLM_IFL_STUB_MS		0x02000000 /* magic number for m_flags */
- #define DLM_IFL_USER		0x00000001
- #define DLM_IFL_ORPHAN		0x00000002
- 
-diff --git a/fs/dlm/lock.c b/fs/dlm/lock.c
-index e3c8641..8122779 100644
---- a/fs/dlm/lock.c
-+++ b/fs/dlm/lock.c
-@@ -1037,10 +1037,10 @@ static int remove_from_waiters_ms(struct dlm_lkb *lkb, struct dlm_message *ms)
- 	struct dlm_ls *ls = lkb->lkb_resource->res_ls;
- 	int error;
- 
--	if (ms != &ls->ls_stub_ms)
-+	if (ms->m_flags != DLM_IFL_STUB_MS)
- 		mutex_lock(&ls->ls_waiters_mutex);
- 	error = _remove_from_waiters(lkb, ms->m_type, ms);
--	if (ms != &ls->ls_stub_ms)
-+	if (ms->m_flags != DLM_IFL_STUB_MS)
- 		mutex_unlock(&ls->ls_waiters_mutex);
- 	return error;
+diff --git a/fs/dlm/plock.c b/fs/dlm/plock.c
+index 30d8b85..e2b8780 100644
+--- a/fs/dlm/plock.c
++++ b/fs/dlm/plock.c
+@@ -71,6 +71,36 @@ static void send_op(struct plock_op *op)
+ 	wake_up(&send_wq);
  }
-@@ -1462,14 +1462,8 @@ static void grant_lock_pending(struct dlm_rsb *r, struct dlm_lkb *lkb)
-    ALTPR/ALTCW: our rqmode may have been changed to PR or CW to become
-    compatible with other granted locks */
  
--static void munge_demoted(struct dlm_lkb *lkb, struct dlm_message *ms)
-+static void munge_demoted(struct dlm_lkb *lkb)
- {
--	if (ms->m_type != DLM_MSG_CONVERT_REPLY) {
--		log_print("munge_demoted %x invalid reply type %d",
--			  lkb->lkb_id, ms->m_type);
--		return;
--	}
--
- 	if (lkb->lkb_rqmode == DLM_LOCK_IV || lkb->lkb_grmode == DLM_LOCK_IV) {
- 		log_print("munge_demoted %x invalid modes gr %d rq %d",
- 			  lkb->lkb_id, lkb->lkb_grmode, lkb->lkb_rqmode);
-@@ -2966,9 +2960,9 @@ static int send_convert(struct dlm_rsb *r, struct dlm_lkb *lkb)
- 	/* down conversions go without a reply from the master */
- 	if (!error && down_conversion(lkb)) {
- 		remove_from_waiters(lkb, DLM_MSG_CONVERT_REPLY);
-+		r->res_ls->ls_stub_ms.m_flags = DLM_IFL_STUB_MS;
- 		r->res_ls->ls_stub_ms.m_type = DLM_MSG_CONVERT_REPLY;
- 		r->res_ls->ls_stub_ms.m_result = 0;
--		r->res_ls->ls_stub_ms.m_flags = lkb->lkb_flags;
- 		__receive_convert_reply(r, lkb, &r->res_ls->ls_stub_ms);
- 	}
- 
-@@ -3156,6 +3150,9 @@ static void receive_flags(struct dlm_lkb *lkb, struct dlm_message *ms)
- 
- static void receive_flags_reply(struct dlm_lkb *lkb, struct dlm_message *ms)
- {
-+	if (ms->m_flags == DLM_IFL_STUB_MS)
++/* If a process was killed while waiting for the only plock on a file,
++   locks_remove_posix will not see any lock on the file so it won't
++   send an unlock-close to us to pass on to userspace to clean up the
++   abandoned waiter.  So, we have to insert the unlock-close when the
++   lock call is interrupted. */
++
++static void do_unlock_close(struct dlm_ls *ls, u64 number,
++			    struct file *file, struct file_lock *fl)
++{
++	struct plock_op *op;
++
++	op = kzalloc(sizeof(*op), GFP_NOFS);
++	if (!op)
 +		return;
 +
- 	lkb->lkb_sbflags = ms->m_sbflags;
- 	lkb->lkb_flags = (lkb->lkb_flags & 0xFFFF0000) |
- 		         (ms->m_flags & 0x0000FFFF);
-@@ -3698,7 +3695,7 @@ static void __receive_convert_reply(struct dlm_rsb *r, struct dlm_lkb *lkb,
- 		/* convert was queued on remote master */
- 		receive_flags_reply(lkb, ms);
- 		if (is_demoted(lkb))
--			munge_demoted(lkb, ms);
-+			munge_demoted(lkb);
- 		del_lkb(r, lkb);
- 		add_lkb(r, lkb, DLM_LKSTS_CONVERT);
- 		add_timeout(lkb);
-@@ -3708,7 +3705,7 @@ static void __receive_convert_reply(struct dlm_rsb *r, struct dlm_lkb *lkb,
- 		/* convert was granted on remote master */
- 		receive_flags_reply(lkb, ms);
- 		if (is_demoted(lkb))
--			munge_demoted(lkb, ms);
-+			munge_demoted(lkb);
- 		grant_lock_pc(r, lkb, ms);
- 		queue_cast(r, lkb, 0);
- 		break;
-@@ -4082,15 +4079,17 @@ void dlm_receive_buffer(union dlm_packet *p, int nodeid)
- 	dlm_put_lockspace(ls);
- }
- 
--static void recover_convert_waiter(struct dlm_ls *ls, struct dlm_lkb *lkb)
-+static void recover_convert_waiter(struct dlm_ls *ls, struct dlm_lkb *lkb,
-+				   struct dlm_message *ms_stub)
++	op->info.optype		= DLM_PLOCK_OP_UNLOCK;
++	op->info.pid		= fl->fl_pid;
++	op->info.fsid		= ls->ls_global_id;
++	op->info.number		= number;
++	op->info.start		= 0;
++	op->info.end		= OFFSET_MAX;
++	if (fl->fl_lmops && fl->fl_lmops->fl_grant)
++		op->info.owner	= (__u64) fl->fl_pid;
++	else
++		op->info.owner	= (__u64)(long) fl->fl_owner;
++
++	op->info.flags |= DLM_PLOCK_FL_CLOSE;
++	send_op(op);
++}
++
+ int dlm_posix_lock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
+ 		   int cmd, struct file_lock *fl)
  {
- 	if (middle_conversion(lkb)) {
- 		hold_lkb(lkb);
--		ls->ls_stub_ms.m_type = DLM_MSG_CONVERT_REPLY;
--		ls->ls_stub_ms.m_result = -EINPROGRESS;
--		ls->ls_stub_ms.m_flags = lkb->lkb_flags;
--		ls->ls_stub_ms.m_header.h_nodeid = lkb->lkb_nodeid;
--		_receive_convert_reply(lkb, &ls->ls_stub_ms);
-+		memset(ms_stub, 0, sizeof(struct dlm_message));
-+		ms_stub->m_flags = DLM_IFL_STUB_MS;
-+		ms_stub->m_type = DLM_MSG_CONVERT_REPLY;
-+		ms_stub->m_result = -EINPROGRESS;
-+		ms_stub->m_header.h_nodeid = lkb->lkb_nodeid;
-+		_receive_convert_reply(lkb, ms_stub);
+@@ -114,9 +144,19 @@ int dlm_posix_lock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
  
- 		/* Same special case as in receive_rcom_lock_args() */
- 		lkb->lkb_grmode = DLM_LOCK_IV;
-@@ -4131,13 +4130,27 @@ static int waiter_needs_recovery(struct dlm_ls *ls, struct dlm_lkb *lkb)
- void dlm_recover_waiters_pre(struct dlm_ls *ls)
- {
- 	struct dlm_lkb *lkb, *safe;
-+	struct dlm_message *ms_stub;
- 	int wait_type, stub_unlock_result, stub_cancel_result;
+ 	send_op(op);
  
-+	ms_stub = kmalloc(GFP_KERNEL, sizeof(struct dlm_message));
-+	if (!ms_stub) {
-+		log_error(ls, "dlm_recover_waiters_pre no mem");
-+		return;
+-	if (xop->callback == NULL)
+-		wait_event(recv_wq, (op->done != 0));
+-	else {
++	if (xop->callback == NULL) {
++		rv = wait_event_killable(recv_wq, (op->done != 0));
++		if (rv == -ERESTARTSYS) {
++			log_debug(ls, "dlm_posix_lock: wait killed %llx",
++				  (unsigned long long)number);
++			spin_lock(&ops_lock);
++			list_del(&op->list);
++			spin_unlock(&ops_lock);
++			kfree(xop);
++			do_unlock_close(ls, number, file, fl);
++			goto out;
++		}
++	} else {
+ 		rv = FILE_LOCK_DEFERRED;
+ 		goto out;
+ 	}
+@@ -233,6 +273,13 @@ int dlm_posix_unlock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
+ 	else
+ 		op->info.owner	= (__u64)(long) fl->fl_owner;
+ 
++	if (fl->fl_flags & FL_CLOSE) {
++		op->info.flags |= DLM_PLOCK_FL_CLOSE;
++		send_op(op);
++		rv = 0;
++		goto out;
 +	}
 +
- 	mutex_lock(&ls->ls_waiters_mutex);
+ 	send_op(op);
+ 	wait_event(recv_wq, (op->done != 0));
  
- 	list_for_each_entry_safe(lkb, safe, &ls->ls_waiters, lkb_wait_reply) {
--		log_debug(ls, "pre recover waiter lkid %x type %d flags %x",
--			  lkb->lkb_id, lkb->lkb_wait_type, lkb->lkb_flags);
-+
-+		/* exclude debug messages about unlocks because there can be so
-+		   many and they aren't very interesting */
-+
-+		if (lkb->lkb_wait_type != DLM_MSG_UNLOCK) {
-+			log_debug(ls, "recover_waiter %x nodeid %d "
-+				  "msg %d to %d", lkb->lkb_id, lkb->lkb_nodeid,
-+				  lkb->lkb_wait_type, lkb->lkb_wait_nodeid);
-+		}
- 
- 		/* all outstanding lookups, regardless of destination  will be
- 		   resent after recovery is done */
-@@ -4183,26 +4196,28 @@ void dlm_recover_waiters_pre(struct dlm_ls *ls)
- 			break;
- 
- 		case DLM_MSG_CONVERT:
--			recover_convert_waiter(ls, lkb);
-+			recover_convert_waiter(ls, lkb, ms_stub);
- 			break;
- 
- 		case DLM_MSG_UNLOCK:
- 			hold_lkb(lkb);
--			ls->ls_stub_ms.m_type = DLM_MSG_UNLOCK_REPLY;
--			ls->ls_stub_ms.m_result = stub_unlock_result;
--			ls->ls_stub_ms.m_flags = lkb->lkb_flags;
--			ls->ls_stub_ms.m_header.h_nodeid = lkb->lkb_nodeid;
--			_receive_unlock_reply(lkb, &ls->ls_stub_ms);
-+			memset(ms_stub, 0, sizeof(struct dlm_message));
-+			ms_stub->m_flags = DLM_IFL_STUB_MS;
-+			ms_stub->m_type = DLM_MSG_UNLOCK_REPLY;
-+			ms_stub->m_result = stub_unlock_result;
-+			ms_stub->m_header.h_nodeid = lkb->lkb_nodeid;
-+			_receive_unlock_reply(lkb, ms_stub);
- 			dlm_put_lkb(lkb);
- 			break;
- 
- 		case DLM_MSG_CANCEL:
- 			hold_lkb(lkb);
--			ls->ls_stub_ms.m_type = DLM_MSG_CANCEL_REPLY;
--			ls->ls_stub_ms.m_result = stub_cancel_result;
--			ls->ls_stub_ms.m_flags = lkb->lkb_flags;
--			ls->ls_stub_ms.m_header.h_nodeid = lkb->lkb_nodeid;
--			_receive_cancel_reply(lkb, &ls->ls_stub_ms);
-+			memset(ms_stub, 0, sizeof(struct dlm_message));
-+			ms_stub->m_flags = DLM_IFL_STUB_MS;
-+			ms_stub->m_type = DLM_MSG_CANCEL_REPLY;
-+			ms_stub->m_result = stub_cancel_result;
-+			ms_stub->m_header.h_nodeid = lkb->lkb_nodeid;
-+			_receive_cancel_reply(lkb, ms_stub);
- 			dlm_put_lkb(lkb);
- 			break;
- 
-@@ -4213,6 +4228,7 @@ void dlm_recover_waiters_pre(struct dlm_ls *ls)
- 		schedule();
+@@ -334,7 +381,10 @@ static ssize_t dev_read(struct file *file, char __user *u, size_t count,
+ 	spin_lock(&ops_lock);
+ 	if (!list_empty(&send_list)) {
+ 		op = list_entry(send_list.next, struct plock_op, list);
+-		list_move(&op->list, &recv_list);
++		if (op->info.flags & DLM_PLOCK_FL_CLOSE)
++			list_del(&op->list);
++		else
++			list_move(&op->list, &recv_list);
+ 		memcpy(&info, &op->info, sizeof(info));
  	}
- 	mutex_unlock(&ls->ls_waiters_mutex);
-+	kfree(ms_stub);
- }
+ 	spin_unlock(&ops_lock);
+@@ -342,6 +392,13 @@ static ssize_t dev_read(struct file *file, char __user *u, size_t count,
+ 	if (!op)
+ 		return -EAGAIN;
  
- static struct dlm_lkb *find_resend_waiter(struct dlm_ls *ls)
-@@ -4277,8 +4293,8 @@ int dlm_recover_waiters_post(struct dlm_ls *ls)
- 		ou = is_overlap_unlock(lkb);
- 		err = 0;
++	/* there is no need to get a reply from userspace for unlocks
++	   that were generated by the vfs cleaning up for a close
++	   (the process did not make an unlock call). */
++
++	if (op->info.flags & DLM_PLOCK_FL_CLOSE)
++		kfree(op);
++
+ 	if (copy_to_user(u, &info, sizeof(info)))
+ 		return -EFAULT;
+ 	return sizeof(info);
+diff --git a/include/linux/dlm_plock.h b/include/linux/dlm_plock.h
+index 2dd2124..3b1cc1b 100644
+--- a/include/linux/dlm_plock.h
++++ b/include/linux/dlm_plock.h
+@@ -14,7 +14,7 @@
+ #define DLM_PLOCK_MISC_NAME		"dlm_plock"
  
--		log_debug(ls, "recover_waiters_post %x type %d flags %x %s",
--			  lkb->lkb_id, mstype, lkb->lkb_flags, r->res_name);
-+		log_debug(ls, "recover_waiter %x nodeid %d msg %d r_nodeid %d",
-+			  lkb->lkb_id, lkb->lkb_nodeid, mstype, r->res_nodeid);
+ #define DLM_PLOCK_VERSION_MAJOR	1
+-#define DLM_PLOCK_VERSION_MINOR	1
++#define DLM_PLOCK_VERSION_MINOR	2
+ #define DLM_PLOCK_VERSION_PATCH	0
  
- 		/* At this point we assume that we won't get a reply to any
- 		   previous op or overlap op on this lock.  First, do a big
+ enum {
+@@ -23,12 +23,14 @@ enum {
+ 	DLM_PLOCK_OP_GET,
+ };
+ 
++#define DLM_PLOCK_FL_CLOSE 1
++
+ struct dlm_plock_info {
+ 	__u32 version[3];
+ 	__u8 optype;
+ 	__u8 ex;
+ 	__u8 wait;
+-	__u8 pad;
++	__u8 flags;
+ 	__u32 pid;
+ 	__s32 nodeid;
+ 	__s32 rv;
 -- 
 1.7.1.1
 
