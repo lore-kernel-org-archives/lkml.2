@@ -1,876 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab1EWSY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 14:24:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56998 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624Ab1EWSYy (ORCPT
+	id S1756791Ab1EWS2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 14:28:53 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:46816 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756215Ab1EWS2v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 14:24:54 -0400
-Date: Mon, 23 May 2011 20:24:51 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [GIT pull] timers for 2.6.40
-Message-ID: <alpine.LFD.2.02.1105232022550.3078@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 23 May 2011 14:28:51 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <alpine.DEB.2.00.1105231133580.29047@router.home>
+References: <BANLkTikfqV57AtCckh99jAT2O38mM6MzTA@mail.gmail.com>
+	<BANLkTikey3L4doiHY=__=690TZNsXqRHUQ@mail.gmail.com>
+	<alpine.DEB.2.00.1105231133580.29047@router.home>
+Date: Mon, 23 May 2011 20:28:50 +0200
+Message-ID: <BANLkTi=-xRRxi4CtxMLt0VgTJWSdiVQugw@mail.gmail.com>
+Subject: Re: Fwd: Oops (bad memory deref) in slab_alloc() due to filp_cachep
+ holding incorrect values
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: linux-kernel@vger.kernel.org
+Cc: Christoph Lameter <cl@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, May 23, 2011 at 6:35 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Mon, 23 May 2011, Robert Święcki wrote:
+>
+>> Hi, not sure if it's related to SLUB, in any case forwarding.
+>
+> Please reboot with the kernel parameter slub_debug or enable
+> CONFIG_SLUB_DEBUG_ON. The kernel will then verify all operations of the
+> users of the allocator and log important issues to the syslog. This is
+> likely some memory corruption.
 
-Please pull the latest timers-for-linus git tree from:
+So, I ran it with CONFIG_SLUB_DEBUG_ON and got Oops in just under a
+second - the important thing is that probably that instead of
+2.6.39-rc4 I ran 2.6.39
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-for-linus
+It was
 
-Thanks,
+<1>[   77.662935] BUG: unable to handle kernel NULL pointer
+dereference at 0000000000000408
+<1>[   77.663002] IP: [<ffffffff8134cbdf>] cap_capable+0x18/0x67
+<4>[   77.663002] PGD 120428067 PUD 120e35067 PMD 0
+<0>[   77.663002] Oops: 0000 [#1] PREEMPT SMP
+<0>[   77.680925] last sysfs file:
+/sys/devices/system/cpu/cpu1/cache/index2/shared_cpu_map
 
-	tglx
+and kdb's backtrace shows:
 
------------------->
-Andi Kleen (1):
-      clockevents: Move C3 stop test outside lock
+[1]kdb> bt
+Stack traceback for pid 8419
+0xffff880120e3aee0     8419     8418  1    1   R  0xffff880120e3b360 *iknowthis2
+<c> ffff88011f57deb8<c> 0000000000000000<c> ffff88011f5731a0<c>
+ffff88011f57def8<c>
+<c> ffffffff81378bfb<c> ffff88011f57ded8<c> ffff880120e3aee0<c>
+0000000000000604<c>
+<c> ffff88011f540500<c> 0000000000000000<c> 0000000000000000<c>
+ffff88011f57df08<c>
+Call Trace:
+ [<ffffffff81378bfb>] ? apparmor_capable+0x27/0x61
+ [<ffffffff8134d932>] ? security_capable+0x2a/0x2c
+ [<ffffffff8109d99d>] ? ns_capable+0x3a/0x4f
+ [<ffffffff8109da2b>] ? nsown_capable+0x24/0x29
+ [<ffffffff810a6695>] ? sys_setgid+0x43/0x8d
+ [<ffffffff810c1e11>] ? sys_setgid16+0x1c/0x1e
+ [<ffffffff81ed6183>] ? ia32_do_call+0x13/0x13
 
-Thomas Gleixner (10):
-      hrtimers: Prepare for cancel on clock was set timers
-      timerfd: Allow timers to be cancelled when clock was set
-      alarmtimer: Check return value of class_find_device()
-      alarmtimer: Drop device refcount after rtc_open()
-      clockevents/source: Use u64 to make 32bit happy
-      MAINTAINERS: Add drivers/clocksource to TIMEKEEPING
-      timerfd: Manage cancelable timers in timerfd
-      hrtimers: Make struct hrtimer_cpu_base layout less stupid
-      hrtimers: Avoid touching inactive timer bases
-      hrtimers: Reorder clock bases
+and kgdb shows
+
+(gdb) target remote /dev/ttyS0
+Remote debugging using /dev/ttyS0
+0xffffffff8134cbdf in cap_capable (tsk=<value optimized out>,
+cred=0x0, targ_ns=0x0, cap=6, audit=1) at security/commoncap.c:88
+88			if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
+
+(gdb) p cred
+$1 = (const struct cred *) 0x0
+
+(gdb) bt
+#0  0xffffffff8134cbdf in cap_capable (tsk=<value optimized out>,
+cred=0x0, targ_ns=0x0, cap=6, audit=1) at security/commoncap.c:88
+#1  0xffffffff81378bfb in apparmor_capable (task=0xffff880120e3aee0,
+cred=0xffff88011f540500, ns=<value optimized out>, cap=6, audit=1) at
+security/apparmor/lsm.c:144
+#2  0xffffffff8134d932 in security_capable (ns=<value optimized out>,
+cred=<value optimized out>, cap=<value optimized out>) at
+security/security.c:160
+#3  0xffffffff8109d99d in ns_capable (ns=<value optimized out>,
+cap=<value optimized out>) at kernel/capability.c:381
+#4  0xffffffff8109da2b in nsown_capable (cap=<value optimized out>) at
+kernel/capability.c:412
+#5  0xffffffff810a6695 in sys_setgid (gid=1540) at kernel/sys.c:570
+#6  0xffffffff810c1e11 in sys_setgid16 (gid=<value optimized out>) at
+kernel/uid16.c:53
+#7  <signal handler called>
+#8  0x0000000008065952 in __brk_reservation_fn_dmi_alloc__ ()
+
+I looked through  apparmor_capable and cap_capable and there's nothing
+that could change value of 'cred' from 0xffff880120e3aee0 to 0 between
+apparmor_capable() and cap_capable()  (i.e. no buffer-overflow causing
+functions, in fact no functions or no interesting operations at all).
+
+Out of curiosity I looked at what runs on the other CPU, and it was:
+
+[0]kdb> bt
+Stack traceback for pid 23087
+0xffff880120df8000    23087    16945  1    0   R  0xffff880120df8480 *iknowthis
+<c> ffff880120d61c58<c> 0000000000000018<c>
+Call Trace:
+ <NMI>  <<EOE>>  [<ffffffff814feb2d>] ? extract_buf+0x5e/0x105
+ [<ffffffff81ed3f85>] ? retint_restore_args+0x13/0x13
+ [<ffffffff814fee11>] ? extract_entropy_user+0xb5/0x124
+ [<ffffffff814fee95>] ? urandom_read+0x15/0x17
+ [<ffffffff8116200b>] ? vfs_read+0xa9/0xfc
+ [<ffffffff811633f5>] ? fget_light+0x42/0xa2
+ [<ffffffff811622a6>] ? sys_read+0x4a/0x6e
+ [<ffffffff81ed4902>] ? system_call_fastpath+0x16/0x1b
+
+It's very strange, cause in the first case (the problem with SLUB),
+the second CPU was also stuck in this routine, and I'm kinda certain
+it is the real cause of the problem (it overwrites another CPU's
+stack?). My config is here:
+http://alt.swiecki.net/linux_kernel/ise-test-2.6.39-kernel-config.txt
+- so the question is; could somebody more familiar with kernel
+internals look into /dev/urandom sys_read routines. I think they don't
+play nicely with SMP PREEMPT kernel (or maybe it just runs out of
+kernel stack in there and overwrites another one). Some more data
+about the second thread:
+
+(gdb) thread 1
+[Switching to thread 1 (Thread 23087)]#0  sha_transform
+(digest=0xffff880120d61de8,
+    in=0xffff880120d61ca8
+"\372\223;4<;\030L\351\331_\345lI\206\362\202\364\373J\277\337\231ӌ!_(\206^\267\366\311\306\061R\001\v\b\322\312ګ\301\334:V\314p\226\253@\332m\206\271\025\361-\255f\027\340",
+<incomplete sequence \364>, W=0xffff880120d61ca8) at lib/sha1.c:47
+47			W[i+16] = rol32(W[i+13] ^ W[i+8] ^ W[i+2] ^ W[i], 1);
+
+(gdb) bt
+#0  sha_transform (digest=0xffff880120d61de8, in=0xffff880120d61ca8
+"\372\223;4<;\030L\351\331_\345lI\206\362\202\364\373J\277\337\231ӌ!_(\206^\267\366\311\306\061R\001\v\b\322\312ګ\301\334:V\314p\226\253@\332m\206\271\025\361-\255f\027\340",
+<incomplete sequence \364>,
+    W=0xffff880120d61ca8) at lib/sha1.c:47
+#1  0xffffffff814feb2d in extract_buf (r=0xffffffff82a88670,
+out=0xffff880120d61e98 "\320S\032|\201\f7\215\333$") at
+drivers/char/random.c:825
+#2  0xffffffff814fee11 in extract_entropy_user (r=0xffffffff82a88670,
+buf=0x7fec871ced98, nbytes=616) at drivers/char/random.c:910
+#3  0xffffffff814fee95 in urandom_read (file=<value optimized out>,
+buf=<value optimized out>, nbytes=<value optimized out>, ppos=<value
+optimized out>) at drivers/char/random.c:1063
+#4  0xffffffff8116200b in vfs_read (file=0xffff880121f13900,
+    buf=0x7fec871ce000 ",\027\372\061\213L\224
+\263\371\alx\304k\312O#\362\233\022\027\217\216\016\316
+\212\022A`\213\264\246z$0=\313L<\253\221\367\264\246VF\350\336[a\372\v\367'\233\375\350\356\350\366\016\243wS\255fʦ\217\r\346k\354\235\335\031\333\335\030\246\061\332\312\020v\333\376\b\177-R]P\277\367\067M\230\324\235\026\264}\273Ƣ\264g\236\025\373\371\021a7tm\"f\313>I\003\346\214\006\255\"A\035\070\256\216\270t\002i\327\275\327G\031\227\017\337*\230H\376\256\a\376\t1XY\355*?{a\201s\272\023\060n\246\267\374\241/\205\037\330X\273\a[\300\220_\004#e\252B\326\370Kt(\306.D.\314\027"...,
+count=<value optimized out>, pos=0xffff880120d61f58) at
+fs/read_write.c:321
+#5  0xffffffff811622a6 in sys_read (fd=<value optimized out>,
+    buf=0x7fec871ce000 ",\027\372\061\213L\224
+\263\371\alx\304k\312O#\362\233\022\027\217\216\016\316
+\212\022A`\213\264\246z$0=\313L<\253\221\367\264\246VF\350\336[a\372\v\367'\233\375\350\356\350\366\016\243wS\255fʦ\217\r\346k\354\235\335\031\333\335\030\246\061\332\312\020v\333\376\b\177-R]P\277\367\067M\230\324\235\026\264}\273Ƣ\264g\236\025\373\371\021a7tm\"f\313>I\003\346\214\006\255\"A\035\070\256\216\270t\002i\327\275\327G\031\227\017\337*\230H\376\256\a\376\t1XY\355*?{a\201s\272\023\060n\246\267\374\241/\205\037\330X\273\a[\300\220_\004#e\252B\326\370Kt(\306.D.\314\027"...,
+count=<value optimized out>) at fs/read_write.c:411
+#6  <signal handler called>
+#7  0x00007fec865e4340 in __brk_reservation_fn_dmi_alloc__ ()
+#8  0xffff880120dc1770 in __brk_reservation_fn_dmi_alloc__ ()
+#9  0xffffffff82a1bb50 in ?? ()
+#10 0x0000000200020000 in __brk_reservation_fn_dmi_alloc__ ()
+#11 0x0000000300000001 in __brk_reservation_fn_dmi_alloc__ ()
+#12 0x00007ffffffff000 in __brk_reservation_fn_dmi_alloc__ ()
+#13 0xffffffff810a4c3d in sys_restart_syscall () at kernel/signal.c:2085
+#14 0x0000000000000000 in ?? ()
+
+(gdb) info registers
+rax            0xf21ac03a	4061839418
+rbx            0xffff880120d61de8	-131936549462552
+rcx            0x80	128
+rdx            0xffff880120d61ca8	-131936549462872
+rsi            0xffff880120d61ca8	-131936549462872
+rdi            0xffff880120d61de8	-131936549462552
+rbp            0xffff880120d61c98	0xffff880120d61c98
+rsp            0xffff880120d61c58	0xffff880120d61c58
+r8             0xbcc035f2	3166713330
+r9             0x50	80
+r10            0xffff880120d61cfc	-131936549462788
+r11            0x47013d0b	1191263499
+r12            0x10	16
+r13            0xffffffff82a88670	-2102884752
+r14            0xffff880120d61e98	-131936549462376
+r15            0xa	10
+rip            0xffffffff813d0297	0xffffffff813d0297 <sha_transform+39>
+eflags         0x283	[ CF SF IF ]
+cs             0x10	16
+ss             0x18	24
+ds             Could not fetch register "ds"; remote failure reply 'E22'
+
+(gdb) disassemble $pc
+Dump of assembler code for function sha_transform:
+   0xffffffff813d0270 <+0>:	push   rbp
+   0xffffffff813d0271 <+1>:	xor    eax,eax
+   0xffffffff813d0273 <+3>:	mov    rbp,rsp
+   0xffffffff813d0276 <+6>:	push   r15
+   0xffffffff813d0278 <+8>:	push   r14
+   0xffffffff813d027a <+10>:	push   r13
+   0xffffffff813d027c <+12>:	push   r12
+   0xffffffff813d027e <+14>:	push   rbx
+   0xffffffff813d027f <+15>:	sub    rsp,0x18
+   0xffffffff813d0283 <+19>:	mov    ecx,DWORD PTR [rsi+rax*1]
+   0xffffffff813d0286 <+22>:	bswap  ecx
+   0xffffffff813d0288 <+24>:	mov    DWORD PTR [rdx+rax*1],ecx
+   0xffffffff813d028b <+27>:	add    rax,0x4
+   0xffffffff813d028f <+31>:	cmp    rax,0x40
+   0xffffffff813d0293 <+35>:	jne    0xffffffff813d0283 <sha_transform+19>
+   0xffffffff813d0295 <+37>:	xor    ecx,ecx
+=> 0xffffffff813d0297 <+39>:	mov    eax,DWORD PTR [rdx+rcx*1+0x20]
+   0xffffffff813d029b <+43>:	xor    eax,DWORD PTR [rdx+rcx*1+0x34]
+   0xffffffff813d029f <+47>:	xor    eax,DWORD PTR [rdx+rcx*1+0x8]
+   0xffffffff813d02a3 <+51>:	xor    eax,DWORD PTR [rdx+rcx*1]
+   0xffffffff813d02a6 <+54>:	ror    eax,0x1f
+   0xffffffff813d02a9 <+57>:	mov    DWORD PTR [rdx+rcx*1+0x40],eax
+   0xffffffff813d02ad <+61>:	add    rcx,0x4
 
 
- MAINTAINERS                  |    1 +
- fs/timerfd.c                 |  102 ++++++++++++++++++++++++--
- include/linux/hrtimer.h      |   33 ++++-----
- include/linux/thread_info.h  |    2 +-
- include/linux/timerfd.h      |    3 +-
- kernel/hrtimer.c             |  162 ++++++++++++++++++++++--------------------
- kernel/posix-cpu-timers.c    |    4 +-
- kernel/posix-timers.c        |    2 +-
- kernel/time/alarmtimer.c     |   16 +++-
- kernel/time/clockevents.c    |    2 +-
- kernel/time/clocksource.c    |    2 +-
- kernel/time/tick-broadcast.c |   16 +++--
- kernel/time/timekeeping.c    |   17 ++++-
- 13 files changed, 242 insertions(+), 120 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8df8d2d..e20c974 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5431,6 +5431,7 @@ F:	include/linux/timex.h
- F:	kernel/time/clocksource.c
- F:	kernel/time/time*.c
- F:	kernel/time/ntp.c
-+F:	drivers/clocksource
- 
- TLG2300 VIDEO4LINUX-2 DRIVER
- M:	Huang Shijie <shijie8@gmail.com>
-diff --git a/fs/timerfd.c b/fs/timerfd.c
-index 8c4fc14..f67acbd 100644
---- a/fs/timerfd.c
-+++ b/fs/timerfd.c
-@@ -22,16 +22,24 @@
- #include <linux/anon_inodes.h>
- #include <linux/timerfd.h>
- #include <linux/syscalls.h>
-+#include <linux/rcupdate.h>
- 
- struct timerfd_ctx {
- 	struct hrtimer tmr;
- 	ktime_t tintv;
-+	ktime_t moffs;
- 	wait_queue_head_t wqh;
- 	u64 ticks;
- 	int expired;
- 	int clockid;
-+	struct rcu_head rcu;
-+	struct list_head clist;
-+	bool might_cancel;
- };
- 
-+static LIST_HEAD(cancel_list);
-+static DEFINE_SPINLOCK(cancel_lock);
-+
- /*
-  * This gets called when the timer event triggers. We set the "expired"
-  * flag, but we do not re-arm the timer (in case it's necessary,
-@@ -51,6 +59,63 @@ static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
- 	return HRTIMER_NORESTART;
- }
- 
-+/*
-+ * Called when the clock was set to cancel the timers in the cancel
-+ * list.
-+ */
-+void timerfd_clock_was_set(void)
-+{
-+	ktime_t moffs = ktime_get_monotonic_offset();
-+	struct timerfd_ctx *ctx;
-+	unsigned long flags;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(ctx, &cancel_list, clist) {
-+		if (!ctx->might_cancel)
-+			continue;
-+		spin_lock_irqsave(&ctx->wqh.lock, flags);
-+		if (ctx->moffs.tv64 != moffs.tv64) {
-+			ctx->moffs.tv64 = KTIME_MAX;
-+			wake_up_locked(&ctx->wqh);
-+		}
-+		spin_unlock_irqrestore(&ctx->wqh.lock, flags);
-+	}
-+	rcu_read_unlock();
-+}
-+
-+static void timerfd_remove_cancel(struct timerfd_ctx *ctx)
-+{
-+	if (ctx->might_cancel) {
-+		ctx->might_cancel = false;
-+		spin_lock(&cancel_lock);
-+		list_del_rcu(&ctx->clist);
-+		spin_unlock(&cancel_lock);
-+	}
-+}
-+
-+static bool timerfd_canceled(struct timerfd_ctx *ctx)
-+{
-+	if (!ctx->might_cancel || ctx->moffs.tv64 != KTIME_MAX)
-+		return false;
-+	ctx->moffs = ktime_get_monotonic_offset();
-+	return true;
-+}
-+
-+static void timerfd_setup_cancel(struct timerfd_ctx *ctx, int flags)
-+{
-+	if (ctx->clockid == CLOCK_REALTIME && (flags & TFD_TIMER_ABSTIME) &&
-+	    (flags & TFD_TIMER_CANCEL_ON_SET)) {
-+		if (!ctx->might_cancel) {
-+			ctx->might_cancel = true;
-+			spin_lock(&cancel_lock);
-+			list_add_rcu(&ctx->clist, &cancel_list);
-+			spin_unlock(&cancel_lock);
-+		}
-+	} else if (ctx->might_cancel) {
-+		timerfd_remove_cancel(ctx);
-+	}
-+}
-+
- static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
- {
- 	ktime_t remaining;
-@@ -59,11 +124,12 @@ static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
- 	return remaining.tv64 < 0 ? ktime_set(0, 0): remaining;
- }
- 
--static void timerfd_setup(struct timerfd_ctx *ctx, int flags,
--			  const struct itimerspec *ktmr)
-+static int timerfd_setup(struct timerfd_ctx *ctx, int flags,
-+			 const struct itimerspec *ktmr)
- {
- 	enum hrtimer_mode htmode;
- 	ktime_t texp;
-+	int clockid = ctx->clockid;
- 
- 	htmode = (flags & TFD_TIMER_ABSTIME) ?
- 		HRTIMER_MODE_ABS: HRTIMER_MODE_REL;
-@@ -72,19 +138,24 @@ static void timerfd_setup(struct timerfd_ctx *ctx, int flags,
- 	ctx->expired = 0;
- 	ctx->ticks = 0;
- 	ctx->tintv = timespec_to_ktime(ktmr->it_interval);
--	hrtimer_init(&ctx->tmr, ctx->clockid, htmode);
-+	hrtimer_init(&ctx->tmr, clockid, htmode);
- 	hrtimer_set_expires(&ctx->tmr, texp);
- 	ctx->tmr.function = timerfd_tmrproc;
--	if (texp.tv64 != 0)
-+	if (texp.tv64 != 0) {
- 		hrtimer_start(&ctx->tmr, texp, htmode);
-+		if (timerfd_canceled(ctx))
-+			return -ECANCELED;
-+	}
-+	return 0;
- }
- 
- static int timerfd_release(struct inode *inode, struct file *file)
- {
- 	struct timerfd_ctx *ctx = file->private_data;
- 
-+	timerfd_remove_cancel(ctx);
- 	hrtimer_cancel(&ctx->tmr);
--	kfree(ctx);
-+	kfree_rcu(ctx, rcu);
- 	return 0;
- }
- 
-@@ -118,8 +189,21 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
- 		res = -EAGAIN;
- 	else
- 		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
-+
-+	/*
-+	 * If clock has changed, we do not care about the
-+	 * ticks and we do not rearm the timer. Userspace must
-+	 * reevaluate anyway.
-+	 */
-+	if (timerfd_canceled(ctx)) {
-+		ctx->ticks = 0;
-+		ctx->expired = 0;
-+		res = -ECANCELED;
-+	}
-+
- 	if (ctx->ticks) {
- 		ticks = ctx->ticks;
-+
- 		if (ctx->expired && ctx->tintv.tv64) {
- 			/*
- 			 * If tintv.tv64 != 0, this is a periodic timer that
-@@ -183,6 +267,7 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
- 	init_waitqueue_head(&ctx->wqh);
- 	ctx->clockid = clockid;
- 	hrtimer_init(&ctx->tmr, clockid, HRTIMER_MODE_ABS);
-+	ctx->moffs = ktime_get_monotonic_offset();
- 
- 	ufd = anon_inode_getfd("[timerfd]", &timerfd_fops, ctx,
- 			       O_RDWR | (flags & TFD_SHARED_FCNTL_FLAGS));
-@@ -199,6 +284,7 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
- 	struct file *file;
- 	struct timerfd_ctx *ctx;
- 	struct itimerspec ktmr, kotmr;
-+	int ret;
- 
- 	if (copy_from_user(&ktmr, utmr, sizeof(ktmr)))
- 		return -EFAULT;
-@@ -213,6 +299,8 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
- 		return PTR_ERR(file);
- 	ctx = file->private_data;
- 
-+	timerfd_setup_cancel(ctx, flags);
-+
- 	/*
- 	 * We need to stop the existing timer before reprogramming
- 	 * it to the new values.
-@@ -240,14 +328,14 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
- 	/*
- 	 * Re-program the timer to the new value ...
- 	 */
--	timerfd_setup(ctx, flags, &ktmr);
-+	ret = timerfd_setup(ctx, flags, &ktmr);
- 
- 	spin_unlock_irq(&ctx->wqh.lock);
- 	fput(file);
- 	if (otmr && copy_to_user(otmr, &kotmr, sizeof(kotmr)))
- 		return -EFAULT;
- 
--	return 0;
-+	return ret;
- }
- 
- SYSCALL_DEFINE2(timerfd_gettime, int, ufd, struct itimerspec __user *, otmr)
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index 62f500c..51932e5 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -143,19 +143,18 @@ struct hrtimer_sleeper {
-  */
- struct hrtimer_clock_base {
- 	struct hrtimer_cpu_base	*cpu_base;
--	clockid_t		index;
-+	int			index;
-+	clockid_t		clockid;
- 	struct timerqueue_head	active;
- 	ktime_t			resolution;
- 	ktime_t			(*get_time)(void);
- 	ktime_t			softirq_time;
--#ifdef CONFIG_HIGH_RES_TIMERS
- 	ktime_t			offset;
--#endif
- };
- 
- enum  hrtimer_base_type {
--	HRTIMER_BASE_REALTIME,
- 	HRTIMER_BASE_MONOTONIC,
-+	HRTIMER_BASE_REALTIME,
- 	HRTIMER_BASE_BOOTTIME,
- 	HRTIMER_MAX_CLOCK_BASES,
- };
-@@ -164,7 +163,7 @@ enum  hrtimer_base_type {
-  * struct hrtimer_cpu_base - the per cpu clock bases
-  * @lock:		lock protecting the base and associated clock bases
-  *			and timers
-- * @clock_base:		array of clock bases for this cpu
-+ * @active_bases:	Bitfield to mark bases with active timers
-  * @expires_next:	absolute time of the next event which was scheduled
-  *			via clock_set_next_event()
-  * @hres_active:	State of high resolution mode
-@@ -173,10 +172,11 @@ enum  hrtimer_base_type {
-  * @nr_retries:		Total number of hrtimer interrupt retries
-  * @nr_hangs:		Total number of hrtimer interrupt hangs
-  * @max_hang_time:	Maximum time spent in hrtimer_interrupt
-+ * @clock_base:		array of clock bases for this cpu
-  */
- struct hrtimer_cpu_base {
- 	raw_spinlock_t			lock;
--	struct hrtimer_clock_base	clock_base[HRTIMER_MAX_CLOCK_BASES];
-+	unsigned long			active_bases;
- #ifdef CONFIG_HIGH_RES_TIMERS
- 	ktime_t				expires_next;
- 	int				hres_active;
-@@ -186,6 +186,7 @@ struct hrtimer_cpu_base {
- 	unsigned long			nr_hangs;
- 	ktime_t				max_hang_time;
- #endif
-+	struct hrtimer_clock_base	clock_base[HRTIMER_MAX_CLOCK_BASES];
- };
- 
- static inline void hrtimer_set_expires(struct hrtimer *timer, ktime_t time)
-@@ -256,8 +257,6 @@ static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
- #ifdef CONFIG_HIGH_RES_TIMERS
- struct clock_event_device;
- 
--extern void clock_was_set(void);
--extern void hres_timers_resume(void);
- extern void hrtimer_interrupt(struct clock_event_device *dev);
- 
- /*
-@@ -291,16 +290,8 @@ extern void hrtimer_peek_ahead_timers(void);
- # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
- # define KTIME_MONOTONIC_RES	KTIME_LOW_RES
- 
--/*
-- * clock_was_set() is a NOP for non- high-resolution systems. The
-- * time-sorted order guarantees that a timer does not expire early and
-- * is expired in the next softirq when the clock was advanced.
-- */
--static inline void clock_was_set(void) { }
- static inline void hrtimer_peek_ahead_timers(void) { }
- 
--static inline void hres_timers_resume(void) { }
--
- /*
-  * In non high resolution mode the time reference is taken from
-  * the base softirq time variable.
-@@ -316,10 +307,18 @@ static inline int hrtimer_is_hres_active(struct hrtimer *timer)
- }
- #endif
- 
-+extern void clock_was_set(void);
-+#ifdef CONFIG_TIMERFD
-+extern void timerfd_clock_was_set(void);
-+#else
-+static inline void timerfd_clock_was_set(void) { }
-+#endif
-+extern void hrtimers_resume(void);
-+
- extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_real(void);
- extern ktime_t ktime_get_boottime(void);
--
-+extern ktime_t ktime_get_monotonic_offset(void);
- 
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
- 
-diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
-index 20fc303..8d03f07 100644
---- a/include/linux/thread_info.h
-+++ b/include/linux/thread_info.h
-@@ -29,7 +29,7 @@ struct restart_block {
- 		} futex;
- 		/* For nanosleep */
- 		struct {
--			clockid_t index;
-+			clockid_t clockid;
- 			struct timespec __user *rmtp;
- #ifdef CONFIG_COMPAT
- 			struct compat_timespec __user *compat_rmtp;
-diff --git a/include/linux/timerfd.h b/include/linux/timerfd.h
-index 2d07929..d3b57fa 100644
---- a/include/linux/timerfd.h
-+++ b/include/linux/timerfd.h
-@@ -19,6 +19,7 @@
-  * shared O_* flags.
-  */
- #define TFD_TIMER_ABSTIME (1 << 0)
-+#define TFD_TIMER_CANCEL_ON_SET (1 << 1)
- #define TFD_CLOEXEC O_CLOEXEC
- #define TFD_NONBLOCK O_NONBLOCK
- 
-@@ -26,6 +27,6 @@
- /* Flags for timerfd_create.  */
- #define TFD_CREATE_FLAGS TFD_SHARED_FCNTL_FLAGS
- /* Flags for timerfd_settime.  */
--#define TFD_SETTIME_FLAGS TFD_TIMER_ABSTIME
-+#define TFD_SETTIME_FLAGS (TFD_TIMER_ABSTIME | TFD_TIMER_CANCEL_ON_SET)
- 
- #endif /* _LINUX_TIMERFD_H */
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index dbbbf7d..c541ee5 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -64,17 +64,20 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
- 	.clock_base =
- 	{
- 		{
--			.index = CLOCK_REALTIME,
--			.get_time = &ktime_get_real,
-+			.index = HRTIMER_BASE_MONOTONIC,
-+			.clockid = CLOCK_MONOTONIC,
-+			.get_time = &ktime_get,
- 			.resolution = KTIME_LOW_RES,
- 		},
- 		{
--			.index = CLOCK_MONOTONIC,
--			.get_time = &ktime_get,
-+			.index = HRTIMER_BASE_REALTIME,
-+			.clockid = CLOCK_REALTIME,
-+			.get_time = &ktime_get_real,
- 			.resolution = KTIME_LOW_RES,
- 		},
- 		{
--			.index = CLOCK_BOOTTIME,
-+			.index = HRTIMER_BASE_BOOTTIME,
-+			.clockid = CLOCK_BOOTTIME,
- 			.get_time = &ktime_get_boottime,
- 			.resolution = KTIME_LOW_RES,
- 		},
-@@ -196,7 +199,7 @@ switch_hrtimer_base(struct hrtimer *timer, struct hrtimer_clock_base *base,
- 	struct hrtimer_cpu_base *new_cpu_base;
- 	int this_cpu = smp_processor_id();
- 	int cpu = hrtimer_get_target(this_cpu, pinned);
--	int basenum = hrtimer_clockid_to_base(base->index);
-+	int basenum = base->index;
- 
- again:
- 	new_cpu_base = &per_cpu(hrtimer_bases, cpu);
-@@ -621,66 +624,6 @@ static int hrtimer_reprogram(struct hrtimer *timer,
- 	return res;
- }
- 
--
--/*
-- * Retrigger next event is called after clock was set
-- *
-- * Called with interrupts disabled via on_each_cpu()
-- */
--static void retrigger_next_event(void *arg)
--{
--	struct hrtimer_cpu_base *base;
--	struct timespec realtime_offset, wtm, sleep;
--
--	if (!hrtimer_hres_active())
--		return;
--
--	get_xtime_and_monotonic_and_sleep_offset(&realtime_offset, &wtm,
--							&sleep);
--	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
--
--	base = &__get_cpu_var(hrtimer_bases);
--
--	/* Adjust CLOCK_REALTIME offset */
--	raw_spin_lock(&base->lock);
--	base->clock_base[HRTIMER_BASE_REALTIME].offset =
--		timespec_to_ktime(realtime_offset);
--	base->clock_base[HRTIMER_BASE_BOOTTIME].offset =
--		timespec_to_ktime(sleep);
--
--	hrtimer_force_reprogram(base, 0);
--	raw_spin_unlock(&base->lock);
--}
--
--/*
-- * Clock realtime was set
-- *
-- * Change the offset of the realtime clock vs. the monotonic
-- * clock.
-- *
-- * We might have to reprogram the high resolution timer interrupt. On
-- * SMP we call the architecture specific code to retrigger _all_ high
-- * resolution timer interrupts. On UP we just disable interrupts and
-- * call the high resolution interrupt code.
-- */
--void clock_was_set(void)
--{
--	/* Retrigger the CPU local events everywhere */
--	on_each_cpu(retrigger_next_event, NULL, 1);
--}
--
--/*
-- * During resume we might have to reprogram the high resolution timer
-- * interrupt (on the local CPU):
-- */
--void hres_timers_resume(void)
--{
--	WARN_ONCE(!irqs_disabled(),
--		  KERN_INFO "hres_timers_resume() called with IRQs enabled!");
--
--	retrigger_next_event(NULL);
--}
--
- /*
-  * Initialize the high resolution related parts of cpu_base
-  */
-@@ -715,11 +658,39 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
- }
- 
- /*
-+ * Retrigger next event is called after clock was set
-+ *
-+ * Called with interrupts disabled via on_each_cpu()
-+ */
-+static void retrigger_next_event(void *arg)
-+{
-+	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
-+	struct timespec realtime_offset, xtim, wtm, sleep;
-+
-+	if (!hrtimer_hres_active())
-+		return;
-+
-+	/* Optimized out for !HIGH_RES */
-+	get_xtime_and_monotonic_and_sleep_offset(&xtim, &wtm, &sleep);
-+	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
-+
-+	/* Adjust CLOCK_REALTIME offset */
-+	raw_spin_lock(&base->lock);
-+	base->clock_base[HRTIMER_BASE_REALTIME].offset =
-+		timespec_to_ktime(realtime_offset);
-+	base->clock_base[HRTIMER_BASE_BOOTTIME].offset =
-+		timespec_to_ktime(sleep);
-+
-+	hrtimer_force_reprogram(base, 0);
-+	raw_spin_unlock(&base->lock);
-+}
-+
-+/*
-  * Switch to high resolution mode
-  */
- static int hrtimer_switch_to_hres(void)
- {
--	int cpu = smp_processor_id();
-+	int i, cpu = smp_processor_id();
- 	struct hrtimer_cpu_base *base = &per_cpu(hrtimer_bases, cpu);
- 	unsigned long flags;
- 
-@@ -735,9 +706,8 @@ static int hrtimer_switch_to_hres(void)
- 		return 0;
- 	}
- 	base->hres_active = 1;
--	base->clock_base[HRTIMER_BASE_REALTIME].resolution = KTIME_HIGH_RES;
--	base->clock_base[HRTIMER_BASE_MONOTONIC].resolution = KTIME_HIGH_RES;
--	base->clock_base[HRTIMER_BASE_BOOTTIME].resolution = KTIME_HIGH_RES;
-+	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++)
-+		base->clock_base[i].resolution = KTIME_HIGH_RES;
- 
- 	tick_setup_sched_timer();
- 
-@@ -761,9 +731,43 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
- 	return 0;
- }
- static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base) { }
-+static inline void retrigger_next_event(void *arg) { }
- 
- #endif /* CONFIG_HIGH_RES_TIMERS */
- 
-+/*
-+ * Clock realtime was set
-+ *
-+ * Change the offset of the realtime clock vs. the monotonic
-+ * clock.
-+ *
-+ * We might have to reprogram the high resolution timer interrupt. On
-+ * SMP we call the architecture specific code to retrigger _all_ high
-+ * resolution timer interrupts. On UP we just disable interrupts and
-+ * call the high resolution interrupt code.
-+ */
-+void clock_was_set(void)
-+{
-+#ifdef CONFIG_HIGHRES_TIMERS
-+	/* Retrigger the CPU local events everywhere */
-+	on_each_cpu(retrigger_next_event, NULL, 1);
-+#endif
-+	timerfd_clock_was_set();
-+}
-+
-+/*
-+ * During resume we might have to reprogram the high resolution timer
-+ * interrupt (on the local CPU):
-+ */
-+void hrtimers_resume(void)
-+{
-+	WARN_ONCE(!irqs_disabled(),
-+		  KERN_INFO "hrtimers_resume() called with IRQs enabled!");
-+
-+	retrigger_next_event(NULL);
-+	timerfd_clock_was_set();
-+}
-+
- static inline void timer_stats_hrtimer_set_start_info(struct hrtimer *timer)
- {
- #ifdef CONFIG_TIMER_STATS
-@@ -856,6 +860,7 @@ static int enqueue_hrtimer(struct hrtimer *timer,
- 	debug_activate(timer);
- 
- 	timerqueue_add(&base->active, &timer->node);
-+	base->cpu_base->active_bases |= 1 << base->index;
- 
- 	/*
- 	 * HRTIMER_STATE_ENQUEUED is or'ed to the current state to preserve the
-@@ -897,6 +902,8 @@ static void __remove_hrtimer(struct hrtimer *timer,
- #endif
- 	}
- 	timerqueue_del(&base->active, &timer->node);
-+	if (!timerqueue_getnext(&base->active))
-+		base->cpu_base->active_bases &= ~(1 << base->index);
- out:
- 	timer->state = newstate;
- }
-@@ -1234,7 +1241,6 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
- void hrtimer_interrupt(struct clock_event_device *dev)
- {
- 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
--	struct hrtimer_clock_base *base;
- 	ktime_t expires_next, now, entry_time, delta;
- 	int i, retries = 0;
- 
-@@ -1256,12 +1262,15 @@ retry:
- 	 */
- 	cpu_base->expires_next.tv64 = KTIME_MAX;
- 
--	base = cpu_base->clock_base;
--
- 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
--		ktime_t basenow;
-+		struct hrtimer_clock_base *base;
- 		struct timerqueue_node *node;
-+		ktime_t basenow;
-+
-+		if (!(cpu_base->active_bases & (1 << i)))
-+			continue;
- 
-+		base = cpu_base->clock_base + i;
- 		basenow = ktime_add(now, base->offset);
- 
- 		while ((node = timerqueue_getnext(&base->active))) {
-@@ -1294,7 +1303,6 @@ retry:
- 
- 			__run_hrtimer(timer, &basenow);
- 		}
--		base++;
- 	}
- 
- 	/*
-@@ -1525,7 +1533,7 @@ long __sched hrtimer_nanosleep_restart(struct restart_block *restart)
- 	struct timespec __user  *rmtp;
- 	int ret = 0;
- 
--	hrtimer_init_on_stack(&t.timer, restart->nanosleep.index,
-+	hrtimer_init_on_stack(&t.timer, restart->nanosleep.clockid,
- 				HRTIMER_MODE_ABS);
- 	hrtimer_set_expires_tv64(&t.timer, restart->nanosleep.expires);
- 
-@@ -1577,7 +1585,7 @@ long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
- 
- 	restart = &current_thread_info()->restart_block;
- 	restart->fn = hrtimer_nanosleep_restart;
--	restart->nanosleep.index = t.timer.base->index;
-+	restart->nanosleep.clockid = t.timer.base->clockid;
- 	restart->nanosleep.rmtp = rmtp;
- 	restart->nanosleep.expires = hrtimer_get_expires_tv64(&t.timer);
- 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 0791b13..58f405b 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -1514,7 +1514,7 @@ static int posix_cpu_nsleep(const clockid_t which_clock, int flags,
- 			return -EFAULT;
- 
- 		restart_block->fn = posix_cpu_nsleep_restart;
--		restart_block->nanosleep.index = which_clock;
-+		restart_block->nanosleep.clockid = which_clock;
- 		restart_block->nanosleep.rmtp = rmtp;
- 		restart_block->nanosleep.expires = timespec_to_ns(rqtp);
- 	}
-@@ -1523,7 +1523,7 @@ static int posix_cpu_nsleep(const clockid_t which_clock, int flags,
- 
- static long posix_cpu_nsleep_restart(struct restart_block *restart_block)
- {
--	clockid_t which_clock = restart_block->nanosleep.index;
-+	clockid_t which_clock = restart_block->nanosleep.clockid;
- 	struct timespec t;
- 	struct itimerspec it;
- 	int error;
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index e5498d7..a1b5edf 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -1056,7 +1056,7 @@ SYSCALL_DEFINE4(clock_nanosleep, const clockid_t, which_clock, int, flags,
-  */
- long clock_nanosleep_restart(struct restart_block *restart_block)
- {
--	clockid_t which_clock = restart_block->nanosleep.index;
-+	clockid_t which_clock = restart_block->nanosleep.clockid;
- 	struct k_clock *kc = clockid_to_kclock(which_clock);
- 
- 	if (WARN_ON_ONCE(!kc || !kc->nsleep_restart))
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index 9265014..2d96624 100644
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -494,7 +494,7 @@ static int update_rmtp(ktime_t exp, enum  alarmtimer_type type,
-  */
- static long __sched alarm_timer_nsleep_restart(struct restart_block *restart)
- {
--	enum  alarmtimer_type type = restart->nanosleep.index;
-+	enum  alarmtimer_type type = restart->nanosleep.clockid;
- 	ktime_t exp;
- 	struct timespec __user  *rmtp;
- 	struct alarm alarm;
-@@ -573,7 +573,7 @@ static int alarm_timer_nsleep(const clockid_t which_clock, int flags,
- 
- 	restart = &current_thread_info()->restart_block;
- 	restart->fn = alarm_timer_nsleep_restart;
--	restart->nanosleep.index = type;
-+	restart->nanosleep.clockid = type;
- 	restart->nanosleep.expires = exp.tv64;
- 	restart->nanosleep.rmtp = rmtp;
- 	ret = -ERESTART_RESTARTBLOCK;
-@@ -669,12 +669,20 @@ static int __init has_wakealarm(struct device *dev, void *name_ptr)
-  */
- static int __init alarmtimer_init_late(void)
- {
-+	struct device *dev;
- 	char *str;
- 
- 	/* Find an rtc device and init the rtc_timer */
--	class_find_device(rtc_class, NULL, &str, has_wakealarm);
--	if (str)
-+	dev = class_find_device(rtc_class, NULL, &str, has_wakealarm);
-+	/* If we have a device then str is valid. See has_wakealarm() */
-+	if (dev) {
- 		rtcdev = rtc_class_open(str);
-+		/*
-+		 * Drop the reference we got in class_find_device,
-+		 * rtc_open takes its own.
-+		 */
-+		put_device(dev);
-+	}
- 	if (!rtcdev) {
- 		printk(KERN_WARNING "No RTC device found, ALARM timers will"
- 			" not wake from suspend");
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 22a9da9..c027d4f 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -197,7 +197,7 @@ EXPORT_SYMBOL_GPL(clockevents_register_device);
- static void clockevents_config(struct clock_event_device *dev,
- 			       u32 freq)
- {
--	unsigned long sec;
-+	u64 sec;
- 
- 	if (!(dev->features & CLOCK_EVT_FEAT_ONESHOT))
- 		return;
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index d9d5f8c..1c95fd6 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -639,7 +639,7 @@ static void clocksource_enqueue(struct clocksource *cs)
-  */
- void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
- {
--	unsigned long sec;
-+	u64 sec;
- 
- 	/*
- 	 * Calc the maximum number of seconds which we can run before
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 723c763..c7218d1 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -456,23 +456,27 @@ void tick_broadcast_oneshot_control(unsigned long reason)
- 	unsigned long flags;
- 	int cpu;
- 
--	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
--
- 	/*
- 	 * Periodic mode does not care about the enter/exit of power
- 	 * states
- 	 */
- 	if (tick_broadcast_device.mode == TICKDEV_MODE_PERIODIC)
--		goto out;
-+		return;
- 
--	bc = tick_broadcast_device.evtdev;
-+	/*
-+	 * We are called with preemtion disabled from the depth of the
-+	 * idle code, so we can't be moved away.
-+	 */
- 	cpu = smp_processor_id();
- 	td = &per_cpu(tick_cpu_device, cpu);
- 	dev = td->evtdev;
- 
- 	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
--		goto out;
-+		return;
-+
-+	bc = tick_broadcast_device.evtdev;
- 
-+	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
- 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
- 		if (!cpumask_test_cpu(cpu, tick_get_broadcast_oneshot_mask())) {
- 			cpumask_set_cpu(cpu, tick_get_broadcast_oneshot_mask());
-@@ -489,8 +493,6 @@ void tick_broadcast_oneshot_control(unsigned long reason)
- 				tick_program_event(dev->next_event, 1);
- 		}
- 	}
--
--out:
- 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
- }
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 8e6a05a..342408c 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -680,7 +680,7 @@ static void timekeeping_resume(void)
- 	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
- 
- 	/* Resume hrtimers */
--	hres_timers_resume();
-+	hrtimers_resume();
- }
- 
- static int timekeeping_suspend(void)
-@@ -1099,6 +1099,21 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
- }
- 
- /**
-+ * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
-+ */
-+ktime_t ktime_get_monotonic_offset(void)
-+{
-+	unsigned long seq;
-+	struct timespec wtom;
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+		wtom = wall_to_monotonic;
-+	} while (read_seqretry(&xtime_lock, seq));
-+	return timespec_to_ktime(wtom);
-+}
-+
-+/**
-  * xtime_update() - advances the timekeeping infrastructure
-  * @ticks:	number of ticks, that have elapsed since the last call.
-  *
+-- 
+Robert Święcki
