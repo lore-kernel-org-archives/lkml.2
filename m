@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab1EWQr6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:47:58 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:18583 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756565Ab1EWQr5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:47:57 -0400
-Message-ID: <4DDA8FBC.1090904@caviumnetworks.com>
-Date: Mon, 23 May 2011 09:47:56 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1756661Ab1EWQuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:50:22 -0400
+Received: from 173-160-34-133-colorado.hfc.comcastbusiness.net ([173.160.34.133]:6945
+	"EHLO ether.astekcorp.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1756393Ab1EWQuV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:50:21 -0400
+From: Dave Carroll <dcarroll@astekcorp.com>
+To: Dave Carroll <dcarroll@astekcorp.com>, "'Milton Miller'" <miltonm@bga.com>
+CC: LPPC <linuxppc-dev@lists.ozlabs.org>, Paul Mackerras <paulus@samba.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Benjamin Herrenschmidt (E-mail)" <benh@kernel.crashing.org>
+Date: Mon, 23 May 2011 10:50:07 -0600
+Subject: RE: [ v4] powerpc: Force page alignment for initrd reserved memory
+Thread-Topic: [ v4] powerpc: Force page alignment for initrd reserved memory
+Thread-Index: AcwYxbbt15MAeWseSJm2zlfSwRRrGAAKbciAAB3/ipA=
+Message-ID: <522F24EF533FC546962ECFA2054FF777373072AB78@MAILSERVER2.cos.astekcorp.com>
+In-Reply-To: <522F24EF533FC546962ECFA2054FF777373072AB75@MAILSERVER2.cos.astekcorp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: David Gibson <david@gibson.dropbear.id.au>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v4 1/6] of: Allow scripts/dtc/libfdt to be used from
- kernel code
-References: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com> <1305930343-31259-2-git-send-email-ddaney@caviumnetworks.com> <20110521063345.GB14828@yookeroo.fritz.box>
-In-Reply-To: <20110521063345.GB14828@yookeroo.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 May 2011 16:47:56.0860 (UTC) FILETIME=[2AE1BFC0:01CC1969]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2011 11:33 PM, David Gibson wrote:
-> On Fri, May 20, 2011 at 03:25:38PM -0700, David Daney wrote:
->> To use it you need to do this in your Kconfig:
->>
->> 	select LIBFDT
->>
->> And in the Makefile of the code using libfdt something like:
->>
->> ccflags-y := -include linux/libfdt_env.h -I$(src)/../../../scripts/dtc/libfdt
->>
->> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
->> ---
->>   drivers/of/Kconfig          |    3 +++
->>   drivers/of/Makefile         |    2 ++
->>   drivers/of/libfdt/Makefile  |    3 +++
->>   drivers/of/libfdt/fdt.c     |    2 ++
->>   drivers/of/libfdt/fdt_ro.c  |    2 ++
->>   drivers/of/libfdt/fdt_wip.c |    2 ++
->
-> No fdt_sw.c or fdt_rw.c?
->
 
-I had no immediate need for them.  They could of course be added, but 
-that would potentially waste space.
+I'm withdrawing this patch for the moment, due to two areas that need further research;
 
-Let's see if I can make it into an archive library.
+1) An adjacent FDT blob, as mentioned by Milton Miller, and
 
-David Daney
+2) Potential interaction with the crash kernel, as used in
+        init/initramfs.c
 
->>   include/linux/libfdt.h      |    8 ++++++++
->>   include/linux/libfdt_env.h  |   13 +++++++++++++
->>   8 files changed, 35 insertions(+), 0 deletions(-)
->>   create mode 100644 drivers/of/libfdt/Makefile
->>   create mode 100644 drivers/of/libfdt/fdt.c
->>   create mode 100644 drivers/of/libfdt/fdt_ro.c
->
+If anyone sees other interactions, please feel free to let me know ...
 
+Thanks,
+-Dave Carroll
