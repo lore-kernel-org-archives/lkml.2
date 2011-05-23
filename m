@@ -1,98 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932335Ab1EWReb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 13:34:31 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:43940 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab1EWRea convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 13:34:30 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-209.messagelabs.com!1306172069!5895059!1
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.69]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Mika Westerberg <mika.westerberg@iki.fi>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "ryan@bluewatersys.com" <ryan@bluewatersys.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 23 May 2011 12:34:28 -0500
-Subject: RE: [PATCH 0/5] ep93xx DMA patches
-Thread-Topic: [PATCH 0/5] ep93xx DMA patches
-Thread-Index: AcwYoqdmCG7IFeEORLGWrbOwuP7DWAAzILIg
-Message-ID: <0D753D10438DA54287A00B027084269764D315F675@AUSP01VMBX24.collaborationhost.net>
-References: <cover.1306082097.git.mika.westerberg@iki.fi>
-In-Reply-To: <cover.1306082097.git.mika.westerberg@iki.fi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S932355Ab1EWRfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:35:43 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38969 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932080Ab1EWRfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 13:35:43 -0400
+Date: Mon, 23 May 2011 18:35:35 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Andrew Lutomirski <luto@mit.edu>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, hannes@cmpxchg.org, riel@redhat.com
+Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
+ vmlinux)
+Message-ID: <20110523173535.GZ5279@suse.de>
+References: <20110520153346.GA1843@barrios-desktop>
+ <BANLkTi=X+=Wh1MLs7Fc-v-OMtxAHbcPmxA@mail.gmail.com>
+ <20110520161934.GA2386@barrios-desktop>
+ <BANLkTi=4C5YAxwAFWC6dsAPMR3xv6LP1hw@mail.gmail.com>
+ <BANLkTimThVw7-PN6ypBBarqXJa1xxYA_Ow@mail.gmail.com>
+ <BANLkTint+Qs+cO+wKUJGytnVY3X1bp+8rQ@mail.gmail.com>
+ <BANLkTinx+oPJFQye7T+RMMGzg9E7m28A=Q@mail.gmail.com>
+ <BANLkTik29nkn-DN9ui6XV4sy5Wo2jmeS9w@mail.gmail.com>
+ <BANLkTikQd34QZnQVSn_9f_Mxc8wtJMHY0w@mail.gmail.com>
+ <20110523164225.GA14734@random.random>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110523164225.GA14734@random.random>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, May 22, 2011 10:03 AM, Mika Westerberg wrote:
->
-> Hello all,
->
-> Motivation of this series was to add DMA support for the ep93xx SPI driver.
-> However, current platform DMA code didn't support the M2M channels which were
-> required for SPI (and IDE) peripherals.
->
-> Ryan Mallon suggested that maybe we should integrate both M2M and M2P code
-> under the dmaengine API. The purpose of this series is to do just that and
-> convert all the existing users to use that new API.
->
-> Patches 1-4 add dmaengine driver and convert the existing users to dmaengine
-> API. The last patch adds DMA support for the SPI driver.
->
-> I've been testing these on TS-7260 (ep9302) connected to SPI EEPROM, and
-> Sim.One (ep9307) with mmc_spi and AC'97 audio.
->
-> memcpy() testing has been done by running drivers/dma/dmatest.ko.
->
-> Regards,
-> MW
->
-> Mika Westerberg (5):
->   dmaengine: add ep93xx DMA support
->   ep93xx: add dmaengine platform code
->   ASoC: ep93xx: convert to use the DMA engine API
->   ep93xx: remove the old M2P DMA code
->   spi/ep93xx: add DMA support
->
->  Documentation/spi/ep93xx_spi                   |   10 +
->  arch/arm/mach-ep93xx/Makefile                  |    2 +-
->  arch/arm/mach-ep93xx/core.c                    |    6 +-
->  arch/arm/mach-ep93xx/dma-m2p.c                 |  411 -------
->  arch/arm/mach-ep93xx/dma.c                     |  108 ++
->  arch/arm/mach-ep93xx/include/mach/dma.h        |  190 ++---
->  arch/arm/mach-ep93xx/include/mach/ep93xx_spi.h |    2 +
->  drivers/dma/Kconfig                            |    7 +
->  drivers/dma/Makefile                           |    1 +
->  drivers/dma/ep93xx_dma.c                       | 1356 ++++++++++++++++++++++++
->  drivers/spi/ep93xx_spi.c                       |  303 +++++-
->  sound/soc/ep93xx/ep93xx-ac97.c                 |    4 +-
->  sound/soc/ep93xx/ep93xx-i2s.c                  |    4 +-
->  sound/soc/ep93xx/ep93xx-pcm.c                  |  137 ++--
->  14 files changed, 1929 insertions(+), 612 deletions(-)
->  delete mode 100644 arch/arm/mach-ep93xx/dma-m2p.c
->  create mode 100644 arch/arm/mach-ep93xx/dma.c
->  create mode 100644 drivers/dma/ep93xx_dma.c
+On Mon, May 23, 2011 at 06:42:25PM +0200, Andrea Arcangeli wrote:
+> On Mon, May 23, 2011 at 08:12:50AM +0900, Minchan Kim wrote:
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 292582c..1663d24 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -231,8 +231,11 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+> >        if (scanned == 0)
+> >                scanned = SWAP_CLUSTER_MAX;
+> > 
+> > -       if (!down_read_trylock(&shrinker_rwsem))
+> > -               return 1;       /* Assume we'll be able to shrink next time */
+> > +       if (!down_read_trylock(&shrinker_rwsem)) {
+> > +               /* Assume we'll be able to shrink next time */
+> > +               ret = 1;
+> > +               goto out;
+> > +       }
+> 
+> It looks cleaner to return -1 here to differentiate the failure in
+> taking the lock from when we take the lock and just 1 object is
+> freed. Callers seems to be ok with -1 already and more intuitive for
+> the while (nr > 10) loops too (those loops could be changed to "while
+> (nr > 0)" if all shrinkers are accurate and not doing something
+> inaccurate like the above code did, the shrinkers retvals I didn't
+> check yet).
+> 
 
-Mika,
+Only one caller reads the value of shrink_slab() and while it would
+survive -1 being returned, it gains nothing. I don't see it as being
+much clearer than the existing return value of 1.
 
-Thanks for posting this.  I'll try to do some testing and feedback later this
-week.
+> >        up_read(&shrinker_rwsem);
+> > +out:
+> > +       cond_resched();
+> >        return ret;
+> >  }
+> 
+> If we enter the loop some of the shrinkers will reschedule but it
+> looks good for the last iteration that may have still run for some
+> time before returning.
 
-One positive, it looks like this will result in a small reduction in the LOC
-for arch/arm/mach-ep93xx.  That might help in getting this merged.  ;-)
+Yes.
 
-Regards,
-Hartley
+> The actual failure of shrinker_rwsem seems only
+> theoretical though (but ok to cover it too with the cond_resched, but
+> in practice this should be more for the case where shrinker_rwsem
+> doesn't fail).
+> 
+
+Profiles from some users imply that this condition is being hit. I
+can't 100% prove it as I can't reproduce the problem locally
+(seems to require a sandybridge laptop for some reason). Tests did
+show that kswapd CPU usage was reduced as well as the liklihood
+of hanging when shrink_slab used cond_resched() like this. See
+https://lkml.org/lkml/2011/5/17/274 .
+
+> > @@ -2331,7 +2336,7 @@ static bool sleeping_prematurely(pg_data_t
+> > *pgdat, int order, long remaining,
+> >         * must be balanced
+> >         */
+> >        if (order)
+> > -               return pgdat_balanced(pgdat, balanced, classzone_idx);
+> > +               return !pgdat_balanced(pgdat, balanced, classzone_idx);
+> >        else
+> >                return !all_zones_ok;
+> >  }
+> 
+> I now wonder if this is why compaction in kswapd didn't work out well
+> and kswapd would spin at 100% load so much when compaction was added,
+
+It's possible.
+
+> plus with kswapd-compaction patch I think this code should be changed
+> to:
+> 
+>  if (!COMPACTION_BUILD && order)
+>   return !pgdat_balanced();
+>  else
+>   return !all_zones_ok;
+> 
+> (but only with kswapd-compaction)
+> 
+
+Why? kswapd can enter lumpy reclaim when !COMPACTION_BUILD. While this
+is hardly desirable, I don't see why kswapd should use different logic
+for balancing depending on whether compaction is used or not.
+
+> I should probably give kswapd-compaction another spin after fixing
+> this, because with compaction kswapd should be super successful at
+> satisfying zone_watermark_ok_safe(zone, _order_...) in the
+> sleeping_prematurely high watermark check, leading to pgdat_balanced
+> returning true most of the time (which would make kswapd go crazy spin
+> instead of stopping as it was supposed to). Mel, do you also think
+> it's worth another try with a fixed sleeping_prematurely like above?
+> 
+
+It's worth a try anyway although I think it's more important to figure
+out if all_unreclaimable is being improperly set or not.
+
+> Another thing, I'm not excited of the schedule_timeout(HZ/10) in
+> kswapd_try_to_sleep(), it seems all for the statistics.
+
+It's to catch where kswapd balances a zone but continual allocations put
+the zone under the high watermark quickly. It's to keep kswapd awake to
+reduce the likelihood that processes get hit the min watermark and
+stall.
+
+-- 
+Mel Gorman
+SUSE Labs
