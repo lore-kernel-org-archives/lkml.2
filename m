@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab1EWRvt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 13:51:49 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34949 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755868Ab1EWRvr (ORCPT
+	id S1756447Ab1EWRwJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:52:09 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34418 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756057Ab1EWRwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 13:51:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=bPZrhf1x/SeJ1kMTWBuC34fo4adcesAVpCgRlvbGjzcgWVQgcZShTLbPBxptmCjouh
-         KuhwfJZN0eHSgyobU9xPrFVdOrfR/NERF3joeI65+l7pLb6nGjloLEEhqLR8Lh8MuAzV
-         fM8jdY/cBDriN3WkKHcadsG9haYxbNXv41KvU=
-Message-ID: <4DDA9EAB.40304@gmail.com>
-Date: Mon, 23 May 2011 21:51:39 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	Mon, 23 May 2011 13:52:06 -0400
+Date: Mon, 23 May 2011 13:52:04 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Alex Bligh <alex@alex.org.uk>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: BUG: Failure to send REQ_FLUSH on unmount on ext3, ext4, and FS
+ in general
+Message-ID: <20110523175204.GA21110@infradead.org>
+References: <959E4E25EAEC544D31199E6F@nimrod.local>
+ <20110523155550.GE4716@quack.suse.cz>
+ <EC63F9E077B362A0FDCF3527@Ximines.local>
+ <20110523172906.GH4716@quack.suse.cz>
+ <16968FD306209AF92D4660B9@Ximines.local>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH -next] x86: apic_flat_64.c needs module.h
-References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au> <20110523104300.dd532a99.randy.dunlap@oracle.com>
-In-Reply-To: <20110523104300.dd532a99.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <16968FD306209AF92D4660B9@Ximines.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2011 09:43 PM, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> apic_flat_64.c needs to include module.h to fix these warnings:
-> 
-> arch/x86/kernel/apic/apic_flat_64.c:31: warning: data definition has no type or storage class
-> arch/x86/kernel/apic/apic_flat_64.c:31: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-> arch/x86/kernel/apic/apic_flat_64.c:31: warning: parameter names (without types) in function declaration
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
->  arch/x86/kernel/apic/apic_flat_64.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-next-20110523.orig/arch/x86/kernel/apic/apic_flat_64.c
-> +++ linux-next-20110523/arch/x86/kernel/apic/apic_flat_64.c
-> @@ -16,6 +16,7 @@
->  #include <linux/ctype.h>
->  #include <linux/init.h>
->  #include <linux/hardirq.h>
-> +#include <linux/module.h>
->  #include <asm/smp.h>
->  #include <asm/apic.h>
->  #include <asm/ipi.h>
+On Mon, May 23, 2011 at 06:39:23PM +0100, Alex Bligh wrote:
+> I'm presuming that if just umount() were altered to do a REQ_FLUSH,
+> the potential presence of 2 sync()s would not be too offensive, as
+> unmount isn't exactly time critical, and as Christoph pointed out in
+> the other thread, a REQ_FLUSH when the write cache has recently been
+> emptied isn't going to take long.
 
-Thanks Randy! For some reason I didn't hit this problem while
-were compiling the kernel and testing it (I usually do not use
-modules though).
+Umount actually is the only place where adding it generically makes
+sense.  It's not time-critical, and with kill_block_super we actually
+have a block specific place to put it, instead of having to hack
+it into the generic VFS, which is something we've been trying to avoid.
 
-I've CC'ed Ingo and Suresh.
+> Ah, fsdevel not here. OK. Partly I'd like to understand whether
+> sync() not flushing write caches on barrier-less file systems
+> is a good thing or a bad thing. I know barriers are better, but if
+> writing to (e.g.) FAT32, I'm betting there is little prospect of
+> barrier support.
 
--- 
-    Cyrill
+"Barrier" support it's gone.  It's really just the FUA and FLUSH
+flags these days.  For transactional filesystem these need to be
+used to guarantee transaction integrity, but for all others just
+adding one blkdev_issue_flush call to ->fsync and ->sync_fs is
+enough.  That's discounting filesystem that use multiple block
+devices, which are a bit more complicated.
+
