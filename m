@@ -1,102 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab1EWQpy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:45:54 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20002 "EHLO mga01.intel.com"
+	id S1756663Ab1EWQqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:46:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43687 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755225Ab1EWQpw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:45:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,257,1304319600"; 
-   d="scan'208";a="6167387"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>
-CC: huang ying <huang.ying.caritas@gmail.com>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@alien8.de>
-Date: Mon, 23 May 2011 09:45:50 -0700
-Subject: RE: [PATCH 5/9] HWPoison: add memory_failure_queue()
-Thread-Topic: [PATCH 5/9] HWPoison: add memory_failure_queue()
-Thread-Index: AcwZONv90LFc5ZBhRSie905s4oTWowALKNFA
-Message-ID: <987664A83D2D224EAE907B061CE93D5301D5BF823C@orsmsx505.amr.corp.intel.com>
-References: <20110517084622.GE22093@elte.hu> <4DD23750.3030606@intel.com>
- <20110517092620.GI22093@elte.hu> <4DD31C78.6000209@intel.com>
- <20110520115614.GH14745@elte.hu>
- <BANLkTi=5Y0fqsmhsoPm8si=nQBc-tCwtrw@mail.gmail.com>
- <20110522100021.GA28177@elte.hu>
- <BANLkTi=VDQMOfWe5tP7nXSv2AEsiUUEteg@mail.gmail.com>
- <20110522132515.GA13078@elte.hu> <4DD9C8B9.5070004@intel.com>
- <20110523110151.GD24674@elte.hu>
-In-Reply-To: <20110523110151.GD24674@elte.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756597Ab1EWQqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:46:44 -0400
+Date: Mon, 23 May 2011 18:46:36 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org
+Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] jump_label: check entries limit in __jump_label_update
+Message-ID: <20110523164636.GF2052@jolsa.brq.redhat.com>
+References: <1304523023-7501-1-git-send-email-jolsa@redhat.com>
+ <20110509193248.GC2524@redhat.com>
+ <20110510104346.GC1899@jolsa.brq.redhat.com>
+ <20110510143045.GA2490@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110510143045.GA2490@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> - NMI handler run for the hardware error, where hardware error
->>   information is collected and put into perf ring buffer as 'event'.
->
-> Correct.
->
-> Note that for MCE errors we want the 'persistent event' framework Boris has 
-> posted: we want these events to be buffered up to a point even if there is no 
-> tool listening in on them:
+hi,
+any feedback?
 
-This is a very opportune time to have this discussion. I've been working
-on getting "in context" recoverable errors working. Sandybridge Server
-platforms will allow for recovery for both instruction and data fetches
-in the current execution context. These are flagged in the machine check
-bank with the "AR" (Action Required) set to 1 (along with several other
-bits making up a recognizable signature).
+thanks,
+jirka
 
-The critical feature here is that we must not return from the machine
-check handler to the context that tripped over the error. In the case
-of the data fault, we'll just re-execute the same access and take
-another machine check. In the case of the instruction fault there is
-no valid context to return to (MCGSTATUS.RIPV is zero).
-
-There are a couple of cases where recovery is possible:
-
-1) The memory error was found while executing user mode code.
-
-The code I have now for recovery makes use of TIF_MCE_NOTIFY to
-make sure that we don't return to the user, but instead end up
-in arch/x86/kernel/signal.c:do_notify_resume() where we arrange
-to have the process handle its own recovery (using mm/memory-failure.c
-to figure out the type of page, and probably resulting in the mapping
-out of the page and sending SIGBUS to the process).
-
-In your proposed solution, we'd generate an event that would be handled
-by some process/daemon ... but how would we ensure that the affected
-process does not run in the mean time? Could we create some analogous
-method to the ptrace stopped state, and hand control of the affected
-process to the daemon that gets the event?
-
-2) The memory error was found in certain special sections of the
-   kernel for which recovery is possible (e.g. while copying to/from
-   user memory, perhaps also page copy and page clear).
-
-Here I don't have a solution. TIF_MCE_NOTIFY isn't checked when returning
-from do_machine_check() to kernel code.
-
-In a CONFIG_PREEMPT=y kernel, all of the recoverable cases ought to be
-in places where pre-emption is allowed ... so perhaps we can also use
-the stop-and-switch option here?
-
--Tony
-
+On Tue, May 10, 2011 at 10:30:45AM -0400, Jason Baron wrote:
+> On Tue, May 10, 2011 at 12:43:46PM +0200, Jiri Olsa wrote:
+> > On Mon, May 09, 2011 at 03:32:48PM -0400, Jason Baron wrote:
+> > > On Wed, May 04, 2011 at 05:30:23PM +0200, Jiri Olsa wrote:
+> > > > When iterating the jump_label entries array (core or modules),
+> > > > the __jump_label_update function peeks over the last entry.
+> > > > 
+> > > > The reason is that the end of the for loop depends on the key
+> > > > value of the processed entry. Thus when going through the
+> > > > last array entry, we will touch the memory behind the array
+> > > > limit.
+> > > > 
+> > > > This bug probably will never be triggered, since most likely the
+> > > > memory behind the jump_label entries will be accesable and the
+> > > > entry->key will be different than the expected value.
+> > > > 
+> > > > 
+> > > > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > > > ---
+> > > >  kernel/jump_label.c |   17 ++++++++++++-----
+> > > >  1 files changed, 12 insertions(+), 5 deletions(-)
+> > > > 
+> > > > diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+> > > > index 74d1c09..b2ee97a 100644
+> > > > --- a/kernel/jump_label.c
+> > > > +++ b/kernel/jump_label.c
+> > > > @@ -105,9 +105,12 @@ static int __jump_label_text_reserved(struct jump_entry *iter_start,
+> > > >  }
+> > > >  
+> > > >  static void __jump_label_update(struct jump_label_key *key,
+> > > > -		struct jump_entry *entry, int enable)
+> > > > +				struct jump_entry *entry,
+> > > > +				struct jump_entry *stop, int enable)
+> > > >  {
+> > > > -	for (; entry->key == (jump_label_t)(unsigned long)key; entry++) {
+> > > > +	for (; (entry < stop) &&
+> > > > +	      (entry->key == (jump_label_t)(unsigned long)key);
+> > > > +	      entry++) {
+> > > >  		/*
+> > > >  		 * entry->code set to 0 invalidates module init text sections
+> > > >  		 * kernel_text_address() verifies we are not in core kernel
+> > > > @@ -158,6 +161,7 @@ early_initcall(jump_label_init);
+> > > >  struct jump_label_mod {
+> > > >  	struct jump_label_mod *next;
+> > > >  	struct jump_entry *entries;
+> > > > +	struct jump_entry *entries_stop;
+> > > >  	struct module *mod;
+> > > >  };
+> > > >  
+> > > > @@ -181,7 +185,8 @@ static void __jump_label_mod_update(struct jump_label_key *key, int enable)
+> > > >  	struct jump_label_mod *mod = key->next;
+> > > >  
+> > > >  	while (mod) {
+> > > > -		__jump_label_update(key, mod->entries, enable);
+> > > > +		__jump_label_update(key, mod->entries, mod->entries_stop,
+> > > > +				    enable);
+> > > >  		mod = mod->next;
+> > > 
+> > > hmmm. Instead of adding a new field to the 'struct jump_label_mod' data
+> > > structure (and thus increasing its footprint), why not use:
+> > > mod->jump_entries +  mod->num_jump_entries here?
+> > 
+> > yep, overlooked the struct module pointer inside jump_label_mod
+> > attaching new patch
+> > 
+> > thanks,
+> > jirka
+> >  
+> > ---
+> > When iterating the jump_label entries array (core or modules),
+> > the __jump_label_update function peeks over the last entry.
+> > 
+> > The reason is that the end of the for loop depends on the key
+> > value of the processed entry. Thus when going through the
+> > last array entry, we will touch the memory behind the array
+> > limit.
+> > 
+> > This bug probably will never be triggered, since most likely the
+> > memory behind the jump_label entries will be accesable and the
+> > entry->key will be different than the expected value.
+> > 
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > ---
+> >  kernel/jump_label.c |   18 +++++++++++++-----
+> >  1 files changed, 13 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+> > index 74d1c09..fa27e75 100644
+> > --- a/kernel/jump_label.c
+> > +++ b/kernel/jump_label.c
+> > @@ -105,9 +105,12 @@ static int __jump_label_text_reserved(struct jump_entry *iter_start,
+> >  }
+> >  
+> >  static void __jump_label_update(struct jump_label_key *key,
+> > -		struct jump_entry *entry, int enable)
+> > +				struct jump_entry *entry,
+> > +				struct jump_entry *stop, int enable)
+> >  {
+> > -	for (; entry->key == (jump_label_t)(unsigned long)key; entry++) {
+> > +	for (; (entry < stop) &&
+> > +	      (entry->key == (jump_label_t)(unsigned long)key);
+> > +	      entry++) {
+> >  		/*
+> >  		 * entry->code set to 0 invalidates module init text sections
+> >  		 * kernel_text_address() verifies we are not in core kernel
+> > @@ -181,7 +184,11 @@ static void __jump_label_mod_update(struct jump_label_key *key, int enable)
+> >  	struct jump_label_mod *mod = key->next;
+> >  
+> >  	while (mod) {
+> > -		__jump_label_update(key, mod->entries, enable);
+> > +		struct module *m = mod->mod;
+> > +
+> > +		__jump_label_update(key, mod->entries,
+> > +				    m->jump_entries + m->num_jump_entries,
+> > +				    enable);
+> >  		mod = mod->next;
+> >  	}
+> >  }
+> > @@ -245,7 +252,8 @@ static int jump_label_add_module(struct module *mod)
+> >  		key->next = jlm;
+> >  
+> >  		if (jump_label_enabled(key))
+> > -			__jump_label_update(key, iter, JUMP_LABEL_ENABLE);
+> > +			__jump_label_update(key, iter, iter_stop,
+> > +					    JUMP_LABEL_ENABLE);
+> >  	}
+> >  
+> >  	return 0;
+> > @@ -371,7 +379,7 @@ static void jump_label_update(struct jump_label_key *key, int enable)
+> >  
+> >  	/* if there are no users, entry can be NULL */
+> >  	if (entry)
+> > -		__jump_label_update(key, entry, enable);
+> > +		__jump_label_update(key, entry, __stop___jump_table, enable);
+> >  
+> >  #ifdef CONFIG_MODULES
+> >  	__jump_label_mod_update(key, enable);
+> > -- 
+> > 1.7.1
+> > 
+> 
+> Looks good.
+> 
+> Acked-by: Jason Baron <jbaron@redhat.com>
+> 
+> Thanks,
+> 
+> -Jason
