@@ -1,147 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab1EWQV0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:21:26 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:10223 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314Ab1EWQVY (ORCPT
+	id S932089Ab1EWQWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:22:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39129 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140Ab1EWQV7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:21:24 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-From: Milton Miller <milltonm@bga.com>
-Subject: Re: linux-next: build warning after merge of the suspend tree
-To: mgross <markgross@thegnar.org>
-Message-Id: <pm-qos-needs-fixing@mdm.bga.com>
-In-Reply-To: <20110523141846.GA8122@gvim.org>
-References: <20110523150636.ccd83777.sfr@canb.auug.org.au>
-	<20110523141846.GA8122@gvim.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mark gross <markgross@thegnar.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 23 May 2011 11:21:17 -0500
-X-Originating-IP: 71.22.127.106
+	Mon, 23 May 2011 12:21:59 -0400
+Subject: Re: [PATCH 3/3] perf_events: add Intel Sandy Bridge
+ offcore_response low-level support (v3)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, andi@firstfloor.org,
+        ming.m.lin@intel.com
+In-Reply-To: <20110523161256.GA11624@quad>
+References: <20110523161256.GA11624@quad>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 23 May 2011 18:21:27 +0200
+Message-ID: <1306167687.18455.22.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 May 2011 about 14:18:46 -0000, mgross wrote:
-> On Mon, May 23, 2011 at 03:06:36PM +1000, Stephen Rothwell wrote:
-> > Hi Rafael,
-> > 
-> > After merging the suspend tree, today's linux-next build (i386 defconfig
-> > among others) produced this warning:
-> > 
-> > kernel/pm_qos_params.c: In function 'pm_qos_power_write':
-> > kernel/pm_qos_params.c:420: warning: passing argument 3 of 'kstrtol' from incompatible pointer type
-> > include/linux/kernel.h:210: note: expected 'long int *' but argument is of type 's32 *'
-> > 
-> > Intreoduced by commit 365daa955e03 ("PM: Correct PM QOS's user mode
-> > interface to work with ascii input per").
-> 
-> Gah!  I'm sorry about that.
-> 
-> attached is a fix.
-> 
-> 
-> --mark
-> 
-> signed-off-by:markgross <markgross@thegnar.org>
-> 
+On Mon, 2011-05-23 at 18:12 +0200, Stephane Eranian wrote:
+> This patch adds Intel Sandy Bridge offcore_response support by
+> providing the low-level constraint table for those events.
+>     
+> On Sandy Bridge, there are two offcore_response events. Each uses
+> its own dedictated extra register. But those registers are NOT shared
+> between sibling CPUs when HT is on unlike Nehalem/Westmere. They are
+> always private to each CPU. But they still need to be controlled within
+> an event group. All events within an event group must use the same
+> value for the extra MSR. That's not controlled by the second patch in
+> this series.
+>     
+> Furthermore on Sandy Bridge, the offcore_response events have NO
+> counter constraints contrary to what the official documentation
+> indicates, so drop the events from the contraint table.
 
-(1) This should be in the patch, not the enclosing letter
-(2) Incorrect capitalization
-(3) Incorrect spacing
-
-Please read Documentation/SubmittingPatches again.
-
-> 
-> 
-> >From a8f0587b9ae598be5ca4c3cdda4e0ced6ca9baaf Mon Sep 17 00:00:00 2001
-> From: mgross <mgross@cr48>
-> Date: Mon, 23 May 2011 07:14:09 -0700
-> Subject: [PATCH] clean up a compile time warning in the use of strict_strtol but that was
->  passing an s32 * when it should be passing a long *
-> 
-
->From should match Signed-off-by:
-
-Please seperate title (subject) and description body
-
-Maybe: pm_qos: strict_strtol takes a long, not s32
-
-strict_strtol takes a pointer to long to store the converted value.
-introduced in xxxx ("change set title here")
-
-So that the reviewers can quickly see if it needs to be backported
-to stable etc.
-
-except read below
+You sending this suggests you actually have a SNB machine, do you also
+happen to know how to use those SNB RSP MSRs? Lin Ming and I were
+wondering how to fill out the extra-regs for
+snb_hw_cache_events_jds[C(LL)].
 
 
-> ---
-> kernel/pm_qos_params.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> index d61ecf3..dd37c56 100644
-> --- a/kernel/pm_qos_params.c
-> +++ b/kernel/pm_qos_params.c
-> @@ -405,6 +405,7 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
->  		size_t count, loff_t *f_pos)
->  {
->  	s32 value;
-> +	long safe_int;
->  	int x;
->  	char ascii_value[11];
->  	struct pm_qos_request_list *pm_qos_req;
-> @@ -417,10 +418,11 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
->  		ascii_value[count] = 0;
->  		if (copy_from_user(ascii_value, buf, count))
->  			return -EFAULT;
-> -		if ((x=strict_strtol(ascii_value, 16, &value)) != 0){
-> -			pr_debug("%s, 0x%x, 0x%x\n",ascii_value, value, x);
-> +		if ((x=strict_strtol(ascii_value, 16, &safe_int)) != 0){
-
-Why are you doing an assignment in the if?  Why not assign first and
-compare later?
-
-> +			pr_debug("%s, 0x%lx, 0x%x\n",ascii_value, safe_int, x);
->  			return -EINVAL;
-
-Nit: Some reason not to return -ERANGE if thats what strtol returned?  
-Folding to -EINVAL is ok but hides information.
-
->  		}
-> +		value = (s32) safe_int;
-
-You call strict checking, which includes overflow checking, but
-only that the value fits in a long.  You then defeat that checking
-by casting to int.
-
-It looks like you want strict_strtoint except thats not defined.
-Hoever, the pattern for strict_strto* is kstrto* and kstrtos32 is
-defined ...
-
->  	} else
->  		return -EINVAL;
->  
-
-Oh, and you now may copy 11 characters from userspace into an 11
-character buffer then terminate it by writing the 12th character
-(ascii_value[count == 11]).  Except its an 11 character array.
-
-What is the magic to set the value to a negative number?  Is
-yet another character for the - required?
-
-
-I see the string from userspace wasn't properly terminated before
-either.  In ed77134bfccf5e75b (PM QOS update), merged in v2.6.35-rc1,
-11 bytes were copied from user then passed to ssscanf without null
-termination forced.  It was updated in 0109c2c48d (PM QoS: Correct
-pr_debug() misuse and improve parameter checks), which was merged in
-2.6.36-rc4, to change the the function that walks off the string from
-sscanf to strlen.  That changelog isn't marked for stable (I didn't
-look if it was sent) but it still isn't force terminated.
-
-happy patching,
-milton
