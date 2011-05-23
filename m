@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab1EWQbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:31:38 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56936 "EHLO kernel.dk"
+	id S1756356Ab1EWQgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:36:42 -0400
+Received: from mail.perches.com ([173.55.12.10]:1876 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab1EWQbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:31:37 -0400
-Message-ID: <4DDA8BE7.3090407@kernel.dk>
-Date: Mon, 23 May 2011 18:31:35 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: move bd_set_size() above rescan_partitions() in
- __blkdev_get()
-References: <BANLkTin3T8msxSSbTLJOvC5WLNFGspPEcg@mail.gmail.com> <20110519093026.GA627@htj.dyndns.org> <BANLkTinP7txzE2U+8qnJR2JVcGpGybnLrA@mail.gmail.com> <20110523112454.GA17547@htj.dyndns.org> <BANLkTinppQGEyiERCjFG0LYgTZGXbtApBw@mail.gmail.com>
-In-Reply-To: <BANLkTinppQGEyiERCjFG0LYgTZGXbtApBw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755905Ab1EWQgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:36:40 -0400
+Subject: Re: [patch v3] checkpatch: Signature format verification
+From: Joe Perches <joe@perches.com>
+To: anish singh <anish198519851985@gmail.com>
+Cc: davej@redhat.com, rostedt@goodmis.org, apw@shadowen.org,
+        akpm@linux-foundation.org, vapier@gentoo.org,
+        linux-kernel@vger.kernel.org, man.k1983@gmail.com
+In-Reply-To: <BANLkTi=9nzMbxU0=P+pOaHcebqhL=bd2HQ@mail.gmail.com>
+References: <1306006721.1622.18.camel@anish-desktop>
+	 <1306059528.2761.3.camel@anish-desktop>
+	 <1306164094.2292.25.camel@anish-desktop>
+	 <1306167105.8687.11.camel@Joe-Laptop>
+	 <BANLkTi=9nzMbxU0=P+pOaHcebqhL=bd2HQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 May 2011 09:36:38 -0700
+Message-ID: <1306168598.8687.27.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-23 17:51, Linus Torvalds wrote:
-> On Mon, May 23, 2011 at 4:24 AM, Tejun Heo <tj@kernel.org> wrote:
->>
->> 02e352287a4 (block: rescan partitions on invalidated devices on
->> -ENOMEDIA too) relocated partition rescan above explicit bd_set_size()
->> to simplify condition check.  As rescan_partitions() does its own bdev
->> size setting, this doesn't break anything; however,
->> rescan_partitions() prints out the following messages when adjusting
->> bdev size, which can be confusing.
-> 
-> Applied,
+On Mon, 2011-05-23 at 22:03 +0530, anish singh wrote:
+> \s[a-zA-Z]* => this is a regular expression for name & space b/w
+> Last/First name
+>                     Ex: anish kumar
+> .* => It is used to grep whatever follows name...in our context
+> mail-id
+>         Ex: abc@bbc.com.
+> So, $1 will contain ...'anish kumar <anish@gmail.com>'
 
-OK, added it when Tejun sent it as well, JFYI.
+Unless the email contains a quote or a period like:
 
--- 
-Jens Axboe
+Signed-off-by: "J. Random Contributor" <jrc@domain.tld>
+
+
 
