@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab1EWIJz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 04:09:55 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50937 "EHLO bear.ext.ti.com"
+	id S1753810Ab1EWIKT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 04:10:19 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46089 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771Ab1EWIJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 04:09:53 -0400
-Message-ID: <4DDA1647.9060502@ti.com>
-Date: Mon, 23 May 2011 09:09:43 +0100
-From: Liam Girdwood <lrg@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1753678Ab1EWIKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 04:10:17 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Dave Chinner <david@fromorbit.com>
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+Date: Mon, 23 May 2011 10:12:06 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: "D. Jansen" <d.g.jansen@googlemail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tytso@mit.edu
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <BANLkTikVLFMX_U6brQ5OALbvJkOGuz6++Q@mail.gmail.com> <20110522004833.GY32466@dastard>
+In-Reply-To: <20110522004833.GY32466@dastard>
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        "grant@secretlab.ca" <grant@secretlab.ca>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCHv5 2/4] TPS65910: GPIO: Add GPIO driver
-References: <2CAE1D41-48DC-457F-8FF3-E45B17AC3E0F@slimlogic.co.uk> <4DBAD7E8.8090703@ti.com> <20110429220651.GG7497@ponder.secretlab.ca> <20110513184153.GZ8970@sortiz-mobl> <20110515212044.GB30725@angua.secretlab.ca> <20110522204404.GJ18610@sortiz-mobl>
-In-Reply-To: <20110522204404.GJ18610@sortiz-mobl>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105231012.06928.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/05/11 21:44, Samuel Ortiz wrote:
-> Hi Grant,
+Am Sonntag, 22. Mai 2011, 02:48:33 schrieb Dave Chinner:
+> On Fri, May 20, 2011 at 08:01:17AM +0200, D. Jansen wrote:
+> > On Fri, May 20, 2011 at 5:39 AM, Dave Chinner <david@fromorbit.com> wrote:
+
+> > 1. I thought I (may) make that decision by using laptop mode.
 > 
-> On Sun, May 15, 2011 at 03:20:44PM -0600, Grant Likely wrote:
->>> Would you be ok with moving this one to drivers/gpio/ ? And in general, moving
->>> most of the GPIO drivers under drivers/mfd/ back to drivers/gpio/ ?
->>> David didn't want to take the basic MFD related GPIO drivers, that's why we
->>> have several of them under mfd.
->>
->> Yes, move them to GPIO.  That is where they belong.
-> Thanks, I'll prepare that for the next merge window.
+> Laptop mode does not change fsync guarantees, so no, you ar enot
+> making a decision to throw data away when you select laptop mode.
+
+You do however decide to sync less often, resulting in a potentially
+larger loss of data.
+
+> > 3. A lib doesn't fix the ordering guarantee problem.
 > 
+> A properly implemented filesystem will not have ordering problems
+> just because fsyncs are not issued.
 
-Ah, I thought you acked the whole series here and applied it yesterday. I can remove this one if required.
+But user space will have this problem. A single task's sequence of
+write(); fsync(); write(); does give an implicit guarantee of ordering
+to user space. To keep that guarantee, you need kernel support,
+because only the kernel can issue the necessary barrier/flush commands.
+A filesystem is not required to make sure your writes hit the disk
+in the order you issued them, unless you use fsync, which gives
+an even larger guarantee, but also implies ordering.
 
-Thanks
+Now you may say that you want full fsync or nothing, but this is a personal
+preference.
 
-Liam 
+	Regards
+		Oliver
