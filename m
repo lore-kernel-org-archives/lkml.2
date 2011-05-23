@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab1EWPYo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 11:24:44 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:35312 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755498Ab1EWPYm (ORCPT
+	id S1755451Ab1EWP1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 11:27:21 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:38117 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754929Ab1EWP1U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 11:24:42 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=oVaZ/u4YZtC2tqyHnbUUGRgoChyOcLhJXB/fjmApRAnTPtEdh/d8w6eYX7CRGPXa39tBtKbzyKKzHY7RATvN6Xwy9IRmU0BvWqdwRCHOoXpZDb6IOhLHFcCmJqBA84Hh;
-Date: Mon, 23 May 2011 08:24:40 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: markgross@thegnar.org
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the suspend tree
-Message-Id: <20110523082440.d417688c.rdunlap@xenotime.net>
-In-Reply-To: <20110523141846.GA8122@gvim.org>
-References: <20110523150636.ccd83777.sfr@canb.auug.org.au>
-	<20110523141846.GA8122@gvim.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 23 May 2011 11:27:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UnwOoX3zUsZNIy419oNYKoXcWZPjaNTnpc3lt3S5YsmgWKdK58SFRmIguORNuEJH9z
+         wQ7JyFvBl27Rt/XbV5PQ==
+MIME-Version: 1.0
+In-Reply-To: <1306163700.18455.16.camel@twins>
+References: <20110520143707.GA5347@quad>
+	<1306141897.18455.8.camel@twins>
+	<1306143168.18455.10.camel@twins>
+	<BANLkTimVM2XvpJ1d9SbmAh7xZ+qSjukX+A@mail.gmail.com>
+	<BANLkTinN92UpxU85r17zB+Khba8k59nJTA@mail.gmail.com>
+	<1306149026.18455.11.camel@twins>
+	<BANLkTik5v7WGygmZqjbh6_iwJ35S9upReg@mail.gmail.com>
+	<1306163700.18455.16.camel@twins>
+Date: Mon, 23 May 2011 17:27:17 +0200
+Message-ID: <BANLkTimNhkdu_QcJqPjV5QLW8+G8E54jww@mail.gmail.com>
+Subject: Re: [PATCH 0/3] perf_events: update extra shared registers management (v2)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, Lin Ming <ming.m.lin@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 May 2011 07:18:46 -0700 mark gross wrote:
+On Mon, May 23, 2011 at 5:15 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2011-05-23 at 14:00 +0200, Stephane Eranian wrote:
+>> On Mon, May 23, 2011 at 1:10 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Mon, 2011-05-23 at 12:58 +0200, Stephane Eranian wrote:
+>> >> There is a major issue as it stands, though. You can
+>> >> get into an infinite loop bouncing between RSP_0 and RSP_1
+>> >> in case there is no solution in the group, i.e., you have 3 values
+>> >> for the extra MSR. I think you need to count the number of times
+>> >> you've called intel_try_alt_er() with success or maintain some sort
+>> >> of bitmask of possible alternate choices and when you exhaust that,
+>> >> you simply fail.
+>> >
+>> > That should be sorted by the compare with the initial idx value, no?
+>> > Once its back where it started out it'll bail.
+>> >
+>> Nope.
+>>
+>> Take:
+>>   - ev1=rsp_0:0x1001
+>>   - ev2=rsp_0:0x1002
+>>   - ev3=rsp_1:0x1008
+>>
+>> ev1-> rsp_0
+>> ev2-> rsp_0, conflict, then try yields rsp_1 -> ok
+>> ev3 -> rsp_1, conflict, then rsp_0, but fails, try again -> rsp_1,
+>> fails, and so on
+>>
+>> The issue is that the intel_try() function does not know the
+>> history of the swaps between rsp_0, rsp1.
+>
+> But it does, we pass the initial reg->idx in, and return false when that
+> matches the new idx, so in your example, ev3 will do:
+>
+>     rsp_1 -> conflict,
+>  try rsp_0 -> conflict,
+>  try rsp_1 -> bail, return emptyconstraint
+>
+>
+Ok, my fault. That's because I tweaked your patch a bit and
+I did not keep track of idx. I guess the logic is not obvious.
+I think you should rename idx to orig_idx.
 
-> On Mon, May 23, 2011 at 03:06:36PM +1000, Stephen Rothwell wrote:
-> > Hi Rafael,
-> > 
-> > After merging the suspend tree, today's linux-next build (i386 defconfig
-> > among others) produced this warning:
-> > 
-> > kernel/pm_qos_params.c: In function 'pm_qos_power_write':
-> > kernel/pm_qos_params.c:420: warning: passing argument 3 of 'kstrtol' from incompatible pointer type
-> > include/linux/kernel.h:210: note: expected 'long int *' but argument is of type 's32 *'
-> > 
-> > Intreoduced by commit 365daa955e03 ("PM: Correct PM QOS's user mode
-> > interface to work with ascii input per").
-> 
-> Gah!  I'm sorry about that.
-> 
-> attached is a fix.
-> 
-> 
-> --mark
-> 
-> signed-off-by:markgross <markgross@thegnar.org>
 
-Not in correct format.
-
-> 
-> From a8f0587b9ae598be5ca4c3cdda4e0ced6ca9baaf Mon Sep 17 00:00:00 2001
-> From: mgross <mgross@cr48>
-
-what is cr48?  conference room 48?
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
