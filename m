@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab1EWJyH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 05:54:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54786 "EHLO mx2.suse.de"
+	id S1753003Ab1EWJyN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 05:54:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54798 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803Ab1EWJyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751204Ab1EWJyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 May 2011 05:54:02 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -20,9 +20,9 @@ Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         linux-ext4 <linux-ext4@vger.kernel.org>, stable <stable@kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 1/2] mm: vmscan: Correct use of pgdat_balanced in sleeping_prematurely
-Date: Mon, 23 May 2011 10:53:54 +0100
-Message-Id: <1306144435-2516-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 2/2] mm: vmscan: Correctly check if reclaimer should schedule during shrink_slab
+Date: Mon, 23 May 2011 10:53:55 +0100
+Message-Id: <1306144435-2516-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1306144435-2516-1-git-send-email-mgorman@suse.de>
 References: <1306144435-2516-1-git-send-email-mgorman@suse.de>
@@ -30,33 +30,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+It has been reported on some laptops that kswapd is consuming large
+amounts of CPU and not being scheduled when SLUB is enabled during
+large amounts of file copying. It is expected that this is due to
+kswapd missing every cond_resched() point because;
 
-Johannes Weiner poined out that the logic in commit [1741c877: mm:
-kswapd: keep kswapd awake for high-order allocations until a percentage
-of the node is balanced] is backwards. Instead of allowing kswapd to go
-to sleep when balancing for high order allocations, it keeps it kswapd
-running uselessly.
+shrink_page_list() calls cond_resched() if inactive pages were isolated
+        which in turn may not happen if all_unreclaimable is set in
+        shrink_zones(). If for whatver reason, all_unreclaimable is
+        set on all zones, we can miss calling cond_resched().
 
+balance_pgdat() only calls cond_resched if the zones are not
+        balanced. For a high-order allocation that is balanced, it
+        checks order-0 again. During that window, order-0 might have
+        become unbalanced so it loops again for order-0 and returns
+        that it was reclaiming for order-0 to kswapd(). It can then
+        find that a caller has rewoken kswapd for a high-order and
+        re-enters balance_pgdat() without ever calling cond_resched().
+
+shrink_slab only calls cond_resched() if we are reclaiming slab
+	pages. If there are a large number of direct reclaimers, the
+	shrinker_rwsem can be contended and prevent kswapd calling
+	cond_resched().
+
+This patch modifies the shrink_slab() case. If the semaphore is
+contended, the caller will still check cond_resched(). After each
+successful call into a shrinker, the check for cond_resched() remains
+in case one shrinker is particularly slow.
+
+This patch replaces
+mm-vmscan-if-kswapd-has-been-running-too-long-allow-it-to-sleep.patch
+in -mm.
+
+[mgorman@suse.de: Preserve call to cond_resched after each call into shrinker]
+From: Minchan Kim <minchan.kim@gmail.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- mm/vmscan.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/vmscan.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 8bfd450..1aa262b 100644
+index 1aa262b..cc1470b 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2286,7 +2286,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
- 	 * must be balanced
- 	 */
- 	if (order)
--		return pgdat_balanced(pgdat, balanced, classzone_idx);
-+		return !pgdat_balanced(pgdat, balanced, classzone_idx);
- 	else
- 		return !all_zones_ok;
+@@ -230,8 +230,11 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+ 	if (scanned == 0)
+ 		scanned = SWAP_CLUSTER_MAX;
+ 
+-	if (!down_read_trylock(&shrinker_rwsem))
+-		return 1;	/* Assume we'll be able to shrink next time */
++	if (!down_read_trylock(&shrinker_rwsem)) {
++		/* Assume we'll be able to shrink next time */
++		ret = 1;
++		goto out;
++	}
+ 
+ 	list_for_each_entry(shrinker, &shrinker_list, list) {
+ 		unsigned long long delta;
+@@ -282,6 +285,8 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+ 		shrinker->nr += total_scan;
+ 	}
+ 	up_read(&shrinker_rwsem);
++out:
++	cond_resched();
+ 	return ret;
  }
+ 
 -- 
 1.7.3.4
 
