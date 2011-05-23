@@ -1,208 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab1EWLNZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 07:13:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41573 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753075Ab1EWLNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 07:13:22 -0400
-Date: Mon, 23 May 2011 11:13:07 GMT
-From: tip-bot for Mandeep Singh Baines <msb@chromium.org>
-Message-ID: <tip-586692a5a5fc5740c8a46abc0f2365495c2d7c5f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, msb@chromium.org, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, marcin.slusarz@gmail.com,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu,
-        dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, msb@chromium.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        marcin.slusarz@gmail.com, fweisbec@gmail.com, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
-In-Reply-To: <20110517071018.GE22305@elte.hu>
-References: <1306127423-3347-3-git-send-email-msb@chromium.org>
-	<20110517071018.GE22305@elte.hu>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] watchdog: Disable watchdog when thresh is zero
-Git-Commit-ID: 586692a5a5fc5740c8a46abc0f2365495c2d7c5f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754202Ab1EWLNM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 07:13:12 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49981 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159Ab1EWLNK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 07:13:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=OC4bFNDzvAdxQTdQi3l/NK+1q12UuTFzh5w9nZWhO+387GpGK5fmumA9G5GHmGUzat
+         YrhOeKw4ywzGOomveiMY0kZyvOqSJKhwRBI6GrNdAz1UQS1Qs0PA0e8kk816Ml75/ZrG
+         Yxxpb/bsZSWIJOGimVZx/LUxc1BUtvGP5L+CA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 23 May 2011 11:13:08 +0000 (UTC)
+In-Reply-To: <20110523105522.GC24674@elte.hu>
+References: <20110520161210.81bbef3a.sfr@canb.auug.org.au>
+	<BANLkTi=Dn_jvJ8mLY0Bc6C1Ptoqa-kJrCg@mail.gmail.com>
+	<20110523090918.GA5474@elte.hu>
+	<BANLkTi=Vbr+DRBy6sa7omGpvAb0uGunYMA@mail.gmail.com>
+	<20110523105522.GC24674@elte.hu>
+Date: Mon, 23 May 2011 14:13:09 +0300
+Message-ID: <BANLkTinh8raz_96vgdgzzeeG+1TM=s5eVw@mail.gmail.com>
+Subject: Re: [bloat] Measuring header file bloat effects on kernel build
+ performance: a more than 2x slowdown ...
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Miller <davem@davemloft.net>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  586692a5a5fc5740c8a46abc0f2365495c2d7c5f
-Gitweb:     http://git.kernel.org/tip/586692a5a5fc5740c8a46abc0f2365495c2d7c5f
-Author:     Mandeep Singh Baines <msb@chromium.org>
-AuthorDate: Sun, 22 May 2011 22:10:22 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 23 May 2011 11:58:59 +0200
+On Mon, May 23, 2011 at 1:55 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>
+>> On Mon, May 23, 2011 at 12:09 PM, Ingo Molnar <mingo@elte.hu> wrote:
 
-watchdog: Disable watchdog when thresh is zero
+>> > Anway, what i tried to demonstrate with this mail how much *real* slowdown
+>> > in the kernel build our current header file bloat is causing. We could
+>> > literally halve our kernel build times if we fixed this!
+>>
+>> News at 11!
+>
+> I have not seen *actual hard numbers* measured before, so how exactly is this
+> news at 11? So i think your condescending reply is neither fair nor justified.
 
-This restores the previous behavior of softlock_thresh.
+That's because the final number itself neither important nor interesting.
+It's enough to know it's big enough.
 
-Currently, setting watchdog_thresh to zero causes the watchdog
-kthreads to consume a lot of CPU.
+Even removing "extern" from prototypes has small but noticeable effect,
+you're talking about real headers.
 
-In addition, the logic of proc_dowatchdog_thresh and
-proc_dowatchdog_enabled has been factored into proc_dowatchdog.
-
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/1306127423-3347-3-git-send-email-msb@chromium.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-LKML-Reference: <20110517071018.GE22305@elte.hu>
----
- include/linux/nmi.h   |    5 +++--
- include/linux/sched.h |    1 -
- kernel/sysctl.c       |   12 ++++++++----
- kernel/watchdog.c     |   25 +++++++++----------------
- 4 files changed, 20 insertions(+), 23 deletions(-)
-
-diff --git a/include/linux/nmi.h b/include/linux/nmi.h
-index c536f85..5317b8b 100644
---- a/include/linux/nmi.h
-+++ b/include/linux/nmi.h
-@@ -47,9 +47,10 @@ static inline bool trigger_all_cpu_backtrace(void)
- int hw_nmi_is_cpu_stuck(struct pt_regs *);
- u64 hw_nmi_get_sample_period(void);
- extern int watchdog_enabled;
-+extern int watchdog_thresh;
- struct ctl_table;
--extern int proc_dowatchdog_enabled(struct ctl_table *, int ,
--			void __user *, size_t *, loff_t *);
-+extern int proc_dowatchdog(struct ctl_table *, int ,
-+			   void __user *, size_t *, loff_t *);
- #endif
- 
- #endif
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 12211e1..d8b2d0b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -315,7 +315,6 @@ extern int proc_dowatchdog_thresh(struct ctl_table *table, int write,
- 				  void __user *buffer,
- 				  size_t *lenp, loff_t *ppos);
- extern unsigned int  softlockup_panic;
--extern int softlockup_thresh;
- void lockup_detector_init(void);
- #else
- static inline void touch_softlockup_watchdog(void)
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c0bb324..3dd0c46 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -730,14 +730,16 @@ static struct ctl_table kern_table[] = {
- 		.data           = &watchdog_enabled,
- 		.maxlen         = sizeof (int),
- 		.mode           = 0644,
--		.proc_handler   = proc_dowatchdog_enabled,
-+		.proc_handler   = proc_dowatchdog,
-+		.extra1		= &zero,
-+		.extra2		= &one,
- 	},
- 	{
- 		.procname	= "watchdog_thresh",
--		.data		= &softlockup_thresh,
-+		.data		= &watchdog_thresh,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dowatchdog_thresh,
-+		.proc_handler	= proc_dowatchdog,
- 		.extra1		= &neg_one,
- 		.extra2		= &sixty,
- 	},
-@@ -755,7 +757,9 @@ static struct ctl_table kern_table[] = {
- 		.data           = &watchdog_enabled,
- 		.maxlen         = sizeof (int),
- 		.mode           = 0644,
--		.proc_handler   = proc_dowatchdog_enabled,
-+		.proc_handler   = proc_dowatchdog,
-+		.extra1		= &zero,
-+		.extra2		= &one,
- 	},
- #endif
- #if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86)
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index cf0e09f..6030191 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -28,7 +28,7 @@
- #include <linux/perf_event.h>
- 
- int watchdog_enabled = 1;
--int __read_mostly softlockup_thresh = 60;
-+int __read_mostly watchdog_thresh = 60;
- 
- static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
- static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
-@@ -105,12 +105,12 @@ static unsigned long get_timestamp(int this_cpu)
- static unsigned long get_sample_period(void)
- {
- 	/*
--	 * convert softlockup_thresh from seconds to ns
-+	 * convert watchdog_thresh from seconds to ns
- 	 * the divide by 5 is to give hrtimer 5 chances to
- 	 * increment before the hardlockup detector generates
- 	 * a warning
- 	 */
--	return softlockup_thresh * (NSEC_PER_SEC / 5);
-+	return watchdog_thresh * (NSEC_PER_SEC / 5);
- }
- 
- /* Commands for resetting the watchdog */
-@@ -182,7 +182,7 @@ static int is_softlockup(unsigned long touch_ts)
- 	unsigned long now = get_timestamp(smp_processor_id());
- 
- 	/* Warn about unreasonable delays: */
--	if (time_after(now, touch_ts + softlockup_thresh))
-+	if (time_after(now, touch_ts + watchdog_thresh))
- 		return now - touch_ts;
- 
- 	return 0;
-@@ -501,19 +501,19 @@ static void watchdog_disable_all_cpus(void)
- /* sysctl functions */
- #ifdef CONFIG_SYSCTL
- /*
-- * proc handler for /proc/sys/kernel/nmi_watchdog
-+ * proc handler for /proc/sys/kernel/nmi_watchdog,watchdog_thresh
-  */
- 
--int proc_dowatchdog_enabled(struct ctl_table *table, int write,
--		     void __user *buffer, size_t *length, loff_t *ppos)
-+int proc_dowatchdog(struct ctl_table *table, int write,
-+		    void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	int ret;
- 
--	ret = proc_dointvec(table, write, buffer, length, ppos);
-+	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
- 	if (ret || !write)
- 		goto out;
- 
--	if (watchdog_enabled)
-+	if (watchdog_enabled && watchdog_thresh)
- 		watchdog_enable_all_cpus();
- 	else
- 		watchdog_disable_all_cpus();
-@@ -521,13 +521,6 @@ int proc_dowatchdog_enabled(struct ctl_table *table, int write,
- out:
- 	return ret;
- }
--
--int proc_dowatchdog_thresh(struct ctl_table *table, int write,
--			     void __user *buffer,
--			     size_t *lenp, loff_t *ppos)
--{
--	return proc_dointvec_minmax(table, write, buffer, lenp, ppos);
--}
- #endif /* CONFIG_SYSCTL */
- 
- 
+Linus dropped few header cleanups of mine, I don't even know when is
+the right time
+to send them now.
