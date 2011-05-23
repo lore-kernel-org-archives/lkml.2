@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab1EWLGh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 07:06:37 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48057 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab1EWLGg (ORCPT
+	id S1753777Ab1EWLGj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 07:06:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54964 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab1EWLGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 07:06:36 -0400
+	Mon, 23 May 2011 07:06:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=JM7t3QeGol+gYKlP0RgGVeH+8m5JkTe3QxI6zWCUWUGdifX+3w7DJTpIxmUZsiIF2N
-         zm7SXOFumiF/QO9/9QvS7GPXUQH3tEN1Dnf8VI7c/I8MDd5mQF9jhJ8L7ThX3SwR3kLV
-         o5ijLOARTjDPuxeh4M2m36jHMuZqwb2nGdDng=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=kgF+9z7foPAls+Xx5ao2Bt4YEkFpFaZzqjPjuJtcWW3Uumc8gXDNkoXAlv6m8cMtOG
+         lHs2+ssXlTbWTt7dPhV+4R60NN+bX5Eih+PrQH+TtmWztO3frw73ZfgVkOFDSJewMYAP
+         oscjsyPcYFTqqJqUYISTW8Bve6+g4LnOMXpB0=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [GIT PULL] perf tools fixes
-Date: Mon, 23 May 2011 13:06:26 +0200
-Message-Id: <1306148788-6179-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/2] perf tools: Fix sample size bit operations
+Date: Mon, 23 May 2011 13:06:27 +0200
+Message-Id: <1306148788-6179-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1306148788-6179-1-git-send-email-fweisbec@gmail.com>
+References: <1306148788-6179-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+What we want is to count the number of bits in the mask,
+not some other random operation written in the middle
+of the night.
 
-Please pull the perf/urgent branch that can be found at:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-	perf/urgent
-
-Thanks,
-	Frederic
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
 ---
+ tools/perf/util/event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Frederic Weisbecker (2):
-      perf tools: Fix sample size bit operations
-      perf tools: Fix ommitted mmap data update on remap
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 17c1c3c..d3fa7e4 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -42,7 +42,7 @@ int perf_sample_size(u64 sample_type)
+ 	int i;
+ 
+ 	for (i = 0; i < 64; i++) {
+-		if ((mask << i) & 1)
++		if (mask & (1 << i))
+ 			size++;
+ 	}
+ 
+-- 
+1.7.3.2
 
-
- tools/perf/util/event.c   |    2 +-
- tools/perf/util/session.c |   39 ++++++++++++++++++++++++++-------------
- 2 files changed, 27 insertions(+), 14 deletions(-)
