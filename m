@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab1EWSGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 14:06:32 -0400
-Received: from edu-smtp-02.edutel.nl ([88.159.1.172]:63052 "EHLO
-	edu-smtp-02.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933076Ab1EWSGZ (ORCPT
+	id S932326Ab1EWSJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 14:09:11 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:36788 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932112Ab1EWSJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 14:06:25 -0400
-Message-ID: <4DDAA219.2020507@neli.hopto.org>
-Date: Mon, 23 May 2011 20:06:17 +0200
-From: Micha Nelissen <micha@neli.hopto.org>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+	Mon, 23 May 2011 14:09:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=TK18yWz4mIT1EpZfF3jzV7W0UZ3fUH3kHj1V111IdzxCu5qv2Dqi15awbSOtsuP0J0
+         TVEscVNCnsZwMNUzuBaZcTnopT1gjEt5cL5EVQRvXeyXYAFO/sMljqGH/mVb9rM+TXko
+         RBElypFRdsCw8DTAhF5tbaVGpSHDchaAAoTsI=
+Message-ID: <4DDAA2C0.7080108@gmail.com>
+Date: Mon, 23 May 2011 22:09:04 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Randy Dunlap <rdunlap@xenotime.net>, Jens Axboe <axboe@kernel.dk>,
-        TejunHeo <tj@kernel.org>, lud <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: USB stick as root device does not work
-References: <Pine.LNX.4.44L0.1105231332090.2020-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1105231332090.2020-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH -next] x86: apic_flat_64.c needs module.h
+References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au> <20110523104300.dd532a99.randy.dunlap@oracle.com> <4DDA9EAB.40304@gmail.com>
+In-Reply-To: <4DDA9EAB.40304@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-
-Alan Stern wrote:
-> On Mon, 23 May 2011, Randy Dunlap wrote:
-> Better to ask people familiar with the block layer (CC'ed).
-
-I found out what happened: I use LILO, and lilo was not passing
-root=/dev/sdb1 on the commandline, but root=811. However, I didn't see
-that since on i386 that part had already scrolled off-screen. I found
-out by accident, due to a user space program trying to parse that,
-expecting a string, getting a number :-).
-
-Using the following in my lilo.conf:
-
-	append="root=/dev/sdb1 rootwait"
-instead of
-	root=/dev/sdb1
-
-works perfectly. Maybe this information is useful for somebody else; I
-did not find it using a quick google.
-
-Thanks for your attention.
-
-Micha
-
-
->> On Sun, 22 May 2011 16:13:17 +0200 Micha Nelissen wrote:
+On 05/23/2011 09:51 PM, Cyrill Gorcunov wrote:
+> On 05/23/2011 09:43 PM, Randy Dunlap wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
 >>
->>> Hi,
->>>
->>> Using USB stick as root device does not work for me. I specify
->>> 'root=/dev/sdb1 rootwait' on the kernel commandline, but the kernel does
->>> not wait for the USB stick to be scanned and its partitions found. I
->>> have a harddisk which is /dev/sda, and this USB stick would be /dev/sdb.
->>>
->>> I think blk_lookup_devt returns the block device number even if it does
->>> not exist yet, and init/do_mounts.c:473 therefore skips waiting:
->>>
->>>         if ((ROOT_DEV == 0) && root_wait) {
->>>
->>> due to ROOT_DEV having become non-zero already.
->>>
->>> If I use the commandline: 'root=/dev/sdb1 rootdelay=5' then it does
->>> mount and boot properly. However, using rootwait seems safer and faster
->>> to me, that it's meant for this use case.
->>>
->>> Thanks for any pointers,
->>>
->>> Micha
->>> --
+>> apic_flat_64.c needs to include module.h to fix these warnings:
+>>
+>> arch/x86/kernel/apic/apic_flat_64.c:31: warning: data definition has no type or storage class
+>> arch/x86/kernel/apic/apic_flat_64.c:31: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+>> arch/x86/kernel/apic/apic_flat_64.c:31: warning: parameter names (without types) in function declaration
+>>
+>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 >> ---
->> ~Randy
->> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>>  arch/x86/kernel/apic/apic_flat_64.c |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> --- linux-next-20110523.orig/arch/x86/kernel/apic/apic_flat_64.c
+>> +++ linux-next-20110523/arch/x86/kernel/apic/apic_flat_64.c
+>> @@ -16,6 +16,7 @@
+>>  #include <linux/ctype.h>
+>>  #include <linux/init.h>
+>>  #include <linux/hardirq.h>
+>> +#include <linux/module.h>
+>>  #include <asm/smp.h>
+>>  #include <asm/apic.h>
+>>  #include <asm/ipi.h>
 > 
+> Thanks Randy! For some reason I didn't hit this problem while
+> were compiling the kernel and testing it (I usually do not use
+> modules though).
 > 
+> I've CC'ed Ingo and Suresh.
+> 
+
+Randy, while adding module.h here is correct I fail to see why I didn't
+hit this problem before, could you please post your config?
+
+-- 
+    Cyrill
