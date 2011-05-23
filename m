@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab1EWMor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 08:44:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55382 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754271Ab1EWMoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 08:44:46 -0400
-Date: Mon, 23 May 2011 14:43:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Message-ID: <20110523124314.GA7232@redhat.com>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-4-git-send-email-tj@kernel.org> <201105180240.56754.vda.linux@googlemail.com> <20110518095539.GU20624@htj.dyndns.org>
+	id S1754379Ab1EWMyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 08:54:12 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:38148 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab1EWMyL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 08:54:11 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: vmbus driver
+Thread-Topic: vmbus driver
+Thread-Index: AQHMFm8184rvumQ7c0KLvy9LhTr6cJSWGtyA//+adbCAA3HcgIABOWxw
+Date: Mon, 23 May 2011 12:54:09 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481FC6DF@TK5EX14MBXC122.redmond.corp.microsoft.com>
+References: <1305842785-30206-1-git-send-email-kys@microsoft.com>
+ <20110520122649.GA550@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481FC2ED@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20110522105941.GB8346@infradead.org>
+In-Reply-To: <20110522105941.GB8346@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110518095539.GU20624@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18, Tejun Heo wrote:
->
-> I've been thinking about Jan's suggestion to make ATTACH and DETACH
-> not require tracee to trap. We already have this for DETACH for cases
-> where the tracer is killed
-
-Yes, I still think that the new DETACH_XXX request which doesn't need
-the stopped tracee makes sense. Yes, we have PTRACE_INTERRUPT. But please
-recall the previous discussion, it is possible that the tracee can't
-react to PTRACE_INTERRUPT and trap because it waits for other threads
-we are tracing.
-
-And. Currently there is no way to detach a zombie leader. Perhaps we
-should change do_wait(), but it is not clear what should we do if the
-tracer is the real parent (we already discussed this a bit).
-
-> and it seems it wouldn't be too difficult
-> to make that happen for ATTACH either
-
-Yes, I think this is simple to do. Do we need this? I leave this up
-to you and Jan.
-
-To me personally attach-implies-trap looks more natural, but probably
-gdb has another opinion.
 
 
-Anyway. IIUC, gdb wants the auto-attach-on-clone without the trap,
-this is more important but this opens a lot of problems.
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Sunday, May 22, 2011 7:00 AM
+> To: KY Srinivasan
+> Cc: Christoph Hellwig; gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: vmbus driver
+> 
+> > I see maintainers for each of the clocksource drivers and I see John Stultz and
+> > Thomas  Gleixner listed as the maintainers for Timekeeping. Who should sign-
+> off
+> > on the Hyper-V clocksource.
+> 
+> just send it to both of the with linux-kernel in Cc, and either of them
+> will probably put it in.
+> 
 
+John, Thomas,
 
-> and for that to be truly useful
-> I suppose PTRACE_SETOPTIONS shouldn't require trapped state either.
+I am working on getting Hyper-V drivers (drivers/staging/hv/*) out of staging.
+I would like to request you to look at the Hyper-V timesource driver:
+drivers/staging/hv/hv_timesource.c. The supporting code for this driver
+is already part of the base kernel. Let me know if this driver is ready to exit staging.
 
-Hmm. Why? we could pass this options along with PTRACE_SEIZE?
+Regards,
 
-> Jan, would that be enough for the use cases you have on mind?
-
-Jan?
-
-Oleg.
+K. Y
 
