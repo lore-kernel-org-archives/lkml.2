@@ -1,131 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab1EWWyn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 18:54:43 -0400
-Received: from 173-160-34-133-colorado.hfc.comcastbusiness.net ([173.160.34.133]:56862
-	"EHLO ether.astekcorp.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755210Ab1EWWyj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 18:54:39 -0400
-From: Dave Carroll <dcarroll@astekcorp.com>
-To: "'Milton Miller'" <miltonm@bga.com>
-CC: LPPC <linuxppc-dev@lists.ozlabs.org>, Paul Mackerras <paulus@samba.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Mon, 23 May 2011 16:54:25 -0600
-Subject: [PATCH  v5] powerpc: Force page alignment for initrd reserved memory
-Thread-Topic: [PATCH  v5] powerpc: Force page alignment for initrd reserved
- memory
-Thread-Index: AcwZcFh+5VZUVdjdQa+TutYV+wnzbAAKYEnQ
-Message-ID: <522F24EF533FC546962ECFA2054FF777373072AB79@MAILSERVER2.cos.astekcorp.com>
-In-Reply-To: <initrd-align-withdrawn@mdm.bga.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1757852Ab1EWW43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 18:56:29 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38262 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755210Ab1EWW42 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 18:56:28 -0400
+Message-ID: <4DDAE5FA.2030303@kernel.org>
+Date: Mon, 23 May 2011 15:55:54 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
+ on semi-formal proof"
+References: <4DD6D746.6070107@kernel.org> <20110520224250.GL2366@linux.vnet.ibm.com> <4DD6F4A2.1070401@kernel.org> <20110520231428.GN2366@linux.vnet.ibm.com> <4DD6F64C.3030402@kernel.org> <20110520234923.GQ2366@linux.vnet.ibm.com> <4DD70120.9090801@kernel.org> <20110521131844.GE2271@linux.vnet.ibm.com> <20110521140845.GA12157@linux.vnet.ibm.com> <4DDAC01E.7050602@kernel.org> <20110523212530.GF7428@linux.vnet.ibm.com> <4DDAD934.9010603@kernel.org>
+In-Reply-To: <4DDAD934.9010603@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090209.4DDAE601.0036,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using 64K pages with a separate cpio rootfs, U-Boot will align
-the rootfs on a 4K page boundary. When the memory is reserved, and
-subsequent early memblock_alloc is called, it will allocate memory
-between the 64K page alignment and reserved memory. When the reserved
-memory is subsequently freed, it is done so by pages, causing the
-early memblock_alloc requests to be re-used, which in my case, caused
-the device-tree to be clobbered.
+On 05/23/2011 03:01 PM, Yinghai Lu wrote:
+> On 05/23/2011 02:25 PM, Paul E. McKenney wrote:
+>> On Mon, May 23, 2011 at 01:14:22PM -0700, Yinghai Lu wrote:
+>>> On 05/21/2011 07:08 AM, Paul E. McKenney wrote:
+>>>> On Sat, May 21, 2011 at 06:18:44AM -0700, Paul E. McKenney wrote:
+>>>>> On Fri, May 20, 2011 at 05:02:40PM -0700, Yinghai Lu wrote:
+>>>>>> On 05/20/2011 04:49 PM, Paul E. McKenney wrote:
+>>>>>>> On Fri, May 20, 2011 at 04:16:28PM -0700, Yinghai Lu wrote:
+>>>>>> ...
+>>>>>>>>
+>>>>>>>> the same one i sent out before, but let DEBUG_LOCKING_API_SELFTESTS disabled.
+>>>>>>>
+>>>>>>> OK, just to make sure I understand...  You are compiling exactly the
+>>>>>>> same kernel source tree with exactly the same .config, just with two
+>>>>>>> different versions of gcc, correct?
+>>>>>> yes.
+>>>>>>>
+>>>>>>> If so, it is quite possible that the slow one is the correct one.  :-/
+>>>>>> yeah, new version always have problem.
+>>>>>>
+>>>>>> looks like opensuse11.3 has 4.5.0 and fedora14 has 4.5.1
+>>>>>
+>>>>> OK, so fedora14 is the fast one (4.5.1) and opensuse11.3 is the slow
+>>>>> one (4.5.0), correct?
+>>>>
+>>>> And does commit c7a3786030 help?  This commit (from Peter Zijlstra)
+>>>> tidied up RCU kthreads' scheduler interactions.  The patch is below,
+>>>> though it is probably more convenient to pull it from the rcu/next
+>>>> branch of:
+>>>>
+>>>>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+>>>>
+>>
+gcc in Fedora 14 is fine with your tree.
 
-This patch forces the reserved memory for initrd to be kernel page
-aligned, and adds the same range extension when freeing initrd. It
-will also move the device tree if it overlaps with the reserved memory
-for initrd.
+Looks like I need to dump openuse 11.3 now.
 
-Many thanks to Milton Miller for his input on this patch.
+Thanks
 
-Signed-off-by: Dave Carroll <dcarroll@astekcorp.com>
----
- * This patch is based on Linus' current tree
-
- arch/powerpc/kernel/prom.c |   11 ++++++++---
- arch/powerpc/mm/init_32.c  |    5 ++++-
- arch/powerpc/mm/init_64.c  |    5 ++++-
- 3 files changed, 16 insertions(+), 5 deletions(-)
-
-diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-index 48aeb55..58871df 100644
---- a/arch/powerpc/kernel/prom.c
-+++ b/arch/powerpc/kernel/prom.c
-@@ -86,7 +86,8 @@ early_param("mem", early_parse_mem);
-  * move_device_tree - move tree to an unused area, if needed.
-  *
-  * The device tree may be allocated beyond our memory limit, or inside the
-- * crash kernel region for kdump. If so, move it out of the way.
-+ * crash kernel region for kdump, or within the page aligned range of initrd.
-+ * If so, move it out of the way.
-  */
- static void __init move_device_tree(void)
- {
-@@ -99,7 +100,9 @@ static void __init move_device_tree(void)
-        size = be32_to_cpu(initial_boot_params->totalsize);
-
-        if ((memory_limit && (start + size) > PHYSICAL_START + memory_limit) ||
--                       overlaps_crashkernel(start, size)) {
-+                       overlaps_crashkernel(start, size) ||
-+                       ((start + size) > _ALIGN_DOWN(initrd_start, PAGE_SIZE)
-+                       && start <= _ALIGN_UP(initrd_end, PAGE_SIZE))) {
-                p = __va(memblock_alloc(size, PAGE_SIZE));
-                memcpy(p, initial_boot_params, size);
-                initial_boot_params = (struct boot_param_header *)p;
-@@ -555,7 +558,9 @@ static void __init early_reserve_mem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
-        /* then reserve the initrd, if any */
-        if (initrd_start && (initrd_end > initrd_start))
--               memblock_reserve(__pa(initrd_start), initrd_end - initrd_start);
-+               memblock_reserve(_ALIGN_DOWN(__pa(initrd_start), PAGE_SIZE),
-+                       _ALIGN_UP(initrd_end, PAGE_SIZE) -
-+                       _ALIGN_DOWN(initrd_start, PAGE_SIZE));
- #endif /* CONFIG_BLK_DEV_INITRD */
-
- #ifdef CONFIG_PPC32
-diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
-index d65b591..4835c4f 100644
---- a/arch/powerpc/mm/init_32.c
-+++ b/arch/powerpc/mm/init_32.c
-@@ -226,8 +226,11 @@ void free_initmem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
--       if (start < end)
-+       if (start < end) {
-+               start = _ALIGN_DOWN(start, PAGE_SIZE);
-+               end = _ALIGN_UP(end, PAGE_SIZE);
-                printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
-+       }
-        for (; start < end; start += PAGE_SIZE) {
-                ClearPageReserved(virt_to_page(start));
-                init_page_count(virt_to_page(start));
-diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
-index 6374b21..060c952 100644
---- a/arch/powerpc/mm/init_64.c
-+++ b/arch/powerpc/mm/init_64.c
-@@ -102,8 +102,11 @@ void free_initmem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
--       if (start < end)
-+       if (start < end) {
-+               start = _ALIGN_DOWN(start, PAGE_SIZE);
-+               end = _ALIGN_UP(end, PAGE_SIZE);
-                printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
-+       }
-        for (; start < end; start += PAGE_SIZE) {
-                ClearPageReserved(virt_to_page(start));
-                init_page_count(virt_to_page(start));
---
-1.7.4
-
-
+Yinghai
