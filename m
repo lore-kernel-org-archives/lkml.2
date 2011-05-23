@@ -1,67 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab1EWGuy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 02:50:54 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:35998 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751597Ab1EWGux (ORCPT
+	id S1752967Ab1EWGyd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 02:54:33 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:44235 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab1EWGyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 02:50:53 -0400
-Message-ID: <4DDA03C6.6050806@ti.com>
-Date: Mon, 23 May 2011 12:20:46 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robherring2@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: smp_twd: Reconfigure clockevents after cpufreq
- change
-References: <1305851091-10096-1-git-send-email-ccross@android.com>	<4DD75BC9.8040004@ti.com> <BANLkTikyGFVKTst1xJTGzHuwY_2GoG6NOw@mail.gmail.com>
-In-Reply-To: <BANLkTikyGFVKTst1xJTGzHuwY_2GoG6NOw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 23 May 2011 02:54:31 -0400
+Date: Mon, 23 May 2011 02:54:27 -0400 (EDT)
+Message-Id: <20110523.025427.137762332894556125.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 22 May 2011 23:54:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/23/2011 10:48 AM, Colin Cross wrote:
-> On Fri, May 20, 2011 at 11:29 PM, Santosh Shilimkar
-> <santosh.shilimkar@ti.com>  wrote:
->> On 5/20/2011 5:54 AM, Colin Cross wrote:
->>>
->>> The localtimer's clock changes with the cpu clock.  After a
->>> cpufreq transition, update the clockevent's frequency and
->>> reprogram the next clock event.
->>>
->>> Adds a clock called "smp_twd" that is used to determine the
->>> twd frequency, which can also be used at init time to
->>> avoid calibrating the twd frequency.
->>>
->>> Clock changes are based on Rob Herring's work.
->>>
->>> Change-Id: I413b5cd07fb2b79bc9fad8b4bf257332d1da7bcd
->>> Signed-off-by: Colin Cross<ccross@android.com>
->>> Cc: Thomas Gleixner<tglx@linutronix.de>
->>> Cc: Russell King<linux@arm.linux.org.uk>
->>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
->>> Cc: Rob Herring<robherring2@gmail.com>
->>> Tested-by: Linus Walleij<linus.walleij@linaro.org>
->>> ---
->>
->> Acked-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
->>
->> What about the clock-node patches?
->> Do you want those to get merged via sub-arch tree's once this
->> patch + Thomas's new API gets merged ?
->
-> The clock-node patches can be merged independently - twd scaling just
-> won't work until they are both merged.
-Yep. That should be ok.
 
-Regards
-Santosh
+Ok, this gets rid of the need to include linux/prefetch.h in
+linux/skbuff.h, thanks largely to Part Gortmaker.
+
+1) bnx2x bug sifxes from Vladislav Zolotarov and Dmitry Kravkov.
+
+2) Unicast frame handling fix in macvlan from David Ward.
+
+3) Dave Jones was hitting ip_rt_bug(), add a backtrace so we
+   can diagnose it further.
+
+4) Remove some spurious synchronize_{net,rcu}() calls during device
+   teardown, from Eric Dumazet.
+
+5) netpoll fixes wrt. bridging from Amerigo Wang.
+
+6) CAIF bug fixes from Sjur Brandeland.
+
+Please pull, thanks a lot!
+
+The following changes since commit 71a8638480eb8fb6cfabe2ee9ca3fbc6e3453a14:
+
+  Merge branch 'viafb-next' of git://github.com/schandinat/linux-2.6 (2011-05-22 12:39:58 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Amerigo Wang (4):
+      netpoll: disable netpoll when enslave a device
+      bridge: call NETDEV_JOIN notifiers when add a slave
+      net: rename NETDEV_BONDING_DESLAVE to NETDEV_RELEASE
+      rtnetlink: ignore NETDEV_RELEASE and NETDEV_JOIN event
+
+Dave Jones (1):
+      ipv4: Give backtrace in ip_rt_bug().
+
+David S. Miller (5):
+      net: Remove prefetches from SKB list handlers.
+      rionet: Remove pointless printk of skb pointer.
+      netlabel: Remove prefetches from list handlers.
+      ipv4: Include linux/prefetch.h in fib_trie.c
+      net: Remove linux/prefetch.h include from linux/skbuff.h
+
+David Ward (1):
+      macvlan: Forward unicast frames in bridge mode to lowerdev
+
+Dmitry Kravkov (2):
+      bnx2x: fix DMAE timeout according to hw specifications
+      bnx2x: allow device properly initialize after hotplug
+
+Emmanuel Grumbach (1):
+      net: skb_trim explicitely check the linearity instead of data_len
+
+Eric Dumazet (2):
+      net: remove synchronize_net() from netdev_set_master()
+      net: avoid synchronize_rcu() in dev_deactivate_many
+
+Heiko Carstens (1):
+      net: filter: move forward declarations to avoid compile warnings
+
+Paul Gortmaker (1):
+      drivers/net: add prefetch header for prefetch users
+
+Vladislav Zolotarov (2):
+      bnx2x: call dev_kfree_skb_any instead of dev_kfree_skb
+      bnx2x: properly handle CFC DEL in cnic flow
+
+WANG Cong (2):
+      pktgen: use vzalloc_node() instead of vmalloc_node() + memset()
+      pktgen: refactor pg_init() code
+
+sjur.brandeland@stericsson.com (5):
+      caif: Bugfix add check NULL pointer before calling functions.
+      caif: Fixes freeze on Link layer removal.
+      caif: Fix freezes when running CAIF loopback device
+      caif: Update documentation of CAIF transmit and receive functions.
+      caif: Plug memory leak for checksum error
+
+ drivers/net/benet/be_main.c        |    1 +
+ drivers/net/bna/bnad.c             |    1 +
+ drivers/net/bnx2x/bnx2x_cmn.c      |    5 +-
+ drivers/net/bnx2x/bnx2x_cmn.h      |    2 +-
+ drivers/net/bnx2x/bnx2x_main.c     |   72 +++++++++++++----------------------
+ drivers/net/bonding/bond_main.c    |    4 +-
+ drivers/net/chelsio/sge.c          |    1 +
+ drivers/net/cnic.c                 |    1 +
+ drivers/net/cxgb3/sge.c            |    1 +
+ drivers/net/cxgb4/sge.c            |    1 +
+ drivers/net/cxgb4vf/sge.c          |    1 +
+ drivers/net/e1000/e1000_main.c     |    1 +
+ drivers/net/e1000e/netdev.c        |    1 +
+ drivers/net/ehea/ehea_qmr.h        |    1 +
+ drivers/net/enic/enic_main.c       |    1 +
+ drivers/net/forcedeth.c            |    1 +
+ drivers/net/igb/igb_main.c         |    1 +
+ drivers/net/igbvf/netdev.c         |    1 +
+ drivers/net/ixgb/ixgb_main.c       |    1 +
+ drivers/net/ixgbe/ixgbe_main.c     |    1 +
+ drivers/net/ixgbevf/ixgbevf_main.c |    1 +
+ drivers/net/macvlan.c              |    6 +--
+ drivers/net/myri10ge/myri10ge.c    |    1 +
+ drivers/net/netconsole.c           |   26 ++++++++----
+ drivers/net/pasemi_mac.c           |    1 +
+ drivers/net/pch_gbe/pch_gbe_main.c |    1 +
+ drivers/net/qla3xxx.c              |    1 +
+ drivers/net/qlge/qlge_main.c       |    1 +
+ drivers/net/r8169.c                |    1 +
+ drivers/net/rionet.c               |    4 +-
+ drivers/net/s2io.c                 |    1 +
+ drivers/net/sb1250-mac.c           |    1 +
+ drivers/net/sfc/rx.c               |    1 +
+ drivers/net/skge.c                 |    1 +
+ drivers/net/stmmac/stmmac_main.c   |    1 +
+ drivers/net/tc35815.c              |    1 +
+ drivers/net/vxge/vxge-main.c       |    1 +
+ drivers/net/vxge/vxge-traffic.c    |    1 +
+ include/linux/filter.h             |    7 ++-
+ include/linux/notifier.h           |    3 +-
+ include/linux/skbuff.h             |    9 ++--
+ include/net/caif/caif_layer.h      |   36 ++++++++++-------
+ net/bridge/br_if.c                 |    3 +
+ net/caif/caif_dev.c                |    7 +++-
+ net/caif/caif_socket.c             |   13 ++----
+ net/caif/cfcnfg.c                  |   44 +++++++++------------
+ net/caif/cfctrl.c                  |   44 +++++++++++++++------
+ net/caif/cfmuxl.c                  |   49 +++++++++++++++++++-----
+ net/core/dev.c                     |    4 +-
+ net/core/pktgen.c                  |   22 ++++++----
+ net/core/rtnetlink.c               |    2 +
+ net/ipv4/fib_trie.c                |    1 +
+ net/ipv4/route.c                   |    1 +
+ net/netlabel/netlabel_addrlist.h   |    8 ++--
+ net/sched/sch_generic.c            |   17 +++++++-
+ 55 files changed, 256 insertions(+), 164 deletions(-)
