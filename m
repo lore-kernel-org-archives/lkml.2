@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab1EWKzk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 06:55:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53601 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751711Ab1EWKzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 06:55:38 -0400
-Date: Mon, 23 May 2011 12:55:22 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Miller <davem@davemloft.net>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [bloat] Measuring header file bloat effects on kernel build
- performance: a more than 2x slowdown ...
-Message-ID: <20110523105522.GC24674@elte.hu>
-References: <20110520161210.81bbef3a.sfr@canb.auug.org.au>
- <BANLkTi=Dn_jvJ8mLY0Bc6C1Ptoqa-kJrCg@mail.gmail.com>
- <20110523090918.GA5474@elte.hu>
- <BANLkTi=Vbr+DRBy6sa7omGpvAb0uGunYMA@mail.gmail.com>
+	id S1753687Ab1EWK6Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 06:58:25 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:17439 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711Ab1EWK6Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 06:58:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wkWBZ9l97Bb9CK8FitIXFe7Z79EzcELOtPgwlWjp116MLjXz+hEimA5CxafvU+eJTX
+         p/LbLcl3jUdazZjwoBRA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=Vbr+DRBy6sa7omGpvAb0uGunYMA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <BANLkTimVM2XvpJ1d9SbmAh7xZ+qSjukX+A@mail.gmail.com>
+References: <20110520143707.GA5347@quad>
+	<1306141897.18455.8.camel@twins>
+	<1306143168.18455.10.camel@twins>
+	<BANLkTimVM2XvpJ1d9SbmAh7xZ+qSjukX+A@mail.gmail.com>
+Date: Mon, 23 May 2011 12:58:20 +0200
+Message-ID: <BANLkTinN92UpxU85r17zB+Khba8k59nJTA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] perf_events: update extra shared registers management (v2)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, Lin Ming <ming.m.lin@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 23, 2011 at 11:36 AM, Stephane Eranian <eranian@google.com> wrote:
+> On Mon, May 23, 2011 at 11:32 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Mon, 2011-05-23 at 11:11 +0200, Peter Zijlstra wrote:
+>>> +       if (event->hw.extra_reg.idx == EXTRA_REG_RSP_0) {
+>>> +               event->attr.config = 0x01bb;
+>>> +               event->hw.extra_reg.idx = EXTRA_REG_RSP_1;
+>>> +               event->hw.extra_reg.msr = MSR_OFFCORE_RSP_1;
+>>> +       } else if (event->hw.extra_reg.idx == EXTRA_REG_RSP_1) {
+>>> +               event->attr.config = 0x01b7;
+>>> +               event->hw.extra_reg.idx = EXTRA_REG_RSP_0;
+>>> +               event->hw.extra_reg.msr = MSR_OFFCORE_RSP_0;
+>>> +       }
+>>
+>> clearly I meant to write:
+>>
+>> event->hw.config &= ~X86_RAW_EVENT_MASK;
 
-* Alexey Dobriyan <adobriyan@gmail.com> wrote:
+Not quite, you want INTEL_ARCH_EVENT_MASK instead
+because you only want to modify umask+event code.
 
-> On Mon, May 23, 2011 at 12:09 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> > � � �24594a2bfcaa: [PATCH] x86-64 merge
-> >
-> > � � - Remove some unneeded prefetches. �Just two are enough to kickstart
-> > � � � the hardware prefetcher.
-> >
-> > � But despite touching prefetches explicitly, this too sloppily left the (now
-> > � dangling) prefetch.h include file around.
-> 
-> Well, developer removes include, developer risks compile breakage.
-
-If developer removes the final prefetch() from an unrelated header he might as 
-well think of removing the prefetch.h header. If there's compile breakage we 
-want to fix the breakage.
-
-But yes, this is easily forgotten and the basic psychology is for header file 
-dependencies to grow, almost never to shrink.
-
-To counteract that in a really good way we need tooling help - we are fighting 
-entropy here ...
-
-> > Anway, what i tried to demonstrate with this mail how much *real* slowdown 
-> > in the kernel build our current header file bloat is causing. We could 
-> > literally halve our kernel build times if we fixed this!
-> 
-> News at 11!
-
-I have not seen *actual hard numbers* measured before, so how exactly is this 
-news at 11? So i think your condescending reply is neither fair nor justified.
-
-Yes, we all knew that there's build time costs of header bloat - but it was 
-never AFAIK measured and posted to lkml in such a clear way.
-
-Thanks,
-
-	Ingo
+There is a major issue as it stands, though. You can
+get into an infinite loop bouncing between RSP_0 and RSP_1
+in case there is no solution in the group, i.e., you have 3 values
+for the extra MSR. I think you need to count the number of times
+you've called intel_try_alt_er() with success or maintain some sort
+of bitmask of possible alternate choices and when you exhaust that,
+you simply fail.
