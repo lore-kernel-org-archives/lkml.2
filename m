@@ -1,122 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab1EWKKu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 06:10:50 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58029 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098Ab1EWKKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 06:10:49 -0400
-Date: Mon, 23 May 2011 12:10:36 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Parag Warudkar <parag.lkml@gmail.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Resume Issues :Exec of NX page, Synaptics Botchup
-Message-ID: <20110523101036.GC28562@elte.hu>
-References: <alpine.DEB.2.02.1105221720040.2065@natty-nar>
- <BANLkTik9ZmQz1A0PBC4P-9XF-hB6Ywr3uQ@mail.gmail.com>
- <alpine.DEB.2.02.1105221817100.1868@natty-nar>
- <BANLkTimt0ozTCSarTVwkOpvgLoW-pizMvA@mail.gmail.com>
+	id S1752499Ab1EWKRE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 06:17:04 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:6152 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab1EWKRC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 06:17:02 -0400
+X-SpamScore: -12
+X-BigFish: VPS-12(zz4015L1432N98dKzz1202hzzz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LLN8K8-01-TID-02
+X-M-MSG: 
+Date: Mon, 23 May 2011 12:17:01 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        "open list:AMD IOMMU (AMD-VI)" <iommu@lists.linux-foundation.org>
+Subject: Re: [PATCH 3/8] x86: Kill set but not used warning
+Message-ID: <20110523101701.GB27867@amd.com>
+References: <1305918786-7239-1-git-send-email-padovan@profusion.mobi>
+ <1305918786-7239-2-git-send-email-padovan@profusion.mobi>
+ <1305918786-7239-3-git-send-email-padovan@profusion.mobi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <BANLkTimt0ozTCSarTVwkOpvgLoW-pizMvA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1305918786-7239-3-git-send-email-padovan@profusion.mobi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 20, 2011 at 03:13:00PM -0400, Gustavo F. Padovan wrote:
+> Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Please provide a short and meaningful commit-msg.
 
-> On Sun, May 22, 2011 at 3:22 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
-> >
-> > Now I get a different call trace for the same NX error. (And Synaptics is
-> > completely dead this time - not attributable to the patch, it was dumb
-> > luck perhaps that it wored last time.)
+> ---
+>  arch/x86/kernel/amd_iommu.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
 > 
-> Just because I'm crazy, can you double-check that you applied my patch
-> and booted the right kernel?
-> 
-> Because that NX error *really* looks like the call to setup_smep(),
-> and the eip still very much looks like something jumped to the
-> "__init" region, not the "__cpuinit" region.
-> 
-> That backtrace really still looks like the same thing.
-> 
-> Oh, and you should do
-> 
-> -static int disable_smep __initdata;
-> +static int disable_smep __cpuinitdata;
-> 
-> too, I guess. Not that it should matter for this particular oops.
+> diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
+> index 873e7e1..cd8cbeb5 100644
+> --- a/arch/x86/kernel/amd_iommu.c
+> +++ b/arch/x86/kernel/amd_iommu.c
+> @@ -1538,13 +1538,11 @@ static void do_detach(struct device *dev)
+>  {
+>  	struct iommu_dev_data *dev_data;
+>  	struct amd_iommu *iommu;
+> -	struct pci_dev *pdev;
+>  	u16 devid;
+>  
+>  	devid    = get_device_id(dev);
+>  	iommu    = amd_iommu_rlookup_table[devid];
+>  	dev_data = get_dev_data(dev);
+> -	pdev     = to_pci_dev(dev);
+>  
+>  	/* decrease reference counters */
+>  	dev_data->domain->dev_iommu[iommu->index] -= 1;
 
-We have a fix for this queued up in x86/urgent:
+This is already gone upstream.
 
- 1d487624fcc1: x86, SMEP: Fix section mismatch warnings
+> @@ -1703,10 +1701,9 @@ static struct protection_domain *domain_for_device(struct device *dev)
+>  	struct protection_domain *dom;
+>  	struct iommu_dev_data *dev_data, *alias_data;
+>  	unsigned long flags;
+> -	u16 devid, alias;
+> +	u16 devid;
+>  
+>  	devid      = get_device_id(dev);
+> -	alias      = amd_iommu_alias_table[devid];
+>  	dev_data   = get_dev_data(dev);
+>  	alias_data = get_dev_data(dev_data->alias);
+>  	if (!alias_data)
 
-which got delayed by weekend latency ... will send these fixes in a couple of 
-minutes.
+This is still there. Can you please rebase this patch against
+linus/master and send again?
 
 Thanks,
 
-	Ingo
+	Joerg
 
--------------->
->From 1d487624fcc17a40aa67acaa9e8f3815fb7cd0f0 Mon Sep 17 00:00:00 2001
-From: Fenghua Yu <fenghua.yu@intel.com>
-Date: Fri, 20 May 2011 15:33:17 -0700
-Subject: [PATCH] x86, SMEP: Fix section mismatch warnings
 
-Fix these kernel compilation warnings:
-
- WARNING: arch/x86/built-in.o(.cpuinit.text+0x1e07): Section mismatch ...
- WARNING: arch/x86/built-in.o(.cpuinit.text+0x1b10): Section mismatch ...
-
-introduced by:
-
-  de5397ad5b9a: x86, cpu: Enable/disable Supervisor Mode Execution Protection
-
-Change disable_smep from __initdata to __cpuinitdata.
-Change setup_smep() from __init to __cpuinit.
-
-Reported-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Asit K Mallick <asit.k.mallick@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1305930797-11409-1-git-send-email-fenghua.yu@intel.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/common.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index cbc70a2..c8b4162 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -254,7 +254,7 @@ static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
- }
- #endif
- 
--static int disable_smep __initdata;
-+static int disable_smep __cpuinitdata;
- static __init int setup_disable_smep(char *arg)
- {
- 	disable_smep = 1;
-@@ -262,7 +262,7 @@ static __init int setup_disable_smep(char *arg)
- }
- __setup("nosmep", setup_disable_smep);
- 
--static __init void setup_smep(struct cpuinfo_x86 *c)
-+static __cpuinit void setup_smep(struct cpuinfo_x86 *c)
- {
- 	if (cpu_has(c, X86_FEATURE_SMEP)) {
- 		if (unlikely(disable_smep)) {
