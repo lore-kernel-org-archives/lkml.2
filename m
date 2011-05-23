@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757802Ab1EWWJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 18:09:25 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:53274 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757708Ab1EWWJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 18:09:21 -0400
-Subject: Re: [PATCH v5 00/21] EVM
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-In-Reply-To: <20110520185034.GA8920@mail.hallyn.com>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <20110520185034.GA8920@mail.hallyn.com>
+	id S1757745Ab1EWWK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 18:10:56 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33531 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab1EWWKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 18:10:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ZiJ8RR1czDoemeZjmpLEz0Tn/3HSuJDwjWlJqSyWPdahOxcO4lDJn338X5bXG8S+2M
+         Ve+tqcaDVDCrrPeeIH9fVyf86m1b4sNA4s+aoPjzOPUWdGpa+uBZAOuhZV2B/tLwIqhf
+         N4H3YfqpqAzoaPYFoUJK6VzYh4H2CRG1Z6j1g=
+Subject: Re: [GIT PULL] perf fixes
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110523134125.GA23518@elte.hu>
+References: <20110523134125.GA23518@elte.hu>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 May 2011 18:09:14 -0400
-Message-ID: <1306188554.2732.73.camel@localhost.localdomain>
+Date: Tue, 24 May 2011 00:10:48 +0200
+Message-ID: <1306188648.2638.17.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-20 at 13:50 -0500, Serge E. Hallyn wrote:
-> Hi Mimi,
+Le lundi 23 mai 2011 à 15:41 +0200, Ingo Molnar a écrit :
+> Linus,
 > 
-> just fyi I think I'm done with the patches where my reviews might be
-> useful.  I'll give them another look-over when you repost.  You said
-> something about ltp testcases - please let me know if you'd like any
-> help, otherwise if they're not yet upstream when you repost, please
-> point me to them, and i'll build a test kernel and exercise it
-> somewhere.
+> Please pull the latest perf-urgent-for-linus git tree from:
 > 
-> thanks,
-> -serge
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-urgent-for-linus
+> 
+>  Thanks,
+> 
 
-Thanks so much Serge for all the reviews!  In terms of the EVM ltp
-testcases, I have some tests, but they make a number of assumptions,
-like having an EVM key and a fully labeled system.  After re-posting,
-I'll take a look into creating a set of EVM testcases, which don't
-require a fully labeled system.
+Hi Ingo
 
-thanks,
+I just tried latest "perf top" from linux-2.6 tree on my 32bit x86 host.
 
-Mimi
+It outputs endless errors, I dont know if you guys already are aware of
+this ?
+
+Can't parse sample, err = -14
+Can't parse sample, err = -14
+Can't parse sample, err = -14
+Can't parse sample, err = -14
+Can't parse sample, err = -14
+Can't parse sample, err = -14
+Can't parse sample, err = -14
+Can't parse sample, err = -14
+
+Thanks
+
 
