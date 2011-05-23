@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010Ab1EWS4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 14:56:09 -0400
-Received: from mail.avalus.com ([89.16.176.221]:41637 "EHLO mail.avalus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755722Ab1EWS4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 14:56:07 -0400
-Date: Mon, 23 May 2011 19:56:03 +0100
-From: Alex Bligh <alex@alex.org.uk>
-Reply-To: Alex Bligh <alex@alex.org.uk>
-To: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>
-cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>, Alex Bligh <alex@alex.org.uk>
-Subject: Re: BUG: Failure to send REQ_FLUSH on unmount on ext3, ext4, and FS
- in general
-Message-ID: <A0F77BF1A64FB25344FC4021@Ximines.local>
-In-Reply-To: <20110523173350.GA10554@infradead.org>
-References: <959E4E25EAEC544D31199E6F@nimrod.local>
- <20110523155550.GE4716@quack.suse.cz>
- <EC63F9E077B362A0FDCF3527@Ximines.local>
- <20110523172906.GH4716@quack.suse.cz> <20110523173350.GA10554@infradead.org>
-X-Mailer: Mulberry/4.0.8 (Mac OS X)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+	id S1757030Ab1EWTCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 15:02:22 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38760 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756956Ab1EWTCQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 15:02:16 -0400
+Date: Mon, 23 May 2011 11:57:33 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Subject: [PATCH 2/5] Documentation: update epoll sysctl text
+Message-Id: <20110523115733.45c780fd.randy.dunlap@oracle.com>
+In-Reply-To: <20110523115542.dcf23f5d.randy.dunlap@oracle.com>
+References: <20110523115542.dcf23f5d.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DDAAF17.00E0:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 
+max_user_instances was removed in this commit:
 
---On 23 May 2011 13:33:50 -0400 Christoph Hellwig <hch@infradead.org> wrote:
+   commit 9df04e1f25effde823a600e755b51475d438f56b
+   Author: Davide Libenzi <davidel@xmailserver.org>
+   Date:   Thu Jan 29 14:25:26 2009 -0800
 
-> It really should be changed.  The previous (bad) excuse was that the
-> ordering barrier code was too much overhead.  Making a filesystem
-> non-safe by default is already a bad sin, but having the code to make
-> it safe around and not enabling it is plain criminal.
+    epoll: drop max_user_instances and rely only on max_user_watches
 
-At risk of wandering into ext3 default flamewar, I suppose people foolishly
-or not might want to live dangerously. If I'm creating an image on a
-loopback mount, or copying stuff to a removable harddrive, perhaps I don't
-really care if data gets corrupted if the power drops while I am writing,
-as I can recreate the data. I'm always going to have that issue even with
-FAT32 and other dinosaurs (ext2). I *do*, however, care if unmount()
-doesn't write all the data, especially as "sync; sync; sync" doesn't
-appear to write the data either.
+but the documentation entry was not removed.
 
--- 
-Alex Bligh
+Cc: Davide Libenzi <davidel@xmailserver.org>
+Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ Documentation/sysctl/fs.txt |    7 -------
+ 1 file changed, 7 deletions(-)
+
+--- linux-2.6.39-git6.orig/Documentation/sysctl/fs.txt
++++ linux-2.6.39-git6/Documentation/sysctl/fs.txt
+@@ -231,13 +231,6 @@ its creation).
+ 
+ This directory contains configuration options for the epoll(7) interface.
+ 
+-max_user_instances
+-------------------
+-
+-This is the maximum number of epoll file descriptors that a single user can
+-have open at a given time. The default value is 128, and should be enough
+-for normal users.
+-
+ max_user_watches
+ ----------------
+ 
