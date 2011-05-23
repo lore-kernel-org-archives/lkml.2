@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab1EWOKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 10:10:22 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37243 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091Ab1EWOKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 10:10:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=N8mOoLDR9QPFZ0s9XRL5PYb8RfIAvqmpWSTixNohN3RskQtGkXxDD6iET70cePO0IO
-         8lieSTLApg7uV6k227elLc0mPDzRPvKxJlpCDuycXKmz0Jpg2YUfNKC6dv/e2WTqFIhX
-         Vu4C0slUGl/y2eM9In0JNTvEGmWxSfbgxAsmo=
+	id S1754928Ab1EWOMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 10:12:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53006 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754091Ab1EWOMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 10:12:06 -0400
+Date: Mon, 23 May 2011 16:10:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: ptrace_resume->wake_up_process (Was: Ptrace documentation, draft
+	#1)
+Message-ID: <20110523141034.GA11866@redhat.com>
+References: <201105152235.32073.vda.linux@googlemail.com> <20110516153122.GA15856@redhat.com> <BANLkTintE-QVUJhJY-_A5nvgj7viJatZ4Q@mail.gmail.com> <20110519194908.GA26584@redhat.com> <BANLkTi=bRb+NCqqS9+ptzxHVOjKKXhZgsg@mail.gmail.com> <20110523121011.GA5799@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <201105231527.53805.stevie.trujillo@gmail.com>
-References: <201105231527.53805.stevie.trujillo@gmail.com>
-Date: Mon, 23 May 2011 22:10:17 +0800
-Message-ID: <BANLkTi=iGzkSwWPZrFPBJZYg6x=dDBb5Eg@mail.gmail.com>
-Subject: Re: ramoops: is using platform_drivers correct?
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Stevie Trujillo <stevie.trujillo@gmail.com>
-Cc: marco.stornelli@gmail.com, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110523121011.GA5799@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 9:27 PM, Stevie Trujillo
-<stevie.trujillo@gmail.com> wrote:
-> Hello,
+On 05/23, Oleg Nesterov wrote:
 >
-> ramoops (drivers/char/ramoops.c) is for "all" computers right? When I try to
-> load it on my laptop, I get ENODEV. This is caused by platform_driver_probe()
-> - the code never reaches the ramoops probe callback.
->
-> After I removed the platform_driver stuff, moving everything into ramoops_init
-> and ramoops_exit it worked.
+> "does nothing" is not 100% true, it does wake_up_process() but this shouldn't
+> be documented, this should be fixed.
 
-Actually that was changed by Kyungmin, Cc'ing...
+In fact ptrace_resume()->wake_up_process() is obviously wrong anyway,
+I think the patch below makes sense even for 2.6.40.
 
-commit c3b92ce9e75f6353104fc7f8e32fb9fdb2550ad0
-Author: Kyungmin Park <kyungmin.park@samsung.com>
-Date:   Wed Oct 27 15:34:52 2010 -0700
+But it is much worse in PTRACE_KILL case. Just for example,
 
-    ramoops: use the platform data structure instead of module params
+	int main(void)
+	{
+		int child, status;
 
-    As each board and system has different memory for ramoops.  It's better to
-    define the platform data instead of module params.
+		child = fork();
+		if (!child) {
+			int ret;
 
-    [akpm@linux-foundation.org: fix ramoops_remove() return type]
-    Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-    Cc: Marco Stornelli <marco.stornelli@gmail.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+			assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
+
+			ret = pause();
+			printf("pause: %d %m\n", ret);
+
+			return 0x23;
+		}
+
+		sleep(1);
+		assert(ptrace(PTRACE_KILL, child, 0,0) == 0);
+
+		assert(child == wait(&status));
+		printf("wait: %x\n", status);
+
+		return 0;
+	}
+
+leaks -ERESTARTNOHAND. Yes, we should probably fix sys_pause() as well,
+it should check signal_pending(). But we shouldn't allow to wake up the
+tracee in unknown state/path.
+
+Can't understand why this wasn't fixed before... I always knew this looks
+wrong, but I never sent the patch. Probably because I never understood
+the original reason for wake_up_process...
+
+Oleg.
+
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -706,7 +706,7 @@ static int ptrace_resume(struct task_str
+ 	}
+ 
+ 	child->exit_code = data;
+-	wake_up_process(child);
++	wake_up_state(child, TASK_TRACED);
+ 
+ 	return 0;
+ }
+
