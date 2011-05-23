@@ -1,183 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab1EWQqp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:46:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43687 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756597Ab1EWQqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:46:44 -0400
-Date: Mon, 23 May 2011 18:46:36 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org
-Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] jump_label: check entries limit in __jump_label_update
-Message-ID: <20110523164636.GF2052@jolsa.brq.redhat.com>
-References: <1304523023-7501-1-git-send-email-jolsa@redhat.com>
- <20110509193248.GC2524@redhat.com>
- <20110510104346.GC1899@jolsa.brq.redhat.com>
- <20110510143045.GA2490@redhat.com>
+	id S1756664Ab1EWQr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:47:58 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:18583 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756565Ab1EWQr5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:47:57 -0400
+Message-ID: <4DDA8FBC.1090904@caviumnetworks.com>
+Date: Mon, 23 May 2011 09:47:56 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110510143045.GA2490@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Gibson <david@gibson.dropbear.id.au>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/6] of: Allow scripts/dtc/libfdt to be used from
+ kernel code
+References: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com> <1305930343-31259-2-git-send-email-ddaney@caviumnetworks.com> <20110521063345.GB14828@yookeroo.fritz.box>
+In-Reply-To: <20110521063345.GB14828@yookeroo.fritz.box>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 May 2011 16:47:56.0860 (UTC) FILETIME=[2AE1BFC0:01CC1969]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-any feedback?
+On 05/20/2011 11:33 PM, David Gibson wrote:
+> On Fri, May 20, 2011 at 03:25:38PM -0700, David Daney wrote:
+>> To use it you need to do this in your Kconfig:
+>>
+>> 	select LIBFDT
+>>
+>> And in the Makefile of the code using libfdt something like:
+>>
+>> ccflags-y := -include linux/libfdt_env.h -I$(src)/../../../scripts/dtc/libfdt
+>>
+>> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
+>> ---
+>>   drivers/of/Kconfig          |    3 +++
+>>   drivers/of/Makefile         |    2 ++
+>>   drivers/of/libfdt/Makefile  |    3 +++
+>>   drivers/of/libfdt/fdt.c     |    2 ++
+>>   drivers/of/libfdt/fdt_ro.c  |    2 ++
+>>   drivers/of/libfdt/fdt_wip.c |    2 ++
+>
+> No fdt_sw.c or fdt_rw.c?
+>
 
-thanks,
-jirka
+I had no immediate need for them.  They could of course be added, but 
+that would potentially waste space.
 
-On Tue, May 10, 2011 at 10:30:45AM -0400, Jason Baron wrote:
-> On Tue, May 10, 2011 at 12:43:46PM +0200, Jiri Olsa wrote:
-> > On Mon, May 09, 2011 at 03:32:48PM -0400, Jason Baron wrote:
-> > > On Wed, May 04, 2011 at 05:30:23PM +0200, Jiri Olsa wrote:
-> > > > When iterating the jump_label entries array (core or modules),
-> > > > the __jump_label_update function peeks over the last entry.
-> > > > 
-> > > > The reason is that the end of the for loop depends on the key
-> > > > value of the processed entry. Thus when going through the
-> > > > last array entry, we will touch the memory behind the array
-> > > > limit.
-> > > > 
-> > > > This bug probably will never be triggered, since most likely the
-> > > > memory behind the jump_label entries will be accesable and the
-> > > > entry->key will be different than the expected value.
-> > > > 
-> > > > 
-> > > > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > > > ---
-> > > >  kernel/jump_label.c |   17 ++++++++++++-----
-> > > >  1 files changed, 12 insertions(+), 5 deletions(-)
-> > > > 
-> > > > diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> > > > index 74d1c09..b2ee97a 100644
-> > > > --- a/kernel/jump_label.c
-> > > > +++ b/kernel/jump_label.c
-> > > > @@ -105,9 +105,12 @@ static int __jump_label_text_reserved(struct jump_entry *iter_start,
-> > > >  }
-> > > >  
-> > > >  static void __jump_label_update(struct jump_label_key *key,
-> > > > -		struct jump_entry *entry, int enable)
-> > > > +				struct jump_entry *entry,
-> > > > +				struct jump_entry *stop, int enable)
-> > > >  {
-> > > > -	for (; entry->key == (jump_label_t)(unsigned long)key; entry++) {
-> > > > +	for (; (entry < stop) &&
-> > > > +	      (entry->key == (jump_label_t)(unsigned long)key);
-> > > > +	      entry++) {
-> > > >  		/*
-> > > >  		 * entry->code set to 0 invalidates module init text sections
-> > > >  		 * kernel_text_address() verifies we are not in core kernel
-> > > > @@ -158,6 +161,7 @@ early_initcall(jump_label_init);
-> > > >  struct jump_label_mod {
-> > > >  	struct jump_label_mod *next;
-> > > >  	struct jump_entry *entries;
-> > > > +	struct jump_entry *entries_stop;
-> > > >  	struct module *mod;
-> > > >  };
-> > > >  
-> > > > @@ -181,7 +185,8 @@ static void __jump_label_mod_update(struct jump_label_key *key, int enable)
-> > > >  	struct jump_label_mod *mod = key->next;
-> > > >  
-> > > >  	while (mod) {
-> > > > -		__jump_label_update(key, mod->entries, enable);
-> > > > +		__jump_label_update(key, mod->entries, mod->entries_stop,
-> > > > +				    enable);
-> > > >  		mod = mod->next;
-> > > 
-> > > hmmm. Instead of adding a new field to the 'struct jump_label_mod' data
-> > > structure (and thus increasing its footprint), why not use:
-> > > mod->jump_entries +  mod->num_jump_entries here?
-> > 
-> > yep, overlooked the struct module pointer inside jump_label_mod
-> > attaching new patch
-> > 
-> > thanks,
-> > jirka
-> >  
-> > ---
-> > When iterating the jump_label entries array (core or modules),
-> > the __jump_label_update function peeks over the last entry.
-> > 
-> > The reason is that the end of the for loop depends on the key
-> > value of the processed entry. Thus when going through the
-> > last array entry, we will touch the memory behind the array
-> > limit.
-> > 
-> > This bug probably will never be triggered, since most likely the
-> > memory behind the jump_label entries will be accesable and the
-> > entry->key will be different than the expected value.
-> > 
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> >  kernel/jump_label.c |   18 +++++++++++++-----
-> >  1 files changed, 13 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> > index 74d1c09..fa27e75 100644
-> > --- a/kernel/jump_label.c
-> > +++ b/kernel/jump_label.c
-> > @@ -105,9 +105,12 @@ static int __jump_label_text_reserved(struct jump_entry *iter_start,
-> >  }
-> >  
-> >  static void __jump_label_update(struct jump_label_key *key,
-> > -		struct jump_entry *entry, int enable)
-> > +				struct jump_entry *entry,
-> > +				struct jump_entry *stop, int enable)
-> >  {
-> > -	for (; entry->key == (jump_label_t)(unsigned long)key; entry++) {
-> > +	for (; (entry < stop) &&
-> > +	      (entry->key == (jump_label_t)(unsigned long)key);
-> > +	      entry++) {
-> >  		/*
-> >  		 * entry->code set to 0 invalidates module init text sections
-> >  		 * kernel_text_address() verifies we are not in core kernel
-> > @@ -181,7 +184,11 @@ static void __jump_label_mod_update(struct jump_label_key *key, int enable)
-> >  	struct jump_label_mod *mod = key->next;
-> >  
-> >  	while (mod) {
-> > -		__jump_label_update(key, mod->entries, enable);
-> > +		struct module *m = mod->mod;
-> > +
-> > +		__jump_label_update(key, mod->entries,
-> > +				    m->jump_entries + m->num_jump_entries,
-> > +				    enable);
-> >  		mod = mod->next;
-> >  	}
-> >  }
-> > @@ -245,7 +252,8 @@ static int jump_label_add_module(struct module *mod)
-> >  		key->next = jlm;
-> >  
-> >  		if (jump_label_enabled(key))
-> > -			__jump_label_update(key, iter, JUMP_LABEL_ENABLE);
-> > +			__jump_label_update(key, iter, iter_stop,
-> > +					    JUMP_LABEL_ENABLE);
-> >  	}
-> >  
-> >  	return 0;
-> > @@ -371,7 +379,7 @@ static void jump_label_update(struct jump_label_key *key, int enable)
-> >  
-> >  	/* if there are no users, entry can be NULL */
-> >  	if (entry)
-> > -		__jump_label_update(key, entry, enable);
-> > +		__jump_label_update(key, entry, __stop___jump_table, enable);
-> >  
-> >  #ifdef CONFIG_MODULES
-> >  	__jump_label_mod_update(key, enable);
-> > -- 
-> > 1.7.1
-> > 
-> 
-> Looks good.
-> 
-> Acked-by: Jason Baron <jbaron@redhat.com>
-> 
-> Thanks,
-> 
-> -Jason
+Let's see if I can make it into an archive library.
+
+David Daney
+
+>>   include/linux/libfdt.h      |    8 ++++++++
+>>   include/linux/libfdt_env.h  |   13 +++++++++++++
+>>   8 files changed, 35 insertions(+), 0 deletions(-)
+>>   create mode 100644 drivers/of/libfdt/Makefile
+>>   create mode 100644 drivers/of/libfdt/fdt.c
+>>   create mode 100644 drivers/of/libfdt/fdt_ro.c
+>
+
