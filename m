@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878Ab1EWXge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 19:36:34 -0400
-Received: from mail.perches.com ([173.55.12.10]:1907 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753700Ab1EWXgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 19:36:32 -0400
-Subject: Re: [PATCH-v2] MAINTAINERS: Add drivers/target/ entry
-From: Joe Perches <joe@perches.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-In-Reply-To: <1306185032-11629-1-git-send-email-nab@linux-iscsi.org>
-References: <1306185032-11629-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 May 2011 16:36:29 -0700
-Message-ID: <1306193789.8687.61.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1757837Ab1EWXii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 19:38:38 -0400
+Received: from science.horizon.com ([71.41.210.146]:44794 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753700Ab1EWXig (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 19:38:36 -0400
+Date: 23 May 2011 19:38:35 -0400
+Message-ID: <20110523233835.32254.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: arend@broadcom.com, linux@horizon.com
+Subject: Re: [RFC] lib: crc8: add new library module providing crc8
+Cc: johannes@sipsolutions.net, linux-kernel@vger.kernel.org
+In-Reply-To: <4DDAC1A5.20004@broadcom.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 14:10 -0700, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> +TARGET SUBSYSTEM
-> +M:	Nicholas A. Bellinger <nab@linux-iscsi.org>
-> +L:	linux-scsi@vger.kernel.org
-> +L:	http://groups.google.com/group/linux-iscsi-target-dev
-> +W:	http://www.linux-iscsi.org
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/nab/lio-core-2.6.git master
-> +S:	Supported
-> +F:	drivers/target/
-> +F:	include/target/
-> +F:	Documentation/target/
+>> Thanks. However, your code example is confusing.
 
-Shouldn't the file layout be more like
+>>> You can fill in a CRC table for an arbitrary polynomial with
+>>>
+>>> #define POLY 0xAB	/* 1 + x^2 + x^4 + x^6 + x^7 (+ x^8) */
+>>> typedef uint8_t crc_type;	/* Must be an unsigned type */
+>>>
+>>> void
+>>> crc_le(crc_type const table[256], crc_type crc, u8 const *buf, size_t len)
+>>> {
+>>> 	while (len--)
+>>> 		crc = (crc>>  8) ^ table[(crc ^ *buf++)&  0xff];
+> 
+>> Here is where my confusion starts. Shifting crc by 8 bits basically 
+>> means 0 ^ table[], right?
 
-drivers/lio/target?
+> I think I understand the code a bit better. Your code is generic for any 
+> given crc_type.
 
-
+Yes, exactly.  The crc_type has to be at least as wide as the CRC
+being computed.  If the crc_type is only 8 bits, the shift by 8 does
+indeed get optimized away.
