@@ -1,179 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab1EWP51 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 11:57:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51784 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756223Ab1EWP50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 11:57:26 -0400
-From: David Teigland <teigland@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] dlm: make plock operation killable
-Date: Mon, 23 May 2011 10:57:20 -0500
-Message-Id: <1306166240-3359-5-git-send-email-teigland@redhat.com>
+	id S1755853Ab1EWQIC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:08:02 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39579 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752223Ab1EWQIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:08:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110523090918.GA5474@elte.hu>
+References: <20110520161210.81bbef3a.sfr@canb.auug.org.au> <BANLkTi=Dn_jvJ8mLY0Bc6C1Ptoqa-kJrCg@mail.gmail.com>
+ <20110523090918.GA5474@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 23 May 2011 09:01:44 -0700
+Message-ID: <BANLkTim_pWfU0=ck8=F1kt_bwjtdGRDgdQ@mail.gmail.com>
+Subject: Re: [bloat] Measuring header file bloat effects on kernel build
+ performance: a more than 2x slowdown ...
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Miller <davem@davemloft.net>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow processes blocked on plock requests to be interrupted
-when they are killed.  This leaves the problem of cleaning
-up the lock state in userspace.  This has three parts:
+On Mon, May 23, 2011 at 2:09 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> I've attached a totally hacky patch that removes all the big #include's from
+> kernel/pid.c and includes all structure and API definitions explicitly.
 
-1. Add a flag to unlock operations sent to userspace
-indicating the file is being closed.  Userspace will
-then look for and clear any waiting plock operations that
-were abandoned by an interrupted process.
+Hmm.
 
-2. Queue an unlock-close operation (like in 1) to clean up
-userspace from an interrupted plock request.  This is needed
-because the vfs will not send a cleanup-unlock if it sees no
-locks on the file, which it won't if the interrupted operation
-was the only one.
+A less hacky patch might be to split up "sched.h" into multiple
+smaller things and at least get *part* of the way.
 
-3. Do not use replies from userspace for unlock-close operations
-because they are unnecessary (they are just cleaning up for the
-process which did not make an unlock call).  This also simplifies
-the new unlock-close generated from point 2.
+A lot of things want "struct task_struct" (and in some cases
+thread_info, but that's already split).
 
-Signed-off-by: David Teigland <teigland@redhat.com>
----
- fs/dlm/plock.c            |   65 ++++++++++++++++++++++++++++++++++++++++++---
- include/linux/dlm_plock.h |    6 +++-
- 2 files changed, 65 insertions(+), 6 deletions(-)
+Much fewer care about the signal stuff.
 
-diff --git a/fs/dlm/plock.c b/fs/dlm/plock.c
-index 30d8b85..e2b8780 100644
---- a/fs/dlm/plock.c
-+++ b/fs/dlm/plock.c
-@@ -71,6 +71,36 @@ static void send_op(struct plock_op *op)
- 	wake_up(&send_wq);
- }
- 
-+/* If a process was killed while waiting for the only plock on a file,
-+   locks_remove_posix will not see any lock on the file so it won't
-+   send an unlock-close to us to pass on to userspace to clean up the
-+   abandoned waiter.  So, we have to insert the unlock-close when the
-+   lock call is interrupted. */
-+
-+static void do_unlock_close(struct dlm_ls *ls, u64 number,
-+			    struct file *file, struct file_lock *fl)
-+{
-+	struct plock_op *op;
-+
-+	op = kzalloc(sizeof(*op), GFP_NOFS);
-+	if (!op)
-+		return;
-+
-+	op->info.optype		= DLM_PLOCK_OP_UNLOCK;
-+	op->info.pid		= fl->fl_pid;
-+	op->info.fsid		= ls->ls_global_id;
-+	op->info.number		= number;
-+	op->info.start		= 0;
-+	op->info.end		= OFFSET_MAX;
-+	if (fl->fl_lmops && fl->fl_lmops->fl_grant)
-+		op->info.owner	= (__u64) fl->fl_pid;
-+	else
-+		op->info.owner	= (__u64)(long) fl->fl_owner;
-+
-+	op->info.flags |= DLM_PLOCK_FL_CLOSE;
-+	send_op(op);
-+}
-+
- int dlm_posix_lock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
- 		   int cmd, struct file_lock *fl)
- {
-@@ -114,9 +144,19 @@ int dlm_posix_lock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
- 
- 	send_op(op);
- 
--	if (xop->callback == NULL)
--		wait_event(recv_wq, (op->done != 0));
--	else {
-+	if (xop->callback == NULL) {
-+		rv = wait_event_killable(recv_wq, (op->done != 0));
-+		if (rv == -ERESTARTSYS) {
-+			log_debug(ls, "dlm_posix_lock: wait killed %llx",
-+				  (unsigned long long)number);
-+			spin_lock(&ops_lock);
-+			list_del(&op->list);
-+			spin_unlock(&ops_lock);
-+			kfree(xop);
-+			do_unlock_close(ls, number, file, fl);
-+			goto out;
-+		}
-+	} else {
- 		rv = FILE_LOCK_DEFERRED;
- 		goto out;
- 	}
-@@ -233,6 +273,13 @@ int dlm_posix_unlock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
- 	else
- 		op->info.owner	= (__u64)(long) fl->fl_owner;
- 
-+	if (fl->fl_flags & FL_CLOSE) {
-+		op->info.flags |= DLM_PLOCK_FL_CLOSE;
-+		send_op(op);
-+		rv = 0;
-+		goto out;
-+	}
-+
- 	send_op(op);
- 	wait_event(recv_wq, (op->done != 0));
- 
-@@ -334,7 +381,10 @@ static ssize_t dev_read(struct file *file, char __user *u, size_t count,
- 	spin_lock(&ops_lock);
- 	if (!list_empty(&send_list)) {
- 		op = list_entry(send_list.next, struct plock_op, list);
--		list_move(&op->list, &recv_list);
-+		if (op->info.flags & DLM_PLOCK_FL_CLOSE)
-+			list_del(&op->list);
-+		else
-+			list_move(&op->list, &recv_list);
- 		memcpy(&info, &op->info, sizeof(info));
- 	}
- 	spin_unlock(&ops_lock);
-@@ -342,6 +392,13 @@ static ssize_t dev_read(struct file *file, char __user *u, size_t count,
- 	if (!op)
- 		return -EAGAIN;
- 
-+	/* there is no need to get a reply from userspace for unlocks
-+	   that were generated by the vfs cleaning up for a close
-+	   (the process did not make an unlock call). */
-+
-+	if (op->info.flags & DLM_PLOCK_FL_CLOSE)
-+		kfree(op);
-+
- 	if (copy_to_user(u, &info, sizeof(info)))
- 		return -EFAULT;
- 	return sizeof(info);
-diff --git a/include/linux/dlm_plock.h b/include/linux/dlm_plock.h
-index 2dd2124..3b1cc1b 100644
---- a/include/linux/dlm_plock.h
-+++ b/include/linux/dlm_plock.h
-@@ -14,7 +14,7 @@
- #define DLM_PLOCK_MISC_NAME		"dlm_plock"
- 
- #define DLM_PLOCK_VERSION_MAJOR	1
--#define DLM_PLOCK_VERSION_MINOR	1
-+#define DLM_PLOCK_VERSION_MINOR	2
- #define DLM_PLOCK_VERSION_PATCH	0
- 
- enum {
-@@ -23,12 +23,14 @@ enum {
- 	DLM_PLOCK_OP_GET,
- };
- 
-+#define DLM_PLOCK_FL_CLOSE 1
-+
- struct dlm_plock_info {
- 	__u32 version[3];
- 	__u8 optype;
- 	__u8 ex;
- 	__u8 wait;
--	__u8 pad;
-+	__u8 flags;
- 	__u32 pid;
- 	__s32 nodeid;
- 	__s32 rv;
--- 
-1.7.1.1
+And many things probably don't even need the task_struct definition,
+and might be perfectly happy with just function calls rather than
+having intimate knowledge of the structure layout and an inline
+function.
 
+                       Linus
