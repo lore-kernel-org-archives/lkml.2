@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab1EWAia (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 20:38:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23001 "EHLO
+	id S1756056Ab1EWAiv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 20:38:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23095 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab1EWAi2 (ORCPT
+	with ESMTP id S1755788Ab1EWAip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 20:38:28 -0400
-Date: Sun, 22 May 2011 17:32:27 -0700
+	Sun, 22 May 2011 20:38:45 -0400
+Date: Sun, 22 May 2011 17:34:12 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Pelagicore AB <info@pelagicore.com>, mchehab@infradead.org
 Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH -next] ata: PATA_ARASAN_CF depends on DMADEVICES
-Message-Id: <20110522173227.5ba18817.randy.dunlap@oracle.com>
+        linux-media@vger.kernel.org
+Subject: [PATCH -next] media: fix kconfig dependency warning for
+ VIDEO_TIMBERDALE
+Message-Id: <20110522173412.21948fba.randy.dunlap@oracle.com>
 In-Reply-To: <20110520165507.cba539d5.sfr@canb.auug.org.au>
 References: <20110520165507.cba539d5.sfr@canb.auug.org.au>
 Organization: Oracle Linux Eng.
@@ -22,8 +23,9 @@ X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090201.4DD9AC7C.003C:SCFSTAT5015188,ss=1,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DD9AC7F.0027:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,21 +34,22 @@ From: Randy Dunlap <randy.dunlap@oracle.com>
 
 Fix kconfig unmet dependency warning:
 
-warning: (PATA_ARASAN_CF && VIDEO_TIMBERDALE && SND_SOC_SH4_SIU) selects DMA_ENGINE which has unmet direct dependencies (DMADEVICES)
+warning: (VIDEO_TIMBERDALE) selects TIMB_DMA which has unmet direct dependencies (DMADEVICES && (MFD_TIMBERDALE || HAS_IOMEM))
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Viresh Kumar <viresh.kumar@st.com>
+Cc: Pelagicore AB <info@pelagicore.com>
 ---
- drivers/ata/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/video/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- linux-next-20110520.orig/drivers/ata/Kconfig
-+++ linux-next-20110520/drivers/ata/Kconfig
-@@ -313,6 +313,7 @@ config PATA_AMD
+--- linux-next-20110520.orig/drivers/media/video/Kconfig
++++ linux-next-20110520/drivers/media/video/Kconfig
+@@ -683,7 +683,7 @@ config VIDEO_HEXIUM_GEMINI
  
- config PATA_ARASAN_CF
- 	tristate "ARASAN CompactFlash PATA Controller Support"
-+	depends on DMADEVICES
+ config VIDEO_TIMBERDALE
+ 	tristate "Support for timberdale Video In/LogiWIN"
+-	depends on VIDEO_V4L2 && I2C
++	depends on VIDEO_V4L2 && I2C && DMADEVICES
  	select DMA_ENGINE
- 	help
- 	  Say Y here to support the ARASAN CompactFlash PATA controller
+ 	select TIMB_DMA
+ 	select VIDEO_ADV7180
