@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab1EWTLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 15:11:08 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42754 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932091Ab1EWTLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 15:11:05 -0400
-Date: Mon, 23 May 2011 21:10:43 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH -next] x86: apic_flat_64.c needs module.h
-Message-ID: <20110523191043.GB23629@elte.hu>
-References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au>
- <20110523104300.dd532a99.randy.dunlap@oracle.com>
- <4DDA9EAB.40304@gmail.com>
- <4DDAA2C0.7080108@gmail.com>
- <4DDAA384.2000203@oracle.com>
+	id S1756957Ab1EWTN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 15:13:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44212 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756560Ab1EWTNy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 15:13:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DDAA384.2000203@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 23 May 2011 12:13:29 -0700
+Message-ID: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
+Subject: (Short?) merge window reminder
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+So I've been busily merging stuff, and just wanted to send out a quick
+reminder that I warned people in the 39 announcement that this might
+be a slightly shorter merge window than usual, so that I can avoid
+having to make the -rc1 release from Japan using my slow laptop (doing
+"allyesconfig" builds on that thing really isn't in the cards, and I
+like to do those to verify things - even if we've already had a few
+cases where arch include differences made it less than effective in
+finding problems).
 
-* Randy Dunlap <randy.dunlap@oracle.com> wrote:
+And judging by the merge window so far, that early close (probably
+Sunday - I'll be on airplanes next Monday) looks rather likely. I
+already seem to have a fairly sizable portion of linux-next in my
+tree, and there haven't been any huge upsets.
 
-> >>>  arch/x86/kernel/apic/apic_flat_64.c |    1 +
-> >>>  1 file changed, 1 insertion(+)
-> >>>
-> >>> --- linux-next-20110523.orig/arch/x86/kernel/apic/apic_flat_64.c
-> >>> +++ linux-next-20110523/arch/x86/kernel/apic/apic_flat_64.c
-> >>> @@ -16,6 +16,7 @@
-> >>>  #include <linux/ctype.h>
-> >>>  #include <linux/init.h>
-> >>>  #include <linux/hardirq.h>
-> >>> +#include <linux/module.h>
-> >>>  #include <asm/smp.h>
-> >>>  #include <asm/apic.h>
-> >>>  #include <asm/ipi.h>
-> >>
-> >> Thanks Randy! For some reason I didn't hit this problem while
-> >> were compiling the kernel and testing it (I usually do not use
-> >> modules though).
-> >>
-> >> I've CC'ed Ingo and Suresh.
-> >>
-> > 
-> > Randy, while adding module.h here is correct I fail to see why I didn't
-> > hit this problem before, could you please post your config?
-> 
-> Certainly, it's attached.  It's a randconfig file.
-> I saw this build error on roughly 5 out of 15 randconfig builds.
-> 
-> CONFIG_SMP is disabled...
+So anybody who was planning a last-minute "please pull" - this is a
+heads-up. Don't do it, you might miss the window entirely.
 
-Your config builds just fine here, using latest -tip:
+Did I miss any major development mailing lists with stuff pending?
 
- tip/master 726281b: Merge branch 'tools/kvm'
+                       Linus
 
- Kernel: arch/x86/boot/bzImage is ready  (#2)
-
-or using x86/apic directly:
-
- tip/x86/apic 1a8880a: x86, apic: Make apic drivers static
-
- System is 3001 kB
- CRC 882c2d5c
- Kernel: arch/x86/boot/bzImage is ready  (#3)
-
-Has linux-next changed something that triggers this build bug?
-
-Thanks,
-
-	Ingo
+PS. The voices in my head also tell me that the numbers are getting
+too big. I may just call the thing 2.8.0. And I almost guarantee that
+this PS is going to result in more discussion than the rest, but when
+the voices tell me to do things, I listen.
