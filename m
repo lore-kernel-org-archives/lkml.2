@@ -1,84 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934108Ab1EWUHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 16:07:47 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36247 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932909Ab1EWUHo (ORCPT
+	id S1757289Ab1EWUJa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 16:09:30 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:13107 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756825Ab1EWUJ0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 16:07:44 -0400
-Subject: Re: [PATCH 2/2] mm: vmscan: Correctly check if reclaimer should
- schedule during shrink_slab
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, stable <stable@kernel.org>
-In-Reply-To: <20110523130303.6b7dad1c.akpm@linux-foundation.org>
-References: <1306144435-2516-1-git-send-email-mgorman@suse.de>
-	 <1306144435-2516-3-git-send-email-mgorman@suse.de>
-	 <20110523130303.6b7dad1c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 00:07:36 +0400
-Message-ID: <1306181256.2442.4.camel@mulgrave.site>
+	Mon, 23 May 2011 16:09:26 -0400
+Date: Mon, 23 May 2011 22:07:51 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [GIT PULL] hwmon updates for 2.6.40
+Message-ID: <20110523220751.425aafae@endymion.delvare>
+In-Reply-To: <1306164092-13024-1-git-send-email-linux@roeck-us.net>
+References: <1306164092-13024-1-git-send-email-linux@roeck-us.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 13:03 -0700, Andrew Morton wrote:
-> On Mon, 23 May 2011 10:53:55 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > It has been reported on some laptops that kswapd is consuming large
-> > amounts of CPU and not being scheduled when SLUB is enabled during
-> > large amounts of file copying. It is expected that this is due to
-> > kswapd missing every cond_resched() point because;
-> > 
-> > shrink_page_list() calls cond_resched() if inactive pages were isolated
-> >         which in turn may not happen if all_unreclaimable is set in
-> >         shrink_zones(). If for whatver reason, all_unreclaimable is
-> >         set on all zones, we can miss calling cond_resched().
-> > 
-> > balance_pgdat() only calls cond_resched if the zones are not
-> >         balanced. For a high-order allocation that is balanced, it
-> >         checks order-0 again. During that window, order-0 might have
-> >         become unbalanced so it loops again for order-0 and returns
-> >         that it was reclaiming for order-0 to kswapd(). It can then
-> >         find that a caller has rewoken kswapd for a high-order and
-> >         re-enters balance_pgdat() without ever calling cond_resched().
-> > 
-> > shrink_slab only calls cond_resched() if we are reclaiming slab
-> > 	pages. If there are a large number of direct reclaimers, the
-> > 	shrinker_rwsem can be contended and prevent kswapd calling
-> > 	cond_resched().
-> > 
-> > This patch modifies the shrink_slab() case. If the semaphore is
-> > contended, the caller will still check cond_resched(). After each
-> > successful call into a shrinker, the check for cond_resched() remains
-> > in case one shrinker is particularly slow.
-> 
-> So CONFIG_PREEMPT=y kernels don't exhibit this problem?
+Hi Guenter,
 
-Yes, they do.  They just don't hang on my sandybridge system in the same
-way than non-PREEMPT kernels do.  I'm still sure it's got something to
-do with rescheduling kswapd onto a different CPU ...
+On Mon, 23 May 2011 08:21:32 -0700, Guenter Roeck wrote:
+> Per Dalén (1):
+>       hwmon: Add support for MAX6642
 
-> I'm still unconvinced that we know what's going on here.  What's kswapd
-> *doing* with all those cycles?  And if kswapd is now scheduling away,
-> who is doing that work instead?  Direct reclaim?
+I see no trace of this device on wiki/Devices nor in sensors-detect.
+Can it be added please?
 
-Still in the dark about this one, too.
-
-James
-
-
+-- 
+Jean Delvare
