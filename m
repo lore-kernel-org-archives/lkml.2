@@ -1,92 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030256Ab1EWVWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 17:22:15 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49907 "EHLO ogre.sisk.pl"
+	id S1030953Ab1EWVZh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 17:25:37 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:37077 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933719Ab1EWVWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 17:22:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: Re: Resume Issues :Exec of NX page, Synaptics Botchup
-Date: Mon, 23 May 2011 23:22:37 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
-Cc: Parag Warudkar <parag.lkml@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Dmitry Torokhov <dtor@mail.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <alpine.DEB.2.02.1105221720040.2065@natty-nar> <201105230041.14729.rjw@sisk.pl> <493994B35A117E4F832F97C4719C4C04011E13400F@orsmsx505.amr.corp.intel.com>
-In-Reply-To: <493994B35A117E4F832F97C4719C4C04011E13400F@orsmsx505.amr.corp.intel.com>
+	id S1030705Ab1EWVZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 17:25:34 -0400
+Date: Mon, 23 May 2011 14:25:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage
+ based on semi-formal proof"
+Message-ID: <20110523212530.GF7428@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4DD6D746.6070107@kernel.org>
+ <20110520224250.GL2366@linux.vnet.ibm.com>
+ <4DD6F4A2.1070401@kernel.org>
+ <20110520231428.GN2366@linux.vnet.ibm.com>
+ <4DD6F64C.3030402@kernel.org>
+ <20110520234923.GQ2366@linux.vnet.ibm.com>
+ <4DD70120.9090801@kernel.org>
+ <20110521131844.GE2271@linux.vnet.ibm.com>
+ <20110521140845.GA12157@linux.vnet.ibm.com>
+ <4DDAC01E.7050602@kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105232322.37991.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DDAC01E.7050602@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 23, 2011, Yu, Fenghua wrote:
-> > On Monday, May 23, 2011, Parag Warudkar wrote:
-> > >
-> > > On Sun, 22 May 2011, Linus Torvalds wrote:
-> > >
-> > > >
-> > > > Hmm. The "Code: " line is just full of complete garbage, so I think
-> > > > the real issue is that you really are trying to execute data.
-> > > >
-> > > > And that in turn seems to be because "setup_disablecpuid()" has
-> > > > actually been free'd, because it is marked as __init.
-> > > >
-> > > > Which is fine at the initial bootup, but not so fine at resume
-> > time,
-> > > > since it was free'd long long ago by then.
-> > > >
-> > > > And it definitely shouldn' t be called at resume time. There's
-> > > > something wrong there. That call trace is odd:
-> > > >
-> > > >   Call Trace:
-> > > >    [<ffffffff8148a119>] ? identify_cpu+0xd8/0x2d8
-> > > >    [<ffffffff8148a32d>] identify_secondary_cpu+0x14/0x1b
-> > > >    [<ffffffff8148bf0f>] smp_store_cpu_info+0x3c/0x3e
-> > > >    [<ffffffff8148c2ef>] start_secondary+0xf7/0x1d2
-> > > >
-> > > > because none of those should be calling "setup_disablecpuid()" at
-> > all.
-> > > >
-> > > > Hmm. In fact, RIP is "setup_disablecpuid+0x40/0x40", ie it is one
-> > past
-> > > > the _end_ of setup_disablecpuid.
-> > > >
-> > > > I suspect that is actually "setup_smep()" that got called, an dthat
-> > > > there was some garbage data in there that caused it to jump back a
-> > > > bit.
-> > > >
-> > > > Does the attached patch fix it?
-> > > >
-> > >
-> > > Now I get a different call trace for the same NX error. (And
-> > Synaptics is
-> > > completely dead this time - not attributable to the patch, it was
-> > dumb
-> > > luck perhaps that it wored last time.)
+On Mon, May 23, 2011 at 01:14:22PM -0700, Yinghai Lu wrote:
+> On 05/21/2011 07:08 AM, Paul E. McKenney wrote:
+> > On Sat, May 21, 2011 at 06:18:44AM -0700, Paul E. McKenney wrote:
+> >> On Fri, May 20, 2011 at 05:02:40PM -0700, Yinghai Lu wrote:
+> >>> On 05/20/2011 04:49 PM, Paul E. McKenney wrote:
+> >>>> On Fri, May 20, 2011 at 04:16:28PM -0700, Yinghai Lu wrote:
+> >>> ...
+> >>>>>
+> >>>>> the same one i sent out before, but let DEBUG_LOCKING_API_SELFTESTS disabled.
+> >>>>
+> >>>> OK, just to make sure I understand...  You are compiling exactly the
+> >>>> same kernel source tree with exactly the same .config, just with two
+> >>>> different versions of gcc, correct?
+> >>> yes.
+> >>>>
+> >>>> If so, it is quite possible that the slow one is the correct one.  :-/
+> >>> yeah, new version always have problem.
+> >>>
+> >>> looks like opensuse11.3 has 4.5.0 and fedora14 has 4.5.1
+> >>
+> >> OK, so fedora14 is the fast one (4.5.1) and opensuse11.3 is the slow
+> >> one (4.5.0), correct?
 > > 
-> > Any chance to try with commit de5397ad5b9ad22e2401c4dacdf1bb3b19c05679
-> > (x86, cpu: Enable/disable Supervisor Mode Execution Protection)
-> > reverted?
+> > And does commit c7a3786030 help?  This commit (from Peter Zijlstra)
+> > tidied up RCU kthreads' scheduler interactions.  The patch is below,
+> > though it is probably more convenient to pull it from the rcu/next
+> > branch of:
 > > 
-> > Rafael
-> 
-> de5397ad5b9ad22e2401c4dacdf1bb3b19c05679 shouldn't affect a system unless the CPU has SMEP feature which is unlikely available out there.
-> 
-> You can check if your CPU has "smep" feature in /proc/cpuinfo. Unlikely you will see the feature on your machine. Then the commit shouldn't cause the problem.
-> 
-> You can unconditionally disable SMEP by kernel option "nosmep".
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> > 
 
-Still, it is known to cause problems to people (see for example
-https://bugzilla.kernel.org/show_bug.cgi?id=35602), so it might be a
-good idea to set "nosmep" by default.
+Thank you for testing this!
 
-Thanks,
-Rafael
+This is with the same config that you emailed out on May 12th?
+
+In particular, CONFIG_TREE_RCU=y?
+
+> [  337.132517] INFO: task rcun0:8 blocked for more than 120 seconds.
+> [  337.133238] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [  337.160396] rcun0           D 0000000000000000     0     8      2 0x00000000
+> [  337.161232]  ffff882070d3fe90 0000000000000046 ffff882070d3e000 0000000000004000
+> [  337.161291]  00000000001d1f80 ffff882070d3ffd8 00000000001d1f80 ffff882070d3ffd8
+> [  337.161348]  0000000000004000 00000000001d1f80 ffff882070d18000 ffff882070d422b0
+> [  337.161404] Call Trace:
+> [  337.161433]  [<ffffffff810afab6>] ? __lock_release+0x166/0x16f
+> [  337.161459]  [<ffffffff81c1dae1>] ? _raw_spin_unlock_irqrestore+0x3f/0x46
+> [  337.161486]  [<ffffffff810ce633>] ? rcu_cpu_kthread_should_stop+0x137/0x137
+> [  337.161512]  [<ffffffff810add8a>] ? trace_hardirqs_on+0xd/0xf
+> [  337.161533]  [<ffffffff810ce633>] ? rcu_cpu_kthread_should_stop+0x137/0x137
+> [  337.161558]  [<ffffffff81099e41>] kthread+0x8c/0xa8
+> [  337.161584]  [<ffffffff81c257d4>] kernel_thread_helper+0x4/0x10
+> [  337.161606]  [<ffffffff81c1dd80>] ? retint_restore_args+0xe/0xe
+> [  337.161627]  [<ffffffff81099db5>] ? __init_kthread_worker+0x5b/0x5b
+> [  337.161645]  [<ffffffff81c257d0>] ? gs_change+0xb/0xb
+> [  337.161651] no locks held by rcun0/8.
+
+This is quite surprising.  The "rcun" kthreads invoke rcu_node_kthread(),
+which does not call rcu_cpu_kthread_should_stop().
+
+But perhaps the stack backtrace got confused.
+
+Could you please try the following diagnostic patch to help me work out
+where the rcun threads are getting stuck?
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index b2868ea..50883dd 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1675,11 +1675,15 @@ static int rcu_node_kthread(void *arg)
+ 
+ 	for (;;) {
+ 		rnp->node_kthread_status = RCU_KTHREAD_WAITING;
++		printk(KERN_INFO "rcun %p starting wait for work.\n", rnp);
+ 		rcu_wait(atomic_read(&rnp->wakemask) != 0);
++		printk(KERN_INFO "rcun %p completed wait for work.\n", rnp);
+ 		rnp->node_kthread_status = RCU_KTHREAD_RUNNING;
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		mask = atomic_xchg(&rnp->wakemask, 0);
++		printk(KERN_INFO "rcun %p initiating boost.\n", rnp);
+ 		rcu_initiate_boost(rnp, flags); /* releases rnp->lock. */
++		printk(KERN_INFO "rcun %p completed boost.\n", rnp);
+ 		for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask >>= 1) {
+ 			if ((mask & 0x1) == 0)
+ 				continue;
+@@ -1689,10 +1693,12 @@ static int rcu_node_kthread(void *arg)
+ 				preempt_enable();
+ 				continue;
+ 			}
++			printk(KERN_INFO "rcun %p awaking rcuc%d.\n", rnp, cpu);
+ 			per_cpu(rcu_cpu_has_work, cpu) = 1;
+ 			sp.sched_priority = RCU_KTHREAD_PRIO;
+ 			sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
+ 			preempt_enable();
++			printk(KERN_INFO "rcun %p awakened rcuc%d.\n", rnp, cpu);
+ 		}
+ 	}
+ 	/* NOTREACHED */
