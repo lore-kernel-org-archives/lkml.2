@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab1EWXpu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 19:45:50 -0400
-Received: from hyde.gogi.tv ([87.106.161.174]:50257 "EHLO hyde.gogi.tv"
+	id S1757907Ab1EWXyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 19:54:07 -0400
+Received: from atl.turmel.org ([74.117.157.138]:56513 "EHLO atl.turmel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755659Ab1EWXpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 19:45:49 -0400
+	id S1752467Ab1EWXyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 19:54:03 -0400
+Message-ID: <4DDAF394.7050405@turmel.org>
+Date: Mon, 23 May 2011 19:53:56 -0400
+From: Phil Turmel <philip@turmel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110518 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
+Subject: Re: (Short?) merge window reminder
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com> <20110523192056.GC23629@elte.hu> <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+In-Reply-To: <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Tue, 24 May 2011 00:45:47 +0100
-From: Daniel Haid <d.haid@gogi.tv>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: Question about iommu on =?UTF-8?Q?x=38=36=5F=36=34=20and=20ra?=
- =?UTF-8?Q?deon=20driver=2E?=
-In-Reply-To: <20110523220536.GB11961@dumpdata.com>
-References: <6ac3f6faad655602b767aa14b355e982@admin.gogi.tv>
- <20110523220536.GB11961@dumpdata.com>
-Message-ID: <756073831c36e0404199a4e8239bcb70@admin.gogi.tv>
-User-Agent: Roundcube Webmail/0.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There had to be more than 'Map around memory hole'? Was it called
-> GART or IOMMU?
- I do not think that there was "IOMMU" or "GART" written there,
- but I do not think that the mainboard in question has an IOMMU
- (Am I correct that it would be a feature of the mainboard while
- the AMD GART is a feature of the CPU?).
- I will look again as soon as I have physical access to the system.
+Hi Linus,
 
-> The problem you are hitting (I think) is that the AMD GART poor-man
-> IOMMU is turned off
-> and the SWIOTLB is used instead. If you would like some technical
-> details, take a look at:
+On 05/23/2011 04:33 PM, Linus Torvalds wrote:
+> On Mon, May 23, 2011 at 12:20 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>>
+>> I really hope there's also a voice that tells you to wait until .42 before
+>> cutting 3.0.0! :-)
 > 
-> http://lists.freedesktop.org/archives/dri-devel/2011-January/006885.html
-> (the point #2 is what you are hitting).
+> So I'm toying with 3.0 (and in that case, it really would be "3.0",
+> not "3.0.0" - the stable team would get the third digit rather than
+> the fourth one.
 
- You are correct. In all the cases where the radeon card does not work
- I see that SWIOTLB has been enabled in the kernel log.
+A few months ago, I briefly considered suggesting that the demise of the BKL
+would be a suitable milestone for the numbering shakeup.
 
- So this is a bug? I suppose that all hardware should be working with
- SWIOTLB? Will a patch that fixes this somewhen be included?
- (The bug where your link points to was closed with WONTFIX)
+But I am a mere mortal lurker, and I remember past flame-fests this topic
+spawned.  So I chickened out.
 
-> Not sure why the AMD GART IOMMU gets disabled on VIA chipsets. You 
-> might
-> want to use 'git gui blame arch/x86/kernel/early-quirks.c' and look
-> at the code in question to figure that out.
-> Well, if everything works.... but you might just want to use
-> the git gui blame to take a look at the back-story of why the quirk
-> was added.
+As a small-scale linux evangelist, I would sure like to skip the explanation
+of the version numbers.
 
- Unfortunately I am getting crashes with "iommu=allowed". I will look
- at git blame.
-
- Thank you for your answers.
-
+Phil
