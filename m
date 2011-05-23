@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab1EWIRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 04:17:10 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:56343 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab1EWIRI (ORCPT
+	id S1754135Ab1EWI3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 04:29:35 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19122 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753197Ab1EWI3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 04:17:08 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6354"; a="92946212"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: <balbi@ti.com>
-Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1306132882-9668-1-git-send-email-tlinder@codeaurora.org> <1306132882-9668-8-git-send-email-tlinder@codeaurora.org> <20110523070556.GJ3095@legolas.emea.dhcp.ti.com> <00a301cc1919$f0e1fa00$d2a5ee00$@org> <20110523072142.GK3095@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110523072142.GK3095@legolas.emea.dhcp.ti.com>
-Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-Date: Mon, 23 May 2011 11:18:53 +0300
-Message-ID: <00cc01cc1922$0fb4ee80$2f1ecb80$@org>
+	Mon, 23 May 2011 04:29:34 -0400
+Date: Mon, 23 May 2011 10:22:02 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "D. Jansen" <d.g.jansen@googlemail.com>
+cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tytso@mit.edu
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+In-Reply-To: <BANLkTikCivzqf5OJEa=ouKSvaLMTS3ayng@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1105231019440.3148@swampdragon.chaosbits.net>
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <9534.1305905293@localhost> <BANLkTikCivzqf5OJEa=ouKSvaLMTS3ayng@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcwZGgrswJMNSeObSamukAU4wW7JwwABtTNg
-Content-Language: en-us
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2085992460-1306138922=:3148"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > +
-> > > > +static struct dummy_hcd_module_parameters mod_data = {
-> > > > +	.is_super_speed = false
-> > > > +};
-> > > > +module_param_named(is_super_speed, mod_data.is_super_speed,
-> bool,
-> > > > +S_IRUGO); MODULE_PARM_DESC(is_super_speed, "true to simulate
-> > > > +SuperSpeed connection");
-> > >
-> > > you shouldn't need this. You should always enable SuperSpeed for
-> > > this driver.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-2085992460-1306138922=:3148
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 20 May 2011, D. Jansen wrote:
+
+> On Fri, May 20, 2011 at 5:28 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> > On Thu, 19 May 2011 15:34:46 +0200, Dennis Jansen said:
 > >
-> > You mean I don't need the module parameter? IMO it's the best way to
-> > enable HS connection. If driver->speed=USB_SPEED_SUPER than dummy_hcd
-> > will try to enumerate the device on the SS root hub and if the gadget
-> > didn't provide SS descriptors - it will fail. Just as it happened
-> > before. Finding out from
+> >> Testing:
+> >> I've been using this workaround on my netbook for over six months now.
+> >> It works as expected for me with all software in a Ubuntu 9.10
+> >> environment and saves me at least 0.5 Watt or roughly 10 % battery
+> >> time - without destroying my hard disk. I have seen no negative side
+> >> effects.
+> >
+> > How much destructive testing did you do?  In the 6 months, how many times did
+> > the system crash (or had the battery pulled out, or whatever) while large
+> > amounts of data were still pending after apps thought they were fsync'ed? How
+> > much crash testing was done against apps that use fsync for ordering or
+> > correctness reasons?
 > 
-> then it should hand the device over to the hs_hcd ;-) Meaning it would
-> disconnect the device, switch to hs_hcd and reconnect :-)
-
-Yes this will be the best solution :) But as I said, the enumeration occurs
-not in dummy_hcd thus I'm not sure how dummy_hcd can find out that it failed
-in order to reconnect the device to hs_hcd. And I'm not sure that dummy_hcd
-should care whether the enumeration succeeds or fails. It seems to me that
-this should be handled by upper levels. Shouldn't it?
-But we're discussing a more general issue; do you remember what the usb30
-spec sais about this? I mean when connecting a HS device to a SS port (over
-SS cable), should it still enumerate as a HS device? It seems to me that the
-answer is no but I'm not sure...
-
+> I don't see the point in verifying the obvious. Of course applications
+> that rely on fsync will lose data.
+> The real problem comes with ordering correctness, which could actually
+> _destroy previous data_ as well.
+> In my scenario (office applications, browsing) I have not hit such a problem.
 > 
-> > dummy_hcd that the enumeration failed is very complicated (if even
-> > possible) and I'm not sure that is the right thing to do... If you
-> > connect a real device over SS port to xHCI and the device doesn't
-> > provide SS descriptors - the enumeration fails and it's ok. But if
-> you
-> > connect the same device to a HS port - it should work properly. This
-> > is what I tried to simulate with this parameter.
-> 
-> it doesn't just fails, it gives the device over to the shared_hcd :-)
+> Does anyone know a Linux app that actually does rely on ordering
+> correctness? Is that one which is used on a laptop? In laptop mode?
+> (-> when on battery?) Because so far the discussion seems to be
+> running in circles around Alan's mailer daemon. I would just shut that
+> down on enabling laptop mode. Problem solved. But I don't run that on
+> my laptop, anyway, esp. in laptop mode. I wonder who would, too.
 > 
 
-Hmmm.... I have v2.6.38 installed on my Linux-host at the moment and I just
-verified that when connecting a Gadget driver without SS descriptors over SS
-connection - the enumeration fails. Was this fixed in v2.6.39? It will take
-me some time to upgrade to v2.6.39  and verify but I have to do it any way
-so I'll give it a shot...
+PostgreSQL's Write Ahead Log (WAL) would be one such example as far as I 
+can see ( http://www.westnet.com/~gsmith/content/postgresql/TuningPGWAL.htm ).
+And yes, people run that on laptops while on battery (I know that for a 
+fact since I do that myself).
 
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Best regards,
-Tanya Brokhman
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-
-
-
-
+--8323328-2085992460-1306138922=:3148--
