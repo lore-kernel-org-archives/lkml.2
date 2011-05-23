@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab1EWNy6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 09:54:58 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:42939 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755451Ab1EWNy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 09:54:56 -0400
-Date: Mon, 23 May 2011 06:52:44 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "Stijn Devriendt (sdevrien)" <sdevrien@cisco.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lm-sensors] [PATCH] Add support for the Philips SA56004
- temperature sensor.
-Message-ID: <20110523135244.GA6897@ericsson.com>
-References: <1305814253-12528-1-git-send-email-sdevrien@cisco.com>
- <20110523043711.GA4890@ericsson.com>
- <6E4D2678AC543844917CA081C9D6B33F047F51E5@XMB-AMS-103.cisco.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <6E4D2678AC543844917CA081C9D6B33F047F51E5@XMB-AMS-103.cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755370Ab1EWNxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 09:53:47 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:63397 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755299Ab1EWNxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 09:53:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=jgYQXPbWgQD9foCq5onN+LxrbgjdHXbx3uy0OeCdESGthNzFXjRUkQsR7CECQ7Dyqg
+         EbwSkN3EJn8+tl18KnTy3vtdppNbwulJdklCyU+20imAG2+ukyv1MKkc/f4+EEcAgZUb
+         eDeFQsqHYK5fWJVgFKVmN68d5Q1ZT23SK8JSc=
+Subject: Re: [PATCH 0/3] block: Per cpu merge stats and cfq fix
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        dpshah@google.com
+In-Reply-To: <4DDA151A.1020504@kernel.dk>
+References: <1305936167-8932-1-git-send-email-vgoyal@redhat.com>
+	 <20110521000650.GA8026@redhat.com>  <4DDA151A.1020504@kernel.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 May 2011 22:53:35 +0900
+Message-ID: <1306158815.1498.6.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 03:08:42AM -0400, Stijn Devriendt (sdevrien) wrote:
-> > -----Original Message-----
-> > From: Guenter Roeck [mailto:guenter.roeck@ericsson.com]
+2011-05-23 (월), 10:04 +0200, Jens Axboe:
+> On 2011-05-21 02:06, Vivek Goyal wrote:
+> > On Fri, May 20, 2011 at 08:02:44PM -0400, Vivek Goyal wrote:
+> >> Hi Jens,
+> >>
+> >> Here is the patch for making merge stats per cpu. While scanning the code
+> >> I also noticed that in one case I was not freeing up per cpu stats. First
+> >> patch fixes it. I also included Namhyung Kim's bio merge fix.
+> >>
+> >> Thanks
+> >> Vivek
+> >>
+> >> Vivek Goyal (3):
+> >>   cfq-iosched: Fix a memory leak of per cpu stats for root group
+> >>   cfq-iosched: Make IO merge related stats per cpu
 > > 
-> > >  	if (!name) { /* identification failed */
-> > > @@ -1372,6 +1401,18 @@ static int lm90_probe(struct i2c_client
-> > *new_client,
-> > >  	/* Set maximum conversion rate */
-> > >  	data->max_convrate = lm90_params[data->kind].max_convrate;
-> > >
-> > > +	if (data->flags & LM90_HAVE_LOCAL_EXT) {
-> > > +		if (lm90_params[data->kind].local_ext_offset > 0)
-> > > +			data->local_ext_offset =
-> > > +
-> lm90_params[data->kind].local_ext_offset;
-> > > +		else {
-> > > +			dev_err(&new_client->dev,
-> > > +			  "Invalid temperature extension register. "
-> > > +			  "Accuracy may be limited.\n");
-> > > +			data->flags &= (~LM90_HAVE_LOCAL_EXT);
-> > > +		}
+> > Minor correction. Following patch author is Namhyung Kim.
 > > 
-> > Either { } in both branches of the if statement, or none.
-> > ( ) around ~LM90_HAVE_LOCAL_EXT is unnecessary.
-> > 
-> > I see it as BUG if LM90_HAVE_LOCAL_EXT is set but local_ext_offset
-> isn't.
-> > That should be found during coding (or code review), and not be
-> exported
-> > to the user. So, from my perspective, the check is unnecessary. I'll
-> leave
-> > that up to Jean to decide, though.
-> > 
-> Do you think a BUG_ON() would be better suited here?
+> > Namhyung Kim(1)
 > 
-I would just use
-
-	data->local_ext_offset = lm90_params[data->kind].local_ext_offset;
-
-without any conditionals (the if statements just add code without real value),
-followed by
-
-	BUG_ON((data->flags & LM90_HAVE_LOCAL_EXT) && data->local_ext_offset == 0);
-
-if you want to be sure.
-
-> > In addition to the above, your patch generates several checkpatch
-> errors
-> > (trailing whitespace). Please fix.
-> I recall letting checkpatch yell at me... I'll have another round of it
-> to
-> be sure.
+> Ugh, already merged it. I should have noticed that too, sorry about that
+> Namhyung.
 > 
-Try to apply your own patch, and you'll see git complain about whitespace errors.
 
-Thanks,
-Guenter
+Hi, Jens.
+It's all right, I'm fine :)
+
+
+-- 
+Regards,
+Namhyung Kim
+
+
