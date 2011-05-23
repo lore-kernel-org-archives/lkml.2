@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab1EWQLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:11:48 -0400
-Received: from mail.perches.com ([173.55.12.10]:1858 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754837Ab1EWQLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:11:47 -0400
-Subject: Re: [patch v3] checkpatch: Signature format verification
-From: Joe Perches <joe@perches.com>
-To: anish <anish198519851985@gmail.com>
-Cc: davej@redhat.com, rostedt@goodmis.org, apw@shadowen.org,
-        akpm@linux-foundation.org, vapier@gentoo.org,
-        linux-kernel@vger.kernel.org, man.k1983@gmail.com
-In-Reply-To: <1306164094.2292.25.camel@anish-desktop>
-References: <1306006721.1622.18.camel@anish-desktop>
-	 <1306059528.2761.3.camel@anish-desktop>
-	 <1306164094.2292.25.camel@anish-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 May 2011 09:11:45 -0700
-Message-ID: <1306167105.8687.11.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756146Ab1EWQMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:12:49 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:18843 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512Ab1EWQMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:12:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=S3rzw5d4EW3v80VFD5jag/B7dh44APowg5m/7ClEInWOMW3SK6svHwjD5fGstLxFP3
+         sMHUAAe6rzWWx4KcodxA==
+Date: Mon, 23 May 2011 18:12:43 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, andi@firstfloor.org,
+        ming.m.lin@intel.com
+Subject: [PATCH 0/3] perf_events: update extra shared registers management
+ (v3)
+Message-ID: <20110523161243.GA11573@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 20:51 +0530, anish wrote:
-> From: anish kumar <anish198519851985@gmail.com>
-> This patch generates warning when there is no space between
-> the patch submitter and successive mail-id.
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> +				if (!($line =~ /^\s*$sign/)) {
 
-				if  ($line !~ /etc...)
+The following short series of patches improves the code
+which manages the extra shared regs used by some events
+on Intel processors. Those events require an extra MSR
+which may be shared between siblings CPUs when HT is on.
+When HT is off, the kernel still needs to ensure that
+events within an event group do not try to program
+different values into that extra MSR.
 
-> +					WARN("$sign is the preferred form\n" .
-> +						$herecurr);
-> +				}
-> +				if ($line =~ /^\s*$sign(.*)/i) {
-> +					if($1 !~ /^\s*(\s[a-zA-Z]*.*)/i) {
+This series improves the current code for managing the
+register sharing by using static allocation instead of
+dynamically trying to find a table slot to host that
+extra MSR. This greatly simplifies the code. The patch
+also prepare the kernel for more registers with those
+kinds of constraints (e.g, LBR_SELECT, LD_LAT).
 
-Email addresses may start with a quote (") or a digit.
+The patch also adds the missing group validation of
+events using those extra MSRs. Up until now, one could
+put two instances of the those events which had incompatible
+values for the extra MSR. There was no upfront check and
+the group would never be scheduled. Now, such group cannot
+be constructed anymore (fail early).
 
-Space between if and (
+Finally, the third patch adds the SandyBridge support for
+the offcore_response events (which use these shared MSR).
+It also removes the offcore_response events  from the
+SandyBridge constraint event table. Those events don't
+have any constraints contrary to what's published in
+the documentation.
 
-> +						WARN("Space required after $sign\n" .
-> +							$herecurr);
-> +					}
-> +					if($1 !~ /[\sa-zA-Z]+\s<.*>/i) {
+The second version updates PATCH 1/3 which was an
+older version with reg->idx initialization problems.
 
-Space between if and (
+The third version solves the lockdep issues by using
+spin_lock_irqsave in __intel_shared_reg_get_constraints().
 
+[PATCH 0/3] introduction
+[PATCH 1/3] rework of the register sharing logic
+[PATCH 2/3] add missing shared regs validation
+[PATCH 3/3] add Intel SandyBridge offcore_response support
 
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
