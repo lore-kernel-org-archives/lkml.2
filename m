@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab1EWQXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:23:04 -0400
-Received: from mail.perches.com ([173.55.12.10]:1862 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756026Ab1EWQXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:23:02 -0400
-Subject: Re: [PATCH]net:8021q:vlan.c Fix pr_info to read on line in the
- syslog.
-From: Joe Perches <joe@perches.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org
-In-Reply-To: <1306166698-2036-1-git-send-email-justinmattock@gmail.com>
-References: <1306166698-2036-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 May 2011 09:23:01 -0700
-Message-ID: <1306167781.8687.20.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756540Ab1EWQX3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:23:29 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:58520 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756487Ab1EWQXZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:23:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=qG0qjqbdtJmCXu3Csg1Un7f5BFKWvy9M877VVMb3RqcVKr8bswMDmJUsEkGok2Ey8u
+         oeo0NcPXqpwD9ijdSYOg==
+Date: Mon, 23 May 2011 09:23:18 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Christoph Hellwig <hch@infradead.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Adding an ugliness in __read_cache_page()?
+In-Reply-To: <20110523072705.GA3966@infradead.org>
+Message-ID: <alpine.LSU.2.00.1105230919480.4182@sister.anvils>
+References: <alpine.LSU.2.00.1105221518180.17400@sister.anvils> <20110523072705.GA3966@infradead.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 09:04 -0700, Justin P. Mattock wrote:
-> The patch below changes the pr_info so that it reads on one line in the syslog
-> rather than two.
+On Mon, 23 May 2011, Christoph Hellwig wrote:
+> On Sun, May 22, 2011 at 03:25:31PM -0700, Hugh Dickins wrote:
+> > I find both ways ugly, but no nice alternative: introducing a new method
+> > when the known callers are already tied to tmpfs/ramfs seems over the top.
 > 
-> before:
-> 
-> [   30.438203] 802.1Q VLAN Support v1.8 Ben Greear <greearb@candelatech.com>
-> [   30.441542] All bugs added by David S. Miller <davem@redhat.com>
-> 
-> 
-> after:
-> [   29.356282] 802.1Q VLAN Support v1.8 Ben Greear <greearb@candelatech.com> All bugs added by: David S. Miller <davem@redhat.com>
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  net/8021q/vlan.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
-> index b2274d1..02f4d8b 100644
-> --- a/net/8021q/vlan.c
-> +++ b/net/8021q/vlan.c
-> @@ -673,8 +673,8 @@ static int __init vlan_proto_init(void)
->  {
->  	int err;
->  
-> -	pr_info("%s v%s %s\n", vlan_fullname, vlan_version, vlan_copyright);
-> -	pr_info("All bugs added by %s\n", vlan_buggyright);
-> +	pr_info("%s v%s %s All bugs added by: %s\n", vlan_fullname, vlan_version, 
-> +		vlan_copyright, vlan_buggyright);
+> Calling into shmem directly is the less ugly variant.
 
-Might as well avoid the format string then too.
+Okay, that's good, thanks.
 
-	pr_info(vlan_fullname " v" vlan_version " " vlan_copyright
-		" All bugs added by: " vlan_buggyright "\n");
- 
-or just kill the otherwise unused vlan_<foo> variables
+> Long term killing
+> that tmpfs abuse would be even better, but I already lost that fight
+> when it was initially added.
 
-	pr_info("802.1Q VLAN Support v" vlan_version
-		" Ben Greear <greearb@candelatech.com>"
-		" All bugs added by: David S. Miller <davem@redhat.com>\n");
+I'd better match your restraint and not fan the flames now -
+I believe we're on opposite sides, or at least orthogonal on that.
 
-though I think that emitting names on startup isn't necessary and
-this is enough:
-
-	pr_info("802.1Q VLAN Support v" vlan_version "\n");
-
-
+Hugh
