@@ -1,119 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab1EWVdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 17:33:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37631 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614Ab1EWVdj convert rfc822-to-8bit (ORCPT
+	id S1757621Ab1EWVep (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 17:34:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26871 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab1EWVeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 17:33:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,258,1304319600"; 
-   d="scan'208";a="87678"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
+	Mon, 23 May 2011 17:34:44 -0400
+Date: Mon, 23 May 2011 14:34:03 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Parag Warudkar <parag.lkml@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Dmitry Torokhov <dtor@mail.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 23 May 2011 14:31:24 -0700
-Subject: RE: Resume Issues :Exec of NX page, Synaptics Botchup
-Thread-Topic: Resume Issues :Exec of NX page, Synaptics Botchup
-Thread-Index: AcwZj4QPbeNgZdRiRgiV5SGW0nemTgAASCSw
-Message-ID: <493994B35A117E4F832F97C4719C4C04011E134650@orsmsx505.amr.corp.intel.com>
-References: <alpine.DEB.2.02.1105221720040.2065@natty-nar>
- <201105230041.14729.rjw@sisk.pl>
- <493994B35A117E4F832F97C4719C4C04011E13400F@orsmsx505.amr.corp.intel.com>
- <201105232322.37991.rjw@sisk.pl>
-In-Reply-To: <201105232322.37991.rjw@sisk.pl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Frank Hofmann <frank.hofmann@tomtom.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 3/3] PM / Hibernate: Update kerneldoc comments in
+ hibernate.c
+Message-Id: <20110523143403.df275ba2.randy.dunlap@oracle.com>
+In-Reply-To: <201105232311.28958.rjw@sisk.pl>
+References: <201105211408.28671.rjw@sisk.pl>
+	<201105211412.11782.rjw@sisk.pl>
+	<4DD9CF9E.6000103@oracle.com>
+	<201105232311.28958.rjw@sisk.pl>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4DDAD2D7.00A0:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Monday, May 23, 2011, Yu, Fenghua wrote:
-> > > On Monday, May 23, 2011, Parag Warudkar wrote:
-> > > >
-> > > > On Sun, 22 May 2011, Linus Torvalds wrote:
-> > > >
-> > > > >
-> > > > > Hmm. The "Code: " line is just full of complete garbage, so I
-> think
-> > > > > the real issue is that you really are trying to execute data.
-> > > > >
-> > > > > And that in turn seems to be because "setup_disablecpuid()" has
-> > > > > actually been free'd, because it is marked as __init.
-> > > > >
-> > > > > Which is fine at the initial bootup, but not so fine at resume
-> > > time,
-> > > > > since it was free'd long long ago by then.
-> > > > >
-> > > > > And it definitely shouldn' t be called at resume time. There's
-> > > > > something wrong there. That call trace is odd:
-> > > > >
-> > > > >   Call Trace:
-> > > > >    [<ffffffff8148a119>] ? identify_cpu+0xd8/0x2d8
-> > > > >    [<ffffffff8148a32d>] identify_secondary_cpu+0x14/0x1b
-> > > > >    [<ffffffff8148bf0f>] smp_store_cpu_info+0x3c/0x3e
-> > > > >    [<ffffffff8148c2ef>] start_secondary+0xf7/0x1d2
-> > > > >
-> > > > > because none of those should be calling "setup_disablecpuid()"
-> at
-> > > all.
-> > > > >
-> > > > > Hmm. In fact, RIP is "setup_disablecpuid+0x40/0x40", ie it is
-> one
-> > > past
-> > > > > the _end_ of setup_disablecpuid.
-> > > > >
-> > > > > I suspect that is actually "setup_smep()" that got called, an
-> dthat
-> > > > > there was some garbage data in there that caused it to jump
-> back a
-> > > > > bit.
-> > > > >
-> > > > > Does the attached patch fix it?
-> > > > >
-> > > >
-> > > > Now I get a different call trace for the same NX error. (And
-> > > Synaptics is
-> > > > completely dead this time - not attributable to the patch, it was
-> > > dumb
-> > > > luck perhaps that it wored last time.)
-> > >
-> > > Any chance to try with commit
-> de5397ad5b9ad22e2401c4dacdf1bb3b19c05679
-> > > (x86, cpu: Enable/disable Supervisor Mode Execution Protection)
-> > > reverted?
-> > >
-> > > Rafael
-> >
-> > de5397ad5b9ad22e2401c4dacdf1bb3b19c05679 shouldn't affect a system
-> unless the CPU has SMEP feature which is unlikely available out there.
-> >
-> > You can check if your CPU has "smep" feature in /proc/cpuinfo.
-> Unlikely you will see the feature on your machine. Then the commit
-> shouldn't cause the problem.
-> >
-> > You can unconditionally disable SMEP by kernel option "nosmep".
+On Mon, 23 May 2011 23:11:28 +0200 Rafael J. Wysocki wrote:
+
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM / Hibernate: Update kerneldoc comments in hibernate.c
 > 
-> Still, it is known to cause problems to people (see for example
-> https://bugzilla.kernel.org/show_bug.cgi?id=35602), so it might be a
-> good idea to set "nosmep" by default.
+> Some of the kerneldoc comments in kernel/power/hibernate.c are
+> outdated and some of them don't adhere to the kernel's standards.
+> Update them and make them look in a consistent way.
 > 
-> Thanks,
-> Rafael
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-See if commit 1d487624fcc17a40aa67acaa9e8f3815fb7cd0f0 in latest Linus' tree fixes the issue.
+Looks good.  Thanks.
 
-Thanks.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
--Fenghua
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
