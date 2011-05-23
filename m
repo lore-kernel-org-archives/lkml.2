@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757723Ab1EWWFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 18:05:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:29431 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149Ab1EWWFx (ORCPT
+	id S1030208Ab1EWVvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 17:51:04 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:46782 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757661Ab1EWVvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 18:05:53 -0400
-Date: Mon, 23 May 2011 18:05:37 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Daniel Haid <d.haid@gogi.tv>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Question about iommu on x86_64 and radeon driver.
-Message-ID: <20110523220536.GB11961@dumpdata.com>
-References: <6ac3f6faad655602b767aa14b355e982@admin.gogi.tv>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6ac3f6faad655602b767aa14b355e982@admin.gogi.tv>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090208.4DDADA3C.0049:SCFSTAT5015188,ss=1,fgs=0
+	Mon, 23 May 2011 17:51:02 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+s1fQWvjOsxWAqHvLHal4YGX4jRT8LqjXs8lKiHq
+	dUcTDhswB51qI5
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        stable@kernel.org
+Subject: [PATCH] viafb: use display information in info not in var for panning
+Date: Mon, 23 May 2011 22:07:26 +0000
+Message-Id: <1306188446-5160-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <201105232211.40154.laurent.pinchart@ideasonboard.com>
+References: <201105232211.40154.laurent.pinchart@ideasonboard.com>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 22, 2011 at 10:56:27PM +0100, Daniel Haid wrote:
-> Hello,
-> 
-> I have an x86_64 system with a VIA chipset and 4GB of RAM. The
-> mainboard
-> is an ASUS M2V where the bios-setup has an option called "Map around
-> memory hole" and I have an "ATI Technologies Inc RV710 [Radeon HD
+As Laurent pointed out we must not use any information in the passed
+var besides xoffset, yoffset and vmode as otherwise applications
+might abuse it. Also use the aligned fix.line_length and not the
+(possible) unaligned xres_virtual.
 
-There had to be more than 'Map around memory hole'? Was it called
-GART or IOMMU?
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Reported-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: stable@kernel.org
+---
+ drivers/video/via/viafbdev.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-> 4350]"
-> graphics card according to lspci.
-> 
-> Now one of the following things happen to my system:
-> 
-> 1) With the bios-option enabled and no kernel parameters I get the
-> following error:
-> 
-> [drm:r600_ring_test] *ERROR* radeon: ring test failed
-> (scratch(0x8504)=0xCAFEDEAD)
-> radeon 0000:02:00.0: disabling GPU acceleration
-> 
-> and then I can not use any 3d-acceleration. I also get the message
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index 3114a87..aa87529 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -348,8 +348,9 @@ static int viafb_pan_display(struct fb_var_screeninfo *var,
+ 	struct fb_info *info)
+ {
+ 	struct viafb_par *viapar = info->par;
+-	u32 vram_addr = (var->yoffset * var->xres_virtual + var->xoffset)
+-		* (var->bits_per_pixel / 8) + viapar->vram_addr;
++	u32 vram_addr = viapar->vram_addr
++		+ var->yoffset * info->fix.line_length
++		+ var->xoffset * info->var.bits_per_pixel / 8;
+ 
+ 	DEBUG_MSG(KERN_DEBUG "viafb_pan_display, address = %d\n", vram_addr);
+ 	if (!viafb_dual_fb) {
+-- 
+1.6.3.2
 
-The problem you are hitting (I think) is that the AMD GART poor-man IOMMU is turned off
-and the SWIOTLB is used instead. If you would like some technical
-details, take a look at:
-http://lists.freedesktop.org/archives/dri-devel/2011-January/006885.html
-(the point #2 is what you are hitting).
-
-> 
-> Looks like a VIA chipset. Disabling IOMMU. Override with iommu=allowed
-> 
-> 2) With the bios-option enabled and "mem=3072M" I can not use only
-> 3GB of RAM,
-> but the radeon card works.
-> 
-> 3) With the bios-option enabled and "iommu=allowed" I get 4GB of RAM
-> and
-> the radeon card works. But I wonder whether this can have any bad
-> effects?
-
-Not sure why the AMD GART IOMMU gets disabled on VIA chipsets. You might
-want to use 'git gui blame arch/x86/kernel/early-quirks.c' and look
-at the code in question to figure that out.
-
-> 
-> 4) Without the bios-option (and without any kernel parameters) I do not
-> get the "Looks like a VIA chipset. Disabling IOMMU. Override with
-> iommu=allowed"
-> message, but strangely linux shows only about 3GB of RAM.
-> 
-> I did not try other combinations. Now my questions are
-> 
-> A) Is this a bug in the radeon driver? Or maybe not, since
-> Documentation/x86/x86_64/boot-options.txt
-> seems to imply that for >3GB an iommu is required?
-
-Correct, and an IOMMU does get turned on. The SWIOTLB one.
-> 
-> B) Is it safe to use iommu=allowed in my case ? If not, what
-> problems will I encounter and what
-> options should I use instead? Will I be stuck with 3GB of RAM?
-
-Well, if everything works.... but you might just want to use
-the git gui blame to take a look at the back-story of why the quirk
-was added.
