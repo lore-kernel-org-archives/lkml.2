@@ -1,70 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab1EWE1Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 00:27:24 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:55170 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab1EWE1W (ORCPT
+	id S1751515Ab1EWEcB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 00:32:01 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:40460 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab1EWEb6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 00:27:22 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Octavian Purdila <tavi@cs.pub.ro>,
-        "David S . Miller" <davem@davemloft.net>
-Subject: Re: [v3 00/39] faster tree-based sysctl implementation
-References: <BANLkTim7xn8tM4wTyd_m_nwUQg_CUTapeA@mail.gmail.com>
-Date: Sun, 22 May 2011 21:27:14 -0700
-In-Reply-To: <BANLkTim7xn8tM4wTyd_m_nwUQg_CUTapeA@mail.gmail.com> (Lucian
-	Adrian Grijincu's message of "Mon, 23 May 2011 04:56:11 +0300")
-Message-ID: <m14o4mavod.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Mon, 23 May 2011 00:31:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hhfKeOcdRSxdZdDEwVe8m6OL6Gnr7qZp+fDtmN2MvNaQlyZkgB9C/2WReP6P7nuZ41
+         veKqW7tWs3neXyb7WRZ+t6TUrvrlCfwF9twOI4LMpnE7ZnVAytET9Z0ViD7sypXD0yRu
+         RZcKmDTuvLXcw8OlRlL3nekL9kRwd6G7l7cVQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+L+OGeMB9TXT4LVOWHy2Mc0c0yOOl82XE=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <4DD6207E.1070300@jp.fujitsu.com>
+References: <4DD61F80.1020505@jp.fujitsu.com>
+	<4DD6207E.1070300@jp.fujitsu.com>
+Date: Mon, 23 May 2011 13:31:57 +0900
+Message-ID: <BANLkTinaHki1oA4O3+FsoPDtFTLfqwRadA@mail.gmail.com>
+Subject: Re: [PATCH 4/5] oom: don't kill random process
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
+        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucian Adrian Grijincu <lucian.grijincu@gmail.com> writes:
-
-> Hi
+2011/5/20 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
+> CAI Qian reported oom-killer killed all system daemons in his
+> system at first if he ran fork bomb as root. The problem is,
+> current logic give them bonus of 3% of system ram. Example,
+> he has 16GB machine, then root processes have ~500MB oom
+> immune. It bring us crazy bad result. _all_ processes have
+> oom-score=1 and then, oom killer ignore process memory usage
+> and kill random process. This regression is caused by commit
+> a63d83f427 (oom: badness heuristic rewrite).
 >
-> This is version 3 of a patch series that introduces a faster/leaner
-> sysctl internal implementation.
+> This patch changes select_bad_process() slightly. If oom points == 1,
+> it's a sign that the system have only root privileged processes or
+> similar. Thus, select_bad_process() calculate oom badness without
+> root bonus and select eligible process.
 >
-> Due to high number of patches and low general interest I'll just point
-> you to the tree/branch:
+> Also, this patch move finding sacrifice child logic into
+> select_bad_process(). It's necessary to implement adequate
+> no root bonus recalculation. and it makes good side effect,
+> current logic doesn't behave as the doc.
 >
->   git://github.com/luciang/linux-2.6-new-sysctl.git   v3-new-sysctl-alg
+> Documentation/sysctl/vm.txt says
 >
+>    oom_kill_allocating_task
 >
-> Patches are on top of v2.6.39. I did not pick a more recent (random)
-> point in Linus' tree to rebase these onto to not mess up testing.
+>    If this is set to non-zero, the OOM killer simply kills the task that
+>    triggered the out-of-memory condition.  This avoids the expensive
+>    tasklist scan.
+>
+> IOW, oom_kill_allocating_task shouldn't search sacrifice child.
+> This patch also fixes this issue.
+>
+> Reported-by: CAI Qian <caiqian@redhat.com>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  fs/proc/base.c      |    2 +-
+>  include/linux/oom.h |    3 +-
+>  mm/oom_kill.c       |   89 ++++++++++++++++++++++++++++----------------------
+>  3 files changed, 53 insertions(+), 41 deletions(-)
+>
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index d6b0424..b608b69 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -482,7 +482,7 @@ static int proc_oom_score(struct task_struct *task, char *buffer)
+>
+>        read_lock(&tasklist_lock);
+>        if (pid_alive(task)) {
+> -               points = oom_badness(task, NULL, NULL, totalpages);
+> +               points = oom_badness(task, NULL, NULL, totalpages, 1);
+>                ratio = points * 1000 / totalpages;
+>        }
+>        read_unlock(&tasklist_lock);
+> diff --git a/include/linux/oom.h b/include/linux/oom.h
+> index 0f5b588..3dd3669 100644
+> --- a/include/linux/oom.h
+> +++ b/include/linux/oom.h
+> @@ -42,7 +42,8 @@ enum oom_constraint {
+>
+>  /* The badness from the OOM killer */
+>  extern unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+> -                       const nodemask_t *nodemask, unsigned long totalpages);
+> +                       const nodemask_t *nodemask, unsigned long totalpages,
+> +                       int protect_root);
+>  extern int try_set_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+>  extern void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+>
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 8bbc3df..7d280d4 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -133,7 +133,8 @@ static bool oom_unkillable_task(struct task_struct *p,
+>  * task consuming the most memory to avoid subsequent oom failures.
+>  */
+>  unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+> -                     const nodemask_t *nodemask, unsigned long totalpages)
+> +                        const nodemask_t *nodemask, unsigned long totalpages,
+> +                        int protect_root)
+>  {
+>        unsigned long points;
+>        unsigned long score_adj = 0;
+> @@ -186,7 +187,7 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+>         *
+>         * XXX: Too large bonus, example, if the system have tera-bytes memory..
+>         */
+> -       if (has_capability_noaudit(p, CAP_SYS_ADMIN)) {
+> +       if (protect_root && has_capability_noaudit(p, CAP_SYS_ADMIN)) {
+>                if (points >= totalpages / 32)
+>                        points -= totalpages / 32;
+>                else
+> @@ -298,8 +299,11 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+>  {
+>        struct task_struct *g, *p;
+>        struct task_struct *chosen = NULL;
+> -       *ppoints = 0;
+> +       int protect_root = 1;
+> +       unsigned long chosen_points = 0;
+> +       struct task_struct *child;
+>
+> + retry:
+>        do_each_thread_reverse(g, p) {
+>                unsigned long points;
+>
+> @@ -332,7 +336,7 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+>                         */
+>                        if (p == current) {
+>                                chosen = p;
+> -                               *ppoints = ULONG_MAX;
+> +                               chosen_points = ULONG_MAX;
+>                        } else {
+>                                /*
+>                                 * If this task is not being ptraced on exit,
+> @@ -345,13 +349,49 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+>                        }
+>                }
+>
+> -               points = oom_badness(p, mem, nodemask, totalpages);
+> -               if (points > *ppoints) {
+> +               points = oom_badness(p, mem, nodemask, totalpages, protect_root);
+> +               if (points > chosen_points) {
+>                        chosen = p;
+> -                       *ppoints = points;
+> +                       chosen_points = points;
+>                }
+>        } while_each_thread(g, p);
+>
+> +       /*
+> +        * chosen_point==1 may be a sign that root privilege bonus is too large
+> +        * and we choose wrong task. Let's recalculate oom score without the
+> +        * dubious bonus.
+> +        */
+> +       if (protect_root && (chosen_points == 1)) {
+> +               protect_root = 0;
+> +               goto retry;
+> +       }
 
+The idea is good to me.
+But once we meet it, should we give up protecting root privileged processes?
+How about decaying bonus point?
 
-Thanks for keeping going on this.
-
-This patchset looks like it is deserving of some close scrutiny, and
-not just the high level design overview I have given the previous
-patches.  This is going to be a busy week for me so I probably won't
-get through all of the patches for a while.
-
-I will mention a couple of nits I noticed while I was skimming through
-your patches.
-- There can be multiple proc superblocks and thus multiple inodes
-  referring to the same /proc/sys file, if there are multiple pid
-  namespaces. 
-
-- I have a hope to move /proc/sys into /proc/<pid>/sys so we don't have
-  to look at current to determine the namespace we want to display.
-  That would allow the deeply magic sysctl_is_seen check to be removed
-  from proc_sys_compare.  That is not your problem, but of an
-  explanation why the namespaces are passed through.
-
-Eric
+-- 
+Kind regards,
+Minchan Kim
