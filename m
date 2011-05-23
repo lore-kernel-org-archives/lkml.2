@@ -1,41 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab1EWAGT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 20:06:19 -0400
-Received: from tundra.namei.org ([65.99.196.166]:35563 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973Ab1EWAGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 20:06:17 -0400
-Date: Mon, 23 May 2011 10:05:30 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-cc: linux-doc@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>,
-        John Johansen <john.johansen@canonical.com>,
-        David Howells <dhowells@redhat.com>,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH for-next] Documentation: add Documentation/security/
-In-Reply-To: <20110520111733.b5319a02.randy.dunlap@oracle.com>
-Message-ID: <alpine.LRH.2.00.1105231005001.21337@tundra.namei.org>
-References: <20110520111733.b5319a02.randy.dunlap@oracle.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755483Ab1EWAZr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 20:25:47 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:64440 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754197Ab1EWAZp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 20:25:45 -0400
+Subject: Re: [BUG] perf: bogus correlation of kernel symbols
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
+        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
+        penberg@kernel.org, hpa@zytor.com
+In-Reply-To: <BANLkTik1SK_kWVvGsKk0SqdByQ5-0b5nFg@mail.gmail.com>
+References: <1305292059.1949.0.camel@dan> <1305293345.1949.22.camel@dan>
+	 <20110516153527.GC21107@elte.hu> <1305852966.3005.19.camel@dan>
+	 <20110520120750.GJ14745@elte.hu> <1305896093.3005.24.camel@dan>
+	 <20110520131108.GA17699@elte.hu> <1306089922.1806.27.camel@dan>
+	 <BANLkTik1SK_kWVvGsKk0SqdByQ5-0b5nFg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 22 May 2011 20:25:36 -0400
+Message-ID: <1306110336.25049.7.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 May 2011, Randy Dunlap wrote:
+On Sun, 2011-05-22 at 16:49 -0700, Tony Luck wrote:
+> 
+> 
+> On Sun, May 22, 2011 at 11:45 AM, Dan Rosenberg
+> <drosenberg@vsecurity.com> wrote:
+>         1. Is it ok to assume the existence of rdtsc?  If not, what
+>         are other
+>         ways of gathering entropy early in the boot process?  If this
+>         is the
+>         approach that's going to be taken, system uptime potentially
+>         becomes
+>         useful for attackers.  Any thoughts on how to address this?
+>         
+> There is a cpuid bit to tell you whether the processor supports rdtsc.
+> 
 
-> added to
->   git://git.kernel.org/pub/scm/linux/kernel/git/rdunlap/linux-docs.git  docs-move
+This might be worth checking, but it also might just be easier to
+clearly document in the Kconfig that the feature requires rdtsc.  I'll
+play with it a bit.
 
-Acked-by: James Morris <jmorris@namei.org>
+> In the cold boot case, I'd worry about whether rdtsc was all that
+> random,
+> it counts from zero when the processors come out of cold reset, and
+> things should be quite deterministic up to when the kernel loads;
+> especially if you have a solid state boot drive rather than the old
+> spinning kind.
+> 
 
--- 
-James Morris
-<jmorris@namei.org>
+The question really becomes whether it's "good enough".  It's certainly
+not cryptographic randomness, but it will produce different results on
+different boots depending on a variety of factors, including
+out-of-order instruction execution, multi-CPU systems, and differences
+in CPU models.  Even though a single machine may be slightly more likely
+to produce certain offsets more often, it seems to me that it would
+still accomplish the goal, because it's highly unlikely that an attacker
+would be able to perform the statistical analysis necessary to figure
+that out.
+
+> Sometime soon you'll have "rdrand" available (check a different cpuid
+> bit).
+> 
+
+This of course is highly preferable, but I'd rather implement a solution
+that's widely supported in hardware today.  Perhaps further down the
+road it could be switched.
+
+> -Tony
+> 
+> 
+
+Thanks for the feedback.
+
+-Dan
+
