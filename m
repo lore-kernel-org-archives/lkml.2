@@ -1,684 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab1EWXzZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 19:55:25 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:5359 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab1EWXzX convert rfc822-to-8bit (ORCPT
+	id S932985Ab1EXAC2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 20:02:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42455 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755504Ab1EXACY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 19:55:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=D6W1Wy368GrUYwOwdN4Bpu+HVbAvRP6OaAnRd4Nb1TrZDIIUzFiAKdl/kROj8+9uk5
-         EReIPKHZTnND6HOU8NIA==
-MIME-Version: 1.0
-In-Reply-To: <1305876469.326305.518470530485.1.gpush@pororo>
-References: <1305876469.325655.313573683829.0.gpush@pororo>
-	<1305876469.326305.518470530485.1.gpush@pororo>
-Date: Mon, 23 May 2011 16:55:15 -0700
-Message-ID: <BANLkTin2Ho-Ce-4RurtHfAST7hqTLDrJ+g@mail.gmail.com>
-Subject: Re: [PATCH 1/4] clk: Add a generic clock infrastructure
-From: Colin Cross <ccross@google.com>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-sh@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 23 May 2011 20:02:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 24 May 2011 08:55:30 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Ying Han <yinghan@google.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        hannes@cmpxchg.org, Michal Hocko <mhocko@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/8] memcg: clean up, export swapiness
+Message-Id: <20110524085530.6f3ff8cc.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <BANLkTi=7-xgUetav9s5fvZ8e+U986Y4Z7w@mail.gmail.com>
+References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110520124312.5928aa92.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTi=7-xgUetav9s5fvZ8e+U986Y4Z7w@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 12:27 AM, Jeremy Kerr <jeremy.kerr@canonical.com> wrote:
-> We currently have ~21 definitions of struct clk in the ARM architecture,
-> each defined on a per-platform basis. This makes it difficult to define
-> platform- (or architecture-) independent clock sources without making
-> assumptions about struct clk, and impossible to compile two
-> platforms with different struct clks into a single image.
->
-> This change is an effort to unify struct clk where possible, by defining
-> a common struct clk, and a set of clock operations. Different clock
-> implementations can set their own operations, and have a standard
-> interface for generic code. The callback interface is exposed to the
-> kernel proper, while the clock implementations only need to be seen by
-> the platform internals.
->
-> The interface is split into two halves:
->
->  * struct clk, which is the generic-device-driver interface. This
->   provides a set of functions which drivers may use to request
->   enable/disable, query or manipulate in a hardware-independent manner.
->
->  * struct clk_hw and struct clk_hw_ops, which is the hardware-specific
->   interface. Clock drivers implement the ops, which allow the core
->   clock code to implement the generic 'struct clk' API.
->
-> This allows us to share clock code among platforms, and makes it
-> possible to dynamically create clock devices in platform-independent
-> code.
->
-> Platforms can enable the generic struct clock through
-> CONFIG_GENERIC_CLK. In this case, the clock infrastructure consists of a
-> common, opaque struct clk, and a set of clock operations (defined per
-> type of clock):
->
->  struct clk_hw_ops {
->        int             (*prepare)(struct clk_hw *);
->        void            (*unprepare)(struct clk_hw *);
->        int             (*enable)(struct clk_hw *);
->        void            (*disable)(struct clk_hw *);
->        unsigned long   (*recalc_rate)(struct clk_hw *);
->        int             (*set_rate)(struct clk_hw *,
->                                        unsigned long, unsigned long *);
->        long            (*round_rate)(struct clk_hw *, unsigned long);
->        int             (*set_parent)(struct clk_hw *, struct clk *);
->        struct clk *    (*get_parent)(struct clk_hw *);
->  };
+On Mon, 23 May 2011 10:26:22 -0700
+Ying Han <yinghan@google.com> wrote:
 
-You might want to split these into three separate structs, for mux
-ops, rate ops, and gate ops.  That way, multiple building blocks (a
-gate and a divider, for example), can be easily combined into a single
-clock node.  Also, an init op that reads the clock tree state from the
-hardware has been very useful on Tegra - there are often clocks that
-you can't or won't change, and being able to view their state as
-configured by the bootloader, and base other clocks off of them, is
-helpful.  It also allows you to turn off clocks that are enabled by
-the bootloader, but never enabled by the kernel (enabled=1,
-enable_count=0).
+> Hi Kame:
+> 
+> Is this patch part of the "memcg async reclaim v2" patchset?
 
-Also, OMAP currently has a second level of global ops that are called
-before the per-clk ops, which handle the common parts of clock enable
-(the "clockdomains" part), which I modeled as each clk having a
-clk_chip, and the clk_chip having some ops.  It does add a lot of
-complexity to the error handling, and OMAP doesn't have very many op
-implementations, so unless other architectures need it, I don't see a
-problem pushing those down into each op implementation.
+yes, I failed to change title...
 
-> Platform clock code can register a clock through clk_register, passing a
-> set of operations, and a pointer to hardware-specific data:
->
->  struct clk_hw_foo {
->        struct clk_hw clk;
->        void __iomem *enable_reg;
->  };
->
->  #define to_clk_foo(c) offsetof(c, clk_hw_foo, clk)
->
->  static int clk_foo_enable(struct clk_hw *clk)
->  {
->        struct clk_foo *foo = to_clk_foo(clk);
->        raw_writeb(foo->enable_reg, 1);
->        return 0;
->  }
->
->  struct clk_hw_ops clk_foo_ops = {
->        .enable = clk_foo_enable,
->  };
->
-> And in the platform initialisation code:
->
->  struct clk_foo my_clk_foo;
->
->  void init_clocks(void)
->  {
->        my_clk_foo.enable_reg = ioremap(...);
->
->        clk_register(&clk_foo_ops, &my_clk_foo, NULL);
->  }
->
-> Changes from Thomas Gleixner <tglx@linutronix.de>.
->
-> The common clock definitions are based on a development patch from Ben
-> Herrenschmidt <benh@kernel.crashing.org>.
->
-> TODO:
->
->  * We don't keep any internal reference to the clock topology at present.
->
-> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->
-> ---
->  drivers/clk/Kconfig  |    3
->  drivers/clk/Makefile |    1
->  drivers/clk/clk.c    |  229 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/clk/clkdev.c |    7 +
->  include/linux/clk.h  |  102 +++++++++++++++++--
->  5 files changed, 332 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 4168c88..e611e34 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -2,3 +2,6 @@
->  config CLKDEV_LOOKUP
->        bool
->        select HAVE_CLK
-> +
-> +config GENERIC_CLK
-> +       bool
-> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> index 07613fa..570d5b9 100644
-> --- a/drivers/clk/Makefile
-> +++ b/drivers/clk/Makefile
-> @@ -1,2 +1,3 @@
->
->  obj-$(CONFIG_CLKDEV_LOOKUP)    += clkdev.o
-> +obj-$(CONFIG_GENERIC_CLK)      += clk.o
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> new file mode 100644
-> index 0000000..ad90a90
-> --- /dev/null
-> +++ b/drivers/clk/clk.c
-> @@ -0,0 +1,229 @@
-> +/*
-> + * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Standard functionality for the common clock API.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/slab.h>
-> +#include <linux/spinlock.h>
-> +
-> +struct clk {
-> +       const char              *name;
-> +       struct clk_hw_ops       *ops;
-> +       struct clk_hw           *hw;
-> +       unsigned int            enable_count;
-> +       unsigned int            prepare_count;
-> +       struct clk              *parent;
+ I am
+> trying to do some tests on top of that, but having hard time finding
+> the [PATCH 3/8] and [PATCH 5/8].
+> 
+PATCH 5 is attached.
 
-Storing the list of possible parents at this level can help abstract
-some common code from mux ops if you pass the index into the list of
-the new parent into the op - most mux ops only need to know which of
-their mux inputs needs to be enabled.
+I think I can send a simplified v3 until this Friday and will not do update until
+the end of LinuxCon Japan (I'm now writing slides ;). Of course, it's merge
+window and I don't want to push any new feature to Andrew.
 
-> +       unsigned long           rate;
+Sorry for my inconvenience.
 
-If you add an init op, an enabled flag here is also useful to track
-whether the bootloader left the clock on, which allows turning off
-unnecessary clocks.
+Thanks,
+-Kame
 
-I think you also need a list of current children of the clock to allow
-propagating rate changes from parent to children.
+==
+This patch adds a logic to keep usage margin to the limit in asynchronous way.
+When the usage over some threshould (determined automatically), asynchronous
+memory reclaim runs and shrink memory to limit - MEMCG_ASYNC_STOP_MARGIN.
 
-> +};
-> +
-> +static DEFINE_SPINLOCK(enable_lock);
-> +static DEFINE_MUTEX(prepare_lock);
+By this, there will be no difference in total amount of usage of cpu to
+scan the LRU but we'll have a chance to make use of wait time of applications
+for freeing memory. For example, when an application read a file or socket,
+to fill the newly alloated memory, it needs wait. Async reclaim can make use
+of that time and give a chance to reduce latency by background works.
 
-There was some discussion earlier of per-tree locking instead of
-global locking.  I have a clock tree that does per-tree locking, as
-well as runtime addition of clocks to the tree (for example, a codec
-chip that is complex enough to treat the internal clocks using the clk
-api, but fed off a clock output from the main SoC), but it adds a ton
-of complexity to the locking.
+This patch only includes required hooks to trigger async reclaim. Core logics
+will be in the following patches.
 
-> +
-> +static void __clk_unprepare(struct clk *clk)
-> +{
-> +       if (!clk)
-> +               return;
-> +
-> +       if (WARN_ON(clk->prepare_count == 0))
-> +               return;
-> +
-> +       if (--clk->prepare_count > 0)
-> +               return;
-> +
-> +       WARN_ON(clk->enable_count > 0);
-> +
-> +       if (clk->ops->unprepare)
-> +               clk->ops->unprepare(clk->hw);
-> +
-> +       __clk_unprepare(clk->parent);
-> +}
-Are there any cases where the unlocked versions of the clk calls need
-to be exposed to the ops implementations?  For example, a set_rate op
-may want to call clk_set_parent on itself to change its parent to a
-better source, and then set its rate.  It would need to call
-__clk_set_parent to avoid deadlocking on the prepare_lock.
+Changelog v1 -> v2:
+  - avoid async reclaim check when num_online_cpus() < 2.
+  - changed MEMCG_ASYNC_START_MARGIN to be 6 * HPAGE_SIZE.
 
-> +void clk_unprepare(struct clk *clk)
-> +{
-> +       mutex_lock(&prepare_lock);
-> +       __clk_unprepare(clk);
-> +       mutex_unlock(&prepare_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(clk_unprepare);
-> +
-> +static int __clk_prepare(struct clk *clk)
-> +{
-> +       int ret = 0;
-> +
-> +       if (!clk)
-> +               return 0;
-> +
-> +       if (clk->prepare_count == 0) {
-> +               ret = __clk_prepare(clk->parent);
-> +               if (ret)
-> +                       return ret;
-> +
-> +               if (clk->ops->prepare) {
-> +                       ret = clk->ops->prepare(clk->hw);
-> +                       if (ret) {
-> +                               __clk_unprepare(clk->parent);
-> +                               return ret;
-> +                       }
-> +               }
-> +       }
-> +
-> +       clk->prepare_count++;
-> +
-> +       return 0;
-> +}
-> +
-> +int clk_prepare(struct clk *clk)
-> +{
-> +       int ret;
-> +
-> +       mutex_lock(&prepare_lock);
-> +       ret = __clk_prepare(clk);
-> +       mutex_unlock(&prepare_lock);
-> +
-> +       return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_prepare);
-> +
-> +static void __clk_disable(struct clk *clk)
-> +{
-> +       if (!clk)
-> +               return;
-> +
-> +       if (WARN_ON(clk->enable_count == 0))
-> +               return;
-> +
-> +       if (--clk->enable_count > 0)
-> +               return;
-> +
-> +       if (clk->ops->disable)
-> +               clk->ops->disable(clk->hw);
-> +       __clk_disable(clk->parent);
-> +}
-> +
-> +void clk_disable(struct clk *clk)
-> +{
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&enable_lock, flags);
-> +       __clk_disable(clk);
-> +       spin_unlock_irqrestore(&enable_lock, flags);
-> +}
-> +EXPORT_SYMBOL_GPL(clk_disable);
-> +
-> +static int __clk_enable(struct clk *clk)
-> +{
-> +       int ret;
-> +
-> +       if (!clk)
-> +               return 0;
-> +
-> +       if (WARN_ON(clk->prepare_count == 0))
-> +               return -ESHUTDOWN;
-> +
-> +
-> +       if (clk->enable_count == 0) {
-> +               ret = __clk_enable(clk->parent);
-> +               if (ret)
-> +                       return ret;
-> +
-> +               if (clk->ops->enable) {
-> +                       ret = clk->ops->enable(clk->hw);
-> +                       if (ret) {
-> +                               __clk_disable(clk->parent);
-> +                               return ret;
-> +                       }
-> +               }
-> +       }
-> +
-> +       clk->enable_count++;
-> +       return 0;
-> +}
-> +
-> +int clk_enable(struct clk *clk)
-> +{
-> +       unsigned long flags;
-> +       int ret;
-> +
-> +       spin_lock_irqsave(&enable_lock, flags);
-> +       ret = __clk_enable(clk);
-> +       spin_unlock_irqrestore(&enable_lock, flags);
-> +
-> +       return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_enable);
-> +
-> +unsigned long clk_get_rate(struct clk *clk)
-> +{
-> +       if (!clk)
-> +               return 0;
-> +       return clk->rate;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_get_rate);
-> +
-> +long clk_round_rate(struct clk *clk, unsigned long rate)
-> +{
-> +       if (clk && clk->ops->round_rate)
-> +               return clk->ops->round_rate(clk->hw, rate);
-> +       return rate;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_round_rate);
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ Documentation/cgroups/memory.txt |   46 ++++++++++++++++++-
+ mm/memcontrol.c                  |   94 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 139 insertions(+), 1 deletion(-)
 
-I think you should hold the prepare mutex around calls to
-clk_round_rate, which will allow some code simplification similar to
-what Russell suggested in another thread.  If you hold the mutex here,
-as well as in clk_set_rate, and you call the round_rate op before the
-set_rate op in clk_set_rate, op implementers can compute the rate in
-their round_rate op, and save the register values needed to get that
-rate in private temporary storage.  The set_rate op can then assume
-that those register values are correct, because the lock is still
-held, and just write them.  That moves all the computation to one
-place, and it only needs to run once.
+Index: mmotm-May11/mm/memcontrol.c
+===================================================================
+--- mmotm-May11.orig/mm/memcontrol.c
++++ mmotm-May11/mm/memcontrol.c
+@@ -115,10 +115,12 @@ enum mem_cgroup_events_index {
+ enum mem_cgroup_events_target {
+ 	MEM_CGROUP_TARGET_THRESH,
+ 	MEM_CGROUP_TARGET_SOFTLIMIT,
++	MEM_CGROUP_TARGET_ASYNC,
+ 	MEM_CGROUP_NTARGETS,
+ };
+ #define THRESHOLDS_EVENTS_TARGET (128)
+ #define SOFTLIMIT_EVENTS_TARGET (1024)
++#define ASYNC_EVENTS_TARGET	(512)	/* assume x86-64's hpagesize */
+ 
+ struct mem_cgroup_stat_cpu {
+ 	long count[MEM_CGROUP_STAT_NSTATS];
+@@ -211,6 +213,29 @@ static void mem_cgroup_threshold(struct 
+ static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
+ 
+ /*
++ * For example, with transparent hugepages, memory reclaim scan at hitting
++ * limit can very long as to reclaim HPAGE_SIZE of memory. This increases
++ * latency of page fault and may cause fallback. At usual page allocation,
++ * we'll see some (shorter) latency, too. To reduce latency, it's appreciated
++ * to free memory in background to make margin to the limit. This consumes
++ * cpu but we'll have a chance to make use of wait time of applications
++ * (read disk etc..) by asynchronous reclaim.
++ *
++ * This async reclaim tries to reclaim HPAGE_SIZE * 2 of pages when margin
++ * to the limit is smaller than HPAGE_SIZE * 2. This will be enabled
++ * automatically when the limit is set and it's greater than the threshold.
++ */
++#if HPAGE_SIZE != PAGE_SIZE
++#define MEMCG_ASYNC_LIMIT_THRESH      (HPAGE_SIZE * 64)
++#define MEMCG_ASYNC_MARGIN	      (HPAGE_SIZE * 4)
++#else /* make the margin as 4M bytes */
++#define MEMCG_ASYNC_LIMIT_THRESH      (128 * 1024 * 1024)
++#define MEMCG_ASYNC_MARGIN            (8 * 1024 * 1024)
++#endif
++
++static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem);
++
++/*
+  * The memory controller data structure. The memory controller controls both
+  * page cache and RSS per cgroup. We would eventually like to provide
+  * statistics based on the statistics developed by Rik Van Riel for clock-pro,
+@@ -278,6 +303,12 @@ struct mem_cgroup {
+ 	 */
+ 	unsigned long 	move_charge_at_immigrate;
+ 	/*
++ 	 * Checks for async reclaim.
++ 	 */
++	unsigned long	async_flags;
++#define AUTO_ASYNC_ENABLED	(0)
++#define USE_AUTO_ASYNC		(1)
++	/*
+ 	 * percpu counter.
+ 	 */
+ 	struct mem_cgroup_stat_cpu *stat;
+@@ -722,6 +753,9 @@ static void __mem_cgroup_target_update(s
+ 	case MEM_CGROUP_TARGET_SOFTLIMIT:
+ 		next = val + SOFTLIMIT_EVENTS_TARGET;
+ 		break;
++	case MEM_CGROUP_TARGET_ASYNC:
++		next = val + ASYNC_EVENTS_TARGET;
++		break;
+ 	default:
+ 		return;
+ 	}
+@@ -745,6 +779,11 @@ static void memcg_check_events(struct me
+ 			__mem_cgroup_target_update(mem,
+ 				MEM_CGROUP_TARGET_SOFTLIMIT);
+ 		}
++		if (__memcg_event_check(mem, MEM_CGROUP_TARGET_ASYNC)) {
++			mem_cgroup_may_async_reclaim(mem);
++			__mem_cgroup_target_update(mem,
++				MEM_CGROUP_TARGET_ASYNC);
++		}
+ 	}
+ }
+ 
+@@ -3365,6 +3404,23 @@ void mem_cgroup_print_bad_page(struct pa
+ 
+ static DEFINE_MUTEX(set_limit_mutex);
+ 
++/* When limit is changed, check async reclaim switch again */
++static void mem_cgroup_set_auto_async(struct mem_cgroup *mem, u64 val)
++{
++	if (!test_bit(AUTO_ASYNC_ENABLED, &mem->async_flags))
++		goto clear;
++	if (num_online_cpus() < 2)
++		goto clear;
++	if (val < MEMCG_ASYNC_LIMIT_THRESH)
++		goto clear;
++
++	set_bit(USE_AUTO_ASYNC, &mem->async_flags);
++	return;
++clear:
++	clear_bit(USE_AUTO_ASYNC, &mem->async_flags);
++	return;
++}
++
+ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+ 				unsigned long long val)
+ {
+@@ -3413,6 +3469,7 @@ static int mem_cgroup_resize_limit(struc
+ 				memcg->memsw_is_minimum = true;
+ 			else
+ 				memcg->memsw_is_minimum = false;
++			mem_cgroup_set_auto_async(memcg, val);
+ 		}
+ 		mutex_unlock(&set_limit_mutex);
+ 
+@@ -3590,6 +3647,15 @@ unsigned long mem_cgroup_soft_limit_recl
+ 	return nr_reclaimed;
+ }
+ 
++static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem)
++{
++	if (!test_bit(USE_AUTO_ASYNC, &mem->async_flags))
++		return;
++	if (res_counter_margin(&mem->res) <= MEMCG_ASYNC_MARGIN) {
++		/* Fill here */
++	}
++}
++
+ /*
+  * This routine traverse page_cgroup in given list and drop them all.
+  * *And* this routine doesn't reclaim page itself, just removes page_cgroup.
+@@ -4149,6 +4215,29 @@ static int mem_control_stat_show(struct 
+ 	return 0;
+ }
+ 
++static u64 mem_cgroup_async_read(struct cgroup *cgrp, struct cftype *cft)
++{
++	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
++
++	return mem->async_flags;
++}
++
++static int
++mem_cgroup_async_write(struct cgroup *cgrp, struct cftype *cft, u64 val)
++{
++	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
++
++	if (val & (1 << AUTO_ASYNC_ENABLED))
++		set_bit(AUTO_ASYNC_ENABLED, &mem->async_flags);
++	else
++		clear_bit(AUTO_ASYNC_ENABLED, &mem->async_flags);
++
++	val = res_counter_read_u64(&mem->res, RES_LIMIT);
++	mem_cgroup_set_auto_async(mem, val);
++	return 0;
++}
++
++
+ static u64 mem_cgroup_swappiness_read(struct cgroup *cgrp, struct cftype *cft)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+@@ -4580,6 +4669,11 @@ static struct cftype mem_cgroup_files[] 
+ 		.unregister_event = mem_cgroup_oom_unregister_event,
+ 		.private = MEMFILE_PRIVATE(_OOM_TYPE, OOM_CONTROL),
+ 	},
++	{
++		.name = "async_control",
++		.read_u64 = mem_cgroup_async_read,
++		.write_u64 = mem_cgroup_async_write,
++	},
+ };
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+Index: mmotm-May11/Documentation/cgroups/memory.txt
+===================================================================
+--- mmotm-May11.orig/Documentation/cgroups/memory.txt
++++ mmotm-May11/Documentation/cgroups/memory.txt
+@@ -70,6 +70,7 @@ Brief summary of control files.
+ 				 (See sysctl's vm.swappiness)
+  memory.move_charge_at_immigrate # set/show controls of moving charges
+  memory.oom_control		 # set/show oom controls.
++ memory.async_control		 # set control for asynchronous memory reclaim
+ 
+ 1. History
+ 
+@@ -664,7 +665,50 @@ At reading, current status of OOM is sho
+ 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
+ 				 be stopped.)
+ 
+-11. TODO
++11. Asynchronous memory reclaim
++
++In some kind of applications which uses many file caches, once memory cgroup
++hit limit, following allocation of pages will hit limit again and the
++application may see huge latency because of memory reclaim.
++
++Memory cgroup provides a method for asynchronous memory reclaim for freeing
++memory before hitting limit. By this, some class of application can avoid
++memory reclaim latency effectively and show good performance. For example,
++if an application reads data from files bigger than limit, freeing memory
++in asynchrnous will reduce latency of read. But please note, even if
++latency decreased, the amount of total usage of CPU is unchanged. So,
++asynchronous memory reclaim works effectively only when you have extra unused
++CPU, applications tend to sleep. So, this feature only works on SMP.
++
++So, if you see this feature doesn't help your application, please let it
++turned off.
++
++
++11.1 memory.async_control
++
++memory.async_control is a control for asynchronous memory reclaim and
++represented as bitmask of controls.
++
++ bit 0 ....user control of automatic asynchronous memory reclaim(see below)
++ bit 1 ....indicate automatic asynchronous memory reclaim is really used.
++
++ * Automatic asynchronous memory reclaim is a feature to free pages to
++   some extent below the limit in background. When this runs, applications
++   can reduce latency at hit limit. (but please note, background reclaim
++   use cpu.)
++
++   This feature can be enabled by
++
++   echo 1 > memory.async_control
++
++   If successfully enabled, bit 1 of memory.async_control is set. Bit 1 may
++   not be set when the number of cpu is 1 or when the limit is too small.
++
++   Note: This feature is not propageted to childrens in automatic. This
++   may be conservative but required limitation to avoid using too much
++   cpus.
++
++12. TODO
+ 
+ 1. Add support for accounting huge pages (as a separate controller)
+ 2. Make per-cgroup scanner reclaim not-shared pages first
 
-> +int clk_set_rate(struct clk *clk, unsigned long rate)
-> +{
-> +       /* not yet implemented */
-> +       return -ENOSYS;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_set_rate);
-
-Here's my implementation, slightly modified and untested to work with
-your variable names (sorry if whitespace gets mangled):
-
-/*
- * called on a clock when it or any of its ancestors change parents or rates
- * must be called with prepare_lock held
- */
-static void _propagate_rate(struct clk *clk)
-{
-	struct clk *child;
-
-	if (clk->ops->recalc_rate)
-		clk->rate = clk->ops->recalc_rate(clk);
-	else if (clk->parent)
-		clk->rate = clk->parent->rate;
-
-	list_for_each_entry(child, &clk->children, parent_node)
-		_propagate_rate(child);
-}
-
-long __clk_round_rate(struct clk *clk, unsigned long rate)
-{
-	if (clk->ops->round_rate)
-		return clk->ops->round_rate(clk, rate);
-
-	return clk->rate;
-}
-
-int __clk_set_rate(struct clk *clk, unsigned long rate)
-{
-	long new_rate;
-	int ret;
-
-	if (!clk->ops->set_rate)
-		return -ENOSYS;
-
-	new_rate = __clk_round_rate(clk, rate);
-	if (new_rate < 0)
-		return new_rate;
-
-	ret = clk->ops->set_rate(clk, new_rate);
-	if (ret)
-		return ret;
-
-	clk->rate = new_rate;
-
-	_propagate_rate(clk);
-
-	return 0;
-}
-
-int clk_set_rate(struct clk *clk, unsigned long rate)
-{
-	int ret;
-
-	mutex_lock(&prepare_lock);
-
-	ret = __clk_set_rate(clk, rate);
-
-	mutex_unlock(prepare_lock);
-
-	return ret;
-}
-
-
-> +struct clk *clk_get_parent(struct clk *clk)
-> +{
-> +       if (!clk)
-> +               return NULL;
-> +
-> +       return clk->parent;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_get_parent);
-> +
-> +int clk_set_parent(struct clk *clk, struct clk *parent)
-> +{
-> +       /* not yet implemented */
-> +       return -ENOSYS;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_set_parent);
-> +
-> +struct clk *clk_register(struct clk_hw_ops *ops, struct clk_hw *hw,
-> +               const char *name)
-> +{
-> +       struct clk *clk;
-> +
-> +       clk = kzalloc(sizeof(*clk), GFP_KERNEL);
-> +       if (!clk)
-> +               return NULL;
-> +
-> +       clk->name = name;
-> +       clk->ops = ops;
-> +       clk->hw = hw;
-> +       hw->clk = clk;
-> +
-> +       /* Query the hardware for parent and initial rate */
-> +
-> +       if (clk->ops->get_parent)
-> +               /* We don't to lock against prepare/enable here, as
-> +                * the clock is not yet accessible from anywhere */
-> +               clk->parent = clk->ops->get_parent(clk->hw);
-> +
-> +       if (clk->ops->recalc_rate)
-> +               clk->rate = clk->ops->recalc_rate(clk->hw);
-> +
-> +
-> +       return clk;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_register);
-
-If you are requiring clk's parents (or possible parents?) to be
-registered before clk, you could put the clk_lookup struct inside the
-clk struct and call clkdev_add from clk_register, saving some
-boilerplate in the platforms.
-
-> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-> index 6db161f..e2a9719 100644
-> --- a/drivers/clk/clkdev.c
-> +++ b/drivers/clk/clkdev.c
-> @@ -23,6 +23,13 @@
->  static LIST_HEAD(clocks);
->  static DEFINE_MUTEX(clocks_mutex);
->
-> +/* For USE_COMMON_STRUCT_CLK, these are provided in clk.c, but not exported
-> + * through other headers; we don't want them used anywhere but here. */
-> +#ifdef CONFIG_USE_COMMON_STRUCT_CLK
-> +extern int __clk_get(struct clk *clk);
-> +extern void __clk_put(struct clk *clk);
-> +#endif
-> +
->  /*
->  * Find the correct struct clk for the device and connection ID.
->  * We do slightly fuzzy matching here:
-> diff --git a/include/linux/clk.h b/include/linux/clk.h
-> index 1d37f42..93ff870 100644
-> --- a/include/linux/clk.h
-> +++ b/include/linux/clk.h
-> @@ -3,6 +3,7 @@
->  *
->  *  Copyright (C) 2004 ARM Limited.
->  *  Written by Deep Blue Solutions Limited.
-> + *  Copyright (c) 2010-2011 Jeremy Kerr <jeremy.kerr@canonical.com>
->  *
->  * This program is free software; you can redistribute it and/or modify
->  * it under the terms of the GNU General Public License version 2 as
-> @@ -11,17 +12,103 @@
->  #ifndef __LINUX_CLK_H
->  #define __LINUX_CLK_H
->
-> +#include <linux/err.h>
-> +#include <linux/spinlock.h>
-> +
->  struct device;
->
-> -/*
-> - * The base API.
-> +struct clk;
-> +
-> +#ifdef CONFIG_GENERIC_CLK
-> +
-> +struct clk_hw {
-> +       struct clk *clk;
-> +};
-> +
-> +/**
-> + * struct clk_hw_ops -  Callback operations for hardware clocks; these are to
-> + * be provided by the clock implementation, and will be called by drivers
-> + * through the clk_* API.
-> + *
-> + * @prepare:   Prepare the clock for enabling. This must not return until
-> + *             the clock is fully prepared, and it's safe to call clk_enable.
-> + *             This callback is intended to allow clock implementations to
-> + *             do any initialisation that may sleep. Called with
-> + *             prepare_lock held.
-> + *
-> + * @unprepare: Release the clock from its prepared state. This will typically
-> + *             undo any work done in the @prepare callback. Called with
-> + *             prepare_lock held.
-> + *
-> + * @enable:    Enable the clock atomically. This must not return until the
-> + *             clock is generating a valid clock signal, usable by consumer
-> + *             devices. Called with enable_lock held. This function must not
-> + *             sleep.
-> + *
-> + * @disable:   Disable the clock atomically. Called with enable_lock held.
-> + *             This function must not sleep.
-> + *
-> + * @recalc_rate        Recalculate the rate of this clock, by quering hardware
-> + *             and/or the clock's parent. Called with the global clock mutex
-> + *             held. Optional, but recommended - if this op is not set,
-> + *             clk_get_rate will return 0.
-You need a callback to update the rate when the parent or parent's
-rate changes, which I would call recalc_rate, as well as this
-init-type call.
-
-> + *
-> + * @get_parent Query the parent of this clock; for clocks with multiple
-> + *             possible parents, query the hardware for the current
-> + *             parent. Currently only called when the clock is first
-> + *             registered.
-> + *
-> + * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
-> + * implementations to split any work between atomic (enable) and sleepable
-> + * (prepare) contexts.  If a clock requires sleeping code to be turned on, this
-> + * should be done in clk_prepare. Switching that will not sleep should be done
-> + * in clk_enable.
-> + *
-> + * Typically, drivers will call clk_prepare when a clock may be needed later
-> + * (eg. when a device is opened), and clk_enable when the clock is actually
-> + * required (eg. from an interrupt). Note that clk_prepare *must* have been
-> + * called before clk_enable.
-> + */
-> +struct clk_hw_ops {
-> +       int             (*prepare)(struct clk_hw *);
-> +       void            (*unprepare)(struct clk_hw *);
-> +       int             (*enable)(struct clk_hw *);
-> +       void            (*disable)(struct clk_hw *);
-> +       unsigned long   (*recalc_rate)(struct clk_hw *);
-> +       long            (*round_rate)(struct clk_hw *, unsigned long);
-> +       struct clk *    (*get_parent)(struct clk_hw *);
-> +};
-> +
-> +/**
-> + * clk_prepare - prepare clock for atomic enabling.
-> + *
-> + * @clk: The clock to prepare
-> + *
-> + * Do any possibly sleeping initialisation on @clk, allowing the clock to be
-> + * later enabled atomically (via clk_enable). This function may sleep.
->  */
-> +int clk_prepare(struct clk *clk);
->
-> +/**
-> + * clk_unprepare - release clock from prepared state
-> + *
-> + * @clk: The clock to release
-> + *
-> + * Do any (possibly sleeping) cleanup on clk. This function may sleep.
-> + */
-> +void clk_unprepare(struct clk *clk);
-> +
-> +#else /* !CONFIG_GENERIC_CLK */
->
->  /*
-> - * struct clk - an machine class defined object / cookie.
-> + * For !CONFIG_GENERIC_CLK, we don't enforce any atomicity
-> + * requirements for clk_enable/clk_disable, so the prepare and unprepare
-> + * functions are no-ops
->  */
-> -struct clk;
-> +static inline int clk_prepare(struct clk *clk) { return 0; }
-> +static inline void clk_unprepare(struct clk *clk) { }
-> +
-> +#endif /* !CONFIG_GENERIC_CLK */
->
->  /**
->  * clk_get - lookup and obtain a reference to a clock producer.
-> @@ -67,6 +154,7 @@ void clk_disable(struct clk *clk);
->  /**
->  * clk_get_rate - obtain the current clock rate (in Hz) for a clock source.
->  *               This is only valid once the clock source has been enabled.
-> + *               Returns zero if the clock rate is unknown.
->  * @clk: clock source
->  */
->  unsigned long clk_get_rate(struct clk *clk);
-> @@ -83,12 +171,6 @@ unsigned long clk_get_rate(struct clk *clk);
->  */
->  void clk_put(struct clk *clk);
->
-> -
-> -/*
-> - * The remaining APIs are optional for machine class support.
-> - */
-> -
-> -
->  /**
->  * clk_round_rate - adjust a rate to the exact rate a clock can provide
->  * @clk: clock source
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
