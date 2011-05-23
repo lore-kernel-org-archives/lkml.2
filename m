@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab1EWVep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 17:34:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26871 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab1EWVeo (ORCPT
+	id S1757630Ab1EWViU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 17:38:20 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41682 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827Ab1EWViS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 17:34:44 -0400
-Date: Mon, 23 May 2011 14:34:03 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Frank Hofmann <frank.hofmann@tomtom.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 3/3] PM / Hibernate: Update kerneldoc comments in
- hibernate.c
-Message-Id: <20110523143403.df275ba2.randy.dunlap@oracle.com>
-In-Reply-To: <201105232311.28958.rjw@sisk.pl>
-References: <201105211408.28671.rjw@sisk.pl>
-	<201105211412.11782.rjw@sisk.pl>
-	<4DD9CF9E.6000103@oracle.com>
-	<201105232311.28958.rjw@sisk.pl>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Mon, 23 May 2011 17:38:18 -0400
+Date: Mon, 23 May 2011 17:38:06 -0400 (EDT)
+Message-Id: <20110523.173806.1174406351709452162.davem@davemloft.net>
+To: joe@perches.com
+Cc: greearb@candelatech.com, linux-arch@vger.kernel.org, arnd@arndb.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Add and use WARN_RATELIMIT
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1305999731.git.joe@perches.com>
+References: <1305666832.1722.62.camel@Joe-Laptop>
+	<cover.1305999731.git.joe@perches.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4DDAD2D7.00A0:SCFMA922111,ss=1,fgs=0
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 23 May 2011 14:38:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 May 2011 23:11:28 +0200 Rafael J. Wysocki wrote:
+From: Joe Perches <joe@perches.com>
+Date: Sat, 21 May 2011 10:48:38 -0700
 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Hibernate: Update kerneldoc comments in hibernate.c
+> Generic mechanism to ratelimit WARN uses.
 > 
-> Some of the kerneldoc comments in kernel/power/hibernate.c are
-> outdated and some of them don't adhere to the kernel's standards.
-> Update them and make them look in a consistent way.
+> Joe Perches (2):
+>   bug.h: Add WARN_RATELIMIT
+>   net: filter: Use WARN_RATELIMIT
 > 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+>  include/asm-generic/bug.h |   16 ++++++++++++++++
+>  net/core/filter.c         |    4 +++-
+>  2 files changed, 19 insertions(+), 1 deletions(-)
 
-Looks good.  Thanks.
-
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+This looks fine to me, and no objections have been voiced otherwise,
+so applied to net-2.6, thanks!
