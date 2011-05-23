@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab1EWQat (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:30:49 -0400
-Received: from mail.perches.com ([173.55.12.10]:1869 "EHLO mail.perches.com"
+	id S1756117Ab1EWQbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:31:38 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56936 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756321Ab1EWQar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:30:47 -0400
-Subject: Re: [patch v2] checkpatch: Signature format verification
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: anish singh <anish198519851985@gmail.com>, davej@redhat.com,
-        apw@shadowen.org, akpm@linux-foundation.org, vapier@gentoo.org,
-        linux-kernel@vger.kernel.org, man.k1983@gmail.com
-In-Reply-To: <1306167729.1465.39.camel@gandalf.stny.rr.com>
-References: <1306006721.1622.18.camel@anish-desktop>
-	 <1306059528.2761.3.camel@anish-desktop>
-	 <1306073772.1681.6.camel@Joe-Laptop>
-	 <BANLkTimMPvn87E0EEqT4vhox4_8nQ4pMug@mail.gmail.com>
-	 <1306124078.1681.10.camel@Joe-Laptop>
-	 <1306167729.1465.39.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 May 2011 09:30:45 -0700
-Message-ID: <1306168245.8687.25.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1752223Ab1EWQbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 12:31:37 -0400
+Message-ID: <4DDA8BE7.3090407@kernel.dk>
+Date: Mon, 23 May 2011 18:31:35 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Tejun Heo <tj@kernel.org>, Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: move bd_set_size() above rescan_partitions() in
+ __blkdev_get()
+References: <BANLkTin3T8msxSSbTLJOvC5WLNFGspPEcg@mail.gmail.com> <20110519093026.GA627@htj.dyndns.org> <BANLkTinP7txzE2U+8qnJR2JVcGpGybnLrA@mail.gmail.com> <20110523112454.GA17547@htj.dyndns.org> <BANLkTinppQGEyiERCjFG0LYgTZGXbtApBw@mail.gmail.com>
+In-Reply-To: <BANLkTinppQGEyiERCjFG0LYgTZGXbtApBw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 12:22 -0400, Steven Rostedt wrote:
-> On Sun, 2011-05-22 at 21:14 -0700, Joe Perches wrote:
-> > On Mon, 2011-05-23 at 08:26 +0530, anish singh wrote:
-> > > On Sun, May 22, 2011 at 7:46 PM, Joe Perches <joe@perches.com> wrote:
-> > >         []
-> > > What does this mean?
-> > It means I didn't quote all of your original message.
-> Of course, we usually do "[...]" or "[..]". Without the dots, it just
-> looks like some kind of uninitialized array.
+On 2011-05-23 17:51, Linus Torvalds wrote:
+> On Mon, May 23, 2011 at 4:24 AM, Tejun Heo <tj@kernel.org> wrote:
+>>
+>> 02e352287a4 (block: rescan partitions on invalidated devices on
+>> -ENOMEDIA too) relocated partition rescan above explicit bd_set_size()
+>> to simplify condition check.  As rescan_partitions() does its own bdev
+>> size setting, this doesn't break anything; however,
+>> rescan_partitions() prints out the following messages when adjusting
+>> bdev size, which can be confusing.
+> 
+> Applied,
 
-Email isn't C and I'm a trendsetter.
-(Either that or I'm alone again in right field...)
+OK, added it when Tejun sent it as well, JFYI.
 
-cheers, Joe
+-- 
+Jens Axboe
 
