@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab1EWOVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 10:21:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:32951 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754107Ab1EWOVR (ORCPT
+	id S1755425Ab1EWOWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 10:22:50 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:41320 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740Ab1EWOWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 10:21:17 -0400
-Date: Mon, 23 May 2011 10:20:49 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Tanya Brokhman <tlinder@codeaurora.org>, <greg@kroah.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-In-Reply-To: <20110523072142.GK3095@legolas.emea.dhcp.ti.com>
-Message-ID: <Pine.LNX.4.44L0.1105231018560.2020-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 23 May 2011 10:22:49 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: benh@kernel.crashing.org
+Cc: robert.richter@amd.com, paulus@samba.org, oprofile-list@lists.sf.net,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH] oprofile, powerpc: Handle events that raise an exception without overflowing
+Date: Mon, 23 May 2011 10:22:40 -0400
+Message-Id: <1306160560-5309-1-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 May 2011, Felipe Balbi wrote:
+Commit 0837e3242c73566fc1c0196b4ec61779c25ffc93 fixes a situation on POWER7
+where events can roll back if a specualtive event doesn't actually complete.
+This can raise a performance monitor exception.  We need to catch this to ensure
+that we reset the PMC.  In all cases the PMC will be less than 256 cycles from
+overflow.
 
-> > > > +module_param_named(is_super_speed, mod_data.is_super_speed, bool,
-> > > > +S_IRUGO); MODULE_PARM_DESC(is_super_speed, "true to simulate
-> > > > +SuperSpeed connection");
-> > > 
-> > > you shouldn't need this. You should always enable SuperSpeed for this
-> > > driver.
-> > 
-> > You mean I don't need the module parameter? IMO it's the best way to enable
-> > HS connection. If driver->speed=USB_SPEED_SUPER than dummy_hcd will try to
-> > enumerate the device on the SS root hub and if the gadget didn't provide SS
-> > descriptors - it will fail. Just as it happened before. Finding out from
-> 
-> then it should hand the device over to the hs_hcd ;-) Meaning it would
-> disconnect the device, switch to hs_hcd and reconnect :-)
+This patch lifts Anton's fix for the problem in perf and applies it to oprofile
+as well.
 
-No.  That doesn't happen with real devices, so there's no reason 
-dummy-hcd should do it.
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+Cc: <stable@kernel.org> # as far back as it applies cleanly
+---
+ arch/powerpc/oprofile/op_model_power4.c |   24 +++++++++++++++++++++++-
+ 1 files changed, 23 insertions(+), 1 deletions(-)
 
-> > dummy_hcd that the enumeration failed is very complicated (if even possible)
-> > and I'm not sure that is the right thing to do... If you connect a real
-> > device over SS port to xHCI and the device doesn't provide SS descriptors -
-> > the enumeration fails and it's ok. But if you connect the same device to a
-> > HS port - it should work properly. This is what I tried to simulate with
-> > this parameter.
-> 
-> it doesn't just fails, it gives the device over to the shared_hcd :-)
-
-It does not.  xhci-hcd does not keep track of whether or not 
-enumeration succeeds, and it doesn't do anything special when 
-enumeration fails.
-
-Alan Stern
+diff --git a/arch/powerpc/oprofile/op_model_power4.c b/arch/powerpc/oprofile/op_model_power4.c
+index 8ee51a2..e6bec74 100644
+--- a/arch/powerpc/oprofile/op_model_power4.c
++++ b/arch/powerpc/oprofile/op_model_power4.c
+@@ -261,6 +261,28 @@ static int get_kernel(unsigned long pc, unsigned long mmcra)
+ 	return is_kernel;
+ }
+ 
++static bool pmc_overflow(unsigned long val)
++{
++	if ((int)val < 0)
++		return true;
++
++	/*
++	 * Events on POWER7 can roll back if a speculative event doesn't
++	 * eventually complete. Unfortunately in some rare cases they will
++	 * raise a performance monitor exception. We need to catch this to
++	 * ensure we reset the PMC. In all cases the PMC will be 256 or less
++	 * cycles from overflow.
++	 *
++	 * We only do this if the first pass fails to find any overflowing
++	 * PMCs because a user might set a period of less than 256 and we
++	 * don't want to mistakenly reset them.
++	 */
++	if (__is_processor(PV_POWER7) && ((0x80000000 - val) <= 256))
++		return true;
++
++	return false;
++}
++
+ static void power4_handle_interrupt(struct pt_regs *regs,
+ 				    struct op_counter_config *ctr)
+ {
+@@ -281,7 +303,7 @@ static void power4_handle_interrupt(struct pt_regs *regs,
+ 
+ 	for (i = 0; i < cur_cpu_spec->num_pmcs; ++i) {
+ 		val = classic_ctr_read(i);
+-		if (val < 0) {
++		if (pmc_overflow(val)) {
+ 			if (oprofile_running && ctr[i].enabled) {
+ 				oprofile_add_ext_sample(pc, regs, i, is_kernel);
+ 				classic_ctr_write(i, reset_value[i]);
+-- 
+1.7.4.1
 
