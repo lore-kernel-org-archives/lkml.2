@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab1EWROJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 13:14:09 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:58608 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756324Ab1EWROI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 13:14:08 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=EIkMDGqafLiKhN52Q2fphtY1qMCsdXdqlkdd/+C01ZjGC/Gir9mFJjGdsiLn81AkapdEEIF8uqqfEh0Rtg9QwIeMFvvaJuf+xhzhJnYbtf33NVnh8TzMFVGhpUG7z4pJ;
-Date: Mon, 23 May 2011 10:14:05 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Micha Nelissen <micha@neli.hopto.org>, lud <linux-usb@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: USB stick as root device does not work
-Message-Id: <20110523101405.e3ccafe9.rdunlap@xenotime.net>
-In-Reply-To: <4DD919FD.9090000@neli.hopto.org>
-References: <4DD919FD.9090000@neli.hopto.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1756640Ab1EWRSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:18:40 -0400
+Received: from mail.perches.com ([173.55.12.10]:1891 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755850Ab1EWRSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 13:18:39 -0400
+Subject: Re: [patch v3] checkpatch: Signature format verification
+From: Joe Perches <joe@perches.com>
+To: anish singh <anish198519851985@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, davej@redhat.com, rostedt@goodmis.org,
+        apw@shadowen.org, akpm@linux-foundation.org, vapier@gentoo.org,
+        linux-kernel@vger.kernel.org, man.k1983@gmail.com
+In-Reply-To: <BANLkTik8coVxt=Z92NQBNH_=4yRhTtexzA@mail.gmail.com>
+References: <1306006721.1622.18.camel@anish-desktop>
+	 <1306059528.2761.3.camel@anish-desktop>
+	 <1306164094.2292.25.camel@anish-desktop>
+	 <1306167105.8687.11.camel@Joe-Laptop>
+	 <BANLkTi=9nzMbxU0=P+pOaHcebqhL=bd2HQ@mail.gmail.com>
+	 <1306168598.8687.27.camel@Joe-Laptop>
+	 <20110523093920.8f1e5cd0.rdunlap@xenotime.net>
+	 <1306168975.8687.29.camel@Joe-Laptop>
+	 <BANLkTik8coVxt=Z92NQBNH_=4yRhTtexzA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 May 2011 10:18:37 -0700
+Message-ID: <1306171117.8687.34.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding cc: of linux-usb mailing list]
+On Mon, 2011-05-23 at 22:36 +0530, anish singh wrote:
+>  if ($1 !~ /[\sa-zA-Z\"]*\s<.*>/i) {
+>  WARN("Space required b/w Full Name & Mail-id:\n" .
+>                                                         $herecurr);
+>                                         }
+> Quote has been taken care too now.
 
-On Sun, 22 May 2011 16:13:17 +0200 Micha Nelissen wrote:
+If you're going to try to validate email addresses,
+please do it reasonably correctly or not at all.
 
-> Hi,
-> 
-> Using USB stick as root device does not work for me. I specify
-> 'root=/dev/sdb1 rootwait' on the kernel commandline, but the kernel does
-> not wait for the USB stick to be scanned and its partitions found. I
-> have a harddisk which is /dev/sda, and this USB stick would be /dev/sdb.
-> 
-> I think blk_lookup_devt returns the block device number even if it does
-> not exist yet, and init/do_mounts.c:473 therefore skips waiting:
-> 
->         if ((ROOT_DEV == 0) && root_wait) {
-> 
-> due to ROOT_DEV having become non-zero already.
-> 
-> If I use the commandline: 'root=/dev/sdb1 rootdelay=5' then it does
-> mount and boot properly. However, using rootwait seems safer and faster
-> to me, that it's meant for this use case.
-> 
-> Thanks for any pointers,
-> 
-> Micha
-> --
+At a minimum you need to add digits, single quote,
+period, and comma.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Look at git-send-email.perl or scripts/get_maintainer.pl
+for email address validation samples.
+
+
