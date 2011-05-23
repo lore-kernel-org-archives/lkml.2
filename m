@@ -1,123 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970Ab1EWSup (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 14:50:45 -0400
-Received: from mail.avalus.com ([89.16.176.221]:46588 "EHLO mail.avalus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756556Ab1EWSun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 14:50:43 -0400
-Date: Mon, 23 May 2011 19:50:39 +0100
-From: Alex Bligh <alex@alex.org.uk>
-Reply-To: Alex Bligh <alex@alex.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>, Alex Bligh <alex@alex.org.uk>
-Subject: Re: BUG: Failure to send REQ_FLUSH on unmount on ext3, ext4, and FS
- in general
-Message-ID: <83DC08645AEEDEA52709C5C3@Ximines.local>
-In-Reply-To: <20110523175204.GA21110@infradead.org>
-References: <959E4E25EAEC544D31199E6F@nimrod.local>
- <20110523155550.GE4716@quack.suse.cz>
- <EC63F9E077B362A0FDCF3527@Ximines.local>
- <20110523172906.GH4716@quack.suse.cz>
- <16968FD306209AF92D4660B9@Ximines.local>
- <20110523175204.GA21110@infradead.org>
-X-Mailer: Mulberry/4.0.8 (Mac OS X)
+	id S932252Ab1EWSuy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 14:50:54 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:6055 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756926Ab1EWSuo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 14:50:44 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 1/1] Clocksource: Move the Hyper-V clocksource driver
+ out of staging
+Thread-Topic: [PATCH 1/1] Clocksource: Move the Hyper-V clocksource driver
+ out of staging
+Thread-Index: AQHMGW2o73xBkI9IxkSJtOUc7B8Bm5SbLWoA//+MZnA=
+Date: Mon, 23 May 2011 18:50:42 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481FC8D4@TK5EX14MBXC122.redmond.corp.microsoft.com>
+References: <1306170743-17797-1-git-send-email-kys@microsoft.com>
+ <alpine.LFD.2.02.1105232010470.3078@ionos>
+In-Reply-To: <alpine.LFD.2.02.1105232010470.3078@ionos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph,
-
---On 23 May 2011 13:52:04 -0400 Christoph Hellwig <hch@infradead.org> wrote:
-
-> On Mon, May 23, 2011 at 06:39:23PM +0100, Alex Bligh wrote:
->> I'm presuming that if just umount() were altered to do a REQ_FLUSH,
->> the potential presence of 2 sync()s would not be too offensive, as
->> unmount isn't exactly time critical, and as Christoph pointed out in
->> the other thread, a REQ_FLUSH when the write cache has recently been
->> emptied isn't going to take long.
->
-> Umount actually is the only place where adding it generically makes
-> sense.  It's not time-critical, and with kill_block_super we actually
-> have a block specific place to put it, instead of having to hack
-> it into the generic VFS, which is something we've been trying to avoid.
-
-You mean like this (completely untested)?
-
-diff --git a/fs/super.c b/fs/super.c
-index 8a06881..a86201a 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -852,6 +852,7 @@ void kill_block_super(struct super_block *sb)
-        bdev->bd_super = NULL;
-        generic_shutdown_super(sb);
-        sync_blockdev(bdev);
-+       blkdev_issue_flush(bdev, GFP_KERNEL, NULL);
-        WARN_ON_ONCE(!(mode & FMODE_EXCL));
-        blkdev_put(bdev, mode | FMODE_EXCL);
- }
 
 
-One thing I am puzzled by is that blkdev_fsync unconditionally
-calls blkdev_issue_flush, but no amount of fsync(), sync() or
-whatever generates any REQ_FLUSH traffic. The only explanation
-I can guess at for that is that blkdev_issue_flush is a NOOP
-if the driver doesn't have a make_request_function:
+> -----Original Message-----
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Sent: Monday, May 23, 2011 2:16 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; johnstul@us.ibm.com; hch@infradead.org; Hank
+> Janssen; Haiyang Zhang
+> Subject: Re: [PATCH 1/1] Clocksource: Move the Hyper-V clocksource driver out
+> of staging
+> 
+> On Mon, 23 May 2011, K. Y. Srinivasan wrote:
+> > +
+> > +#include <linux/version.h>
+> > +#include <linux/clocksource.h>
+> > +#include <linux/init.h>
+> > +#include <linux/module.h>
+> > +#include <linux/pci.h>
+> > +#include <linux/dmi.h>
+> > +#include <asm/hyperv.h>
+> > +#include <asm/mshyperv.h>
+> > +#include <asm/hypervisor.h>
+> > +
+> > +#define HV_CLOCK_SHIFT	22
+> 
+> Please do not use hard coded conversion factors. See below
 
-        /*
-         * some block devices may not have their queue correctly set up here
-         * (e.g. loop device without a backing file) and so issuing a flush
-         * here will panic. Ensure there is a request function before 
-issuing
-         * the flush.
-         */
-        if (!q->make_request_fn)
-                return -ENXIO;
+I will fix this.
+> 
+> > +static cycle_t read_hv_clock(struct clocksource *arg)
+> > +{
+> > +	cycle_t current_tick;
+> > +	/*
+> > +	 * Read the partition counter to get the current tick count. This count
+> > +	 * is set to 0 when the partition is created and is incremented in
+> > +	 * 100 nanosecond units.
+> > +	 */
+> > +	rdmsrl(HV_X64_MSR_TIME_REF_COUNT, current_tick);
+> > +	return current_tick;
+> > +}
+> > +
+> > +static struct clocksource hyperv_cs = {
+> > +	.name           = "hyperv_clocksource",
+> > +	.rating         = 400, /* use this when running on Hyperv*/
+> > +	.read           = read_hv_clock,
+> > +	.mask           = CLOCKSOURCE_MASK(64),
+> > +	/*
+> > +	 * The time ref counter in HyperV is in 100ns units.
+> > +	 * The definition of mult is:
+> > +	 * mult/2^shift = ns/cyc = 100
+> > +	 * mult = (100 << shift)
+> > +	 */
+> > +	.mult           = (100 << HV_CLOCK_SHIFT),
+> > +	.shift          = HV_CLOCK_SHIFT,
+> > +};
+> > +
+> > +static const struct dmi_system_id __initconst
+> > +hv_timesource_dmi_table[] __maybe_unused  = {
+> > +	{
+> > +		.ident = "Hyper-V",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft
+> Corporation"),
+> > +			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+> > +			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
+> > +		},
+> > +	},
+> > +	{ },
+> > +};
+> > +MODULE_DEVICE_TABLE(dmi, hv_timesource_dmi_table);
+> > +
+> > +static const struct pci_device_id __initconst
+> > +hv_timesource_pci_table[] __maybe_unused = {
+> > +	{ PCI_DEVICE(0x1414, 0x5353) }, /* VGA compatible controller */
+> > +	{ 0 }
+> > +};
+> > +MODULE_DEVICE_TABLE(pci, hv_timesource_pci_table);
+> 
+> This pci_id table is unused. What's the purpose ?
 
-According to Documentation/block/writeback_cache_control.txt, drivers
-with a request_fn are still meant to get REQ_FLUSH etc. provided
-they have done:
+Both the PCI and DMI tables were defined to ensure autoloading
+> 
+> > +
+> > +static int __init init_hv_clocksource(void)
+> > +{
+> > +	if ((x86_hyper != &x86_hyper_ms_hyperv) ||
+> > +		!(ms_hyperv.features &
+> HV_X64_MSR_TIME_REF_COUNT_AVAILABLE))
+> > +		return -ENODEV;
+> 
+> Isn't this a sufficient indicator ?
 
-   blk_queue_flush(sdkp->disk->queue, REQ_FLUSH);
+This ensures we are running on Hyper-V and for that this check is sufficient.
 
-So should that read (again untested) as follows:
+> 
+> > +	if (!dmi_check_system(hv_timesource_dmi_table))
+> > +		return -ENODEV;
+> 
+> Do we really need this additional check? I'd say if x86_hyper ==
+> x86_hyper_ms_hyperv then failing the DMI check would be more than
+> silly.
 
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index 6c9b5e1..3a6d4bd 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -408,7 +408,8 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t 
-gfp_mask,
-         * here will panic. Ensure there is a request function before 
-issuing
-         * the flush.
-         */
--       if (!q->make_request_fn)
-+       if (!q->make_request_fn &&
-+           !(q->request_fn && (q->flush_flags & REQ_FLUSH)))
-                return -ENXIO;
+Both the PCI and DMI tables were introduced by Greg to support autoloading.
+I will see if I can clean this up.
 
-        bio = bio_alloc(gfp_mask, 0);
+> 
+> > +	pr_info("Registering HyperV clock source\n");
+> > +	return clocksource_register(&hyperv_cs);
+> 
+> Please use clocksource_register_hz/khz and get rid of the hard coded
+> constants.
+
+Will do.
+> 
+> > +}
+> > +
+> > +module_init(init_hv_clocksource);
+> > +MODULE_DESCRIPTION("HyperV based clocksource");
+> > +MODULE_AUTHOR("K. Y. Srinivasan <ksrinivasan@novell.com>");
+> > +MODULE_LICENSE("GPL");
+> 
+> Why do we need to build this as a module?
+
+No particular reason. This is the way, I had it in the staging directory.
+Do you want me to build this as part of the kernel? I would then not have
+to worry about auto-loading issues.
+
+Regards,
+
+K. Y 
 
 
->> Ah, fsdevel not here. OK. Partly I'd like to understand whether
->> sync() not flushing write caches on barrier-less file systems
->> is a good thing or a bad thing. I know barriers are better, but if
->> writing to (e.g.) FAT32, I'm betting there is little prospect of
->> barrier support.
->
-> "Barrier" support it's gone.  It's really just the FUA and FLUSH
-> flags these days.
-
-Sorry - slack terminology on my part.
-
--- 
-Alex Bligh
