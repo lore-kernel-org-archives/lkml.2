@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941Ab1EWTRq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 15:17:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56972 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932903Ab1EWTRn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 15:17:43 -0400
-Date: Mon, 23 May 2011 21:17:39 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: KY Srinivasan <kys@microsoft.com>
-cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Hank Janssen <hjanssen@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] Clocksource: Move the Hyper-V clocksource driver
- out of staging
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481FC8D4@TK5EX14MBXC122.redmond.corp.microsoft.com>
-Message-ID: <alpine.LFD.2.02.1105232116140.3078@ionos>
-References: <1306170743-17797-1-git-send-email-kys@microsoft.com> <alpine.LFD.2.02.1105232010470.3078@ionos> <6E21E5352C11B742B20C142EB499E0481FC8D4@TK5EX14MBXC122.redmond.corp.microsoft.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S933170Ab1EWTVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 15:21:12 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44061 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933126Ab1EWTVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 15:21:08 -0400
+Date: Mon, 23 May 2011 21:20:56 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
+Subject: Re: (Short?) merge window reminder
+Message-ID: <20110523192056.GC23629@elte.hu>
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 May 2011, KY Srinivasan wrote:
-> > > +module_init(init_hv_clocksource);
-> > > +MODULE_DESCRIPTION("HyperV based clocksource");
-> > > +MODULE_AUTHOR("K. Y. Srinivasan <ksrinivasan@novell.com>");
-> > > +MODULE_LICENSE("GPL");
-> > 
-> > Why do we need to build this as a module?
-> 
-> No particular reason. This is the way, I had it in the staging directory.
-> Do you want me to build this as part of the kernel? I would then not have
-> to worry about auto-loading issues.
 
-If we get rid of the DMI/PCI stuff then the whole module code is
-larger than the real code. So no point in building it modular, just
-make it depend on CONFIG_WHATEVER_MEANS_HYPERV
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Thanks,
+> PS. The voices in my head also tell me that the numbers are getting too big. 
+> I may just call the thing 2.8.0. And I almost guarantee that this PS is going 
+> to result in more discussion than the rest, but when the voices tell me to do 
+> things, I listen.
 
-	tglx
+I really hope there's also a voice that tells you to wait until .42 before 
+cutting 3.0.0! :-)
+
+	Ingo
