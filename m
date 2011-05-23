@@ -1,38 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab1EWGr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 02:47:27 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:51091 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab1EWGrZ (ORCPT
+	id S1753070Ab1EWGuy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 02:50:54 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:35998 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751597Ab1EWGux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 02:47:25 -0400
-Date: Mon, 23 May 2011 02:46:20 -0400 (EDT)
-Message-Id: <20110523.024620.245701157448889932.davem@davemloft.net>
-To: geert@linux-m68k.org
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-m68k@vger.kernel.org
-Subject: Re: [PATCH 4/4] sparc: iounmap() and *_free_coherent() - Use
- lookup_resource()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1306006756-32009-5-git-send-email-geert@linux-m68k.org>
-References: <1306006756-32009-1-git-send-email-geert@linux-m68k.org>
-	<1306006756-32009-5-git-send-email-geert@linux-m68k.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 23 May 2011 02:50:53 -0400
+Message-ID: <4DDA03C6.6050806@ti.com>
+Date: Mon, 23 May 2011 12:20:46 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Colin Cross <ccross@android.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robherring2@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: smp_twd: Reconfigure clockevents after cpufreq
+ change
+References: <1305851091-10096-1-git-send-email-ccross@android.com>	<4DD75BC9.8040004@ti.com> <BANLkTikyGFVKTst1xJTGzHuwY_2GoG6NOw@mail.gmail.com>
+In-Reply-To: <BANLkTikyGFVKTst1xJTGzHuwY_2GoG6NOw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 22 May 2011 23:46:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Sat, 21 May 2011 21:39:16 +0200
+On 5/23/2011 10:48 AM, Colin Cross wrote:
+> On Fri, May 20, 2011 at 11:29 PM, Santosh Shilimkar
+> <santosh.shilimkar@ti.com>  wrote:
+>> On 5/20/2011 5:54 AM, Colin Cross wrote:
+>>>
+>>> The localtimer's clock changes with the cpu clock.  After a
+>>> cpufreq transition, update the clockevent's frequency and
+>>> reprogram the next clock event.
+>>>
+>>> Adds a clock called "smp_twd" that is used to determine the
+>>> twd frequency, which can also be used at init time to
+>>> avoid calibrating the twd frequency.
+>>>
+>>> Clock changes are based on Rob Herring's work.
+>>>
+>>> Change-Id: I413b5cd07fb2b79bc9fad8b4bf257332d1da7bcd
+>>> Signed-off-by: Colin Cross<ccross@android.com>
+>>> Cc: Thomas Gleixner<tglx@linutronix.de>
+>>> Cc: Russell King<linux@arm.linux.org.uk>
+>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>> Cc: Rob Herring<robherring2@gmail.com>
+>>> Tested-by: Linus Walleij<linus.walleij@linaro.org>
+>>> ---
+>>
+>> Acked-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>
+>> What about the clock-node patches?
+>> Do you want those to get merged via sub-arch tree's once this
+>> patch + Thomas's new API gets merged ?
+>
+> The clock-node patches can be merged independently - twd scaling just
+> won't work until they are both merged.
+Yep. That should be ok.
 
-> Replace a custom implementation (which doesn't lock the resource tree) by a
-> call to lookup_resource()
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Acked-by: David S. Miller <davem@davemloft.net>
+Regards
+Santosh
