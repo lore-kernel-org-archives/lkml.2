@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab1EWOJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 10:09:54 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46312 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab1EWOJx (ORCPT
+	id S1754610Ab1EWOKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 10:10:22 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37243 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754091Ab1EWOKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 10:09:53 -0400
+	Mon, 23 May 2011 10:10:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=pErbhKFpp78hrUasMa6cY1nB3fBWKe0O5zUM8GSL68bJL19rRleLwFty8xQFXW63dG
-         O1XdIFI/AMFlThXNOOSmwh8DukAbMb8COMSjtSrV1cZPxRqp75w9L3f+ibRRtyp9OeCf
-         RjxHpjOisCjrSegzhgRQNsOMxumOYNutT6taM=
+        b=N8mOoLDR9QPFZ0s9XRL5PYb8RfIAvqmpWSTixNohN3RskQtGkXxDD6iET70cePO0IO
+         8lieSTLApg7uV6k227elLc0mPDzRPvKxJlpCDuycXKmz0Jpg2YUfNKC6dv/e2WTqFIhX
+         Vu4C0slUGl/y2eM9In0JNTvEGmWxSfbgxAsmo=
 MIME-Version: 1.0
-In-Reply-To: <20110523144159.5788ee9f@lxorguk.ukuu.org.uk>
-References: <20110511204609.GA6059@patrik-macbook>
-	<20110511225557.2c8f6649@lxorguk.ukuu.org.uk>
-	<BANLkTi=tB+22Xen9StHkCdoEa8A2hqA2aA@mail.gmail.com>
-	<20110523144159.5788ee9f@lxorguk.ukuu.org.uk>
-Date: Mon, 23 May 2011 16:09:52 +0200
-Message-ID: <BANLkTinssZiR1E+=b4Rfd1pu3mX_6uidSQ@mail.gmail.com>
-Subject: Re: [PATCH] gma500: Skip bogus LVDS VBT mode and check for LVDS
- before adding backlight (try 2)
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <201105231527.53805.stevie.trujillo@gmail.com>
+References: <201105231527.53805.stevie.trujillo@gmail.com>
+Date: Mon, 23 May 2011 22:10:17 +0800
+Message-ID: <BANLkTi=iGzkSwWPZrFPBJZYg6x=dDBb5Eg@mail.gmail.com>
+Subject: Re: ramoops: is using platform_drivers correct?
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Stevie Trujillo <stevie.trujillo@gmail.com>
+Cc: marco.stornelli@gmail.com, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 3:41 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> So my question is, do you think we should incorporate the new and more
->> feature complete output handling from the i915 into gma500? We might
->> even start sharing that code between gma500 and i915. If that is
->> something you like to avoid we can of course keep working on our
->> current output code.
+On Mon, May 23, 2011 at 9:27 PM, Stevie Trujillo
+<stevie.trujillo@gmail.com> wrote:
+> Hello,
 >
-> Importing the code seems reasonable. KeithP didn't want it shared when I
-> asked him, but importing it and having the same code in many areas is the
-> first step to sharing anyway.
+> ramoops (drivers/char/ramoops.c) is for "all" computers right? When I try to
+> load it on my laptop, I get ENODEV. This is caused by platform_driver_probe()
+> - the code never reaches the ramoops probe callback.
 >
-> Alan
->
+> After I removed the platform_driver stuff, moving everything into ramoops_init
+> and ramoops_exit it worked.
 
-Ok, I'll get back to you (probably after the weekend) when I've had
-some more time to work on this.
+Actually that was changed by Kyungmin, Cc'ing...
 
-Anyone who would like to look more closely on the LVDS parts of gma500
-vs i915 are free to join in.
+commit c3b92ce9e75f6353104fc7f8e32fb9fdb2550ad0
+Author: Kyungmin Park <kyungmin.park@samsung.com>
+Date:   Wed Oct 27 15:34:52 2010 -0700
 
-Thanks
-Patrik Jakobsson
+    ramoops: use the platform data structure instead of module params
+
+    As each board and system has different memory for ramoops.  It's better to
+    define the platform data instead of module params.
+
+    [akpm@linux-foundation.org: fix ramoops_remove() return type]
+    Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+    Cc: Marco Stornelli <marco.stornelli@gmail.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
