@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab1EWAiT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 20:38:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39920 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753632Ab1EWAiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 20:38:17 -0400
-Message-ID: <4DD9AC5A.4010606@zytor.com>
-Date: Sun, 22 May 2011 17:37:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-CC: Tony Luck <tony.luck@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-References: <1305292059.1949.0.camel@dan> <1305293345.1949.22.camel@dan>	 <20110516153527.GC21107@elte.hu> <1305852966.3005.19.camel@dan>	 <20110520120750.GJ14745@elte.hu> <1305896093.3005.24.camel@dan>	 <20110520131108.GA17699@elte.hu> <1306089922.1806.27.camel@dan>	 <BANLkTik1SK_kWVvGsKk0SqdByQ5-0b5nFg@mail.gmail.com> <1306110336.25049.7.camel@dan>
-In-Reply-To: <1306110336.25049.7.camel@dan>
-Content-Type: text/plain; charset=UTF-8
+	id S1755966Ab1EWAif (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 20:38:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23028 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788Ab1EWAib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 20:38:31 -0400
+Date: Sun, 22 May 2011 17:38:02 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Mike Waychison <mikew@google.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        gregkh <greg@kroah.com>
+Subject: [PATCH -next] firmware: fix GOOGLE_SMI kconfig dependency warning
+Message-Id: <20110522173802.c0766c64.randy.dunlap@oracle.com>
+In-Reply-To: <20110520165507.cba539d5.sfr@canb.auug.org.au>
+References: <20110520165507.cba539d5.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4DD9AC80.00E3:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2011 05:25 PM, Dan Rosenberg wrote:
-> 
->> Sometime soon you'll have "rdrand" available (check a different cpuid
->> bit).
-> 
-> This of course is highly preferable, but I'd rather implement a solution
-> that's widely supported in hardware today.  Perhaps further down the
-> road it could be switched.
-> 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Use the better one that is actually available.
+Is it meaningful/useful to enable EFI_VARS but not EFI?
+That's what GOOGLE_SMI does.  Make it enable EFI also.
 
-	-hpa
+Fixes this kconfig dependency warning:
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+warning: (GOOGLE_SMI) selects EFI_VARS which has unmet direct dependencies (EFI)
 
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Mike Waychison <mikew@google.com>
+---
+ drivers/firmware/google/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20110520.orig/drivers/firmware/google/Kconfig
++++ linux-next-20110520/drivers/firmware/google/Kconfig
+@@ -13,6 +13,7 @@ menu "Google Firmware Drivers"
+ config GOOGLE_SMI
+ 	tristate "SMI interface for Google platforms"
+ 	depends on ACPI && DMI
++	select EFI
+ 	select EFI_VARS
+ 	help
+ 	  Say Y here if you want to enable SMI callbacks for Google
