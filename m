@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab1EWQ40 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:56:26 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:55278 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756589Ab1EWQ4Z (ORCPT
+	id S932098Ab1EWRAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:00:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16320 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755856Ab1EWRAG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:56:25 -0400
-Date: Mon, 23 May 2011 19:56:23 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: torvalds@linux-foundation.org
-cc: cl@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, rientjes@google.com
-Subject: [GIT PULL] SLAB updates for v2.6.40-rc0
-Message-ID: <alpine.DEB.2.00.1105231955400.8359@tiger>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 23 May 2011 13:00:06 -0400
+X-ExtLoop1: 1
+From: "Anvin, H Peter" <h.peter.anvin@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>, "H.J. Lu" <hjl.tools@gmail.com>
+CC: GCC Development <gcc@gcc.gnu.org>,
+        GNU C Library <libc-alpha@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "x32-abi@googlegroups.com" <x32-abi@googlegroups.com>
+Date: Mon, 23 May 2011 09:59:14 -0700
+Subject: RE: X32 project status update
+Thread-Topic: X32 project status update
+Thread-Index: AcwXy6ypyleqm+OMQ+6t4ARedKZShQBnvREQ
+Message-ID: <ADDEBCD9C145E542A8688C29F1FBDCB9013041770F@orsmsx502.amr.corp.intel.com>
+References: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
+ <201105211727.35985.arnd@arndb.de>
+In-Reply-To: <201105211727.35985.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+The eventual goal is to merge it with the x86-64 syscall table, although we're still working out exactly where we can do it.
 
-Here's bunch of fixes and cleanups to the SLUB allocator. Bulk of them are
-related to the lockless fastpaths but there's also some preparational work on
-lockless slowpaths that will hopefully appear in v2.6.41.
+	-hpa
 
-                         Pekka
+-----Original Message-----
+From: Arnd Bergmann [mailto:arnd@arndb.de] 
+Sent: Saturday, May 21, 2011 8:28
+To: H.J. Lu
+Cc: GCC Development; GNU C Library; LKML; x32-abi@googlegroups.com; Anvin, H Peter
+Subject: Re: X32 project status update
 
-The following changes since commit caebc160ce3f76761cc62ad96ef6d6f30f54e3dd:
-   Linus Torvalds (1):
-         Merge branch 'for-linus' of git://git.kernel.org/.../ryusuke/nilfs2
+On Saturday 21 May 2011 17:01:33 H.J. Lu wrote:
+> This is the x32 project status update:
+> 
+> https://sites.google.com/site/x32abi/
+> 
 
-are available in the git repository at:
+I've had another look at the kernel patch. It basically
+looks all good, but the system call table appears to
+diverge from the x86_64 list for no (documented) reason,
+in the calls above 302. Is that intentional?
 
-   ssh://master.kernel.org/pub/scm/linux/kernel/git/penberg/slab-2.6.git for-linus
+I can see why you might want to keep the numbers identical,
+but if they are already different, why not use the generic
+system call table from asm-generic/unistd.h for the new
+ABI?
 
-Christoph Lameter (10):
-       slub: Use NUMA_NO_NODE in get_partial
-       slub: get_map() function to establish map of free objects in a slab
-       slub: Eliminate repeated use of c->page through a new page variable
-       slub: Move node determination out of hotpath
-       slub: Move debug handlign in __slab_free
-       slub: Remove CONFIG_CMPXCHG_LOCAL ifdeffery
-       slub: Avoid warning for !CONFIG_SLUB_DEBUG
-       slub: Make CONFIG_DEBUG_PAGE_ALLOC work with new fastpath
-       slub: Remove node check in slab_free
-       slub: Deal with hyperthetical case of PAGE_SIZE > 2M
-
-David Rientjes (1):
-       slub: avoid label inside conditional
-
-Li Zefan (1):
-       slub: Fix a typo in config name
-
-Pekka Enberg (1):
-       Merge branch 'slab/next' into for-linus
-
-  include/linux/slub_def.h |    8 +-
-  mm/slub.c                |  165 ++++++++++++++++++----------------------------
-  2 files changed, 69 insertions(+), 104 deletions(-)
+	Arnd
