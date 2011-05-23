@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab1EWQo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:44:26 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:45107 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756343Ab1EWQoZ (ORCPT
+	id S1756636Ab1EWQpK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:45:10 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:34018 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab1EWQpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:44:25 -0400
-Date: Mon, 23 May 2011 18:44:21 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        andi@firstfloor.org, ming.m.lin@intel.com
-Subject: Re: [PATCH 1/3] perf_events: update Intel extra regs shared constraints management (v3)
-Message-ID: <20110523164421.GC15299@one.firstfloor.org>
-References: <20110523161247.GA11590@quad>
-Mime-Version: 1.0
+	Mon, 23 May 2011 12:45:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=kUVvPpriCqPf92hZlm5vBtZAWVPIt4xcXRH24KjUHCmoZREiUOvDNX06nWwTkTw4Nh
+         lMju/B5mGQB2gQegyNLM44iXy5JZa7rSejosnAPSm8wZbVdMoh62sU5e78r0DxIrpMJQ
+         tRMvILq+ow62RHueB46jrzOQFHA1G847tDK+A=
+Date: Mon, 23 May 2011 09:45:02 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: anish singh <anish198519851985@gmail.com>
+Cc: broonie@opensource.wolfsonmicro.com, arnaud.patard@rtp-net.org,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
+Subject: Re: s3c2410_ts.c move to threaded_irq?
+Message-ID: <20110523164502.GB20397@core.coreip.homeip.net>
+References: <BANLkTikwHU-RhbPp0Xwni7zKU68g6L522A@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110523161247.GA11590@quad>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <BANLkTikwHU-RhbPp0Xwni7zKU68g6L522A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 06:12:47PM +0200, Stephane Eranian wrote:
->     
-> This patch improves the code managing the extra shared registers
-> used for offcore_response events on Intel Nehalem/Westmere. The
-> idea is to use static allocation instead of dynamic allocation.
-> This simplifies greatly the get and put constraint routines for
-> those events.
->     
-> The patch also renames per_core to shared_regs because the same
-> data structure gets used whether or not HT is on. When HT is
-> off, those events still need to coordination because they use
-> a extra MSR that has to be shared within an event group.
->     
-> The first post of this patch had an older (bogus) version of
-> the patch with bogus initialization of reg->idx.
+On Mon, May 23, 2011 at 01:18:59PM +0530, anish singh wrote:
+> Will it be ok if i move this driver(drivers/input/touchscreen/s3c2410_ts.c)
+> to threaded_irq?As we know there are some inherent advantages in moving
+> to threaded_irq.
+> 
 
-I did a quick read -- not full check -- and it looked good to me.
-I like the idea of preallocating the slots.
+I would not make such a blanket statement. Threaded interrupts are very
+beneficial in some situations and godsend in others but regular
+interrupts have their users too. It all depends on the device and the
+driver.
 
-Acked-by: Andi Kleen <ak@linux.intel.com>
+Thanks.
 
--Andi
+-- 
+Dmitry
