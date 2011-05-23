@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab1EWRv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 13:51:28 -0400
-Received: from mail.perches.com ([173.55.12.10]:1895 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756159Ab1EWRv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 13:51:27 -0400
-Subject: Re: [PATCH] drivers: Use kzalloc instead of 'kmalloc+memset',
- where possible.
-From: Joe Perches <joe@perches.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1306172407.8198.3.camel@localhost.localdomain>
-References: <1306172407.8198.3.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 May 2011 10:51:25 -0700
-Message-ID: <1306173085.8687.38.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1756325Ab1EWRvt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:51:49 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34949 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755868Ab1EWRvr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 13:51:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=bPZrhf1x/SeJ1kMTWBuC34fo4adcesAVpCgRlvbGjzcgWVQgcZShTLbPBxptmCjouh
+         KuhwfJZN0eHSgyobU9xPrFVdOrfR/NERF3joeI65+l7pLb6nGjloLEEhqLR8Lh8MuAzV
+         fM8jdY/cBDriN3WkKHcadsG9haYxbNXv41KvU=
+Message-ID: <4DDA9EAB.40304@gmail.com>
+Date: Mon, 23 May 2011 21:51:39 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH -next] x86: apic_flat_64.c needs module.h
+References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au> <20110523104300.dd532a99.randy.dunlap@oracle.com>
+In-Reply-To: <20110523104300.dd532a99.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 23:40 +0600, Rakib Mullick wrote:
-> Following patch removes the uses of 'kmalloc+memset' from various
-> drivers subsystems, which is replaced by kzalloc. kzalloc take care of
-> setting allocated memory with null, so it helps to get rid from using
-> memset.
-> diff --git a/drivers/gpu/drm/drm_scatter.c b/drivers/gpu/drm/drm_scatter.c
-[]
-> -	entry->pagelist = kmalloc(pages * sizeof(*entry->pagelist), GFP_KERNEL);
-> +	entry->pagelist = kzalloc(pages * sizeof(*entry->pagelist), GFP_KERNEL);
+On 05/23/2011 09:43 PM, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> apic_flat_64.c needs to include module.h to fix these warnings:
+> 
+> arch/x86/kernel/apic/apic_flat_64.c:31: warning: data definition has no type or storage class
+> arch/x86/kernel/apic/apic_flat_64.c:31: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+> arch/x86/kernel/apic/apic_flat_64.c:31: warning: parameter names (without types) in function declaration
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> ---
+>  arch/x86/kernel/apic/apic_flat_64.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- linux-next-20110523.orig/arch/x86/kernel/apic/apic_flat_64.c
+> +++ linux-next-20110523/arch/x86/kernel/apic/apic_flat_64.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/ctype.h>
+>  #include <linux/init.h>
+>  #include <linux/hardirq.h>
+> +#include <linux/module.h>
+>  #include <asm/smp.h>
+>  #include <asm/apic.h>
+>  #include <asm/ipi.h>
 
-Perhaps it's better to use:
+Thanks Randy! For some reason I didn't hit this problem while
+were compiling the kernel and testing it (I usually do not use
+modules though).
 
-	entry->pagelist =  kcalloc(pages, sizeof(*entry->pagelist), GFP_KERNEL);
+I've CC'ed Ingo and Suresh.
 
-> -	entry->busaddr = kmalloc(pages * sizeof(*entry->busaddr), GFP_KERNEL);
-> +	entry->busaddr = kzalloc(pages * sizeof(*entry->busaddr), GFP_KERNEL);
-
-here too.
-
+-- 
+    Cyrill
