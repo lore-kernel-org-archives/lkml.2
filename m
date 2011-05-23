@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab1EWD7j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 23:59:39 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:61966 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755784Ab1EWD7g convert rfc822-to-8bit (ORCPT
+	id S1750905Ab1EWECf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 00:02:35 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:62064 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab1EWECc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 23:59:36 -0400
+	Mon, 23 May 2011 00:02:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=ovGefZagBjOYNhekckQja2Fp84msfQxlfZySYIZGbi0EBmj0Tdt3B6TNdyLLSlofOK
-         +bxXHRapVy71f8GeOGWXB0kWASgrT9F4zikjD//rVU6mEjc4AcpLtY0xAgDRZ0eLelVm
-         NM2m/Bm/xr53pWkEzTzDaVcqt5e2ibeE18lLw=
+        b=J5t3Cu9pvSnO69xihGjBrDsMUqZIk413Rstg/3xHjI5v3a6iMlTyGBsprLUJl3Wejr
+         iTLtukJs1sV9mHWMPrj9J3nJMSx9M3a2ItsCYyZ4r7EtZoZ+GeqOG2CMyKweBLJUorp+
+         sHIaoUqk5TFu5bI3jeigRPdhcrB2lgDeZ7mdc=
 MIME-Version: 1.0
 In-Reply-To: <4DD6204D.5020109@jp.fujitsu.com>
 References: <4DD61F80.1020505@jp.fujitsu.com>
 	<4DD6204D.5020109@jp.fujitsu.com>
-Date: Mon, 23 May 2011 12:59:35 +0900
-Message-ID: <BANLkTim2-uncnzoHwdG+4+uCv+Ht4YH3Qw@mail.gmail.com>
+Date: Mon, 23 May 2011 13:02:31 +0900
+Message-ID: <BANLkTinpX59NnwsJVQZNTgt_6X3DVK9WLg@mail.gmail.com>
 Subject: Re: [PATCH 3/5] oom: oom-killer don't use proportion of system-ram internally
 From: Minchan Kim <minchan.kim@gmail.com>
 To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
@@ -71,10 +71,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > +       unsigned long points;
 > +       unsigned long ratio = 0;
 > +       unsigned long totalpages = totalram_pages + total_swap_pages + 1;
-
-Does we need +1?
-oom_badness does have the check.
-
 >
 >        read_lock(&tasklist_lock);
 > -       if (pid_alive(task))
@@ -158,18 +154,10 @@ oom_badness does have the check.
 > +        *
 > +        * XXX: Too large bonus, example, if the system have tera-bytes memory..
 >         */
-> -       if (has_capability_noaudit(p, CAP_SYS_ADMIN))
-> -               points -= 30;
-> +       if (has_capability_noaudit(p, CAP_SYS_ADMIN)) {
-> +               if (points >= totalpages / 32)
-> +                       points -= totalpages / 32;
-> +               else
-> +                       points = 0;
 
-Odd. Why do we initialize points with 0?
-
-I think the idea is good.
-
+Nitpick. I have no opposition about adding this comment.
+But strictly speaking, the comment isn't related to this patch.
+No biggie and it's up to you.  :)
 
 -- 
 Kind regards,
