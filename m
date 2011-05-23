@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab1EWNkY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 09:40:24 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51886 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751531Ab1EWNkX convert rfc822-to-8bit (ORCPT
+	id S1754844Ab1EWNxR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 09:53:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:46602 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab1EWNxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 09:40:23 -0400
-Date: Mon, 23 May 2011 14:41:59 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gma500: Skip bogus LVDS VBT mode and check for LVDS
- before adding backlight (try 2)
-Message-ID: <20110523144159.5788ee9f@lxorguk.ukuu.org.uk>
-In-Reply-To: <BANLkTi=tB+22Xen9StHkCdoEa8A2hqA2aA@mail.gmail.com>
-References: <20110511204609.GA6059@patrik-macbook>
-	<20110511225557.2c8f6649@lxorguk.ukuu.org.uk>
-	<BANLkTi=tB+22Xen9StHkCdoEa8A2hqA2aA@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 May 2011 09:53:15 -0400
+X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=vhdKIqpQuCYA:10 a=FItVoo-xZpcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=HGfM4eMJg_wTZz3JjfoA:9 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110523135120.309567301@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 23 May 2011 09:51:20 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 0/6] ktest: Updates for ktest.pl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Will it go into 2.6.40-rc1?
+Linus,
 
-I hope so.
+Please pull the following patches from:
 
-> The issue is that I'm not getting any EDID from the display. Could be
-> the GMBus getting in the way or that the SDVO IO mapping isn't set up
-> properly before sending the SDVO_CMD_SET_CONTROL_BUS_SWITCH command.
-> I've been fiddling quite a lot with it but nothing seems to work, so
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-ktest.git
 
-I'm also not clear if the i²c mapping is always the same. Certainly this
-is a problem on Moorestown/Oaktrail in some cases.
+    branch: for-linus
 
-> instead I took the current SDVO code (and large parts of the output
-> handling) from the i915 driver and crammed it into gma500. That did
-> the trick (though it's not currently talking to crtc abstraction
-> properly).
 
-Interesting.
+Steven Rostedt (6):
+      ktest: Fix post install command
+      ktest: If test failed due to timeout, print that
+      ktest: Reboot to good kernel after every bisect run
+      ktest: Reboot after each patchcheck run
+      ktest: Create variables for the ktest config files
+      ktest: Allow options to be used by other options
 
-> So my question is, do you think we should incorporate the new and more
-> feature complete output handling from the i915 into gma500? We might
-> even start sharing that code between gma500 and i915. If that is
-> something you like to avoid we can of course keep working on our
-> current output code.
-
-Importing the code seems reasonable. KeithP didn't want it shared when I
-asked him, but importing it and having the same code in many areas is the
-first step to sharing anyway.
-
-Alan
+----
+ tools/testing/ktest/ktest.pl    |  156 +++++++++++++++++++++++++++++++++++++--
+ tools/testing/ktest/sample.conf |   93 +++++++++++++++++++++++
+ 2 files changed, 242 insertions(+), 7 deletions(-)
