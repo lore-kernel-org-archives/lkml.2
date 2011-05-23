@@ -1,134 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390Ab1EWUns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 16:43:48 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:57962 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757355Ab1EWUnp (ORCPT
+	id S1753747Ab1EWUoo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 16:44:44 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44889 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751922Ab1EWUon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 16:43:45 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=D28Q3kPhqrGdzAlGOa4Cef2RPWwr5CqDscT/1zxF403wvwJisv1LyP5bZo2M+G6LDcPb+kUsy+zNxEwOwfNMcG1eEPFnVdMGaA/iZqIBvbmdQvv2ZbSYAXOZ/CEVqbZq;
-Date: Mon, 23 May 2011 13:43:39 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] PCI changes
-Message-ID: <20110523134339.609508fe@jbarnes-vaio.home>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+	Mon, 23 May 2011 16:44:43 -0400
+Date: Mon, 23 May 2011 13:44:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Consistency of loops in mm/truncate.c?
+Message-Id: <20110523134439.22582eee.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LSU.2.00.1105221526020.17400@sister.anvils>
+References: <alpine.LSU.2.00.1105221526020.17400@sister.anvils>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 204.16.154.129 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit
-2f666bcf757cb72549f360ef6da02f03620a48b6:
+On Sun, 22 May 2011 15:27:41 -0700 (PDT)
+Hugh Dickins <hughd@google.com> wrote:
 
-  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-04-19 18:32:57 -0700)
+> Andrew,
+> 
+> I have a series aimed at 2.6.41 to remove mm/shmem.c's peculiar radix
+> tree of swap entries, using slots in the file's standard radix_tree
+> instead - prompted in part by https://lkml.org/lkml/2011/1/22/110
+> 
+> There's a patch to give shmem its own truncation loop, handling pages
+> and swap entries in the same pass.  For that I want to start from a
+> copy of truncate_inode_page_range(), but notice some discrepancies
+> between the different loops in mm/truncate.c, so want to standardize
+> them first before copying.
+> 
+> The advancement of index is hard to follow: we rely upon page->index
+> of an unlocked page persisting, yet we're ashamed of doing so, sometimes
+> reading it again once locked.  invalidate_mapping_pages() apologizes for
+> this, but I think we should now just document that page->index is not
+> modified until the page is freed.
 
-are available in the git repository at:
+That should be true under i_mutex and perhaps other external locking. 
+We could put some debug checks in there to catch any situation where
+->index changed after the page was locked.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 linux-next
+> invalidate_inode_pages2_range() has two sophistications not seen
+> elsewhere, which 7afadfdc says were folded in by akpm (along with
+> a page->index one):
+> 
+> - Don't look up more pages than we're going to use:
+>   seems a good thing for me to fold into truncate_inode_pages_range()
+>   and invalidate_mapping_pages() too.
 
-Ok, with the recent fixes to the resource code, we ought to be able to
-re-enable the code that tries to reallocate bridge resources as
-needed.  As with last time we tried this, we'll keep the revert trigger
-light; if this causes any problems we can't quickly root cause we'll
-yank it back out.
+I guess so.  I doubt if it makes a measurable performance difference
+(except maybe in the case of small direct-io's?) but consistency is
+good.
 
-Other than that, there are a few enabling features for PCIe 2.1
-extensions here, and some support code for KVM, along with the usual
-collection of fixes.
+> - Check for the cursor wrapping at the end of the mapping:
+>   but with
+> 
+> #if BITS_PER_LONG==32
+> #define MAX_LFS_FILESIZE (((u64)PAGE_CACHE_SIZE << (BITS_PER_LONG-1))-1) 
+> #elif BITS_PER_LONG==64
+> #define MAX_LFS_FILESIZE 0x7fffffffffffffffUL
+> #endif
+> 
+>   I don't see how page->index + 1 would ever be 0, even if one or
+>   other of those "-1"s went away; so may I delete the "wrapped" case?
 
-Thanks,
-Jesse
+err yes, that seems bogus now and was bogus at the time.  I never
+trusted that s_maxbytes thing :)
 
-Alex Williamson (4):
-      PCI: Enable ASPM state clearing regardless of policy
-      PCI: Track the size of each saved capability data area
-      PCI: Add interfaces to store and load the device saved state
-      KVM: Use pci_store/load_saved_state() around VM device usage
-
-Chen Gong (1):
-      PCI: remove unused AER functions
-
-Greg Thelen (2):
-      PCI: check pci_vpd_pci22_wait() return
-      PCI: handle positive error codes
-
-Hemant Pedanekar (1):
-      PCI: Add quirk for setting valid class for TI816X Endpoint
-
-Ian Campbell (1):
-      PCI hotplug: acpiphp: assume device is in state D0 after powering on a slot.
-
-Jan Beulich (1):
-      x86/PCI: derive pcibios_last_bus from ACPI MCFG
-
-Jean Delvare (3):
-      PCI: Fix typo in ich7 quirk comment
-      PCI: Use ICH6_GPIO_EN in ich6_lpc_acpi_gpio
-      PCI: Don't use dmi_name_in_vendors in quirk
-
-Jesse Barnes (3):
-      PCI: add ID-based ordering enable/disable support
-      PCI: add OBFF enable/disable support
-      PCI: add latency tolerance reporting enable/disable support
-
-Jordan_Hargrave@Dell.com (1):
-      PCI: Set PCIE maxpayload for card during hotplug insertion
-
-Julia Lawall (1):
-      x86/PCI: Convert release_resource to release_region/release_mem_region
-
-Rafael J. Wysocki (2):
-      PCI/PM: Add kerneldoc description of pci_pm_reset()
-      PCI/ACPI: Report _OSC control mask returned on failure to get control
-
-Seth Heasley (1):
-      x86/PCI: irq and pci_ids patch for Intel Panther Point DeviceIDs
-
-Wanlong Gao (1):
-      PCI: Fix uninitialized variable bug in AER injection code
-
-Yinghai Lu (5):
-      x86/PCI: Remove dma32_reserve_bootmem
-      PCI/e1000e: Add and use pci_disable_link_state_locked()
-      PCI: update bridge resources to get more big ranges when allocating space (again)
-      PCI: add rescan to /sys/.../pci_bus/.../
-      PCI/sysfs: move bus cpuaffinity to class dev_attrs
-
- Documentation/ABI/testing/sysfs-bus-pci |    9 +
- arch/x86/include/asm/pci.h              |    2 -
- arch/x86/kernel/pci-dma.c               |   64 -----
- arch/x86/kernel/setup.c                 |    1 -
- arch/x86/pci/direct.c                   |   17 +-
- arch/x86/pci/irq.c                      |    4 +-
- arch/x86/pci/mmconfig-shared.c          |   10 +
- drivers/acpi/pci_root.c                 |   14 +-
- drivers/net/e1000e/netdev.c             |    2 +-
- drivers/pci/access.c                    |   18 ++-
- drivers/pci/bus.c                       |    6 -
- drivers/pci/hotplug/acpiphp_glue.c      |    7 +
- drivers/pci/hotplug/pcihp_slot.c        |   45 ++++
- drivers/pci/pci-sysfs.c                 |   62 +++++
- drivers/pci/pci.c                       |  419 ++++++++++++++++++++++++++++++-
- drivers/pci/pci.h                       |    3 +-
- drivers/pci/pcie/aer/aer_inject.c       |    2 +-
- drivers/pci/pcie/aer/aerdrv.h           |    9 -
- drivers/pci/pcie/aspm.c                 |   21 ++-
- drivers/pci/probe.c                     |   43 +---
- drivers/pci/quirks.c                    |   21 ++-
- drivers/pci/remove.c                    |    2 -
- drivers/pci/setup-bus.c                 |  125 +++++++++-
- include/linux/kvm_host.h                |    1 +
- include/linux/pci-aspm.h                |    1 +
- include/linux/pci.h                     |   49 ++++-
- include/linux/pci_ids.h                 |    3 +
- include/linux/pci_regs.h                |   17 ++
- virt/kvm/assigned-dev.c                 |   18 +-
- 29 files changed, 818 insertions(+), 177 deletions(-)
