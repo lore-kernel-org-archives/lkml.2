@@ -1,111 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab1EWNyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 09:54:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53155 "EHLO
+	id S1755500Ab1EWNyh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 09:54:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:46602 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab1EWNxQ (ORCPT
+	with ESMTP id S1754213Ab1EWNxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 May 2011 09:53:16 -0400
-X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=_RRW9DzEg2QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=FytXeRmdpJLRMkgMge8A:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=vhdKIqpQuCYA:10 a=Bf9LM9a78QAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=qElbTcKNFUMruBC7lO0A:9 a=EL01VTH7HNDg6uMqIFYA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110523135315.190161723@goodmis.org>
+Message-Id: <20110523135315.494798793@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 23 May 2011 09:51:24 -0400
+Date: Mon, 23 May 2011 09:51:25 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 4/6] ktest: Reboot after each patchcheck run
+Subject: [PATCH 5/6] ktest: Create variables for the ktest config files
 References: <20110523135120.309567301@goodmis.org>
-Content-Disposition: inline; filename=0004-ktest-Reboot-after-each-patchcheck-run.patch
+Content-Disposition: inline; filename=0005-ktest-Create-variables-for-the-ktest-config-files.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The patches being checked may not leave the kernel in a state
-that the next run will allow the new kernel to be copied to the
-machine. Reboot to a known good kernel before continuing to the
-next kernel to test.
+I found that I constantly reuse information for each test case.
+It would be nice to just define a variable to reuse.
 
-Added option PATCHCHECK_SLEEP_TIME for the max time to sleep between
-patchcheck reboots.
+For example I may have:
+
+TEST_START
+[...]
+TEST = ssh root@mybox /path/to/my/script
+
+TEST_START
+[...]
+TEST = ssh root@mybox /path/to/my/script
+
+[etc]
+
+The issue is, I may wont to change that script or one of the other
+fields. Then I need to update each line individually.
+
+With the addition of config variables (variables only used during parsing
+the config) we can simplify the config files. These variables can
+also be defined multiple times and each time the new value will
+overwrite the old value.
+
+The convention to use a config variable over a ktest option is to use :=
+instead of =.
+
+Now we could do:
+
+USER := root
+TARGET := mybox
+TEST_SCRIPT := /path/to/my/script
+TEST_CASE := ${USER}@${TARGET} ${TEST_SCRIPT}
+
+TEST_START
+[...]
+TEST = ${TEST_CASE}
+
+TEST_START
+[...]
+TEST = ${TEST_CASE}
+
+[etc]
+
+Now we just need to update the variables at the top.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl    |   13 +++++++++++++
- tools/testing/ktest/sample.conf |    4 ++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
+ tools/testing/ktest/ktest.pl    |   62 +++++++++++++++++++++++++++++++++++++++
+ tools/testing/ktest/sample.conf |   59 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 121 insertions(+), 0 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 2011222..65003a1 100755
+index 65003a1..18ef668 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -36,6 +36,7 @@ $default{"REBOOT_ON_SUCCESS"}	= 1;
- $default{"POWEROFF_ON_SUCCESS"}	= 0;
- $default{"BUILD_OPTIONS"}	= "";
- $default{"BISECT_SLEEP_TIME"}	= 60;   # sleep time between bisects
-+$default{"PATCHCHECK_SLEEP_TIME"} = 60; # sleep time between patch checks
- $default{"CLEAR_LOG"}		= 0;
- $default{"BISECT_MANUAL"}	= 0;
- $default{"BISECT_SKIP"}		= 1;
-@@ -96,6 +97,7 @@ my $monitor_pid;
- my $monitor_cnt = 0;
- my $sleep_time;
- my $bisect_sleep_time;
-+my $patchcheck_sleep_time;
- my $store_failures;
- my $timeout;
- my $booted_timeout;
-@@ -1764,6 +1766,14 @@ sub config_bisect {
-     success $i;
+@@ -114,6 +114,7 @@ my $successes = 0;
+ 
+ my %entered_configs;
+ my %config_help;
++my %variable;
+ 
+ $config_help{"MACHINE"} = << "EOF"
+  The machine hostname that you will test.
+@@ -262,6 +263,39 @@ sub get_ktest_configs {
+     }
  }
  
-+sub patchcheck_reboot {
-+    doprint "Reboot and sleep $patchcheck_sleep_time seconds\n";
-+    reboot;
-+    start_monitor;
-+    wait_for_monitor $patchcheck_sleep_time;
-+    end_monitor;
++sub process_variables {
++    my ($value) = @_;
++    my $retval = "";
++
++    # We want to check for '\', and it is just easier
++    # to check the previous characet of '$' and not need
++    # to worry if '$' is the first character. By adding
++    # a space to $value, we can just check [^\\]\$ and
++    # it will still work.
++    $value = " $value";
++
++    while ($value =~ /(.*?[^\\])\$\{(.*?)\}(.*)/) {
++	my $begin = $1;
++	my $var = $2;
++	my $end = $3;
++	# append beginning of value to retval
++	$retval = "$retval$begin";
++	if (defined($variable{$var})) {
++	    $retval = "$retval$variable{$var}";
++	} else {
++	    # put back the origin piece.
++	    $retval = "$retval\$\{$var\}";
++	}
++	$value = $end;
++    }
++    $retval = "$retval$value";
++
++    # remove the space added in the beginning
++    $retval =~ s/ //;
++
++    return "$retval"
 +}
 +
- sub patchcheck {
-     my ($i) = @_;
+ sub set_value {
+     my ($lvalue, $rvalue) = @_;
  
-@@ -1855,6 +1865,8 @@ sub patchcheck {
- 	end_monitor;
- 	return 0 if ($failed);
- 
-+	patchcheck_reboot;
-+
+@@ -271,10 +305,22 @@ sub set_value {
+     if ($rvalue =~ /^\s*$/) {
+ 	delete $opt{$lvalue};
+     } else {
++	$rvalue = process_variables($rvalue);
+ 	$opt{$lvalue} = $rvalue;
      }
-     $in_patchcheck = 0;
-     success $i;
-@@ -2004,6 +2016,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
-     $poweroff_after_halt = set_test_option("POWEROFF_AFTER_HALT", $i);
-     $sleep_time = set_test_option("SLEEP_TIME", $i);
-     $bisect_sleep_time = set_test_option("BISECT_SLEEP_TIME", $i);
-+    $patchcheck_sleep_time = set_test_option("PATCHCHECK_SLEEP_TIME", $i);
-     $bisect_manual = set_test_option("BISECT_MANUAL", $i);
-     $bisect_skip = set_test_option("BISECT_SKIP", $i);
-     $store_failures = set_test_option("STORE_FAILURES", $i);
+ }
+ 
++sub set_variable {
++    my ($lvalue, $rvalue) = @_;
++
++    if ($rvalue =~ /^\s*$/) {
++	delete $variable{$lvalue};
++    } else {
++	$rvalue = process_variables($rvalue);
++	$variable{$lvalue} = $rvalue;
++    }
++}
++
+ sub read_config {
+     my ($config) = @_;
+ 
+@@ -387,6 +433,22 @@ sub read_config {
+ 		    $repeats{$val} = $repeat;
+ 		}
+ 	    }
++	} elsif (/^\s*([A-Z_\[\]\d]+)\s*:=\s*(.*?)\s*$/) {
++	    next if ($skip);
++
++	    my $lvalue = $1;
++	    my $rvalue = $2;
++
++	    # process config variables.
++	    # Config variables are only active while reading the
++	    # config and can be defined anywhere. They also ignore
++	    # TEST_START and DEFAULTS, but are skipped if they are in
++	    # on of these sections that have SKIP defined.
++	    # The save variable can be
++	    # defined multiple times and the new one simply overrides
++	    # the prevous one.
++	    set_variable($lvalue, $rvalue);
++
+ 	} else {
+ 	    die "$name: $.: Garbage found in config\n$_";
+ 	}
 diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
-index 4c5d6bd..87bf92a 100644
+index 87bf92a..761079e 100644
 --- a/tools/testing/ktest/sample.conf
 +++ b/tools/testing/ktest/sample.conf
-@@ -366,6 +366,10 @@
- # (default 60)
- #BISECT_SLEEP_TIME = 60
+@@ -73,6 +73,65 @@
+ # ktest will fail to execute, and no tests will run.
+ #
  
-+# The time in between patch checks to sleep (in seconds)
-+# (default 60)
-+#PATCHCHECK_SLEEP_TIME = 60
-+
- # Reboot the target box on error (default 0)
- #REBOOT_ON_ERROR = 0
++#### Config variables ####
++#
++# This config file can also contain "config variables".
++# These are assigned with ":=" instead of the ktest option
++# assigment "=".
++#
++# The difference between ktest options and config variables
++# is that config variables can be used multiple times,
++# where each instance will override the previous instance.
++# And that they only live at time of processing this config.
++#
++# The advantage to config variables are that they can be used
++# by any option or any other config variables to define thing
++# that you may use over and over again in the options.
++#
++# For example:
++#
++# USER      := root
++# TARGET    := mybox
++# TEST_CASE := ssh ${USER}@${TARGET} /path/to/my/test
++#
++# TEST_START
++# MIN_CONFIG = config1
++# TEST = ${TEST_CASE}
++#
++# TEST_START
++# MIN_CONFIG = config2
++# TEST = ${TEST_CASE}
++#
++# TEST_CASE := ssh ${USER}@${TARGET} /path/to/my/test2
++#
++# TEST_START
++# MIN_CONFIG = config1
++# TEST = ${TEST_CASE}
++#
++# TEST_START
++# MIN_CONFIG = config2
++# TEST = ${TEST_CASE}
++#
++# TEST_DIR := /home/me/test
++#
++# BUILD_DIR = ${TEST_DIR}/linux.git
++# OUTPUT_DIR = ${TEST_DIR}/test
++#
++# Note, the config variables are evaluated immediately, thus
++# updating TARGET after TEST_CASE has been assigned does nothing
++# to TEST_CASE.
++#
++# As shown in the example, to evaluate a config variable, you
++# use the ${X} convention. Simple $X will not work.
++#
++# If the config variable does not exist, the ${X} will not
++# be evaluated. Thus:
++#
++# MAKE_CMD = PATH=/mypath:${PATH} make
++#
++# If PATH is not a config variable, then the ${PATH} in
++# the MAKE_CMD option will be evaluated by the shell when
++# the MAKE_CMD option is passed into shell processing.
+ 
+ #### Mandatory Default Options ####
  
 -- 
 1.7.4.4
