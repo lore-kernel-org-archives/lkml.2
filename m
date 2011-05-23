@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab1EWH1q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 03:27:46 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:52700 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398Ab1EWH1o (ORCPT
+	id S1753017Ab1EWHhi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 03:37:38 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51783 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023Ab1EWHhh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 03:27:44 -0400
-Date: Mon, 23 May 2011 09:27:40 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Sven Eckelmann <sven@narfation.org>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
-        Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCHv2] atomic: add *_dec_not_zero
-Message-ID: <20110523072740.GA2377@osiris.boeblingen.de.ibm.com>
-References: <1304458235-28473-1-git-send-email-sven@narfation.org>
- <1305748194-23351-1-git-send-email-sven@narfation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305748194-23351-1-git-send-email-sven@narfation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 May 2011 03:37:37 -0400
+Subject: Re: question about blk_schedule_flush_plug
+From: Peter Zijlstra <peterz@infradead.org>
+To: Con Kolivas <kernel@kolivas.org>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, mingo@elte.hu
+In-Reply-To: <201105231705.20168.kernel@kolivas.org>
+References: <201105231705.20168.kernel@kolivas.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 23 May 2011 09:36:56 +0200
+Message-ID: <1306136216.18455.3.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 09:49:54PM +0200, Sven Eckelmann wrote:
-> Introduce an *_dec_not_zero operation.  Make this a special case of
-> *_add_unless because batman-adv uses atomic_dec_not_zero in different
-> places like re-broadcast queue or aggregation queue management. There
-> are other non-final patches which may also want to use this macro.
-[...]
-> ---
-> This is actually the same patch as before, but I am still waiting for
-> some (N)Acks for ia64, m32r, s390, sh and generic.
-[...]
-> diff --git a/arch/s390/include/asm/atomic.h b/arch/s390/include/asm/atomic.h
-> index d9db138..09972c3 100644
-> --- a/arch/s390/include/asm/atomic.h
-> +++ b/arch/s390/include/asm/atomic.h
-> @@ -109,6 +109,7 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
->  }
+On Mon, 2011-05-23 at 17:05 +1000, Con Kolivas wrote:
+> I was looking at the scheduler changes going into 2.6.39 again and wondered 
+> about the use of blk_schedule_flush_plug smack in the middle of schedule()
 > 
->  #define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
-> +#define atomic_dec_not_zero(v) atomic_add_unless((v), -1, 0)
+> It looks like this:
+> 			if (blk_needs_flush_plug(prev)) {
+> 				raw_spin_unlock(&rq->lock);
+> 				blk_schedule_flush_plug(prev);
+> 				raw_spin_lock(&rq->lock);
+> 			}
 > 
->  #undef __CS_LOOP
+> Now call me suspicious but to my eyes it looks really dubious unlocking the 
+> runqueue like that right in the heart of schedule().
 > 
-> @@ -326,6 +327,7 @@ static inline long long atomic64_dec_if_positive(atomic64_t *v)
->  #define atomic64_dec_return(_v)		atomic64_sub_return(1, _v)
->  #define atomic64_dec_and_test(_v)	(atomic64_sub_return(1, _v) == 0)
->  #define atomic64_inc_not_zero(v)	atomic64_add_unless((v), 1, 0)
-> +#define atomic64_dec_not_zero(v)	atomic64_add_unless((v), -1, 0)
-> 
->  #define smp_mb__before_atomic_dec()	smp_mb()
->  #define smp_mb__after_atomic_dec()	smp_mb()
+> Comments?
 
-Acked-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Yeah, that's quite all-right, both pre_schedule() and idle_balance()
+already did that too.
+
+We can safely release the runqueue lock after deactivate_task() and
+before put_prev_task().
