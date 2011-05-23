@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030837Ab1EWVya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 17:54:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51328 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177Ab1EWVy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 17:54:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,258,1304319600"; 
-   d="scan'208";a="3529584"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Ingo Molnar" <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
-        "Andi Kleen" <andi@firstfloor.org>, "Borislav Petkov" <bp@alien8.de>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>
-Subject: [RFC 0/9] mce recovery for Sandy Bridge server
-Date: Mon, 23 May 2011 14:54:27 -0700
-Message-Id: <4ddad79317108eb33d@agluck-desktop.sc.intel.com>
+	id S1755694Ab1EWV7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 17:59:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60944 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149Ab1EWV7S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 17:59:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=msEUI32xKnhme/ULTBreIL4OgF+fqEjrTgKiv40qMwwpjwLjBPDV0bkkh5BXmhRDzA
+         AxmaZHtVVJ8L00T5IH4dk2FYSbVOMgEK+2Ny8ymh4UZZubtL2z1YIuCMoPhRDfYkb6UV
+         Tl0kHftkr1xI/gr57yeNkbgepcEixs3xkoJZA=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
+	<20110523192056.GC23629@elte.hu>
+	<BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+Date: Mon, 23 May 2011 23:59:17 +0200
+Message-ID: <BANLkTi=19n3pfEBBASFEeSwopBgOiN8Dtw@mail.gmail.com>
+Subject: Re: (Short?) merge window reminder
+From: Oliver Pinter <oliver.pntr@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's a nine-part patch series to implement "AR=1" recovery
-that will be available on high-end Sandy Bridge server processors.
-In this case the process detects an uncorrectable memory error
-while doing an instruction of data fetch that is about to be
-consumed.  This is in contrast to the recoverable errors on
-Nehalem and Westmere that were out of immediate execution context
-(patrol scrubber and cache line write-back).
+On 5/23/11, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Mon, May 23, 2011 at 12:20 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>>
+>> I really hope there's also a voice that tells you to wait until .42 before
+>> cutting 3.0.0! :-)
 
-The code is based on work done by Andi last year and published in
-the "mce/action-required" branch of his mce git tree:
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git
-Thus he gets author credit on 6 out of 9 patches (but I'll take
-the blame for all of them).
+I think, the best time for this, after reorganize the ARM arch folder / tree.
 
-The first eight patches are mostly cleanups and minor new bits
-that are needed by part 9 where the interesting stuff happens.
-
-For the "in context" case, we must not return from the machine
-check handler (in the data fetch case we'd re-execute the fetch
-and take another machine check, in the instruction fetch case
-we actually don't have a precise IP to return to).  We use the
-TIF_MCE_NOTIFY task flag bit to ensure that we don't return to
-the user context - but we also need to keep track of the memory
-address where the fault occurred. The h/w only gives us the physical
-address which we must keep track of ... to do so we have added
-"mce_error_pfn" to the task structure - this feels odd, but it
-is an attribute of the task (e.g. this task may be migrated to
-another processor before we get to look at TIF_MCE_NOTIFY and
-head to do_notify_resume() to process it).
-
-Andi's recovery code can also handle a few cases where the
-error is detected while running kernel code (when copying
-data to/from a user process) - but the TIF_MCE_NOTIFY method
-doesn't actually ever get to this code (since the entry_64.S code
-only checks TIF_MCE_NOTIFY on return to userspace). I'd
-appreciate any ideas on how to handle this. Perhaps we could
-do good things when CONFIG_PREEMPT=y (it seems probable that
-any error in a non-preemtible section of kernel code is going
-to be fatal).
-
--Tony
-
- arch/x86/include/asm/mce.h                |    3 +-
- arch/x86/kernel/cpu/mcheck/mce-severity.c |   37 +++-
- arch/x86/kernel/cpu/mcheck/mce.c          |  286 ++++++++++++++++++++++++-----
- arch/x86/kernel/signal.c                  |    2 +-
- include/linux/init_task.h                 |    7 +
- include/linux/sched.h                     |    3 +
- mm/memory-failure.c                       |   28 ++--
- 7 files changed, 300 insertions(+), 66 deletions(-)
-
-Andi Kleen (6):
-      MCE: Always retrieve mce rip before calling no_way_out
-      MCE: Move ADDR/MISC reading code into common function
-      MCE: Mask out address mask bits below address granuality
-      HWPOISON: Handle hwpoison in current process
-      MCE: Pass registers to work handlers
-      MCE: Add Action-Required support
-
-Tony Luck (3):
-      mce: fixes for mce severity table
-      mce: save most severe error information
-      mce: run through processors with more severe problems first
-
+>
+> So I'm toying with 3.0 (and in that case, it really would be "3.0",
+> not "3.0.0" - the stable team would get the third digit rather than
+> the fourth one.
+>
+> But no, it wouldn't be for 42. Despite THHGTTG, I think "40" is a
+> fairly nice round number.
+>
+> There's also the timing issue - since we no longer do version numbers
+> based on features, but based on time, just saying "we're about to
+> start the third decade" works as well as any other excuse.
+>
+> But we'll see.
+>
+>                            Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
