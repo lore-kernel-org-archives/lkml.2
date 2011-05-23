@@ -1,96 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab1EWLZB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 07:25:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46312 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195Ab1EWLZA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 07:25:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MYzq0Lxcx+IzEb4TaRKWka4krwxALM3FjvX7c0HnMIOcijTZD4X2XPF+3gVa+mlgXw
-         lk0qaHoMDHAi4Pxk0yy5Qu/c2fMA3WLHCRh3+itvH91scYlo+W4qoAU70+5aF21W3t1v
-         d6uvmme7d5jyjVDziwX0up241af1i9AS+sdCo=
-Date: Mon, 23 May 2011 13:24:54 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] block: move bd_set_size() above rescan_partitions() in
- __blkdev_get()
-Message-ID: <20110523112454.GA17547@htj.dyndns.org>
-References: <BANLkTin3T8msxSSbTLJOvC5WLNFGspPEcg@mail.gmail.com>
- <20110519093026.GA627@htj.dyndns.org>
- <BANLkTinP7txzE2U+8qnJR2JVcGpGybnLrA@mail.gmail.com>
+	id S1753791Ab1EWL0C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 07:26:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58208 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752925Ab1EWL0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 07:26:01 -0400
+Date: Mon, 23 May 2011 13:25:58 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Am??rico Wang <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Patch] mm: remove noswapaccount kernel parameter
+Message-ID: <20110523112558.GC11439@tiehlicka.suse.cz>
+References: <BANLkTinLvqa0DiayLOwvxE9zBmqb4Y7Rww@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTinP7txzE2U+8qnJR2JVcGpGybnLrA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTinLvqa0DiayLOwvxE9zBmqb4Y7Rww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-02e352287a4 (block: rescan partitions on invalidated devices on
--ENOMEDIA too) relocated partition rescan above explicit bd_set_size()
-to simplify condition check.  As rescan_partitions() does its own bdev
-size setting, this doesn't break anything; however,
-rescan_partitions() prints out the following messages when adjusting
-bdev size, which can be confusing.
+On Mon 23-05-11 19:08:08, Am??rico Wang wrote:
+> noswapaccount is deprecated by swapaccount=0, and it is scheduled
+> to be removed in 2.6.40.
 
-  sda: detected capacity change from 0 to 146815737856
-  sdb: detected capacity change from 0 to 146815737856
+Similar patch is already in the Andrew's tree
+(memsw-remove-noswapaccount-kernel-parameter.patch). Andrew, are you
+going to push it?
+Btw. the patch is missing documentation part which is present here.
 
-This patch restores the original order and remove the warning
-messages.
+> 
+> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> 
+> ---
 
-stable: Please apply together with 02e352287a4 (block: rescan
-        partitions on invalidated devices on -ENOMEDIA too).
+>  Documentation/feature-removal-schedule.txt |   16 ----------------
+>  Documentation/kernel-parameters.txt        |    3 ---
+>  init/Kconfig                               |    4 ++--
+>  mm/memcontrol.c                            |    8 --------
+>  mm/page_cgroup.c                           |    2 +-
+>  5 files changed, 3 insertions(+), 30 deletions(-)
+> 
+> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> index 4cba260..688328a 100644
+> --- a/Documentation/feature-removal-schedule.txt
+> +++ b/Documentation/feature-removal-schedule.txt
+> @@ -519,22 +519,6 @@ Files:	net/netfilter/xt_connlimit.c
+>  
+>  ----------------------------
+>  
+> -What:	noswapaccount kernel command line parameter
+> -When:	2.6.40
+> -Why:	The original implementation of memsw feature enabled by
+> -	CONFIG_CGROUP_MEM_RES_CTLR_SWAP could be disabled by the noswapaccount
+> -	kernel parameter (introduced in 2.6.29-rc1). Later on, this decision
+> -	turned out to be not ideal because we cannot have the feature compiled
+> -	in and disabled by default and let only interested to enable it
+> -	(e.g. general distribution kernels might need it). Therefore we have
+> -	added swapaccount[=0|1] parameter (introduced in 2.6.37) which provides
+> -	the both possibilities. If we remove noswapaccount we will have
+> -	less command line parameters with the same functionality and we
+> -	can also cleanup the parameter handling a bit ().
+> -Who:	Michal Hocko <mhocko@suse.cz>
+> -
+> -----------------------------
+> -
+>  What:	ipt_addrtype match include file
+>  When:	2012
+>  Why:	superseded by xt_addrtype
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index c603ef7..1931450 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1777,9 +1777,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  
+>  	nosoftlockup	[KNL] Disable the soft-lockup detector.
+>  
+> -	noswapaccount	[KNL] Disable accounting of swap in memory resource
+> -			controller. (See Documentation/cgroups/memory.txt)
+> -
+>  	nosync		[HW,M68K] Disables sync negotiation for all devices.
+>  
+>  	notsc		[BUGS=X86-32] Disable Time Stamp Counter
+> diff --git a/init/Kconfig b/init/Kconfig
+> index c8b172e..ef46c0d 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -673,7 +673,7 @@ config CGROUP_MEM_RES_CTLR_SWAP
+>  	  be careful about enabling this. When memory resource controller
+>  	  is disabled by boot option, this will be automatically disabled and
+>  	  there will be no overhead from this. Even when you set this config=y,
+> -	  if boot option "noswapaccount" is set, swap will not be accounted.
+> +	  if boot option "swapaccount=0" is set, swap will not be accounted.
+>  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
+>  	  size is 4096bytes, 512k per 1Gbytes of swap.
+>  config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+> @@ -688,7 +688,7 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+>  	  parameter should have this option unselected.
+>  	  For those who want to have the feature enabled by default should
+>  	  select this option (if, for some reason, they need to disable it
+> -	  then noswapaccount does the trick).
+> +	  then swapaccount=0 does the trick).
+>  
+>  config CGROUP_PERF
+>  	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 010f916..e992fdf 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -5176,12 +5176,4 @@ static int __init enable_swap_account(char *s)
+>  	return 1;
+>  }
+>  __setup("swapaccount", enable_swap_account);
+> -
+> -static int __init disable_swap_account(char *s)
+> -{
+> -	printk_once("noswapaccount is deprecated and will be removed in 2.6.40. Use swapaccount=0 instead\n");
+> -	enable_swap_account("=0");
+> -	return 1;
+> -}
+> -__setup("noswapaccount", disable_swap_account);
+>  #endif
+> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+> index 2daadc3..b7bc8c0 100644
+> --- a/mm/page_cgroup.c
+> +++ b/mm/page_cgroup.c
+> @@ -502,7 +502,7 @@ int swap_cgroup_swapon(int type, unsigned long max_pages)
+>  nomem:
+>  	printk(KERN_INFO "couldn't allocate enough memory for swap_cgroup.\n");
+>  	printk(KERN_INFO
+> -		"swap_cgroup can be disabled by noswapaccount boot option\n");
+> +		"swap_cgroup can be disabled by swapaccount=0 boot option\n");
+>  	return -ENOMEM;
+>  }
+>  
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Tony Luck <tony.luck@gmail.com>
-Tested-by: Tony Luck <tony.luck@gmail.com>
-Cc: stable@kernel.org
----
- fs/block_dev.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 257b00e..bf9c7a7 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1120,6 +1120,15 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 					goto restart;
- 				}
- 			}
-+
-+			if (!ret && !bdev->bd_openers) {
-+				bd_set_size(bdev,(loff_t)get_capacity(disk)<<9);
-+				bdi = blk_get_backing_dev_info(bdev);
-+				if (bdi == NULL)
-+					bdi = &default_backing_dev_info;
-+				bdev_inode_switch_bdi(bdev->bd_inode, bdi);
-+			}
-+
- 			/*
- 			 * If the device is invalidated, rescan partition
- 			 * if open succeeded or failed with -ENOMEDIUM.
-@@ -1130,14 +1139,6 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 				rescan_partitions(disk, bdev);
- 			if (ret)
- 				goto out_clear;
--
--			if (!bdev->bd_openers) {
--				bd_set_size(bdev,(loff_t)get_capacity(disk)<<9);
--				bdi = blk_get_backing_dev_info(bdev);
--				if (bdi == NULL)
--					bdi = &default_backing_dev_info;
--				bdev_inode_switch_bdi(bdev->bd_inode, bdi);
--			}
- 		} else {
- 			struct block_device *whole;
- 			whole = bdget_disk(disk, 0);
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
