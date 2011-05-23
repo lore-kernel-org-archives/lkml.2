@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757745Ab1EWWK4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 18:10:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33531 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755177Ab1EWWKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 18:10:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ZiJ8RR1czDoemeZjmpLEz0Tn/3HSuJDwjWlJqSyWPdahOxcO4lDJn338X5bXG8S+2M
-         Ve+tqcaDVDCrrPeeIH9fVyf86m1b4sNA4s+aoPjzOPUWdGpa+uBZAOuhZV2B/tLwIqhf
-         N4H3YfqpqAzoaPYFoUJK6VzYh4H2CRG1Z6j1g=
-Subject: Re: [GIT PULL] perf fixes
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110523134125.GA23518@elte.hu>
-References: <20110523134125.GA23518@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 00:10:48 +0200
-Message-ID: <1306188648.2638.17.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1757708Ab1EWWM7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 18:12:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15833 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753285Ab1EWWM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 18:12:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,258,1304319600"; 
+   d="scan'208";a="3539129"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Ingo Molnar" <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
+        "Andi Kleen" <andi@firstfloor.org>, "Borislav Petkov" <bp@alien8.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>
+In-Reply-To: <4ddad79317108eb33d@agluck-desktop.sc.intel.com>
+Subject: [RFC 2/9] mce: save most severe error information
+Date: Mon, 23 May 2011 15:12:57 -0700
+Message-Id: <4ddadbe91716015857@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 23 mai 2011 à 15:41 +0200, Ingo Molnar a écrit :
-> Linus,
-> 
-> Please pull the latest perf-urgent-for-linus git tree from:
-> 
->    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-urgent-for-linus
-> 
->  Thanks,
-> 
+From: Tony Luck <tony.luck@intel.com>
 
-Hi Ingo
+monarch clears all of the per cpu "mces_seen", so we must keep a copy
+to use after mce_end()
 
-I just tried latest "perf top" from linux-2.6 tree on my 32bit x86 host.
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-It outputs endless errors, I dont know if you guys already are aware of
-this ?
-
-Can't parse sample, err = -14
-Can't parse sample, err = -14
-Can't parse sample, err = -14
-Can't parse sample, err = -14
-Can't parse sample, err = -14
-Can't parse sample, err = -14
-Can't parse sample, err = -14
-Can't parse sample, err = -14
-
-Thanks
-
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 3385ea2..ed1542a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1046,6 +1046,9 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 		}
+ 	}
+ 
++	/* Save our worst error locally, monarch will clear mces_seen */
++	m = *final;
++
+ 	if (!no_way_out)
+ 		mce_clear_state(toclear);
+ 
+@@ -1064,7 +1067,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	 * support MCE broadcasting or it has been disabled.
+ 	 */
+ 	if (no_way_out && tolerant < 3)
+-		mce_panic("Fatal machine check on current CPU", final, msg);
++		mce_panic("Fatal machine check on current CPU", &m, msg);
+ 
+ 	/*
+ 	 * If the error seems to be unrecoverable, something should be
+-- 
+1.7.3.1
 
