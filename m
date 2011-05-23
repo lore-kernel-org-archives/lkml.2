@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568Ab1EWQjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 12:39:25 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:60627 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756546Ab1EWQjX (ORCPT
+	id S932099Ab1EWQm1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 12:42:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26173 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab1EWQmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 12:39:23 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=KT5m7CsqEv2Abw+jcUxQygdDfRIXnpslIJsWc0VvtzMKTLHA4dZc7PXpyUfJCQhWKZqu7ti9T/4fzu0gVWxHWniHW5sZtoCc5ZYCMMFrQtWrYEr8eW1be1J3MgKK9891;
-Date: Mon, 23 May 2011 09:39:20 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Joe Perches <joe@perches.com>
-Cc: anish singh <anish198519851985@gmail.com>, davej@redhat.com,
-        rostedt@goodmis.org, apw@shadowen.org, akpm@linux-foundation.org,
-        vapier@gentoo.org, linux-kernel@vger.kernel.org, man.k1983@gmail.com
-Subject: Re: [patch v3] checkpatch: Signature format verification
-Message-Id: <20110523093920.8f1e5cd0.rdunlap@xenotime.net>
-In-Reply-To: <1306168598.8687.27.camel@Joe-Laptop>
-References: <1306006721.1622.18.camel@anish-desktop>
-	<1306059528.2761.3.camel@anish-desktop>
-	<1306164094.2292.25.camel@anish-desktop>
-	<1306167105.8687.11.camel@Joe-Laptop>
-	<BANLkTi=9nzMbxU0=P+pOaHcebqhL=bd2HQ@mail.gmail.com>
-	<1306168598.8687.27.camel@Joe-Laptop>
-Organization: YPO4
+	Mon, 23 May 2011 12:42:25 -0400
+Date: Mon, 23 May 2011 09:42:05 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-rdma@vger.kernel.org
+Subject: Re: linux-next: Tree for May 23 (infiniband + netlink)
+Message-Id: <20110523094205.4a5651d2.randy.dunlap@oracle.com>
+In-Reply-To: <20110523154518.5e27cfb0.sfr@canb.auug.org.au>
+References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090205.4DDA8E6D.014C:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 May 2011 09:36:38 -0700 Joe Perches wrote:
+On Mon, 23 May 2011 15:45:18 +1000 Stephen Rothwell wrote:
 
-> On Mon, 2011-05-23 at 22:03 +0530, anish singh wrote:
-> > \s[a-zA-Z]* => this is a regular expression for name & space b/w
-> > Last/First name
-> >                     Ex: anish kumar
-> > .* => It is used to grep whatever follows name...in our context
-> > mail-id
-> >         Ex: abc@bbc.com.
-> > So, $1 will contain ...'anish kumar <anish@gmail.com>'
+> Hi all,
 > 
-> Unless the email contains a quote or a period like:
-> 
-> Signed-off-by: "J. Random Contributor" <jrc@domain.tld>
+> Changes since 20110520:
 
-and quotes are not required (i.e., are optional) AFAIK.
+when CONFIG_NET is not enabled:
+
+ERROR: "skb_trim" [drivers/infiniband/core/ib_core.ko] undefined!
+ERROR: "netlink_kernel_create" [drivers/infiniband/core/ib_core.ko] undefined!
+ERROR: "netlink_kernel_release" [drivers/infiniband/core/ib_core.ko] undefined!
+ERROR: "netlink_rcv_skb" [drivers/infiniband/core/ib_core.ko] undefined!
+ERROR: "nla_put" [drivers/infiniband/core/ib_core.ko] undefined!
+ERROR: "init_net" [drivers/infiniband/core/ib_core.ko] undefined!
+ERROR: "netlink_dump_start" [drivers/infiniband/core/ib_core.ko] undefined!
+ERROR: "skb_put" [drivers/infiniband/core/ib_core.ko] undefined!
 
 ---
 ~Randy
