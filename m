@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793Ab1EWURB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 16:17:01 -0400
-Received: from mail.agmk.net ([91.192.224.71]:44951 "EHLO mail.agmk.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757356Ab1EWUQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 16:16:49 -0400
-X-Greylist: delayed 1878 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 May 2011 16:16:49 EDT
-From: =?utf-8?q?Pawe=C5=82_Sikora?= <pluto@agmk.net>
-To: linux-kernel@vger.kernel.org
-Subject: [2.6.38.6] opteron server dies / how to debug call trace flood?
-Date: Mon, 23 May 2011 21:45:23 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38.6-8; KDE/4.6.3; x86_64; ; )
-Cc: arekm@pld-linux.org
+	id S933483Ab1EWTpj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 15:45:39 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52439 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932209Ab1EWTph (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 15:45:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=k3jm4iKwmwJ59HobSIDBaum0lFhg821UJ/FnRsmPYNifuZMKyuLQgtAZqhFlslsTMQ
+         +SFAClfnYApIhRDVRYcA==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201105232145.23365.pluto@agmk.net>
+In-Reply-To: <1305806316.2466.7221.camel@twins>
+References: <1305674470-23727-1-git-send-email-john.stultz@linaro.org>
+	<1305806316.2466.7221.camel@twins>
+Date: Mon, 23 May 2011 12:45:32 -0700
+X-Google-Sender-Auth: tTLRQHPddY8Qs5dmx1zqx_ZsadY
+Message-ID: <BANLkTikPs35QJk7q8MtWaSq9fBKbYSJ4bA@mail.gmail.com>
+Subject: Re: [RFC][PATCH] sched: Fix min_vruntime calculation in dequeue_entity
+From: Dima Zavin <dima@android.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Peter,
 
-i'm currently testing the 2.6.38.6 with vserver/grsec on dual opteron
-and it dies after some time. afaics on the remote ipmi console there's
-a call trace flood without explicite kernel oops. machine respones
-to pings but ssh is unavailable. here's the looged ipmi terminal:
+My apologies for the very delayed response, mail filter fail.
 
-(...)
-Resource Manager: Runlevel has been reached...........................[ 3 ]
+Your patch looks equivalent to what we use today, so...
 
- .------------------------< PLD Linux 2.99 (Th) >------------------------*
-:|:
-:|:  Welcome to odra
-:|:  Mon May 23  2011 19:31:50
-:|:
- `---{ 0 users }---[ 2.6.38.6-8 ]---( x86_64 )------*
+Acked-by: Dima Zavin <dima@android.com>
 
 
-ttyS1 odra login: [ 3192.210129] Stack:
-[ 3192.212164] Call Trace:
-[ 3192.213016] Code: 90 90 90 90 90 55 48 c7 c0 d0 dd 00 00 48 89 e5 65 48 03 04 25 08 b5 00 00 ba 00 01 00 00 f0 66 0f c1 10 38 f2 74 06 f3 90 8a 10 <eb> f6 c9 c3 66 0f 1f 44 00 00 55 48 c7 c0 d0 dd 00 00 48 89 e5 
-[ 3192.313455] Stack:
-[ 3192.315494] Call Trace:
-[ 3192.316350] Code: eb ad 90 90 90 90 90 90 90 55 48 c7 c0 d0 dd 00 00 48 89 e5 65 48 03 04 25 08 b5 00 00 ba 00 01 00 00 f0 66 0f c1 10 38 f2 74 06 <f3> 90 8a 10 eb f6 c9 c3 66 0f 1f 44 00 00 55 48 c7 c0 d0 dd 00 
-[ 3192.416782] Stack:
-[ 3192.418813] Call Trace:
-[ 3192.419682] Code: 90 90 90 90 90 90 90 55 48 c7 c0 d0 dd 00 00 48 89 e5 65 48 03 04 25 08 b5 00 00 ba 00 01 00 00 f0 66 0f c1 10 38 f2 74 06 f3 90 <8a> 10 eb f6 c9 c3 66 0f 1f 44 00 00 55 48 c7 c0 d0 dd 00 00 48 
-[ 3192.520109] Stack:
-[ 3192.522135] Call Trace:
-[ 3192.523015] Code: 90 90 90 90 90 90 90 55 48 c7 c0 d0 dd 00 00 48 89 e5 65 48 03 04 25 08 b5 00 00 ba 00 01 00 00 f0 66 0f c1 10 38 f2 74 06 f3 90 <8a> 10 eb f6 c9 c3 66 0f 1f 44 00 00 55 48 c7 c0 d0 dd 00 00 48 
-[ 3192.626777] Stack:
-[ 3192.628810] Call Trace:
-[ 3192.629682] Code: 90 90 90 90 90 90 90 55 48 c7 c0 d0 dd 00 00 48 89 e5 65 48 03 04 25 08 b5 00 00 ba 00 01 00 00 f0 66 0f c1 10 38 f2 74 06 f3 90 <8a> 10 eb f6 c9 c3 66 0f 1f 44 00 00 55 48 c7 c0 d0 dd 00 00 48 
-[ 3192.833431] Stack:
-[ 3192.835461] Call Trace:
-[ 3192.836350] Code: 90 90 90 90 90 90 90 55 48 c7 c0 d0 dd 00 00 48 89 e5 65 48 03 04 25 08 b5 00 00 ba 00 01 00 00 f0 66 0f c1 10 38 f2 74 06 f3 90 <8a> 10 eb f6 c9 c3 66 0f 1f 44 00 00 55 48 c7 c0 d0 dd 00 00 48 
-[ 3192.936757] Stack:
-[ 3192.938792] Call Trace:
-[ 3192.939685] Code: 90 90 90 90 90 90 90 55 48 c7 c0 d0 dd 00 00 48 89 e5 65 48 03 04 25 08 b5 00 00 ba 00 01 00 00 f0 66 0f c1 10 38 f2 74 06 f3 90 <8a> 10 eb f6 c9 c3 66 0f 1f 44 00 00 55 48 c7 c0 d0 dd 00 00 48
-(...)
-
-is there any way to decrypt such flood?
-
-BR,
-Paweł.
+On Thu, May 19, 2011 at 4:58 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2011-05-17 at 16:21 -0700, John Stultz wrote:
+>> While Dima never replied publicly, I bugged him a few weeks ago
+>> and he said that this fix should address his original issue.
+>
+> Should or does? :-)
+>
+> I was really hoping for a tested-by tag..
+>
