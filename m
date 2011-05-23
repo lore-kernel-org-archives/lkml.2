@@ -1,150 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030630Ab1EWVGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 17:06:14 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:53325 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030593Ab1EWVGF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 17:06:05 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.osdl.org>, <netdev@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [GIT PULL] Namespace file descriptors for 2.6.40
-Date: Mon, 23 May 2011 14:05:57 -0700
-Message-ID: <m1wrhh3z62.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
+	id S1030721Ab1EWVGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 17:06:44 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:46086 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030683Ab1EWVGh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 17:06:37 -0400
+Subject: Re: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19fYn0l7rfG6S90povZwEEk2MSAT6Sx7F4=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+From: Felipe Balbi <balbi@ti.com>
+In-Reply-To: <Pine.LNX.4.44L0.1105231220230.2020-100000@iolanthe.rowland.org>
+Date: Tue, 24 May 2011 00:06:29 +0300
+Cc: Felipe Balbi <balbi@ti.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Tanya Brokhman <tlinder@codeaurora.org>, <greg@kroah.com>,
+        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BD27AEAC-1E6D-480C-9E18-A970B992AD75@ti.com>
+References: <Pine.LNX.4.44L0.1105231220230.2020-100000@iolanthe.rowland.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Please pull the namespace file descriptor git tree from:
+(replying from another PC, not sure if formatting
+will be broken, hopefully not)
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/linux-2.6-nsfd.git
+On May 23, 2011, at 7:28 PM, Alan Stern wrote:
+>>> Since in dummy_hcd all of this is much simpler I think that the device speed
+>>> should be determined by driver->speed and "which type of cable the
+>>> connection was made over - SS or HS". The "cable type" is exactly what the
+>>> module parameter is.
+>> 
+>> I really don't understand this.  You're going to have a module parameter
+>> for what type of cable is plugged in?
+> 
+> It would be more accurate to say the module parameter will be used to
+> force the connection to run at a lower speed than the maximum possible.  
+> This is kind of like what happens when you plug in a SuperSpeed device 
+> using a USB-2 cable -- the connection runs at a lower speed than it 
+> could have.
 
-Because other syscall work has happened in other trees there
-are conflicts on alpha and m68k.
+if it's something like that, for sure we can have the module parameter. But
+plugging a USB2 gadget/function to a USB3-capable UDC/HCD should
+work fine.
 
-For alpha all that is needed is a simple incrementing of the syscall
-number in my tree and adding of my syscall to the end of the list.
+With Tatyana's patches, if we load a USB2 g_zero to dummy_hcd, enumeration
+will fail where it shouldn't. This has been my whole point ;-) Maybe I wasn't
+clear enough.
 
-For m68k please just delete all of the syscall entries the conflict will
-add to arch/m68k/kernel/entry_mm.S.  The m68k tree has consolidated
-everything in arch/m68k/kernel/syscalltable.S
+>> What about the case where SuperSpeed enumeration
+>> fails and you have to fall back to high speed?
+> 
+> If SuperSpeed enumeration fails, say because the device doesn't have 
+> any SuperSpeed descriptors, xhci-hcd doesn't fall back to high speed, 
+> does it?  dummy-hcd should behave the same way.
 
+it should at least. Isn't that what happens between EHCI/OHCI ? HS Chirp
+sequencing fails, then we fall back to FullSpeed.
 
-This tree adds the files /proc/<pid>/ns/net, /proc/<pid>/ns/ipc,
-/proc/<pid>/ns/uts that can be opened to refer to the namespaces of a
-process at the time those files are opened, and can be bind mounted to
-keep the specified namespace alive without a process.
+>> It seems like you really
+>> need to handle both speeds and the speed fall back parameter in the same
+>> driver.  Isn't there some other gadget driver that has a fall back to
+>> full or low speed when high speed enumeration fails?
+> 
+> That's a property of the gadget driver, not the UDC driver.  dummy-hcd 
+> is a UDC driver (and an HCD too).
 
-This tree adds the setns system call that can be used to change the
-specified namespace of a process to the namespace specified by a system
-call.
+USB3.0 dummy_hcd should still enumerate USB2.0 gadget drivers.
 
-This tree adds a new rtnetlink attribute that allows for moving a
-network device into a network namespace specified by a file descriptor.
+-- 
+balbi
 
-Support for the other namespaces is planned but is not ready for 2.6.40.
-
-These changes dramatically simplify what a userspace process has to do
-to keep a namespace alive, and to execute system calls in it.
-
-The shortlog:
-
-Stephen Rothwell (1):
-      net: fix get_net_ns_by_fd for !CONFIG_NET_NS
-
-Eric W. Biederman (11):
-      ns: proc files for namespace naming policy.
-      ns: Introduce the setns syscall
-      ns proc: Add support for the network namespace.
-      ns proc: Add support for the uts namespace
-      ns proc: Add support for the ipc namespace
-      net: Allow setting the network namespace by fd
-      Merge commit '2e7bad5f34b5beed47542490c760ed26574e38ba' into HEAD
-      Merge commit '7143b7d41218d4fc2ea33e6056c73609527ae687' into HEAD
-      ns: Wire up the setns system call
-      ns: Declare sys_setns in syscalls.h
-      ns proc: Return -ENOENT for a nonexistent /proc/self/ns/ entry.
-
-The diffstat:
-
- arch/alpha/include/asm/unistd.h        |    3 +-
- arch/alpha/kernel/systbls.S            |    1 +
- arch/arm/include/asm/unistd.h          |    1 +
- arch/arm/kernel/calls.S                |    1 +
- arch/avr32/include/asm/unistd.h        |    3 +-
- arch/avr32/kernel/syscall_table.S      |    1 +
- arch/blackfin/include/asm/unistd.h     |    3 +-
- arch/blackfin/mach-common/entry.S      |    1 +
- arch/cris/arch-v10/kernel/entry.S      |    1 +
- arch/cris/arch-v32/kernel/entry.S      |    1 +
- arch/cris/include/asm/unistd.h         |    3 +-
- arch/frv/include/asm/unistd.h          |    3 +-
- arch/frv/kernel/entry.S                |    1 +
- arch/h8300/include/asm/unistd.h        |    3 +-
- arch/h8300/kernel/syscalls.S           |    1 +
- arch/ia64/include/asm/unistd.h         |    3 +-
- arch/ia64/kernel/entry.S               |    1 +
- arch/m32r/include/asm/unistd.h         |    3 +-
- arch/m32r/kernel/syscall_table.S       |    1 +
- arch/m68k/include/asm/unistd.h         |    3 +-
- arch/m68k/kernel/syscalltable.S        |    1 +
- arch/microblaze/include/asm/unistd.h   |    3 +-
- arch/microblaze/kernel/syscall_table.S |    1 +
- arch/mips/include/asm/unistd.h         |   15 ++-
- arch/mips/kernel/scall32-o32.S         |    1 +
- arch/mips/kernel/scall64-64.S          |    1 +
- arch/mips/kernel/scall64-n32.S         |    1 +
- arch/mips/kernel/scall64-o32.S         |    1 +
- arch/mn10300/include/asm/unistd.h      |    3 +-
- arch/mn10300/kernel/entry.S            |    1 +
- arch/parisc/include/asm/unistd.h       |    4 +-
- arch/parisc/kernel/syscall_table.S     |    1 +
- arch/powerpc/include/asm/systbl.h      |    1 +
- arch/powerpc/include/asm/unistd.h      |    3 +-
- arch/s390/include/asm/unistd.h         |    3 +-
- arch/s390/kernel/syscalls.S            |    1 +
- arch/sh/include/asm/unistd_32.h        |    3 +-
- arch/sh/include/asm/unistd_64.h        |    3 +-
- arch/sh/kernel/syscalls_32.S           |    1 +
- arch/sh/kernel/syscalls_64.S           |    1 +
- arch/sparc/include/asm/unistd.h        |    3 +-
- arch/sparc/kernel/systbls_32.S         |    2 +-
- arch/sparc/kernel/systbls_64.S         |    4 +-
- arch/x86/ia32/ia32entry.S              |    1 +
- arch/x86/include/asm/unistd_32.h       |    3 +-
- arch/x86/include/asm/unistd_64.h       |    2 +
- arch/x86/kernel/syscall_table_32.S     |    1 +
- arch/xtensa/include/asm/unistd.h       |    4 +-
- fs/proc/Makefile                       |    1 +
- fs/proc/base.c                         |   20 ++--
- fs/proc/inode.c                        |    7 +
- fs/proc/internal.h                     |   18 +++
- fs/proc/namespaces.c                   |  198 ++++++++++++++++++++++++++++++++
- include/asm-generic/unistd.h           |    4 +-
- include/linux/if_link.h                |    1 +
- include/linux/proc_fs.h                |   21 ++++
- include/linux/syscalls.h               |    1 +
- include/net/net_namespace.h            |    1 +
- ipc/namespace.c                        |   37 ++++++
- kernel/nsproxy.c                       |   42 +++++++
- kernel/utsname.c                       |   39 ++++++
- net/core/net_namespace.c               |   65 +++++++++++
- net/core/rtnetlink.c                   |    5 +-
- 63 files changed, 525 insertions(+), 42 deletions(-)
-
-Thanks,
-Eric
