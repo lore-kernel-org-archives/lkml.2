@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757857Ab1EWWc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 18:32:26 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33951 "EHLO gate.crashing.org"
+	id S1757744Ab1EWW2g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 18:28:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58753 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752803Ab1EWWcW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 18:32:22 -0400
-Subject: Re: [PATCH 0/7] This patchset adds support for running Linux under the Freescale hypervisor,
-Mime-Version: 1.0 (Apple Message framework v1084)
+	id S1752659Ab1EWW2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 18:28:35 -0400
+Date: Mon, 23 May 2011 18:28:22 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: mingo@elte.hu
+Subject: suspicious rcu_dereference_check in post_schedule.
+Message-ID: <20110523222822.GA7027@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, mingo@elte.hu
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <BANLkTinqOb1UH=keRtZ9=454NDrzcjYV7g@mail.gmail.com>
-Date: Mon, 23 May 2011 17:27:41 -0500
-Cc: Gala Kumar-B11780 <B11780@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@kernel.org" <akpm@kernel.org>,
-        "linux-console@vger.kernel.org" <linux-console@vger.kernel.org>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4E082CF8-0ED1-4236-BBC4-EA35E227D2F0@kernel.crashing.org>
-References: <1305813272-31826-1-git-send-email-timur@freescale.com> <A221B293-A4DD-4223-AEEA-F3E5243D2C0A@freescale.com> <BANLkTinqOb1UH=keRtZ9=454NDrzcjYV7g@mail.gmail.com>
-To: Tabi Timur-B04825 <B04825@freescale.com>
-X-Mailer: Apple Mail (2.1084)
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+just noticed this on a build of Linus' tree from sometime yesterday.
 
-On May 23, 2011, at 4:09 PM, Tabi Timur-B04825 wrote:
+	Dave
 
-> On Fri, May 20, 2011 at 3:29 PM, Kumar Gala <kumar.gala@freescale.com> wrote:
-> 
->> Applied to 'test' branch.  (grabbed 'v2' of tty patch).  Fixed merged conflicts.
-> 
-> I don't think you pushed this branch to git.kernel.org
-> 
-> http://git.kernel.org/?p=linux/kernel/git/galak/powerpc.git;a=shortlog;h=refs/heads/test
-> 
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+kernel/sched_rt.c:1266 invoked rcu_dereference_check() without protection!
 
-Tree pushed.
+other info that might help us debug this:
 
-- k
+
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by watchdog/0/12:
+ #0:  (&rq->lock){-.-.-.}, at: [<ffffffff8104c460>] post_schedule.part.25+0x14/0x4a
+
+stack backtrace:
+Pid: 12, comm: watchdog/0 Not tainted 2.6.39+ #43
+Call Trace:
+ [<ffffffff8108c376>] lockdep_rcu_dereference+0xa7/0xaf
+ [<ffffffff8104b7ee>] find_lowest_rq+0x11b/0x19a
+ [<ffffffff81055667>] push_rt_task.part.69+0x7b/0x1d2
+ [<ffffffff810558cc>] post_schedule_rt+0x1f/0x27
+ [<ffffffff8104c47c>] post_schedule.part.25+0x30/0x4a
+ [<ffffffff814c8ac9>] schedule+0x76e/0x7ca
+ [<ffffffff810bf0af>] ? watchdog_enable+0x194/0x194
+ [<ffffffff810bf0af>] ? watchdog_enable+0x194/0x194
+ [<ffffffff810bf122>] watchdog+0x73/0xb6
+ [<ffffffff810793e9>] kthread+0xa8/0xb0
+ [<ffffffff814ce230>] ? sub_preempt_count+0xa1/0xb4
+ [<ffffffff814d24a4>] kernel_thread_helper+0x4/0x10
+ [<ffffffff814cb698>] ? retint_restore_args+0x13/0x13
+ [<ffffffff81079341>] ? __init_kthread_worker+0x5a/0x5a
+ [<ffffffff814d24a0>] ? gs_change+0x13/0x13
+
