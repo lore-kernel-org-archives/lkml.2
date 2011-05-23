@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab1EWHhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 03:37:38 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51783 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab1EWHhh convert rfc822-to-8bit (ORCPT
+	id S1753351Ab1EWHn5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 03:43:57 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:38610 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751485Ab1EWHnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 03:37:37 -0400
+	Mon, 23 May 2011 03:43:55 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19y+a0hd79ywUJsY+5Dl/MChgLgO38SUPtXTNXHFM
+	uTwoS6qyg1vQuh
 Subject: Re: question about blk_schedule_flush_plug
-From: Peter Zijlstra <peterz@infradead.org>
+From: Mike Galbraith <efault@gmx.de>
 To: Con Kolivas <kernel@kolivas.org>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, mingo@elte.hu,
+        peterz@infradead.org
 In-Reply-To: <201105231705.20168.kernel@kolivas.org>
 References: <201105231705.20168.kernel@kolivas.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 23 May 2011 09:36:56 +0200
-Message-ID: <1306136216.18455.3.camel@twins>
+Date: Mon, 23 May 2011 09:43:49 +0200
+Message-ID: <1306136629.4876.13.camel@marge.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -39,8 +44,17 @@ On Mon, 2011-05-23 at 17:05 +1000, Con Kolivas wrote:
 > 
 > Comments?
 
-Yeah, that's quite all-right, both pre_schedule() and idle_balance()
-already did that too.
+Releasing/retaking rq->lock is nothing new:
 
-We can safely release the runqueue lock after deactivate_task() and
-before put_prev_task().
+static void idle_balance(int this_cpu, struct rq *this_rq)
+{
+...
+        /*
+         * Drop the rq->lock, but keep IRQ/preempt disabled.
+         */
+        raw_spin_unlock(&this_rq->lock);
+
+See also need_resched, and double_lock_balance() instances.
+
+	-Mike
+
