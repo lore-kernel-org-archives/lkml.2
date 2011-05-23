@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab1EWDZM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 23:25:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:43237 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756064Ab1EWDZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 23:25:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,254,1304319600"; 
-   d="scan'208";a="2820044"
-Date: Mon, 23 May 2011 05:25:04 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 00/13] Ux500 PRCMU into MFD v4
-Message-ID: <20110523032503.GA22189@sortiz-mobl>
-References: <1305967300-16337-1-git-send-email-linus.walleij@stericsson.com>
+	id S1756086Ab1EWDf5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 23:35:57 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:58606 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752445Ab1EWDf4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 23:35:56 -0400
+Message-ID: <4DD9D5EB.3060807@st.com>
+Date: Mon, 23 May 2011 09:05:07 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305967300-16337-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] ata: PATA_ARASAN_CF depends on DMADEVICES
+References: <20110520165507.cba539d5.sfr@canb.auug.org.au> <20110522173227.5ba18817.randy.dunlap@oracle.com>
+In-Reply-To: <20110522173227.5ba18817.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On Sat, May 21, 2011 at 10:41:40AM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On 05/23/2011 06:02 AM, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> This is mainly a rebase to Torvald's HEAD to rid the merge
-> conflict in drivers/cpufreq.
+> Fix kconfig unmet dependency warning:
 > 
-> All but the last patch can be merged into Sam's MFD tree I
-> believe, but ACKs from MFD work just as fine and I'll request
-> pull.
-I'd rather see this one going through your tree as it does contain many arch
-related changes. Please add my ACK to the MFD parts.
-Also, please cc me on your pull request so that I can fix the mfd_data from
-patch #13 before sending my pull request.
+> warning: (PATA_ARASAN_CF && VIDEO_TIMBERDALE && SND_SOC_SH4_SIU) selects DMA_ENGINE which has unmet direct dependencies (DMADEVICES)
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: Viresh Kumar <viresh.kumar@st.com>
+> ---
+>  drivers/ata/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- linux-next-20110520.orig/drivers/ata/Kconfig
+> +++ linux-next-20110520/drivers/ata/Kconfig
+> @@ -313,6 +313,7 @@ config PATA_AMD
+>  
+>  config PATA_ARASAN_CF
+>  	tristate "ARASAN CompactFlash PATA Controller Support"
+> +	depends on DMADEVICES
+>  	select DMA_ENGINE
 
-Cheers,
-Samuel.
+Randy,
+
+I think we can also remove this "select DMA_ENGINE" line.
+
+Otherwise, it looks fine.
+
+Acked-by: Viresh Kumar <viresh.kumar@st.com>
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+viresh
