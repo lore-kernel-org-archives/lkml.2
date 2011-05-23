@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031054Ab1EWV0V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 17:26:21 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45364 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1030208Ab1EWV0S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 17:26:18 -0400
-Date: Mon, 23 May 2011 17:21:01 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Tanya Brokhman <tlinder@codeaurora.org>, <greg@kroah.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-In-Reply-To: <BD27AEAC-1E6D-480C-9E18-A970B992AD75@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1105231710590.2020-100000@iolanthe.rowland.org>
+	id S1030256Ab1EWVWP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 17:22:15 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49907 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933719Ab1EWVWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 17:22:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: Resume Issues :Exec of NX page, Synaptics Botchup
+Date: Mon, 23 May 2011 23:22:37 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: Parag Warudkar <parag.lkml@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Dmitry Torokhov <dtor@mail.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <alpine.DEB.2.02.1105221720040.2065@natty-nar> <201105230041.14729.rjw@sisk.pl> <493994B35A117E4F832F97C4719C4C04011E13400F@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <493994B35A117E4F832F97C4719C4C04011E13400F@orsmsx505.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105232322.37991.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011, Felipe Balbi wrote:
-
-> > It would be more accurate to say the module parameter will be used to
-> > force the connection to run at a lower speed than the maximum possible.  
-> > This is kind of like what happens when you plug in a SuperSpeed device 
-> > using a USB-2 cable -- the connection runs at a lower speed than it 
-> > could have.
-> 
-> if it's something like that, for sure we can have the module parameter. But
-> plugging a USB2 gadget/function to a USB3-capable UDC/HCD should
-> work fine.
-> 
-> With Tatyana's patches, if we load a USB2 g_zero to dummy_hcd, enumeration
-> will fail where it shouldn't. This has been my whole point ;-) Maybe I wasn't
-> clear enough.
-
-I guess not.  I thought Tatyana said she was working to fix that bug...
-
-> >> What about the case where SuperSpeed enumeration
-> >> fails and you have to fall back to high speed?
+On Monday, May 23, 2011, Yu, Fenghua wrote:
+> > On Monday, May 23, 2011, Parag Warudkar wrote:
+> > >
+> > > On Sun, 22 May 2011, Linus Torvalds wrote:
+> > >
+> > > >
+> > > > Hmm. The "Code: " line is just full of complete garbage, so I think
+> > > > the real issue is that you really are trying to execute data.
+> > > >
+> > > > And that in turn seems to be because "setup_disablecpuid()" has
+> > > > actually been free'd, because it is marked as __init.
+> > > >
+> > > > Which is fine at the initial bootup, but not so fine at resume
+> > time,
+> > > > since it was free'd long long ago by then.
+> > > >
+> > > > And it definitely shouldn' t be called at resume time. There's
+> > > > something wrong there. That call trace is odd:
+> > > >
+> > > >   Call Trace:
+> > > >    [<ffffffff8148a119>] ? identify_cpu+0xd8/0x2d8
+> > > >    [<ffffffff8148a32d>] identify_secondary_cpu+0x14/0x1b
+> > > >    [<ffffffff8148bf0f>] smp_store_cpu_info+0x3c/0x3e
+> > > >    [<ffffffff8148c2ef>] start_secondary+0xf7/0x1d2
+> > > >
+> > > > because none of those should be calling "setup_disablecpuid()" at
+> > all.
+> > > >
+> > > > Hmm. In fact, RIP is "setup_disablecpuid+0x40/0x40", ie it is one
+> > past
+> > > > the _end_ of setup_disablecpuid.
+> > > >
+> > > > I suspect that is actually "setup_smep()" that got called, an dthat
+> > > > there was some garbage data in there that caused it to jump back a
+> > > > bit.
+> > > >
+> > > > Does the attached patch fix it?
+> > > >
+> > >
+> > > Now I get a different call trace for the same NX error. (And
+> > Synaptics is
+> > > completely dead this time - not attributable to the patch, it was
+> > dumb
+> > > luck perhaps that it wored last time.)
 > > 
-> > If SuperSpeed enumeration fails, say because the device doesn't have 
-> > any SuperSpeed descriptors, xhci-hcd doesn't fall back to high speed, 
-> > does it?  dummy-hcd should behave the same way.
-> 
-> it should at least. Isn't that what happens between EHCI/OHCI ? HS Chirp
-> sequencing fails, then we fall back to FullSpeed.
-
-That's a failure in initialization, not a failure in enumeration.
-
-There are two reasons why the HS chirp might fail: the device doesn't 
-support high speed operation or hardware errors prevent the chirp from 
-working.  With dummy-hcd there are no hardware errors (because there's 
-no hardware).
-
-As for whether or not the device supports high-speed or SuperSpeed
-operation, that's determined by the usb_gadget_driver->speed field.  If 
-the field doesn't specify SuperSpeed then dummy-hcd should connect the 
-gadget to the USB-2 root hub rather than the USB-3 root hub.  Isn't 
-that what Tatyana's patch does?  It contains a line saying:
-
-		dum->gadget.speed = driver->speed;
-
-> >> It seems like you really
-> >> need to handle both speeds and the speed fall back parameter in the same
-> >> driver.  Isn't there some other gadget driver that has a fall back to
-> >> full or low speed when high speed enumeration fails?
+> > Any chance to try with commit de5397ad5b9ad22e2401c4dacdf1bb3b19c05679
+> > (x86, cpu: Enable/disable Supervisor Mode Execution Protection)
+> > reverted?
 > > 
-> > That's a property of the gadget driver, not the UDC driver.  dummy-hcd 
-> > is a UDC driver (and an HCD too).
+> > Rafael
 > 
-> USB3.0 dummy_hcd should still enumerate USB2.0 gadget drivers.
+> de5397ad5b9ad22e2401c4dacdf1bb3b19c05679 shouldn't affect a system unless the CPU has SMEP feature which is unlikely available out there.
+> 
+> You can check if your CPU has "smep" feature in /proc/cpuinfo. Unlikely you will see the feature on your machine. Then the commit shouldn't cause the problem.
+> 
+> You can unconditionally disable SMEP by kernel option "nosmep".
 
-Yes, certainly it should.  If it doesn't, that's a bug, not a design 
-error.
+Still, it is known to cause problems to people (see for example
+https://bugzilla.kernel.org/show_bug.cgi?id=35602), so it might be a
+good idea to set "nosmep" by default.
 
-Alan Stern
-
+Thanks,
+Rafael
