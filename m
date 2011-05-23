@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757714Ab1EWVtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 17:49:11 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:49432 "EHLO relay.sgi.com"
+	id S1030837Ab1EWVya (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 17:54:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51328 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757694Ab1EWVtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 17:49:08 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201105232149.p4NLn2PV022851@stout.americas.sgi.com>
-Date: Mon, 23 May 2011 16:49:02 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update 1 for 2.6.40-rc1
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.5 7/5/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S932177Ab1EWVy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 17:54:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,258,1304319600"; 
+   d="scan'208";a="3529584"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Ingo Molnar" <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
+        "Andi Kleen" <andi@firstfloor.org>, "Borislav Petkov" <bp@alien8.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>
+Subject: [RFC 0/9] mce recovery for Sandy Bridge server
+Date: Mon, 23 May 2011 14:54:27 -0700
+Message-Id: <4ddad79317108eb33d@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit ea2b50ef4c9e030749ae473e95258f477c3a68ca:
+Here's a nine-part patch series to implement "AR=1" recovery
+that will be available on high-end Sandy Bridge server processors.
+In this case the process detects an uncorrectable memory error
+while doing an instruction of data fetch that is about to be
+consumed.  This is in contrast to the recoverable errors on
+Nehalem and Westmere that were out of immediate execution context
+(patrol scrubber and cache line write-back).
 
-  Merge branch 'x86-apic-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-05-23 12:54:15 -0700)
+The code is based on work done by Andi last year and published in
+the "mce/action-required" branch of his mce git tree:
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git
+Thus he gets author credit on 6 out of 9 patches (but I'll take
+the blame for all of them).
 
-are available in the git repository at:
+The first eight patches are mostly cleanups and minor new bits
+that are needed by part 9 where the interesting stuff happens.
 
-  git://oss.sgi.com/xfs/xfs for-linus
+For the "in context" case, we must not return from the machine
+check handler (in the data fetch case we'd re-execute the fetch
+and take another machine check, in the instruction fetch case
+we actually don't have a precise IP to return to).  We use the
+TIF_MCE_NOTIFY task flag bit to ensure that we don't return to
+the user context - but we also need to keep track of the memory
+address where the fault occurred. The h/w only gives us the physical
+address which we must keep track of ... to do so we have added
+"mce_error_pfn" to the task structure - this feels odd, but it
+is an attribute of the task (e.g. this task may be migrated to
+another processor before we get to look at TIF_MCE_NOTIFY and
+head to do_notify_resume() to process it).
 
-Christoph Hellwig (6):
-      xfs: optimize AGFL refills
-      xfs: do not immediately reuse busy extent ranges
-      xfs: exact busy extent tracking
-      xfs: reduce the number of pagb_lock roundtrips in xfs_alloc_clear_busy
-      xfs: fix compiler warning in xfs_trace.h
-      xfs: add an x86 compat handler for XFS_IOC_ZERO_RANGE
+Andi's recovery code can also handle a few cases where the
+error is detected while running kernel code (when copying
+data to/from a user process) - but the TIF_MCE_NOTIFY method
+doesn't actually ever get to this code (since the entry_64.S code
+only checks TIF_MCE_NOTIFY on return to userspace). I'd
+appreciate any ideas on how to handle this. Perhaps we could
+do good things when CONFIG_PREEMPT=y (it seems probable that
+any error in a non-preemtible section of kernel code is going
+to be fatal).
 
-Dave Chinner (10):
-      xfs: ensure reclaim cursor is reset correctly at end of AG
-      xfs: exit AIL push work correctly when AIL is empty
-      xfs: always push the AIL to the target
-      xfs: make AIL target updates and compares 32bit safe.
-      xfs: fix race condition in AIL push trigger
-      xfs: fix duplicate workqueue initialisation
-      xfs: fix xfs_itruncate_start tracing
-      xfs: avoid getting stuck during async inode flushes
-      xfs: reset buffer pointers before freeing them
-      xfs: obey minleft values during extent allocation correctly
+-Tony
 
-David Sterba (1):
-      xfs: cleanup duplicate initializations
+ arch/x86/include/asm/mce.h                |    3 +-
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   37 +++-
+ arch/x86/kernel/cpu/mcheck/mce.c          |  286 ++++++++++++++++++++++++-----
+ arch/x86/kernel/signal.c                  |    2 +-
+ include/linux/init_task.h                 |    7 +
+ include/linux/sched.h                     |    3 +
+ mm/memory-failure.c                       |   28 ++--
+ 7 files changed, 300 insertions(+), 66 deletions(-)
 
-Joe Perches (1):
-      xfs: kill off xfs_printk()
+Andi Kleen (6):
+      MCE: Always retrieve mce rip before calling no_way_out
+      MCE: Move ADDR/MISC reading code into common function
+      MCE: Mask out address mask bits below address granuality
+      HWPOISON: Handle hwpoison in current process
+      MCE: Pass registers to work handlers
+      MCE: Add Action-Required support
 
- fs/xfs/linux-2.6/xfs_buf.c     |   22 +-
- fs/xfs/linux-2.6/xfs_buf.h     |    1 +
- fs/xfs/linux-2.6/xfs_ioctl32.c |    3 +-
- fs/xfs/linux-2.6/xfs_ioctl32.h |    1 +
- fs/xfs/linux-2.6/xfs_linux.h   |    1 +
- fs/xfs/linux-2.6/xfs_message.c |   20 +-
- fs/xfs/linux-2.6/xfs_message.h |    7 +-
- fs/xfs/linux-2.6/xfs_super.c   |    4 -
- fs/xfs/linux-2.6/xfs_sync.c    |   11 +
- fs/xfs/linux-2.6/xfs_trace.h   |   76 ++---
- fs/xfs/xfs_ag.h                |    1 -
- fs/xfs/xfs_alloc.c             |  844 +++++++++++++++++++++++++++------------
- fs/xfs/xfs_alloc.h             |   15 +-
- fs/xfs/xfs_alloc_btree.c       |   13 +-
- fs/xfs/xfs_dfrag.c             |    6 +-
- fs/xfs/xfs_inode.c             |    2 +-
- fs/xfs/xfs_inode_item.c        |    1 -
- fs/xfs/xfs_log.c               |   15 +-
- fs/xfs/xfs_log.h               |    2 -
- fs/xfs/xfs_log_cil.c           |    5 +-
- fs/xfs/xfs_log_priv.h          |    2 +
- fs/xfs/xfs_log_recover.c       |   75 ++--
- fs/xfs/xfs_mount.c             |    4 +-
- fs/xfs/xfs_trans.c             |    6 +-
- fs/xfs/xfs_trans_ail.c         |   47 ++-
- fs/xfs/xfs_types.h             |    2 -
- 26 files changed, 748 insertions(+), 438 deletions(-)
+Tony Luck (3):
+      mce: fixes for mce severity table
+      mce: save most severe error information
+      mce: run through processors with more severe problems first
+
