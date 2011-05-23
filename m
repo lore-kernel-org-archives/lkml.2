@@ -1,14 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030214Ab1EWWN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 18:13:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3705 "EHLO mga01.intel.com"
+	id S934161Ab1EWWOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 18:14:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27263 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753337Ab1EWWN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 18:13:58 -0400
+	id S932197Ab1EWWOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 18:14:18 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,258,1304319600"; 
-   d="scan'208";a="7369439"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Ingo Molnar" <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
@@ -16,50 +14,77 @@ Cc: "Ingo Molnar" <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
         "Linus Torvalds" <torvalds@linux-foundation.org>,
         "Andrew Morton" <akpm@linux-foundation.org>
 In-Reply-To: <4ddad79317108eb33d@agluck-desktop.sc.intel.com>
-Subject: [RFC 5/9] MCE: Mask out address mask bits below address granuality
-Date: Mon, 23 May 2011 15:13:58 -0700
-Message-Id: <4ddadc261716628e0@agluck-desktop.sc.intel.com>
+Subject: [RFC 6/9] HWPOISON: Handle hwpoison in current process
+Date: Mon, 23 May 2011 15:14:18 -0700
+Message-Id: <4ddadc3a1716839948@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <andi@firstfloor.org>
 
-SER enabled systems report the address granuality for each
-reported address in a machine check. But the bits below
-the granuality are undefined. Mask them out before
-logging the machine check.
+When hardware poison handles the current process use
+a forced signal with _AR severity.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+ mm/memory-failure.c |   28 ++++++++++++++++------------
+ 1 files changed, 16 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index f4924dc..a9a0e25 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -532,8 +532,18 @@ static void mce_read_aux(struct mce *m, int i)
- {
- 	if (m->status & MCI_STATUS_MISCV)
- 		m->misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
--	if (m->status & MCI_STATUS_ADDRV)
-+	if (m->status & MCI_STATUS_ADDRV) {
- 		m->addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
-+
-+		/*
-+		 * Mask the reported address by the reported granuality.
-+		 */
-+		if (mce_ser && (m->status & MCI_STATUS_MISCV)) {
-+			u8 shift = m->misc & 0x1f;
-+			m->addr >>= shift;
-+			m->addr <<= shift;
-+		}
-+	}
- }
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 2b9a5ee..a203113 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -184,8 +184,7 @@ int hwpoison_filter(struct page *p)
+ EXPORT_SYMBOL_GPL(hwpoison_filter);
  
- DEFINE_PER_CPU(unsigned, mce_poll_count);
+ /*
+- * Send all the processes who have the page mapped an ``action optional''
+- * signal.
++ * Send all the processes who have the page mapped a SIGBUS.
+  */
+ static int kill_proc_ao(struct task_struct *t, unsigned long addr, int trapno,
+ 			unsigned long pfn, struct page *page)
+@@ -194,23 +193,28 @@ static int kill_proc_ao(struct task_struct *t, unsigned long addr, int trapno,
+ 	int ret;
+ 
+ 	printk(KERN_ERR
+-		"MCE %#lx: Killing %s:%d early due to hardware memory corruption\n",
+-		pfn, t->comm, t->pid);
++		"MCE %#lx: Killing %s:%d due to hardware memory corruption\n",
++	       pfn, t->comm, t->pid);
+ 	si.si_signo = SIGBUS;
+ 	si.si_errno = 0;
+-	si.si_code = BUS_MCEERR_AO;
+ 	si.si_addr = (void *)addr;
+ #ifdef __ARCH_SI_TRAPNO
+ 	si.si_trapno = trapno;
+ #endif
+ 	si.si_addr_lsb = compound_trans_order(compound_head(page)) + PAGE_SHIFT;
+-	/*
+-	 * Don't use force here, it's convenient if the signal
+-	 * can be temporarily blocked.
+-	 * This could cause a loop when the user sets SIGBUS
+-	 * to SIG_IGN, but hopefully no one will do that?
+-	 */
+-	ret = send_sig_info(SIGBUS, &si, t);  /* synchronous? */
++	if (t == current) {
++		si.si_code = BUS_MCEERR_AR;
++		ret = force_sig_info(SIGBUS, &si, t);
++	} else {
++		/*
++		 * Don't use force here, it's convenient if the signal
++		 * can be temporarily blocked.
++		 * This could cause a loop when the user sets SIGBUS
++		 * to SIG_IGN, but hopefully noone will do that?
++		 */
++		si.si_code = BUS_MCEERR_AO;
++		ret = send_sig_info(SIGBUS, &si, t);
++	}
+ 	if (ret < 0)
+ 		printk(KERN_INFO "MCE: Error sending signal to %s:%d: %d\n",
+ 		       t->comm, t->pid, ret);
 -- 
 1.7.3.1
 
