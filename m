@@ -1,97 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab1EWRlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 13:41:47 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:56240 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756057Ab1EWRlp (ORCPT
+	id S1756714Ab1EWRmc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 13:42:32 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:47457 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756223Ab1EWRm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 13:41:45 -0400
-In-Reply-To: <20110520162709.GA3497@darkmag.usersys.redhat.com>
-References: <20110515165945.GA20024@darkmag.usersys.redhat.com> <20110516.140359.111037536766782557.davem@davemloft.net> <OF948388D5.90B3F5A7-ON88257892.006C3228-88257892.0071B9D5@us.ibm.com> <20110517133801.GC30366@darkmag.usersys.redhat.com> <20110517143756.GE30366@darkmag.usersys.redhat.com> <OF11F57B2A.6B43B7E6-ON88257893.005490B0-88257893.00615176@us.ibm.com> <20110520162709.GA3497@darkmag.usersys.redhat.com>
-To: Veaceslav Falico <vfalico@redhat.com>
-Cc: David Miller <davem@davemloft.net>, jmorris@namei.org, kaber@trash.net,
-        kuznet@ms2.inr.ac.ru, linux-kernel@vger.kernel.org, mmarek@suse.cz,
-        netdev@vger.kernel.org, netdev-owner@vger.kernel.org,
-        pekkas@netcore.fi, yoshfuji@linux-ipv6.org
-MIME-Version: 1.0
-Subject: Re: [PATCH v3 1/1] igmp: call ip_mc_clear_src() only when we have no users
- of ip_mc_list
-X-KeepSent: 8F2A5C61:8060D0CC-88257899:00610B06;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.1FP5 SHF29 November 12, 2010
-From: David Stevens <dlstevens@us.ibm.com>
-Message-ID: <OF8F2A5C61.8060D0CC-ON88257899.00610B06-88257899.006123E3@us.ibm.com>
-Date: Mon, 23 May 2011 10:41:03 -0700
-X-MIMETrack: Serialize by Router on D03NM121/03/M/IBM(Release 8.5.1FP2|March 17, 2010) at
- 05/23/2011 11:41:03,
-	Serialize complete at 05/23/2011 11:41:03
-Content-Type: text/plain; charset="US-ASCII"
+	Mon, 23 May 2011 13:42:29 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+Subject: Re: linux-next: build warning after merge of the suspend tree
+To: mgross <markgross@thegnar.org>
+Message-Id: <pm-qos-needs-fixing-2@mdm.bga.com>
+In-Reply-To: <pm-qos-needs-fixing-2@mdm.bga.com>
+References: <20110523150636.ccd83777.sfr@canb.auug.org.au>
+	<20110523141846.GA8122@gvim.org>
+	<pm-qos-needs-fixing@mdm.bga.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 23 May 2011 12:42:18 -0500
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-netdev-owner@vger.kernel.org wrote on 05/20/2011 09:27:09 AM:
+[ I managed to botch my own email the first time, how embarrassing!
+So I added Randy and updated the paragraph about negative values.
+And then I need a new Message-Id too. ]
 
-> From: Veaceslav Falico <vfalico@redhat.com>
+On Mon, 23 May 2011 about 14:18:46 -0000, mgross wrote:
+> On Mon, May 23, 2011 at 03:06:36PM +1000, Stephen Rothwell wrote:
+> > Hi Rafael,
+> > 
+> > After merging the suspend tree, today's linux-next build (i386 defconfig
+> > among others) produced this warning:
+> > 
+> > kernel/pm_qos_params.c: In function 'pm_qos_power_write':
+> > kernel/pm_qos_params.c:420: warning: passing argument 3 of 'kstrtol' from incompatible pointer type
+> > include/linux/kernel.h:210: note: expected 'long int *' but argument is of type 's32 *'
+> > 
+> > Intreoduced by commit 365daa955e03 ("PM: Correct PM QOS's user mode
+> > interface to work with ascii input per").
+> 
+> Gah!  I'm sorry about that.
+> 
+> attached is a fix.
+> 
+> 
+> --mark
+> 
+> signed-off-by:markgross <markgross@thegnar.org>
+> 
 
-Looks ok to me:
+(1) This should be in the patch, not the enclosing letter
+(2) Incorrect capitalization
+(3) Incorrect spacing
 
-Acked-by: David L Stevens <dlstevens@us.ibm.com>
+Please read Documentation/SubmittingPatches again.
 
 > 
-> So, does this patch seem ok? If yes, I'll send it with the changelog.
 > 
+> >From a8f0587b9ae598be5ca4c3cdda4e0ced6ca9baaf Mon Sep 17 00:00:00 2001
+> From: mgross <mgross@cr48>
+> Date: Mon, 23 May 2011 07:14:09 -0700
+> Subject: [PATCH] clean up a compile time warning in the use of strict_strtol but that was
+>  passing an s32 * when it should be passing a long *
+> 
+
+>From should match Signed-off-by:
+
+Please seperate title (subject) and description body
+
+Maybe: pm_qos: strict_strtol takes a long, not s32
+
+strict_strtol takes a pointer to long to store the converted value.
+introduced in xxxx ("change set title here")
+
+So that the reviewers can quickly see if it needs to be backported
+to stable etc.
+
+except read below
+
+
 > ---
-> diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-> index 1fd3d9c..57ca93a 100644
-> --- a/net/ipv4/igmp.c
-> +++ b/net/ipv4/igmp.c
-> @@ -1169,20 +1169,18 @@ static void igmp_group_dropped(struct ip_mc_list 
-*im)
+> kernel/pm_qos_params.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
 > 
->     if (!in_dev->dead) {
->        if (IGMP_V1_SEEN(in_dev))
-> -         goto done;
-> +         return;
->        if (IGMP_V2_SEEN(in_dev)) {
->           if (reporter)
->              igmp_send_report(in_dev, im, IGMP_HOST_LEAVE_MESSAGE);
-> -         goto done;
-> +         return;
->        }
->        /* IGMPv3 */
->        igmpv3_add_delrec(in_dev, im);
-> 
->        igmp_ifc_event(in_dev);
->     }
-> -done:
->  #endif
-> -   ip_mc_clear_src(im);
->  }
-> 
->  static void igmp_group_added(struct ip_mc_list *im)
-> @@ -1319,6 +1317,7 @@ void ip_mc_dec_group(struct in_device *in_dev,
-> __be32 addr)
->              *ip = i->next_rcu;
->              in_dev->mc_count--;
->              igmp_group_dropped(i);
-> +            ip_mc_clear_src(i);
-> 
->              if (!in_dev->dead)
->                 ip_rt_multicast_event(in_dev);
-> @@ -1428,7 +1427,8 @@ void ip_mc_destroy_dev(struct in_device *in_dev)
->        in_dev->mc_list = i->next_rcu;
->        in_dev->mc_count--;
-> 
-> -      igmp_group_dropped(i);
-> +      /* We've dropped the groups in ip_mc_down already */
-> +      ip_mc_clear_src(i);
->        ip_ma_put(i);
->     }
->  }
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+> index d61ecf3..dd37c56 100644
+> --- a/kernel/pm_qos_params.c
+> +++ b/kernel/pm_qos_params.c
+> @@ -405,6 +405,7 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+>  		size_t count, loff_t *f_pos)
+>  {
+>  	s32 value;
+> +	long safe_int;
+>  	int x;
+>  	char ascii_value[11];
+>  	struct pm_qos_request_list *pm_qos_req;
+> @@ -417,10 +418,11 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+>  		ascii_value[count] = 0;
+>  		if (copy_from_user(ascii_value, buf, count))
+>  			return -EFAULT;
+> -		if ((x=strict_strtol(ascii_value, 16, &value)) != 0){
+> -			pr_debug("%s, 0x%x, 0x%x\n",ascii_value, value, x);
+> +		if ((x=strict_strtol(ascii_value, 16, &safe_int)) != 0){
 
+Why are you doing an assignment in the if?  Why not assign first and
+compare later?
+
+> +			pr_debug("%s, 0x%lx, 0x%x\n",ascii_value, safe_int, x);
+>  			return -EINVAL;
+
+Nit: Some reason not to return -ERANGE if thats what strtol returned?  
+While folding the error to -EINVAL is ok, it hides diagnostic informatio
+from the user.
+
+>  		}
+> +		value = (s32) safe_int;
+
+You call strict checking, which includes overflow checking, but
+only that the value fits in a long.  You then defeat that checking
+by casting to int.
+
+It looks like you want strict_strtoint except thats not defined.
+Hoever, the pattern for strict_strto* is kstrto* and kstrtos32 is
+defined ...
+
+>  	} else
+>  		return -EINVAL;
+>  
+
+Oh, and you now may copy 11 characters from userspace into an 11
+character buffer then terminate it by writing the 12th character
+(ascii_value[count == 11]).  Except its an 11 character array.
+
+The variable is a s32, aparently in native endian if pased in binary
+as 4 bytes.  What is the magic to set the value to a negative number
+through the ascii interface?  Is yet another character for the -
+required?
+
+
+I see the string from userspace wasn't properly terminated before
+either.  In ed77134bfccf5e75b (PM QOS update), merged in v2.6.35-rc1,
+11 bytes were copied from user then passed to ssscanf without null
+termination forced.  It was updated in 0109c2c48d (PM QoS: Correct
+pr_debug() misuse and improve parameter checks), which was merged in
+2.6.36-rc4, to change the the function that walks off the string from
+sscanf to strlen.  That changelog isn't marked for stable (I didn't
+look if it was sent) but it still isn't force terminated.
+
+happy patching,
+milton
