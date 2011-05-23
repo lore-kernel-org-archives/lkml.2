@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934211Ab1EWWUO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 18:20:14 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:45942 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753285Ab1EWWUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 18:20:11 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        namhyung@gmail.com, akpm@linux-foundation.org, davem@davemloft.net,
-        fweisbec@gmail.com, dhowells@redhat.com,
-        Richard Weinberger <richard@nod.at>
-Subject: [RFC][PATCH] x86: get rid of asmregparm
-Date: Tue, 24 May 2011 00:18:05 +0200
-Message-Id: <1306189085-29896-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.4.2
+	id S934340Ab1EWWTL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 18:19:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44220 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934318Ab1EWWTH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 18:19:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=VyBxQIcyqrxYI8iJdiDev7ZrwEtGZ3NuarbFy72y8ydXtEkr5JfIs0qDve7TRENJsY
+         bsg/Sy5tnSFlLiCJvaFpzVZIs7QsxMi0xvDx5albWMEUvIHxrzxCEiP7q8PiPfION1hM
+         S12N8KSvFD2ZiTKO0NzPA5p4m490MXzmcSYno=
+MIME-Version: 1.0
+In-Reply-To: <20110523123135.GA10785@linutronix.de>
+References: <1306132882-9668-1-git-send-email-tlinder@codeaurora.org>
+ <1306132882-9668-5-git-send-email-tlinder@codeaurora.org> <20110523123135.GA10785@linutronix.de>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 23 May 2011 18:18:45 -0400
+X-Google-Sender-Auth: daJPIBKLWJ1v8_tNlKuIVYcreTc
+Message-ID: <BANLkTimuG8wr4kOpaEL58W3CoiWrgYHB4A@mail.gmail.com>
+Subject: Re: [PATCH v12 4/8] usb:gadget: Add SuperSpeed support to the Gadget Framework
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        balbi@ti.com, ablay@codeaurora.org,
+        open list <linux-kernel@vger.kernel.org>,
+        Tatyana Brokhman <tlinder@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As UML does no longer need asmregparm we can remove it.
+On Mon, May 23, 2011 at 08:31, Sebastian Andrzej Siewior wrote:
+> * Tatyana Brokhman | 2011-05-23 09:41:13 [+0300]:
+>>diff --git a/drivers/usb/gadget/composite.c
+>>b/drivers/usb/gadget/composite.c
+>>index 1c6bd66..7738302 100644
+>>--- a/drivers/usb/gadget/composite.c
+>>+++ b/drivers/usb/gadget/composite.c
+>>@@ -1015,6 +1175,62 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+>>               *((u8 *)req->buf) = value;
+>>               value = min(w_length, (u16) 1);
+>>               break;
+>>+
+>>+      /*
+>>+       * USB 3.0 additions:
+>>+       * Function driver should handle get_status request. If such cb
+>>+       * wasn't supplied we respond with default value = 0
+>>+       * Note: function driver should supply such cb only for the first
+>>+       * interface of the function
+>>+       */
+>>+      case USB_REQ_GET_STATUS:
+>>+              if (!gadget_is_superspeed(gadget))
+>>+                      goto unknown;
+>>+              if (ctrl->bRequestType != (USB_DIR_IN | USB_RECIP_INTERFACE))
+>>+                      goto unknown;
+>>+              value = 2;      /* This is the length of the get_status reply */
+>>+              *((__le16 *)req->buf) = 0;
+>
+> Mike please correct me if I'm wrong bug this looks like a case for
+> put_unaligned_le16().
+> Is someone actually using gadget support on blackfin? I'm asking because
+> config_buf() (same file, upstream) is using req->buf to build the
+> descriptors in place and one element is le16 which should be affected.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/x86/include/asm/linkage.h |    5 -----
- arch/x86/kernel/ptrace.c       |    4 ++--
- include/linux/linkage.h        |    4 ----
- 3 files changed, 2 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/include/asm/linkage.h b/arch/x86/include/asm/linkage.h
-index 12d55e7..4814297 100644
---- a/arch/x86/include/asm/linkage.h
-+++ b/arch/x86/include/asm/linkage.h
-@@ -8,11 +8,6 @@
- 
- #ifdef CONFIG_X86_32
- #define asmlinkage CPP_ASMLINKAGE __attribute__((regparm(0)))
--/*
-- * For 32-bit UML - mark functions implemented in assembly that use
-- * regparm input parameters:
-- */
--#define asmregparm __attribute__((regparm(3)))
- 
- /*
-  * Make sure the compiler doesn't do anything stupid with the
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index f65e5b5..807c2a2 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1363,7 +1363,7 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
-  * We must return the syscall number to actually look up in the table.
-  * This can be -1L to skip running any syscall at all.
-  */
--asmregparm long syscall_trace_enter(struct pt_regs *regs)
-+long syscall_trace_enter(struct pt_regs *regs)
- {
- 	long ret = 0;
- 
-@@ -1408,7 +1408,7 @@ asmregparm long syscall_trace_enter(struct pt_regs *regs)
- 	return ret ?: regs->orig_ax;
- }
- 
--asmregparm void syscall_trace_leave(struct pt_regs *regs)
-+void syscall_trace_leave(struct pt_regs *regs)
- {
- 	bool step;
- 
-diff --git a/include/linux/linkage.h b/include/linux/linkage.h
-index 7135ebc..3f46aed 100644
---- a/include/linux/linkage.h
-+++ b/include/linux/linkage.h
-@@ -14,10 +14,6 @@
- #define asmlinkage CPP_ASMLINKAGE
- #endif
- 
--#ifndef asmregparm
--# define asmregparm
--#endif
--
- #define __page_aligned_data	__section(.data..page_aligned) __aligned(PAGE_SIZE)
- #define __page_aligned_bss	__section(.bss..page_aligned) __aligned(PAGE_SIZE)
- 
--- 
-1.7.4.2
-
+yes, we do gadget stuff heavily on Blackfin with a few different
+controllers.  if things broke, we'd be unhappy ;).
+-mike
