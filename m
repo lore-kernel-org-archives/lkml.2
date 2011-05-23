@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab1EWFGm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 01:06:42 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:40245 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339Ab1EWFGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 01:06:40 -0400
-Date: Mon, 23 May 2011 15:06:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mark gross <markgross@thegnar.org>
-Subject: linux-next: build warning after merge of the suspend tree
-Message-Id: <20110523150636.ccd83777.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__23_May_2011_15_06_36_+1000_kxuSAlpJ1ioUnjhU"
+	id S1752694Ab1EWFLy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 01:11:54 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33733 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab1EWFLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 01:11:50 -0400
+From: Mandeep Singh Baines <msb@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/4] watchdog: fix rounding issues in get_sample_period()
+Date: Sun, 22 May 2011 22:10:20 -0700
+Message-Id: <1306127423-3347-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__23_May_2011_15_06_36_+1000_kxuSAlpJ1ioUnjhU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In get_sample_period(), softlockup_thresh is integer divided by 5 before
+the multiplication by NSEC_PER_SEC. This results in softlockup_thresh
+being rounded down to the nearest integer multiple of 5.
 
-Hi Rafael,
+For example, a softlockup_thresh of 4 rounds down to 0.
 
-After merging the suspend tree, today's linux-next build (i386 defconfig
-among others) produced this warning:
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ kernel/watchdog.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-kernel/pm_qos_params.c: In function 'pm_qos_power_write':
-kernel/pm_qos_params.c:420: warning: passing argument 3 of 'kstrtol' from i=
-ncompatible pointer type
-include/linux/kernel.h:210: note: expected 'long int *' but argument is of =
-type 's32 *'
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 14733d4..a06972d 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -110,7 +110,7 @@ static unsigned long get_sample_period(void)
+ 	 * increment before the hardlockup detector generates
+ 	 * a warning
+ 	 */
+-	return softlockup_thresh / 5 * NSEC_PER_SEC;
++	return softlockup_thresh * (NSEC_PER_SEC / 5);
+ }
+ 
+ /* Commands for resetting the watchdog */
+-- 
+1.7.3.1
 
-Intreoduced by commit 365daa955e03 ("PM: Correct PM QOS's user mode
-interface to work with ascii input per").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__23_May_2011_15_06_36_+1000_kxuSAlpJ1ioUnjhU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN2etcAAoJEDMEi1NhKgbsEu8H/R1wg/xsnVPyfw0hHU3m9oGu
-h1KkEdSlsUwO4Fwl1AemhsfIuSVjbsxDftFPMgK/6TLjrydTVT3zwvdZ/GAIJLGX
-N/I9lzGRCN0mjAc5LHNcHD7vhN27YB6sb5dy2d3SEYPMgZ2+HiIk2f+mBA8akCqy
-NaWpTVKrXtKAzfzI238nkxcSJJLXH6K9oc/eSSnNpWQ5xi/njZDj5U3ljs6kovA0
-PpqXM2zeWZloEC37DakOUHmLG6DrZS9uHqmzduwSSi1mHpe5u8J7Sj6KxJe92r5p
-UeSUf1ipXymzIo6voPFsBN5VWa3CvCxrLXNYl8ww+T5TPw19YKhk6fZEn9io6Lg=
-=ha5Q
------END PGP SIGNATURE-----
-
---Signature=_Mon__23_May_2011_15_06_36_+1000_kxuSAlpJ1ioUnjhU--
