@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab1EWGTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 02:19:25 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:47678 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751349Ab1EWGTX (ORCPT
+	id S1752545Ab1EWGV4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 02:21:56 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:41557 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab1EWGVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 02:19:23 -0400
-Date: Mon, 23 May 2011 09:19:11 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Tanya Brokhman <tlinder@codeaurora.org>, greg@kroah.com,
-        linux-usb@vger.kernel.org, balbi@ti.com, ablay@codeaurora.org,
-        linux-arm-msm@vger.kernel.org,
-        "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v11 4/7] usb:gadget: Add SuperSpeed support to the Gadget
- Framework
-Message-ID: <20110523061909.GE3095@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1305805417-31750-1-git-send-email-tlinder@codeaurora.org>
- <1305805417-31750-5-git-send-email-tlinder@codeaurora.org>
- <20110520164924.GC31929@linutronix.de>
- <002401cc1850$c4cd7030$4e685090$@org>
- <20110522105908.GA26607@linutronix.de>
+	Mon, 23 May 2011 02:21:54 -0400
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5k/CuK2RLQ==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DD9FCFC.10803@hartkopp.net>
+Date: Mon, 23 May 2011 08:21:48 +0200
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Icedove/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cYtjc4pxslFTELvY"
-Content-Disposition: inline
-In-Reply-To: <20110522105908.GA26607@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        Wolfgang Grandegger <wg@grandegger.com>, sachi@mistralsolutions.com,
+        davinci-linux-open-source@linux.davincidsp.com, nsekhar@ti.com,
+        open list <linux-kernel@vger.kernel.org>,
+        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, Netdev@vger.kernel.org,
+        m-watkins@ti.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
+References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com> <4DCB88A4.2010901@grandegger.com> <4DCBF1B6.6000104@hartkopp.net> <201105221230.56243.arnd@arndb.de>
+In-Reply-To: <201105221230.56243.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 22.05.2011 12:30, Arnd Bergmann wrote:
+> On Thursday 12 May 2011 16:41:58 Oliver Hartkopp wrote:
+>> E.g. assume you need the CAN-IDs 0x100, 0x200 and 0x300 in your application
+>> and for that reason you configure these IDs in the pruss CAN driver.
+>>
+>> What if someone generates a 100% CAN busload exactly on CAN-ID 0x100 then?
+>>
+>> Worst case (1MBit/s, DLC=0) you would need to handle about 21.000 irqs/s for
+>> the correctly received CAN frames with the filtered CAN-ID 0x100 ...
+> 
+> Then I guess the main thing that a "smart" CAN implementation like pruss
+> should do is interrupt mitigation. When you have a constant flow of
+> packets coming in, the hardware should be able to DMA a lot of
+> them into kernel memory before the driver is required to pick them up,
+> and only get into interrupt driven mode when the kernel has managed
+> to process all outstanding packets.
+> 
+>> This all depends heavily on Linux networking (skb handling, caching, etc) and
+>> is pretty fast and optimized!! That was also the reason why it ran on the old
+>> PowerPC that smoothly. The mostly seen effect if anything drops is when the
+>> application (holding the socket) was not fast enough to handle the incoming
+>> data. NB: For that reason we implemented a CAN content filter (CAN_BCM) that
+>> is able to do content filtering and timeout monitoring in Kernelspace - all
+>> performed in the SoftIRQ.
+> 
+> Right, dropping packets that no process is waiting for should be done as
+> early as possible. In pruss-can, the idea was to do it in hardware, which
+> doesn't really work all that well for the reasons discussed before.
+> Dropping the frames in the NAPI poll function (softirq time) seems like a
+> logical choice.
 
---cYtjc4pxslFTELvY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In 'real world' CAN setups you'll never see 21.000 CAN frames per second (and
+therefore 21.000 irqs/s) - you are usually designing CAN network traffic with
+less than 60% busload. So interrupt rates somewhere below 1000 irqs/s can be
+assumed.
 
-Hi,
+>From what i've seen so far a 3-4 messages rx FIFO and NAPI support just make it.
 
-On Sun, May 22, 2011 at 12:59:08PM +0200, Sebastian Andrzej Siewior wrote:
-> >Well here is the dilemma: if I do it the other tree were done - I get
-> >checkpatch error.=20
-> >You're right, adding this the way it's above doesn't look too good but w=
-hen
-> >I fixed the other three I was asked not to do so in this patch, which al=
-so
-> >makes sense since it has nothing to do with SS support...
-> >So what do I do? Submit with a checkpatch error?
->=20
-> It is nice to have things consistent and a follow-up patch could fix the
-> checkpatch error(s).
+@Marc/Wolfgang: Would this be also your recommendation for a CAN controller
+design that supports SocketCAN in the best way?
 
-I tend to like more when the cleanup comes beforehand ;-)
+As the Linux network stack supports hardware timestamps too, this could be an
+additional (optional!) feature.
 
---=20
-balbi
+Regards,
+Oliver
 
---cYtjc4pxslFTELvY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>> Having 'Mailboxes' bound to CAN-IDs is something that's useful for 8/16 bit
+>> CPUs where an application is tightly bound to the embedded ECUs functionality.
+> 
+> Makes sense.
+> 
+> 	Arnd
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN2fxcAAoJEAv8Txj19kN1lEUIAKMpq0ThJ7Av6jrsMteB2aGH
-wJ2JK5HFfZ6qdXVuOIrVPZRY2w4s7ON7jtQNBIoIk8xa2pVW+LRpv83O06wFHCiu
-bbn8Ist3ZT4hz2T7032qNREFGka4sFJTrjAIGxiehM1VkfsypbZVW4a/3cPnO4Zx
-DdJBlJk/Kdnpqecv8T2clFlm0TCgO49Ymcs5FbsXAu5Sy3za/pH3Y/rhSxv7bttY
-/LwWTsXoQvgu6aAX+FU/ITPr0UhsFKbA1M+/Gu2gEY3eBZjgnasOf/SUlG1qk7Rk
-0J7v4RApe8jNMTHtNmx6Wlqxr3zxdASDWcd+qAbpRa2tYsYLMZTYgYLlNjQv85k=
-=BCk9
------END PGP SIGNATURE-----
-
---cYtjc4pxslFTELvY--
