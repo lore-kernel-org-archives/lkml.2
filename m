@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab1EWAmp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 May 2011 20:42:45 -0400
-Received: from waste.org ([173.11.57.241]:42659 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755608Ab1EWAmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 May 2011 20:42:43 -0400
-Subject: Re: Regression with i915 and suspend on Thinkpad x220
-From: Matt Mackall <mpm@selenic.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <yunipt2730l.fsf@aiko.keithp.com>
-References: <1306040157.3322.11.camel@calx>
-	 <yunlixz6yop.fsf@aiko.keithp.com> <1306078089.4204.1.camel@calx>
-	 <yunipt2730l.fsf@aiko.keithp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 22 May 2011 19:42:42 -0500
-Message-ID: <1306111362.4204.17.camel@calx>
+	id S1753187Ab1EWBCJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 May 2011 21:02:09 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:52897 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab1EWBCH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 May 2011 21:02:07 -0400
+Date: Sun, 22 May 2011 21:01:59 -0400 (EDT)
+Message-Id: <20110522.210159.2028885878337277330.davem@davemloft.net>
+To: heiko.carstens@de.ibm.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com
+Subject: Re: [PATCH] net: filter: move forward declarations to avoid
+ compile warnings
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110522170811.GA2758@osiris.boeblingen.de.ibm.com>
+References: <20110522170811.GA2758@osiris.boeblingen.de.ibm.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 22 May 2011 18:02:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-05-22 at 16:02 -0700, Keith Packard wrote:
-> On Sun, 22 May 2011 10:28:09 -0500, Matt Mackall <mpm@selenic.com> wrote:
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Sun, 22 May 2011 19:08:11 +0200
+
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
 > 
-> > Appears to work, thanks.
+> Get rid of this compile warning:
 > 
-> Thanks for testing this.
+> In file included from arch/s390/kernel/compat_linux.c:37:0:
+> include/linux/filter.h:139:23: warning: 'struct sk_buff' declared inside parameter list
 > 
-> Jesse and Chris: would be best to figure out what's going on here if
-> possible, otherwise we should consider submitting an FBC disable patch
-> for SNB to stable@
-> 
-> Matt: sounds like your machine can reliably reproduce this problem; if
-> we come up with an alternate patch which re-enables FBC, would you be
-> willing to give it a try?
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-Sure.
-
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
-
+Applied.
