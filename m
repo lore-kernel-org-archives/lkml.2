@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab1EWIKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 04:10:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46089 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753678Ab1EWIKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 04:10:17 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-Date: Mon, 23 May 2011 10:12:06 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: "D. Jansen" <d.g.jansen@googlemail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, tytso@mit.edu
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <BANLkTikVLFMX_U6brQ5OALbvJkOGuz6++Q@mail.gmail.com> <20110522004833.GY32466@dastard>
-In-Reply-To: <20110522004833.GY32466@dastard>
+	id S1753979Ab1EWIRK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 04:17:10 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:56343 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237Ab1EWIRI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 04:17:08 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6354"; a="92946212"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: <balbi@ti.com>
+Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1306132882-9668-1-git-send-email-tlinder@codeaurora.org> <1306132882-9668-8-git-send-email-tlinder@codeaurora.org> <20110523070556.GJ3095@legolas.emea.dhcp.ti.com> <00a301cc1919$f0e1fa00$d2a5ee00$@org> <20110523072142.GK3095@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110523072142.GK3095@legolas.emea.dhcp.ti.com>
+Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+Date: Mon, 23 May 2011 11:18:53 +0300
+Message-ID: <00cc01cc1922$0fb4ee80$2f1ecb80$@org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105231012.06928.oneukum@suse.de>
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcwZGgrswJMNSeObSamukAU4wW7JwwABtTNg
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 22. Mai 2011, 02:48:33 schrieb Dave Chinner:
-> On Fri, May 20, 2011 at 08:01:17AM +0200, D. Jansen wrote:
-> > On Fri, May 20, 2011 at 5:39 AM, Dave Chinner <david@fromorbit.com> wrote:
-
-> > 1. I thought I (may) make that decision by using laptop mode.
+> > > > +
+> > > > +static struct dummy_hcd_module_parameters mod_data = {
+> > > > +	.is_super_speed = false
+> > > > +};
+> > > > +module_param_named(is_super_speed, mod_data.is_super_speed,
+> bool,
+> > > > +S_IRUGO); MODULE_PARM_DESC(is_super_speed, "true to simulate
+> > > > +SuperSpeed connection");
+> > >
+> > > you shouldn't need this. You should always enable SuperSpeed for
+> > > this driver.
+> >
+> > You mean I don't need the module parameter? IMO it's the best way to
+> > enable HS connection. If driver->speed=USB_SPEED_SUPER than dummy_hcd
+> > will try to enumerate the device on the SS root hub and if the gadget
+> > didn't provide SS descriptors - it will fail. Just as it happened
+> > before. Finding out from
 > 
-> Laptop mode does not change fsync guarantees, so no, you ar enot
-> making a decision to throw data away when you select laptop mode.
+> then it should hand the device over to the hs_hcd ;-) Meaning it would
+> disconnect the device, switch to hs_hcd and reconnect :-)
 
-You do however decide to sync less often, resulting in a potentially
-larger loss of data.
+Yes this will be the best solution :) But as I said, the enumeration occurs
+not in dummy_hcd thus I'm not sure how dummy_hcd can find out that it failed
+in order to reconnect the device to hs_hcd. And I'm not sure that dummy_hcd
+should care whether the enumeration succeeds or fails. It seems to me that
+this should be handled by upper levels. Shouldn't it?
+But we're discussing a more general issue; do you remember what the usb30
+spec sais about this? I mean when connecting a HS device to a SS port (over
+SS cable), should it still enumerate as a HS device? It seems to me that the
+answer is no but I'm not sure...
 
-> > 3. A lib doesn't fix the ordering guarantee problem.
 > 
-> A properly implemented filesystem will not have ordering problems
-> just because fsyncs are not issued.
+> > dummy_hcd that the enumeration failed is very complicated (if even
+> > possible) and I'm not sure that is the right thing to do... If you
+> > connect a real device over SS port to xHCI and the device doesn't
+> > provide SS descriptors - the enumeration fails and it's ok. But if
+> you
+> > connect the same device to a HS port - it should work properly. This
+> > is what I tried to simulate with this parameter.
+> 
+> it doesn't just fails, it gives the device over to the shared_hcd :-)
+> 
 
-But user space will have this problem. A single task's sequence of
-write(); fsync(); write(); does give an implicit guarantee of ordering
-to user space. To keep that guarantee, you need kernel support,
-because only the kernel can issue the necessary barrier/flush commands.
-A filesystem is not required to make sure your writes hit the disk
-in the order you issued them, unless you use fsync, which gives
-an even larger guarantee, but also implies ordering.
+Hmmm.... I have v2.6.38 installed on my Linux-host at the moment and I just
+verified that when connecting a Gadget driver without SS descriptors over SS
+connection - the enumeration fails. Was this fixed in v2.6.39? It will take
+me some time to upgrade to v2.6.39  and verify but I have to do it any way
+so I'll give it a shot...
 
-Now you may say that you want full fsync or nothing, but this is a personal
-preference.
 
-	Regards
-		Oliver
+Best regards,
+Tanya Brokhman
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
+
+
+
