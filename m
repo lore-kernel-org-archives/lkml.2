@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab1EXUkP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 16:40:15 -0400
-Received: from lanfw001a.cxnet.dk ([87.72.215.196]:32777 "EHLO
-	lanfw001a.cxnet.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab1EXUkN (ORCPT
+	id S932880Ab1EXUqF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 16:46:05 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:47133 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754286Ab1EXUqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 16:40:13 -0400
-Subject: [ANNOUNCE] IPTV-Analyzer project released v0.9.1
-From: Jesper Dangaard Brouer <hawk@comx.dk>
-To: hawk@comx.dk
-Content-Type: text/plain; charset="UTF-8"
-Organization: ComX Networks A/S
-Date: Tue, 24 May 2011 16:40:05 -0400
-Message-ID: <1306269605.11061.10.camel@probook>
+	Tue, 24 May 2011 16:46:03 -0400
+Date: Tue, 24 May 2011 22:45:45 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Fabio Erculiani <lxnay@sabayon.org>
+Cc: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fbmem: fix race condition between
+ register_framebuffer() and fb_open()
+Message-ID: <20110524224545.08c53b1d@neptune.home>
+In-Reply-To: <1306266871-12464-1-git-send-email-lxnay@sabayon.org>
+References: <1306266871-12464-1-git-send-email-lxnay@sabayon.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; i686-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new release 0.9.1 of the IPTV-Analyzer project is comming to you
-directly from New York City RedHat office ;-)
+On Tue, 24 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
+> register_framebuffer() acquires registration_lock, then calls
+> do_register_framebuffer() which calls fb_notifier_call_chain()
+> which calls fb_open() which calls get_fb_info() which tries
+> (at last) to acquire registration_lock again.
+> This is a workaround.
 
-New features include bytes and packet counters, no-signal detection,
-heartbeat system per stream, and new event types.
+What calls fb_open() instead of just calling fb_info->fbops->fb_open
+when it is set?
+In other words what kernel handler of fb_notifier chain does file-based
+open of the framebuffer or is the event pushed out synchronously to
+userspace?
 
- Homepage:
-  http://www.iptv-analyzer.org
-
- Git tree:
-  https://github.com/netoptimizer/IPTV-Analyzer
-
-Notice, database changes in this release.  Its possible to upgrade
-the database schema without loosing your current data.
-
-The IPTV-Analyzer is a continuous/real-time tool for analyzing the
-contents of MPEG2 Transport Stream (TS) packets, which is commonly
-used for IPTV multicast signals. The main purpose is continuous
-quality measurement, with a focus on detecting MPEG2 TS/CC packet
-drops.
-
- Bugreports and feature requests please use:
-  https://github.com/netoptimizer/IPTV-Analyzer/issues
-
-(Disclaimer, RedHat is not directly associated with project, I just
-hangout with them during my visit to NYC).
-
--- 
-Best regards,
-  Jesper Dangaard Brouer
-  ComX Networks A/S
-  Linux Network Kernel Developer
-  Cand. Scient Datalog / MSc.CS
-  Author of http://adsl-optimizer.dk
-  LinkedIn: http://www.linkedin.com/in/brouer
-
+> Signed-off-by: Fabio Erculiani <lxnay@sabayon.org>
+> ---
+>  drivers/video/fbmem.c |   13 ++++++++++++-
+>  1 files changed, 12 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> index 5aac00e..b9831a0 100644
+> --- a/drivers/video/fbmem.c
+> +++ b/drivers/video/fbmem.c
+> @@ -1628,6 +1628,11 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+>  	event.info = fb_info;
+>  	if (!lock_fb_info(fb_info))
+>  		return -ENODEV;
+> +
+> +	/* FIXME: unlock registration mutex before registration
+> +	 * notification is sent, in order to avoid deadlock.
+> +	 */
+> +	mutex_unlock(&registration_lock);
+>  	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
+>  	unlock_fb_info(fb_info);
+>  	return 0;
+> @@ -1692,7 +1697,13 @@ register_framebuffer(struct fb_info *fb_info)
+>  
+>  	mutex_lock(&registration_lock);
+>  	ret = do_register_framebuffer(fb_info);
+> -	mutex_unlock(&registration_lock);
+> +	if (ret != 0)
+> +		/*
+> +		 * FIXME: mutex is unlocked only if ret == 0.
+> +		 * This is the second part of the workaround
+> +		 * that prevents deadlocking.
+> +		 */
+> +		mutex_unlock(&registration_lock);
+>  
+>  	return ret;
+>  }
