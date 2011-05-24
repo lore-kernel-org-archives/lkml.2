@@ -1,320 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096Ab1EXSi0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:38:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45008 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933023Ab1EXSiW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:38:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=JdQXBe27cBgDmpDw8tOQprVkNrIotfk5M3ZGN2LWyOHwPor7bZbSDBGNy4YJdGzZ0V
-         /m9HezmvKk6Hualecimt0KNFSpE5cUGyHyM69OIYLnGTM53P4fAQPW9/OONAJMYhBqii
-         Vd1WwkHxhYXLXNwychwOp5es3DppHLhOI9vQA=
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com
-Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
-        pedro@codesourcery.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 19/19] ptrace: implement group stop notification for ptracer
-Date: Tue, 24 May 2011 20:37:39 +0200
-Message-Id: <1306262259-7285-20-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1306262259-7285-1-git-send-email-tj@kernel.org>
-References: <1306262259-7285-1-git-send-email-tj@kernel.org>
+	id S932625Ab1EXSln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:41:43 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:32768 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932853Ab1EXShz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 14:37:55 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Greg KH <greg@kroah.com>
+Cc: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [stable] PA-RISC: compile error in include/net/dst.h
+Date: Tue, 24 May 2011 20:37:49 +0200
+Message-ID: <2522442.xP32cQyJEX@donald.sf-tec.de>
+User-Agent: KMail/4.6 beta5 (Linux/2.6.37-12-desktop; KDE/4.6.3; i686; ; )
+In-Reply-To: <2254093.9oQvKLogfV@donald.sf-tec.de>
+References: <2612811.b2htuyZy9x@donald.sf-tec.de> <20110522143222.GB14556@kroah.com> <2254093.9oQvKLogfV@donald.sf-tec.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart3541033.Jq7cWPDluZ"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently there's no way for ptracer to find out whether group stop
-that tracee was in finished other than polling with PTRACE_GETSIGINFO.
-Also, tracer can't detect new group stop started by an untraced thread
-if tracee is already trapped.  This patch implements group stop
-notification for ptracer using STOP traps.
 
-When group stop state of a seized tracee changes, JOBCTL_TRAP_NOTIFY
-is set, which triggers STOP trap but is sticky until the next
-PTRACE_GETSIGINFO.  As GETSIGINFO exports the current group stop
-state, this guarantees that tracer checks the current group stop state
-at least once after group stop state change.  Stickiness is necessary
-because notification trap may race with PTRACE_CONT for other traps
-and get lost.
+--nextPart3541033.Jq7cWPDluZ
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
 
-Note that simply scheduling such trap isn't enough.  If tracee is
-running (PTRACE_CONT'd from group stop trap), the usual trapping -
-setting NOTIFY followed by the usual signal_wake_up() - is enough;
-however, if tracee is trapped, the scheduled trap won't happen until
-the trap is continued.
+I wrote:
+> Am Sonntag, 22. Mai 2011, 07:32:22 schrieb Greg KH:
+> > On Sun, May 22, 2011 at 10:15:19AM +0200, Rolf Eike Beer wrote:
+> > >                  from include/net/ipv6.h:16,
+> > >                  from
+> > >                  include/linux/sunrpc/clnt.h:25,
+> > >                  from include/linux/nfs_fs.h:50,
+> > > 
+> > >                  from init/do_mounts.c:20:
+> > > include/net/dst.h: In function 'dst_hold':
+> > > include/net/dst.h:238:2: error: size of unnamed array is negative
+> > > In file included from include/linux/nfs_fs.h:59:0,
+> > > 
+> > >                  from init/do_mounts.c:20:
+> > > include/linux/mempool.h: In function 'mempool_create_kmalloc_pool':
+> > > include/linux/mempool.h:58:10: warning: cast to pointer from integer
+> > > of
+> > > different size
+> > > 
+> > > This is both in 2.6.38.6 and 2.6.39, but is not in 2.6.38.4 when
+> > > compiling for my C8000.
+> > 
+> > Could you bisect it down to the patch that causes the problem in
+> > 2.6.38.6?
+> 
+> I will try if I find time in the next days. Until now I can only confirm
+> that 2.6.38.5 builds fine.
 
-This is solved by re-trapping if tracee is in STOP trap.  Along with
-JOBCTL_TRAP_NOTIFY, JOBCTL_TRAPPING is set and tracee is woken up from
-TASK_TRACED.  Tracee then (re-)enters INTERRUPT trap generating
-notification for tracer.  TRAPPING hides the TRACED -> RUNNING ->
-TRACED transition from tracer.
+As 2.6.38.6 does if I use the correct .config. So it is an older issue which is 
+not related to recent changes but likely some general HPPA breakage. We'll 
+discuss the rest on linux-parisc.
 
-Many ptrace requests expect tracee to remain trapped until they
-finish.  Such conditions are marked with JOBCTL_BLOCK_NOTIFY and if
-notification happens while BLOCK_NOTIFY is set, JOBCTL_TRAPPING is set
-but the actual wake up and re-trapping takes place when the ptrace
-request finishes.  This is safe as the only task which can wait for
-TRAPPING is the ptracer.
+Eike
+--nextPart3541033.Jq7cWPDluZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
 
-Re-trapping is used only for STOP trap.  If tracer wants to get
-notified about group stop, it either leaves tracee in the initial STOP
-trap or puts it into STOP trap using PTRACE_INTERRUPT.  If STOP trap
-is scheduled while tracee is already in a trap, it's guaranteed that
-tracee will enter a trap without returning to userland, so tracer
-doesn't lose any control over tracee execution for group stop
-notification.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
 
-An example program follows.
+iEYEABECAAYFAk3b+v0ACgkQXKSJPmm5/E5JtwCfXbn0WubfIblCw+/NIb7z23oB
+OpUAniuTRy4AShlOK718waVyBsje/CYi
+=vhmF
+-----END PGP SIGNATURE-----
 
-  #define PTRACE_SEIZE		0x4206
-  #define PTRACE_INTERRUPT	0x4207
-
-  #define PTRACE_SEIZE_DEVEL	0x80000000
-
-  static const struct timespec ts1s = { .tv_sec = 1 };
-
-  int main(int argc, char **argv)
-  {
-	  pid_t tracee, tracer;
-	  int i;
-
-	  tracee = fork();
-	  if (!tracee)
-		  while (1)
-			  pause();
-
-	  tracer = fork();
-	  if (!tracer) {
-		  int stopped;
-		  siginfo_t si;
-
-		  ptrace(PTRACE_SEIZE, tracee, NULL,
-			 (void *)(unsigned long)PTRACE_SEIZE_DEVEL);
-		  ptrace(PTRACE_INTERRUPT, tracee, NULL, NULL);
-	  repeat:
-		  waitid(P_PID, tracee, NULL, WSTOPPED);
-
-		  ptrace(PTRACE_GETSIGINFO, tracee, NULL, &si);
-		  if (!si.si_code) {
-			  printf("tracer: SIG %d\n", si.si_signo);
-			  ptrace(PTRACE_CONT, tracee, NULL,
-				 (void *)(unsigned long)si.si_signo);
-			  goto repeat;
-		  }
-		  stopped = !!si.si_status;
-		  printf("tracer: stopped=%d signo=%d\n", stopped, si.si_signo);
-		  if (!stopped)
-			  ptrace(PTRACE_CONT, tracee, NULL, NULL);
-		  goto repeat;
-	  }
-
-	  for (i = 0; i < 3; i++) {
-		  nanosleep(&ts1s, NULL);
-		  printf("mother: SIGSTOP\n");
-		  kill(tracee, SIGSTOP);
-		  nanosleep(&ts1s, NULL);
-		  printf("mother: SIGCONT\n");
-		  kill(tracee, SIGCONT);
-	  }
-	  nanosleep(&ts1s, NULL);
-
-	  kill(tracer, SIGKILL);
-	  kill(tracee, SIGKILL);
-	  return 0;
-  }
-
-In the above program, tracer gets notification of group stop state
-changes and can track stopped state without polling PTRACE_GETSIGINFO.
-
-  # ./test-gstop-notify
-  tracer: stopped=0 signo=5
-  mother: SIGSTOP
-  tracer: SIG 19
-  tracer: stopped=1 signo=19
-  mother: SIGCONT
-  tracer: stopped=0 signo=5
-  tracer: SIG 18
-  mother: SIGSTOP
-  tracer: SIG 19
-  tracer: stopped=1 signo=19
-  mother: SIGCONT
-  tracer: stopped=0 signo=5
-  tracer: SIG 18
-  mother: SIGSTOP
-  tracer: SIG 19
-  tracer: stopped=1 signo=19
-  mother: SIGCONT
-  tracer: stopped=0 signo=5
-  tracer: SIG 18
-
--v2: ptrace_trap_notify() updated to use task_set_jobctl_pending() and
-     should no longer set NOTIFY if target task is dying.  This issue
-     was spotted by Oleg.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/sched.h |    3 +-
- kernel/ptrace.c       |   11 ++++++++
- kernel/signal.c       |   69 ++++++++++++++++++++++++++++++++++++++++++++++---
- 3 files changed, 78 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 9298f97..3120b97 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1800,10 +1800,11 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define JOBCTL_STOP_PENDING	(1 << 17) /* task should stop for group stop */
- #define JOBCTL_STOP_CONSUME	(1 << 18) /* consume group stop count */
- #define JOBCTL_TRAP_STOP	(1 << 19) /* trap for STOP */
-+#define JOBCTL_TRAP_NOTIFY	(1 << 20) /* sticky trap for notifications */
- #define JOBCTL_TRAPPING		(1 << 21) /* switching to TRACED */
- #define JOBCTL_BLOCK_NOTIFY	(1 << 22) /* block NOTIFY re-traps */
- 
--#define JOBCTL_TRAP_MASK	JOBCTL_TRAP_STOP
-+#define JOBCTL_TRAP_MASK	(JOBCTL_TRAP_STOP | JOBCTL_TRAP_NOTIFY)
- #define JOBCTL_PENDING_MASK	(JOBCTL_STOP_PENDING | JOBCTL_TRAP_MASK)
- 
- extern bool task_set_jobctl_pending(struct task_struct *task,
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 1982d7a..6424323 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -617,6 +617,9 @@ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
- 			info->si_signo = child->jobctl & JOBCTL_STOP_SIGMASK;
- 			WARN_ON_ONCE(!info->si_signo);
- 		}
-+
-+		/* tracer got siginfo, clear the sticky trap */
-+		task_clear_jobctl_pending(child, JOBCTL_TRAP_NOTIFY);
- 	}
- out_unlock:
- 	unlock_task_sighand(child, &flags);
-@@ -923,6 +926,14 @@ static void ptrace_put_task_struct(struct task_struct *child)
- 
- 	if (likely(lock_task_sighand(child, &flags))) {
- 		child->jobctl &= ~JOBCTL_BLOCK_NOTIFY;
-+
-+		/*
-+		 * If TRAPPING is set, it means NOTIFY occurred in-between
-+		 * and re-trap was blocked.  Trigger re-trap.
-+		 */
-+		if (child->jobctl & JOBCTL_TRAPPING)
-+			signal_wake_up(child, task_is_traced(child));
-+
- 		unlock_task_sighand(child, &flags);
- 	}
- out_put:
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 4662723..e1e44f4 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -817,6 +817,61 @@ static int check_kill_permission(int sig, struct siginfo *info,
- 	return security_task_kill(t, info, sig, 0);
- }
- 
-+/**
-+ * ptrace_trap_notify - schedule trap to notify ptracer
-+ * @t: tracee wanting to notify tracer
-+ *
-+ * This function schedules sticky ptrace trap which is cleared on
-+ * PTRACE_GETSIGINFO to notify ptracer of an event.  @t must have been
-+ * seized by ptracer.
-+ *
-+ * If @t is running, STOP trap will be taken.  If already trapped for STOP,
-+ * it will re-trap.  If trapped for other traps, STOP trap will be
-+ * eventually taken without returning to userland after the existing traps
-+ * are finished by PTRACE_CONT.
-+ *
-+ * CONTEXT:
-+ * Must be called with @task->sighand->siglock held.
-+ */
-+static void ptrace_trap_notify(struct task_struct *t)
-+{
-+	siginfo_t *si = t->last_siginfo;
-+	unsigned int mask;
-+	bool pstop;
-+
-+	WARN_ON_ONCE(!(t->ptrace & PT_SEIZED));
-+	assert_spin_locked(&t->sighand->siglock);
-+
-+	/*
-+	 * @t is being ptraced and new SEIZE behavior is in effect.
-+	 * Schedule sticky trap which will clear on the next GETSIGINFO.
-+	 *
-+	 * If @t is currently trapped for STOP, it should re-trap with new
-+	 * exit_code indicating continuation so that the ptracer can notice
-+	 * the event; otherwise, use normal signal delivery wake up.
-+	 *
-+	 * The re-trapping sets JOBCTL_TRAPPING such that the transition is
-+	 * hidden from the ptracer.
-+	 *
-+	 * This means that if @t is trapped for other reasons than STOP,
-+	 * the notification trap won't be delievered until the current one
-+	 * is complete.  This is the intended behavior.
-+	 *
-+	 * Note that if JOBCTL_BLOCK_NOTIFY, TRAPPING is set but actual
-+	 * re-trap doesn't happen.  This is used to avoid waking up while
-+	 * ptrace request is in progress.  The ptracer will notice TRAPPING
-+	 * is set on request completion and trigger re-trap.
-+	 */
-+	mask = JOBCTL_TRAP_NOTIFY;
-+	pstop = task_is_traced(t) && si && si->si_code == PTRACE_STOP_SI_CODE;
-+	if (pstop)
-+		mask |= JOBCTL_TRAPPING;
-+
-+	if (task_set_jobctl_pending(t, mask) &&
-+	    !(t->jobctl & JOBCTL_BLOCK_NOTIFY))
-+		signal_wake_up(t, pstop);
-+}
-+
- /*
-  * Handle magic process-wide effects of stop/continue signals. Unlike
-  * the signal actions, these happen immediately at signal-generation
-@@ -855,7 +910,10 @@ static int prepare_signal(int sig, struct task_struct *p, int from_ancestor_ns)
- 		do {
- 			task_clear_jobctl_pending(t, JOBCTL_STOP_PENDING);
- 			rm_from_queue(SIG_KERNEL_STOP_MASK, &t->pending);
--			wake_up_state(t, __TASK_STOPPED);
-+			if (likely(!(t->ptrace & PT_SEIZED)))
-+				wake_up_state(t, __TASK_STOPPED);
-+			else
-+				ptrace_trap_notify(t);
- 		} while_each_thread(p, t);
- 
- 		/*
-@@ -1972,7 +2030,10 @@ static bool do_signal_stop(int signr)
- 			if (!task_is_stopped(t) &&
- 			    task_set_jobctl_pending(t, signr | gstop)) {
- 				sig->group_stop_count++;
--				signal_wake_up(t, 0);
-+				if (likely(!(t->ptrace & PT_SEIZED)))
-+					signal_wake_up(t, 0);
-+				else
-+					ptrace_trap_notify(t);
- 			}
- 		}
- 	}
-@@ -2010,10 +2071,10 @@ static bool do_signal_stop(int signr)
- 		schedule();
- 	} else {
- 		/*
--		 * While ptraced, group stop is handled by STOP trap.
-+		 * While ptraced, group stop is handled by NOTIFY trap.
- 		 * Schedule it and let the caller deal with it.
- 		 */
--		task_set_jobctl_pending(current, JOBCTL_TRAP_STOP);
-+		task_set_jobctl_pending(current, JOBCTL_TRAP_NOTIFY);
- 		spin_unlock_irq(&current->sighand->siglock);
- 	}
- 
--- 
-1.7.1
+--nextPart3541033.Jq7cWPDluZ--
 
