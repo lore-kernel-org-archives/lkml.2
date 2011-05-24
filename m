@@ -1,207 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab1EXGea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 02:34:30 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38635 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab1EXGe2 (ORCPT
+	id S1752926Ab1EXGj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 02:39:28 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:42774 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab1EXGj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 02:34:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=hpgSQgiz76inEBssdtm3Bl2jlkXksnw8wFgEpQGw/HrHKxdtc9Wus4cX+CEeHZXoUD
-         Gu/KguzIIm8nLUVxLprt0FKRZQbD/dHclDeZMs8J5XkLKRPLoAFVf+pd5gE6t0DAZDdT
-         RAP5Bg0MK8+FkxOXCGSqxJKaliJDwkiL3Tfsw=
-Date: Mon, 23 May 2011 23:34:24 -0700
-From: mark gross <markgross@thegnar.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: markgross@thegnar.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Milton Miller <milltonm@bga.com>, Simon Horman <horms@verge.net.au>
-Subject: Re: linux-next: build warning after merge of the suspend tree
-Message-ID: <20110524063424.GC18075@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20110523150636.ccd83777.sfr@canb.auug.org.au>
- <20110523141846.GA8122@gvim.org>
- <201105232154.52344.rjw@sisk.pl>
+	Tue, 24 May 2011 02:39:26 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Lukas Czerner <lczerner@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de>
+	<AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com>
+	<201103301706.36214.arnd@arndb.de>
+	<BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com>
+	<87wrhgk8lp.fsf@devron.myhome.or.jp>
+	<BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com>
+Date: Tue, 24 May 2011 15:39:22 +0900
+In-Reply-To: <BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com> (Kyungmin
+	Park's message of "Tue, 24 May 2011 14:21:50 +0900")
+Message-ID: <87r57ok3fp.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105232154.52344.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 09:54:52PM +0200, Rafael J. Wysocki wrote:
-> On Monday, May 23, 2011, mark gross wrote:
-> > On Mon, May 23, 2011 at 03:06:36PM +1000, Stephen Rothwell wrote:
-> > > Hi Rafael,
-> > > 
-> > > After merging the suspend tree, today's linux-next build (i386 defconfig
-> > > among others) produced this warning:
-> > > 
-> > > kernel/pm_qos_params.c: In function 'pm_qos_power_write':
-> > > kernel/pm_qos_params.c:420: warning: passing argument 3 of 'kstrtol' from incompatible pointer type
-> > > include/linux/kernel.h:210: note: expected 'long int *' but argument is of type 's32 *'
-> > > 
-> > > Intreoduced by commit 365daa955e03 ("PM: Correct PM QOS's user mode
-> > > interface to work with ascii input per").
-> > 
-> > Gah!  I'm sorry about that.
-> > 
-> > attached is a fix.
-> > 
-> > 
-> > --mark
-> > 
-> > signed-off-by:markgross <markgross@thegnar.org>
-> > 
-> > 
-> > 
-> > From a8f0587b9ae598be5ca4c3cdda4e0ced6ca9baaf Mon Sep 17 00:00:00 2001
-> > From: mgross <mgross@cr48>
-> > Date: Mon, 23 May 2011 07:14:09 -0700
-> > Subject: [PATCH] clean up a compile time warning in the use of strict_strtol but that was
-> >  passing an s32 * when it should be passing a long *
-> > 
-> > ---
-> >  kernel/pm_qos_params.c |    6 ++++--
-> >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> > index d61ecf3..dd37c56 100644
-> > --- a/kernel/pm_qos_params.c
-> > +++ b/kernel/pm_qos_params.c
-> > @@ -405,6 +405,7 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> >  		size_t count, loff_t *f_pos)
-> >  {
-> >  	s32 value;
-> > +	long safe_int;
-> >  	int x;
-> >  	char ascii_value[11];
-> >  	struct pm_qos_request_list *pm_qos_req;
-> > @@ -417,10 +418,11 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> >  		ascii_value[count] = 0;
-> >  		if (copy_from_user(ascii_value, buf, count))
-> >  			return -EFAULT;
-> > -		if ((x=strict_strtol(ascii_value, 16, &value)) != 0){
-> > -			pr_debug("%s, 0x%x, 0x%x\n",ascii_value, value, x);
-> > +		if ((x=strict_strtol(ascii_value, 16, &safe_int)) != 0){
-> > +			pr_debug("%s, 0x%lx, 0x%x\n",ascii_value, safe_int, x);
-> >  			return -EINVAL;
-> >  		}
-> > +		value = (s32) safe_int;
-> 
-> Well, this doesn't seem quite right.
-> 
-> >  	} else
-> >  		return -EINVAL;
-> 
-> Besides, if count == 11, there we'll write beyond ascii_value[], right?
+Kyungmin Park <kmpark@infradead.org> writes:
 
-right. That is a bug.
+>>> Do you still object to merge this feature for .40? As I said the
+>>> batched discard design is out-of-scope of this patch.
+>>> It's implemented at other batched discard, ext4, xfs and so on.
+>>>
+>>> I hope fat is also support the batched discard.
+>>>
+>>> Any opinions?
+>>
+>> I'm also thinking implementing this is good though. Sorry, I'm not going
+>> to apply this for now, and would like to wait to be used by real
+>> userland (I hope guys notice the problem, or userland tackles it somehow
+>> sadly).
+>>
+>> I think, to expose the wrong behavior like this would be worse.
+>>
+>> E.g. one of problems, userland might do like this (trim chunk from 0 to
+>> number of block)
+>>
+>> for chunk in number_of_blocks
+>>        do_trim chunk
+>> done
+>
+> It's handled at trim implementation. It just trim the fat aware block.
+> Not trim the blocks which fat doesn't know.
+> As fat don't use the block 0, 1, it adjust the start block at kernel.
+>
+> +       if (start < FAT_START_ENT)
+> +               start = FAT_START_ENT;
+>
+> and don't exceed the max cluster size.
+>
+> +       len = (len > sbi->max_cluster) ? sbi->max_cluster : len;
+>
+> +       for (count = start; count <= len; count++) {
 
-> 
-> What about the appended patch instead of your original one?
-Thank you!
+Yes. We _adjust_ from 0 to 2 here, so, the end of block also have to be
+_adjusted_.
 
-> Rafael
-> 
-> 
-> ---
-> From: mark gross <markgross@thegnar.org>
-> Subject: PM: Correct PM QOS's user mode interface to work with ascii input per
-> 
-> What is in the kernel docs.  Writing a string to the ABI from user mode
-> comes in 2 flavors.  One with and one without a '\n' at the end.  This
-> change accepts both.
-> 
-> # echo 0x12345678 > /dev/cpu_dma_latency
-> 
-> and
-> 
-> # echo -n 0x12345678 > /dev/cpu_dma_latency
-> 
-> now both work.
-> 
-> [rjw: Fixed up array bounds checking and type casting.]
-> 
-> Signed-off-by: mark gross <markgross@thegnar.org>
-> Acked-by: Simon Horman <horms@verge.net.au>
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  kernel/pm_qos_params.c |   25 ++++++++++++++++---------
->  1 file changed, 16 insertions(+), 9 deletions(-)
-> 
-> Index: linux-2.6/kernel/pm_qos_params.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/pm_qos_params.c
-> +++ linux-2.6/kernel/pm_qos_params.c
-> @@ -40,6 +40,7 @@
->  #include <linux/string.h>
->  #include <linux/platform_device.h>
->  #include <linux/init.h>
-> +#include <linux/kernel.h>
->  
->  #include <linux/uaccess.h>
->  
-> @@ -404,24 +405,30 @@ static ssize_t pm_qos_power_write(struct
->  		size_t count, loff_t *f_pos)
->  {
->  	s32 value;
-> -	int x;
->  	char ascii_value[11];
->  	struct pm_qos_request_list *pm_qos_req;
->  
->  	if (count == sizeof(s32)) {
->  		if (copy_from_user(&value, buf, sizeof(s32)))
->  			return -EFAULT;
-> -	} else if (count == 11) { /* len('0x12345678/0') */
-> -		if (copy_from_user(ascii_value, buf, 11))
-> +	} else if (count >= 10) { /* '0x12345678' or '0x12345678\n'*/
-Did you mean <= 11 here?  I know that Alan Stern wanted to see the ABI
-adjusted to accept shorter hex string that the full 10 char string.
+>From other point of view, if userland specified 0 - max-length
+(i.e. number of blocks), what happens? It would trim block of 2 -
+(max-length - 2), right?
 
-FWIW I'm ok with doing that.
+So, actually, userland specify 2 - (max-length + 2). And userland has to
+know 2 is real start, not 0.
 
-> +		unsigned long int ulval;
-> +		int ret;
-> +
-> +		count = 10;
+But how to know it? Yes, it's FS internal layout, AFAICS, other FSes also
+expose internal like this.
 
-I kind of wanted to return an error to the user if they violate the
-documented format for the hex string.  With this code you get a silent
-truncation of the lower digits if the string is "0x123456789abcdef"
+>> But this is actually wrong, this interface doesn't map blocks to 0-max,
+>> so userland have to know real maximum-block-number somehow for each FS
+>> (and maybe have to know real minimum-block-number).
+>>
+>> So, how to fix this? The solutions would be userland workaround, or fix
+>> kernel. If it was userland, userland have to know FS internal sadly. If
+>> it was kernel, we would have backward compatible nightmare, or ignore
+>> compatible :(.
+>
+> I think basic concept of batched discard is trim at once instead of
+> deleted entries at filesystem (original one).
+> So it can set the specific start address or any start (usually 0) with
+> maximum length.
 
+Yes, I think so too (i.e. 0 - max length). But the implement is not
+working like it. It exposes FS internal layout.
 
-> +		ascii_value[count] = 0;
-> +		if (copy_from_user(ascii_value, buf, count))
->  			return -EFAULT;
-> -		if (strlen(ascii_value) != 10)
-> -			return -EINVAL;
-> -		x = sscanf(ascii_value, "%x", &value);
-> -		if (x != 1)
-> +
-> +		ret = strict_strtoul(ascii_value, 16, &ulval);
-> +		if (ret){
-> +			pr_debug("%s, 0x%lx, 0x%x\n", ascii_value, ulval, ret);
->  			return -EINVAL;
-> -		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
-> -	} else
-> +		}
-> +		value = (s32)lower_32_bits(ulval);
-This shouldn't be needed if you are constrained to a hex format of
-"0x12345678" but this is more readable.  lower_32_bits is a good idea.
+>> I really think we have to rethink this and have agreement about common
+>> interface. Or there was real userland app, I think FAT can implement to
+>> work that app.
+>
+> IMO, we should use the same user space application. user program
+> doesn't know the which filesystem are underlying.
 
---mark
+Indeed.
 
-> +	} else {
->  		return -EINVAL;
-> +	}
->  
->  	pm_qos_req = filp->private_data;
->  	pm_qos_update_request(pm_qos_req, value);
+> So sample user space program used at ext4, xfs should be used. and I
+> tested it.
+
+I bet it doesn't trim whole FS (due to expose FS layout) actually even
+if user asked like above example.
+
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
