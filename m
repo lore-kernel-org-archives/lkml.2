@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab1EXMRA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 08:17:00 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:24451 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951Ab1EXMQ6 convert rfc822-to-8bit (ORCPT
+	id S932072Ab1EXMQw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 08:16:52 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52904 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab1EXMQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 08:16:58 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zz1431J936eK1432N98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: "Frysinger, Michael" <Michael.Frysinger@analog.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Date: Tue, 24 May 2011 13:16:52 +0100
-Subject: RE: FW: [PATCH] MAINTAINERS: Fix Analog Devices mailinglist address
-Thread-Topic: FW: [PATCH] MAINTAINERS: Fix Analog Devices mailinglist address
-Thread-Index: AcwaDEDhXtNQpjdGTOqkAEziBgRu+QAABYfg
-Message-ID: <544AC56F16B56944AEC3BD4E3D5917713AAF293C3B@LIMKCMBX1.ad.analog.com>
-References: <544AC56F16B56944AEC3BD4E3D5917713AAF293A45@LIMKCMBX1.ad.analog.com>
- <201105240801.02702.michael.frysinger@analog.com>
-In-Reply-To: <201105240801.02702.michael.frysinger@analog.com>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 May 2011 08:16:51 -0400
+Message-ID: <7E10264BABCB4C1788DCD9715461BDE8@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <sachi@mistralsolutions.com>, "Samuel Ortiz" <sameo@linux.intel.com>,
+        "open list" <linux-kernel@vger.kernel.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <201105151133.23870.arnd@arndb.de> <B876E8072D52496DB747D5CCCF64826D@subhasishg> <201105231730.06564.arnd@arndb.de>
+In-Reply-To: <201105231730.06564.arnd@arndb.de>
+Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
+Date: Tue, 24 May 2011 17:47:32 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frysinger, Michael wrote on 2011-05-24:
-> On Tuesday, May 24, 2011 03:17:11 Hennerich, Michael wrote:
->> From: Lars-Peter Clausen <lars@metafoo.de>
+Hi Arnd,
+
+>> http://linux.omap.com/pipermail/davinci-linux-open-source/
+>> 2011-March/022339.html.
 >>
->> There is a small typo in the Analog Devices driver mailinglist
-> address.
+>> We can use this implementation along with the sysfs to load the devices
+>> runtime.
 >
-> i'll run this through the Blackfin tree since i'll send out a pull
-> request later today ...
-> -mike
+> Possibly, but the actual data structures might end up differently
+> when they are built around a sysfs interface. If you have a sysfs
+> interface, it is more important to have that in a clean way than
+> the board file, so we should first discuss the set of sysfs
+> attributes that you are going to need, and then see how to
+> represent that in platform data for predefined boards.
+>
+>> The configs that I have in the board_file for the devices
+>> structure, are fixed for a board. To swap the boards, we do not need to 
+>> re-compile
+>> the kernel.
+>
+> The other point to consider is that we are definitely moving
+> towards the flattened device tree for these definitions now.
+> It's probably good to make the sysfs attributes directly correspond
+> to fdt device properties. I'm not sure if we also need to allow platform
+> data. The easiest way could be to just require the use of device tree
+> for predefined pruss devices.
+>
+> I'm sorry that this is moving in a different direction now, you
+> had an unfortunate timing here.
+>
+> Let's first discuss the exact properties that are really required
+> to define the differences between PRU backends, as those will
+> be required in any case. What do you need for PRU specific
+> data besides the firmware and the name of the device?
 
-Even better - just wanted to make sure it doesn't get lost.
-
-Greetings,
-Michael
-
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368; Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin, Margaret Seif
-
-
+Would it be a good approach to first get a basic sensible
+driver into the tree and then work towards improving and
+adjusting for future compatibilities.
+That way we can gradually build towards the perfect driver
+in steps, rather than digressing far too off suddenly.
+That would be some source of motivation for me too.
+ 
 
