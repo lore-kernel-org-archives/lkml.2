@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab1EXUgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 16:36:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6449 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752334Ab1EXUgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 16:36:03 -0400
-Subject: Re: [PATCH] pci, dmar: Update dmar units devices list during
- hotplug
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, Vinod Koul <vinod.koul@intel.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        iommu@lists.linux-foundation.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <4DDC1406.3050102@kernel.org>
-References: <4DC6E569.1060808@kernel.org> <1305843308.3100.10.camel@x201>
-	 <1306234696.7218.14.camel@i7.infradead.org> <1306258959.3100.79.camel@x201>
-		  <4DDC0858.3090406@kernel.org> <1306267639.3100.102.camel@x201>
-	  <4DDC1406.3050102@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 14:34:51 -0600
-Message-ID: <1306269291.3100.106.camel@x201>
+	id S1757062Ab1EXUhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 16:37:17 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:49619 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab1EXUhP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 16:37:15 -0400
+Subject: Re: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Chris McDermott <lcm@linux.vnet.ibm.com>
+In-Reply-To: <20110524130700.079b09e8.akpm@linux-foundation.org>
+References: <20110411172004.0361.A69D9226@jp.fujitsu.com>
+	 <1302557371.7286.16607.camel@nimitz>
+	 <20110412100129.43F1.A69D9226@jp.fujitsu.com>
+	 <1302575241.7286.17853.camel@nimitz>
+	 <20110524130700.079b09e8.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 24 May 2011 13:37:04 -0700
+Message-ID: <1306269424.22505.20.camel@nimitz>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 13:24 -0700, Yinghai Lu wrote:
-> On 05/24/2011 01:07 PM, Alex Williamson wrote:
-> > On Tue, 2011-05-24 at 12:34 -0700, Yinghai Lu wrote:
-> >> On 05/24/2011 10:42 AM, Alex Williamson wrote:
-> >>> On Tue, 2011-05-24 at 11:58 +0100, David Woodhouse wrote:
-> >>>> On Thu, 2011-05-19 at 16:15 -0600, Alex Williamson wrote:
-> >>>>> I think I'd vote for saving some kind of representation of the bus
-> >>>>> hierarchy, we probably don't need to list every possible individual
-> >>>>> device.  Leaving a broken pointer around to be matched up and restored
-> >>>>> later just seems like a continuation of an idea that was bad to begin
-> >>>>> with.  Thanks, 
-> >>>>
-> >>>> I agree. We should just process the original ATSR information in
-> >>>> dmar_find_matched_drhd_unit(), rather than comparing with a list of
-> >>>> possibly stale pointers.
-> >>>>
-> >>>> I don't quite understand why the list of PCI devices was *ever* done
-> >>>> like that.
-> >>>
-> >>> Yinghai,
-> >>>
-> >>> I thought I might be running into something similar so spent some time
-> >>> taking a different slant coding up the bug you found.  Turns out I
-> >>> should have tested your patch first because I wasn't hitting that bug at
-> >>> all.  The patch below is a work-in-progress that I think fixes the bug
-> >>> by providing a quick means of re-parsing the scope as needed to match
-> >>> current struct pci_devs.  It needs testing and cleanup, but feel free to
-> >>> run with it (or ignore).  Just figured its better to post than waste the
-> >>> code if you end up doing something similar.  Thanks,
-> >>>
-> >>> Alex
-> >>>
-> >>
-> >> it does not apply to current linus tree cleanly.
-> > 
-> > Sorry, for some reason I started hacking on this against a rhel kernel.
-> > Here's the compile tested-only forward port to 2.6.39 (plus the
-> > domain_exit flush patch).  Thanks,
+On Tue, 2011-05-24 at 13:07 -0700, Andrew Morton wrote:
+> On Mon, 11 Apr 2011 19:27:21 -0700
+> Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+> > I'll go try and dig for some more specifics on the hardware so we at
+> > least have something to test on.
 > 
-> can not find anywhere to call flush_unmaps_timeout(0).
+> How's that digging coming along?
 > 
-> so what do you mean flush patch?
+> I'm pretty wobbly about this patch.  Perhaps we should set
+> RECLAIM_DISTANCE to pi/2 or something, to force people to correctly set
+> the dang thing in initscripts.
 
-Take v2.6.39, add
-http://git.infradead.org/iommu-2.6.git/commitdiff/7b668357810ecb5fdda4418689d50f5d95aea6a8
-and the patch below should apply cleanly.  IIRC, it doesn't touch
-anything near domain_exit, so it should apply with some fuzz to stock
-2.6.39 too.  Thanks,
+The original change in the hardware tables was for the benefit of a
+benchmark.  Said benchmark isn't going to get run on mainline until the
+next batch of enterprise distros drops, at which point the hardware
+where this was done will be irrelevant for the benchmark.  I'm sure any
+new hardware will just set this distance to another yet arbitrary value
+to make the kernel do what it wants. :)
 
-Alex
+Also, when the hardware got _set_ to this initially, I complained.  So,
+I guess I'm getting my way now, with this patch.  I'm cool with it:
+
+Acked-by: Dave Hansen <dave@linux.vnet.ibm.com>
+
+-- Dave
 
