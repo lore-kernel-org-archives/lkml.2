@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab1EXIOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 04:14:42 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38735 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754265Ab1EXIOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 04:14:40 -0400
-Date: Tue, 24 May 2011 10:14:34 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        "Huang, Ying" <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [RFC 0/9] mce recovery for Sandy Bridge server
-Message-ID: <20110524081434.GA18863@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
-	linux-kernel@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>,
-	Andi Kleen <andi@firstfloor.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>
-References: <4ddad79317108eb33d@agluck-desktop.sc.intel.com>
- <20110524034023.GB25230@elte.hu>
+	id S1754515Ab1EXIRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 04:17:42 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40425 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102Ab1EXIRk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 04:17:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=if835UkoczNOGDJer2+OYPS8Y2Ugs+cfR7oXKmD3Xs1tmqYcpNpNjJHSIBEd6cCeKv
+         /LgRNAccsZPbkMfcx4RWwhQDsbVc0fj3CFjtdQDUCvi0gMz7lTB9OxHfQP4YpCUIekkW
+         ihjIBBl93YSINwpQMB0e2iJyZVam3tLdA0ip4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110524034023.GB25230@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTimxmWiof9s5AvS3v_0X+sMiE=0x5g@mail.gmail.com>
+References: <BANLkTimxmWiof9s5AvS3v_0X+sMiE=0x5g@mail.gmail.com>
+Date: Tue, 24 May 2011 16:17:39 +0800
+Message-ID: <BANLkTikhvhptDG-eRZ9uD5wSm3RxTn1RFw@mail.gmail.com>
+Subject: Re: [PATCH] sched: remove noop in next_prio()
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 05:40:23AM +0200, Ingo Molnar wrote:
-> So we *really* want to promote this code to a higher level of abstraction. 
-> Everyone would benefit from doing that: Intel hardware error handling features 
-> would be enabled much more richly and i suspect they would also be *used* in a 
-> much more meaningful way - driving the hw cycle as well.
+On Sat, May 21, 2011 at 10:19 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> When computing the next priority for a given run-queue, the check for
+> RT priority of the task determined by the pick_next_highest_task_rt()
+> function could be removed, since only RT task is returned by the
+> function.
+>
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 
-Absolutely agreed. The RAS architecture should look like this, IMHO:
+Yup, it's true.
 
-I. Event collection: #MC handler and pollers, no queueing or buffering crap.
+Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
 
-II. Pluggable and extensible filters which are
-* per vendor
-* configurable from userspace
-* easily extensible
-* decide whether action should be taken in the kernel or error is non-critical
-and should go to RAS daemon
+> ---
+>
+> --- a/kernel/sched_rt.c 2011-04-27 11:48:50.000000000 +0800
+> +++ b/kernel/sched_rt.c 2011-05-21 22:10:34.000000000 +0800
+> @@ -670,7 +670,7 @@ static inline int next_prio(struct rq *r
+>  {
+>        struct task_struct *next = pick_next_highest_task_rt(rq, rq->cpu);
+>
+> -       if (next && rt_prio(next->prio))
+> +       if (next)
+>                return next->prio;
+>        else
+>                return MAX_RT_PRIO;
+>
 
-III. Error handling callback(s)
-* also extensible
-* also per vendor
-* also configurable from userspace
 
-Advantages:
-* reuse perf code - no need for ad-hoc new buffers and lockless thingies when we
-have it all already
-
-* easy code and even hw testing with perf inject or ras inject
-** this gives us also the different injection methods per vendor in an unified
-way instead of interfaces in /sys or debugfs or mcelog or ...
-
-* keep code design sane instead of letting it needlessly fiddle with
-other parts of the kernel
-
-* ...
-
-Now I should better go and put my patches where my mouth is :).
 
 -- 
-Regards/Gruss,
-    Boris.
+Only stand for myself
