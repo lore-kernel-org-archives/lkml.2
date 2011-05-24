@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab1EXByI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 21:54:08 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55093 "EHLO
+	id S1758109Ab1EXB4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 21:56:07 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55195 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757835Ab1EXByE (ORCPT
+	with ESMTP id S1757835Ab1EXB4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 21:54:04 -0400
+	Mon, 23 May 2011 21:56:04 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DDB0FB2.9050300@jp.fujitsu.com>
-Date: Tue, 24 May 2011 10:53:54 +0900
+Message-ID: <4DDB1028.7000600@jp.fujitsu.com>
+Date: Tue, 24 May 2011 10:55:52 +0900
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: minchan.kim@gmail.com
+To: rientjes@google.com
 CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
-        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
+        akpm@linux-foundation.org, caiqian@redhat.com, hughd@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan.kim@gmail.com, oleg@redhat.com
 Subject: Re: [PATCH 4/5] oom: don't kill random process
-References: <4DD61F80.1020505@jp.fujitsu.com>	<4DD6207E.1070300@jp.fujitsu.com> <BANLkTinaHki1oA4O3+FsoPDtFTLfqwRadA@mail.gmail.com>
-In-Reply-To: <BANLkTinaHki1oA4O3+FsoPDtFTLfqwRadA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+References: <4DD61F80.1020505@jp.fujitsu.com> <4DD6207E.1070300@jp.fujitsu.com> <alpine.DEB.2.00.1105231529340.17840@chino.kir.corp.google.com> <4DDB0B45.2080507@jp.fujitsu.com> <alpine.DEB.2.00.1105231838420.17729@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1105231838420.17729@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +       /*
->> +        * chosen_point==1 may be a sign that root privilege bonus is too large
->> +        * and we choose wrong task. Let's recalculate oom score without the
->> +        * dubious bonus.
->> +        */
->> +       if (protect_root&&  (chosen_points == 1)) {
->> +               protect_root = 0;
->> +               goto retry;
->> +       }
+>>> This is unnecessary and just makes the oom killer egregiously long.  We
+>>> are already diagnosing problems here at Google where the oom killer holds
+>>> tasklist_lock on the readside for far too long, causing other cpus waiting
+>>> for a write_lock_irq(&tasklist_lock) to encounter issues when irqs are
+>>> disabled and it is spinning.  A second tasklist scan is simply a
+>>> non-starter.
+>>>
+>>>    [ This is also one of the reasons why we needed to introduce
+>>>      mm->oom_disable_count to prevent a second, expensive tasklist scan. ]
+>>
+>> You misunderstand the code. Both select_bad_process() and oom_kill_process()
+>> are under tasklist_lock(). IOW, no change lock holding time.
+>>
 >
-> The idea is good to me.
-> But once we meet it, should we give up protecting root privileged processes?
-> How about decaying bonus point?
+> A second iteration through the tasklist in select_bad_process() will
+> extend the time that tasklist_lock is held, which is what your patch does.
 
-After applying my patch, unprivileged process never get score-1. (note, mapping
-anon pages naturally makes to increase nr_ptes)
-
-Then, decaying don't make any accuracy. Am I missing something?
-
+It never happen usual case. Plz think when happen all process score = 1.
 
