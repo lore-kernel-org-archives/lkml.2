@@ -1,115 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933576Ab1EXVkG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 17:40:06 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:34910 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933545Ab1EXVjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 17:39:51 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v6 17/18] ARM: LPAE: add support for ATAG_MEM64
-Date: Tue, 24 May 2011 22:39:23 +0100
-Message-Id: <1306273164-18217-18-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.4.2.g597a6
-In-Reply-To: <1306273164-18217-1-git-send-email-catalin.marinas@arm.com>
-References: <1306273164-18217-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 24 May 2011 21:39:50.0224 (UTC) FILETIME=[1C12C500:01CC1A5B]
-X-MC-Unique: 111052422394900301
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S932627Ab1EXVjj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 17:39:39 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52183 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757340Ab1EXVjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 17:39:37 -0400
+Date: Tue, 24 May 2011 23:39:24 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [BUG]  "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+Message-ID: <20110524213924.GO27634@elte.hu>
+References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
+ <1306272750.2497.79.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306272750.2497.79.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p4OLf4Ka005054
 
-From: Will Deacon <will.deacon@arm.com>
 
-LPAE provides support for memory banks with physical addresses of up
-to 40 bits.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-This patch adds a new atag, ATAG_MEM64, so that the Kernel can be
-informed about memory that exists above the 4GB boundary.
+> On Tue, 2011-05-24 at 19:13 +0100, Marc Zyngier wrote:
+> > Peter,
+> > 
+> > I've experienced all kind of lock-ups on ARM SMP platforms recently, and
+> > finally tracked it down to the following patch:
+> > 
+> > e4a52bcb9a18142d79e231b6733cabdbf2e67c1f [sched: Remove rq->lock from the first half of ttwu()].
+> > 
+> > Even on moderate load, the machine locks up, often silently, and
+> > sometimes with a few messages like:
+> > INFO: rcu_preempt_state detected stalls on CPUs/tasks: { 0} (detected by 1, t=12002 jiffies)
+> > 
+> > Another side effect of this patch is that the load average is always 0,
+> > whatever load I throw at the system.
+> > 
+> > Reverting the sched changes up to that patch (included) gives me a
+> > working system again, which happily survives parallel kernel
+> > compilations without complaining.
+> > 
+> > My knowledge of the scheduler being rather limited, I haven't been able
+> > to pinpoint the exact problem (though it probably have something to do
+> > with __ARCH_WANT_INTERRUPTS_ON_CTXSW being defined on ARM). The enclosed
+> > patch somehow papers over the load average problem, but the system ends
+> > up locking up anyway:
+> 
+> Hurm.. I'll try and make x86 use __ARCH_WANT_INTERRUPTS_ON_CTXSW, IIRC
+> Ingo once said that that is possible and try to see if I can reproduce.
+> No clear ideas atm.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm/include/asm/setup.h |   10 +++++++++-
- arch/arm/kernel/compat.c     |    4 ++--
- arch/arm/kernel/setup.c      |   12 +++++++++++-
- 3 files changed, 22 insertions(+), 4 deletions(-)
+Yes, should be possible to just disable it on x86 - no further tricks needed. 
+It's been a long time since i tested that though.
 
-diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
-index 95176af..5e3587c 100644
---- a/arch/arm/include/asm/setup.h
-+++ b/arch/arm/include/asm/setup.h
-@@ -43,6 +43,13 @@ struct tag_mem32 {
- 	__u32	start;	/* physical start address */
- };
- 
-+#define ATAG_MEM64	0x54420002
-+
-+struct tag_mem64 {
-+	__u64	size;
-+	__u64	start;	/* physical start address */
-+};
-+
- /* VGA text type displays */
- #define ATAG_VIDEOTEXT	0x54410003
- 
-@@ -147,7 +154,8 @@ struct tag {
- 	struct tag_header hdr;
- 	union {
- 		struct tag_core		core;
--		struct tag_mem32	mem;
-+		struct tag_mem32	mem32;
-+		struct tag_mem64	mem64;
- 		struct tag_videotext	videotext;
- 		struct tag_ramdisk	ramdisk;
- 		struct tag_initrd	initrd;
-diff --git a/arch/arm/kernel/compat.c b/arch/arm/kernel/compat.c
-index 9256523..f224d95 100644
---- a/arch/arm/kernel/compat.c
-+++ b/arch/arm/kernel/compat.c
-@@ -86,8 +86,8 @@ static struct tag * __init memtag(struct tag *tag, unsigned long start, unsigned
- 	tag = tag_next(tag);
- 	tag->hdr.tag = ATAG_MEM;
- 	tag->hdr.size = tag_size(tag_mem32);
--	tag->u.mem.size = size;
--	tag->u.mem.start = start;
-+	tag->u.mem32.size = size;
-+	tag->u.mem32.start = start;
- 
- 	return tag;
- }
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 006c1e8..4158e4d 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -611,11 +611,21 @@ __tagtable(ATAG_CORE, parse_tag_core);
- 
- static int __init parse_tag_mem32(const struct tag *tag)
- {
--	return arm_add_memory(tag->u.mem.start, tag->u.mem.size);
-+	return arm_add_memory(tag->u.mem32.start, tag->u.mem32.size);
- }
- 
- __tagtable(ATAG_MEM, parse_tag_mem32);
- 
-+#ifdef CONFIG_PHYS_ADDR_T_64BIT
-+static int __init parse_tag_mem64(const struct tag *tag)
-+{
-+	/* We only use 32-bits for the size. */
-+	return arm_add_memory(tag->u.mem64.start, (unsigned long)tag->u.mem64.size);
-+}
-+
-+__tagtable(ATAG_MEM64, parse_tag_mem64);
-+#endif /* CONFIG_PHYS_ADDR_T_64BIT */
-+
- #if defined(CONFIG_VGA_CONSOLE) || defined(CONFIG_DUMMY_CONSOLE)
- struct screen_info screen_info = {
-  .orig_video_lines	= 30,
+Thanks,
 
+	Ingo
