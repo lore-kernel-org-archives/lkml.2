@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab1EXOQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:16:17 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61193 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932466Ab1EXOQO convert rfc822-to-8bit (ORCPT
+	id S1756249Ab1EXOXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:23:52 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26846 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab1EXOXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:16:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=AIlEkj4oWK1hwYfgGZ6kHDPV4MJzC4v9Rx9sHzpv3C8CFEJxauWkfV/tu5XeGMDmLI
-         +bnQyAmydM8Wvn/DK4fy4ZAaVqRHtc/ov/0TPsAPORKdxM1gidBPORzjtuSOBxye9F+R
-         OOXYpG2Ddb8HX2f1tmMHrOK/vlkhlTvI0wi3I=
+	Tue, 24 May 2011 10:23:51 -0400
+Date: Tue, 24 May 2011 16:16:15 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Hillf Danton <dhillf@gmail.com>
+cc: Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] sched: remove noop in next_prio()
+In-Reply-To: <BANLkTimq31hMRa+vD=pLrtTAx=Hv=h0Acg@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1105241615080.7986@swampdragon.chaosbits.net>
+References: <BANLkTimxmWiof9s5AvS3v_0X+sMiE=0x5g@mail.gmail.com> <BANLkTikhvhptDG-eRZ9uD5wSm3RxTn1RFw@mail.gmail.com> <1306238014.16375.0.camel@marge.simson.net> <BANLkTimq31hMRa+vD=pLrtTAx=Hv=h0Acg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimCaEPVeBj_00HvqGp7j+_PUvs2Fg@mail.gmail.com>
-References: <201105231527.53805.stevie.trujillo@gmail.com>
-	<BANLkTi=iGzkSwWPZrFPBJZYg6x=dDBb5Eg@mail.gmail.com>
-	<BANLkTi=Xtunb3Qocw_AWZyAkBak52=njWQ@mail.gmail.com>
-	<BANLkTinNn_nx1Wd8ocUHe2WipFkUK0o-2A@mail.gmail.com>
-	<BANLkTi=UeEEj0fRb9v1viFpUOWvmrSHM2g@mail.gmail.com>
-	<BANLkTimcxvdXeyqP+_h=JQwiay_PH8awkA@mail.gmail.com>
-	<BANLkTimCaEPVeBj_00HvqGp7j+_PUvs2Fg@mail.gmail.com>
-Date: Tue, 24 May 2011 23:16:13 +0900
-X-Google-Sender-Auth: 6oWSSMzCgy2NzGeEPUd3Ud3NhcI
-Message-ID: <BANLkTikeUMFyLuWcHbW4TrF1wqM8_F_Vnw@mail.gmail.com>
-Subject: Re: ramoops: is using platform_drivers correct?
-From: Kyungmin Park <kmpark@infradead.org>
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: Stevie Trujillo <stevie.trujillo@gmail.com>, marco.stornelli@gmail.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 11:12 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> On Tue, May 24, 2011 at 2:14 PM, Kyungmin Park <kmpark@infradead.org> wrote:
->> On Tue, May 24, 2011 at 2:49 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
->>> Huh? Is this for x86 too? Why so unfriendly for end-users?
->> I don't know which address is acceptable for x86, in case of ARM, each
->> SoCs has different SRAM address. so it's not good to define for all
->> SoCs and ARM.
->>>
->>> I think we need some kernel parameter like 'crashkernel=' (or memmap=)
->>> to reserve memory for ramoops, right?
->>
->> The first implementation is just module parameters.
->> ramoops.address=0x??????? ramoops.size=0x????. So I patched it as
->> using platform devices.
->> and the reason use the platform is it's dependent on each SoCs and board usage.
->>
->
-> But the result is that this makes end-users harder to use it.
->
-> Using platform API still relies on a hard-code address, at least in
-> your example,
-> so, why not leave it as a module parameter to let user to find the
-> correct address?
+On Tue, 24 May 2011, Hillf Danton wrote:
 
-It's possible. I just make it possible to use the platform driver. you
-can specify the original method.
+> On Tue, May 24, 2011 at 7:53 PM, Mike Galbraith <efault@gmx.de> wrote:
+> > On Tue, 2011-05-24 at 16:17 +0800, Yong Zhang wrote:
+> >> On Sat, May 21, 2011 at 10:19 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> >> > When computing the next priority for a given run-queue, the check for
+> >> > RT priority of the task determined by the pick_next_highest_task_rt()
+> >> > function could be removed, since only RT task is returned by the
+> >> > function.
+> >> >
+> >> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> >>
+> >> Yup, it's true.
+> >
+> > (could whack the else while there)
+> >
+> 
+> Where is it, Mike?
+> 
 
-Thank you,
-Kyungmin Park
->
+
+-       if (next && rt_prio(next->prio))
++       if (next)
+               return next->prio;
+-       else
+-              return MAX_RT_PRIO;
++       return MAX_RT_PRIO;
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
