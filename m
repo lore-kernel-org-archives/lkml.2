@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932363Ab1EXSMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:12:30 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:56853 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752799Ab1EXSM2 convert rfc822-to-8bit (ORCPT
+	id S932688Ab1EXSQc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:16:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43990 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932506Ab1EXSQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:12:28 -0400
-Subject: [BUG]  "sched: Remove rq->lock from the first half of ttwu()" 
- locks up on ARM
-From: Marc Zyngier <Marc.Zyngier@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Frank Rowand <frank.rowand@am.sony.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Organization: ARM Ltd
-Date: Tue, 24 May 2011 19:13:12 +0100
-Message-ID: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-X-OriginalArrivalTime: 24 May 2011 18:12:35.0636 (UTC) FILETIME=[287B3740:01CC1A3E]
-X-MC-Unique: 111052419122501201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 May 2011 14:16:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=arhnpns1mJ9CZQjuvSx0suII4RRG599h2Nr6vXSXg6530PrDhoATGDio2OeM3v914p
+         RwhhtQa4vmJdyliRAa+7dYzsDo5Z3DVzuo9F/YofIgnzwfYUTooJ+HelpLsEOxGzuZc9
+         8ZIhrjfH7fxjo+S799fqj/Of/Ov8MVCwnihL8=
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Hiromu Yakura <hiromu1996@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        Arnaud Lacombe <lacombar@gmail.com>
+Subject: [PATCH] xconfig: merge code path to conf_write()
+Date: Tue, 24 May 2011 14:16:18 -0400
+Message-Id: <1306260978-29437-1-git-send-email-lacombar@gmail.com>
+X-Mailer: git-send-email 1.7.3.4.574.g608b.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+Michal, Hiromu,
 
-I've experienced all kind of lock-ups on ARM SMP platforms recently, and
-finally tracked it down to the following patch:
+That should fix the first error miss in xconfig. I'll have a look tonight to
+gconf.
 
-e4a52bcb9a18142d79e231b6733cabdbf2e67c1f [sched: Remove rq->lock from the first half of ttwu()].
+ - Arnaud
 
-Even on moderate load, the machine locks up, often silently, and
-sometimes with a few messages like:
-INFO: rcu_preempt_state detected stalls on CPUs/tasks: { 0} (detected by 1, t=12002 jiffies)
+---
 
-Another side effect of this patch is that the load average is always 0,
-whatever load I throw at the system.
+From: Arnaud Lacombe <lacombar@gmail.com>
+Subject: [PATCH] xconfig: merge code path to conf_write()
 
-Reverting the sched changes up to that patch (included) gives me a
-working system again, which happily survives parallel kernel
-compilations without complaining.
+Avoid to have multiple path saving the config. This fixes an error check miss
+when the window is being closed and the user requested the config to be written.
 
-My knowledge of the scheduler being rather limited, I haven't been able
-to pinpoint the exact problem (though it probably have something to do
-with __ARCH_WANT_INTERRUPTS_ON_CTXSW being defined on ARM). The enclosed
-patch somehow papers over the load average problem, but the system ends
-up locking up anyway:
+Reported-by: Hiromu Yakura <hiromu1996@gmail.com>
+Pointed-out-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+---
+ scripts/kconfig/qconf.cc |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index d3ade54..5ab43c4 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2526,8 +2526,13 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
- 		 * to spin on ->on_cpu if p is current, since that would
- 		 * deadlock.
- 		 */
--		if (p == current)
-+		if (p == current) {
-+			p->sched_contributes_to_load = !!task_contributes_to_load(p);
-+			p->state = TASK_WAKING;
-+			if (p->sched_class->task_waking)
-+				p->sched_class->task_waking(p);
- 			goto out_activate;
-+		}
- #endif
- 		cpu_relax();
- 	}
-
-I'd be happy to test any patch you may have.
-
-Cheers,
-
-	M.
+diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
+index 06dd2e3..c2796b8 100644
+--- a/scripts/kconfig/qconf.cc
++++ b/scripts/kconfig/qconf.cc
+@@ -1489,8 +1489,7 @@ void ConfigMainWindow::saveConfigAs(void)
+ 	QString s = Q3FileDialog::getSaveFileName(conf_get_configname(), NULL, this);
+ 	if (s.isNull())
+ 		return;
+-	if (conf_write(QFile::encodeName(s)))
+-		QMessageBox::information(this, "qconf", _("Unable to save configuration!"));
++	saveConfig();
+ }
+ 
+ void ConfigMainWindow::searchConfig(void)
+@@ -1643,7 +1642,7 @@ void ConfigMainWindow::closeEvent(QCloseEvent* e)
+ 	mb.setButtonText(QMessageBox::Cancel, _("Cancel Exit"));
+ 	switch (mb.exec()) {
+ 	case QMessageBox::Yes:
+-		conf_write(NULL);
++		saveConfig();
+ 	case QMessageBox::No:
+ 		e->accept();
+ 		break;
 -- 
-Reality is an implementation detail.
-
+1.7.3.4.574.g608b.dirty
 
