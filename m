@@ -1,98 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab1EXI74 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 04:59:56 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:33613 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab1EXI7y (ORCPT
+	id S1755166Ab1EXIyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 04:54:38 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49436 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754798Ab1EXIyg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 04:59:54 -0400
-X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 May 2011 04:59:54 EDT
-From: Philipp Reisner <philipp.reisner@linbit.com>
-Organization: LINBIT
-To: Jens Axboe <axboe@kernel.dk>
-Subject: [GIT PULL] DRBD bits for 2.6.40
-Date: Tue, 24 May 2011 10:50:24 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-X-OTRS-FollowUp-SenderType: agent
+	Tue, 24 May 2011 04:54:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NWtdwwyYXKfb0nbHf5HV8TAhR/yy+Q8yH9fzEn9bO1LxHVJ3B5WlNlvkr9mJg67vpW
+         DWUym9M4iNWjHMV9y1mTn77Fwpnqhj6aBLcDMKV0nvPsa3Qb9rmUzXtJidnSmGDghtHJ
+         630jF2egtAVc3JazhJcBXfwyK4ona1IHdrrs4=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105241050.24719.philipp.reisner@linbit.com>
+In-Reply-To: <87mxick0zj.fsf@devron.myhome.or.jp>
+References: <20110328103431.GA22323@july>
+	<201103301620.50263.arnd@arndb.de>
+	<AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com>
+	<201103301706.36214.arnd@arndb.de>
+	<BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com>
+	<87wrhgk8lp.fsf@devron.myhome.or.jp>
+	<BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com>
+	<87r57ok3fp.fsf@devron.myhome.or.jp>
+	<BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com>
+	<87mxick0zj.fsf@devron.myhome.or.jp>
+Date: Tue, 24 May 2011 17:54:35 +0900
+X-Google-Sender-Auth: rr6LMnglK5nBa00ni6L4gq3n8hc
+Message-ID: <BANLkTiktjZ3ezpN0HuviWGzjoWUKqtXjZA@mail.gmail.com>
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+From: Kyungmin Park <kmpark@infradead.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Arnd Bergmann <arnd@arndb.de>, Lukas Czerner <lczerner@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 779d530632c98967820d3bbcae15d492fc20301e:
+On Tue, May 24, 2011 at 4:32 PM, OGAWA Hirofumi
+<hirofumi@mail.parknet.co.jp> wrote:
+> Kyungmin Park <kmpark@infradead.org> writes:
+>
+>>>> It's handled at trim implementation. It just trim the fat aware block.
+>>>> Not trim the blocks which fat doesn't know.
+>>>> As fat don't use the block 0, 1, it adjust the start block at kernel.
+>>>>
+>>>> +       if (start < FAT_START_ENT)
+>>>> +               start = FAT_START_ENT;
+>>>>
+>>>> and don't exceed the max cluster size.
+>>>>
+>>>> +       len = (len > sbi->max_cluster) ? sbi->max_cluster : len;
+>>>>
+>>>> +       for (count = start; count <= len; count++) {
+>>>
+>>> Yes. We _adjust_ from 0 to 2 here, so, the end of block also have to be
+>>> _adjusted_.
+>>>
+>>> From other point of view, if userland specified 0 - max-length
+>>> (i.e. number of blocks), what happens? It would trim block of 2 -
+>>> (max-length - 2), right?
+>>
+>> No, length is not changed. so max-length is used.
+>
+> No, no. Userland will know max-length from statvfs, right? So, let's
+> assume it is 100 (->f_blocks) * 1024 (->f_bsize).
+>
+> Now, userland know about max length, 102400, ok? Let's start to trim.
+>
+> Assume, userland want to trim whole. So, userland will specify like
+>
+>        trim(0, 102400).
+>
+> What happen in kernel actually?
+>
+> Current implement doesn't map blocks. So, in the case of FAT, it adjusts
+> from 0 to 2 * 1024.
+>
+> So, it trims between 2048 and 102400. The problem is here. FS layout is
+> actually, 2048 and (102400 + 2048). I.e. actually userland has to do
+>
+>        trim(2048, 102400 + 2048)
 
-  Merge branches 'for-jens/xen-backend-fixes' and 'for-jens/xen-blkback-v3.3' 
-of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen into 
-for-2.6.40/drivers (2011-05-19 09:46:00 +0200)
+Umm maybe first implementation does as like this, but Lukas mentioned
+it's wrong. So I modified it for batched discard concept.
 
-are available in the git repository at:
+You want the loop like this
 
-  git://git.drbd.org/linux-2.6-drbd.git for-jens
+for (count = start; count <= (start + len); count++)
 
-DRBD's changelog:
-8.3.11 (api:88/proto:86-96)
---------
- * Fixed handling of read errors during online verify runs
- * Fixes for possible distributed deadlocks during online verify and
-   checksum based resync processes
- * Fixed handling of IO errors with an on-io-error=pass-on policy; the
-   disk state goes to inconsistent
- * Fixed the behavior in case ping-timeout and ping-int are set to the
-   same value
- * Fix for connecting on high latency network links
- * Fixed state transitions if fence-peer handler returns after connection was
-   established again
- * Made die max_bio_size negotiation conservative instead of optimistic
- * Network timeouts for mirrored write requests are now always enforced,
-   no longer only when the socket is congested
-
-
-
-Andrew Morton (1):
-      drbd: fix warning
-
-Bart Van Assche (1):
-      drbd: Fix spelling
-
-Lars Ellenberg (5):
-      lru_cache.h: fix comments referring to ts_ instead of lc_
-      drbd: fix potential distributed deadlock
-      drbd: fix disconnect/reconnect loop, if ping-timeout == ping-int
-      drbd: fix potential activity log refcount imbalance in error path
-      drbd: fix schedule in atomic
-
-Philipp Reisner (7):
-      drbd: Fix for application IO with the on-io-error=pass-on policy
-      drbd: Only downgrade the disk state in case of disk failures
-      drbd: Fix for the connection problems on high latency links
-      drbd: Disallow the peer_disk_state to be D_OUTDATED while connected
-      drbd: Fixed state transitions after async outdate-peer-handler returned
-      drbd: Take a more conservative approach when deciding max_bio_size
-      drbd: fix warning
-
- drivers/block/drbd/drbd_actlog.c   |    2 +-
- drivers/block/drbd/drbd_bitmap.c   |    6 +-
- drivers/block/drbd/drbd_int.h      |   19 ++++--
- drivers/block/drbd/drbd_main.c     |   37 +++++++++--
- drivers/block/drbd/drbd_nl.c       |  127 ++++++++++++++++++++++++++---------
- drivers/block/drbd/drbd_receiver.c |   68 ++++++++------------
- drivers/block/drbd/drbd_req.c      |   20 +++---
- drivers/block/drbd/drbd_req.h      |    5 +-
- drivers/block/drbd/drbd_worker.c   |   98 +++++++++++++++++-----------
- include/linux/drbd.h               |   10 ++--
- include/linux/drbd_tag_magic.h     |    2 +-
- include/linux/lru_cache.h          |   12 ++--
- 12 files changed, 255 insertions(+), 151 deletions(-)
--- 
-: Dipl-Ing Philipp Reisner
-: LINBIT | Your Way to High Availability
-: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
-: http://www.linbit.com
-
-DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
+>
+> to specify whole. How to know 2048?
+>
+> See what I'm saying?
+>
+> FAT has liner block space, so the problem is small against mapping. But
+> other FSes has bigger problem.
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
