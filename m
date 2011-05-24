@@ -1,273 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933303Ab1EXV3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 17:29:51 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53356 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933027Ab1EXV3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 17:29:39 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: markgross@thegnar.org
-Subject: Re: linux-next: build warning after merge of the suspend tree
-Date: Tue, 24 May 2011 23:30:09 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Simon Horman <horms@verge.net.au>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <20110523150636.ccd83777.sfr@canb.auug.org.au> <201105232154.52344.rjw@sisk.pl> <20110524063424.GC18075@gvim.org>
-In-Reply-To: <20110524063424.GC18075@gvim.org>
+	id S1757385Ab1EXVbe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 17:31:34 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48738 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753842Ab1EXVbd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 17:31:33 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105242330.09491.rjw@sisk.pl>
+In-Reply-To: <1306272274.2497.73.camel@laptop>
+References: <4ddad79317108eb33d@agluck-desktop.sc.intel.com>
+ <20110524034023.GB25230@elte.hu> <987664A83D2D224EAE907B061CE93D5301D5D0595B@orsmsx505.amr.corp.intel.com>
+ <20110524173326.GA7635@gere.osrc.amd.com> <BANLkTinSOFAioAe2v5c6PRB9EKjJJNMg9w@mail.gmail.com>
+ <1306272274.2497.73.camel@laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 24 May 2011 14:30:41 -0700
+Message-ID: <BANLkTi=BrrwL=gzn7H6O1rAGJpe=VPAQRQ@mail.gmail.com>
+Subject: Re: [RFC 0/9] mce recovery for Sandy Bridge server
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 24, 2011, mark gross wrote:
-> On Mon, May 23, 2011 at 09:54:52PM +0200, Rafael J. Wysocki wrote:
-> > On Monday, May 23, 2011, mark gross wrote:
-> > > On Mon, May 23, 2011 at 03:06:36PM +1000, Stephen Rothwell wrote:
-> > > > Hi Rafael,
-> > > > 
-> > > > After merging the suspend tree, today's linux-next build (i386 defconfig
-> > > > among others) produced this warning:
-> > > > 
-> > > > kernel/pm_qos_params.c: In function 'pm_qos_power_write':
-> > > > kernel/pm_qos_params.c:420: warning: passing argument 3 of 'kstrtol' from incompatible pointer type
-> > > > include/linux/kernel.h:210: note: expected 'long int *' but argument is of type 's32 *'
-> > > > 
-> > > > Intreoduced by commit 365daa955e03 ("PM: Correct PM QOS's user mode
-> > > > interface to work with ascii input per").
-> > > 
-> > > Gah!  I'm sorry about that.
-> > > 
-> > > attached is a fix.
-> > > 
-> > > 
-> > > --mark
-> > > 
-> > > signed-off-by:markgross <markgross@thegnar.org>
-> > > 
-> > > 
-> > > 
-> > > From a8f0587b9ae598be5ca4c3cdda4e0ced6ca9baaf Mon Sep 17 00:00:00 2001
-> > > From: mgross <mgross@cr48>
-> > > Date: Mon, 23 May 2011 07:14:09 -0700
-> > > Subject: [PATCH] clean up a compile time warning in the use of strict_strtol but that was
-> > >  passing an s32 * when it should be passing a long *
-> > > 
-> > > ---
-> > >  kernel/pm_qos_params.c |    6 ++++--
-> > >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> > > index d61ecf3..dd37c56 100644
-> > > --- a/kernel/pm_qos_params.c
-> > > +++ b/kernel/pm_qos_params.c
-> > > @@ -405,6 +405,7 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> > >  		size_t count, loff_t *f_pos)
-> > >  {
-> > >  	s32 value;
-> > > +	long safe_int;
-> > >  	int x;
-> > >  	char ascii_value[11];
-> > >  	struct pm_qos_request_list *pm_qos_req;
-> > > @@ -417,10 +418,11 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> > >  		ascii_value[count] = 0;
-> > >  		if (copy_from_user(ascii_value, buf, count))
-> > >  			return -EFAULT;
-> > > -		if ((x=strict_strtol(ascii_value, 16, &value)) != 0){
-> > > -			pr_debug("%s, 0x%x, 0x%x\n",ascii_value, value, x);
-> > > +		if ((x=strict_strtol(ascii_value, 16, &safe_int)) != 0){
-> > > +			pr_debug("%s, 0x%lx, 0x%x\n",ascii_value, safe_int, x);
-> > >  			return -EINVAL;
-> > >  		}
-> > > +		value = (s32) safe_int;
-> > 
-> > Well, this doesn't seem quite right.
-> > 
-> > >  	} else
-> > >  		return -EINVAL;
-> > 
-> > Besides, if count == 11, there we'll write beyond ascii_value[], right?
-> 
-> right. That is a bug.
-> 
-> > 
-> > What about the appended patch instead of your original one?
-> Thank you!
-> 
-> > Rafael
-> > 
-> > 
-> > ---
-> > From: mark gross <markgross@thegnar.org>
-> > Subject: PM: Correct PM QOS's user mode interface to work with ascii input per
-> > 
-> > What is in the kernel docs.  Writing a string to the ABI from user mode
-> > comes in 2 flavors.  One with and one without a '\n' at the end.  This
-> > change accepts both.
-> > 
-> > # echo 0x12345678 > /dev/cpu_dma_latency
-> > 
-> > and
-> > 
-> > # echo -n 0x12345678 > /dev/cpu_dma_latency
-> > 
-> > now both work.
-> > 
-> > [rjw: Fixed up array bounds checking and type casting.]
-> > 
-> > Signed-off-by: mark gross <markgross@thegnar.org>
-> > Acked-by: Simon Horman <horms@verge.net.au>
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> >  kernel/pm_qos_params.c |   25 ++++++++++++++++---------
-> >  1 file changed, 16 insertions(+), 9 deletions(-)
-> > 
-> > Index: linux-2.6/kernel/pm_qos_params.c
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/pm_qos_params.c
-> > +++ linux-2.6/kernel/pm_qos_params.c
-> > @@ -40,6 +40,7 @@
-> >  #include <linux/string.h>
-> >  #include <linux/platform_device.h>
-> >  #include <linux/init.h>
-> > +#include <linux/kernel.h>
-> >  
-> >  #include <linux/uaccess.h>
-> >  
-> > @@ -404,24 +405,30 @@ static ssize_t pm_qos_power_write(struct
-> >  		size_t count, loff_t *f_pos)
-> >  {
-> >  	s32 value;
-> > -	int x;
-> >  	char ascii_value[11];
-> >  	struct pm_qos_request_list *pm_qos_req;
-> >  
-> >  	if (count == sizeof(s32)) {
-> >  		if (copy_from_user(&value, buf, sizeof(s32)))
-> >  			return -EFAULT;
-> > -	} else if (count == 11) { /* len('0x12345678/0') */
-> > -		if (copy_from_user(ascii_value, buf, 11))
-> > +	} else if (count >= 10) { /* '0x12345678' or '0x12345678\n'*/
-> Did you mean <= 11 here?  I know that Alan Stern wanted to see the ABI
-> adjusted to accept shorter hex string that the full 10 char string.
-> 
-> FWIW I'm ok with doing that.
-> 
-> > +		unsigned long int ulval;
-> > +		int ret;
-> > +
-> > +		count = 10;
-> 
-> I kind of wanted to return an error to the user if they violate the
-> documented format for the hex string.  With this code you get a silent
-> truncation of the lower digits if the string is "0x123456789abcdef"
+On Tue, May 24, 2011 at 2:24 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>
+> Right, so you can't do things like that from NMI context, but what perf
+> can do is raise a self-IPI and continue from IRQ context (question for
+> the HW folks, can there be cycles between the NMI iret and IRQ assert
+> from whatever context was before the NMI hit?)
 
-That's correct, but with the previous code there will be a truncation
-is "echo -n 0x123456789".  If we don't want that, we should check if the
-last character is a '\n'.
+Of course there can be - the code where the NMI hit may have
+interrupts disabled.
 
-> > +		ascii_value[count] = 0;
-> > +		if (copy_from_user(ascii_value, buf, count))
-> >  			return -EFAULT;
-> > -		if (strlen(ascii_value) != 10)
-> > -			return -EINVAL;
-> > -		x = sscanf(ascii_value, "%x", &value);
-> > -		if (x != 1)
-> > +
-> > +		ret = strict_strtoul(ascii_value, 16, &ulval);
-> > +		if (ret){
-> > +			pr_debug("%s, 0x%lx, 0x%x\n", ascii_value, ulval, ret);
-> >  			return -EINVAL;
-> > -		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
-> > -	} else
-> > +		}
-> > +		value = (s32)lower_32_bits(ulval);
-> This shouldn't be needed if you are constrained to a hex format of
-> "0x12345678" but this is more readable.  lower_32_bits is a good idea.
-
-OK
-
-Appended is another patch that adds the '\n' check and reworks the code
-a bit (so that it will accept strings like "0x1" too).
-
-Thanks,
-Rafael
-
-
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM: Fix PM QOS's user mode interface to work with ASCII input
-
-Make pm_qos_power_write() accept values passed to it in the ASCII hex
-format either with or without an ending newline.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- kernel/pm_qos_params.c |   33 +++++++++++++++++++++++----------
- 1 file changed, 23 insertions(+), 10 deletions(-)
-
-Index: linux-2.6/kernel/pm_qos_params.c
-===================================================================
---- linux-2.6.orig/kernel/pm_qos_params.c
-+++ linux-2.6/kernel/pm_qos_params.c
-@@ -40,6 +40,7 @@
- #include <linux/string.h>
- #include <linux/platform_device.h>
- #include <linux/init.h>
-+#include <linux/kernel.h>
- 
- #include <linux/uaccess.h>
- 
-@@ -404,24 +405,36 @@ static ssize_t pm_qos_power_write(struct
- 		size_t count, loff_t *f_pos)
- {
- 	s32 value;
--	int x;
--	char ascii_value[11];
- 	struct pm_qos_request_list *pm_qos_req;
- 
- 	if (count == sizeof(s32)) {
- 		if (copy_from_user(&value, buf, sizeof(s32)))
- 			return -EFAULT;
--	} else if (count == 11) { /* len('0x12345678/0') */
--		if (copy_from_user(ascii_value, buf, 11))
-+	} else if (count <= 11) { /* ASCII perhaps? */
-+		char ascii_value[11];
-+		unsigned long int ulval;
-+		int ret;
-+
-+		if (copy_from_user(ascii_value, buf, count))
- 			return -EFAULT;
--		if (strlen(ascii_value) != 10)
--			return -EINVAL;
--		x = sscanf(ascii_value, "%x", &value);
--		if (x != 1)
-+
-+		if (count > 10) {
-+			if (ascii_value[10] == '\n')
-+				ascii_value[10] = '\0';
-+			else
-+				return -EINVAL;
-+		} else {
-+			ascii_value[count] = '\0';
-+		}
-+		ret = strict_strtoul(ascii_value, 16, &ulval);
-+		if (ret) {
-+			pr_debug("%s, 0x%lx, 0x%x\n", ascii_value, ulval, ret);
- 			return -EINVAL;
--		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
--	} else
-+		}
-+		value = (s32)lower_32_bits(ulval);
-+	} else {
- 		return -EINVAL;
-+	}
- 
- 	pm_qos_req = filp->private_data;
- 	pm_qos_update_request(pm_qos_req, value);
+                                Linus
