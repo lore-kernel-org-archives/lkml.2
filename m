@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab1EXFtf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 01:49:35 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48122 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab1EXFte convert rfc822-to-8bit (ORCPT
+	id S1752733Ab1EXFvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 01:51:40 -0400
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:43770 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab1EXFvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 01:49:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NeRrsth4CEl17aWJNKKAig21h74hfakvPu56V5YyAbOZo5WYehxMp8Q9kVecHIlaG0
-         FcwKmCZNlxIK605qv5JBi77C1cUATVTwp2M47F/Kle1m8qiHl4hNBUzPsZ5lblVBZO7A
-         dD2ID8RvrOvxM6EYWf3lC1wFJEDZkzq0qHzIM=
+	Tue, 24 May 2011 01:51:37 -0400
+Date: Tue, 24 May 2011 07:51:27 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Subject: [PATCH] kvm: add missing void __user * cast to access_ok() call
+Message-ID: <20110524055127.GA2460@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinNn_nx1Wd8ocUHe2WipFkUK0o-2A@mail.gmail.com>
-References: <201105231527.53805.stevie.trujillo@gmail.com>
-	<BANLkTi=iGzkSwWPZrFPBJZYg6x=dDBb5Eg@mail.gmail.com>
-	<BANLkTi=Xtunb3Qocw_AWZyAkBak52=njWQ@mail.gmail.com>
-	<BANLkTinNn_nx1Wd8ocUHe2WipFkUK0o-2A@mail.gmail.com>
-Date: Tue, 24 May 2011 13:49:34 +0800
-Message-ID: <BANLkTi=UeEEj0fRb9v1viFpUOWvmrSHM2g@mail.gmail.com>
-Subject: Re: ramoops: is using platform_drivers correct?
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Stevie Trujillo <stevie.trujillo@gmail.com>, marco.stornelli@gmail.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 1:32 PM, Kyungmin Park <kmpark@infradead.org> wrote:
-> On Mon, May 23, 2011 at 11:36 PM, Kyungmin Park <kmpark@infradead.org> wrote:
->> Hi,
->>
->> You have to define the ramoops platform data at your board file and
->> pass it to the platform device init.
->> As these address is different for each SoCs. e.g., x86, and Samsung
->> ARM SoCs and so on.
->>
->> I think maybe you use the x86 so define the default x86 ram address
->> for ramoops and pass it to platform structures.
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-Why not document this?
+fa3d315a "KVM: Validate userspace_addr of memslot when registered" introduced
+this new warning onn s390:
 
->>
->> At office, I will send the sample usage.
->
-> +static struct ramoops_platform_data goni_ramoops_data = {
-> +       .mem_size               = SZ_16K,
-> +       .mem_address            = 0xED000000,   /* SRAM */
-> +};
-> +
-> +static struct platform_device goni_ramoops = {
-> +       .name = "ramoops",
-> +       .dev = {
-> +               .platform_data = &goni_ramoops_data,
-> +       },
-> +};
->
-> and register the goni_rammoops. then you can find a rammops.
->
+kvm_main.c: In function '__kvm_set_memory_region':
+kvm_main.c:654:7: warning: passing argument 1 of '__access_ok' makes pointer from integer without a cast
+arch/s390/include/asm/uaccess.h:53:19: note: expected 'const void *' but argument is of type '__u64'
 
-Huh? Is this for x86 too? Why so unfriendly for end-users?
+Add the missing cast to get rid of it again...
 
-I think we need some kernel parameter like 'crashkernel=' (or memmap=)
-to reserve memory for ramoops, right?
+Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ virt/kvm/kvm_main.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks.
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -651,7 +651,8 @@ int __kvm_set_memory_region(struct kvm *
+ 	/* We can read the guest memory with __xxx_user() later on. */
+ 	if (user_alloc &&
+ 	    ((mem->userspace_addr & (PAGE_SIZE - 1)) ||
+-	     !access_ok(VERIFY_WRITE, mem->userspace_addr, mem->memory_size)))
++	     !access_ok(VERIFY_WRITE, (void __user *)mem->userspace_addr,
++			mem->memory_size)))
+ 		goto out;
+ 	if (mem->slot >= KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
+ 		goto out;
