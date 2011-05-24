@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab1EXCw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 22:52:27 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39346 "EHLO hera.kernel.org"
+	id S1755912Ab1EXCz3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 22:55:29 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59297 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755192Ab1EXCwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 22:52:20 -0400
-Date: Tue, 24 May 2011 02:51:56 GMT
-From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
-Message-ID: <tip-0f61f3e4db71946292ef8d6d6df74b8fcf001646@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1306200686-17317-1-git-send-email-fweisbec@gmail.com>
-References: <1306200686-17317-1-git-send-email-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Fix sample type size calculation in 32 bits archs
-Git-Commit-ID: 0f61f3e4db71946292ef8d6d6df74b8fcf001646
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 24 May 2011 02:51:57 +0000 (UTC)
+	id S1753148Ab1EXCz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 22:55:27 -0400
+Date: Tue, 24 May 2011 12:55:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: linux-next: manual merge of the namespace tree with the sh tree
+Message-Id: <20110524125523.3a20bc27.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0f61f3e4db71946292ef8d6d6df74b8fcf001646
-Gitweb:     http://git.kernel.org/tip/0f61f3e4db71946292ef8d6d6df74b8fcf001646
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Tue, 24 May 2011 03:31:26 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 24 May 2011 04:33:24 +0200
+Hi Eric,
 
-perf tools: Fix sample type size calculation in 32 bits archs
+Today's linux-next merge of the namespace tree got conflicts in
+arch/sh/include/asm/unistd_32.h, arch/sh/include/asm/unistd_64.h,
+arch/sh/kernel/syscalls_32.S and arch/sh/kernel/syscalls_64.S between
+commit c7434dbf29b4 ("sh: wire up sys_sendmmsg") from the sh tree and
+commit e975ee91dcc1 ("ns: Wire up the setns system call") from the
+namespace tree.
 
-The shift used here to count the number of bits set in
-the mask doesn't work above the low part for archs that
-are not 64 bits.
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Fix the constant used for the shift.
-
-This fixes a 32-bit perf top failure reported by Eric Dumazet:
-
-	Can't parse sample, err = -14
-	Can't parse sample, err = -14
-	...
-
-Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com
-Link: http://lkml.kernel.org/r/1306200686-17317-1-git-send-email-fweisbec@gmail.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- tools/perf/util/event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 252b72a..6635fcd 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -42,7 +42,7 @@ int perf_sample_size(u64 sample_type)
- 	int i;
- 
- 	for (i = 0; i < 64; i++) {
--		if (mask & (1UL << i))
-+		if (mask & (1ULL << i))
- 			size++;
- 	}
- 
+diff --cc arch/sh/include/asm/unistd_32.h
+index bb7d270,26c697c..0000000
+--- a/arch/sh/include/asm/unistd_32.h
++++ b/arch/sh/include/asm/unistd_32.h
+@@@ -373,9 -373,9 +373,10 @@@
+  #define __NR_open_by_handle_at	360
+  #define __NR_clock_adjtime	361
+  #define __NR_syncfs		362
+ -#define __NR_setns              363
+ +#define __NR_sendmmsg		363
+++#define __NR_setns              364
+  
+--#define NR_syscalls 364
+++#define NR_syscalls 365
+  
+  #ifdef __KERNEL__
+  
+diff --cc arch/sh/include/asm/unistd_64.h
+index 46327ce,330668a..0000000
+--- a/arch/sh/include/asm/unistd_64.h
++++ b/arch/sh/include/asm/unistd_64.h
+@@@ -394,11 -394,11 +394,12 @@@
+  #define __NR_open_by_handle_at	371
+  #define __NR_clock_adjtime	372
+  #define __NR_syncfs		373
+ -#define __NR_setns              374
+ +#define __NR_sendmmsg		374
+++#define __NR_setns              375
+  
+  #ifdef __KERNEL__
+  
+--#define NR_syscalls 375
+++#define NR_syscalls 376
+  
+  #define __ARCH_WANT_IPC_PARSE_VERSION
+  #define __ARCH_WANT_OLD_READDIR
+diff --cc arch/sh/kernel/syscalls_32.S
+index 7c486f3,67dcf66..0000000
+--- a/arch/sh/kernel/syscalls_32.S
++++ b/arch/sh/kernel/syscalls_32.S
+@@@ -380,4 -380,4 +380,5 @@@ ENTRY(sys_call_table
+  	.long sys_open_by_handle_at	/* 360 */
+  	.long sys_clock_adjtime
+  	.long sys_syncfs
+ +	.long sys_sendmmsg
++ 	.long sys_setns
+diff --cc arch/sh/kernel/syscalls_64.S
+index ba1a737,dade54e..0000000
+--- a/arch/sh/kernel/syscalls_64.S
++++ b/arch/sh/kernel/syscalls_64.S
+@@@ -400,4 -400,4 +400,5 @@@ sys_call_table
+  	.long sys_open_by_handle_at
+  	.long sys_clock_adjtime
+  	.long sys_syncfs
+ -	.long sys_setns
+ +	.long sys_sendmmsg
+++	.long sys_setns			/* 375 */
