@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932961Ab1EXOqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:46:38 -0400
-Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:62874 "EHLO
-	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932085Ab1EXOqh (ORCPT
+	id S1756658Ab1EXNu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:50:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52274 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836Ab1EXNu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:46:37 -0400
-X-Greylist: delayed 3395 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 May 2011 10:46:37 EDT
-Subject: [PATCH] x86: reorder mm_context_t to remove x86_64 alignment
- padding & so shrink mm_struct
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>, wilsons@start.ca
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 14:49:59 +0100
-Message-ID: <1306244999.1999.5.camel@castor.rsk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 24 May 2011 09:50:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=PJaZ55HdPcnpcblMIk5I0js0VR4SC54rh93FnCQi159QlLz79RxR4W7+CGkMoSigC9
+         WatEjy6cS5LsLwTwpZHB2O2M/2OpULQhQSmrUhetPNBf0yDtwuyGW2x6hjcoLlHcHrSU
+         wzuq/CpVHH/BJnebUXhYk4el+UcSzGU0qP7+w=
+MIME-Version: 1.0
+In-Reply-To: <1306244383.1465.59.camel@gandalf.stny.rr.com>
+References: <BANLkTin4OiDiPO3znMvKTVZcYukHReydMQ@mail.gmail.com>
+	<1306244383.1465.59.camel@gandalf.stny.rr.com>
+Date: Tue, 24 May 2011 21:50:56 +0800
+Message-ID: <BANLkTin2r7omjQC9ro0f2_qEc8SzPX33Pg@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix need_resched() when checking peempt
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorder mm_context_t to remove alignment padding on 64 bit builds
-shrinking its size from 64 to 56 bytes.
-    
-This allows mm_struct to shrink from 840 to 832 bytes, so using one
-fewer cache lines, and getting more objects per slab when using slub.
-    
-    
-slabinfo mm_struct reports
-before :-
-    
-    Sizes (bytes)     Slabs
-    -----------------------------------
-    Object :     840  Total  :       7
-    SlabObj:     896  Full   :       1
-    SlabSiz:   16384  Partial:       4
-    Loss   :      56  CpuSlab:       2
-    Align  :      64  Objects:      18
-    
-after :-
+On Tue, May 24, 2011 at 9:39 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 2011-05-24 at 21:27 +0800, Hillf Danton wrote:
+>> When checking if current task could be preempted by a newly woken task,
+>> further check could be bypassed if the current thread is different from
+>> the current task of run-queue, and it is corrected accordingly.
+>
+> Ug, that change log is an obfuscated mess. But looking at the actual
+> patch, I figured what you wanted to say. How about this:
+>
+> ----
+> The RT preempt check tests the wrong task if NEED_RESCHED is set. It
+> currently checks the local CPU task. It is suppose to check the task
+> that is running on the run queue we are about to wake another task on.
+> ----
+>
+Thanks, it is great changelog:)
 
-    Sizes (bytes)     Slabs
-    ----------------------------------
-    Object :     832  Total  :       7
-    SlabObj:     832  Full   :       1
-    SlabSiz:   16384  Partial:       4
-    Loss   :       0  CpuSlab:       2
-    Align  :      64  Objects:      19
-    
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
-
----
-patch against v2.6.39
-compiled & tested on x86_64.
-
-regards
-Richard
-
-
-
-diff --git a/arch/x86/include/asm/mmu.h b/arch/x86/include/asm/mmu.h
-index aeff3e8..5f55e69 100644
---- a/arch/x86/include/asm/mmu.h
-+++ b/arch/x86/include/asm/mmu.h
-@@ -11,14 +11,14 @@
- typedef struct {
- 	void *ldt;
- 	int size;
--	struct mutex lock;
--	void *vdso;
- 
- #ifdef CONFIG_X86_64
- 	/* True if mm supports a task running in 32 bit compatibility mode. */
- 	unsigned short ia32_compat;
- #endif
- 
-+	struct mutex lock;
-+	void *vdso;
- } mm_context_t;
- 
- #ifdef CONFIG_SMP
-
-
+Hillf
