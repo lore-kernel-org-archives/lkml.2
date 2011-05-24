@@ -1,64 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab1EXIRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 04:17:42 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:40425 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab1EXIRk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 04:17:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=if835UkoczNOGDJer2+OYPS8Y2Ugs+cfR7oXKmD3Xs1tmqYcpNpNjJHSIBEd6cCeKv
-         /LgRNAccsZPbkMfcx4RWwhQDsbVc0fj3CFjtdQDUCvi0gMz7lTB9OxHfQP4YpCUIekkW
-         ihjIBBl93YSINwpQMB0e2iJyZVam3tLdA0ip4=
+	id S1754610Ab1EXIaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 04:30:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39941 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754468Ab1EXIaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 04:30:18 -0400
+Date: Tue, 24 May 2011 09:30:08 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: minchan.kim@gmail.com, abarry@cray.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Unending loop in __alloc_pages_slowpath following OOM-kill; rfc:
+ patch.
+Message-ID: <20110524083008.GA5279@suse.de>
+References: <4DCDA347.9080207@cray.com>
+ <BANLkTikiXUzbsUkzaKZsZg+5ugruA2JdMA@mail.gmail.com>
+ <4DD2991B.5040707@cray.com>
+ <BANLkTimYEs315jjY9OZsL6--mRq3O_zbDA@mail.gmail.com>
+ <20110520164924.GB2386@barrios-desktop>
+ <4DDB3A1E.6090206@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimxmWiof9s5AvS3v_0X+sMiE=0x5g@mail.gmail.com>
-References: <BANLkTimxmWiof9s5AvS3v_0X+sMiE=0x5g@mail.gmail.com>
-Date: Tue, 24 May 2011 16:17:39 +0800
-Message-ID: <BANLkTikhvhptDG-eRZ9uD5wSm3RxTn1RFw@mail.gmail.com>
-Subject: Re: [PATCH] sched: remove noop in next_prio()
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4DDB3A1E.6090206@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 21, 2011 at 10:19 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> When computing the next priority for a given run-queue, the check for
-> RT priority of the task determined by the pick_next_highest_task_rt()
-> function could be removed, since only RT task is returned by the
-> function.
->
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+On Tue, May 24, 2011 at 01:54:54PM +0900, KOSAKI Motohiro wrote:
+> >>From 8bd3f16736548375238161d1bd85f7d7c381031f Mon Sep 17 00:00:00 2001
+> > From: Minchan Kim <minchan.kim@gmail.com>
+> > Date: Sat, 21 May 2011 01:37:41 +0900
+> > Subject: [PATCH] Prevent unending loop in __alloc_pages_slowpath
+> > 
+> > From: Andrew Barry <abarry@cray.com>
+> > 
+> > I believe I found a problem in __alloc_pages_slowpath, which allows a process to
+> > get stuck endlessly looping, even when lots of memory is available.
+> > 
+> > Running an I/O and memory intensive stress-test I see a 0-order page allocation
+> > with __GFP_IO and __GFP_WAIT, running on a system with very little free memory.
+> > Right about the same time that the stress-test gets killed by the OOM-killer,
+> > the utility trying to allocate memory gets stuck in __alloc_pages_slowpath even
+> > though most of the systems memory was freed by the oom-kill of the stress-test.
+> > 
+> > The utility ends up looping from the rebalance label down through the
+> > wait_iff_congested continiously. Because order=0, __alloc_pages_direct_compact
+> > skips the call to get_page_from_freelist. Because all of the reclaimable memory
+> > on the system has already been reclaimed, __alloc_pages_direct_reclaim skips the
+> > call to get_page_from_freelist. Since there is no __GFP_FS flag, the block with
+> > __alloc_pages_may_oom is skipped. The loop hits the wait_iff_congested, then
+> > jumps back to rebalance without ever trying to get_page_from_freelist. This loop
+> > repeats infinitely.
+> > 
+> > The test case is pretty pathological. Running a mix of I/O stress-tests that do
+> > a lot of fork() and consume all of the system memory, I can pretty reliably hit
+> > this on 600 nodes, in about 12 hours. 32GB/node.
+> > 
+> > Signed-off-by: Andrew Barry <abarry@cray.com>
+> > Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  mm/page_alloc.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 3f8bce2..e78b324 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -2064,6 +2064,7 @@ restart:
+> >  		first_zones_zonelist(zonelist, high_zoneidx, NULL,
+> >  					&preferred_zone);
+> >  
+> > +rebalance:
+> >  	/* This is the last chance, in general, before the goto nopage. */
+> >  	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
+> >  			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
+> > @@ -2071,7 +2072,6 @@ restart:
+> >  	if (page)
+> >  		goto got_pg;
+> >  
+> > -rebalance:
+> >  	/* Allocate without watermarks if the context allows */
+> >  	if (alloc_flags & ALLOC_NO_WATERMARKS) {
+> >  		page = __alloc_pages_high_priority(gfp_mask, order,
+> 
+> I'm sorry I missed this thread long time.
+> 
+> In this case, I think we should call drain_all_pages().
 
-Yup, it's true.
+Why?
 
-Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
+If the direct reclaimer failed to reclaim any pages on its own, the call
+to get_page_from_freelist() is going to be useless and there is
+no guarantee that any other CPU managed to reclaim pages either. All
+this ends up doing is sending in IPI which if it's very lucky will take
+a page from another CPUs free list.
 
+> then following
+> patch is better.
+> However I also think your patch is valuable. because while the task is
+> sleeping in wait_iff_congested(), an another task may free some pages.
+> thus, rebalance path should try to get free pages. iow, you makes sense.
+> 
+> So, I'd like to propose to merge both your and my patch.
+> 
+> Thanks.
+> 
+> 
+> From 2e77784668f6ca53d88ecb46aa6b99d9d0f33ffa Mon Sep 17 00:00:00 2001
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date: Tue, 24 May 2011 13:41:57 +0900
+> Subject: [PATCH] vmscan: remove painful micro optimization
+> 
+> Currently, __alloc_pages_direct_reclaim() call get_page_from_freelist()
+> only if try_to_free_pages() return !0.
+> 
+> It's no necessary micro optimization becauase "return 0" mean vmscan reached
+> priority 0 and didn't get any pages, iow, it's really slow path. But also it
+> has bad side effect. If we don't call drain_all_pages(), we have a chance to
+> get infinite loop.
+> 
+
+With the "rebalance" patch, where is the infinite loop?
+
+> This patch remove its bad and meaningless micro optimization.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > ---
->
-> --- a/kernel/sched_rt.c 2011-04-27 11:48:50.000000000 +0800
-> +++ b/kernel/sched_rt.c 2011-05-21 22:10:34.000000000 +0800
-> @@ -670,7 +670,7 @@ static inline int next_prio(struct rq *r
->  {
->        struct task_struct *next = pick_next_highest_task_rt(rq, rq->cpu);
->
-> -       if (next && rt_prio(next->prio))
-> +       if (next)
->                return next->prio;
->        else
->                return MAX_RT_PRIO;
->
-
-
+>  mm/page_alloc.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 1572079..c41d488 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1950,9 +1950,6 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+> 
+>  	cond_resched();
+> 
+> -	if (unlikely(!(*did_some_progress)))
+> -		return NULL;
+> -
+>  retry:
+>  	page = get_page_from_freelist(gfp_mask, nodemask, order,
+>  					zonelist, high_zoneidx,
+> -- 
+> 1.7.3.1
+> 
+> 
+> 
+> 
 
 -- 
-Only stand for myself
+Mel Gorman
+SUSE Labs
