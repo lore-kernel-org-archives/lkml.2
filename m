@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab1EXOTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:19:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52819 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932471Ab1EXOTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:19:48 -0400
-Date: Tue, 24 May 2011 16:19:47 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kconfig: do not record timestamp in .config
-Message-ID: <20110524141947.GD2276@sepie.suse.cz>
-References: <1305516176-4072-1-git-send-email-lacombar@gmail.com>
- <4DD0E06C.2040009@suse.cz>
- <BANLkTi=bZe6T9hM+bUMBM1Jy5xVHP2x9cg@mail.gmail.com>
+	id S932609Ab1EXOUX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:20:23 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46061 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932471Ab1EXOUW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 10:20:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=xpamNIA47B34H8TBlDtSBelvWKUasMpsy2fUTZ0HUOKtlv+L8R5VuxRa2fp44pTj16
+         tbVgt9OMYjlfTF/ggy63B1UjUeCyN6oJYj20fAhAM5iuZb+Ojfk/lcd67MKKW4AQ9OP5
+         9Wa3Tqb3qhhqNk0e8KEkWaYH2ZSPMzP9ErDmU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=bZe6T9hM+bUMBM1Jy5xVHP2x9cg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1306238014.16375.0.camel@marge.simson.net>
+References: <BANLkTimxmWiof9s5AvS3v_0X+sMiE=0x5g@mail.gmail.com>
+	<BANLkTikhvhptDG-eRZ9uD5wSm3RxTn1RFw@mail.gmail.com>
+	<1306238014.16375.0.camel@marge.simson.net>
+Date: Tue, 24 May 2011 22:20:20 +0800
+Message-ID: <BANLkTimq31hMRa+vD=pLrtTAx=Hv=h0Acg@mail.gmail.com>
+Subject: Re: [PATCH] sched: remove noop in next_prio()
+From: Hillf Danton <dhillf@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 10:16:11AM -0400, Arnaud Lacombe wrote:
-> Hi Michal,
-> 
-> 2011/5/16 Michal Marek <mmarek@suse.cz>:
-> > On 16.5.2011 05:22, Arnaud Lacombe wrote:
-> >>
-> >> Hi Michal,
-> >>
-> >> The following patch removes the timestamp in .config file. This is a
-> >> prerequiresite for the revised version of the printer merge I sent back
-> >> in December[0]. The issue is that heading comment generations will be
-> >> merged in a single function, and that would revert the deterministic
-> >> change you made in mid-April.
-> >>
-> >> The other options are either to have timestamp always enabled and
-> >> disable them selectively, but that might be a pain to implement, or to
-> >> have timestamp disable by default and an environment variable, say
-> >> KCONFIG_TIMESTAMP, to turn everything on manually.
-> >
-> > I personally am not a big fan of embedded timestamps, so
-> >
-> > Acked-by: Michal Marek <mmarek@suse.cz>
-> >
-> Do you intend to merge that patch for .1 (or whatever Linus decides to
-> call the next kernel) ?
+On Tue, May 24, 2011 at 7:53 PM, Mike Galbraith <efault@gmx.de> wrote:
+> On Tue, 2011-05-24 at 16:17 +0800, Yong Zhang wrote:
+>> On Sat, May 21, 2011 at 10:19 PM, Hillf Danton <dhillf@gmail.com> wrote:
+>> > When computing the next priority for a given run-queue, the check for
+>> > RT priority of the task determined by the pick_next_highest_task_rt()
+>> > function could be removed, since only RT task is returned by the
+>> > function.
+>> >
+>> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>>
+>> Yup, it's true.
+>
+> (could whack the else while there)
+>
 
-I merged it now.
+Where is it, Mike?
 
-Michal
+thanks
+           Hillf
