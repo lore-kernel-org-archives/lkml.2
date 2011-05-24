@@ -1,149 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab1EXSR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:17:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:48783 "EHLO
+	id S1755520Ab1EXSRY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:17:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38088 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932341Ab1EXSRV (ORCPT
+	with ESMTP id S932094Ab1EXSRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 May 2011 14:17:21 -0400
-X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=TrBTAdWbWgUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=7mOBRU54AAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=SmLqPcwJMorV1wg6L0QA:9 a=36RqBmZCrAxBpM8EeUMA:7 a=jEp0ucaQiEUA:10 a=WeOa-AV5lc8A:10 a=jeBq3FmKZ4MA:10 a=r04YyNQmxQEyeCc_:21 a=MwtuLC5QivM3fG4O:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=vhdKIqpQuCYA:10 a=yG7VgigxZREA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=VVezscezS1KcZcbIXk0A:9 a=V2S8qur0rY0apTtiNKgA:7 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110524181719.308526063@goodmis.org>
+Message-Id: <20110524181719.603843681@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 24 May 2011 14:10:33 -0400
+Date: Tue, 24 May 2011 14:10:34 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 01/12] maccess,probe_kernel: Make write/read src const void *
+        Rakib Mullick <rakib.mullick@gmail.com>
+Subject: [PATCH 02/12] x86/ftrace: Fix compiler warning in ftrace.c
 References: <20110524181032.382259739@goodmis.org>
-Content-Disposition: inline; filename=0001-maccess-probe_kernel-Make-write-read-src-const-void.patch
+Content-Disposition: inline; filename=0002-x86-ftrace-Fix-compiler-warning-in-ftrace.c.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Rakib Mullick <rakib.mullick@gmail.com>
 
-The functions probe_kernel_write() and probe_kernel_read() do not modify
-the src pointer. Allow const pointers to be passed in without the need
-of a typecast.
+ Due to commit dc326fca2b64 (x86, cpu: Clean up and unify the NOP selection infrastructure), we get the following warning:
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
-Acked-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+arch/x86/kernel/ftrace.c: In function ‘ftrace_make_nop’:
+arch/x86/kernel/ftrace.c:308:6: warning: assignment discards qualifiers from pointer target type
+arch/x86/kernel/ftrace.c: In function ‘ftrace_make_call’:
+arch/x86/kernel/ftrace.c:318:6: warning: assignment discards qualifiers from pointer target type
+
+ftrace_nop_replace() now returns const unsigned char *, so change its associated function/variable to its compatible type to keep compiler clam.
+
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+Link: http://lkml.kernel.org/r/1305221620.7986.4.camel@localhost.localdomain
+
+[ updated for change of const void *src in probe_kernel_write() ]
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1305824936.1465.4.camel@gandalf.stny.rr.com
 ---
- arch/blackfin/mm/maccess.c |    4 ++--
- arch/s390/mm/maccess.c     |    4 ++--
- include/linux/uaccess.h    |    8 ++++----
- mm/maccess.c               |    8 ++++----
- 4 files changed, 12 insertions(+), 12 deletions(-)
+ arch/x86/kernel/ftrace.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/blackfin/mm/maccess.c b/arch/blackfin/mm/maccess.c
-index b71cebc..e253211 100644
---- a/arch/blackfin/mm/maccess.c
-+++ b/arch/blackfin/mm/maccess.c
-@@ -16,7 +16,7 @@ static int validate_memory_access_address(unsigned long addr, int size)
- 	return bfin_mem_access_type(addr, size);
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index 0ba15a6..c9a281f 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -123,7 +123,7 @@ static unsigned char *ftrace_call_replace(unsigned long ip, unsigned long addr)
+ static atomic_t nmi_running = ATOMIC_INIT(0);
+ static int mod_code_status;		/* holds return value of text write */
+ static void *mod_code_ip;		/* holds the IP to write to */
+-static void *mod_code_newcode;		/* holds the text to write to the IP */
++static const void *mod_code_newcode;	/* holds the text to write to the IP */
+ 
+ static unsigned nmi_wait_count;
+ static atomic_t nmi_update_count = ATOMIC_INIT(0);
+@@ -225,7 +225,7 @@ within(unsigned long addr, unsigned long start, unsigned long end)
  }
  
--long probe_kernel_read(void *dst, void *src, size_t size)
-+long probe_kernel_read(void *dst, const void *src, size_t size)
+ static int
+-do_ftrace_mod_code(unsigned long ip, void *new_code)
++do_ftrace_mod_code(unsigned long ip, const void *new_code)
  {
- 	unsigned long lsrc = (unsigned long)src;
- 	int mem_type;
-@@ -55,7 +55,7 @@ long probe_kernel_read(void *dst, void *src, size_t size)
- 	return -EFAULT;
+ 	/*
+ 	 * On x86_64, kernel text mappings are mapped read-only with
+@@ -266,8 +266,8 @@ static const unsigned char *ftrace_nop_replace(void)
  }
  
--long probe_kernel_write(void *dst, void *src, size_t size)
-+long probe_kernel_write(void *dst, const void *src, size_t size)
+ static int
+-ftrace_modify_code(unsigned long ip, unsigned char *old_code,
+-		   unsigned char *new_code)
++ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
++		   unsigned const char *new_code)
  {
- 	unsigned long ldst = (unsigned long)dst;
- 	int mem_type;
-diff --git a/arch/s390/mm/maccess.c b/arch/s390/mm/maccess.c
-index 71a4b0d..51e5cd9 100644
---- a/arch/s390/mm/maccess.c
-+++ b/arch/s390/mm/maccess.c
-@@ -19,7 +19,7 @@
-  * using the stura instruction.
-  * Returns the number of bytes copied or -EFAULT.
-  */
--static long probe_kernel_write_odd(void *dst, void *src, size_t size)
-+static long probe_kernel_write_odd(void *dst, const void *src, size_t size)
+ 	unsigned char replaced[MCOUNT_INSN_SIZE];
+ 
+@@ -301,7 +301,7 @@ ftrace_modify_code(unsigned long ip, unsigned char *old_code,
+ int ftrace_make_nop(struct module *mod,
+ 		    struct dyn_ftrace *rec, unsigned long addr)
  {
- 	unsigned long count, aligned;
- 	int offset, mask;
-@@ -45,7 +45,7 @@ static long probe_kernel_write_odd(void *dst, void *src, size_t size)
- 	return rc ? rc : count;
- }
+-	unsigned char *new, *old;
++	unsigned const char *new, *old;
+ 	unsigned long ip = rec->ip;
  
--long probe_kernel_write(void *dst, void *src, size_t size)
-+long probe_kernel_write(void *dst, const void *src, size_t size)
+ 	old = ftrace_call_replace(ip, addr);
+@@ -312,7 +312,7 @@ int ftrace_make_nop(struct module *mod,
+ 
+ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
  {
- 	long copied = 0;
+-	unsigned char *new, *old;
++	unsigned const char *new, *old;
+ 	unsigned long ip = rec->ip;
  
-diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
-index d512d98..5ca0951 100644
---- a/include/linux/uaccess.h
-+++ b/include/linux/uaccess.h
-@@ -93,8 +93,8 @@ static inline unsigned long __copy_from_user_nocache(void *to,
-  * Safely read from address @src to the buffer at @dst.  If a kernel fault
-  * happens, handle that and return -EFAULT.
-  */
--extern long probe_kernel_read(void *dst, void *src, size_t size);
--extern long __probe_kernel_read(void *dst, void *src, size_t size);
-+extern long probe_kernel_read(void *dst, const void *src, size_t size);
-+extern long __probe_kernel_read(void *dst, const void *src, size_t size);
- 
- /*
-  * probe_kernel_write(): safely attempt to write to a location
-@@ -105,7 +105,7 @@ extern long __probe_kernel_read(void *dst, void *src, size_t size);
-  * Safely write to address @dst from the buffer at @src.  If a kernel fault
-  * happens, handle that and return -EFAULT.
-  */
--extern long notrace probe_kernel_write(void *dst, void *src, size_t size);
--extern long notrace __probe_kernel_write(void *dst, void *src, size_t size);
-+extern long notrace probe_kernel_write(void *dst, const void *src, size_t size);
-+extern long notrace __probe_kernel_write(void *dst, const void *src, size_t size);
- 
- #endif		/* __LINUX_UACCESS_H__ */
-diff --git a/mm/maccess.c b/mm/maccess.c
-index e2b6f56..4cee182 100644
---- a/mm/maccess.c
-+++ b/mm/maccess.c
-@@ -15,10 +15,10 @@
-  * happens, handle that and return -EFAULT.
-  */
- 
--long __weak probe_kernel_read(void *dst, void *src, size_t size)
-+long __weak probe_kernel_read(void *dst, const void *src, size_t size)
-     __attribute__((alias("__probe_kernel_read")));
- 
--long __probe_kernel_read(void *dst, void *src, size_t size)
-+long __probe_kernel_read(void *dst, const void *src, size_t size)
- {
- 	long ret;
- 	mm_segment_t old_fs = get_fs();
-@@ -43,10 +43,10 @@ EXPORT_SYMBOL_GPL(probe_kernel_read);
-  * Safely write to address @dst from the buffer at @src.  If a kernel fault
-  * happens, handle that and return -EFAULT.
-  */
--long __weak probe_kernel_write(void *dst, void *src, size_t size)
-+long __weak probe_kernel_write(void *dst, const void *src, size_t size)
-     __attribute__((alias("__probe_kernel_write")));
- 
--long __probe_kernel_write(void *dst, void *src, size_t size)
-+long __probe_kernel_write(void *dst, const void *src, size_t size)
- {
- 	long ret;
- 	mm_segment_t old_fs = get_fs();
+ 	old = ftrace_nop_replace();
 -- 
 1.7.4.4
 
