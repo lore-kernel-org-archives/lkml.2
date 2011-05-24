@@ -1,79 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933102Ab1EXV3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 17:29:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37737 "EHLO mx2.mail.elte.hu"
+	id S933303Ab1EXV3v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 17:29:51 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53356 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933009Ab1EXV3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 17:29:37 -0400
-Date: Tue, 24 May 2011 23:29:25 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Ahern <dsahern@gmail.com>
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        paulus@samba.org, acme@redhat.com
-Subject: Re: perf: regression -- missing /sys/devices/system/cpu/perf_events
-Message-ID: <20110524212925.GL27634@elte.hu>
-References: <alpine.DEB.2.00.1105240955050.9203@cl320.eecs.utk.edu>
- <1306246306.18455.36.camel@twins>
- <alpine.DEB.2.00.1105241341160.24062@cl320.eecs.utk.edu>
- <20110524194810.GB27634@elte.hu>
- <alpine.DEB.2.00.1105241610390.24062@cl320.eecs.utk.edu>
- <4DDC1BB2.4090503@gmail.com>
+	id S933027Ab1EXV3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 17:29:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: markgross@thegnar.org
+Subject: Re: linux-next: build warning after merge of the suspend tree
+Date: Tue, 24 May 2011 23:30:09 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Simon Horman <horms@verge.net.au>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <20110523150636.ccd83777.sfr@canb.auug.org.au> <201105232154.52344.rjw@sisk.pl> <20110524063424.GC18075@gvim.org>
+In-Reply-To: <20110524063424.GC18075@gvim.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DDC1BB2.4090503@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105242330.09491.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Ahern <dsahern@gmail.com> wrote:
-
-> On 05/24/11 14:12, Vince Weaver wrote:
-> > On Tue, 24 May 2011, Ingo Molnar wrote:
-> >>
-> >> So, what is wrong with the method Peter suggested: the presence of the perf 
-> >> syscall (it not returning -ENOSYS) is bona fide evidence that perf is 
-> >> available.
+On Tuesday, May 24, 2011, mark gross wrote:
+> On Mon, May 23, 2011 at 09:54:52PM +0200, Rafael J. Wysocki wrote:
+> > On Monday, May 23, 2011, mark gross wrote:
+> > > On Mon, May 23, 2011 at 03:06:36PM +1000, Stephen Rothwell wrote:
+> > > > Hi Rafael,
+> > > > 
+> > > > After merging the suspend tree, today's linux-next build (i386 defconfig
+> > > > among others) produced this warning:
+> > > > 
+> > > > kernel/pm_qos_params.c: In function 'pm_qos_power_write':
+> > > > kernel/pm_qos_params.c:420: warning: passing argument 3 of 'kstrtol' from incompatible pointer type
+> > > > include/linux/kernel.h:210: note: expected 'long int *' but argument is of type 's32 *'
+> > > > 
+> > > > Intreoduced by commit 365daa955e03 ("PM: Correct PM QOS's user mode
+> > > > interface to work with ascii input per").
+> > > 
+> > > Gah!  I'm sorry about that.
+> > > 
+> > > attached is a fix.
+> > > 
+> > > 
+> > > --mark
+> > > 
+> > > signed-off-by:markgross <markgross@thegnar.org>
+> > > 
+> > > 
+> > > 
+> > > From a8f0587b9ae598be5ca4c3cdda4e0ced6ca9baaf Mon Sep 17 00:00:00 2001
+> > > From: mgross <mgross@cr48>
+> > > Date: Mon, 23 May 2011 07:14:09 -0700
+> > > Subject: [PATCH] clean up a compile time warning in the use of strict_strtol but that was
+> > >  passing an s32 * when it should be passing a long *
+> > > 
+> > > ---
+> > >  kernel/pm_qos_params.c |    6 ++++--
+> > >  1 files changed, 4 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+> > > index d61ecf3..dd37c56 100644
+> > > --- a/kernel/pm_qos_params.c
+> > > +++ b/kernel/pm_qos_params.c
+> > > @@ -405,6 +405,7 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+> > >  		size_t count, loff_t *f_pos)
+> > >  {
+> > >  	s32 value;
+> > > +	long safe_int;
+> > >  	int x;
+> > >  	char ascii_value[11];
+> > >  	struct pm_qos_request_list *pm_qos_req;
+> > > @@ -417,10 +418,11 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+> > >  		ascii_value[count] = 0;
+> > >  		if (copy_from_user(ascii_value, buf, count))
+> > >  			return -EFAULT;
+> > > -		if ((x=strict_strtol(ascii_value, 16, &value)) != 0){
+> > > -			pr_debug("%s, 0x%x, 0x%x\n",ascii_value, value, x);
+> > > +		if ((x=strict_strtol(ascii_value, 16, &safe_int)) != 0){
+> > > +			pr_debug("%s, 0x%lx, 0x%x\n",ascii_value, safe_int, x);
+> > >  			return -EINVAL;
+> > >  		}
+> > > +		value = (s32) safe_int;
 > > 
-> > it's just hard to do that from a shell script.
+> > Well, this doesn't seem quite right.
+> > 
+> > >  	} else
+> > >  		return -EINVAL;
+> > 
+> > Besides, if count == 11, there we'll write beyond ascii_value[], right?
 > 
-> What about kallsyms:
+> right. That is a bug.
 > 
-> grep sys_perf_event_open /proc/kallsyms
+> > 
+> > What about the appended patch instead of your original one?
+> Thank you!
+> 
+> > Rafael
+> > 
+> > 
+> > ---
+> > From: mark gross <markgross@thegnar.org>
+> > Subject: PM: Correct PM QOS's user mode interface to work with ascii input per
+> > 
+> > What is in the kernel docs.  Writing a string to the ABI from user mode
+> > comes in 2 flavors.  One with and one without a '\n' at the end.  This
+> > change accepts both.
+> > 
+> > # echo 0x12345678 > /dev/cpu_dma_latency
+> > 
+> > and
+> > 
+> > # echo -n 0x12345678 > /dev/cpu_dma_latency
+> > 
+> > now both work.
+> > 
+> > [rjw: Fixed up array bounds checking and type casting.]
+> > 
+> > Signed-off-by: mark gross <markgross@thegnar.org>
+> > Acked-by: Simon Horman <horms@verge.net.au>
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >  kernel/pm_qos_params.c |   25 ++++++++++++++++---------
+> >  1 file changed, 16 insertions(+), 9 deletions(-)
+> > 
+> > Index: linux-2.6/kernel/pm_qos_params.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/pm_qos_params.c
+> > +++ linux-2.6/kernel/pm_qos_params.c
+> > @@ -40,6 +40,7 @@
+> >  #include <linux/string.h>
+> >  #include <linux/platform_device.h>
+> >  #include <linux/init.h>
+> > +#include <linux/kernel.h>
+> >  
+> >  #include <linux/uaccess.h>
+> >  
+> > @@ -404,24 +405,30 @@ static ssize_t pm_qos_power_write(struct
+> >  		size_t count, loff_t *f_pos)
+> >  {
+> >  	s32 value;
+> > -	int x;
+> >  	char ascii_value[11];
+> >  	struct pm_qos_request_list *pm_qos_req;
+> >  
+> >  	if (count == sizeof(s32)) {
+> >  		if (copy_from_user(&value, buf, sizeof(s32)))
+> >  			return -EFAULT;
+> > -	} else if (count == 11) { /* len('0x12345678/0') */
+> > -		if (copy_from_user(ascii_value, buf, 11))
+> > +	} else if (count >= 10) { /* '0x12345678' or '0x12345678\n'*/
+> Did you mean <= 11 here?  I know that Alan Stern wanted to see the ABI
+> adjusted to accept shorter hex string that the full 10 char string.
+> 
+> FWIW I'm ok with doing that.
+> 
+> > +		unsigned long int ulval;
+> > +		int ret;
+> > +
+> > +		count = 10;
+> 
+> I kind of wanted to return an error to the user if they violate the
+> documented format for the hex string.  With this code you get a silent
+> truncation of the lower digits if the string is "0x123456789abcdef"
 
-that looks pretty roundabout and expensive - kallsyms can be large.
+That's correct, but with the previous code there will be a truncation
+is "echo -n 0x123456789".  If we don't want that, we should check if the
+last character is a '\n'.
 
-Nor is there a guarantee that the function will always be called 
-sys_perf_event_open() - we already renamed it from sys_perf_counter_open() as 
-you yourself mentioned it :-)
+> > +		ascii_value[count] = 0;
+> > +		if (copy_from_user(ascii_value, buf, count))
+> >  			return -EFAULT;
+> > -		if (strlen(ascii_value) != 10)
+> > -			return -EINVAL;
+> > -		x = sscanf(ascii_value, "%x", &value);
+> > -		if (x != 1)
+> > +
+> > +		ret = strict_strtoul(ascii_value, 16, &ulval);
+> > +		if (ret){
+> > +			pr_debug("%s, 0x%lx, 0x%x\n", ascii_value, ulval, ret);
+> >  			return -EINVAL;
+> > -		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
+> > -	} else
+> > +		}
+> > +		value = (s32)lower_32_bits(ulval);
+> This shouldn't be needed if you are constrained to a hex format of
+> "0x12345678" but this is more readable.  lower_32_bits is a good idea.
 
-Plus the kernel can be built without /proc/kallsyms, and root can chmod off the 
-file permissions of /proc/kallsyms for unprivileged user-space as well. So it's 
-not a particularly robust check.
+OK
 
-I agree with Vince that as far as shell scripts are concerned, checking 
-/proc/sys/kernel/perf_event_paranoid would work best - and it works better than 
-having to check the perf syscall.
-
-Vince: mind sending a patch that adds a comment to perf_event_paranoid that 
-userspace relies on the existence of that file as a feature check? Having such 
-reminders in the code works even better than frequent testing ;-)
-
-As far as the actual PAPI library goes i really hope it checks the syscall 
-itself: that's much faster and more robust than an 
-access("/proc/sys/kernel/perf_event_paranoid") call ...
+Appended is another patch that adds the '\n' check and reworks the code
+a bit (so that it will accept strings like "0x1" too).
 
 Thanks,
+Rafael
 
-	Ingo
+
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM: Fix PM QOS's user mode interface to work with ASCII input
+
+Make pm_qos_power_write() accept values passed to it in the ASCII hex
+format either with or without an ending newline.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ kernel/pm_qos_params.c |   33 +++++++++++++++++++++++----------
+ 1 file changed, 23 insertions(+), 10 deletions(-)
+
+Index: linux-2.6/kernel/pm_qos_params.c
+===================================================================
+--- linux-2.6.orig/kernel/pm_qos_params.c
++++ linux-2.6/kernel/pm_qos_params.c
+@@ -40,6 +40,7 @@
+ #include <linux/string.h>
+ #include <linux/platform_device.h>
+ #include <linux/init.h>
++#include <linux/kernel.h>
+ 
+ #include <linux/uaccess.h>
+ 
+@@ -404,24 +405,36 @@ static ssize_t pm_qos_power_write(struct
+ 		size_t count, loff_t *f_pos)
+ {
+ 	s32 value;
+-	int x;
+-	char ascii_value[11];
+ 	struct pm_qos_request_list *pm_qos_req;
+ 
+ 	if (count == sizeof(s32)) {
+ 		if (copy_from_user(&value, buf, sizeof(s32)))
+ 			return -EFAULT;
+-	} else if (count == 11) { /* len('0x12345678/0') */
+-		if (copy_from_user(ascii_value, buf, 11))
++	} else if (count <= 11) { /* ASCII perhaps? */
++		char ascii_value[11];
++		unsigned long int ulval;
++		int ret;
++
++		if (copy_from_user(ascii_value, buf, count))
+ 			return -EFAULT;
+-		if (strlen(ascii_value) != 10)
+-			return -EINVAL;
+-		x = sscanf(ascii_value, "%x", &value);
+-		if (x != 1)
++
++		if (count > 10) {
++			if (ascii_value[10] == '\n')
++				ascii_value[10] = '\0';
++			else
++				return -EINVAL;
++		} else {
++			ascii_value[count] = '\0';
++		}
++		ret = strict_strtoul(ascii_value, 16, &ulval);
++		if (ret) {
++			pr_debug("%s, 0x%lx, 0x%x\n", ascii_value, ulval, ret);
+ 			return -EINVAL;
+-		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
+-	} else
++		}
++		value = (s32)lower_32_bits(ulval);
++	} else {
+ 		return -EINVAL;
++	}
+ 
+ 	pm_qos_req = filp->private_data;
+ 	pm_qos_update_request(pm_qos_req, value);
