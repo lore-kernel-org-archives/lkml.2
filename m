@@ -1,132 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab1EXKoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 06:44:13 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:57785 "EHLO mx1.fusionio.com"
+	id S1753965Ab1EXKoh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 06:44:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55283 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab1EXKoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 06:44:11 -0400
-X-ASG-Debug-ID: 1306233849-03d6a50f5816060001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DDB8BF6.2000304@fusionio.com>
-Date: Tue, 24 May 2011 12:44:06 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753476Ab1EXKog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 06:44:36 -0400
+Date: Tue, 24 May 2011 12:44:22 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+cc: Lukas Czerner <lczerner@redhat.com>, Kyungmin Park <kmpark@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+In-Reply-To: <874o4kjtsy.fsf@devron.myhome.or.jp>
+Message-ID: <alpine.LFD.2.00.1105241211100.4028@dhcp-27-109.brq.redhat.com>
+References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de> <AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com> <201103301706.36214.arnd@arndb.de> <BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com> <87wrhgk8lp.fsf@devron.myhome.or.jp>
+ <BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com> <87r57ok3fp.fsf@devron.myhome.or.jp> <BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com> <87mxick0zj.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
+ <874o4kjtsy.fsf@devron.myhome.or.jp>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Parag Warudkar <parag.lkml@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-Subject: Re: __elv_add_request OOPS
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar>
-X-ASG-Orig-Subj: Re: __elv_add_request OOPS
-In-Reply-To: <alpine.DEB.2.02.1105232329040.1910@natty-nar>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1306233849
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64660
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-24 06:29, Parag Warudkar wrote:
-> 
-> External DVD drive - connected when suspended, removed before resume.
-> Results in NULL pointer dereference in __blk_add_request on resume.
-> 
-> *ffffffff811d6503:      48 89 58 08             mov    %rbx,0x8(%rax) |
-> %ebx = ffff880131559020 <--- faulting instruction
-> 
-> 48 89 58 08 appears only in list_add :
-> 
-> static inline void list_add(struct list_head *new, struct list_head *head)
-> {
->         __list_add(new, head, head->next);
-> ffffffff81ac012c:       49 8b 04 24             mov    (%r12),%rax
-> #ifndef CONFIG_DEBUG_LIST
-> static inline void __list_add(struct list_head *new,
->                               struct list_head *prev,
->                               struct list_head *next)
-> {
->         next->prev = new;
-> ffffffff81ac0130:       48 89 58 08             mov    %rbx,0x8(%rax)
-> 
-> AFAICS list_add is only called from one place in __elv_add_request :
-> 
->        switch (where) {
->         case ELEVATOR_INSERT_REQUEUE:
->         case ELEVATOR_INSERT_FRONT:
->                 rq->cmd_flags |= REQ_SOFTBARRIER;
->               **  list_add(&rq->queuelist, &q->queue_head);
->                 break;
-> 
-> Now, where is the patch? :)
+On Tue, 24 May 2011, OGAWA Hirofumi wrote:
 
-You forgot to attach it?
+> Lukas Czerner <lczerner@redhat.com> writes:
+> 
+> >> No, no. Userland will know max-length from statvfs, right? So, let's
+> >> assume it is 100 (->f_blocks) * 1024 (->f_bsize).
+> >
+> > You do not need to know the filesystem size to do the discard, it should
+> > be adjusted within the kernel. Just specify ULLONG_MAX as a length. See
+> > fstrim tool in util-linux-ng.
+> >
+> >> 
+> >> Now, userland know about max length, 102400, ok? Let's start to trim.
+> >> 
+> >> Assume, userland want to trim whole. So, userland will specify like
+> >> 
+> >> 	trim(0, 102400).
+> >> 
+> >> What happen in kernel actually?
+> >> 
+> >> Current implement doesn't map blocks. So, in the case of FAT, it adjusts
+> >> from 0 to 2 * 1024.
+> >> 
+> >> So, it trims between 2048 and 102400. The problem is here. FS layout is
+> >> actually, 2048 and (102400 + 2048). I.e. actually userland has to do
+> >> 
+> >> 	trim(2048, 102400 + 2048)
+> >> 
+> >> to specify whole. How to know 2048?
+> >
+> > You do not need to know anything in userspace. If you want to trim the
+> > whole filesystem you just do trim(0, ULLONG_MAX) - which is what fstrim
+> > does when you do not specify range. And you just skip the filesystem
+> > metadata obviously, regardless if they are at the beginning of the
+> > filesystem or in the middle. Just do whatever you need to do within your
+> > filesystem.
+> >
+> > What we do in ext4 is, that we convert length and start passed in struct
+> > fstrim_range into filesystem block units and then get the last
+> > allocation group and block offset within that group (we do the same for
+> > the start block) and we try to discard free block ranges in from staring
+> > block to the last block.
+> >
+> > It is really not a rocket science and since every filesystem is
+> > different and has different internal data structures it is up to you how
+> > to do this. And if you shift a block or two, it really does not matter
+> > as much since user-land does not know about how the filesystem block are
+> > laid out anyway, nor user land knows which are free and which are not.
+> >
+> > I agree that the interface is a little bit fuzzy, but that is mainly
+> > because it is intended to be filesystem independent and we do have a lot
+> > of various filesystems, so I wanted it to be as flexibile as it should,
+> > hence the start, len in Bytes.
+> >
+> > Hope it helped.
+> 
+> No. If you want to trim whole with some chunk like 1GB and periodically
+> (IIRC in xfstest), what do? We have to trim until ULLONG_MAX for each
+> 1GB?
+> 
+> Thanks.
+> 
 
-This is clearly q == NULL, CC'ing James/linux-scsi. Oops left below.
+What ? No, of course not. As I said, just go through 1G worth of filesystem
+blocks skipping metadata. However we do have a special case when we
+adjust start and len according to the first data block (which is only
+the case of 1024B blocksize).
 
-> [18682.256362] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-> [18682.256535] IP: [<ffffffff811d6503>] __elv_add_request+0x1e3/0x270
-> [18682.256603] PGD 0
-> [18682.256632] Oops: 0002 [#1] SMP
-> [18682.256686] CPU 2
-> [18682.256714] Modules linked in: nls_utf8 udf crc_itu_t usb_storage cryptd aes_x86_64 aes_generic fuse parport_pc ppdev dm_crypt kvm_intel joydev kvm binfmt_misc snd_hda_codec_hdmi snd_hda_codec_realtek arc4 snd_hda_intel snd_hda_codec iwlagn snd_hwdep snd_pcm mac80211 snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq snd_timer snd_seq_device snd cfg80211 soundcore btusb uvcvideo snd_page_alloc bluetooth videodev v4l2_compat_ioctl32 psmouse ideapad_laptop serio_raw sparse_keymap lp intel_ips mac_hid parport ext4 mbcache jbd2 i915 ahci libahci libata drm_kms_helper drm i2c_algo_bit cfbcopyarea video cfbimgblt cfbfillrect atl1c
-> [18682.257659]
-> [18682.257685] Pid: 14069, comm: xdg-screensaver Not tainted 2.6.39+ #4 LENOVO 0876                            /Base Board Product Name
-> [18682.257845] RIP: 0010:[<ffffffff811d6503>]  [<ffffffff811d6503>] __elv_add_request+0x1e3/0x270
-> [18682.257964] RSP: 0018:ffff88009b3a19e8  EFLAGS: 00010006
-> [18682.258056] RAX: 0000000000000000 RBX: ffff880131559020 RCX: 0000000000000001
-> [18682.258152] RDX: 0000000000000001 RSI: ffff880131559020 RDI: ffff8801315f77d0
-> [18682.258248] RBP: ffff88009b3a1a08 R08: ffffffff811e1000 R09: ffff8801315f77d0
-> [18682.258343] R10: ffff8800b5085e40 R11: ffff8800b5085e40 R12: ffff8801315f77d0
-> [18682.258437] R13: 0000000000000001 R14: 0000000000000001 R15: ffff8800b5085e40
-> [18682.258529] FS:  0000000000000000(0000) GS:ffff880137c80000(0000) knlGS:0000000000000000
-> [18682.258636] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [18682.258712] CR2: 0000000000000008 CR3: 0000000001a03000 CR4: 00000000000006e0
-> [18682.258807] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [18682.258898] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [18682.258994] Process xdg-screensaver (pid: 14069, threadinfo ffff88009b3a0000, task ffff8800aff096b0)
-> [18682.259112] Stack:
-> [18682.259140]  ffff8801315f77d0 ffff880131559020 0000000000000001 ffff88009b3a1c48
-> [18682.259249]  ffff88009b3a1a38 ffffffff811e10a0 0000000000000000 ffff88009b3a1a48
-> [18682.259354]  ffff880131559020 0000000000000000 ffff88009b3a1af8 ffffffff811e118e
-> [18682.259460] Call Trace:
-> [18682.259504]  [<ffffffff811e10a0>] blk_execute_rq_nowait+0x60/0xc0
-> [18682.259587]  [<ffffffff811e118e>] blk_execute_rq+0x8e/0x130
-> [18682.259668]  [<ffffffff812db5bc>] scsi_execute+0xfc/0x160
-> [18682.259742]  [<ffffffff812dc18f>] scsi_execute_req+0xbf/0x130
-> [18682.259821]  [<ffffffff812d5c71>] ioctl_internal_command.clone.4+0x61/0x1b0
-> [18682.259914]  [<ffffffff812d5e3e>] scsi_set_medium_removal+0x7e/0xb0
-> [18682.260000]  [<ffffffff812ecfa0>] sr_lock_door+0x20/0x30
-> [18682.260075]  [<ffffffff812f9da7>] cdrom_release+0x147/0x270
-> [18682.260153]  [<ffffffff812ebac8>] sr_block_release+0x38/0x60
-> [18682.260233]  [<ffffffff811730ac>] __blkdev_put+0x16c/0x1b0
-> [18682.260308]  [<ffffffff81173129>] blkdev_put+0x39/0x150
-> [18682.260379]  [<ffffffff81173264>] blkdev_close+0x24/0x30
-> [18682.260455]  [<ffffffff81140fba>] fput+0xea/0x220
-> [18682.260521]  [<ffffffff8113d396>] filp_close+0x66/0x90
-> [18682.260592]  [<ffffffff8105c117>] put_files_struct+0x87/0xf0
-> [18682.260668]  [<ffffffff8105c244>] exit_files+0x54/0x70
-> [18682.264275]  [<ffffffff8105c72b>] do_exit+0x16b/0x860
-> [18682.267802]  [<ffffffff811f6c2a>] ? trace_hardirqs_off_thunk+0x3a/0x6c
-> [18682.271512]  [<ffffffff8105d0e8>] do_group_exit+0x58/0xd0
-> [18682.276948]  [<ffffffff8105d177>] sys_exit_group+0x17/0x20
-> [18682.281121]  [<ffffffff81485d42>] system_call_fastpath+0x16/0x1b
-> [18682.284603] Code: ff ff e9 90 fe ff ff 90 81 4b 40 00 08 00 00 48 89 df e8 c1 93 00 00 eb c1 0f 1f 80 00 00 00 00 81 4b 40 00 08 00 00 49 8b 04 24
-> [18682.284903]  89 58 08 48 89 03 4c 89 63 08 49 89 1c 24 eb 9e 0f 1f 40 00
-> [18682.290727] RIP  [<ffffffff811d6503>] __elv_add_request+0x1e3/0x270
-> [18682.293189]  RSP <ffff88009b3a19e8>
-> [18682.296075] CR2: 0000000000000008
-> [18682.358582] ---[ end trace 82dd699fdeb50b72 ]---
+	if (start < first_data_blk) {
+		len -= first_data_blk - start;
+		start = first_data_blk;
+	}
 
--- 
-Jens Axboe
+Which means that we just skip the first block (or whatever first data
+block is). And this is the same as skipping metadata.
 
+-Lukas
