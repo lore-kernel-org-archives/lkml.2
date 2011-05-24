@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab1EXXOd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 19:14:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59831 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754804Ab1EXXOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 19:14:32 -0400
-Message-ID: <4DDC3BC3.4010804@zytor.com>
-Date: Tue, 24 May 2011 16:14:11 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-CC: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
-        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
-        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
-        penberg@kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-References: <1306269105.21443.20.camel@dan> <4DDC31DF.5010303@zytor.com>
-In-Reply-To: <4DDC31DF.5010303@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933110Ab1EXXPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 19:15:10 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37415 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754804Ab1EXXPJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 19:15:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :organization:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=CdFOS8AHZEH7qxNVuJJIxR8zhQA/L1eU8Rw9g3wfzusQiK4ERU6AagSD0jwvAYYmco
+         DYYwWz5zVZhCv85/6KhNmUjslPgYvFPcOXt1XEl6LTZ9WMdA1KWfCOUmbXzToKEBEzCa
+         lDgQc+A4n4J54Q3Rp5x2xz2S3EJEcPJ1YZ7tc=
+Subject: Re: [PATCH] MIPS:i8259.c remove resume and shutdown to syscore_ops
+From: Wanlong Gao <wanlong.gao@gmail.com>
+Reply-To: wanlong.gao@gmail.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Pengfei Zhang <zoppof.zhang@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+In-Reply-To: <201105242059.59770.rjw@sisk.pl>
+References: <1306247112.2066.8.camel@Tux>  <201105242059.59770.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Linux kernel
+Date: Wed, 25 May 2011 07:14:59 +0800
+Message-ID: <1306278899.2135.2.camel@Tux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2011 03:31 PM, H. Peter Anvin wrote:
+On 二, 2011-05-24 at 20:59 +0200, Rafael J. Wysocki wrote:
+> On Tuesday, May 24, 2011, Wanlong Gao wrote:
+> > 
+> > > On Tue, May 24, 2011 at 08:19:18PM +0800, Pengfei Zhang wrote:
+> > > 
+> > > > Remove the resume and shutdown of i8259A from the sysdev_class
+> > > > to the syscore_ops since these members had removed from the
+> > > > structure sysdev_class.
+> > > 
+> > > I don't see why one would want to want to first call
+> > > register_syscore_ops
+> > > then sysdev_class_register and sysdev_register?
+> > > 
+> > Hi Ralf:
+> > If these not moved to syscore_ops, building will get error.
+> > 
+> > Hi Thomas:
+> > Does you mean that we can just remove the sysfs entry now ?
 > 
-> Arguably this is really something that would be *much* better done in
-> the bootloader, but given that the dominant boot loader for Linux is
-> Grub, I don't expect that anything will ever happen until the cows come
-> home :(
+> I had the appended patch in my tree before the merge window started,
+> but it conflicted with analogous changes in the MIPS tree, so I had
+> dropped it.  Was it a mistake?
 > 
+> Rafael
 
-This pretty much means we need an opt-out for this.  I think we need
-this both in the form of a boot protocol flag bit (for the case where
-the boot loader knows what it's doing, and what the kernel to stay put;
-perhaps it has already randomized) and a kernel command-line option
-(which can be parsed early and set the above flag.)
+Hi Rafael:
 
-	-hpa
+On 5/24/11, Ralf Baechle <ralf@linux-mips.org> wrote:
+>Re: [PATCH] MIPS: Use struct syscore_ops instead of sysdevs for i8259
+> On Fri, May 20, 2011 at 10:41:41PM +0900, Yoichi Yuasa wrote:
+>
+> Thanks, applied.
+>
+>   Ralf
+It seems already applied some about this?
+
+Thanks
+
+Best regards
+Wanlong Gao
+
