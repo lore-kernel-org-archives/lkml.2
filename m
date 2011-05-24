@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757772Ab1EXXEY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 19:04:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15964 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757374Ab1EXXEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 19:04:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,264,1304319600"; 
-   d="scan'208";a="8059164"
-From: Andi Kleen <andi@firstfloor.org>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        jbeulich@novell.com, fenghua.yu@intel.com, khali@linux-fr.org
-Subject: [PATCH 3/3] coretemp: Get microcode revision from cpu_data
-Date: Tue, 24 May 2011 16:03:30 -0700
-Message-Id: <1306278210-18285-3-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
-References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
+	id S1757806Ab1EXXFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 19:05:07 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:57346 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757756Ab1EXXFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 19:05:05 -0400
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
+        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
+        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
+        penberg@kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
+In-Reply-To: <4DDC31DF.5010303@zytor.com>
+References: <1306269105.21443.20.camel@dan>  <4DDC31DF.5010303@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 19:04:56 -0400
+Message-ID: <1306278296.1921.10.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Tue, 2011-05-24 at 15:31 -0700, H. Peter Anvin wrote:
+> On 05/24/2011 01:31 PM, Dan Rosenberg wrote:
+> > This introduces CONFIG_RANDOMIZE_BASE, which randomizes the address at
+> > which the kernel is decompressed at boot as a security feature that
+> > deters exploit attempts relying on knowledge of the location of kernel
+> > internals.  The default values of the kptr_restrict and dmesg_restrict
+> > sysctls are set to (1) when this is enabled, since hiding kernel
+> > pointers is necessary to preserve the secrecy of the randomized base
+> > address.
+> > 
+> > This feature also uses a fixed mapping to move the IDT (if not already
+> > done as a fix for the F00F bug), to avoid exposing the location of
+> > kernel internals relative to the original IDT.  This has the additional
+> > security benefit of marking the new virtual address of the IDT
+> > read-only.
+> 
+> As written, I think this is unsafe, simply because the kernel has no
+> idea what memory is actually safe to relocate into, and your code
+> doesn't actually make any attempt at doing so.
+> 
+> The fact that you change CONFIG_PHYSICAL_ALIGN is particularly
+> devastating, and will introduce boot failures on real systems.
+> 
+> For this to be acceptable, you need to at the very least:
+> 
+> 1. Verify the in the address map passed to the kernel where it is safe
+>    to locate the kernel;
 
-Now that the ucode revision is available in cpu_data remove
-the existing code in coretemp.c to query it manually. Read the ucode
-revision from cpu_data instead
+I'll do this, thanks.
 
-Cc: jbeulich@novell.com
-Cc: fenghua.yu@intel.com
-Cc: khali@linux-fr.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- drivers/hwmon/coretemp.c |   29 +++++------------------------
- 1 files changed, 5 insertions(+), 24 deletions(-)
+> 2. Not introduce a performance regression (we avoid locating in the
+>    bottom 16 MiB for performance reasons, except on very small systems);
 
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 9577c43..aff3e2c 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -324,15 +324,6 @@ static int get_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *dev)
- 	}
- }
- 
--static void __devinit get_ucode_rev_on_cpu(void *edx)
--{
--	u32 eax;
--
--	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
--	sync_core();
--	rdmsr(MSR_IA32_UCODE_REV, eax, *(u32 *)edx);
--}
--
- static int get_pkg_tjmax(unsigned int cpu, struct device *dev)
- {
- 	int err;
-@@ -433,21 +424,11 @@ static int chk_ucode_version(struct platform_device *pdev)
- 	 * Readings might stop update when processor visited too deep sleep,
- 	 * fixed for stepping D0 (6EC).
- 	 */
--	if (c->x86_model == 0xe && c->x86_mask < 0xc) {
--		/* check for microcode update */
--		err = smp_call_function_single(pdev->id, get_ucode_rev_on_cpu,
--					       &edx, 1);
--		if (err) {
--			dev_err(&pdev->dev,
--				"Cannot determine microcode revision of "
--				"CPU#%u (%d)!\n", pdev->id, err);
--			return -ENODEV;
--		} else if (edx < 0x39) {
--			dev_err(&pdev->dev,
--				"Errata AE18 not fixed, update BIOS or "
--				"microcode of the CPU!\n");
--			return -ENODEV;
--		}
-+	if (c->x86_model == 0xe && c->x86_mask < 0xc && c->x86_cpu_update < 0x39) {
-+		dev_err(&pdev->dev,
-+			"Errata AE18 not fixed, update BIOS or "
-+			"microcode of the CPU!\n");
-+		return -ENODEV;
- 	}
- 	return 0;
- }
--- 
-1.7.4.4
+I altered the boot code so that it uses CONFIG_PHYSICAL_START, which
+defaults to 16 MiB, as a lower bound on location.  So nothing will ever
+get loaded below there, and I still can take advantage of higher
+alignment granularity.  Are there other problems I'm not anticipating?
+
+> 3. Make sure not to break kdump.
+> 
+
+Ok, I'll be sure to add this to the list of things to test.
+
+Thanks for the feedback.
+
+-Dan
+
 
