@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab1EXQ7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 12:59:35 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52910 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab1EXQ7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 12:59:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=IVosRS+PL5dR7f9pEXXECnUyG3OdXN3VU5zZ7LnhG9RHTWYc1SziMzlvnLQlOs9LDL
-         /YaUkDRj6uRYFzz53l7e9D3StZrlyxDdma4bb2STTWV09dYV9n2Je9MXi4MAcWqtjwWn
-         LMg1c1ytTB/tudIwB7pJ3zWd67m5qzqdlp67E=
+	id S1756083Ab1EXRHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 13:07:10 -0400
+Received: from mail.virtall.com ([178.63.195.102]:52705 "EHLO mail.virtall.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753576Ab1EXRHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 13:07:09 -0400
+X-Greylist: delayed 436 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 May 2011 13:07:08 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=wpkg.org; h=message-id:date
+	:from:mime-version:to:subject:content-type
+	:content-transfer-encoding; q=dns; s=default; b=8ebittLRCqyUP40l
+	Kh6pOAtDGIw5dHrEJiHc1yCB5EkPUJzKWKNbppuMctrAnfbM8zy3RO2LmNRSdbGh
+	MNi/gDTaV9SxMXNOXoTnf+9wK+0Fnejd4c8LlfYgrpY9c6GzI1sJ5k4HMKwqhSZl
+	xBY8LiGjoqiN7zBqj1bO/Ay3KSU=
+Message-ID: <4DDBE405.7010208@wpkg.org>
+Date: Tue, 24 May 2011 18:59:49 +0200
+From: Tomasz Chmielewski <mangoo@wpkg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1306173085.8687.38.camel@Joe-Laptop>
-References: <1306172407.8198.3.camel@localhost.localdomain>
-	<1306173085.8687.38.camel@Joe-Laptop>
-Date: Tue, 24 May 2011 22:59:33 +0600
-Message-ID: <BANLkTikQjH5pdenTNRxyBwegbkRj0vGHLg@mail.gmail.com>
-Subject: Re: [PATCH] drivers: Use kzalloc instead of 'kmalloc+memset', where possible.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.39, poulsbo/gma500, suspend broken?
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/23/11, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2011-05-23 at 23:40 +0600, Rakib Mullick wrote:
->> Following patch removes the uses of 'kmalloc+memset' from various
->> drivers subsystems, which is replaced by kzalloc. kzalloc take care of
->> setting allocated memory with null, so it helps to get rid from using
->> memset.
->> diff --git a/drivers/gpu/drm/drm_scatter.c b/drivers/gpu/drm/drm_scatter.c
-> []
->> -	entry->pagelist = kmalloc(pages * sizeof(*entry->pagelist), GFP_KERNEL);
->> +	entry->pagelist = kzalloc(pages * sizeof(*entry->pagelist), GFP_KERNEL);
->
-> Perhaps it's better to use:
->
-> 	entry->pagelist =  kcalloc(pages, sizeof(*entry->pagelist), GFP_KERNEL);
->
->> -	entry->busaddr = kmalloc(pages * sizeof(*entry->busaddr), GFP_KERNEL);
->> +	entry->busaddr = kzalloc(pages * sizeof(*entry->busaddr), GFP_KERNEL);
->
-> here too.
->
-Is there any significant benefit of using kcalloc here?
+I noticed that with 2.6.39 kernel, I can no longer successfully suspend 
+a netbook with poulsbo/gma500 hardware.
+
+I.e. the system does seem to suspend, but it's no longer possible to 
+wake it by pressing keys (at least on Asus Aspire One 751h I use).
 
 
-Thanks,
-Rakib
->
+Is it a known limitation of poulsbo/gma500 (added to 2.6.39 - before 
+that, I was using 2.6.35 with some closed drivers)?
+
+
+-- 
+Tomasz Chmielewski
+http://wpkg.org
