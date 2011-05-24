@@ -1,189 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab1EXL52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 07:57:28 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38356 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754555Ab1EXL50 (ORCPT
+	id S1755721Ab1EXLtG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 07:49:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39448 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab1EXLtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 07:57:26 -0400
-From: Alan Cox <alan@linux.jf.intel.com>
-Subject: [PATCH RESEND] langwell_gpio: add runtime pm support
-To: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
-Date: Tue, 24 May 2011 12:41:45 +0100
-Message-ID: <20110524114120.25760.57757.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Tue, 24 May 2011 07:49:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=X2uR2CTmSRqGE9GUa3LvXWhZ48soZI1x689HrCHTVdy55UXUrvDkENIHFR0c75WEOg
+         GQdPEx1vAlBCOviLDeBL74PDM7TiL3cKyHiQHm3b/bAtSqbdLhC1y6JuM/0iz2C4aYNM
+         KmF8ER0nX/2enM8vMFMGQZun2OQ2ukOq3QWsA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Date: Tue, 24 May 2011 07:49:04 -0400
+X-Google-Sender-Auth: 600sgxULWirQR8lK7vwbkqW8QTw
+Message-ID: <BANLkTin4wu1HNDeo8Rv7iddM9KkgZdhfgA@mail.gmail.com>
+Subject: UNIX Compatibility
+From: Richard Yao <ryao@ic.sunysb.edu>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kristen Carlson Accardi <kristen@linux.intel.com>
+I know that the system call codes used by Linux are not 100% UNIX
+compatible. Is there anything else in the kernel that is not UNIX
+compatible? Would modifying these things for UNIX compatibility break
+anything in userland provided that it is recompiled against the
+modified sources?
 
-While this is essentially a no-op for this driver, it has the
-side effect of letting the PMU driver snoop D3 requests from
-the PCI core for this driver.
+By the way, I subscribed to the mailing because I heard that Linus
+Torvalds is considering changing Linux's version scheme from 2.6.x to
+3.x. Is there any possibility of putting better UNIX compatibility on
+the list of features planned for 3.x?
 
-This is only for langwell, not for whitney point.
-
-Signed-off-by: Kristen Carlson Accardi <kristen@linux.intel.com>
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-
----
-
- drivers/gpio/langwell_gpio.c |   65 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 65 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
-index 1b06f67..bd6571e 100644
---- a/drivers/gpio/langwell_gpio.c
-+++ b/drivers/gpio/langwell_gpio.c
-@@ -33,6 +33,7 @@
- #include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/slab.h>
-+#include <linux/pm_runtime.h>
- 
- /*
-  * Langwell chip has 64 pins and thus there are 2 32bit registers to control
-@@ -63,6 +64,7 @@ struct lnw_gpio {
- 	void				*reg_base;
- 	spinlock_t			lock;
- 	unsigned			irq_base;
-+	struct pci_dev			*pdev;
- };
- 
- static void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
-@@ -104,11 +106,18 @@ static int lnw_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
- 	u32 value;
- 	unsigned long flags;
- 
-+	if (lnw->pdev)
-+		pm_runtime_get(&lnw->pdev->dev);
-+
- 	spin_lock_irqsave(&lnw->lock, flags);
- 	value = readl(gpdr);
- 	value &= ~BIT(offset % 32);
- 	writel(value, gpdr);
- 	spin_unlock_irqrestore(&lnw->lock, flags);
-+
-+	if (lnw->pdev)
-+		pm_runtime_put(&lnw->pdev->dev);
-+
- 	return 0;
- }
- 
-@@ -120,11 +129,19 @@ static int lnw_gpio_direction_output(struct gpio_chip *chip,
- 	unsigned long flags;
- 
- 	lnw_gpio_set(chip, offset, value);
-+
-+	if (lnw->pdev)
-+		pm_runtime_get(&lnw->pdev->dev);
-+
- 	spin_lock_irqsave(&lnw->lock, flags);
- 	value = readl(gpdr);
- 	value |= BIT(offset % 32);
- 	writel(value, gpdr);
- 	spin_unlock_irqrestore(&lnw->lock, flags);
-+
-+	if (lnw->pdev)
-+		pm_runtime_put(&lnw->pdev->dev);
-+
- 	return 0;
- }
- 
-@@ -145,6 +162,10 @@ static int lnw_irq_type(struct irq_data *d, unsigned type)
- 
- 	if (gpio >= lnw->chip.ngpio)
- 		return -EINVAL;
-+
-+	if (lnw->pdev)
-+		pm_runtime_get(&lnw->pdev->dev);
-+
- 	spin_lock_irqsave(&lnw->lock, flags);
- 	if (type & IRQ_TYPE_EDGE_RISING)
- 		value = readl(grer) | BIT(gpio % 32);
-@@ -159,6 +180,9 @@ static int lnw_irq_type(struct irq_data *d, unsigned type)
- 	writel(value, gfer);
- 	spin_unlock_irqrestore(&lnw->lock, flags);
- 
-+	if (lnw->pdev)
-+		pm_runtime_put(&lnw->pdev->dev);
-+
- 	return 0;
- }
- 
-@@ -211,6 +235,39 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
- 	chip->irq_eoi(data);
- }
- 
-+#ifdef CONFIG_PM
-+static int lnw_gpio_runtime_resume(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static int lnw_gpio_runtime_suspend(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static int lnw_gpio_runtime_idle(struct device *dev)
-+{
-+	int err = pm_schedule_suspend(dev, 500);
-+
-+	if (!err)
-+		return 0;
-+
-+	return -EBUSY;
-+}
-+
-+#else
-+#define lnw_gpio_runtime_suspend	NULL
-+#define lnw_gpio_runtime_resume		NULL
-+#define lnw_gpio_runtime_idle		NULL
-+#endif
-+
-+static const struct dev_pm_ops lnw_gpio_pm_ops = {
-+	.runtime_suspend = lnw_gpio_runtime_suspend,
-+	.runtime_resume = lnw_gpio_runtime_resume,
-+	.runtime_idle = lnw_gpio_runtime_idle,
-+};
-+
- static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
- 			const struct pci_device_id *id)
- {
-@@ -270,6 +327,7 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
- 	lnw->chip.base = gpio_base;
- 	lnw->chip.ngpio = id->driver_data;
- 	lnw->chip.can_sleep = 0;
-+	lnw->pdev = pdev;
- 	pci_set_drvdata(pdev, lnw);
- 	retval = gpiochip_add(&lnw->chip);
- 	if (retval) {
-@@ -285,6 +343,10 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
- 	}
- 
- 	spin_lock_init(&lnw->lock);
-+
-+	pm_runtime_put_noidle(&pdev->dev);
-+	pm_runtime_allow(&pdev->dev);
-+
- 	goto done;
- err5:
- 	kfree(lnw);
-@@ -302,6 +364,9 @@ static struct pci_driver lnw_gpio_driver = {
- 	.name		= "langwell_gpio",
- 	.id_table	= lnw_gpio_ids,
- 	.probe		= lnw_gpio_probe,
-+	.driver		= {
-+		.pm	= &lnw_gpio_pm_ops,
-+	},
- };
- 
- 
-
+Yours truly,
+Richard Yao
