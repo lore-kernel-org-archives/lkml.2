@@ -1,189 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207Ab1EXSjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:39:36 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60946 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933003Ab1EXSiS (ORCPT
+	id S933064Ab1EXSiT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:38:19 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:47239 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933023Ab1EXSiQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:38:18 -0400
+	Tue, 24 May 2011 14:38:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=skgfp1ykitVsVYkcPMUXUej8zBM7UFUvwf1fyieGMBeHEMnTjUijfpIQITaLChfPn2
-         6y/ncrUWDSZlDL8ckCCTEz0q2+iunKFGm3ttMZFAoaDj7/2d1c6239OBxEHBti8YDCro
-         zjzgkMjmjoILVJg99SqsjhCU/zgJFFZXpArlo=
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com
-Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
-        pedro@codesourcery.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 16/19] ptrace: make group stop state visible via PTRACE_GETSIGINFO
-Date: Tue, 24 May 2011 20:37:36 +0200
-Message-Id: <1306262259-7285-17-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1306262259-7285-1-git-send-email-tj@kernel.org>
-References: <1306262259-7285-1-git-send-email-tj@kernel.org>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=RdyYzWvk119JIQBR33yrdj3KwTIA9YQUMeUfTLcTcE4tsWEcGo+Su4XFoXoaKnZXBt
+         EuH7uid0vM9P/tOr/Q+w==
+MIME-Version: 1.0
+In-Reply-To: <1304118968-6620-1-git-send-email-vnagarnaik@google.com>
+References: <1304106356-11277-1-git-send-email-vnagarnaik@google.com> <1304118968-6620-1-git-send-email-vnagarnaik@google.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Tue, 24 May 2011 11:37:37 -0700
+Message-ID: <BANLkTikfyMEmQRsdkje64V0owZg2RsPpgQ@mail.gmail.com>
+Subject: Re: [PATCH] trace: Add a free on close control mechanism for buffer_size_kb
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If tracee is SEIZED, PTRACE_EVENT_STOP trap is used for group stop;
-however, there currently is no way to find out which signal initiated
-the group stop or if the group stop is still in effect.
+Hi Steven
 
-This patch changes PTRACE_GET_SIGINFO on ptrace traps to report group
-stop information via si.si_signo and si.si_pt_flags.  Note that it's
-only available if tracee was seized.
+Thanks for including my other patches in your tree. However, I did not
+see this patch included in it.
 
-This doesn't address notification and tracer has to put tracee in an
-appropriate trap and poll the flag.  Later patches will deal with
-notification and trap transition.
+Did you want any changes to it?
 
-Test program follows.
 
-  #define PTRACE_SEIZE		0x4206
-  #define PTRACE_INTERRUPT	0x4207
+On Fri, Apr 29, 2011 at 4:16 PM, Vaibhav Nagarnaik
+<vnagarnaik@google.com> wrote:
+> The proc file entry buffer_size_kb is used to set the size of tracing
+> buffer. The memory to expand the buffer size is kernel memory. Consider
+> a use case where tracing is handled by a user space utility, which acts
+> as a gate keeper for tracing requests. In an OOM condition, tracing is
+> considered a low priority task and if the utility gets killed the ring
+> buffer memory cannot be released back to the kernel.
+>
+> This patch adds an IOCTL on the buffer_size_kb file to set a boolean.
+> When this boolean is enabled, closing buffer_size_kb file will cause
+> tracing to stop and free up the ring buffer memory.
+>
+> The user space process can then open the buffer_size_kb file to set the
+> new buffer size for tracing, enable the boolean through IOCTL and keep
+> the file open. Under OOM condition, if the process gets killed, the
+> kernel closes the file descriptor for buffer_size_kb. The release
+> handler stops the tracing and releases the kernel memory automatically.
+>
+> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+> ---
+>  include/linux/ftrace.h |    3 +
+>  kernel/trace/trace.c   |  141 +++++++++++++++++++++++++++++++++++------------
+>  2 files changed, 108 insertions(+), 36 deletions(-)
+>
+> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+> index ca29e03..30c8a23 100644
+> --- a/include/linux/ftrace.h
+> +++ b/include/linux/ftrace.h
+> @@ -114,6 +114,9 @@ struct ftrace_func_command {
+>                                        char *params, int enable);
+>  };
+>
+> +/* enable/disable auto free ring buffer on file close */
+> +#define TRACE_RINGBUF_FREE_ON_CLOSE _IOW('t', 0x01, int)
+> +
+>  #ifdef CONFIG_DYNAMIC_FTRACE
+>
+>  int ftrace_arch_code_modify_prepare(void);
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index d38c16a..06f4458 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -2765,7 +2765,7 @@ int tracer_init(struct tracer *t, struct trace_array *tr)
+>        return t->init(tr);
+>  }
+>
+> -static int tracing_resize_ring_buffer(unsigned long size)
+> +static int __tracing_resize_ring_buffer(unsigned long size)
+>  {
+>        int ret;
+>
+> @@ -2817,6 +2817,42 @@ static int tracing_resize_ring_buffer(unsigned long size)
+>        return ret;
+>  }
+>
+> +static ssize_t tracing_resize_ring_buffer(unsigned long size)
+> +{
+> +       int cpu, ret = 0;
+> +
+> +       mutex_lock(&trace_types_lock);
+> +
+> +       tracing_stop();
+> +
+> +       /* disable all cpu buffers */
+> +       for_each_tracing_cpu(cpu) {
+> +               if (global_trace.data[cpu])
+> +                       atomic_inc(&global_trace.data[cpu]->disabled);
+> +               if (max_tr.data[cpu])
+> +                       atomic_inc(&max_tr.data[cpu]->disabled);
+> +       }
+> +
+> +       if (size != global_trace.entries)
+> +               ret = __tracing_resize_ring_buffer(size);
+> +
+> +       /* If check pages failed, return ENOMEM */
+> +       if (tracing_disabled)
+> +               ret = -ENOMEM;
+> +
+> +       for_each_tracing_cpu(cpu) {
+> +               if (global_trace.data[cpu])
+> +                       atomic_dec(&global_trace.data[cpu]->disabled);
+> +               if (max_tr.data[cpu])
+> +                       atomic_dec(&max_tr.data[cpu]->disabled);
+> +       }
+> +
+> +       tracing_start();
+> +       mutex_unlock(&trace_types_lock);
+> +
+> +       return ret;
+> +}
+> +
+>
+>  /**
+>  * tracing_update_buffers - used by tracing facility to expand ring buffers
+> @@ -2834,7 +2870,7 @@ int tracing_update_buffers(void)
+>
+>        mutex_lock(&trace_types_lock);
+>        if (!ring_buffer_expanded)
+> -               ret = tracing_resize_ring_buffer(trace_buf_size);
+> +               ret = __tracing_resize_ring_buffer(trace_buf_size);
+>        mutex_unlock(&trace_types_lock);
+>
+>        return ret;
+> @@ -2858,7 +2894,7 @@ static int tracing_set_tracer(const char *buf)
+>        mutex_lock(&trace_types_lock);
+>
+>        if (!ring_buffer_expanded) {
+> -               ret = tracing_resize_ring_buffer(trace_buf_size);
+> +               ret = __tracing_resize_ring_buffer(trace_buf_size);
+>                if (ret < 0)
+>                        goto out;
+>                ret = 0;
+> @@ -3399,11 +3435,37 @@ out_err:
+>        goto out;
+>  }
+>
+> +struct ftrace_entries_info {
+> +       struct trace_array      *tr;
+> +       int                     free_buffer_on_close;
+> +};
+> +
+> +static int
+> +tracing_entries_open(struct inode *inode, struct file *filp)
+> +{
+> +       struct ftrace_entries_info *info;
+> +
+> +       if (tracing_disabled)
+> +               return -ENODEV;
+> +
+> +       info = kzalloc(sizeof(*info), GFP_KERNEL);
+> +       if (!info)
+> +               return -ENOMEM;
+> +
+> +       info->tr = (struct trace_array *)inode->i_private;
+> +       info->free_buffer_on_close = 0;
+> +
+> +       filp->private_data = info;
+> +
+> +       return 0;
+> +}
+> +
+>  static ssize_t
+>  tracing_entries_read(struct file *filp, char __user *ubuf,
+>                     size_t cnt, loff_t *ppos)
+>  {
+> -       struct trace_array *tr = filp->private_data;
+> +       struct ftrace_entries_info *info = filp->private_data;
+> +       struct trace_array *tr = info->tr;
+>        char buf[96];
+>        int r;
+>
+> @@ -3425,7 +3487,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+>  {
+>        unsigned long val;
+>        char buf[64];
+> -       int ret, cpu;
+> +       int ret;
+>
+>        if (cnt >= sizeof(buf))
+>                return -EINVAL;
+> @@ -3443,46 +3505,50 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+>        if (!val)
+>                return -EINVAL;
+>
+> -       mutex_lock(&trace_types_lock);
+> +       /* value is in KB */
+> +       val <<= 10;
+>
+> -       tracing_stop();
+> +       ret = tracing_resize_ring_buffer(val);
+> +       if (ret < 0)
+> +               return ret;
+>
+> -       /* disable all cpu buffers */
+> -       for_each_tracing_cpu(cpu) {
+> -               if (global_trace.data[cpu])
+> -                       atomic_inc(&global_trace.data[cpu]->disabled);
+> -               if (max_tr.data[cpu])
+> -                       atomic_inc(&max_tr.data[cpu]->disabled);
+> -       }
+> +       *ppos += cnt;
+>
+> -       /* value is in KB */
+> -       val <<= 10;
+> +       return cnt;
+> +}
+>
+> -       if (val != global_trace.entries) {
+> -               ret = tracing_resize_ring_buffer(val);
+> -               if (ret < 0) {
+> -                       cnt = ret;
+> -                       goto out;
+> -               }
+> +static long
+> +tracing_entries_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+> +{
+> +       int ret = -ENOIOCTLCMD;
+> +       struct ftrace_entries_info *info = filp->private_data;
+> +
+> +       switch (cmd) {
+> +       case TRACE_RINGBUF_FREE_ON_CLOSE: {
+> +               info->free_buffer_on_close = !!arg;
+> +               ret = 0;
+> +               break;
+> +       }
+>        }
+>
+> -       *ppos += cnt;
+> +       return ret;
+> +}
+>
+> -       /* If check pages failed, return ENOMEM */
+> -       if (tracing_disabled)
+> -               cnt = -ENOMEM;
+> - out:
+> -       for_each_tracing_cpu(cpu) {
+> -               if (global_trace.data[cpu])
+> -                       atomic_dec(&global_trace.data[cpu]->disabled);
+> -               if (max_tr.data[cpu])
+> -                       atomic_dec(&max_tr.data[cpu]->disabled);
+> +static int
+> +tracing_entries_release(struct inode *inode, struct file *filp)
+> +{
+> +       struct ftrace_entries_info *info = filp->private_data;
+> +
+> +       if (info->free_buffer_on_close) {
+> +               /* disable tracing */
+> +               tracing_off();
+> +               /* resize the ring buffer to 0 */
+> +               tracing_resize_ring_buffer(0);
+>        }
+>
+> -       tracing_start();
+> -       mutex_unlock(&trace_types_lock);
+> +       kfree(info);
+>
+> -       return cnt;
+> +       return 0;
+>  }
+>
+>  static int mark_printk(const char *fmt, ...)
+> @@ -3624,9 +3690,12 @@ static const struct file_operations tracing_pipe_fops = {
+>  };
+>
+>  static const struct file_operations tracing_entries_fops = {
+> -       .open           = tracing_open_generic,
+> +       .open           = tracing_entries_open,
+>        .read           = tracing_entries_read,
+>        .write          = tracing_entries_write,
+> +       .unlocked_ioctl = tracing_entries_ioctl,
+> +       .compat_ioctl   = tracing_entries_ioctl,
+> +       .release        = tracing_entries_release,
+>        .llseek         = generic_file_llseek,
+>  };
+>
+> --
+> 1.7.3.1
+>
+>
 
-  #define PTRACE_SEIZE_DEVEL	0x80000000
 
-  static const struct timespec ts1s = { .tv_sec = 1 };
 
-  int main(int argc, char **argv)
-  {
-	  pid_t tracee, tracer;
-	  int i;
-
-	  tracee = fork();
-	  if (!tracee)
-		  while (1)
-			  nanosleep(&ts1s, NULL);
-
-	  tracer = fork();
-	  if (!tracer) {
-		  int last_stopped = 0, stopped;
-		  siginfo_t si;
-
-		  ptrace(PTRACE_SEIZE, tracee, NULL,
-			 (void *)(unsigned long)PTRACE_SEIZE_DEVEL);
-	  repeat:
-		  ptrace(PTRACE_INTERRUPT, tracee, NULL, NULL);
-		  waitid(P_PID, tracee, NULL, WSTOPPED);
-
-		  ptrace(PTRACE_GETSIGINFO, tracee, NULL, &si);
-		  if (si.si_code) {
-			  stopped = !!si.si_status;
-			  if (stopped != last_stopped)
-				  printf("tracer: stopped=%d signo=%d\n",
-					 stopped, si.si_signo);
-			  last_stopped = stopped;
-			  ptrace(PTRACE_CONT, tracee, NULL, NULL);
-		  } else {
-			  printf("tracer: SIG %d\n", si.si_signo);
-			  ptrace(PTRACE_CONT, tracee, NULL,
-				 (void *)(unsigned long)si.si_signo);
-		  }
-		  goto repeat;
-	  }
-
-	  for (i = 0; i < 3; i++) {
-		  nanosleep(&ts1s, NULL);
-		  printf("mother: SIGSTOP\n");
-		  kill(tracee, SIGSTOP);
-		  nanosleep(&ts1s, NULL);
-		  printf("mother: SIGCONT\n");
-		  kill(tracee, SIGCONT);
-	  }
-	  nanosleep(&ts1s, NULL);
-
-	  kill(tracer, SIGKILL);
-	  kill(tracee, SIGKILL);
-	  return 0;
-  }
-
-Tracer delivers signal, resumes group stop, induces INTERRUPT traps
-and reports group stop state change in busy loop.  Mother sends
-SIGSTOP or CONT to tracee on each second.  Note that si_pt_flags and
-flag testing are replaced with si_status testing.  si_status occupies
-the same offset as si_pt_flags and PTRACE_SI_STOPPED is the only flag
-defined, so I took a dirty short cut.
-
-  # ./test-stopped
-  mother: SIGSTOP
-  tracer: SIG 19
-  tracer: stopped=1 signo=19
-  mother: SIGCONT
-  tracer: stopped=0 signo=5
-  tracer: SIG 18
-  mother: SIGSTOP
-  tracer: SIG 19
-  tracer: stopped=1 signo=19
-  mother: SIGCONT
-  tracer: stopped=0 signo=5
-  tracer: SIG 18
-  mother: SIGSTOP
-  tracer: SIG 19
-  tracer: stopped=1 signo=19
-  mother: SIGCONT
-  tracer: SIG 18
-  tracer: stopped=0 signo=5
-
--v2: Local variable sig defined inside if() block it's used in as
-     suggested by Oleg.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/ptrace.h |    3 +++
- kernel/ptrace.c        |   19 +++++++++++++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 8c45eb0..1e84960 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -73,6 +73,9 @@
- #define PTRACE_EVENT_EXIT	6
- #define PTRACE_EVENT_STOP	7
- 
-+/* flags in siginfo.si_pt_flags from PTRACE_GETSIGINFO */
-+#define PTRACE_SI_STOPPED	0x00000001 /* tracee is job control stopped */
-+
- #include <asm/ptrace.h>
- 
- #ifdef __KERNEL__
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 851870c..a205c98 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -583,6 +583,25 @@ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
- 
- 	error = 0;
- 	*info = *child->last_siginfo;
-+
-+	/*
-+	 * If reporting ptrace trap for a seized tracee, enable reporting
-+	 * of info->si_pt_flags.
-+	 */
-+	if ((child->ptrace & PT_SEIZED) &&
-+	    (info->si_code & __SI_MASK) == __SI_TRAP) {
-+		struct signal_struct *sig = child->signal;
-+
-+		/*
-+		 * Report whether group stop is in effect w/ SI_STOPPED and
-+		 * if so which signal caused it.
-+		 */
-+		if (sig->group_stop_count || sig->flags & SIGNAL_STOP_STOPPED) {
-+			info->si_pt_flags |= PTRACE_SI_STOPPED;
-+			info->si_signo = child->jobctl & JOBCTL_STOP_SIGMASK;
-+			WARN_ON_ONCE(!info->si_signo);
-+		}
-+	}
- out_unlock:
- 	unlock_task_sighand(child, &flags);
- 	return error;
--- 
-1.7.1
-
+Vaibhav Nagarnaik
