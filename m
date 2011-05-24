@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750972Ab1EXEK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 00:10:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64253 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749Ab1EXEK5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 00:10:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=XT/Y5J2EI7qOZTYXFzdoxn6bLuQZ7WhNP60qiuhUQvy55xzc0TGvKjjli/jLVxlS/O
-         3m4pvvtIpNu0Ix+IzCvGNZyrf02A5H90ri8iDxQnVMMjSgYQFtF+M+5fBHjTj92grg87
-         cR9Iz+egsY/uPlb0Hd7AD58LDAnAgo4b+a+WE=
+	id S1751392Ab1EXEOs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 00:14:48 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43308 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764Ab1EXEOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 00:14:47 -0400
+Date: Mon, 23 May 2011 21:14:43 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Mysterious CFQ crash and RCU
+Message-ID: <20110524041443.GA2329@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110519222404.GG12600@redhat.com>
+ <20110521210013.GJ2271@linux.vnet.ibm.com>
+ <20110523152141.GB4019@redhat.com>
+ <20110523153848.GC2310@linux.vnet.ibm.com>
+ <1306189249.15900.10.camel@t41.thuisdomein>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTine2kobQA8TkmtiuXdKL=07NCo2vA@mail.gmail.com>
-References: <20110520161816.dda6f1fd.sfr@canb.auug.org.au> <BANLkTimjzzqTS1fELmpb0UivqseLsYOfPw@mail.gmail.com>
- <BANLkTine2kobQA8TkmtiuXdKL=07NCo2vA@mail.gmail.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Tue, 24 May 2011 00:10:35 -0400
-Message-ID: <BANLkTim-zRShhy49d7yn5WTJYzR6A2DtZQ@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306189249.15900.10.camel@t41.thuisdomein>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 00:01, Linus Torvalds wrote:
-> On Mon, May 23, 2011 at 7:06 PM, Mike Frysinger wrote:
->>
->> more failures:
->
-> Is this blackfin or something?
+On Tue, May 24, 2011 at 12:20:40AM +0200, Paul Bolle wrote:
+> On Mon, 2011-05-23 at 08:38 -0700, Paul E. McKenney wrote:
+> > Running under CONFIG_PREEMPT=y (along with CONFIG_TREE_PREEMPT_RCU=y)
+> > could be very helpful in and of itself.  CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+> > can also be helpful.  In post-2.6.39 mainline, it should be possible
+> > to set CONFIG_DEBUG_OBJECTS_RCU_HEAD=y without CONFIG_PREEMPT=y, but
+> > again, CONFIG_PREEMPT=y can help find problems.
+> 
+> 0) The first thing I tried (from your suggestions) was
+> CONFIG_DEBUG_OBJECTS_RCU_HEAD=y. Given its dependencies (and, well, the
+> build system I used) I ended up with:
+> 
+>     $ grep -e PREEMPT -e RCU /boot/config-2.6.39-0.local3.fc16.i686 |
+>     grep -v "^#"
+>     CONFIG_TREE_PREEMPT_RCU=y
+>     CONFIG_PREEMPT_RCU=y
+>     CONFIG_RCU_FANOUT=32
+>     CONFIG_PREEMPT_NOTIFIERS=y
+>     CONFIG_PREEMPT=y
+>     CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+>     CONFIG_DEBUG_PREEMPT=y
+>     CONFIG_PROVE_RCU=y
+>     CONFIG_SPARSE_RCU_POINTER=y
+> 
+> It looks like I am unable to trigger the issue we're talking about here
+> when using that config.
 
-let's go with "something" ...
+Interesting.  One way for this to happen is to block inside an RCU
+read-side critical section.  I need to think about appropriate
+diagnostics for this.
 
-> I did an allyesconfig with a special x86 patch that should have caught
-> everything that didn't have the proper prefetch.h include, but non-x86
-> drivers would have passed that.
+> 1) For reference, the config of a kernel that does trigger it had:
+> 
+>     $ grep -e PREEMPT -e RCU /boot/config-2.6.39-0.local2.fc16.i686 |
+>     grep -v "^#"
+>     CONFIG_TREE_RCU=y
+>     CONFIG_RCU_FANOUT=32
+>     CONFIG_RCU_FAST_NO_HZ=y
+>     CONFIG_PREEMPT_NOTIFIERS=y
+>     CONFIG_PREEMPT_VOLUNTARY=y
+>     CONFIG_PROVE_RCU=y
+>     CONFIG_SPARSE_RCU_POINTER=y
+> 
+> > > Again CONFIG_TREE_PREEMPT_RCU is available only if PREEMPT=y. So should
+> > > we enable preemtion and CONFIG_TREE_PREEMPT_RCU=y and try to reproduce
+> > > the issue?
+> > 
+> > Please!
+> 
+> 2) It appears I can't reproduce with those options enabled (see above).
+> 
+> > Polling is fine.  Please see attached for a script to poll at 15-second
+> > intervals.  Please also feel free to adjust, just tell me what you
+> > adjusted.
+> 
+> And should I now try to run that script on a config that triggers this
+> issue (such as the config under 1) above)?
 
-the isp1362-hcd failure probably is before your
-268bb0ce3e87872cb9290c322b0d35bce230d88f.  i think i was reading a log
-that is a few days old (ive been traveling and am playing catch up
-atm).  i'll refresh and see what's what still.
+It might help while I am working out more targetted diagnostics.
 
-the common musb code only allows it to be built if the arch glue is
-available, and there is no x86 glue.  so an allyesconfig on x86
-wouldnt have picked up the failure.  it'll bomb though for any target
-which does have the glue.
--mike
+							Thanx, Paul
