@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab1EXGiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 02:38:46 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:19061 "EHLO mgw-sa01.nokia.com"
+	id S1753075Ab1EXGnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 02:43:43 -0400
+Received: from mail.perches.com ([173.55.12.10]:1940 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384Ab1EXGio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 02:38:44 -0400
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 24 May 2011 09:41:47 +0300
-Message-Id: <20110524064147.4545.43792.sendpatchset@localhost.localdomain>
-Subject: [GIT PULL] UBI changes for 2.6.40
-X-Nokia-AV: Clean
+	id S1751697Ab1EXGnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 02:43:42 -0400
+Subject: Re: [PATCH-v2] MAINTAINERS: Add drivers/target/ entry
+From: Joe Perches <joe@perches.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+In-Reply-To: <1306217469.29724.150.camel@haakon2.linux-iscsi.org>
+References: <1306185032-11629-1-git-send-email-nab@linux-iscsi.org>
+	 <1306193789.8687.61.camel@Joe-Laptop>
+	 <1306217469.29724.150.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 May 2011 23:43:40 -0700
+Message-ID: <1306219420.2298.12.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 2011-05-23 at 23:11 -0700, Nicholas A. Bellinger wrote:
+> On Mon, 2011-05-23 at 16:36 -0700, Joe Perches wrote:
+> > On Mon, 2011-05-23 at 14:10 -0700, Nicholas A. Bellinger wrote:
+> > > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > > +TARGET SUBSYSTEM
+> > > +M:	Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > > +L:	linux-scsi@vger.kernel.org
+> > > +L:	http://groups.google.com/group/linux-iscsi-target-dev
+> > > +W:	http://www.linux-iscsi.org
+> > > +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/nab/lio-core-2.6.git master
+> > > +S:	Supported
+> > > +F:	drivers/target/
+> > > +F:	include/target/
+> > > +F:	Documentation/target/
+> > 
+> > Shouldn't the file layout be more like
+> > drivers/lio/target?
+> Hi Joe,
 
-please pull UBI changes.
+Hi Nicholas.
 
-The following changes since commit a6360dd37e1a144ed11e6548371bade559a1e4df:
+> Not sure what you mean here..  Currently drivers/target/ contains the
+> fabric independent target core, and /drivers/target/$FABRIC/ contains
+> individual fabric module drivers.
+> 
+> I originally decided to use drivers/target/ to avoid any confusion wrt
+> to the 'LIO' term, which to some folks is interchangable wrt to the
+> 'iscsi-target' fabric module.
 
-  Linux 2.6.39-rc3 (2011-04-11 17:21:51 -0700)
+Target doesn't mean much to me and the wiki calls the
+system LIO.
 
-are available in the git repository at:
-  git://git.infradead.org/ubi-2.6.git linux-next
+http://linux-iscsi.org/wiki/Main_Page
 
-Artem Bityutskiy (9):
-      UBI: make the control character device non-seekable
-      UBI: re-name set volume properties ioctl
-      UBI: cleanup comments around volume properties
-      UBI: use __packed instead of __attribute__((packed))
-      UBI: fix minor stylistic issues
-      UBI: fix typo in a message
-      UBI: improve checking in debugging prints
-      UBI: turn some macros into static inline
-      UBI: switch to dynamic printks
+I think that drivers/target might be better renamed to
+drivers/lio/target and drivers/lio/target/$FABRIC could
+be below that.
 
- drivers/mtd/ubi/cdev.c      |   14 ++--
- drivers/mtd/ubi/debug.c     |   21 +++---
- drivers/mtd/ubi/debug.h     |  161 ++++++++++++++++++++++---------------------
- drivers/mtd/ubi/io.c        |    6 +-
- drivers/mtd/ubi/scan.c      |    2 +-
- drivers/mtd/ubi/ubi-media.h |    6 +-
- drivers/mtd/ubi/ubi.h       |    4 +-
- drivers/mtd/ubi/wl.c        |    3 +-
- include/linux/mtd/ubi.h     |    4 +-
- include/mtd/ubi-user.h      |   40 ++++++-----
- 10 files changed, 132 insertions(+), 129 deletions(-)
+No worries if you think otherwise.
 
-Thanks,
-Artem.
+cheers, Joe
+
