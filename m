@@ -1,145 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031084Ab1EXBUF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 21:20:05 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:38210 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932484Ab1EXBUC (ORCPT
+	id S1031128Ab1EXBV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 21:21:58 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37670 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031095Ab1EXBVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 21:20:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=AONEglQTjVQLlXQefgXs3o0Gr0wZZ6Qa7yIFUnvFpJP5VIyQ1TOyMDBxdqbCt+ghTZ
-         +3o4gKo2AIazz/XCFXcydSlrv8El1VBScXAgUHzBgp8HI8rM0x4SxAyLgtAdr8aFP9je
-         jeivq/SdvWJ0FrhHmS1oX2M87+egKapxPRC70=
+	Mon, 23 May 2011 21:21:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DDB082C.2030809@jp.fujitsu.com>
+Date: Tue, 24 May 2011 10:21:48 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikQd34QZnQVSn_9f_Mxc8wtJMHY0w@mail.gmail.com>
-References: <BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com>
- <BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com> <4DD5DC06.6010204@jp.fujitsu.com>
- <BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com> <BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
- <20110520140856.fdf4d1c8.kamezawa.hiroyu@jp.fujitsu.com> <20110520101120.GC11729@random.random>
- <BANLkTikAFMvpgHR2dopd+Nvjfyw_XT5=LA@mail.gmail.com> <20110520153346.GA1843@barrios-desktop>
- <BANLkTi=X+=Wh1MLs7Fc-v-OMtxAHbcPmxA@mail.gmail.com> <20110520161934.GA2386@barrios-desktop>
- <BANLkTi=4C5YAxwAFWC6dsAPMR3xv6LP1hw@mail.gmail.com> <BANLkTimThVw7-PN6ypBBarqXJa1xxYA_Ow@mail.gmail.com>
- <BANLkTint+Qs+cO+wKUJGytnVY3X1bp+8rQ@mail.gmail.com> <BANLkTinx+oPJFQye7T+RMMGzg9E7m28A=Q@mail.gmail.com>
- <BANLkTik29nkn-DN9ui6XV4sy5Wo2jmeS9w@mail.gmail.com> <BANLkTikQd34QZnQVSn_9f_Mxc8wtJMHY0w@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 23 May 2011 21:19:42 -0400
-X-Google-Sender-Auth: wC4kKp9Yqm_6bWheFi93jyVpfQ0
-Message-ID: <BANLkTi=wVOPSv1BA_mZq9=r14Vu3kUh3_w@mail.gmail.com>
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
-        riel@redhat.com
-Content-Type: multipart/mixed; boundary=bcaec520f411219c4304a3fb6331
+To: rientjes@google.com
+CC: caiqian@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, hughd@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan.kim@gmail.com, oleg@redhat.com
+Subject: Re: [PATCH 3/5] oom: oom-killer don't use proportion of system-ram
+ internally
+References: <4DD61F80.1020505@jp.fujitsu.com> <4DD6204D.5020109@jp.fujitsu.com> <alpine.DEB.2.00.1105231522410.17840@chino.kir.corp.google.com> <alpine.DEB.2.00.1105231547060.17840@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1105231547060.17840@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec520f411219c4304a3fb6331
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On Sun, May 22, 2011 at 7:12 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> Could you test below patch based on vanilla 2.6.38.6?
-> The expect result is that system hang never should happen.
-> I hope this is last test about hang.
+(2011/05/24 7:48), David Rientjes wrote:
+> On Mon, 23 May 2011, David Rientjes wrote:
 >
-> Thanks.
+>> I already suggested an alternative patch to CAI Qian to greatly increase
+>> the granularity of the oom score from a range of 0-1000 to 0-10000 to
+>> differentiate between tasks within 0.01% of available memory (16MB on CAI
+>> Qian's 16GB system).  I'll propose this officially in a separate email.
+>>
 >
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 292582c..1663d24 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -231,8 +231,11 @@ unsigned long shrink_slab(struct shrink_control *shr=
-ink,
-> =A0 =A0 =A0 if (scanned =3D=3D 0)
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 scanned =3D SWAP_CLUSTER_MAX;
+> This is an alternative patch as earlier proposed with suggested
+> improvements from Minchan.  CAI, would it be possible to test this out on
+> your usecase?
 >
-> - =A0 =A0 =A0 if (!down_read_trylock(&shrinker_rwsem))
-> - =A0 =A0 =A0 =A0 =A0 =A0 =A0 return 1; =A0 =A0 =A0 /* Assume we'll be ab=
-le to shrink next time */
-> + =A0 =A0 =A0 if (!down_read_trylock(&shrinker_rwsem)) {
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 /* Assume we'll be able to shrink next time=
- */
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 ret =3D 1;
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 goto out;
-> + =A0 =A0 =A0 }
->
-> =A0 =A0 =A0 list_for_each_entry(shrinker, &shrinker_list, list) {
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 unsigned long long delta;
-> @@ -286,6 +289,8 @@ unsigned long shrink_slab(struct shrink_control *shri=
-nk,
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 shrinker->nr +=3D total_scan;
-> =A0 =A0 =A0 }
-> =A0 =A0 =A0 up_read(&shrinker_rwsem);
-> +out:
-> + =A0 =A0 =A0 cond_resched();
-> =A0 =A0 =A0 return ret;
-> =A0}
->
-> @@ -2331,7 +2336,7 @@ static bool sleeping_prematurely(pg_data_t
-> *pgdat, int order, long remaining,
-> =A0 =A0 =A0 =A0* must be balanced
-> =A0 =A0 =A0 =A0*/
-> =A0 =A0 =A0 if (order)
-> - =A0 =A0 =A0 =A0 =A0 =A0 =A0 return pgdat_balanced(pgdat, balanced, clas=
-szone_idx);
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 return !pgdat_balanced(pgdat, balanced, cla=
-sszone_idx);
-> =A0 =A0 =A0 else
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 return !all_zones_ok;
-> =A0}
+> I'm indifferent to the actual scale of OOM_SCORE_MAX_FACTOR; it could be
+> 10 as proposed in this patch or even increased higher for higher
+> resolution.
 
-So far with this patch I can't reproduce the hang or the bogus OOM.
+I did explain why your proposal is unacceptable.
 
-To be completely clear, I have COMPACTION, MIGRATION, and THP off, I'm
-running 2.6.38.6, and I have exactly two patches applied.  One is the
-attached patch and the other is a the fpu.ko/aesni_intel.ko merger
-which I need to get dracut to boot my box.
+http://www.gossamer-threads.com/lists/linux/kernel/1378837#1378837
 
-For fun, I also upgraded to 8GB of RAM and it still works.
-
---Andy
-
->
-> --
-> Kind regards,
-> Minchan Kim
->
-
---bcaec520f411219c4304a3fb6331
-Content-Type: application/octet-stream; name="minchan-patch-v3.patch"
-Content-Disposition: attachment; filename="minchan-patch-v3.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_go25pkug0
-
-Y29tbWl0IDFmMzExMWJlMWY5MjIyNjM2YjFkNTZhOGZmNWMzODNlYzRmYjIwNmIKQXV0aG9yOiBB
-bmR5IEx1dG9taXJza2kgPGx1dG9AbWl0LmVkdT4KRGF0ZTogICBNb24gTWF5IDIzIDEyOjIwOjE3
-IDIwMTEgLTA0MDAKCiAgICBbTWluY2hhbl0gcGF0Y2ggZm9yIHRlc3RpbmcgMjMtMDUtMjAxMQoK
-ZGlmZiAtLWdpdCBhL21tL3Ztc2Nhbi5jIGIvbW0vdm1zY2FuLmMKaW5kZXggMDY2NTUyMC4uYzlj
-OWM5MyAxMDA2NDQKLS0tIGEvbW0vdm1zY2FuLmMKKysrIGIvbW0vdm1zY2FuLmMKQEAgLTIzMCw4
-ICsyMzAsMTEgQEAgdW5zaWduZWQgbG9uZyBzaHJpbmtfc2xhYih1bnNpZ25lZCBsb25nIHNjYW5u
-ZWQsIGdmcF90IGdmcF9tYXNrLAogCWlmIChzY2FubmVkID09IDApCiAJCXNjYW5uZWQgPSBTV0FQ
-X0NMVVNURVJfTUFYOwogCi0JaWYgKCFkb3duX3JlYWRfdHJ5bG9jaygmc2hyaW5rZXJfcndzZW0p
-KQotCQlyZXR1cm4gMTsJLyogQXNzdW1lIHdlJ2xsIGJlIGFibGUgdG8gc2hyaW5rIG5leHQgdGlt
-ZSAqLworCWlmICghZG93bl9yZWFkX3RyeWxvY2soJnNocmlua2VyX3J3c2VtKSkgeworCQkvKiBB
-c3N1bWUgd2UnbGwgYmUgYWJsZSB0byBzaHJpbmsgbmV4dCB0aW1lICovCisJCXJldCA9IDE7CisJ
-CWdvdG8gb3V0OworCX0KIAogCWxpc3RfZm9yX2VhY2hfZW50cnkoc2hyaW5rZXIsICZzaHJpbmtl
-cl9saXN0LCBsaXN0KSB7CiAJCXVuc2lnbmVkIGxvbmcgbG9uZyBkZWx0YTsKQEAgLTI4Miw2ICsy
-ODUsOSBAQCB1bnNpZ25lZCBsb25nIHNocmlua19zbGFiKHVuc2lnbmVkIGxvbmcgc2Nhbm5lZCwg
-Z2ZwX3QgZ2ZwX21hc2ssCiAJCXNocmlua2VyLT5uciArPSB0b3RhbF9zY2FuOwogCX0KIAl1cF9y
-ZWFkKCZzaHJpbmtlcl9yd3NlbSk7CisKK291dDoKKwljb25kX3Jlc2NoZWQoKTsKIAlyZXR1cm4g
-cmV0OwogfQogCkBAIC0yMjg2LDcgKzIyOTIsNyBAQCBzdGF0aWMgYm9vbCBzbGVlcGluZ19wcmVt
-YXR1cmVseShwZ19kYXRhX3QgKnBnZGF0LCBpbnQgb3JkZXIsIGxvbmcgcmVtYWluaW5nLAogCSAq
-IG11c3QgYmUgYmFsYW5jZWQKIAkgKi8KIAlpZiAob3JkZXIpCi0JCXJldHVybiBwZ2RhdF9iYWxh
-bmNlZChwZ2RhdCwgYmFsYW5jZWQsIGNsYXNzem9uZV9pZHgpOworCQlyZXR1cm4gIXBnZGF0X2Jh
-bGFuY2VkKHBnZGF0LCBiYWxhbmNlZCwgY2xhc3N6b25lX2lkeCk7CiAJZWxzZQogCQlyZXR1cm4g
-IWFsbF96b25lc19vazsKIH0K
---bcaec520f411219c4304a3fb6331--
