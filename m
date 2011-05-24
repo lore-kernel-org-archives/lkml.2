@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab1EXU7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 16:59:16 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:44809 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab1EXU7N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 16:59:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ePcT2Z5oEMLXvfaWxf1KMT88sGfkDK8SxsLUFb5mJNCgtQlyfs/uPOWqgp8HKRSWUD
-         GwEAGKH9LQRViKrRrqyiqzg5S3LQNtP7IhJIt/ohIhZ9m3s7KyruMH7J6gfJSdtPnA6d
-         fJ4QhmwjgB8dsffeYSIy9noXee5t2ZF4lBtGM=
+	id S1757191Ab1EXVC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 17:02:57 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48701 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756954Ab1EXVC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 17:02:56 -0400
+Date: Tue, 24 May 2011 23:02:33 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
+        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
+        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
+        penberg@kernel.org, hpa@zytor.com,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+Message-ID: <20110524210233.GI27634@elte.hu>
+References: <1306269105.21443.20.camel@dan>
 MIME-Version: 1.0
-In-Reply-To: <20110525040627.753980f8.lisa@ltmnet.com>
-References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
-	<20110523192056.GC23629@elte.hu>
-	<BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
-	<20110525040627.753980f8.lisa@ltmnet.com>
-Date: Tue, 24 May 2011 22:59:12 +0200
-Message-ID: <BANLkTimJ3PgPGRNcQGddmriub53w83BZjQ@mail.gmail.com>
-Subject: Re: (Short?) merge window reminder
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: Lisa Milne <lisa@ltmnet.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306269105.21443.20.camel@dan>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-2011/5/24 Lisa Milne <lisa@ltmnet.com>:
->> So I'm toying with 3.0 (and in that case, it really would be "3.0",
->> not "3.0.0" - the stable team would get the third digit rather than
->> the fourth one.
->
-> How about stardates?
+* Dan Rosenberg <drosenberg@vsecurity.com> wrote:
 
-This is a wonderful idea! :)
+> This introduces CONFIG_RANDOMIZE_BASE, which randomizes the address at
+> which the kernel is decompressed at boot as a security feature that
+> deters exploit attempts relying on knowledge of the location of kernel
+> internals.  The default values of the kptr_restrict and dmesg_restrict
+> sysctls are set to (1) when this is enabled, since hiding kernel
+> pointers is necessary to preserve the secrecy of the randomized base
+> address.
 
-> That'd make a release made now 64860.8
->
-> I really should sleep more...
->
-> --
-> Lisa Milne <lisa@ltmnet.com>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+That was quick! :-)
 
+> This feature also uses a fixed mapping to move the IDT (if not already
+> done as a fix for the F00F bug), to avoid exposing the location of
+> kernel internals relative to the original IDT.  This has the additional
+> security benefit of marking the new virtual address of the IDT
+> read-only.
 
+Btw., as i suggested before the IDT should be made percpu, that way we could 
+split out and evaluate the IDT change independently of any security 
+considerations, as a potential scalability improvement. Makes the decision 
+easier because right now moving the IDT to a 4K TLB increases the kernel's TLB 
+footprint a tiny bit.
 
--- 
-Slawa!
-Zimny Lech z Wawelu
+> Entropy is generated using the RDRAND instruction if it is supported. If not, 
+> then RDTSC is used, if supported. If neither RDRAND nor RDTSC are supported, 
+> then no randomness is introduced. Support for the CPUID instruction is 
+> required to check for the availability of these two instructions.
+
+Btw., i'd suggest to fall back not to zero but to something system specific 
+like RAM size or a BIOS signature such as the contents of 0xf0000 or so. This, 
+while clearly not random, will at least *somewhat* randomize the kernel against 
+remote attackers who do not know the RAM size or the system type.
+
+Thanks,
+
+	Ingo
