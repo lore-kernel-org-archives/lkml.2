@@ -1,120 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab1EXNHA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 09:07:00 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43206 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932204Ab1EXNG6 (ORCPT
+	id S932198Ab1EXNGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:06:48 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:34223 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756314Ab1EXNGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 09:06:58 -0400
-Date: Tue, 24 May 2011 09:06:35 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "yinghai@kernel.org" <yinghai@kernel.org>,
-        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: Xen MMU's requirement to pin pages RO and initial_memory_mapping.
-Message-ID: <20110524130635.GB10017@dumpdata.com>
-References: <20110513153010.GB16519@dumpdata.com>
- <alpine.DEB.2.00.1105131650550.8972@kaball-desktop>
- <20110516154132.GA12486@dumpdata.com>
- <alpine.DEB.2.00.1105171745300.12963@kaball-desktop>
- <20110517180520.GC13706@dumpdata.com>
- <alpine.DEB.2.00.1105231541020.12963@kaball-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105231541020.12963@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A010201.4DDBAD6A.008D:SCFMA922111,ss=1,fgs=0
+	Tue, 24 May 2011 09:06:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=pejKEmF1rND0ottilo0zEd0bbnXWsUrpVrxCFP9q076GhwjUohXdAWdKw/VGDR356V
+         pLdrQqYmt9sevJ4LE2RrRve+Nx70sbww0YvjNjXucqfhMuEplrDCjHhh3X/01RJktiwB
+         y4TKEbd7gSyPL514i4DK1WrbSp2z3A0I2UTNw=
+Subject: Re: [PATCH] Kconfig: add warning about permission of config file
+From: Hiromu Yakura <hiromu1996@gmail.com>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zippel@linux-m68k.org, mmarek@suse.cz
+In-Reply-To: <BANLkTikhFdd_PRzCg3w9HD1TO=cmdmm6_A@mail.gmail.com>
+References: <1306167401.18840.8.camel@hiromu-MacBook>
+	 <BANLkTikhFdd_PRzCg3w9HD1TO=cmdmm6_A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 22:06:40 +0900
+Message-ID: <1306242400.7501.10.camel@hiromu-MacBook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 04:20:15PM +0100, Stefano Stabellini wrote:
-> On Tue, 17 May 2011, Konrad Rzeszutek Wilk wrote:
-> > On Tue, May 17, 2011 at 06:50:55PM +0100, Stefano Stabellini wrote:
-> > > On Mon, 16 May 2011, Konrad Rzeszutek Wilk wrote:
-> > > > > They become pagetable pages when:
-> > > > > 
-> > > > > - they are explicitly pinned by pin_pagetable_pfn
-> > > > > 
-> > > > > - they are hooked into the current pagetable
-> > > > 
-> > > > Ok, so could we use those two calls to trigger the pagetable walk
-> > > > and mark them RO as appropiate? Which call sites are those? The
-> > > > xen_set_pgd/xen_set_pud/xen_set_pmd ?
-> > > 
-> > > xen_alloc_pte_init and xen_alloc_pmd_init are the ones that mark the
-> > > pagetable pages RO and pin them, calling make_lowmem_page_readonly and
-> > > pin_pagetable_pfn.
-> > > 
-> > > alloc_pte/pmd are called right before hooking them into the pagetable;
-> > > unfortunately that means that they fail at marking the pagetable pages
-> > > RO: make_lowmem_page_readonly uses lookup_address to find the pte
-> > > corresponding to a page, however at this point the pagetable pages are
-> > > not mapped yet (usually they are not hooked but when they are hooked, the
-> > > upper level pagetable page is not hooked), so lookup_address fails.
-> > 
-> > Right. We don't have to walk the hooked pagetable, I think. We are passed
-> > in the PMD/PGD of the PFN and we could look at the content of that PFN.
-> > Walk each entry in there and for those that are present, determine
-> > if the page table it points to (whatever level it is) is RO. If not, mark
-> > it RO. And naturally do it recursively to cover all levels.
->  
-> I am not sure what you mean.
-> The interface is the following:
+Hello,
+thanks for replying.
+
+On Mon, May 23, 2011 at 13:58, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Do you have a precise way to reproduce this, in particular which
+> target is involved ? I tried to `chmod 555' the kernel root directory,
+> re-ran `conf' (through the `defconfig' target) and `mconf' (manually
+> for this one, as check-lxdialog.sh fails when invoked though make).
+> The former failed with:
 > 
-> void alloc_pte(struct mm_struct *mm, unsigned long pfn);
+> *** Error during writing of the configuration.
 > 
-> pfn is the pagetable page's pfn, that has to be marked RO in all his mappings;
-> mm is the mm_struct where this pagetable page is mapped.
-> Except it is not true anymore because the pagetable page is not mapped
-> yet in mm; so we cannot walk anything here, unfortunately.
+> gmake[1]: *** [defconfig] Error 1
+> gmake: *** [defconfig] Error 2
+In my environment, this patch is working properly.
+The output is as follows:
 
-I was thinking to "resolve" the pfn, and directly read from the pfn's the
-entries. So not walking the mm_struct, but reading the raw data from the 
-PFN page... but I that would not do much as alloc_pte is done _before_ that
-pagetable is actually populated - so it has nothing in it.
+hiromu@hiromu-MacBook:/usr/src/linux-2.6$ ls -ld .
+dr-xr-sr-x 25 hiromu hiromu 4096 May 24 21:41 .
+hiromu@hiromu-MacBook:/usr/src/linux-2.6$ make defconfig
+*** Default configuration is based on 'x86_64_defconfig'
+*** Permission denied to write the configuration.
 
+make[1]: *** [defconfig] Error 1
+make: *** [defconfig] Error 2
+hiromu@hiromu-MacBook:/usr/src/linux-2.6$  
 
-> We could remember that we failed to mark this page RO so that the next
-> time we try to write a pte that contains that address we know we have to
-> mark it RO.
-> But this approach is basically equivalent to the one we had before
-> 2.6.39: we consider the range pgt_buf_start-pgt_buf_end a "published"
-> range of pagetable pages that we have to mark RO.
-> In fact it is affected by the same problem: after writing the ptes that
-> map the range pgt_buf_start-pgt_buf_end, if we try to allocate a new
-> pagetable page incrementing pgt_buf_end we fail because the new page is
-> already marked RW in a pinned page.
-> At the same time we cannot modify the pte to change the mapping to RO
-> because lookup_address doesn't find it (the pagetable page containing
-> the pte in question is not reachable from init_mm yet).
+> So check _are_ being done whether or not the configuration can be
+> written, but there might be a corner-case not checked, in that case,
+> this specific path should be fixed.
+I think it is OK if you have the write permission to the directory
+which be saved the configuration.
 
-So.. why not do the raw walk of the PFN (and within this
-"raw walk" ioremap the PFNs, and do a depth-first walk on the page-tables
-do set them to RO) when it is being hooked up to the page-table?
-Meaning - whatever trigger point is when we try to set a PUD in a PGD,
-or PTE into a PMD. And naturally we can't walk the 'init_mm' as it
-has not been hooked up yet (and it cannot as the page-tables have not
-been set to RO).
-
-> 
-> 
-> Unfortunately I cannot see an easy way to fix alloc_pte without making
-> sure that the pfn passed as an argument is already mapped and the pte is
-> reachable using lookup_address.
-
-Lets ignore that for now.
-> 
-> Alternatively we could come up with a new interface that properly
-> publishes the pgt_buf_start-pgt_buf_top range, but it would still need a
-> "free" function for the pgt_buf_end-pgt_buf_top range to be called after
-> the initial mapping is complete.
+> > Cc: Roman Zippel <zippel@linux-m68k.org>
+> > Cc: Michal Marek <mmarek@suse.cz>
+> > Cc: Arnaud Lacombe <lacombar@gmail.com>
+> >
+> > Signed-off-by: Hiromu Yakura <hiromu1996@gmail.com>
+> > ---
+> >  scripts/kconfig/conf.c     |    6 ++++++
+> >  scripts/kconfig/confdata.c |   17 +++++++++++++++++
+> >  scripts/kconfig/gconf.c    |    4 ++++
+> >  scripts/kconfig/lkc.h      |    1 +
+> >  scripts/kconfig/mconf.c    |    4 ++++
+> >  scripts/kconfig/nconf.c    |    4 ++++
+> >  scripts/kconfig/qconf.cc   |    4 ++++
+> >  7 files changed, 40 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+> > index 006ad81..d93e351 100644
+> > --- a/scripts/kconfig/conf.c
+> > +++ b/scripts/kconfig/conf.c
+> > @@ -466,6 +466,12 @@ int main(int ac, char **av)
+> >        bindtextdomain(PACKAGE, LOCALEDIR);
+> >        textdomain(PACKAGE);
+> >
+> > +       if (conf_check_permission()) {
+> > +               fprintf(stderr,
+> > +                       "*** Permission denied to write the configuration.\n\n");
+> > +               exit(1);
+> > +       }
+> > +
+> >        while ((opt = getopt_long(ac, av, "", long_opts, NULL)) != -1) {
+> >                input_mode = (enum input_mode)opt;
+> >                switch (opt) {
+> > diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+> > index 61c35bf..3de1fbe 100644
+> > --- a/scripts/kconfig/confdata.c
+> > +++ b/scripts/kconfig/confdata.c
+> > @@ -7,6 +7,7 @@
+> >  #include <ctype.h>
+> >  #include <errno.h>
+> >  #include <fcntl.h>
+> > +#include <libgen.h>
+> >  #include <stdio.h>
+> >  #include <stdlib.h>
+> >  #include <string.h>
+> > @@ -1051,3 +1052,19 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
+> >                        set_all_choice_values(csym);
+> >        }
+> >  }
+> > +
+> > +int conf_check_permission(void)
+> > +{
+> > +       int ret, retval = 0;
+> > +       const char *name;
+> > +       char *dir;
+> > +
+> > +       name = conf_get_configname();
+> > +       dir = dirname((char *)name);
+> > +
+> > +       ret = access(dir, W_OK);
+> > +       if (ret < 0)
+> > +               retval = -errno;
+> > +
+> > +       return retval;
+> > +}
+> > diff --git a/scripts/kconfig/gconf.c b/scripts/kconfig/gconf.c
+> > index 4558961..3567a23 100644
+> > --- a/scripts/kconfig/gconf.c
+> > +++ b/scripts/kconfig/gconf.c
+> > @@ -1510,6 +1510,10 @@ int main(int ac, char *av[])
+> >        bind_textdomain_codeset(PACKAGE, "UTF-8");
+> >        textdomain(PACKAGE);
+> >
+> > +       if (conf_check_permission())
+> > +               fprintf(stderr,
+> > +                       "Warning: Permission denied to write the configuration.\n");
+> > +
+> >        /* GTK stuffs */
+> >        gtk_set_locale();
+> >        gtk_init(&ac, &av);
+> > diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+> > index febf0c9..4d20841 100644
+> > --- a/scripts/kconfig/lkc.h
+> > +++ b/scripts/kconfig/lkc.h
+> > @@ -91,6 +91,7 @@ char *conf_get_default_confname(void);
+> >  void sym_set_change_count(int count);
+> >  void sym_add_change_count(int count);
+> >  void conf_set_all_new_symbols(enum conf_def_mode mode);
+> > +int conf_check_permission(void);
+> >
+> >  /* confdata.c and expr.c */
+> >  static inline void xfwrite(const void *str, size_t len, size_t count, FILE *out)
+> > diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+> > index d433c7a..c820e05 100644
+> > --- a/scripts/kconfig/mconf.c
+> > +++ b/scripts/kconfig/mconf.c
+> > @@ -803,6 +803,10 @@ int main(int ac, char **av)
+> >        bindtextdomain(PACKAGE, LOCALEDIR);
+> >        textdomain(PACKAGE);
+> >
+> > +       if (conf_check_permission())
+> > +               fprintf(stderr,
+> > +                       "Warning: Permission denied to write the configuration.\n");
+> > +
+> >        conf_parse(av[1]);
+> >        conf_read(NULL);
+> >
+> > diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+> > index db56377..1cea031 100644
+> > --- a/scripts/kconfig/nconf.c
+> > +++ b/scripts/kconfig/nconf.c
+> > @@ -1491,6 +1491,10 @@ int main(int ac, char **av)
+> >        bindtextdomain(PACKAGE, LOCALEDIR);
+> >        textdomain(PACKAGE);
+> >
+> > +       if (conf_check_permission())
+> > +               fprintf(stderr,
+> > +                       "Warning: Permission denied to write the configuration.\n");
+> > +
+> >        conf_parse(av[1]);
+> >        conf_read(NULL);
+> >
+> > diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
+> > index 06dd2e3..7dca7ac 100644
+> > --- a/scripts/kconfig/qconf.cc
+> > +++ b/scripts/kconfig/qconf.cc
+> > @@ -1746,6 +1746,10 @@ int main(int ac, char** av)
+> >        bindtextdomain(PACKAGE, LOCALEDIR);
+> >        textdomain(PACKAGE);
+> >
+> > +       if (conf_check_permission())
+> > +               fprintf(stderr,
+> > +                       "Warning: Permission denied to write the configuration.\n");
+> > +
+> >  #ifndef LKC_DIRECT_LINK
+> >        kconfig_load();
+> >  #endif
+> > --
+> > 1.7.4.1
+> >
+> >
+> >
+> >
 
