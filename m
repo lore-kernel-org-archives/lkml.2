@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab1EXRcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 13:32:43 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43564 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756543Ab1EXRcm (ORCPT
+	id S933009Ab1EXVcm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 17:32:42 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36763 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932161Ab1EXVck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 13:32:42 -0400
-Date: Tue, 24 May 2011 13:28:25 -0400 (EDT)
-Message-Id: <20110524.132825.968974982805294440.davem@davemloft.net>
-To: vfalico@redhat.com
-Cc: dlstevens@us.ibm.com, jmorris@namei.org, kaber@trash.net,
-        kuznet@ms2.inr.ac.ru, linux-kernel@vger.kernel.org, mmarek@suse.cz,
-        netdev@vger.kernel.org, netdev-owner@vger.kernel.org,
-        pekkas@netcore.fi, yoshfuji@linux-ipv6.org
-Subject: Re: [PATCH v4 1/1] igmp: call ip_mc_clear_src() only when we have
- no users of ip_mc_list
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110524091505.GA21550@darkmag.usersys.redhat.com>
-References: <20110520162709.GA3497@darkmag.usersys.redhat.com>
-	<OF8F2A5C61.8060D0CC-ON88257899.00610B06-88257899.006123E3@us.ibm.com>
-	<20110524091505.GA21550@darkmag.usersys.redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 24 May 2011 17:32:40 -0400
+Subject: Re: [PATCH]: Fix Ultrastor asm snippet
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        James.Bottomley@suse.de, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, akpm@linux-foundation.org
+In-Reply-To: <20110520142459.4c37d3e0@lxorguk.ukuu.org.uk>
+References: <20110518150605.GA25262@const.bordeaux.inria.fr>
+	 <20110520130215.GB3428@infradead.org>
+	 <20110520142459.4c37d3e0@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 13:28:44 -0400
+Message-ID: <1306258124.10201.22.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 24 May 2011 10:28:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Veaceslav Falico <vfalico@redhat.com>
-Date: Tue, 24 May 2011 11:15:05 +0200
-
-> In igmp_group_dropped() we call ip_mc_clear_src(), which resets the number
-> of source filters per mulitcast. However, igmp_group_dropped() is also
-> called on NETDEV_DOWN, NETDEV_PRE_TYPE_CHANGE and NETDEV_UNREGISTER, which
-> means that the group might get added back on NETDEV_UP, NETDEV_REGISTER and
-> NETDEV_POST_TYPE_CHANGE respectively, leaving us with broken source
-> filters.
+On Fri, 2011-05-20 at 14:24 +0100, Alan Cox wrote:
+> On Fri, 20 May 2011 09:02:15 -0400
+> Christoph Hellwig <hch@infradead.org> wrote:
 > 
-> To fix that, we must clear the source filters only when there are no users
-> in the ip_mc_list, i.e. in ip_mc_dec_group() and on device destroy.
+> > On Wed, May 18, 2011 at 05:06:05PM +0200, Samuel Thibault wrote:
+> > > Commit 1292500b replaced
+> > > 
+> > > "=m" (*field) : "1" (*field)
+> > > 
+> > > with
+> > > 
+> > > "=m" (*field) :
+> > > 
+> > > with comment "The following patch fixes it by using the '+' operator on
+> > > the (*field) operand, marking it as read-write to gcc."
+> > > '+' was actually forgotten.  This really puts it.
+> > 
+> > Do you actually have the hardware or was this just a code audit?
+> > 
+> > I have the strong suspicion that this driver is pretty much dead and
+> > bitrotting.
 > 
-> Acked-by: David L Stevens <dlstevens@us.ibm.com>
-> Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+> There are a pile of scsi drivers like the Ultrastor that probably want
+> retiring via staging.
 
-Applied.
+OK, can someone work out how we do this and then send the patch (I
+assume it's just an update in the deprecated features and a move to
+staging?)
+
+> I can believe an AHA152x or two lurk around,
+
+Yes, got one ... and occasionally even test with it.
+
+>  and the odd NCR53c80 and
+> clones because they were so voluminous but the rest I doubt somewhat.
+
+James
+
+
