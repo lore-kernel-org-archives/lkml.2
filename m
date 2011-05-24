@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab1EXH5b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 03:57:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62171 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753940Ab1EXH5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 03:57:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,260,1304319600"; 
-   d="scan'208";a="3829971"
-Subject: Re: [PATCH] dmaengine/dw_dmac: Update maintainer-ship
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        shiraz.hashim@st.com, armando.visconti@st.com, viresh.linux@gmail.com
-In-Reply-To: <f7a8ea363d81ddbfab43272711cb482e700540e5.1306220852.git.viresh.kumar@st.com>
-References: <f7a8ea363d81ddbfab43272711cb482e700540e5.1306220852.git.viresh.kumar@st.com>
+	id S1753818Ab1EXH0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 03:26:30 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37736 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752499Ab1EXH03 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 03:26:29 -0400
+Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Ingo Molnar <mingo@elte.hu>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Containers <containers@lists.osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <m1k4dgr35i.fsf@fess.ebiederm.org>
+References: <m11uzrvd26.fsf@fess.ebiederm.org>
+	 <BANLkTim4q5dK6nOb=pVKbk1c8b-Nh_hBfA@mail.gmail.com>
+	 <m1boyvpo9r.fsf@fess.ebiederm.org> <1306048393.4092.8.camel@mulgrave.site>
+	 <20110522084224.GA12279@elte.hu>  <m1k4dgr35i.fsf@fess.ebiederm.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 12:54:06 +0530
-Message-ID: <1306221846.28926.317.camel@vkoul-udesk3>
+Date: Tue, 24 May 2011 11:26:21 +0400
+Message-ID: <1306221981.10201.8.camel@mulgrave.site>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 12:44 +0530, Viresh Kumar wrote:
-> Nobody is currently maintaining dw_dmac. We are using dw_dmac for SPEAr13xx and
-> are currently maintaining it. After discussing with Vinod, sending this patch to
-> update maintainer-ship of dw_dmac.
+On Tue, 2011-05-24 at 00:03 -0700, Eric W. Biederman wrote:
+> Ingo Molnar <mingo@elte.hu> writes:
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> ---
->  MAINTAINERS                |    7 +++++++
->  drivers/dma/dw_dmac.c      |    2 ++
->  drivers/dma/dw_dmac_regs.h |    1 +
->  include/linux/dw_dmac.h    |    1 +
->  4 files changed, 11 insertions(+), 0 deletions(-)
+> > I agree with Linus's notion in this thread though, a core kernel change should 
+> > generally not worry about hooking up rare-arch system calls (concentrate on the 
+> > architectures that get tested most) - those are better enabled gradually 
+> > anyway.
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 0b41524..a911177 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5430,6 +5430,13 @@ L:	linux-serial@vger.kernel.org
->  S:	Maintained
->  F:	drivers/tty/serial
->  
-> +SYNOPSYS DESIGNWARE DMAC DRIVER
-> +M:	Viresh Kumar <viresh.kumar@st.com>
-> +S:	Maintained
-> +F:	include/linux/dw_dmac.h
-> +F:	drivers/dma/dw_dmac_regs.h
-> +F:	drivers/dma/dw_dmac.c
-> +
->  TIMEKEEPING, NTP
->  M:	John Stultz <johnstul@us.ibm.com>
->  M:	Thomas Gleixner <tglx@linutronix.de>
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index 2a2e2fa..08e2202 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -3,6 +3,7 @@
->   * AVR32 systems.)
->   *
->   * Copyright (C) 2007-2008 Atmel Corporation
-> + * Copyright (c) 2011-2012 Viresh Kumar <viresh.kumar@st.com>
+> The way I read it he was complaining about my having parisc bits and
+> asking for my branch to be merged before the parisc bits had been
+> merged.  Which I credit as a fair complaint.  If I am going to depend on
+> other peoples trees I should wait.
+> 
+> At the same time when I am busy looking for every possible source of
+> trouble and putting code into net-next to detect pending conflicts,
+> and when maintainers complain when I ask for review that my patches
+> conflict with their patches.  Being a contentious developer I am
+> inclined to do something.
 
-2012???
+Right ... and the problem is that someone has to care, because the
+conflict will show up in linux-next.  I think Stephen Rothwell would
+appreciate us making his life easier rather than leaving it to him to
+sort out the problems.
 
+> Now that the reality has sunk in that it means waiting for other peoples
+> code to be merged before I request for my changes to be merged I don't
+> think I will structure a tree that way again while I remember.
 
+Right.   This is quite a common occurrence in SCSI (mostly changes
+entangled with block or libata).  If you don't feel comfortable running
+a postmerge tree, just send me the bits and I'll do it (after all it
+works either way around: I can pull in the syscalls and depend on your
+tree rather than vice versa).
 
--- 
-~Vinod
+James
+
 
