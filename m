@@ -1,211 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab1EXH7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 03:59:16 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:55494 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753940Ab1EXH7P convert rfc822-to-8bit (ORCPT
+	id S1754413Ab1EXIJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 04:09:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46752 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791Ab1EXIJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 03:59:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=SvprHzGh6gI/mC5ZJbipbTNKietbIkdMPrM9Q1fL50AWPHOtTdNn+ONYt8uDpBfHcT
-         yXCKLkDNWQOnonauD2TQ==
-MIME-Version: 1.0
-In-Reply-To: <1305876469.326620.351525457111.2.gpush@pororo>
-References: <1305876469.325655.313573683829.0.gpush@pororo>
-	<1305876469.326620.351525457111.2.gpush@pororo>
-Date: Tue, 24 May 2011 00:59:11 -0700
-Message-ID: <BANLkTikstyLHOYiGtb8tG0TchYwxRj3UYQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] clk: Implement clk_set_rate
-From: Colin Cross <ccross@google.com>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
+	Tue, 24 May 2011 04:09:46 -0400
+Date: Tue, 24 May 2011 10:09:36 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Colin Cross <ccross@google.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        linux-sh@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH 0/4] Add a generic struct clk
+Message-ID: <20110524080936.GI20715@pengutronix.de>
+References: <1305876469.325655.313573683829.0.gpush@pororo>
+ <BANLkTik=EFayZW61TgfOni-XML+tRLOcqw@mail.gmail.com>
+ <20110524062620.GA22096@pengutronix.de>
+ <BANLkTimEoCaKwJtpbQTDSEDydNkZ1BkKog@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTimEoCaKwJtpbQTDSEDydNkZ1BkKog@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:46:12 up 3 days, 21:25, 49 users,  load average: 0.71, 0.99, 0.99
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 12:27 AM, Jeremy Kerr <jeremy.kerr@canonical.com> wrote:
-> Implemenent clk_set_rate by adding a set_rate callback to clk_hw_ops,
-> and core code to handle propagation of rate changes up and down the
-> clock tree.
->
-> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
->
-> ---
->  drivers/clk/clk.c   |   74 ++++++++++++++++++++++++++++++++++++++++----
->  include/linux/clk.h |   12 +++++++
->  2 files changed, 80 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index ad90a90..3a4d70e 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -21,6 +21,8 @@ struct clk {
->        unsigned int            enable_count;
->        unsigned int            prepare_count;
->        struct clk              *parent;
-> +       struct hlist_head       children;
-> +       struct hlist_node       child_node;
->        unsigned long           rate;
->  };
->
-> @@ -176,10 +178,61 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
->  }
->  EXPORT_SYMBOL_GPL(clk_round_rate);
->
-> +/*
-> + * clk_recalc_rates - Given a clock (with a recently updated clk->rate),
-> + *     notify its children that the rate may need to be recalculated, using
-> + *     ops->recalc_rate().
-> + */
-> +static void clk_recalc_rates(struct clk *clk)
-> +{
-> +       struct hlist_node *tmp;
-> +       struct clk *child;
-> +
-> +       if (clk->ops->recalc_rate)
-> +               clk->rate = clk->ops->recalc_rate(clk->hw);
-> +
-> +       hlist_for_each_entry(child, tmp, &clk->children, child_node)
-> +               clk_recalc_rates(child);
-> +}
-> +
->  int clk_set_rate(struct clk *clk, unsigned long rate)
->  {
-> -       /* not yet implemented */
-> -       return -ENOSYS;
-> +       unsigned long parent_rate, new_rate;
-> +       int ret;
-> +
-> +       if (!clk->ops->set_rate)
-> +               return -ENOSYS;
-> +
-> +       new_rate = rate;
-> +
-> +       /* prevent racing with updates to the clock topology */
-> +       mutex_lock(&prepare_lock);
-> +
-> +propagate:
-> +       ret = clk->ops->set_rate(clk->hw, new_rate, &parent_rate);
-> +
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       /* ops->set_rate may require the parent's rate to change (to
-> +        * parent_rate), we need to propagate the set_rate call to the
-> +        * parent.
-> +        */
-> +       if (ret == CLK_SET_RATE_PROPAGATE) {
-> +               new_rate = parent_rate;
-> +               clk = clk->parent;
-> +               goto propagate;
-> +       }
-> +
-> +       /* If successful (including propagation to the parent clock(s)),
-> +        * recalculate the rates of the clock, including children.  We'll be
-> +        * calling this on the 'parent-most' clock that we propagated to.
-> +        */
-> +       clk_recalc_rates(clk);
-> +
-> +       mutex_unlock(&prepare_lock);
-> +
-> +       return 0;
->  }
->  EXPORT_SYMBOL_GPL(clk_set_rate);
->
-> @@ -213,16 +266,25 @@ struct clk *clk_register(struct clk_hw_ops *ops, struct clk_hw *hw,
->        clk->hw = hw;
->        hw->clk = clk;
->
-> -       /* Query the hardware for parent and initial rate */
-> +       /* Query the hardware for parent and initial rate. We may alter
-> +        * the clock topology, making this clock available from the parent's
-> +        * children list. So, we need to protect against concurrent
-> +        * accesses through set_rate
-> +        */
-> +       mutex_lock(&prepare_lock);
->
-> -       if (clk->ops->get_parent)
-> -               /* We don't to lock against prepare/enable here, as
-> -                * the clock is not yet accessible from anywhere */
-> +       if (clk->ops->get_parent) {
->                clk->parent = clk->ops->get_parent(clk->hw);
-> +               if (clk->parent)
-> +                       hlist_add_head(&clk->child_node,
-> +                                       &clk->parent->children);
-> +       }
->
->        if (clk->ops->recalc_rate)
->                clk->rate = clk->ops->recalc_rate(clk->hw);
->
-> +       mutex_unlock(&prepare_lock);
-> +
->
->        return clk;
->  }
-> diff --git a/include/linux/clk.h b/include/linux/clk.h
-> index 93ff870..e0969d2 100644
-> --- a/include/linux/clk.h
-> +++ b/include/linux/clk.h
-> @@ -58,6 +58,12 @@ struct clk_hw {
->  *             parent. Currently only called when the clock is first
->  *             registered.
->  *
-> + * @set_rate   Change the rate of this clock. If this callback returns
-> + *             CLK_SET_RATE_PROPAGATE, the rate change will be propagated to
-> + *             the parent clock (which may propagate again). The requested
-> + *             rate of the parent is passed back from the callback in the
-> + *             second 'unsigned long *' argument.
-This seems backwards to me, it requires children to have knowledge of
-the best states for their parents.  I don't think it can ever be
-implemented safely, either.  If the child's set rate needs to decrease
-its divider value to increase its rate, but increase the parents
-divider to decrease the rate, the clock can end up running too fast,
-and out of spec, after set_rate on the child clock has finished, but
-set_rate on the parent clock has not been called yet.  And if the
-parent clock errors out, clk_set_rate returns an error, but the rate
-has still changed to some random intermediate value.
+On Tue, May 24, 2011 at 12:31:13AM -0700, Colin Cross wrote:
+> On Mon, May 23, 2011 at 11:26 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > On Mon, May 23, 2011 at 04:12:24PM -0700, Colin Cross wrote:
+> >> >
+> >> >   tglx's plan is to create a separate struct clk_hwdata, which contains a
+> >> >   union of base data structures for common clocks: div, mux, gate, etc. The
+> >> >   ops callbacks are passed a clk_hw, plus a clk_hwdata, and most of the base
+> >> >   hwdata fields are handled within the core clock code. This means less
+> >> >   encapsulation of clock implementation logic, but more coverage of
+> >> >   clock basics through the core code.
+> >>
+> >> I don't think they should be a union, I think there should be 3
+> >> separate private datas, and three sets of clock ops, for the three
+> >> different types of clock blocks: rate changers (dividers and plls),
+> >> muxes, and gates.  These blocks are very often combined - a device
+> >> clock often has a mux and a divider, and clk_set_parent and
+> >> clk_set_rate on the same struct clk both need to work.
+> >
+> > The idea is to being able to propagate functions to the parent. It's
+> > very convenient for the implementation of clocks when they only
+> > implement either a divider, a mux or a gate. Combining all of these
+> > into a single clock leads to complicated clock trees and many different
+> > clocks where you can't factor out the common stuff.
+> 
+> That seems complicated.  You end up with lots of extra clocks (meaning
+> more boilerplate in the platform files) that have no meaning in the
+> system (what is the clock between the mux and the divider in Tegra's
+> i2c1 clock, it can never feed any devices), and you have to figure out
+> at the framework level when to propagate and when to error out.  I'm
+> not even sure you can always find the right place to stop propagating
+> - do you just keep going up until the set_parent callback succeeds, or
+> exists, or what?
 
-Can you explain a use case where propagation is necessary?  It doesn't
-match the Sascha's reply to my comments on the main patch, where he
-said users are best suited to make the decision on the correct parent,
-but child clocks are best suited to make the decision on the parent's
-rate?  Can you point me to a current clock implementation that does
-anything like this?
+For the set_parent there would be no propagating at all. For set_rate I
+can imagine a flag in the generic clock which tells whether to propagate
+set_rate or not.
 
-> + *
->  * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
->  * implementations to split any work between atomic (enable) and sleepable
->  * (prepare) contexts.  If a clock requires sleeping code to be turned on, this
-> @@ -76,9 +82,15 @@ struct clk_hw_ops {
->        void            (*disable)(struct clk_hw *);
->        unsigned long   (*recalc_rate)(struct clk_hw *);
->        long            (*round_rate)(struct clk_hw *, unsigned long);
-> +       int             (*set_rate)(struct clk_hw *,
-> +                                       unsigned long, unsigned long *);
->        struct clk *    (*get_parent)(struct clk_hw *);
->  };
->
-> +enum {
-> +       CLK_SET_RATE_PROPAGATE = 1,
-> +};
-> +
->  /**
->  * clk_prepare - prepare clock for atomic enabling.
->  *
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+> 
+> I think you can still factor out all the common code if you treat each
+> clock as a possible mux, divider, and gate combination.  Each part of
+> the clock is still just as abstractable as before - you can set the
+> rate_ops to be the generic single register divider implementation, and
+> the gate ops to be the generic single bit enable implementation.  The
+> idea of what a clock node is matches the HW design,
+
+The hardware design consists of only discrete rate changers (plls,
+dividers), muxes and gates. These are the only building blocks
+*every* hardware design has. I believe that many of the problems
+the current implementations have are due to the multiple building
+blocks stuffed into one clock. If you haven't already take a look
+at my i.MX5 clock patches:
+
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/113631
+
+They need changes to fit onto the current patches and the rate
+propagation problem is not solved there, but the resulting clock
+data files are really short and nice to read. Furthermore it's easy
+to implement. Just look at the diagrams in the datasheet and go through
+them.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
