@@ -1,53 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab1EXJJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 05:09:53 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47986 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab1EXJJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 05:09:52 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DDB75D8.1000804@jp.fujitsu.com>
-Date: Tue, 24 May 2011 18:09:44 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1755425Ab1EXJNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 05:13:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1561 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755250Ab1EXJNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 05:13:44 -0400
+Date: Tue, 24 May 2011 12:12:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Krishna Kumar2 <krkumar2@in.ibm.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux390@de.ibm.com,
+        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
+Subject: Re: [PATCHv2 10/14] virtio_net: limit xmit polling
+Message-ID: <20110524091255.GB16886@redhat.com>
+References: <cover.1305846412.git.mst@redhat.com>
+ <aced8619c07018b5495f9ceb2c02d4fbf897a098.1305846412.git.mst@redhat.com>
+ <877h9kvlps.fsf@rustcorp.com.au>
+ <20110522121008.GA12155@redhat.com>
+ <87boyutbjg.fsf@rustcorp.com.au>
+ <20110523111900.GB27212@redhat.com>
+ <OFEED174CD.D3C9A726-ON6525789A.002661D5-6525789A.002B26ED@in.ibm.com>
 MIME-Version: 1.0
-To: minchan.kim@gmail.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
-        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
-Subject: Re: [PATCH 4/5] oom: don't kill random process
-References: <4DD61F80.1020505@jp.fujitsu.com>	<4DD6207E.1070300@jp.fujitsu.com>	<BANLkTinaHki1oA4O3+FsoPDtFTLfqwRadA@mail.gmail.com>	<4DDB0FB2.9050300@jp.fujitsu.com>	<BANLkTinKm=m8zdPGN0Trpy4HtEFyxMYzPA@mail.gmail.com>	<4DDB711B.8010408@jp.fujitsu.com> <BANLkTik5tXv+k9tk2egXgmBRzcBD5Avjkw@mail.gmail.com>
-In-Reply-To: <BANLkTik5tXv+k9tk2egXgmBRzcBD5Avjkw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OFEED174CD.D3C9A726-ON6525789A.002661D5-6525789A.002B26ED@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> Hmm, If I understand your code correctly, unprivileged process can get
->>> a score 1 by 3% bonus.
->>
->> 3% bonus is for privileged process. :)
+On Tue, May 24, 2011 at 01:24:15PM +0530, Krishna Kumar2 wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> wrote on 05/23/2011 04:49:00 PM:
 > 
-> OMG. Typo.
-> Anyway, my point is following as.
-> If chose_point is 1, it means root bonus is rather big. Right?
-> If is is, your patch does second loop with completely ignore of bonus
-> for root privileged process.
-> My point is that let's not ignore bonus completely. Instead of it,
-> let's recalculate 1.5% for example.
-
-1) unpriviledged process can't get score 1 (because at least a process need one
-   anon, one file and two or more ptes).
-2) then, score=1 mean all processes in the system are privileged. thus decay won't help.
-
-IOW, never happen privileged and unprivileged score in this case.
-
-
+> > > To do this properly, we should really be using the actual number of sg
+> > > elements needed, but we'd have to do most of xmit_skb beforehand so we
+> > > know how many.
+> > >
+> > > Cheers,
+> > > Rusty.
+> >
+> > Maybe I'm confused here.  The problem isn't the failing
+> > add_buf for the given skb IIUC.  What we are trying to do here is stop
+> > the queue *before xmit_skb fails*. We can't look at the
+> > number of fragments in the current skb - the next one can be
+> > much larger.  That's why we check capacity after xmit_skb,
+> > not before it, right?
 > 
-> But I don't insist on my idea.
-> Thanks.
+> Maybe Rusty means it is a simpler model to free the amount
+> of space that this xmit needs. We will still fail anyway
+> at some time but it is unlikely, since earlier iteration
+> freed up atleast the space that it was going to use.
+
+Not sure I nderstand.  We can't know space is freed in the previous
+iteration as buffers might not have been used by then.
+
+> The
+> code could become much simpler:
+> 
+> start_xmit()
+> {
+> {
+>         num_sgs = get num_sgs for this skb;
+> 
+>         /* Free enough pending old buffers to enable queueing this one */
+>         free_old_xmit_skbs(vi, num_sgs * 2);     /* ?? */
+> 
+>         if (virtqueue_get_capacity() < num_sgs) {
+>                 netif_stop_queue(dev);
+>                 if (virtqueue_enable_cb_delayed(vi->svq) ||
+>                     free_old_xmit_skbs(vi, num_sgs)) {
+>                         /* Nothing freed up, or not enough freed up */
+>                         kfree_skb(skb);
+>                         return NETDEV_TX_OK;
+
+This packet drop is what we wanted to avoid.
 
 
+>                 }
+>                 netif_start_queue(dev);
+>                 virtqueue_disable_cb(vi->svq);
+>         }
+> 
+>         /* xmit_skb cannot fail now, also pass 'num_sgs' */
+>         xmit_skb(vi, skb, num_sgs);
+>         virtqueue_kick(vi->svq);
+> 
+>         skb_orphan(skb);
+>         nf_reset(skb);
+> 
+>         return NETDEV_TX_OK;
+> }
+> 
+> We could even return TX_BUSY since that makes the dequeue
+> code more efficient. See dev_dequeue_skb() - you can skip a
+> lot of code (and avoid taking locks) to check if the queue
+> is already stopped but that code runs only if you return
+> TX_BUSY in the earlier iteration.
+> 
+> BTW, shouldn't the check in start_xmit be:
+> 	if (likely(!free_old_xmit_skbs(vi, 2+MAX_SKB_FRAGS))) {
+> 		...
+> 	}
+> 
+> Thanks,
+> 
+> - KK
+
+I thought we used to do basically this but other devices moved to a
+model where they stop *before* queueing fails, so we did too.
+
+-- 
+MST
