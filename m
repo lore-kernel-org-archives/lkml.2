@@ -1,102 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab1EXMIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 08:08:14 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37985 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab1EXMIM (ORCPT
+	id S1755472Ab1EXMOn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 08:14:43 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:41959 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753771Ab1EXMOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 08:08:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=RglynnkbNZpb0xUDVrWPjEljPgImt2hEBLYv47yusfbS2gNI4X+mvyPlNiCCJ3KVZA
-         WggfrD4dpZuD+G83nPhmDz3/rm4bNFB4MMWhmUOoSp4JwzQYLYQhzv3F5UNCVqXkxCKb
-         Icef2NTDqIOmxrM+Gu2A69UjgnAeN3n0vmGmY=
-Subject: [PATCH] seqlock: get rid of SEQLOCK_UNLOCKED
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 14:08:08 +0200
-Message-ID: <1306238888.3026.31.camel@edumazet-laptop>
+	Tue, 24 May 2011 08:14:41 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Youquan Song <youquan.song@linux.intel.com>,
+        "Song, Youquan" <youquan.song@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "Kay, Allen M" <allen.m.kay@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Sankaran, Rajesh" <rajesh.sankaran@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Liu, Kent" <kent.liu@intel.com>
+Subject: Re: [PATCH v3] x86, vt-d: enable x2apic opt out
+In-Reply-To: Your message of "Tue, 24 May 2011 08:38:47 BST."
+             <1306222728.2627.49.camel@i7.infradead.org>
+From: Valdis.Kletnieks@vt.edu
+References: <1306161148-3987-1-git-send-email-youquan.song@intel.com> <7457.1306203521@localhost> <20110524153614.GA19080@linux-youquan.bj.intel.com> <17321.1306210686@localhost>
+            <1306222728.2627.49.camel@i7.infradead.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: multipart/signed; boundary="==_Exmh_1306239208_2659P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 24 May 2011 08:13:28 -0400
+Message-ID: <5843.1306239208@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4DDBA0EE.0010,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All static seqlock should be initialized with the lockdep friendly
-__SEQLOCK_UNLOCKED() macro.
+--==_Exmh_1306239208_2659P
+Content-Type: text/plain; charset=us-ascii
 
-Remove legacy SEQLOCK_UNLOCKED() macro.
+On Tue, 24 May 2011 08:38:47 BST, David Woodhouse said:
+> On Tue, 2011-05-24 at 05:18 +0100, Valdis.Kletnieks@vt.edu wrote:
+> > Do we want an actual WARN there, complete with stack traceback and
+> > all?
+> > 
+> > Or did you intend a pr_warn or printk(KERN_WARNING or similar?
+> 
+> The traceback has been very useful in other BIOS issues, because it gets
+> tracked and counted on kerneloops.org along with platform
+> identification. So we have been able to track down the major offenders
+> of some of the most egregious BIOS stupidities and make *some* progress
+> on getting them to improve the untested dross they habitually turn out.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: David Miller <davem@davemloft.net>
----
- arch/ia64/kernel/time.c         |    2 +-
- arch/x86/kernel/vsyscall_64.c   |    2 +-
- include/linux/seqlock.h         |    3 ---
- net/ipv4/inet_connection_sock.c |    2 +-
- 4 files changed, 3 insertions(+), 6 deletions(-)
+Oh OK... that probably is a good idea then.
 
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 04440cc..85118df 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -36,7 +36,7 @@
- static cycle_t itc_get_cycles(struct clocksource *cs);
- 
- struct fsyscall_gtod_data_t fsyscall_gtod_data = {
--	.lock = SEQLOCK_UNLOCKED,
-+	.lock = __SEQLOCK_UNLOCKED(fsyscall_gtod_data.lock),
- };
- 
- struct itc_jitter_data_t itc_jitter_data;
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index dcbb28c..59be48d 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -59,7 +59,7 @@ int __vgetcpu_mode __section_vgetcpu_mode;
- 
- struct vsyscall_gtod_data __vsyscall_gtod_data __section_vsyscall_gtod_data =
- {
--	.lock = SEQLOCK_UNLOCKED,
-+	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
- 	.sysctl_enabled = 1,
- };
- 
-diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-index 06d6964..e981189 100644
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -41,9 +41,6 @@ typedef struct {
- #define __SEQLOCK_UNLOCKED(lockname) \
- 		 { 0, __SPIN_LOCK_UNLOCKED(lockname) }
- 
--#define SEQLOCK_UNLOCKED \
--		 __SEQLOCK_UNLOCKED(old_style_seqlock_init)
--
- #define seqlock_init(x)					\
- 	do {						\
- 		(x)->sequence = 0;			\
-diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
-index 61fac4c..c14d88a 100644
---- a/net/ipv4/inet_connection_sock.c
-+++ b/net/ipv4/inet_connection_sock.c
-@@ -33,7 +33,7 @@ EXPORT_SYMBOL(inet_csk_timer_bug_msg);
-  * This struct holds the first and last local port number.
-  */
- struct local_ports sysctl_local_ports __read_mostly = {
--	.lock = SEQLOCK_UNLOCKED,
-+	.lock = __SEQLOCK_UNLOCKED(sysctl_local_ports.lock),
- 	.range = { 32768, 61000 },
- };
- 
+--==_Exmh_1306239208_2659P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFN26DocC3lWbTT17ARAuviAJ0f/hFpxuZc2F0O/KmlnIpwmLgB3QCfcFUd
+az1zC4vxr2+lbtMH10gNKzQ=
+=NFFD
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1306239208_2659P--
 
