@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab1EXN1M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 09:27:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54052 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932142Ab1EXN1K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 09:27:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=lY3lo5bHyD5a1YaeDMulYKSI8QHugJwwijKtWY9oeeeMepRtJ0SOJxfbmeFS7eRXx0
-         w1eGkTL6SupHXZmLEV1MxYyGNEhqmKBVK3PLXNasP3wihcDwVIZZg3eS+Vq5jlj2uKwL
-         dQ0Q9b7qEeRcgixhvdsBPmCmPHF2tmvt1xt/Q=
+	id S932264Ab1EXNaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:30:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49489 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756105Ab1EXNae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 09:30:34 -0400
+Date: Tue, 24 May 2011 15:30:17 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+cc: Lukas Czerner <lczerner@redhat.com>, Kyungmin Park <kmpark@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+In-Reply-To: <87sjs4i93w.fsf@devron.myhome.or.jp>
+Message-ID: <alpine.LFD.2.00.1105241520260.4028@dhcp-27-109.brq.redhat.com>
+References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de> <AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com> <201103301706.36214.arnd@arndb.de> <BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com> <87wrhgk8lp.fsf@devron.myhome.or.jp>
+ <BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com> <87r57ok3fp.fsf@devron.myhome.or.jp> <BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com> <87mxick0zj.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
+ <874o4kjtsy.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241211100.4028@dhcp-27-109.brq.redhat.com> <87y61wic4h.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241319340.4028@dhcp-27-109.brq.redhat.com> <87sjs4i93w.fsf@devron.myhome.or.jp>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Tue, 24 May 2011 21:27:10 +0800
-Message-ID: <BANLkTin4OiDiPO3znMvKTVZcYukHReydMQ@mail.gmail.com>
-Subject: [PATCH] sched: fix need_resched() when checking peempt
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When checking if current task could be preempted by a newly woken task,
-further check could be bypassed if the current thread is different from
-the current task of run-queue, and it is corrected accordingly.
+On Tue, 24 May 2011, OGAWA Hirofumi wrote:
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+> Lukas Czerner <lczerner@redhat.com> writes:
+> 
+> >> Are you read my email? So, FAT adjust 2 blocks, ext* 1 block, and what
+> >> is other? The middle was guaranteed as continued? So, which is end of
+> >> blocks?
+> >
+> > I am sorry but I am not sure what you are asking for. Just grab the size
+> > of the file system or even better the size of underlying device (since
+> > the filesyste would not be bigger than that) and use that.
+> >
+> > Of course if you grab the count of filesystem blocks (and the file
+> > system does not account for the first data block) you'll end up with len
+> > smaller than first data block. So it might make sense to not to
+> > decrement the len and just start from first data block since it is not
+> > accounted for anyway. However it is not a big deal, is it ? Are you
+> > expecting any problems with this behaviour ?
+> 
+> What is size of file system or underlying devices? You force to find the
+> device which target FS is using? Even if you can get size of underlying
+> devices, you force to user to insane loop in size of devices?
 
---- tip-git/kernel/sched_rt.c	Sun May 22 20:12:01 2011
-+++ sched_rt.c	Tue May 24 20:31:27 2011
-@@ -1074,7 +1074,7 @@ static void check_preempt_curr_rt(struct
- 	 * to move current somewhere else, making room for our non-migratable
- 	 * task.
- 	 */
--	if (p->prio == rq->curr->prio && !need_resched())
-+	if (p->prio == rq->curr->prio && !test_tsk_need_resched(rq->curr))
- 		check_preempt_equal_prio(rq, p);
- #endif
- }
+Look, I do not have time to argue with you forever and I do not even
+understand what is your point. Just go and read other filesystems
+implementation of FITRIM (ext4,ext3,xfs,btrfs?) and you'll see what you
+need to do.
+
+If you do not want to get the file system size, then FINE! just pass the
+damn UULONG_MAX as length. I have no clue what insane loop are you
+talking about! It is *easy* just discard the whole thing (with
+UULONG_MAX) or, if you want to do it per-partes, then do it as long as
+it does not return EINVAL, once it does you know that your "start" is
+out of the filesystem and you are done!
+
+
+> 
+> Why can you guarantee it's not big deal in design? Why can't you admit
+> userland can't make optimized loop?
+
+And what do you mean by that ?
+
+-Lukas
