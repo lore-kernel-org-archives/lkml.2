@@ -1,319 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab1EXAC2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 20:02:28 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42455 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755504Ab1EXACY (ORCPT
+	id S932668Ab1EXACF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 20:02:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38844 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753285Ab1EXACC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 20:02:24 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 24 May 2011 08:55:30 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Ying Han <yinghan@google.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        hannes@cmpxchg.org, Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/8] memcg: clean up, export swapiness
-Message-Id: <20110524085530.6f3ff8cc.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <BANLkTi=7-xgUetav9s5fvZ8e+U986Y4Z7w@mail.gmail.com>
-References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110520124312.5928aa92.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTi=7-xgUetav9s5fvZ8e+U986Y4Z7w@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 May 2011 20:02:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=Zsh30gNKzdIIftEkRByV4e/odLJtuMxZnpOF09EcFY8asiX50nkd8vdpXbng542OQo
+         dgCnM8to/B+scx1ea1XhVNx7r2XMEhXCRgcs67fg5nwGgNFt5z698EnwfrL6Vq5ZfbUP
+         LdXbO4zUXqd1kJwY6TgwHDB0doPpzICrdDx0g=
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Mon, 23 May 2011 17:01:41 -0700
+Message-ID: <BANLkTikkGq8cnyKA453YZLc6mqYa=+bxvA@mail.gmail.com>
+Subject: compat-wireless 2.6.39 final release
+To: linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 May 2011 10:26:22 -0700
-Ying Han <yinghan@google.com> wrote:
+Before the world ended Linus decided to release v2.6.39 and now that
+the show is not over we get to enjoy it. So we get the respective
+backport of the 802.11 / BT / Ethernet drivers and subsystems
+available to users on older kernels. The short and sweet details:
 
-> Hi Kame:
-> 
-> Is this patch part of the "memcg async reclaim v2" patchset?
+Vanilla release:
 
-yes, I failed to change title...
+http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.39/compat-wireless-2.6.39-1.tar.bz2
 
- I am
-> trying to do some tests on top of that, but having hard time finding
-> the [PATCH 3/8] and [PATCH 5/8].
-> 
-PATCH 5 is attached.
+The "-sn" release (pending-stable and linux-next-cherry-picks patches applied):
 
-I think I can send a simplified v3 until this Friday and will not do update until
-the end of LinuxCon Japan (I'm now writing slides ;). Of course, it's merge
-window and I don't want to push any new feature to Andrew.
+http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.39/compat-wireless-2.6.39-1-sn.tar.bz2
 
-Sorry for my inconvenience.
+The all the details:
 
-Thanks,
--Kame
+http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.39/ChangeLog-2.6.39-wireless
 
-==
-This patch adds a logic to keep usage margin to the limit in asynchronous way.
-When the usage over some threshould (determined automatically), asynchronous
-memory reclaim runs and shrink memory to limit - MEMCG_ASYNC_STOP_MARGIN.
+Below just the compat.git and compat-wireless.git updates, to see the
+respective kernel updates check the ChangeLog above. I've tested this
+release with iwlagn on 2.6.38. Please report any issues.
 
-By this, there will be no difference in total amount of usage of cpu to
-scan the LRU but we'll have a chance to make use of wait time of applications
-for freeing memory. For example, when an application read a file or socket,
-to fill the newly alloated memory, it needs wait. Async reclaim can make use
-of that time and give a chance to reduce latency by background works.
+===============================================
+ChangeLog for compat-wireless for linux-2.6.39
+===============================================
 
-This patch only includes required hooks to trigger async reclaim. Core logics
-will be in the following patches.
+This is the ChangeLog for the Linux kernel project compat-wireless.
+It provides a backport of a few Linux kernel subsystems down to
+older kernels:
 
-Changelog v1 -> v2:
-  - avoid async reclaim check when num_online_cpus() < 2.
-  - changed MEMCG_ASYNC_START_MARGIN to be 6 * HPAGE_SIZE.
+  * 802.11
+  * Bluetooth
+  * Ethernet
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- Documentation/cgroups/memory.txt |   46 ++++++++++++++++++-
- mm/memcontrol.c                  |   94 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 139 insertions(+), 1 deletion(-)
+For more details refer to the home page:
 
-Index: mmotm-May11/mm/memcontrol.c
-===================================================================
---- mmotm-May11.orig/mm/memcontrol.c
-+++ mmotm-May11/mm/memcontrol.c
-@@ -115,10 +115,12 @@ enum mem_cgroup_events_index {
- enum mem_cgroup_events_target {
- 	MEM_CGROUP_TARGET_THRESH,
- 	MEM_CGROUP_TARGET_SOFTLIMIT,
-+	MEM_CGROUP_TARGET_ASYNC,
- 	MEM_CGROUP_NTARGETS,
- };
- #define THRESHOLDS_EVENTS_TARGET (128)
- #define SOFTLIMIT_EVENTS_TARGET (1024)
-+#define ASYNC_EVENTS_TARGET	(512)	/* assume x86-64's hpagesize */
- 
- struct mem_cgroup_stat_cpu {
- 	long count[MEM_CGROUP_STAT_NSTATS];
-@@ -211,6 +213,29 @@ static void mem_cgroup_threshold(struct 
- static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
- 
- /*
-+ * For example, with transparent hugepages, memory reclaim scan at hitting
-+ * limit can very long as to reclaim HPAGE_SIZE of memory. This increases
-+ * latency of page fault and may cause fallback. At usual page allocation,
-+ * we'll see some (shorter) latency, too. To reduce latency, it's appreciated
-+ * to free memory in background to make margin to the limit. This consumes
-+ * cpu but we'll have a chance to make use of wait time of applications
-+ * (read disk etc..) by asynchronous reclaim.
-+ *
-+ * This async reclaim tries to reclaim HPAGE_SIZE * 2 of pages when margin
-+ * to the limit is smaller than HPAGE_SIZE * 2. This will be enabled
-+ * automatically when the limit is set and it's greater than the threshold.
-+ */
-+#if HPAGE_SIZE != PAGE_SIZE
-+#define MEMCG_ASYNC_LIMIT_THRESH      (HPAGE_SIZE * 64)
-+#define MEMCG_ASYNC_MARGIN	      (HPAGE_SIZE * 4)
-+#else /* make the margin as 4M bytes */
-+#define MEMCG_ASYNC_LIMIT_THRESH      (128 * 1024 * 1024)
-+#define MEMCG_ASYNC_MARGIN            (8 * 1024 * 1024)
-+#endif
-+
-+static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem);
-+
-+/*
-  * The memory controller data structure. The memory controller controls both
-  * page cache and RSS per cgroup. We would eventually like to provide
-  * statistics based on the statistics developed by Rik Van Riel for clock-pro,
-@@ -278,6 +303,12 @@ struct mem_cgroup {
- 	 */
- 	unsigned long 	move_charge_at_immigrate;
- 	/*
-+ 	 * Checks for async reclaim.
-+ 	 */
-+	unsigned long	async_flags;
-+#define AUTO_ASYNC_ENABLED	(0)
-+#define USE_AUTO_ASYNC		(1)
-+	/*
- 	 * percpu counter.
- 	 */
- 	struct mem_cgroup_stat_cpu *stat;
-@@ -722,6 +753,9 @@ static void __mem_cgroup_target_update(s
- 	case MEM_CGROUP_TARGET_SOFTLIMIT:
- 		next = val + SOFTLIMIT_EVENTS_TARGET;
- 		break;
-+	case MEM_CGROUP_TARGET_ASYNC:
-+		next = val + ASYNC_EVENTS_TARGET;
-+		break;
- 	default:
- 		return;
- 	}
-@@ -745,6 +779,11 @@ static void memcg_check_events(struct me
- 			__mem_cgroup_target_update(mem,
- 				MEM_CGROUP_TARGET_SOFTLIMIT);
- 		}
-+		if (__memcg_event_check(mem, MEM_CGROUP_TARGET_ASYNC)) {
-+			mem_cgroup_may_async_reclaim(mem);
-+			__mem_cgroup_target_update(mem,
-+				MEM_CGROUP_TARGET_ASYNC);
-+		}
- 	}
- }
- 
-@@ -3365,6 +3404,23 @@ void mem_cgroup_print_bad_page(struct pa
- 
- static DEFINE_MUTEX(set_limit_mutex);
- 
-+/* When limit is changed, check async reclaim switch again */
-+static void mem_cgroup_set_auto_async(struct mem_cgroup *mem, u64 val)
-+{
-+	if (!test_bit(AUTO_ASYNC_ENABLED, &mem->async_flags))
-+		goto clear;
-+	if (num_online_cpus() < 2)
-+		goto clear;
-+	if (val < MEMCG_ASYNC_LIMIT_THRESH)
-+		goto clear;
-+
-+	set_bit(USE_AUTO_ASYNC, &mem->async_flags);
-+	return;
-+clear:
-+	clear_bit(USE_AUTO_ASYNC, &mem->async_flags);
-+	return;
-+}
-+
- static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
- 				unsigned long long val)
- {
-@@ -3413,6 +3469,7 @@ static int mem_cgroup_resize_limit(struc
- 				memcg->memsw_is_minimum = true;
- 			else
- 				memcg->memsw_is_minimum = false;
-+			mem_cgroup_set_auto_async(memcg, val);
- 		}
- 		mutex_unlock(&set_limit_mutex);
- 
-@@ -3590,6 +3647,15 @@ unsigned long mem_cgroup_soft_limit_recl
- 	return nr_reclaimed;
- }
- 
-+static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem)
-+{
-+	if (!test_bit(USE_AUTO_ASYNC, &mem->async_flags))
-+		return;
-+	if (res_counter_margin(&mem->res) <= MEMCG_ASYNC_MARGIN) {
-+		/* Fill here */
-+	}
-+}
-+
- /*
-  * This routine traverse page_cgroup in given list and drop them all.
-  * *And* this routine doesn't reclaim page itself, just removes page_cgroup.
-@@ -4149,6 +4215,29 @@ static int mem_control_stat_show(struct 
- 	return 0;
- }
- 
-+static u64 mem_cgroup_async_read(struct cgroup *cgrp, struct cftype *cft)
-+{
-+	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
-+
-+	return mem->async_flags;
-+}
-+
-+static int
-+mem_cgroup_async_write(struct cgroup *cgrp, struct cftype *cft, u64 val)
-+{
-+	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
-+
-+	if (val & (1 << AUTO_ASYNC_ENABLED))
-+		set_bit(AUTO_ASYNC_ENABLED, &mem->async_flags);
-+	else
-+		clear_bit(AUTO_ASYNC_ENABLED, &mem->async_flags);
-+
-+	val = res_counter_read_u64(&mem->res, RES_LIMIT);
-+	mem_cgroup_set_auto_async(mem, val);
-+	return 0;
-+}
-+
-+
- static u64 mem_cgroup_swappiness_read(struct cgroup *cgrp, struct cftype *cft)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
-@@ -4580,6 +4669,11 @@ static struct cftype mem_cgroup_files[] 
- 		.unregister_event = mem_cgroup_oom_unregister_event,
- 		.private = MEMFILE_PRIVATE(_OOM_TYPE, OOM_CONTROL),
- 	},
-+	{
-+		.name = "async_control",
-+		.read_u64 = mem_cgroup_async_read,
-+		.write_u64 = mem_cgroup_async_write,
-+	},
- };
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-Index: mmotm-May11/Documentation/cgroups/memory.txt
-===================================================================
---- mmotm-May11.orig/Documentation/cgroups/memory.txt
-+++ mmotm-May11/Documentation/cgroups/memory.txt
-@@ -70,6 +70,7 @@ Brief summary of control files.
- 				 (See sysctl's vm.swappiness)
-  memory.move_charge_at_immigrate # set/show controls of moving charges
-  memory.oom_control		 # set/show oom controls.
-+ memory.async_control		 # set control for asynchronous memory reclaim
- 
- 1. History
- 
-@@ -664,7 +665,50 @@ At reading, current status of OOM is sho
- 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
- 				 be stopped.)
- 
--11. TODO
-+11. Asynchronous memory reclaim
-+
-+In some kind of applications which uses many file caches, once memory cgroup
-+hit limit, following allocation of pages will hit limit again and the
-+application may see huge latency because of memory reclaim.
-+
-+Memory cgroup provides a method for asynchronous memory reclaim for freeing
-+memory before hitting limit. By this, some class of application can avoid
-+memory reclaim latency effectively and show good performance. For example,
-+if an application reads data from files bigger than limit, freeing memory
-+in asynchrnous will reduce latency of read. But please note, even if
-+latency decreased, the amount of total usage of CPU is unchanged. So,
-+asynchronous memory reclaim works effectively only when you have extra unused
-+CPU, applications tend to sleep. So, this feature only works on SMP.
-+
-+So, if you see this feature doesn't help your application, please let it
-+turned off.
-+
-+
-+11.1 memory.async_control
-+
-+memory.async_control is a control for asynchronous memory reclaim and
-+represented as bitmask of controls.
-+
-+ bit 0 ....user control of automatic asynchronous memory reclaim(see below)
-+ bit 1 ....indicate automatic asynchronous memory reclaim is really used.
-+
-+ * Automatic asynchronous memory reclaim is a feature to free pages to
-+   some extent below the limit in background. When this runs, applications
-+   can reduce latency at hit limit. (but please note, background reclaim
-+   use cpu.)
-+
-+   This feature can be enabled by
-+
-+   echo 1 > memory.async_control
-+
-+   If successfully enabled, bit 1 of memory.async_control is set. Bit 1 may
-+   not be set when the number of cpu is 1 or when the limit is too small.
-+
-+   Note: This feature is not propageted to childrens in automatic. This
-+   may be conservative but required limitation to avoid using too much
-+   cpus.
-+
-+12. TODO
- 
- 1. Add support for accounting huge pages (as a separate controller)
- 2. Make per-cgroup scanner reclaim not-shared pages first
+http://wireless.kernel.org/en/users/Download/stable/
 
+The compat-wireless project consists of code from three projects:
+
+  * The Linux kernel: linux-2.6-allstable.git
+  * Compat-wirelesS: compat-wireless.git
+  * Compat: compat.git
+
+The compat-wireless stable releases incorporates code from from
+each of these git trees for the respective upstream Linux kernel
+stable release. A branch called linux-2.6.3x.y exists for each
+stable release. Below we provide the ChangeLog of changes from
+the previous branched release to the new branched release.
+
+Release: linux-2.6.39
+
+
+Updates from the compat.git project:
+====================================
+
+git shortlog linux-2.6.38.y..linux-2.6.39.y
+
+Hauke Mehrtens (10):
+      compat: backport alloc_ordered_workqueue
+      compat: add support for kernel 2.6.38
+      compat: backport usb_pipe_endpoint()
+      compat: backport tty_{lock,unlock,locked}
+      compat: backport tty_set_termios
+      compat: add tty_set_termios only for kernel >= 2.6.27
+      compat: backport netdev_refcnt_read.
+      compat: add support for kernel 2.6.39
+      compat: fix build for kernel < 2.6.29
+      compat: semaphore.h mpoved from asm/ to linux/
+
+Luis R. Rodriguez (1):
+      compat: backport IRQ namespace cleanup
+
+Vasanthakumar Thiagarajan (1):
+      compat: Define usleep_range(min, max) as msleep(max/1000) for <2.6.36
+
+Updates from the compat-wireless.git project:
+=============================================
+
+git shortlog linux-2.6.38.y..linux-2.6.39.y
+
+David Ward (1):
+      compat-wireless: fix driver-select for iwl3945/iwlagn
+
+Greg Whiteley (1):
+      compat-wireless: rt2800pci (and rt2x00pci) don't unload on 'make unload'
+
+Hauke Mehrtens (22):
+      compat-wireless: adapt chamhes in brcm80211
+      compat-wireless: remove max_brightness
+      compat-wireless: remove compat for threaded_irq in rt2x00
+      compat-wireless: backport of alloc_ordered_workqueue into compat.git
+      compat-wireless: make patches apply again
+      compat-wireless: brcm80211 adapt changes in mac80211
+      compat-wireless: build zd1211rw only for kernel >= 2.6.29
+      compat-wireless: activate BRCMFMAC
+      compat-wireless: rename some config options
+      compat-wireless: backport pm ops for atlx
+      compat-wireless: some updates to bluetooth patch
+      compat-wireless: brcm80211 fix is in upstream now
+      compat-wireless: Add drivers/net/wireless/rtlwifi/rtl8192c
+      compat-wireless: generate CONFIG_COMPAT_KERNEL_39
+      compat-wireless: build ath9k common when no pci is available
+      compat-wireless: updates needed for iwlwifi split
+      compat-wireless: add rtl8192cu
+      compat-wireless: some minor updates for config.mk
+      compat-wireless: change number of patch:
+      compat-wireless: do not set blink_set for kernel <= 2.6.24
+      compat-wireless: backport threaded irq for wl12xx_spi
+      compat-wireless: fix compile warning for wl12xx
+
+Johannes Berg (1):
+      fix Intel driver-select, make it iwlagn only for now
+
+Luis R. Rodriguez (28):
+      compat-wireless: refresh patches
+      compat-wireless: fix stable pending tag mismatch output
+      compat-wireless: skip directory if patches directory is empty
+      compat-wireless: fix disable_bt
+      compat-wireless: fix intel drivers on driver-select
+      compat-wireless: fix gen-stable-release.sh for git tree updates
+      compat-wireless: refresh patches
+      compat-wireless: remove
+crap/0001-ath9k-Add-debugfs-interface-to-dump-registers.patch
+      compat-wireless: fix packet log patch to apply
+      compat-wireless: refresh crap patches
+      compat-wireless: remove ath3k bt workaround
+      compat-wireless: refresh patches for 2.6.39-rc1
+      compat-wireless: refresh patches for v2.6.39-rc1
+      compat-wireless: suck out pending-stable patches from linux-next
+      compat-wireless: fix compilation warning for wl12xx
+      compat-wireless: fix usb makefile
+      compat-wireless: refresh patches for 2.6.39-rc6
+      compat-wireless: remove some already applied pending-stable patches
+      compat-wireless: update pending stable fixes
+      compat-wireless: add long range pending fix when using RTS / CTS
+with ath9k
+      compat-wireless: refresh patches for 2.6.39 final
+      compat-wireless: backport pending-stable
+ath9k-Fix-drain-txq-failure-in-flush.patch
+      compat-wireless: backport
+ath9k-avoid-enabling-interrupts-while-processing-rx.patch
+      compat-wireless: backport
+rtlwifi-rtl8192c-common-rtl8192ce-Fix-for-HT40-regre.patch
+      compat-wireless: remove a linux-next-pending ath9k patc
+      compat-wireless: add cherry picked:
+ath9k-use-PS-wakeup-before-REG_READ.patch
+      compat-wireless: clarify reason for cherry picked file
+      compat-wireless: fix the cherry pick from applying
