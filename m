@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab1EXNcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 09:32:14 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51602 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756357Ab1EXNcN (ORCPT
+	id S1756545Ab1EXNdR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:33:17 -0400
+Received: from exht1.emulex.com ([138.239.113.183]:21669 "EHLO
+	exht1.ad.emulex.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756447Ab1EXNdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 09:32:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=WKp3yfO0pK5TiLjSS50sRhIYycATB+DJzsoejVy4KzOq6B3xDtJVzFE1uOdAsYf6hc
-         od/Gwvpr0mciHAwbz68c0AvBzb6ZHy/vNTQ+x+SojiLtdTCRfOaHFDBHM3jCj87N5NLV
-         HojjobWHsXD8SEJZ94pFMiLyXVUteUYPZKrM0=
-Date: Tue, 24 May 2011 15:32:05 +0200
-From: Luca Tettamanti <kronos.it@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH] Delete unused variable no_wb.
-Message-ID: <20110524133204.GA11529@nb-core2.darkstar.lan>
+	Tue, 24 May 2011 09:33:16 -0400
+Date: Tue, 24 May 2011 09:32:47 -0400
+From: James Smart <james.smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Iannicelli, Alex" <Alex.Iannicelli@emulex.com>
+Subject: Re: [PATCH 3/9] [SCSI] lpfc: Silence DEBUG_STRICT_USER_COPY_CHECKS=y
+ warning
+References: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org> <1305244212-19183-4-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1305244212-19183-4-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+Message-ID: <5b0f759a-66ec-4f31-bcdf-084e3a6aa4c3@exht1.ad.emulex.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The number of writeback threads was removed from the output by c1955ce3.
+Acked-by: James Smart <james.smart@emulex.com>
 
-Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
----
- mm/backing-dev.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Thanks
 
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index befc875..f032e6e 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -63,10 +63,10 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
--	unsigned long nr_dirty, nr_io, nr_more_io, nr_wb;
-+	unsigned long nr_dirty, nr_io, nr_more_io;
- 	struct inode *inode;
- 
--	nr_wb = nr_dirty = nr_io = nr_more_io = 0;
-+	nr_dirty = nr_io = nr_more_io = 0;
- 	spin_lock(&inode_wb_list_lock);
- 	list_for_each_entry(inode, &wb->b_dirty, i_wb_list)
- 		nr_dirty++;
--- 
-1.7.5.1
+-- james
+
+
+On 5/12/2011 7:50 PM, Stephen Boyd wrote:
+> Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following
+> warning:
+>
+> In file included from arch/x86/include/asm/uaccess.h:573,
+>                   from include/linux/uaccess.h:5,
+>                   from include/linux/highmem.h:7,
+>                   from include/linux/pagemap.h:10,
+>                   from include/linux/blkdev.h:12,
+>                   from drivers/scsi/lpfc/lpfc_debugfs.c:21:
+> In function 'copy_from_user':
+> arch/x86/include/asm/uaccess_64.h:65:
+> warning: call to 'copy_from_user_overflow' declared with
+> attribute warning: copy_from_user() buffer size is not provably
+> correct
+>
+> presumably due to buf_size being signed causing GCC to fail to
+> see that buf_size can't become negative.
+>
+> Cc: James Smart<james.smart@emulex.com>
+> Signed-off-by: Stephen Boyd<sboyd@codeaurora.org>
+> ---
+>   drivers/scsi/lpfc/lpfc_debugfs.c |    3 ++-
+>   1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/scsi/lpfc/lpfc_debugfs.c b/drivers/scsi/lpfc/lpfc_debugfs.c
+> index 3d96774..0af53a6 100644
+> --- a/drivers/scsi/lpfc/lpfc_debugfs.c
+> +++ b/drivers/scsi/lpfc/lpfc_debugfs.c
+> @@ -1305,7 +1305,8 @@ static int lpfc_idiag_cmd_get(const char __user *buf, size_t nbytes,
+>   {
+>   	char mybuf[64];
+>   	char *pbuf, *step_str;
+> -	int bsize, i;
+> +	int i;
+> +	size_t bsize;
+>
+>   	/* Protect copy from user */
+>   	if (!access_ok(VERIFY_READ, buf, nbytes))
