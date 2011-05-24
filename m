@@ -1,163 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab1EXL35 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 07:29:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46545 "EHLO mx1.redhat.com"
+	id S1755628Ab1EXLc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 07:32:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54005 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754896Ab1EXL3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 07:29:55 -0400
-Date: Tue, 24 May 2011 14:29:39 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Krishna Kumar2 <krkumar2@in.ibm.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux390@de.ibm.com,
-        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
-Subject: Re: [PATCHv2 10/14] virtio_net: limit xmit polling
-Message-ID: <20110524112901.GB17087@redhat.com>
-References: <cover.1305846412.git.mst@redhat.com>
- <aced8619c07018b5495f9ceb2c02d4fbf897a098.1305846412.git.mst@redhat.com>
- <877h9kvlps.fsf@rustcorp.com.au>
- <20110522121008.GA12155@redhat.com>
- <87boyutbjg.fsf@rustcorp.com.au>
- <20110523111900.GB27212@redhat.com>
- <OFEED174CD.D3C9A726-ON6525789A.002661D5-6525789A.002B26ED@in.ibm.com>
- <20110524091255.GB16886@redhat.com>
- <OF69E520FD.340352AC-ON6525789A.003308A2-6525789A.0033F2DF@in.ibm.com>
+	id S1755084Ab1EXLc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 07:32:56 -0400
+Date: Tue, 24 May 2011 13:32:43 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+cc: Lukas Czerner <lczerner@redhat.com>, Kyungmin Park <kmpark@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+In-Reply-To: <87y61wic4h.fsf@devron.myhome.or.jp>
+Message-ID: <alpine.LFD.2.00.1105241319340.4028@dhcp-27-109.brq.redhat.com>
+References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de> <AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com> <201103301706.36214.arnd@arndb.de> <BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com> <87wrhgk8lp.fsf@devron.myhome.or.jp>
+ <BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com> <87r57ok3fp.fsf@devron.myhome.or.jp> <BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com> <87mxick0zj.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
+ <874o4kjtsy.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241211100.4028@dhcp-27-109.brq.redhat.com> <87y61wic4h.fsf@devron.myhome.or.jp>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <OF69E520FD.340352AC-ON6525789A.003308A2-6525789A.0033F2DF@in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 02:57:43PM +0530, Krishna Kumar2 wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> wrote on 05/24/2011 02:42:55 PM:
+On Tue, 24 May 2011, OGAWA Hirofumi wrote:
+
+> Lukas Czerner <lczerner@redhat.com> writes:
 > 
-> > > > > To do this properly, we should really be using the actual number of
-> sg
-> > > > > elements needed, but we'd have to do most of xmit_skb beforehand so
-> we
-> > > > > know how many.
-> > > > >
-> > > > > Cheers,
-> > > > > Rusty.
-> > > >
-> > > > Maybe I'm confused here.  The problem isn't the failing
-> > > > add_buf for the given skb IIUC.  What we are trying to do here is
-> stop
-> > > > the queue *before xmit_skb fails*. We can't look at the
-> > > > number of fragments in the current skb - the next one can be
-> > > > much larger.  That's why we check capacity after xmit_skb,
-> > > > not before it, right?
-> > >
-> > > Maybe Rusty means it is a simpler model to free the amount
-> > > of space that this xmit needs. We will still fail anyway
-> > > at some time but it is unlikely, since earlier iteration
-> > > freed up atleast the space that it was going to use.
+> >> No. If you want to trim whole with some chunk like 1GB and periodically
+> >> (IIRC in xfstest), what do? We have to trim until ULLONG_MAX for each
+> >> 1GB?
+> >> 
+> >> Thanks.
+> >> 
 > >
-> > Not sure I nderstand.  We can't know space is freed in the previous
-> > iteration as buffers might not have been used by then.
-> 
-> Yes, the first few iterations may not have freed up space, but
-> later ones should. The amount of free space should increase
-> from then on, especially since we try to free double of what
-> we consume.
-
-Hmm. This is only an upper limit on the # of entries in the queue.
-Assume that vq size is 4 and we transmit 4 enties without
-getting anything in the used ring. The next transmit will fail.
-
-So I don't really see why it's unlikely that we reach the packet
-drop code with your patch.
-
-> > > The
-> > > code could become much simpler:
-> > >
-> > > start_xmit()
-> > > {
-> > > {
-> > >         num_sgs = get num_sgs for this skb;
-> > >
-> > >         /* Free enough pending old buffers to enable queueing this one
-> */
-> > >         free_old_xmit_skbs(vi, num_sgs * 2);     /* ?? */
-> > >
-> > >         if (virtqueue_get_capacity() < num_sgs) {
-> > >                 netif_stop_queue(dev);
-> > >                 if (virtqueue_enable_cb_delayed(vi->svq) ||
-> > >                     free_old_xmit_skbs(vi, num_sgs)) {
-> > >                         /* Nothing freed up, or not enough freed up */
-> > >                         kfree_skb(skb);
-> > >                         return NETDEV_TX_OK;
+> > What ? No, of course not. As I said, just go through 1G worth of filesystem
+> > blocks skipping metadata. However we do have a special case when we
+> > adjust start and len according to the first data block (which is only
+> > the case of 1024B blocksize).
 > >
-> > This packet drop is what we wanted to avoid.
-> 
-> Please see below on returning NETDEV_TX_BUSY.
-> 
+> > 	if (start < first_data_blk) {
+> > 		len -= first_data_blk - start;
+> > 		start = first_data_blk;
+> > 	}
 > >
-> > >                 }
-> > >                 netif_start_queue(dev);
-> > >                 virtqueue_disable_cb(vi->svq);
-> > >         }
-> > >
-> > >         /* xmit_skb cannot fail now, also pass 'num_sgs' */
-> > >         xmit_skb(vi, skb, num_sgs);
-> > >         virtqueue_kick(vi->svq);
-> > >
-> > >         skb_orphan(skb);
-> > >         nf_reset(skb);
-> > >
-> > >         return NETDEV_TX_OK;
-> > > }
-> > >
-> > > We could even return TX_BUSY since that makes the dequeue
-> > > code more efficient. See dev_dequeue_skb() - you can skip a
-> > > lot of code (and avoid taking locks) to check if the queue
-> > > is already stopped but that code runs only if you return
-> > > TX_BUSY in the earlier iteration.
-> > >
-> > > BTW, shouldn't the check in start_xmit be:
-> > >    if (likely(!free_old_xmit_skbs(vi, 2+MAX_SKB_FRAGS))) {
-> > >       ...
-> > >    }
-> > >
-> > > Thanks,
-> > >
-> > > - KK
-> >
-> > I thought we used to do basically this but other devices moved to a
-> > model where they stop *before* queueing fails, so we did too.
+> > Which means that we just skip the first block (or whatever first data
+> > block is). And this is the same as skipping metadata.
 > 
-> I am not sure of why it was changed, since returning TX_BUSY
-> seems more efficient IMHO.
-> qdisc_restart() handles requeue'd
-> packets much better than a stopped queue, as a significant
-> part of this code is skipped if gso_skb is present
+> Are you read my email? So, FAT adjust 2 blocks, ext* 1 block, and what
+> is other? The middle was guaranteed as continued? So, which is end of
+> blocks?
 
-I think this is the argument:
-http://www.mail-archive.com/virtualization@lists.linux-foundation.org/msg06364.html
+I am sorry but I am not sure what you are asking for. Just grab the size
+of the file system or even better the size of underlying device (since
+the filesyste would not be bigger than that) and use that.
 
+Of course if you grab the count of filesystem blocks (and the file
+system does not account for the first data block) you'll end up with len
+smaller than first data block. So it might make sense to not to
+decrement the len and just start from first data block since it is not
+accounted for anyway. However it is not a big deal, is it ? Are you
+expecting any problems with this behaviour ?
 
-> (qdisc
-> will eventually start dropping packets when tx_queue_len is
-> exceeded anyway).
-> 
-> Thanks,
-> 
-> - KK
-
-tx_queue_len is a pretty large buffer so maybe no.
-I think the packet drops from the scheduler queue can also be
-done intelligently (e.g. with CHOKe) which should
-work better than dropping a random packet?
-
--- 
-MST
+-Lukas
