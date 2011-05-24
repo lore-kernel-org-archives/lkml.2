@@ -1,174 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757731Ab1EXXtG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 19:49:06 -0400
-Received: from syscomptechweb.com ([72.55.168.116]:51242 "EHLO
-	cl-t085-170cl.privatedns.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1757698Ab1EXXtE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 19:49:04 -0400
-X-Greylist: delayed 52743 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 May 2011 19:49:04 EDT
-Message-ID: <0263ea7d039b9a8325b07e115a4f3ce8.squirrel@72.55.168.116>
-Date: Tue, 24 May 2011 12:35:53 +0400
-Subject: For your interest
-From: "A.M.Yassini" <a.m.k.yassiin@g.pl>
-Reply-To: a.m.k.yasin@g.pl
-User-Agent: SquirrelMail/1.4.21
+	id S1754710Ab1EXIgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 04:36:03 -0400
+Received: from smtpout02.highway.telekom.at ([195.3.96.113]:10354 "EHLO
+	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754560Ab1EXIgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 04:36:00 -0400
+From: Melchior FRANZ <melchior.franz@gmail.com>
+Subject: [PATCH] support wlan hotkey on Acer Travelmate 5735Z
+Date: Tue, 24 May 2011 10:35:55 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.39; KDE/4.6.3; x86_64; ; )
+X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
+X-PGP: http://members.aon.at/mfranz/melchior.franz
 MIME-Version: 1.0
-Content-Type: multipart/mixed;boundary="----=_20110524123553_71590"
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cl-t085-170cl.privatedns.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - g.pl
-To: unlisted-recipients:; (no To-header on input)
+To: linux-kernel@vger.kernel.org
+Cc: Joey Lee <jlee@novell.com>, Carlos Corbacho <carlos@strangeworlds.co.uk>,
+        platform-driver-x86@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105241035.55877@rk-nord.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_20110524123553_71590
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
+From: Melchior FRANZ <mfranz@aon.at>
+    
+On an Acer Travelmate 5735Z-452G32Mnss the WLAN-enable/disable key
+doesn't send 0x1 as acpi event key code, but 0x3. This patch also
+makes the module ignore hotkey acpi events for functions that are
+already handled without. This avoids warning message "keyboard:
+can't emulate rawmode for keycode 240".
+
+Signed-off-by: Melchior FRANZ <mfranz@aon.at>
+---
+
+This patch requires that Joey LEE's 64 bit fix be applied,
+otherwise the whole acer-wmi module fails to load on this
+machine. See https://bugzilla.kernel.org/show_bug.cgi?id=34142#c21
+(0001-acer-wmi-allow-64-bits-return-buffer-from-WMI-metho.patch)
 
 
-
-Greeting,
-
-My name is Mr. A. M. Yassin, I live and work in Abu Dhabi UAE.
-I have an urgent business which I believe will interest you.
-Find the enclose for details.
-
-For any reason you cannot open that attachment, please let me
-know so that I can resend it in the body of the mail, thank you.
-
-I wait for your response, Thank you.
-
-Regards
-
-A. M. Yassin
-------=_20110524123553_71590
-Content-Type: application/pdf; name="Interesting deal.pdf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Interesting deal.pdf"
-
-JVBERi0xLjUNCiW1tbW1DQoxIDAgb2JqDQo8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFIvTGFu
-Zyhlbi1VUykgPj4NCmVuZG9iag0KMiAwIG9iag0KPDwvVHlwZS9QYWdlcy9Db3VudCAxL0tpZHNb
-IDMgMCBSXSA+Pg0KZW5kb2JqDQozIDAgb2JqDQo8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL1Jl
-c291cmNlczw8L0ZvbnQ8PC9GMSA1IDAgUi9GMiA3IDAgUj4+L1Byb2NTZXRbL1BERi9UZXh0L0lt
-YWdlQi9JbWFnZUMvSW1hZ2VJXSA+Pi9NZWRpYUJveFsgMCAwIDYxMiA3OTJdIC9Db250ZW50cyA0
-IDAgUi9Hcm91cDw8L1R5cGUvR3JvdXAvUy9UcmFuc3BhcmVuY3kvQ1MvRGV2aWNlUkdCPj4vVGFi
-cy9TPj4NCmVuZG9iag0KNCAwIG9iag0KPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0xlbmd0aCAzNzM5
-Pj4NCnN0cmVhbQ0KeJytW1uP28YVfjfg/zAPLSoB2jHvFNEnu3HcJHYSxFsUQdIHSuQuhV2T9HLp
-df59z2WulGaloEVgrUTO9Vy+850zkzfXL1+8+jYWcSyjTFzfvHwRiwj+i0WZyCjJRJkmMtuK608v
-X0TiFj/evXzx2+rdOl89rK/SVduur5LV47pYHdZX2aq/Xcfxatqs/yOuv3/54i0M/+baDhrHpczd
-MX9biUBTPX9cyW1xYduolIlu+9063q5Evb6Kk9WndVwGO1eZzIpF51q8qfu7NXQVMEC0+gm2e4Pb
-pQ/a6b5db1kEosM9t/A9X7ViXSlJ4EPxGjruZvEN/Onq3QGbbEILSTLYauUvpINhadRAlzKWRex3
-cWb/F/TtD6CbR3zWNri411pz9U68/YRCog786BEnm/CrFEqA0CRfiSfdixrTcHYe0rng34Kt4hZm
-qkkizYSzUo8B1FFBk+e1WIBC8kxtZhjH4WFdcv+ZZrMr+MOdl3TMT4ZjVV2hJuEd9SN9wV6v1MZQ
-Qvf4gj6o3a5F00mUHGmUT9CKJml7klArdq1p0sLG1IRK2kJtmUYbeF76wasTMzkKiRmW0dVfYAQ9
-ZNsLMpVeTPiUVoJS2Hdi0BOJaSDVtEOvtve8VLexrDLPREI9tqnMlj1IsMPM9r4fZtQjOj09YKnT
-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
-uIqnYQgkY9SJxBkhJ6UsdPKg7kVpdliLW1Mob+3AQsXkiaIMXYGCb8d3O6eZftxyvcum0a7sWDX0
-rlOorW9sunXRG3wKxJDzN1K8QnnSKLMAi/jTRuQwQkTxOY/w5V8NjxzEzrmAJEZTETcoRExi40a4
-MzKMcxlpGU5dzb6GZwpPBx0UGGaotm+u3U1UJfBvGdEzuxNVQ9DZvuK8+8GKeVSeTKxTG0WHQUS7
-SNu7W2kcQ6EBpHiPZNLed7oDAoh4lhmGZxMOQLehd/j48ydPWj5RIjNjYzDESPBPS2Ay0QzOCa8G
-pMeFQ7vzVYZMnDnVU8cpa3WvB2+N/Cw+rtPV23/QzYZs9faar8HgIP9mMkK1BnsIzJWGQbhnda7X
-IxmnYrlqT8496Jo9O4ZGAcyW9epVDv0HFTYuuXeTbCtzcYk7sG+pOEc2R740qlIH6T9YDcwyvHnh
-Dnpu/rKUFxbPE4wN+n4AppNulin65R3gpjYJybuhQVLBYKvO/6V43eOBhV8RPjwTaMvSX8LI4cA/
-l/DSmP9doBgIq9yf95yY8theozjXNq3wLN7WKtxrmDYNcq95B+/8JxWQXm/Ac5MnBd7OuqxtnNr/
-PwATEvlB/hq8+pDiJVevC5PnyTh5cBOQvPk9g6bOmZLXNnxcDtYTbvpfWOkCRQ0KZW5kc3RyZWFt
-DQplbmRvYmoNCjUgMCBvYmoNCjw8L1R5cGUvRm9udC9TdWJ0eXBlL1RydWVUeXBlL05hbWUvRjEv
-QmFzZUZvbnQvVGltZXMjMjBOZXcjMjBSb21hbi9FbmNvZGluZy9XaW5BbnNpRW5jb2RpbmcvRm9u
-dERlc2NyaXB0b3IgNiAwIFIvRmlyc3RDaGFyIDMyL0xhc3RDaGFyIDEyMS9XaWR0aHMgMTAgMCBS
-Pj4NCmVuZG9iag0KNiAwIG9iag0KPDwvVHlwZS9Gb250RGVzY3JpcHRvci9Gb250TmFtZS9UaW1l
-cyMyME5ldyMyMFJvbWFuL0ZsYWdzIDMyL0l0YWxpY0FuZ2xlIDAvQXNjZW50IDg5MS9EZXNjZW50
-IC0yMTYvQ2FwSGVpZ2h0IDY5My9BdmdXaWR0aCA0MDEvTWF4V2lkdGggMjU2OC9Gb250V2VpZ2h0
-IDQwMC9YSGVpZ2h0IDI1MC9MZWFkaW5nIDQyL1N0ZW1WIDQwL0ZvbnRCQm94WyAtNTY4IC0yMTYg
-MjAwMCA2OTNdID4+DQplbmRvYmoNCjcgMCBvYmoNCjw8L1R5cGUvRm9udC9TdWJ0eXBlL1RydWVU
-eXBlL05hbWUvRjIvQmFzZUZvbnQvVGltZXMjMjBOZXcjMjBSb21hbixCb2xkL0VuY29kaW5nL1dp
-bkFuc2lFbmNvZGluZy9Gb250RGVzY3JpcHRvciA4IDAgUi9GaXJzdENoYXIgMzIvTGFzdENoYXIg
-ODkvV2lkdGhzIDExIDAgUj4+DQplbmRvYmoNCjggMCBvYmoNCjw8L1R5cGUvRm9udERlc2NyaXB0
-b3IvRm9udE5hbWUvVGltZXMjMjBOZXcjMjBSb21hbixCb2xkL0ZsYWdzIDMyL0l0YWxpY0FuZ2xl
-IDAvQXNjZW50IDg5MS9EZXNjZW50IC0yMTYvQ2FwSGVpZ2h0IDY3Ny9BdmdXaWR0aCA0MjcvTWF4
-V2lkdGggMjU1OC9Gb250V2VpZ2h0IDcwMC9YSGVpZ2h0IDI1MC9MZWFkaW5nIDQyL1N0ZW1WIDQy
-L0ZvbnRCQm94WyAtNTU4IC0yMTYgMjAwMCA2NzddID4+DQplbmRvYmoNCjkgMCBvYmoNCjw8L0F1
-dGhvcihQZXRlcikvQ3JlYXRvcij+/wBNAGkAYwByAG8AcwBvAGYAdACuACAATwBmAGYAaQBjAGUA
-IABXAG8AcgBkACAAMgAwADAANykvQ3JlYXRpb25EYXRlKEQ6MjAxMDExMjcxMzMxNDMpIC9Nb2RE
-YXRlKEQ6MjAxMDExMjcxMzMxNDMpIC9Qcm9kdWNlcij+/wBNAGkAYwByAG8AcwBvAGYAdACuACAA
-TwBmAGYAaQBjAGUAIABXAG8AcgBkACAAMgAwADAANyk+Pg0KZW5kb2JqDQoxMCAwIG9iag0KWyAy
-NTAgMCAwIDAgNTAwIDgzMyAwIDE4MCAzMzMgMzMzIDAgMCAyNTAgMzMzIDI1MCAyNzggNTAwIDAg
-NTAwIDAgNTAwIDUwMCA1MDAgNTAwIDAgMCAwIDI3OCAwIDAgMCAwIDAgNzIyIDY2NyA2NjcgNzIy
-IDYxMSA1NTYgNzIyIDcyMiAzMzMgMzg5IDcyMiA2MTEgODg5IDcyMiA3MjIgNTU2IDAgNjY3IDU1
-NiA2MTEgNzIyIDAgOTQ0IDAgNzIyIDAgMCAwIDAgMCAwIDAgNDQ0IDUwMCA0NDQgNTAwIDQ0NCAz
-MzMgNTAwIDUwMCAyNzggMCA1MDAgMjc4IDc3OCA1MDAgNTAwIDUwMCA1MDAgMzMzIDM4OSAyNzgg
-NTAwIDUwMCA3MjIgNTAwIDUwMF0gDQplbmRvYmoNCjExIDAgb2JqDQpbIDI1MCAwIDAgMCAwIDAg
-MCAwIDAgMCAwIDAgMjUwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCA3
-MjIgMCAwIDcyMiAwIDAgNzc4IDAgMzg5IDAgMCA2NjcgMCA3MjIgNzc4IDAgMCA3MjIgNTU2IDY2
-NyA3MjIgMCAwIDAgNzIyXSANCmVuZG9iag0KMTIgMCBvYmoNCjw8L1R5cGUvWFJlZi9TaXplIDEy
-L1dbIDEgNCAyXSAvUm9vdCAxIDAgUi9JbmZvIDkgMCBSL0lEWzwxQTkyQTNFMjlCQ0RFRDRCOERD
-MzhDMDQ1OUY4MzU4MT48MUE5MkEzRTI5QkNERUQ0QjhEQzM4QzA0NTlGODM1ODE+XSAvRmlsdGVy
-L0ZsYXRlRGVjb2RlL0xlbmd0aCA1NT4+DQpzdHJlYW0NCnicY2AAgv//GYGkIAMDiPKDUG1gijEV
-TAl4Q6gfYErwGZgSmg6mhLvAlEg+mBLdwcAAAGKFCEUNCmVuZHN0cmVhbQ0KZW5kb2JqDQp4cmVm
-DQowIDEzDQowMDAwMDAwMDAwIDY1NTM1IGYNCjAwMDAwMDAwMTcgMDAwMDAgbg0KMDAwMDAwMDA3
-OCAwMDAwMCBuDQowMDAwMDAwMTM0IDAwMDAwIG4NCjAwMDAwMDAzNTcgMDAwMDAgbg0KMDAwMDAw
-NDE3MSAwMDAwMCBuDQowMDAwMDA0MzQ0IDAwMDAwIG4NCjAwMDAwMDQ1ODIgMDAwMDAgbg0KMDAw
-MDAwNDc1OSAwMDAwMCBuDQowMDAwMDA1MDAyIDAwMDAwIG4NCjAwMDAwMDUyMzEgMDAwMDAgbg0K
-MDAwMDAwNTU2MCAwMDAwMCBuDQowMDAwMDA1NzI3IDAwMDAwIG4NCnRyYWlsZXINCjw8L1NpemUg
-MTMvUm9vdCAxIDAgUi9JbmZvIDkgMCBSL0lEWzwxQTkyQTNFMjlCQ0RFRDRCOERDMzhDMDQ1OUY4
-MzU4MT48MUE5MkEzRTI5QkNERUQ0QjhEQzM4QzA0NTlGODM1ODE+XSA+Pg0Kc3RhcnR4cmVmDQo1
-OTgxDQolJUVPRg0KeHJlZg0KMCAwDQp0cmFpbGVyDQo8PC9TaXplIDEzL1Jvb3QgMSAwIFIvSW5m
-byA5IDAgUi9JRFs8MUE5MkEzRTI5QkNERUQ0QjhEQzM4QzA0NTlGODM1ODE+PDFBOTJBM0UyOUJD
-REVENEI4REMzOEMwNDU5RjgzNTgxPl0gL1ByZXYgNTk4MS9YUmVmU3RtIDU3Mjc+Pg0Kc3RhcnR4
-cmVmDQo2Mzk2DQolJUVPRg==
-------=_20110524123553_71590--
-
-
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index 6cb55a6..fb4ee5f 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -98,13 +98,26 @@ enum acer_wmi_event_ids {
+ 
+ static const struct key_entry acer_wmi_keymap[] = {
+ 	{KE_KEY, 0x01, {KEY_WLAN} },     /* WiFi */
++	{KE_KEY, 0x03, {KEY_WLAN} },     /* WiFi */
+ 	{KE_KEY, 0x12, {KEY_BLUETOOTH} },	/* BT */
+ 	{KE_KEY, 0x21, {KEY_PROG1} },    /* Backup */
+ 	{KE_KEY, 0x22, {KEY_PROG2} },    /* Arcade */
+ 	{KE_KEY, 0x23, {KEY_PROG3} },    /* P_Key */
+ 	{KE_KEY, 0x24, {KEY_PROG4} },    /* Social networking_Key */
++	{KE_IGNORE, 0x41, {KEY_MUTE} },
++	{KE_IGNORE, 0x42, {KEY_PREVIOUSSONG} },
++	{KE_IGNORE, 0x43, {KEY_NEXTSONG} },
++	{KE_IGNORE, 0x44, {KEY_PLAYPAUSE} },
++	{KE_IGNORE, 0x45, {KEY_STOP} },
++	{KE_IGNORE, 0x48, {KEY_VOLUMEUP} },
++	{KE_IGNORE, 0x49, {KEY_VOLUMEDOWN} },
++	{KE_IGNORE, 0x61, {KEY_SWITCHVIDEOMODE} },
++	{KE_IGNORE, 0x62, {KEY_BRIGHTNESSUP} },
++	{KE_IGNORE, 0x63, {KEY_BRIGHTNESSDOWN} },
+ 	{KE_KEY, 0x64, {KEY_SWITCHVIDEOMODE} },	/* Display Switch */
++	{KE_IGNORE, 0x81, {KEY_SLEEP} },
+ 	{KE_KEY, 0x82, {KEY_TOUCHPAD_TOGGLE} },	/* Touch Pad On/Off */
++	{KE_IGNORE, 0x83, {KEY_TOUCHPAD_TOGGLE} },
+ 	{KE_END, 0}
+ };
+ 
+@@ -1345,7 +1358,7 @@ static void acer_wmi_notify(u32 value, void *context)
+ 	case WMID_HOTKEY_EVENT:
+ 		if (return_value.device_state) {
+ 			u16 device_state = return_value.device_state;
+-			pr_debug("deivces states: 0x%x\n", device_state);
++			pr_debug("device state: 0x%x\n", device_state);
+ 			if (has_cap(ACER_CAP_WIRELESS))
+ 				rfkill_set_sw_state(wireless_rfkill,
+ 				!(device_state & ACER_WMID3_GDS_WIRELESS));
