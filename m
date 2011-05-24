@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953Ab1EXUZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 16:25:53 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:44070 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932385Ab1EXUZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 16:25:52 -0400
-Date: Tue, 24 May 2011 13:25:41 -0700
-From: Kees Cook <kees.cook@canonical.com>
+	id S1756995Ab1EXUba (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 16:31:30 -0400
+Received: from leopard.mail.utk.edu ([160.36.0.85]:42295 "EHLO
+	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156Ab1EXUb3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 16:31:29 -0400
+Date: Tue, 24 May 2011 16:31:11 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-Message-ID: <20110524202541.GF19633@outflux.net>
-References: <20110516165249.GB10929@elte.hu>
- <1305565422.5456.21.camel@gandalf.stny.rr.com>
- <20110517124212.GB21441@elte.hu>
- <1305637528.5456.723.camel@gandalf.stny.rr.com>
- <20110517131902.GF21441@elte.hu>
- <BANLkTikBK3-KZ10eErQ6Eex_L6Qe2aZang@mail.gmail.com>
- <1305807728.11267.25.camel@gandalf.stny.rr.com>
- <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
- <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
- <20110524200815.GD27634@elte.hu>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        fbuihuu@gmail.com, paulus@samba.org, acme@redhat.com
+Subject: Re: perf: regression with PERF_EVENT_IOC_REFRESH
+In-Reply-To: <20110524154020.GA26516@elte.hu>
+Message-ID: <alpine.DEB.2.00.1105241616280.24062@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu> <1306182141.2497.5.camel@laptop> <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu> <1306233036.2497.15.camel@laptop> <alpine.DEB.2.00.1105241041490.10575@cl320.eecs.utk.edu>
+ <1306249830.18455.41.camel@twins> <20110524154020.GA26516@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110524200815.GD27634@elte.hu>
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC trimmed, as recommended]
-
-Hi,
-
-On Tue, May 24, 2011 at 10:08:15PM +0200, Ingo Molnar wrote:
-> * Will Drewry <wad@chromium.org> wrote:
+On Tue, 24 May 2011, Ingo Molnar wrote:
 > 
-> > The change avoids defining a new trace call type or a huge number of internal 
-> > changes and hides seccomp.mode=2 from ABI-exposure in prctl, but the attack 
-> > surface is non-trivial to verify, and I'm not sure if this ABI change makes 
-> > sense. It amounts to:
-> > 
-> >  include/linux/ftrace_event.h  |    4 +-
-> >  include/linux/perf_event.h    |   10 +++++---
-> >  kernel/perf_event.c           |   49 +++++++++++++++++++++++++++++++++++++---
-> >  kernel/seccomp.c              |    8 ++++++
-> >  kernel/trace/trace_syscalls.c |   27 +++++++++++++++++-----
-> >  5 files changed, 82 insertions(+), 16 deletions(-)
-> > 
-> > And can be found here: http://static.dataspill.org/perf_secure/v1/
-> 
-> Wow, i'm very impressed how few changes you needed to do to support this!
-> [...]
-> attr.require_secure: this is basically used to *force* the creation of 
-> security-controlling filters, right? It seems to me that this could be done via 
-> a seccomp ABI extension as well, without adding this to the perf ABI. That 
-> seccomp call could check whether the right events are created and move the task 
-> to mode 2 only if that prereq is met - or something like that.
+> Btw., how did it happen that the PAPI tests did not get run against upstream 
+> over the course of about half a year, two full stable kernels released:
 
-I understood the prctl() API that was outlined earlier, but it seems
-this is not going to happen now. What would the programming API actually
-look like for an application developer using this perf-style method?
+we run regresion tests nightly.  There was a bug in our 
+  "create two events and sample on the second"
+test, where it was actualy sampling on the first counter by mistake.
+When I fixed the test to do what it claimed to do it found the bug.
 
--Kees
+PAPI runs on at least 5 different operating systems, 3 different
+Linux perf counter implementations, and on kernels dating back to 2.4.
+Plus numerous architectures.  While we try to test against recent
+Linux perf_events, we just don't have the hardware to be comprehensive.
 
--- 
-Kees Cook
-Ubuntu Security Team
+It doesn't help that our test machines are primarily used for GPGPU work
+during the day, so we're limited to what kernels we can have installed
+due to driver issues.
+
+> suggest moving these usecases into 'perf test' or so - that it gets run every 
+> day:
+
+you can feel free to install PAPI on your test machines and give it a run 
+daily too.  It's open source
+
+  setenv CVSROOT :pserver:anonymous@cvs.eecs.utk.edu:/cvs/homes/papi 
+  cvs login
+  cvs co all
+
+  cd papi
+  ./configure
+  make
+  ./run_tests
+
+There are often false negatives on the tests that can be a pain
+to track down.  Welcome to my world.  We gladly accept patches.
+
+Vince
