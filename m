@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab1EXPMU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 11:12:20 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:53220 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753332Ab1EXPMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 11:12:18 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-Identified-User;
-	b=wrmaPP/KsMfPOxGqK4hQTCUOGDvHcROh1gAbLgZqglA7ApF1Ms5WbuBfQOtC+e4XGyNbq9TIsmsXj0W0vBe1oKygyA/QbwxpEXeQ9i3IiSANgB35Mr78M6MmI9h6exT8;
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH] wireless: Default to 'n' for 2 new added devices in Kconfig.
-Date: Tue, 24 May 2011 23:11:56 +0800
-Message-Id: <1306249916-6638-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.40.193 authed with tm@tao.ma}
+	id S1755912Ab1EXPQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 11:16:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54375 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755625Ab1EXPQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 11:16:43 -0400
+Date: Tue, 24 May 2011 08:14:13 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+Cc: Michal Simek <monstr@monstr.eu>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        John Williams <john.williams@petalogix.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH v5] uio/pdrv_genirq: Add OF support
+Message-ID: <20110524151413.GA25076@suse.de>
+References: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
+ <4DDB960F.4050902@monstr.eu>
+ <20110524123625.GC31517@suse.de>
+ <20110524150215.GA2723@local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110524150215.GA2723@local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On Tue, May 24, 2011 at 05:02:16PM +0200, Hans J. Koch wrote:
+> On Tue, May 24, 2011 at 05:36:25AM -0700, Greg KH wrote:
+> > On Tue, May 24, 2011 at 01:27:11PM +0200, Michal Simek wrote:
+> > > Hi Greg,
+> > > 
+> > > can you please add it to your tree? I see you have sent pull request.
+> > 
+> > It's too late for the merge window for this, sorry.  I needed to have
+> > this before it opened up, and in the linux-next tree for a week or so
+> > before that.
+> > 
+> > Sorry.
+> > 
+> > Can you resend it in a format that I can apply it in, as well as getting
+> > an ack from Hans?
+> 
+> There was already a "Signed-off-by:" from me, and a "Reviewed-by:" from
+> Wolfram Sang, so that should be OK.
 
-We make oldconfig every time when a new kernel arrives, but
-if we don't have such a device(I guess this is the most common
-case for a new device), the default value should be 'n' so
-that the kernel size we build doesn't grow up too much quickly.
-For anyone who has the device, it is OK for them to turn it on
-by themselves.
-
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- drivers/net/wireless/ath/ath9k/Kconfig |    1 +
- drivers/net/wireless/rt2x00/Kconfig    |    2 +-
- 2 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/Kconfig b/drivers/net/wireless/ath/ath9k/Kconfig
-index d9ff841..2548f47 100644
---- a/drivers/net/wireless/ath/ath9k/Kconfig
-+++ b/drivers/net/wireless/ath/ath9k/Kconfig
-@@ -25,6 +25,7 @@ config ATH9K
- 
- config ATH9K_PCI
- 	bool "Atheros ath9k PCI/PCIe bus support"
-+	default n
- 	depends on ATH9K && PCI
- 	default PCI
- 	---help---
-diff --git a/drivers/net/wireless/rt2x00/Kconfig b/drivers/net/wireless/rt2x00/Kconfig
-index 9def1e5..677abc9 100644
---- a/drivers/net/wireless/rt2x00/Kconfig
-+++ b/drivers/net/wireless/rt2x00/Kconfig
-@@ -166,7 +166,7 @@ config RT2800USB_RT35XX
- config RT2800USB_RT53XX
-        bool "rt2800usb - Include support for rt53xx devices (EXPERIMENTAL)"
-        depends on EXPERIMENTAL
--       default y
-+       default n
-        ---help---
-          This adds support for rt53xx wireless chipset family to the
-          rt2800pci driver.
--- 
-1.7.4
+There was on the forwarded patch?  Sorry, I missed it, if only it was in
+a format that could have been applied :)
 
