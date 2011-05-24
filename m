@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab1EXVbe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 17:31:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48738 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753842Ab1EXVbd (ORCPT
+	id S932682Ab1EXV3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 17:29:15 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46329 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757224Ab1EXV3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 17:31:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <1306272274.2497.73.camel@laptop>
-References: <4ddad79317108eb33d@agluck-desktop.sc.intel.com>
- <20110524034023.GB25230@elte.hu> <987664A83D2D224EAE907B061CE93D5301D5D0595B@orsmsx505.amr.corp.intel.com>
- <20110524173326.GA7635@gere.osrc.amd.com> <BANLkTinSOFAioAe2v5c6PRB9EKjJJNMg9w@mail.gmail.com>
- <1306272274.2497.73.camel@laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 May 2011 14:30:41 -0700
-Message-ID: <BANLkTi=BrrwL=gzn7H6O1rAGJpe=VPAQRQ@mail.gmail.com>
-Subject: Re: [RFC 0/9] mce recovery for Sandy Bridge server
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 24 May 2011 17:29:12 -0400
+Subject: Re: [BUG]  "sched: Remove rq->lock from the first half of ttwu()" 
+ locks up on ARM
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Marc Zyngier <Marc.Zyngier@arm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Frank Rowand <frank.rowand@am.sony.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
+References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 23:32:30 +0200
+Message-ID: <1306272750.2497.79.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 2:24 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> Right, so you can't do things like that from NMI context, but what perf
-> can do is raise a self-IPI and continue from IRQ context (question for
-> the HW folks, can there be cycles between the NMI iret and IRQ assert
-> from whatever context was before the NMI hit?)
+On Tue, 2011-05-24 at 19:13 +0100, Marc Zyngier wrote:
+> Peter,
+> 
+> I've experienced all kind of lock-ups on ARM SMP platforms recently, and
+> finally tracked it down to the following patch:
+> 
+> e4a52bcb9a18142d79e231b6733cabdbf2e67c1f [sched: Remove rq->lock from the first half of ttwu()].
+> 
+> Even on moderate load, the machine locks up, often silently, and
+> sometimes with a few messages like:
+> INFO: rcu_preempt_state detected stalls on CPUs/tasks: { 0} (detected by 1, t=12002 jiffies)
+> 
+> Another side effect of this patch is that the load average is always 0,
+> whatever load I throw at the system.
+> 
+> Reverting the sched changes up to that patch (included) gives me a
+> working system again, which happily survives parallel kernel
+> compilations without complaining.
+> 
+> My knowledge of the scheduler being rather limited, I haven't been able
+> to pinpoint the exact problem (though it probably have something to do
+> with __ARCH_WANT_INTERRUPTS_ON_CTXSW being defined on ARM). The enclosed
+> patch somehow papers over the load average problem, but the system ends
+> up locking up anyway:
 
-Of course there can be - the code where the NMI hit may have
-interrupts disabled.
+Hurm.. I'll try and make x86 use __ARCH_WANT_INTERRUPTS_ON_CTXSW, IIRC
+Ingo once said that that is possible and try to see if I can reproduce.
+No clear ideas atm.
 
-                                Linus
+Thanks for reporting.
+
