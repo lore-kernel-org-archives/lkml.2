@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab1EXMOn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 08:14:43 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:41959 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771Ab1EXMOl (ORCPT
+	id S1754437Ab1EXMNr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 08:13:47 -0400
+Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:50605 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750831Ab1EXMNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 08:14:41 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Youquan Song <youquan.song@linux.intel.com>,
-        "Song, Youquan" <youquan.song@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "Kay, Allen M" <allen.m.kay@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Sankaran, Rajesh" <rajesh.sankaran@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Liu, Kent" <kent.liu@intel.com>
-Subject: Re: [PATCH v3] x86, vt-d: enable x2apic opt out
-In-Reply-To: Your message of "Tue, 24 May 2011 08:38:47 BST."
-             <1306222728.2627.49.camel@i7.infradead.org>
-From: Valdis.Kletnieks@vt.edu
-References: <1306161148-3987-1-git-send-email-youquan.song@intel.com> <7457.1306203521@localhost> <20110524153614.GA19080@linux-youquan.bj.intel.com> <17321.1306210686@localhost>
-            <1306222728.2627.49.camel@i7.infradead.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1306239208_2659P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 24 May 2011 08:13:28 -0400
-Message-ID: <5843.1306239208@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4DDBA0EE.0010,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Tue, 24 May 2011 08:13:46 -0400
+Date: Tue, 24 May 2011 14:13:43 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] timers: consider slack value in mod_timer()
+Message-ID: <20110524121343.GA17312@Chamillionaire.breakpoint.cc>
+References: <20110521105828.GA29442@Chamillionaire.breakpoint.cc>
+ <BANLkTinGZ0L4oQkBYo9H=R==X5Z+efjRaQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <BANLkTinGZ0L4oQkBYo9H=R==X5Z+efjRaQ@mail.gmail.com>
+X-Key-Id: FE3F4706
+X-Key-Fingerprint: FFDA BBBB 3563 1B27 75C9  925B 98D5 5C1C FE3F 4706
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1306239208_2659P
-Content-Type: text/plain; charset=us-ascii
+* Yong Zhang | 2011-05-24 15:54:17 [+0800]:
 
-On Tue, 24 May 2011 08:38:47 BST, David Woodhouse said:
-> On Tue, 2011-05-24 at 05:18 +0100, Valdis.Kletnieks@vt.edu wrote:
-> > Do we want an actual WARN there, complete with stack traceback and
-> > all?
-> > 
-> > Or did you intend a pr_warn or printk(KERN_WARNING or similar?
-> 
-> The traceback has been very useful in other BIOS issues, because it gets
-> tracked and counted on kerneloops.org along with platform
-> identification. So we have been able to track down the major offenders
-> of some of the most egregious BIOS stupidities and make *some* progress
-> on getting them to improve the untested dross they habitually turn out.
+>> diff --git a/kernel/timer.c b/kernel/timer.c
+>> index fd61986..bf09726 100644
+>> --- a/kernel/timer.c
+>> +++ b/kernel/timer.c
+>> @@ -804,6 +804,8 @@ int mod_timer(struct timer_list *timer, unsigned long expires)
+>> ?? ?? ?? ?? ?? ?? ?? ??return 1;
+>>
+>> ?? ?? ?? ??expires = apply_slack(timer, expires);
+>
+>So, why not move above line up, then we can use the recalculated
+>expires?
 
-Oh OK... that probably is a good idea then.
+We leave often before apply_slack() kicks in. From printks() it looks
+like we leave more often in first "return 1" than in the second. Moving
+that line up would lead to more __mode_timer() calls.
 
---==_Exmh_1306239208_2659P
-Content-Type: application/pgp-signature
+>
+>Thanks,
+>Yong
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFN26DocC3lWbTT17ARAuviAJ0f/hFpxuZc2F0O/KmlnIpwmLgB3QCfcFUd
-az1zC4vxr2+lbtMH10gNKzQ=
-=NFFD
------END PGP SIGNATURE-----
-
---==_Exmh_1306239208_2659P--
-
+Sebastian
