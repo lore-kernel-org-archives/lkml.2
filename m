@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab1EXGnn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 02:43:43 -0400
-Received: from mail.perches.com ([173.55.12.10]:1940 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697Ab1EXGnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 02:43:42 -0400
-Subject: Re: [PATCH-v2] MAINTAINERS: Add drivers/target/ entry
-From: Joe Perches <joe@perches.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-In-Reply-To: <1306217469.29724.150.camel@haakon2.linux-iscsi.org>
-References: <1306185032-11629-1-git-send-email-nab@linux-iscsi.org>
-	 <1306193789.8687.61.camel@Joe-Laptop>
-	 <1306217469.29724.150.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 May 2011 23:43:40 -0700
-Message-ID: <1306219420.2298.12.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753313Ab1EXGoK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 02:44:10 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39366 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab1EXGoI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 02:44:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=nE2IYt3aPtiRdTCJaSLSRLrx5qU3ymojW+5rdehqC3m+4mptJ6cKpNp3RXgNgWBXKM
+         /qbFoVjH2exY3QIqgTj1efJ73DJbwIhQPersFPgjSjVgVSQ6t76TFnhvelSBU1dyqqfd
+         ne8kTCcKrAwoogU3h0kHqQGyl8EAilEQuvdQg=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Ben Greear <greearb@candelatech.com>
+Subject: [PATCH v3]net:8021q:vlan.c Fix pr_info to just give the vlan fullname and version. 
+Date: Mon, 23 May 2011 23:43:48 -0700
+Message-Id: <1306219428-11528-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 23:11 -0700, Nicholas A. Bellinger wrote:
-> On Mon, 2011-05-23 at 16:36 -0700, Joe Perches wrote:
-> > On Mon, 2011-05-23 at 14:10 -0700, Nicholas A. Bellinger wrote:
-> > > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > > +TARGET SUBSYSTEM
-> > > +M:	Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > > +L:	linux-scsi@vger.kernel.org
-> > > +L:	http://groups.google.com/group/linux-iscsi-target-dev
-> > > +W:	http://www.linux-iscsi.org
-> > > +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/nab/lio-core-2.6.git master
-> > > +S:	Supported
-> > > +F:	drivers/target/
-> > > +F:	include/target/
-> > > +F:	Documentation/target/
-> > 
-> > Shouldn't the file layout be more like
-> > drivers/lio/target?
-> Hi Joe,
+The below patch removes vlan_buggyright and vlan_copyright from vlan_proto_init, 
+so that it prints out just the fullname of vlan and the version number.
 
-Hi Nicholas.
+before:
 
-> Not sure what you mean here..  Currently drivers/target/ contains the
-> fabric independent target core, and /drivers/target/$FABRIC/ contains
-> individual fabric module drivers.
-> 
-> I originally decided to use drivers/target/ to avoid any confusion wrt
-> to the 'LIO' term, which to some folks is interchangable wrt to the
-> 'iscsi-target' fabric module.
+[   30.438203] 802.1Q VLAN Support v1.8 Ben Greear <greearb@candelatech.com>
+[   30.441542] All bugs added by David S. Miller <davem@redhat.com>
 
-Target doesn't mean much to me and the wiki calls the
-system LIO.
+after:
 
-http://linux-iscsi.org/wiki/Main_Page
+[   31.513910] 802.1Q VLAN Support v1.8
 
-I think that drivers/target might be better renamed to
-drivers/lio/target and drivers/lio/target/$FABRIC could
-be below that.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+CC: Joe Perches <joe@perches.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: Ben Greear <greearb@candelatech.com>
+---
+ net/8021q/vlan.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-No worries if you think otherwise.
-
-cheers, Joe
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index b2274d1..c7a581a 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -46,8 +46,6 @@ int vlan_net_id __read_mostly;
+ 
+ const char vlan_fullname[] = "802.1Q VLAN Support";
+ const char vlan_version[] = DRV_VERSION;
+-static const char vlan_copyright[] = "Ben Greear <greearb@candelatech.com>";
+-static const char vlan_buggyright[] = "David S. Miller <davem@redhat.com>";
+ 
+ /* End of global variables definitions. */
+ 
+@@ -673,8 +671,7 @@ static int __init vlan_proto_init(void)
+ {
+ 	int err;
+ 
+-	pr_info("%s v%s %s\n", vlan_fullname, vlan_version, vlan_copyright);
+-	pr_info("All bugs added by %s\n", vlan_buggyright);
++	pr_info("%s v%s\n", vlan_fullname, vlan_version);
+ 
+ 	err = register_pernet_subsys(&vlan_net_ops);
+ 	if (err < 0)
+-- 
+1.7.5.1
 
