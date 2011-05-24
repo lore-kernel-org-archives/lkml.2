@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab1EXESi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 00:18:38 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:45711 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab1EXESh (ORCPT
+	id S1751792Ab1EXESo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 00:18:44 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:39474 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751066Ab1EXESm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 00:18:37 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Youquan Song <youquan.song@linux.intel.com>
-Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        david.woodhouse@intel.com, akpm@linux-foundation.org, mingo@elte.hu,
-        tglx@linutronix.de, hpa@zytor.com, hpa@linux.intel.com,
-        allen.m.kay@intel.com, suresh.b.siddha@intel.com,
-        rajesh.sankaran@intel.com, asit.k.mallick@intel.com,
-        kent.liu@intel.com
-Subject: Re: [PATCH v3] x86, vt-d: enable x2apic opt out
-In-Reply-To: Your message of "Tue, 24 May 2011 11:36:14 EDT."
-             <20110524153614.GA19080@linux-youquan.bj.intel.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1306161148-3987-1-git-send-email-youquan.song@intel.com> <7457.1306203521@localhost>
-            <20110524153614.GA19080@linux-youquan.bj.intel.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1306210686_3286P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 24 May 2011 00:18:42 -0400
+Message-ID: <4DDB3184.2080301@st.com>
+Date: Tue, 24 May 2011 09:48:12 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Vipin KUMAR <vipin.kumar@st.com>
+Subject: Re: [PATCH 1/4] clk: Add a generic clock infrastructure
+References: <1305876469.326305.518470530485.1.gpush@pororo>
+In-Reply-To: <1305876469.326305.518470530485.1.gpush@pororo>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Date: Tue, 24 May 2011 00:18:06 -0400
-Message-ID: <17321.1306210686@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4DDB3183.000B,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1306210686_3286P
-Content-Type: text/plain; charset=us-ascii
+On 05/20/2011 12:57 PM, Jeremy Kerr wrote:
+> +static DEFINE_SPINLOCK(enable_lock);
+> +static DEFINE_MUTEX(prepare_lock);
 
-On Tue, 24 May 2011 11:36:14 EDT, Youquan Song said:
-> > If we're doing a WARN level here, what are the downsides of just automagically
-> > forcing it rather than making them use a kernel parameter and reboot?  
-> 
-> As we have discussed before, x2apci opt out feature is requested from OEM that
-> they want to firmware tell OS to opt out x2apic when the platform,
-> hardware or BIOS is not ready to support x2apic. So we can not reboot or
-> force to use kernel parameter.  
+Probably all clocks can be handled separately, i.e. single lock for all
+of them will make system slower. Suppose i want to enable UART's clock
+then why should spi code be waiting for the lock.
+So, we should have per clk lock.
 
-Do we want an actual WARN there, complete with stack traceback and all?
+<...>
 
-Or did you intend a pr_warn or printk(KERN_WARNING or similar?
+> +struct clk *clk_register(struct clk_hw_ops *ops, struct clk_hw *hw,
+> +               const char *name)
+> +{
+> +       struct clk *clk;
+> +
+> +       clk = kzalloc(sizeof(*clk), GFP_KERNEL);
+> +       if (!clk)
+> +               return NULL;
+> +
+> +       clk->name = name;
+> +       clk->ops = ops;
+> +       clk->hw = hw;
+> +       hw->clk = clk;
+> +
+> +       /* Query the hardware for parent and initial rate */
+> +
 
---==_Exmh_1306210686_3286P
-Content-Type: application/pgp-signature
+Can remove this blank line.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+> +       if (clk->ops->get_parent)
+> +               /* We don't to lock against prepare/enable here, as
+> +                * the clock is not yet accessible from anywhere */
 
-iD8DBQFN2zF+cC3lWbTT17ARAmK/AKCfC6rW/mLzjXjryq8SJTosI676qACgoTXH
-UCCmKKsiTkLYrgvJlGVQ/PA=
-=xICR
------END PGP SIGNATURE-----
+Shouldn't we use following style for multi-line comments.
+/*
+ * ....
+ */
 
---==_Exmh_1306210686_3286P--
+> +               clk->parent = clk->ops->get_parent(clk->hw);
+> +
+> +       if (clk->ops->recalc_rate)
+> +               clk->rate = clk->ops->recalc_rate(clk->hw);
+> +
+> +
 
+Can remove one of these blank lines.
+
+-- 
+viresh
