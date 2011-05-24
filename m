@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab1EXRxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 13:53:47 -0400
-Received: from leopard.mail.utk.edu ([160.36.0.85]:36623 "EHLO
-	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756918Ab1EXRxg (ORCPT
+	id S1757145Ab1EXR42 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 13:56:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61020 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab1EXR40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 13:53:36 -0400
-Date: Tue, 24 May 2011 13:53:25 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: linux-kernel@vger.kernel.org, fbuihuu@gmail.com, mingo@elte.hu,
-        paulus@samba.org, acme@redhat.com
-Subject: Re: perf: regression with PERF_EVENT_IOC_REFRESH
-In-Reply-To: <1306249830.18455.41.camel@twins>
-Message-ID: <alpine.DEB.2.00.1105241350020.24062@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>  <1306182141.2497.5.camel@laptop>  <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu>  <1306233036.2497.15.camel@laptop>  <alpine.DEB.2.00.1105241041490.10575@cl320.eecs.utk.edu>
- <1306249830.18455.41.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 24 May 2011 13:56:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=S8mBJUP0U4fDJng1srPp2kbV5mGuzkd7R4r1sbXct5V+VORiX3u2y6FuDebSZ621WH
+         BNNd159gS2/ZsokyEjwncD8MjmxvCh9u47bXrRZ9qBd1simtWYdDOHElqnVl+7wBPrI1
+         nxpL+JvuC02lZJuxCVJFKA3jWyDJqsfPz23h0=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110524173326.GA7635@gere.osrc.amd.com>
+References: <4ddad79317108eb33d@agluck-desktop.sc.intel.com>
+	<20110524034023.GB25230@elte.hu>
+	<987664A83D2D224EAE907B061CE93D5301D5D0595B@orsmsx505.amr.corp.intel.com>
+	<20110524173326.GA7635@gere.osrc.amd.com>
+Date: Tue, 24 May 2011 10:56:26 -0700
+X-Google-Sender-Auth: aaDvlxMyf6utjaXom3c7JLNRTi0
+Message-ID: <BANLkTinSOFAioAe2v5c6PRB9EKjJJNMg9w@mail.gmail.com>
+Subject: Re: [RFC 0/9] mce recovery for Sandy Bridge server
+From: Tony Luck <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011, Peter Zijlstra wrote:
+Dragging PeterZ to this thread, since we are now talking about scheduler.
 
-> On Tue, 2011-05-24 at 11:04 -0400, Vince Weaver wrote:
-> > 2.6.37, 2.6.38, or 2.6.39 then it would be silly to do it just for
-> > 2.6.40.
-> 
-> Oh, I assumed it was recent and .39/.40 would suffice.
+On Tue, May 24, 2011 at 10:33 AM, Borislav Petkov <bp@amd64.org> wrote:
+> On Tue, May 24, 2011 at 09:57:46AM -0700, Luck, Tony wrote:
+>> So can we talk about this part for a while before returning to the
+>> "how to report this" discussion?
+>>
+>> So here's the situation - we are in the NMI handler when we find from
+>> looking at the machine check bank registers that we have a recoverable
+>> error. We know the physical address, and we know the task (which might
+>> have been in user or kernel context). I can package that information
+>> into a perf/event ... but then how can I mark the current task as
+>> not-fit-for-execution?
+>
+> Maybe something like
+>
+> set_current_state(TASK_UNINTERRUPTIBLE);
+>
+> finish work in NMI context
+>
+> do remaining work in process context like sending appropriate signals
+> etc; finally:
+>
+> set_task_state(tsk, TASK_RUNNING)
 
-It turns out the problem was only introduced in PAPI in November ( I had 
-assumed it dated back further).  So maybe not as dire as it seemed at 
-first.  
+That looks pretty easy - are their any weird side effects that I should
+be worried about?  My perf/event can't really include the "task" pointer
+(that sounds way too internal) - but I can provide the process id, so
+the "RAS daemon" that sees this event can look up the task to do that
+final set_task_state(tsk, TASK_RUNNING).
 
-The fix to PAPI does seem to be trivial, though the whole set of 
-bad code was introduced to work around a different problem so I need
-to verify the fix doesn't break other things.
+Does this work in the threaded case? In the case where the task was in
+kernel context (but in a CONFIG_PREEMT=y kernel at some point
+where preemption is allowed)?
 
-Thanks,
-
-Vince
-vweaver1@eecs.utk.edu
+-Tony
