@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab1EXGCZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 02:02:25 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52680 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab1EXGCW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 02:02:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=b20k+bQv8ut11CJJwid7uiuFKFYIoPbGs3vYUHRCWmYQTZNmmf73VIJSD3x2n+CL37
-         w9ZmRfKrW1Jh2M0W25DCIV5FWP2r6HJwPR6o+w8sHx8UFj8qdscoxowKjX9NibX/73cK
-         wgX59G30rbg8oUNaySVIg1gysFEMekPZpXTUg=
-Subject: Re: [PATCH -next] mtd: fix physmap.h warnings
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-mtd@lists.infradead.org,
-        linux-next@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-In-Reply-To: <1306216431.2785.46.camel@localhost>
-References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au>
-	 <20110523113709.4357b4ba.randy.dunlap@oracle.com>
-	 <1306216431.2785.46.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 08:58:03 +0300
-Message-ID: <1306216683.2785.47.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1752784Ab1EXF7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 01:59:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41519 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752511Ab1EXF7I convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 01:59:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110523193035.GA9170@elte.hu>
+References: <20110523193035.GA9170@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 23 May 2011 22:58:13 -0700
+Message-ID: <BANLkTimUr+2k3_RAyncLX5yFYeV5JaJDsQ@mail.gmail.com>
+Subject: Re: [GIT PULL] more x86/apic changes for v2.6.40
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 08:53 +0300, Artem Bityutskiy wrote:
-> On Mon, 2011-05-23 at 11:37 -0700, Randy Dunlap wrote:
-> > From: Randy Dunlap <randy.dunlap@oracle.com>
-> > 
-> > Fix build warnings in physmap.h:
-> > 
-> > include/linux/mtd/physmap.h:25: warning: 'struct platform_device' declared inside parameter list
-> > include/linux/mtd/physmap.h:25: warning: its scope is only this definition or declaration, which is probably not what you want
-> > include/linux/mtd/physmap.h:26: warning: 'struct platform_device' declared inside parameter list
-> > include/linux/mtd/physmap.h:27: warning: 'struct platform_device' declared inside parameter list
-> > 
-> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Oh, this was missed during review.  This was introduced in
-> b7281ca2a4b00044c60c25059f467d05772cdbe3 which is going in via Russel's
-> tree, so I guess Russel could pick up your patch.
+On Mon, May 23, 2011 at 12:30 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> Please pull the latest x86-apic-for-linus git tree from:
+>
+> � git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-apic-for-linus
 
-My big apologies, s/Russel/Russell/.
+Hmm. Right now my bisect is going (and on that slow atom thing I'm
+just about to give up for the evening and continue tomorrow), but it
+*looks* like this pull breaks resume on my eeepc netbook.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+I've bisected it down to three merges:
+ - sched-core-for-linus (looks unlikely)
+ - 'for-linus' of master.kernel.org:/home/rmk/linux-2.6-arm
+ - x86-apic-for-linus (I don't see anything wrong, but it seems to be
+the most likely of the three)
 
+Any idea why anything there would break resume?
+
+                          Linus
