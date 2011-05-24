@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702Ab1EXSfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:35:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43044 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755659Ab1EXSfF (ORCPT
+	id S932594Ab1EXSex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:34:53 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:58626 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754582Ab1EXSew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:35:05 -0400
+	Tue, 24 May 2011 14:34:52 -0400
+X-Sasl-enc: JHDJHgA5+gjx+BZhBoxagqghdUtxixQYCELYLdoHGUtv 1306262091
+Date: Tue, 24 May 2011 11:34:48 -0700
+From: Greg KH <greg@kroah.com>
+To: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Cc: Matthew Wilcox <matthew@wil.cx>, linux-usb@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: USBIP protocol documentation?
+Message-ID: <20110524183448.GA18511@kroah.com>
+References: <4DDBF8BD.3000603@freemail.hu>
 MIME-Version: 1.0
-In-Reply-To: <1306259131.7171.7.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <20110523193035.GA9170@elte.hu> <BANLkTimUr+2k3_RAyncLX5yFYeV5JaJDsQ@mail.gmail.com>
- <20110524060321.GA20904@elte.hu> <20110524061525.GA29815@elte.hu> <1306259131.7171.7.camel@sbsiddha-MOBL3.sc.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 May 2011 11:34:14 -0700
-Message-ID: <BANLkTi=bh+P07UPzhv9v=0x78o9+PUrCnw@mail.gmail.com>
-Subject: Re: [GIT PULL] more x86/apic changes for v2.6.40
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel J Blueman <daniel.blueman@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4DDBF8BD.3000603@freemail.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 10:45 AM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
->
-> Patch appended(I am sorry, should have caught this earlier. Looks like
-> my system does keep the ioapic state intact during suspend/resume.)
+On Tue, May 24, 2011 at 08:28:13PM +0200, Németh Márton wrote:
+> Hi,
+> 
+> I'm looking for the USBIP protocol documentation. I found that
+> there was already a discussion about the USBIP protocol and
+> there is some draft about it:
+> 
+>   * http://marc.info/?l=linux-kernel&m=122001863119269&w=2
+>   * http://www.kernel.org/pub/linux/kernel/people/willy/usbip/usbip-protocol-draft-1
+> 
+> Unfortunately I couldn't found any detailed protocol documentation
+> on the project homepage:
+> 
+>   * http://usbip.sourceforge.net/#documentation
+> 
+> Do you know any follow-up on the USBIP protocol documentation?
 
-Looks likely. My bisect just finished as I got this email, with
+I think the code is the "real" documentation.
 
-57a6f74023c7fd943160d7635bbc8d9f66e2ab54 is the first bad commit
-commit 57a6f74023c7fd943160d7635bbc8d9f66e2ab54
-Author: Suresh Siddha <suresh.b.siddha@intel.com>
-Date:   Wed May 18 16:31:36 2011 -0700
+Note a number of developers are actively working on changing the protocol
+and fixing it up based on Matthew's previous comments.  Look at the
+thread on the usbip project's mailing list for a few details.  More will
+be in the patches produced by the developers.
 
-    x86, ioapic: Consolidate ioapic_saved_data[] into 'struct ioapic'
+good luck,
 
-    Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-    Cc: daniel.blueman@gmail.com
-    Link: http://lkml.kernel.org/r/20110518233157.830697056@sbsiddha-MOBL3.sc.intel.com
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-:040000 040000 0ae77b7536a88d0ce4f789a7c870aa3103ccc1d5
-3460a9ec2b6a017d91b8fa6465e8d7d7cd8be71d M	arch
-
-and I'm now going back to top-of-git and applying your patch to verify
-that it fixes it. But it looks rather likely that it does.
-
-                     Linus
+greg k-h
