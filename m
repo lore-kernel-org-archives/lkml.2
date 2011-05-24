@@ -1,71 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab1EXPIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 11:08:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46038 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab1EXPIK (ORCPT
+	id S1755186Ab1EXPLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 11:11:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36144 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752695Ab1EXPLF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 11:08:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=jtjIMdv3ZgS9HbQ1xB4YfKA5nVltJDopBz99GAinfLyU0RGoLJ7nPIMtzZqoigNW+Z
-         u0yDoMqmWLvlx36i9FrFP/FHFQR1ZD/G3qk+2k/f+pWmCZQ/96cuoIKBR5YESC+m+WSd
-         80qUeMbfofm5WIdn8Bvou8L6dzzmy5ASxU+7E=
-Subject: Re: [PATCH 2/2] loop: handle on-demand devices correctly
-From: Namhyung Kim <namhyung@gmail.com>
-To: Laurent Vivier <Laurent.Vivier@bull.net>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1306249314.2838.19.camel@b015126-ux.fr.ad.bull.net>
-References: <1306247761-2246-1-git-send-email-namhyung@gmail.com>
-	 <1306247761-2246-2-git-send-email-namhyung@gmail.com>
-	 <4DDBC4A7.1040104@fusionio.com>  <1306249066.1751.7.camel@leonhard>
-	 <1306249314.2838.19.camel@b015126-ux.fr.ad.bull.net>
+	Tue, 24 May 2011 11:11:05 -0400
+Subject: Re: perf: regression with PERF_EVENT_IOC_REFRESH
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: linux-kernel@vger.kernel.org, fbuihuu@gmail.com, mingo@elte.hu,
+        paulus@samba.org, acme@redhat.com
+In-Reply-To: <alpine.DEB.2.00.1105241041490.10575@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>
+	 <1306182141.2497.5.camel@laptop>
+	 <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu>
+	 <1306233036.2497.15.camel@laptop>
+	 <alpine.DEB.2.00.1105241041490.10575@cl320.eecs.utk.edu>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 00:08:03 +0900
-Message-ID: <1306249683.1751.12.camel@leonhard>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 24 May 2011 17:10:30 +0200
+Message-ID: <1306249830.18455.41.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011-05-24 (화), 17:01 +0200, Laurent Vivier:
-> Le mardi 24 mai 2011 à 23:57 +0900, Namhyung Kim a écrit :
-> > 2011-05-24 (화), 16:45 +0200, Jens Axboe:
-> > > Thanks, applied. Seems we should mark this for stable.
-> > > 
-> > 
-> > Hi Jens,
-> > 
-> > The partition handling was introduced by commit 476a4813cfdd ("loop:
-> > manage partitions in disk image") so that we need these patches for all
-> > stable releases, AFAICS.
-> > 
-> > $ git name-rev --tags 476a4813cfdd
-> > 476a4813cfdd tags/v2.6.26-rc1~1115^2~9
-> > 
-> > Now I can see that brd (ramdisk) module seems to have same problems with
-> > loop. I'll work on that, too.
-> 
-> Have a look to nbd.c too.
-> 
-> Regards,
-> Laurent
-> 
+On Tue, 2011-05-24 at 11:04 -0400, Vince Weaver wrote:
+> 2.6.37, 2.6.38, or 2.6.39 then it would be silly to do it just for
+> 2.6.40.
 
-Hi Laurent,
-
-I'll take a look on that too after looking at brd. Thanks for the
-comment.
-
-
--- 
-Regards,
-Namhyung Kim
-
-
+Oh, I assumed it was recent and .39/.40 would suffice.
