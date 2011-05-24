@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933027Ab1EXWED (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 18:04:03 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:42180 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757017Ab1EXWEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 18:04:01 -0400
-Date: Wed, 25 May 2011 00:04:08 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Greg KH <gregkh@suse.de>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Michal Simek <monstr@monstr.eu>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        John Williams <john.williams@petalogix.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH v5] uio/pdrv_genirq: Add OF support
-Message-ID: <20110524220408.GB16040@local>
-References: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
- <4DDB960F.4050902@monstr.eu>
- <20110524123625.GC31517@suse.de>
- <20110524150215.GA2723@local>
- <20110524151413.GA25076@suse.de>
+	id S933478Ab1EXWF3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 18:05:29 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57926 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161Ab1EXWF2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 18:05:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type;
+        b=mnE20s7ZfPdOXjUKykkdpXUntZTbm9Euxa27ZfRgKGsabOiQwFryK10XF2C2DoM/AR
+         l3FiSD77upvVvQlva6c6JocAEPRtSRizJfZkVAM+q6kdZRdAEqe0k44We7Xzuca7RfZL
+         HyAJeRQHmzxF1/GkEwcHLIDK2IiHV3qMYUaQs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110524151413.GA25076@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Tue, 24 May 2011 15:05:27 -0700
+X-Google-Sender-Auth: gRemvdKXCfE8gyWy72p4iffT62s
+Message-ID: <BANLkTimnTkw1of97dvc4Gtsw6Bd6bgFbUQ@mail.gmail.com>
+Subject: warning about ib_cache_cleanup
+From: Yinghai Lu <yinghai@kernel.org>
+To: Roland Dreier <roland@purestorage.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 08:14:13AM -0700, Greg KH wrote:
-> On Tue, May 24, 2011 at 05:02:16PM +0200, Hans J. Koch wrote:
-> > On Tue, May 24, 2011 at 05:36:25AM -0700, Greg KH wrote:
-> > > On Tue, May 24, 2011 at 01:27:11PM +0200, Michal Simek wrote:
-> > > > Hi Greg,
-> > > > 
-> > > > can you please add it to your tree? I see you have sent pull request.
-> > > 
-> > > It's too late for the merge window for this, sorry.  I needed to have
-> > > this before it opened up, and in the linux-next tree for a week or so
-> > > before that.
-> > > 
-> > > Sorry.
-> > > 
-> > > Can you resend it in a format that I can apply it in, as well as getting
-> > > an ack from Hans?
-> > 
-> > There was already a "Signed-off-by:" from me, and a "Reviewed-by:" from
-> > Wolfram Sang, so that should be OK.
-> 
-> There was on the forwarded patch?  Sorry, I missed it, if only it was in
-> a format that could have been applied :)
-
-I forwarded the original patch (added Signed-of-by and Reviewed-by tags)
-to you.
-
-HTH,
-Hans
+WARNING: vmlinux.o(.init.text+0x439b9): Section mismatch in reference
+from the function ib_core_init() to the function
+.exit.text:ib_cache_cleanup()
+The function __init ib_core_init() references
+a function __exit ib_cache_cleanup().
+This is often seen when error handling in the init function
+uses functionality in the exit path.
+The fix is often to remove the __exit annotation of
+ib_cache_cleanup() so it may be used outside an exit section.
