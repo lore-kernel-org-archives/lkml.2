@@ -1,43 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab1EXS23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:28:29 -0400
-Received: from relay03.digicable.hu ([92.249.128.185]:38680 "EHLO
-	relay03.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481Ab1EXS22 (ORCPT
+	id S1756722Ab1EXS3z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:29:55 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:34227 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab1EXS3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:28:28 -0400
-Message-ID: <4DDBF8BD.3000603@freemail.hu>
-Date: Tue, 24 May 2011 20:28:13 +0200
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <greg@kroah.com>, Matthew Wilcox <matthew@wil.cx>
-CC: linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: USBIP protocol documentation?
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Original: 94.21.98.46
+	Tue, 24 May 2011 14:29:54 -0400
+Date: Tue, 24 May 2011 14:29:13 -0400 (EDT)
+Message-Id: <20110524.142913.2084979139911365095.davem@davemloft.net>
+To: jaxboe@fusionio.com
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, chris.mason@oracle.com
+Subject: Re: [GIT PULL] Start of removal of legacy parallel interfaces for
+ 3.0
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4DDBF40E.7020003@fusionio.com>
+References: <4DDBF40E.7020003@fusionio.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 24 May 2011 11:29:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Jens Axboe <jaxboe@fusionio.com>
+Date: Tue, 24 May 2011 20:08:14 +0200
 
-I'm looking for the USBIP protocol documentation. I found that
-there was already a discussion about the USBIP protocol and
-there is some draft about it:
+> With the 3.0 kernel approaching, now is a great time to get rid of some
+> legacy bagage. And what better part to start with than the old IDE code.
 
-  * http://marc.info/?l=linux-kernel&m=122001863119269&w=2
-  * http://www.kernel.org/pub/linux/kernel/people/willy/usbip/usbip-protocol-draft-1
-
-Unfortunately I couldn't found any detailed protocol documentation
-on the project homepage:
-
-  * http://usbip.sourceforge.net/#documentation
-
-Do you know any follow-up on the USBIP protocol documentation?
-
-Regards,
-
-	Márton Németh
+We've already had this discussion a million times, we can't do this.
