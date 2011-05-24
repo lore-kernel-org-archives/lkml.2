@@ -1,98 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab1EXHOr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 03:14:47 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:52058 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752282Ab1EXHOq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 03:14:46 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <shiraz.hashim@st.com>,
-        <armando.visconti@st.com>, <viresh.linux@gmail.com>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH] dmaengine/dw_dmac: Update maintainer-ship
-Date: Tue, 24 May 2011 12:44:27 +0530
-Message-ID: <f7a8ea363d81ddbfab43272711cb482e700540e5.1306220852.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
+	id S1753854Ab1EXHRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 03:17:08 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50392 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752499Ab1EXHRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 03:17:05 -0400
+Date: Tue, 24 May 2011 09:16:28 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
+Message-ID: <20110524071628.GA31612@elte.hu>
+References: <m11uzrvd26.fsf@fess.ebiederm.org>
+ <BANLkTim4q5dK6nOb=pVKbk1c8b-Nh_hBfA@mail.gmail.com>
+ <m1boyvpo9r.fsf@fess.ebiederm.org>
+ <1306048393.4092.8.camel@mulgrave.site>
+ <20110522084224.GA12279@elte.hu>
+ <m1k4dgr35i.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1k4dgr35i.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nobody is currently maintaining dw_dmac. We are using dw_dmac for SPEAr13xx and
-are currently maintaining it. After discussing with Vinod, sending this patch to
-update maintainer-ship of dw_dmac.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- MAINTAINERS                |    7 +++++++
- drivers/dma/dw_dmac.c      |    2 ++
- drivers/dma/dw_dmac_regs.h |    1 +
- include/linux/dw_dmac.h    |    1 +
- 4 files changed, 11 insertions(+), 0 deletions(-)
+* Eric W. Biederman <ebiederm@xmission.com> wrote:
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 0b41524..a911177 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5430,6 +5430,13 @@ L:	linux-serial@vger.kernel.org
- S:	Maintained
- F:	drivers/tty/serial
- 
-+SYNOPSYS DESIGNWARE DMAC DRIVER
-+M:	Viresh Kumar <viresh.kumar@st.com>
-+S:	Maintained
-+F:	include/linux/dw_dmac.h
-+F:	drivers/dma/dw_dmac_regs.h
-+F:	drivers/dma/dw_dmac.c
-+
- TIMEKEEPING, NTP
- M:	John Stultz <johnstul@us.ibm.com>
- M:	Thomas Gleixner <tglx@linutronix.de>
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 2a2e2fa..08e2202 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -3,6 +3,7 @@
-  * AVR32 systems.)
-  *
-  * Copyright (C) 2007-2008 Atmel Corporation
-+ * Copyright (c) 2011-2012 Viresh Kumar <viresh.kumar@st.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -1487,3 +1488,4 @@ module_exit(dw_exit);
- MODULE_LICENSE("GPL v2");
- MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller driver");
- MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
-+MODULE_AUTHOR("Viresh Kumar <viresh.kumar@st.com>");
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index 720f821..6cb1da1 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -2,6 +2,7 @@
-  * Driver for the Synopsys DesignWare AHB DMA Controller
-  *
-  * Copyright (C) 2005-2007 Atmel Corporation
-+ * Copyright (c) 2011-2012 Viresh Kumar <viresh.kumar@st.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
-index 6998d93..ea57c4b 100644
---- a/include/linux/dw_dmac.h
-+++ b/include/linux/dw_dmac.h
-@@ -3,6 +3,7 @@
-  * AVR32 systems.)
-  *
-  * Copyright (C) 2007 Atmel Corporation
-+ * Copyright (c) 2011-2012 Viresh Kumar <viresh.kumar@st.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
--- 
-1.7.2.2
+> > Also, system call table conflicts are trivial to resolve. Merging in 
+> > net-next to avoid such a conflict is like cracking a nut with a 
+> > sledgehammer.
+> 
+> Well I still have trauma from how nasty it was to test with syscall numbers 
+> continuing to change when I was working on the kexec_load system call.
+> 
+> As far as I can tell any one system call conflict on any one
+> architecture is easy to resolve.  Resolving a conflict on all
+> architectures would amount to at least 50 files that need to be resolved
+> that feels a bit more than trivial.
 
+Of course - and the straightforward solution is to not do it but concentrate on 
+the 2-3 archs you find to be the primary target of your patches. How many 
+parisc systems are there on the planet, which in the future will be upgraded to 
+both kernel and user-space running your new syscall for real? Less than 10? How 
+many ARM and x86 systems?
+
+> My gut feel says we should really implement an 
+> include/asm-generic/unistd-common.h to include all new system calls.
+> 
+> That way there would be only one file to touch instead of 50. Certainly it 
+> works for include/asm-generic/unistd.h for the architectures that use it.  
+> And all we really need is just a little abstraction on that concept.
+
+I suppose that could be tried, although in practice it would probably be 
+somewhat complex due to the various compat syscall handling differences.
+So i guess this is one of the 'lets see how ugly/fragile it becomes' patches.
+
+Thanks,
+
+	Ingo
