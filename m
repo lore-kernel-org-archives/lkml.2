@@ -1,25 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab1EXCmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 22:42:15 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47523 "EHLO mx2.mail.elte.hu"
+	id S1754548Ab1EXCwR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 22:52:17 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38270 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754057Ab1EXCmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 22:42:12 -0400
-Date: Tue, 24 May 2011 04:41:48 +0200
+	id S1752516Ab1EXCwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 22:52:14 -0400
+Date: Tue, 24 May 2011 04:48:48 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+To: Huang Ying <ying.huang@intel.com>
+Cc: huang ying <huang.ying.caritas@gmail.com>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20110524024148.GA18967@elte.hu>
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
+Message-ID: <20110524024848.GA25230@elte.hu>
+References: <20110517092620.GI22093@elte.hu>
+ <4DD31C78.6000209@intel.com>
+ <20110520115614.GH14745@elte.hu>
+ <BANLkTi=5Y0fqsmhsoPm8si=nQBc-tCwtrw@mail.gmail.com>
+ <20110522100021.GA28177@elte.hu>
+ <BANLkTi=VDQMOfWe5tP7nXSv2AEsiUUEteg@mail.gmail.com>
+ <20110522132515.GA13078@elte.hu>
+ <4DD9C8B9.5070004@intel.com>
+ <20110523110151.GD24674@elte.hu>
+ <4DDB1396.7050205@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4DDB1396.7050205@intel.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -32,56 +47,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull the latest perf-urgent-for-linus git tree from:
+* Huang Ying <ying.huang@intel.com> wrote:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-urgent-for-linus
+> >> - How to deal with ring-buffer overflow?  For example, there is full of 
+> >>   corrected memory error in ring-buffer, and now a recoverable memory error 
+> >>   occurs but it can not be put into perf ring buffer because of ring-buffer 
+> >>   overflow, how to deal with the recoverable memory error?
+> > 
+> > The solution is to make it large enough. With *every* queueing solution there 
+> > will be some sort of queue size limit.
+> 
+> Another solution could be:
+> 
+> Create two ring-buffer. One is for logging and will be read by RAS
+> daemon; the other is for recovering, the event record will be removed
+> from the ring-buffer after all 'active filters' have been run on it.
+> Even RAS daemon being restarted or hang, recoverable error can be taken
+> cared of.
 
- Thanks,
+Well, filters will always be executed since they execute when the event is 
+inserted - not when it's extracted.
+
+So if you worry about losing *filter* executions (and dependent policy action) 
+- there should be no loss there, ever.
+
+But yes, the scheme you outline would work as well: a counting-only event with 
+a filter specified - this will do no buffering at all.
+
+So ... to get the ball rolling in this area one of you guys active in RAS 
+should really try a first approximation for the active filter approach: add a 
+test-TRACE_EVENT() for the errors you are interested in and define a convenient 
+way to register policy action with post-filter events. This should work even 
+without having the 'active' portion defined at the ABI and filter-string level.
+
+Thanks,
 
 	Ingo
-
------------------->
-Frederic Weisbecker (1):
-      perf tools: Fix sample type size calculation in 32 bits archs
-
-Jesper Juhl (1):
-      profile: Use vzalloc() rather than vmalloc() & memset()
-
-
- kernel/profile.c        |    6 ++----
- tools/perf/util/event.c |    2 +-
- 2 files changed, 3 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/profile.c b/kernel/profile.c
-index 66f841b..14c9f87 100644
---- a/kernel/profile.c
-+++ b/kernel/profile.c
-@@ -126,11 +126,9 @@ int __ref profile_init(void)
- 	if (prof_buffer)
- 		return 0;
- 
--	prof_buffer = vmalloc(buffer_bytes);
--	if (prof_buffer) {
--		memset(prof_buffer, 0, buffer_bytes);
-+	prof_buffer = vzalloc(buffer_bytes);
-+	if (prof_buffer)
- 		return 0;
--	}
- 
- 	free_cpumask_var(prof_cpu_mask);
- 	return -ENOMEM;
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 252b72a..6635fcd 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -42,7 +42,7 @@ int perf_sample_size(u64 sample_type)
- 	int i;
- 
- 	for (i = 0; i < 64; i++) {
--		if (mask & (1UL << i))
-+		if (mask & (1ULL << i))
- 			size++;
- 	}
- 
