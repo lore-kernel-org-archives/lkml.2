@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab1EXMQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 08:16:52 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52904 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab1EXMQv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 08:16:51 -0400
-Message-ID: <7E10264BABCB4C1788DCD9715461BDE8@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <sachi@mistralsolutions.com>, "Samuel Ortiz" <sameo@linux.intel.com>,
-        "open list" <linux-kernel@vger.kernel.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <201105151133.23870.arnd@arndb.de> <B876E8072D52496DB747D5CCCF64826D@subhasishg> <201105231730.06564.arnd@arndb.de>
-In-Reply-To: <201105231730.06564.arnd@arndb.de>
-Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
-Date: Tue, 24 May 2011 17:47:32 +0530
-Organization: Mistral Solutions
+	id S1755915Ab1EXMTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 08:19:09 -0400
+Received: from mail.avalus.com ([89.16.176.221]:47604 "EHLO mail.avalus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750992Ab1EXMTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 08:19:08 -0400
+Date: Tue, 24 May 2011 13:19:05 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
+cc: Alex Bligh <alex@alex.org.uk>
+Subject: Question: block layer and REQ_FLUSH
+Message-ID: <4C9FE036825E46DE8121365F@Ximines.local>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Documentation/block/writeback_cache_control.txt says:
 
->> http://linux.omap.com/pipermail/davinci-linux-open-source/
->> 2011-March/022339.html.
->>
->> We can use this implementation along with the sysfs to load the devices
->> runtime.
->
-> Possibly, but the actual data structures might end up differently
-> when they are built around a sysfs interface. If you have a sysfs
-> interface, it is more important to have that in a clean way than
-> the board file, so we should first discuss the set of sysfs
-> attributes that you are going to need, and then see how to
-> represent that in platform data for predefined boards.
->
->> The configs that I have in the board_file for the devices
->> structure, are fixed for a board. To swap the boards, we do not need to 
->> re-compile
->> the kernel.
->
-> The other point to consider is that we are definitely moving
-> towards the flattened device tree for these definitions now.
-> It's probably good to make the sysfs attributes directly correspond
-> to fdt device properties. I'm not sure if we also need to allow platform
-> data. The easiest way could be to just require the use of device tree
-> for predefined pruss devices.
->
-> I'm sorry that this is moving in a different direction now, you
-> had an unfortunate timing here.
->
-> Let's first discuss the exact properties that are really required
-> to define the differences between PRU backends, as those will
-> be required in any case. What do you need for PRU specific
-> data besides the firmware and the name of the device?
+> The REQ_FLUSH flag can be OR ed into the r/w flags of a bio submitted from
+> the filesystem and will make sure the volatile cache of the storage device
+> has been flushed before the actual I/O operation is started.  This
+> explicitly guarantees that previously completed write requests are on
+> non-volatile storage before the flagged bio starts.
 
-Would it be a good approach to first get a basic sensible
-driver into the tree and then work towards improving and
-adjusting for future compatibilities.
-That way we can gradually build towards the perfect driver
-in steps, rather than digressing far too off suddenly.
-That would be some source of motivation for me too.
- 
+>From the block driver's point of view, is it only necessary to ensure
+*completed* I/O operations are flushed to disk (as per the text), or
+is it also necessary to ensure *in flight* requests (i.e. those that
+have not been completed) are flushed to disk too? IE when the block
+layer does the flush, does it also wait for in-flight I/O to complete?
 
+IE if the time sequence is
+	WRITE1
+	WRITE2
+	WRITE3
+			Complete WRITE2 -> sent to volatile cache
+	WRITE4
+	REQ_FLUSH
+
+Do I need to only ensure WRITE2 is flushed, or (as I suspect) do I
+need to wait for all bios previously submitted to the driver to
+complete? If so, from the driver's point of view anyway, should the
+guarantee refer to "previously submitted write requests" as opposed
+to "previously completed"?
+
+-- 
+Alex Bligh
