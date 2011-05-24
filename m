@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab1EXBcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 21:32:45 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:38109 "EHLO
+	id S1758067Ab1EXBe0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 21:34:26 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64721 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568Ab1EXBco convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752568Ab1EXBeW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 21:32:44 -0400
+	Mon, 23 May 2011 21:34:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=GNxkcmI/WgRkEDePV4V8CjlSAtoel1BiaPhVgTpHKEqmVialVzCesy94VDALXtr/fe
-         aDmPiWjwtgkfNhB2XhWi7cDskJQGEzIOYHgqFm8P6armxNw7x/Xvoh3vkBrIG3jcE6HU
-         2FJyLw7PWcn1qTNLVVwifoBG4DJTdRXEGvRBw=
+        b=u7fyMwmZRrEVc3ltbhl2XG2kbDvcGgHJA6YPA4GRvngKDvRbPHB7XTshlxTxxvD/ns
+         lr5RMB8GkYxUb0UGSY/0hxtIC7gADvsp42yYjOvMrti6HM51bTnhw3W8naANpYs1Qzj+
+         2b4gwgeaG1dkZMcNryVUPyCWeSVmn9YpvXCU0=
 MIME-Version: 1.0
-In-Reply-To: <4DDB0669.6040409@jp.fujitsu.com>
-References: <4DD61F80.1020505@jp.fujitsu.com>
-	<4DD6204D.5020109@jp.fujitsu.com>
-	<BANLkTim2-uncnzoHwdG+4+uCv+Ht4YH3Qw@mail.gmail.com>
-	<4DDB0669.6040409@jp.fujitsu.com>
-Date: Tue, 24 May 2011 10:32:43 +0900
-Message-ID: <BANLkTinb3Yuvrz5b-dyGYv0_HMB9+ax3yA@mail.gmail.com>
-Subject: Re: [PATCH 3/5] oom: oom-killer don't use proportion of system-ram internally
+In-Reply-To: <BANLkTi=wVOPSv1BA_mZq9=r14Vu3kUh3_w@mail.gmail.com>
+References: <BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com>
+	<BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com>
+	<4DD5DC06.6010204@jp.fujitsu.com>
+	<BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com>
+	<BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
+	<20110520140856.fdf4d1c8.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110520101120.GC11729@random.random>
+	<BANLkTikAFMvpgHR2dopd+Nvjfyw_XT5=LA@mail.gmail.com>
+	<20110520153346.GA1843@barrios-desktop>
+	<BANLkTi=X+=Wh1MLs7Fc-v-OMtxAHbcPmxA@mail.gmail.com>
+	<20110520161934.GA2386@barrios-desktop>
+	<BANLkTi=4C5YAxwAFWC6dsAPMR3xv6LP1hw@mail.gmail.com>
+	<BANLkTimThVw7-PN6ypBBarqXJa1xxYA_Ow@mail.gmail.com>
+	<BANLkTint+Qs+cO+wKUJGytnVY3X1bp+8rQ@mail.gmail.com>
+	<BANLkTinx+oPJFQye7T+RMMGzg9E7m28A=Q@mail.gmail.com>
+	<BANLkTik29nkn-DN9ui6XV4sy5Wo2jmeS9w@mail.gmail.com>
+	<BANLkTikQd34QZnQVSn_9f_Mxc8wtJMHY0w@mail.gmail.com>
+	<BANLkTi=wVOPSv1BA_mZq9=r14Vu3kUh3_w@mail.gmail.com>
+Date: Tue, 24 May 2011 10:34:21 +0900
+Message-ID: <BANLkTimw23VP4yyuDed-KrLEcnfLMMA-fQ@mail.gmail.com>
+Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
 From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
-        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
+        riel@redhat.com
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 10:14 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> Hi
->
->
->>> @@ -476,14 +476,17 @@ static const struct file_operations
->>> proc_lstats_operations = {
->>>
->>>  static int proc_oom_score(struct task_struct *task, char *buffer)
->>>  {
->>> -       unsigned long points = 0;
->>> +       unsigned long points;
->>> +       unsigned long ratio = 0;
->>> +       unsigned long totalpages = totalram_pages + total_swap_pages + 1;
+On Tue, May 24, 2011 at 10:19 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Sun, May 22, 2011 at 7:12 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+>> Could you test below patch based on vanilla 2.6.38.6?
+>> The expect result is that system hang never should happen.
+>> I hope this is last test about hang.
 >>
->> Does we need +1?
->> oom_badness does have the check.
->
-> "ratio = points * 1000 / totalpages;" need to avoid zero divide.
->
->>>        /*
->>>         * Root processes get 3% bonus, just like the __vm_enough_memory()
->>>         * implementation used by LSMs.
->>> +        *
->>> +        * XXX: Too large bonus, example, if the system have tera-bytes
->>> memory..
->>>         */
->>> -       if (has_capability_noaudit(p, CAP_SYS_ADMIN))
->>> -               points -= 30;
->>> +       if (has_capability_noaudit(p, CAP_SYS_ADMIN)) {
->>> +               if (points>= totalpages / 32)
->>> +                       points -= totalpages / 32;
->>> +               else
->>> +                       points = 0;
+>> Thanks.
 >>
->> Odd. Why do we initialize points with 0?
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index 292582c..1663d24 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -231,8 +231,11 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+>>       if (scanned == 0)
+>>               scanned = SWAP_CLUSTER_MAX;
 >>
->> I think the idea is good.
+>> -       if (!down_read_trylock(&shrinker_rwsem))
+>> -               return 1;       /* Assume we'll be able to shrink next time */
+>> +       if (!down_read_trylock(&shrinker_rwsem)) {
+>> +               /* Assume we'll be able to shrink next time */
+>> +               ret = 1;
+>> +               goto out;
+>> +       }
+>>
+>>       list_for_each_entry(shrinker, &shrinker_list, list) {
+>>               unsigned long long delta;
+>> @@ -286,6 +289,8 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+>>               shrinker->nr += total_scan;
+>>       }
+>>       up_read(&shrinker_rwsem);
+>> +out:
+>> +       cond_resched();
+>>       return ret;
+>>  }
+>>
+>> @@ -2331,7 +2336,7 @@ static bool sleeping_prematurely(pg_data_t
+>> *pgdat, int order, long remaining,
+>>        * must be balanced
+>>        */
+>>       if (order)
+>> -               return pgdat_balanced(pgdat, balanced, classzone_idx);
+>> +               return !pgdat_balanced(pgdat, balanced, classzone_idx);
+>>       else
+>>               return !all_zones_ok;
+>>  }
 >
-> The points is unsigned. It's common technique to avoid underflow.
+> So far with this patch I can't reproduce the hang or the bogus OOM.
+>
+> To be completely clear, I have COMPACTION, MIGRATION, and THP off, I'm
+> running 2.6.38.6, and I have exactly two patches applied.  One is the
+> attached patch and the other is a the fpu.ko/aesni_intel.ko merger
+> which I need to get dracut to boot my box.
+>
+> For fun, I also upgraded to 8GB of RAM and it still works.
 >
 
-Thanks for explanation, KOSAKI.
-I need sleeping. :(
+Hmm. Could you test it with enable thp and 2G RAM?
+Isn't it a original test environment?
+Please don't change test environment. :)
 
-
+Thanks for your effort, Andrew.
 
 -- 
 Kind regards,
