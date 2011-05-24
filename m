@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957Ab1EXPDj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 11:03:39 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52185 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963Ab1EXPDi (ORCPT
+	id S1754420Ab1EXPFE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 11:05:04 -0400
+Received: from jaguar.mail.utk.edu ([160.36.0.84]:43732 "EHLO
+	jaguar.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753272Ab1EXPFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 11:03:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Ih9dMWtRoshxm3czCYrxU0ynFMU+VBBl2MCCEtVODT1+35wXXDksk3ktYLSYSktbPP
-         BMvJSB2I4l7FMuzdfZhH4X2qnlRRQMURIbNg+WRnsd/SPDMxfWO6unYTDbJrGGiEhxFl
-         75YEX1+Yy7C9fWhSJO97Qp7fywvi8maadY5fo=
-Message-ID: <4DDBC8C7.4000001@gmail.com>
-Date: Tue, 24 May 2011 10:03:35 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 24 May 2011 11:05:02 -0400
+Date: Tue, 24 May 2011 11:04:43 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: linux-kernel@vger.kernel.org, fbuihuu@gmail.com, mingo@elte.hu,
+        paulus@samba.org, acme@redhat.com
+Subject: Re: perf: regression with PERF_EVENT_IOC_REFRESH
+In-Reply-To: <1306233036.2497.15.camel@laptop>
+Message-ID: <alpine.DEB.2.00.1105241041490.10575@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>  <1306182141.2497.5.camel@laptop>  <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu> <1306233036.2497.15.camel@laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] drivers/amba: probe via device tree
-References: <1305829704-11774-1-git-send-email-robherring2@gmail.com>	<20110519233958.GB18181@ponder.secretlab.ca>	<4DD66B8A.5040404@gmail.com>	<201105201621.03801.arnd@arndb.de> <4DD68614.6090209@gmail.com>	<a42f0c27-2811-4b68-bedf-7dfaa7bff6ff@VA3EHSMHS025.ehs.local>	<BANLkTi=8vX1Cs_fzpQXZBuuDuLYLu1FGmg@mail.gmail.com>	<4DDA2AC0.1060406@gaisler.com>	<20110523095829.GG17672@n2100.arm.linux.org.uk> <BANLkTink1rrC8F3Gjhqt84gYzOibX+AgDQ@mail.gmail.com>
-In-Reply-To: <BANLkTink1rrC8F3Gjhqt84gYzOibX+AgDQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant,
+On Tue, 24 May 2011, Peter Zijlstra wrote:
 
-On 05/23/2011 10:09 AM, Grant Likely wrote:
-> On Mon, May 23, 2011 at 3:58 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk>  wrote:
->> On Mon, May 23, 2011 at 11:37:04AM +0200, Kristoffer Glembo wrote:
->>> Grant Likely wrote:
->>>> In the case we're talking about the bus really is an AMBA bus, and all
->>>> the devices on it are in some sense real amba devices.  The problem is
->>>> that not all of the devices on the bus implement peripheral ID
->>>> registers or other mechanisms that good upstanding AMBA devices are
->>>> expected to have.
->>>
->>> Before we go hardware bashing of non primecell AMBA devices I would just
->>> want to point out that the primecell stuff is not part of the AMBA
->>> specification.
->>
->> And before we go down that route, let me point out that the 'amba bus'
->> stuff in the kernel is there to support primecells, rather than all
->> devices which the AMBA specification covers.
->>
->> The reason it's called 'amba' is because back in 2001 or so when the
->> first primecell drivers were created, there was little information
->> available as to what AMBA, AHB, or APB even covered.  All I had to go
->> on were the primecell documents themselves.  The higher level documents
->> were not available to me.
->>
->> So, despite it being called 'amba', it really is just for primecells
->> and if we didn't have the exposure to userspace, I'd have renamed it to
->> 'apb' or similar instead.
->
-> Okay, that clarifies things a lot, and lends weight to the arguement
-> that it is perfectly normal and acceptable to have both amba_devices
-> and platform_devices on the same bus segment.  Are there any cases
-> where amba primecells are being driven by platform_drivers?  If so,
-> should those drivers have an amba_driver registration added?
+> > The old behavior might have been unintentional, but PAPI unfortunately 
+> > depends on it (not code I originaly wrote, but code I have to maintain).
+> 
+> Right, so what the code does is create a group of which the leader is
+> disabled, which effectively has the whole group disabled. It then abuses
+> REFRESH,0 to enable the leader.
 
-I would be surprised if there are any implemented as platform_drivers 
-that are not duplicates of an amba driver. The STMP uart is actually a 
-pl011 and it's platform driver was recently removed IIRC. So I think we 
-can consider platform drivers something that should be fixed in this case.
+yes.  This is currently what PAPI does.
 
-Do you still think we should have a global match table of all devices or 
-a generic "arm,primecell" compatible property would work. Several 
-drivers like the pl022 have several h/w variations they support, so we 
-would either need to list all those variations or have a generic name 
-per device.
+> The code should use ENABLE (surprise, surprise!) to enable the leader
+> and get things going.
 
-I think having "arm,amba-deviceid" is not needed. The current code does 
-nothing but warn if it doesn't match the h/w value. The drivers already 
-have a list of id's that they support and the amba bus only matches 
-against the h/w id value. The only use I can see is overriding a broken 
-h/w value. Certainly seems like it should be optional at least.
+It was unclear from the documentation that enabling a group leader that 
+had siblings with overflow setup would start them triggering
+without some sort of REFRESH first.  It does seem to work though.
+But then again, so did the original behavior.
 
-Rob
+> This is very clear abuse of the API and I'm not really inclined to fix
+> it, in fact, I'd be tempted to add an additional test to verify the
+> argument to REFRESH > 0.
+
+Well, when there's no documentation then people write to the code.
+As I said before, I didn't write this code.  I just get to pick up the 
+pieces when it breaks.
+
+As an aside, I also wasted 6 hours last night finding out that you don't 
+get signaled on overflow if you don't have a ring-buffer mmap()ed, even
+if you never read from the buffer and you only are interested in counting
+the number of overflows.  I should stop complaining though or you'll
+start telling me to fix the documentation.  Which maybe I would do if I 
+didn't spend all my time writing code to reproduce problems in the perf 
+ABI for bisection purposes.
+
+> Then again, I do appreciate you're having a problem there, how soon can
+> you push this trivial fix into all maintained PAPI branches? We could
+> revert this for one release and then properly shut this abuse down the
+> next release.
+
+well since you apparently aren't going to retroactively revert it for 
+2.6.37, 2.6.38, or 2.6.39 then it would be silly to do it just for 2.6.40.
+
+I'll audit the PAPI code to see how widespread it is.
+
+To warn you though, we still have people complain within hours when we 
+break support for 2.6.16 kernels, so it's not like the people who use 
+PAPI are the kind to run out and install a minor stable release.  They're
+going to upgrade their distro or move their binary to a newer machine and 
+suddenly start geting EINVAL returns on their previously working code and 
+then start noisily complaining.
+
+Vince
