@@ -1,64 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab1EXDmU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 23:42:20 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44457 "EHLO smtps.tip.net.au"
+	id S1757075Ab1EXD6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 23:58:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59525 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757060Ab1EXDmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 23:42:17 -0400
-Date: Tue, 24 May 2011 13:42:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree (suspend
- tree related)
-Message-Id: <20110524134216.1033c885.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__24_May_2011_13_42_16_+1000_nCJeb4GDaQLP9nNS"
+	id S1753148Ab1EXD6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 23:58:42 -0400
+Date: Tue, 24 May 2011 03:58:20 GMT
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Message-ID: <tip-6e9101aeec39961308176e0f59e73ac5d37d243a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, msb@chromium.org, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, marcin.slusarz@gmail.com,
+        fweisbec@gmail.com, tglx@linutronix.de, sfr@canb.auug.org.au,
+        mingo@elte.hu, dzickus@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, msb@chromium.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        marcin.slusarz@gmail.com, fweisbec@gmail.com, sfr@canb.auug.org.au,
+        tglx@linutronix.de, dzickus@redhat.com, mingo@elte.hu
+In-Reply-To: <20110517071642.GF22305@elte.hu>
+References: <20110524134129.8da27016.sfr@canb.auug.org.au>
+	<20110517071642.GF22305@elte.hu>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] watchdog: Fix non-standard prototype of get_softlockup_thresh()
+Git-Commit-ID: 6e9101aeec39961308176e0f59e73ac5d37d243a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 24 May 2011 03:58:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__24_May_2011_13_42_16_+1000_nCJeb4GDaQLP9nNS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  6e9101aeec39961308176e0f59e73ac5d37d243a
+Gitweb:     http://git.kernel.org/tip/6e9101aeec39961308176e0f59e73ac5d37d243a
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Tue, 24 May 2011 05:43:18 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 24 May 2011 05:53:39 +0200
 
-Hi Rafael,
+watchdog: Fix non-standard prototype of get_softlockup_thresh()
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+This build warning slipped through:
 
-kernel/swsusp.c:13:25: error: asm/suspend.h: No such file or directory
-kernel/power/hibernate.c:28:25: error: asm/suspend.h: No such file or direc=
-tory
+  kernel/watchdog.c:102: warning: function declaration isn't a prototype
 
-Caused by commit 8f6404f39725 ("PM / Hibernate: Remove
-arch_prepare_suspend()" which completely removed asm/suspend.h on
-powerpc, frv and s390.
+As reported by Stephen Rothwell.
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Also address an unused variable warning that GCC 4.6.0 reports:
+we cannot do anything about failed watchdog ops during CPU hotplug
+(it's not serious enough to return an error from the notifier),
+so ignore them.
 
---Signature=_Tue__24_May_2011_13_42_16_+1000_nCJeb4GDaQLP9nNS
-Content-Type: application/pgp-signature
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mandeep Singh Baines <msb@chromium.org>
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/r/20110524134129.8da27016.sfr@canb.auug.org.au
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+LKML-Reference: <20110517071642.GF22305@elte.hu>
+---
+ kernel/watchdog.c |   11 ++++-------
+ 1 files changed, 4 insertions(+), 7 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN2ykYAAoJEDMEi1NhKgbsLaMH/03dV8m8qG+8Bf8lNR2fGL+R
-cj37LMhHuXJChADR02Om7LjjuS7xFgHKukSGZ/r8Tm5RTS6lg7Wuhypm5UknNAOT
-xDXG0jE1DdgHmAicTDEgl/+UcX+IiqCda4bSdOQ8Umv9TjIE+d4Bly01ltPO0rpO
-aXFhBZ8ZxD1wRBY3LY10NELCJq+tlc1/ENiG2AUh1ZarUiAPWeDZ4cuuj1HRVpkM
-sq3iN/aKczzKYtw2LD0Ulq4b3616KUElyLmTBp9YRd5R6LiVGzs8eCivtS0TzuwN
-K6TUmHXwpv/aE6Vv0My56AL4Ah+cDuLZVgGIXV/uYNTgyGo7igMPtffIm2RtsQg=
-=lry2
------END PGP SIGNATURE-----
-
---Signature=_Tue__24_May_2011_13_42_16_+1000_nCJeb4GDaQLP9nNS--
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 6e63097..3d0c56a 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -98,7 +98,7 @@ __setup("nosoftlockup", nosoftlockup_setup);
+  * the thresholds with a factor: we make the soft threshold twice the amount of
+  * time the hard threshold is.
+  */
+-static int get_softlockup_thresh()
++static int get_softlockup_thresh(void)
+ {
+ 	return watchdog_thresh * 2;
+ }
+@@ -415,15 +415,13 @@ static void watchdog_nmi_disable(int cpu) { return; }
+ #endif /* CONFIG_HARDLOCKUP_DETECTOR */
+ 
+ /* prepare/enable/disable routines */
+-static int watchdog_prepare_cpu(int cpu)
++static void watchdog_prepare_cpu(int cpu)
+ {
+ 	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, cpu);
+ 
+ 	WARN_ON(per_cpu(softlockup_watchdog, cpu));
+ 	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	hrtimer->function = watchdog_timer_fn;
+-
+-	return 0;
+ }
+ 
+ static int watchdog_enable(int cpu)
+@@ -542,17 +540,16 @@ static int __cpuinit
+ cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ {
+ 	int hotcpu = (unsigned long)hcpu;
+-	int err = 0;
+ 
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+ 	case CPU_UP_PREPARE_FROZEN:
+-		err = watchdog_prepare_cpu(hotcpu);
++		watchdog_prepare_cpu(hotcpu);
+ 		break;
+ 	case CPU_ONLINE:
+ 	case CPU_ONLINE_FROZEN:
+ 		if (watchdog_enabled)
+-			err = watchdog_enable(hotcpu);
++			watchdog_enable(hotcpu);
+ 		break;
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	case CPU_UP_CANCELED:
