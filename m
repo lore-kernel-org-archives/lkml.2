@@ -1,68 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab1EXW6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 18:58:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63466 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053Ab1EXW6h (ORCPT
+	id S932902Ab1EXXAs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 19:00:48 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:57756 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab1EXXAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 18:58:37 -0400
-From: "Hans-Peter Jansen" <hpj@urpla.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: (Short?) merge window reminder
-Date: Wed, 25 May 2011 01:00:07 +0200
-User-Agent: KMail/1.9.10
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
-        "linux-fsdevel" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-        aufs-users@lists.sourceforge.net
-References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com> <20110523192056.GC23629@elte.hu> <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
-In-Reply-To: <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Tue, 24 May 2011 19:00:47 -0400
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
+        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
+        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
+        penberg@kernel.org, hpa@zytor.com,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+In-Reply-To: <20110524211644.GJ27634@elte.hu>
+References: <1306269105.21443.20.camel@dan> <20110524211644.GJ27634@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 19:00:38 -0400
+Message-ID: <1306278038.1921.5.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201105250100.08708.hpj@urpla.net>
-X-Provags-ID: V02:K0:++ayveSQbSleo76l7op9r8NMFsYK+g1k3RGBIwQCYvy
- buS745BiJlsY4OCMFgwZvzt1/2CbZs87ErxhEE5uhO3xK269kB
- ZU6L50qrtU8w/f+NFas5ym6c02sh9zrKDx4XAv5uYeDe9YAIpa
- LjhYneeO4TuiTGCPGKlw4GhfECFPZ23mWAK4tfm7YzRGFLZMTq
- 74rcmZMRPN+6GM0lB2+s9mxtCBP3C32QRK1S4fYU2Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 May 2011, 22:33:48 Linus Torvalds wrote:
-> On Mon, May 23, 2011 at 12:20 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> > I really hope there's also a voice that tells you to wait until .42
-> > before cutting 3.0.0! :-)
->
-> So I'm toying with 3.0 (and in that case, it really would be "3.0",
-> not "3.0.0" - the stable team would get the third digit rather than
-> the fourth one.
->
-> But no, it wouldn't be for 42. Despite THHGTTG, I think "40" is a
-> fairly nice round number.
->
-> There's also the timing issue - since we no longer do version numbers
-> based on features, but based on time, just saying "we're about to
-> start the third decade" works as well as any other excuse.
+On Tue, 2011-05-24 at 23:16 +0200, Ingo Molnar wrote:
+> * Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+> 
+> > Comments/Questions:
+> > 
+> > * Since RDRAND is relatively new, only the most recent version of
+> > binutils supports assembling it.  To avoid breaking builds for people
+> > who use older toolchains but want this feature, I hardcoded the opcodes.
+> > If anyone has a better approach, please let me know.
+> 
+> This is generally the best approach. Maybe mention it here:
+> 
+> > +	/* rdrand %eax */
+> > +	.byte	0x0f, 0xc7, 0xf0
+> 
+> ... that this is done to work on older GAS as well. Putting that into 
+> changelogs is good, putting it into comments is better.
+> 
 
-But hey, do you really want to release a Linux 3.0 kernel without 
-serious layered filesystem functionality? 
+Will do.
 
-Shame on you,
-Pete
 
-PS.: Sorry for being such a pest in this regard, but filesystem layering 
-is one of the most important missing bits to excel out of the box in
- * live distros 
- * diskless computing
- * flash based systems
-Even the linux based commercial PBX solution (mobydick), I bought, ships 
-with it.
-PPS.: Bad timing, I know, but I'm glad, that Al is back to life again..
+> > * In order to increase the entropy for the randomized base, I changed
+> > the default value of CONFIG_PHYSICAL_ALIGN back to 2mb.  It had
+> > previously been raised to 16mb as a hack so that relocatable kernels
+> > wouldn't load below that minimum.  I address this by changing the
+> > meaning of CONFIG_PHYSICAL_START such that it now represents a minimum
+> > address that relocatable kernels can be loaded at (rather than being
+> > ignored by relocatable kernels).  So, if a relocatable kernel determines
+> > it should be loaded at an address below CONFIG_PHYSICAL_START (which
+> > defaults to 16mb), I just bump it up.
+> 
+> This would need a real fix, right? The PHYSICAL_ALIGN hack looks worth fixing 
+> in its own right.
+> 
+
+I'm not sure of a better way to do this than what I've done, which is
+essentially introduce a lower bound on the start location rather than
+restricting the alignment.  Suggestions welcome.
+
+> > * CONFIG_RANDOMIZE_BASE automatically sets the default value of kptr_restrict 
+> > and dmesg_restrict to 1, since it's nonsensical to use this without the other 
+> > two.  I considered removing CONFIG_SECURITY_DMESG_RESTRICT altogether (it 
+> > currently sets the default value for dmesg_restrict), but just in case 
+> > distros want to keep the CONFIG as a toggle switch but don't want to use 
+> > CONFIG_RANDOMIZE_BASE, I kept it around.  So, now CONFIG_RANDOMIZE_BASE sets 
+> > the default value for CONFIG_SECURITY_DMESG_RESTRICT.
+> 
+> No, the right solution is what i suggested a few mails ago: /proc/kallsyms (and 
+> other RIP printing places) should report the non-randomized RIP.
+> 
+> That way we do not have to change the kptr_restrict default and tools will 
+> continue to work ...
+> 
+
+Ok, I'll do it this way, and leave the kptr_restrict default to 0.  But
+I still think having the dmesg_restrict default depend on randomization
+makes sense, since kernel .text is explicitly revealed in the syslog.
+
+> > * x86-64 is still "to-do". Because it calculates the kernel text address 
+> > twice, this may be a little trickier.
+> 
+> Note that 64-bit is obviously a must-have condition for the eventual acceptance 
+> of this patch.
+
+Of course, just wanted early feedback.
+
+> 
+> > * Finding a middle ground instead of the current "all-or-nothing" behavior of 
+> > kptr_restrict that allows perf users to use this feature is future work.
+> 
+> Well, for perf we need to transform back the RIPs that get passed along in the 
+> stack-dump/call-chain code, see:
+> 
+>  arch/x86/kernel/dumpstack_64.c
+>  arch/x86/kernel/dumpstack.c
+>  arch/x86/kernel/dumpstack_32.c
+> 
+> That, combined with /proc/kallsyms unrandomization makes 'perf top' will just 
+> work and produce non-randomized RIPs.
+> 
+> The canonical RIP to report is the one that the kernel would have if it was 
+> loaded non-randomized.
+> 
+
+Will do.
+
+> > * Tested by repeatedly booting and observing kallsyms output on both i386.  
+> > Passed the "looks random to me" test, and saw no bad behavior. Tested that 
+> > changing CONFIG_PHYSICAL_ALIGN to 2mb still boots and runs fine on amd64.
+> 
+> Please run it over rngtest to measure how much true randomness is in it, on 
+> your testbox.
+> 
+
+Will do.
+
+> > * Could use testing of CPU hotplugging and suspend/resume.
+> 
+> and kexec/crashdump. and perf ;-)
+> 
+
+Will do.
+
+Thanks very much for the feedback.
+
