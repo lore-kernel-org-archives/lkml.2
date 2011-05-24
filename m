@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab1EXSmo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:42:44 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60985 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214Ab1EXSmm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:42:42 -0400
-Date: Tue, 24 May 2011 14:42:38 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Grant Likely <grant.likely@secretlab.ca>
-cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] ARM Device tree support
-In-Reply-To: <BANLkTiknh4nCviohecbcJEiWnSW-JdMxDw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1105241435550.3207@xanadu.home>
-References: <BANLkTiknh4nCviohecbcJEiWnSW-JdMxDw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757372Ab1EXSnD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:43:03 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:57964 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755214Ab1EXSnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 14:43:01 -0400
+X-ASG-Debug-ID: 1306262579-01de28096b62890001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DDBFC30.6030201@fusionio.com>
+Date: Tue, 24 May 2011 20:42:56 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [GIT PULL] Start of removal of legacy parallel interfaces for
+  3.0
+References: <4DDBF40E.7020003@fusionio.com> <BANLkTi=sYVpvEwShbhC65qfaA0Jt3rEjsQ@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] Start of removal of legacy parallel interfaces for
+  3.0
+In-Reply-To: <BANLkTi=sYVpvEwShbhC65qfaA0Jt3rEjsQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1306262579
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64662
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 May 2011, Grant Likely wrote:
-
-> Hi Russell,
+On 2011-05-24 20:37, Linus Torvalds wrote:
+> On Tue, May 24, 2011 at 11:08 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>
+>> With the 3.0 kernel approaching, now is a great time to get rid of some
+>> legacy bagage. And what better part to start with than the old IDE code.
+>> Parallel interfaces are so 1990's, we can't be seen with those on a
+>> fancy new kernel version.
 > 
-> How do you want to handle merging the ARM DT support?  Do you want to
-> pull it into your tree, or would you like me to ask Linus to pull
-> directly?  As you can see, It does include a couple of pre-requisite
-> cross-arch cleanups that I normally push to Linus directly.
+> No.
+> 
+> Guys. Really.
+> 
+> Any version numbering change is *not* an excuse to drop any old stuff,
+> or do anything new and exciting.
 
-I don't think that Linus would object to you pushing that to him 
-directly, given that Russell has already agreed to those patches going 
-in this cycle.
+Boy, you guys sure are humorless. I would've thought the reference to
+killing SCSI next would be a good clue.
 
-Whatever the path, it is however important that they do get in _this_ 
-cycle.  Most people are just too nervous committing themselves to DT if 
-the basic stuff doesn't hit mainline.  And if we are serious about 
-_trying_ to change the state of things in ARM land by going the DT route 
-then we must have this in mainline as soon as possible.
+So we can't kill x86 32-bit either?
 
+-- 
+Jens Axboe
 
-Nicolas
