@@ -1,93 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab1EXPkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 11:40:39 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38425 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754455Ab1EXPkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 11:40:36 -0400
-Date: Tue, 24 May 2011 17:40:20 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>, linux-kernel@vger.kernel.org,
-        fbuihuu@gmail.com, paulus@samba.org, acme@redhat.com
-Subject: Re: perf: regression with PERF_EVENT_IOC_REFRESH
-Message-ID: <20110524154020.GA26516@elte.hu>
-References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>
- <1306182141.2497.5.camel@laptop>
- <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu>
- <1306233036.2497.15.camel@laptop>
- <alpine.DEB.2.00.1105241041490.10575@cl320.eecs.utk.edu>
- <1306249830.18455.41.camel@twins>
+	id S1755890Ab1EXPkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 11:40:35 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:56994 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab1EXPkd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 11:40:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=SU0Z6fNN8Bt6QdtAQudQowe0EnaWJeM3hnW6ULMJ036SjDxl66iS6zww+Mxt4439U+
+         /e9G8p7QJfmjbA+VrdvgZG2XxC6qTd2x34K0Gyx+7gNgeB+OfwOPiT+Zo/9VtKp8MFnW
+         gWIEUyo1oenih75BUStGgtpdTnUrcC8LNiPUU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306249830.18455.41.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1306238657-30089-1-git-send-email-vinod.koul@intel.com>
+References: <1306238657-30089-1-git-send-email-vinod.koul@intel.com>
+Date: Tue, 24 May 2011 17:40:32 +0200
+X-Google-Sender-Auth: vZcie7A7j9_zRMw22R4CIqyxxQs
+Message-ID: <BANLkTikDPeEFWdsVQ=Ak8jXEXsC-+uoOaw@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: Add API documentation for slave dma usage
+From: Per Forlin <per.forlin@linaro.org>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dan <dan.j.williams@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Vinod,
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> On Tue, 2011-05-24 at 11:04 -0400, Vince Weaver wrote:
+On Tue, May 24, 2011 at 2:04 PM, Koul, Vinod <vinod.koul@intel.com> wrote:
+> From: Vinod Koul <vinod.koul@intel.com>
 >
-> > 2.6.37, 2.6.38, or 2.6.39 then it would be silly to do it just for
-> > 2.6.40.
+> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+> ---
+>  Documentation/dma-slave-api.txt |   74 +++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 74 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/dma-slave-api.txt
+I suggest putting this in subsection of dmaengine.txt instead.
+dmaengine.txt would be the natural place to look at.
 
-No, this commit was added in v2.6.38 so v2.6.37 should be fine.
+>
+> diff --git a/Documentation/dma-slave-api.txt b/Documentation/dma-slave-api.txt
+> new file mode 100644
+> index 0000000..7498807
+> --- /dev/null
+> +++ b/Documentation/dma-slave-api.txt
+> @@ -0,0 +1,74 @@
+> +                    Slave DMA API Guide
+> +                    ===================
+> +
+> +                Vinod Koul <vinod dot koul at intel.com>
+> +
+> +This is a guide to device driver writers on how to use the Slave-DMA API of the
+> +DMA Engine. This is applicable only for slave DMA usage and not async tx. For
+> +the async tx usage of DMA Engine please see
+> +Documentation/crypto/async-tx-api.txt
+> +
+> +The slave DMA usage consists of following steps
+> +1. Allocate a DMA slave channel
+> +2. Set slave and controller specific parameters
+> +3. Get a descriptor for transaction
+> +4. Submit the transaction and wait for callback notification
+> +
+> +1. Allocate a DMA slave channel
+> +Channel allocation is slightly different in the slave DMA context, client
+> +drivers typically need a channel from a particular DMA controller only and even
+> +in some cases a specific channel is desired. To request a channel
+> +__dma_request_channel() API is used.
+> +
+> +Interface:
+> +struct dma_chan *dma_request_channel(dma_cap_mask_t mask,
+> +               dma_filter_fn filter_fn,
+> +               void *filter_param);
+> +where dma_filter_fn is defined as:
+> +typedef bool (*dma_filter_fn)(struct dma_chan *chan, void *filter_param);
+> +
+> +When the optional 'filter_fn' parameter is set to NULL dma_request_channel
+> +simply returns the first channel that satisfies the capability mask.  Otherwise,
+> +when the mask parameter is insufficient for specifying the necessary channel,
+> +the filter_fn routine can be used to disposition the available channels in the
+> +system. The filter_fn routine is called once for each free channel in the
+> +system.  Upon seeing a suitable channel filter_fn returns DMA_ACK which flags
+> +that channel to be the return value from dma_request_channel.  A channel
+> +allocated via this interface is exclusive to the caller, until
+> +dma_release_channel() is called.
+> +
+> +2. Set slave and controller specific parameters
+> +Next step is always to pass some specific information to the DMA driver. Most of
+> +the generic information which a slave DMA can use is in struct dma_slave_config.
+> +It allows the clients to specify DMA direction, DMA addresses, bus widths, DMA
+> +burst lengths etc. If some DMA controllers have more parameters to be sent then
+> +they should try to embed struct dma_slave_config in their controller specific
+> +structure. That gives flexibility to client to pass more parameters, if
+> +required.
+> +
+> +Interface:
+> +struct dma_async_tx_descriptor *(*chan->device->device_prep_dma_sg)(
+> +               struct dma_chan *chan,
+> +               struct scatterlist *dst_sg, unsigned int dst_nents,
+> +               struct scatterlist *src_sg, unsigned int src_nents,
+> +               unsigned long flags);
+> +struct dma_async_tx_descriptor *(*chan->device->device_prep_dma_cyclic)(
+> +               struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+> +               size_t period_len, enum dma_data_direction direction);
+> +
+> +4. Submit the transaction(s) and wait for callback notification when slave API
+> +is 3 above returns, the non NULL value would imply a "descriptor" for the
+> +transaction. These transaction(s) would need to be submitted which pushes them
+> +into queue in DMA driver. If DMA is idle then the first descriptor submit will
+> +be pushed to DMA and subsequent ones will be queued. On completion of the DMA
+> +operation the next in queue is submitted and a tasklet triggered. The tasklet
+> +would then call the client driver completion callback routine for notification,
+> +if set.
+> +
+Does submit really start the transfer as well? My interpretation of
+submit is that is only adds desc to a pending queue. When calling
+issue_pending all these descs will be schedule for DMA transfer. Calls
+to submit after this point will added to the pending queue again and
+not be issued until calling issue_pending once more.
 
-> Oh, I assumed it was recent and .39/.40 would suffice.
-
-Btw., how did it happen that the PAPI tests did not get run against upstream 
-over the course of about half a year, two full stable kernels released:
-
- Date:   Mon Mar 14 18:20:32 2011 -0700    Linux 2.6.38
- Date:   Wed May 18 21:06:34 2011 -0700    Linux 2.6.39
-
-?
-
-I'd suggest periodically running the PAPI tests on the perf development tree:
-
-  http://people.redhat.com/mingo/tip.git/README
-
-doing that would have caught this problem 6 months ago.
-
-The upstream policy is that regressions are generally recognized before the 
-next kernel gets released: i.e. in the stabilization period after -rc1, the 
-roughly two months until the final kernel gets released. That is the window 
-when we can still fix regressions relatively cheaply.
-
-Yes, there are exceptions, but if a piece of user-space code did not get tested 
-with upstream over months and months then that moves into the 'fix it if we 
-can' category - not a regression per se.
-
-So the upstream message is: we can only care about you if you care testing 
-upstream.
-
-So if it's easy to fix we can certainly fix this bug and mark it for a -stable 
-backport, but this is not a regression that got reported to us in any timely 
-manner.
-
-Btw., to get such assumptions tested more frequently than twice a year i'd 
-suggest moving these usecases into 'perf test' or so - that it gets run every 
-day:
-
- $ perf test
- 1: vmlinux symtab matches kallsyms: FAILED!
-
- 2: detect open syscall event: Ok
- 3: detect open syscall event on all cpus: Ok
- 4: read samples using the mmap interface: Ok
-
-Thanks,
-
-	Ingo
+Thanks for your initiative to document the slave parts of dmaegine.
+Per
