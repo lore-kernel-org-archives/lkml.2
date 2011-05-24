@@ -1,111 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab1EXIJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 04:09:49 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46752 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab1EXIJq (ORCPT
+	id S1754488Ab1EXILc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 04:11:32 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:58216 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102Ab1EXIL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 04:09:46 -0400
-Date: Tue, 24 May 2011 10:09:36 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Colin Cross <ccross@google.com>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH 0/4] Add a generic struct clk
-Message-ID: <20110524080936.GI20715@pengutronix.de>
-References: <1305876469.325655.313573683829.0.gpush@pororo>
- <BANLkTik=EFayZW61TgfOni-XML+tRLOcqw@mail.gmail.com>
- <20110524062620.GA22096@pengutronix.de>
- <BANLkTimEoCaKwJtpbQTDSEDydNkZ1BkKog@mail.gmail.com>
+	Tue, 24 May 2011 04:11:29 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Ingo Molnar <mingo@elte.hu>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Containers <containers@lists.osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
+References: <m11uzrvd26.fsf@fess.ebiederm.org>
+	<BANLkTim4q5dK6nOb=pVKbk1c8b-Nh_hBfA@mail.gmail.com>
+	<m1boyvpo9r.fsf@fess.ebiederm.org>
+	<1306048393.4092.8.camel@mulgrave.site>
+	<20110522084224.GA12279@elte.hu> <m1k4dgr35i.fsf@fess.ebiederm.org>
+	<1306221981.10201.8.camel@mulgrave.site>
+Date: Tue, 24 May 2011 01:11:19 -0700
+In-Reply-To: <1306221981.10201.8.camel@mulgrave.site> (James Bottomley's
+	message of "Tue, 24 May 2011 11:26:21 +0400")
+Message-ID: <m1aaeco6vs.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimEoCaKwJtpbQTDSEDydNkZ1BkKog@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:46:12 up 3 days, 21:25, 49 users,  load average: 0.71, 0.99, 0.99
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19AwTDmqav5brbacaRSshHHL6QleJimnmg=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 12:31:13AM -0700, Colin Cross wrote:
-> On Mon, May 23, 2011 at 11:26 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> > On Mon, May 23, 2011 at 04:12:24PM -0700, Colin Cross wrote:
-> >> >
-> >> >   tglx's plan is to create a separate struct clk_hwdata, which contains a
-> >> >   union of base data structures for common clocks: div, mux, gate, etc. The
-> >> >   ops callbacks are passed a clk_hw, plus a clk_hwdata, and most of the base
-> >> >   hwdata fields are handled within the core clock code. This means less
-> >> >   encapsulation of clock implementation logic, but more coverage of
-> >> >   clock basics through the core code.
-> >>
-> >> I don't think they should be a union, I think there should be 3
-> >> separate private datas, and three sets of clock ops, for the three
-> >> different types of clock blocks: rate changers (dividers and plls),
-> >> muxes, and gates.  These blocks are very often combined - a device
-> >> clock often has a mux and a divider, and clk_set_parent and
-> >> clk_set_rate on the same struct clk both need to work.
-> >
-> > The idea is to being able to propagate functions to the parent. It's
-> > very convenient for the implementation of clocks when they only
-> > implement either a divider, a mux or a gate. Combining all of these
-> > into a single clock leads to complicated clock trees and many different
-> > clocks where you can't factor out the common stuff.
-> 
-> That seems complicated.  You end up with lots of extra clocks (meaning
-> more boilerplate in the platform files) that have no meaning in the
-> system (what is the clock between the mux and the divider in Tegra's
-> i2c1 clock, it can never feed any devices), and you have to figure out
-> at the framework level when to propagate and when to error out.  I'm
-> not even sure you can always find the right place to stop propagating
-> - do you just keep going up until the set_parent callback succeeds, or
-> exists, or what?
+James Bottomley <James.Bottomley@HansenPartnership.com> writes:
 
-For the set_parent there would be no propagating at all. For set_rate I
-can imagine a flag in the generic clock which tells whether to propagate
-set_rate or not.
+> On Tue, 2011-05-24 at 00:03 -0700, Eric W. Biederman wrote:
+>> Ingo Molnar <mingo@elte.hu> writes:
+>> 
+>> > I agree with Linus's notion in this thread though, a core kernel change should 
+>> > generally not worry about hooking up rare-arch system calls (concentrate on the 
+>> > architectures that get tested most) - those are better enabled gradually 
+>> > anyway.
+>> 
+>> The way I read it he was complaining about my having parisc bits and
+>> asking for my branch to be merged before the parisc bits had been
+>> merged.  Which I credit as a fair complaint.  If I am going to depend on
+>> other peoples trees I should wait.
+>> 
+>> At the same time when I am busy looking for every possible source of
+>> trouble and putting code into net-next to detect pending conflicts,
+>> and when maintainers complain when I ask for review that my patches
+>> conflict with their patches.  Being a contentious developer I am
+                                         ^^^^^^^^^^^ conscientious
+I didn't realize it was possible to make that typo.
 
-> 
-> I think you can still factor out all the common code if you treat each
-> clock as a possible mux, divider, and gate combination.  Each part of
-> the clock is still just as abstractable as before - you can set the
-> rate_ops to be the generic single register divider implementation, and
-> the gate ops to be the generic single bit enable implementation.  The
-> idea of what a clock node is matches the HW design,
+>> inclined to do something.
+>
+> Right ... and the problem is that someone has to care, because the
+> conflict will show up in linux-next.  I think Stephen Rothwell would
+> appreciate us making his life easier rather than leaving it to him to
+> sort out the problems.
+>
+>> Now that the reality has sunk in that it means waiting for other peoples
+>> code to be merged before I request for my changes to be merged I don't
+>> think I will structure a tree that way again while I remember.
+>
+> Right.   This is quite a common occurrence in SCSI (mostly changes
+> entangled with block or libata).  If you don't feel comfortable running
+> a postmerge tree, just send me the bits and I'll do it (after all it
+> works either way around: I can pull in the syscalls and depend on your
+> tree rather than vice versa).
 
-The hardware design consists of only discrete rate changers (plls,
-dividers), muxes and gates. These are the only building blocks
-*every* hardware design has. I believe that many of the problems
-the current implementations have are due to the multiple building
-blocks stuffed into one clock. If you haven't already take a look
-at my i.MX5 clock patches:
+Well for the moment I don't see too many problems.  I sent another pull
+request to Linus earlier today now that your changes are in.  So I am
+hoping either Linus will pull my tree or someone will educate me on what
+he will Linus will accept.
 
-http://thread.gmane.org/gmane.linux.ports.arm.kernel/113631
+Right now my tree is tested and in a good state.  Heck I'm running it
+to send this email.  So I am reluctant to change anything without clear
+feedback.
 
-They need changes to fit onto the current patches and the rate
-propagation problem is not solved there, but the resulting clock
-data files are really short and nice to read. Furthermore it's easy
-to implement. Just look at the diagrams in the datasheet and go through
-them.
+James when you refer to a postmerge tree what are the dynamics/semantics
+usually associated with that?  Is this a tree that gets pulled a couple
+of times?  Once with the non-conflicting bits.  Another time when the
+bits it depends on have been merged?  Or is this a tree that gets pulled
+after the merge window entirely?
 
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Eric
