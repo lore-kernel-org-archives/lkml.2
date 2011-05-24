@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab1EXIq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 04:46:56 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59394 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab1EXIqz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 04:46:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=oyqKVObDRan42GEjkKbD4WSgCf6Bssa4ZIrwdeNu1tpjaGCSleqbWs7IxRri8dVbGM
-         RHnF8U80NTyCaFWEKp7QXaDUAoPgLyhciMBb8S2z7c5ui3de27VMeSf8+9gXFlsYfVpk
-         WM9nKEWuoyBEChyyE1xP5/USBpliVxsS02Z1w=
-MIME-Version: 1.0
-In-Reply-To: <4DDB0FB2.9050300@jp.fujitsu.com>
-References: <4DD61F80.1020505@jp.fujitsu.com>
-	<4DD6207E.1070300@jp.fujitsu.com>
-	<BANLkTinaHki1oA4O3+FsoPDtFTLfqwRadA@mail.gmail.com>
-	<4DDB0FB2.9050300@jp.fujitsu.com>
-Date: Tue, 24 May 2011 17:46:54 +0900
-Message-ID: <BANLkTinKm=m8zdPGN0Trpy4HtEFyxMYzPA@mail.gmail.com>
-Subject: Re: [PATCH 4/5] oom: don't kill random process
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
-        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755400Ab1EXJUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 05:20:24 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54159 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755147Ab1EXJUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 05:20:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,260,1304319600"; 
+   d="scan'208";a="484684"
+Subject: Re: [PATCH resend] dmaengine/dw_dmac: Update maintainer-ship
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        shiraz.hashim@st.com, armando.visconti@st.com, viresh.linux@gmail.com,
+        hskinnemoen@gmail.com
+In-Reply-To: <fd5b04cbce5c1051dee3faf0719f6db3ee706e60.1306226016.git.viresh.kumar@st.com>
+References: <fd5b04cbce5c1051dee3faf0719f6db3ee706e60.1306226016.git.viresh.kumar@st.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 14:16:55 +0530
+Message-ID: <1306226815.28926.322.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 10:53 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->>> +       /*
->>> +        * chosen_point==1 may be a sign that root privilege bonus is too
->>> large
->>> +        * and we choose wrong task. Let's recalculate oom score without
->>> the
->>> +        * dubious bonus.
->>> +        */
->>> +       if (protect_root&&  (chosen_points == 1)) {
->>> +               protect_root = 0;
->>> +               goto retry;
->>> +       }
->>
->> The idea is good to me.
->> But once we meet it, should we give up protecting root privileged
->> processes?
->> How about decaying bonus point?
->
-> After applying my patch, unprivileged process never get score-1. (note,
-> mapping
-> anon pages naturally makes to increase nr_ptes)
-
-Hmm, If I understand your code correctly, unprivileged process can get
-a score 1 by 3% bonus.
-So after all, we can get a chosen_point with 1.
-Why I get a chosen_point with 1 is as bonus is rather big, I think.
-So I would like to use small bonus than first iteration(ie, decay bonus).
-
->
-> Then, decaying don't make any accuracy. Am I missing something?
-
-Maybe I miss something.  :(
-
-
-
+On Tue, 2011-05-24 at 14:04 +0530, Viresh Kumar wrote:
+> Nobody is currently maintaining dw_dmac. We are using dw_dmac for SPEAr13xx and
+> are currently maintaining it. After discussing with Vinod, sending this patch to
+> update maintainer-ship of dw_dmac.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> ---
+>  MAINTAINERS                |    7 +++++++
+>  drivers/dma/dw_dmac.c      |    2 ++
+>  drivers/dma/dw_dmac_regs.h |    1 +
+>  include/linux/dw_dmac.h    |    1 +
+>  4 files changed, 11 insertions(+), 0 deletions(-)
+Am okay if Havard is...
 
 -- 
-Kind regards,
-Minchan Kim
+~Vinod
+
