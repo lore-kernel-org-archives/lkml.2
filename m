@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab1EXDlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 23:41:51 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47390 "EHLO smtps.tip.net.au"
+	id S1757220Ab1EXDmI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 23:42:08 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34235 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757011Ab1EXDlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 23:41:49 -0400
-Date: Tue, 24 May 2011 13:41:29 +1000
+	id S1757060Ab1EXDmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 23:42:05 -0400
+Date: Tue, 24 May 2011 13:42:03 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mandeep Singh Baines <msb@chromium.org>, Ingo Molnar <mingo@elte.hu>
-Subject: linux-next: build warning in Lunus' tree
-Message-Id: <20110524134129.8da27016.sfr@canb.auug.org.au>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (tile tree
+ related)
+Message-Id: <20110524134203.62d859c0.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__24_May_2011_13_41_29_+1000_+WiRM2v/H2dMuNO0"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__24_May_2011_13_41_29_+1000_+WiRM2v/H2dMuNO0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Chris,
 
-Hi all,
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
 
-In Linus' tree, today's linux-next build (sparc64 defconfig)
-produced this warning:
+In file included from arch/sparc/include/asm/siginfo.h:19,
+                 from include/linux/signal.h:5,
+                 from include/linux/sched.h:73,
+                 from arch/sparc/kernel/asm-offsets.c:13:
+include/linux/compat.h:401: error: expected ')' before 'ctx_id'
+include/linux/compat.h:406: error: expected ')' before 'ctx_id'
 
-kernel/watchdog.c:102: warning: function declaration isn't a prototype
+Caused by commit be84cb43833e ("compat: fixes to allow working with tile arch").
 
-Introduced by commit 4eec42f39204 ("watchdog: Change the default timeout
-and configure nmi watchdog period based").
+I added this patch for today:
 
---=20
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 24 May 2011 13:28:54 +1000
+Subject: [PATCH] compat: include aio_abi.h for aio_context_t
+
+fixes this build error on sparc64 (at least):
+
+In file included from arch/sparc/include/asm/siginfo.h:19,
+                 from include/linux/signal.h:5,
+                 from include/linux/sched.h:73,
+                 from arch/sparc/kernel/asm-offsets.c:13:
+include/linux/compat.h:401: error: expected ')' before 'ctx_id'
+include/linux/compat.h:406: error: expected ')' before 'ctx_id'
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/compat.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index 644e1a4..ddcb7db 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -13,6 +13,7 @@
+ #include <linux/socket.h>
+ #include <linux/if.h>
+ #include <linux/fs.h>
++#include <linux/aio_abi.h>	/* for aio_context_t */
+ 
+ #include <asm/compat.h>
+ #include <asm/siginfo.h>
+-- 
+1.7.5.1
+
+-- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__24_May_2011_13_41_29_+1000_+WiRM2v/H2dMuNO0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN2yjpAAoJEDMEi1NhKgbs0dsH/31Yti5QbaWV4PlYrLgnY58g
-b/siwNKbfMv9SPUCOAKxVMcqcveMiBGLJJswlWp5WBJ6mM4blgnjDb26G7egjcoj
-U8Uo9xRXdtpSUZ+Ku2fWeuDuoNFCBuaFea2Wty16eQxYz0CE3w2ljEA29AvVZ91D
-8LCNAXSfLgh4p50kxtnicIZN8ana54DVyOWL7LYEmI0X7MpkMDnntmrbvuzJzEdh
-sAa6g78T1AkzdHW7ZB33Jdzi57QElWOo7103ODyMyFdx/Vk5wCz3h9jes8W4QBhW
-ntsedyAJ9Mrd+Xwx+m2fF7BLvVA9tkdmDjikD0dsWkIYEVBeuEwbZr9PsCsEU9Y=
-=gYJZ
------END PGP SIGNATURE-----
-
---Signature=_Tue__24_May_2011_13_41_29_+1000_+WiRM2v/H2dMuNO0--
