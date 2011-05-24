@@ -1,96 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab1EXL2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 07:28:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63914 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab1EXL23 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 07:28:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=V7EiEdCJ1mxokwOVzaOR74eG5KR7OWjoWy1/a7ciDg0/Tcrz0pVUwBJYVbuaeOFOQ1
-         W89tpKY9Hy79Z1zl0o0dJ63958nwgPEmLY8TTqMrlA5AId05rEna93W9ct5upvu+WH5m
-         zrQm0/4Ovp+3RFcQ0eWfp9FWTWfjvGEULxTDY=
-Date: Tue, 24 May 2011 14:28:31 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] coretemp: Initialize sysfs attrs
-Message-ID: <20110524112831.GA5520@swordfish.minsk.epam.com>
+	id S1755404Ab1EXL35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 07:29:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46545 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754896Ab1EXL3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 07:29:55 -0400
+Date: Tue, 24 May 2011 14:29:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Krishna Kumar2 <krkumar2@in.ibm.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux390@de.ibm.com,
+        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
+Subject: Re: [PATCHv2 10/14] virtio_net: limit xmit polling
+Message-ID: <20110524112901.GB17087@redhat.com>
+References: <cover.1305846412.git.mst@redhat.com>
+ <aced8619c07018b5495f9ceb2c02d4fbf897a098.1305846412.git.mst@redhat.com>
+ <877h9kvlps.fsf@rustcorp.com.au>
+ <20110522121008.GA12155@redhat.com>
+ <87boyutbjg.fsf@rustcorp.com.au>
+ <20110523111900.GB27212@redhat.com>
+ <OFEED174CD.D3C9A726-ON6525789A.002661D5-6525789A.002B26ED@in.ibm.com>
+ <20110524091255.GB16886@redhat.com>
+ <OF69E520FD.340352AC-ON6525789A.003308A2-6525789A.0033F2DF@in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <OF69E520FD.340352AC-ON6525789A.003308A2-6525789A.0033F2DF@in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize sysfs attrs before device_create_file() call to suppress lockdep_init_map()
-warning:
+On Tue, May 24, 2011 at 02:57:43PM +0530, Krishna Kumar2 wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> wrote on 05/24/2011 02:42:55 PM:
+> 
+> > > > > To do this properly, we should really be using the actual number of
+> sg
+> > > > > elements needed, but we'd have to do most of xmit_skb beforehand so
+> we
+> > > > > know how many.
+> > > > >
+> > > > > Cheers,
+> > > > > Rusty.
+> > > >
+> > > > Maybe I'm confused here.  The problem isn't the failing
+> > > > add_buf for the given skb IIUC.  What we are trying to do here is
+> stop
+> > > > the queue *before xmit_skb fails*. We can't look at the
+> > > > number of fragments in the current skb - the next one can be
+> > > > much larger.  That's why we check capacity after xmit_skb,
+> > > > not before it, right?
+> > >
+> > > Maybe Rusty means it is a simpler model to free the amount
+> > > of space that this xmit needs. We will still fail anyway
+> > > at some time but it is unlikely, since earlier iteration
+> > > freed up atleast the space that it was going to use.
+> >
+> > Not sure I nderstand.  We can't know space is freed in the previous
+> > iteration as buffers might not have been used by then.
+> 
+> Yes, the first few iterations may not have freed up space, but
+> later ones should. The amount of free space should increase
+> from then on, especially since we try to free double of what
+> we consume.
 
-[    3.653628] WARNING: at kernel/lockdep.c:2885 lockdep_init_map+0xea/0x43c()
-[    3.653698] Modules linked in:
-[    3.654835] Pid: 1, comm: swapper Not tainted 2.6.39-dbg-git8-05624-g46187f8 #576
-[    3.656014] Call Trace:
-[    3.657139]  [<ffffffff8103e4b4>] warn_slowpath_common+0x7e/0x96
-[    3.658298]  [<ffffffff8103e4e1>] warn_slowpath_null+0x15/0x17
-[    3.659460]  [<ffffffff8106d7b9>] lockdep_init_map+0xea/0x43c
-[    3.660616]  [<ffffffff81163c1a>] sysfs_add_file_mode+0x5d/0xa8
-[    3.661785]  [<ffffffff81163c71>] sysfs_add_file+0xc/0xe
-[    3.662929]  [<ffffffff81163d26>] sysfs_create_file+0x23/0x25
-[    3.664045]  [<ffffffff813724d1>] device_create_file+0x14/0x16
-[    3.665172]  [<ffffffff81460ed4>] coretemp_probe+0xf9/0x185
-[    3.666306]  [<ffffffff8137638e>] platform_drv_probe+0x12/0x14
-[    3.667420]  [<ffffffff81375321>] driver_probe_device+0xb0/0x14b
-[    3.668542]  [<ffffffff8137546d>] __device_attach+0x35/0x3a
-[    3.669710]  [<ffffffff81375438>] ? __driver_attach+0x7c/0x7c
-[    3.670816]  [<ffffffff8137426b>] bus_for_each_drv+0x54/0x88
-[    3.671921]  [<ffffffff81375231>] device_attach+0x77/0x9b
-[    3.673027]  [<ffffffff81374aef>] bus_probe_device+0x22/0x39
-[    3.674137]  [<ffffffff81373235>] device_add+0x3c1/0x550
-[    3.675249]  [<ffffffff81371ed9>] ? dev_set_name+0x3c/0x3e
-[    3.676371]  [<ffffffff813769f3>] platform_device_add+0x10c/0x156
-[    3.677491]  [<ffffffff8146af9c>] get_core_online+0xab/0x16e
-[    3.678608]  [<ffffffff81ad8070>] coretemp_init+0x4b/0x80
-[    3.679724]  [<ffffffff81ad8025>] ? hwmon_init+0xee/0xee
-[    3.680853]  [<ffffffff8100020a>] do_one_initcall+0x7a/0x13c
-[    3.681975]  [<ffffffff81aaac74>] kernel_init+0xe1/0x15b
-[    3.683081]  [<ffffffff8147e4e4>] kernel_thread_helper+0x4/0x10
-[    3.684174]  [<ffffffff8102d48c>] ? finish_task_switch+0x76/0xf0
-[    3.685266]  [<ffffffff81477918>] ? retint_restore_args+0x13/0x13
-[    3.686356]  [<ffffffff81aaab93>] ? start_kernel+0x3ee/0x3ee
-[    3.687425]  [<ffffffff8147e4e0>] ? gs_change+0x13/0x13
-[    3.688489] ---[ end trace 7392ad3e6a92ae39 ]---
+Hmm. This is only an upper limit on the # of entries in the queue.
+Assume that vq size is 4 and we transmit 4 enties without
+getting anything in the used ring. The next transmit will fail.
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+So I don't really see why it's unlikely that we reach the packet
+drop code with your patch.
 
----
+> > > The
+> > > code could become much simpler:
+> > >
+> > > start_xmit()
+> > > {
+> > > {
+> > >         num_sgs = get num_sgs for this skb;
+> > >
+> > >         /* Free enough pending old buffers to enable queueing this one
+> */
+> > >         free_old_xmit_skbs(vi, num_sgs * 2);     /* ?? */
+> > >
+> > >         if (virtqueue_get_capacity() < num_sgs) {
+> > >                 netif_stop_queue(dev);
+> > >                 if (virtqueue_enable_cb_delayed(vi->svq) ||
+> > >                     free_old_xmit_skbs(vi, num_sgs)) {
+> > >                         /* Nothing freed up, or not enough freed up */
+> > >                         kfree_skb(skb);
+> > >                         return NETDEV_TX_OK;
+> >
+> > This packet drop is what we wanted to avoid.
+> 
+> Please see below on returning NETDEV_TX_BUSY.
+> 
+> >
+> > >                 }
+> > >                 netif_start_queue(dev);
+> > >                 virtqueue_disable_cb(vi->svq);
+> > >         }
+> > >
+> > >         /* xmit_skb cannot fail now, also pass 'num_sgs' */
+> > >         xmit_skb(vi, skb, num_sgs);
+> > >         virtqueue_kick(vi->svq);
+> > >
+> > >         skb_orphan(skb);
+> > >         nf_reset(skb);
+> > >
+> > >         return NETDEV_TX_OK;
+> > > }
+> > >
+> > > We could even return TX_BUSY since that makes the dequeue
+> > > code more efficient. See dev_dequeue_skb() - you can skip a
+> > > lot of code (and avoid taking locks) to check if the queue
+> > > is already stopped but that code runs only if you return
+> > > TX_BUSY in the earlier iteration.
+> > >
+> > > BTW, shouldn't the check in start_xmit be:
+> > >    if (likely(!free_old_xmit_skbs(vi, 2+MAX_SKB_FRAGS))) {
+> > >       ...
+> > >    }
+> > >
+> > > Thanks,
+> > >
+> > > - KK
+> >
+> > I thought we used to do basically this but other devices moved to a
+> > model where they stop *before* queueing fails, so we did too.
+> 
+> I am not sure of why it was changed, since returning TX_BUSY
+> seems more efficient IMHO.
+> qdisc_restart() handles requeue'd
+> packets much better than a stopped queue, as a significant
+> part of this code is skipped if gso_skb is present
 
- drivers/hwmon/coretemp.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+I think this is the argument:
+http://www.mail-archive.com/virtualization@lists.linux-foundation.org/msg06364.html
 
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 9577c43..d9e70ac 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -350,6 +350,7 @@ static int get_pkg_tjmax(unsigned int cpu, struct device *dev)
- 
- static int create_name_attr(struct platform_data *pdata, struct device *dev)
- {
-+	sysfs_attr_init(&pdata->name_attr.attr);
- 	pdata->name_attr.attr.name = "name";
- 	pdata->name_attr.attr.mode = S_IRUGO;
- 	pdata->name_attr.show = show_name;
-@@ -372,6 +373,7 @@ static int create_core_attrs(struct temp_data *tdata, struct device *dev,
- 	for (i = 0; i < MAX_ATTRS; i++) {
- 		snprintf(tdata->attr_name[i], CORETEMP_NAME_LENGTH, names[i],
- 			attr_no);
-+		sysfs_attr_init(&tdata->sd_attrs[i].dev_attr.attr);
- 		tdata->sd_attrs[i].dev_attr.attr.name = tdata->attr_name[i];
- 		tdata->sd_attrs[i].dev_attr.attr.mode = S_IRUGO;
- 		tdata->sd_attrs[i].dev_attr.show = rd_ptr[i];
 
+> (qdisc
+> will eventually start dropping packets when tx_queue_len is
+> exceeded anyway).
+> 
+> Thanks,
+> 
+> - KK
+
+tx_queue_len is a pretty large buffer so maybe no.
+I think the packet drops from the scheduler queue can also be
+done intelligently (e.g. with CHOKe) which should
+work better than dropping a random packet?
+
+-- 
+MST
