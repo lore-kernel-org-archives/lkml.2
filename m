@@ -1,194 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab1EXSQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:16:15 -0400
-Received: from mail.hsia.com.cn ([61.152.154.60]:49743 "EHLO hsia.com.cn"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755633Ab1EXSQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:16:14 -0400
-X-Greylist: delayed 3194 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 May 2011 14:16:07 EDT
-Date: Wed, 25 May 2011 01:22:31 +0800
-From: Richard Zhao <linuxzsc@hsia.com.cn>
-To: Colin Cross <ccross@google.com>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH 0/4] Add a generic struct clk
-Message-ID: <20110524172231.GA2764@b20223-02.ap.freescale.net>
-References: <1305876469.325655.313573683829.0.gpush@pororo>
- <1305876469.325655.313573683829.0.gpush@pororo>
- <BANLkTik=EFayZW61TgfOni-XML+tRLOcqw@mail.gmail.com>
+	id S932111Ab1EXRZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 13:25:00 -0400
+Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:55563 "EHLO
+	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab1EXRY7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 13:24:59 -0400
+X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
+Message-ID: <4DDBE9DC.5040607@ise.pw.edu.pl>
+Date: Tue, 24 May 2011 19:24:44 +0200
+From: wzab <wzab@ise.pw.edu.pl>
+Reply-To: wzab@ise.pw.edu.pl
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTik=EFayZW61TgfOni-XML+tRLOcqw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Reply-To: <richard@b20223-02.ap.freescale.net>
+To: linux-kernel@vger.kernel.org
+CC: "Zabolotny, Wojciech" <wzab@ise.pw.edu.pl>
+Subject: Kernel panic when booting 2.6.39
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 04:12:24PM -0700, Colin Cross wrote:
-> On Fri, May 20, 2011 at 12:27 AM, Jeremy Kerr <jeremy.kerr@canonical.com> wrote:
-> > [This series was originally titled 'Add a common struct clk', but
-> > the goals have changed since that first set of patches. We're now aiming
-> > for a more complete generic clock infrastructure, rather than just
-> > abstracting struct clk]
-> >
-> > [This series still needs work, see the TODO section below]
-> >
-> > [Totally RFC at the moment]
-> >
-> > Hi all,
-> >
-> > These patches are an attempt to allow platforms to share clock code. At
-> > present, the definitions of 'struct clk' are local to platform code,
-> > which makes allocating and initialising cross-platform clock sources
-> > difficult, and makes it impossible to compile a single image containing
-> > support for two ARM platforms with different struct clks.
-> >
-> > The three patches are for the architecture-independent kernel code,
-> > introducing the common clk infrastructure. The changelog for the first
-> > patch includes details about the new clock definitions.
-> >
-> > The second patch implements clk_set_rate, and in doing so adds
-> > functionality to walk the clock tree in both directions.
-> >
-> > clk_set_parent is left unimplemented, see TODO below for why.
-> >
-> > The third and fourth patches provide some basic clocks (fixed-rate and
-> > gated), mostly to serve as an example of the hardware implementation.
-> > I'm intending to later provide similar base clocks for mux and divider
-> > hardware clocks.
-> >
-> > Many thanks to the following for their input:
-> >  * Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> >  * Thomas Gleixner <tglx@linutronix.de>
-> >  * Ben Dooks <ben-linux@fluff.org>
-> >  * Baruch Siach <baruch@tkos.co.il>
-> >  * Russell King <linux@arm.linux.org.uk>
-> >  * Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> >  * Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-> >  * Vincent Guittot <vincent.guittot@linaro.org>
-> >  * Sascha Hauer <s.hauer@pengutronix.de>
-> >  * Ryan Mallon <ryan@bluewatersys.com>
-> >  * Colin Cross <ccross@google.com>
-> >  * Jassi Brar <jassisinghbrar@gmail.com>
-> >  * Saravana Kannan <skannan@codeaurora.org>
-> 
-> I have a similar set of patches I was working on that handles a little
-> more of the common code than these.  I can post them if you want, but
-> for now I'll just point out where I had different ideas, and not muddy
-> the waters with conflicting patches.
-> 
-> > TODO:
-> >
-> >  * Need to figure out the locking around clk_set_parent. Changing the in-kernel
-> >   clock topology requires acquiring both the mutex (to prevent against races
-> >   with clk_prepare, which may propagate to the parent clock) and the spinlock
-> >   (to prevent the same race with clk_enable).
-> >
-> >   However, we should also be changing the hardware clock topology in sync with
-> >   the in-kernel clock topology, which would imply that both locks *also* need
-> >   to be held while updating the parent in the hardware (ie, in
-> >   clk_hw_ops->set_parent) too.  However, I believe some platform clock
-> >   implementations may require this callback to be able to sleep. Comments?
-> 
-> This sequence is the best I could come up with without adding a
-> temporary 2nd parent:
-> 1. lock prepare mutex
-Maybe tell child clocks "I'm going to change clock rate, please stop work if needed"
-> 2. call prepare on the new parent if prepare_count > 0
-> 3. lock the enable spinlock
-> 4. call enable on the new parent if enable_count > 0
-> 5. change the parent pointer to the new parent
-> 6. unlock the spinlock
-> 7. call the set_parent callback
-Why do it need to sleep if it only set some hw registers?
-> 8. lock the enable spinlock
-> 9. call disable on the old parent iff you called enable on the new
-> parent (enable_count may have changed)
-> 10. unlock the enable spinlock
-> 11. call unprepare on the old parent if prepare_count
-propagate rate here and also tell child clocks "rate changed already, change your
-parameters and go on to work".
-> 12. unlock prepare mutex
-> 
-> The only possible problem I see is that if a clock starts disabled at
-> step 1., and clk_enable is called on it between steps 6 and 7,
-> clk_enable will return having enabled the new parent, but the clock is
-> still running off the old parent.  As soon as the clock gets switched
-> to the new parent, the clock will be properly enabled.  I don't see
-> this as a huge problem - calling clk_set_parent on a clock while it is
-> enabled may not even work without causing glitches on some platforms.
-some do be glitch free, especially for cpu clock parents.
-> 
-> I guess the only way around it would be to store a temporary
-> "new_parent" pointer between steps 5 and 9, and have
-> clk_enable/disable operate on both the current parent and the new
-> parent.  They would also need to refcount the extra enables separately
-> to undo on the old parent.
-> 
-> >  * tglx and I have been discussing different ways of passing clock information
-> >   to the clock hardware implementation. I'm proposing providing a base 'struct
-> >   clk_hw', which implementations subclass by wrapping in their own structure
-> >   (or one of a set of simple 'library' structures, like clk_hw_mux or
-> >   clk_hw_gate).  The clk_hw base is passed as the first argument to all
-> >   clk_hw_ops callbacks.
-> >
-> >   tglx's plan is to create a separate struct clk_hwdata, which contains a
-> >   union of base data structures for common clocks: div, mux, gate, etc. The
-> >   ops callbacks are passed a clk_hw, plus a clk_hwdata, and most of the base
-> >   hwdata fields are handled within the core clock code. This means less
-> >   encapsulation of clock implementation logic, but more coverage of
-> >   clock basics through the core code.
-> 
-> I don't think they should be a union, I think there should be 3
-> separate private datas, and three sets of clock ops, for the three
-> different types of clock blocks: rate changers (dividers and plls),
-> muxes, and gates.  These blocks are very often combined - a device
-> clock often has a mux and a divider, and clk_set_parent and
-> clk_set_rate on the same struct clk both need to work.
-> 
-> >   tglx, could you send some details about your approach? I'm aiming to refine
-> >   this series with the good bits from each technique.
-> >
-> >  * The clock registration code probably needs work. This is the domain
-> >   of the platform/board maintainers, any wishes here?
-When clock init, data in struct clk may not be synced with hw registers. After
-enabled minimal needed clk (cpu, core bus etc), we need sync the whole tree,
-disable zero enable_count clocks, set correct .rate ... . The sync function
-is also common code, right? but not have to be called all times I think.
+When I'm booting one of my machines with the newest 2.6.39 kernel, I 
+usually get the kernel panic. the system freezes completely, so that 
+even panic messages are not logged.
+I've managed to record them using serial console.
 
-Thanks
-Richard
-> >
-> > Cheers,
-> >
-> >
-> > Jeremy
-> >
-> > --
-> >
-> > ---
-> > Jeremy Kerr (4):
-> >      clk: Add a generic clock infrastructure
-> >      clk: Implement clk_set_rate
-> >      clk: Add fixed-rate clock
-> >      clk: Add simple gated clock
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+udevd[1022]: SYSFS{}= will be removed in a future udev version, please 
+use ATTR{}= to match the event devicpci_hotplug: PCI Hot Plug PCI Core 
+version: 0.5
+e, or ATTRS{}= t------------[ cut here ]------------
+------------[ cut here ]------------
+BUG: unable to handle kernel NULL pointer dereference at 0000002b
+IP: [<c05db4a0>] 0xc05db49f
+*pde = 00000000
+Oops: 0002 [#1] PREEMPT SMP
+last sysfs file: /sys/devices/virtual/tty/ptyua/uevent
+Modules linked in: processor(+) usbcore(+) pci_hotplug(+) unix
+
+Pid: 1050, comm: modprobe Not tainted 2.6.39 #2 
+/D865GBF
+EIP: 0000:[<c05db4a0>] EFLAGS: 00000001 CPU: 0
+EIP is at 0xc05db4a0
+EAX: c02e0568 EBX: c02e0550 ECX: c0267066 EDX: c02e04f9
+ESI: c05db4a0 EDI: 0000002d EBP: 00000025 ESP: f6253c50
+  DS: da92 ES: 0001 FS: ccdb GS: 0033 SS: 0068
+Process modprobe (pid: 1050, ti=f6252000 task=f58cf4e0 task.ti=f5a40000)
+Stack:
+  c02e0b89 c02e0550 00000046 c05db4a0 00000007 c05bda92 00000025 c052fbe0
+  00005d92 00000025 c053cfd4 c013509e 00005d92 00005ddf 00005db7 00001db6
+  c0135215 00000096 ffffc000 0000002b 00000003 c05bfde8 00000000 c013559b
+Call Trace:
+  [<c02e0b89>] ? serial8250_console_write+0xa9/0x150
+  [<c02e0550>] ? wait_for_xmitr+0x80/0x80
+  [<c013509e>] ? __call_console_drivers+0x6e/0x80
+  [<c0135215>] ? console_unlock+0xd5/0x1b0
+  [<c013559b>] ? vprintk+0x19b/0x3f0
+  [<c04121e9>] ? _raw_spin_lock_irqsave+0x19/0x40
+  [<c013097f>] ? sub_preempt_count+0x6f/0xa0
+  [<c0265d85>] ? number.clone.1+0x335/0x350
+  [<c0121a30>] ? vmalloc_sync_all+0xf0/0xf0
+  [<c040f9c1>] ? printk+0x17/0x1e
+  [<c0134c2f>] ? warn_slowpath_common+0x2f/0xb0
+  [<c0121a30>] ? vmalloc_sync_all+0xf0/0xf0
+  [<c0411f4c>] ? _raw_spin_unlock+0xc/0x30
+  [<c0134ccb>] ? warn_slowpath_null+0x1b/0x20
+  [<c0411f4c>] ? _raw_spin_unlock+0xc/0x30
+  [<c03012f6>] ? get_device_parent.clone.12+0x106/0x160
+  [<c01a4013>] ? kmem_cache_alloc+0x83/0x90
+  [<c030181a>] ? device_add+0x8a/0x5b0
+  [<c0125af0>] ? complete_all+0x40/0x60
+  [<c01308f8>] ? get_parent_ip+0x8/0x20
+  [<c013097f>] ? sub_preempt_count+0x6f/0xa0
+  [<c0411f1e>] ? _raw_spin_unlock_irqrestore+0xe/0x30
+  [<c035e218>] ? thermal_cooling_device_register+0xc8/0x220
+  [<f82f2082>] ? acpi_processor_add+0x3b6/0x442 [processor]
+  [<c0299e6f>] ? acpi_device_probe+0x34/0xe7
+  [<c0303ba5>] ? driver_probe_device+0x65/0x160
+  [<c029a23f>] ? acpi_match_device_ids+0x27/0x4d
+  [<c0303d19>] ? __driver_attach+0x79/0x80
+  [<c0303ca0>] ? driver_probe_device+0x160/0x160
+  [<c0302f0b>] ? bus_for_each_dev+0x4b/0x70
+  [<c0299daf>] ? acpi_device_hid+0x13/0x13
+  [<c0303906>] ? driver_attach+0x16/0x20
+  [<c0303ca0>] ? driver_probe_device+0x160/0x160
+  [<c030356c>] ? bus_add_driver+0x9c/0x230
+  [<c0299daf>] ? acpi_device_hid+0x13/0x13
+  [<c03041af>] ? driver_register+0x5f/0x100
+  [<c040f9c1>] ? printk+0x17/0x1e
+  [<f830c05a>] ? acpi_processor_init+0x5a/0xb7 [processor]
+  [<c01011f3>] ? do_one_initcall+0x33/0x170
+  [<c019d9e8>] ? __vunmap+0xa8/0xe0
+  [<f830c000>] ? 0xf830bfff
+  [<c0163893>] ? sys_init_module+0x123/0x1960
+  [<c0412b90>] ? sysenter_do_call+0x12/0x26
+Code: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 <a9> aa 
+00 00 f8 03 00 00 00 00 00 00 50 ff 2d c0 60 ff 2d c0 00
+EIP: [<c05db4a0>] 0xc05db4a0 SS:ESP 0068:f6253c50
+CR2: 000000000000002b
+---[ end trace 89983478aa9ce18f ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+Pid: 1050, comm: modprobe Tainted: G      D     2.6.39 #2
+Call Trace:
+  [<c040f8cc>] ? panic+0x61/0x13f
+  [<c0105c46>] ? oops_end+0x86/0x90
+  [<c0121590>] ? no_context+0xc0/0x150
+  [<c0121a30>] ? vmalloc_sync_all+0xf0/0xf0
+  [<c012176f>] ? bad_area_nosemaphore+0xf/0x20
+  [<c0121c86>] ? do_page_fault+0x256/0x3f0
+  [<c0411f1e>] ? _raw_spin_unlock_irqrestore+0xe/0x30
+  [<c0151cc5>] ? down_trylock+0x25/0x40
+  [<c01356eb>] ? vprintk+0x2eb/0x3f0
+  [<c01308f8>] ? get_parent_ip+0x8/0x20
+  [<c026713f>] ? delay_tsc+0x6f/0xa0
+  [<c02e0550>] ? wait_for_xmitr+0x80/0x80
+  [<c0267066>] ? __delay+0x6/0x10
+  [<c02e04ef>] ? wait_for_xmitr+0x1f/0x80
+  [<c02e0568>] ? serial8250_console_putchar+0x18/0x30
+  [<c02dccdb>] ? uart_console_write+0x2b/0x60
+  [<c02e0b89>] ? serial8250_console_write+0xa9/0x150
+  [<c02e0550>] ? wait_for_xmitr+0x80/0x80
+  [<c013509e>] ? __call_console_drivers+0x6e/0x80
+  [<c0135215>] ? console_unlock+0xd5/0x1b0
+  [<c013559b>] ? vprintk+0x19b/0x3f0
+  [<c04121e9>] ? _raw_spin_lock_irqsave+0x19/0x40
+  [<c013097f>] ? sub_preempt_count+0x6f/0xa0
+  [<c0265d85>] ? number.clone.1+0x335/0x350
+  [<c0121a30>] ? vmalloc_sync_all+0xf0/0xf0
+  [<c040f9c1>] ? printk+0x17/0x1e
+  [<c0134c2f>] ? warn_slowpath_common+0x2f/0xb0
+  [<c0121a30>] ? vmalloc_sync_all+0xf0/0xf0
+  [<c0411f4c>] ? _raw_spin_unlock+0xc/0x30
+  [<c0134ccb>] ? warn_slowpath_null+0x1b/0x20
+  [<c0411f4c>] ? _raw_spin_unlock+0xc/0x30
+  [<c03012f6>] ? get_device_parent.clone.12+0x106/0x160
+  [<c01a4013>] ? kmem_cache_alloc+0x83/0x90
+  [<c030181a>] ? device_add+0x8a/0x5b0
+  [<c0125af0>] ? complete_all+0x40/0x60
+  [<c01308f8>] ? get_parent_ip+0x8/0x20
+  [<c013097f>] ? sub_preempt_count+0x6f/0xa0
+  [<c0411f1e>] ? _raw_spin_unlock_irqrestore+0xe/0x30
+  [<c035e218>] ? thermal_cooling_device_register+0xc8/0x220
+  [<f82f2082>] ? acpi_processor_add+0x3b6/0x442 [processor]
+  [<c0299e6f>] ? acpi_device_probe+0x34/0xe7
+  [<c0303ba5>] ? driver_probe_device+0x65/0x160
+  [<c029a23f>] ? acpi_match_device_ids+0x27/0x4d
+  [<c0303d19>] ? __driver_attach+0x79/0x80
+  [<c0303ca0>] ? driver_probe_device+0x160/0x160
+  [<c0302f0b>] ? bus_for_each_dev+0x4b/0x70
+  [<c0299daf>] ? acpi_device_hid+0x13/0x13
+  [<c0303906>] ? driver_attach+0x16/0x20
+  [<c0303ca0>] ? driver_probe_device+0x160/0x160
+  [<c030356c>] ? bus_add_driver+0x9c/0x230
+  [<c0299daf>] ? acpi_device_hid+0x13/0x13
+  [<c03041af>] ? driver_register+0x5f/0x100
+  [<c040f9c1>] ? printk+0x17/0x1e
+  [<f830c05a>] ? acpi_processor_init+0x5a/0xb7 [processor]
+  [<c01011f3>] ? do_one_initcall+0x33/0x170
+  [<c019d9e8>] ? __vunmap+0xa8/0xe0
+  [<f830c000>] ? 0xf830bfff
+  [<c0163893>] ? sys_init_module+0x123/0x1960
+  [<c0412b90>] ? sysenter_do_call+0x12/0x26
