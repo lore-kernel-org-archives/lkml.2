@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab1EXUhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 16:37:17 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:49619 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab1EXUhP (ORCPT
+	id S1757510Ab1EXUkP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 16:40:15 -0400
+Received: from lanfw001a.cxnet.dk ([87.72.215.196]:32777 "EHLO
+	lanfw001a.cxnet.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab1EXUkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 16:37:15 -0400
-Subject: Re: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Chris McDermott <lcm@linux.vnet.ibm.com>
-In-Reply-To: <20110524130700.079b09e8.akpm@linux-foundation.org>
-References: <20110411172004.0361.A69D9226@jp.fujitsu.com>
-	 <1302557371.7286.16607.camel@nimitz>
-	 <20110412100129.43F1.A69D9226@jp.fujitsu.com>
-	 <1302575241.7286.17853.camel@nimitz>
-	 <20110524130700.079b09e8.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 24 May 2011 13:37:04 -0700
-Message-ID: <1306269424.22505.20.camel@nimitz>
+	Tue, 24 May 2011 16:40:13 -0400
+Subject: [ANNOUNCE] IPTV-Analyzer project released v0.9.1
+From: Jesper Dangaard Brouer <hawk@comx.dk>
+To: hawk@comx.dk
+Content-Type: text/plain; charset="UTF-8"
+Organization: ComX Networks A/S
+Date: Tue, 24 May 2011 16:40:05 -0400
+Message-ID: <1306269605.11061.10.camel@probook>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 13:07 -0700, Andrew Morton wrote:
-> On Mon, 11 Apr 2011 19:27:21 -0700
-> Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-> > I'll go try and dig for some more specifics on the hardware so we at
-> > least have something to test on.
-> 
-> How's that digging coming along?
-> 
-> I'm pretty wobbly about this patch.  Perhaps we should set
-> RECLAIM_DISTANCE to pi/2 or something, to force people to correctly set
-> the dang thing in initscripts.
+The new release 0.9.1 of the IPTV-Analyzer project is comming to you
+directly from New York City RedHat office ;-)
 
-The original change in the hardware tables was for the benefit of a
-benchmark.  Said benchmark isn't going to get run on mainline until the
-next batch of enterprise distros drops, at which point the hardware
-where this was done will be irrelevant for the benchmark.  I'm sure any
-new hardware will just set this distance to another yet arbitrary value
-to make the kernel do what it wants. :)
+New features include bytes and packet counters, no-signal detection,
+heartbeat system per stream, and new event types.
 
-Also, when the hardware got _set_ to this initially, I complained.  So,
-I guess I'm getting my way now, with this patch.  I'm cool with it:
+ Homepage:
+  http://www.iptv-analyzer.org
 
-Acked-by: Dave Hansen <dave@linux.vnet.ibm.com>
+ Git tree:
+  https://github.com/netoptimizer/IPTV-Analyzer
 
--- Dave
+Notice, database changes in this release.  Its possible to upgrade
+the database schema without loosing your current data.
+
+The IPTV-Analyzer is a continuous/real-time tool for analyzing the
+contents of MPEG2 Transport Stream (TS) packets, which is commonly
+used for IPTV multicast signals. The main purpose is continuous
+quality measurement, with a focus on detecting MPEG2 TS/CC packet
+drops.
+
+ Bugreports and feature requests please use:
+  https://github.com/netoptimizer/IPTV-Analyzer/issues
+
+(Disclaimer, RedHat is not directly associated with project, I just
+hangout with them during my visit to NYC).
+
+-- 
+Best regards,
+  Jesper Dangaard Brouer
+  ComX Networks A/S
+  Linux Network Kernel Developer
+  Cand. Scient Datalog / MSc.CS
+  Author of http://adsl-optimizer.dk
+  LinkedIn: http://www.linkedin.com/in/brouer
 
