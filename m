@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab1EXOJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:09:48 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:45440 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653Ab1EXOJr convert rfc822-to-8bit (ORCPT
+	id S932439Ab1EXOKD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:10:03 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:47115 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932326Ab1EXOKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:09:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Vcnu2NXSsbfD5bLO/tlSFAiKvfEMhKQ6Z/2ZFNXxh4vmGO4+gUdwkgfa15io5uG8US
-         awJPx7GltdEbc3I88xFC/M3FWhFw20H7yTlz63hr6NCcigFdAUBcFFFOuGzN/ly5gS0Z
-         cUoMwMg2qpfFWR5vHfid/S0xVNKhA3FsqPH6M=
+	Tue, 24 May 2011 10:10:00 -0400
+X-Sasl-enc: Peg+O6qgPEwIYjByEfeuOkGXwWvgeLO3ky2DFqLfcI1J 1306246199
+Message-ID: <4DDBBC35.4010605@imap.cc>
+Date: Tue, 24 May 2011 16:09:57 +0200
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <web-530857881@zbackend1.aha.ru>
-References: <web-530857881@zbackend1.aha.ru>
-Date: Tue, 24 May 2011 10:09:46 -0400
-Message-ID: <BANLkTinachR0M-cHzj3d4XmTOMWfCBASdA@mail.gmail.com>
-Subject: Re: (Short?) merge window reminder
-From: Jerome Glisse <j.glisse@gmail.com>
-To: werner <w.landgraf@ru.ru>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Florian Fainelli <ffainelli@freebox.fr>
+CC: Greg KH <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>,
+        Maxime Bizon <mbizon@freebox.fr>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] TTY: export NR_LDISC and N_* line discipline numbers
+ to user-space
+References: <201105241043.03347.ffainelli@freebox.fr> <20110524124044.GD31517@suse.de> <201105241517.23166.ffainelli@freebox.fr>
+In-Reply-To: <201105241517.23166.ffainelli@freebox.fr>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig1A0D1E3D93FDA1D4178862FE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 9:40 AM, werner <w.landgraf@ru.ru> wrote:
-> Version numbers should not be only numerology, but connected to quality or
-> progress.  Comparing the situation of the 1, 2.0, 2.2, 2.4, 2.6 versions,
-> since starting 2.6 , the progress of the kernel, and also the situation of
-> Linux as a whole and of its use changed very.  Exactly in the last
-> subversions with many new hardware modules/drivers the quality improved
-> very.  At the same time, the subversions becomes too much since the last new
-> version.  Thus, it's time for 2.8 or even 3.0 in order to mark this very
-> improved quality and use of Linux since the start of the 2 and 2.6 versions.
->    wl
-> ---
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig1A0D1E3D93FDA1D4178862FE
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-If i were to give my feeling, and i am doing it right now, i wish that
-such version change to be backed with things like removal of dead code
-for instance in the GPU side we would like at one point to drop non
-KMS path and delete a whole bunch of files and dead API in the process
-(at least that's on my bad santa list). Non KMS is in survival mode,
-at this point we try to not break it but we don't give shit about it.
-Bug against it are redirected to the closest black hole.
+Am 24.05.2011 15:17 schrieb Florian Fainelli:
+> On Tuesday 24 May 2011 14:40:44 Greg KH wrote:
+>> On Tue, May 24, 2011 at 10:43:03AM +0200, Florian Fainelli wrote:
+>>> From: Florian Fainelli <ffainelli@freebox.fr>
+>>>
+>>> Since commit (4564f9e5: consolidate line discipline number definition=
+s)
+>>> the patch moved all line discipline number from a per-architecture
+>>> termios.h to a shared one: tty.h. However, prior to this consolidatio=
+n
+>>> work, the line discipline numbers were outside of an ifdef
+>>> __KERNEL__/endif block so these numbers used to be exported to
+>>> user-space.
+>>>
+>>> Since such numbers are kernel ABI anyway, and tty.h is already includ=
+ed
+>>> for user- space header processing, just move these relevant defines
+>>> outside of the ifdef __KERNEL__/endif block in include/linux/tty.h.
+[...]
+>> Meaning, why has it taken this long for anyone to notice?
+>=20
+> - long standing user-space applications such as pppd got their N_PPP lo=
+ng ago,=20
+> and do not have to worry about N_PPP being renumbered so they can just =
+define=20
+> it in pppd's sources it won't break
 
-Cheers,
-Jerome
+Also, I just checked on openSUSE 11.2, which comes with kernel
+release is 2.6.27, and it still defines the LD numbers in
+/usr/include/bits/ioctl-types.h (included from sys/ioctl.h).
+I guess other distributions are doing the same, so their users
+wouldn't notice the change.
+
+Anyway, the patch is fine by me. Feel free to add:
+
+Acked-by: Tilman Schmidt <tilman@imap.cc>
+
+Thanks,
+Tilman
+
+--=20
+Tilman Schmidt                    E-Mail: tilman@imap.cc
+Bonn, Germany
+Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
+Unge=C3=B6ffnet mindestens haltbar bis: (siehe R=C3=BCckseite)
+
+
+--------------enig1A0D1E3D93FDA1D4178862FE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.12 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk3bvDUACgkQQ3+did9BuFt3jgCgiSr9CUUz03fevgcfsYqkDtyw
+icYAnjwHVLMwtT0W+AE3cqbov8GQmX+Q
+=AMO1
+-----END PGP SIGNATURE-----
+
+--------------enig1A0D1E3D93FDA1D4178862FE--
