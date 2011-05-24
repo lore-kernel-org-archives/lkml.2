@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab1EXGDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 02:03:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43858 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919Ab1EXGDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 02:03:39 -0400
-Date: Tue, 24 May 2011 08:03:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	id S1753155Ab1EXGPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 02:15:19 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45524 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab1EXGPQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 02:15:16 -0400
+Subject: Re: [PATCH-v5 00/13] iscsi-target: initial .40-rc1 merge
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
+        Boaz Harrosh <bharrosh@panasas.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Daniel J Blueman <daniel.blueman@gmail.com>
-Subject: Re: [GIT PULL] more x86/apic changes for v2.6.40
-Message-ID: <20110524060321.GA20904@elte.hu>
-References: <20110523193035.GA9170@elte.hu>
- <BANLkTimUr+2k3_RAyncLX5yFYeV5JaJDsQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimUr+2k3_RAyncLX5yFYeV5JaJDsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+        Martin Svec <martin.svec@zoner.cz>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        linux-next <linux-next@vger.kernel.org>
+In-Reply-To: <1305862678-30150-1-git-send-email-nab@linux-iscsi.org>
+References: <1305862678-30150-1-git-send-email-nab@linux-iscsi.org>
+Content-Type: text/plain
+Date: Mon, 23 May 2011 23:06:56 -0700
+Message-Id: <1306217216.29724.144.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Mon, May 23, 2011 at 12:30 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > Please pull the latest x86-apic-for-linus git tree from:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-apic-for-linus
+On Thu, 2011-05-19 at 20:37 -0700, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
 > 
-> Hmm. Right now my bisect is going (and on that slow atom thing I'm
-> just about to give up for the evening and continue tomorrow), but it
-> *looks* like this pull breaks resume on my eeepc netbook.
+> Hi James,
 > 
-> I've bisected it down to three merges:
->  - sched-core-for-linus (looks unlikely)
->  - 'for-linus' of master.kernel.org:/home/rmk/linux-2.6-arm
->  - x86-apic-for-linus (I don't see anything wrong, but it seems to be
-> the most likely of the three)
+> Here is an updated v5 mergeable + squashable .40-rc1 series of iscsi-target
+> against scsi-misc .39-rc7 target core intrastructure with (round 1) .40
+> target core patches from this evening applied:
 > 
-> Any idea why anything there would break resume?
+> [PATCH 0/6] target: .40 bugfixes+changes (round 1)
+> http://marc.info/?l=linux-scsi&m=130586157027016&w=2
+> 
+> The includes the following changes from PATCH-v4:
+> 
+> *) Convert initial iscsi-target merge to use scsi_tcq.h
+> 
+> As before, please merge patch #1 + #2 as seperate libiscsi commits with
+> Mike's signoff.  From there go ahead and squash #3 -> #13 using the commit
+> message of patch #3 for an initial commit of drivers/target/iscsi/
+> 
+> This patch has been made against the latest scsi-misc HEAD:
+> 
+> commit 6ad11eaa8a689a27e0c99905bcf800a37cd432a0
+> Author: Joe Carnuccio <joe.carnuccio@qlogic.com>
+> Date:   Tue May 10 11:30:16 2011 -0700
+> 
+>     [SCSI] qla2xxx: Refactor call to qla2xxx_read_sfp for thermal temperature.
+> 
+> 
+> The complete series for an initial merge including (round 1) .40 changes is
+> available directly here:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-40-iscsi-target-merge-v3
+> 
+> 
+> At this point there is one outstanding bug + patch being tested by Martin wrt
+> to SessionType=Discovery logout exception handling during an iscsi-target
+> failure/shutdown event.  Please expect an rc-fixes patch to address this
+> specific issue after the initial merge.
+> 
+> Thanks folks!
+> 
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> 
 
-Possibly the resume fix in the APIC merge :-/
+Hi James,
 
-It's these commits:
+Ping on finally getting iscsi-target merged..?
 
- 31dce14a3269: x86, ioapic: Use ioapic_saved_data while enabling intr-remapping
- 4c79185cdb14: x86, ioapic: Allocate ioapic_saved_data early
- b64ce24daffb: x86, ioapic: Fix potential resume deadlock
+I have no further changes nor gotten any further review feedback at this
+point for an initial merge for .40-rc1 (or 2.8.0-rc1) , and one
+iscsi-target bugfix is currently in my queue for rc-fixes that has been
+resolved recently with Martin's help.
 
-The first one fixes the resume bug in an easily backportable way (although the 
-GFP_ATOMIC is not nice), the later two do it cleaner.
+Considering the short term window this time around, can you please have
+a look at getting this merged ASAP so that it can send a few days in
+linux-next..?
 
-So if b64ce24daffb works for you and 31dce14a3269 breaks this would signal that 
-the fix from Suresh is the source of the Atom regression.
+Thank you,
 
-Thanks,
+--nab
 
-	Ingo
+
