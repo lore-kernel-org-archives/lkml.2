@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab1EXFpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 01:45:30 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45229 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab1EXFp3 (ORCPT
+	id S1752194Ab1EXFqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 01:46:07 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51883 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab1EXFqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 01:45:29 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DDB45EF.2080803@jp.fujitsu.com>
-Date: Tue, 24 May 2011 14:45:19 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: minchan.kim@gmail.com
-CC: abarry@cray.com, akpm@linux-foundation.org, linux-mm@kvack.org,
-        mgorman@suse.de, riel@redhat.com, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Unending loop in __alloc_pages_slowpath following OOM-kill; rfc:
- patch.
-References: <4DCDA347.9080207@cray.com> <BANLkTikiXUzbsUkzaKZsZg+5ugruA2JdMA@mail.gmail.com> <4DD2991B.5040707@cray.com> <BANLkTimYEs315jjY9OZsL6--mRq3O_zbDA@mail.gmail.com> <20110520164924.GB2386@barrios-desktop> <4DDB3A1E.6090206@jp.fujitsu.com>
-In-Reply-To: <4DDB3A1E.6090206@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 24 May 2011 01:46:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=EOUCAh+C4dzLotyweA8h0mZsUBVUByha7TyckIXYfFqCGy2tEZD6oApLuaI60p79h8
+         4a59sfBrMbqPDFrwxtXH15N++TFjvQQ5oydAOgqNE15RuXuAXIEAGNRmEM0P4AKJBWKz
+         FYxbnstenCTsIyLICcl+rrNnA/mj7qUyUlIuo=
+Subject: Re: [PATCH v2]net:8021q:vlan.c Fix pr_info to just give the vlan
+ fullname and version.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Ben Greear <greearb@candelatech.com>
+In-Reply-To: <1306215647-2857-1-git-send-email-justinmattock@gmail.com>
+References: <1306215647-2857-1-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 07:45:58 +0200
+Message-ID: <1306215958.2638.29.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/24 13:54), KOSAKI Motohiro wrote:
->> >From 8bd3f16736548375238161d1bd85f7d7c381031f Mon Sep 17 00:00:00 2001
->> From: Minchan Kim <minchan.kim@gmail.com>
->> Date: Sat, 21 May 2011 01:37:41 +0900
->> Subject: [PATCH] Prevent unending loop in __alloc_pages_slowpath
->>
->> From: Andrew Barry <abarry@cray.com>
->>
->> I believe I found a problem in __alloc_pages_slowpath, which allows a process to
->> get stuck endlessly looping, even when lots of memory is available.
->>
->> Running an I/O and memory intensive stress-test I see a 0-order page allocation
->> with __GFP_IO and __GFP_WAIT, running on a system with very little free memory.
->> Right about the same time that the stress-test gets killed by the OOM-killer,
->> the utility trying to allocate memory gets stuck in __alloc_pages_slowpath even
->> though most of the systems memory was freed by the oom-kill of the stress-test.
->>
->> The utility ends up looping from the rebalance label down through the
->> wait_iff_congested continiously. Because order=0, __alloc_pages_direct_compact
->> skips the call to get_page_from_freelist. Because all of the reclaimable memory
->> on the system has already been reclaimed, __alloc_pages_direct_reclaim skips the
->> call to get_page_from_freelist. Since there is no __GFP_FS flag, the block with
->> __alloc_pages_may_oom is skipped. The loop hits the wait_iff_congested, then
->> jumps back to rebalance without ever trying to get_page_from_freelist. This loop
->> repeats infinitely.
->>
->> The test case is pretty pathological. Running a mix of I/O stress-tests that do
->> a lot of fork() and consume all of the system memory, I can pretty reliably hit
->> this on 600 nodes, in about 12 hours. 32GB/node.
->>
->> Signed-off-by: Andrew Barry <abarry@cray.com>
->> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
->> Cc: Mel Gorman <mgorman@suse.de>
->> ---
->>  mm/page_alloc.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index 3f8bce2..e78b324 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -2064,6 +2064,7 @@ restart:
->>  		first_zones_zonelist(zonelist, high_zoneidx, NULL,
->>  					&preferred_zone);
->>  
->> +rebalance:
->>  	/* This is the last chance, in general, before the goto nopage. */
->>  	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
->>  			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
->> @@ -2071,7 +2072,6 @@ restart:
->>  	if (page)
->>  		goto got_pg;
->>  
->> -rebalance:
->>  	/* Allocate without watermarks if the context allows */
->>  	if (alloc_flags & ALLOC_NO_WATERMARKS) {
->>  		page = __alloc_pages_high_priority(gfp_mask, order,
+Le lundi 23 mai 2011 à 22:40 -0700, Justin P. Mattock a écrit :
+> The below patch removes vlan_buggyright and vlan_copyright from vlan_proto_init, 
+> so that it prints out just the fullname of vlan and the version number.
 > 
-> I'm sorry I missed this thread long time.
+> before:
 > 
-> In this case, I think we should call drain_all_pages(). then following
-> patch is better.
-> However I also think your patch is valuable. because while the task is
-> sleeping in wait_iff_congested(), an another task may free some pages.
-> thus, rebalance path should try to get free pages. iow, you makes sense.
+> [   30.438203] 802.1Q VLAN Support v1.8 Ben Greear <greearb@candelatech.com>
+> [   30.441542] All bugs added by David S. Miller <davem@redhat.com>
 > 
-> So, I'd like to propose to merge both your and my patch.
+> after:
+> 
+> [   31.513910] 802.1Q VLAN Support v1.8
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> CC: Joe Perches <joe@perches.com>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Ben Greear <greearb@candelatech.com>
+> ---
+>  net/8021q/vlan.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+> index b2274d1..9df3fcb 100644
+> --- a/net/8021q/vlan.c
+> +++ b/net/8021q/vlan.c
+> @@ -673,8 +673,7 @@ static int __init vlan_proto_init(void)
+>  {
+>  	int err;
+>  
+> -	pr_info("%s v%s %s\n", vlan_fullname, vlan_version, vlan_copyright);
+> -	pr_info("All bugs added by %s\n", vlan_buggyright);
+> +	pr_info("%s v%s\n", vlan_fullname, vlan_version);
+>  
+>  	err = register_pernet_subsys(&vlan_net_ops);
+>  	if (err < 0)
 
-I forgot to write important thing. Your patch looks good to me.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+This reminds me a discussion with Harald Welte in netfilter workshop
+2010.
+
+Sometime these strings help lot guys working to fight GPL violations.
 
 
 
