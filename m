@@ -1,168 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab1EXAya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 20:54:30 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40909 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871Ab1EXAy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 20:54:27 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DDB0199.6030805@jp.fujitsu.com>
-Date: Tue, 24 May 2011 09:53:45 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: Test for CFS Bandwidth Control V6
-References: <20110323030326.789836913@google.com> <4DD5CE05.3030500@cn.fujitsu.com>
-In-Reply-To: <4DD5CE05.3030500@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1031073Ab1EXBCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 21:02:31 -0400
+Received: from barracuda.fsl.cs.sunysb.edu ([130.245.126.20]:33597 "EHLO
+	barracuda.fsl.cs.sunysb.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030717Ab1EXBC2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 21:02:28 -0400
+X-ASG-Debug-ID: 1306198946-01c65a06b01864c0001-xx1T2L
+X-Barracuda-Envelope-From: ezk@fsl.cs.sunysb.edu
+X-Barracuda-RBL-Trusted-Forwarder: 130.245.126.16
+Subject: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
+X-Barracuda-BWL-IP: 192.168.1.133
+X-Barracuda-BBL-IP: 192.168.1.133
+X-Barracuda-RBL-IP: 192.168.1.133
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-ASG-Orig-Subj: Re: [PATCH 5/7] overlay filesystem (inode.c bad error path)
+Content-Type: text/plain; charset=us-ascii
+From: Erez Zadok <ezk@fsl.cs.sunysb.edu>
+In-Reply-To: <b11ac28b818740a8b3f619e756735e41@HUBCAS2.cs.stonybrook.edu>
+Date: Mon, 23 May 2011 21:02:24 -0400
+Cc: "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "nbd@openwrt.org" <nbd@openwrt.org>, "neilb@suse.de" <neilb@suse.de>,
+        "hramrach@centrum.cz" <hramrach@centrum.cz>,
+        "jordipujolp@gmail.com" <jordipujolp@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B7D82117-02A5-4C33-A6B0-C231809FC8C7@fsl.cs.sunysb.edu>
+References: <1305635452-14835-1-git-send-email-miklos@szeredi.hu> <103d3f78e2d3478d8bb93f5dda3a4a08@HUBCAS1.cs.stonybrook.edu> <D8301738-5094-4666-8C4D-E26425F1AD66@fsl.cs.sunysb.edu> <87wrhlah1e.fsf@tucsk.pomaz.szeredi.hu> <7dcd9c4e62864bc6aae66f5a4e3f3752@HUBCAS1.cs.stonybrook.edu> <2983EA36-BB3B-4AE3-9CAA-5A3C2D884DCF@fsl.cs.sunysb.edu> <b11ac28b818740a8b3f619e756735e41@HUBCAS2.cs.stonybrook.edu>
+To: Miklos Szeredi <miklos@szeredi.hu>
+X-Mailer: Apple Mail (2.1084)
+X-Barracuda-Connect: avatar.fsl.cs.sunysb.edu[130.245.126.16]
+X-Barracuda-Start-Time: 1306198946
+X-Barracuda-URL: http://130.245.126.20:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64622
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul and Xiao,
+On May 23, 2011, at 4:57 AM, Miklos Szeredi wrote:
 
-Please check/test a fix at the foot of this mail.
-
-(2011/05/20 11:12), Xiao Guangrong wrote:
-> Hi Paul,
+> Erez Zadok <ezk@fsl.cs.sunysb.edu> writes:
 > 
-> I'm so sorry for sending this mail in the new thread, since i didn't
-> receive your V6 patchset from LKML.
+>> Are you interested in testing overlayfs on top of NFS at this time?
 > 
-> It seams the patchset can not be applied, since it's conflict between
-> patch 3 and patch 5:
-> 
-> ========Quote========
-(snip)
-> ========End quote========
+> No, not as an upper layer.  NFS as a lower layer should work fine.
 
-Maybe I've fixed it by hand, or git-am is so wonderful.
+OK, I'll give it a test as well (careful what you wish for :-)
 
-I believe Paul will do it right for next time.
+BTW, when do you typically sync up w/ Linus's tree: is it only when you release the next ovl version?
 
-> 
-> I downloaded the patchset from Internet, i missed the newer version?
-> 
-> I have done some test after fixed the conflict by handle, below test can cause
-> box crash:
-> 
-> ========Quote　cpu_hotlpug.sh ========
-(snip)
-> ======== End quote　cpu_hotlpug.sh ========
-> 
-> Sorry to disturb you if the bug is know.
-> 
-> Thanks!
+> Thanks,
+> Miklos
 
-Thank you for reporting it, Xiao!
-
-I confirmed that running your test cause hung-up on my box.
-And after some investigation, I found that this is an infinite loop
-in migrate_task() due to miscalculation of rq->nr_running; when a
-task is queued to throttled entity the nr_running is incremented at
-the queuing and also the unthrottling.
-
-I made a fix for this bug and it seems works well for me.
-Could you try this patch and give us your feedback, Xiao?
-
-Thanks,
-H.Seto
-
----
- kernel/sched_fair.c |   28 +++++++++++++---------------
- 1 files changed, 13 insertions(+), 15 deletions(-)
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 3936393..544072f 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1537,7 +1537,7 @@ static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
- 	walk_tg_tree_from(cfs_rq->tg, tg_unthrottle_down, tg_nop,
- 			  (void *)&udd);
- 
--	if (!cfs_rq->load.weight)
-+	if (!cfs_rq->h_nr_running)
- 		return;
- 
- 	task_delta = cfs_rq->h_nr_running;
-@@ -1843,10 +1843,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 		cfs_rq->h_nr_running++;
- 
- 		/* end evaluation on throttled cfs_rq */
--		if (cfs_rq_throttled(cfs_rq)) {
--			se = NULL;
--			break;
--		}
-+		if (cfs_rq_throttled(cfs_rq))
-+			goto done;
-+
- 		flags = ENQUEUE_WAKEUP;
- 	}
- 
-@@ -1855,14 +1854,14 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 		cfs_rq->h_nr_running++;
- 
- 		if (cfs_rq_throttled(cfs_rq))
--			break;
-+			goto done;
- 
- 		update_cfs_load(cfs_rq, 0);
- 		update_cfs_shares(cfs_rq);
- 	}
- 
--	if (!se)
--		inc_nr_running(rq);
-+	inc_nr_running(rq);
-+done:
- 	hrtick_update(rq);
- }
- 
-@@ -1885,10 +1884,9 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 		cfs_rq->h_nr_running--;
- 
- 		/* end evaluation on throttled cfs_rq */
--		if (cfs_rq_throttled(cfs_rq)) {
--			se = NULL;
--			break;
--		}
-+		if (cfs_rq_throttled(cfs_rq))
-+			goto done;
-+
- 		/* Don't dequeue parent if it has other entities besides us */
- 		if (cfs_rq->load.weight) {
- 			 /* Avoid double update below. */
-@@ -1910,14 +1908,14 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 		cfs_rq->h_nr_running--;
- 
- 		if (cfs_rq_throttled(cfs_rq))
--			break;
-+			goto done;
- 
- 		update_cfs_load(cfs_rq, 0);
- 		update_cfs_shares(cfs_rq);
- 	}
- 
--	if (!se)
--		dec_nr_running(rq);
-+	dec_nr_running(rq);
-+done:
- 	hrtick_update(rq);
- }
- 
--- 
-1.7.4.4
-
+Erez.
 
