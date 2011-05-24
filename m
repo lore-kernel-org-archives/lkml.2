@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab1EXQiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 12:38:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56705 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753413Ab1EXQio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 12:38:44 -0400
-Date: Tue, 24 May 2011 18:38:42 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Arun Sharma <asharma@fb.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] kbuild: Create a kernel-headers RPM
-Message-ID: <20110524163842.GE2276@sepie.suse.cz>
-References: <1305653779-3445-1-git-send-email-asharma@fb.com>
- <1305653779-3445-3-git-send-email-asharma@fb.com>
+	id S1753785Ab1EXQuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 12:50:04 -0400
+Received: from pqueueb.post.tele.dk ([193.162.153.10]:34342 "EHLO
+	pqueueb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab1EXQuC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 12:50:02 -0400
+Date: Tue, 24 May 2011 18:49:35 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, Hiromu Yakura <hiromu1996@gmail.com>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zippel@linux-m68k.org
+Subject: Re: [PATCH] Kconfig: add warning about permission of config file
+Message-ID: <20110524164935.GA18458@merkur.ravnborg.org>
+References: <1306167401.18840.8.camel@hiromu-MacBook> <BANLkTikhFdd_PRzCg3w9HD1TO=cmdmm6_A@mail.gmail.com> <1306242400.7501.10.camel@hiromu-MacBook> <4DDBB150.2090602@suse.cz> <1306247192.7501.25.camel@hiromu-MacBook> <4DDBC846.8050402@suse.cz> <BANLkTin5ZDt5ZeckOJ2WsNUZm6mxmYiRwQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305653779-3445-3-git-send-email-asharma@fb.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTin5ZDt5ZeckOJ2WsNUZm6mxmYiRwQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 10:36:16AM -0700, Arun Sharma wrote:
-> To compile binaries which depend on new kernel interfaces, we need a
-> kernel-headers RPM
-> 
-> Signed-off-by: Arun Sharma <asharma@fb.com>
-> ---
->  scripts/package/mkspec |   16 ++++++++++++++++
->  1 files changed, 16 insertions(+), 0 deletions(-)
+> >>>
+> >>> Arnaud's point is that your patch should not be necessary at all,
+> >>> because kconfig already checks the return value of the fopen() call in
+> >>> conf_write() and prints the above message if it fails. So do you have a
+> >>> testcase where make<...>config without your patch returns without
+> >>> error, but the configuration is not written?
+> >>
+> >> Sorry for misunderstanding.
+> >> Indeed, make *config which use 'conf' (e.g. oldconfig, defconfig...)
+> >> raise error.
+> >> And only xconfig and gconfig don't write the configuration without
+> >> error.
+> >
+> > I see, qconf lacks a check for the return value of conf_write() in
+> > ConfigMainWindow::closeEvent(), gconf does check the return value, but only
+> > displays it in the bottom box of the main window instead of a message box.
+> > Neither of them return failure in the error case. These bugs should be
+> > indeed fixed.
+> >
+> agree.
+The only thing that a write-access check up-front could be useful for would be
+to launch a front-end in ReadOnly mode.
+And this is not supported by any of them today IIRC.
 
-Pushed to kbuild-2.6.git#packaging.
-
-Thanks,
-Michal
+	Sam
