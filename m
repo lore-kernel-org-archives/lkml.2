@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab1EXNAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 09:00:18 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:41907 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756138Ab1EXNAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 09:00:17 -0400
-Date: Tue, 24 May 2011 09:00:08 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@localhost6.localdomain6
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: once again, tracking down misconfigured CONFIG variables
-Message-ID: <alpine.DEB.2.00.1105240851080.21813@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932152Ab1EXNCg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:02:36 -0400
+Received: from seven.medozas.de ([188.40.89.202]:51368 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756112Ab1EXNCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 09:02:34 -0400
+Date: Tue, 24 May 2011 15:02:33 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Jacek Luczak <difrost.kernel@gmail.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-mm <linux-mm"@kvack.medozas.de
+Subject: Re: (Short?) merge window reminder
+In-Reply-To: <BANLkTimCXVdVa6KLRG8GJR1gJY=7_5SkOA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.01.1105241500410.23085@frira.zrqbmnf.qr>
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com> <20110523192056.GC23629@elte.hu> <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com> <20110523231721.GM10009@thunk.org> <4DDAEC68.30803@zytor.com> <BANLkTikGfVSAMY2a2yiXaNpvBVvF8YdMEA@mail.gmail.com>
+ <alpine.LNX.2.01.1105241409280.15351@frira.zrqbmnf.qr> <BANLkTimCXVdVa6KLRG8GJR1gJY=7_5SkOA@mail.gmail.com>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 2011-05-24 14:30, Jacek Luczak wrote:
 
-  now that we're into another merge window, i'll try to find time this
-week to run my kernel scanning/cleanup scripts to find discrepancies
-in the source related to unused/misreferenced Kconfig variables and
-similar things.
+>2011/5/24 Jan Engelhardt <jengelh@medozas.de>:
+>> On Tuesday 2011-05-24 01:33, Linus Torvalds wrote:
+>>
+>>>Another advantage of switching numbering models (ie 3.0 instead of
+>>>2.8.x) would be that it would also make the "odd numbers are also
+>>>numbers" transition much more natural.
+>>>
+>>>Because of our historical even/odd model, I wouldn't do a 2.7.x -
+>>>there's just too much history of 2.1, 2.3, 2.5 being development
+>>>trees.
+>>
+>> .oO(Though once 2.{7 or more, odd} trickle into the distros, it would
+>> become pretty much apparent that they are not devel.)
+>>
+>>>And then in another few years (probably before getting close to 3.40,
+>>>so I'm not going to make a big deal of 3 = "third decade"), I'd just
+>>>do 4.0 etc.
+>>
+>> While 2.6 has certainly worn out, already thinking of a 4.0 is highly
+>> reminiscient of the version number arms race Firefox and ChromeBrowser
+>> are doing currently.
+>>
+>>>Because all our releases are supposed to be stable releases these
+>>>days, and if we get rid of one level of numbering, I feel perfectly
+>>>fine with getting rid of the even/odd history too.
+>>
+>> If I remember past-time discussions right, ELF was the contributing
+>> factor to bump the major number to 2.0 back then; ever since 2.0, no
+>> similarly breakthrough-ing event has occurred.
+>
+>What then about BKL removal? Nice place to celebrate with version jump
+>and heaving some beers.
 
-  the top level of the output from the last time i did this is here:
-
-  http://www.crashcourse.ca/wiki/index.php/Kernel_cleanup
-
-so you can follow any of those links to see the more specific output,
-much of which i'm guessing is still valid.
-
-  you're also welcome to run the scripts yourself, they're here (and
-probably need a bit of tweaking these days):
-
-  http://www.crashcourse.ca/wiki/index.php/Kernel_cleanup_scripts
-
-you can run these scripts with an argument of the specific source
-directory that interests you, so here's an example based on a recent
-"git pull", showing what i call "badrefs" for CONFIG variables:
-
-$ ../s/find_badref_configs.sh kernel
->>>>> DEBUG_SHIRQ_FIXME
-kernel/irq/manage.c:1329:#ifdef CONFIG_DEBUG_SHIRQ_FIXME
->>>>> HIGHRES_TIMERS
-kernel/hrtimer.c:751:#ifdef CONFIG_HIGHRES_TIMERS
->>>>> KDB_CONTINUE_CATASTROPHIC
-kernel/debug/kdb/kdb_main.c:70:#ifdef CONFIG_KDB_CONTINUE_CATASTROPHIC
-kernel/debug/kdb/kdb_main.c:72:	CONFIG_KDB_CONTINUE_CATASTROPHIC;
-$
-
-  in other words, under the top-level "kernel" directory, there are
-preprocessor tests for CONFIG variables that don't appear to be
-defined anywhere and are therefore useless.  same thing for the entire
-"fs" directory:
-
-$ ../s/find_badref_configs.sh fs
->>>>> BEFS_RW
-fs/befs/linuxvfs.c:786:#ifndef CONFIG_BEFS_RW
-fs/befs/linuxvfs.c:792:#endif				/* CONFIG_BEFS_RW */
->>>>> CIFS_DNOTIFY_EXPERIMENTAL
-fs/cifs/cifsglob.h:784:#ifdef CONFIG_CIFS_DNOTIFY_EXPERIMENTAL /* unused temporarily */
-fs/cifs/cifsfs.c:990:#ifdef CONFIG_CIFS_DNOTIFY_EXPERIMENTAL /* unused temporarily */
-fs/cifs/cifsproto.h:392:#ifdef CONFIG_CIFS_DNOTIFY_EXPERIMENTAL /* unused temporarily */
-fs/cifs/cifssmb.c:5735:#ifdef CONFIG_CIFS_DNOTIFY_EXPERIMENTAL /* BB unused temporarily */
->>>>> CIFS_SYMLINK_EXPERIMENTAL
-fs/cifs/cifsproto.h:311:#ifdef CONFIG_CIFS_SYMLINK_EXPERIMENTAL
-fs/cifs/cifssmb.c:2524:#ifdef CONFIG_CIFS_SYMLINK_EXPERIMENTAL
-fs/cifs/cifssmb.c:2636:#endif /* CIFS_SYMLINK_EXPERIMENTAL */ /* BB temporarily unused */
->>>>> KDB_MODULES
-fs/xfs/linux-2.6/xfs_buf.h:342:#ifdef CONFIG_KDB_MODULES
-fs/xfs/linux-2.6/xfs_buf.c:1893:#ifdef CONFIG_KDB_MODULES
->>>>> NILFS_POSIX_ACL
-fs/nilfs2/nilfs.h:189:#ifdef CONFIG_NILFS_POSIX_ACL
->>>>> NILFS_XATTR
-fs/nilfs2/nilfs.h:49:#ifdef CONFIG_NILFS_XATTR
-fs/nilfs2/super.c:1376:#ifdef CONFIG_NILFS_XATTR
-$
-
-  you get the idea.  and if people are talking about an eventual 3.0,
-part of that process should be a concerted effort to get rid of all
-this historical cruft that's been hanging around, some of it for a
-long, long time.
-
-rday
-
--- 
-
-========================================================================
-Robert P. J. Day                                 Ottawa, Ontario, CANADA
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
-
-
+The BKL going away was not a change that would require new 
+userspace programs.
