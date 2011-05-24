@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab1EXKEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 06:04:21 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:33138 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753187Ab1EXKES convert rfc822-to-8bit (ORCPT
+	id S1754404Ab1EXKH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 06:07:28 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45022 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246Ab1EXKH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 06:04:18 -0400
-Subject: Re: [PATCH v5 00/19] ARM: Add support for the Large Physical
- Address Extensions
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110523165412.GF15138@n2100.arm.linux.org.uk>
-References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
-	 <20110523165412.GF15138@n2100.arm.linux.org.uk>
-Organization: ARM Limited
-Date: Tue, 24 May 2011 11:04:08 +0100
-Message-ID: <1306231448.19557.23.camel@e102109-lin.cambridge.arm.com>
+	Tue, 24 May 2011 06:07:27 -0400
+Subject: Re: [PATCH] regulator: Do bulk enables of regulators in parallel
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+In-Reply-To: <1306195960-5897-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1306195960-5897-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 11:07:22 +0100
+Message-ID: <1306231642.3307.1.camel@odin>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 24 May 2011 10:04:22.0813 (UTC) FILETIME=[F49924D0:01CC19F9]
-X-MC-Unique: 111052411041409801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 17:54 +0100, Russell King - ARM Linux wrote:
-> On Sun, May 08, 2011 at 01:51:19PM +0100, Catalin Marinas wrote:
-> > This set of patches adds support for the Large Physical Extensions on
-> > the ARM architecture (available with the Cortex-A15 processor). LPAE
-> > comes with a 3-level page table format (compared to 2-level for the
-> > classic one), allowing up to 40-bit physical address space.
-> >
-> > The ARM LPAE documentation is available from (free registration needed):
-> >
-> > http://infocenter.arm.com/help/topic/com.arm.doc.ddi0406b_virtualization_extns/index.html
-> >
-> > The full set of patches on top of linux-next (LPAE, support for an
-> > emulated Versatile Express with Cortex-A15 tile and generic timers) is
-> > available on this branch:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-2.6-cm.git arm-lpae-next
+On Tue, 2011-05-24 at 08:12 +0800, Mark Brown wrote:
+> In order to reduce the impact of ramp times rather than enabling the
+> regulators for a device in series use async tasks to run the actual
+> enables. This means that the delays which the enables implement can all
+> run in parallel, though it does mean that the order in which the
+> supplies come on may be unstable.
 > 
-> FYI, I'm going to drop the pgt patch because the warnings are still there
+> For super bonus fun points if any of the regulators are shared between
+> multiple supplies on the same device (as is rather likely) then this
+> will test our locking.  Note that in this case we only delay once for
+> each physical regulator so the threads shouldn't block each other while
+> delaying.
+> 
+> It'd be even nicer if we could coalesce writes to a shared enable registers
+> in PMICs but that's definitely future work, and it may also be useful
+> and is certainly more achievable to optimise out the parallelism if none
+> of the regulators implement ramp delays.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+> 
+> Targetted at 2.6.41 obviously.
+> 
 
-What warnings are you seeing? Could you please post them?
+Applied.
 
-I tried with just your nopud patch on top of v2.6.39 and compiled for
-vexpress. I don't get any warnings and I tried STRICT_MM_TYPECHECKS as
-well.
+Thanks
 
--- 
-Catalin
-
+Liam
 
