@@ -1,117 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab1EXVHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 17:07:31 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:60141 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752938Ab1EXVH3 (ORCPT
+	id S1756536Ab1EXVOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 17:14:24 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62417 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab1EXVOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 17:07:29 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 4/4] gpio/nomadik: add function to read GPIO pull down status
-Date: Tue, 24 May 2011 23:07:17 +0200
-Message-ID: <1306271237-29044-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	Tue, 24 May 2011 17:14:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=anW2XH7QNgKOYaO9WBu/uKSzgAbEkouvtgH6JSFmY6bykkfKH5Kmjrt06gQyguailg
+         338+nyfpm7dB36P0M3G/Hck11AIrL2KWZH1maEidcN//P4+weU5vigoKvMpV3nm07bZI
+         Yu/MzXQgPxCDsSOz6yDBivfEloZ+vKfpYMHxc=
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20110523032503.GA22189@sortiz-mobl>
+References: <1305967300-16337-1-git-send-email-linus.walleij@stericsson.com>
+	<20110523032503.GA22189@sortiz-mobl>
+Date: Tue, 24 May 2011 23:14:22 +0200
+X-Google-Sender-Auth: Dsdonl-nYc7eRkGXCfkfklYlp8o
+Message-ID: <BANLkTikK3mZmSZm0YMcOjXqO0QimOftoWQ@mail.gmail.com>
+Subject: Re: [PATCH 00/13] Ux500 PRCMU into MFD v4
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rickard Andersson <rickard.andersson@stericsson.com>
+2011/5/23 Samuel Ortiz <sameo@linux.intel.com>:
 
-Signed-off-by: Rickard Andersson <rickard.andersson@stericsson.com>
-Reviewed-by: Martin Persson <martin.persson@stericsson.com>
-[Split off from larger patch]
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/plat-nomadik/include/plat/gpio.h |    2 +
- drivers/gpio/gpio-nomadik.c               |   34 +++++++++++++++++++++++++---
- 2 files changed, 32 insertions(+), 4 deletions(-)
+> Hi Linus,
+> (...)
+> I'd rather see this one going through your tree as it does contain many arch
+> related changes. Please add my ACK to the MFD parts.
+> Also, please cc me on your pull request so that I can fix the mfd_data from
+> patch #13 before sending my pull request.
 
-diff --git a/arch/arm/plat-nomadik/include/plat/gpio.h b/arch/arm/plat-nomadik/include/plat/gpio.h
-index 1b9f6f0..ea19a5b 100644
---- a/arch/arm/plat-nomadik/include/plat/gpio.h
-+++ b/arch/arm/plat-nomadik/include/plat/gpio.h
-@@ -78,6 +78,8 @@ extern int nmk_gpio_get_mode(int gpio);
- extern void nmk_gpio_wakeups_suspend(void);
- extern void nmk_gpio_wakeups_resume(void);
- 
-+extern void nmk_gpio_read_pull(int gpio_bank, u32 *pull_up);
-+
- /*
-  * Platform data to register a block: only the initial gpio/irq number.
-  */
-diff --git a/drivers/gpio/gpio-nomadik.c b/drivers/gpio/gpio-nomadik.c
-index 3802047..4961ef9 100644
---- a/drivers/gpio/gpio-nomadik.c
-+++ b/drivers/gpio/gpio-nomadik.c
-@@ -57,6 +57,7 @@ struct nmk_gpio_chip {
- 	u32 fwimsc;
- 	u32 slpm;
- 	u32 enabled;
-+	u32 pull_up;
- };
- 
- static struct nmk_gpio_chip *
-@@ -103,16 +104,22 @@ static void __nmk_gpio_set_pull(struct nmk_gpio_chip *nmk_chip,
- 	u32 pdis;
- 
- 	pdis = readl(nmk_chip->addr + NMK_GPIO_PDIS);
--	if (pull == NMK_GPIO_PULL_NONE)
-+	if (pull == NMK_GPIO_PULL_NONE) {
- 		pdis |= bit;
--	else
-+		nmk_chip->pull_up &= ~bit;
-+	} else {
- 		pdis &= ~bit;
-+	}
-+
- 	writel(pdis, nmk_chip->addr + NMK_GPIO_PDIS);
- 
--	if (pull == NMK_GPIO_PULL_UP)
-+	if (pull == NMK_GPIO_PULL_UP) {
-+		nmk_chip->pull_up |= bit;
- 		writel(bit, nmk_chip->addr + NMK_GPIO_DATS);
--	else if (pull == NMK_GPIO_PULL_DOWN)
-+	} else if (pull == NMK_GPIO_PULL_DOWN) {
-+		nmk_chip->pull_up &= ~bit;
- 		writel(bit, nmk_chip->addr + NMK_GPIO_DATC);
-+	}
- }
- 
- static void __nmk_gpio_make_input(struct nmk_gpio_chip *nmk_chip,
-@@ -921,6 +928,25 @@ void nmk_gpio_wakeups_resume(void)
- 	}
- }
- 
-+/*
-+ * Read the pull up/pull down status.
-+ * A bit set in 'pull_up' means that pull up
-+ * is selected if pull is enabled in PDIS register.
-+ * Note: only pull up/down set via this driver can
-+ * be detected due to HW limitations.
-+ */
-+void nmk_gpio_read_pull(int gpio_bank, u32 *pull_up)
-+{
-+	if (gpio_bank < NUM_BANKS) {
-+		struct nmk_gpio_chip *chip = nmk_gpio_chips[gpio_bank];
-+
-+		if (!chip)
-+			return;
-+
-+		*pull_up = chip->pull_up;
-+	}
-+}
-+
- static int __devinit nmk_gpio_probe(struct platform_device *dev)
- {
- 	struct nmk_gpio_platform_data *pdata = dev->dev.platform_data;
--- 
-1.7.3.2
+OK said and done. Hold on for when/if Torvalds pulls my stuff in.
 
+Yours,
+Linus Walleij
