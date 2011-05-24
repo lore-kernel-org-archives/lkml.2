@@ -1,115 +1,534 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab1EXOdn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:33:43 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:52164 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756690Ab1EXOdk (ORCPT
+	id S932204Ab1EXOff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:35:35 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:53823 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127Ab1EXOfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:33:40 -0400
+	Tue, 24 May 2011 10:35:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=nanometrics.ca; s=google;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=o/eWGavQfeEsQ9LOktP7vh66Lws22g8jfyoX1Oz9z1JwbFlcSUjYBp2PNkp+6R8gqK
-         EkFILWXacllYrwFj652UpgbUBf3KU8eBGW8HHwUJT10NLh0T1uVUE1jcYNengf2SZzbw
-         KcyvQfRw0IncjyJ0PjeNM3XmbZizvlwVNraOI=
-MIME-Version: 1.0
-In-Reply-To: <1305872945.2630.119.camel@localhost>
-References: <1305196419.2713.84.camel@localhost>
-	<1305751647-3122-1-git-send-email-bengardiner@nanometrics.ca>
-	<BANLkTi=+V7PR_29pK3ooVggPmeicCG0eWg@mail.gmail.com>
-	<BANLkTi=nmvdKNaNDCUUZQF3QX-jDydTSng@mail.gmail.com>
-	<1305872945.2630.119.camel@localhost>
-Date: Tue, 24 May 2011 10:33:37 -0400
-Message-ID: <BANLkTinkqLV=7of1Ug=e-8a-A8qVJU98wA@mail.gmail.com>
-Subject: Re: [PATCH] UBIFS: don't fail on -EBADMSG when fixing free space
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: dedekind1@gmail.com
-Cc: "Matthew L. Creech" <mlcreech@gmail.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=GcYd7SXkfwa+ZkU+3QVTVQzgJEUabJqrgDUPdSRUrOeDA/EPJkBPYhyddUSIaBa+s3
+         HSfPK8HwKiNI2LmvUlA3eH8uPXYrrfPYyHKE+o93Y/8KEIuI+GUf0/gtpXJcGIjh2T7b
+         4FQVklv5u0tXLJ2/ZeeUMvJ0iqGKKC0c2Cwws=
+From: yxlraid@gmail.com
+To: James.Bottomley@suse.de
+Cc: jslaby@suse.cz, linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yuxiangl@marvell.com, jfeng@marvell.com
+Subject: [PATCH 5/9] [SCSI] mvsas: Remove unused macros, variables and functions
+Date: Tue, 24 May 2011 22:35:09 +0800
+Message-Id: <1306247709-6327-1-git-send-email-yxlraid@gmail.com>
+X-Mailer: git-send-email 1.7.5.1
+In-Reply-To: <msas-macros>
+References: <msas-macros>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Artem,
+From: Xiangliang Yu <yuxiangl@marvell.com>
 
-On Fri, May 20, 2011 at 2:21 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Thu, 2011-05-19 at 09:28 -0400, Ben Gardiner wrote:
->> [...]
->>
->> Because the "ubi_io_read: error -74 (ECC error)" is precisely what I
->> am encountering on my hardware when I do not flash with a utility that
->> drops empty pages at the end of eraseblocks. I imagined that this was
->> also the case for you. But I have also read that there are
->> peculiarities of the davinci nand driver (both in u-boot and linux).
->>
->> So, at least on my hardware, the -74 error is expected when the 0xff
->> pages are not dropped and so without the 'err != -EBADMSG' exception
->> the free space fixup will cause the volume to fail mount for me:
->
-> I am confused. The fix Matthew made is about the following situation:
+-- Remove unused macros: VSR_PHY_VS0, VSR_PHY_VS1, MVS_SLOTS,
+	MVS_CAN_QUEUE, MVS_MSI, SG_MX, _MV_DUMP, MV_DISABLE_NCQ
+-- Remove unused variables for mvs_info: irq, exp_req, cmd_size
+-- Remove unused functions: mvs_get_sas_addr, mvs_hexdump,
+	mvs_hba_sb_dump, mvs_hab_memory_dump, mvs_hba_cq_dump
 
-Sorry for the confusion. In the first 'Programming ubinized images'
-thread I saw that Matthew mentioned seeing lots of -74 errors so I was
-assuming that his and my problems are one and the same. Now that I
-have tested his patch I am seeing that this is not the case.
-
-> 1. You have completely erased flash (MTD partition) - no one has ever
-> written there. If you now read the flash, you'll get all 0xFFs with no
-> errors.
->
-> 2. You use a "dumb" flasher to program an UBI image. This flasher will
-> write empty NAND pages "as is". If you now read the flash after the
-> "dumb" programming, you should have no errors.
->
-> 3. You mount UBIFS for the very first time. It tries to fix up your
-> flash. Whatever eraseblock UBIFS reads, it should not encounter any
-> error.
-
-Yes I agree with the context for the patch. I can say so far that on
-da850evm 1. occurs as you described whereas for 2. and 3. ECC errors
-are encountered on read.
-
-> Isn't it weird that a freshly programmed flash cannot be read without
-> -EBADMSG (ECC correction failure).
-
-Yes it is very weird. :) I had been assuming up to this point that the
--74 errors were the result of writing the 0xff pages when they should
-be dropped. I can see now that this is not the case.
-
-On Fri, May 20, 2011 at 2:29 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Thu, 2011-05-19 at 09:28 -0400, Ben Gardiner wrote:
->> So, at least on my hardware, the -74 error is expected when the 0xff
->> pages are not dropped and so without the 'err != -EBADMSG' exception
->> the free space fixup will cause the volume to fail mount for me:
->
-> Still confused. If you have empty and erased flash, then you program it
-> with all 0xFFs, you should be able to read it with no errors.
-
-Right. In retrospect this seems to be a self-evident statement :)
-I had been previously attributing the -74 errors to a combination of
-1) writing 0xff pages when one should not and 2) lack of subpage
-writing support workaround with -O 2048. But it is clearly (to me now)
-a reading operation failure.
-
-> If this is
-> not the case for you, you should fix the driver. UBIFS cannot help in
-> this case - we consider it as "broken flash driver" case.
-
-Thank you. Yes, this appears to be the case and I'm glad to hear
-confirmation of this from an expert such as yourself.
-
-> I have not read your e-mail carefully because of limited amount of time,
-> but with quick reading I became confused - too much information :-)
-
-No problem. Thank you very much for what you have read and for your
-insights into the ongoing NAND flash problems on da850evm.
-
-Best Regards,
-Ben Gardiner
-
+Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
 ---
-Nanometrics Inc.
-http://www.nanometrics.ca
+ drivers/scsi/mvsas/mv_64xx.c |    1 -
+ drivers/scsi/mvsas/mv_94xx.c |    1 -
+ drivers/scsi/mvsas/mv_94xx.h |    2 -
+ drivers/scsi/mvsas/mv_defs.h |    5 +-
+ drivers/scsi/mvsas/mv_init.c |   24 ++++---
+ drivers/scsi/mvsas/mv_sas.c  |  163 +----------------------------------------
+ drivers/scsi/mvsas/mv_sas.h  |   13 +---
+ 7 files changed, 20 insertions(+), 189 deletions(-)
+
+diff --git a/drivers/scsi/mvsas/mv_64xx.c b/drivers/scsi/mvsas/mv_64xx.c
+index b02dd80..96bde34 100644
+--- a/drivers/scsi/mvsas/mv_64xx.c
++++ b/drivers/scsi/mvsas/mv_64xx.c
+@@ -803,7 +803,6 @@ const struct mvs_dispatch mvs_64xx_dispatch = {
+ 	mvs_write_port_irq_stat,
+ 	mvs_read_port_irq_mask,
+ 	mvs_write_port_irq_mask,
+-	mvs_get_sas_addr,
+ 	mvs_64xx_command_active,
+ 	mvs_64xx_clear_srs_irq,
+ 	mvs_64xx_issue_stop,
+diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
+index ef3c901..5b25f1b 100644
+--- a/drivers/scsi/mvsas/mv_94xx.c
++++ b/drivers/scsi/mvsas/mv_94xx.c
+@@ -947,7 +947,6 @@ const struct mvs_dispatch mvs_94xx_dispatch = {
+ 	mvs_write_port_irq_stat,
+ 	mvs_read_port_irq_mask,
+ 	mvs_write_port_irq_mask,
+-	mvs_get_sas_addr,
+ 	mvs_94xx_command_active,
+ 	mvs_94xx_clear_srs_irq,
+ 	mvs_94xx_issue_stop,
+diff --git a/drivers/scsi/mvsas/mv_94xx.h b/drivers/scsi/mvsas/mv_94xx.h
+index e71ae11..458d127 100644
+--- a/drivers/scsi/mvsas/mv_94xx.h
++++ b/drivers/scsi/mvsas/mv_94xx.h
+@@ -132,8 +132,6 @@ enum sas_sata_vsp_regs {
+ 	VSR_PHY_MODE9		= 0x09 * 4, /* Test */
+ 	VSR_PHY_MODE10		= 0x0A * 4, /* Power */
+ 	VSR_PHY_MODE11		= 0x0B * 4, /* Phy Mode */
+-	VSR_PHY_VS0		= 0x0C * 4, /* Vednor Specific 0 */
+-	VSR_PHY_VS1		= 0x0D * 4, /* Vednor Specific 1 */
+ 
+ 	VSR_PHY_FFE_CONTROL	= 0x10C,
+ 	VSR_PHY_DFE_UPDATE_CRTL	= 0x110,
+diff --git a/drivers/scsi/mvsas/mv_defs.h b/drivers/scsi/mvsas/mv_defs.h
+index 9202bc6..e39629d 100644
+--- a/drivers/scsi/mvsas/mv_defs.h
++++ b/drivers/scsi/mvsas/mv_defs.h
+@@ -43,7 +43,6 @@ enum chip_flavors {
+ 
+ /* driver compile-time configuration */
+ enum driver_configuration {
+-	MVS_SLOTS		= 512,	/* command slots */
+ 	MVS_TX_RING_SZ		= 1024,	/* TX ring size (12-bit) */
+ 	MVS_RX_RING_SZ		= 1024, /* RX ring size (12-bit) */
+ 					/* software requires power-of-2
+@@ -56,8 +55,7 @@ enum driver_configuration {
+ 	MVS_SSP_CMD_SZ		= 64,	/* SSP command table buffer size */
+ 	MVS_ATA_CMD_SZ		= 96,	/* SATA command table buffer size */
+ 	MVS_OAF_SZ		= 64,	/* Open address frame buffer size */
+-	MVS_QUEUE_SIZE	= 32,	/* Support Queue depth */
+-	MVS_CAN_QUEUE		= MVS_SLOTS - 2,	/* SCSI Queue depth */
++	MVS_QUEUE_SIZE		= 64,	/* Support Queue depth */
+ 	MVS_SOC_CAN_QUEUE	= MVS_SOC_SLOTS - 2,
+ };
+ 
+@@ -392,7 +390,6 @@ enum sas_cmd_port_registers {
+ };
+ 
+ enum mvs_info_flags {
+-	MVF_MSI		= (1U << 0),	/* MSI is enabled */
+ 	MVF_PHY_PWR_FIX	= (1U << 1),	/* bug workaround */
+ 	MVF_FLAG_SOC		= (1U << 2),	/* SoC integrated controllers */
+ };
+diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+index b111ae2..a7815f9 100644
+--- a/drivers/scsi/mvsas/mv_init.c
++++ b/drivers/scsi/mvsas/mv_init.c
+@@ -53,7 +53,6 @@ static const struct mvs_chip_info mvs_chips[] = {
+ struct device_attribute *mvst_host_attrs[];
+ 
+ #define SOC_SAS_NUM 2
+-#define SG_MX 64
+ 
+ static struct scsi_host_template mvs_sht = {
+ 	.module			= THIS_MODULE,
+@@ -70,7 +69,7 @@ static struct scsi_host_template mvs_sht = {
+ 	.can_queue		= 1,
+ 	.cmd_per_lun		= 1,
+ 	.this_id		= -1,
+-	.sg_tablesize		= SG_MX,
++	.sg_tablesize		= SG_ALL,
+ 	.max_sectors		= SCSI_DEFAULT_MAX_SECTORS,
+ 	.use_clustering		= ENABLE_CLUSTERING,
+ 	.eh_device_reset_handler = sas_eh_device_reset_handler,
+@@ -133,7 +132,7 @@ static void mvs_free(struct mvs_info *mvi)
+ 	if (mvi->flags & MVF_FLAG_SOC)
+ 		slot_nr = MVS_SOC_SLOTS;
+ 	else
+-		slot_nr = MVS_SLOTS;
++		slot_nr = MVS_CHIP_SLOT_SZ;
+ 
+ 	if (mvi->dma_pool)
+ 		pci_pool_destroy(mvi->dma_pool);
+@@ -166,6 +165,7 @@ static void mvs_free(struct mvs_info *mvi)
+ 		scsi_host_put(mvi->shost);
+ 	list_for_each_entry(mwq, &mvi->wq_list, entry)
+ 		cancel_delayed_work(&mwq->work_q);
++	kfree(mvi->tags);
+ 	kfree(mvi);
+ }
+ 
+@@ -232,7 +232,7 @@ static int __devinit mvs_alloc(struct mvs_info *mvi, struct Scsi_Host *shost)
+ 	if (mvi->flags & MVF_FLAG_SOC)
+ 		slot_nr = MVS_SOC_SLOTS;
+ 	else
+-		slot_nr = MVS_SLOTS;
++		slot_nr = MVS_CHIP_SLOT_SZ;
+ 
+ 	spin_lock_init(&mvi->lock);
+ 	for (i = 0; i < mvi->chip->n_phy; i++) {
+@@ -369,8 +369,9 @@ static struct mvs_info *__devinit mvs_pci_alloc(struct pci_dev *pdev,
+ 	struct mvs_info *mvi;
+ 	struct sas_ha_struct *sha = SHOST_TO_SAS_HA(shost);
+ 
+-	mvi = kzalloc(sizeof(*mvi) + MVS_SLOTS * sizeof(struct mvs_slot_info),
+-			GFP_KERNEL);
++	mvi = kzalloc(sizeof(*mvi) +
++		(1L << mvs_chips[ent->driver_data].slot_width) *
++		sizeof(struct mvs_slot_info), GFP_KERNEL);
+ 	if (!mvi)
+ 		return NULL;
+ 
+@@ -379,7 +380,6 @@ static struct mvs_info *__devinit mvs_pci_alloc(struct pci_dev *pdev,
+ 	mvi->chip_id = ent->driver_data;
+ 	mvi->chip = &mvs_chips[mvi->chip_id];
+ 	INIT_LIST_HEAD(&mvi->wq_list);
+-	mvi->irq = pdev->irq;
+ 
+ 	((struct mvs_prv_info *)sha->lldd_ha)->mvi[id] = mvi;
+ 	((struct mvs_prv_info *)sha->lldd_ha)->n_phy = mvi->chip->n_phy;
+@@ -391,6 +391,10 @@ static struct mvs_info *__devinit mvs_pci_alloc(struct pci_dev *pdev,
+ 	tasklet_init(&mv_tasklet, mvs_tasklet, (unsigned long)sha);
+ #endif
+ 
++	mvi->tags = kzalloc(MVS_CHIP_SLOT_SZ>>3, GFP_KERNEL);
++	if (!mvi->tags)
++		goto err_out;
++
+ 	if (MVS_CHIP_DISP->chip_ioremap(mvi))
+ 		goto err_out;
+ 	if (!mvs_alloc(mvi, shost))
+@@ -505,11 +509,11 @@ static void  __devinit mvs_post_sas_ha_init(struct Scsi_Host *shost,
+ 	if (mvi->flags & MVF_FLAG_SOC)
+ 		can_queue = MVS_SOC_CAN_QUEUE;
+ 	else
+-		can_queue = MVS_CAN_QUEUE;
++		can_queue = MVS_CHIP_SLOT_SZ;
+ 
+ 	sha->lldd_queue_size = can_queue;
+ 	shost->can_queue = can_queue;
+-	mvi->shost->cmd_per_lun = MVS_SLOTS/sha->num_phys;
++	mvi->shost->cmd_per_lun = MVS_QUEUE_SIZE;
+ 	sha->core.shost = mvi->shost;
+ }
+ 
+@@ -650,7 +654,7 @@ static void __devexit mvs_pci_remove(struct pci_dev *pdev)
+ 	scsi_remove_host(mvi->shost);
+ 
+ 	MVS_CHIP_DISP->interrupt_disable(mvi);
+-	free_irq(mvi->irq, sha);
++	free_irq(mvi->pdev->irq, sha);
+ 	for (i = 0; i < core_nr; i++) {
+ 		mvi = ((struct mvs_prv_info *)sha->lldd_ha)->mvi[i];
+ 		mvs_free(mvi);
+diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
+index 4585dc0..7bd0ee3 100644
+--- a/drivers/scsi/mvsas/mv_sas.c
++++ b/drivers/scsi/mvsas/mv_sas.c
+@@ -38,7 +38,7 @@ static int mvs_find_tag(struct mvs_info *mvi, struct sas_task *task, u32 *tag)
+ 
+ void mvs_tag_clear(struct mvs_info *mvi, u32 tag)
+ {
+-	void *bitmap = &mvi->tags;
++	void *bitmap = mvi->tags;
+ 	clear_bit(tag, bitmap);
+ }
+ 
+@@ -49,14 +49,14 @@ void mvs_tag_free(struct mvs_info *mvi, u32 tag)
+ 
+ void mvs_tag_set(struct mvs_info *mvi, unsigned int tag)
+ {
+-	void *bitmap = &mvi->tags;
++	void *bitmap = mvi->tags;
+ 	set_bit(tag, bitmap);
+ }
+ 
+ inline int mvs_tag_alloc(struct mvs_info *mvi, u32 *tag_out)
+ {
+ 	unsigned int index, tag;
+-	void *bitmap = &mvi->tags;
++	void *bitmap = mvi->tags;
+ 
+ 	index = find_first_zero_bit(bitmap, mvi->tags_num);
+ 	tag = index;
+@@ -74,126 +74,6 @@ void mvs_tag_init(struct mvs_info *mvi)
+ 		mvs_tag_clear(mvi, i);
+ }
+ 
+-void mvs_hexdump(u32 size, u8 *data, u32 baseaddr)
+-{
+-	u32 i;
+-	u32 run;
+-	u32 offset;
+-
+-	offset = 0;
+-	while (size) {
+-		printk(KERN_DEBUG"%08X : ", baseaddr + offset);
+-		if (size >= 16)
+-			run = 16;
+-		else
+-			run = size;
+-		size -= run;
+-		for (i = 0; i < 16; i++) {
+-			if (i < run)
+-				printk(KERN_DEBUG"%02X ", (u32)data[i]);
+-			else
+-				printk(KERN_DEBUG"   ");
+-		}
+-		printk(KERN_DEBUG": ");
+-		for (i = 0; i < run; i++)
+-			printk(KERN_DEBUG"%c",
+-				isalnum(data[i]) ? data[i] : '.');
+-		printk(KERN_DEBUG"\n");
+-		data = &data[16];
+-		offset += run;
+-	}
+-	printk(KERN_DEBUG"\n");
+-}
+-
+-#if (_MV_DUMP > 1)
+-static void mvs_hba_sb_dump(struct mvs_info *mvi, u32 tag,
+-				   enum sas_protocol proto)
+-{
+-	u32 offset;
+-	struct mvs_slot_info *slot = &mvi->slot_info[tag];
+-
+-	offset = slot->cmd_size + MVS_OAF_SZ +
+-	    MVS_CHIP_DISP->prd_size() * slot->n_elem;
+-	dev_printk(KERN_DEBUG, mvi->dev, "+---->Status buffer[%d] :\n",
+-			tag);
+-	mvs_hexdump(32, (u8 *) slot->response,
+-		    (u32) slot->buf_dma + offset);
+-}
+-#endif
+-
+-static void mvs_hba_memory_dump(struct mvs_info *mvi, u32 tag,
+-				enum sas_protocol proto)
+-{
+-#if (_MV_DUMP > 1)
+-	u32 sz, w_ptr;
+-	u64 addr;
+-	struct mvs_slot_info *slot = &mvi->slot_info[tag];
+-
+-	/*Delivery Queue */
+-	sz = MVS_CHIP_SLOT_SZ;
+-	w_ptr = slot->tx;
+-	addr = mvi->tx_dma;
+-	dev_printk(KERN_DEBUG, mvi->dev,
+-		"Delivery Queue Size=%04d , WRT_PTR=%04X\n", sz, w_ptr);
+-	dev_printk(KERN_DEBUG, mvi->dev,
+-		"Delivery Queue Base Address=0x%llX (PA)"
+-		"(tx_dma=0x%llX), Entry=%04d\n",
+-		addr, (unsigned long long)mvi->tx_dma, w_ptr);
+-	mvs_hexdump(sizeof(u32), (u8 *)(&mvi->tx[mvi->tx_prod]),
+-			(u32) mvi->tx_dma + sizeof(u32) * w_ptr);
+-	/*Command List */
+-	addr = mvi->slot_dma;
+-	dev_printk(KERN_DEBUG, mvi->dev,
+-		"Command List Base Address=0x%llX (PA)"
+-		"(slot_dma=0x%llX), Header=%03d\n",
+-		addr, (unsigned long long)slot->buf_dma, tag);
+-	dev_printk(KERN_DEBUG, mvi->dev, "Command Header[%03d]:\n", tag);
+-	/*mvs_cmd_hdr */
+-	mvs_hexdump(sizeof(struct mvs_cmd_hdr), (u8 *)(&mvi->slot[tag]),
+-		(u32) mvi->slot_dma + tag * sizeof(struct mvs_cmd_hdr));
+-	/*1.command table area */
+-	dev_printk(KERN_DEBUG, mvi->dev, "+---->Command Table :\n");
+-	mvs_hexdump(slot->cmd_size, (u8 *) slot->buf, (u32) slot->buf_dma);
+-	/*2.open address frame area */
+-	dev_printk(KERN_DEBUG, mvi->dev, "+---->Open Address Frame :\n");
+-	mvs_hexdump(MVS_OAF_SZ, (u8 *) slot->buf + slot->cmd_size,
+-				(u32) slot->buf_dma + slot->cmd_size);
+-	/*3.status buffer */
+-	mvs_hba_sb_dump(mvi, tag, proto);
+-	/*4.PRD table */
+-	dev_printk(KERN_DEBUG, mvi->dev, "+---->PRD table :\n");
+-	mvs_hexdump(MVS_CHIP_DISP->prd_size() * slot->n_elem,
+-		(u8 *) slot->buf + slot->cmd_size + MVS_OAF_SZ,
+-		(u32) slot->buf_dma + slot->cmd_size + MVS_OAF_SZ);
+-#endif
+-}
+-
+-static void mvs_hba_cq_dump(struct mvs_info *mvi)
+-{
+-#if (_MV_DUMP > 2)
+-	u64 addr;
+-	void __iomem *regs = mvi->regs;
+-	u32 entry = mvi->rx_cons + 1;
+-	u32 rx_desc = le32_to_cpu(mvi->rx[entry]);
+-
+-	/*Completion Queue */
+-	addr = mr32(RX_HI) << 16 << 16 | mr32(RX_LO);
+-	dev_printk(KERN_DEBUG, mvi->dev, "Completion Task = 0x%p\n",
+-		   mvi->slot_info[rx_desc & RXQ_SLOT_MASK].task);
+-	dev_printk(KERN_DEBUG, mvi->dev,
+-		"Completion List Base Address=0x%llX (PA), "
+-		"CQ_Entry=%04d, CQ_WP=0x%08X\n",
+-		addr, entry - 1, mvi->rx[0]);
+-	mvs_hexdump(sizeof(u32), (u8 *)(&rx_desc),
+-		    mvi->rx_dma + sizeof(u32) * entry);
+-#endif
+-}
+-
+-void mvs_get_sas_addr(void *buf, u32 buflen)
+-{
+-	/*memcpy(buf, "\x50\x05\x04\x30\x11\xab\x64\x40", 8);*/
+-}
+-
+ struct mvs_info *mvs_find_dev_mvi(struct domain_device *dev)
+ {
+ 	unsigned long i = 0, j = 0, hi = 0;
+@@ -421,13 +301,6 @@ int mvs_slave_configure(struct scsi_device *sdev)
+ 	if (ret)
+ 		return ret;
+ 	if (dev_is_sata(dev)) {
+-		/* may set PIO mode */
+-	#if MV_DISABLE_NCQ
+-		struct ata_port *ap = dev->sata_dev.ap;
+-		struct ata_device *adev = ap->link.device;
+-		adev->flags |= ATA_DFLAG_NCQ_OFF;
+-		scsi_adjust_queue_depth(sdev, MSG_SIMPLE_TAG, 1);
+-	#endif
+ 	}
+ 	return 0;
+ }
+@@ -475,10 +348,7 @@ static int mvs_task_prep_smp(struct mvs_info *mvi,
+ 	void *buf_prd;
+ 	struct mvs_slot_info *slot = &mvi->slot_info[tag];
+ 	u32 flags = (tei->n_elem << MCH_PRD_LEN_SHIFT);
+-#if _MV_DUMP
+-	u8 *buf_cmd;
+-	void *from;
+-#endif
++
+ 	/*
+ 	 * DMA-map SMP request, response buffers
+ 	 */
+@@ -510,15 +380,7 @@ static int mvs_task_prep_smp(struct mvs_info *mvi,
+ 	buf_tmp = slot->buf;
+ 	buf_tmp_dma = slot->buf_dma;
+ 
+-#if _MV_DUMP
+-	buf_cmd = buf_tmp;
+-	hdr->cmd_tbl = cpu_to_le64(buf_tmp_dma);
+-	buf_tmp += req_len;
+-	buf_tmp_dma += req_len;
+-	slot->cmd_size = req_len;
+-#else
+ 	hdr->cmd_tbl = cpu_to_le64(sg_dma_address(sg_req));
+-#endif
+ 
+ 	/* region 2: open address frame area (MVS_OAF_SZ bytes) ********* */
+ 	buf_oaf = buf_tmp;
+@@ -567,12 +429,6 @@ static int mvs_task_prep_smp(struct mvs_info *mvi,
+ 	/* fill in PRD (scatter/gather) table, if any */
+ 	MVS_CHIP_DISP->make_prd(task->scatter, tei->n_elem, buf_prd);
+ 
+-#if _MV_DUMP
+-	/* copy cmd table */
+-	from = kmap_atomic(sg_page(sg_req), KM_IRQ0);
+-	memcpy(buf_cmd, from + sg_req->offset, req_len);
+-	kunmap_atomic(from, KM_IRQ0);
+-#endif
+ 	return 0;
+ 
+ err_out_2:
+@@ -668,9 +524,6 @@ static int mvs_task_prep_ata(struct mvs_info *mvi,
+ 
+ 	buf_tmp += MVS_ATA_CMD_SZ;
+ 	buf_tmp_dma += MVS_ATA_CMD_SZ;
+-#if _MV_DUMP
+-	slot->cmd_size = MVS_ATA_CMD_SZ;
+-#endif
+ 
+ 	/* region 2: open address frame area (MVS_OAF_SZ bytes) ********* */
+ 	/* used for STP.  unused for SATA? */
+@@ -788,9 +641,6 @@ static int mvs_task_prep_ssp(struct mvs_info *mvi,
+ 
+ 	buf_tmp += MVS_SSP_CMD_SZ;
+ 	buf_tmp_dma += MVS_SSP_CMD_SZ;
+-#if _MV_DUMP
+-	slot->cmd_size = MVS_SSP_CMD_SZ;
+-#endif
+ 
+ 	/* region 2: open address frame area (MVS_OAF_SZ bytes) ********* */
+ 	buf_oaf = buf_tmp;
+@@ -997,7 +847,6 @@ static int mvs_task_prep(struct sas_task *task, struct mvs_info *mvi, int is_tmf
+ 	task->task_state_flags |= SAS_TASK_AT_INITIATOR;
+ 	spin_unlock(&task->task_state_lock);
+ 
+-	mvs_hba_memory_dump(mvi, tag, task->task_proto);
+ 	mvi_dev->running_req++;
+ 	++(*pass);
+ 	mvi->tx_prod = (mvi->tx_prod + 1) & (MVS_CHIP_SLOT_SZ - 1);
+@@ -1963,8 +1812,6 @@ int mvs_slot_complete(struct mvs_info *mvi, u32 rx_desc, u32 flags)
+ 	void *to;
+ 	enum exec_status sts;
+ 
+-	if (mvi->exp_req)
+-		mvi->exp_req--;
+ 	if (unlikely(!task || !task->lldd_task || !task->dev))
+ 		return -1;
+ 
+@@ -1972,8 +1819,6 @@ int mvs_slot_complete(struct mvs_info *mvi, u32 rx_desc, u32 flags)
+ 	dev = task->dev;
+ 	mvi_dev = dev->lldd_dev;
+ 
+-	mvs_hba_cq_dump(mvi);
+-
+ 	spin_lock(&task->task_state_lock);
+ 	task->task_state_flags &=
+ 		~(SAS_TASK_STATE_PENDING | SAS_TASK_AT_INITIATOR);
+diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
+index 3399ff1..7abfa2d 100644
+--- a/drivers/scsi/mvsas/mv_sas.h
++++ b/drivers/scsi/mvsas/mv_sas.h
+@@ -48,12 +48,8 @@
+ 
+ #define DRV_NAME		"mvsas"
+ #define DRV_VERSION		"0.8.2"
+-#define _MV_DUMP		0
+ #define MVS_ID_NOT_MAPPED	0x7f
+-/* #define DISABLE_HOTPLUG_DMA_FIX */
+-// #define MAX_EXP_RUNNING_REQ	2
+ #define WIDE_PORT_MAX_PHY		4
+-#define	MV_DISABLE_NCQ	0
+ #define mv_printk(fmt, arg ...)	\
+ 	printk(KERN_DEBUG"%s %d:" fmt, __FILE__, __LINE__, ## arg)
+ #ifdef MV_DEBUG
+@@ -131,7 +127,6 @@ struct mvs_dispatch {
+ 	u32 (*read_port_irq_mask)(struct mvs_info *mvi, u32 port);
+ 	void (*write_port_irq_mask)(struct mvs_info *mvi, u32 port, u32 val);
+ 
+-	void (*get_sas_addr)(void *buf, u32 buflen);
+ 	void (*command_active)(struct mvs_info *mvi, u32 slot_idx);
+ 	void (*clear_srs_irq)(struct mvs_info *mvi, u8 reg_set, u8 clear_all);
+ 	void (*issue_stop)(struct mvs_info *mvi, enum mvs_port_type type,
+@@ -333,9 +328,6 @@ struct mvs_slot_info {
+ 	 */
+ 	void *buf;
+ 	dma_addr_t buf_dma;
+-#if _MV_DUMP
+-	u32 cmd_size;
+-#endif
+ 	void *response;
+ 	struct mvs_port *port;
+ 	struct mvs_device	*device;
+@@ -389,12 +381,10 @@ struct mvs_info {
+ 	const struct mvs_chip_info *chip;
+ 
+ 	int tags_num;
+-	DECLARE_BITMAP(tags, MVS_SLOTS);
++	unsigned long *tags;
+ 	/* further per-slot information */
+ 	struct mvs_phy phy[MVS_MAX_PHYS];
+ 	struct mvs_port port[MVS_MAX_PHYS];
+-	u32 irq;
+-	u32 exp_req;
+ 	u32 id;
+ 	u64 sata_reg_set;
+ 	struct list_head *hba_list;
+@@ -485,7 +475,6 @@ void mvs_do_release_task(struct mvs_info *mvi, int phy_no,
+ void mvs_int_port(struct mvs_info *mvi, int phy_no, u32 events);
+ void mvs_update_phyinfo(struct mvs_info *mvi, int i, int get_st);
+ int mvs_int_rx(struct mvs_info *mvi, bool self_clear);
+-void mvs_hexdump(u32 size, u8 *data, u32 baseaddr);
+ struct mvs_device *mvs_find_dev_by_reg_set(struct mvs_info *mvi, u8 reg_set);
+ #endif
+ 
+-- 
+1.7.4.4
+
