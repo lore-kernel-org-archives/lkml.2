@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932412Ab1EXSdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:33:51 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32984 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab1EXSdu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:33:50 -0400
-Date: Tue, 24 May 2011 11:33:28 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Joe Perches <joe@perches.com>,
-        netdev <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        davem@davemloft.net
-Subject: Re: linux-next: Tree for May 24 (ratelimits, CONFIG_PRINTK not
- enabled)
-Message-Id: <20110524113328.e3d5867b.randy.dunlap@oracle.com>
-In-Reply-To: <20110524140212.a4f19769.sfr@canb.auug.org.au>
-References: <20110524140212.a4f19769.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090207.4DDBFA07.00B9:SCFSTAT5015188,ss=1,fgs=0
+	id S932732Ab1EXSoz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:44:55 -0400
+Received: from enyo.dsw2k3.info ([195.71.86.239]:38221 "EHLO enyo.dsw2k3.info"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756569Ab1EXSow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 14:44:52 -0400
+X-Greylist: delayed 634 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 May 2011 14:44:52 EDT
+Date: Tue, 24 May 2011 20:34:05 +0200
+From: Matthias Schniedermeyer <ms@citd.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
+Subject: Re: (Short?) merge window reminder
+Message-ID: <20110524183405.GA14493@citd.de>
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
+ <20110523192056.GC23629@elte.hu>
+ <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011 14:02:12 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+On 23.05.2011 13:33, Linus Torvalds wrote:
+> On Mon, May 23, 2011 at 12:20 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > I really hope there's also a voice that tells you to wait until .42 before
+> > cutting 3.0.0! :-)
 > 
-> Changes since 20110523:
+> So I'm toying with 3.0 (and in that case, it really would be "3.0",
+> not "3.0.0" - the stable team would get the third digit rather than
+> the fourth one.
 
-when CONFIG_PRINTK is not enabled:
+What about strictly 3 part versions? Just add a .0.
 
-net/core/filter.c:353: warning: type defaults to 'int' in declaration of 'DEFINE_RATELIMIT_STATE'
-net/core/filter.c:353: warning: parameter names (without types) in function declaration
-net/core/filter.c:353: error: invalid storage class for function 'DEFINE_RATELIMIT_STATE'
-net/core/filter.c:353: error: implicit declaration of function '__ratelimit'
-net/core/filter.c:353: error: '_rs' undeclared (first use in this function)
+3.0.0 - Release Kernel 3.0
+3.0.1 - Stable 1
+3.0.2 - Stable 2
+3.1.0 - Release Kernel 3.1
+3.1.1 - Stable 1
+...
 
-
-Adding <linux/ratelimit.h> to <asm-generic/bug.h> causes other problems:
-
-In file included from linux-next-20110524/include/linux/thread_info.h:53,
-                 from linux-next-20110524/include/linux/preempt.h:9,
-                 from linux-next-20110524/include/linux/spinlock.h:50,
-                 from linux-next-20110524/include/linux/ratelimit.h:5,
-                 from linux-next-20110524/include/asm-generic/bug.h:5,
-                 from linux-next-20110524/arch/x86/include/asm/bug.h:38,
-                 from linux-next-20110524/include/linux/kernel.h:23,
-                 from linux-next-20110524/arch/x86/include/asm/percpu.h:44,
-                 from linux-next-20110524/arch/x86/include/asm/current.h:5,
-                 from linux-next-20110524/arch/x86/include/asm/processor.h:15,
-                 from linux-next-20110524/arch/x86/include/asm/atomic.h:6,
-                 from linux-next-20110524/include/linux/crypto.h:20,
-                 from linux-next-20110524/arch/x86/kernel/asm-offsets.c:8:
-linux-next-20110524/arch/x86/include/asm/thread_info.h:34: error: expected specifier-qualifier-list before 'mm_segment_t'
-In file included from linux-next-20110524/include/linux/thread_info.h:53,
-                 from linux-next-20110524/include/linux/preempt.h:9,
-                 from linux-next-20110524/include/linux/spinlock.h:50,
-                 from linux-next-20110524/include/linux/ratelimit.h:5,
-                 from linux-next-20110524/include/asm-generic/bug.h:5,
-                 from linux-next-20110524/arch/x86/include/asm/bug.h:38,
-                 from linux-next-20110524/include/linux/kernel.h:23,
-                 from linux-next-20110524/arch/x86/include/asm/percpu.h:44,
-                 from linux-next-20110524/arch/x86/include/asm/current.h:5,
-                 from linux-next-20110524/arch/x86/include/asm/processor.h:15,
-                 from linux-next-20110524/arch/x86/include/asm/atomic.h:6,
-                 from linux-next-20110524/include/linux/crypto.h:20,
-                 from linux-next-20110524/arch/x86/kernel/asm-offsets.c:8:
-linux-next-20110524/arch/x86/include/asm/thread_info.h:217: error: expected declaration specifiers or '...' before 'kernel_stack'
-linux-next-20110524/arch/x86/include/asm/thread_info.h:217: warning: data definition has no type or storage class
-linux-next-20110524/arch/x86/include/asm/thread_info.h:217: warning: type defaults to 'int' in declaration of 'DECLARE_PER_CPU'
-linux-next-20110524/arch/x86/include/asm/thread_info.h: In function 'current_thread_info':
-linux-next-20110524/arch/x86/include/asm/thread_info.h:222: error: implicit declaration of function 'percpu_read_stable'
-linux-next-20110524/arch/x86/include/asm/thread_info.h:222: error: 'kernel_stack' undeclared (first use in this function)
+Biggest problem is likely version phobics that get pimples when they see 
+trailing zeros. ;-)
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+
+Bis denn
+
+-- 
+Real Programmers consider "what you see is what you get" to be just as 
+bad a concept in Text Editors as it is in women. No, the Real Programmer
+wants a "you asked for it, you got it" text editor -- complicated, 
+cryptic, powerful, unforgiving, dangerous.
+
