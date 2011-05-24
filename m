@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab1EXVcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 17:32:23 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36731 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753245Ab1EXVcV (ORCPT
+	id S1755299Ab1EXRJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 13:09:18 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54480 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab1EXRJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 17:32:21 -0400
-Subject: Re: [PATCH 5/6] target: Convert REPORT_LUNs to use int_to_scsilun
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Martin Svec <martin.svec@zoner.cz>
-In-Reply-To: <1305861554-29960-6-git-send-email-nab@linux-iscsi.org>
-References: <1305861554-29960-1-git-send-email-nab@linux-iscsi.org>
-	 <1305861554-29960-6-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 13:02:57 -0400
-Message-ID: <1306256577.10201.13.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Tue, 24 May 2011 13:09:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=WAFFRBubTaLwaN+CJF+SPf653Zh15rvsXUpr81jNbnaO1mOtvyv/iEOotYlu3QLXID
+         FrWS1PLUfyyBmyS+v0tPEt3XsRyegO5n8Nh8wGkw9GA1ScHV/Tq08ghD1wezRPZvDy0C
+         MJ9dtxmLM9XslY8IjhMty0Cpe+Hkm1f8AgcHI=
+Message-ID: <4DDBE4D5.9010000@gmail.com>
+Date: Tue, 24 May 2011 19:03:17 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Stevie Trujillo <stevie.trujillo@gmail.com>
+CC: linux-kernel@vger.kernel.org, xiyou.wangcong@gmail.com,
+        kmpark@infradead.org
+Subject: Re: ramoops: is using platform_drivers correct?
+References: <201105231527.53805.stevie.trujillo@gmail.com>
+In-Reply-To: <201105231527.53805.stevie.trujillo@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-19 at 20:19 -0700, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> This patch converts transport_core_report_lun_response() to use
-> drivers/scsi/scsi_scan.c:int_to_scsilun instead of using the
-> struct target_core_fabric_ops->pack_lun() fabric provided API vector.
-> 
-> It also removes the tfo->pack_lun check from target_fabric_tf_ops_check()
-> and removes from struct target_core_fabric_ops->pack_lun() from
-> target_core_fabric_ops.h, and the following mainline scsi-misc fabric
-> modules:
-> 
-> *) tcm_loop: Drop tcm_loop_pack_lun() usage
-> *) tcm_fc: Drop ft_pack_lun() usage
-> 
-> Reported-by: Mike Christie <michaelc@cs.wisc.edu>
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Il 23/05/2011 15:27, Stevie Trujillo ha scritto:
+> Hello,
+>
+> ramoops (drivers/char/ramoops.c) is for "all" computers right? When I try to
 
-There's no way this or the following patch count as bug fixes.  They're
-converging hand rolled functions and definitions (which is good, but not
-a bug fix).
+Yes, or at least was my intention. It's true that this drivers is useful 
+when you use an NVRAM, this is typical for the embedded world where the 
+platform driver approach is more diffused. Sure at this point the module 
+parameters are not useful. In addition the platform data struct doesn't 
+define a way to select if to dump only oops. At the end I think a patch 
+it's needed here. I have to look at the code to see if it's possible to 
+use the platform data OR module parameters. I'll submit a patch.
 
-James
-
-
+Marco
