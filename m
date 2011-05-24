@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab1EXKH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 06:07:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45022 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab1EXKH1 (ORCPT
+	id S1755877Ab1EXKHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 06:07:31 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:49255 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab1EXKH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 06:07:27 -0400
-Subject: Re: [PATCH] regulator: Do bulk enables of regulators in parallel
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-In-Reply-To: <1306195960-5897-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1306195960-5897-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 11:07:22 +0100
-Message-ID: <1306231642.3307.1.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 24 May 2011 06:07:28 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: Kyungmin Park <kmpark@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de>
+	<AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com>
+	<201103301706.36214.arnd@arndb.de>
+	<BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com>
+	<87wrhgk8lp.fsf@devron.myhome.or.jp>
+	<BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com>
+	<87r57ok3fp.fsf@devron.myhome.or.jp>
+	<BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com>
+	<87mxick0zj.fsf@devron.myhome.or.jp>
+	<alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
+Date: Tue, 24 May 2011 19:07:25 +0900
+In-Reply-To: <alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
+	(Lukas Czerner's message of "Tue, 24 May 2011 11:25:11 +0200 (CEST)")
+Message-ID: <874o4kjtsy.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 08:12 +0800, Mark Brown wrote:
-> In order to reduce the impact of ramp times rather than enabling the
-> regulators for a device in series use async tasks to run the actual
-> enables. This means that the delays which the enables implement can all
-> run in parallel, though it does mean that the order in which the
-> supplies come on may be unstable.
-> 
-> For super bonus fun points if any of the regulators are shared between
-> multiple supplies on the same device (as is rather likely) then this
-> will test our locking.  Note that in this case we only delay once for
-> each physical regulator so the threads shouldn't block each other while
-> delaying.
-> 
-> It'd be even nicer if we could coalesce writes to a shared enable registers
-> in PMICs but that's definitely future work, and it may also be useful
-> and is certainly more achievable to optimise out the parallelism if none
-> of the regulators implement ramp delays.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
-> 
-> Targetted at 2.6.41 obviously.
-> 
+Lukas Czerner <lczerner@redhat.com> writes:
 
-Applied.
+>> No, no. Userland will know max-length from statvfs, right? So, let's
+>> assume it is 100 (->f_blocks) * 1024 (->f_bsize).
+>
+> You do not need to know the filesystem size to do the discard, it should
+> be adjusted within the kernel. Just specify ULLONG_MAX as a length. See
+> fstrim tool in util-linux-ng.
+>
+>> 
+>> Now, userland know about max length, 102400, ok? Let's start to trim.
+>> 
+>> Assume, userland want to trim whole. So, userland will specify like
+>> 
+>> 	trim(0, 102400).
+>> 
+>> What happen in kernel actually?
+>> 
+>> Current implement doesn't map blocks. So, in the case of FAT, it adjusts
+>> from 0 to 2 * 1024.
+>> 
+>> So, it trims between 2048 and 102400. The problem is here. FS layout is
+>> actually, 2048 and (102400 + 2048). I.e. actually userland has to do
+>> 
+>> 	trim(2048, 102400 + 2048)
+>> 
+>> to specify whole. How to know 2048?
+>
+> You do not need to know anything in userspace. If you want to trim the
+> whole filesystem you just do trim(0, ULLONG_MAX) - which is what fstrim
+> does when you do not specify range. And you just skip the filesystem
+> metadata obviously, regardless if they are at the beginning of the
+> filesystem or in the middle. Just do whatever you need to do within your
+> filesystem.
+>
+> What we do in ext4 is, that we convert length and start passed in struct
+> fstrim_range into filesystem block units and then get the last
+> allocation group and block offset within that group (we do the same for
+> the start block) and we try to discard free block ranges in from staring
+> block to the last block.
+>
+> It is really not a rocket science and since every filesystem is
+> different and has different internal data structures it is up to you how
+> to do this. And if you shift a block or two, it really does not matter
+> as much since user-land does not know about how the filesystem block are
+> laid out anyway, nor user land knows which are free and which are not.
+>
+> I agree that the interface is a little bit fuzzy, but that is mainly
+> because it is intended to be filesystem independent and we do have a lot
+> of various filesystems, so I wanted it to be as flexibile as it should,
+> hence the start, len in Bytes.
+>
+> Hope it helped.
 
-Thanks
+No. If you want to trim whole with some chunk like 1GB and periodically
+(IIRC in xfstest), what do? We have to trim until ULLONG_MAX for each
+1GB?
 
-Liam
-
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
