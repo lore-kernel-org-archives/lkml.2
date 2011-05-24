@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab1EXPFE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 11:05:04 -0400
-Received: from jaguar.mail.utk.edu ([160.36.0.84]:43732 "EHLO
-	jaguar.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753272Ab1EXPFC (ORCPT
+	id S1754287Ab1EXPEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 11:04:47 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38367 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357Ab1EXPEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 11:05:02 -0400
-Date: Tue, 24 May 2011 11:04:43 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: linux-kernel@vger.kernel.org, fbuihuu@gmail.com, mingo@elte.hu,
-        paulus@samba.org, acme@redhat.com
-Subject: Re: perf: regression with PERF_EVENT_IOC_REFRESH
-In-Reply-To: <1306233036.2497.15.camel@laptop>
-Message-ID: <alpine.DEB.2.00.1105241041490.10575@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>  <1306182141.2497.5.camel@laptop>  <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu> <1306233036.2497.15.camel@laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 24 May 2011 11:04:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=gW1gH5yjcz1uXHO3ykbjd7N6yRytLrc9f/tITrFhjmB3S5HLoM8K7+EeZbrVGSrdJw
+         Ja1XpE96ePFv4gWdKOuV1mzD12+OzOdI+Fz+j7ngnM4x17ksFrjsHy3O+QrEbmygYCZ9
+         rQn4XQWug39BxBUtWbwD0KExO8yHD9KlRXrvY=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1306248401.1465.69.camel@gandalf.stny.rr.com>
+References: <BANLkTinrHfVT43Evto3GqN8venDrLXoMbg@mail.gmail.com>
+	<1306244836.2497.60.camel@laptop>
+	<BANLkTik6cc+jA3Ft4wOTWPwKhOheUM-VbQ@mail.gmail.com>
+	<1306247058.1465.66.camel@gandalf.stny.rr.com>
+	<BANLkTimynA+wdsEwayzdDZRTPeZHRoDtgg@mail.gmail.com>
+	<1306248401.1465.69.camel@gandalf.stny.rr.com>
+Date: Tue, 24 May 2011 23:04:44 +0800
+Message-ID: <BANLkTimFv59s1B4dPsrWQGdH+FO-omcXyA@mail.gmail.com>
+Subject: Re: [PATCH] sched: remove starvation in check_preempt_equal_prio()
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011, Peter Zijlstra wrote:
+On Tue, May 24, 2011 at 10:46 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 2011-05-24 at 22:33 +0800, Hillf Danton wrote:
+>> On Tue, May 24, 2011 at 10:24 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> > On Tue, 2011-05-24 at 22:01 +0800, Hillf Danton wrote:
+>> >> On Tue, May 24, 2011 at 9:47 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> >> > On Tue, 2011-05-24 at 21:34 +0800, Hillf Danton wrote:
+>> >> >> If there are pushable tasks and they are high enough in priority, in which
+>> >> >> case task p is covered, the current could keep holding its CPU.
+>> >> >
+>> >> > -ENOPARSE..
+>> >> >
+>> >>
+>> >> Here the priority is same, then pushing task p off has little difference from
+>> >> pushing any other pushable.
+>> >
+>> > If task p is currently running and is a FIFO task, you do not push it
+>> > off for another task of same prio.
+>> >
+>> If it is one of the current principles in RT schedule, the patch has
+>> to be dropped.
+>>
+>
+> Yes, that is the definition of FIFO (First In First Out). The tasks that
+> get to the CPU first run till they voluntarily schedule away, or are
+> preempted by an even high priority task. Tasks of the same priority must
+> wait till the previous task has finished.
+>
 
-> > The old behavior might have been unintentional, but PAPI unfortunately 
-> > depends on it (not code I originaly wrote, but code I have to maintain).
-> 
-> Right, so what the code does is create a group of which the leader is
-> disabled, which effectively has the whole group disabled. It then abuses
-> REFRESH,0 to enable the leader.
+Though I dont know who is the author of pusher, I like it, and the comments
+related to it. The patch is a try to take advantage of pusher to
+relive starvation
+a bit, but failed.
 
-yes.  This is currently what PAPI does.
+thanks all comments.
 
-> The code should use ENABLE (surprise, surprise!) to enable the leader
-> and get things going.
-
-It was unclear from the documentation that enabling a group leader that 
-had siblings with overflow setup would start them triggering
-without some sort of REFRESH first.  It does seem to work though.
-But then again, so did the original behavior.
-
-> This is very clear abuse of the API and I'm not really inclined to fix
-> it, in fact, I'd be tempted to add an additional test to verify the
-> argument to REFRESH > 0.
-
-Well, when there's no documentation then people write to the code.
-As I said before, I didn't write this code.  I just get to pick up the 
-pieces when it breaks.
-
-As an aside, I also wasted 6 hours last night finding out that you don't 
-get signaled on overflow if you don't have a ring-buffer mmap()ed, even
-if you never read from the buffer and you only are interested in counting
-the number of overflows.  I should stop complaining though or you'll
-start telling me to fix the documentation.  Which maybe I would do if I 
-didn't spend all my time writing code to reproduce problems in the perf 
-ABI for bisection purposes.
-
-> Then again, I do appreciate you're having a problem there, how soon can
-> you push this trivial fix into all maintained PAPI branches? We could
-> revert this for one release and then properly shut this abuse down the
-> next release.
-
-well since you apparently aren't going to retroactively revert it for 
-2.6.37, 2.6.38, or 2.6.39 then it would be silly to do it just for 2.6.40.
-
-I'll audit the PAPI code to see how widespread it is.
-
-To warn you though, we still have people complain within hours when we 
-break support for 2.6.16 kernels, so it's not like the people who use 
-PAPI are the kind to run out and install a minor stable release.  They're
-going to upgrade their distro or move their binary to a newer machine and 
-suddenly start geting EINVAL returns on their previously working code and 
-then start noisily complaining.
-
-Vince
+Hillf
