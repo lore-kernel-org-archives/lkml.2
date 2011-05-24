@@ -1,160 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab1EXIaU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 04:30:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39941 "EHLO mx2.suse.de"
+	id S1754726Ab1EXIak (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 04:30:40 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2143 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754468Ab1EXIaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 04:30:18 -0400
-Date: Tue, 24 May 2011 09:30:08 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: minchan.kim@gmail.com, abarry@cray.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org, riel@redhat.com, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Unending loop in __alloc_pages_slowpath following OOM-kill; rfc:
- patch.
-Message-ID: <20110524083008.GA5279@suse.de>
-References: <4DCDA347.9080207@cray.com>
- <BANLkTikiXUzbsUkzaKZsZg+5ugruA2JdMA@mail.gmail.com>
- <4DD2991B.5040707@cray.com>
- <BANLkTimYEs315jjY9OZsL6--mRq3O_zbDA@mail.gmail.com>
- <20110520164924.GB2386@barrios-desktop>
- <4DDB3A1E.6090206@jp.fujitsu.com>
+	id S1754468Ab1EXIae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 04:30:34 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Message-ID: <4DDB6C98.1080609@broadcom.com>
+Date: Tue, 24 May 2011 10:30:16 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
+ Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4DDB3A1E.6090206@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Dan Carpenter" <error27@gmail.com>
+Subject: Re: [RFC] lib: crc8: add new library module providing crc8
+ algorithm
+References: <1306010973-5625-1-git-send-email-arend@broadcom.com>
+ <20110522122325.108b1c86@lxorguk.ukuu.org.uk>
+ <4DD905CC.8040407@broadcom.com>
+ <20110522151959.7fd6e87e@lxorguk.ukuu.org.uk>
+ <4DDB622B.1050005@broadcom.com>
+In-Reply-To: <4DDB622B.1050005@broadcom.com>
+X-WSS-ID: 61C5B20F3IC4912606-04-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 01:54:54PM +0900, KOSAKI Motohiro wrote:
-> >>From 8bd3f16736548375238161d1bd85f7d7c381031f Mon Sep 17 00:00:00 2001
-> > From: Minchan Kim <minchan.kim@gmail.com>
-> > Date: Sat, 21 May 2011 01:37:41 +0900
-> > Subject: [PATCH] Prevent unending loop in __alloc_pages_slowpath
-> > 
-> > From: Andrew Barry <abarry@cray.com>
-> > 
-> > I believe I found a problem in __alloc_pages_slowpath, which allows a process to
-> > get stuck endlessly looping, even when lots of memory is available.
-> > 
-> > Running an I/O and memory intensive stress-test I see a 0-order page allocation
-> > with __GFP_IO and __GFP_WAIT, running on a system with very little free memory.
-> > Right about the same time that the stress-test gets killed by the OOM-killer,
-> > the utility trying to allocate memory gets stuck in __alloc_pages_slowpath even
-> > though most of the systems memory was freed by the oom-kill of the stress-test.
-> > 
-> > The utility ends up looping from the rebalance label down through the
-> > wait_iff_congested continiously. Because order=0, __alloc_pages_direct_compact
-> > skips the call to get_page_from_freelist. Because all of the reclaimable memory
-> > on the system has already been reclaimed, __alloc_pages_direct_reclaim skips the
-> > call to get_page_from_freelist. Since there is no __GFP_FS flag, the block with
-> > __alloc_pages_may_oom is skipped. The loop hits the wait_iff_congested, then
-> > jumps back to rebalance without ever trying to get_page_from_freelist. This loop
-> > repeats infinitely.
-> > 
-> > The test case is pretty pathological. Running a mix of I/O stress-tests that do
-> > a lot of fork() and consume all of the system memory, I can pretty reliably hit
-> > this on 600 nodes, in about 12 hours. 32GB/node.
-> > 
-> > Signed-off-by: Andrew Barry <abarry@cray.com>
-> > Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> > Cc: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  mm/page_alloc.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index 3f8bce2..e78b324 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -2064,6 +2064,7 @@ restart:
-> >  		first_zones_zonelist(zonelist, high_zoneidx, NULL,
-> >  					&preferred_zone);
-> >  
-> > +rebalance:
-> >  	/* This is the last chance, in general, before the goto nopage. */
-> >  	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
-> >  			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
-> > @@ -2071,7 +2072,6 @@ restart:
-> >  	if (page)
-> >  		goto got_pg;
-> >  
-> > -rebalance:
-> >  	/* Allocate without watermarks if the context allows */
-> >  	if (alloc_flags & ALLOC_NO_WATERMARKS) {
-> >  		page = __alloc_pages_high_priority(gfp_mask, order,
-> 
-> I'm sorry I missed this thread long time.
-> 
-> In this case, I think we should call drain_all_pages().
+On 05/24/2011 09:45 AM, Arend van Spriel wrote:
+> On 05/22/2011 04:19 PM, Alan Cox wrote:
+>> Is it just used for wireless in this form ?
+>>
+>> See the n_gsm and bluetooth code for what I think is the same crc
+>> algorithm but in reverse bit order .
+> Hi Alan,
+>
+> Look into the code in n_gsm and bluetooth code. The algorithm is the
+Meant to say 'I looked into the code...'
 
-Why?
-
-If the direct reclaimer failed to reclaim any pages on its own, the call
-to get_page_from_freelist() is going to be useless and there is
-no guarantee that any other CPU managed to reclaim pages either. All
-this ends up doing is sending in IPI which if it's very lucky will take
-a page from another CPUs free list.
-
-> then following
-> patch is better.
-> However I also think your patch is valuable. because while the task is
-> sleeping in wait_iff_congested(), an another task may free some pages.
-> thus, rebalance path should try to get free pages. iow, you makes sense.
-> 
-> So, I'd like to propose to merge both your and my patch.
-> 
-> Thanks.
-> 
-> 
-> From 2e77784668f6ca53d88ecb46aa6b99d9d0f33ffa Mon Sep 17 00:00:00 2001
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Date: Tue, 24 May 2011 13:41:57 +0900
-> Subject: [PATCH] vmscan: remove painful micro optimization
-> 
-> Currently, __alloc_pages_direct_reclaim() call get_page_from_freelist()
-> only if try_to_free_pages() return !0.
-> 
-> It's no necessary micro optimization becauase "return 0" mean vmscan reached
-> priority 0 and didn't get any pages, iow, it's really slow path. But also it
-> has bad side effect. If we don't call drain_all_pages(), we have a chance to
-> get infinite loop.
-> 
-
-With the "rebalance" patch, where is the infinite loop?
-
-> This patch remove its bad and meaningless micro optimization.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/page_alloc.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 1572079..c41d488 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1950,9 +1950,6 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
-> 
->  	cond_resched();
-> 
-> -	if (unlikely(!(*did_some_progress)))
-> -		return NULL;
-> -
->  retry:
->  	page = get_page_from_freelist(gfp_mask, nodemask, order,
->  					zonelist, high_zoneidx,
-> -- 
-> 1.7.3.1
-> 
-> 
-> 
-> 
+Gr. AvS
 
 -- 
-Mel Gorman
-SUSE Labs
+Almost nobody dances sober, unless they happen to be insane.
+-- H.P. Lovecraft --
+
+
