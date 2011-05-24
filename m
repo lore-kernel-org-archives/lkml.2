@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933644Ab1EXX6W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 19:58:22 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16222 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757486Ab1EXX5q (ORCPT
+	id S1757389Ab1EXX4a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 19:56:30 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:45075 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab1EXX43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 19:57:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 24 May 2011 16:57:45 -0700
-From: <achew@nvidia.com>
-To: <g.liahkovetski@gmx.de>, <mchehab@redhat.com>, <olof@lixom.net>
-CC: <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Chew <achew@nvidia.com>
-Subject: [PATCH 3/3] [media] ov9740: Fixed some settings
-Date: Tue, 24 May 2011 16:55:38 -0700
-Message-ID: <1306281338-20247-3-git-send-email-achew@nvidia.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <1306281338-20247-1-git-send-email-achew@nvidia.com>
-References: <1306281338-20247-1-git-send-email-achew@nvidia.com>
+	Tue, 24 May 2011 19:56:29 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6356"; a="93421554"
+From: David Brown <davidb@codeaurora.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v6 00/18] ARM: Add support for the Large Physical Address Extensions
+References: <1306273164-18217-1-git-send-email-catalin.marinas@arm.com>
+Date: Tue, 24 May 2011 16:56:28 -0700
+In-Reply-To: <1306273164-18217-1-git-send-email-catalin.marinas@arm.com>
+	(Catalin Marinas's message of "Tue, 24 May 2011 22:39:06 +0100")
+Message-ID: <8yapqn7fyab.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Chew <achew@nvidia.com>
+On Tue, May 24 2011, Catalin Marinas wrote:
 
-Based on vendor feedback, should issue a software reset at start of day.
+> This set of patches adds support for the Large Physical Extensions on
+> the ARM architecture (available with the Cortex-A15 processor). LPAE
+> comes with a 3-level page table format (compared to 2-level for the
+> classic one), allowing up to 40-bit physical address space.
 
-Also, OV9740_ANALOG_CTRL15 needs to be changed so the sensor does not begin
-streaming until it is ready (otherwise, results in a nonsense frame for the
-initial frame).
+Do you expect non LPAE targets to be able to boot with these changes
+applied (and LPAE enabled)?  I am able to build this tree for the
+MSM8660 (with a minor patch below), but it fails to boot with LPAE
+enabled.  It seems to work fine with LPAE not enabled.
 
-For discontinuous clocks, need to change OV9740_MIPI_CTRL00.
+I did have to fix the msm timer code to get the branch you mentioned to
+compile.  The return type of the function changed back to 'void' without
+changing the returns:
 
-Finally, OV9740_ISP_CTRL19 needs to be changed to really use YUYV ordering
-(the previous value was for VYUY).
-
-Signed-off-by: Andrew Chew <achew@nvidia.com>
 ---
- drivers/media/video/ov9740.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ arch/arm/mach-msm/timer.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Submitted three patches with the super basic things.  Suspend/resume, and
-supporting the different resolutions programmatically, coming soon.
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index 50cc0bc..6e659e4 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -268,7 +268,7 @@ static void __cpuinit msm_local_timer_setup(struct clock_event_device *evt)
+ 
+ 	/* Use existing clock_event for cpu 0 */
+ 	if (!smp_processor_id())
+-		return 0;
++		return;
+ 
+ 	writel(DGT_CLK_CTL_DIV_4, MSM_TMR_BASE + DGT_CLK_CTL);
+ 
+@@ -296,7 +296,8 @@ static void __cpuinit msm_local_timer_setup(struct clock_event_device *evt)
+ 	if (res) {
+ 		pr_err("local_timer_setup: request_irq failed for %s\n",
+ 		       clock->clockevent.name);
+-		return res;
++		/* TODO: How to handle this error. */
++		return;
+ 	}
+ 
+ 	clockevents_register_device(evt);
 
-diff --git a/drivers/media/video/ov9740.c b/drivers/media/video/ov9740.c
-index d5c9061..9d7c74d 100644
---- a/drivers/media/video/ov9740.c
-+++ b/drivers/media/video/ov9740.c
-@@ -68,6 +68,7 @@
- #define OV9740_ANALOG_CTRL04		0x3604
- #define OV9740_ANALOG_CTRL10		0x3610
- #define OV9740_ANALOG_CTRL12		0x3612
-+#define OV9740_ANALOG_CTRL15		0x3615
- #define OV9740_ANALOG_CTRL20		0x3620
- #define OV9740_ANALOG_CTRL21		0x3621
- #define OV9740_ANALOG_CTRL22		0x3622
-@@ -222,6 +223,9 @@ struct ov9740_priv {
- };
- 
- static const struct ov9740_reg ov9740_defaults[] = {
-+	/* Software Reset */
-+	{ OV9740_SOFTWARE_RESET,	0x01 },
-+
- 	/* Banding Filter */
- 	{ OV9740_AEC_B50_STEP_HI,	0x00 },
- 	{ OV9740_AEC_B50_STEP_LO,	0xe8 },
-@@ -333,6 +337,7 @@ static const struct ov9740_reg ov9740_defaults[] = {
- 	{ OV9740_ANALOG_CTRL10,		0xa1 },
- 	{ OV9740_ANALOG_CTRL12,		0x24 },
- 	{ OV9740_ANALOG_CTRL22,		0x9f },
-+	{ OV9740_ANALOG_CTRL15,		0xf0 },
- 
- 	/* Sensor Control */
- 	{ OV9740_SENSOR_CTRL03,		0x42 },
-@@ -385,7 +390,7 @@ static const struct ov9740_reg ov9740_defaults[] = {
- 	{ OV9740_LN_LENGTH_PCK_LO,	0x62 },
- 
- 	/* MIPI Control */
--	{ OV9740_MIPI_CTRL00,		0x44 },
-+	{ OV9740_MIPI_CTRL00,		0x64 }, /* 0x44 for continuous clock */
- 	{ OV9740_MIPI_3837,		0x01 },
- 	{ OV9740_MIPI_CTRL01,		0x0f },
- 	{ OV9740_MIPI_CTRL03,		0x05 },
-@@ -393,6 +398,9 @@ static const struct ov9740_reg ov9740_defaults[] = {
- 	{ OV9740_VFIFO_RD_CTRL,		0x16 },
- 	{ OV9740_MIPI_CTRL_3012,	0x70 },
- 	{ OV9740_SC_CMMM_MIPI_CTR,	0x01 },
-+
-+	/* YUYV order */
-+	{ OV9740_ISP_CTRL19,		0x02 },
- };
- 
- static const struct ov9740_reg ov9740_regs_vga[] = {
 -- 
-1.7.5.1
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
