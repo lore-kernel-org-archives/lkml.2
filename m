@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347Ab1EXOZd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:25:33 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56882 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095Ab1EXOZb (ORCPT
+	id S932542Ab1EXO0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:26:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37163 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126Ab1EXO0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:25:31 -0400
+	Tue, 24 May 2011 10:26:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:organization:date
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Uq7DLmuGYtpRUoqiLRRl5iPDQ1CQqk5/W5+AKaJbZDS1TAKxUcE5R+JZYzGvvR5j5x
-         DrhlpASu+Wm82bQ7XW1jHLVn2BoXB5SNNMuOe7SOjJPSe5t7h5WvrmbD7WzhXX4xMyjT
-         qiCqQI/+zyutblf8dkJdNfe+r4+wzs2+d739Q=
-Subject: [PATCH] MIPS:i8259.c remove resume and shutdown to syscore_ops
-From: Wanlong Gao <wanlong.gao@gmail.com>
-Reply-To: wanlong.gao@gmail.com
-To: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Pengfei Zhang <zoppof.zhang@gmail.com>
+        b=YMGhdA0xHU7VC9Y+4i231WX3dvsxUfPkM4TMOWTLhdFhYBTXBNftL/mwkjGU1a8djF
+         aFcupNwqkwKE/ezQ6niZBmVRlt4rki2SrcTbpi+rPp/qjuuntgvGzvyAm23McZgp2zuZ
+         ROKrE9Q/aOuKUCftK7gRtai/RalmYj0DQNqJg=
+Subject: Re: [PATCH] Kconfig: add warning about permission of config file
+From: Hiromu Yakura <hiromu1996@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zippel@linux-m68k.org
+In-Reply-To: <4DDBB150.2090602@suse.cz>
+References: <1306167401.18840.8.camel@hiromu-MacBook>
+	 <BANLkTikhFdd_PRzCg3w9HD1TO=cmdmm6_A@mail.gmail.com>
+	 <1306242400.7501.10.camel@hiromu-MacBook>  <4DDBB150.2090602@suse.cz>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Linux kernel
-Date: Tue, 24 May 2011 22:25:12 +0800
-Message-ID: <1306247112.2066.8.camel@Tux>
+Date: Tue, 24 May 2011 23:26:32 +0900
+Message-ID: <1306247192.7501.25.camel@hiromu-MacBook>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -31,26 +33,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-> On Tue, May 24, 2011 at 08:19:18PM +0800, Pengfei Zhang wrote:
-> 
-> > Remove the resume and shutdown of i8259A from the sysdev_class
-> > to the syscore_ops since these members had removed from the
-> > structure sysdev_class.
-> 
-> I don't see why one would want to want to first call
-> register_syscore_ops
-> then sysdev_class_register and sysdev_register?
-> 
-Hi Ralf:
-If these not moved to syscore_ops, building will get error.
+On Fri, May 24, 2011 at 22:23, Michal Marek <mmarek@suse.cz> wrote:
+> Arnaud's point is that your patch should not be necessary at all, 
+> because kconfig already checks the return value of the fopen() call in 
+> conf_write() and prints the above message if it fails. So do you have a 
+> testcase where make <...>config without your patch returns without 
+> error, but the configuration is not written?
+Sorry for misunderstanding.
+Indeed, make *config which use 'conf' (e.g. oldconfig, defconfig...)
+raise error.
+And only xconfig and gconfig don't write the configuration without
+error.
 
-Hi Thomas:
-Does you mean that we can just remove the sysfs entry now ?
-
+However, make *config using 'conf' hasn't function of 'Save as'.
+In other words, if you don't set the write permission to the directory,
+you would lose changes of the configuration.
+I think that it is necessary to check permission at all so that kconfig
+warn of the possibility of losing changes.
 
 Thanks
-Best regards
 
-Wanlong Gao
+
 
