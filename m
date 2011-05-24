@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967Ab1EXQTS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 12:19:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34731 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab1EXQTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 12:19:16 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] intel-iommu: Only unlink device domains from iommu
-To: dwmw2@infradead.org
-Cc: alex.williamson@redhat.com, david.woodhouse@intel.com,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, ddutile@redhat.com, chrisw@redhat.com
-Date: Tue, 24 May 2011 12:19:04 -0400
-Message-ID: <20110524161745.2472.77832.stgit@virtlab9.virt.bos.redhat.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1757061Ab1EXQUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 12:20:39 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:60084 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab1EXQUh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 12:20:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=JRdLGe9S//RKmM7thQVKqUEBHyWxbb4W2ejo4Z0B0P/XBUWU01gUnfXdmruLVkaBCd
+         qF2LmNRdH30jiKjOcEGwgo6Alt2sN6bnQ0OeEYnbH88AUFVD3SdskKkneypGgBDJgymQ
+         XO9xdIXnSxad6US8snx6zewB0TcwLwHY+KfGk=
+Subject: Re: kernel BUG at net/ipv4/tcp_output.c:1006!
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: TB <lkml@techboom.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <4DDBD834.6080804@techboom.com>
+References: <1305307633.3866.61.camel@edumazet-laptop>
+	 <4DCD86C0.9030904@techboom.com>	<1305316058.3120.6.camel@edumazet-laptop>
+	 <20110513.160138.1477780250019480052.davem@davemloft.net>
+	 <4DD54E89.7050707@techboom.com> <1305825086.3028.84.camel@edumazet-laptop>
+	 <4DDBD834.6080804@techboom.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 18:20:33 +0200
+Message-ID: <1306254033.3026.67.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a97590e5 added unlinking domains from iommus to reciprocate the
-iommu from domains unlinking that was already done.  We actually want
-to only do this for device domains and never for the static
-identity map domain or VM domains.  The SI domain is special and
-never freed, while VM domain->id lives in their own special address
-space, separate from iommu->domain_ids.
+Le mardi 24 mai 2011 à 12:09 -0400, TB a écrit :
 
-In the current code, a VM can get domain->id zero, then mark that
-domain unused when unbound from pci-stub.  This leads to DMAR
-write faults when the device is re-bound to the host driver.
+> That's all I'm expecting :)
+> 
+> However we've got 3 servers that hung with a blank screen and no network
+> over the weekend and nothing unusual in the net console
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+Oh well, it could be anything ...
 
-This should also be queued for stable
 
- drivers/pci/intel-iommu.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index 284fe72..096c9ad 100644
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -3447,10 +3447,13 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
- 		domain_update_iommu_cap(domain);
- 		spin_unlock_irqrestore(&domain->iommu_lock, tmp_flags);
- 
--		spin_lock_irqsave(&iommu->lock, tmp_flags);
--		clear_bit(domain->id, iommu->domain_ids);
--		iommu->domains[domain->id] = NULL;
--		spin_unlock_irqrestore(&iommu->lock, tmp_flags);
-+		if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
-+		    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY)) {
-+			spin_lock_irqsave(&iommu->lock, tmp_flags);
-+			clear_bit(domain->id, iommu->domain_ids);
-+			iommu->domains[domain->id] = NULL;
-+			spin_unlock_irqrestore(&iommu->lock, tmp_flags);
-+		}
- 	}
- 
- 	spin_unlock_irqrestore(&device_domain_lock, flags);
 
