@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab1EXNJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 09:09:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:50850 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756197Ab1EXNJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 09:09:39 -0400
-X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=bq_J3biGYC0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=_xfTZj9QwyJqPCq0EBkA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] sched: remove noop in next_prio()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>
-In-Reply-To: <BANLkTimxmWiof9s5AvS3v_0X+sMiE=0x5g@mail.gmail.com>
-References: <BANLkTimxmWiof9s5AvS3v_0X+sMiE=0x5g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 24 May 2011 09:09:36 -0400
-Message-ID: <1306242576.1465.53.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S932258Ab1EXNNG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:13:06 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:44583 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932222Ab1EXNNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 09:13:05 -0400
+From: Florian Fainelli <ffainelli@freebox.fr>
+Organization: Freebox
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH] TTY: export NR_LDISC and N_* line discipline numbers to user-space
+Date: Tue, 24 May 2011 15:17:23 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-server; KDE/4.6.2; x86_64; ; )
+Cc: lkml <linux-kernel@vger.kernel.org>, Maxime Bizon <mbizon@freebox.fr>,
+        Tilman Schmidt <tilman@imap.cc>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <201105241043.03347.ffainelli@freebox.fr> <20110524124044.GD31517@suse.de>
+In-Reply-To: <20110524124044.GD31517@suse.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105241517.23166.ffainelli@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-05-21 at 22:19 +0800, Hillf Danton wrote:
-> When computing the next priority for a given run-queue, the check for
-> RT priority of the task determined by the pick_next_highest_task_rt()
-> function could be removed, since only RT task is returned by the
-> function.
+Hello,
+
+On Tuesday 24 May 2011 14:40:44 Greg KH wrote:
+> On Tue, May 24, 2011 at 10:43:03AM +0200, Florian Fainelli wrote:
+> > From: Florian Fainelli <ffainelli@freebox.fr>
+> > 
+> > Since commit (4564f9e5: consolidate line discipline number definitions)
+> > the patch moved all line discipline number from a per-architecture
+> > termios.h to a shared one: tty.h. However, prior to this consolidation
+> > work, the line discipline numbers were outside of an ifdef
+> > __KERNEL__/endif block so these numbers used to be exported to
+> > user-space.
+> > 
+> > Since such numbers are kernel ABI anyway, and tty.h is already included
+> > for user- space header processing, just move these relevant defines
+> > outside of the ifdef __KERNEL__/endif block in include/linux/tty.h.
 > 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
+> Any reason you didn't copy _any_ of the people who signed off on that
+> patch, or the original author of that patch?
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+No particular reason but my mistake, fixed that.
 
--- Steve
+> 
+> Anyway, this is been this way for four years, since the 2.6.21 kernel
+> release.  Since no one has noticed, or complained, since then, how much
+> a problem is this really?
 
+This is a problem because you may have out of tree drivers using a line 
+discpline number, and you do not want your companion user-space application to 
+have to use a different line discpline number but the one the kernel should 
+provide.
 
+> 
+> Meaning, why has it taken this long for anyone to notice?
+
+- long standing user-space applications such as pppd got their N_PPP long ago, 
+and do not have to worry about N_PPP being renumbered so they can just define 
+it in pppd's sources it won't break
+
+- I started implementing a line discipline driver only a couple of months ago 
+and then realized that such ABI should have been exported
+--
+Florian
