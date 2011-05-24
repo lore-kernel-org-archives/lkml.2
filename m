@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758061Ab1EXBRl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 21:17:41 -0400
-Received: from list.bajajcapital.com ([209.20.93.67]:37810 "EHLO
-	list.bajajcapital.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab1EXBRj (ORCPT
+	id S1756892Ab1EXAEr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 20:04:47 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:50757 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753461Ab1EXAEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 21:17:39 -0400
-X-Greylist: delayed 1395 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 May 2011 21:17:39 EDT
-X-DomainKeys: Sendmail DomainKeys Filter v1.0.1 list.bajajcapital.com BA1851E91E8
-DomainKey-Signature: a=rsa-sha1; s=signer; d=bajajcapital.com; c=simple; q=dns;
-	b=SmyCnlsbxF8YU9y+jqUIF972Nw3/3i5DULy7fkoEqckRg6Fuxg/aZRvqI9tXRsWww
-	YptBRM4Z6TAozs3sPQnqw==
-Recieved: 
-Date: Tue, 24 May 2011 06:24:23 +0580
-To: linux-kernel@vger.kernel.org
-From: Bajaj Capital <investorsindia@bajajcapital.com>
-Subject: Special issue on your child's future planning
-Message-ID: <f57ba5c86789ac2e2942e4608ba7658a@localhost.localdomain>
-X-Priority: 3
-X-Mailer: PHPMailer [version 1.73]
-X-Mailer: phplist v2.10.8
-X-MessageID: 3895
-X-ListMember: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 23 May 2011 20:04:43 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=C2qK57XYvzp5ETy3p13O+LNOWNgPV949hUfYYN3+m5BO7Xuc10ujHY7PBMqohOCFxFVAK9c/B1iocTSTq41U900+mfQKV5lH5gKu0VL+eqBU0yXkv3LLOP2NfsaQJvAg;
+Date: Mon, 23 May 2011 17:04:30 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] PCI changes
+Message-ID: <20110523170430.04a773c2@jbarnes-vaio.home>
+In-Reply-To: <20110523.171617.1123528853189250599.davem@davemloft.net>
+References: <20110523134339.609508fe@jbarnes-vaio.home>
+	<20110523.171617.1123528853189250599.davem@davemloft.net>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 204.16.154.129 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On Mon, 23 May 2011 17:16:17 -0400 (EDT)
+David Miller <davem@davemloft.net> wrote:
 
- Unable to view the mailer click here to view it online
-<http://www.bajajcapital.com/e-mailer/investor-india/investors-20011.html>
+> From: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Date: Mon, 23 May 2011 13:43:39 -0700
+> 
+> > The following changes since commit
+> > 2f666bcf757cb72549f360ef6da02f03620a48b6:
+> > 
+> >   Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-04-19 18:32:57 -0700)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 linux-next
+> > 
+> > Ok, with the recent fixes to the resource code, we ought to be able to
+> > re-enable the code that tries to reallocate bridge resources as
+> > needed.  As with last time we tried this, we'll keep the revert trigger
+> > light; if this causes any problems we can't quickly root cause we'll
+> > yank it back out.
+> > 
+> > Other than that, there are a few enabling features for PCIe 2.1
+> > extensions here, and some support code for KVM, along with the usual
+> > collection of fixes.
+> 
+> Jesse, I submitted a warning fixe a few months ago and they don't
+> seem to be integrated.
+> 
+> http://marc.info/?l=-pci&m=130146645206948&w=2
 
- <http://www.bajajcapital.com/New%20Subscription.htm>
+Arg, sorry Dave.  I remember seeing that patch even, but didn't see it
+in patchwork when I did my last pass.  I'll queue it up for my next
+pull.  IIRC, ppc64 has a similar issue, and Ben ran into the same
+multiple usage issue, but I don't remember how he solved it.  At any
+rate, this fix looks fine.
 
- <http://www.bajajcapital.com/New%20Subscription.htm>
-
- <http://www.bajajcapital.com/contactus.php>
-
- This is not a spam mail. If you do not wish to receive this mailer,
-Click here to "Unsubcribe"
-<http://www.bajajcapital.com/taxsaving/quickunsubs.php>
-. We respect your privacy.
-
- *Click here to Subscribe Online
-<http://www.bajajcapital.com/New%20Subscription.htm>
-* 
-
- For more Information please contact Mr. Vikas Kumar/ R.K Singh on
-Email: investorsindia@bajajcapital.com
-<http://uk.mc249.mail.yahoo.com/mc/compose?to=investorsindiabcl@bajajcapital.com>
-; Mobile: 9899810512, 
- 
-/Ph. No. 011 6616 1111, Ext – 687 & 257/
-
- Please Ignore Mail If Already Subscribed
-
---
-To unsubscribe from this list visit
-http://list.bajajcapital.com/lists/?p=unsubscribe&uid=5e45811c1162b9224015609e4014297c
-
-
-
+Thanks,
+Jesse
