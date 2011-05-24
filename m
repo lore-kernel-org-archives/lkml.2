@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab1EXCTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 22:19:42 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:40733 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755737Ab1EXCTi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 22:19:38 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Youquan Song <youquan.song@intel.com>
-Cc: linux-kernel@vger.kernel.org, david.woodhouse@intel.com,
-        akpm@linux-foundation.org, mingo@elte.hu, tglx@linutronix.de,
-        hpa@zytor.com, hpa@linux.intel.com, allen.m.kay@intel.com,
-        suresh.b.siddha@intel.com, rajesh.sankaran@intel.com,
-        asit.k.mallick@intel.com, kent.liu@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH v3] x86, vt-d: enable x2apic opt out
-In-Reply-To: Your message of "Mon, 23 May 2011 22:32:28 +0800."
-             <1306161148-3987-1-git-send-email-youquan.song@intel.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1306161148-3987-1-git-send-email-youquan.song@intel.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1306203521_3286P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 23 May 2011 22:18:41 -0400
-Message-ID: <7457.1306203521@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4DDB1586.009F,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1755652Ab1EXCmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 22:42:15 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47523 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754057Ab1EXCmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 22:42:12 -0400
+Date: Tue, 24 May 2011 04:41:48 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20110524024148.GA18967@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1306203521_3286P
-Content-Type: text/plain; charset=us-ascii
+Linus,
 
-On Mon, 23 May 2011 22:32:28 +0800, Youquan Song said:
+Please pull the latest perf-urgent-for-linus git tree from:
 
-> +		no_x2apic_optout [Default Off]
-> +			With this option BIOS x2APIC opt-out request will be
-> +			ignored.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-urgent-for-linus
 
-> +	else if (!x2apic_supported() && cpu_has_x2apic)
-> +		WARN(1, "Your BIOS is broken and requested that x2apic be "
-> +			"disabled.\n This will leave your machine vulnerable to"
-> +			" irq-injection attacks\n"
-> +			"Use 'intel_iommu=no_x2apic_optout' to override BIOS "
-> +			"request\n");
+ Thanks,
 
-If we're doing a WARN level here, what are the downsides of just automagically
-forcing it rather than making them use a kernel parameter and reboot?  Will
-some systems fail to boot because the BIOS was in fact right in requesting
-hat x2apic be turned off?
+	Ingo
+
+------------------>
+Frederic Weisbecker (1):
+      perf tools: Fix sample type size calculation in 32 bits archs
+
+Jesper Juhl (1):
+      profile: Use vzalloc() rather than vmalloc() & memset()
 
 
+ kernel/profile.c        |    6 ++----
+ tools/perf/util/event.c |    2 +-
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
---==_Exmh_1306203521_3286P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFN2xWBcC3lWbTT17ARAp+GAJ9FjFYCOmOlc7V9myPA6yGodqjGBgCgmlf/
-yjvcLCqL/0Q46YlNAqxyHBg=
-=TURs
------END PGP SIGNATURE-----
-
---==_Exmh_1306203521_3286P--
-
+diff --git a/kernel/profile.c b/kernel/profile.c
+index 66f841b..14c9f87 100644
+--- a/kernel/profile.c
++++ b/kernel/profile.c
+@@ -126,11 +126,9 @@ int __ref profile_init(void)
+ 	if (prof_buffer)
+ 		return 0;
+ 
+-	prof_buffer = vmalloc(buffer_bytes);
+-	if (prof_buffer) {
+-		memset(prof_buffer, 0, buffer_bytes);
++	prof_buffer = vzalloc(buffer_bytes);
++	if (prof_buffer)
+ 		return 0;
+-	}
+ 
+ 	free_cpumask_var(prof_cpu_mask);
+ 	return -ENOMEM;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 252b72a..6635fcd 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -42,7 +42,7 @@ int perf_sample_size(u64 sample_type)
+ 	int i;
+ 
+ 	for (i = 0; i < 64; i++) {
+-		if (mask & (1UL << i))
++		if (mask & (1ULL << i))
+ 			size++;
+ 	}
+ 
