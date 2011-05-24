@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab1EXPwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 11:52:10 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50898 "EHLO mx1.suse.de"
+	id S1757098Ab1EXP4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 11:56:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53519 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755587Ab1EXPwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 11:52:08 -0400
-Date: Tue, 24 May 2011 17:52:05 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/18] writeback: sync expired inodes first in
- background writeback
-Message-ID: <20110524155205.GC5390@quack.suse.cz>
-References: <20110524051411.924582719@intel.com>
- <20110524051858.972440561@intel.com>
+	id S1754356Ab1EXP4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 11:56:13 -0400
+Date: Tue, 24 May 2011 11:56:09 -0400
+From: Dave Jones <davej@redhat.com>
+To: Justin Mattock <justinmattock@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: INFO: suspicious rcu_dereference_check() usage.
+Message-ID: <20110524155608.GA17977@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Justin Mattock <justinmattock@gmail.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	netdev <netdev@vger.kernel.org>
+References: <4DDB491A.2070901@gmail.com>
+ <BANLkTinC=2wxtYD4YmePgOfoLSh9STD6Sw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110524051858.972440561@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTinC=2wxtYD4YmePgOfoLSh9STD6Sw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 24-05-11 13:14:17, Wu Fengguang wrote:
-> A background flush work may run for ever. So it's reasonable for it to
-> mimic the kupdate behavior of syncing old/expired inodes first.
-> 
-> At each queue_io() time, first try enqueuing only newly expired inodes.
-> If there are zero expired inodes to work with, then relax the rule and
-> enqueue all dirty inodes.
-  Fengguang, I've been thinking about this change again (since the code is
-now easier to read - good work! - and so I realized some new consequences)
-and I was wondering: Assume there is one continuously redirtied file and
-untar starts in parallel. With the new logic, background writeback will
-never consider inodes that are not expired in this situation (we never
-switch to "all dirty inodes" phase - or even if we switched, we would just
-queue all inodes and then return back to queueing only expired inodes). So
-the net effect is that for 30 seconds we will be only continuously writing
-pages of the continuously dirtied file instead of (possibly older) pages of
-other files that are written. Is this really desirable? Wasn't the old
-behavior simpler and not worse than the new one?
+On Mon, May 23, 2011 at 11:50:46PM -0700, Justin Mattock wrote:
+ 
+ > [ 2862.310349] WARNING: at net/ipv4/route.c:1668 ip_rt_bug+0x5c/0x62()
 
-								Honza
+Awesome, adding that WARN_ON paid off. This is the same bug I've been trying
+to reproduce the last few weeks. DaveM mentioned that it means we used
+an input route for packet output.
 
-> --- linux-next.orig/fs/fs-writeback.c	2011-05-24 11:17:18.000000000 +0800
-> +++ linux-next/fs/fs-writeback.c	2011-05-24 11:17:18.000000000 +0800
-> @@ -718,7 +718,7 @@ static long wb_writeback(struct bdi_writ
->  		if (work->for_background && !over_bground_thresh())
->  			break;
->  
-> -		if (work->for_kupdate) {
-> +		if (work->for_kupdate || work->for_background) {
->  			oldest_jif = jiffies -
->  				msecs_to_jiffies(dirty_expire_interval * 10);
->  			wbc.older_than_this = &oldest_jif;
-> @@ -729,6 +729,7 @@ static long wb_writeback(struct bdi_writ
->  		wbc.pages_skipped = 0;
->  		wbc.inodes_cleaned = 0;
->  
-> +retry:
->  		trace_wbc_writeback_start(&wbc, wb->bdi);
->  		if (work->sb)
->  			__writeback_inodes_sb(work->sb, wb, &wbc);
-> @@ -752,6 +753,19 @@ static long wb_writeback(struct bdi_writ
->  		if (wbc.inodes_cleaned)
->  			continue;
->  		/*
-> +		 * background writeback will start with expired inodes, and
-> +		 * if none is found, fallback to all inodes. This order helps
-> +		 * reduce the number of dirty pages reaching the end of LRU
-> +		 * lists and cause trouble to the page reclaim.
-> +		 */
-> +		if (work->for_background &&
-> +		    wbc.older_than_this &&
-> +		    list_empty(&wb->b_io) &&
-> +		    list_empty(&wb->b_more_io)) {
-> +			wbc.older_than_this = NULL;
-> +			goto retry;
-> +		}
-> +		/*
->  		 * No more inodes for IO, bail
->  		 */
->  		if (!wbc.more_io)
-> 
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+ > [ 2862.310414] Pid: 6153, comm: gcm-session Not tainted
+ > 2.6.39-04906-g5e152b4-dirty #2
+ > [ 2862.310417] Call Trace:
+ > [ 2862.310424]  [<ffffffff8104c634>] warn_slowpath_common+0x83/0x9b
+ > [ 2862.310430]  [<ffffffff8104c666>] warn_slowpath_null+0x1a/0x1c
+ > [ 2862.310434]  [<ffffffff814095c9>] ip_rt_bug+0x5c/0x62
+ > [ 2862.310439]  [<ffffffff814112a1>] dst_output+0x19/0x1d
+ > [ 2862.310443]  [<ffffffff81412aa0>] ip_local_out+0x20/0x25
+ > [ 2862.310448]  [<ffffffff814139c9>] ip_send_skb+0x19/0x58
+ > [ 2862.310453]  [<ffffffff8142fa4e>] udp_send_skb+0x239/0x29b
+ > [ 2862.310458]  [<ffffffff814310f0>] udp_sendmsg+0x5a1/0x7d4
+ > [ 2862.310464]  [<ffffffff81079408>] ? trace_hardirqs_off+0xd/0xf
+ > [ 2862.310469]  [<ffffffff8141139c>] ? ip_select_ident+0x3d/0x3d
+ > [ 2862.310475]  [<ffffffff810525b8>] ? local_bh_enable_ip+0xe/0x10
+ > [ 2862.310481]  [<ffffffff8148f131>] ? _raw_spin_unlock_bh+0x31/0x35
+ > [ 2862.310486]  [<ffffffff813d41a6>] ? release_sock+0x14c/0x155
+ > [ 2862.310490]  [<ffffffff814386ac>] inet_sendmsg+0x66/0x6f
+ > [ 2862.310495]  [<ffffffff813d02b0>] sock_sendmsg+0xe6/0x109
+ > [ 2862.310501]  [<ffffffff8107d63f>] ? lock_acquire+0xe1/0x109
+ > [ 2862.310505]  [<ffffffff8107d535>] ? lock_release+0x1aa/0x1d3
+ > [ 2862.310512]  [<ffffffff810ed549>] ? might_fault+0xa5/0xac
+ > [ 2862.310516]  [<ffffffff813ceb34>] ? copy_from_user+0x2f/0x31
+ > [ 2862.310521]  [<ffffffff813d1f34>] sys_sendto+0x132/0x174
+ > [ 2862.310526]  [<ffffffff81495cfa>] ? sysret_check+0x2e/0x69
+ > [ 2862.310531]  [<ffffffff8107b016>] ? trace_hardirqs_on_caller+0x13f/0x172
+ > [ 2862.310537]  [<ffffffff8109fd4d>] ? audit_syscall_entry+0x11c/0x148
+ > [ 2862.310542]  [<ffffffff8121debe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ > [ 2862.310546]  [<ffffffff81495cc2>] system_call_fastpath+0x16/0x1b
+ > [ 2862.310549] ---[ end trace 2d2332adaa8bf2b5 ]---
+ > [ 2863.373889] ip_rt_bug: 10.0.0.10 -> 255.255.255.255, ?
+ 
+The common thing between your bug and the trace I triggered was the
+destination ip reported. A clue maybe ?
+
+	Dave
+
