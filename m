@@ -1,287 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756932Ab1EXOdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:33:44 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39016 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756742Ab1EXOdl (ORCPT
+	id S1756843Ab1EXOdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:33:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45151 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756201Ab1EXOdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:33:41 -0400
+	Tue, 24 May 2011 10:33:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Y85DBekbW9nVXLXhWVsug43Mb8j9XUkHiCe6Z9axUo7jundJ8w/lEgdrqLjyfDMRin
-         C19G5fuFwdxg+9x4iaBH6/Fa0IAnEFON46HhmC2ZLt+UpIFCbF7iuo+ntJqqn97j3pip
-         p+mPly+1nvDfSQYxXK6NfWqiLIYeOMKHt2JYw=
-From: yxlraid@gmail.com
-To: James.Bottomley@suse.de
-Cc: jslaby@suse.cz, linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yuxiangl@marvell.com, jfeng@marvell.com
-Subject: [PATCH 4/9] [SCSI] mvsas: fix 94xx hotplug issue
-Date: Tue, 24 May 2011 22:33:11 +0800
-Message-Id: <1306247591-6222-1-git-send-email-yxlraid@gmail.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <mvsas-hotplug-issue>
-References: <mvsas-hotplug-issue>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=o3uJdmy/2F7488b5cVBhtlbQNPlrQlbyzXbY+PRRhTh8E69kahZpsQ57TYRrCJl0ot
+         QvUsGjJF3zg/8dkgjU7eqjmF5PPSYQc1FZj+z1AWOKl+UcdJuHTeUsgma/MxhNYb1bmS
+         e9Woyrt48RR+HxiCTPqNs1/P9Qf8FNKQHaN6w=
+MIME-Version: 1.0
+In-Reply-To: <1306247058.1465.66.camel@gandalf.stny.rr.com>
+References: <BANLkTinrHfVT43Evto3GqN8venDrLXoMbg@mail.gmail.com>
+	<1306244836.2497.60.camel@laptop>
+	<BANLkTik6cc+jA3Ft4wOTWPwKhOheUM-VbQ@mail.gmail.com>
+	<1306247058.1465.66.camel@gandalf.stny.rr.com>
+Date: Tue, 24 May 2011 22:33:19 +0800
+Message-ID: <BANLkTimynA+wdsEwayzdDZRTPeZHRoDtgg@mail.gmail.com>
+Subject: Re: [PATCH] sched: remove starvation in check_preempt_equal_prio()
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiangliang Yu <yuxiangl@marvell.com>
+On Tue, May 24, 2011 at 10:24 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 2011-05-24 at 22:01 +0800, Hillf Danton wrote:
+>> On Tue, May 24, 2011 at 9:47 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, 2011-05-24 at 21:34 +0800, Hillf Danton wrote:
+>> >> If there are pushable tasks and they are high enough in priority, in which
+>> >> case task p is covered, the current could keep holding its CPU.
+>> >
+>> > -ENOPARSE..
+>> >
+>>
+>> Here the priority is same, then pushing task p off has little difference from
+>> pushing any other pushable.
+>
+> If task p is currently running and is a FIFO task, you do not push it
+> off for another task of same prio.
+>
+If it is one of the current principles in RT schedule, the patch has
+to be dropped.
 
--- Fix 94xx A0/B0 revision hotplug issue.
--- Remove unused macro: DISABLE_HOTPLUG_DMA_FIX
-
-Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
----
- drivers/scsi/mvsas/mv_64xx.c |    9 ++++-----
- drivers/scsi/mvsas/mv_94xx.c |   16 +++++++++++-----
- drivers/scsi/mvsas/mv_init.c |   15 +++++++++++----
- drivers/scsi/mvsas/mv_sas.c  |   28 ++++++++++++----------------
- drivers/scsi/mvsas/mv_sas.h  |    9 ++++-----
- 5 files changed, 42 insertions(+), 35 deletions(-)
-
-diff --git a/drivers/scsi/mvsas/mv_64xx.c b/drivers/scsi/mvsas/mv_64xx.c
-index c88b8a7..b02dd80 100644
---- a/drivers/scsi/mvsas/mv_64xx.c
-+++ b/drivers/scsi/mvsas/mv_64xx.c
-@@ -744,11 +744,13 @@ int mvs_64xx_spi_waitdataready(struct mvs_info *mvi, u32 timeout)
- 	return -1;
- }
- 
--#ifndef DISABLE_HOTPLUG_DMA_FIX
--void mvs_64xx_fix_dma(dma_addr_t buf_dma, int buf_len, int from, void *prd)
-+void mvs_64xx_fix_dma(struct mvs_info *mvi, u32 phy_mask,
-+				int buf_len, int from, void *prd)
- {
- 	int i;
- 	struct mvs_prd *buf_prd = prd;
-+	dma_addr_t buf_dma = mvi->bulk_buffer_dma;
-+
- 	buf_prd	+= from;
- 	for (i = 0; i < MAX_SG_ENTRY - from; i++) {
- 		buf_prd->addr = cpu_to_le64(buf_dma);
-@@ -756,7 +758,6 @@ void mvs_64xx_fix_dma(dma_addr_t buf_dma, int buf_len, int from, void *prd)
- 		++buf_prd;
- 	}
- }
--#endif
- 
- static void mvs_64xx_tune_interrupt(struct mvs_info *mvi, u32 time)
- {
-@@ -830,9 +831,7 @@ const struct mvs_dispatch mvs_64xx_dispatch = {
- 	mvs_64xx_spi_buildcmd,
- 	mvs_64xx_spi_issuecmd,
- 	mvs_64xx_spi_waitdataready,
--#ifndef DISABLE_HOTPLUG_DMA_FIX
- 	mvs_64xx_fix_dma,
--#endif
- 	mvs_64xx_tune_interrupt,
- 	NULL,
- };
-diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
-index e589f31..ef3c901 100644
---- a/drivers/scsi/mvsas/mv_94xx.c
-+++ b/drivers/scsi/mvsas/mv_94xx.c
-@@ -871,19 +871,27 @@ int mvs_94xx_spi_waitdataready(struct mvs_info *mvi, u32 timeout)
- 	return -1;
- }
- 
--#ifndef DISABLE_HOTPLUG_DMA_FIX
--void mvs_94xx_fix_dma(dma_addr_t buf_dma, int buf_len, int from, void *prd)
-+void mvs_94xx_fix_dma(struct mvs_info *mvi, u32 phy_mask,
-+				int buf_len, int from, void *prd)
- {
- 	int i;
- 	struct mvs_prd *buf_prd = prd;
-+	dma_addr_t buf_dma;
- 	buf_prd += from;
-+
-+	if ((mvi->pdev->revision == VANIR_A0_REV) ||
-+			(mvi->pdev->revision == VANIR_B0_REV))
-+		buf_dma = (phy_mask <= 0x08) ?
-+				mvi->bulk_buffer_dma : mvi->bulk_buffer_dma1;
-+	else
-+		return;
-+
- 	for (i = 0; i < MAX_SG_ENTRY - from; i++) {
- 		buf_prd->addr = cpu_to_le64(buf_dma);
- 		buf_prd->im_len.len = cpu_to_le32(buf_len);
- 		++buf_prd;
- 	}
- }
--#endif
- 
- /*
-  * FIXME JEJB: temporary nop clear_srs_irq to make 94xx still work
-@@ -967,9 +975,7 @@ const struct mvs_dispatch mvs_94xx_dispatch = {
- 	mvs_94xx_spi_buildcmd,
- 	mvs_94xx_spi_issuecmd,
- 	mvs_94xx_spi_waitdataready,
--#ifndef DISABLE_HOTPLUG_DMA_FIX
- 	mvs_94xx_fix_dma,
--#endif
- 	mvs_94xx_tune_interrupt,
- 	mvs_94xx_non_spec_ncq_error,
- };
-diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
-index 531093d..b111ae2 100644
---- a/drivers/scsi/mvsas/mv_init.c
-+++ b/drivers/scsi/mvsas/mv_init.c
-@@ -153,11 +153,13 @@ static void mvs_free(struct mvs_info *mvi)
- 		dma_free_coherent(mvi->dev,
- 				  sizeof(*mvi->slot) * slot_nr,
- 				  mvi->slot, mvi->slot_dma);
--#ifndef DISABLE_HOTPLUG_DMA_FIX
-+
- 	if (mvi->bulk_buffer)
- 		dma_free_coherent(mvi->dev, TRASH_BUCKET_SIZE,
- 				  mvi->bulk_buffer, mvi->bulk_buffer_dma);
--#endif
-+	if (mvi->bulk_buffer1)
-+		dma_free_coherent(mvi->dev, TRASH_BUCKET_SIZE,
-+				  mvi->bulk_buffer1, mvi->bulk_buffer_dma1);
- 
- 	MVS_CHIP_DISP->chip_iounmap(mvi);
- 	if (mvi->shost)
-@@ -278,13 +280,18 @@ static int __devinit mvs_alloc(struct mvs_info *mvi, struct Scsi_Host *shost)
- 		goto err_out;
- 	memset(mvi->slot, 0, sizeof(*mvi->slot) * slot_nr);
- 
--#ifndef DISABLE_HOTPLUG_DMA_FIX
- 	mvi->bulk_buffer = dma_alloc_coherent(mvi->dev,
- 				       TRASH_BUCKET_SIZE,
- 				       &mvi->bulk_buffer_dma, GFP_KERNEL);
- 	if (!mvi->bulk_buffer)
- 		goto err_out;
--#endif
-+
-+	mvi->bulk_buffer1 = dma_alloc_coherent(mvi->dev,
-+				       TRASH_BUCKET_SIZE,
-+				       &mvi->bulk_buffer_dma1, GFP_KERNEL);
-+	if (!mvi->bulk_buffer1)
-+		goto err_out;
-+
- 	sprintf(pool_name, "%s%d", "mvs_dma_pool", mvi->id);
- 	mvi->dma_pool = pci_pool_create(pool_name, mvi->pdev, MVS_SLOT_BUF_SZ, 16, 0);
- 	if (!mvi->dma_pool) {
-diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
-index aaa475a..4585dc0 100644
---- a/drivers/scsi/mvsas/mv_sas.c
-+++ b/drivers/scsi/mvsas/mv_sas.c
-@@ -630,14 +630,11 @@ static int mvs_task_prep_ata(struct mvs_info *mvi,
- 		(mvi_dev->taskfileset << TXQ_SRS_SHIFT);
- 	mvi->tx[mvi->tx_prod] = cpu_to_le32(del_q);
- 
--#ifndef DISABLE_HOTPLUG_DMA_FIX
- 	if (task->data_dir == DMA_FROM_DEVICE)
- 		flags = (MVS_CHIP_DISP->prd_count() << MCH_PRD_LEN_SHIFT);
- 	else
- 		flags = (tei->n_elem << MCH_PRD_LEN_SHIFT);
--#else
--	flags = (tei->n_elem << MCH_PRD_LEN_SHIFT);
--#endif
-+
- 	if (task->ata_task.use_ncq)
- 		flags |= MCH_FPDMA;
- 	if (dev->sata_dev.command_set == ATAPI_COMMAND_SET) {
-@@ -729,11 +726,11 @@ static int mvs_task_prep_ata(struct mvs_info *mvi,
- 
- 	/* fill in PRD (scatter/gather) table, if any */
- 	MVS_CHIP_DISP->make_prd(task->scatter, tei->n_elem, buf_prd);
--#ifndef DISABLE_HOTPLUG_DMA_FIX
-+
- 	if (task->data_dir == DMA_FROM_DEVICE)
--		MVS_CHIP_DISP->dma_fix(mvi->bulk_buffer_dma,
-+		MVS_CHIP_DISP->dma_fix(mvi, sas_port->phy_mask,
- 				TRASH_BUCKET_SIZE, tei->n_elem, buf_prd);
--#endif
-+
- 	return 0;
- }
- 
-@@ -1283,6 +1280,13 @@ static u32 mvs_is_sig_fis_received(u32 irq_status)
- 	return irq_status & PHYEV_SIG_FIS;
- }
- 
-+static void mvs_sig_remove_timer(struct mvs_phy *phy)
-+{
-+	if (phy->timer.function)
-+		del_timer(&phy->timer);
-+	phy->timer.function = NULL;
-+}
-+
- void mvs_update_phyinfo(struct mvs_info *mvi, int i, int get_st)
- {
- 	struct mvs_phy *phy = &mvi->phy[i];
-@@ -1305,6 +1309,7 @@ void mvs_update_phyinfo(struct mvs_info *mvi, int i, int get_st)
- 		if (phy->phy_type & PORT_TYPE_SATA) {
- 			phy->identify.target_port_protocols = SAS_PROTOCOL_STP;
- 			if (mvs_is_sig_fis_received(phy->irq_status)) {
-+				mvs_sig_remove_timer(phy);
- 				phy->phy_attached = 1;
- 				phy->att_dev_sas_addr =
- 					i + mvi->id * mvi->chip->n_phy;
-@@ -1322,7 +1327,6 @@ void mvs_update_phyinfo(struct mvs_info *mvi, int i, int get_st)
- 						tmp | PHYEV_SIG_FIS);
- 				phy->phy_attached = 0;
- 				phy->phy_type &= ~PORT_TYPE_SATA;
--				MVS_CHIP_DISP->phy_reset(mvi, i, 0);
- 				goto out_done;
- 			}
- 		}	else if (phy->phy_type & PORT_TYPE_SAS
-@@ -2193,13 +2197,6 @@ static void mvs_sig_time_out(unsigned long tphy)
- 	}
- }
- 
--static void mvs_sig_remove_timer(struct mvs_phy *phy)
--{
--	if (phy->timer.function)
--		del_timer(&phy->timer);
--	phy->timer.function = NULL;
--}
--
- void mvs_int_port(struct mvs_info *mvi, int phy_no, u32 events)
- {
- 	u32 tmp;
-@@ -2263,7 +2260,6 @@ void mvs_int_port(struct mvs_info *mvi, int phy_no, u32 events)
- 	}
- 	if (phy->irq_status & (PHYEV_SIG_FIS | PHYEV_ID_DONE)) {
- 		phy->phy_status = mvs_is_phy_ready(mvi, phy_no);
--		mvs_sig_remove_timer(phy);
- 		mv_dprintk("notify plug in on phy[%d]\n", phy_no);
- 		if (phy->phy_status) {
- 			mdelay(10);
-diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
-index fed8495..3399ff1 100644
---- a/drivers/scsi/mvsas/mv_sas.h
-+++ b/drivers/scsi/mvsas/mv_sas.h
-@@ -168,9 +168,8 @@ struct mvs_dispatch {
- 						);
- 	int (*spi_issuecmd)(struct mvs_info *mvi, u32 cmd);
- 	int (*spi_waitdataready)(struct mvs_info *mvi, u32 timeout);
--#ifndef DISABLE_HOTPLUG_DMA_FIX
--	void (*dma_fix)(dma_addr_t buf_dma, int buf_len, int from, void *prd);
--#endif
-+	void (*dma_fix)(struct mvs_info *mvi, u32 phy_mask,
-+				int buf_len, int from, void *prd);
- 	void (*tune_interrupt)(struct mvs_info *mvi, u32 time);
- 	void (*non_spec_ncq_error)(struct mvs_info *mvi);
- 
-@@ -409,11 +408,11 @@ struct mvs_info {
- 	void *addon;
- 	struct hba_info_page hba_info_param;
- 	struct mvs_device	devices[MVS_MAX_DEVICES];
--#ifndef DISABLE_HOTPLUG_DMA_FIX
- 	void *bulk_buffer;
- 	dma_addr_t bulk_buffer_dma;
-+	void *bulk_buffer1;
-+	dma_addr_t bulk_buffer_dma1;
- #define TRASH_BUCKET_SIZE    	0x20000
--#endif
- 	void *dma_pool;
- 	struct mvs_slot_info slot_info[0];
- };
--- 
-1.7.4.4
-
+thanks
+          Hillf
