@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab1EXRA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 13:00:59 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1631 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753120Ab1EXRA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 13:00:58 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Message-ID: <4DDBE432.3040207@broadcom.com>
-Date: Tue, 24 May 2011 19:00:34 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
- Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Dan Carpenter" <error27@gmail.com>
-Subject: Re: [RFC] lib: crc8: add new library module providing crc8
- algorithm
-References: <1306010973-5625-1-git-send-email-arend@broadcom.com>
- <20110522122325.108b1c86@lxorguk.ukuu.org.uk>
- <4DD905CC.8040407@broadcom.com>
- <20110522151959.7fd6e87e@lxorguk.ukuu.org.uk>
- <4DDB622B.1050005@broadcom.com>
- <20110524104404.336c765f@lxorguk.ukuu.org.uk>
- <4DDB81FD.2020903@broadcom.com>
- <20110524112732.67d92b2f@lxorguk.ukuu.org.uk>
- <4DDB8AB5.7080808@broadcom.com>
- <20110524135705.00f7fb12@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110524135705.00f7fb12@lxorguk.ukuu.org.uk>
-X-WSS-ID: 61C53A964NS11466686-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
+	id S1757542Ab1EXVcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 17:32:23 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36731 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753245Ab1EXVcV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 17:32:21 -0400
+Subject: Re: [PATCH 5/6] target: Convert REPORT_LUNs to use int_to_scsilun
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Svec <martin.svec@zoner.cz>
+In-Reply-To: <1305861554-29960-6-git-send-email-nab@linux-iscsi.org>
+References: <1305861554-29960-1-git-send-email-nab@linux-iscsi.org>
+	 <1305861554-29960-6-git-send-email-nab@linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 13:02:57 -0400
+Message-ID: <1306256577.10201.13.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2011 02:57 PM, Alan Cox wrote:
-> On Tue, 24 May 2011 12:38:45 +0200
-> "Arend van Spriel"<arend@broadcom.com>  wrote:
->
->> On 05/24/2011 12:27 PM, Alan Cox wrote:
->>>> Not sure whether you mean the source code or the object code. I build
->>>> kernel with debug symbols so the sizes are bit higher.
->>> nm will tell you the actual sizes. I think the n_gsm code is about 500
->>> bytes or so and chunks of it inline.
->> Not counting the crc table I assume.
-> I forget but I think including - its a tiny tiny bit of code once inlined.
+On Thu, 2011-05-19 at 20:19 -0700, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> This patch converts transport_core_report_lun_response() to use
+> drivers/scsi/scsi_scan.c:int_to_scsilun instead of using the
+> struct target_core_fabric_ops->pack_lun() fabric provided API vector.
+> 
+> It also removes the tfo->pack_lun check from target_fabric_tf_ops_check()
+> and removes from struct target_core_fabric_ops->pack_lun() from
+> target_core_fabric_ops.h, and the following mainline scsi-misc fabric
+> modules:
+> 
+> *) tcm_loop: Drop tcm_loop_pack_lun() usage
+> *) tcm_fc: Drop ft_pack_lun() usage
+> 
+> Reported-by: Mike Christie <michaelc@cs.wisc.edu>
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 
-I used nm on both flavours.
+There's no way this or the following patch count as bug fixes.  They're
+converging hand rolled functions and definitions (which is good, but not
+a bug fix).
 
-dynamic crc table based on polynomial and bit order
----------------------------------------------------
-00000000 00000026 T crc8
-00000030 000000dc T crc8_create
-
-fixed crc table with table selection based on bit order
--------------------------------------------------------
-00000000 00000026 T crc8
-00000030 0000002b T crc8_create
-00000100 00000100 r crc8_table_lsb
-00000000 00000100 r crc8_table_msb
-
-The first requires the user to provide buffer to hold the table. The 
-difference is in the crc_create() function (maybe better named 
-crc_populate_table() in first, and crc_select_table() in second). It is 
-177 bytes larger. The crc calculating function is 38 bytes. Still pretty 
-small I would think.
-
-Gr. AvS
-
--- 
-Almost nobody dances sober, unless they happen to be insane.
--- H.P. Lovecraft --
+James
 
 
