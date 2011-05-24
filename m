@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab1EXJhd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 05:37:33 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51419 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755462Ab1EXJhc (ORCPT
+	id S1755675Ab1EXJih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 05:38:37 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55183 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab1EXJig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 05:37:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=dG9FGKbe+PL1+6zOlI7p2oQXXWEMKJVBc9Su0tw5sEItUoG+6k+Bx0nzccqD+tGRgq
-         D3rGtGGCzs83kKLEfWqFPp25ujFBiXw9/d1objeqrQly7d16tNCZtHkGXrB8c88lg5jE
-         mTRONGGEvIRCKcoaoLZb3nMYAeYSZQkUwDjPA=
+	Tue, 24 May 2011 05:38:36 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DDB7C94.1090805@jp.fujitsu.com>
+Date: Tue, 24 May 2011 18:38:28 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikaJuw9WE-87cNkh1UQPgyP3mokVg@mail.gmail.com>
-References: <1301601122-25431-1-git-send-email-vapier@gentoo.org>
-	<1301696134-31249-1-git-send-email-vapier@gentoo.org>
-	<20110403234402.GC1420@mtj.dyndns.org>
-	<BANLkTikaJuw9WE-87cNkh1UQPgyP3mokVg@mail.gmail.com>
-Date: Tue, 24 May 2011 11:37:31 +0200
-X-Google-Sender-Auth: 6Rq8dz58-wcHNjrpRlilBd_ESPw
-Message-ID: <BANLkTi=6D640-Cz+e7EpFVMYd=vpeY9v+Q@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [PATCH 1/2 v2] percpu: unify input section names
-From: Tejun Heo <tj@kernel.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: minchan.kim@gmail.com
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
+        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
+Subject: Re: [PATCH 4/5] oom: don't kill random process
+References: <4DD61F80.1020505@jp.fujitsu.com>	<4DD6207E.1070300@jp.fujitsu.com>	<BANLkTinaHki1oA4O3+FsoPDtFTLfqwRadA@mail.gmail.com>	<4DDB0FB2.9050300@jp.fujitsu.com>	<BANLkTinKm=m8zdPGN0Trpy4HtEFyxMYzPA@mail.gmail.com>	<4DDB711B.8010408@jp.fujitsu.com>	<BANLkTik5tXv+k9tk2egXgmBRzcBD5Avjkw@mail.gmail.com>	<4DDB75D8.1000804@jp.fujitsu.com> <BANLkTime4C8nk0TBOfd2NT4mEEtLN6ZYaQ@mail.gmail.com>
+In-Reply-To: <BANLkTime4C8nk0TBOfd2NT4mEEtLN6ZYaQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+(2011/05/24 18:20), Minchan Kim wrote:
+> On Tue, May 24, 2011 at 6:09 PM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>>>>> Hmm, If I understand your code correctly, unprivileged process can get
+>>>>> a score 1 by 3% bonus.
+>>>>
+>>>> 3% bonus is for privileged process. :)
+>>>
+>>> OMG. Typo.
+>>> Anyway, my point is following as.
+>>> If chose_point is 1, it means root bonus is rather big. Right?
+>>> If is is, your patch does second loop with completely ignore of bonus
+>>> for root privileged process.
+>>> My point is that let's not ignore bonus completely. Instead of it,
+>>> let's recalculate 1.5% for example.
+>>
+>> 1) unpriviledged process can't get score 1 (because at least a process need one
+>>   anon, one file and two or more ptes).
+>> 2) then, score=1 mean all processes in the system are privileged. thus decay won't help.
+>>
+>> IOW, never happen privileged and unprivileged score in this case.
+> 
+> I am blind. Thanks for open my eyes, KOSAKI.
 
-On Tue, May 24, 2011 at 3:46 AM, Mike Frysinger <vapier@gentoo.org> wrote:
-> i dont see this in mainline for 2.6.40-rc1 either ?
+No. Your review is very cute. Thank you for attempting this!
 
-Just sent pull request.  Was waiting for more fixes and waited too long.
 
-Thank you.
 
--- 
-tejun
