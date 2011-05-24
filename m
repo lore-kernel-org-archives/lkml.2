@@ -1,219 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab1EXLs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 07:48:56 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:58977 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755021Ab1EXLsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 07:48:53 -0400
-Date: Tue, 24 May 2011 11:25:01 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: torvalds@osdl.org, akpm@osdl.org
-Cc: cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, lenb@kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] cpupowerutils
-Message-ID: <20110524092500.GB28923@comet.dominikbrodowski.net>
-Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org, cpufreq@vger.kernel.org,
-	linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-	lenb@kernel.org, Ingo Molnar <mingo@elte.hu>,
-	Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
+	id S1755561Ab1EXJZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 05:25:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6493 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755299Ab1EXJZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 05:25:25 -0400
+Date: Tue, 24 May 2011 11:25:11 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+cc: Kyungmin Park <kmpark@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+In-Reply-To: <87mxick0zj.fsf@devron.myhome.or.jp>
+Message-ID: <alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
+References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de> <AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com> <201103301706.36214.arnd@arndb.de> <BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com> <87wrhgk8lp.fsf@devron.myhome.or.jp>
+ <BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com> <87r57ok3fp.fsf@devron.myhome.or.jp> <BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com> <87mxick0zj.fsf@devron.myhome.or.jp>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1240518882-1306229114=:5457"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-the git tree
+--8323328-1240518882-1306229114=:5457
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/cpupowerutils.git master
+On Tue, 24 May 2011, OGAWA Hirofumi wrote:
 
-contains a new utility called "cpupowerutils" which is laregely based on
-the well known "cpufrequtils", but extended to provide much more information
-about other power-related features of modern CPUs, such as idle states.
+> Kyungmin Park <kmpark@infradead.org> writes:
+> 
+> >>> It's handled at trim implementation. It just trim the fat aware block.
+> >>> Not trim the blocks which fat doesn't know.
+> >>> As fat don't use the block 0, 1, it adjust the start block at kernel.
+> >>>
+> >>> +       if (start < FAT_START_ENT)
+> >>> +               start = FAT_START_ENT;
+> >>>
+> >>> and don't exceed the max cluster size.
+> >>>
+> >>> +       len = (len > sbi->max_cluster) ? sbi->max_cluster : len;
+> >>>
+> >>> +       for (count = start; count <= len; count++) {
+> >>
+> >> Yes. We _adjust_ from 0 to 2 here, so, the end of block also have to be
+> >> _adjusted_.
+> >>
+> >> From other point of view, if userland specified 0 - max-length
+> >> (i.e. number of blocks), what happens? It would trim block of 2 -
+> >> (max-length - 2), right?
+> >
+> > No, length is not changed. so max-length is used.
+> 
+> No, no. Userland will know max-length from statvfs, right? So, let's
+> assume it is 100 (->f_blocks) * 1024 (->f_bsize).
 
-Users and Developers want to have *one* tool to get an overview what
-their system supports and to monitor and debug CPU power management
-in detail. The tool should compile and work on as many architectures
-as possible.
+You do not need to know the filesystem size to do the discard, it should
+be adjusted within the kernel. Just specify ULLONG_MAX as a length. See
+fstrim tool in util-linux-ng.
 
-To reach these goals, Thomas Renninger suggested -- and implemented most
-of the parts -- to convert the external tool cpufrequtils to a userspace
-tool residing in tools/power/cpupower/ .
+> 
+> Now, userland know about max length, 102400, ok? Let's start to trim.
+> 
+> Assume, userland want to trim whole. So, userland will specify like
+> 
+> 	trim(0, 102400).
+> 
+> What happen in kernel actually?
+> 
+> Current implement doesn't map blocks. So, in the case of FAT, it adjusts
+> from 0 to 2 * 1024.
+> 
+> So, it trims between 2048 and 102400. The problem is here. FS layout is
+> actually, 2048 and (102400 + 2048). I.e. actually userland has to do
+> 
+> 	trim(2048, 102400 + 2048)
+> 
+> to specify whole. How to know 2048?
 
-Once this stabilizes, it is intended to replace cpufrequtils and the
-Intel-specific tools in tools/power/x86 .
+You do not need to know anything in userspace. If you want to trim the
+whole filesystem you just do trim(0, ULLONG_MAX) - which is what fstrim
+does when you do not specify range. And you just skip the filesystem
+metadata obviously, regardless if they are at the beginning of the
+filesystem or in the middle. Just do whatever you need to do within your
+filesystem.
 
-A list of patches and the diffstat are appended to this messages.
+What we do in ext4 is, that we convert length and start passed in struct
+fstrim_range into filesystem block units and then get the last
+allocation group and block offset within that group (we do the same for
+the start block) and we try to discard free block ranges in from staring
+block to the last block.
 
-Best,
-	Dominik
+It is really not a rocket science and since every filesystem is
+different and has different internal data structures it is up to you how
+to do this. And if you shift a block or two, it really does not matter
+as much since user-land does not know about how the filesystem block are
+laid out anyway, nor user land knows which are free and which are not.
 
+I agree that the interface is a little bit fuzzy, but that is mainly
+because it is intended to be filesystem independent and we do have a lot
+of various filesystems, so I wanted it to be as flexibile as it should,
+hence the start, len in Bytes.
 
-Dominik Brodowski (10):
-      cpupowerutils - cpufrequtils extended with quite some features
-      cpupowerutils: use COPYING, CREDITS from top-level directory
-      cpupowerutils: remove ccdv, use kernel quiet/verbose mechanism
-      cpupowerutils: do not update po files on each and every compile
-      cpupowerutils: bench - ConfigStyle bugfixes
-      cpupowerutils: lib - ConfigStyle bugfixes
-      cpupowerutils: idle_monitor - ConfigStyle bugfixes
-      cpupowerutils: helpers - ConfigStyle bugfixes
-      cpupowerutils: utils - ConfigStyle bugfixes
-      cpupowerutils: use kernel version-derived version string
+Hope it helped.
 
-Roman Vasiyarov (1):
-      cpupowerutils: increase MAX_LINE_LEN
+Thanks!
+-Lukas
 
-Thomas Renninger (2):
-      cpupowerutils: Rename: libcpufreq->libcpupower
-      cpupower: Rename package from cpupowerutils to cpupower
+> 
+> See what I'm saying?
+> 
+> FAT has liner block space, so the problem is small against mapping. But
+> other FSes has bigger problem.
+> 
+> Thanks.
+> 
 
- CREDITS                                            |   17 +-
- MAINTAINERS                                        |    6 +
- tools/power/cpupower/.gitignore                    |   22 +
- tools/power/cpupower/Makefile                      |  279 ++++++
- tools/power/cpupower/README                        |   49 +
- tools/power/cpupower/ToDo                          |   11 +
- tools/power/cpupower/bench/Makefile                |   29 +
- tools/power/cpupower/bench/README-BENCH            |  124 +++
- tools/power/cpupower/bench/benchmark.c             |  194 ++++
- tools/power/cpupower/bench/benchmark.h             |   29 +
- tools/power/cpupower/bench/config.h                |   36 +
- tools/power/cpupower/bench/cpufreq-bench_plot.sh   |  104 +++
- tools/power/cpupower/bench/cpufreq-bench_script.sh |  101 ++
- tools/power/cpupower/bench/example.cfg             |   11 +
- tools/power/cpupower/bench/main.c                  |  202 ++++
- tools/power/cpupower/bench/parse.c                 |  225 +++++
- tools/power/cpupower/bench/parse.h                 |   53 ++
- tools/power/cpupower/bench/system.c                |  191 ++++
- tools/power/cpupower/bench/system.h                |   29 +
- tools/power/cpupower/debug/i386/Makefile           |   20 +
- tools/power/cpupower/debug/i386/centrino-decode.c  |  113 +++
- tools/power/cpupower/debug/i386/dump_psb.c         |  196 ++++
- tools/power/cpupower/debug/i386/intel_gsic.c       |   78 ++
- .../power/cpupower/debug/i386/powernow-k8-decode.c |   96 ++
- tools/power/cpupower/debug/kernel/Makefile         |   23 +
- .../power/cpupower/debug/kernel/cpufreq-test_tsc.c |  113 +++
- tools/power/cpupower/debug/x86_64/Makefile         |   14 +
- .../power/cpupower/debug/x86_64/centrino-decode.c  |    1 +
- .../cpupower/debug/x86_64/powernow-k8-decode.c     |    1 +
- tools/power/cpupower/lib/cpufreq.c                 |  208 +++++
- tools/power/cpupower/lib/cpufreq.h                 |  223 +++++
- tools/power/cpupower/lib/sysfs.c                   |  672 ++++++++++++++
- tools/power/cpupower/lib/sysfs.h                   |   31 +
- tools/power/cpupower/man/cpupower-frequency-info.1 |   76 ++
- tools/power/cpupower/man/cpupower-frequency-set.1  |   54 ++
- tools/power/cpupower/man/cpupower-info.1           |   19 +
- tools/power/cpupower/man/cpupower-monitor.1        |  179 ++++
- tools/power/cpupower/man/cpupower-set.1            |  103 +++
- tools/power/cpupower/man/cpupower.1                |   72 ++
- tools/power/cpupower/po/cs.po                      |  944 +++++++++++++++++++
- tools/power/cpupower/po/de.po                      |  961 ++++++++++++++++++++
- tools/power/cpupower/po/fr.po                      |  947 +++++++++++++++++++
- tools/power/cpupower/po/it.po                      |  961 ++++++++++++++++++++
- tools/power/cpupower/po/pt.po                      |  957 +++++++++++++++++++
- tools/power/cpupower/utils/builtin.h               |   18 +
- tools/power/cpupower/utils/cpufreq-info.c          |  678 ++++++++++++++
- tools/power/cpupower/utils/cpufreq-set.c           |  358 ++++++++
- tools/power/cpupower/utils/cpuidle-info.c          |  244 +++++
- tools/power/cpupower/utils/cpupower-info.c         |  153 ++++
- tools/power/cpupower/utils/cpupower-set.c          |  153 ++++
- tools/power/cpupower/utils/cpupower.c              |  203 ++++
- tools/power/cpupower/utils/helpers/amd.c           |  137 +++
- tools/power/cpupower/utils/helpers/bitmask.c       |  292 ++++++
- tools/power/cpupower/utils/helpers/bitmask.h       |   33 +
- tools/power/cpupower/utils/helpers/cpuid.c         |  143 +++
- tools/power/cpupower/utils/helpers/helpers.h       |  180 ++++
- tools/power/cpupower/utils/helpers/misc.c          |   35 +
- tools/power/cpupower/utils/helpers/msr.c           |  122 +++
- tools/power/cpupower/utils/helpers/pci.c           |   44 +
- tools/power/cpupower/utils/helpers/sysfs.c         |  358 ++++++++
- tools/power/cpupower/utils/helpers/sysfs.h         |   28 +
- tools/power/cpupower/utils/helpers/topology.c      |  108 +++
- .../cpupower/utils/idle_monitor/amd_fam14h_idle.c  |  338 +++++++
- .../cpupower/utils/idle_monitor/cpuidle_sysfs.c    |  196 ++++
- .../cpupower/utils/idle_monitor/cpupower-monitor.c |  448 +++++++++
- .../cpupower/utils/idle_monitor/cpupower-monitor.h |   68 ++
- .../cpupower/utils/idle_monitor/idle_monitors.def  |    7 +
- .../cpupower/utils/idle_monitor/idle_monitors.h    |   18 +
- .../cpupower/utils/idle_monitor/mperf_monitor.c    |  255 ++++++
- tools/power/cpupower/utils/idle_monitor/nhm_idle.c |  216 +++++
- tools/power/cpupower/utils/idle_monitor/snb_idle.c |  190 ++++
- tools/power/cpupower/utils/version-gen.sh          |   35 +
- 72 files changed, 13831 insertions(+), 1 deletions(-)
- create mode 100644 tools/power/cpupower/.gitignore
- create mode 100644 tools/power/cpupower/Makefile
- create mode 100644 tools/power/cpupower/README
- create mode 100644 tools/power/cpupower/ToDo
- create mode 100644 tools/power/cpupower/bench/Makefile
- create mode 100644 tools/power/cpupower/bench/README-BENCH
- create mode 100644 tools/power/cpupower/bench/benchmark.c
- create mode 100644 tools/power/cpupower/bench/benchmark.h
- create mode 100644 tools/power/cpupower/bench/config.h
- create mode 100644 tools/power/cpupower/bench/cpufreq-bench_plot.sh
- create mode 100644 tools/power/cpupower/bench/cpufreq-bench_script.sh
- create mode 100644 tools/power/cpupower/bench/example.cfg
- create mode 100644 tools/power/cpupower/bench/main.c
- create mode 100644 tools/power/cpupower/bench/parse.c
- create mode 100644 tools/power/cpupower/bench/parse.h
- create mode 100644 tools/power/cpupower/bench/system.c
- create mode 100644 tools/power/cpupower/bench/system.h
- create mode 100644 tools/power/cpupower/debug/i386/Makefile
- create mode 100644 tools/power/cpupower/debug/i386/centrino-decode.c
- create mode 100644 tools/power/cpupower/debug/i386/dump_psb.c
- create mode 100644 tools/power/cpupower/debug/i386/intel_gsic.c
- create mode 100644 tools/power/cpupower/debug/i386/powernow-k8-decode.c
- create mode 100644 tools/power/cpupower/debug/kernel/Makefile
- create mode 100644 tools/power/cpupower/debug/kernel/cpufreq-test_tsc.c
- create mode 100644 tools/power/cpupower/debug/x86_64/Makefile
- create mode 120000 tools/power/cpupower/debug/x86_64/centrino-decode.c
- create mode 120000 tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
- create mode 100644 tools/power/cpupower/lib/cpufreq.c
- create mode 100644 tools/power/cpupower/lib/cpufreq.h
- create mode 100644 tools/power/cpupower/lib/sysfs.c
- create mode 100644 tools/power/cpupower/lib/sysfs.h
- create mode 100644 tools/power/cpupower/man/cpupower-frequency-info.1
- create mode 100644 tools/power/cpupower/man/cpupower-frequency-set.1
- create mode 100644 tools/power/cpupower/man/cpupower-info.1
- create mode 100644 tools/power/cpupower/man/cpupower-monitor.1
- create mode 100644 tools/power/cpupower/man/cpupower-set.1
- create mode 100644 tools/power/cpupower/man/cpupower.1
- create mode 100644 tools/power/cpupower/po/cs.po
- create mode 100644 tools/power/cpupower/po/de.po
- create mode 100644 tools/power/cpupower/po/fr.po
- create mode 100644 tools/power/cpupower/po/it.po
- create mode 100644 tools/power/cpupower/po/pt.po
- create mode 100644 tools/power/cpupower/utils/builtin.h
- create mode 100644 tools/power/cpupower/utils/cpufreq-info.c
- create mode 100644 tools/power/cpupower/utils/cpufreq-set.c
- create mode 100644 tools/power/cpupower/utils/cpuidle-info.c
- create mode 100644 tools/power/cpupower/utils/cpupower-info.c
- create mode 100644 tools/power/cpupower/utils/cpupower-set.c
- create mode 100644 tools/power/cpupower/utils/cpupower.c
- create mode 100644 tools/power/cpupower/utils/helpers/amd.c
- create mode 100644 tools/power/cpupower/utils/helpers/bitmask.c
- create mode 100644 tools/power/cpupower/utils/helpers/bitmask.h
- create mode 100644 tools/power/cpupower/utils/helpers/cpuid.c
- create mode 100644 tools/power/cpupower/utils/helpers/helpers.h
- create mode 100644 tools/power/cpupower/utils/helpers/misc.c
- create mode 100644 tools/power/cpupower/utils/helpers/msr.c
- create mode 100644 tools/power/cpupower/utils/helpers/pci.c
- create mode 100644 tools/power/cpupower/utils/helpers/sysfs.c
- create mode 100644 tools/power/cpupower/utils/helpers/sysfs.h
- create mode 100644 tools/power/cpupower/utils/helpers/topology.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/amd_fam14h_idle.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/cpuidle_sysfs.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/cpupower-monitor.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/cpupower-monitor.h
- create mode 100644 tools/power/cpupower/utils/idle_monitor/idle_monitors.def
- create mode 100644 tools/power/cpupower/utils/idle_monitor/idle_monitors.h
- create mode 100644 tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/nhm_idle.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/snb_idle.c
- create mode 100755 tools/power/cpupower/utils/version-gen.sh
+-- 
+--8323328-1240518882-1306229114=:5457--
