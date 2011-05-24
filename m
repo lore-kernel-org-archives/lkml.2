@@ -1,55 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933492Ab1EXWZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 18:25:21 -0400
-Received: from csumail.ces.edu ([144.50.130.137]:27777 "EHLO
-	INFORMA-JHPVCRB.ces.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756186Ab1EXWZU convert rfc822-to-8bit (ORCPT
+	id S1757487Ab1EXW2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 18:28:45 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:50232 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757222Ab1EXW2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 18:25:20 -0400
-X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 May 2011 18:25:20 EDT
-From: "Darrow  Sheila" <sdarrow@centralstate.edu>
-Date: Tue, 24 May 2011 18:20:19 -0400
-Subject: Contact Mr. Thomas Hillary on (bmwdept11@shqiptar.eu)
-Thread-Topic: Contact Mr. Thomas Hillary on (bmwdept11@shqiptar.eu)
-Thread-Index: AQHMGmDEXBynW4/2sUSOU70s4dyG3A==
-Message-ID: <B7FF8D4C259B5442BCC354A568C0FD792C44100ADA@informa-jhpvcrb>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 24 May 2011 18:28:44 -0400
+Date: Wed, 25 May 2011 00:27:33 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: ian.campbell@citrix.com, akpm@linux-foundation.org,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
+        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH V4] mm: Extend memory hotplug API to allow memory hotplug in virtual machines
+Message-ID: <20110524222733.GA29133@router-fw-old.local.net-space.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch applies to Linus' git tree, git commit 98b98d316349e9a028e632629fe813d07fa5afdd
+(Merge branch 'drm-core-next' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6)
+with a few prerequisite patches available at https://lkml.org/lkml/2011/5/2/296
+and https://lkml.org/lkml/2011/5/17/408 (all prerequisite patches were included in -mm tree).
 
+This patch contains online_page_callback and apropriate functions for
+registering/unregistering online page callbacks. It allows to do some
+machine specific tasks during online page stage which is required
+to implement memory hotplug in virtual machines. Currently this patch
+is required by latest memory hotplug support for Xen balloon driver
+patch which will be posted soon.
 
+Additionally, originial online_page() function was splited into
+following functions doing "atomic" operations:
+  - __online_page_set_limits() - set new limits for memory management code,
+  - __online_page_increment_counters() - increment totalram_pages and totalhigh_pages,
+  - __online_page_free() - free page to allocator.
 
-CUSTOMER SERVICE
-REFNO.:BMW/75-A080332010
-Batch: 174/05/ZY369
-Dear E-mail Owner,
+It was done to:
+  - not duplicate existing code,
+  - ease hotplug code devolpment by usage of well defined interface,
+  - avoid stupid bugs which are unavoidable when the same code
+    (by design) is developed in many places.
 
-You are receiving this message because you are a Winner of (300,000.00 G.B.P) from BMW Automobile new year promo Online Lottery game.
-A random email balloting system selected your email address amongst a total of five (5) winners without the sale of any tickets.
+Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ include/linux/memory_hotplug.h |   11 +++++-
+ mm/memory_hotplug.c            |   68 ++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 74 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 8122018..0b8e2a7 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -68,12 +68,19 @@ static inline void zone_seqlock_init(struct zone *zone)
+ extern int zone_grow_free_lists(struct zone *zone, unsigned long new_nr_pages);
+ extern int zone_grow_waitqueues(struct zone *zone, unsigned long nr_pages);
+ extern int add_one_highpage(struct page *page, int pfn, int bad_ppro);
+-/* need some defines for these for archs that don't support it */
+-extern void online_page(struct page *page);
+ /* VM interface that may be used by firmware interface */
+ extern int online_pages(unsigned long, unsigned long);
+ extern void __offline_isolated_pages(unsigned long, unsigned long);
  
-Confirm receipt by sending your 
-Name: 
-Address: 
-Age: 
-Nationality: 
-Mobile Number: 
-Occupation:
-
-Contact Mr. Thomas Hillary on (bmwdept11@shqiptar.eu) Tel:+4470359437491
++typedef void (*online_page_callback_t)(struct page *page);
++
++extern int set_online_page_callback(online_page_callback_t callback);
++extern int restore_online_page_callback(online_page_callback_t callback);
++
++extern void __online_page_set_limits(struct page *page);
++extern void __online_page_increment_counters(struct page *page);
++extern void __online_page_free(struct page *page);
++
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+ extern bool is_pageblock_removable_nolock(struct page *page);
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index a807ccb..9d47c39 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -34,6 +34,17 @@
  
-You will be furnished with details on how to receive your prize as soon as we receive your response to this mail. Be sure to check all incoming mail folders including your junk folder for subsequent mails from us.
+ #include "internal.h"
  
-NB: You are to reply directly to this email bmwdept11@shqiptar.eu because any mail sent to any other email address will not be attended to.
-Darrow Sheila
-Annoucer For BMW Automobile Promo.
++/*
++ * online_page_callback contains pointer to current page onlining function.
++ * Initially it is generic_online_page(). If it is required it could be
++ * changed by calling set_online_page_callback() for callback registration
++ * and restore_online_page_callback() for generic callback restore.
++ */
++
++static void generic_online_page(struct page *page);
++
++static online_page_callback_t online_page_callback = generic_online_page;
++
+ DEFINE_MUTEX(mem_hotplug_mutex);
+ 
+ void lock_memory_hotplug(void)
+@@ -361,23 +372,74 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
+ }
+ EXPORT_SYMBOL_GPL(__remove_pages);
+ 
+-void online_page(struct page *page)
++int set_online_page_callback(online_page_callback_t callback)
++{
++	int rc = -EINVAL;
++
++	lock_memory_hotplug();
++
++	if (online_page_callback == generic_online_page) {
++		online_page_callback = callback;
++		rc = 0;
++	}
++
++	unlock_memory_hotplug();
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(set_online_page_callback);
++
++int restore_online_page_callback(online_page_callback_t callback)
++{
++	int rc = -EINVAL;
++
++	lock_memory_hotplug();
++
++	if (online_page_callback == callback) {
++		online_page_callback = generic_online_page;
++		rc = 0;
++	}
++
++	unlock_memory_hotplug();
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(restore_online_page_callback);
++
++void __online_page_set_limits(struct page *page)
+ {
+ 	unsigned long pfn = page_to_pfn(page);
+ 
+-	totalram_pages++;
+ 	if (pfn >= num_physpages)
+ 		num_physpages = pfn + 1;
++}
++EXPORT_SYMBOL_GPL(__online_page_set_limits);
++
++void __online_page_increment_counters(struct page *page)
++{
++	totalram_pages++;
+ 
+ #ifdef CONFIG_HIGHMEM
+ 	if (PageHighMem(page))
+ 		totalhigh_pages++;
+ #endif
++}
++EXPORT_SYMBOL_GPL(__online_page_increment_counters);
+ 
++void __online_page_free(struct page *page)
++{
+ 	ClearPageReserved(page);
+ 	init_page_count(page);
+ 	__free_page(page);
+ }
++EXPORT_SYMBOL_GPL(__online_page_free);
++
++static void generic_online_page(struct page *page)
++{
++	__online_page_set_limits(page);
++	__online_page_increment_counters(page);
++	__online_page_free(page);
++}
+ 
+ static int online_pages_range(unsigned long start_pfn, unsigned long nr_pages,
+ 			void *arg)
+@@ -388,7 +450,7 @@ static int online_pages_range(unsigned long start_pfn, unsigned long nr_pages,
+ 	if (PageReserved(pfn_to_page(start_pfn)))
+ 		for (i = 0; i < nr_pages; i++) {
+ 			page = pfn_to_page(start_pfn + i);
+-			online_page(page);
++			online_page_callback(page);
+ 			onlined_pages++;
+ 		}
+ 	*(unsigned long *)arg = onlined_pages;
+-- 
+1.5.6.5
