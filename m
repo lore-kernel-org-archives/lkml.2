@@ -1,111 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab1EXOvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:51:49 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:41010 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751010Ab1EXOvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:51:49 -0400
-X-ASG-Debug-ID: 1306248708-03d6a50f5817ef0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DDBC600.1000200@fusionio.com>
-Date: Tue, 24 May 2011 16:51:44 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753098Ab1EXOz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:55:57 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:35803 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752341Ab1EXOz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 10:55:56 -0400
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+Date: Tue, 24 May 2011 15:55:46 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-28-generic; KDE/4.6.2; x86_64; ; )
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, oleg@redhat.com,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
+        bdonlan@gmail.com
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <201105241336.04298.pedro@codesourcery.com> <20110524140215.GF10334@htj.dyndns.org>
+In-Reply-To: <20110524140215.GF10334@htj.dyndns.org>
 MIME-Version: 1.0
-To: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-CC: Paul Bolle <pebolle@tiscali.nl>, Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: Mysterious CFQ crash and RCU
-References: <20110519222404.GG12600@redhat.com> <20110521210013.GJ2271@linux.vnet.ibm.com> <20110523152141.GB4019@redhat.com> <20110523153848.GC2310@linux.vnet.ibm.com> <1306189249.15900.10.camel@t41.thuisdomein> <4DDB7D36.60905@fusionio.com> <20110524143527.GA2266@linux.vnet.ibm.com>
-X-ASG-Orig-Subj: Re: Mysterious CFQ crash and RCU
-In-Reply-To: <20110524143527.GA2266@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1306248708
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64662
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Message-Id: <201105241555.47282.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-24 16:35, Paul E. McKenney wrote:
-> On Tue, May 24, 2011 at 11:41:10AM +0200, Jens Axboe wrote:
->> On 2011-05-24 00:20, Paul Bolle wrote:
->>> On Mon, 2011-05-23 at 08:38 -0700, Paul E. McKenney wrote:
->>>> Running under CONFIG_PREEMPT=y (along with CONFIG_TREE_PREEMPT_RCU=y)
->>>> could be very helpful in and of itself.  CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
->>>> can also be helpful.  In post-2.6.39 mainline, it should be possible
->>>> to set CONFIG_DEBUG_OBJECTS_RCU_HEAD=y without CONFIG_PREEMPT=y, but
->>>> again, CONFIG_PREEMPT=y can help find problems.
->>>
->>> 0) The first thing I tried (from your suggestions) was
->>> CONFIG_DEBUG_OBJECTS_RCU_HEAD=y. Given its dependencies (and, well, the
->>> build system I used) I ended up with:
->>>
->>>     $ grep -e PREEMPT -e RCU /boot/config-2.6.39-0.local3.fc16.i686 |
->>>     grep -v "^#"
->>>     CONFIG_TREE_PREEMPT_RCU=y
->>>     CONFIG_PREEMPT_RCU=y
->>>     CONFIG_RCU_FANOUT=32
->>>     CONFIG_PREEMPT_NOTIFIERS=y
->>>     CONFIG_PREEMPT=y
->>>     CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
->>>     CONFIG_DEBUG_PREEMPT=y
->>>     CONFIG_PROVE_RCU=y
->>>     CONFIG_SPARSE_RCU_POINTER=y
->>>
->>> It looks like I am unable to trigger the issue we're talking about here
->>> when using that config.
->>>
->>> 1) For reference, the config of a kernel that does trigger it had:
->>>
->>>     $ grep -e PREEMPT -e RCU /boot/config-2.6.39-0.local2.fc16.i686 |
->>>     grep -v "^#"
->>>     CONFIG_TREE_RCU=y
->>>     CONFIG_RCU_FANOUT=32
->>>     CONFIG_RCU_FAST_NO_HZ=y
->>>     CONFIG_PREEMPT_NOTIFIERS=y
->>>     CONFIG_PREEMPT_VOLUNTARY=y
->>>     CONFIG_PROVE_RCU=y
->>>     CONFIG_SPARSE_RCU_POINTER=y
->>>
->>>>> Again CONFIG_TREE_PREEMPT_RCU is available only if PREEMPT=y. So should
->>>>> we enable preemtion and CONFIG_TREE_PREEMPT_RCU=y and try to reproduce
->>>>> the issue?
->>>>
->>>> Please!
->>>
->>> 2) It appears I can't reproduce with those options enabled (see above).
->>>
->>>> Polling is fine.  Please see attached for a script to poll at 15-second
->>>> intervals.  Please also feel free to adjust, just tell me what you
->>>> adjusted.
->>>
->>> And should I now try to run that script on a config that triggers this
->>> issue (such as the config under 1) above)?
->>
->> Paul, can we see a dmesg from your running system? Perhaps there's some
->> dependency on a particular driver or device that makes this easier to
->> reproduce.
-> 
-> Here you go, please see attached.
-> 
-> I should have some additional diagnostics later today Pacific time.
+On Tuesday 24 May 2011 15:02:15, Tejun Heo wrote:
+> Now that thinking more about it, TRAP_STOP (INTERRUPT trap) would
+> probably be better.  I'll think more about it.  For fork, it doesn't
+> really matter but deliverying SIGSTOP on CLONE isn't too good.  From
+> user's POV, TRAP_STOP should work too, right?
 
-Heh sorry, _other_ Paul :-)
+AFAICS, it should be no problem.
 
-You are not seeing this issue, are you?
-
-As per your earlier comment on sleeping under rcu_read_lock(), I checked
-everything again and it seems sane. Would that not trigger an
-immediately schedule-while-atomic in any case, regardless of RCU config?
-
+Thanks,
 -- 
-Jens Axboe
-
+Pedro Alves
