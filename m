@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab1EXSNW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:13:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37219 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab1EXSNU (ORCPT
+	id S932363Ab1EXSMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:12:30 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:56853 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752799Ab1EXSM2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:13:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer;
-        b=RfgNAlEVg1NZEgWepnrYoi7qmwVr/jnH57AM9G5DaUiJagvtAvLccSszjrZ9SzwLm/
-         udlekrWi2n4z7l58/BjR8ObWSHe++A+SVMwdA864/0jTqjYApLuSeXaWPBWhMRDC5H0F
-         gZO9bcflHGC7B+jn1qcc37duBi8XAk6ijOILg=
-From: Jonas Gorski <jonas.gorski@gmail.com>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] exportfs: reallow building as a module
-Date: Tue, 24 May 2011 20:12:08 +0200
-Message-Id: <1306260728-12031-1-git-send-email-jonas.gorski@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 24 May 2011 14:12:28 -0400
+Subject: [BUG]  "sched: Remove rq->lock from the first half of ttwu()" 
+ locks up on ARM
+From: Marc Zyngier <Marc.Zyngier@arm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Frank Rowand <frank.rowand@am.sony.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Organization: ARM Ltd
+Date: Tue, 24 May 2011 19:13:12 +0100
+Message-ID: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+X-OriginalArrivalTime: 24 May 2011 18:12:35.0636 (UTC) FILETIME=[287B3740:01CC1A3E]
+X-MC-Unique: 111052419122501201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 990d6c2d7aee921e3bce22b2d6a750fd552262be ("vfs: Add name to file
-handle conversion support") changed EXPORTFS to be a bool.
-This was needed for earlier revisions of the original patch, but the actual
-commit put the code needing it into its own file that only gets compiled
-when FHANDLE is selected which in turn selects EXPORTFS.
-So EXPORTFS can be safely compiled as a module when not selecting FHANDLE.
+Peter,
 
-Signed-off-by: Jonas Gorski <jonas.gorski@gmail.com>
----
- fs/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I've experienced all kind of lock-ups on ARM SMP platforms recently, and
+finally tracked it down to the following patch:
 
-diff --git a/fs/Kconfig b/fs/Kconfig
-index f3aa9b0..efb7d4e 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -47,7 +47,7 @@ config FS_POSIX_ACL
- 	def_bool n
- 
- config EXPORTFS
--	bool
-+	tristate
- 
- config FILE_LOCKING
- 	bool "Enable POSIX file locking API" if EXPERT
+e4a52bcb9a18142d79e231b6733cabdbf2e67c1f [sched: Remove rq->lock from the first half of ttwu()].
+
+Even on moderate load, the machine locks up, often silently, and
+sometimes with a few messages like:
+INFO: rcu_preempt_state detected stalls on CPUs/tasks: { 0} (detected by 1, t=12002 jiffies)
+
+Another side effect of this patch is that the load average is always 0,
+whatever load I throw at the system.
+
+Reverting the sched changes up to that patch (included) gives me a
+working system again, which happily survives parallel kernel
+compilations without complaining.
+
+My knowledge of the scheduler being rather limited, I haven't been able
+to pinpoint the exact problem (though it probably have something to do
+with __ARCH_WANT_INTERRUPTS_ON_CTXSW being defined on ARM). The enclosed
+patch somehow papers over the load average problem, but the system ends
+up locking up anyway:
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index d3ade54..5ab43c4 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2526,8 +2526,13 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 		 * to spin on ->on_cpu if p is current, since that would
+ 		 * deadlock.
+ 		 */
+-		if (p == current)
++		if (p == current) {
++			p->sched_contributes_to_load = !!task_contributes_to_load(p);
++			p->state = TASK_WAKING;
++			if (p->sched_class->task_waking)
++				p->sched_class->task_waking(p);
+ 			goto out_activate;
++		}
+ #endif
+ 		cpu_relax();
+ 	}
+
+I'd be happy to test any patch you may have.
+
+Cheers,
+
+	M.
 -- 
-1.7.2.5
+Reality is an implementation detail.
+
 
