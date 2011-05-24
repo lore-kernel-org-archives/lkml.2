@@ -1,137 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab1EXJ1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 05:27:52 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54309 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098Ab1EXJ1u (ORCPT
+	id S1755635Ab1EXJ25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 05:28:57 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:6818
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755421Ab1EXJ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 05:27:50 -0400
-In-Reply-To: <20110524091255.GB16886@redhat.com>
-References: <cover.1305846412.git.mst@redhat.com> <aced8619c07018b5495f9ceb2c02d4fbf897a098.1305846412.git.mst@redhat.com> <877h9kvlps.fsf@rustcorp.com.au> <20110522121008.GA12155@redhat.com> <87boyutbjg.fsf@rustcorp.com.au> <20110523111900.GB27212@redhat.com> <OFEED174CD.D3C9A726-ON6525789A.002661D5-6525789A.002B26ED@in.ibm.com> <20110524091255.GB16886@redhat.com>
-Subject: Re: [PATCHv2 10/14] virtio_net: limit xmit polling
-X-KeepSent: 69E520FD:340352AC-6525789A:003308A2;
- type=4; name=$KeepSent
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux390@de.ibm.com,
-        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
-X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
-Message-ID: <OF69E520FD.340352AC-ON6525789A.003308A2-6525789A.0033F2DF@in.ibm.com>
-From: Krishna Kumar2 <krkumar2@in.ibm.com>
-Date: Tue, 24 May 2011 14:57:43 +0530
-X-MIMETrack: Serialize by Router on d23ml174/23/M/IBM(Release 8.5.1FP4|July 25, 2010) at
- 24/05/2011 14:57:49
+	Tue, 24 May 2011 05:28:56 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2cK1432N98dKzz1202hzz8275dh8275chz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LLP0YC-02-0U0-02
+X-M-MSG: 
+Date: Tue, 24 May 2011 11:27:47 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Eric B Munson <emunson@mgebm.net>
+CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] oprofile, powerpc: Handle events that raise an exception
+ without overflowing
+Message-ID: <20110524092747.GS20052@erda.amd.com>
+References: <1306160560-5309-1-git-send-email-emunson@mgebm.net>
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1306160560-5309-1-git-send-email-emunson@mgebm.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> wrote on 05/24/2011 02:42:55 PM:
+On 23.05.11 10:22:40, Eric B Munson wrote:
+> Commit 0837e3242c73566fc1c0196b4ec61779c25ffc93 fixes a situation on POWER7
+> where events can roll back if a specualtive event doesn't actually complete.
+> This can raise a performance monitor exception.  We need to catch this to ensure
+> that we reset the PMC.  In all cases the PMC will be less than 256 cycles from
+> overflow.
+> 
+> This patch lifts Anton's fix for the problem in perf and applies it to oprofile
+> as well.
+> 
+> Signed-off-by: Eric B Munson <emunson@mgebm.net>
+> Cc: <stable@kernel.org> # as far back as it applies cleanly
+> ---
+>  arch/powerpc/oprofile/op_model_power4.c |   24 +++++++++++++++++++++++-
+>  1 files changed, 23 insertions(+), 1 deletions(-)
 
-> > > > To do this properly, we should really be using the actual number of
-sg
-> > > > elements needed, but we'd have to do most of xmit_skb beforehand so
-we
-> > > > know how many.
-> > > >
-> > > > Cheers,
-> > > > Rusty.
-> > >
-> > > Maybe I'm confused here.  The problem isn't the failing
-> > > add_buf for the given skb IIUC.  What we are trying to do here is
-stop
-> > > the queue *before xmit_skb fails*. We can't look at the
-> > > number of fragments in the current skb - the next one can be
-> > > much larger.  That's why we check capacity after xmit_skb,
-> > > not before it, right?
-> >
-> > Maybe Rusty means it is a simpler model to free the amount
-> > of space that this xmit needs. We will still fail anyway
-> > at some time but it is unlikely, since earlier iteration
-> > freed up atleast the space that it was going to use.
->
-> Not sure I nderstand.  We can't know space is freed in the previous
-> iteration as buffers might not have been used by then.
+I applied the fix to oprofile/urgent.
 
-Yes, the first few iterations may not have freed up space, but
-later ones should. The amount of free space should increase
-from then on, especially since we try to free double of what
-we consume.
+Thanks Eric,
 
-> > The
-> > code could become much simpler:
-> >
-> > start_xmit()
-> > {
-> > {
-> >         num_sgs = get num_sgs for this skb;
-> >
-> >         /* Free enough pending old buffers to enable queueing this one
-*/
-> >         free_old_xmit_skbs(vi, num_sgs * 2);     /* ?? */
-> >
-> >         if (virtqueue_get_capacity() < num_sgs) {
-> >                 netif_stop_queue(dev);
-> >                 if (virtqueue_enable_cb_delayed(vi->svq) ||
-> >                     free_old_xmit_skbs(vi, num_sgs)) {
-> >                         /* Nothing freed up, or not enough freed up */
-> >                         kfree_skb(skb);
-> >                         return NETDEV_TX_OK;
->
-> This packet drop is what we wanted to avoid.
+-Robert
 
-Please see below on returning NETDEV_TX_BUSY.
-
->
-> >                 }
-> >                 netif_start_queue(dev);
-> >                 virtqueue_disable_cb(vi->svq);
-> >         }
-> >
-> >         /* xmit_skb cannot fail now, also pass 'num_sgs' */
-> >         xmit_skb(vi, skb, num_sgs);
-> >         virtqueue_kick(vi->svq);
-> >
-> >         skb_orphan(skb);
-> >         nf_reset(skb);
-> >
-> >         return NETDEV_TX_OK;
-> > }
-> >
-> > We could even return TX_BUSY since that makes the dequeue
-> > code more efficient. See dev_dequeue_skb() - you can skip a
-> > lot of code (and avoid taking locks) to check if the queue
-> > is already stopped but that code runs only if you return
-> > TX_BUSY in the earlier iteration.
-> >
-> > BTW, shouldn't the check in start_xmit be:
-> >    if (likely(!free_old_xmit_skbs(vi, 2+MAX_SKB_FRAGS))) {
-> >       ...
-> >    }
-> >
-> > Thanks,
-> >
-> > - KK
->
-> I thought we used to do basically this but other devices moved to a
-> model where they stop *before* queueing fails, so we did too.
-
-I am not sure of why it was changed, since returning TX_BUSY
-seems more efficient IMHO. qdisc_restart() handles requeue'd
-packets much better than a stopped queue, as a significant
-part of this code is skipped if gso_skb is present (qdisc
-will eventually start dropping packets when tx_queue_len is
-exceeded anyway).
-
-Thanks,
-
-- KK
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
