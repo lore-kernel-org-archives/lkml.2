@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab1EXNCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 09:02:36 -0400
-Received: from seven.medozas.de ([188.40.89.202]:51368 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756112Ab1EXNCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 09:02:34 -0400
-Date: Tue, 24 May 2011 15:02:33 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Jacek Luczak <difrost.kernel@gmail.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-mm <linux-mm"@kvack.medozas.de
-Subject: Re: (Short?) merge window reminder
-In-Reply-To: <BANLkTimCXVdVa6KLRG8GJR1gJY=7_5SkOA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.01.1105241500410.23085@frira.zrqbmnf.qr>
-References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com> <20110523192056.GC23629@elte.hu> <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com> <20110523231721.GM10009@thunk.org> <4DDAEC68.30803@zytor.com> <BANLkTikGfVSAMY2a2yiXaNpvBVvF8YdMEA@mail.gmail.com>
- <alpine.LNX.2.01.1105241409280.15351@frira.zrqbmnf.qr> <BANLkTimCXVdVa6KLRG8GJR1gJY=7_5SkOA@mail.gmail.com>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756245Ab1EXNDo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:03:44 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:64766 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756112Ab1EXNDm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 09:03:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=kp7qUGHIfowB28swpkpE/M2mO9CdpKedWrxsKUboQcpbO/iwTibkfwtrQPFXlvN823
+         xwrX7+bwjKV8AjpMy0/zzENlP7teFjDMvjhGzaBRGkXnuuVGgv+nI1zXaacwnOGBTbeZ
+         lmLpnjEpNTLwP9ribyTxXOtuDJH/8gNf3VsIo=
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: Chris Ball <cjb@laptop.org>, Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH] drivers:mmc:add the NO_IRQ define to of_mmc_spi.c
+Date: Tue, 24 May 2011 21:03:22 +0800
+Message-Id: <1306242202-9252-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 2011-05-24 14:30, Jacek Luczak wrote:
+For archs that don't support NO_IRQ (such as mips),
+provide a dummy value. Fix the build error for mips.
 
->2011/5/24 Jan Engelhardt <jengelh@medozas.de>:
->> On Tuesday 2011-05-24 01:33, Linus Torvalds wrote:
->>
->>>Another advantage of switching numbering models (ie 3.0 instead of
->>>2.8.x) would be that it would also make the "odd numbers are also
->>>numbers" transition much more natural.
->>>
->>>Because of our historical even/odd model, I wouldn't do a 2.7.x -
->>>there's just too much history of 2.1, 2.3, 2.5 being development
->>>trees.
->>
->> .oO(Though once 2.{7 or more, odd} trickle into the distros, it would
->> become pretty much apparent that they are not devel.)
->>
->>>And then in another few years (probably before getting close to 3.40,
->>>so I'm not going to make a big deal of 3 = "third decade"), I'd just
->>>do 4.0 etc.
->>
->> While 2.6 has certainly worn out, already thinking of a 4.0 is highly
->> reminiscient of the version number arms race Firefox and ChromeBrowser
->> are doing currently.
->>
->>>Because all our releases are supposed to be stable releases these
->>>days, and if we get rid of one level of numbering, I feel perfectly
->>>fine with getting rid of the even/odd history too.
->>
->> If I remember past-time discussions right, ELF was the contributing
->> factor to bump the major number to 2.0 back then; ever since 2.0, no
->> similarly breakthrough-ing event has occurred.
->
->What then about BKL removal? Nice place to celebrate with version jump
->and heaving some beers.
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+---
+ drivers/mmc/host/of_mmc_spi.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-The BKL going away was not a change that would require new 
-userspace programs.
+diff --git a/drivers/mmc/host/of_mmc_spi.c b/drivers/mmc/host/of_mmc_spi.c
+index e2aecb7..ab66f24 100644
+--- a/drivers/mmc/host/of_mmc_spi.c
++++ b/drivers/mmc/host/of_mmc_spi.c
+@@ -25,6 +25,11 @@
+ #include <linux/mmc/core.h>
+ #include <linux/mmc/host.h>
+ 
++/* For archs that don't support NO_IRQ (such as mips), provide a dummy value */
++#ifndef NO_IRQ
++#define NO_IRQ 0
++#endif
++
+ MODULE_LICENSE("GPL");
+ 
+ enum {
+-- 
+1.7.4.1
+
