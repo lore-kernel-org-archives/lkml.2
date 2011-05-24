@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab1EXQJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 12:09:36 -0400
-Received: from s040.panelboxmanager.com ([72.55.186.60]:48873 "EHLO
-	s040.panelboxmanager.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757179Ab1EXQJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 12:09:34 -0400
-Message-ID: <4DDBD834.6080804@techboom.com>
-Date: Tue, 24 May 2011 12:09:24 -0400
-From: TB <lkml@techboom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1756967Ab1EXQTS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 12:19:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34731 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751831Ab1EXQTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 12:19:16 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH] intel-iommu: Only unlink device domains from iommu
+To: dwmw2@infradead.org
+Cc: alex.williamson@redhat.com, david.woodhouse@intel.com,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, ddutile@redhat.com, chrisw@redhat.com
+Date: Tue, 24 May 2011 12:19:04 -0400
+Message-ID: <20110524161745.2472.77832.stgit@virtlab9.virt.bos.redhat.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: kernel BUG at net/ipv4/tcp_output.c:1006!
-References: <1305307633.3866.61.camel@edumazet-laptop>	 <4DCD86C0.9030904@techboom.com>	<1305316058.3120.6.camel@edumazet-laptop>	 <20110513.160138.1477780250019480052.davem@davemloft.net>	 <4DD54E89.7050707@techboom.com> <1305825086.3028.84.camel@edumazet-laptop>
-In-Reply-To: <1305825086.3028.84.camel@edumazet-laptop>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - s040.panelboxmanager.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - techboom.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-05-19 01:11 PM, Eric Dumazet wrote:
-> Le jeudi 19 mai 2011 à 13:08 -0400, TB a écrit :
->> On 11-05-13 04:01 PM, David Miller wrote:
->>> From: Eric Dumazet <eric.dumazet@gmail.com>
->>> Date: Fri, 13 May 2011 21:47:38 +0200
->>>
->>>> I suspect we should push commit 2fceec13375e5d98 (tcp: len check is
->>>> unnecessarily devastating, change to WARN_ON) to stable if not already
->>>> done...
->>>>
->>>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=2fceec13375e5d98
->>>>
->>>> David, is this commit in your stable queue ?
->>>
->>> No, but now it is.
->>
->> We've put this commit with the previous tcp_cubic patch on 60 of our
->> servers and we're waiting to see how it goes.
-> 
-> Dont expect too much. It only permits to survive after logging messages,
-> instead of halting machine ;)
+Commit a97590e5 added unlinking domains from iommus to reciprocate the
+iommu from domains unlinking that was already done.  We actually want
+to only do this for device domains and never for the static
+identity map domain or VM domains.  The SI domain is special and
+never freed, while VM domain->id lives in their own special address
+space, separate from iommu->domain_ids.
 
-That's all I'm expecting :)
+In the current code, a VM can get domain->id zero, then mark that
+domain unused when unbound from pci-stub.  This leads to DMAR
+write faults when the device is re-bound to the host driver.
 
-However we've got 3 servers that hung with a blank screen and no network
-over the weekend and nothing unusual in the net console
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+
+This should also be queued for stable
+
+ drivers/pci/intel-iommu.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+index 284fe72..096c9ad 100644
+--- a/drivers/pci/intel-iommu.c
++++ b/drivers/pci/intel-iommu.c
+@@ -3447,10 +3447,13 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
+ 		domain_update_iommu_cap(domain);
+ 		spin_unlock_irqrestore(&domain->iommu_lock, tmp_flags);
+ 
+-		spin_lock_irqsave(&iommu->lock, tmp_flags);
+-		clear_bit(domain->id, iommu->domain_ids);
+-		iommu->domains[domain->id] = NULL;
+-		spin_unlock_irqrestore(&iommu->lock, tmp_flags);
++		if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
++		    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY)) {
++			spin_lock_irqsave(&iommu->lock, tmp_flags);
++			clear_bit(domain->id, iommu->domain_ids);
++			iommu->domains[domain->id] = NULL;
++			spin_unlock_irqrestore(&iommu->lock, tmp_flags);
++		}
+ 	}
+ 
+ 	spin_unlock_irqrestore(&device_domain_lock, flags);
+
