@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915Ab1EXMTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 08:19:09 -0400
-Received: from mail.avalus.com ([89.16.176.221]:47604 "EHLO mail.avalus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750992Ab1EXMTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 08:19:08 -0400
-Date: Tue, 24 May 2011 13:19:05 +0100
-From: Alex Bligh <alex@alex.org.uk>
-Reply-To: Alex Bligh <alex@alex.org.uk>
-To: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
-cc: Alex Bligh <alex@alex.org.uk>
-Subject: Question: block layer and REQ_FLUSH
-Message-ID: <4C9FE036825E46DE8121365F@Ximines.local>
-X-Mailer: Mulberry/4.0.8 (Mac OS X)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
+	id S1756097Ab1EXMUD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 08:20:03 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:63300 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961Ab1EXMUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 08:20:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=pB2e3uModwfXet52A9tBMbrEOJ7q797l0WdstL3hOUc812xjXPDJYpC0be3aiEz0m5
+         /Ro32oOAvuN0a5+2xAaVXYTrrExq7jfeNO3RYphyo3QSZ+T2P+3GGjraQbi/BOXrAljn
+         ar5+cXDI6iwLcl2hTD/DxkcM0I/dHFSJwnG2Y=
+From: Pengfei Zhang <zoppof.zhang@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Pengfei Zhang <zoppof.zhang@gmail.com>
+Subject: [PATCH] MIPS:i8259.c remove resume and shutdown to syscore_ops
+Date: Tue, 24 May 2011 20:19:18 +0800
+Message-Id: <1306239558-4997-1-git-send-email-zoppof.zhang@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation/block/writeback_cache_control.txt says:
+Remove the resume and shutdown of i8259A from the sysdev_class
+to the syscore_ops since these members had removed from the
+structure sysdev_class.
 
-> The REQ_FLUSH flag can be OR ed into the r/w flags of a bio submitted from
-> the filesystem and will make sure the volatile cache of the storage device
-> has been flushed before the actual I/O operation is started.  This
-> explicitly guarantees that previously completed write requests are on
-> non-volatile storage before the flagged bio starts.
+Signed-off-by: Pengfei Zhang <zoppof.zhang@gmail.com>
+---
+ arch/mips/kernel/i8259.c |   20 +++++++++++++-------
+ 1 files changed, 13 insertions(+), 7 deletions(-)
 
->From the block driver's point of view, is it only necessary to ensure
-*completed* I/O operations are flushed to disk (as per the text), or
-is it also necessary to ensure *in flight* requests (i.e. those that
-have not been completed) are flushed to disk too? IE when the block
-layer does the flush, does it also wait for in-flight I/O to complete?
-
-IE if the time sequence is
-	WRITE1
-	WRITE2
-	WRITE3
-			Complete WRITE2 -> sent to volatile cache
-	WRITE4
-	REQ_FLUSH
-
-Do I need to only ensure WRITE2 is flushed, or (as I suspect) do I
-need to wait for all bios previously submitted to the driver to
-complete? If so, from the driver's point of view anyway, should the
-guarantee refer to "previously submitted write requests" as opposed
-to "previously completed"?
-
+diff --git a/arch/mips/kernel/i8259.c b/arch/mips/kernel/i8259.c
+index c018696..a74a8ea 100644
+--- a/arch/mips/kernel/i8259.c
++++ b/arch/mips/kernel/i8259.c
+@@ -16,6 +16,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/sysdev.h>
+ #include <linux/irq.h>
++#include <linux/syscore_ops.h>
+ 
+ #include <asm/i8259.h>
+ #include <asm/io.h>
+@@ -215,14 +216,13 @@ spurious_8259A_irq:
+ 	}
+ }
+ 
+-static int i8259A_resume(struct sys_device *dev)
++static void i8259A_resume(void)
+ {
+ 	if (i8259A_auto_eoi >= 0)
+ 		init_8259A(i8259A_auto_eoi);
+-	return 0;
+ }
+ 
+-static int i8259A_shutdown(struct sys_device *dev)
++static void i8259A_shutdown(void)
+ {
+ 	/* Put the i8259A into a quiescent state that
+ 	 * the kernel initialization code can get it
+@@ -232,15 +232,17 @@ static int i8259A_shutdown(struct sys_device *dev)
+ 		outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
+ 		outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-1 */
+ 	}
+-	return 0;
+ }
+ 
+-static struct sysdev_class i8259_sysdev_class = {
+-	.name = "i8259",
++static struct syscore_ops i8259_syscore_ops = {
+ 	.resume = i8259A_resume,
+ 	.shutdown = i8259A_shutdown,
+ };
+ 
++static struct sysdev_class i8259_sysdev_class = {
++	.name = "i8259",
++};
++
+ static struct sys_device device_i8259A = {
+ 	.id	= 0,
+ 	.cls	= &i8259_sysdev_class,
+@@ -248,7 +250,11 @@ static struct sys_device device_i8259A = {
+ 
+ static int __init i8259A_init_sysfs(void)
+ {
+-	int error = sysdev_class_register(&i8259_sysdev_class);
++	int error;
++
++	register_syscore_ops(&i8259_syscore_ops);
++
++	error = sysdev_class_register(&i8259_sysdev_class);
+ 	if (!error)
+ 		error = sysdev_register(&device_i8259A);
+ 	return error;
 -- 
-Alex Bligh
+1.7.4.1
+
