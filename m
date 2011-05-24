@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab1EXKzk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 06:55:40 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:39520 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752761Ab1EXKzj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 06:55:39 -0400
-Date: Tue, 24 May 2011 12:51:47 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Richard Cochran <richard.cochran@omicron.at>, linux-kernel@vger.kernel.org
-Subject: [PATCH] posix clocks: correct error value in posix_clock_poll()
-Message-ID: <20110524125147.0eb112b5@absol.kitzblitz>
-Organization: -
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
- AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
- T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
- ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
- BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754304Ab1EXK5w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 06:57:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45024 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753144Ab1EXK5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 06:57:51 -0400
+Date: Tue, 24 May 2011 11:57:46 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: minchan.kim@gmail.com, abarry@cray.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Unending loop in __alloc_pages_slowpath following OOM-kill; rfc:
+ patch.
+Message-ID: <20110524105746.GF5279@suse.de>
+References: <4DD2991B.5040707@cray.com>
+ <BANLkTimYEs315jjY9OZsL6--mRq3O_zbDA@mail.gmail.com>
+ <20110520164924.GB2386@barrios-desktop>
+ <4DDB3A1E.6090206@jp.fujitsu.com>
+ <20110524083008.GA5279@suse.de>
+ <4DDB6DF6.2050700@jp.fujitsu.com>
+ <20110524084915.GC5279@suse.de>
+ <4DDB74F7.9020109@jp.fujitsu.com>
+ <20110524091611.GD5279@suse.de>
+ <4DDB7D0F.3060204@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4DDB7D0F.3060204@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
-It looks to me like -ENODEV might not be a good return value
-in poll(). Would POLLERR be the correct one in this case?
+On Tue, May 24, 2011 at 06:40:31PM +0900, KOSAKI Motohiro wrote:
+> (2011/05/24 18:16), Mel Gorman wrote:
+> > On Tue, May 24, 2011 at 06:05:59PM +0900, KOSAKI Motohiro wrote:
+> >>>>> Why?
+> >>>>
+> >>>> Otherwise, we don't have good PCP dropping trigger. Big machine might have
+> >>>> big pcp cache.
+> >>>>
+> >>>
+> >>> Big machines also have a large cost for sending IPIs.
+> >>
+> >> Yes. But it's only matter if IPIs are frequently happen.
+> >> But, drain_all_pages() is NOT only IPI source. some vmscan function (e.g.
+> >> try_to_umap) makes a lot of IPIs.
+> >>
+> >> Then, it's _relatively_ not costly. I have a question. Do you compare which
+> >> operation and drain_all_pages()? IOW, your "costly" mean which scenario suspect?
+> >>
+> > 
+> > I am concerned that if the machine gets into trouble and we are failing
+> > to reclaim that sending more IPIs is not going to help any. There is no
+> > evidence at the moment that sending extra IPIs here will help anything.
+> 
+> In old days, we always call drain_all_pages() if did_some_progress!=0. But
+> current kernel only call it when get_page_from_freelist() fail. So,
+> wait_iff_congested() may help but no guarantee to help us.
+> 
+> If you still strongly worry about IPI cost, I'm concern to move drain_all_pages()
+> to more unfrequently point. but to ignore pcp makes less sense, IMHO.
+> 
 
- kernel/time/posix-clock.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yes, I'm worried about it because excessive time
+spent in drain_all_pages() has come up on the past
+http://lkml.org/lkml/2010/8/23/81 . The PCP lists are not being
+ignored at the moment. They are drained when direct reclaim makes
+forward progress but still fails to allocate a page.
 
-diff --git a/kernel/time/posix-clock.c b/kernel/time/posix-clock.c
-index c340ca6..2424d3f 100644
---- a/kernel/time/posix-clock.c
-+++ b/kernel/time/posix-clock.c
-@@ -71,7 +71,7 @@ static unsigned int posix_clock_poll(struct file *fp, poll_table *wait)
- 	int result = 0;
- 
- 	if (!clk)
--		return -ENODEV;
-+		return POLLERR;
- 
- 	if (clk->ops.poll)
- 		result = clk->ops.poll(clk, fp, wait);
 -- 
-1.7.5.rc3
+Mel Gorman
+SUSE Labs
