@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933147Ab1EXXxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 19:53:41 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37262 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab1EXXxk (ORCPT
+	id S933247Ab1EXXxw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 19:53:52 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:38466 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094Ab1EXXxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 19:53:40 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DDC44F0.6090809@jp.fujitsu.com>
-Date: Wed, 25 May 2011 08:53:20 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 24 May 2011 19:53:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=SMlzuYSqFqc3yTH0bZdXRx2eolrbKgabjdtJlv6XBdWKRKom1ysWRvauvMPMMmjSxq
+         pVHKWYD1rhpYFPVZ+/pg==
+Date: Tue, 24 May 2011 16:53:45 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch 1/6] s390, block: disable fixed buffer mode when DMA support
+ is disabled
+Message-ID: <alpine.DEB.2.00.1105241650230.29780@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: mgorman@suse.de
-CC: minchan.kim@gmail.com, abarry@cray.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org, riel@redhat.com, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Unending loop in __alloc_pages_slowpath following OOM-kill; rfc:
- patch.
-References: <4DD2991B.5040707@cray.com> <BANLkTimYEs315jjY9OZsL6--mRq3O_zbDA@mail.gmail.com> <20110520164924.GB2386@barrios-desktop> <4DDB3A1E.6090206@jp.fujitsu.com> <20110524083008.GA5279@suse.de> <4DDB6DF6.2050700@jp.fujitsu.com> <20110524084915.GC5279@suse.de> <4DDB74F7.9020109@jp.fujitsu.com> <20110524091611.GD5279@suse.de> <4DDB7D0F.3060204@jp.fujitsu.com> <20110524105746.GF5279@suse.de>
-In-Reply-To: <20110524105746.GF5279@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> In old days, we always call drain_all_pages() if did_some_progress!=0. But
->> current kernel only call it when get_page_from_freelist() fail. So,
->> wait_iff_congested() may help but no guarantee to help us.
->>
->> If you still strongly worry about IPI cost, I'm concern to move drain_all_pages()
->> to more unfrequently point. but to ignore pcp makes less sense, IMHO.
->>
-> 
-> Yes, I'm worried about it because excessive time
-> spent in drain_all_pages() has come up on the past
-> http://lkml.org/lkml/2010/8/23/81 . The PCP lists are not being
-> ignored at the moment. They are drained when direct reclaim makes
-> forward progress but still fails to allocate a page.
+dasd=fixedbuffers must create a SLAB_CACHE_DMA cache, which is not
+possible if CONFIG_ZONE_DMA is disabled (a supported configuration
+without 64-bit support).
 
-Well, it's no priority==0 case. that's my point.
+If passed, emit a warning and disable fixed buffer mode.
 
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ drivers/s390/block/dasd_devmap.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/s390/block/dasd_devmap.c b/drivers/s390/block/dasd_devmap.c
+--- a/drivers/s390/block/dasd_devmap.c
++++ b/drivers/s390/block/dasd_devmap.c
+@@ -282,6 +282,11 @@ dasd_parse_keyword( char *parsestring ) {
+ 		return residual_str;
+ 	}
+ 	if (strncmp("fixedbuffers", parsestring, length) == 0) {
++#ifndef CONFIG_ZONE_DMA
++		DBF_EVENT(DBF_WARNING, "%s", "DMA support disabled, "
++					"fixed buffer mode disabled.");
++		return residual_str;
++#endif
+ 		if (dasd_page_cache)
+ 			return residual_str;
+ 		dasd_page_cache =
