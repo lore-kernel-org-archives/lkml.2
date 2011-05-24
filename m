@@ -1,101 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626Ab1EXOgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:36:13 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:52462 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257Ab1EXOgL (ORCPT
+	id S932692Ab1EXOgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:36:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38592 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932601Ab1EXOgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:36:11 -0400
+	Tue, 24 May 2011 10:36:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=NmBlTD7egGp4KrR9p1OZ5YTQr2v97BMeLF0HeMTE3ts+FZ34PLe9C4+OyPMpKg7y7X
-         SZGBHKBxCetm3S5d4SNetii4sBeEErfd769XfxW0G7gZAi3V1UwUBMIkREJatLNQwF1N
-         mm8VDTQuWcck8zc7YWm+TefE6aik5MP87JRJo=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=PDb1u0+XtbrCKefmBx1o6taEyESyzpzUDnZ7Z54q3OC11KrcTpiRp652cjrJTKuHCC
+         59Kx4D7fSqWKAH2RBrrEyQy97l2TUwkW6tErbrI13cvHR1wZlhcwtnkhRUSepKQHo4ay
+         nCmaZcrdDc8dujkg+owwZsBcgKXqxgsmwLFS4=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Jens Axboe <jaxboe@fusionio.com>
 Cc: linux-kernel@vger.kernel.org, Laurent Vivier <Laurent.Vivier@bull.net>
-Subject: [PATCH 1/2] loop: limit 'max_part' module param to DISK_MAX_PARTS
-Date: Tue, 24 May 2011 23:36:00 +0900
-Message-Id: <1306247761-2246-1-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 2/2] loop: handle on-demand devices correctly
+Date: Tue, 24 May 2011 23:36:01 +0900
+Message-Id: <1306247761-2246-2-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.5.2
+In-Reply-To: <1306247761-2246-1-git-send-email-namhyung@gmail.com>
+References: <1306247761-2246-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'max_part' parameter controls the number of maximum partition
-a loop block device can have. However if a user specifies very
-large value it would exceed the limitation of device minor number
-and can cause a kernel panic (or, at least, produce invalid
-device nodes in some cases).
+When finding or allocating a loop device, loop_probe() did not take
+partition numbers into account so that it can result to a different
+device. Consider following example:
 
-On my desktop system, following command kills the kernel. On qemu,
-it triggers similar oops but the kernel was alive:
+$ sudo modprobe loop max_part=15
+$ ls -l /dev/loop*
+brw-rw---- 1 root disk 7,   0 2011-05-24 22:16 /dev/loop0
+brw-rw---- 1 root disk 7,  16 2011-05-24 22:16 /dev/loop1
+brw-rw---- 1 root disk 7,  32 2011-05-24 22:16 /dev/loop2
+brw-rw---- 1 root disk 7,  48 2011-05-24 22:16 /dev/loop3
+brw-rw---- 1 root disk 7,  64 2011-05-24 22:16 /dev/loop4
+brw-rw---- 1 root disk 7,  80 2011-05-24 22:16 /dev/loop5
+brw-rw---- 1 root disk 7,  96 2011-05-24 22:16 /dev/loop6
+brw-rw---- 1 root disk 7, 112 2011-05-24 22:16 /dev/loop7
+$ sudo mknod /dev/loop8 b 7 128
+$ sudo losetup /dev/loop8 ~/temp/disk-with-3-parts.img
+$ sudo losetup -a
+/dev/loop128: [0805]:278201 (/home/namhyung/temp/disk-with-3-parts.img)
+$ ls -l /dev/loop*
+brw-rw---- 1 root disk 7,    0 2011-05-24 22:16 /dev/loop0
+brw-rw---- 1 root disk 7,   16 2011-05-24 22:16 /dev/loop1
+brw-rw---- 1 root disk 7, 2048 2011-05-24 22:18 /dev/loop128
+brw-rw---- 1 root disk 7, 2049 2011-05-24 22:18 /dev/loop128p1
+brw-rw---- 1 root disk 7, 2050 2011-05-24 22:18 /dev/loop128p2
+brw-rw---- 1 root disk 7, 2051 2011-05-24 22:18 /dev/loop128p3
+brw-rw---- 1 root disk 7,   32 2011-05-24 22:16 /dev/loop2
+brw-rw---- 1 root disk 7,   48 2011-05-24 22:16 /dev/loop3
+brw-rw---- 1 root disk 7,   64 2011-05-24 22:16 /dev/loop4
+brw-rw---- 1 root disk 7,   80 2011-05-24 22:16 /dev/loop5
+brw-rw---- 1 root disk 7,   96 2011-05-24 22:16 /dev/loop6
+brw-rw---- 1 root disk 7,  112 2011-05-24 22:16 /dev/loop7
+brw-r--r-- 1 root root 7,  128 2011-05-24 22:17 /dev/loop8
 
-$ sudo modprobe loop max_part=200000
- ------------[ cut here ]------------
- kernel BUG at /media/Linux_Data/project/linux/fs/sysfs/group.c:65!
- invalid opcode: 0000 [#1] SMP
- last sysfs file:
- CPU 0
- Modules linked in: loop(+)
+After this patch, /dev/loop8 - instead of /dev/loop128 - was
+accessed correctly.
 
- Pid: 43, comm: insmod Tainted: G        W   2.6.39-qemu+ #155 Bochs Bochs
- RIP: 0010:[<ffffffff8113ce61>]  [<ffffffff8113ce61>] internal_create_group+0x2a/0x170
- RSP: 0018:ffff880007b3fde8  EFLAGS: 00000246
- RAX: 00000000ffffffef RBX: ffff880007b3d878 RCX: 00000000000007b4
- RDX: ffffffff8152da50 RSI: 0000000000000000 RDI: ffff880007b3d878
- RBP: ffff880007b3fe38 R08: ffff880007b3fde8 R09: 0000000000000000
- R10: ffff88000783b4a8 R11: ffff880007b3d878 R12: ffffffff8152da50
- R13: ffff880007b3d868 R14: 0000000000000000 R15: ffff880007b3d800
- FS:  0000000002137880(0063) GS:ffff880007c00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 0000000000422680 CR3: 0000000007b50000 CR4: 00000000000006b0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 0000000000000000 DR7: 0000000000000000
- Process insmod (pid: 43, threadinfo ffff880007b3e000, task ffff880007afb9c0)
- Stack:
-  ffff880007b3fe58 ffffffff811e66dd ffff880007b3fe58 ffffffff811e570b
-  0000000000000010 ffff880007b3d800 ffff880007a7b390 ffff880007b3d868
-  0000000000400920 ffff880007b3d800 ffff880007b3fe48 ffffffff8113cfc8
- Call Trace:
-  [<ffffffff811e66dd>] ? device_add+0x4bc/0x5af
-  [<ffffffff811e570b>] ? dev_set_name+0x3c/0x3e
-  [<ffffffff8113cfc8>] sysfs_create_group+0xe/0x12
-  [<ffffffff810b420e>] blk_trace_init_sysfs+0x14/0x16
-  [<ffffffff8116a090>] blk_register_queue+0x47/0xf7
-  [<ffffffff8116f527>] add_disk+0xdf/0x290
-  [<ffffffffa00060eb>] loop_init+0xeb/0x1b8 [loop]
-  [<ffffffffa0006000>] ? 0xffffffffa0005fff
-  [<ffffffff8100020a>] do_one_initcall+0x7a/0x12e
-  [<ffffffff81096804>] sys_init_module+0x9c/0x1e0
-  [<ffffffff813329bb>] system_call_fastpath+0x16/0x1b
- Code: c3 55 48 89 e5 41 57 41 56 41 89 f6 41 55 41 54 49 89 d4 53 48 89 fb 48 83 ec 28 48 85 ff 74 0b 85 f6 75 0b 48 83 7f 30 00 75 14 <0f> 0b eb fe 48 83 7f 30 00 b9 ea ff ff ff 0f 84 18 01 00 00 49
- RIP  [<ffffffff8113ce61>] internal_create_group+0x2a/0x170
-  RSP <ffff880007b3fde8>
- ---[ end trace a123eb592043acad ]---
+In addition, 'range' passed to blk_register_region() should
+include all range of dev_t that LOOP_MAJOR can address. It does
+not need to be limited by partition numbers unless 'max_loop'
+param was specified.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 Cc: Laurent Vivier <Laurent.Vivier@bull.net>
 ---
- drivers/block/loop.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/block/loop.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index a076a14ca72d..cbf7052d1dd5 100644
+index cbf7052d1dd5..c59a672a3de0 100644
 --- a/drivers/block/loop.c
 +++ b/drivers/block/loop.c
-@@ -1691,6 +1691,9 @@ static int __init loop_init(void)
- 	if (max_part > 0)
- 		part_shift = fls(max_part);
+@@ -1658,7 +1658,7 @@ static struct kobject *loop_probe(dev_t dev, int *part, void *data)
+ 	struct kobject *kobj;
  
-+	if ((1UL << part_shift) > DISK_MAX_PARTS)
-+		return -EINVAL;
-+
- 	if (max_loop > 1UL << (MINORBITS - part_shift))
- 		return -EINVAL;
+ 	mutex_lock(&loop_devices_mutex);
+-	lo = loop_init_one(dev & MINORMASK);
++	lo = loop_init_one(MINOR(dev) >> part_shift);
+ 	kobj = lo ? get_disk(lo->lo_disk) : ERR_PTR(-ENOMEM);
+ 	mutex_unlock(&loop_devices_mutex);
  
+@@ -1699,10 +1699,10 @@ static int __init loop_init(void)
+ 
+ 	if (max_loop) {
+ 		nr = max_loop;
+-		range = max_loop;
++		range = max_loop << part_shift;
+ 	} else {
+ 		nr = 8;
+-		range = 1UL << (MINORBITS - part_shift);
++		range = 1UL << MINORBITS;
+ 	}
+ 
+ 	if (register_blkdev(LOOP_MAJOR, "loop"))
+@@ -1741,7 +1741,7 @@ static void __exit loop_exit(void)
+ 	unsigned long range;
+ 	struct loop_device *lo, *next;
+ 
+-	range = max_loop ? max_loop :  1UL << (MINORBITS - part_shift);
++	range = max_loop ? max_loop << part_shift : 1UL << MINORBITS;
+ 
+ 	list_for_each_entry_safe(lo, next, &loop_devices, lo_list)
+ 		loop_del_one(lo);
 -- 
 1.7.5.2
 
