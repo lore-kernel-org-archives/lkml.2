@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab1EXNzE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 09:55:04 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:63472 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756332Ab1EXNzC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 09:55:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=rx8YV1H10F8RcnQx5fAEJZ8kpRAcXKoyJUaPa5jEO694JL8hxEX9TZI4UhQK7ql0Xw
-         O+KTCPf2xCPOZPj/XiJmmah+wWdaSmjT7D0sGF0eBjJksmj7Her/GNmvYG4bwl3IbXeu
-         h+WnzC7r5esCrUWfVRcthcuBy40EKVGL40cps=
+	id S1756728Ab1EXNzc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:55:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51759 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756664Ab1EXNzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 09:55:31 -0400
+Date: Tue, 24 May 2011 15:55:29 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Eduardo Silva <edsiper@gmail.com>, Roman Zippel <zippel@linux-m68k.org>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] gconfig: enable rules hint for main treeviews
+Message-ID: <20110524135529.GA2276@sepie.suse.cz>
+References: <1305808621.11775.3.camel@monotop>
+ <20110519091309.ebeacbfb.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <A7E21A2F-4338-465D-933A-66B0C4D15BE1@mit.edu>
-References: <BANLkTin4wu1HNDeo8Rv7iddM9KkgZdhfgA@mail.gmail.com> <A7E21A2F-4338-465D-933A-66B0C4D15BE1@mit.edu>
-From: Michael Witten <mfwitten@gmail.com>
-Date: Tue, 24 May 2011 13:54:31 +0000
-Message-ID: <BANLkTimEZUSbV9wiQZvzCeztdfeMwaMJwA@mail.gmail.com>
-Subject: Re: UNIX Compatibility
-To: Theodore Tso <tytso@mit.edu>
-Cc: Richard Yao <ryao@ic.sunysb.edu>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110519091309.ebeacbfb.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 13:06, Theodore Tso <tytso@mit.edu> wrote:
->
-> On May 24, 2011, at 7:49 AM, Richard Yao wrote:
->
->> I know that the system call codes used by Linux are not 100% UNIX
->> compatible. Is there anything else in the kernel that is not UNIX
->> compatible? Would modifying these things for UNIX compatibility break
->> anything in userland provided that it is recompiled against the
->> modified sources?
->
-> What do you mean by "UNIX compatible?"  API compatibility?
-> ABI compatibility?   Which Unix?  Solaris and HPUX and AIX
-> are systems which are allowed to use the Unix(tm) trademark,
-> but them are not compatible with each other.
->
-> So the question you are asking is not well defined.
->
-> Also, why are you asking it?   What problem are you trying to solve?
-> At this point, Linux is running on far more servers than any of the
-> Legacy Unix systems out there, and the ones which are still in
-> development (i.e., Solaris and AIX) are have recently been worrying
-> about adding Linux compatibility layers (usually at the API level).
+On Thu, May 19, 2011 at 09:13:09AM -0700, Randy Dunlap wrote:
+> On Thu, 19 May 2011 08:37:01 -0400 Eduardo Silva wrote:
+> 
+> > Due to the large amount of rows in the treeviews, is difficult to
+> > match columns with rows, setting the rules hint to 'true' allows the
+> > treeview to alternate background colors in the rows making the data
+> > more readable.
+> > 
+> > Signed-off-by: Eduardo Silva <edsiper@gmail.com>
+> 
+> Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Nice.  Thanks.
 
-Surely something as precarious as hegemony is nothing to boast about.
+Applied, thanks.
+
+Michal
