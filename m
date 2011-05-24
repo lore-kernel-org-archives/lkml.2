@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab1EXTJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 15:09:16 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4096 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab1EXTJP (ORCPT
+	id S1754339Ab1EXTKA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 15:10:00 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60306 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab1EXTJ7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 15:09:15 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 24 May 2011 12:09:14 -0700
-Subject: Re: [PATCH 2/2] power: bq20z75: enable detection after registering
-From: Rhyland Klein <rklein@nvidia.com>
-To: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>
-Cc: "bleung@chromium.org" <bleung@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1306263960-1236-2-git-send-email-rklein@nvidia.com>
-References: <1306263960-1236-1-git-send-email-rklein@nvidia.com>
-	 <1306263960-1236-2-git-send-email-rklein@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 12:07:33 -0700
-Message-ID: <1306264053.31129.5.camel@rklein-linux2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 24 May 2011 15:09:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=oz7OB4VbruSyGUsniKwuu++w7oo0WOWwUXC3Zv1twdda6kt8M3Ruep+BicTpLMz0FB
+         qoCGuSCRewesemeCyalNk4HNiUSYbK2KwC69LtIYzVrhATAJpnWAABS3fxEqykLm6HWB
+         B8DG7QB2M0VDnUf7mddCjWKWMR3b45w7InuJE=
+MIME-Version: 1.0
+In-Reply-To: <201105242059.59770.rjw@sisk.pl>
+References: <1306247112.2066.8.camel@Tux>
+	<201105242059.59770.rjw@sisk.pl>
+Date: Tue, 24 May 2011 21:09:58 +0200
+Message-ID: <BANLkTimYuJiiCbqO9QxgaAKHAZWe04vhgA@mail.gmail.com>
+Subject: Re: [PATCH] MIPS:i8259.c remove resume and shutdown to syscore_ops
+From: Manuel Lauss <manuel.lauss@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: wanlong.gao@gmail.com, Ralf Baechle <ralf@linux-mips.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Pengfei Zhang <zoppof.zhang@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 12:06 -0700, Rhyland Klein wrote:
-> Need to enable detection, which is also blocking the unit conversion logic
-> after registering the power_supply.
-> 
-> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+On Tue, May 24, 2011 at 8:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, May 24, 2011, Wanlong Gao wrote:
+>>
+>> > On Tue, May 24, 2011 at 08:19:18PM +0800, Pengfei Zhang wrote:
+>> >
+>> > > Remove the resume and shutdown of i8259A from the sysdev_class
+>> > > to the syscore_ops since these members had removed from the
+>> > > structure sysdev_class.
+>> >
+>> > I don't see why one would want to want to first call
+>> > register_syscore_ops
+>> > then sysdev_class_register and sysdev_register?
+>> >
+>> Hi Ralf:
+>> If these not moved to syscore_ops, building will get error.
+>>
+>> Hi Thomas:
+>> Does you mean that we can just remove the sysfs entry now ?
+>
+> I had the appended patch in my tree before the merge window started,
+> but it conflicted with analogous changes in the MIPS tree, so I had
+> dropped it.  Was it a mistake?
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Acked-and-tested-by: Lars-Peter Clausen <lars@metafoo.de>
 > ---
-> v2:	This should have been adding the line, not removing it. Fixed that.
-> 
->  drivers/power/bq20z75.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
-> index e1adc0e..9c5e5be 100644
-> --- a/drivers/power/bq20z75.c
-> +++ b/drivers/power/bq20z75.c
-> @@ -702,6 +702,8 @@ skip_gpio:
->  
->  	INIT_DELAYED_WORK(&bq20z75_device->work, bq20z75_delayed_work);
->  
-> +	bq20z75_device->enable_detection = true;
-> +
->  	return 0;
->  
->  exit_psupply:
+>  arch/mips/alchemy/common/dbdma.c |   92 +++++++++++----------------------------
+>  arch/mips/alchemy/common/irq.c   |   62 +++++++++-----------------
 
-ignore this patch, sent updated patch with proper version tag in
-subject.
+I took care of these two, they were the reason for the conflict in -next.
 
--rhyland
-
-
+Manuel
