@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab1EXSln (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:41:43 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:32768 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932853Ab1EXShz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:37:55 -0400
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: Greg KH <greg@kroah.com>
-Cc: Parisc List <linux-parisc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [stable] PA-RISC: compile error in include/net/dst.h
-Date: Tue, 24 May 2011 20:37:49 +0200
-Message-ID: <2522442.xP32cQyJEX@donald.sf-tec.de>
-User-Agent: KMail/4.6 beta5 (Linux/2.6.37-12-desktop; KDE/4.6.3; i686; ; )
-In-Reply-To: <2254093.9oQvKLogfV@donald.sf-tec.de>
-References: <2612811.b2htuyZy9x@donald.sf-tec.de> <20110522143222.GB14556@kroah.com> <2254093.9oQvKLogfV@donald.sf-tec.de>
+	id S1757355Ab1EXSmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:42:44 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60985 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755214Ab1EXSmm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 14:42:42 -0400
+Date: Tue, 24 May 2011 14:42:38 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] ARM Device tree support
+In-Reply-To: <BANLkTiknh4nCviohecbcJEiWnSW-JdMxDw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1105241435550.3207@xanadu.home>
+References: <BANLkTiknh4nCviohecbcJEiWnSW-JdMxDw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart3541033.Jq7cWPDluZ"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 23 May 2011, Grant Likely wrote:
 
---nextPart3541033.Jq7cWPDluZ
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
-
-I wrote:
-> Am Sonntag, 22. Mai 2011, 07:32:22 schrieb Greg KH:
-> > On Sun, May 22, 2011 at 10:15:19AM +0200, Rolf Eike Beer wrote:
-> > >                  from include/net/ipv6.h:16,
-> > >                  from
-> > >                  include/linux/sunrpc/clnt.h:25,
-> > >                  from include/linux/nfs_fs.h:50,
-> > > 
-> > >                  from init/do_mounts.c:20:
-> > > include/net/dst.h: In function 'dst_hold':
-> > > include/net/dst.h:238:2: error: size of unnamed array is negative
-> > > In file included from include/linux/nfs_fs.h:59:0,
-> > > 
-> > >                  from init/do_mounts.c:20:
-> > > include/linux/mempool.h: In function 'mempool_create_kmalloc_pool':
-> > > include/linux/mempool.h:58:10: warning: cast to pointer from integer
-> > > of
-> > > different size
-> > > 
-> > > This is both in 2.6.38.6 and 2.6.39, but is not in 2.6.38.4 when
-> > > compiling for my C8000.
-> > 
-> > Could you bisect it down to the patch that causes the problem in
-> > 2.6.38.6?
+> Hi Russell,
 > 
-> I will try if I find time in the next days. Until now I can only confirm
-> that 2.6.38.5 builds fine.
+> How do you want to handle merging the ARM DT support?  Do you want to
+> pull it into your tree, or would you like me to ask Linus to pull
+> directly?  As you can see, It does include a couple of pre-requisite
+> cross-arch cleanups that I normally push to Linus directly.
 
-As 2.6.38.6 does if I use the correct .config. So it is an older issue which is 
-not related to recent changes but likely some general HPPA breakage. We'll 
-discuss the rest on linux-parisc.
+I don't think that Linus would object to you pushing that to him 
+directly, given that Russell has already agreed to those patches going 
+in this cycle.
 
-Eike
---nextPart3541033.Jq7cWPDluZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
+Whatever the path, it is however important that they do get in _this_ 
+cycle.  Most people are just too nervous committing themselves to DT if 
+the basic stuff doesn't hit mainline.  And if we are serious about 
+_trying_ to change the state of things in ARM land by going the DT route 
+then we must have this in mainline as soon as possible.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
 
-iEYEABECAAYFAk3b+v0ACgkQXKSJPmm5/E5JtwCfXbn0WubfIblCw+/NIb7z23oB
-OpUAniuTRy4AShlOK718waVyBsje/CYi
-=vhmF
------END PGP SIGNATURE-----
-
---nextPart3541033.Jq7cWPDluZ--
-
+Nicolas
