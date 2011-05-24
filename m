@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058Ab1EXIto (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 04:49:44 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41044 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754950Ab1EXItn (ORCPT
+	id S1755135Ab1EXI74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 04:59:56 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:33613 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753944Ab1EXI7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 04:49:43 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DDB711B.8010408@jp.fujitsu.com>
-Date: Tue, 24 May 2011 17:49:31 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 24 May 2011 04:59:54 -0400
+X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 May 2011 04:59:54 EDT
+From: Philipp Reisner <philipp.reisner@linbit.com>
+Organization: LINBIT
+To: Jens Axboe <axboe@kernel.dk>
+Subject: [GIT PULL] DRBD bits for 2.6.40
+Date: Tue, 24 May 2011 10:50:24 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+X-OTRS-FollowUp-SenderType: agent
 MIME-Version: 1.0
-To: minchan.kim@gmail.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
-        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
-Subject: Re: [PATCH 4/5] oom: don't kill random process
-References: <4DD61F80.1020505@jp.fujitsu.com>	<4DD6207E.1070300@jp.fujitsu.com>	<BANLkTinaHki1oA4O3+FsoPDtFTLfqwRadA@mail.gmail.com>	<4DDB0FB2.9050300@jp.fujitsu.com> <BANLkTinKm=m8zdPGN0Trpy4HtEFyxMYzPA@mail.gmail.com>
-In-Reply-To: <BANLkTinKm=m8zdPGN0Trpy4HtEFyxMYzPA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105241050.24719.philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/24 17:46), Minchan Kim wrote:
-> On Tue, May 24, 2011 at 10:53 AM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
->>>> +       /*
->>>> +        * chosen_point==1 may be a sign that root privilege bonus is too
->>>> large
->>>> +        * and we choose wrong task. Let's recalculate oom score without
->>>> the
->>>> +        * dubious bonus.
->>>> +        */
->>>> +       if (protect_root&&  (chosen_points == 1)) {
->>>> +               protect_root = 0;
->>>> +               goto retry;
->>>> +       }
->>>
->>> The idea is good to me.
->>> But once we meet it, should we give up protecting root privileged
->>> processes?
->>> How about decaying bonus point?
->>
->> After applying my patch, unprivileged process never get score-1. (note,
->> mapping
->> anon pages naturally makes to increase nr_ptes)
-> 
-> Hmm, If I understand your code correctly, unprivileged process can get
-> a score 1 by 3% bonus.
+The following changes since commit 779d530632c98967820d3bbcae15d492fc20301e:
 
-3% bonus is for privileged process. :)
+  Merge branches 'for-jens/xen-backend-fixes' and 'for-jens/xen-blkback-v3.3' 
+of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen into 
+for-2.6.40/drivers (2011-05-19 09:46:00 +0200)
+
+are available in the git repository at:
+
+  git://git.drbd.org/linux-2.6-drbd.git for-jens
+
+DRBD's changelog:
+8.3.11 (api:88/proto:86-96)
+--------
+ * Fixed handling of read errors during online verify runs
+ * Fixes for possible distributed deadlocks during online verify and
+   checksum based resync processes
+ * Fixed handling of IO errors with an on-io-error=pass-on policy; the
+   disk state goes to inconsistent
+ * Fixed the behavior in case ping-timeout and ping-int are set to the
+   same value
+ * Fix for connecting on high latency network links
+ * Fixed state transitions if fence-peer handler returns after connection was
+   established again
+ * Made die max_bio_size negotiation conservative instead of optimistic
+ * Network timeouts for mirrored write requests are now always enforced,
+   no longer only when the socket is congested
 
 
-> So after all, we can get a chosen_point with 1.
-> Why I get a chosen_point with 1 is as bonus is rather big, I think.
-> So I would like to use small bonus than first iteration(ie, decay bonus).
-> 
->>
->> Then, decaying don't make any accuracy. Am I missing something?
-> 
-> Maybe I miss something.  :(
-> 
-> 
-> 
-> 
 
+Andrew Morton (1):
+      drbd: fix warning
 
+Bart Van Assche (1):
+      drbd: Fix spelling
+
+Lars Ellenberg (5):
+      lru_cache.h: fix comments referring to ts_ instead of lc_
+      drbd: fix potential distributed deadlock
+      drbd: fix disconnect/reconnect loop, if ping-timeout == ping-int
+      drbd: fix potential activity log refcount imbalance in error path
+      drbd: fix schedule in atomic
+
+Philipp Reisner (7):
+      drbd: Fix for application IO with the on-io-error=pass-on policy
+      drbd: Only downgrade the disk state in case of disk failures
+      drbd: Fix for the connection problems on high latency links
+      drbd: Disallow the peer_disk_state to be D_OUTDATED while connected
+      drbd: Fixed state transitions after async outdate-peer-handler returned
+      drbd: Take a more conservative approach when deciding max_bio_size
+      drbd: fix warning
+
+ drivers/block/drbd/drbd_actlog.c   |    2 +-
+ drivers/block/drbd/drbd_bitmap.c   |    6 +-
+ drivers/block/drbd/drbd_int.h      |   19 ++++--
+ drivers/block/drbd/drbd_main.c     |   37 +++++++++--
+ drivers/block/drbd/drbd_nl.c       |  127 ++++++++++++++++++++++++++---------
+ drivers/block/drbd/drbd_receiver.c |   68 ++++++++------------
+ drivers/block/drbd/drbd_req.c      |   20 +++---
+ drivers/block/drbd/drbd_req.h      |    5 +-
+ drivers/block/drbd/drbd_worker.c   |   98 +++++++++++++++++-----------
+ include/linux/drbd.h               |   10 ++--
+ include/linux/drbd_tag_magic.h     |    2 +-
+ include/linux/lru_cache.h          |   12 ++--
+ 12 files changed, 255 insertions(+), 151 deletions(-)
+-- 
+: Dipl-Ing Philipp Reisner
+: LINBIT | Your Way to High Availability
+: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
+: http://www.linbit.com
+
+DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
