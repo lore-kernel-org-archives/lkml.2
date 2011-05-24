@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab1EXRxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 13:53:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37973 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755704Ab1EXRxf convert rfc822-to-8bit (ORCPT
+	id S1757007Ab1EXRxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 13:53:47 -0400
+Received: from leopard.mail.utk.edu ([160.36.0.85]:36623 "EHLO
+	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756918Ab1EXRxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 13:53:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=JP71pHvIfw6ZV3tUcR23M6JyYJ3F03eXnPFIf/gFG0+e5/A22i8N3mFDHP3elMyyz8
-         X3KyxfZcZ89+JSoJ0JJ1S1vEgFwRYHFosRBoSteVJn4UKFRAKiCyRD850obsURH+8mSW
-         tvS8xXJIVWiHzsJAtRII1OZqKB+RdQ5HcSE50=
+	Tue, 24 May 2011 13:53:36 -0400
+Date: Tue, 24 May 2011 13:53:25 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: linux-kernel@vger.kernel.org, fbuihuu@gmail.com, mingo@elte.hu,
+        paulus@samba.org, acme@redhat.com
+Subject: Re: perf: regression with PERF_EVENT_IOC_REFRESH
+In-Reply-To: <1306249830.18455.41.camel@twins>
+Message-ID: <alpine.DEB.2.00.1105241350020.24062@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>  <1306182141.2497.5.camel@laptop>  <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu>  <1306233036.2497.15.camel@laptop>  <alpine.DEB.2.00.1105241041490.10575@cl320.eecs.utk.edu>
+ <1306249830.18455.41.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110524141031.GC2276@sepie.suse.cz>
-References: <1305966108-13399-4-git-send-email-jim.cromie@gmail.com>
- <1306176297-6964-1-git-send-email-jim.cromie@gmail.com> <20110524141031.GC2276@sepie.suse.cz>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Tue, 24 May 2011 11:53:05 -0600
-Message-ID: <BANLkTimoMJXG1jGmZcupgYEHa0Pd6d_0BA@mail.gmail.com>
-Subject: Re: [PATCH 0/3 rev2] fix scripts/export_report.pl
-To: Michal Marek <mmarek@suse.cz>
-Cc: rdunlap@xenotime.net, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 8:10 AM, Michal Marek <mmarek@suse.cz> wrote:
+On Tue, 24 May 2011, Peter Zijlstra wrote:
 
-> Applied to kbuild-2.6.git#misc after editing the subject lines a bit:
->
-> Jim Cromie (3):
->      export_report: do collectcfiles work in perl itself
->      export_report: sort SECTION 2 output
->      export_report: use warn() to issue WARNING, so they go to stderr
->
-> Michal
->
+> On Tue, 2011-05-24 at 11:04 -0400, Vince Weaver wrote:
+> > 2.6.37, 2.6.38, or 2.6.39 then it would be silly to do it just for
+> > 2.6.40.
+> 
+> Oh, I assumed it was recent and .39/.40 would suffice.
 
-thanks,
+It turns out the problem was only introduced in PAPI in November ( I had 
+assumed it dated back further).  So maybe not as dire as it seemed at 
+first.  
 
-can you point to the tree ?
-(I want to see what rewording is better)
+The fix to PAPI does seem to be trivial, though the whole set of 
+bad code was introduced to work around a different problem so I need
+to verify the fix doesn't break other things.
 
-I didnt see it at git.kernel.org, nor where MAINTAINERS entry points
-(at least after converting it to http)
+Thanks,
 
-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git
-for-next
-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git
-rc-fixes
+Vince
+vweaver1@eecs.utk.edu
