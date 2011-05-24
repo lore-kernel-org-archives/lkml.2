@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab1EXSbg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:31:36 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:48863 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001Ab1EXSbd convert rfc822-to-8bit (ORCPT
+	id S932412Ab1EXSdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:33:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32984 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696Ab1EXSdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:31:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hYLKnc/p1XxLtoINYb6931e/DzAM0a4gOV5CGQXoGD08G6Addzq3cZpMvZaOJ+QDzY
-         5HqgwUSrBeiXiIpF0Duy+b3y/eoobMAOYxQ7XjUP9Wdhd5Fhzn/lGpRT6vLpPYzS8+vA
-         n2jMpbtDhrPJmXmOq0gFia1acNXMagxN2OIXI=
-MIME-Version: 1.0
-In-Reply-To: <20110524181619.GC26055@thunk.org>
-References: <BANLkTin4wu1HNDeo8Rv7iddM9KkgZdhfgA@mail.gmail.com>
- <A7E21A2F-4338-465D-933A-66B0C4D15BE1@mit.edu> <BANLkTi=q7tDVkahrnng7+BJhvxh=gx71ng@mail.gmail.com>
- <20110524181619.GC26055@thunk.org>
-From: Michael Witten <mfwitten@gmail.com>
-Date: Tue, 24 May 2011 18:31:02 +0000
-Message-ID: <BANLkTi=QUS5WfAMWTw7vuEwuBOVHsww3mA@mail.gmail.com>
-Subject: Re: UNIX Compatibility
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Richard Yao <ryao@ic.sunysb.edu>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 May 2011 14:33:50 -0400
+Date: Tue, 24 May 2011 11:33:28 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Joe Perches <joe@perches.com>,
+        netdev <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        davem@davemloft.net
+Subject: Re: linux-next: Tree for May 24 (ratelimits, CONFIG_PRINTK not
+ enabled)
+Message-Id: <20110524113328.e3d5867b.randy.dunlap@oracle.com>
+In-Reply-To: <20110524140212.a4f19769.sfr@canb.auug.org.au>
+References: <20110524140212.a4f19769.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090207.4DDBFA07.00B9:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 18:16, Ted Ts'o <tytso@mit.edu> wrote:
+On Tue, 24 May 2011 14:02:12 +1000 Stephen Rothwell wrote:
 
-> No one ever bothers to deal with issues because they are tiny,
-> nit-pitcky things that no one other than standards mavens would care
-> about.  You have to be someone who is extremely anal to really care
-> about this kind of stuff.  It's really stupid stuff... paper pushers...
->
-> If you want to waste time out of your life that you'll never get back...
-> ...
-> ... standards committee, as full of ivory-tower eggheads as it is,
-> does have some folks who recognize that there is such a thing as
-> the Real World)...
+> Hi all,
+> 
+> Changes since 20110523:
 
-The world would be a better place if you weren't so needlessly
-confrontational when sharing your knoweldge, Ted.
+when CONFIG_PRINTK is not enabled:
+
+net/core/filter.c:353: warning: type defaults to 'int' in declaration of 'DEFINE_RATELIMIT_STATE'
+net/core/filter.c:353: warning: parameter names (without types) in function declaration
+net/core/filter.c:353: error: invalid storage class for function 'DEFINE_RATELIMIT_STATE'
+net/core/filter.c:353: error: implicit declaration of function '__ratelimit'
+net/core/filter.c:353: error: '_rs' undeclared (first use in this function)
+
+
+Adding <linux/ratelimit.h> to <asm-generic/bug.h> causes other problems:
+
+In file included from linux-next-20110524/include/linux/thread_info.h:53,
+                 from linux-next-20110524/include/linux/preempt.h:9,
+                 from linux-next-20110524/include/linux/spinlock.h:50,
+                 from linux-next-20110524/include/linux/ratelimit.h:5,
+                 from linux-next-20110524/include/asm-generic/bug.h:5,
+                 from linux-next-20110524/arch/x86/include/asm/bug.h:38,
+                 from linux-next-20110524/include/linux/kernel.h:23,
+                 from linux-next-20110524/arch/x86/include/asm/percpu.h:44,
+                 from linux-next-20110524/arch/x86/include/asm/current.h:5,
+                 from linux-next-20110524/arch/x86/include/asm/processor.h:15,
+                 from linux-next-20110524/arch/x86/include/asm/atomic.h:6,
+                 from linux-next-20110524/include/linux/crypto.h:20,
+                 from linux-next-20110524/arch/x86/kernel/asm-offsets.c:8:
+linux-next-20110524/arch/x86/include/asm/thread_info.h:34: error: expected specifier-qualifier-list before 'mm_segment_t'
+In file included from linux-next-20110524/include/linux/thread_info.h:53,
+                 from linux-next-20110524/include/linux/preempt.h:9,
+                 from linux-next-20110524/include/linux/spinlock.h:50,
+                 from linux-next-20110524/include/linux/ratelimit.h:5,
+                 from linux-next-20110524/include/asm-generic/bug.h:5,
+                 from linux-next-20110524/arch/x86/include/asm/bug.h:38,
+                 from linux-next-20110524/include/linux/kernel.h:23,
+                 from linux-next-20110524/arch/x86/include/asm/percpu.h:44,
+                 from linux-next-20110524/arch/x86/include/asm/current.h:5,
+                 from linux-next-20110524/arch/x86/include/asm/processor.h:15,
+                 from linux-next-20110524/arch/x86/include/asm/atomic.h:6,
+                 from linux-next-20110524/include/linux/crypto.h:20,
+                 from linux-next-20110524/arch/x86/kernel/asm-offsets.c:8:
+linux-next-20110524/arch/x86/include/asm/thread_info.h:217: error: expected declaration specifiers or '...' before 'kernel_stack'
+linux-next-20110524/arch/x86/include/asm/thread_info.h:217: warning: data definition has no type or storage class
+linux-next-20110524/arch/x86/include/asm/thread_info.h:217: warning: type defaults to 'int' in declaration of 'DECLARE_PER_CPU'
+linux-next-20110524/arch/x86/include/asm/thread_info.h: In function 'current_thread_info':
+linux-next-20110524/arch/x86/include/asm/thread_info.h:222: error: implicit declaration of function 'percpu_read_stable'
+linux-next-20110524/arch/x86/include/asm/thread_info.h:222: error: 'kernel_stack' undeclared (first use in this function)
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
