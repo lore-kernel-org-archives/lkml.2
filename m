@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab1EXUNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 16:13:00 -0400
-Received: from aspirin.dii.utk.edu ([160.36.0.81]:45228 "EHLO
-	aspirin.dii.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756839Ab1EXUM7 (ORCPT
+	id S932781Ab1EXUNm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 16:13:42 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:36248 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757472Ab1EXUNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 16:12:59 -0400
-Date: Tue, 24 May 2011 16:12:49 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Ingo Molnar <mingo@elte.hu>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        paulus@samba.org, acme@redhat.com
-Subject: Re: perf: regression -- missing
- /sys/devices/system/cpu/perf_events
-In-Reply-To: <20110524194810.GB27634@elte.hu>
-Message-ID: <alpine.DEB.2.00.1105241610390.24062@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1105240955050.9203@cl320.eecs.utk.edu> <1306246306.18455.36.camel@twins> <alpine.DEB.2.00.1105241341160.24062@cl320.eecs.utk.edu> <20110524194810.GB27634@elte.hu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 24 May 2011 16:13:40 -0400
+Date: Tue, 24 May 2011 21:13:19 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: David Fries <david@fries.net>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2011-05-12-15-52 uploaded
+Message-ID: <20110524211319.41ca5d06@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <20110524122437.GA20502@spacedout.fries.net>
+References: <201105122329.p4CNTanN009889@imap1.linux-foundation.org>
+	<20110524122437.GA20502@spacedout.fries.net>
+X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011, Ingo Molnar wrote:
+On Tue, 24 May 2011 07:24:37 -0500
+David Fries <david@fries.net> wrote:
+
+> On Thu, May 12, 2011 at 03:53:09PM -0700, akpm@linux-foundation.org wrote:
+> > The mm-of-the-moment snapshot 2011-05-12-15-52 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > and will soon be available at
+> > 
+> >    git://zen-kernel.org/kernel/mmotm.git
 > 
-> So, what is wrong with the method Peter suggested: the presence of the perf 
-> syscall (it not returning -ENOSYS) is bona fide evidence that perf is 
-> available.
+> Except that git repository was last updated 2010-12-03, making it time
+> to remove the reference from the announcement e-mail script.
 
-it's just hard to do that from a shell script.
+FWIW mmotm is availabe in git form here,
 
-also, running the perf syscall can be tricky if you have a new kernel but 
-an older set of header files that doesn't have the syscall number defined.
+	git://git.cmpxchg.org/linux-mmotm.git
 
-Vince
-vweaver1@eecs.utk.edu
+I've never had any problems with the repo on cmpxchg.org.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
