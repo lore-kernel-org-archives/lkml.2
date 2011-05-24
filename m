@@ -1,113 +1,548 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab1EXOgQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:36:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38592 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932601Ab1EXOgN (ORCPT
+	id S932700Ab1EXOhE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:37:04 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33343 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095Ab1EXOhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:36:13 -0400
+	Tue, 24 May 2011 10:37:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=PDb1u0+XtbrCKefmBx1o6taEyESyzpzUDnZ7Z54q3OC11KrcTpiRp652cjrJTKuHCC
-         59Kx4D7fSqWKAH2RBrrEyQy97l2TUwkW6tErbrI13cvHR1wZlhcwtnkhRUSepKQHo4ay
-         nCmaZcrdDc8dujkg+owwZsBcgKXqxgsmwLFS4=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: linux-kernel@vger.kernel.org, Laurent Vivier <Laurent.Vivier@bull.net>
-Subject: [PATCH 2/2] loop: handle on-demand devices correctly
-Date: Tue, 24 May 2011 23:36:01 +0900
-Message-Id: <1306247761-2246-2-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
-In-Reply-To: <1306247761-2246-1-git-send-email-namhyung@gmail.com>
-References: <1306247761-2246-1-git-send-email-namhyung@gmail.com>
+        b=ccoCk5P+zi8K0eO8NPW4cXdC4JdLrhu3zt9C0HKIRv10DOzamOQCyH9Wl4E2wBXPnx
+         oR2V+eqV+v2D16GfHTGfV+XIXynqhx3q+LpF2QZLqLajDGZQ3ETZnPl7VIIa4l08L56F
+         /LFi7bLPXNSmZIyZJIwlMmkEaMRZyVNbxl8Bk=
+From: yxlraid@gmail.com
+To: James.Bottomley@suse.de
+Cc: jslaby@suse.cz, linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yuxiangl@marvell.com, jfeng@marvell.com
+Subject: [PATCH 6/9] [SCSI] mvsas: Add new macros and functions
+Date: Tue, 24 May 2011 22:36:02 +0800
+Message-Id: <1306247762-6395-1-git-send-email-yxlraid@gmail.com>
+X-Mailer: git-send-email 1.7.5.1
+In-Reply-To: <mvsas-add-macros>
+References: <mvsas-add-macros>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When finding or allocating a loop device, loop_probe() did not take
-partition numbers into account so that it can result to a different
-device. Consider following example:
+From: Xiangliang Yu <yuxiangl@marvell.com>
 
-$ sudo modprobe loop max_part=15
-$ ls -l /dev/loop*
-brw-rw---- 1 root disk 7,   0 2011-05-24 22:16 /dev/loop0
-brw-rw---- 1 root disk 7,  16 2011-05-24 22:16 /dev/loop1
-brw-rw---- 1 root disk 7,  32 2011-05-24 22:16 /dev/loop2
-brw-rw---- 1 root disk 7,  48 2011-05-24 22:16 /dev/loop3
-brw-rw---- 1 root disk 7,  64 2011-05-24 22:16 /dev/loop4
-brw-rw---- 1 root disk 7,  80 2011-05-24 22:16 /dev/loop5
-brw-rw---- 1 root disk 7,  96 2011-05-24 22:16 /dev/loop6
-brw-rw---- 1 root disk 7, 112 2011-05-24 22:16 /dev/loop7
-$ sudo mknod /dev/loop8 b 7 128
-$ sudo losetup /dev/loop8 ~/temp/disk-with-3-parts.img
-$ sudo losetup -a
-/dev/loop128: [0805]:278201 (/home/namhyung/temp/disk-with-3-parts.img)
-$ ls -l /dev/loop*
-brw-rw---- 1 root disk 7,    0 2011-05-24 22:16 /dev/loop0
-brw-rw---- 1 root disk 7,   16 2011-05-24 22:16 /dev/loop1
-brw-rw---- 1 root disk 7, 2048 2011-05-24 22:18 /dev/loop128
-brw-rw---- 1 root disk 7, 2049 2011-05-24 22:18 /dev/loop128p1
-brw-rw---- 1 root disk 7, 2050 2011-05-24 22:18 /dev/loop128p2
-brw-rw---- 1 root disk 7, 2051 2011-05-24 22:18 /dev/loop128p3
-brw-rw---- 1 root disk 7,   32 2011-05-24 22:16 /dev/loop2
-brw-rw---- 1 root disk 7,   48 2011-05-24 22:16 /dev/loop3
-brw-rw---- 1 root disk 7,   64 2011-05-24 22:16 /dev/loop4
-brw-rw---- 1 root disk 7,   80 2011-05-24 22:16 /dev/loop5
-brw-rw---- 1 root disk 7,   96 2011-05-24 22:16 /dev/loop6
-brw-rw---- 1 root disk 7,  112 2011-05-24 22:16 /dev/loop7
-brw-r--r-- 1 root root 7,  128 2011-05-24 22:17 /dev/loop8
+-- Add new macros: MVS_SOFT_RESET, MVS_HARD_RESET, MVS_PHY_TUNE,
+	MVS_COMMAND_ACTIVE, EXP_BRCT_CHG, MVS_MAX_SG
+-- Add new member sg_width in struct mvs_chip_info
+-- Use macros rather than magic number
+-- Add new functions: mvs_fill_ssp_resp_iu, mvs_set_sense,
+	mvs_94xx_clear_srs_irq, mvs_94xx_phy_set_link_rate
 
-After this patch, /dev/loop8 - instead of /dev/loop128 - was
-accessed correctly.
-
-In addition, 'range' passed to blk_register_region() should
-include all range of dev_t that LOOP_MAJOR can address. It does
-not need to be limited by partition numbers unless 'max_loop'
-param was specified.
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Laurent Vivier <Laurent.Vivier@bull.net>
+Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
 ---
- drivers/block/loop.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/mvsas/mv_64xx.c |   18 ++++----
+ drivers/scsi/mvsas/mv_94xx.c |   80 ++++++++++++++++++++++++++---------
+ drivers/scsi/mvsas/mv_94xx.h |    2 +
+ drivers/scsi/mvsas/mv_defs.h |    3 +-
+ drivers/scsi/mvsas/mv_init.c |   21 +++++----
+ drivers/scsi/mvsas/mv_sas.c  |   94 +++++++++++++++++++++++++++++++++++-------
+ drivers/scsi/mvsas/mv_sas.h  |    7 +++
+ 7 files changed, 169 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index cbf7052d1dd5..c59a672a3de0 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1658,7 +1658,7 @@ static struct kobject *loop_probe(dev_t dev, int *part, void *data)
- 	struct kobject *kobj;
+diff --git a/drivers/scsi/mvsas/mv_64xx.c b/drivers/scsi/mvsas/mv_64xx.c
+index 96bde34..702c767 100644
+--- a/drivers/scsi/mvsas/mv_64xx.c
++++ b/drivers/scsi/mvsas/mv_64xx.c
+@@ -48,7 +48,7 @@ static void __devinit mvs_64xx_enable_xmt(struct mvs_info *mvi, int phy_id)
+ 	u32 tmp;
  
- 	mutex_lock(&loop_devices_mutex);
--	lo = loop_init_one(dev & MINORMASK);
-+	lo = loop_init_one(MINOR(dev) >> part_shift);
- 	kobj = lo ? get_disk(lo->lo_disk) : ERR_PTR(-ENOMEM);
- 	mutex_unlock(&loop_devices_mutex);
+ 	tmp = mr32(MVS_PCS);
+-	if (mvi->chip->n_phy <= 4)
++	if (mvi->chip->n_phy <= MVS_SOC_PORTS)
+ 		tmp |= 1 << (phy_id + PCS_EN_PORT_XMT_SHIFT);
+ 	else
+ 		tmp |= 1 << (phy_id + PCS_EN_PORT_XMT_SHIFT2);
+@@ -95,7 +95,7 @@ static void mvs_64xx_stp_reset(struct mvs_info *mvi, u32 phy_id)
+ 	u32 reg, tmp;
  
-@@ -1699,10 +1699,10 @@ static int __init loop_init(void)
+ 	if (!(mvi->flags & MVF_FLAG_SOC)) {
+-		if (phy_id < 4)
++		if (phy_id < MVS_SOC_PORTS)
+ 			pci_read_config_dword(mvi->pdev, PCR_PHY_CTL, &reg);
+ 		else
+ 			pci_read_config_dword(mvi->pdev, PCR_PHY_CTL2, &reg);
+@@ -104,13 +104,13 @@ static void mvs_64xx_stp_reset(struct mvs_info *mvi, u32 phy_id)
+ 		reg = mr32(MVS_PHY_CTL);
  
- 	if (max_loop) {
- 		nr = max_loop;
--		range = max_loop;
-+		range = max_loop << part_shift;
- 	} else {
- 		nr = 8;
--		range = 1UL << (MINORBITS - part_shift);
-+		range = 1UL << MINORBITS;
+ 	tmp = reg;
+-	if (phy_id < 4)
++	if (phy_id < MVS_SOC_PORTS)
+ 		tmp |= (1U << phy_id) << PCTL_LINK_OFFS;
+ 	else
+-		tmp |= (1U << (phy_id - 4)) << PCTL_LINK_OFFS;
++		tmp |= (1U << (phy_id - MVS_SOC_PORTS)) << PCTL_LINK_OFFS;
+ 
+ 	if (!(mvi->flags & MVF_FLAG_SOC)) {
+-		if (phy_id < 4) {
++		if (phy_id < MVS_SOC_PORTS) {
+ 			pci_write_config_dword(mvi->pdev, PCR_PHY_CTL, tmp);
+ 			mdelay(10);
+ 			pci_write_config_dword(mvi->pdev, PCR_PHY_CTL, reg);
+@@ -133,9 +133,9 @@ static void mvs_64xx_phy_reset(struct mvs_info *mvi, u32 phy_id, int hard)
+ 	tmp &= ~PHYEV_RDY_CH;
+ 	mvs_write_port_irq_stat(mvi, phy_id, tmp);
+ 	tmp = mvs_read_phy_ctl(mvi, phy_id);
+-	if (hard == 1)
++	if (hard == MVS_HARD_RESET)
+ 		tmp |= PHY_RST_HARD;
+-	else if (hard == 0)
++	else if (hard == MVS_SOFT_RESET)
+ 		tmp |= PHY_RST;
+ 	mvs_write_phy_ctl(mvi, phy_id, tmp);
+ 	if (hard) {
+@@ -346,7 +346,7 @@ static int __devinit mvs_64xx_init(struct mvs_info *mvi)
+ 
+ 		mvs_64xx_enable_xmt(mvi, i);
+ 
+-		mvs_64xx_phy_reset(mvi, i, 1);
++		mvs_64xx_phy_reset(mvi, i, MVS_HARD_RESET);
+ 		msleep(500);
+ 		mvs_64xx_detect_porttype(mvi, i);
  	}
+@@ -661,7 +661,7 @@ void mvs_64xx_phy_set_link_rate(struct mvs_info *mvi, u32 phy_id,
+ 		tmp |= lrmax;
+ 	}
+ 	mvs_write_phy_ctl(mvi, phy_id, tmp);
+-	mvs_64xx_phy_reset(mvi, phy_id, 1);
++	mvs_64xx_phy_reset(mvi, phy_id, MVS_HARD_RESET);
+ }
  
- 	if (register_blkdev(LOOP_MAJOR, "loop"))
-@@ -1741,7 +1741,7 @@ static void __exit loop_exit(void)
- 	unsigned long range;
- 	struct loop_device *lo, *next;
+ static void mvs_64xx_clear_active_cmds(struct mvs_info *mvi)
+diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
+index 5b25f1b..a0ec4aa 100644
+--- a/drivers/scsi/mvsas/mv_94xx.c
++++ b/drivers/scsi/mvsas/mv_94xx.c
+@@ -389,7 +389,7 @@ static int __devinit mvs_94xx_init(struct mvs_info *mvi)
+ 	mvs_phy_hacks(mvi);
  
--	range = max_loop ? max_loop :  1UL << (MINORBITS - part_shift);
-+	range = max_loop ? max_loop << part_shift : 1UL << MINORBITS;
+ 	/* set LED blink when IO*/
+-	mw32(MVS_PA_VSR_ADDR, 0x00000030);
++	mw32(MVS_PA_VSR_ADDR, VSR_PHY_ACT_LED);
+ 	tmp = mr32(MVS_PA_VSR_PORT);
+ 	tmp &= 0xFFFF00FF;
+ 	tmp |= 0x00003300;
+@@ -419,7 +419,7 @@ static int __devinit mvs_94xx_init(struct mvs_info *mvi)
+ 		mvs_94xx_config_reg_from_hba(mvi, i);
+ 		mvs_94xx_phy_enable(mvi, i);
  
- 	list_for_each_entry_safe(lo, next, &loop_devices, lo_list)
- 		loop_del_one(lo);
+-		mvs_94xx_phy_reset(mvi, i, 1);
++		mvs_94xx_phy_reset(mvi, i, PHY_RST_HARD);
+ 		msleep(500);
+ 		mvs_94xx_detect_porttype(mvi, i);
+ 	}
+@@ -585,10 +585,48 @@ static irqreturn_t mvs_94xx_isr(struct mvs_info *mvi, int irq, u32 stat)
+ static void mvs_94xx_command_active(struct mvs_info *mvi, u32 slot_idx)
+ {
+ 	u32 tmp;
+-	mvs_cw32(mvi, 0x300 + (slot_idx >> 3), 1 << (slot_idx % 32));
+-	do {
+-		tmp = mvs_cr32(mvi, 0x300 + (slot_idx >> 3));
+-	} while (tmp & 1 << (slot_idx % 32));
++	tmp = mvs_cr32(mvi, MVS_COMMAND_ACTIVE+(slot_idx >> 3));
++	if (tmp && 1 << (slot_idx % 32)) {
++		mv_printk("command active %08X,  slot [%x].\n", tmp, slot_idx);
++		mvs_cw32(mvi, MVS_COMMAND_ACTIVE + (slot_idx >> 3),
++			1 << (slot_idx % 32));
++		do {
++			tmp = mvs_cr32(mvi,
++				MVS_COMMAND_ACTIVE + (slot_idx >> 3));
++		} while (tmp & 1 << (slot_idx % 32));
++	}
++}
++
++void mvs_94xx_clear_srs_irq(struct mvs_info *mvi, u8 reg_set, u8 clear_all)
++{
++	void __iomem *regs = mvi->regs;
++	u32 tmp;
++
++	if (clear_all) {
++		tmp = mr32(MVS_INT_STAT_SRS_0);
++		if (tmp) {
++			mv_dprintk("check SRS 0 %08X.\n", tmp);
++			mw32(MVS_INT_STAT_SRS_0, tmp);
++		}
++		tmp = mr32(MVS_INT_STAT_SRS_1);
++		if (tmp) {
++			mv_dprintk("check SRS 1 %08X.\n", tmp);
++			mw32(MVS_INT_STAT_SRS_1, tmp);
++		}
++	} else {
++		if (reg_set > 31)
++			tmp = mr32(MVS_INT_STAT_SRS_1);
++		else
++			tmp = mr32(MVS_INT_STAT_SRS_0);
++
++		if (tmp & (1 << (reg_set % 32))) {
++			mv_dprintk("register set 0x%x was stopped.\n", reg_set);
++			if (reg_set > 31)
++				mw32(MVS_INT_STAT_SRS_1, 1 << (reg_set % 32));
++			else
++				mw32(MVS_INT_STAT_SRS_0, 1 << (reg_set % 32));
++		}
++	}
+ }
+ 
+ static void mvs_94xx_issue_stop(struct mvs_info *mvi, enum mvs_port_type type,
+@@ -596,12 +634,10 @@ static void mvs_94xx_issue_stop(struct mvs_info *mvi, enum mvs_port_type type,
+ {
+ 	void __iomem *regs = mvi->regs;
+ 	u32 tmp;
++	mvs_94xx_clear_srs_irq(mvi, 0, 1);
+ 
+-	if (type == PORT_TYPE_SATA) {
+-		tmp = mr32(MVS_INT_STAT_SRS_0) | (1U << tfs);
+-		mw32(MVS_INT_STAT_SRS_0, tmp);
+-	}
+-	mw32(MVS_INT_STAT, CINT_CI_STOP);
++	tmp = mr32(MVS_INT_STAT);
++	mw32(MVS_INT_STAT, tmp | CINT_CI_STOP);
+ 	tmp = mr32(MVS_PCS) | 0xFF00;
+ 	mw32(MVS_PCS, tmp);
+ }
+@@ -794,7 +830,18 @@ static void mvs_94xx_fix_phy_info(struct mvs_info *mvi, int i,
+ void mvs_94xx_phy_set_link_rate(struct mvs_info *mvi, u32 phy_id,
+ 			struct sas_phy_linkrates *rates)
+ {
+-	/* TODO */
++	u32 lrmax = 0;
++	u32 tmp;
++
++	tmp = mvs_read_phy_ctl(mvi, phy_id);
++	lrmax = (rates->maximum_linkrate - SAS_LINK_RATE_1_5_GBPS) << 12;
++
++	if (lrmax) {
++		tmp &= ~(0x3 << 12);
++		tmp |= lrmax;
++	}
++	mvs_write_phy_ctl(mvi, phy_id, tmp);
++	mvs_94xx_phy_reset(mvi, phy_id, PHY_RST_HARD);
+ }
+ 
+ static void mvs_94xx_clear_active_cmds(struct mvs_info *mvi)
+@@ -893,15 +940,6 @@ void mvs_94xx_fix_dma(struct mvs_info *mvi, u32 phy_mask,
+ 	}
+ }
+ 
+-/*
+- * FIXME JEJB: temporary nop clear_srs_irq to make 94xx still work
+- * with 64xx fixes
+- */
+-static void mvs_94xx_clear_srs_irq(struct mvs_info *mvi, u8 reg_set,
+-				   u8 clear_all)
+-{
+-}
+-
+ static void mvs_94xx_tune_interrupt(struct mvs_info *mvi, u32 time)
+ {
+ 	void __iomem *regs = mvi->regs;
+diff --git a/drivers/scsi/mvsas/mv_94xx.h b/drivers/scsi/mvsas/mv_94xx.h
+index 458d127..ba78129 100644
+--- a/drivers/scsi/mvsas/mv_94xx.h
++++ b/drivers/scsi/mvsas/mv_94xx.h
+@@ -109,6 +109,7 @@ enum hw_registers {
+ 	MVS_P4_VSR_DATA 	= 0x254, /* phy4 VSR data */
+ 	MVS_PA_VSR_ADDR		= 0x290, /* All port VSR addr */
+ 	MVS_PA_VSR_PORT		= 0x294, /* All port VSR data */
++	MVS_COMMAND_ACTIVE	= 0x300,
+ };
+ 
+ enum pci_cfg_registers {
+@@ -132,6 +133,7 @@ enum sas_sata_vsp_regs {
+ 	VSR_PHY_MODE9		= 0x09 * 4, /* Test */
+ 	VSR_PHY_MODE10		= 0x0A * 4, /* Power */
+ 	VSR_PHY_MODE11		= 0x0B * 4, /* Phy Mode */
++	VSR_PHY_ACT_LED		= 0x0C * 4, /* Activity LED control */
+ 
+ 	VSR_PHY_FFE_CONTROL	= 0x10C,
+ 	VSR_PHY_DFE_UPDATE_CRTL	= 0x110,
+diff --git a/drivers/scsi/mvsas/mv_defs.h b/drivers/scsi/mvsas/mv_defs.h
+index e39629d..1927e1b 100644
+--- a/drivers/scsi/mvsas/mv_defs.h
++++ b/drivers/scsi/mvsas/mv_defs.h
+@@ -395,9 +395,10 @@ enum mvs_info_flags {
+ };
+ 
+ enum mvs_event_flags {
+-	PHY_PLUG_EVENT	= (3U),
++	PHY_PLUG_EVENT		= (3U),
+ 	PHY_PLUG_IN		= (1U << 0),	/* phy plug in */
+ 	PHY_PLUG_OUT		= (1U << 1),	/* phy plug out */
++	EXP_BRCT_CHG		= (1U << 2),	/* broadcast change */
+ };
+ 
+ enum mvs_port_type {
+diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+index a7815f9..bf7d90c 100644
+--- a/drivers/scsi/mvsas/mv_init.c
++++ b/drivers/scsi/mvsas/mv_init.c
+@@ -39,15 +39,15 @@ int interrupt_coalescing = 0x80;
+ static struct scsi_transport_template *mvs_stt;
+ struct kmem_cache *mvs_task_list_cache;
+ static const struct mvs_chip_info mvs_chips[] = {
+-	[chip_6320] =	{ 1, 2, 0x400, 17, 16,  9, &mvs_64xx_dispatch, },
+-	[chip_6440] =	{ 1, 4, 0x400, 17, 16,  9, &mvs_64xx_dispatch, },
+-	[chip_6485] =	{ 1, 8, 0x800, 33, 32, 10, &mvs_64xx_dispatch, },
+-	[chip_9180] =	{ 2, 4, 0x800, 17, 64,  9, &mvs_94xx_dispatch, },
+-	[chip_9480] =	{ 2, 4, 0x800, 17, 64,  9, &mvs_94xx_dispatch, },
+-	[chip_9445] =	{ 1, 4, 0x800, 17, 64, 11, &mvs_94xx_dispatch, },
+-	[chip_9485] =	{ 2, 4, 0x800, 17, 64, 11, &mvs_94xx_dispatch, },
+-	[chip_1300] =	{ 1, 4, 0x400, 17, 16,  9, &mvs_64xx_dispatch, },
+-	[chip_1320] =	{ 2, 4, 0x800, 17, 64,  9, &mvs_94xx_dispatch, },
++	[chip_6320] =	{ 1, 2, 0x400, 17, 16, 6,  9, &mvs_64xx_dispatch, },
++	[chip_6440] =	{ 1, 4, 0x400, 17, 16, 6,  9, &mvs_64xx_dispatch, },
++	[chip_6485] =	{ 1, 8, 0x800, 33, 32, 6, 10, &mvs_64xx_dispatch, },
++	[chip_9180] =	{ 2, 4, 0x800, 17, 64, 8,  9, &mvs_94xx_dispatch, },
++	[chip_9480] =	{ 2, 4, 0x800, 17, 64, 8,  9, &mvs_94xx_dispatch, },
++	[chip_9445] =	{ 1, 4, 0x800, 17, 64, 8, 11, &mvs_94xx_dispatch, },
++	[chip_9485] =	{ 2, 4, 0x800, 17, 64, 8, 11, &mvs_94xx_dispatch, },
++	[chip_1300] =	{ 1, 4, 0x400, 17, 16, 6,  9, &mvs_64xx_dispatch, },
++	[chip_1320] =	{ 2, 4, 0x800, 17, 64, 8,  9, &mvs_94xx_dispatch, },
+ };
+ 
+ struct device_attribute *mvst_host_attrs[];
+@@ -466,7 +466,7 @@ static int __devinit mvs_prep_sas_ha_init(struct Scsi_Host *shost,
+ 	((struct mvs_prv_info *)sha->lldd_ha)->n_host = core_nr;
+ 
+ 	shost->transportt = mvs_stt;
+-	shost->max_id = 128;
++	shost->max_id = MVS_MAX_DEVICES;
+ 	shost->max_lun = ~0;
+ 	shost->max_channel = 1;
+ 	shost->max_cmd_len = 16;
+@@ -512,6 +512,7 @@ static void  __devinit mvs_post_sas_ha_init(struct Scsi_Host *shost,
+ 		can_queue = MVS_CHIP_SLOT_SZ;
+ 
+ 	sha->lldd_queue_size = can_queue;
++	shost->sg_tablesize = min_t(u16, SG_ALL, MVS_MAX_SG);
+ 	shost->can_queue = can_queue;
+ 	mvi->shost->cmd_per_lun = MVS_QUEUE_SIZE;
+ 	sha->core.shost = mvi->shost;
+diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
+index 7bd0ee3..38b47918 100644
+--- a/drivers/scsi/mvsas/mv_sas.c
++++ b/drivers/scsi/mvsas/mv_sas.c
+@@ -203,12 +203,12 @@ int mvs_phy_control(struct asd_sas_phy *sas_phy, enum phy_func func,
+ 		tmp = MVS_CHIP_DISP->read_phy_ctl(mvi, phy_id);
+ 		if (tmp & PHY_RST_HARD)
+ 			break;
+-		MVS_CHIP_DISP->phy_reset(mvi, phy_id, 1);
++		MVS_CHIP_DISP->phy_reset(mvi, phy_id, MVS_HARD_RESET);
+ 		break;
+ 
+ 	case PHY_FUNC_LINK_RESET:
+ 		MVS_CHIP_DISP->phy_enable(mvi, phy_id);
+-		MVS_CHIP_DISP->phy_reset(mvi, phy_id, 0);
++		MVS_CHIP_DISP->phy_reset(mvi, phy_id, MVS_SOFT_RESET);
+ 		break;
+ 
+ 	case PHY_FUNC_DISABLE:
+@@ -1758,12 +1758,63 @@ static int mvs_sata_done(struct mvs_info *mvi, struct sas_task *task,
+ 	return stat;
+ }
+ 
++void mvs_set_sense(u8 *buffer, int len, int d_sense,
++		int key, int asc, int ascq)
++{
++	memset(buffer, 0, len);
++
++	if (d_sense) {
++		/* Descriptor format */
++		if (len < 4) {
++			mv_printk("Length %d of sense buffer too small to "
++				"fit sense %x:%x:%x", len, key, asc, ascq);
++		}
++
++		buffer[0] = 0x72;		/* Response Code	*/
++		if (len > 1)
++			buffer[1] = key;	/* Sense Key */
++		if (len > 2)
++			buffer[2] = asc;	/* ASC	*/
++		if (len > 3)
++			buffer[3] = ascq;	/* ASCQ	*/
++	} else {
++		if (len < 14) {
++			mv_printk("Length %d of sense buffer too small to "
++				"fit sense %x:%x:%x", len, key, asc, ascq);
++		}
++
++		buffer[0] = 0x70;		/* Response Code	*/
++		if (len > 2)
++			buffer[2] = key;	/* Sense Key */
++		if (len > 7)
++			buffer[7] = 0x0a;	/* Additional Sense Length */
++		if (len > 12)
++			buffer[12] = asc;	/* ASC */
++		if (len > 13)
++			buffer[13] = ascq; /* ASCQ */
++	}
++
++	return;
++}
++
++void mvs_fill_ssp_resp_iu(struct ssp_response_iu *iu,
++				u8 key, u8 asc, u8 asc_q)
++{
++	iu->datapres = 2;
++	iu->response_data_len = 0;
++	iu->sense_data_len = 17;
++	iu->status = 02;
++	mvs_set_sense(iu->sense_data, 17, 0,
++			key, asc, asc_q);
++}
++
+ static int mvs_slot_err(struct mvs_info *mvi, struct sas_task *task,
+ 			 u32 slot_idx)
+ {
+ 	struct mvs_slot_info *slot = &mvi->slot_info[slot_idx];
+ 	int stat;
+ 	u32 err_dw0 = le32_to_cpu(*(u32 *) (slot->response));
++	u32 err_dw1 = le32_to_cpu(*((u32 *)slot->response + 1));
+ 	u32 tfs = 0;
+ 	enum mvs_port_type type = PORT_TYPE_SAS;
+ 
+@@ -1775,8 +1826,19 @@ static int mvs_slot_err(struct mvs_info *mvi, struct sas_task *task,
+ 	stat = SAM_STAT_CHECK_CONDITION;
+ 	switch (task->task_proto) {
+ 	case SAS_PROTOCOL_SSP:
++	{
+ 		stat = SAS_ABORTED_TASK;
++		if ((err_dw0 & NO_DEST) || err_dw1 & bit(31)) {
++			struct ssp_response_iu *iu = slot->response +
++				sizeof(struct mvs_err_info);
++			mvs_fill_ssp_resp_iu(iu, NOT_READY, 0x04, 01);
++			sas_ssp_task_response(mvi->dev, task, iu);
++			stat = SAM_STAT_CHECK_CONDITION;
++		}
++		if (err_dw1 & bit(31))
++			mv_printk("reuse same slot, retry command.\n");
+ 		break;
++	}
+ 	case SAS_PROTOCOL_SMP:
+ 		stat = SAM_STAT_CHECK_CONDITION;
+ 		break;
+@@ -1974,13 +2036,13 @@ static void mvs_work_queue(struct work_struct *work)
+ 	struct mvs_wq *mwq = container_of(dw, struct mvs_wq, work_q);
+ 	struct mvs_info *mvi = mwq->mvi;
+ 	unsigned long flags;
++	u32 phy_no = (unsigned long) mwq->data;
++	struct sas_ha_struct *sas_ha = mvi->sas;
++	struct mvs_phy *phy = &mvi->phy[phy_no];
++	struct asd_sas_phy *sas_phy = &phy->sas_phy;
+ 
+ 	spin_lock_irqsave(&mvi->lock, flags);
+ 	if (mwq->handler & PHY_PLUG_EVENT) {
+-		u32 phy_no = (unsigned long) mwq->data;
+-		struct sas_ha_struct *sas_ha = mvi->sas;
+-		struct mvs_phy *phy = &mvi->phy[phy_no];
+-		struct asd_sas_phy *sas_phy = &phy->sas_phy;
+ 
+ 		if (phy->phy_event & PHY_PLUG_OUT) {
+ 			u32 tmp;
+@@ -2002,6 +2064,11 @@ static void mvs_work_queue(struct work_struct *work)
+ 				mv_dprintk("phy%d Attached Device\n", phy_no);
+ 			}
+ 		}
++	} else if (mwq->handler & EXP_BRCT_CHG) {
++		phy->phy_event &= ~EXP_BRCT_CHG;
++		sas_ha->notify_port_event(sas_phy,
++				PORTE_BROADCAST_RCVD);
++		mv_dprintk("phy%d Got Broadcast Change\n", phy_no);
+ 	}
+ 	list_del(&mwq->entry);
+ 	spin_unlock_irqrestore(&mvi->lock, flags);
+@@ -2037,7 +2104,7 @@ static void mvs_sig_time_out(unsigned long tphy)
+ 		if (&mvi->phy[phy_no] == phy) {
+ 			mv_dprintk("Get signature time out, reset phy %d\n",
+ 				phy_no+mvi->id*mvi->chip->n_phy);
+-			MVS_CHIP_DISP->phy_reset(mvi, phy_no, 1);
++			MVS_CHIP_DISP->phy_reset(mvi, phy_no, MVS_HARD_RESET);
+ 		}
+ 	}
+ }
+@@ -2045,9 +2112,7 @@ static void mvs_sig_time_out(unsigned long tphy)
+ void mvs_int_port(struct mvs_info *mvi, int phy_no, u32 events)
+ {
+ 	u32 tmp;
+-	struct sas_ha_struct *sas_ha = mvi->sas;
+ 	struct mvs_phy *phy = &mvi->phy[phy_no];
+-	struct asd_sas_phy *sas_phy = &phy->sas_phy;
+ 
+ 	phy->irq_status = MVS_CHIP_DISP->read_port_irq_stat(mvi, phy_no);
+ 	mv_dprintk("port %d ctrl sts=0x%X.\n", phy_no+mvi->id*mvi->chip->n_phy,
+@@ -2086,7 +2151,7 @@ void mvs_int_port(struct mvs_info *mvi, int phy_no, u32 events)
+ 							phy_no);
+ 				else
+ 					MVS_CHIP_DISP->phy_reset(mvi,
+-							phy_no, 0);
++							phy_no, MVS_SOFT_RESET);
+ 				return;
+ 			}
+ 		}
+@@ -2118,14 +2183,14 @@ void mvs_int_port(struct mvs_info *mvi, int phy_no, u32 events)
+ 			}
+ 			mvs_update_phyinfo(mvi, phy_no, 0);
+ 			if (phy->phy_type & PORT_TYPE_SAS) {
+-				MVS_CHIP_DISP->phy_reset(mvi, phy_no, 2);
++				MVS_CHIP_DISP->phy_reset(mvi, phy_no, MVS_PHY_TUNE);
+ 				mdelay(10);
+ 			}
+ 
+ 			mvs_bytes_dmaed(mvi, phy_no);
+ 			/* whether driver is going to handle hot plug */
+ 			if (phy->phy_event & PHY_PLUG_OUT) {
+-				mvs_port_notify_formed(sas_phy, 0);
++				mvs_port_notify_formed(&phy->sas_phy, 0);
+ 				phy->phy_event &= ~PHY_PLUG_OUT;
+ 			}
+ 		} else {
+@@ -2135,9 +2200,8 @@ void mvs_int_port(struct mvs_info *mvi, int phy_no, u32 events)
+ 	} else if (phy->irq_status & PHYEV_BROAD_CH) {
+ 		mv_dprintk("port %d broadcast change.\n",
+ 			phy_no + mvi->id*mvi->chip->n_phy);
+-		/* exception for Samsung disk drive*/
+-		mdelay(1000);
+-		sas_ha->notify_port_event(sas_phy, PORTE_BROADCAST_RCVD);
++		mvs_handle_event(mvi, (void *)(unsigned long)phy_no,
++				EXP_BRCT_CHG);
+ 	}
+ 	MVS_CHIP_DISP->write_port_irq_stat(mvi, phy_no, phy->irq_status);
+ }
+diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
+index 7abfa2d..abc4358 100644
+--- a/drivers/scsi/mvsas/mv_sas.h
++++ b/drivers/scsi/mvsas/mv_sas.h
+@@ -96,6 +96,11 @@ enum dev_status {
+ 	MVS_DEV_EH	= 0x1,
+ };
+ 
++enum dev_reset {
++	MVS_SOFT_RESET	= 0,
++	MVS_HARD_RESET	= 1,
++	MVS_PHY_TUNE	= 2,
++};
+ 
+ struct mvs_info;
+ 
+@@ -176,9 +181,11 @@ struct mvs_chip_info {
+ 	u32 		fis_offs;
+ 	u32 		fis_count;
+ 	u32 		srs_sz;
++	u32		sg_width;
+ 	u32 		slot_width;
+ 	const struct mvs_dispatch *dispatch;
+ };
++#define MVS_MAX_SG		(1U << mvi->chip->sg_width)
+ #define MVS_CHIP_SLOT_SZ	(1U << mvi->chip->slot_width)
+ #define MVS_RX_FISL_SZ		\
+ 	(mvi->chip->fis_offs + (mvi->chip->fis_count * 0x100))
 -- 
-1.7.5.2
+1.7.4.4
 
