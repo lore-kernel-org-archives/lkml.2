@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab1EXGJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 02:09:58 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60932 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752082Ab1EXGJ5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 02:09:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110524060321.GA20904@elte.hu>
-References: <20110523193035.GA9170@elte.hu> <BANLkTimUr+2k3_RAyncLX5yFYeV5JaJDsQ@mail.gmail.com>
- <20110524060321.GA20904@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 23 May 2011 23:09:05 -0700
-Message-ID: <BANLkTin+Ri0RcemY6S77iZ+rZcpPHueyTw@mail.gmail.com>
-Subject: Re: [GIT PULL] more x86/apic changes for v2.6.40
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Daniel J Blueman <daniel.blueman@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753262Ab1EXGT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 02:19:28 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39263 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112Ab1EXGT0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 02:19:26 -0400
+Subject: Re: [PATCH-v2] MAINTAINERS: Add drivers/target/ entry
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+In-Reply-To: <1306193789.8687.61.camel@Joe-Laptop>
+References: <1306185032-11629-1-git-send-email-nab@linux-iscsi.org>
+	 <1306193789.8687.61.camel@Joe-Laptop>
+Content-Type: text/plain
+Date: Mon, 23 May 2011 23:11:09 -0700
+Message-Id: <1306217469.29724.150.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 11:03 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> Possibly the resume fix in the APIC merge :-/
+On Mon, 2011-05-23 at 16:36 -0700, Joe Perches wrote:
+> On Mon, 2011-05-23 at 14:10 -0700, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > +TARGET SUBSYSTEM
+> > +M:	Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > +L:	linux-scsi@vger.kernel.org
+> > +L:	http://groups.google.com/group/linux-iscsi-target-dev
+> > +W:	http://www.linux-iscsi.org
+> > +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/nab/lio-core-2.6.git master
+> > +S:	Supported
+> > +F:	drivers/target/
+> > +F:	include/target/
+> > +F:	Documentation/target/
+> 
+> Shouldn't the file layout be more like
+> 
+> drivers/lio/target?
+> 
 
-Well, that's certainly in the right area..
+Hi Joe,
 
-> It's these commits:
->
->  31dce14a3269: x86, ioapic: Use ioapic_saved_data while enabling intr-remapping
->  4c79185cdb14: x86, ioapic: Allocate ioapic_saved_data early
->  b64ce24daffb: x86, ioapic: Fix potential resume deadlock
+Not sure what you mean here..  Currently drivers/target/ contains the
+fabric independent target core, and /drivers/target/$FABRIC/ contains
+individual fabric module drivers.
 
-Those are all in my bisect window, yes. But because it now jumped into
-that branch, all the header files changed, and it will take forever to
-compile on that machine (I used to do a "build image on my main
-machine, copy it over" when I got really fed up with bisecting
-multiple things, but now I'm doing it on that machine itself)
+I originally decided to use drivers/target/ to avoid any confusion wrt
+to the 'LIO' term, which to some folks is interchangable wrt to the
+'iscsi-target' fabric module.
 
-I'll get it fully bisected tomorrow, in the meantime maybe Daniel and
-Suresh can think about their patches and see if they come up with
-something.
+--nab
 
-                    Linus
