@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab1EXMAU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 08:00:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60573 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab1EXMAS (ORCPT
+	id S1756034Ab1EXMPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 08:15:14 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:41730
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754340Ab1EXMPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 08:00:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=aQSEeAJWsTdS9oZ9SaEgG378Bkz4Qwkxgt8LLp8jQnYAprq/pZ8NFUv7xWZGIRQ1Jd
-         cK0xp2MGhpehrZedCo5ufVoVwLxTOzjogV0gRykGdy0xaChS4szTXTL02jgXAWia9U8d
-         E6tu6ro2blFa4mhB+GeZiQYwKV3ZCzr7jdZEs=
-Date: Tue, 24 May 2011 14:00:13 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Pedro Alves <pedro@codesourcery.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, oleg@redhat.com,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
-        bdonlan@gmail.com
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Message-ID: <20110524120013.GD10334@htj.dyndns.org>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org>
- <201105201027.36688.pedro@codesourcery.com>
- <20110520093111.GG31426@htj.dyndns.org>
- <201105241049.58921.pedro@codesourcery.com>
+	Tue, 24 May 2011 08:15:12 -0400
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+From: Michael Frysinger <michael.frysinger@analog.com>
+Reply-To: Michael Frysinger <michael.frysinger@analog.com>
+Organization: ADI
+To: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+Subject: Re: FW: [PATCH] MAINTAINERS: Fix Analog Devices mailinglist address
+Date: Tue, 24 May 2011 08:01:02 -0400
+User-Agent: KMail/1.13.7 (Linux/2.6.38.1; KDE/4.6.2; x86_64; ; )
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+References: <544AC56F16B56944AEC3BD4E3D5917713AAF293A45@LIMKCMBX1.ad.analog.com>
+In-Reply-To: <544AC56F16B56944AEC3BD4E3D5917713AAF293A45@LIMKCMBX1.ad.analog.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105241049.58921.pedro@codesourcery.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-ID: <201105240801.02702.michael.frysinger@analog.com>
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, May 24, 2011 at 10:49:58AM +0100, Pedro Alves wrote:
-> A couple interface questions that just crossed my mind:
+On Tuesday, May 24, 2011 03:17:11 Hennerich, Michael wrote:
+> From: Lars-Peter Clausen <lars@metafoo.de>
 > 
->  - on a fork/vfork/clone, if PTRACE_EVENT_FORK|VFORK|CLONE have been
->    enabled, will the tracer still see the new child stop with a
->    SIGSTOP, or will it see a PTRACE_EVENT_INTERRUPT?
+> There is a small typo in the Analog Devices driver mailinglist address.
 
-This won't change, so SIGSTOP although we probably want to improve it
-such that this can be distinguished from SIGTRAP from userland.
+i'll run this through the Blackfin tree since i'll send out a pull request 
+later today ...
+-mike
 
->  - is PTRACE_INTERRUPT on PTRACE_TRACEME-traced-child planed to
->    be allowed (for convenience)?
->    A PTRACE_O_TRACEINTERRUPT, or some such PTRACE_SETOPTIONS
->    option might be necessary to get PTRACE_EVENT_INTERRUPT instead
->    of SIGSTOP in the point above.
-
-I'm currently leaning toward deprecating PTRACE_TRACEME.  If a task
-can PTRACE_TRACEME, it may as well just do pause(2) and let the parent
-SEIZE it.
-
-Thanks.
-
--- 
-tejun
