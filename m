@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113Ab1EXCAi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 22:00:38 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:35059 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758087Ab1EXCAf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 22:00:35 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
-        hpa@zytor.com, Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-In-Reply-To: Your message of "Mon, 23 May 2011 12:49:02 +0200."
-             <20110523104902.GB24674@elte.hu>
-From: Valdis.Kletnieks@vt.edu
-References: <1305292059.1949.0.camel@dan> <1305293345.1949.22.camel@dan> <20110516153527.GC21107@elte.hu> <1305852966.3005.19.camel@dan> <20110520120750.GJ14745@elte.hu> <1305896093.3005.24.camel@dan> <20110520131108.GA17699@elte.hu> <1306089922.1806.27.camel@dan> <BANLkTik1SK_kWVvGsKk0SqdByQ5-0b5nFg@mail.gmail.com> <1306110336.25049.7.camel@dan>
-            <20110523104902.GB24674@elte.hu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1306202368_3286P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 23 May 2011 21:59:28 -0400
-Message-ID: <6733.1306202368@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4DDB1106.00BE,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1758124Ab1EXCBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 22:01:52 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45407 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751188Ab1EXCBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 22:01:48 -0400
+Date: Tue, 24 May 2011 04:01:35 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
+Subject: Re: (Short?) merge window reminder
+Message-ID: <20110524020135.GA19249@elte.hu>
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
+ <20110523192056.GC23629@elte.hu>
+ <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+ <20110523231721.GM10009@thunk.org>
+ <4DDAEC68.30803@zytor.com>
+ <BANLkTikGfVSAMY2a2yiXaNpvBVvF8YdMEA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikGfVSAMY2a2yiXaNpvBVvF8YdMEA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1306202368_3286P
-Content-Type: text/plain; charset=us-ascii
 
-On Mon, 23 May 2011 12:49:02 +0200, Ingo Molnar said:
-> Well, since entropy does not get reduced on addition of independent variables 
-> the right sequence is (pseudocode):
->
-> 	rnd  = entropy_cycles();
-> 	rnd += entropy_rdrand();
-> 	rnd += entropy_RTC();
-> 	rnd += entropy_system();
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-I'm having trouble convincing myself that RTC and cycles are truly independent
-variables.... ;)
+> Another advantage of switching numbering models (ie 3.0 instead of
+> 2.8.x) would be that it would also make the "odd numbers are also
+> numbers" transition much more natural.
 
-Consider the case of a fixed-frequency CPU - if you know the time since boot,
-and the current RTC, and the current cycle count, you can work backwards to
-find the RTC and cycle count at boot.  I'm not sure that a variable clockspeed
-helps all that much - an attacker can perhaps find a way to force the highest/
-lowest CPU speed - or the system may even helpfully do it for the attacker -
-I've seen plenty of misconfigured laptops that force lowest supported CPU
-clockspeed on battery rather than race-to-idle.
+Yeah, it sounds really good to get rid of the (meanwhile) meaningless
+"2.6." prefix from our version code and iterate it in a more
+meaningful way.
 
-Having said that, the 13 bootup rdtsc values you list *seem* to have on the
-order of 24-28 bits of entropy, and only the lowest-order bit seems to be
-non-random (the low-order byte of the 13 values are 28, b6, 44, 54, dc, 78, 2c,
-38, 02, 58, 76, 16, and be).  So rdtsc appears to be good enough for what we
-want here...
+I suspect the stable team and distros will enjoy the more meaningful
+third digit as well: it will raise the perceived importance of
+stabilization and packaging work.
 
+Btw., we should probably remove the fourth (patch) level, otherwise
+distros might feel tempted to fill it in with their own patch-stack
+version number, which would result in confusing "3.3.1.5" meaning
+different things on different distros - while 3.3.1-5.rpm style of
+distro kernel package naming denotes the distro patch level more
+clearly.
 
---==_Exmh_1306202368_3286P
-Content-Type: application/pgp-signature
+I don't think the odd/even history will linger too long: in practice
+we'll iterate through 3.1, 3.2, 3.3 and 3.4 rather quickly, in the first
+year, so any residual notion of stable/unstable will be gone within a
+few iterations.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+> Because of our historical even/odd model, I wouldn't do a 2.7.x -
+> there's just too much history of 2.1, 2.3, 2.5 being development
+> trees. But if I do 3.0, then I'd be chucking that whole thing out the
+> window, and the next release would be 3.1, 3.2, etc..
+> 
+> And then in another few years (probably before getting close to 3.40,
+> so I'm not going to make a big deal of 3 = "third decade"), I'd just
+> do 4.0 etc.
 
-iD8DBQFN2xEAcC3lWbTT17ARAgbhAKD1OLPE/qz+JNrvSxjNBkD+dBvMfwCfWIXp
-7WGxfd+22fnkL0pA8t6TdfM=
-=wZ/G
------END PGP SIGNATURE-----
+Perhaps we could do 4.0 once the last bit of -rt hits upstream? /me ducks
 
---==_Exmh_1306202368_3286P--
+> Because all our releases are supposed to be stable releases these
+> days, and if we get rid of one level of numbering, I feel perfectly
+> fine with getting rid of the even/odd history too.
 
+They are very stable releases as far as i'm concerned - i can pretty
+confidently run and use -rc2 and better kernels on my boxes these days
+and could do so for the past few years.
+
+Thanks,
+
+	Ingo
