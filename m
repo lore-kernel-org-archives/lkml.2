@@ -1,183 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab1EXO1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:27:33 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:60215 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756109Ab1EXO1c (ORCPT
+	id S1756834Ab1EXO2P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:28:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47689 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360Ab1EXO2N convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:27:32 -0400
+	Tue, 24 May 2011 10:28:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=elUEL4Y2kYh1XdfBnHlqTkFt5xdwgV7pcqbim+d4NOJTy1UoxHibI3CcP5DbqRKUmo
-         wqtvT4cdDV0hssj5dvLw3dNv6bgCYa6ANlntSixi3g+YUp7aS+tcettUP45LU5JwKehf
-         U2lDeZrq4qCLTSD7rMywXwCk2U/uGO0xNBsJs=
-From: yxlraid@gmail.com
-To: James.Bottomley@suse.de
-Cc: jslaby@suse.cz, linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yuxiangl@marvell.com, jfeng@marvell.com
-Subject: [PATCH 1/9] [SCSI] mvsas: Add support for Non specific NCQ error interrupt
-Date: Tue, 24 May 2011 22:26:50 +0800
-Message-Id: <1306247210-5888-1-git-send-email-yxlraid@gamil.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <mvsas-ncq>
-References: <mvsas-ncq>
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=mbLKHILyVD4u5b/WfMJQvBs3kOA/NodEPBma74WprpxScxKAuHpLngZgJp+059EKXb
+         sDLeq7Z8MVHYtqNlavQGPN5/D/KQw+zDrxS31ZP46InofWtWufoawJRPOA7wRYHADvs4
+         9tXJlZkjqU6UyDH7eQP8asL/YjAbqRY8IsUok=
+From: Stevie Trujillo <stevie.trujillo@gmail.com>
+To: Kyungmin Park <kmpark@infradead.org>
+Subject: Re: ramoops: is using platform_drivers correct?
+Date: Tue, 24 May 2011 16:28:08 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.4-ck3; KDE/4.6.3; x86_64; ; )
+Cc: =?iso-8859-1?q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        marco.stornelli@gmail.com, linux-kernel@vger.kernel.org
+References: <201105231527.53805.stevie.trujillo@gmail.com> <BANLkTimCaEPVeBj_00HvqGp7j+_PUvs2Fg@mail.gmail.com> <BANLkTikeUMFyLuWcHbW4TrF1wqM8_F_Vnw@mail.gmail.com>
+In-Reply-To: <BANLkTikeUMFyLuWcHbW4TrF1wqM8_F_Vnw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201105241628.08819.stevie.trujillo@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiangliang Yu <yuxiangl@marvell.com>
+On Tuesday 24 May 2011 16:16:13 Kyungmin Park wrote:
+> On Tue, May 24, 2011 at 11:12 PM, Américo Wang <xiyou.wangcong@gmail.com> 
+wrote:
+> > On Tue, May 24, 2011 at 2:14 PM, Kyungmin Park <kmpark@infradead.org> 
+wrote:
+> >> On Tue, May 24, 2011 at 2:49 PM, Américo Wang <xiyou.wangcong@gmail.com> 
+wrote:
+> >>> Huh? Is this for x86 too? Why so unfriendly for end-users?
+> >> 
+> >> I don't know which address is acceptable for x86, in case of ARM, each
+> >> SoCs has different SRAM address. so it's not good to define for all
+> >> SoCs and ARM.
+> >> 
+> >>> I think we need some kernel parameter like 'crashkernel=' (or memmap=)
+> >>> to reserve memory for ramoops, right?
+> >> 
+> >> The first implementation is just module parameters.
+> >> ramoops.address=0x??????? ramoops.size=0x????. So I patched it as
+> >> using platform devices.
+> >> and the reason use the platform is it's dependent on each SoCs and board
+> >> usage.
+> > 
+> > But the result is that this makes end-users harder to use it.
+> > 
+> > Using platform API still relies on a hard-code address, at least in
+> > your example,
+> > so, why not leave it as a module parameter to let user to find the
+> > correct address?
+> 
+> It's possible. I just make it possible to use the platform driver. you
+> can specify the original method.
 
--- Add support for Non specific NCQ error interrupt.
+I don't think it's possible without also having a platform_device. 
+ramoops_probe is never called here, I think platform_driver_probe returns -
+ENODEV.
 
-Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
----
- drivers/scsi/mvsas/mv_64xx.c  |    1 +
- drivers/scsi/mvsas/mv_94xx.c  |   32 +++++++++++++++++++++++++++++++-
- drivers/scsi/mvsas/mv_chips.h |    3 +++
- drivers/scsi/mvsas/mv_defs.h  |    1 +
- drivers/scsi/mvsas/mv_sas.c   |   14 ++++++++++++++
- drivers/scsi/mvsas/mv_sas.h   |    2 ++
- 6 files changed, 52 insertions(+), 1 deletions(-)
+static int __init ramoops_init(void)
+{
+    return platform_driver_probe(&ramoops_driver, ramoops_probe);
+}
 
-diff --git a/drivers/scsi/mvsas/mv_64xx.c b/drivers/scsi/mvsas/mv_64xx.c
-index 13c9604..0e13e64 100644
---- a/drivers/scsi/mvsas/mv_64xx.c
-+++ b/drivers/scsi/mvsas/mv_64xx.c
-@@ -811,5 +811,6 @@ const struct mvs_dispatch mvs_64xx_dispatch = {
- #ifndef DISABLE_HOTPLUG_DMA_FIX
- 	mvs_64xx_fix_dma,
- #endif
-+	NULL,
- };
- 
-diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
-index 78162c3..9d60c7c 100644
---- a/drivers/scsi/mvsas/mv_94xx.c
-+++ b/drivers/scsi/mvsas/mv_94xx.c
-@@ -249,7 +249,7 @@ static int __devinit mvs_94xx_init(struct mvs_info *mvi)
- 
- 	/* enable completion queue interrupt */
- 	tmp = (CINT_PORT_MASK | CINT_DONE | CINT_MEM | CINT_SRS | CINT_CI_STOP |
--		CINT_DMA_PCIE);
-+		CINT_DMA_PCIE | CINT_NON_SPEC_NCQ_ERROR);
- 	tmp |= CINT_PHY_MASK;
- 	mw32(MVS_INT_MASK, tmp);
- 
-@@ -367,6 +367,35 @@ static void mvs_94xx_issue_stop(struct mvs_info *mvi, enum mvs_port_type type,
- 	mw32(MVS_PCS, tmp);
- }
- 
-+static void mvs_94xx_non_spec_ncq_error(struct mvs_info *mvi)
-+{
-+	void __iomem *regs = mvi->regs;
-+	u32 err_0, err_1;
-+	u8 i;
-+	struct mvs_device *device;
-+
-+	err_0 = mr32(MVS_NON_NCQ_ERR_0);
-+	err_1 = mr32(MVS_NON_NCQ_ERR_1);
-+
-+	mv_dprintk("non specific ncq error err_0:%x,err_1:%x.\n",
-+			err_0, err_1);
-+	for (i = 0; i < 32; i++) {
-+		if (err_0 & bit(i)) {
-+			device = mvs_find_dev_by_reg_set(mvi, i);
-+			if (device)
-+				mvs_release_task(mvi, device->sas_device);
-+		}
-+		if (err_1 & bit(i)) {
-+			device = mvs_find_dev_by_reg_set(mvi, i+32);
-+			if (device)
-+				mvs_release_task(mvi, device->sas_device);
-+		}
-+	}
-+
-+	mw32(MVS_NON_NCQ_ERR_0, err_0);
-+	mw32(MVS_NON_NCQ_ERR_1, err_1);
-+}
-+
- static void mvs_94xx_free_reg_set(struct mvs_info *mvi, u8 *tfs)
- {
- 	void __iomem *regs = mvi->regs;
-@@ -679,5 +708,6 @@ const struct mvs_dispatch mvs_94xx_dispatch = {
- #ifndef DISABLE_HOTPLUG_DMA_FIX
- 	mvs_94xx_fix_dma,
- #endif
-+	mvs_94xx_non_spec_ncq_error,
- };
- 
-diff --git a/drivers/scsi/mvsas/mv_chips.h b/drivers/scsi/mvsas/mv_chips.h
-index 1753a6f..4519f80 100644
---- a/drivers/scsi/mvsas/mv_chips.h
-+++ b/drivers/scsi/mvsas/mv_chips.h
-@@ -223,6 +223,9 @@ static inline void mvs_int_full(struct mvs_info *mvi)
- 			mvs_int_port(mvi, i, tmp);
- 	}
- 
-+	if (stat & CINT_NON_SPEC_NCQ_ERROR)
-+		MVS_CHIP_DISP->non_spec_ncq_error(mvi);
-+
- 	if (stat & CINT_SRS)
- 		mvs_int_sata(mvi);
- 
-diff --git a/drivers/scsi/mvsas/mv_defs.h b/drivers/scsi/mvsas/mv_defs.h
-index bc00c94..9202bc6 100644
---- a/drivers/scsi/mvsas/mv_defs.h
-+++ b/drivers/scsi/mvsas/mv_defs.h
-@@ -144,6 +144,7 @@ enum hw_register_bits {
- 	CINT_DMA_PCIE		= (1U << 27),	/* DMA to PCIE timeout */
- 	CINT_MEM		= (1U << 26),	/* int mem parity err */
- 	CINT_I2C_SLAVE		= (1U << 25),	/* slave I2C event */
-+	CINT_NON_SPEC_NCQ_ERROR	= (1U << 25),	/* Non specific NCQ error */
- 	CINT_SRS		= (1U << 3),	/* SRS event */
- 	CINT_CI_STOP		= (1U << 1),	/* cmd issue stopped */
- 	CINT_DONE		= (1U << 0),	/* cmd completion */
-diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
-index 0ef2742..aaa475a 100644
---- a/drivers/scsi/mvsas/mv_sas.c
-+++ b/drivers/scsi/mvsas/mv_sas.c
-@@ -253,6 +253,20 @@ int mvs_find_dev_phyno(struct domain_device *dev, int *phyno)
- 	return num;
- }
- 
-+struct mvs_device *mvs_find_dev_by_reg_set(struct mvs_info *mvi,
-+						u8 reg_set)
-+{
-+	u32 dev_no;
-+	for (dev_no = 0; dev_no < MVS_MAX_DEVICES; dev_no++) {
-+		if (mvi->devices[dev_no].taskfileset == MVS_ID_NOT_MAPPED)
-+			continue;
-+
-+		if (mvi->devices[dev_no].taskfileset == reg_set)
-+			return &mvi->devices[dev_no];
-+	}
-+	return NULL;
-+}
-+
- static inline void mvs_free_reg_set(struct mvs_info *mvi,
- 				struct mvs_device *dev)
- {
-diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
-index 1367d8b..f96100d 100644
---- a/drivers/scsi/mvsas/mv_sas.h
-+++ b/drivers/scsi/mvsas/mv_sas.h
-@@ -170,6 +170,7 @@ struct mvs_dispatch {
- #ifndef DISABLE_HOTPLUG_DMA_FIX
- 	void (*dma_fix)(dma_addr_t buf_dma, int buf_len, int from, void *prd);
- #endif
-+	void (*non_spec_ncq_error)(struct mvs_info *mvi);
- 
- };
- 
-@@ -416,5 +417,6 @@ void mvs_int_port(struct mvs_info *mvi, int phy_no, u32 events);
- void mvs_update_phyinfo(struct mvs_info *mvi, int i, int get_st);
- int mvs_int_rx(struct mvs_info *mvi, bool self_clear);
- void mvs_hexdump(u32 size, u8 *data, u32 baseaddr);
-+struct mvs_device *mvs_find_dev_by_reg_set(struct mvs_info *mvi, u8 reg_set);
- #endif
- 
--- 
-1.7.4.4
+Maybe one could run platform_driver_probe() only if (!mem_address && 
+!mem_size)?
 
+Unrelated question: should the printk()s end with "\n"? I see they do that 
+other places in the kernel.
