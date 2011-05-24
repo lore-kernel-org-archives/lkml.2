@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab1EXLt4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 07:49:56 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45887 "EHLO
+	id S1755802Ab1EXLuH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 07:50:07 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45889 "EHLO
 	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753127Ab1EXLtz (ORCPT
+	with ESMTP id S1755216Ab1EXLuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 07:49:55 -0400
+	Tue, 24 May 2011 07:50:04 -0400
 From: Alan Cox <alan@linux.jf.intel.com>
 Subject: [PATCH] kernel: fix silly warning
 To: mingo@elte.hu, linux-kernel@vger.kernel.org
-Date: Tue, 24 May 2011 12:34:53 +0100
-Message-ID: <20110524113404.18793.80546.stgit@localhost.localdomain>
+Date: Tue, 24 May 2011 12:35:06 +0100
+Message-ID: <20110524113502.18829.44241.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
