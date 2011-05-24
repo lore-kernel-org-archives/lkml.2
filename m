@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab1EXJml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 05:42:41 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56790 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752963Ab1EXJmj (ORCPT
+	id S1755641Ab1EXJpG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 05:45:06 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:47272 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab1EXJpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 05:42:39 -0400
-Date: Tue, 24 May 2011 10:44:04 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Arend van Spriel" <arend@broadcom.com>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Dan Carpenter" <error27@gmail.com>
-Subject: Re: [RFC] lib: crc8: add new library module providing crc8
- algorithm
-Message-ID: <20110524104404.336c765f@lxorguk.ukuu.org.uk>
-In-Reply-To: <4DDB622B.1050005@broadcom.com>
-References: <1306010973-5625-1-git-send-email-arend@broadcom.com>
-	<20110522122325.108b1c86@lxorguk.ukuu.org.uk>
-	<4DD905CC.8040407@broadcom.com>
-	<20110522151959.7fd6e87e@lxorguk.ukuu.org.uk>
-	<4DDB622B.1050005@broadcom.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 24 May 2011 05:45:04 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Lukas Czerner <lczerner@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de>
+	<AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com>
+	<201103301706.36214.arnd@arndb.de>
+	<BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com>
+	<87wrhgk8lp.fsf@devron.myhome.or.jp>
+	<BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com>
+	<87r57ok3fp.fsf@devron.myhome.or.jp>
+	<BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com>
+	<87mxick0zj.fsf@devron.myhome.or.jp>
+	<BANLkTiktjZ3ezpN0HuviWGzjoWUKqtXjZA@mail.gmail.com>
+Date: Tue, 24 May 2011 18:44:59 +0900
+In-Reply-To: <BANLkTiktjZ3ezpN0HuviWGzjoWUKqtXjZA@mail.gmail.com> (Kyungmin
+	Park's message of "Tue, 24 May 2011 17:54:35 +0900")
+Message-ID: <87ei3ojuuc.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011 09:45:47 +0200
-"Arend van Spriel" <arend@broadcom.com> wrote:
+Kyungmin Park <kmpark@infradead.org> writes:
 
-> On 05/22/2011 04:19 PM, Alan Cox wrote:
-> > Is it just used for wireless in this form ?
-> >
-> > See the n_gsm and bluetooth code for what I think is the same crc
-> > algorithm but in reverse bit order .
-> 
-> Hi Alan,
-> 
-> Look into the code in n_gsm and bluetooth code. The algorithm is the 
-> same, but except for the bit order it also is using a different 
-> polynomial. My current implementation has a fixed table. I could do the 
-> table generation runtime with the polynomial and the bit order as 
-> parameters. That would make it more general purpose.
+>>> No, length is not changed. so max-length is used.
+>>
+>> No, no. Userland will know max-length from statvfs, right? So, let's
+>> assume it is 100 (->f_blocks) * 1024 (->f_bsize).
+>>
+>> Now, userland know about max length, 102400, ok? Let's start to trim.
+>>
+>> Assume, userland want to trim whole. So, userland will specify like
+>>
+>>        trim(0, 102400).
+>>
+>> What happen in kernel actually?
+>>
+>> Current implement doesn't map blocks. So, in the case of FAT, it adjusts
+>> from 0 to 2 * 1024.
+>>
+>> So, it trims between 2048 and 102400. The problem is here. FS layout is
+>> actually, 2048 and (102400 + 2048). I.e. actually userland has to do
+>>
+>>        trim(2048, 102400 + 2048)
+>
+> Umm maybe first implementation does as like this, but Lukas mentioned
+> it's wrong. So I modified it for batched discard concept.
 
-Probably not worth it - its so tiny a piece of code anyway (< 500 bytes
-or so) that it's going to be bigger not smaller if you do that !
+I don't know what Lukas thought/said though, I hope he notices the
+problem if real app started to use. Or I'd like to know how to work
+without the knowledge of FS internal.
+
+> You want the loop like this
+>
+> for (count = start; count <= (start + len); count++)
+
+I'm not sure this loop is what doing from the above example. Like I said
+in previous thread, I'd like to see liner mapping from 0 like simply
+regular file in _all_FSes_. If I read ext* correctly, it was hell of raw
+FS layout.
+
+I.e. FAT has from "2 - (2 + number_of_blocks)" layout, in FAT case, I
+think it should map to "0 to number_of_block", and expose as liner from 0.
+
+But, it should be for all FSes, otherwise there is no benefit for
+userland. If there is exception, userland would has to know FS internal
+after all.
+
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
