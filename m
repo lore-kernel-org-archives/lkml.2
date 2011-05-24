@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab1EXO0k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:26:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37163 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932126Ab1EXO0h (ORCPT
+	id S1756542Ab1EXO0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:26:36 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44287 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756174Ab1EXO0e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:26:37 -0400
+	Tue, 24 May 2011 10:26:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=YMGhdA0xHU7VC9Y+4i231WX3dvsxUfPkM4TMOWTLhdFhYBTXBNftL/mwkjGU1a8djF
-         aFcupNwqkwKE/ezQ6niZBmVRlt4rki2SrcTbpi+rPp/qjuuntgvGzvyAm23McZgp2zuZ
-         ROKrE9Q/aOuKUCftK7gRtai/RalmYj0DQNqJg=
-Subject: Re: [PATCH] Kconfig: add warning about permission of config file
-From: Hiromu Yakura <hiromu1996@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zippel@linux-m68k.org
-In-Reply-To: <4DDBB150.2090602@suse.cz>
-References: <1306167401.18840.8.camel@hiromu-MacBook>
-	 <BANLkTikhFdd_PRzCg3w9HD1TO=cmdmm6_A@mail.gmail.com>
-	 <1306242400.7501.10.camel@hiromu-MacBook>  <4DDBB150.2090602@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 23:26:32 +0900
-Message-ID: <1306247192.7501.25.camel@hiromu-MacBook>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=sIDW3ptoTHQXsaAJY0/EZk/V2JswstjbScJp5vwo6iwfXjGETYxL0tuEAm48BktJHI
+         ZJ00Z9j37j+LsXivaVHLZL1SGWMz1jbFHI3KEkHeguPqsBwzed6O7oGDu/7bMK6NT0tF
+         X8CE+IlEuICUW5+VD9vVNkaHdyMGE8RT4OaU8=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1105241615080.7986@swampdragon.chaosbits.net>
+References: <BANLkTimxmWiof9s5AvS3v_0X+sMiE=0x5g@mail.gmail.com>
+	<BANLkTikhvhptDG-eRZ9uD5wSm3RxTn1RFw@mail.gmail.com>
+	<1306238014.16375.0.camel@marge.simson.net>
+	<BANLkTimq31hMRa+vD=pLrtTAx=Hv=h0Acg@mail.gmail.com>
+	<alpine.LNX.2.00.1105241615080.7986@swampdragon.chaosbits.net>
+Date: Tue, 24 May 2011 22:26:33 +0800
+Message-ID: <BANLkTikamnMuuyG_CZJ+jv-kA7mPLNw1tg@mail.gmail.com>
+Subject: Re: [PATCH] sched: remove noop in next_prio()
+From: Hillf Danton <dhillf@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, May 24, 2011 at 10:16 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> On Tue, 24 May 2011, Hillf Danton wrote:
+>
+>> On Tue, May 24, 2011 at 7:53 PM, Mike Galbraith <efault@gmx.de> wrote:
+>> > On Tue, 2011-05-24 at 16:17 +0800, Yong Zhang wrote:
+>> >> On Sat, May 21, 2011 at 10:19 PM, Hillf Danton <dhillf@gmail.com> wrote:
+>> >> > When computing the next priority for a given run-queue, the check for
+>> >> > RT priority of the task determined by the pick_next_highest_task_rt()
+>> >> > function could be removed, since only RT task is returned by the
+>> >> > function.
+>> >> >
+>> >> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>> >>
+>> >> Yup, it's true.
+>> >
+>> > (could whack the else while there)
+>> >
+>>
+>> Where is it, Mike?
+>>
+>
+>
+> -       if (next && rt_prio(next->prio))
+> +       if (next)
+>               return next->prio;
+> -       else
+> -              return MAX_RT_PRIO;
+> +       return MAX_RT_PRIO;
+>
+>
+>
+> --
+> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+> Plain text mails only, please.
+>
+>
 
-On Fri, May 24, 2011 at 22:23, Michal Marek <mmarek@suse.cz> wrote:
-> Arnaud's point is that your patch should not be necessary at all, 
-> because kconfig already checks the return value of the fopen() call in 
-> conf_write() and prints the above message if it fails. So do you have a 
-> testcase where make <...>config without your patch returns without 
-> error, but the configuration is not written?
-Sorry for misunderstanding.
-Indeed, make *config which use 'conf' (e.g. oldconfig, defconfig...)
-raise error.
-And only xconfig and gconfig don't write the configuration without
-error.
+Very cool, thank you:)
 
-However, make *config using 'conf' hasn't function of 'Save as'.
-In other words, if you don't set the write permission to the directory,
-you would lose changes of the configuration.
-I think that it is necessary to check permission at all so that kconfig
-warn of the possibility of losing changes.
-
-Thanks
-
-
-
+Hillf
