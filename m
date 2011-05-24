@@ -1,107 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab1EXIyi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 04:54:38 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:49436 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754798Ab1EXIyg convert rfc822-to-8bit (ORCPT
+	id S1755213Ab1EXI5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 04:57:10 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57350 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754582Ab1EXI5I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 04:54:36 -0400
+	Tue, 24 May 2011 04:57:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=NWtdwwyYXKfb0nbHf5HV8TAhR/yy+Q8yH9fzEn9bO1LxHVJ3B5WlNlvkr9mJg67vpW
-         DWUym9M4iNWjHMV9y1mTn77Fwpnqhj6aBLcDMKV0nvPsa3Qb9rmUzXtJidnSmGDghtHJ
-         630jF2egtAVc3JazhJcBXfwyK4ona1IHdrrs4=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fJuZsdZGh7hjNkdexyPqotarlpjUTrhFj6dD/EcS3E7A5NwwjZmNa62+HlGSJlWOY4
+         VJNb60KGnDWxnQM5zrMiFrQVjTZl7kGLpP11vR1KWi8ZFc5ywkUO8eZtFPN4Vuaa1bI+
+         s2Sv0LB00DlvRCgfJHz5Q/azIXQTlCmQrR3Uw=
 MIME-Version: 1.0
-In-Reply-To: <87mxick0zj.fsf@devron.myhome.or.jp>
-References: <20110328103431.GA22323@july>
-	<201103301620.50263.arnd@arndb.de>
-	<AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com>
-	<201103301706.36214.arnd@arndb.de>
-	<BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com>
-	<87wrhgk8lp.fsf@devron.myhome.or.jp>
-	<BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com>
-	<87r57ok3fp.fsf@devron.myhome.or.jp>
-	<BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com>
-	<87mxick0zj.fsf@devron.myhome.or.jp>
-Date: Tue, 24 May 2011 17:54:35 +0900
-X-Google-Sender-Auth: rr6LMnglK5nBa00ni6L4gq3n8hc
-Message-ID: <BANLkTiktjZ3ezpN0HuviWGzjoWUKqtXjZA@mail.gmail.com>
-Subject: Re: [PATCH v6] fat: Batched discard support for fat
-From: Kyungmin Park <kmpark@infradead.org>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Arnd Bergmann <arnd@arndb.de>, Lukas Czerner <lczerner@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4DDB6F48.1010809@jp.fujitsu.com>
+References: <4DCDA347.9080207@cray.com>
+	<BANLkTikiXUzbsUkzaKZsZg+5ugruA2JdMA@mail.gmail.com>
+	<4DD2991B.5040707@cray.com>
+	<BANLkTimYEs315jjY9OZsL6--mRq3O_zbDA@mail.gmail.com>
+	<20110520164924.GB2386@barrios-desktop>
+	<4DDB3A1E.6090206@jp.fujitsu.com>
+	<BANLkTinkcu5j1H8tHNT4aTmOL-GXfSwPQw@mail.gmail.com>
+	<4DDB6F48.1010809@jp.fujitsu.com>
+Date: Tue, 24 May 2011 17:57:07 +0900
+Message-ID: <BANLkTimbu0pDNb1cHGu0B6P-foRHQ2uiWw@mail.gmail.com>
+Subject: Re: Unending loop in __alloc_pages_slowpath following OOM-kill; rfc: patch.
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: abarry@cray.com, akpm@linux-foundation.org, linux-mm@kvack.org,
+        mgorman@suse.de, riel@redhat.com, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 4:32 PM, OGAWA Hirofumi
-<hirofumi@mail.parknet.co.jp> wrote:
-> Kyungmin Park <kmpark@infradead.org> writes:
->
->>>> It's handled at trim implementation. It just trim the fat aware block.
->>>> Not trim the blocks which fat doesn't know.
->>>> As fat don't use the block 0, 1, it adjust the start block at kernel.
->>>>
->>>> +       if (start < FAT_START_ENT)
->>>> +               start = FAT_START_ENT;
->>>>
->>>> and don't exceed the max cluster size.
->>>>
->>>> +       len = (len > sbi->max_cluster) ? sbi->max_cluster : len;
->>>>
->>>> +       for (count = start; count <= len; count++) {
->>>
->>> Yes. We _adjust_ from 0 to 2 here, so, the end of block also have to be
->>> _adjusted_.
->>>
->>> From other point of view, if userland specified 0 - max-length
->>> (i.e. number of blocks), what happens? It would trim block of 2 -
->>> (max-length - 2), right?
+On Tue, May 24, 2011 at 5:41 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>>> I'm sorry I missed this thread long time.
 >>
->> No, length is not changed. so max-length is used.
+>> No problem. It would be better than not review.
 >
-> No, no. Userland will know max-length from statvfs, right? So, let's
-> assume it is 100 (->f_blocks) * 1024 (->f_bsize).
+> thx.
 >
-> Now, userland know about max length, 102400, ok? Let's start to trim.
 >
-> Assume, userland want to trim whole. So, userland will specify like
+>>> In this case, I think we should call drain_all_pages(). then following
+>>> patch is better.
+>>
+>> Strictly speaking, this problem isn't related to drain_all_pages.
+>> This problem caused by lru empty but I admit it could work well if
+>> your patch applied.
+>> So yours could help, too.
+>>
+>>> However I also think your patch is valuable. because while the task is
+>>> sleeping in wait_iff_congested(), an another task may free some pages.
+>>> thus, rebalance path should try to get free pages. iow, you makes sense.
+>>
+>> Yes.
+>> Off-topic.
+>> I would like to move cond_resched below get_page_from_freelist in
+>> __alloc_pages_direct_reclaim. Otherwise, it is likely we can be stolen
+>> pages to other processes.
+>> One more benefit is that if it's apparently OOM path(ie,
+>> did_some_progress = 0), we can reduce OOM kill latency due to remove
+>> unnecessary cond_resched.
 >
->        trim(0, 102400).
->
-> What happen in kernel actually?
->
-> Current implement doesn't map blocks. So, in the case of FAT, it adjusts
-> from 0 to 2 * 1024.
->
-> So, it trims between 2048 and 102400. The problem is here. FS layout is
-> actually, 2048 and (102400 + 2048). I.e. actually userland has to do
->
->        trim(2048, 102400 + 2048)
+> I agree. Can you please mind to send a patch?
 
-Umm maybe first implementation does as like this, but Lukas mentioned
-it's wrong. So I modified it for batched discard concept.
-
-You want the loop like this
-
-for (count = start; count <= (start + len); count++)
+I had but at that time, Andrew had a concern.
+I will resend it when I have a time. Let's discuss, again.
 
 >
-> to specify whole. How to know 2048?
 >
-> See what I'm saying?
+>>> So, I'd like to propose to merge both your and my patch.
+>>
+>> Recently, there was discussion on drain_all_pages with Wu.
+>> He saw much overhead in 8-core system, AFAIR.
+>> I Cced Wu.
+>>
+>> How about checking per-cpu before calling drain_all_pages() than
+>> unconditional calling?
+>> if (per_cpu_ptr(zone->pageset, smp_processor_id())
+>> Â  Â  drain_all_pages();
+>>
+>> Of course, It can miss other CPU free pages. But above routine assume
+>> local cpu direct reclaim is successful but it failed by per-cpu. So I
+>> think it works.
 >
-> FAT has liner block space, so the problem is small against mapping. But
-> other FSes has bigger problem.
+> Can you please tell me previous discussion url or mail subject?
+> I mean, if it is costly and performance degression risk, we don't have to
+> take my idea.
+
+Yes. You could see it by https://lkml.org/lkml/2011/4/30/81.
+
 >
 > Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 >
+>
+>>
+>> Thanks for good suggestion and Reviewed-by, KOSAKI.
+>
+>
+>
+
+
+
+-- 
+Kind regards,
+Minchan Kim
