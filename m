@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab1EXLOn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 07:14:43 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:58666 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754633Ab1EXLOl (ORCPT
+	id S1754952Ab1EXLYg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 07:24:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48452 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866Ab1EXLYf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 07:14:41 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: Kyungmin Park <kmpark@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v6] fat: Batched discard support for fat
-References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de>
-	<AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com>
-	<201103301706.36214.arnd@arndb.de>
-	<BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com>
-	<87wrhgk8lp.fsf@devron.myhome.or.jp>
-	<BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com>
-	<87r57ok3fp.fsf@devron.myhome.or.jp>
-	<BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com>
-	<87mxick0zj.fsf@devron.myhome.or.jp>
-	<alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
-	<874o4kjtsy.fsf@devron.myhome.or.jp>
-	<alpine.LFD.2.00.1105241211100.4028@dhcp-27-109.brq.redhat.com>
-Date: Tue, 24 May 2011 20:14:38 +0900
-In-Reply-To: <alpine.LFD.2.00.1105241211100.4028@dhcp-27-109.brq.redhat.com>
-	(Lukas Czerner's message of "Tue, 24 May 2011 12:44:22 +0200 (CEST)")
-Message-ID: <87y61wic4h.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	Tue, 24 May 2011 07:24:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=pF1mTsf8cgA4fqVLON/9FfW1eTp4yKNkNIdqaXMOvlX3tzEkSyPDFL5dyeqTXB7hE4
+         hkSl10ab2SwgGbQs8LfTtvo9GayYHaFGjJ3RwmH9H9KvgexyBtmm3zi/loaa8ImZ49Yj
+         rb1Yt4r7KQRCrudo3IJZVXsJGHNo9bd2TYQko=
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <BANLkTimw23VP4yyuDed-KrLEcnfLMMA-fQ@mail.gmail.com>
+References: <BANLkTi=NTLn4Lx7EkybuA8-diTVOvMDxBw@mail.gmail.com>
+ <BANLkTinEDXHuRUYpYN0d95+fz4+F7ccL4w@mail.gmail.com> <4DD5DC06.6010204@jp.fujitsu.com>
+ <BANLkTik=7C5qFZTsPQG4JYY-MEWDTHdc6A@mail.gmail.com> <BANLkTins7qxWVh0bEwtk1Vx+m98N=oYVtw@mail.gmail.com>
+ <20110520140856.fdf4d1c8.kamezawa.hiroyu@jp.fujitsu.com> <20110520101120.GC11729@random.random>
+ <BANLkTikAFMvpgHR2dopd+Nvjfyw_XT5=LA@mail.gmail.com> <20110520153346.GA1843@barrios-desktop>
+ <BANLkTi=X+=Wh1MLs7Fc-v-OMtxAHbcPmxA@mail.gmail.com> <20110520161934.GA2386@barrios-desktop>
+ <BANLkTi=4C5YAxwAFWC6dsAPMR3xv6LP1hw@mail.gmail.com> <BANLkTimThVw7-PN6ypBBarqXJa1xxYA_Ow@mail.gmail.com>
+ <BANLkTint+Qs+cO+wKUJGytnVY3X1bp+8rQ@mail.gmail.com> <BANLkTinx+oPJFQye7T+RMMGzg9E7m28A=Q@mail.gmail.com>
+ <BANLkTik29nkn-DN9ui6XV4sy5Wo2jmeS9w@mail.gmail.com> <BANLkTikQd34QZnQVSn_9f_Mxc8wtJMHY0w@mail.gmail.com>
+ <BANLkTi=wVOPSv1BA_mZq9=r14Vu3kUh3_w@mail.gmail.com> <BANLkTimw23VP4yyuDed-KrLEcnfLMMA-fQ@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 24 May 2011 07:24:15 -0400
+X-Google-Sender-Auth: lCL0kLgvu8Ful3_n5LQGF-3Qbh0
+Message-ID: <BANLkTi=PffB2AmQ4m1XymxhnDUWsEXTwQA@mail.gmail.com>
+Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
+        riel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lukas Czerner <lczerner@redhat.com> writes:
+On Mon, May 23, 2011 at 9:34 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Tue, May 24, 2011 at 10:19 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+>> On Sun, May 22, 2011 at 7:12 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+>>> Could you test below patch based on vanilla 2.6.38.6?
+>>> The expect result is that system hang never should happen.
+>>> I hope this is last test about hang.
+>>>
+>>> Thanks.
+>>>
+>>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>>> index 292582c..1663d24 100644
+>>> --- a/mm/vmscan.c
+>>> +++ b/mm/vmscan.c
+>>> @@ -231,8 +231,11 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+>>>       if (scanned == 0)
+>>>               scanned = SWAP_CLUSTER_MAX;
+>>>
+>>> -       if (!down_read_trylock(&shrinker_rwsem))
+>>> -               return 1;       /* Assume we'll be able to shrink next time */
+>>> +       if (!down_read_trylock(&shrinker_rwsem)) {
+>>> +               /* Assume we'll be able to shrink next time */
+>>> +               ret = 1;
+>>> +               goto out;
+>>> +       }
+>>>
+>>>       list_for_each_entry(shrinker, &shrinker_list, list) {
+>>>               unsigned long long delta;
+>>> @@ -286,6 +289,8 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+>>>               shrinker->nr += total_scan;
+>>>       }
+>>>       up_read(&shrinker_rwsem);
+>>> +out:
+>>> +       cond_resched();
+>>>       return ret;
+>>>  }
+>>>
+>>> @@ -2331,7 +2336,7 @@ static bool sleeping_prematurely(pg_data_t
+>>> *pgdat, int order, long remaining,
+>>>        * must be balanced
+>>>        */
+>>>       if (order)
+>>> -               return pgdat_balanced(pgdat, balanced, classzone_idx);
+>>> +               return !pgdat_balanced(pgdat, balanced, classzone_idx);
+>>>       else
+>>>               return !all_zones_ok;
+>>>  }
+>>
+>> So far with this patch I can't reproduce the hang or the bogus OOM.
+>>
+>> To be completely clear, I have COMPACTION, MIGRATION, and THP off, I'm
+>> running 2.6.38.6, and I have exactly two patches applied.  One is the
+>> attached patch and the other is a the fpu.ko/aesni_intel.ko merger
+>> which I need to get dracut to boot my box.
+>>
+>> For fun, I also upgraded to 8GB of RAM and it still works.
+>>
+>
+> Hmm. Could you test it with enable thp and 2G RAM?
+> Isn't it a original test environment?
+> Please don't change test environment. :)
 
->> No. If you want to trim whole with some chunk like 1GB and periodically
->> (IIRC in xfstest), what do? We have to trim until ULLONG_MAX for each
->> 1GB?
->> 
->> Thanks.
->> 
->
-> What ? No, of course not. As I said, just go through 1G worth of filesystem
-> blocks skipping metadata. However we do have a special case when we
-> adjust start and len according to the first data block (which is only
-> the case of 1024B blocksize).
->
-> 	if (start < first_data_blk) {
-> 		len -= first_data_blk - start;
-> 		start = first_data_blk;
-> 	}
->
-> Which means that we just skip the first block (or whatever first data
-> block is). And this is the same as skipping metadata.
+The test that passed last night was an environment (hardware and
+config) that I had confirmed earlier as failing without the patch.
 
-Are you read my email? So, FAT adjust 2 blocks, ext* 1 block, and what
-is other? The middle was guaranteed as continued? So, which is end of
-blocks?
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+I just re-tested my original config (from a backup -- migration,
+compaction, and thp "always" are enabled).  I get bogus OOMs but not a
+hang.  (I'm running with mem=2G right now -- I'll swap the DIMMs back
+out later on if you want.)
+
+I attached the bogus OOM (actually several that happened in sequence).
+ They look readahead-related.  There was plenty of free swap space.
+
+--Andy
