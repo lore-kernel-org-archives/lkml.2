@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106Ab1EXKb7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 06:31:59 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:41506 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752412Ab1EXKb5 (ORCPT
-	<rfc822;groupwise-jlee@novell.com:4:1>);
-	Tue, 24 May 2011 06:31:57 -0400
-Message-Id: <4DDC15B9020000230002D051@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Tue, 24 May 2011 04:31:53 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <melchior.franz@gmail.com>
-Cc: "Joey Lee" <JLee@novell.com>, <carlos@strangeworlds.co.uk>,
-        <linux-kernel@vger.kernel.org>, <platform-driver-x86@vger.kernel.org>
-Subject: Re: [PATCH] support wlan hotkey on Acer Travelmate 5735Z
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755811Ab1EXKdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 06:33:33 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:60669 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752493Ab1EXKdb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 06:33:31 -0400
+Date: Tue, 24 May 2011 13:33:26 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: balbi@ti.com, "'Alan Stern'" <stern@rowland.harvard.edu>,
+        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+Message-ID: <20110524103325.GC14371@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <BD27AEAC-1E6D-480C-9E18-A970B992AD75@ti.com>
+ <Pine.LNX.4.44L0.1105231710590.2020-100000@iolanthe.rowland.org>
+ <00ed01cc19d6$e1fef520$a5fcdf60$@org>
+ <20110524101817.GB14371@legolas.emea.dhcp.ti.com>
+ <010501cc19fd$b8738320$295a8960$@org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="R+My9LyyhiUvIEro"
 Content-Disposition: inline
+In-Reply-To: <010501cc19fd$b8738320$295a8960$@org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 二，2011-05-24 於 10:35 +0200，Melchior FRANZ 提到：
-> From: Melchior FRANZ <mfranz@aon.at>
->     
-> On an Acer Travelmate 5735Z-452G32Mnss the WLAN-enable/disable key
-> doesn't send 0x1 as acpi event key code, but 0x3. This patch also
-> makes the module ignore hotkey acpi events for functions that are
-> already handled without. This avoids warning message "keyboard:
-> can't emulate rawmode for keycode 240".
-> 
-> Signed-off-by: Melchior FRANZ <mfranz@aon.at>
 
-Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+--R+My9LyyhiUvIEro
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank's for your patch, it also works to me on TravelMate 8572.
+Hi,
 
-Joey Lee
+On Tue, May 24, 2011 at 01:31:14PM +0300, Tanya Brokhman wrote:
+> > but then again, maybe you changed driver->speed
+> > to super and didn't provide superspeed descriptors.
+> >=20
+>=20
+> Yes :) The driver->speed is updated in usb_composite_probe() if
+> CONFIG_USB_GADGET_SUPERSPEED is defined.
+>=20
+> So, are we ok with this solution? The module parameter I mean?
+> Are you going to try the v13 in your branch? Please let me know how it go=
+es
+> and of course if you have any comments.
 
-> ---
-> 
-> This patch requires that Joey LEE's 64 bit fix be applied,
-> otherwise the whole acer-wmi module fails to load on this
-> machine. See https://bugzilla.kernel.org/show_bug.cgi?id=34142#c21
-> (0001-acer-wmi-allow-64-bits-return-buffer-from-WMI-metho.patch)
-> 
-> 
-> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> index 6cb55a6..fb4ee5f 100644
-> --- a/drivers/platform/x86/acer-wmi.c
-> +++ b/drivers/platform/x86/acer-wmi.c
-> @@ -98,13 +98,26 @@ enum acer_wmi_event_ids {
->  
->  static const struct key_entry acer_wmi_keymap[] = {
->  	{KE_KEY, 0x01, {KEY_WLAN} },     /* WiFi */
-> +	{KE_KEY, 0x03, {KEY_WLAN} },     /* WiFi */
->  	{KE_KEY, 0x12, {KEY_BLUETOOTH} },	/* BT */
->  	{KE_KEY, 0x21, {KEY_PROG1} },    /* Backup */
->  	{KE_KEY, 0x22, {KEY_PROG2} },    /* Arcade */
->  	{KE_KEY, 0x23, {KEY_PROG3} },    /* P_Key */
->  	{KE_KEY, 0x24, {KEY_PROG4} },    /* Social networking_Key */
-> +	{KE_IGNORE, 0x41, {KEY_MUTE} },
-> +	{KE_IGNORE, 0x42, {KEY_PREVIOUSSONG} },
-> +	{KE_IGNORE, 0x43, {KEY_NEXTSONG} },
-> +	{KE_IGNORE, 0x44, {KEY_PLAYPAUSE} },
-> +	{KE_IGNORE, 0x45, {KEY_STOP} },
-> +	{KE_IGNORE, 0x48, {KEY_VOLUMEUP} },
-> +	{KE_IGNORE, 0x49, {KEY_VOLUMEDOWN} },
-> +	{KE_IGNORE, 0x61, {KEY_SWITCHVIDEOMODE} },
-> +	{KE_IGNORE, 0x62, {KEY_BRIGHTNESSUP} },
-> +	{KE_IGNORE, 0x63, {KEY_BRIGHTNESSDOWN} },
->  	{KE_KEY, 0x64, {KEY_SWITCHVIDEOMODE} },	/* Display Switch */
-> +	{KE_IGNORE, 0x81, {KEY_SLEEP} },
->  	{KE_KEY, 0x82, {KEY_TOUCHPAD_TOGGLE} },	/* Touch Pad On/Off */
-> +	{KE_IGNORE, 0x83, {KEY_TOUCHPAD_TOGGLE} },
->  	{KE_END, 0}
->  };
->  
-> @@ -1345,7 +1358,7 @@ static void acer_wmi_notify(u32 value, void *context)
->  	case WMID_HOTKEY_EVENT:
->  		if (return_value.device_state) {
->  			u16 device_state = return_value.device_state;
-> -			pr_debug("deivces states: 0x%x\n", device_state);
-> +			pr_debug("device state: 0x%x\n", device_state);
->  			if (has_cap(ACER_CAP_WIRELESS))
->  				rfkill_set_sw_state(wireless_rfkill,
->  				!(device_state & ACER_WMID3_GDS_WIRELESS));
+I think it still gives the possibility for failure. I would rather not
+take that until all gadget drivers are fixed. We can help you doing that
+and we only change driver->speed after all gadget drivers have their
+"sensible defaults" SuperSpeed descriptors.
 
+What do you say ? Other than that, the module parameter is, like Alan
+Said, useful for debugging, so we might as well keep it.
 
+--=20
+balbi
+
+--R+My9LyyhiUvIEro
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN24l1AAoJEAv8Txj19kN17xYH/2sfevZxOkno7F1wcYEjlEPP
+x/BiOjjRdhNtKbljLXDOK5LgI9h9jp7GB1uUUNod7HgPBhIQSqgFUZWOJcRNsQXq
+uBHe8eQFOHu/HvGaLcMAboBjB5MCZLSpRS8OY/jk3jJG7d14UQfFXPstxf70NRBW
+mfr1oZIX2bmu38buB4Joq1n8R+omdUKOH5b8l+2+xd4l7XJiY+Uo42eoUM+SXo55
++rDxVPJLgKcOr0aJG+UUgIk/5Jirlp2Nj2LTCcWQSHSe3qXfhMsT/NvDm+dc5zBV
+SfST7ZsfClCxvK3gh7GCbsoHKWa9tYSOJfYzdgawSvN/xZOWeylOG9HcovalXbw=
+=6pZA
+-----END PGP SIGNATURE-----
+
+--R+My9LyyhiUvIEro--
