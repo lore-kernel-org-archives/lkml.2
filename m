@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732Ab1EXSoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:44:55 -0400
-Received: from enyo.dsw2k3.info ([195.71.86.239]:38221 "EHLO enyo.dsw2k3.info"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756569Ab1EXSow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:44:52 -0400
-X-Greylist: delayed 634 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 May 2011 14:44:52 EDT
-Date: Tue, 24 May 2011 20:34:05 +0200
-From: Matthias Schniedermeyer <ms@citd.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
-Subject: Re: (Short?) merge window reminder
-Message-ID: <20110524183405.GA14493@citd.de>
-References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
- <20110523192056.GC23629@elte.hu>
- <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+	id S932702Ab1EXSfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:35:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43044 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755659Ab1EXSfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 14:35:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1306259131.7171.7.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <20110523193035.GA9170@elte.hu> <BANLkTimUr+2k3_RAyncLX5yFYeV5JaJDsQ@mail.gmail.com>
+ <20110524060321.GA20904@elte.hu> <20110524061525.GA29815@elte.hu> <1306259131.7171.7.camel@sbsiddha-MOBL3.sc.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 24 May 2011 11:34:14 -0700
+Message-ID: <BANLkTi=bh+P07UPzhv9v=0x78o9+PUrCnw@mail.gmail.com>
+Subject: Re: [GIT PULL] more x86/apic changes for v2.6.40
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel J Blueman <daniel.blueman@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.05.2011 13:33, Linus Torvalds wrote:
-> On Mon, May 23, 2011 at 12:20 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > I really hope there's also a voice that tells you to wait until .42 before
-> > cutting 3.0.0! :-)
-> 
-> So I'm toying with 3.0 (and in that case, it really would be "3.0",
-> not "3.0.0" - the stable team would get the third digit rather than
-> the fourth one.
+On Tue, May 24, 2011 at 10:45 AM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+>
+> Patch appended(I am sorry, should have caught this earlier. Looks like
+> my system does keep the ioapic state intact during suspend/resume.)
 
-What about strictly 3 part versions? Just add a .0.
+Looks likely. My bisect just finished as I got this email, with
 
-3.0.0 - Release Kernel 3.0
-3.0.1 - Stable 1
-3.0.2 - Stable 2
-3.1.0 - Release Kernel 3.1
-3.1.1 - Stable 1
-...
+57a6f74023c7fd943160d7635bbc8d9f66e2ab54 is the first bad commit
+commit 57a6f74023c7fd943160d7635bbc8d9f66e2ab54
+Author: Suresh Siddha <suresh.b.siddha@intel.com>
+Date:   Wed May 18 16:31:36 2011 -0700
 
-Biggest problem is likely version phobics that get pimples when they see 
-trailing zeros. ;-)
+    x86, ioapic: Consolidate ioapic_saved_data[] into 'struct ioapic'
 
+    Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+    Cc: daniel.blueman@gmail.com
+    Link: http://lkml.kernel.org/r/20110518233157.830697056@sbsiddha-MOBL3.sc.intel.com
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
 
+:040000 040000 0ae77b7536a88d0ce4f789a7c870aa3103ccc1d5
+3460a9ec2b6a017d91b8fa6465e8d7d7cd8be71d M	arch
 
+and I'm now going back to top-of-git and applying your patch to verify
+that it fixes it. But it looks rather likely that it does.
 
-Bis denn
-
--- 
-Real Programmers consider "what you see is what you get" to be just as 
-bad a concept in Text Editors as it is in women. No, the Real Programmer
-wants a "you asked for it, you got it" text editor -- complicated, 
-cryptic, powerful, unforgiving, dangerous.
-
+                     Linus
