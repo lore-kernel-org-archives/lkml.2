@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab1EXLgT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 07:36:19 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43446 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab1EXLgS (ORCPT
+	id S1755187Ab1EXLiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 07:38:51 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:46487 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab1EXLiu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 07:36:18 -0400
+	Tue, 24 May 2011 07:38:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=qNBg8Ks/jzUn/aVXSpbm6BI8PRJ0Uc3S4loM6yQaR2WJJxwtEdI+evAu/MublwLD3L
-         bAJkIeLwSGm+R73KyU+g2huiMsY8bXo/XfR4h+DpdmqOw9jrcmNNcVm7ummyr02Q0vbG
-         68LgQpAZ84wTOO1wezgX1EN6aTEMlxouKxk5s=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] power_supply: Fix annotation for s3c_adc_battery_probe()
-Date: Tue, 24 May 2011 14:36:00 +0300
-User-Agent: KMail/1.13.6 (Linux/2.6.38-gentoo-r5-anarsoul; KDE/4.6.2; i686; ; )
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org
-References: <1306233962-7283-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1306233962-7283-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type:content-transfer-encoding;
+        b=Ejhj4z4CON/WUnAPC6PcK6bTcNLGbFcpFPe8eG3MVntFla0CG6+WdqGkDccmGtOHQl
+         ezwSxgdAiePdIrVrSJjEQJEVcxEIb6aZjXAe2lHy3BG2TXZXFwsC6985f9SqcdUcB5NX
+         VL6xOBGfLUAu2NiFIyLHAG7ch6r+SEbUAoPkU=
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: =?utf-8?Q?St=C3=A9phane?= Chatty <chatty@enac.fr>
+Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        USB list <linux-input@vger.kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid-multitouch: Add support for Lumio panels
+References: <1305725244-5327-1-git-send-email-benjamin.tissoires@enac.fr>
+	<87boyyo0gr.fsf@macbook.be.48ers.dk>
+	<BANLkTikPXHswWQqQHqd8fegotqoZPLErsQ@mail.gmail.com>
+	<87mxihd6kh.fsf@macbook.be.48ers.dk>
+	<BANLkTi=nyaVBhKB6bKLCqtykjMAaKfEt9A@mail.gmail.com>
+	<87ipt533cw.fsf@macbook.be.48ers.dk>
+	<17A85239-A316-43B7-B46C-0AD33B0D92C1@enac.fr>
+Date: Tue, 24 May 2011 13:38:44 +0200
+In-Reply-To: <17A85239-A316-43B7-B46C-0AD33B0D92C1@enac.fr> (=?utf-8?Q?=22?=
+ =?utf-8?Q?St=C3=A9phane?=
+	Chatty"'s message of "Tue, 24 May 2011 11:05:24 +0200")
+Message-ID: <874o4k9vln.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105241436.01179.anarsoul@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 May 2011 13:46:02 Mark Brown wrote:
-> A probe() function is used at device init time rather than system init
-> time.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>>>>> "Stéphane" == Stéphane Chatty <chatty@enac.fr> writes:
 
-Acked-by: Vasily Khoruzhick <anarsoul@gmail.com>
+Hi,
 
-> ---
->  drivers/power/s3c_adc_battery.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/power/s3c_adc_battery.c
-> b/drivers/power/s3c_adc_battery.c index d36c289..a675e31 100644
-> --- a/drivers/power/s3c_adc_battery.c
-> +++ b/drivers/power/s3c_adc_battery.c
-> @@ -266,7 +266,7 @@ static irqreturn_t s3c_adc_bat_charged(int irq, void
-> *dev_id) return IRQ_HANDLED;
->  }
-> 
-> -static int __init s3c_adc_bat_probe(struct platform_device *pdev)
-> +static int __devinit s3c_adc_bat_probe(struct platform_device *pdev)
->  {
->  	struct s3c_adc_client	*client;
->  	struct s3c_adc_bat_pdata *pdata = pdev->dev.platform_data;
+ Stéphane> Benjamin and I have been in touch with the Lumio people about
+ Stéphane> this device and their reply is "old firmware, not supported
+ Stéphane> anymore". Peter, is there a way to upgrade your firmware?
+
+Thanks. I've not been directly involved with this project earlier or in
+communication with Lumio, so I'm not 100% sure if this controller board
+is able to handle new firmware. This configuration uses 2 cameras, but
+we also have another setup with 4 cameras (where multitouch has been
+verified under Win7). That one uses a different controller board, and
+its firmware uses product ID 6 like on your setup.
+
+I'll try to contact Lumio to verify.
+
+-- 
+Bye, Peter Korsgaard
