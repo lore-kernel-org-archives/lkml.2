@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab1EXCwY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 22:52:24 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38012 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752516Ab1EXCwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 22:52:19 -0400
-X-Sasl-enc: u5oFM9TUTtOsOk8RyHWKFAeeDlunEsXlfNlKkdKTbaBm 1306205538
-Date: Mon, 23 May 2011 19:51:51 -0700
-From: Greg KH <greg@kroah.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-ID: <20110524025151.GA26939@kroah.com>
-References: <20110520161816.dda6f1fd.sfr@canb.auug.org.au>
- <BANLkTimjzzqTS1fELmpb0UivqseLsYOfPw@mail.gmail.com>
+	id S1753464Ab1EXCw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 22:52:27 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39346 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755192Ab1EXCwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 22:52:20 -0400
+Date: Tue, 24 May 2011 02:51:56 GMT
+From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
+Message-ID: <tip-0f61f3e4db71946292ef8d6d6df74b8fcf001646@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1306200686-17317-1-git-send-email-fweisbec@gmail.com>
+References: <1306200686-17317-1-git-send-email-fweisbec@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools: Fix sample type size calculation in 32 bits archs
+Git-Commit-ID: 0f61f3e4db71946292ef8d6d6df74b8fcf001646
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <BANLkTimjzzqTS1fELmpb0UivqseLsYOfPw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 24 May 2011 02:51:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 10:06:40PM -0400, Mike Frysinger wrote:
-> On Fri, May 20, 2011 at 02:18, Stephen Rothwell wrote:
-> > Caused by commit e66eed651fd1 ("list: remove prefetching from regular list
-> > iterators").
-> >
-> > I added the following patch for today:
-> 
-> probably should get added to whatever tree that commit is coming from
-> so we dont have bisect hell ?
-> 
-> more failures:
-> drivers/usb/host/isp1362-hcd.c: In function 'isp1362_write_ptd':
-> drivers/usb/host/isp1362-hcd.c:355: error: implicit declaration of
-> function 'prefetch'
-> drivers/usb/host/isp1362-hcd.c: In function 'isp1362_read_ptd':
-> drivers/usb/host/isp1362-hcd.c:377: error: implicit declaration of
-> function 'prefetchw'
-> make[3]: *** [drivers/usb/host/isp1362-hcd.o] Error 1
-> 
-> drivers/usb/musb/musb_core.c: In function 'musb_write_fifo':
-> drivers/usb/musb/musb_core.c:219: error: implicit declaration of
-> function 'prefetch'
-> make[3]: *** [drivers/usb/musb/musb_core.o] Error 1
-> 
-> although it seems like it should be fairly trivial to look at the
-> funcs in linux/prefetch.h, grep the tree, and find a pretty good list
-> of the files that are missing the include
+Commit-ID:  0f61f3e4db71946292ef8d6d6df74b8fcf001646
+Gitweb:     http://git.kernel.org/tip/0f61f3e4db71946292ef8d6d6df74b8fcf001646
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Tue, 24 May 2011 03:31:26 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 24 May 2011 04:33:24 +0200
 
-How did this not show up in linux-next?  Where did the patch that caused
-this show up from?
+perf tools: Fix sample type size calculation in 32 bits archs
 
-totally confused,
+The shift used here to count the number of bits set in
+the mask doesn't work above the low part for archs that
+are not 64 bits.
 
-greg k-h
+Fix the constant used for the shift.
+
+This fixes a 32-bit perf top failure reported by Eric Dumazet:
+
+	Can't parse sample, err = -14
+	Can't parse sample, err = -14
+	...
+
+Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Stephane Eranian <eranian@google.com
+Link: http://lkml.kernel.org/r/1306200686-17317-1-git-send-email-fweisbec@gmail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ tools/perf/util/event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 252b72a..6635fcd 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -42,7 +42,7 @@ int perf_sample_size(u64 sample_type)
+ 	int i;
+ 
+ 	for (i = 0; i < 64; i++) {
+-		if (mask & (1UL << i))
++		if (mask & (1ULL << i))
+ 			size++;
+ 	}
+ 
