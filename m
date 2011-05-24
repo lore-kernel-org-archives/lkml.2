@@ -1,354 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab1EXOig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 10:38:36 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:47862 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147Ab1EXOie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 10:38:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BW57x0+b6tkHjHJJttSZra4kbLdDr1+H1GuHPXGq2pVlCX6JRiD0wxaACMMosoB14Q
-         o18ubzQ8ZNBCXPxyj40YuWmoKCF32+Nqug9KVD9PP4KFKYs9/ZNrctxcNeecm+M+1Rj3
-         OtO4cfOuZIxwbYjyXeKSb49TLy6WaYWlh8aYE=
-From: yxlraid@gmail.com
-To: James.Bottomley@suse.de
-Cc: jslaby@suse.cz, linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yuxiangl@marvell.com, jfeng@marvell.com
-Subject: [PATCH 8/9] [SCSI] mvsas: update comments
-Date: Tue, 24 May 2011 22:38:10 +0800
-Message-Id: <1306247890-6532-1-git-send-email-yxlraid@gmail.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <mvsas-comments>
-References: <mvsas-comments>
+	id S932766Ab1EXOj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 10:39:27 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:51148 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932282Ab1EXOj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 10:39:26 -0400
+Date: Tue, 24 May 2011 15:39:37 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Rob Landley <rob@landley.net>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Subject: Re: MIPS panic in 2.6.39 (bisected to 7eaceaccab5f)
+Message-ID: <20110524143937.GB30117@linux-mips.org>
+References: <4DDB5673.5060206@landley.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DDB5673.5060206@landley.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiangliang Yu <yuxiangl@marvell.com>
+On Tue, May 24, 2011 at 01:55:47AM -0500, Rob Landley wrote:
 
--- Update comments: remove obsolete comments and add new comments
+> You can reproduce this under qemu by grabbing:
+> 
+>   http://landley.net/aboriginal/downloads/binaries/system-image-mips.tar.bz2
+> 
+> If you extract that tarball and ./run-emulator.sh it should boot
+> to a mips shell prompt.  Now build your own vmlinux to replace the
+> kernel in there with (using the attached .config), and try again,
+> you should get a panic message something like:
+> 
+> PID hash table entries: 512 (order: -1, 2048 bytes)
+> Dentry cache hash table entries: 16384 (order: 4, 65536 bytes)
+> Inode-cache hash table entries: 8192 (order: 3, 32768 bytes)
+> Primary instruction cache 2kB, VIPT, 2-way, linesize 16 bytes.
+> Primary data cache 2kB, 2-way, VIPT, no aliases, linesize 16 bytes
+> Writing ErrCtl register=00000000
+> Readback ErrCtl register=00000000
+> Memory: 125836k/127004k available (2172k kernel code, 1168k reserved, 507k data, 156k init, 0k highmem)
+> SLUB: Genslabs=9, HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+> NR_IRQS:256
+> CPU 0 Unable to handle kernel paging request at virtual address 00000080, epc == 803a09b0, ra == 803a0990
+> Oops[#1]:
+> Cpu 0
+> $ 0   : 00000000 00000050 1bdc0001 00000000
+> $ 4   : 00000018 00000000 00000001 00000000
+> $ 8   : fffffff8 00000001 00000000 fffffffc
+> $12   : fffffffc 00000000 00000008 fffffffc
+> $16   : 803bce58 803bef35 803c0000 803c0000
+> $20   : 80380000 00000000 00000000 00000000
+> $24   : 00000000 00000000                  
+> $28   : 80382000 80383ec8 00000000 803a0990
+> Hi    : 00000000
+> Lo    : 00000000
+> epc   : 803a09b0 arch_init_irq+0x38/0x15c
+>     Not tainted
+> ra    : 803a0990 arch_init_irq+0x18/0x15c
+> Status: 10000002    KERNEL EXL 
+> Cause : 0080000c
+> BadVA : 00000080
+> PrId  : 00019300 (MIPS 24Kc)
+> Process swapper (pid: 0, threadinfo=80382000, task=803855c0, tls=00000000)
+> Stack : 803a17d4 87804000 803bce58 803bef35 803c0000 803c0000 8039fac4 8039fac4
+>         00000000 803bce58 80380f04 0000004a 8039f454 00000000 803beee0 00000000
+>         00000000 00000000 00000000 00000000 00000000 80315f00 00000000 00000000
+>         00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+>         00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+>         ...
+> Call Trace:
+> [<803a09b0>] arch_init_irq+0x38/0x15c
+> [<8039fac4>] start_kernel+0x1f0/0x33c
+> [<80315f00>] kernel_entry+0x0/0x94
+> 
+> 
+> Code: 8c437048  3c021bdc  34420001 <ac620080> 24030001  3c02803c  080e827d  ac437040  8c43701c 
+> 
+> 
+> I bisected it the problem to commit
+> 7eaceaccab5f40bbfda044629a6298616aeaed50, but have no idea what
+> the actual bug is.  (Other than "a null pointer dereference from
+> arch_init_irq", I just dunno _why_.)
 
-Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
----
- drivers/scsi/mvsas/mv_64xx.c  |   17 ++++-------------
- drivers/scsi/mvsas/mv_94xx.c  |   19 ++++++-------------
- drivers/scsi/mvsas/mv_94xx.h  |   24 ++++++++++++------------
- drivers/scsi/mvsas/mv_chips.h |    2 --
- drivers/scsi/mvsas/mv_defs.h  |    2 +-
- drivers/scsi/mvsas/mv_init.c  |    1 -
- drivers/scsi/mvsas/mv_sas.c   |   14 +-------------
- 7 files changed, 24 insertions(+), 55 deletions(-)
+That commit just does not seem to be the answer.
 
-diff --git a/drivers/scsi/mvsas/mv_64xx.c b/drivers/scsi/mvsas/mv_64xx.c
-index bc75ba7..dec5f96 100644
---- a/drivers/scsi/mvsas/mv_64xx.c
-+++ b/drivers/scsi/mvsas/mv_64xx.c
-@@ -33,7 +33,6 @@ static void mvs_64xx_detect_porttype(struct mvs_info *mvi, int i)
- 	u32 reg;
- 	struct mvs_phy *phy = &mvi->phy[i];
- 
--	/* TODO check & save device type */
- 	reg = mr32(MVS_GBL_PORT_TYPE);
- 	phy->phy_type &= ~(PORT_TYPE_SAS | PORT_TYPE_SATA);
- 	if (reg & MODE_SAS_SATA & (1 << i))
-@@ -63,7 +62,6 @@ static void __devinit mvs_64xx_phy_hacks(struct mvs_info *mvi)
- 	mvs_phy_hacks(mvi);
- 
- 	if (!(mvi->flags & MVF_FLAG_SOC)) {
--		/* TEST - for phy decoding error, adjust voltage levels */
- 		for (i = 0; i < MVS_SOC_PORTS; i++) {
- 			mvs_write_port_vsr_addr(mvi, i, VSR_PHY_MODE8);
- 			mvs_write_port_vsr_data(mvi, i, 0x2F0);
-@@ -375,13 +373,7 @@ static int __devinit mvs_64xx_init(struct mvs_info *mvi)
- 		mvs_update_phyinfo(mvi, i, 1);
- 	}
- 
--	/* FIXME: update wide port bitmaps */
--
- 	/* little endian for open address and command table, etc. */
--	/*
--	 * it seems that ( from the spec ) turning on big-endian won't
--	 * do us any good on big-endian machines, need further confirmation
--	 */
- 	cctl = mr32(MVS_CTL);
- 	cctl |= CCTL_ENDIAN_CMD;
- 	cctl |= CCTL_ENDIAN_DATA;
-@@ -394,8 +386,8 @@ static int __devinit mvs_64xx_init(struct mvs_info *mvi)
- 	tmp |= PCS_CMD_RST;
- 	tmp &= ~PCS_SELF_CLEAR;
- 	mw32(MVS_PCS, tmp);
--	/* interrupt coalescing may cause missing HW interrput in some case,
--	 * and the max count is 0x1ff, while our max slot is 0x200,
-+	/*
-+	 * the max count is 0x1ff, while our max slot is 0x200,
- 	 * it will make count 0.
- 	 */
- 	tmp = 0;
-@@ -632,7 +624,6 @@ static void mvs_64xx_phy_work_around(struct mvs_info *mvi, int i)
- {
- 	u32 tmp;
- 	struct mvs_phy *phy = &mvi->phy[i];
--	/* workaround for HW phy decoding error on 1.5g disk drive */
- 	mvs_write_port_vsr_addr(mvi, i, VSR_PHY_MODE6);
- 	tmp = mvs_read_port_vsr_data(mvi, i);
- 	if (((phy->phy_status & PHY_NEG_SPP_PHYS_LINK_RATE_MASK) >>
-@@ -765,8 +756,8 @@ static void mvs_64xx_tune_interrupt(struct mvs_info *mvi, u32 time)
- {
- 	void __iomem *regs = mvi->regs;
- 	u32 tmp = 0;
--	/* interrupt coalescing may cause missing HW interrput in some case,
--	 * and the max count is 0x1ff, while our max slot is 0x200,
-+	/*
-+	 * the max count is 0x1ff, while our max slot is 0x200,
- 	 * it will make count 0.
- 	 */
- 	if (time == 0) {
-diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
-index 1276e49..f4a995c 100644
---- a/drivers/scsi/mvsas/mv_94xx.c
-+++ b/drivers/scsi/mvsas/mv_94xx.c
-@@ -460,13 +460,7 @@ static int __devinit mvs_94xx_init(struct mvs_info *mvi)
- 		mvs_update_phyinfo(mvi, i, 1);
- 	}
- 
--	/* FIXME: update wide port bitmaps */
--
- 	/* little endian for open address and command table, etc. */
--	/*
--	 * it seems that ( from the spec ) turning on big-endian won't
--	 * do us any good on big-endian machines, need further confirmation
--	 */
- 	cctl = mr32(MVS_CTL);
- 	cctl |= CCTL_ENDIAN_CMD;
- 	cctl &= ~CCTL_ENDIAN_OPEN;
-@@ -478,8 +472,8 @@ static int __devinit mvs_94xx_init(struct mvs_info *mvi)
- 	tmp |= PCS_CMD_RST;
- 	tmp &= ~PCS_SELF_CLEAR;
- 	mw32(MVS_PCS, tmp);
--	/* interrupt coalescing may cause missing HW interrput in some case,
--	 * and the max count is 0x1ff, while our max slot is 0x200,
-+	/*
-+	 * the max count is 0x1ff, while our max slot is 0x200,
- 	 * it will make count 0.
- 	 */
- 	tmp = 0;
-@@ -488,6 +482,7 @@ static int __devinit mvs_94xx_init(struct mvs_info *mvi)
- 	else
- 		mw32(MVS_INT_COAL, MVS_CHIP_SLOT_SZ | COAL_EN);
- 
-+	/* default interrupt coalescing time is 128us */
- 	tmp = 0x10000 | interrupt_coalescing;
- 	mw32(MVS_INT_COAL_TMOUT, tmp);
- 
-@@ -745,7 +740,7 @@ static int mvs_94xx_oob_done(struct mvs_info *mvi, int i)
- {
- 	u32 phy_st;
- 	phy_st = mvs_read_phy_ctl(mvi, i);
--	if (phy_st & PHY_READY_MASK)	/* phy ready */
-+	if (phy_st & PHY_READY_MASK)
- 		return 1;
- 	return 0;
- }
-@@ -770,7 +765,6 @@ static void mvs_94xx_get_att_identify_frame(struct mvs_info *mvi, int port_id,
- 	int i;
- 	u32 id_frame[7];
- 
--	/* mvs_hexdump(28, (u8 *)id_frame, 0); */
- 	for (i = 0; i < 7; i++) {
- 		mvs_write_port_cfg_addr(mvi, port_id,
- 					CONFIG_ATT_ID_FRAME0 + i * 4);
-@@ -778,7 +772,6 @@ static void mvs_94xx_get_att_identify_frame(struct mvs_info *mvi, int port_id,
- 		mv_dprintk("94xx phy %d atta frame %d %x.\n",
- 			port_id + mvi->id * mvi->chip->n_phy, i, id_frame[i]);
- 	}
--	/* mvs_hexdump(28, (u8 *)id_frame, 0); */
- 	memcpy(id, id_frame, 28);
- }
- 
-@@ -962,8 +955,8 @@ static void mvs_94xx_tune_interrupt(struct mvs_info *mvi, u32 time)
- {
- 	void __iomem *regs = mvi->regs;
- 	u32 tmp = 0;
--	/* interrupt coalescing may cause missing HW interrput in some case,
--	 * and the max count is 0x1ff, while our max slot is 0x200,
-+	/*
-+	 * the max count is 0x1ff, while our max slot is 0x200,
- 	 * it will make count 0.
- 	 */
- 	if (time == 0) {
-diff --git a/drivers/scsi/mvsas/mv_94xx.h b/drivers/scsi/mvsas/mv_94xx.h
-index b42532b..77a1e52 100644
---- a/drivers/scsi/mvsas/mv_94xx.h
-+++ b/drivers/scsi/mvsas/mv_94xx.h
-@@ -121,18 +121,18 @@ enum pci_cfg_registers {
- 
- /*  SAS/SATA Vendor Specific Port Registers */
- enum sas_sata_vsp_regs {
--	VSR_PHY_STAT		= 0x00 * 4, /* Phy Status */
--	VSR_PHY_MODE1		= 0x01 * 4, /* phy tx */
--	VSR_PHY_MODE2		= 0x02 * 4, /* tx scc */
--	VSR_PHY_MODE3		= 0x03 * 4, /* pll */
--	VSR_PHY_MODE4		= 0x04 * 4, /* VCO */
--	VSR_PHY_MODE5		= 0x05 * 4, /* Rx */
--	VSR_PHY_MODE6		= 0x06 * 4, /* CDR */
--	VSR_PHY_MODE7		= 0x07 * 4, /* Impedance */
--	VSR_PHY_MODE8		= 0x08 * 4, /* Voltage */
--	VSR_PHY_MODE9		= 0x09 * 4, /* Test */
--	VSR_PHY_MODE10		= 0x0A * 4, /* Power */
--	VSR_PHY_MODE11		= 0x0B * 4, /* Phy Mode */
-+	VSR_PHY_STAT		= 0x00 * 4, /* Phy Interrupt Status */
-+	VSR_PHY_MODE1		= 0x01 * 4, /* phy Interrupt Enable */
-+	VSR_PHY_MODE2		= 0x02 * 4, /* Phy Configuration */
-+	VSR_PHY_MODE3		= 0x03 * 4, /* Phy Status */
-+	VSR_PHY_MODE4		= 0x04 * 4, /* Phy Counter 0 */
-+	VSR_PHY_MODE5		= 0x05 * 4, /* Phy Counter 1 */
-+	VSR_PHY_MODE6		= 0x06 * 4, /* Event Counter Control */
-+	VSR_PHY_MODE7		= 0x07 * 4, /* Event Counter Select */
-+	VSR_PHY_MODE8		= 0x08 * 4, /* Event Counter 0 */
-+	VSR_PHY_MODE9		= 0x09 * 4, /* Event Counter 1 */
-+	VSR_PHY_MODE10		= 0x0A * 4, /* Event Counter 2 */
-+	VSR_PHY_MODE11		= 0x0B * 4, /* Event Counter 3 */
- 	VSR_PHY_ACT_LED		= 0x0C * 4, /* Activity LED control */
- 
- 	VSR_PHY_FFE_CONTROL	= 0x10C,
-diff --git a/drivers/scsi/mvsas/mv_chips.h b/drivers/scsi/mvsas/mv_chips.h
-index 0a11bc7..bcc4080 100644
---- a/drivers/scsi/mvsas/mv_chips.h
-+++ b/drivers/scsi/mvsas/mv_chips.h
-@@ -164,7 +164,6 @@ static inline void __devinit mvs_phy_hacks(struct mvs_info *mvi)
- {
- 	u32 tmp;
- 
--	/* workaround for SATA R-ERR, to ignore phy glitch */
- 	tmp = mvs_cr32(mvi, CMD_PHY_TIMER);
- 	tmp &= ~(1 << 9);
- 	tmp |= (1 << 10);
-@@ -179,7 +178,6 @@ static inline void __devinit mvs_phy_hacks(struct mvs_info *mvi)
- 	tmp |= 0x3fff;
- 	mvs_cw32(mvi, CMD_SAS_CTL0, tmp);
- 
--	/* workaround for WDTIMEOUT , set to 550 ms */
- 	mvs_cw32(mvi, CMD_WD_TIMER, 0x7a0000);
- 
- 	/* not to halt for different port op during wideport link change */
-diff --git a/drivers/scsi/mvsas/mv_defs.h b/drivers/scsi/mvsas/mv_defs.h
-index 1927e1b..dec7cad 100644
---- a/drivers/scsi/mvsas/mv_defs.h
-+++ b/drivers/scsi/mvsas/mv_defs.h
-@@ -160,7 +160,7 @@ enum hw_register_bits {
- 	TXQ_CMD_SSP		= 1,		/* SSP protocol */
- 	TXQ_CMD_SMP		= 2,		/* SMP protocol */
- 	TXQ_CMD_STP		= 3,		/* STP/SATA protocol */
--	TXQ_CMD_SSP_FREE_LIST	= 4,		/* add to SSP targ free list */
-+	TXQ_CMD_SSP_FREE_LIST	= 4,		/* add to SSP target free list */
- 	TXQ_CMD_SLOT_RESET	= 7,		/* reset command slot */
- 	TXQ_MODE_I		= (1U << 28),	/* mode: 0=target,1=initiator */
- 	TXQ_MODE_TARGET 	= 0,
-diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
-index b28ee5b..cf4aaa9 100644
---- a/drivers/scsi/mvsas/mv_init.c
-+++ b/drivers/scsi/mvsas/mv_init.c
-@@ -405,7 +405,6 @@ err_out:
- 	return NULL;
- }
- 
--/* move to PCI layer or libata core? */
- static int pci_go_64(struct pci_dev *pdev)
- {
- 	int rc;
-diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
-index 31ca8fe..4958fef 100644
---- a/drivers/scsi/mvsas/mv_sas.c
-+++ b/drivers/scsi/mvsas/mv_sas.c
-@@ -102,7 +102,6 @@ struct mvs_info *mvs_find_dev_mvi(struct domain_device *dev)
- 
- }
- 
--/* FIXME */
- int mvs_find_dev_phyno(struct domain_device *dev, int *phyno)
- {
- 	unsigned long i = 0, j = 0, n = 0, num = 0;
-@@ -177,7 +176,6 @@ void mvs_phys_reset(struct mvs_info *mvi, u32 phy_mask, int hard)
- 	}
- }
- 
--/* FIXME: locking? */
- int mvs_phy_control(struct asd_sas_phy *sas_phy, enum phy_func func,
- 			void *funcdata)
- {
-@@ -504,11 +502,8 @@ static int mvs_task_prep_ata(struct mvs_info *mvi,
- 			flags |= MCH_ATAPI;
- 	}
- 
--	/* FIXME: fill in port multiplier number */
--
- 	hdr->flags = cpu_to_le32(flags);
- 
--	/* FIXME: the low order order 5 bits for the TAG if enable NCQ */
- 	if (task->ata_task.use_ncq && mvs_get_ncq_tag(task, &hdr_tag))
- 		task->ata_task.fis.sector_count |= (u8) (hdr_tag << 3);
- 	else
-@@ -552,9 +547,6 @@ static int mvs_task_prep_ata(struct mvs_info *mvi,
- 	buf_tmp_dma += i;
- 
- 	/* region 4: status buffer (larger the PRD, smaller this buf) ****** */
--	/* FIXME: probably unused, for SATA.  kept here just in case
--	 * we get a STP/SATA error information record
--	 */
- 	slot->response = buf_tmp;
- 	hdr->status_buf = cpu_to_le64(buf_tmp_dma);
- 	if (mvi->flags & MVF_FLAG_SOC)
-@@ -1126,7 +1118,6 @@ static void *mvs_get_d2h_reg(struct mvs_info *mvi, int i, void *buf)
- 	MVS_CHIP_DISP->write_port_cfg_addr(mvi, i, PHYR_SATA_SIG0);
- 	s[0] = cpu_to_le32(MVS_CHIP_DISP->read_port_cfg_data(mvi, i));
- 
--	/* Workaround: take some ATAPI devices for ATA */
- 	if (((s[1] & 0x00FFFFFF) == 0x00EB1401) && (*(u8 *)&s[3] == 0x01))
- 		s[1] = 0x00EB1401 | (*((u8 *)&s[1] + 3) & 0x10);
- 
-@@ -1433,7 +1424,6 @@ static void mvs_tmf_timedout(unsigned long data)
- 	complete(&task->completion);
- }
- 
--/* XXX */
- #define MVS_TASK_TIMEOUT 20
- static int mvs_exec_internal_tmf_task(struct domain_device *dev,
- 			void *parameter, u32 para_len, struct mvs_tmf_task *tmf)
-@@ -1577,7 +1567,6 @@ int mvs_I_T_nexus_reset(struct domain_device *dev)
- 	mv_printk("%s for device[%x]:rc= %d\n",
- 		__func__, mvi_dev->device_id, rc);
- 
--	/* housekeeper */
- 	spin_lock_irqsave(&mvi->lock, flags);
- 	mvs_release_task(mvi, dev);
- 	spin_unlock_irqrestore(&mvi->lock, flags);
-@@ -1681,7 +1670,6 @@ int mvs_abort_task(struct sas_task *task)
- 
- 	} else if (task->task_proto & SAS_PROTOCOL_SATA ||
- 		task->task_proto & SAS_PROTOCOL_STP) {
--		/* to do free register_set */
- 		if (SATA_DEV == dev->dev_type) {
- 			struct mvs_slot_info *slot = task->lldd_task;
- 			u32 slot_idx = (u32)(slot - mvi->slot_info);
-@@ -1901,6 +1889,7 @@ int mvs_slot_complete(struct mvs_info *mvi, u32 rx_desc, u32 flags)
- 		return -1;
- 	}
- 
-+	/* when no device attaching, go ahead and complete by error handling*/
- 	if (unlikely(!mvi_dev || flags)) {
- 		if (!mvi_dev)
- 			mv_dprintk("port has not device.\n");
-@@ -2017,7 +2006,6 @@ void mvs_release_task(struct mvs_info *mvi,
- 		      struct domain_device *dev)
- {
- 	int i, phyno[WIDE_PORT_MAX_PHY], num;
--	/* housekeeper */
- 	num = mvs_find_dev_phyno(dev, phyno);
- 	for (i = 0; i < num; i++)
- 		mvs_do_release_task(mvi, phyno[i], dev);
--- 
-1.7.4.4
+Can you provide the kernel disassembly for the arch_init_irq() function?
 
+Also, does the problem go away if you switch from CONFIG_MIPS_MT_SMP to
+CONFIG_MIPS_MT_DISABLED?  The former is designed to run on all MIPS CPUs
+and on a non-MT enabled CPU core it should just disable MT and run happily
+anyway.  I know there was work on MT support being done by Thiemo Seufer
+and I wonder if that ever made it into qemu and if so, if qemu gets MT
+right.
+
+  Ralf
