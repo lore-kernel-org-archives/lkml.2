@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab1EXNNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 09:13:06 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:44583 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932222Ab1EXNNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 09:13:05 -0400
-From: Florian Fainelli <ffainelli@freebox.fr>
-Organization: Freebox
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH] TTY: export NR_LDISC and N_* line discipline numbers to user-space
-Date: Tue, 24 May 2011 15:17:23 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-server; KDE/4.6.2; x86_64; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>, Maxime Bizon <mbizon@freebox.fr>,
-        Tilman Schmidt <tilman@imap.cc>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <201105241043.03347.ffainelli@freebox.fr> <20110524124044.GD31517@suse.de>
-In-Reply-To: <20110524124044.GD31517@suse.de>
+	id S1756351Ab1EXNSn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:18:43 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60643 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756109Ab1EXNSk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 09:18:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=f6Gy7JtZxAwcnmGL/GT4KkkWmym8dTW2SjB8d7+ZWpqV30qPUpV3rTfk4S3oWDs+Tz
+         DCObiv4gu7V/gcPnAVzOYTEqbXTj5HWnp08eM2MAcTY2aUOEY5OhUyHYhKlwJ0J0P4lV
+         NfwYHiDeVpjImn+7cozO5B51wNhu/3oTxnGmc=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105241517.23166.ffainelli@freebox.fr>
+In-Reply-To: <alpine.LNX.2.01.1105241500410.23085@frira.zrqbmnf.qr>
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
+	<20110523192056.GC23629@elte.hu>
+	<BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+	<20110523231721.GM10009@thunk.org>
+	<4DDAEC68.30803@zytor.com>
+	<BANLkTikGfVSAMY2a2yiXaNpvBVvF8YdMEA@mail.gmail.com>
+	<alpine.LNX.2.01.1105241409280.15351@frira.zrqbmnf.qr>
+	<BANLkTimCXVdVa6KLRG8GJR1gJY=7_5SkOA@mail.gmail.com>
+	<alpine.LNX.2.01.1105241500410.23085@frira.zrqbmnf.qr>
+Date: Tue, 24 May 2011 15:18:39 +0200
+Message-ID: <BANLkTinNK+9XijCN0YGXyvLQ8_npPTG2cQ@mail.gmail.com>
+Subject: Re: (Short?) merge window reminder
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-mm <linux-mm"@kvack.medozas.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2011/5/24 Jan Engelhardt <jengelh@medozas.de>:
+> On Tuesday 2011-05-24 14:30, Jacek Luczak wrote:
+>
+>>2011/5/24 Jan Engelhardt <jengelh@medozas.de>:
+>>> On Tuesday 2011-05-24 01:33, Linus Torvalds wrote:
+>>>
+>>>>Another advantage of switching numbering models (ie 3.0 instead of
+>>>>2.8.x) would be that it would also make the "odd numbers are also
+>>>>numbers" transition much more natural.
+>>>>
+>>>>Because of our historical even/odd model, I wouldn't do a 2.7.x -
+>>>>there's just too much history of 2.1, 2.3, 2.5 being development
+>>>>trees.
+>>>
+>>> .oO(Though once 2.{7 or more, odd} trickle into the distros, it would
+>>> become pretty much apparent that they are not devel.)
+>>>
+>>>>And then in another few years (probably before getting close to 3.40,
+>>>>so I'm not going to make a big deal of 3 = "third decade"), I'd just
+>>>>do 4.0 etc.
+>>>
+>>> While 2.6 has certainly worn out, already thinking of a 4.0 is highly
+>>> reminiscient of the version number arms race Firefox and ChromeBrowser
+>>> are doing currently.
+>>>
+>>>>Because all our releases are supposed to be stable releases these
+>>>>days, and if we get rid of one level of numbering, I feel perfectly
+>>>>fine with getting rid of the even/odd history too.
+>>>
+>>> If I remember past-time discussions right, ELF was the contributing
+>>> factor to bump the major number to 2.0 back then; ever since 2.0, no
+>>> similarly breakthrough-ing event has occurred.
+>>
+>>What then about BKL removal? Nice place to celebrate with version jump
+>>and heaving some beers.
+>
+> The BKL going away was not a change that would require new
+> userspace programs.
 
-On Tuesday 24 May 2011 14:40:44 Greg KH wrote:
-> On Tue, May 24, 2011 at 10:43:03AM +0200, Florian Fainelli wrote:
-> > From: Florian Fainelli <ffainelli@freebox.fr>
-> > 
-> > Since commit (4564f9e5: consolidate line discipline number definitions)
-> > the patch moved all line discipline number from a per-architecture
-> > termios.h to a shared one: tty.h. However, prior to this consolidation
-> > work, the line discipline numbers were outside of an ifdef
-> > __KERNEL__/endif block so these numbers used to be exported to
-> > user-space.
-> > 
-> > Since such numbers are kernel ABI anyway, and tty.h is already included
-> > for user- space header processing, just move these relevant defines
-> > outside of the ifdef __KERNEL__/endif block in include/linux/tty.h.
-> 
-> Any reason you didn't copy _any_ of the people who signed off on that
-> patch, or the original author of that patch?
+True but as you I guess - kind off - notice there's no such event that
+would launch fireworks and we get features smoothly. By that then we
+should celebrate killing old nightmares aka BKL. It's more like - lets
+not find the reason but include one just to feel better. At the end
+the simplified  version convention is the best reason to do this cut
+off. I even plan to send a truck full of chickens to Linus if this
+will convince him :) Then, while describing new kernel deployment, I
+won't need to pronounce the cool sounding - ,,Mika so I've now
+installed two(dot)six(dot)thirty-five(dot)forty-one(dash)one
+version.''
 
-No particular reason but my mistake, fixed that.
-
-> 
-> Anyway, this is been this way for four years, since the 2.6.21 kernel
-> release.  Since no one has noticed, or complained, since then, how much
-> a problem is this really?
-
-This is a problem because you may have out of tree drivers using a line 
-discpline number, and you do not want your companion user-space application to 
-have to use a different line discpline number but the one the kernel should 
-provide.
-
-> 
-> Meaning, why has it taken this long for anyone to notice?
-
-- long standing user-space applications such as pppd got their N_PPP long ago, 
-and do not have to worry about N_PPP being renumbered so they can just define 
-it in pppd's sources it won't break
-
-- I started implementing a line discipline driver only a couple of months ago 
-and then realized that such ABI should have been exported
---
-Florian
+Cheers,
+-Jacek
