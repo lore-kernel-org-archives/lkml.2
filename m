@@ -1,113 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab1EXI5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 04:57:10 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:57350 "EHLO
+	id S1755200Ab1EXJEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 05:04:21 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:60529 "EHLO
 	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582Ab1EXI5I convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754950Ab1EXJEU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 04:57:08 -0400
+	Tue, 24 May 2011 05:04:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=fJuZsdZGh7hjNkdexyPqotarlpjUTrhFj6dD/EcS3E7A5NwwjZmNa62+HlGSJlWOY4
-         VJNb60KGnDWxnQM5zrMiFrQVjTZl7kGLpP11vR1KWi8ZFc5ywkUO8eZtFPN4Vuaa1bI+
-         s2Sv0LB00DlvRCgfJHz5Q/azIXQTlCmQrR3Uw=
+        b=kXPGAsBh1iPCR4+bm11ZROCqigW+dxDy0HT8A/PpyEwqConF1f1C2F3nVIEELIS/Fx
+         v4X8FDT1XFPw0VmppOWRxG/RGuhO2yXLCOe/o7Viai94fAMQWoBMW3fFy6/yfSQQpSRp
+         VkB9s1wVYN+RaODmBrnOGkL+2Ahin5izPqvlM=
 MIME-Version: 1.0
-In-Reply-To: <4DDB6F48.1010809@jp.fujitsu.com>
-References: <4DCDA347.9080207@cray.com>
-	<BANLkTikiXUzbsUkzaKZsZg+5ugruA2JdMA@mail.gmail.com>
-	<4DD2991B.5040707@cray.com>
-	<BANLkTimYEs315jjY9OZsL6--mRq3O_zbDA@mail.gmail.com>
-	<20110520164924.GB2386@barrios-desktop>
-	<4DDB3A1E.6090206@jp.fujitsu.com>
-	<BANLkTinkcu5j1H8tHNT4aTmOL-GXfSwPQw@mail.gmail.com>
-	<4DDB6F48.1010809@jp.fujitsu.com>
-Date: Tue, 24 May 2011 17:57:07 +0900
-Message-ID: <BANLkTimbu0pDNb1cHGu0B6P-foRHQ2uiWw@mail.gmail.com>
-Subject: Re: Unending loop in __alloc_pages_slowpath following OOM-kill; rfc: patch.
+In-Reply-To: <4DDB711B.8010408@jp.fujitsu.com>
+References: <4DD61F80.1020505@jp.fujitsu.com>
+	<4DD6207E.1070300@jp.fujitsu.com>
+	<BANLkTinaHki1oA4O3+FsoPDtFTLfqwRadA@mail.gmail.com>
+	<4DDB0FB2.9050300@jp.fujitsu.com>
+	<BANLkTinKm=m8zdPGN0Trpy4HtEFyxMYzPA@mail.gmail.com>
+	<4DDB711B.8010408@jp.fujitsu.com>
+Date: Tue, 24 May 2011 18:04:19 +0900
+Message-ID: <BANLkTik5tXv+k9tk2egXgmBRzcBD5Avjkw@mail.gmail.com>
+Subject: Re: [PATCH 4/5] oom: don't kill random process
 From: Minchan Kim <minchan.kim@gmail.com>
 To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: abarry@cray.com, akpm@linux-foundation.org, linux-mm@kvack.org,
-        mgorman@suse.de, riel@redhat.com, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
+        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 5:41 PM, KOSAKI Motohiro
+On Tue, May 24, 2011 at 5:49 PM, KOSAKI Motohiro
 <kosaki.motohiro@jp.fujitsu.com> wrote:
->>> I'm sorry I missed this thread long time.
+> (2011/05/24 17:46), Minchan Kim wrote:
+>> On Tue, May 24, 2011 at 10:53 AM, KOSAKI Motohiro
+>> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>>>>> +       /*
+>>>>> +        * chosen_point==1 may be a sign that root privilege bonus is too
+>>>>> large
+>>>>> +        * and we choose wrong task. Let's recalculate oom score without
+>>>>> the
+>>>>> +        * dubious bonus.
+>>>>> +        */
+>>>>> +       if (protect_root&&  (chosen_points == 1)) {
+>>>>> +               protect_root = 0;
+>>>>> +               goto retry;
+>>>>> +       }
+>>>>
+>>>> The idea is good to me.
+>>>> But once we meet it, should we give up protecting root privileged
+>>>> processes?
+>>>> How about decaying bonus point?
+>>>
+>>> After applying my patch, unprivileged process never get score-1. (note,
+>>> mapping
+>>> anon pages naturally makes to increase nr_ptes)
 >>
->> No problem. It would be better than not review.
+>> Hmm, If I understand your code correctly, unprivileged process can get
+>> a score 1 by 3% bonus.
 >
-> thx.
->
->
->>> In this case, I think we should call drain_all_pages(). then following
->>> patch is better.
->>
->> Strictly speaking, this problem isn't related to drain_all_pages.
->> This problem caused by lru empty but I admit it could work well if
->> your patch applied.
->> So yours could help, too.
->>
->>> However I also think your patch is valuable. because while the task is
->>> sleeping in wait_iff_congested(), an another task may free some pages.
->>> thus, rebalance path should try to get free pages. iow, you makes sense.
->>
->> Yes.
->> Off-topic.
->> I would like to move cond_resched below get_page_from_freelist in
->> __alloc_pages_direct_reclaim. Otherwise, it is likely we can be stolen
->> pages to other processes.
->> One more benefit is that if it's apparently OOM path(ie,
->> did_some_progress = 0), we can reduce OOM kill latency due to remove
->> unnecessary cond_resched.
->
-> I agree. Can you please mind to send a patch?
+> 3% bonus is for privileged process. :)
 
-I had but at that time, Andrew had a concern.
-I will resend it when I have a time. Let's discuss, again.
+OMG. Typo.
+Anyway, my point is following as.
+If chose_point is 1, it means root bonus is rather big. Right?
+If is is, your patch does second loop with completely ignore of bonus
+for root privileged process.
+My point is that let's not ignore bonus completely. Instead of it,
+let's recalculate 1.5% for example.
 
->
->
->>> So, I'd like to propose to merge both your and my patch.
->>
->> Recently, there was discussion on drain_all_pages with Wu.
->> He saw much overhead in 8-core system, AFAIR.
->> I Cced Wu.
->>
->> How about checking per-cpu before calling drain_all_pages() than
->> unconditional calling?
->> if (per_cpu_ptr(zone->pageset, smp_processor_id())
->>     drain_all_pages();
->>
->> Of course, It can miss other CPU free pages. But above routine assume
->> local cpu direct reclaim is successful but it failed by per-cpu. So I
->> think it works.
->
-> Can you please tell me previous discussion url or mail subject?
-> I mean, if it is costly and performance degression risk, we don't have to
-> take my idea.
-
-Yes. You could see it by https://lkml.org/lkml/2011/4/30/81.
-
->
-> Thanks.
->
->
->>
->> Thanks for good suggestion and Reviewed-by, KOSAKI.
->
->
->
-
-
-
+But I don't insist on my idea.
+Thanks.
 -- 
 Kind regards,
 Minchan Kim
