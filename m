@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab1EXFqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 01:46:07 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51883 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab1EXFqE (ORCPT
+	id S1752390Ab1EXFtf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 01:49:35 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48122 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab1EXFte convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 01:46:04 -0400
+	Tue, 24 May 2011 01:49:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=EOUCAh+C4dzLotyweA8h0mZsUBVUByha7TyckIXYfFqCGy2tEZD6oApLuaI60p79h8
-         4a59sfBrMbqPDFrwxtXH15N++TFjvQQ5oydAOgqNE15RuXuAXIEAGNRmEM0P4AKJBWKz
-         FYxbnstenCTsIyLICcl+rrNnA/mj7qUyUlIuo=
-Subject: Re: [PATCH v2]net:8021q:vlan.c Fix pr_info to just give the vlan
- fullname and version.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Ben Greear <greearb@candelatech.com>
-In-Reply-To: <1306215647-2857-1-git-send-email-justinmattock@gmail.com>
-References: <1306215647-2857-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 07:45:58 +0200
-Message-ID: <1306215958.2638.29.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NeRrsth4CEl17aWJNKKAig21h74hfakvPu56V5YyAbOZo5WYehxMp8Q9kVecHIlaG0
+         FcwKmCZNlxIK605qv5JBi77C1cUATVTwp2M47F/Kle1m8qiHl4hNBUzPsZ5lblVBZO7A
+         dD2ID8RvrOvxM6EYWf3lC1wFJEDZkzq0qHzIM=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTinNn_nx1Wd8ocUHe2WipFkUK0o-2A@mail.gmail.com>
+References: <201105231527.53805.stevie.trujillo@gmail.com>
+	<BANLkTi=iGzkSwWPZrFPBJZYg6x=dDBb5Eg@mail.gmail.com>
+	<BANLkTi=Xtunb3Qocw_AWZyAkBak52=njWQ@mail.gmail.com>
+	<BANLkTinNn_nx1Wd8ocUHe2WipFkUK0o-2A@mail.gmail.com>
+Date: Tue, 24 May 2011 13:49:34 +0800
+Message-ID: <BANLkTi=UeEEj0fRb9v1viFpUOWvmrSHM2g@mail.gmail.com>
+Subject: Re: ramoops: is using platform_drivers correct?
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Stevie Trujillo <stevie.trujillo@gmail.com>, marco.stornelli@gmail.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 23 mai 2011 à 22:40 -0700, Justin P. Mattock a écrit :
-> The below patch removes vlan_buggyright and vlan_copyright from vlan_proto_init, 
-> so that it prints out just the fullname of vlan and the version number.
-> 
-> before:
-> 
-> [   30.438203] 802.1Q VLAN Support v1.8 Ben Greear <greearb@candelatech.com>
-> [   30.441542] All bugs added by David S. Miller <davem@redhat.com>
-> 
-> after:
-> 
-> [   31.513910] 802.1Q VLAN Support v1.8
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> CC: Joe Perches <joe@perches.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Ben Greear <greearb@candelatech.com>
-> ---
->  net/8021q/vlan.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
-> index b2274d1..9df3fcb 100644
-> --- a/net/8021q/vlan.c
-> +++ b/net/8021q/vlan.c
-> @@ -673,8 +673,7 @@ static int __init vlan_proto_init(void)
->  {
->  	int err;
->  
-> -	pr_info("%s v%s %s\n", vlan_fullname, vlan_version, vlan_copyright);
-> -	pr_info("All bugs added by %s\n", vlan_buggyright);
-> +	pr_info("%s v%s\n", vlan_fullname, vlan_version);
->  
->  	err = register_pernet_subsys(&vlan_net_ops);
->  	if (err < 0)
+On Tue, May 24, 2011 at 1:32 PM, Kyungmin Park <kmpark@infradead.org> wrote:
+> On Mon, May 23, 2011 at 11:36 PM, Kyungmin Park <kmpark@infradead.org> wrote:
+>> Hi,
+>>
+>> You have to define the ramoops platform data at your board file and
+>> pass it to the platform device init.
+>> As these address is different for each SoCs. e.g., x86, and Samsung
+>> ARM SoCs and so on.
+>>
+>> I think maybe you use the x86 so define the default x86 ram address
+>> for ramoops and pass it to platform structures.
 
-This reminds me a discussion with Harald Welte in netfilter workshop
-2010.
+Why not document this?
 
-Sometime these strings help lot guys working to fight GPL violations.
+>>
+>> At office, I will send the sample usage.
+>
+> +static struct ramoops_platform_data goni_ramoops_data = {
+> +       .mem_size               = SZ_16K,
+> +       .mem_address            = 0xED000000,   /* SRAM */
+> +};
+> +
+> +static struct platform_device goni_ramoops = {
+> +       .name = "ramoops",
+> +       .dev = {
+> +               .platform_data = &goni_ramoops_data,
+> +       },
+> +};
+>
+> and register the goni_rammoops. then you can find a rammops.
+>
 
+Huh? Is this for x86 too? Why so unfriendly for end-users?
 
+I think we need some kernel parameter like 'crashkernel=' (or memmap=)
+to reserve memory for ramoops, right?
 
-
+Thanks.
