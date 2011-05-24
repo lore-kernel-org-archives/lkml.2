@@ -1,117 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab1EXGj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 02:39:28 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:42774 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab1EXGj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 02:39:26 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Lukas Czerner <lczerner@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v6] fat: Batched discard support for fat
-References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de>
-	<AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com>
-	<201103301706.36214.arnd@arndb.de>
-	<BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com>
-	<87wrhgk8lp.fsf@devron.myhome.or.jp>
-	<BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com>
-Date: Tue, 24 May 2011 15:39:22 +0900
-In-Reply-To: <BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com> (Kyungmin
-	Park's message of "Tue, 24 May 2011 14:21:50 +0900")
-Message-ID: <87r57ok3fp.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1753124Ab1EXGik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 02:38:40 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:18769 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751384Ab1EXGij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 02:38:39 -0400
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 24 May 2011 09:41:39 +0300
+Message-Id: <20110524064139.4507.8224.sendpatchset@localhost.localdomain>
+Subject: [GIT PULL] UBIFS changes for 2.6.40
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyungmin Park <kmpark@infradead.org> writes:
+Hi Linus,
 
->>> Do you still object to merge this feature for .40? As I said the
->>> batched discard design is out-of-scope of this patch.
->>> It's implemented at other batched discard, ext4, xfs and so on.
->>>
->>> I hope fat is also support the batched discard.
->>>
->>> Any opinions?
->>
->> I'm also thinking implementing this is good though. Sorry, I'm not going
->> to apply this for now, and would like to wait to be used by real
->> userland (I hope guys notice the problem, or userland tackles it somehow
->> sadly).
->>
->> I think, to expose the wrong behavior like this would be worse.
->>
->> E.g. one of problems, userland might do like this (trim chunk from 0 to
->> number of block)
->>
->> for chunk in number_of_blocks
->>        do_trim chunk
->> done
->
-> It's handled at trim implementation. It just trim the fat aware block.
-> Not trim the blocks which fat doesn't know.
-> As fat don't use the block 0, 1, it adjust the start block at kernel.
->
-> +       if (start < FAT_START_ENT)
-> +               start = FAT_START_ENT;
->
-> and don't exceed the max cluster size.
->
-> +       len = (len > sbi->max_cluster) ? sbi->max_cluster : len;
->
-> +       for (count = start; count <= len; count++) {
+please pull UBIFS changes.
 
-Yes. We _adjust_ from 0 to 2 here, so, the end of block also have to be
-_adjusted_.
+The following changes since commit 693d92a1bbc9e42681c42ed190bd42b636ca876f:
 
->From other point of view, if userland specified 0 - max-length
-(i.e. number of blocks), what happens? It would trim block of 2 -
-(max-length - 2), right?
+  Linux 2.6.39-rc7 (2011-05-09 19:33:54 -0700)
 
-So, actually, userland specify 2 - (max-length + 2). And userland has to
-know 2 is real start, not 0.
+are available in the git repository at:
+  git://git.infradead.org/ubifs-2.6.git linux-next
 
-But how to know it? Yes, it's FS internal layout, AFAICS, other FSes also
-expose internal like this.
+Artem Bityutskiy (48):
+      UBIFS: make debugfs files non-seekable
+      UBIFS: fix minor stylistic issues
+      UBIFS: use __packed instead of __attribute__((packed))
+      UBIFS: introduce a separate structure for budgeting info
+      UBIFS: simplify dbg_dump_budg calling conventions
+      UBIFS: rearrange the budget dump
+      UBIFS: improve space checking debugging feature
+      UBIFS: make force in-the-gaps to be a general self-check
+      UBIFS: introduce lsave debugging
+      UBIFS: use EROFS when emulating failures
+      UBIFS: use ro_mount instead of MS_RDONLY
+      UBIFS: fix oops in lprops dump function
+      UBIFS: do not change debugfs file position
+      UBIFS: remove strange commentary
+      UBIFS: remove duplicated code
+      UBIFS: remove dead GC LEB recovery piece of code
+      UBIFS: print useful debugging messages when cannot recover gc_lnum
+      UBIFS: dump the stack on errors in failure mode too
+      UBIFS: split ubifs_rcvry_gc_commit
+      UBIFS: refactor ubifs_rcvry_gc_commit
+      UBIFS: fix debugging message
+      UBIFS: remove an unneeded check
+      UBIFS: fix debugging FS checking failure
+      UBIFS: fix inode size debugging check failure
+      UBIFS: fix a rare memory leak in ro to rw remounting path
+      UBIFS: improve debugging lprops scanning a little
+      UBIFS: simplify error path in lprops debugging check
+      UBIFS: simplify lprops debugging check
+      UBIFS: dump more in the lprops debugging check
+      UBIFS: improve debugging messages
+      UBIFS: improve commentary
+      UBIFS: make 2 functions static
+      UBIFS: double check that buds are replied in order
+      UBIFS: remove unnecessary stack variable
+      UBIFS: store free and dirty space in the bud replay entry
+      UBIFS: simplify replay
+      UBIFS: substitute the replay tree with a replay list
+      UBIFS: change bud replay function conventions
+      UBIFS: remove BUG statement
+      UBIFS: synchronize write-buffer before switching to the next bud
+      UBIFS: expect corruption only in last journal head LEBs
+      UBIFS: share the next_log_lnum helper
+      UBIFS: clean up LEB recovery function
+      UBIFS: always cleanup the recovered LEB
+      UBIFS: simplify LEB recovery function further
+      UBIFS: fix extremely rare mount failure
+      UBIFS: fix kernel-doc comments
+      UBIFS: switch to dynamic printks
 
->> But this is actually wrong, this interface doesn't map blocks to 0-max,
->> so userland have to know real maximum-block-number somehow for each FS
->> (and maybe have to know real minimum-block-number).
->>
->> So, how to fix this? The solutions would be userland workaround, or fix
->> kernel. If it was userland, userland have to know FS internal sadly. If
->> it was kernel, we would have backward compatible nightmare, or ignore
->> compatible :(.
->
-> I think basic concept of batched discard is trim at once instead of
-> deleted entries at filesystem (original one).
-> So it can set the specific start address or any start (usually 0) with
-> maximum length.
+Matthew L. Creech (3):
+      UBIFS: add a superblock flag for free space fix-up
+      UBIFS: add the fixup function
+      UBIFS: fix-up free space on mount if flag is set
 
-Yes, I think so too (i.e. 0 - max length). But the implement is not
-working like it. It exposes FS internal layout.
+Sedat Dilek (1):
+      UBIFS: make xattr operations names consistent
 
->> I really think we have to rethink this and have agreement about common
->> interface. Or there was real userland app, I think FAT can implement to
->> work that app.
->
-> IMO, we should use the same user space application. user program
-> doesn't know the which filesystem are underlying.
+ Documentation/filesystems/ubifs.txt |   26 +--
+ fs/ubifs/budget.c                   |  104 ++++----
+ fs/ubifs/commit.c                   |    2 +-
+ fs/ubifs/debug.c                    |  167 ++++++++-----
+ fs/ubifs/debug.h                    |  178 +++++---------
+ fs/ubifs/dir.c                      |    4 +-
+ fs/ubifs/file.c                     |   28 ++-
+ fs/ubifs/find.c                     |   10 +-
+ fs/ubifs/gc.c                       |   71 +++---
+ fs/ubifs/io.c                       |   33 +--
+ fs/ubifs/journal.c                  |   29 ++-
+ fs/ubifs/log.c                      |   28 +--
+ fs/ubifs/lprops.c                   |  115 ++++------
+ fs/ubifs/lpt_commit.c               |   55 ++++-
+ fs/ubifs/master.c                   |    8 +-
+ fs/ubifs/misc.h                     |   17 ++
+ fs/ubifs/orphan.c                   |    3 +-
+ fs/ubifs/recovery.c                 |  354 +++++++++++++-------------
+ fs/ubifs/replay.c                   |  468 +++++++++++++++++------------------
+ fs/ubifs/sb.c                       |  153 +++++++++++-
+ fs/ubifs/super.c                    |   46 +++--
+ fs/ubifs/tnc.c                      |   10 +-
+ fs/ubifs/tnc_commit.c               |   18 +-
+ fs/ubifs/ubifs-media.h              |   30 ++-
+ fs/ubifs/ubifs.h                    |   86 ++++---
+ fs/ubifs/xattr.c                    |    8 +-
+ 26 files changed, 1117 insertions(+), 934 deletions(-)
 
-Indeed.
-
-> So sample user space program used at ext4, xfs should be used. and I
-> tested it.
-
-I bet it doesn't trim whole FS (due to expose FS layout) actually even
-if user asked like above example.
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Thanks,
+Artem.
