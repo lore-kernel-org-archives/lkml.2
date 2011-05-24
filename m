@@ -1,83 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab1EXIgD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 04:36:03 -0400
-Received: from smtpout02.highway.telekom.at ([195.3.96.113]:10354 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754560Ab1EXIgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 04:36:00 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-Subject: [PATCH] support wlan hotkey on Acer Travelmate 5735Z
-Date: Tue, 24 May 2011 10:35:55 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39; KDE/4.6.3; x86_64; ; )
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
+	id S1754782Ab1EXIgU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 04:36:20 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48866 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560Ab1EXIgR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 04:36:17 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DDB6DF6.2050700@jp.fujitsu.com>
+Date: Tue, 24 May 2011 17:36:06 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Cc: Joey Lee <jlee@novell.com>, Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        platform-driver-x86@vger.kernel.org
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: mgorman@suse.de
+CC: minchan.kim@gmail.com, abarry@cray.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Unending loop in __alloc_pages_slowpath following OOM-kill; rfc:
+ patch.
+References: <4DCDA347.9080207@cray.com> <BANLkTikiXUzbsUkzaKZsZg+5ugruA2JdMA@mail.gmail.com> <4DD2991B.5040707@cray.com> <BANLkTimYEs315jjY9OZsL6--mRq3O_zbDA@mail.gmail.com> <20110520164924.GB2386@barrios-desktop> <4DDB3A1E.6090206@jp.fujitsu.com> <20110524083008.GA5279@suse.de>
+In-Reply-To: <20110524083008.GA5279@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105241035.55877@rk-nord.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Melchior FRANZ <mfranz@aon.at>
-    
-On an Acer Travelmate 5735Z-452G32Mnss the WLAN-enable/disable key
-doesn't send 0x1 as acpi event key code, but 0x3. This patch also
-makes the module ignore hotkey acpi events for functions that are
-already handled without. This avoids warning message "keyboard:
-can't emulate rawmode for keycode 240".
+(2011/05/24 17:30), Mel Gorman wrote:
+> On Tue, May 24, 2011 at 01:54:54PM +0900, KOSAKI Motohiro wrote:
+>>> >From 8bd3f16736548375238161d1bd85f7d7c381031f Mon Sep 17 00:00:00 2001
+>>> From: Minchan Kim <minchan.kim@gmail.com>
+>>> Date: Sat, 21 May 2011 01:37:41 +0900
+>>> Subject: [PATCH] Prevent unending loop in __alloc_pages_slowpath
+>>>
+>>> From: Andrew Barry <abarry@cray.com>
+>>>
+>>> I believe I found a problem in __alloc_pages_slowpath, which allows a process to
+>>> get stuck endlessly looping, even when lots of memory is available.
+>>>
+>>> Running an I/O and memory intensive stress-test I see a 0-order page allocation
+>>> with __GFP_IO and __GFP_WAIT, running on a system with very little free memory.
+>>> Right about the same time that the stress-test gets killed by the OOM-killer,
+>>> the utility trying to allocate memory gets stuck in __alloc_pages_slowpath even
+>>> though most of the systems memory was freed by the oom-kill of the stress-test.
+>>>
+>>> The utility ends up looping from the rebalance label down through the
+>>> wait_iff_congested continiously. Because order=0, __alloc_pages_direct_compact
+>>> skips the call to get_page_from_freelist. Because all of the reclaimable memory
+>>> on the system has already been reclaimed, __alloc_pages_direct_reclaim skips the
+>>> call to get_page_from_freelist. Since there is no __GFP_FS flag, the block with
+>>> __alloc_pages_may_oom is skipped. The loop hits the wait_iff_congested, then
+>>> jumps back to rebalance without ever trying to get_page_from_freelist. This loop
+>>> repeats infinitely.
+>>>
+>>> The test case is pretty pathological. Running a mix of I/O stress-tests that do
+>>> a lot of fork() and consume all of the system memory, I can pretty reliably hit
+>>> this on 600 nodes, in about 12 hours. 32GB/node.
+>>>
+>>> Signed-off-by: Andrew Barry <abarry@cray.com>
+>>> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+>>> Cc: Mel Gorman <mgorman@suse.de>
+>>> ---
+>>>  mm/page_alloc.c |    2 +-
+>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>>> index 3f8bce2..e78b324 100644
+>>> --- a/mm/page_alloc.c
+>>> +++ b/mm/page_alloc.c
+>>> @@ -2064,6 +2064,7 @@ restart:
+>>>  		first_zones_zonelist(zonelist, high_zoneidx, NULL,
+>>>  					&preferred_zone);
+>>>  
+>>> +rebalance:
+>>>  	/* This is the last chance, in general, before the goto nopage. */
+>>>  	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
+>>>  			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
+>>> @@ -2071,7 +2072,6 @@ restart:
+>>>  	if (page)
+>>>  		goto got_pg;
+>>>  
+>>> -rebalance:
+>>>  	/* Allocate without watermarks if the context allows */
+>>>  	if (alloc_flags & ALLOC_NO_WATERMARKS) {
+>>>  		page = __alloc_pages_high_priority(gfp_mask, order,
+>>
+>> I'm sorry I missed this thread long time.
+>>
+>> In this case, I think we should call drain_all_pages().
+> 
+> Why?
 
-Signed-off-by: Melchior FRANZ <mfranz@aon.at>
----
-
-This patch requires that Joey LEE's 64 bit fix be applied,
-otherwise the whole acer-wmi module fails to load on this
-machine. See https://bugzilla.kernel.org/show_bug.cgi?id=34142#c21
-(0001-acer-wmi-allow-64-bits-return-buffer-from-WMI-metho.patch)
+Otherwise, we don't have good PCP dropping trigger. Big machine might have
+big pcp cache.
 
 
-diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-index 6cb55a6..fb4ee5f 100644
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -98,13 +98,26 @@ enum acer_wmi_event_ids {
- 
- static const struct key_entry acer_wmi_keymap[] = {
- 	{KE_KEY, 0x01, {KEY_WLAN} },     /* WiFi */
-+	{KE_KEY, 0x03, {KEY_WLAN} },     /* WiFi */
- 	{KE_KEY, 0x12, {KEY_BLUETOOTH} },	/* BT */
- 	{KE_KEY, 0x21, {KEY_PROG1} },    /* Backup */
- 	{KE_KEY, 0x22, {KEY_PROG2} },    /* Arcade */
- 	{KE_KEY, 0x23, {KEY_PROG3} },    /* P_Key */
- 	{KE_KEY, 0x24, {KEY_PROG4} },    /* Social networking_Key */
-+	{KE_IGNORE, 0x41, {KEY_MUTE} },
-+	{KE_IGNORE, 0x42, {KEY_PREVIOUSSONG} },
-+	{KE_IGNORE, 0x43, {KEY_NEXTSONG} },
-+	{KE_IGNORE, 0x44, {KEY_PLAYPAUSE} },
-+	{KE_IGNORE, 0x45, {KEY_STOP} },
-+	{KE_IGNORE, 0x48, {KEY_VOLUMEUP} },
-+	{KE_IGNORE, 0x49, {KEY_VOLUMEDOWN} },
-+	{KE_IGNORE, 0x61, {KEY_SWITCHVIDEOMODE} },
-+	{KE_IGNORE, 0x62, {KEY_BRIGHTNESSUP} },
-+	{KE_IGNORE, 0x63, {KEY_BRIGHTNESSDOWN} },
- 	{KE_KEY, 0x64, {KEY_SWITCHVIDEOMODE} },	/* Display Switch */
-+	{KE_IGNORE, 0x81, {KEY_SLEEP} },
- 	{KE_KEY, 0x82, {KEY_TOUCHPAD_TOGGLE} },	/* Touch Pad On/Off */
-+	{KE_IGNORE, 0x83, {KEY_TOUCHPAD_TOGGLE} },
- 	{KE_END, 0}
- };
- 
-@@ -1345,7 +1358,7 @@ static void acer_wmi_notify(u32 value, void *context)
- 	case WMID_HOTKEY_EVENT:
- 		if (return_value.device_state) {
- 			u16 device_state = return_value.device_state;
--			pr_debug("deivces states: 0x%x\n", device_state);
-+			pr_debug("device state: 0x%x\n", device_state);
- 			if (has_cap(ACER_CAP_WIRELESS))
- 				rfkill_set_sw_state(wireless_rfkill,
- 				!(device_state & ACER_WMID3_GDS_WIRELESS));
+> If the direct reclaimer failed to reclaim any pages on its own, the call
+> to get_page_from_freelist() is going to be useless and there is
+> no guarantee that any other CPU managed to reclaim pages either. All
+> this ends up doing is sending in IPI which if it's very lucky will take
+> a page from another CPUs free list.
+
+It's no matter. because did_some_progress==0 mean vmscan failed to reclaim
+any pages and reach priority==0. Thus, it obviously slow path.
+
+
+> 
+>> then following
+>> patch is better.
+>> However I also think your patch is valuable. because while the task is
+>> sleeping in wait_iff_congested(), an another task may free some pages.
+>> thus, rebalance path should try to get free pages. iow, you makes sense.
+>>
+>> So, I'd like to propose to merge both your and my patch.
+>>
+>> Thanks.
+>>
+>>
+>> From 2e77784668f6ca53d88ecb46aa6b99d9d0f33ffa Mon Sep 17 00:00:00 2001
+>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Date: Tue, 24 May 2011 13:41:57 +0900
+>> Subject: [PATCH] vmscan: remove painful micro optimization
+>>
+>> Currently, __alloc_pages_direct_reclaim() call get_page_from_freelist()
+>> only if try_to_free_pages() return !0.
+>>
+>> It's no necessary micro optimization becauase "return 0" mean vmscan reached
+>> priority 0 and didn't get any pages, iow, it's really slow path. But also it
+>> has bad side effect. If we don't call drain_all_pages(), we have a chance to
+>> get infinite loop.
+>>
+> 
+> With the "rebalance" patch, where is the infinite loop?
+
+I wrote the above.
+
+
