@@ -1,38 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab1EXJ7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 05:59:54 -0400
-Received: from mail.play-mail.info ([211.47.140.228]:33527 "EHLO
-	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754482Ab1EXJ7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 05:59:53 -0400
+	id S1755906Ab1EXKBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 06:01:44 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2371 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755111Ab1EXKBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 06:01:43 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Message-ID: <4DDB81FD.2020903@broadcom.com>
+Date: Tue, 24 May 2011 12:01:33 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
+ Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Message-Id: <110524185952TF.19036@mail.play-mail.info>
-Date: Tue, 24 May 2011 18:59:52 +0900
-From: =?UTF-8?B?44GT44KM6KaL44Gm5oCd44GE5Ye644GX44Gm44GK6L+U5LqL44GP44Gg44GV44GE?= 
-	<marina9150@inter7.jp>
-To: linux-kernel@vger.kernel.org
-Content-Type: Text/Plain;charset="utf-8"
-Subject: =?UTF-8?B?5b+Y44KM44KJ44KM44Gm44GX44G+44Gj44Gf44Gn44GX44KH44GG44GL77yf?=
+To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Dan Carpenter" <error27@gmail.com>
+Subject: Re: [RFC] lib: crc8: add new library module providing crc8
+ algorithm
+References: <1306010973-5625-1-git-send-email-arend@broadcom.com>
+ <20110522122325.108b1c86@lxorguk.ukuu.org.uk>
+ <4DD905CC.8040407@broadcom.com>
+ <20110522151959.7fd6e87e@lxorguk.ukuu.org.uk>
+ <4DDB622B.1050005@broadcom.com>
+ <20110524104404.336c765f@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110524104404.336c765f@lxorguk.ukuu.org.uk>
+X-WSS-ID: 61C55D6D3IC4935636-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4OA00uI001290
 
-マリナです。度々のメールごめんなさい。
-あの時突然私が消えてしまったから
-きっと悪い印象持たれてしまっていたのかもしれないですね。
+On 05/24/2011 11:44 AM, Alan Cox wrote:
+> On Tue, 24 May 2011 09:45:47 +0200
+> "Arend van Spriel"<arend@broadcom.com>  wrote:
+>
+>> On 05/22/2011 04:19 PM, Alan Cox wrote:
+>>> Is it just used for wireless in this form ?
+>>>
+>>> See the n_gsm and bluetooth code for what I think is the same crc
+>>> algorithm but in reverse bit order .
+>> Hi Alan,
+>>
+>> Look into the code in n_gsm and bluetooth code. The algorithm is the
+>> same, but except for the bit order it also is using a different
+>> polynomial. My current implementation has a fixed table. I could do the
+>> table generation runtime with the polynomial and the bit order as
+>> parameters. That would make it more general purpose.
+> Probably not worth it - its so tiny a piece of code anyway (<  500 bytes
+> or so) that it's going to be bigger not smaller if you do that !
 
-実は携帯が壊れてしまって
-連絡を取りたくても連絡出来なかったんです。
-言い訳だと言われてしまえばそれまでなのですが
-どうしても貴方のことを諦めきれなくて
-女々しくこうしてメールをしてしまっています。
+Hi Alan,
 
-あの時私と会おうとしてくれて
-お住まいとか待ち合わせ場所とか入れてくれてましたよね？
-もう一度…もう一度だけ私にチャンスを下さいませんか？
+Not sure whether you mean the source code or the object code. I build 
+kernel with debug symbols so the sizes are bit higher.
 
-お返事にお住まいと待ち合わせ場所を入れてください。
-私ちゃんと待ってますから。   ���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+fixed table:        -rw-r--r-- 1 arend arend 1859 2011-05-24 11:53 crc8.o
+custom table:    -rw-r--r-- 1 arend arend 2215 2011-05-24 11:58 crc8.o
+
+The size increase is not that big.
+
+Gr. AvS
+
+-- 
+Almost nobody dances sober, unless they happen to be insane.
+-- H.P. Lovecraft --
+
+
