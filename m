@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab1EXP3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 11:29:36 -0400
-Received: from odin2.bull.net ([129.184.85.11]:35125 "EHLO odin2.bull.net"
+	id S1754247Ab1EXPCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 11:02:12 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:60245 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755793Ab1EXP3f convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 11:29:35 -0400
-Subject: Re: [PATCH 2/2] loop: handle on-demand devices correctly
-From: Laurent Vivier <Laurent.Vivier@bull.net>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1306249066.1751.7.camel@leonhard>
-References: <1306247761-2246-1-git-send-email-namhyung@gmail.com>
-	 <1306247761-2246-2-git-send-email-namhyung@gmail.com>
-	 <4DDBC4A7.1040104@fusionio.com>  <1306249066.1751.7.camel@leonhard>
-Date: Tue, 24 May 2011 17:01:54 +0200
-Message-ID: <1306249314.2838.19.camel@b015126-ux.fr.ad.bull.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on MSGC-003/SRV/BULL(Release 8.5.2FP1|November 29, 2010) at
- 24/05/2011 17:01:55,
-	Serialize by Router on MSGC-003/SRV/BULL(Release 8.5.2FP1|November 29, 2010) at
- 24/05/2011 17:01:55,
-	Serialize complete at 24/05/2011 17:01:55
-X-TNEFEvaluated: 1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+	id S1753193Ab1EXPCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 11:02:11 -0400
+Date: Tue, 24 May 2011 17:02:16 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Greg KH <gregkh@suse.de>
+Cc: Michal Simek <monstr@monstr.eu>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        John Williams <john.williams@petalogix.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH v5] uio/pdrv_genirq: Add OF support
+Message-ID: <20110524150215.GA2723@local>
+References: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
+ <4DDB960F.4050902@monstr.eu>
+ <20110524123625.GC31517@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110524123625.GC31517@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 24 mai 2011 à 23:57 +0900, Namhyung Kim a écrit :
-> 2011-05-24 (화), 16:45 +0200, Jens Axboe:
-> > Thanks, applied. Seems we should mark this for stable.
+On Tue, May 24, 2011 at 05:36:25AM -0700, Greg KH wrote:
+> On Tue, May 24, 2011 at 01:27:11PM +0200, Michal Simek wrote:
+> > Hi Greg,
 > > 
+> > can you please add it to your tree? I see you have sent pull request.
 > 
-> Hi Jens,
+> It's too late for the merge window for this, sorry.  I needed to have
+> this before it opened up, and in the linux-next tree for a week or so
+> before that.
 > 
-> The partition handling was introduced by commit 476a4813cfdd ("loop:
-> manage partitions in disk image") so that we need these patches for all
-> stable releases, AFAICS.
+> Sorry.
 > 
-> $ git name-rev --tags 476a4813cfdd
-> 476a4813cfdd tags/v2.6.26-rc1~1115^2~9
+> Can you resend it in a format that I can apply it in, as well as getting
+> an ack from Hans?
+
+There was already a "Signed-off-by:" from me, and a "Reviewed-by:" from
+Wolfram Sang, so that should be OK.
+
+There was some unanswered question by Thomas De Scham, though.
+
+Thanks,
+Hans
+
+>  I'll be glad to queue it up for the next major
+> release after this if you do that.
 > 
-> Now I can see that brd (ramdisk) module seems to have same problems with
-> loop. I'll work on that, too.
-
-Have a look to nbd.c too.
-
-Regards,
-Laurent
-
--- 
------------- Laurent.Vivier@bull.net ------------
-"We are the Borg. You will be assimilated. Your 
- biological and technological distinctiveness 
- will be added to our own. Resistance is futile."
-
+> thanks,
+> 
+> greg k-h
+> 
