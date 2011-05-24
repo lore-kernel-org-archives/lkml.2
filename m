@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab1EXCwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 22:52:17 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38270 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516Ab1EXCwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 22:52:14 -0400
-Date: Tue, 24 May 2011 04:48:48 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Huang Ying <ying.huang@intel.com>
-Cc: huang ying <huang.ying.caritas@gmail.com>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
-Message-ID: <20110524024848.GA25230@elte.hu>
-References: <20110517092620.GI22093@elte.hu>
- <4DD31C78.6000209@intel.com>
- <20110520115614.GH14745@elte.hu>
- <BANLkTi=5Y0fqsmhsoPm8si=nQBc-tCwtrw@mail.gmail.com>
- <20110522100021.GA28177@elte.hu>
- <BANLkTi=VDQMOfWe5tP7nXSv2AEsiUUEteg@mail.gmail.com>
- <20110522132515.GA13078@elte.hu>
- <4DD9C8B9.5070004@intel.com>
- <20110523110151.GD24674@elte.hu>
- <4DDB1396.7050205@intel.com>
+	id S1756076Ab1EXCwY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 22:52:24 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38012 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752516Ab1EXCwT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 May 2011 22:52:19 -0400
+X-Sasl-enc: u5oFM9TUTtOsOk8RyHWKFAeeDlunEsXlfNlKkdKTbaBm 1306205538
+Date: Mon, 23 May 2011 19:51:51 -0700
+From: Greg KH <greg@kroah.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20110524025151.GA26939@kroah.com>
+References: <20110520161816.dda6f1fd.sfr@canb.auug.org.au>
+ <BANLkTimjzzqTS1fELmpb0UivqseLsYOfPw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DDB1396.7050205@intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <BANLkTimjzzqTS1fELmpb0UivqseLsYOfPw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Huang Ying <ying.huang@intel.com> wrote:
-
-> >> - How to deal with ring-buffer overflow?  For example, there is full of 
-> >>   corrected memory error in ring-buffer, and now a recoverable memory error 
-> >>   occurs but it can not be put into perf ring buffer because of ring-buffer 
-> >>   overflow, how to deal with the recoverable memory error?
-> > 
-> > The solution is to make it large enough. With *every* queueing solution there 
-> > will be some sort of queue size limit.
+On Mon, May 23, 2011 at 10:06:40PM -0400, Mike Frysinger wrote:
+> On Fri, May 20, 2011 at 02:18, Stephen Rothwell wrote:
+> > Caused by commit e66eed651fd1 ("list: remove prefetching from regular list
+> > iterators").
+> >
+> > I added the following patch for today:
 > 
-> Another solution could be:
+> probably should get added to whatever tree that commit is coming from
+> so we dont have bisect hell ?
 > 
-> Create two ring-buffer. One is for logging and will be read by RAS
-> daemon; the other is for recovering, the event record will be removed
-> from the ring-buffer after all 'active filters' have been run on it.
-> Even RAS daemon being restarted or hang, recoverable error can be taken
-> cared of.
+> more failures:
+> drivers/usb/host/isp1362-hcd.c: In function 'isp1362_write_ptd':
+> drivers/usb/host/isp1362-hcd.c:355: error: implicit declaration of
+> function 'prefetch'
+> drivers/usb/host/isp1362-hcd.c: In function 'isp1362_read_ptd':
+> drivers/usb/host/isp1362-hcd.c:377: error: implicit declaration of
+> function 'prefetchw'
+> make[3]: *** [drivers/usb/host/isp1362-hcd.o] Error 1
+> 
+> drivers/usb/musb/musb_core.c: In function 'musb_write_fifo':
+> drivers/usb/musb/musb_core.c:219: error: implicit declaration of
+> function 'prefetch'
+> make[3]: *** [drivers/usb/musb/musb_core.o] Error 1
+> 
+> although it seems like it should be fairly trivial to look at the
+> funcs in linux/prefetch.h, grep the tree, and find a pretty good list
+> of the files that are missing the include
 
-Well, filters will always be executed since they execute when the event is 
-inserted - not when it's extracted.
+How did this not show up in linux-next?  Where did the patch that caused
+this show up from?
 
-So if you worry about losing *filter* executions (and dependent policy action) 
-- there should be no loss there, ever.
+totally confused,
 
-But yes, the scheme you outline would work as well: a counting-only event with 
-a filter specified - this will do no buffering at all.
-
-So ... to get the ball rolling in this area one of you guys active in RAS 
-should really try a first approximation for the active filter approach: add a 
-test-TRACE_EVENT() for the errors you are interested in and define a convenient 
-way to register policy action with post-filter events. This should work even 
-without having the 'active' portion defined at the ABI and filter-string level.
-
-Thanks,
-
-	Ingo
+greg k-h
