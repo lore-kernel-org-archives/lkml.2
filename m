@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab1EXNaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 09:30:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49489 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756105Ab1EXNae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 09:30:34 -0400
-Date: Tue, 24 May 2011 15:30:17 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-cc: Lukas Czerner <lczerner@redhat.com>, Kyungmin Park <kmpark@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v6] fat: Batched discard support for fat
-In-Reply-To: <87sjs4i93w.fsf@devron.myhome.or.jp>
-Message-ID: <alpine.LFD.2.00.1105241520260.4028@dhcp-27-109.brq.redhat.com>
-References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de> <AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com> <201103301706.36214.arnd@arndb.de> <BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com> <87wrhgk8lp.fsf@devron.myhome.or.jp>
- <BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com> <87r57ok3fp.fsf@devron.myhome.or.jp> <BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com> <87mxick0zj.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
- <874o4kjtsy.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241211100.4028@dhcp-27-109.brq.redhat.com> <87y61wic4h.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241319340.4028@dhcp-27-109.brq.redhat.com> <87sjs4i93w.fsf@devron.myhome.or.jp>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756483Ab1EXNbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:31:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:34652 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756432Ab1EXNbO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 09:31:14 -0400
+X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=G1dXN-r5QsUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=ZfUuFlCtmpj_9wFjj3wA:9 a=F30VYG4NC6kjMf6TNocA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v0] sched: change how run-queue is selected for RT task
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>
+In-Reply-To: <BANLkTimF2d93VVGKHDdFTn=V-1h9nWrs_w@mail.gmail.com>
+References: <BANLkTimF2d93VVGKHDdFTn=V-1h9nWrs_w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 24 May 2011 09:31:12 -0400
+Message-ID: <1306243872.1465.55.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011, OGAWA Hirofumi wrote:
-
-> Lukas Czerner <lczerner@redhat.com> writes:
+On Sat, 2011-05-21 at 23:28 +0800, Hillf Danton wrote:
+> When selecting run-queue for a given RT task, we have to take a few
+> factors, such as task priority and CPU cache affinity, into
+> consideration. In this work, a simpler method is proposed, which is
+> focusing on the relation between the current run-queue of the given
+> task and the given run-queue.
 > 
-> >> Are you read my email? So, FAT adjust 2 blocks, ext* 1 block, and what
-> >> is other? The middle was guaranteed as continued? So, which is end of
-> >> blocks?
-> >
-> > I am sorry but I am not sure what you are asking for. Just grab the size
-> > of the file system or even better the size of underlying device (since
-> > the filesyste would not be bigger than that) and use that.
-> >
-> > Of course if you grab the count of filesystem blocks (and the file
-> > system does not account for the first data block) you'll end up with len
-> > smaller than first data block. So it might make sense to not to
-> > decrement the len and just start from first data block since it is not
-> > accounted for anyway. However it is not a big deal, is it ? Are you
-> > expecting any problems with this behaviour ?
+> If the current run-queue of task is the given run-queue, the run-queue
+> of task keeps unchanged, so the CPU cache affinities of both task and
+> the current task of run-queue remain unchanged. Then there are at
+> least two tasks competing one CPU, and in the worst case that both
+> competitors are RT tasks the victim will be selected and processed by
+> pusher later.
 > 
-> What is size of file system or underlying devices? You force to find the
-> device which target FS is using? Even if you can get size of underlying
-> devices, you force to user to insane loop in size of devices?
+> On other hand, if the current run-queue of task is different from the
+> given run-queue, task is simply delivered to its current run-queue,
+> since pusher is always willing to do hard works.
+> 
+> In summary, the burden of RT task is always processed first by the
+> pusher of its current run-queue.
 
-Look, I do not have time to argue with you forever and I do not even
-understand what is your point. Just go and read other filesystems
-implementation of FITRIM (ext4,ext3,xfs,btrfs?) and you'll see what you
-need to do.
+Why? Why should we preempt a high prio task to make it push off a task
+that has just woken up on its CPU? If we know that we are about to
+preempt a high prio RT task, why interrupt it, when we could simply make
+this task wake up on another CPU?
 
-If you do not want to get the file system size, then FINE! just pass the
-damn UULONG_MAX as length. I have no clue what insane loop are you
-talking about! It is *easy* just discard the whole thing (with
-UULONG_MAX) or, if you want to do it per-partes, then do it as long as
-it does not return EINVAL, once it does you know that your "start" is
-out of the filesystem and you are done!
-
+-- Steve
 
 > 
-> Why can you guarantee it's not big deal in design? Why can't you admit
-> userland can't make optimized loop?
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+> 
+> --- a/kernel/sched_rt.c	2011-04-27 11:48:50.000000000 +0800
+> +++ b/kernel/sched_rt.c	2011-05-21 22:19:52.000000000 +0800
+> @@ -998,14 +998,12 @@ select_task_rq_rt(struct rq *rq, struct
+>  	 *
+>  	 * For equal prio tasks, we just let the scheduler sort it out.
+>  	 */
+> -	if (unlikely(rt_task(rq->curr)) &&
+> -	    (rq->curr->rt.nr_cpus_allowed < 2 ||
+> -	     rq->curr->prio < p->prio) &&
+> -	    (p->rt.nr_cpus_allowed > 1)) {
+> -		int cpu = find_lowest_rq(p);
+> 
+> -		return (cpu == -1) ? task_cpu(p) : cpu;
+> -	}
+> +	if (task_cpu(p) == rq->cpu)
+> +		return rq->cpu;
+> +
+> +	if (likely(!rt_task(rq->curr)))
+> +		return rq->cpu;
+> 
+>  	/*
+>  	 * Otherwise, just let it ride on the affined RQ and the
 
-And what do you mean by that ?
 
--Lukas
