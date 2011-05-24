@@ -1,51 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab1EXM4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 08:56:13 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60193 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755767Ab1EXM4M (ORCPT
+	id S1756184Ab1EXNAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:00:18 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:41907 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756138Ab1EXNAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 08:56:12 -0400
-Date: Tue, 24 May 2011 13:57:05 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Arend van Spriel" <arend@broadcom.com>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Dan Carpenter" <error27@gmail.com>
-Subject: Re: [RFC] lib: crc8: add new library module providing crc8
- algorithm
-Message-ID: <20110524135705.00f7fb12@lxorguk.ukuu.org.uk>
-In-Reply-To: <4DDB8AB5.7080808@broadcom.com>
-References: <1306010973-5625-1-git-send-email-arend@broadcom.com>
-	<20110522122325.108b1c86@lxorguk.ukuu.org.uk>
-	<4DD905CC.8040407@broadcom.com>
-	<20110522151959.7fd6e87e@lxorguk.ukuu.org.uk>
-	<4DDB622B.1050005@broadcom.com>
-	<20110524104404.336c765f@lxorguk.ukuu.org.uk>
-	<4DDB81FD.2020903@broadcom.com>
-	<20110524112732.67d92b2f@lxorguk.ukuu.org.uk>
-	<4DDB8AB5.7080808@broadcom.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 24 May 2011 09:00:17 -0400
+Date: Tue, 24 May 2011 09:00:08 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost6.localdomain6
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: once again, tracking down misconfigured CONFIG variables
+Message-ID: <alpine.DEB.2.00.1105240851080.21813@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011 12:38:45 +0200
-"Arend van Spriel" <arend@broadcom.com> wrote:
 
-> On 05/24/2011 12:27 PM, Alan Cox wrote:
-> >> Not sure whether you mean the source code or the object code. I build
-> >> kernel with debug symbols so the sizes are bit higher.
-> > nm will tell you the actual sizes. I think the n_gsm code is about 500
-> > bytes or so and chunks of it inline.
-> 
-> Not counting the crc table I assume.
+  now that we're into another merge window, i'll try to find time this
+week to run my kernel scanning/cleanup scripts to find discrepancies
+in the source related to unused/misreferenced Kconfig variables and
+similar things.
 
-I forget but I think including - its a tiny tiny bit of code once inlined.
+  the top level of the output from the last time i did this is here:
+
+  http://www.crashcourse.ca/wiki/index.php/Kernel_cleanup
+
+so you can follow any of those links to see the more specific output,
+much of which i'm guessing is still valid.
+
+  you're also welcome to run the scripts yourself, they're here (and
+probably need a bit of tweaking these days):
+
+  http://www.crashcourse.ca/wiki/index.php/Kernel_cleanup_scripts
+
+you can run these scripts with an argument of the specific source
+directory that interests you, so here's an example based on a recent
+"git pull", showing what i call "badrefs" for CONFIG variables:
+
+$ ../s/find_badref_configs.sh kernel
+>>>>> DEBUG_SHIRQ_FIXME
+kernel/irq/manage.c:1329:#ifdef CONFIG_DEBUG_SHIRQ_FIXME
+>>>>> HIGHRES_TIMERS
+kernel/hrtimer.c:751:#ifdef CONFIG_HIGHRES_TIMERS
+>>>>> KDB_CONTINUE_CATASTROPHIC
+kernel/debug/kdb/kdb_main.c:70:#ifdef CONFIG_KDB_CONTINUE_CATASTROPHIC
+kernel/debug/kdb/kdb_main.c:72:	CONFIG_KDB_CONTINUE_CATASTROPHIC;
+$
+
+  in other words, under the top-level "kernel" directory, there are
+preprocessor tests for CONFIG variables that don't appear to be
+defined anywhere and are therefore useless.  same thing for the entire
+"fs" directory:
+
+$ ../s/find_badref_configs.sh fs
+>>>>> BEFS_RW
+fs/befs/linuxvfs.c:786:#ifndef CONFIG_BEFS_RW
+fs/befs/linuxvfs.c:792:#endif				/* CONFIG_BEFS_RW */
+>>>>> CIFS_DNOTIFY_EXPERIMENTAL
+fs/cifs/cifsglob.h:784:#ifdef CONFIG_CIFS_DNOTIFY_EXPERIMENTAL /* unused temporarily */
+fs/cifs/cifsfs.c:990:#ifdef CONFIG_CIFS_DNOTIFY_EXPERIMENTAL /* unused temporarily */
+fs/cifs/cifsproto.h:392:#ifdef CONFIG_CIFS_DNOTIFY_EXPERIMENTAL /* unused temporarily */
+fs/cifs/cifssmb.c:5735:#ifdef CONFIG_CIFS_DNOTIFY_EXPERIMENTAL /* BB unused temporarily */
+>>>>> CIFS_SYMLINK_EXPERIMENTAL
+fs/cifs/cifsproto.h:311:#ifdef CONFIG_CIFS_SYMLINK_EXPERIMENTAL
+fs/cifs/cifssmb.c:2524:#ifdef CONFIG_CIFS_SYMLINK_EXPERIMENTAL
+fs/cifs/cifssmb.c:2636:#endif /* CIFS_SYMLINK_EXPERIMENTAL */ /* BB temporarily unused */
+>>>>> KDB_MODULES
+fs/xfs/linux-2.6/xfs_buf.h:342:#ifdef CONFIG_KDB_MODULES
+fs/xfs/linux-2.6/xfs_buf.c:1893:#ifdef CONFIG_KDB_MODULES
+>>>>> NILFS_POSIX_ACL
+fs/nilfs2/nilfs.h:189:#ifdef CONFIG_NILFS_POSIX_ACL
+>>>>> NILFS_XATTR
+fs/nilfs2/nilfs.h:49:#ifdef CONFIG_NILFS_XATTR
+fs/nilfs2/super.c:1376:#ifdef CONFIG_NILFS_XATTR
+$
+
+  you get the idea.  and if people are talking about an eventual 3.0,
+part of that process should be a concerted effort to get rid of all
+this historical cruft that's been hanging around, some of it for a
+long, long time.
+
+rday
+
+-- 
+
+========================================================================
+Robert P. J. Day                                 Ottawa, Ontario, CANADA
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
+
+
