@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab1EXJlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 05:41:16 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:55019 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755582Ab1EXJlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 05:41:14 -0400
-X-ASG-Debug-ID: 1306230073-01de28096b5fd40001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DDB7D36.60905@fusionio.com>
-Date: Tue, 24 May 2011 11:41:10 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: Mysterious CFQ crash and RCU
-References: <20110519222404.GG12600@redhat.com>	 <20110521210013.GJ2271@linux.vnet.ibm.com>	 <20110523152141.GB4019@redhat.com>	 <20110523153848.GC2310@linux.vnet.ibm.com> <1306189249.15900.10.camel@t41.thuisdomein>
-X-ASG-Orig-Subj: Re: Mysterious CFQ crash and RCU
-In-Reply-To: <1306189249.15900.10.camel@t41.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
+	id S1755762Ab1EXJml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 05:42:41 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56790 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752963Ab1EXJmj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 05:42:39 -0400
+Date: Tue, 24 May 2011 10:44:04 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Arend van Spriel" <arend@broadcom.com>
+Cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Dan Carpenter" <error27@gmail.com>
+Subject: Re: [RFC] lib: crc8: add new library module providing crc8
+ algorithm
+Message-ID: <20110524104404.336c765f@lxorguk.ukuu.org.uk>
+In-Reply-To: <4DDB622B.1050005@broadcom.com>
+References: <1306010973-5625-1-git-send-email-arend@broadcom.com>
+	<20110522122325.108b1c86@lxorguk.ukuu.org.uk>
+	<4DD905CC.8040407@broadcom.com>
+	<20110522151959.7fd6e87e@lxorguk.ukuu.org.uk>
+	<4DDB622B.1050005@broadcom.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1306230073
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64657
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-24 00:20, Paul Bolle wrote:
-> On Mon, 2011-05-23 at 08:38 -0700, Paul E. McKenney wrote:
->> Running under CONFIG_PREEMPT=y (along with CONFIG_TREE_PREEMPT_RCU=y)
->> could be very helpful in and of itself.  CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
->> can also be helpful.  In post-2.6.39 mainline, it should be possible
->> to set CONFIG_DEBUG_OBJECTS_RCU_HEAD=y without CONFIG_PREEMPT=y, but
->> again, CONFIG_PREEMPT=y can help find problems.
-> 
-> 0) The first thing I tried (from your suggestions) was
-> CONFIG_DEBUG_OBJECTS_RCU_HEAD=y. Given its dependencies (and, well, the
-> build system I used) I ended up with:
-> 
->     $ grep -e PREEMPT -e RCU /boot/config-2.6.39-0.local3.fc16.i686 |
->     grep -v "^#"
->     CONFIG_TREE_PREEMPT_RCU=y
->     CONFIG_PREEMPT_RCU=y
->     CONFIG_RCU_FANOUT=32
->     CONFIG_PREEMPT_NOTIFIERS=y
->     CONFIG_PREEMPT=y
->     CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
->     CONFIG_DEBUG_PREEMPT=y
->     CONFIG_PROVE_RCU=y
->     CONFIG_SPARSE_RCU_POINTER=y
-> 
-> It looks like I am unable to trigger the issue we're talking about here
-> when using that config.
-> 
-> 1) For reference, the config of a kernel that does trigger it had:
-> 
->     $ grep -e PREEMPT -e RCU /boot/config-2.6.39-0.local2.fc16.i686 |
->     grep -v "^#"
->     CONFIG_TREE_RCU=y
->     CONFIG_RCU_FANOUT=32
->     CONFIG_RCU_FAST_NO_HZ=y
->     CONFIG_PREEMPT_NOTIFIERS=y
->     CONFIG_PREEMPT_VOLUNTARY=y
->     CONFIG_PROVE_RCU=y
->     CONFIG_SPARSE_RCU_POINTER=y
-> 
->>> Again CONFIG_TREE_PREEMPT_RCU is available only if PREEMPT=y. So should
->>> we enable preemtion and CONFIG_TREE_PREEMPT_RCU=y and try to reproduce
->>> the issue?
->>
->> Please!
-> 
-> 2) It appears I can't reproduce with those options enabled (see above).
-> 
->> Polling is fine.  Please see attached for a script to poll at 15-second
->> intervals.  Please also feel free to adjust, just tell me what you
->> adjusted.
-> 
-> And should I now try to run that script on a config that triggers this
-> issue (such as the config under 1) above)?
+On Tue, 24 May 2011 09:45:47 +0200
+"Arend van Spriel" <arend@broadcom.com> wrote:
 
-Paul, can we see a dmesg from your running system? Perhaps there's some
-dependency on a particular driver or device that makes this easier to
-reproduce.
+> On 05/22/2011 04:19 PM, Alan Cox wrote:
+> > Is it just used for wireless in this form ?
+> >
+> > See the n_gsm and bluetooth code for what I think is the same crc
+> > algorithm but in reverse bit order .
+> 
+> Hi Alan,
+> 
+> Look into the code in n_gsm and bluetooth code. The algorithm is the 
+> same, but except for the bit order it also is using a different 
+> polynomial. My current implementation has a fixed table. I could do the 
+> table generation runtime with the polynomial and the bit order as 
+> parameters. That would make it more general purpose.
 
--- 
-Jens Axboe
-
+Probably not worth it - its so tiny a piece of code anyway (< 500 bytes
+or so) that it's going to be bigger not smaller if you do that !
