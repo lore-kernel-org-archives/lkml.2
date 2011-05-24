@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab1EXPHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 11:07:48 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53631 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346Ab1EXPHq (ORCPT
+	id S1752428Ab1EXPIM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 11:08:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46038 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab1EXPIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 11:07:46 -0400
+	Tue, 24 May 2011 11:08:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=YlULh3HHnbmm+iK1k8Hp2JRZMM33wFkwDZZzI+HCuIk+K/yc58tdl2JkjR2p4BT3TY
-         YaomBrrT5wucE/FOZUtvaBHD6Fk3PTiULb5xPr2pKHrQM2b8mzV34aTEqrxZqoc5mZYJ
-         4KkGU7/lPAaBPYlwpJ1k23AsqcLT7HabjVnko=
-MIME-Version: 1.0
-In-Reply-To: <20110524154348.27ba649d@lxorguk.ukuu.org.uk>
-References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
-	<20110523192056.GC23629@elte.hu>
-	<BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
-	<20110523231721.GM10009@thunk.org>
-	<4DDAEC68.30803@zytor.com>
-	<BANLkTikGfVSAMY2a2yiXaNpvBVvF8YdMEA@mail.gmail.com>
-	<alpine.LNX.2.01.1105241409280.15351@frira.zrqbmnf.qr>
-	<BANLkTimCXVdVa6KLRG8GJR1gJY=7_5SkOA@mail.gmail.com>
-	<alpine.LNX.2.01.1105241500410.23085@frira.zrqbmnf.qr>
-	<BANLkTinNK+9XijCN0YGXyvLQ8_npPTG2cQ@mail.gmail.com>
-	<20110524154348.27ba649d@lxorguk.ukuu.org.uk>
-Date: Tue, 24 May 2011 11:07:45 -0400
-Message-ID: <BANLkTi=Xuk4=Q43QV1pv33K=J2FFZBLLtQ@mail.gmail.com>
-Subject: Re: (Short?) merge window reminder
-From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jacek Luczak <difrost.kernel@gmail.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-arch@vger.kernel.org,
-        "linux-mm <linux-mm"@kvack.medozas.de, "Ted Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=jtjIMdv3ZgS9HbQ1xB4YfKA5nVltJDopBz99GAinfLyU0RGoLJ7nPIMtzZqoigNW+Z
+         u0yDoMqmWLvlx36i9FrFP/FHFQR1ZD/G3qk+2k/f+pWmCZQ/96cuoIKBR5YESC+m+WSd
+         80qUeMbfofm5WIdn8Bvou8L6dzzmy5ASxU+7E=
+Subject: Re: [PATCH 2/2] loop: handle on-demand devices correctly
+From: Namhyung Kim <namhyung@gmail.com>
+To: Laurent Vivier <Laurent.Vivier@bull.net>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1306249314.2838.19.camel@b015126-ux.fr.ad.bull.net>
+References: <1306247761-2246-1-git-send-email-namhyung@gmail.com>
+	 <1306247761-2246-2-git-send-email-namhyung@gmail.com>
+	 <4DDBC4A7.1040104@fusionio.com>  <1306249066.1751.7.camel@leonhard>
+	 <1306249314.2838.19.camel@b015126-ux.fr.ad.bull.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 May 2011 00:08:03 +0900
+Message-ID: <1306249683.1751.12.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 10:43 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> Can we drop most of MCA, EISA and ISA bus if we are going to have a big
-> version change ? A driver spring clean is much overdue and it's all in
-> git in case someone wishes to sneak out at midnight and bring some crawly
-> horror back from the dead.
+2011-05-24 (화), 17:01 +0200, Laurent Vivier:
+> Le mardi 24 mai 2011 à 23:57 +0900, Namhyung Kim a écrit :
+> > 2011-05-24 (화), 16:45 +0200, Jens Axboe:
+> > > Thanks, applied. Seems we should mark this for stable.
+> > > 
+> > 
+> > Hi Jens,
+> > 
+> > The partition handling was introduced by commit 476a4813cfdd ("loop:
+> > manage partitions in disk image") so that we need these patches for all
+> > stable releases, AFAICS.
+> > 
+> > $ git name-rev --tags 476a4813cfdd
+> > 476a4813cfdd tags/v2.6.26-rc1~1115^2~9
+> > 
+> > Now I can see that brd (ramdisk) module seems to have same problems with
+> > loop. I'll work on that, too.
+> 
+> Have a look to nbd.c too.
+> 
+> Regards,
+> Laurent
+> 
 
-2.8 could mark the beginning of the great cleanup
-  --- work out the details of what needs to be cleaned and set a goal
-  --- remove old buses/driver, switch to device tree, graphics, 32/64
-merges, etc
-3.0 would mark its completion
+Hi Laurent,
+
+I'll take a look on that too after looking at brd. Thanks for the
+comment.
+
 
 -- 
-Jon Smirl
-jonsmirl@gmail.com
+Regards,
+Namhyung Kim
+
+
