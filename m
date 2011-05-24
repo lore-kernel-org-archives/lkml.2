@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab1EXNe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 09:34:56 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46433 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756433Ab1EXNez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 09:34:55 -0400
-Date: Tue, 24 May 2011 06:33:53 -0700
-From: Greg KH <gregkh@suse.de>
-To: Florian Fainelli <ffainelli@freebox.fr>
-Cc: lkml <linux-kernel@vger.kernel.org>, Maxime Bizon <mbizon@freebox.fr>,
-        Tilman Schmidt <tilman@imap.cc>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] TTY: export NR_LDISC and N_* line discipline numbers to
- user-space
-Message-ID: <20110524133353.GB19488@suse.de>
-References: <201105241043.03347.ffainelli@freebox.fr>
- <20110524124044.GD31517@suse.de>
- <201105241517.23166.ffainelli@freebox.fr>
+	id S1756610Ab1EXNeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 09:34:09 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58232 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756416Ab1EXNeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 09:34:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=koytzyioOEHBFKL2ljHC64I7VMEDMLA81J15kdDd/qZh0yMSGL9SvRFIcR+BH/DvtJ
+         w4p3v0MwSgORcOHmv/UUI/7MKyPq7NjPPYKU/Bf6xlXFG8O94kqBJzcdS4x8erR/LQbY
+         h4QYrrsrKD63F4Bqhn7NSvovArz4yHRT8KZAg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105241517.23166.ffainelli@freebox.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 24 May 2011 21:34:05 +0800
+Message-ID: <BANLkTinrHfVT43Evto3GqN8venDrLXoMbg@mail.gmail.com>
+Subject: [PATCH] sched: remove starvation in check_preempt_equal_prio()
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 03:17:23PM +0200, Florian Fainelli wrote:
-> Hello,
-> 
-> On Tuesday 24 May 2011 14:40:44 Greg KH wrote:
-> > On Tue, May 24, 2011 at 10:43:03AM +0200, Florian Fainelli wrote:
-> > > From: Florian Fainelli <ffainelli@freebox.fr>
-> > > 
-> > > Since commit (4564f9e5: consolidate line discipline number definitions)
-> > > the patch moved all line discipline number from a per-architecture
-> > > termios.h to a shared one: tty.h. However, prior to this consolidation
-> > > work, the line discipline numbers were outside of an ifdef
-> > > __KERNEL__/endif block so these numbers used to be exported to
-> > > user-space.
-> > > 
-> > > Since such numbers are kernel ABI anyway, and tty.h is already included
-> > > for user- space header processing, just move these relevant defines
-> > > outside of the ifdef __KERNEL__/endif block in include/linux/tty.h.
-> > 
-> > Any reason you didn't copy _any_ of the people who signed off on that
-> > patch, or the original author of that patch?
-> 
-> No particular reason but my mistake, fixed that.
-> 
-> > 
-> > Anyway, this is been this way for four years, since the 2.6.21 kernel
-> > release.  Since no one has noticed, or complained, since then, how much
-> > a problem is this really?
-> 
-> This is a problem because you may have out of tree drivers using a line 
-> discpline number, and you do not want your companion user-space application to 
-> have to use a different line discpline number but the one the kernel should 
-> provide.
-> 
-> > 
-> > Meaning, why has it taken this long for anyone to notice?
-> 
-> - long standing user-space applications such as pppd got their N_PPP long ago, 
-> and do not have to worry about N_PPP being renumbered so they can just define 
-> it in pppd's sources it won't break
-> 
-> - I started implementing a line discipline driver only a couple of months ago 
-> and then realized that such ABI should have been exported
+If there are pushable tasks and they are high enough in priority, in which
+case task p is covered, the current could keep holding its CPU.
 
-Ok, then it really isn't that important of a change :)
+Even if current task has to release its CPU, requeuing task p could result in
+starvation of tasks that are of same priority and have been waiting on RQ for
+a couple of hours:/
 
-I'll queue it up for the next major merge window after this one, thanks.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-greg k-h
+--- tip-git/kernel/sched_rt.c	Sun May 22 20:12:01 2011
++++ sched_rt.c	Tue May 24 21:01:51 2011
+@@ -1028,24 +1028,23 @@ select_task_rq_rt(struct task_struct *p,
+ 	return cpu;
+ }
+
++static struct task_struct *pick_next_pushable_task(struct rq *);
++
+ static void check_preempt_equal_prio(struct rq *rq, struct task_struct *p)
+ {
+-	if (rq->curr->rt.nr_cpus_allowed == 1)
+-		return;
+-
+-	if (p->rt.nr_cpus_allowed != 1
+-	    && cpupri_find(&rq->rd->cpupri, p, NULL))
++	if (rq->curr->rt.nr_cpus_allowed > 1) {
++		struct task_struct *push = pick_next_pushable_task(rq);
++		/*
++		 * Though curr is pushable, if there are other pushable tasks,
++		 * we keep curr busy.
++		 */
++		if (push && !(push->prio > p->prio))
++			return;
++	} else
+ 		return;
+
+-	if (!cpupri_find(&rq->rd->cpupri, rq->curr, NULL))
+-		return;
+-
+-	/*
+-	 * There appears to be other cpus that can accept
+-	 * current and none to run 'p', so lets reschedule
+-	 * to try and push current away:
+-	 */
+-	requeue_task_rt(rq, p, 1);
++	/* yield curr */
++	requeue_task_rt(rq, rq->curr, 0);
+ 	resched_task(rq->curr);
+ }
+
+@@ -1091,7 +1090,7 @@ static struct sched_rt_entity *pick_next
+ 	BUG_ON(idx >= MAX_RT_PRIO);
+
+ 	queue = array->queue + idx;
+-	next = list_entry(queue->next, struct sched_rt_entity, run_list);
++	next = list_first_entry(queue, struct sched_rt_entity, run_list);
+
+ 	return next;
+ }
