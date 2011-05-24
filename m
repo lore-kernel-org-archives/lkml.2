@@ -1,74 +1,625 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098Ab1EXP4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 11:56:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53519 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754356Ab1EXP4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 11:56:13 -0400
-Date: Tue, 24 May 2011 11:56:09 -0400
-From: Dave Jones <davej@redhat.com>
-To: Justin Mattock <justinmattock@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: INFO: suspicious rcu_dereference_check() usage.
-Message-ID: <20110524155608.GA17977@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Justin Mattock <justinmattock@gmail.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	netdev <netdev@vger.kernel.org>
-References: <4DDB491A.2070901@gmail.com>
- <BANLkTinC=2wxtYD4YmePgOfoLSh9STD6Sw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinC=2wxtYD4YmePgOfoLSh9STD6Sw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757093Ab1EXQDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 12:03:04 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:46935 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756635Ab1EXQDC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 12:03:02 -0400
+X-Auth-Info: 3sdJhWCWf1uKckIPcIGjo4DvFKhbpbxGepwJbqFVlsg=
+From: Anatolij Gustschin <agust@denx.de>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, dzu@denx.de, Anatolij Gustschin <agust@denx.de>
+Subject: [PATCH 1/2] misc/eeprom: add driver for 93xx46 EEPROMs over GPIO
+Date: Tue, 24 May 2011 18:02:42 +0200
+Message-Id: <1306252963-20746-1-git-send-email-agust@denx.de>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 11:50:46PM -0700, Justin Mattock wrote:
+93xx46 EEPROMs can be connected using GPIO lines. Add a generic
+93xx46 EEPROM driver using common GPIO API for such configurations.
+A platform is supposed to register appropriate 93xx46 gpio device
+providing GPIO interface description and using this driver
+read/write/erase access to the EEPROM chip can be easily done
+over sysfs files.
+
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
+---
+ drivers/misc/eeprom/Kconfig       |   10 +
+ drivers/misc/eeprom/Makefile      |    1 +
+ drivers/misc/eeprom/gpio-93xx46.c |  525 +++++++++++++++++++++++++++++++++++++
+ include/linux/gpio-93xx46.h       |   19 ++
+ 4 files changed, 555 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/eeprom/gpio-93xx46.c
+ create mode 100644 include/linux/gpio-93xx46.h
+
+diff --git a/drivers/misc/eeprom/Kconfig b/drivers/misc/eeprom/Kconfig
+index 9118613..fcceffd 100644
+--- a/drivers/misc/eeprom/Kconfig
++++ b/drivers/misc/eeprom/Kconfig
+@@ -70,4 +70,14 @@ config EEPROM_93CX6
  
- > [ 2862.310349] WARNING: at net/ipv4/route.c:1668 ip_rt_bug+0x5c/0x62()
-
-Awesome, adding that WARN_ON paid off. This is the same bug I've been trying
-to reproduce the last few weeks. DaveM mentioned that it means we used
-an input route for packet output.
-
- > [ 2862.310414] Pid: 6153, comm: gcm-session Not tainted
- > 2.6.39-04906-g5e152b4-dirty #2
- > [ 2862.310417] Call Trace:
- > [ 2862.310424]  [<ffffffff8104c634>] warn_slowpath_common+0x83/0x9b
- > [ 2862.310430]  [<ffffffff8104c666>] warn_slowpath_null+0x1a/0x1c
- > [ 2862.310434]  [<ffffffff814095c9>] ip_rt_bug+0x5c/0x62
- > [ 2862.310439]  [<ffffffff814112a1>] dst_output+0x19/0x1d
- > [ 2862.310443]  [<ffffffff81412aa0>] ip_local_out+0x20/0x25
- > [ 2862.310448]  [<ffffffff814139c9>] ip_send_skb+0x19/0x58
- > [ 2862.310453]  [<ffffffff8142fa4e>] udp_send_skb+0x239/0x29b
- > [ 2862.310458]  [<ffffffff814310f0>] udp_sendmsg+0x5a1/0x7d4
- > [ 2862.310464]  [<ffffffff81079408>] ? trace_hardirqs_off+0xd/0xf
- > [ 2862.310469]  [<ffffffff8141139c>] ? ip_select_ident+0x3d/0x3d
- > [ 2862.310475]  [<ffffffff810525b8>] ? local_bh_enable_ip+0xe/0x10
- > [ 2862.310481]  [<ffffffff8148f131>] ? _raw_spin_unlock_bh+0x31/0x35
- > [ 2862.310486]  [<ffffffff813d41a6>] ? release_sock+0x14c/0x155
- > [ 2862.310490]  [<ffffffff814386ac>] inet_sendmsg+0x66/0x6f
- > [ 2862.310495]  [<ffffffff813d02b0>] sock_sendmsg+0xe6/0x109
- > [ 2862.310501]  [<ffffffff8107d63f>] ? lock_acquire+0xe1/0x109
- > [ 2862.310505]  [<ffffffff8107d535>] ? lock_release+0x1aa/0x1d3
- > [ 2862.310512]  [<ffffffff810ed549>] ? might_fault+0xa5/0xac
- > [ 2862.310516]  [<ffffffff813ceb34>] ? copy_from_user+0x2f/0x31
- > [ 2862.310521]  [<ffffffff813d1f34>] sys_sendto+0x132/0x174
- > [ 2862.310526]  [<ffffffff81495cfa>] ? sysret_check+0x2e/0x69
- > [ 2862.310531]  [<ffffffff8107b016>] ? trace_hardirqs_on_caller+0x13f/0x172
- > [ 2862.310537]  [<ffffffff8109fd4d>] ? audit_syscall_entry+0x11c/0x148
- > [ 2862.310542]  [<ffffffff8121debe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- > [ 2862.310546]  [<ffffffff81495cc2>] system_call_fastpath+0x16/0x1b
- > [ 2862.310549] ---[ end trace 2d2332adaa8bf2b5 ]---
- > [ 2863.373889] ip_rt_bug: 10.0.0.10 -> 255.255.255.255, ?
+ 	  If unsure, say N.
  
-The common thing between your bug and the trace I triggered was the
-destination ip reported. A clue maybe ?
-
-	Dave
++config EEPROM_GPIO_93XX46
++	tristate "EEPROM 93XX46 over GPIO support"
++	depends on GPIOLIB && SYSFS
++	help
++	  Driver for the EEPROM chipsets 93xx46x connected with GPIO.
++	  The driver supports both read and write commands and also
++	  the command to erase the whole EEPROM.
++
++	  If unsure, say N.
++
+ endmenu
+diff --git a/drivers/misc/eeprom/Makefile b/drivers/misc/eeprom/Makefile
+index df3d68f..38d8259 100644
+--- a/drivers/misc/eeprom/Makefile
++++ b/drivers/misc/eeprom/Makefile
+@@ -3,3 +3,4 @@ obj-$(CONFIG_EEPROM_AT25)	+= at25.o
+ obj-$(CONFIG_EEPROM_LEGACY)	+= eeprom.o
+ obj-$(CONFIG_EEPROM_MAX6875)	+= max6875.o
+ obj-$(CONFIG_EEPROM_93CX6)	+= eeprom_93cx6.o
++obj-$(CONFIG_EEPROM_GPIO_93XX46) += gpio-93xx46.o
+diff --git a/drivers/misc/eeprom/gpio-93xx46.c b/drivers/misc/eeprom/gpio-93xx46.c
+new file mode 100644
+index 0000000..5c7d7dd
+--- /dev/null
++++ b/drivers/misc/eeprom/gpio-93xx46.c
+@@ -0,0 +1,525 @@
++/*
++ * Driver for 93xx46 EEPROMs over GPIO lines.
++ *
++ * (C) 2011 DENX Software Engineering, Anatolij Gustschin <agust@denx.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/fs.h>
++#include <linux/gpio.h>
++#include <linux/gpio-93xx46.h>
++#include <linux/delay.h>
++#include <linux/mutex.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/sysctl.h>
++
++#define OP_START	0x4
++#define OP_WRITE	(OP_START | 0x1)
++#define OP_READ		(OP_START | 0x2)
++#define OP_ERASE	(OP_START | 0x3)
++#define OP_EWEN		(OP_START | 0x0)
++#define OP_EWDS		(OP_START | 0x0)
++#define ADDR_EWDS	0x00
++#define ADDR_ERAL	0x20
++#define ADDR_EWEN	0x30
++#define DELAY		450
++
++struct gpio_93xx46_dev {
++	struct device *dev;
++	struct gpio_93xx46_platform_data *pdata;
++	struct bin_attribute bin;
++	int addrlen;
++
++	struct gpio pins[4];
++};
++
++static DEFINE_MUTEX(gpio_93xx46_mutex);
++
++static int gpio_93xx46_request_gpios(struct gpio_93xx46_dev *edev)
++{
++	struct gpio_93xx46_platform_data *pd = edev->pdata;
++	const char *name =  to_platform_device(edev->dev)->name;
++	int ret;
++
++	edev->pins[0].gpio = pd->clk;
++	edev->pins[0].flags = GPIOF_OUT_INIT_LOW;
++	edev->pins[0].label = name;
++	edev->pins[1].gpio = pd->cs;
++	edev->pins[1].flags = GPIOF_OUT_INIT_LOW;
++	edev->pins[1].label = name;
++	edev->pins[2].gpio = pd->din;
++	edev->pins[2].flags = GPIOF_OUT_INIT_LOW;
++	edev->pins[2].label = name;
++	edev->pins[3].gpio = pd->dout;
++	edev->pins[3].flags = GPIOF_IN;
++	edev->pins[3].label = name;
++
++	ret = gpio_request_array(edev->pins, ARRAY_SIZE(edev->pins));
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static void gpio_93xx46_tx_bit(struct gpio_93xx46_dev *edev, bool bit)
++{
++	struct gpio_93xx46_platform_data *pd = edev->pdata;
++
++	if (bit)
++		gpio_set_value(pd->din, 1);
++	else
++		gpio_set_value(pd->din, 0);
++
++	ndelay(DELAY);
++	gpio_set_value(pd->clk, 1);
++	ndelay(DELAY);
++	gpio_set_value(pd->clk, 0);
++}
++
++static inline unsigned char
++gpio_93xx46_rx_byte(struct gpio_93xx46_platform_data *pd)
++{
++	int data = 0, i;
++
++	for (i = 0; i < 8 ; i++) {
++		gpio_set_value(pd->clk, 1);
++		ndelay(DELAY);
++		gpio_set_value(pd->clk, 0);
++
++		if (gpio_get_value(pd->dout))
++			data |= 1;
++		data <<= 1;
++		ndelay(DELAY);
++	}
++	return data >>= 1;
++}
++
++static void gpio_93xx46_read(struct gpio_93xx46_dev *edev,
++			     char *buf, unsigned offs, size_t cnt)
++{
++	struct gpio_93xx46_platform_data *pd = edev->pdata;
++	int active = !(pd->flags & EE_CS_LOW);
++	int cmd_addr, len, mask;
++	int i;
++
++	cmd_addr = (OP_READ << edev->addrlen);
++	if (edev->addrlen == 7) {
++		cmd_addr |= (offs & 0x7f);
++		len = 10;
++	} else {
++		cmd_addr |= (offs & 0x3f);
++		len = 9;
++	}
++	mask = 1 << (len - 1);
++
++	mutex_lock(&gpio_93xx46_mutex);
++
++	gpio_set_value(pd->cs, !active);
++	gpio_set_value(pd->clk, 0);
++	gpio_set_value(pd->din, 1);
++	ndelay(DELAY);
++
++	if (pd->prepare)
++		pd->prepare(edev);
++
++	gpio_set_value(pd->cs, active);
++	ndelay(DELAY);
++
++	for (i = 0; i < len; i++, mask >>= 1)
++		gpio_93xx46_tx_bit(edev, !!(cmd_addr & mask));
++
++	ndelay(DELAY);
++
++	for (i = 0; i < cnt; i++)
++		buf[i] = gpio_93xx46_rx_byte(pd);
++
++	gpio_set_value(pd->clk, 0);
++	gpio_set_value(pd->din, 0);
++	gpio_set_value(pd->cs, !active);
++	ndelay(DELAY);
++
++	if (pd->finish)
++		pd->finish(edev);
++
++	mutex_unlock(&gpio_93xx46_mutex);
++}
++
++static void gpio_93xx46_ewen(struct gpio_93xx46_dev *edev)
++{
++	struct gpio_93xx46_platform_data *pd = edev->pdata;
++	int active = !(pd->flags & EE_CS_LOW);
++	int cmd_addr, len, mask;
++	int i;
++
++	cmd_addr = OP_EWEN << edev->addrlen;
++	if (edev->addrlen == 7) {
++		cmd_addr |= ADDR_EWEN << 1;
++		len = 10;
++	} else {
++		cmd_addr |= ADDR_EWEN;
++		len = 9;
++	}
++	mask = 1 << (len - 1);
++
++	mutex_lock(&gpio_93xx46_mutex);
++
++	gpio_set_value(pd->cs, !active);
++	gpio_set_value(pd->clk, 0);
++	gpio_set_value(pd->din, 1);
++	ndelay(DELAY);
++
++	if (pd->prepare)
++		pd->prepare(edev);
++
++	gpio_set_value(pd->cs, active);
++	ndelay(DELAY);
++
++	for (i = 0; i < len; i++, mask >>= 1)
++		gpio_93xx46_tx_bit(edev, !!(cmd_addr & mask));
++
++	ndelay(DELAY);
++
++	gpio_set_value(pd->clk, 0);
++	gpio_set_value(pd->din, 0);
++	gpio_set_value(pd->cs, !active);
++	ndelay(DELAY);
++
++	if (pd->finish)
++		pd->finish(edev);
++
++	mutex_unlock(&gpio_93xx46_mutex);
++}
++
++static void gpio_93xx46_ewds(struct gpio_93xx46_dev *edev)
++{
++	struct gpio_93xx46_platform_data *pd = edev->pdata;
++	int active = !(pd->flags & EE_CS_LOW);
++	int cmd_addr, len, mask;
++	int i;
++
++	cmd_addr = OP_EWDS << edev->addrlen;
++	if (edev->addrlen == 7) {
++		cmd_addr |= ADDR_EWDS << 1;
++		len = 10;
++	} else {
++		cmd_addr |= ADDR_EWDS;
++		len = 9;
++	}
++	mask = 1 << (len - 1);
++
++	mutex_lock(&gpio_93xx46_mutex);
++
++	gpio_set_value(pd->cs, !active);
++	gpio_set_value(pd->clk, 0);
++	gpio_set_value(pd->din, 1);
++	ndelay(DELAY);
++
++	if (pd->prepare)
++		pd->prepare(edev);
++
++	gpio_set_value(pd->cs, active);
++	ndelay(DELAY);
++
++	for (i = 0; i < len; i++, mask >>= 1)
++		gpio_93xx46_tx_bit(edev, !!(cmd_addr & mask));
++
++	ndelay(DELAY);
++
++	gpio_set_value(pd->clk, 0);
++	gpio_set_value(pd->din, 0);
++	gpio_set_value(pd->cs, !active);
++	ndelay(DELAY);
++
++	if (pd->finish)
++		pd->finish(edev);
++
++	mutex_unlock(&gpio_93xx46_mutex);
++}
++
++static void gpio_93xx46_eral(struct gpio_93xx46_dev *edev)
++{
++	struct gpio_93xx46_platform_data *pd = edev->pdata;
++	int active = !(pd->flags & EE_CS_LOW);
++	int cmd_addr, len, mask;
++	int i, to = 10;
++
++	cmd_addr = OP_START << edev->addrlen;
++	if (edev->addrlen == 7) {
++		cmd_addr |= ADDR_ERAL << 1;
++		len = 10;
++	} else {
++		cmd_addr |= ADDR_ERAL;
++		len = 9;
++	}
++	mask = 1 << (len - 1);
++
++	mutex_lock(&gpio_93xx46_mutex);
++
++	gpio_set_value(pd->cs, !active);
++	gpio_set_value(pd->clk, 0);
++	gpio_set_value(pd->din, 1);
++	ndelay(DELAY);
++
++	if (pd->prepare)
++		pd->prepare(edev);
++
++	gpio_set_value(pd->cs, active);
++	ndelay(DELAY);
++
++	for (i = 0; i < len; i++, mask >>= 1)
++		gpio_93xx46_tx_bit(edev, !!(cmd_addr & mask));
++
++	gpio_set_value(pd->cs, !active);
++	ndelay(DELAY);
++	gpio_set_value(pd->cs, active);
++	ndelay(DELAY);
++
++	while (!gpio_get_value(pd->dout)) {
++		if (!to--) {
++			dev_err(edev->dev, "erase not ready timeout\n");
++			break;
++		}
++		mdelay(1);
++	}
++
++	gpio_set_value(pd->clk, 0);
++	gpio_set_value(pd->din, 0);
++	gpio_set_value(pd->cs, !active);
++	ndelay(DELAY);
++
++	if (pd->finish)
++		pd->finish(edev);
++
++	mutex_unlock(&gpio_93xx46_mutex);
++}
++
++static void gpio_93xx46_write(struct gpio_93xx46_dev *edev,
++			      unsigned offs, char data)
++{
++	struct gpio_93xx46_platform_data *pd = edev->pdata;
++	int active = !(pd->flags & EE_CS_LOW);
++	int cmd_addr, len, mask;
++	int i, to = 10;
++
++	cmd_addr = (OP_WRITE << edev->addrlen);
++	if (edev->addrlen == 7) {
++		cmd_addr |= (offs & 0x7f);
++		len = 10;
++	} else {
++		cmd_addr |= (offs & 0x3f);
++		len = 9;
++	}
++	mask = 1 << (len - 1);
++
++	mutex_lock(&gpio_93xx46_mutex);
++
++	gpio_set_value(pd->cs, !active);
++	gpio_set_value(pd->clk, 0);
++	gpio_set_value(pd->din, 1);
++	ndelay(DELAY);
++
++	if (pd->prepare)
++		pd->prepare(edev);
++
++	gpio_set_value(pd->cs, active);
++	ndelay(DELAY);
++
++	for (i = 0; i < len; i++, mask >>= 1)
++		gpio_93xx46_tx_bit(edev, !!(cmd_addr & mask));
++
++	ndelay(DELAY);
++
++	for (i = 0; i < 8; i++) {
++		gpio_93xx46_tx_bit(edev, !!(data & 0x80));
++		data <<= 1;
++	}
++
++	gpio_set_value(pd->cs, !active);
++	ndelay(DELAY);
++	gpio_set_value(pd->cs, active);
++	ndelay(DELAY);
++
++	while (!gpio_get_value(pd->dout)) {
++		if (!to--) {
++			dev_err(edev->dev, "write not ready timeout\n");
++			break;
++		}
++		mdelay(1);
++	}
++
++	gpio_set_value(pd->clk, 0);
++	gpio_set_value(pd->din, 0);
++	gpio_set_value(pd->cs, !active);
++	ndelay(DELAY);
++
++	if (pd->finish)
++		pd->finish(edev);
++
++	mutex_unlock(&gpio_93xx46_mutex);
++}
++
++static ssize_t
++gpio_93xx46_bin_read(struct file *filp, struct kobject *kobj,
++		     struct bin_attribute *bin_attr,
++		     char *buf, loff_t off, size_t count)
++{
++	struct device *dev = container_of(kobj, struct device, kobj);
++	struct gpio_93xx46_dev *edev = dev_get_drvdata(dev);
++
++	if (unlikely(!count))
++		return count;
++	if (unlikely(off >= edev->bin.size))
++		return 0;
++	if ((off + count) > edev->bin.size)
++		count = edev->bin.size - off;
++
++	gpio_93xx46_read(edev, buf, off, count);
++	return count;
++}
++
++static ssize_t
++gpio_93xx46_bin_write(struct file *filp, struct kobject *kobj,
++		      struct bin_attribute *bin_attr,
++		      char *buf, loff_t off, size_t count)
++{
++	struct device *dev = container_of(kobj, struct device, kobj);
++	struct gpio_93xx46_dev *edev = dev_get_drvdata(dev);
++	int i;
++
++	if (unlikely(!count))
++		return count;
++	if (unlikely(off >= edev->bin.size))
++		return 0;
++	if ((off + count) > edev->bin.size)
++		count = edev->bin.size - off;
++
++	gpio_93xx46_ewen(edev);
++
++	for (i = 0; i < count; i++)
++		gpio_93xx46_write(edev, off + i, buf[i]);
++
++	gpio_93xx46_ewds(edev);
++
++	return count;
++}
++
++ssize_t gpio_93xx46_store_erase(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	struct gpio_93xx46_dev *edev = dev_get_drvdata(dev);
++	int erase = 0;
++
++	sscanf(buf, "%d", &erase);
++	if (erase) {
++		gpio_93xx46_ewen(edev);
++		gpio_93xx46_eral(edev);
++		gpio_93xx46_ewds(edev);
++	}
++
++	return count;
++}
++static DEVICE_ATTR(erase, S_IWUSR, NULL, gpio_93xx46_store_erase);
++
++static int __devinit gpio_93xx46_probe(struct platform_device *pdev)
++{
++	struct gpio_93xx46_platform_data *pd = pdev->dev.platform_data;
++	struct gpio_93xx46_dev *edev = NULL;
++	int err;
++
++	if (!pd)
++		return -ENODEV;
++
++	edev = kzalloc(sizeof(*edev), GFP_KERNEL);
++	if (!edev)
++		return -ENOMEM;
++
++	edev->dev = &pdev->dev;
++	edev->pdata = pd;
++	if (pd->flags & EE_ADDR8)
++		edev->addrlen = 7;
++	else if (pd->flags & EE_ADDR16)
++		edev->addrlen = 6;
++	else {
++		dev_err(&pdev->dev,
++			"invalid address flags 0x%x\n", pd->flags);
++		err = -EINVAL;
++		goto fail;
++	}
++
++	err = gpio_93xx46_request_gpios(edev);
++	if (err)
++		goto fail;
++
++	sysfs_bin_attr_init(&edev->bin);
++	edev->bin.attr.name = "eeprom";
++	edev->bin.attr.mode = S_IRUSR;
++	edev->bin.read = gpio_93xx46_bin_read;
++	edev->bin.size = 128;
++	if (!(pd->flags & EE_READONLY)) {
++		edev->bin.write = gpio_93xx46_bin_write;
++		edev->bin.attr.mode |= S_IWUSR;
++	}
++
++	err = sysfs_create_bin_file(&pdev->dev.kobj, &edev->bin);
++	if (err)
++		goto fail;
++
++	if (!(pd->flags & EE_READONLY)) {
++		if (device_create_file(&pdev->dev, &dev_attr_erase))
++			dev_err(&pdev->dev, "can't create erase interface\n");
++	}
++
++	platform_set_drvdata(pdev, edev);
++
++	return 0;
++fail:
++	kfree(edev);
++	return err;
++}
++
++static int __devexit gpio_93xx46_remove(struct platform_device *pdev)
++{
++	struct gpio_93xx46_platform_data *pd = pdev->dev.platform_data;
++	struct gpio_93xx46_dev *edev = platform_get_drvdata(pdev);
++
++	if (!(pd->flags & EE_READONLY))
++		device_remove_file(&pdev->dev, &dev_attr_erase);
++	sysfs_remove_bin_file(&pdev->dev.kobj, &edev->bin);
++	gpio_free_array(edev->pins, ARRAY_SIZE(edev->pins));
++	platform_set_drvdata(pdev, NULL);
++	kfree(edev);
++	return 0;
++}
++
++static struct platform_driver gpio_93xx46_driver = {
++	.probe		= gpio_93xx46_probe,
++	.remove		= __devexit_p(gpio_93xx46_remove),
++	.driver		= {
++		.name	= "gpio-93xx46",
++		.owner	= THIS_MODULE,
++	}
++};
++
++static int __init gpio_93xx46_init(void)
++{
++	return platform_driver_register(&gpio_93xx46_driver);
++}
++module_init(gpio_93xx46_init);
++
++static void __exit gpio_93xx46_exit(void)
++{
++	platform_driver_unregister(&gpio_93xx46_driver);
++}
++module_exit(gpio_93xx46_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Driver for 93xx46 EEPROMs over GPIO");
++MODULE_AUTHOR("Anatolij Gustschin <agust@denx.de>");
++MODULE_ALIAS("platform:gpio-93xx46");
+diff --git a/include/linux/gpio-93xx46.h b/include/linux/gpio-93xx46.h
+new file mode 100644
+index 0000000..a565de6
+--- /dev/null
++++ b/include/linux/gpio-93xx46.h
+@@ -0,0 +1,19 @@
++/*
++ * Module: gpio-93xx46
++ * Interface description for 93xx46 EEPROMs connected over GPIO.
++ */
++struct gpio_93xx46_platform_data {
++	unsigned	clk;
++	unsigned	cs;
++	unsigned	din;
++	unsigned	dout;
++
++	u8		flags;
++#define EE_ADDR8	0x01		/*  8 bit addr. cfg */
++#define EE_ADDR16	0x02		/* 16 bit addr. cfg */
++#define EE_READONLY	0x08		/* forbid writing */
++#define EE_CS_LOW	0x10		/* CS is active low */
++
++	void (*prepare)(void *);
++	void (*finish)(void *);
++};
+-- 
+1.7.1
 
