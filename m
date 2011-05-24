@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab1EXTya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 15:54:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12277 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514Ab1EXTy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 15:54:29 -0400
-Date: Tue, 24 May 2011 15:53:56 -0400
-From: David Teigland <teigland@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] dlm updates for 2.6.40
-Message-ID: <20110524195356.GB27093@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S933007Ab1EXTxk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 15:53:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55359 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932866Ab1EXTxj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 15:53:39 -0400
+From: Fabio Erculiani <lxnay@sabayon.org>
+To: linux-fbdev@vger.kernel.org
+Cc: lethal@linux-sh.org, linux-kernel@vger.kernel.org,
+        Fabio Erculiani <lxnay@sabayon.org>
+Subject: [PATCH] fbmem: fix race condition between register_framebuffer() and fb_open()
+Date: Tue, 24 May 2011 21:54:31 +0200
+Message-Id: <1306266871-12464-1-git-send-email-lxnay@sabayon.org>
+X-Mailer: git-send-email 1.7.5.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+register_framebuffer() acquires registration_lock, then calls
+do_register_framebuffer() which calls fb_notifier_call_chain()
+which calls fb_open() which calls get_fb_info() which tries
+(at last) to acquire registration_lock again.
+This is a workaround.
 
-Please pull dlm updates for 2.6.40 from:
+Signed-off-by: Fabio Erculiani <lxnay@sabayon.org>
+---
+ drivers/video/fbmem.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/teigland/dlm.git for-linus
+diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+index 5aac00e..b9831a0 100644
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1628,6 +1628,11 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+ 	event.info = fb_info;
+ 	if (!lock_fb_info(fb_info))
+ 		return -ENODEV;
++
++	/* FIXME: unlock registration mutex before registration
++	 * notification is sent, in order to avoid deadlock.
++	 */
++	mutex_unlock(&registration_lock);
+ 	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
+ 	unlock_fb_info(fb_info);
+ 	return 0;
+@@ -1692,7 +1697,13 @@ register_framebuffer(struct fb_info *fb_info)
+ 
+ 	mutex_lock(&registration_lock);
+ 	ret = do_register_framebuffer(fb_info);
+-	mutex_unlock(&registration_lock);
++	if (ret != 0)
++		/*
++		 * FIXME: mutex is unlocked only if ret == 0.
++		 * This is the second part of the workaround
++		 * that prevents deadlocking.
++		 */
++		mutex_unlock(&registration_lock);
+ 
+ 	return ret;
+ }
+-- 
+1.7.5.rc1
 
-The most useful patch makes posix lock operations (from gfs2/ocfs2)
-interruptible using the helpful wait_event_killable.  This is followed by
-a new timer that can be set to warn when locks have been waiting for a
-reply message for a configured time.  People debugging lost dlm messages
-have been asking for this.
-Thanks,
-Dave
-
-David Teigland (3):
-      dlm: delayed reply message warning
-      dlm: remove shared message stub for recovery
-      dlm: make plock operation killable
-
-Matt Fleming (1):
-      dlm: Remove superfluous call to recalc_sigpending()
-
- fs/dlm/config.c           |    9 ++-
- fs/dlm/config.h           |    1 +
- fs/dlm/dlm_internal.h     |    3 +
- fs/dlm/lock.c             |  182 +++++++++++++++++++++++++++++++++++----------
- fs/dlm/lock.h             |    1 +
- fs/dlm/lockspace.c        |    6 +-
- fs/dlm/plock.c            |   65 +++++++++++++++-
- fs/dlm/user.c             |    1 -
- include/linux/dlm_plock.h |    6 +-
- 9 files changed, 223 insertions(+), 51 deletions(-)
