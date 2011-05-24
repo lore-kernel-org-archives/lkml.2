@@ -1,183 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923Ab1EXA0g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 20:26:36 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:33003 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757786Ab1EXA0c convert rfc822-to-8bit (ORCPT
+	id S1757877Ab1EXA3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 20:29:09 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1798 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752477Ab1EXA3E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 20:26:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=M0bcogQ7+s0sdRXGNYfht4p7lXP0aL5I4z2IowNfatvvQOq/I2FE7CIeyBjIgf+BAy
-         CVpJqvWyWPk+T7WN5tyg==
+	Mon, 23 May 2011 20:29:04 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+From: "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
+To: "Greg KH" <greg@kroah.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
+cc: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 23 May 2011 17:28:54 -0700
+Subject: RE: [GIT PATCH] STAGING pull for .40
+Thread-Topic: [GIT PATCH] STAGING pull for .40
+Thread-Index: AcwZnXPh8CSULbFwTdi6/UFUenFjzgACnXWA
+Message-ID: <400C43189542CE41BC0A5B252FC90136A8E6853B13@SJEXCHCCR02.corp.ad.broadcom.com>
+References: <20110523193855.GA20384@kroah.com>
+ <BANLkTi=vUXOfZ57CT7CtAjOzYReBnp=Vvg@mail.gmail.com>
+ <20110523230033.GA26471@kroah.com>
+In-Reply-To: <20110523230033.GA26471@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-In-Reply-To: <20110524091114.02fb183d.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110520123749.d54b32fa.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110520124636.45c26cfa.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110520144935.3bfdb2e2.akpm@linux-foundation.org>
-	<BANLkTi=Ap=NdZ+05UjjEsC5f5wdjo9yvew@mail.gmail.com>
-	<BANLkTinEcbQoV6n0+S9W4s4+AFJKKCiwsA@mail.gmail.com>
-	<20110524091114.02fb183d.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 23 May 2011 17:26:28 -0700
-Message-ID: <BANLkTinX-qe2vRApxBQbvEdsoAcvCQtB4A@mail.gmail.com>
-Subject: Re: [PATCH 6/8] memcg asynchronous memory reclaim interface
-From: Ying Han <yinghan@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        hannes@cmpxchg.org, Michal Hocko <mhocko@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+X-WSS-ID: 61C423361IC11082701-01-01
+Content-Type: text/plain;
+ charset=us-ascii
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 5:11 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Mon, 23 May 2011 16:36:20 -0700
-> Ying Han <yinghan@google.com> wrote:
->
->> On Fri, May 20, 2011 at 4:56 PM, Hiroyuki Kamezawa
->> <kamezawa.hiroyuki@gmail.com> wrote:
->> > 2011/5/21 Andrew Morton <akpm@linux-foundation.org>:
->> >> On Fri, 20 May 2011 12:46:36 +0900
->> >> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> >>
->> >>> This patch adds a logic to keep usage margin to the limit in asynchronous way.
->> >>> When the usage over some threshould (determined automatically), asynchronous
->> >>> memory reclaim runs and shrink memory to limit - MEMCG_ASYNC_STOP_MARGIN.
->> >>>
->> >>> By this, there will be no difference in total amount of usage of cpu to
->> >>> scan the LRU
->> >>
->> >> This is not true if "don't writepage at all (revisit this when
->> >> dirty_ratio comes.)" is true.  Skipping over dirty pages can cause
->> >> larger amounts of CPU consumption.
->> >>
->> >>> but we'll have a chance to make use of wait time of applications
->> >>> for freeing memory. For example, when an application read a file or socket,
->> >>> to fill the newly alloated memory, it needs wait. Async reclaim can make use
->> >>> of that time and give a chance to reduce latency by background works.
->> >>>
->> >>> This patch only includes required hooks to trigger async reclaim and user interfaces.
->> >>> Core logics will be in the following patches.
->> >>>
->> >>>
->> >>> ...
->> >>>
->> >>>  /*
->> >>> + * For example, with transparent hugepages, memory reclaim scan at hitting
->> >>> + * limit can very long as to reclaim HPAGE_SIZE of memory. This increases
->> >>> + * latency of page fault and may cause fallback. At usual page allocation,
->> >>> + * we'll see some (shorter) latency, too. To reduce latency, it's appreciated
->> >>> + * to free memory in background to make margin to the limit. This consumes
->> >>> + * cpu but we'll have a chance to make use of wait time of applications
->> >>> + * (read disk etc..) by asynchronous reclaim.
->> >>> + *
->> >>> + * This async reclaim tries to reclaim HPAGE_SIZE * 2 of pages when margin
->> >>> + * to the limit is smaller than HPAGE_SIZE * 2. This will be enabled
->> >>> + * automatically when the limit is set and it's greater than the threshold.
->> >>> + */
->> >>> +#if HPAGE_SIZE != PAGE_SIZE
->> >>> +#define MEMCG_ASYNC_LIMIT_THRESH      (HPAGE_SIZE * 64)
->> >>> +#define MEMCG_ASYNC_MARGIN         (HPAGE_SIZE * 4)
->> >>> +#else /* make the margin as 4M bytes */
->> >>> +#define MEMCG_ASYNC_LIMIT_THRESH      (128 * 1024 * 1024)
->> >>> +#define MEMCG_ASYNC_MARGIN            (8 * 1024 * 1024)
->> >>> +#endif
->> >>
->> >> Document them, please.  How are they used, what are their units.
->> >>
->> >
->> > will do.
->> >
->> >
->> >>> +static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem);
->> >>> +
->> >>> +/*
->> >>>   * The memory controller data structure. The memory controller controls both
->> >>>   * page cache and RSS per cgroup. We would eventually like to provide
->> >>>   * statistics based on the statistics developed by Rik Van Riel for clock-pro,
->> >>> @@ -278,6 +303,12 @@ struct mem_cgroup {
->> >>>        */
->> >>>       unsigned long   move_charge_at_immigrate;
->> >>>       /*
->> >>> +      * Checks for async reclaim.
->> >>> +      */
->> >>> +     unsigned long   async_flags;
->> >>> +#define AUTO_ASYNC_ENABLED   (0)
->> >>> +#define USE_AUTO_ASYNC               (1)
->> >>
->> >> These are really confusing.  I looked at the implementation and at the
->> >> documentation file and I'm still scratching my head.  I can't work out
->> >> why they exist.  With the amount of effort I put into it ;)
->> >>
->> >> Also, AUTO_ASYNC_ENABLED and USE_AUTO_ASYNC have practically the same
->> >> meaning, which doesn't help things.
->> >>
->> > Ah, yes it's confusing.
->>
->> Sorry I was confused by the memory.async_control interface. I assume
->> that is the knob to turn on/off the bg reclaim on per-memcg basis. But
->> when I tried to turn it off, it seems not working well:
->>
->> $ cat /proc/7248/cgroup
->> 3:memory:/A
->>
->> $ cat /dev/cgroup/memory/A/memory.async_control
->> 0
->>
->
-> If enabled and kworker runs, this shows "3", for now.
-> I'll make this simpler in the next post.
->
->> Then i can see the kworkers start running when the memcg A under
->> memory pressure. There was no other memcgs configured under root.
->
->
-> What kworkers ? For example, many kworkers runs on ext4? on my host.
-> If kworker/u:x works, it may be for memcg (for my host)
+On Mon, May 23, 2011 at 04:01 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, May 23, 2011 at 01:43:13PM -0700, Linus Torvalds wrote:
+> > which looks like another case of "can't compile two things both into
+> > the kernel".
+> >
+> > Looks like the BRCMSMAC / BRCMFMAC drivers need to be mutually
+> > exclusive. Something like
+> >
+> >   depends on m || (BRCMSMAC != y)
+> >
+> > for BRCMFMAC?
+> >
+> > Or they should just avoid using the same globally visible name.
+> 
+> Both probably.  I'll fix this up for the next set of staging fixes
+> after
+> you release -rc1.
 
-I am kind of sure they are kworkers from memcg. They start running
-right after my test and then stop when i kill that test.
+Sorry about this. We have never compiled both modules with yesconfig to check for coexistence issue. We will add this to checklist from now on. And there should not be any coexistence problem for brcmsmac and brcmfmac. I will send out a patch for fixing this today.
 
-$ cat /dev/cgroup/memory/A/memory.limit_in_bytes
-2147483648
-$ cat /dev/cgroup/memory/A/memory.async_control
-0
+Thanks,
+Franky
 
-
-  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-  393 root      20   0     0    0    0 S   54  0.0   1:30.36
-kworker/7:1
-  391 root      20   0     0    0    0 S   51  0.0   1:42.35
-kworker/5:1
-  390 root      20   0     0    0    0 S   43  0.0   1:45.55
-kworker/4:1
-   11 root      20   0     0    0    0 S   40  0.0   1:36.98
-kworker/1:0
-   14 root      20   0     0    0    0 S   36  0.0   1:47.04
-kworker/0:1
-  389 root      20   0     0    0    0 S   24  0.0   0:47.35
-kworker/3:1
-20071 root      20   0 20.0g 497m 497m D   12  1.5   0:04.99 memtoy
-  392 root      20   0     0    0    0 S   10  0.0   1:26.43
-kworker/6:1
-
---Ying
-
->
-> Ok, I'll add statistics in v3.
->
-> Thanks,
-> -Kame
->
->
