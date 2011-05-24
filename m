@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858Ab1EXTbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 15:31:14 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42897 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932806Ab1EXTbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 15:31:13 -0400
-Date: Tue, 24 May 2011 21:30:59 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, penberg@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v6] x86: UV uv_tlb.c cleanup
-Message-ID: <20110524193059.GA25098@elte.hu>
-References: <E1QOw12-0004MN-Lp@eag09.americas.sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1QOw12-0004MN-Lp@eag09.americas.sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S932883Ab1EXTcj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 15:32:39 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:39579 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab1EXTcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 15:32:36 -0400
+Date: Tue, 24 May 2011 15:32:22 -0400 (EDT)
+Message-Id: <20110524.153222.1953796640575918161.davem@davemloft.net>
+To: joe@perches.com
+Cc: randy.dunlap@oracle.com, sfr@canb.auug.org.au, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for May 24 (ratelimits, CONFIG_PRINTK not
+ enabled)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1306262988.2298.49.camel@Joe-Laptop>
+References: <20110524140212.a4f19769.sfr@canb.auug.org.au>
+	<20110524113328.e3d5867b.randy.dunlap@oracle.com>
+	<1306262988.2298.49.camel@Joe-Laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 24 May 2011 12:32:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Joe Perches <joe@perches.com>
+Date: Tue, 24 May 2011 11:49:48 -0700
 
-* Cliff Wickman <cpw@sgi.com> wrote:
+> On Tue, 2011-05-24 at 11:33 -0700, Randy Dunlap wrote:
+>> Adding <linux/ratelimit.h> to <asm-generic/bug.h> causes other problems:
+> 
+> Yup, that's not a good solution.
 
-> General readability cleanup of tlb_uv.c. Now:
-> - no function has over 50 non-comment lines
-> - very few statements of over 80 characters need to be broken
-
-So, have you checked whether this patch applies cleanly to the latest x86 tree?
-
-Thanks,
-
-	Ingo
+Please come up with a fix or I'll have to revert, thanks Joe.
