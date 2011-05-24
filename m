@@ -1,126 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab1EXJZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 05:25:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6493 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755299Ab1EXJZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 05:25:25 -0400
-Date: Tue, 24 May 2011 11:25:11 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-cc: Kyungmin Park <kmpark@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v6] fat: Batched discard support for fat
-In-Reply-To: <87mxick0zj.fsf@devron.myhome.or.jp>
-Message-ID: <alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
-References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de> <AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com> <201103301706.36214.arnd@arndb.de> <BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com> <87wrhgk8lp.fsf@devron.myhome.or.jp>
- <BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com> <87r57ok3fp.fsf@devron.myhome.or.jp> <BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com> <87mxick0zj.fsf@devron.myhome.or.jp>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755627Ab1EXJ1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 05:27:52 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54309 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab1EXJ1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 05:27:50 -0400
+In-Reply-To: <20110524091255.GB16886@redhat.com>
+References: <cover.1305846412.git.mst@redhat.com> <aced8619c07018b5495f9ceb2c02d4fbf897a098.1305846412.git.mst@redhat.com> <877h9kvlps.fsf@rustcorp.com.au> <20110522121008.GA12155@redhat.com> <87boyutbjg.fsf@rustcorp.com.au> <20110523111900.GB27212@redhat.com> <OFEED174CD.D3C9A726-ON6525789A.002661D5-6525789A.002B26ED@in.ibm.com> <20110524091255.GB16886@redhat.com>
+Subject: Re: [PATCHv2 10/14] virtio_net: limit xmit polling
+X-KeepSent: 69E520FD:340352AC-6525789A:003308A2;
+ type=4; name=$KeepSent
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux390@de.ibm.com,
+        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
+X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
+Message-ID: <OF69E520FD.340352AC-ON6525789A.003308A2-6525789A.0033F2DF@in.ibm.com>
+From: Krishna Kumar2 <krkumar2@in.ibm.com>
+Date: Tue, 24 May 2011 14:57:43 +0530
+X-MIMETrack: Serialize by Router on d23ml174/23/M/IBM(Release 8.5.1FP4|July 25, 2010) at
+ 24/05/2011 14:57:49
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1240518882-1306229114=:5457"
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+"Michael S. Tsirkin" <mst@redhat.com> wrote on 05/24/2011 02:42:55 PM:
 
---8323328-1240518882-1306229114=:5457
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Tue, 24 May 2011, OGAWA Hirofumi wrote:
-
-> Kyungmin Park <kmpark@infradead.org> writes:
-> 
-> >>> It's handled at trim implementation. It just trim the fat aware block.
-> >>> Not trim the blocks which fat doesn't know.
-> >>> As fat don't use the block 0, 1, it adjust the start block at kernel.
-> >>>
-> >>> +       if (start < FAT_START_ENT)
-> >>> +               start = FAT_START_ENT;
-> >>>
-> >>> and don't exceed the max cluster size.
-> >>>
-> >>> +       len = (len > sbi->max_cluster) ? sbi->max_cluster : len;
-> >>>
-> >>> +       for (count = start; count <= len; count++) {
-> >>
-> >> Yes. We _adjust_ from 0 to 2 here, so, the end of block also have to be
-> >> _adjusted_.
-> >>
-> >> From other point of view, if userland specified 0 - max-length
-> >> (i.e. number of blocks), what happens? It would trim block of 2 -
-> >> (max-length - 2), right?
+> > > > To do this properly, we should really be using the actual number of
+sg
+> > > > elements needed, but we'd have to do most of xmit_skb beforehand so
+we
+> > > > know how many.
+> > > >
+> > > > Cheers,
+> > > > Rusty.
+> > >
+> > > Maybe I'm confused here.  The problem isn't the failing
+> > > add_buf for the given skb IIUC.  What we are trying to do here is
+stop
+> > > the queue *before xmit_skb fails*. We can't look at the
+> > > number of fragments in the current skb - the next one can be
+> > > much larger.  That's why we check capacity after xmit_skb,
+> > > not before it, right?
 > >
-> > No, length is not changed. so max-length is used.
-> 
-> No, no. Userland will know max-length from statvfs, right? So, let's
-> assume it is 100 (->f_blocks) * 1024 (->f_bsize).
+> > Maybe Rusty means it is a simpler model to free the amount
+> > of space that this xmit needs. We will still fail anyway
+> > at some time but it is unlikely, since earlier iteration
+> > freed up atleast the space that it was going to use.
+>
+> Not sure I nderstand.  We can't know space is freed in the previous
+> iteration as buffers might not have been used by then.
 
-You do not need to know the filesystem size to do the discard, it should
-be adjusted within the kernel. Just specify ULLONG_MAX as a length. See
-fstrim tool in util-linux-ng.
+Yes, the first few iterations may not have freed up space, but
+later ones should. The amount of free space should increase
+from then on, especially since we try to free double of what
+we consume.
 
-> 
-> Now, userland know about max length, 102400, ok? Let's start to trim.
-> 
-> Assume, userland want to trim whole. So, userland will specify like
-> 
-> 	trim(0, 102400).
-> 
-> What happen in kernel actually?
-> 
-> Current implement doesn't map blocks. So, in the case of FAT, it adjusts
-> from 0 to 2 * 1024.
-> 
-> So, it trims between 2048 and 102400. The problem is here. FS layout is
-> actually, 2048 and (102400 + 2048). I.e. actually userland has to do
-> 
-> 	trim(2048, 102400 + 2048)
-> 
-> to specify whole. How to know 2048?
+> > The
+> > code could become much simpler:
+> >
+> > start_xmit()
+> > {
+> > {
+> >         num_sgs = get num_sgs for this skb;
+> >
+> >         /* Free enough pending old buffers to enable queueing this one
+*/
+> >         free_old_xmit_skbs(vi, num_sgs * 2);     /* ?? */
+> >
+> >         if (virtqueue_get_capacity() < num_sgs) {
+> >                 netif_stop_queue(dev);
+> >                 if (virtqueue_enable_cb_delayed(vi->svq) ||
+> >                     free_old_xmit_skbs(vi, num_sgs)) {
+> >                         /* Nothing freed up, or not enough freed up */
+> >                         kfree_skb(skb);
+> >                         return NETDEV_TX_OK;
+>
+> This packet drop is what we wanted to avoid.
 
-You do not need to know anything in userspace. If you want to trim the
-whole filesystem you just do trim(0, ULLONG_MAX) - which is what fstrim
-does when you do not specify range. And you just skip the filesystem
-metadata obviously, regardless if they are at the beginning of the
-filesystem or in the middle. Just do whatever you need to do within your
-filesystem.
+Please see below on returning NETDEV_TX_BUSY.
 
-What we do in ext4 is, that we convert length and start passed in struct
-fstrim_range into filesystem block units and then get the last
-allocation group and block offset within that group (we do the same for
-the start block) and we try to discard free block ranges in from staring
-block to the last block.
+>
+> >                 }
+> >                 netif_start_queue(dev);
+> >                 virtqueue_disable_cb(vi->svq);
+> >         }
+> >
+> >         /* xmit_skb cannot fail now, also pass 'num_sgs' */
+> >         xmit_skb(vi, skb, num_sgs);
+> >         virtqueue_kick(vi->svq);
+> >
+> >         skb_orphan(skb);
+> >         nf_reset(skb);
+> >
+> >         return NETDEV_TX_OK;
+> > }
+> >
+> > We could even return TX_BUSY since that makes the dequeue
+> > code more efficient. See dev_dequeue_skb() - you can skip a
+> > lot of code (and avoid taking locks) to check if the queue
+> > is already stopped but that code runs only if you return
+> > TX_BUSY in the earlier iteration.
+> >
+> > BTW, shouldn't the check in start_xmit be:
+> >    if (likely(!free_old_xmit_skbs(vi, 2+MAX_SKB_FRAGS))) {
+> >       ...
+> >    }
+> >
+> > Thanks,
+> >
+> > - KK
+>
+> I thought we used to do basically this but other devices moved to a
+> model where they stop *before* queueing fails, so we did too.
 
-It is really not a rocket science and since every filesystem is
-different and has different internal data structures it is up to you how
-to do this. And if you shift a block or two, it really does not matter
-as much since user-land does not know about how the filesystem block are
-laid out anyway, nor user land knows which are free and which are not.
+I am not sure of why it was changed, since returning TX_BUSY
+seems more efficient IMHO. qdisc_restart() handles requeue'd
+packets much better than a stopped queue, as a significant
+part of this code is skipped if gso_skb is present (qdisc
+will eventually start dropping packets when tx_queue_len is
+exceeded anyway).
 
-I agree that the interface is a little bit fuzzy, but that is mainly
-because it is intended to be filesystem independent and we do have a lot
-of various filesystems, so I wanted it to be as flexibile as it should,
-hence the start, len in Bytes.
+Thanks,
 
-Hope it helped.
+- KK
 
-Thanks!
--Lukas
-
-> 
-> See what I'm saying?
-> 
-> FAT has liner block space, so the problem is small against mapping. But
-> other FSes has bigger problem.
-> 
-> Thanks.
-> 
-
--- 
---8323328-1240518882-1306229114=:5457--
