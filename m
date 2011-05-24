@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab1EXMgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 08:36:14 -0400
-Received: from mail.codesourcery.com ([38.113.113.100]:36951 "EHLO
-	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754082Ab1EXMgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 08:36:13 -0400
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Date: Tue, 24 May 2011 13:36:03 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-28-generic; KDE/4.6.2; x86_64; ; )
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, oleg@redhat.com,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
-        bdonlan@gmail.com
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <201105241049.58921.pedro@codesourcery.com> <20110524120013.GD10334@htj.dyndns.org>
-In-Reply-To: <20110524120013.GD10334@htj.dyndns.org>
+	id S1756156Ab1EXM5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 08:57:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49735 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756110Ab1EXM5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 08:57:31 -0400
+Date: Tue, 24 May 2011 05:36:25 -0700
+From: Greg KH <gregkh@suse.de>
+To: Michal Simek <monstr@monstr.eu>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Arnd Bergmann <arnd@arndb.de>,
+        John Williams <john.williams@petalogix.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH v5] uio/pdrv_genirq: Add OF support
+Message-ID: <20110524123625.GC31517@suse.de>
+References: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
+ <4DDB960F.4050902@monstr.eu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105241336.04298.pedro@codesourcery.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DDB960F.4050902@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 May 2011 13:00:13, Tejun Heo wrote:
-> Hello,
+On Tue, May 24, 2011 at 01:27:11PM +0200, Michal Simek wrote:
+> Hi Greg,
 > 
-> On Tue, May 24, 2011 at 10:49:58AM +0100, Pedro Alves wrote:
-> > A couple interface questions that just crossed my mind:
-> > 
-> >  - on a fork/vfork/clone, if PTRACE_EVENT_FORK|VFORK|CLONE have been
-> >    enabled, will the tracer still see the new child stop with a
-> >    SIGSTOP, or will it see a PTRACE_EVENT_INTERRUPT?
-> 
-> This won't change, so SIGSTOP although we probably want to improve it
-> such that this can be distinguished from SIGTRAP from userland.
+> can you please add it to your tree? I see you have sent pull request.
 
-(I assume you meant SIGSTOP from userland.)  So that if a SIGSTOPs
-from userland is sent before the tracer waits for the child, the
-tracer sees a siginfo corresponding to the userland SIGSTOP?  Sounds
-like it might work.
+It's too late for the merge window for this, sorry.  I needed to have
+this before it opened up, and in the linux-next tree for a week or so
+before that.
 
-> >  - is PTRACE_INTERRUPT on PTRACE_TRACEME-traced-child planed to
-> >    be allowed (for convenience)?
-> >    A PTRACE_O_TRACEINTERRUPT, or some such PTRACE_SETOPTIONS
-> >    option might be necessary to get PTRACE_EVENT_INTERRUPT instead
-> >    of SIGSTOP in the point above.
-> 
-> I'm currently leaning toward deprecating PTRACE_TRACEME.  If a task
-> can PTRACE_TRACEME, it may as well just do pause(2) and let the parent
-> SEIZE it.
+Sorry.
 
-Debuggers will want to nurse the child through a couple of
-execs (shell, then real debuggee), so that scheme requires a bit
-more synchronization, because SEIZE hides the magic exec SIGTRAP,
-and so the tracer needs to set the O_TRACEXEC option before the first
-exec, and make sure external signals don't break the synchronization.
-Reading/writing to/from blocking pipes for that initial synchronization
-is what GDB uses instead for e.g., hpux/ttrace support, which looks
-similar to using PTRACE_SEIZE for PTRACE_TRACEME.  A bit more
-cumbersome, though doable, I suppose.
+Can you resend it in a format that I can apply it in, as well as getting
+an ack from Hans?  I'll be glad to queue it up for the next major
+release after this if you do that.
 
-Thanks.
+thanks,
 
--- 
-Pedro Alves
+greg k-h
