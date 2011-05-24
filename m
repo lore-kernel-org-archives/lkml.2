@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110Ab1EXXPK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 19:15:10 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37415 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754804Ab1EXXPJ (ORCPT
+	id S933469Ab1EXXT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 19:19:57 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:53157 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932997Ab1EXXT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 19:15:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :organization:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=CdFOS8AHZEH7qxNVuJJIxR8zhQA/L1eU8Rw9g3wfzusQiK4ERU6AagSD0jwvAYYmco
-         DYYwWz5zVZhCv85/6KhNmUjslPgYvFPcOXt1XEl6LTZ9WMdA1KWfCOUmbXzToKEBEzCa
-         lDgQc+A4n4J54Q3Rp5x2xz2S3EJEcPJ1YZ7tc=
-Subject: Re: [PATCH] MIPS:i8259.c remove resume and shutdown to syscore_ops
-From: Wanlong Gao <wanlong.gao@gmail.com>
-Reply-To: wanlong.gao@gmail.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Pengfei Zhang <zoppof.zhang@gmail.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-In-Reply-To: <201105242059.59770.rjw@sisk.pl>
-References: <1306247112.2066.8.camel@Tux>  <201105242059.59770.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Linux kernel
-Date: Wed, 25 May 2011 07:14:59 +0800
-Message-ID: <1306278899.2135.2.camel@Tux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Tue, 24 May 2011 19:19:56 -0400
+From: Sameer Nanda <snanda@chromium.org>
+To: akpm@linux-foundation.org, ext-phil.2.carmody@nokia.com,
+        Tim.Deegan@citrix.com, jbeulich@novell.com, snanda@google.com
+Cc: linux-kernel@vger.kernel.org, Sameer Nanda <snanda@chromium.org>
+Subject: [PATCH] init: skip calibration delay if previously done
+Date: Tue, 24 May 2011 16:19:06 -0700
+Message-Id: <1306279146-23487-1-git-send-email-snanda@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 二, 2011-05-24 at 20:59 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, May 24, 2011, Wanlong Gao wrote:
-> > 
-> > > On Tue, May 24, 2011 at 08:19:18PM +0800, Pengfei Zhang wrote:
-> > > 
-> > > > Remove the resume and shutdown of i8259A from the sysdev_class
-> > > > to the syscore_ops since these members had removed from the
-> > > > structure sysdev_class.
-> > > 
-> > > I don't see why one would want to want to first call
-> > > register_syscore_ops
-> > > then sysdev_class_register and sysdev_register?
-> > > 
-> > Hi Ralf:
-> > If these not moved to syscore_ops, building will get error.
-> > 
-> > Hi Thomas:
-> > Does you mean that we can just remove the sysfs entry now ?
-> 
-> I had the appended patch in my tree before the merge window started,
-> but it conflicted with analogous changes in the MIPS tree, so I had
-> dropped it.  Was it a mistake?
-> 
-> Rafael
+For each CPU, do the calibration delay only once. For subsequent calls,
+use the cached per-CPU value of loops_per_jiffy.
 
-Hi Rafael:
+This saves about 200ms of resume time on dual core Intel Atom N5xx based
+systems. This helps bring down the kernel resume time on such systems from
+about 500ms to about 300ms.
 
-On 5/24/11, Ralf Baechle <ralf@linux-mips.org> wrote:
->Re: [PATCH] MIPS: Use struct syscore_ops instead of sysdevs for i8259
-> On Fri, May 20, 2011 at 10:41:41PM +0900, Yoichi Yuasa wrote:
->
-> Thanks, applied.
->
->   Ralf
-It seems already applied some about this?
+Signed-off-by: Sameer Nanda <snanda@chromium.org>
+---
+ init/calibrate.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-Thanks
-
-Best regards
-Wanlong Gao
+diff --git a/init/calibrate.c b/init/calibrate.c
+index 76ac919..47d3408 100644
+--- a/init/calibrate.c
++++ b/init/calibrate.c
+@@ -183,11 +183,18 @@ recalibrate:
+ 	return lpj;
+ }
+ 
++DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
++
+ void __cpuinit calibrate_delay(void)
+ {
+ 	static bool printed;
++	int this_cpu = smp_processor_id();
+ 
+-	if (preset_lpj) {
++	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
++		loops_per_jiffy = per_cpu(cpu_loops_per_jiffy, this_cpu);
++		pr_info("Calibrating delay loop (skipped) "
++				"already calibrated this CPU previously.. ");
++	} else if (preset_lpj) {
+ 		loops_per_jiffy = preset_lpj;
+ 		if (!printed)
+ 			pr_info("Calibrating delay loop (skipped) "
+@@ -205,6 +212,7 @@ void __cpuinit calibrate_delay(void)
+ 			pr_info("Calibrating delay loop... ");
+ 		loops_per_jiffy = calibrate_delay_converge();
+ 	}
++	per_cpu(cpu_loops_per_jiffy, this_cpu) = loops_per_jiffy;
+ 	if (!printed)
+ 		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
+ 			loops_per_jiffy/(500000/HZ),
+-- 
+1.7.3.1
 
