@@ -1,35 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab1EXS3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 14:29:55 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:34227 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab1EXS3y (ORCPT
+	id S1753774Ab1EXSbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 14:31:36 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:48863 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757001Ab1EXSbd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 14:29:54 -0400
-Date: Tue, 24 May 2011 14:29:13 -0400 (EDT)
-Message-Id: <20110524.142913.2084979139911365095.davem@davemloft.net>
-To: jaxboe@fusionio.com
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, chris.mason@oracle.com
-Subject: Re: [GIT PULL] Start of removal of legacy parallel interfaces for
- 3.0
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4DDBF40E.7020003@fusionio.com>
-References: <4DDBF40E.7020003@fusionio.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 24 May 2011 11:29:18 -0700 (PDT)
+	Tue, 24 May 2011 14:31:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hYLKnc/p1XxLtoINYb6931e/DzAM0a4gOV5CGQXoGD08G6Addzq3cZpMvZaOJ+QDzY
+         5HqgwUSrBeiXiIpF0Duy+b3y/eoobMAOYxQ7XjUP9Wdhd5Fhzn/lGpRT6vLpPYzS8+vA
+         n2jMpbtDhrPJmXmOq0gFia1acNXMagxN2OIXI=
+MIME-Version: 1.0
+In-Reply-To: <20110524181619.GC26055@thunk.org>
+References: <BANLkTin4wu1HNDeo8Rv7iddM9KkgZdhfgA@mail.gmail.com>
+ <A7E21A2F-4338-465D-933A-66B0C4D15BE1@mit.edu> <BANLkTi=q7tDVkahrnng7+BJhvxh=gx71ng@mail.gmail.com>
+ <20110524181619.GC26055@thunk.org>
+From: Michael Witten <mfwitten@gmail.com>
+Date: Tue, 24 May 2011 18:31:02 +0000
+Message-ID: <BANLkTi=QUS5WfAMWTw7vuEwuBOVHsww3mA@mail.gmail.com>
+Subject: Re: UNIX Compatibility
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Richard Yao <ryao@ic.sunysb.edu>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jens Axboe <jaxboe@fusionio.com>
-Date: Tue, 24 May 2011 20:08:14 +0200
+On Tue, May 24, 2011 at 18:16, Ted Ts'o <tytso@mit.edu> wrote:
 
-> With the 3.0 kernel approaching, now is a great time to get rid of some
-> legacy bagage. And what better part to start with than the old IDE code.
+> No one ever bothers to deal with issues because they are tiny,
+> nit-pitcky things that no one other than standards mavens would care
+> about.  You have to be someone who is extremely anal to really care
+> about this kind of stuff.  It's really stupid stuff... paper pushers...
+>
+> If you want to waste time out of your life that you'll never get back...
+> ...
+> ... standards committee, as full of ivory-tower eggheads as it is,
+> does have some folks who recognize that there is such a thing as
+> the Real World)...
 
-We've already had this discussion a million times, we can't do this.
+The world would be a better place if you weren't so needlessly
+confrontational when sharing your knoweldge, Ted.
