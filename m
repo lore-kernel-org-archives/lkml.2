@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab1EXJQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 05:16:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35782 "EHLO mx1.redhat.com"
+	id S932071Ab1EXJQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 05:16:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41531 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755214Ab1EXJQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 05:16:04 -0400
-Date: Tue, 24 May 2011 11:15:05 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: David Stevens <dlstevens@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, jmorris@namei.org, kaber@trash.net,
-        kuznet@ms2.inr.ac.ru, linux-kernel@vger.kernel.org, mmarek@suse.cz,
-        netdev@vger.kernel.org, netdev-owner@vger.kernel.org,
-        pekkas@netcore.fi, yoshfuji@linux-ipv6.org
-Subject: [PATCH v4 1/1] igmp: call ip_mc_clear_src() only when we have no
- users of ip_mc_list
-Message-ID: <20110524091505.GA21550@darkmag.usersys.redhat.com>
-References: <20110515165945.GA20024@darkmag.usersys.redhat.com>
- <20110516.140359.111037536766782557.davem@davemloft.net>
- <OF948388D5.90B3F5A7-ON88257892.006C3228-88257892.0071B9D5@us.ibm.com>
- <20110517133801.GC30366@darkmag.usersys.redhat.com>
- <20110517143756.GE30366@darkmag.usersys.redhat.com>
- <OF11F57B2A.6B43B7E6-ON88257893.005490B0-88257893.00615176@us.ibm.com>
- <20110520162709.GA3497@darkmag.usersys.redhat.com>
- <OF8F2A5C61.8060D0CC-ON88257899.00610B06-88257899.006123E3@us.ibm.com>
+	id S1755214Ab1EXJQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 05:16:14 -0400
+Date: Tue, 24 May 2011 10:16:11 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: minchan.kim@gmail.com, abarry@cray.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Unending loop in __alloc_pages_slowpath following OOM-kill; rfc:
+ patch.
+Message-ID: <20110524091611.GD5279@suse.de>
+References: <4DCDA347.9080207@cray.com>
+ <BANLkTikiXUzbsUkzaKZsZg+5ugruA2JdMA@mail.gmail.com>
+ <4DD2991B.5040707@cray.com>
+ <BANLkTimYEs315jjY9OZsL6--mRq3O_zbDA@mail.gmail.com>
+ <20110520164924.GB2386@barrios-desktop>
+ <4DDB3A1E.6090206@jp.fujitsu.com>
+ <20110524083008.GA5279@suse.de>
+ <4DDB6DF6.2050700@jp.fujitsu.com>
+ <20110524084915.GC5279@suse.de>
+ <4DDB74F7.9020109@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <OF8F2A5C61.8060D0CC-ON88257899.00610B06-88257899.006123E3@us.ibm.com>
+In-Reply-To: <4DDB74F7.9020109@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In igmp_group_dropped() we call ip_mc_clear_src(), which resets the number
-of source filters per mulitcast. However, igmp_group_dropped() is also
-called on NETDEV_DOWN, NETDEV_PRE_TYPE_CHANGE and NETDEV_UNREGISTER, which
-means that the group might get added back on NETDEV_UP, NETDEV_REGISTER and
-NETDEV_POST_TYPE_CHANGE respectively, leaving us with broken source
-filters.
+On Tue, May 24, 2011 at 06:05:59PM +0900, KOSAKI Motohiro wrote:
+> >>> Why?
+> >>
+> >> Otherwise, we don't have good PCP dropping trigger. Big machine might have
+> >> big pcp cache.
+> >>
+> > 
+> > Big machines also have a large cost for sending IPIs.
+> 
+> Yes. But it's only matter if IPIs are frequently happen.
+> But, drain_all_pages() is NOT only IPI source. some vmscan function (e.g.
+> try_to_umap) makes a lot of IPIs.
+> 
+> Then, it's _relatively_ not costly. I have a question. Do you compare which
+> operation and drain_all_pages()? IOW, your "costly" mean which scenario suspect?
+> 
 
-To fix that, we must clear the source filters only when there are no users
-in the ip_mc_list, i.e. in ip_mc_dec_group() and on device destroy.
+I am concerned that if the machine gets into trouble and we are failing
+to reclaim that sending more IPIs is not going to help any. There is no
+evidence at the moment that sending extra IPIs here will help anything.
 
-Acked-by: David L Stevens <dlstevens@us.ibm.com>
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-
----
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index 1fd3d9c..57ca93a 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -1169,20 +1169,18 @@ static void igmp_group_dropped(struct ip_mc_list *im)
- 
- 	if (!in_dev->dead) {
- 		if (IGMP_V1_SEEN(in_dev))
--			goto done;
-+			return;
- 		if (IGMP_V2_SEEN(in_dev)) {
- 			if (reporter)
- 				igmp_send_report(in_dev, im, IGMP_HOST_LEAVE_MESSAGE);
--			goto done;
-+			return;
- 		}
- 		/* IGMPv3 */
- 		igmpv3_add_delrec(in_dev, im);
- 
- 		igmp_ifc_event(in_dev);
- 	}
--done:
- #endif
--	ip_mc_clear_src(im);
- }
- 
- static void igmp_group_added(struct ip_mc_list *im)
-@@ -1319,6 +1317,7 @@ void ip_mc_dec_group(struct in_device *in_dev, __be32 addr)
- 				*ip = i->next_rcu;
- 				in_dev->mc_count--;
- 				igmp_group_dropped(i);
-+				ip_mc_clear_src(i);
- 
- 				if (!in_dev->dead)
- 					ip_rt_multicast_event(in_dev);
-@@ -1428,7 +1427,8 @@ void ip_mc_destroy_dev(struct in_device *in_dev)
- 		in_dev->mc_list = i->next_rcu;
- 		in_dev->mc_count--;
- 
--		igmp_group_dropped(i);
-+		/* We've dropped the groups in ip_mc_down already */
-+		ip_mc_clear_src(i);
- 		ip_ma_put(i);
- 	}
- }
+-- 
+Mel Gorman
+SUSE Labs
