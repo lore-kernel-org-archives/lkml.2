@@ -1,174 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab1EXHQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 03:16:58 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46414 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab1EXHQ4 (ORCPT
+	id S1753925Ab1EXHRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 03:17:23 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:24017 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab1EXHRT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 03:16:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:content-transfer-encoding:user-agent;
-        b=EBYOBx4WNiRsE5EdQUHXrDgacdD5kuXtv0rF43KnJYDVxDFthyVd1tkW4HFi2gPAsK
-         9mQjUDcOx/mf9mdoW8H5yTpFixzF1lfbSKFfx0CsP7thoqgc7YsBP/AbPcnorH+TdL2i
-         vJaXILYQZhwnHPSKR2XkitGVx5os+4E1+NbW4=
-Date: Tue, 24 May 2011 00:16:50 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 2.6.40-rc0
-Message-ID: <20110524071650.GB20870@core.coreip.homeip.net>
+	Tue, 24 May 2011 03:17:19 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        "Frysinger, Michael" <Michael.Frysinger@analog.com>
+Date: Tue, 24 May 2011 08:17:11 +0100
+Subject: FW: [PATCH] MAINTAINERS: Fix Analog Devices mailinglist address
+Thread-Topic: [PATCH] MAINTAINERS: Fix Analog Devices mailinglist address
+Thread-Index: AcwLPBJ839WXOjlLQwK9e1A3G4r9XgOpeyqg
+Message-ID: <544AC56F16B56944AEC3BD4E3D5917713AAF293A45@LIMKCMBX1.ad.analog.com>
+Accept-Language: de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-Please pull from:
+There is a small typo in the Analog Devices driver mailinglist address.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
 
-to receive updates for the input subsystem. Drivers, drivers, drivers...
-The only noteworthy change is that we won't wake up userspace evdev
-readers until we accumulate full packet (i.e. get EV_SYN marker) to
-limit bouncing between kernel and userspace.
+---
+ MAINTAINERS |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-Changelog:
----------
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 9f926c0..97b6584 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -287,35 +287,35 @@ F:        sound/pci/ad1889.*
 
-Alexander Stein (3):
-      Input: gpio_keys - add support for EV_ABS
-      Input: gpio-keys - add support for setting device name
-      Input: ads7846 - add possibility to use external vref on ads7846
+ AD525X ANALOG DEVICES DIGITAL POTENTIOMETERS DRIVER
+ M:     Michael Hennerich <michael.hennerich@analog.com>
+-L:     device-driver-devel@blackfin.uclinux.org
++L:     device-drivers-devel@blackfin.uclinux.org
+ W:     http://wiki.analog.com/AD5254
+ S:     Supported
+ F:     drivers/misc/ad525x_dpot.c
 
-Axel Lin (4):
-      Input: qt1070 - add MODULE_DEVICE_TABLE
-      Input: omap-keypad - fix a wrong free_irq() parameter
-      Input: twl4030-pwrbutton - fix a leak of the IRQ during init failure
-      Input: h3600_ts_input - fix a leak of the IRQ during init failure
+ AD5398 CURRENT REGULATOR DRIVER (AD5398/AD5821)
+ M:     Michael Hennerich <michael.hennerich@analog.com>
+-L:     device-driver-devel@blackfin.uclinux.org
++L:     device-drivers-devel@blackfin.uclinux.org
+ W:     http://wiki.analog.com/AD5398
+ S:     Supported
+ F:     drivers/regulator/ad5398.c
 
-Dmitry Torokhov (3):
-      Input: input-polldev - use system-wide freezable workqueue
-      Input: sh_keysc - make sh_keysc_device_driver static
-      Input: sh_keysc - only compile PM code if PM is enabled
+ AD714X CAPACITANCE TOUCH SENSOR DRIVER (AD7142/3/7/8/7A)
+ M:     Michael Hennerich <michael.hennerich@analog.com>
+-L:     device-driver-devel@blackfin.uclinux.org
++L:     device-drivers-devel@blackfin.uclinux.org
+ W:     http://wiki.analog.com/AD7142
+ S:     Supported
+ F:     drivers/input/misc/ad714x.c
 
-Eric Dumazet (1):
-      Input: remove useless synchronize_rcu() calls
+ AD7877 TOUCHSCREEN DRIVER
+ M:     Michael Hennerich <michael.hennerich@analog.com>
+-L:     device-driver-devel@blackfin.uclinux.org
++L:     device-drivers-devel@blackfin.uclinux.org
+ W:     http://wiki.analog.com/AD7877
+ S:     Supported
+ F:     drivers/input/touchscreen/ad7877.c
 
-Igor Grinberg (1):
-      Input: ads7846 - fix gpio_pendown configuration
+ AD7879 TOUCHSCREEN DRIVER (AD7879/AD7889)
+ M:     Michael Hennerich <michael.hennerich@analog.com>
+-L:     device-driver-devel@blackfin.uclinux.org
++L:     device-drivers-devel@blackfin.uclinux.org
+ W:     http://wiki.analog.com/AD7879
+ S:     Supported
+ F:     drivers/input/touchscreen/ad7879.c
+@@ -341,7 +341,7 @@ F:  drivers/net/wireless/adm8211.*
 
-Iiro Valkonen (1):
-      Input: atmel_mxt_ts - make CHG line high after enabling interrupts
+ ADP5520 BACKLIGHT DRIVER WITH IO EXPANDER (ADP5520/ADP5501)
+ M:     Michael Hennerich <michael.hennerich@analog.com>
+-L:     device-driver-devel@blackfin.uclinux.org
++L:     device-drivers-devel@blackfin.uclinux.org
+ W:     http://wiki.analog.com/ADP5520
+ S:     Supported
+ F:     drivers/mfd/adp5520.c
+@@ -352,7 +352,7 @@ F:  drivers/input/keyboard/adp5520-keys.c
 
-Jeff Brown (1):
-      Input: evdev - only signal polls on full packets
+ ADP5588 QWERTY KEYPAD AND IO EXPANDER DRIVER (ADP5588/ADP5587)
+ M:     Michael Hennerich <michael.hennerich@analog.com>
+-L:     device-driver-devel@blackfin.uclinux.org
++L:     device-drivers-devel@blackfin.uclinux.org
+ W:     http://wiki.analog.com/ADP5588
+ S:     Supported
+ F:     drivers/input/keyboard/adp5588-keys.c
+@@ -360,7 +360,7 @@ F:  drivers/gpio/adp5588-gpio.c
 
-Johan Hovold (2):
-      Input: rotary-encoder - refactor and clean up
-      Input: rotary-encoder - add support for half-period encoders
+ ADP8860 BACKLIGHT DRIVER (ADP8860/ADP8861/ADP8863)
+ M:     Michael Hennerich <michael.hennerich@analog.com>
+-L:     device-driver-devel@blackfin.uclinux.org
++L:     device-drivers-devel@blackfin.uclinux.org
+ W:     http://wiki.analog.com/ADP8860
+ S:     Supported
+ F:     drivers/video/backlight/adp8860_bl.c
+@@ -387,7 +387,7 @@ F:  drivers/hwmon/adt7475.c
 
-Joonyoung Shim (2):
-      Input: atmel_mxt_ts - support 12bit resolution
-      Input: atmel_mxt_ts - convert to MT protocol B
+ ADXL34X THREE-AXIS DIGITAL ACCELEROMETER DRIVER (ADXL345/ADXL346)
+ M:     Michael Hennerich <michael.hennerich@analog.com>
+-L:     device-driver-devel@blackfin.uclinux.org
++L:     device-drivers-devel@blackfin.uclinux.org
+ W:     http://wiki.analog.com/ADXL345
+ S:     Supported
+ F:     drivers/input/misc/adxl34x.c
+@@ -526,7 +526,7 @@ S:  Maintained
+ F:     drivers/infiniband/hw/amso1100/
 
-Julia Lawall (1):
-      Input: atmel_tsadcc - correct call to input_free_device
-
-Magnus Damm (2):
-      Input: sh_keysc - implement runtime PM support
-      Input: sh_keysc - switch to threaded IRQ handler
-
-Michael Hennerich (5):
-      Input: ad714x - fix up input configuration
-      Input: ad714x - fix threshold and completion interrupt masks
-      Input: ad714x - allow platform code to specify irqflags
-      Input: ad714x - fix captouch wheel option algorithm
-      Input: ADP5589 - new driver for I2C Keypad Decoder and I/O Expander
-
-Rakesh Iyer (2):
-      Input: tegra-kbc - add ghost key filter
-      Input: tegra-kbc - change wakeup logic to be all or nothing
-
-Thierry Reding (5):
-      Input: tsc2007 - debounce pressure measurement
-      Input: tsc2007 - add max_rt parameter to platform data
-      Input: tsc2007 - add poll_delay parameter to platform data
-      Input: tsc2007 - add poll_period parameter to platform data
-      Input: tsc2007 - add X, Y and Z fuzz factors to platform data
-
-Ville Syrjala (1):
-      Input: ati_remote2 - return the error code from sysfs channel_mask store
-
-Zhang Jiejing (2):
-      Input: add driver for Maxim max11801 touchscreen controller
-      Input: add driver FSL MPR121 capacitive touch sensor
-
-Éric Piel (4):
-      Input: elantech - describe further the protocol
-      Input: elantech - export pressure and width when supported
-      Input: elantech - report multitouch with proper ABS_MT messages
-      Input: elantech - remove support for proprietary X driver
+ ANALOG DEVICES INC ASOC CODEC DRIVERS
+-L:     device-driver-devel@blackfin.uclinux.org
++L:     device-drivers-devel@blackfin.uclinux.org
+ L:     alsa-devel@alsa-project.org (moderated for non-subscribers)
+ W:     http://wiki.analog.com/
+ S:     Supported
+--
+1.7.2.5
 
 
-Diffstat:
---------
-
- Documentation/input/elantech.txt           |  123 ++++-
- Documentation/input/rotary-encoder.txt     |   13 +
- arch/arm/mach-tegra/include/mach/kbc.h     |    4 +-
- drivers/input/evdev.c                      |   19 +-
- drivers/input/input-polldev.c              |   56 +--
- drivers/input/input.c                      |    1 -
- drivers/input/joydev.c                     |    1 -
- drivers/input/keyboard/Kconfig             |   22 +
- drivers/input/keyboard/Makefile            |    2 +
- drivers/input/keyboard/adp5589-keys.c      |  771 ++++++++++++++++++++++++++++
- drivers/input/keyboard/gpio_keys.c         |   11 +-
- drivers/input/keyboard/mpr121_touchkey.c   |  339 ++++++++++++
- drivers/input/keyboard/omap-keypad.c       |    6 +-
- drivers/input/keyboard/qt1070.c            |    1 +
- drivers/input/keyboard/sh_keysc.c          |   53 +--
- drivers/input/keyboard/tegra-kbc.c         |   60 ++-
- drivers/input/misc/ad714x.c                |  129 ++----
- drivers/input/misc/ati_remote2.c           |    9 +-
- drivers/input/misc/rotary_encoder.c        |  119 +++--
- drivers/input/misc/twl4030-pwrbutton.c     |    2 +-
- drivers/input/mouse/elantech.c             |   72 ++-
- drivers/input/mouse/elantech.h             |    6 +
- drivers/input/mousedev.c                   |    1 -
- drivers/input/touchscreen/Kconfig          |   12 +
- drivers/input/touchscreen/Makefile         |    1 +
- drivers/input/touchscreen/ads7846.c        |   26 +-
- drivers/input/touchscreen/atmel_mxt_ts.c   |   92 +++--
- drivers/input/touchscreen/atmel_tsadcc.c   |    2 +-
- drivers/input/touchscreen/h3600_ts_input.c |    8 +-
- drivers/input/touchscreen/max11801_ts.c    |  272 ++++++++++
- drivers/input/touchscreen/tsc2007.c        |   26 +-
- include/linux/gpio_keys.h                  |    8 +-
- include/linux/i2c/mpr121_touchkey.h        |   20 +
- include/linux/i2c/tsc2007.h                |    7 +
- include/linux/input/ad714x.h               |    3 +-
- include/linux/input/adp5589.h              |  213 ++++++++
- include/linux/rotary_encoder.h             |    1 +
- include/linux/spi/ads7846.h                |    3 +-
- 38 files changed, 2155 insertions(+), 359 deletions(-)
- create mode 100644 drivers/input/keyboard/adp5589-keys.c
- create mode 100644 drivers/input/keyboard/mpr121_touchkey.c
- create mode 100644 drivers/input/touchscreen/max11801_ts.c
- create mode 100644 include/linux/i2c/mpr121_touchkey.h
- create mode 100644 include/linux/input/adp5589.h
-
--- 
-Dmitry
 
