@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab1EXPhO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 11:37:14 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43050 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab1EXPhM (ORCPT
+	id S1755533Ab1EXPjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 11:39:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:59503 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752297Ab1EXPjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 11:37:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=CDc7KJNgOkB8fkUiceSbDRZwSwsbYV+UpsKNoSHYqYoaujd3aMm4KVdPDdyE3wv/nP
-         0x/gCEIuZ6fVNqhOZJ+wNjiRspQ1w3LfrQDxiK7xCo0X0ioHqmGFK0LAaHaX6Hwy0A5M
-         4GBC85A/iCaZW2468XzNNi/8C8GTzCZyCo0AU=
+	Tue, 24 May 2011 11:39:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] arch/tile: add /proc/tile, /proc/sys/tile, and a sysfs cpu attribute
+Date: Tue, 24 May 2011 17:38:51 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org
+References: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com> <4DD5334D.4060800@tilera.com> <201105191722.17685.arnd@arndb.de>
+In-Reply-To: <201105191722.17685.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20110524151910.GA23496@elte.hu>
-References: <E1QOrld-0003II-DP@eag09.americas.sgi.com>
-	<20110524151910.GA23496@elte.hu>
-Date: Tue, 24 May 2011 18:37:11 +0300
-X-Google-Sender-Auth: UFW_X1wJUhpgSf-tTOK6JU3BFeM
-Message-ID: <BANLkTiknsRgnkM=pQhAzFDe_uCWG-Du7hw@mail.gmail.com>
-Subject: Re: [PATCH v5] x86: UV uv_tlb.c cleanup
-From: Pekka Enberg <penberg@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Cliff Wickman <cpw@sgi.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105241738.52146.arnd@arndb.de>
+X-Provags-ID: V02:K0:ajJGKX/m9G6h4iihobvA4zRUEY1I0Ijm8J5AsnoiKKT
+ Ac74tAQ0KfhygqLrgK7gbGBwy12koSmMTpTwvSfyyii7mZYleP
+ qQDsctHQ6LZ+oNHIJ/hmxctKZ4lDBRRa+WcwDyYIjjzDc3GwOK
+ L2AyeEKrpne0scZaKsv1phHcwZHDaU4OR+dj6ZZtPk6tzqkJnj
+ 1Oo1spRnKVr69ROzRhD3g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 6:19 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> Don't the kfree()s get changed - i.e. the patch has a side-effect?
->
-> And yes, while this might be a kmem leak fix, it is a fix and a *SIDE EFFECT*
-> which i explicitly asked to be queued in a separate patch(es) from the large
-> cleanup patch ...
->
-> The cleanup patch should be a cleanup of existing code - even if that code has
-> bugs. Nothing more. Bug fixes are for different patches.
+On Thursday 19 May 2011, Arnd Bergmann wrote:
+> > 
+> > # cat /proc/tile/board
+> > board_part: 402-00002-05
+> > board_serial: NBS-5002-00012
+> > chip_serial: P62338.01.110
+> > chip_revision: A0
+> > board_revision: 2.2
+> > board_description: Tilera TILExpressPro-64, TILEPro64 processor (866 MHz-capable), 1 10GbE, 6 1GbE
+> > # cat /proc/tile/switch
+> > control: mdio gbe/0
+> 
+> I think it's ok to have it below /sys/hypervisor, because the information
+> is provided through a hypervisor ABI, even though it describes something
+> else. This is more like /sys/firmware, but the boundaries between that
+> and /sys/hypervisor are not clearly defined when running virtualized anyway.
 
-There's also renames in the patch that make it pretty hard to review
-for correctness. Formatting changes are best done as separate patches.
+A minor point that I meant to bring up but had not gotten to:
+
+When you do a /sys/hypervisor/ interface, put everything into a subdirectory
+under /sys/hypervisor with the name of your hypervisor, to avoid naming
+conflicts, e.g.
+
+/sys/hypervisor/tilera-hv/board/board_serial
+
+	Arnd
