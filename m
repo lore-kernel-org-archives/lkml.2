@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab1EXBbv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 May 2011 21:31:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37191 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754797Ab1EXBbu convert rfc822-to-8bit (ORCPT
+	id S1758059Ab1EXBcp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 May 2011 21:32:45 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38109 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab1EXBco convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 May 2011 21:31:50 -0400
+	Mon, 23 May 2011 21:32:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=x1Cp2sjwBXSZBBQ+4eVz5W2f/g57mGbohBQO+9ZYpLOIaflVNUYC0rc4jIEu5jbybx
-         VyHJUZULmjcH5AyAFQM77P1zIDUSXHw5v/U61u1ULXyefi/mNFc1YjjQJeW349SZO/0M
-         Y1vl/UAAQkBbnFDNWlNpuMm+Jxd6TqbVmZ+Ok=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GNxkcmI/WgRkEDePV4V8CjlSAtoel1BiaPhVgTpHKEqmVialVzCesy94VDALXtr/fe
+         aDmPiWjwtgkfNhB2XhWi7cDskJQGEzIOYHgqFm8P6armxNw7x/Xvoh3vkBrIG3jcE6HU
+         2FJyLw7PWcn1qTNLVVwifoBG4DJTdRXEGvRBw=
 MIME-Version: 1.0
-In-Reply-To: <5210.1306200244@localhost>
-References: <1306006721.1622.18.camel@anish-desktop> <1306059528.2761.3.camel@anish-desktop>
- <1306164094.2292.25.camel@anish-desktop> <1306167105.8687.11.camel@Joe-Laptop>
- <BANLkTi=9nzMbxU0=P+pOaHcebqhL=bd2HQ@mail.gmail.com> <1306168598.8687.27.camel@Joe-Laptop>
- <20110523093920.8f1e5cd0.rdunlap@xenotime.net> <1306168975.8687.29.camel@Joe-Laptop>
- <BANLkTik8coVxt=Z92NQBNH_=4yRhTtexzA@mail.gmail.com> <1306171117.8687.34.camel@Joe-Laptop>
- <BANLkTikqezyJMy1_i-woTVM9bvVL750iew@mail.gmail.com> <1306174166.8687.49.camel@Joe-Laptop>
- <BANLkTimCZP0raacMazU7wWTtoAUcUE9vRQ@mail.gmail.com> <5210.1306200244@localhost>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 23 May 2011 21:31:29 -0400
-X-Google-Sender-Auth: 8tuOoWBkpY0O4vsTKLVB6ovm7Lo
-Message-ID: <BANLkTinwGhs0OaH7gZsyrbmL-6wMcmM2VA@mail.gmail.com>
-Subject: Re: [patch v3] checkpatch: Signature format verification
-To: Valdis.Kletnieks@vt.edu
-Cc: Joe Perches <joe@perches.com>, anish singh <anish198519851985@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, davej@redhat.com,
-        rostedt@goodmis.org, apw@shadowen.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, man.k1983@gmail.com
+In-Reply-To: <4DDB0669.6040409@jp.fujitsu.com>
+References: <4DD61F80.1020505@jp.fujitsu.com>
+	<4DD6204D.5020109@jp.fujitsu.com>
+	<BANLkTim2-uncnzoHwdG+4+uCv+Ht4YH3Qw@mail.gmail.com>
+	<4DDB0669.6040409@jp.fujitsu.com>
+Date: Tue, 24 May 2011 10:32:43 +0900
+Message-ID: <BANLkTinb3Yuvrz5b-dyGYv0_HMB9+ax3yA@mail.gmail.com>
+Subject: Re: [PATCH 3/5] oom: oom-killer don't use proportion of system-ram internally
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
+        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 21:24,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Mon, 23 May 2011 18:51:42 EDT, Mike Frysinger said:
->> On Mon, May 23, 2011 at 14:09, Joe Perches wrote:
->> >    167     Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
->>
->> personally, i dont think those quotes should be there
+On Tue, May 24, 2011 at 10:14 AM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> Hi
 >
-> Although not strictly required by the ABNF of RFC822 and its successors, it's
-> probably a wise thing to apply the double quotes in this case anyhow, due to
-> the fairly high likelyhood that some software will choke on the ' character in
-> Ted's last name if unquoted.
+>
+>>> @@ -476,14 +476,17 @@ static const struct file_operations
+>>> proc_lstats_operations = {
+>>>
+>>>  static int proc_oom_score(struct task_struct *task, char *buffer)
+>>>  {
+>>> -       unsigned long points = 0;
+>>> +       unsigned long points;
+>>> +       unsigned long ratio = 0;
+>>> +       unsigned long totalpages = totalram_pages + total_swap_pages + 1;
+>>
+>> Does we need +1?
+>> oom_badness does have the check.
+>
+> "ratio = points * 1000 / totalpages;" need to avoid zero divide.
+>
+>>>        /*
+>>>         * Root processes get 3% bonus, just like the __vm_enough_memory()
+>>>         * implementation used by LSMs.
+>>> +        *
+>>> +        * XXX: Too large bonus, example, if the system have tera-bytes
+>>> memory..
+>>>         */
+>>> -       if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+>>> -               points -= 30;
+>>> +       if (has_capability_noaudit(p, CAP_SYS_ADMIN)) {
+>>> +               if (points>= totalpages / 32)
+>>> +                       points -= totalpages / 32;
+>>> +               else
+>>> +                       points = 0;
+>>
+>> Odd. Why do we initialize points with 0?
+>>
+>> I think the idea is good.
+>
+> The points is unsigned. It's common technique to avoid underflow.
+>
 
-then people will notice their software blows and they'll fix it
+Thanks for explanation, KOSAKI.
+I need sleeping. :(
 
-i dont have a problem with "over" quoting with the From/To/CC headers
-in say `git format-patch` or `git send-email`, but i dont think they
-make sense in s-o-b/related tags.
--mike
+
+
+-- 
+Kind regards,
+Minchan Kim
