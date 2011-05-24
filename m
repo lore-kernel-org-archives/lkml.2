@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab1EXVhs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 17:37:48 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57817 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753610Ab1EXVhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 17:37:47 -0400
-Date: Tue, 24 May 2011 23:37:35 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        paulus@samba.org, acme@redhat.com
-Subject: Re: perf: regression -- missing /sys/devices/system/cpu/perf_events
-Message-ID: <20110524213735.GM27634@elte.hu>
-References: <alpine.DEB.2.00.1105240955050.9203@cl320.eecs.utk.edu>
- <1306246306.18455.36.camel@twins>
- <alpine.DEB.2.00.1105241341160.24062@cl320.eecs.utk.edu>
- <20110524194810.GB27634@elte.hu>
- <alpine.DEB.2.00.1105241610390.24062@cl320.eecs.utk.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105241610390.24062@cl320.eecs.utk.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1757612Ab1EXVe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 17:34:27 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:44695 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792Ab1EXVe0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 17:34:26 -0400
+Subject: Re: [RFC 0/9] mce recovery for Sandy Bridge server
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+In-Reply-To: <BANLkTi=BrrwL=gzn7H6O1rAGJpe=VPAQRQ@mail.gmail.com>
+References: <4ddad79317108eb33d@agluck-desktop.sc.intel.com>
+	 <20110524034023.GB25230@elte.hu>
+	 <987664A83D2D224EAE907B061CE93D5301D5D0595B@orsmsx505.amr.corp.intel.com>
+	 <20110524173326.GA7635@gere.osrc.amd.com>
+	 <BANLkTinSOFAioAe2v5c6PRB9EKjJJNMg9w@mail.gmail.com>
+	 <1306272274.2497.73.camel@laptop>
+	 <BANLkTi=BrrwL=gzn7H6O1rAGJpe=VPAQRQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 23:37:42 +0200
+Message-ID: <1306273062.2497.80.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Vince Weaver <vweaver1@eecs.utk.edu> wrote:
-
-> On Tue, 24 May 2011, Ingo Molnar wrote:
-> > 
-> > So, what is wrong with the method Peter suggested: the presence of the perf 
-> > syscall (it not returning -ENOSYS) is bona fide evidence that perf is 
-> > available.
+On Tue, 2011-05-24 at 14:30 -0700, Linus Torvalds wrote:
+> On Tue, May 24, 2011 at 2:24 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> >
+> > Right, so you can't do things like that from NMI context, but what perf
+> > can do is raise a self-IPI and continue from IRQ context (question for
+> > the HW folks, can there be cycles between the NMI iret and IRQ assert
+> > from whatever context was before the NMI hit?)
 > 
-> it's just hard to do that from a shell script.
+> Of course there can be - the code where the NMI hit may have
+> interrupts disabled.
 
-Yeah.
+D'0h yes of course!..
 
-> also, running the perf syscall can be tricky if you have a new kernel but an 
-> older set of header files that doesn't have the syscall number defined.
+Then I can't immediately see a way to stop a thread dead in its tracks.
+Userspace yes, but not kernel-space.
 
-I suspect you could add some quick band-aid like:
-
-#ifndef __NR_perf_event_open
-# ifdef __i386__
-#  define __NR_perf_event_open 336
-# endif
-# ifdef __x86_64__ 
-#  define __NR_perf_event_open 298
-# endif
-# ifdef __powerpc__
-#  define __NR_perf_event_open 319
-# endif
-# ifdef __arm__
-#  define __NR_perf_event_open 364
-# endif
-#endif
-
-#ifndef __NR_perf_event_open
-# error Please add the __NR_perf_event_open definition for this architecture!
-#endif
-
-This should cover 99% of the users - and fill in the table as people report 
-build failures :)
-
-Thanks,
-
-	Ingo
