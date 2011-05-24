@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145Ab1EXR42 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 13:56:28 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61020 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab1EXR40 (ORCPT
+	id S1757187Ab1EXR7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 13:59:42 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49164 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777Ab1EXR7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 13:56:26 -0400
+	Tue, 24 May 2011 13:59:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=S8mBJUP0U4fDJng1srPp2kbV5mGuzkd7R4r1sbXct5V+VORiX3u2y6FuDebSZ621WH
-         BNNd159gS2/ZsokyEjwncD8MjmxvCh9u47bXrRZ9qBd1simtWYdDOHElqnVl+7wBPrI1
-         nxpL+JvuC02lZJuxCVJFKA3jWyDJqsfPz23h0=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=oXkRfVEGtr9tGcm86ntkhXEiQU0xQraQXu+QVoiW32Nl1i3reFzUtSE0TXeLiLbqm7
+         3TTqF2mt/NUKl5UdgxtyBTXPg1ItLotzkvqm2DTkVQJTShrENIVtwVVdhmaQkIrXVYDB
+         KDAlaPOjiuYpdAGPrgwxYcP2WKXUrCaXT0H7Q=
 MIME-Version: 1.0
-In-Reply-To: <20110524173326.GA7635@gere.osrc.amd.com>
-References: <4ddad79317108eb33d@agluck-desktop.sc.intel.com>
-	<20110524034023.GB25230@elte.hu>
-	<987664A83D2D224EAE907B061CE93D5301D5D0595B@orsmsx505.amr.corp.intel.com>
-	<20110524173326.GA7635@gere.osrc.amd.com>
-Date: Tue, 24 May 2011 10:56:26 -0700
-X-Google-Sender-Auth: aaDvlxMyf6utjaXom3c7JLNRTi0
-Message-ID: <BANLkTinSOFAioAe2v5c6PRB9EKjJJNMg9w@mail.gmail.com>
-Subject: Re: [RFC 0/9] mce recovery for Sandy Bridge server
-From: Tony Luck <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <1306258716.7501.35.camel@hiromu-MacBook>
+References: <1306167401.18840.8.camel@hiromu-MacBook>
+	<BANLkTikhFdd_PRzCg3w9HD1TO=cmdmm6_A@mail.gmail.com>
+	<1306242400.7501.10.camel@hiromu-MacBook>
+	<4DDBB150.2090602@suse.cz>
+	<1306247192.7501.25.camel@hiromu-MacBook>
+	<4DDBC846.8050402@suse.cz>
+	<BANLkTin5ZDt5ZeckOJ2WsNUZm6mxmYiRwQ@mail.gmail.com>
+	<1306258716.7501.35.camel@hiromu-MacBook>
+Date: Tue, 24 May 2011 13:59:39 -0400
+Message-ID: <BANLkTikFT17GOgV1UJTFxEG+P2X-u4ZJjw@mail.gmail.com>
+Subject: Re: [PATCH] Kconfig: add warning about permission of config file
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Hiromu Yakura <hiromu1996@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zippel@linux-m68k.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dragging PeterZ to this thread, since we are now talking about scheduler.
+Hi,
 
-On Tue, May 24, 2011 at 10:33 AM, Borislav Petkov <bp@amd64.org> wrote:
-> On Tue, May 24, 2011 at 09:57:46AM -0700, Luck, Tony wrote:
->> So can we talk about this part for a while before returning to the
->> "how to report this" discussion?
+On Tue, May 24, 2011 at 1:38 PM, Hiromu Yakura <hiromu1996@gmail.com> wrote:
+> On Tue, May 24, 2011, at 0:50, Arnaud Lacombe <lacombar@gmail.com>
+> wrote:
+>> On Tue, May 24, 2011 at 11:01 AM, Michal Marek <mmarek@suse.cz> wrote:
+>> > I see, qconf lacks a check for the return value of conf_write() in
+>> > ConfigMainWindow::closeEvent(), gconf does check the return value, but only
+>> > displays it in the bottom box of the main window instead of a message box.
+>> > Neither of them return failure in the error case. These bugs should be
+>> > indeed fixed.
+>> >
+>> agree.
 >>
->> So here's the situation - we are in the NMI handler when we find from
->> looking at the machine check bank registers that we have a recoverable
->> error. We know the physical address, and we know the task (which might
->> have been in user or kernel context). I can package that information
->> into a perf/event ... but then how can I mark the current task as
->> not-fit-for-execution?
+>> > But I don't like the directory permission check, it only
+>> > handles one case, but does not handle permission on the .config file itself
+>> > with KCONFIG_OVERWRITECONFIG=1, ENOSPC and so on.
+>> >
+>> seconded.
+> I'm sorry for forgetting to handle a case which was set KCONFIG_OVERWRITECONFIG.
+> So I rewrote the patch and attach it.
 >
-> Maybe something like
+> Thanks for your advice.
 >
-> set_current_state(TASK_UNINTERRUPTIBLE);
+> Signed-off-by: Hiromu Yakura <hiromu1996@gmail.com>
 >
-> finish work in NMI context
->
-> do remaining work in process context like sending appropriate signals
-> etc; finally:
->
-> set_task_state(tsk, TASK_RUNNING)
+Let me re-state: your patch does not handle all the case where
+conf_write() may fails, and I do not think we want to preemptively
+check for all errors open(2) may return.
 
-That looks pretty easy - are their any weird side effects that I should
-be worried about?  My perf/event can't really include the "task" pointer
-(that sounds way too internal) - but I can provide the process id, so
-the "RAS daemon" that sees this event can look up the task to do that
-final set_task_state(tsk, TASK_RUNNING).
-
-Does this work in the threaded case? In the case where the task was in
-kernel context (but in a CONFIG_PREEMT=y kernel at some point
-where preemption is allowed)?
-
--Tony
+ - Arnaud
