@@ -1,89 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab1EXQWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 12:22:54 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58420 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936Ab1EXQWw (ORCPT
+	id S1757152Ab1EXQVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 12:21:44 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:39592 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab1EXQVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 12:22:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject:references
-         :in-reply-to:content-type:content-transfer-encoding;
-        b=Zlzdp3SizDFex8UtongC0+q7GqNDmSJCcmQOGdGfkjCNtPGnBmdLxLGf0fC0pU0664
-         WlzpyxYgs15Bb1BhG2NKjyzINdl0tyP+D9lBOY+8Rq/t6xffjCWay6Zjf2X4oFhFZJzj
-         pbyjLriYn0wYy/3mJ9kST2gZeSmJkB5cz2+yo=
-Message-ID: <4DDBDB4D.4080606@gmail.com>
-Date: Tue, 24 May 2011 09:22:37 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>,
+	Tue, 24 May 2011 12:21:43 -0400
+X-IronPort-AV: E=Sophos;i="4.65,261,1304294400"; 
+   d="scan'208";a="5924357"
+Date: Tue, 24 May 2011 17:24:04 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: INFO: suspicious rcu_dereference_check() usage.
-References: <4DDB491A.2070901@gmail.com> <BANLkTinC=2wxtYD4YmePgOfoLSh9STD6Sw@mail.gmail.com> <20110524155608.GA17977@redhat.com>
-In-Reply-To: <20110524155608.GA17977@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: Xen MMU's requirement to pin pages RO and
+ initial_memory_mapping.
+In-Reply-To: <20110524130635.GB10017@dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1105241510110.12963@kaball-desktop>
+References: <20110513153010.GB16519@dumpdata.com> <alpine.DEB.2.00.1105131650550.8972@kaball-desktop> <20110516154132.GA12486@dumpdata.com> <alpine.DEB.2.00.1105171745300.12963@kaball-desktop> <20110517180520.GC13706@dumpdata.com>
+ <alpine.DEB.2.00.1105231541020.12963@kaball-desktop> <20110524130635.GB10017@dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2011 08:56 AM, Dave Jones wrote:
-> On Mon, May 23, 2011 at 11:50:46PM -0700, Justin Mattock wrote:
->
->   >  [ 2862.310349] WARNING: at net/ipv4/route.c:1668 ip_rt_bug+0x5c/0x62()
->
-> Awesome, adding that WARN_ON paid off. This is the same bug I've been trying
-> to reproduce the last few weeks. DaveM mentioned that it means we used
-> an input route for packet output.
->
->   >  [ 2862.310414] Pid: 6153, comm: gcm-session Not tainted
->   >  2.6.39-04906-g5e152b4-dirty #2
->   >  [ 2862.310417] Call Trace:
->   >  [ 2862.310424]  [<ffffffff8104c634>] warn_slowpath_common+0x83/0x9b
->   >  [ 2862.310430]  [<ffffffff8104c666>] warn_slowpath_null+0x1a/0x1c
->   >  [ 2862.310434]  [<ffffffff814095c9>] ip_rt_bug+0x5c/0x62
->   >  [ 2862.310439]  [<ffffffff814112a1>] dst_output+0x19/0x1d
->   >  [ 2862.310443]  [<ffffffff81412aa0>] ip_local_out+0x20/0x25
->   >  [ 2862.310448]  [<ffffffff814139c9>] ip_send_skb+0x19/0x58
->   >  [ 2862.310453]  [<ffffffff8142fa4e>] udp_send_skb+0x239/0x29b
->   >  [ 2862.310458]  [<ffffffff814310f0>] udp_sendmsg+0x5a1/0x7d4
->   >  [ 2862.310464]  [<ffffffff81079408>] ? trace_hardirqs_off+0xd/0xf
->   >  [ 2862.310469]  [<ffffffff8141139c>] ? ip_select_ident+0x3d/0x3d
->   >  [ 2862.310475]  [<ffffffff810525b8>] ? local_bh_enable_ip+0xe/0x10
->   >  [ 2862.310481]  [<ffffffff8148f131>] ? _raw_spin_unlock_bh+0x31/0x35
->   >  [ 2862.310486]  [<ffffffff813d41a6>] ? release_sock+0x14c/0x155
->   >  [ 2862.310490]  [<ffffffff814386ac>] inet_sendmsg+0x66/0x6f
->   >  [ 2862.310495]  [<ffffffff813d02b0>] sock_sendmsg+0xe6/0x109
->   >  [ 2862.310501]  [<ffffffff8107d63f>] ? lock_acquire+0xe1/0x109
->   >  [ 2862.310505]  [<ffffffff8107d535>] ? lock_release+0x1aa/0x1d3
->   >  [ 2862.310512]  [<ffffffff810ed549>] ? might_fault+0xa5/0xac
->   >  [ 2862.310516]  [<ffffffff813ceb34>] ? copy_from_user+0x2f/0x31
->   >  [ 2862.310521]  [<ffffffff813d1f34>] sys_sendto+0x132/0x174
->   >  [ 2862.310526]  [<ffffffff81495cfa>] ? sysret_check+0x2e/0x69
->   >  [ 2862.310531]  [<ffffffff8107b016>] ? trace_hardirqs_on_caller+0x13f/0x172
->   >  [ 2862.310537]  [<ffffffff8109fd4d>] ? audit_syscall_entry+0x11c/0x148
->   >  [ 2862.310542]  [<ffffffff8121debe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->   >  [ 2862.310546]  [<ffffffff81495cc2>] system_call_fastpath+0x16/0x1b
->   >  [ 2862.310549] ---[ end trace 2d2332adaa8bf2b5 ]---
->   >  [ 2863.373889] ip_rt_bug: 10.0.0.10 ->  255.255.255.255, ?
->
-> The common thing between your bug and the trace I triggered was the
-> destination ip reported. A clue maybe ?
->
-> 	Dave
->
->
+On Tue, 24 May 2011, Konrad Rzeszutek Wilk wrote:
+> > > Right. We don't have to walk the hooked pagetable, I think. We are passed
+> > > in the PMD/PGD of the PFN and we could look at the content of that PFN.
+> > > Walk each entry in there and for those that are present, determine
+> > > if the page table it points to (whatever level it is) is RO. If not, mark
+> > > it RO. And naturally do it recursively to cover all levels.
+> >  
+> > I am not sure what you mean.
+> > The interface is the following:
+> > 
+> > void alloc_pte(struct mm_struct *mm, unsigned long pfn);
+> > 
+> > pfn is the pagetable page's pfn, that has to be marked RO in all his mappings;
+> > mm is the mm_struct where this pagetable page is mapped.
+> > Except it is not true anymore because the pagetable page is not mapped
+> > yet in mm; so we cannot walk anything here, unfortunately.
+> 
+> I was thinking to "resolve" the pfn, and directly read from the pfn's the
+> entries. So not walking the mm_struct, but reading the raw data from the 
+> PFN page... but I that would not do much as alloc_pte is done _before_ that
+> pagetable is actually populated - so it has nothing in it.
+> 
+> 
+> > We could remember that we failed to mark this page RO so that the next
+> > time we try to write a pte that contains that address we know we have to
+> > mark it RO.
+> > But this approach is basically equivalent to the one we had before
+> > 2.6.39: we consider the range pgt_buf_start-pgt_buf_end a "published"
+> > range of pagetable pages that we have to mark RO.
+> > In fact it is affected by the same problem: after writing the ptes that
+> > map the range pgt_buf_start-pgt_buf_end, if we try to allocate a new
+> > pagetable page incrementing pgt_buf_end we fail because the new page is
+> > already marked RW in a pinned page.
+> > At the same time we cannot modify the pte to change the mapping to RO
+> > because lookup_address doesn't find it (the pagetable page containing
+> > the pte in question is not reachable from init_mm yet).
+> 
+> So.. why not do the raw walk of the PFN (and within this
+> "raw walk" ioremap the PFNs, and do a depth-first walk on the page-tables
+> do set them to RO) when it is being hooked up to the page-table?
+> Meaning - whatever trigger point is when we try to set a PUD in a PGD,
+> or PTE into a PMD. And naturally we can't walk the 'init_mm' as it
+> has not been hooked up yet (and it cannot as the page-tables have not
+> been set to RO).
 
-there was a bug for http://marc.info/?l=linux-kernel&m=129913127722786&w=2
-but looking I see something in there with recv.c not route.c but 
-probably something
-same or in the same vacinity. as for the sluggishness I have been 
-noticing the system doing so, but
-never saw anything like the above, so if it is your WARN_ON then kudos 
-to you!
 
-Justin P. Mattock
+We cannot use the pvop call when we hook the pagetable page into the
+upper level because it is right after the alloc_pte call and we still
+cannot find its mappings through lookup_address. Keep in mind that it is
+the pagetable page mapping that we have to set read-only, not the
+content of the pagetable page.
+The pagetable page mapping might be written before or after the
+pagetable page is being hooked into the pagetable.
+BTW I have to say that all the alloc_pte calls are currently wrong
+because the struct mm that we are passing is meaningless.
+
+
+On the other hand if you are suggesting to use the pvop call when we
+write pte entries, that is set_pte (xen_set_pte_init), get the pfn from
+the pte, figure out if it is a pagetable page, and if it is mark it
+read-only, that is exactly what we are already doing.
+
+
+Unfortunately it has a number of issues:
+
+- once the pte entries are written they cannot easily be changed because
+they still cannot be found using lookup_address. This means that once
+the pte entries for range pgt_buf_start-pgt_buf_end have been written,
+we cannot allocate any new pagetable pages, because we don't have a way
+to mark them read-only anymore. This is the issue that brought us to the
+introduction of x86_init.mapping.pagetable_reserve.
+
+- we need to distinguish between normal mappings and temporary
+mappings; among the temporary mappings we need to distinguish between new
+pagetable pages that are not hooked into the pagetable yet and
+pagetable already hooked into the pagetable. It is not easy and it is
+error prone.
+
+
+
+I think the approach of catching a pte write and trying to understand
+what the pfn exactly is has proven to be too fragile.
+We need a simple proper interface, like alloc_pte was supposed to be,
+otherwise it will keep breaking.
+
+
+
+At the moment I can only see two possible ways of solving this:
+
+1) Have a way to find the pte that maps a pagetable page when the
+pagetable page is hooked into the pagetable.
+Unfortunately I fail to see a way to do it, given the current way of
+allocating the pagetable pages. Maybe somebody with a deeper knowlegde
+of kernel_physical_mapping_init could suggest a way.
+
+2) Have a simple way to know if a pfn is a pagetable page.
+If we had a function like pfn_is_pagetable_page(unsigned long pfn) we
+could remove the hacks we have in xen_set_pte and mark read-only
+the entry whenever needed. This implies that we need a way to know all
+the pfn's of the pagetable pages in advance.
+
