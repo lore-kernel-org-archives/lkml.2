@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab1EXHbR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 03:31:17 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:51605 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344Ab1EXHbQ convert rfc822-to-8bit (ORCPT
+	id S1753913Ab1EXHcU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 03:32:20 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:55870 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab1EXHcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 03:31:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=H8cN8/Nqmb/5jdzTiyc0LzkbREixIzjx5i7NfPlYsHs09NkeOYdn2QIAHWq5KlGR/7
-         BceYsRFa9uYFbXYtPpvA==
+	Tue, 24 May 2011 03:32:19 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Lukas Czerner <lczerner@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de>
+	<AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com>
+	<201103301706.36214.arnd@arndb.de>
+	<BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com>
+	<87wrhgk8lp.fsf@devron.myhome.or.jp>
+	<BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com>
+	<87r57ok3fp.fsf@devron.myhome.or.jp>
+	<BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com>
+Date: Tue, 24 May 2011 16:32:16 +0900
+In-Reply-To: <BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com> (Kyungmin
+	Park's message of "Tue, 24 May 2011 15:55:34 +0900")
+Message-ID: <87mxick0zj.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20110524062620.GA22096@pengutronix.de>
-References: <1305876469.325655.313573683829.0.gpush@pororo>
-	<BANLkTik=EFayZW61TgfOni-XML+tRLOcqw@mail.gmail.com>
-	<20110524062620.GA22096@pengutronix.de>
-Date: Tue, 24 May 2011 00:31:13 -0700
-Message-ID: <BANLkTimEoCaKwJtpbQTDSEDydNkZ1BkKog@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Add a generic struct clk
-From: Colin Cross <ccross@google.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-sh@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 11:26 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Mon, May 23, 2011 at 04:12:24PM -0700, Colin Cross wrote:
->> >
->> >   tglx's plan is to create a separate struct clk_hwdata, which contains a
->> >   union of base data structures for common clocks: div, mux, gate, etc. The
->> >   ops callbacks are passed a clk_hw, plus a clk_hwdata, and most of the base
->> >   hwdata fields are handled within the core clock code. This means less
->> >   encapsulation of clock implementation logic, but more coverage of
->> >   clock basics through the core code.
+Kyungmin Park <kmpark@infradead.org> writes:
+
+>>> It's handled at trim implementation. It just trim the fat aware block.
+>>> Not trim the blocks which fat doesn't know.
+>>> As fat don't use the block 0, 1, it adjust the start block at kernel.
+>>>
+>>> +       if (start < FAT_START_ENT)
+>>> +               start = FAT_START_ENT;
+>>>
+>>> and don't exceed the max cluster size.
+>>>
+>>> +       len = (len > sbi->max_cluster) ? sbi->max_cluster : len;
+>>>
+>>> +       for (count = start; count <= len; count++) {
 >>
->> I don't think they should be a union, I think there should be 3
->> separate private datas, and three sets of clock ops, for the three
->> different types of clock blocks: rate changers (dividers and plls),
->> muxes, and gates.  These blocks are very often combined - a device
->> clock often has a mux and a divider, and clk_set_parent and
->> clk_set_rate on the same struct clk both need to work.
+>> Yes. We _adjust_ from 0 to 2 here, so, the end of block also have to be
+>> _adjusted_.
+>>
+>> From other point of view, if userland specified 0 - max-length
+>> (i.e. number of blocks), what happens? It would trim block of 2 -
+>> (max-length - 2), right?
 >
-> The idea is to being able to propagate functions to the parent. It's
-> very convenient for the implementation of clocks when they only
-> implement either a divider, a mux or a gate. Combining all of these
-> into a single clock leads to complicated clock trees and many different
-> clocks where you can't factor out the common stuff.
+> No, length is not changed. so max-length is used.
 
-That seems complicated.  You end up with lots of extra clocks (meaning
-more boilerplate in the platform files) that have no meaning in the
-system (what is the clock between the mux and the divider in Tegra's
-i2c1 clock, it can never feed any devices), and you have to figure out
-at the framework level when to propagate and when to error out.  I'm
-not even sure you can always find the right place to stop propagating
-- do you just keep going up until the set_parent callback succeeds, or
-exists, or what?
+No, no. Userland will know max-length from statvfs, right? So, let's
+assume it is 100 (->f_blocks) * 1024 (->f_bsize).
 
-I think you can still factor out all the common code if you treat each
-clock as a possible mux, divider, and gate combination.  Each part of
-the clock is still just as abstractable as before - you can set the
-rate_ops to be the generic single register divider implementation, and
-the gate ops to be the generic single bit enable implementation.  The
-idea of what a clock node is matches the HW design, and op propagation
-is easy - if it has rate ops, you can call clk_set_rate on it,
-otherwise you can't.
+Now, userland know about max length, 102400, ok? Let's start to trim.
+
+Assume, userland want to trim whole. So, userland will specify like
+
+	trim(0, 102400).
+
+What happen in kernel actually?
+
+Current implement doesn't map blocks. So, in the case of FAT, it adjusts
+from 0 to 2 * 1024.
+
+So, it trims between 2048 and 102400. The problem is here. FS layout is
+actually, 2048 and (102400 + 2048). I.e. actually userland has to do
+
+	trim(2048, 102400 + 2048)
+
+to specify whole. How to know 2048?
+
+See what I'm saying?
+
+FAT has liner block space, so the problem is small against mapping. But
+other FSes has bigger problem.
+
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
