@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932859Ab1EYWJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 18:09:21 -0400
-Received: from n1.taur.dk ([217.198.219.102]:33102 "EHLO n1.taur.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab1EYWJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 18:09:20 -0400
-Message-ID: <4DDD7D9E.60100@kasperkp.dk>
-Date: Thu, 26 May 2011 00:07:26 +0200
-From: Kasper Pedersen <kkp2010@kasperkp.dk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S932591Ab1EYWIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 18:08:06 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53671 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070Ab1EYWIF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 18:08:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hnq+5v2fnkW0yc/NXeKrjcAWNM2EQbwXLDG3iCAg22hqkInPplDAxYvLCiS0wwK3so
+         zSWsR/WREbJYYyj1APYF3KIKLE/SOgVXSpnXnS7LF9847Sj94FBNradZ11tBcxi+2R4L
+         u3xFhRXvMbLUzm5fLhNLDO1Y2bAo55pTF/OwU=
 MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1105252304050.3078@ionos>
+References: <BANLkTikbJ3zX48SV0fFF8LDs=Uj8CmymgQ@mail.gmail.com>
+	<BANLkTi=sA+gmggQayj9b8_O1E1rvQbEuPw@mail.gmail.com>
+	<BANLkTikD_1mcZDeevSXLZaNg3CnuYU8pxA@mail.gmail.com>
+	<BANLkTim5BeDNMyJkLGw3j=L9MLexsBqvhA@mail.gmail.com>
+	<alpine.LFD.2.02.1105252235380.3078@ionos>
+	<BANLkTimVTfbf2bRMA6-r+egAbVR-abQA1A@mail.gmail.com>
+	<alpine.LFD.2.02.1105252304050.3078@ionos>
+Date: Thu, 26 May 2011 01:08:04 +0300
+Message-ID: <BANLkTim3rAD2Rcz4M03BM0gif1Lv7a5ALw@mail.gmail.com>
+Subject: Re: CPU used at 100% in 2.6.39-git10
+From: Anca Emanuel <anca.emanuel@gmail.com>
 To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        John Stultz <johnstul@us.ibm.com>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH v3] x86: tsc: make TSC calibration immune to interrupts
-References: <4DDC0B4F.6060202@kasperkp.dk> <alpine.LFD.2.02.1105251243330.3078@ionos>
-In-Reply-To: <alpine.LFD.2.02.1105251243330.3078@ionos>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2011 12:51 PM, Thomas Gleixner wrote:
->> The 8 additional samples costs us 28 microseconds in startup
->> time.
-> 
-> That's a good reason to avoid the whole conditional thing and just do
-> the best of 5 always.
+On Thu, May 26, 2011 at 12:08 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Wed, 25 May 2011, Linus Torvalds wrote:
+>
+>> On Wed, May 25, 2011 at 1:37 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> >
+>> > /me blushes
+>> >
+>> > Does the patch below fix it ?
+>>
+>> Yup, that seems to fix it for me. Commit log and sign-off?
+>>
+>>                         Linus
+>
+> ---->
+> hrtimers: Fix moronic typo
+>
+> commit 9ec2690758a5 ("timerfd: Manage cancelable timers in timerfd")
+> introduced a CONFIG_HIGHRES_TIMERS (should be CONFIG_HIGH_RES_TIMERS)
+> typo, which caused applications depending on CLOCK_REALTIME timers to
+> become sluggy due to the fact that the time base of the realtime
+> timers was not updated when the wall clock time was set.
+>
+> Reported-by: Anca Emanuel <anca.emanuel@gmail.com>
+> Fatfingered-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index c541ee5..a9205e3 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -748,7 +748,7 @@ static inline void retrigger_next_event(void *arg) { }
+>  */
+>  void clock_was_set(void)
+>  {
+> -#ifdef CONFIG_HIGHRES_TIMERS
+> +#ifdef CONFIG_HIGH_RES_TIMERS
+>        /* Retrigger the CPU local events everywhere */
+>        on_each_cpu(retrigger_next_event, NULL, 1);
+>  #endif
+>
 
-I do not mind removing it again.
-The additional 170us only happen when quick_pit_calibrate fails,
-and then native_calibrate_tsc burns 30ms extra anyway.
+Tested-by: Anca Emanuel <anca.emanuel@gmail.com>
 
->> +
->> +	*p = tp;
-> 
-> The value is completely uninteresting when we return ULLONG_MAX.
-> 
-
-native_calibrate_tsc() depends on *p being written regardless of
-whether we can get a SMI-free reading:
-
-	/* We don't have an alternative source, disable TSC */
-	if (!hpet && !ref1 && !ref2) {
-		printk("TSC: No reference (HPET/PMTIMER) available\n");
-		return 0;
-	}
-
-this works since acpi_pm_read_early() returns 0 when pmtmr_ioport 
-is 0, or CONFIG_X86_PM_TIMER is not set.
-
-Without it we would report "calibration failed" rather than 
-"No reference" or "Using PIT" when there is neither pmtimer nor 
-hpet.
-
-/Kasper Pedersen
+Linus, Thomas, this solves the problem, thanks very much for your help.
