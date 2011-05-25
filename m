@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933046Ab1EYPuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 11:50:10 -0400
-Received: from lauca.usach.cl ([158.170.64.28]:42542 "HELO
-	correoantiguo.usach.cl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1755353Ab1EYPuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 11:50:09 -0400
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 11:50:07 EDT
-From: "Mail Administrator" <mail.a6@gmx.us>
-Subject: Email Quota Exceeded
-To: admin@admin.com
-X-Mailer: CommuniGate Pro WebUser v5.1.8
-Date: Wed, 25 May 2011 10:48:24 -0400
-Message-ID: <web-27840802@correoantiguo.usach.cl>
+	id S932817Ab1EYOv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:51:29 -0400
+Received: from hyde.gogi.tv ([87.106.161.174]:56506 "EHLO hyde.gogi.tv"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753414Ab1EYOv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 10:51:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 25 May 2011 15:51:26 +0100
+From: Daniel Haid <d.haid@gogi.tv>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: Question about iommu on =?UTF-8?Q?x=38=36=5F=36=34=20and=20ra?=
+ =?UTF-8?Q?deon=20driver=2E?=
+In-Reply-To: <20110525125752.GB3467@dumpdata.com>
+References: <6ac3f6faad655602b767aa14b355e982@admin.gogi.tv>
+ <20110523220536.GB11961@dumpdata.com>
+ <756073831c36e0404199a4e8239bcb70@admin.gogi.tv>
+ <m2wrhf4sw5.fsf@firstfloor.org>
+ <08370791664f069624d25c757ed101c0@admin.gogi.tv>
+ <20110525125752.GB3467@dumpdata.com>
+Message-ID: <6d6b404ccb4dc0a713e8e12403acde32@admin.gogi.tv>
+User-Agent: Roundcube Webmail/0.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to inform you that you have exceeded your E-mail 
-Quota Limit and
-you need to increase your E-mail Quota Limit because in 
-less than 96 hours
-your E- mail Account will be disabled.Increase your E-mail 
-Quota Limit and
-continue to use your Webmail Account.
+>> I see. Now, maybe this will not work for some reason, but
+>> would it be possible to somehow disable both IOMMU and SWIOTLB
+>> and tell all drivers only to do DMA with the lower 4GB of memory?
+>
+> Only if you allow 3GB or less in the machine. So you would have to do
+> mem=3G as well.
+>
+> The reason is that (and you can see that yourself by looking at the
+> E820), is that 1GB is actually _above_ the 4GB.
 
-To increase your E-mail Quota Limit to 2.7GB, Fill in your 
-Details as
-below and send to the E-mail Quota Webmaster by CLICKING 
-REPLY:
-
-EMAIL ADDRESS:
-USERNAME:
-PASSWORD:
-CONFIRM PASSWORD:
-DATE OF BIRTH:
-
-Thank you for your understanding and corperation in 
-helping us give you
-the Best of E-mail Service.
+ I see. Is it possible to somehow give "mem=3G" to the kernel and still
+ use the memory above 4G for something, like a ramdisk or something?
