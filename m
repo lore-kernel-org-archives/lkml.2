@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab1EYUrb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:47:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41716 "EHLO mx2.suse.de"
+	id S932789Ab1EYUsz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:48:55 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:48460 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754904Ab1EYUr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:47:29 -0400
-Message-ID: <4DDD6B1F.1060303@suse.cz>
-Date: Wed, 25 May 2011 22:48:31 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S932580Ab1EYUsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:48:52 -0400
+Date: Wed, 25 May 2011 13:48:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage
+ based on semi-formal proof"
+Message-ID: <20110525204849.GK2341@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4DDAE5FA.2030303@kernel.org>
+ <4DDAE6A5.6060701@kernel.org>
+ <20110524011824.GL7428@linux.vnet.ibm.com>
+ <4DDB093F.2060601@kernel.org>
+ <20110524013523.GO7428@linux.vnet.ibm.com>
+ <4DDC21E1.1070502@kernel.org>
+ <20110525000530.GK2266@linux.vnet.ibm.com>
+ <4DDC4992.2020505@kernel.org>
+ <20110525044650.GA2262@linux.vnet.ibm.com>
+ <20110525072406.GH429@elte.hu>
 MIME-Version: 1.0
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Steven Whitehouse <swhiteho@redhat.com>,
-        cluster-devel@redhat.com
-Subject: Re: [PATCH 27/34] gfs2: Drop __TIME__ usage
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-28-git-send-email-mmarek@suse.cz>
-In-Reply-To: <1302015561-21047-28-git-send-email-mmarek@suse.cz>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110525072406.GH429@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 5.4.2011 16:59, Michal Marek napsal(a):
-> The kernel already prints its build timestamp during boot, no need to
-> repeat it in random drivers and produce different object files each
-> time.
+On Wed, May 25, 2011 at 09:24:06AM +0200, Ingo Molnar wrote:
 > 
-> Cc: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: cluster-devel@redhat.com
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
->  fs/gfs2/main.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > On Tue, May 24, 2011 at 05:13:06PM -0700, Yinghai Lu wrote:
+> > > On 05/24/2011 05:05 PM, Paul E. McKenney wrote:
+> > > > On Tue, May 24, 2011 at 02:23:45PM -0700, Yinghai Lu wrote:
+> > > >> On 05/23/2011 06:35 PM, Paul E. McKenney wrote:
+> > > >>> On Mon, May 23, 2011 at 06:26:23PM -0700, Yinghai Lu wrote:
+> > > >>>> On 05/23/2011 06:18 PM, Paul E. McKenney wrote:
+> > > >>>>
+> > > >>>>> OK, so it looks like I need to get this out of the way in order to track
+> > > >>>>> down the delays.  Or does reverting PeterZ's patch get you a stable
+> > > >>>>> system, but with the longish delays in memory_dev_init()?  If the latter,
+> > > >>>>> it might be more productive to handle the two problems separately.
+> > > >>>>>
+> > > >>>>> For whatever it is worth, I do see about 5% increase in grace-period
+> > > >>>>> duration when switching to kthreads.  This is acceptable -- your
+> > > >>>>> 30x increase clearly is completely unacceptable and must be fixed.
+> > > >>>>> Other than that, the main thing that affects grace period duration is
+> > > >>>>> the setting of CONFIG_HZ -- the smaller the HZ value, the longer the
+> > > >>>>> grace-period duration.
+> > > >>>>
+> > > >>>> for my 1024g system when memory hotadd is enabled in kernel config:
+> > > >>>> 1. current linus tree + tip tree:  memory_dev_init will take about 100s.
+> > > >>>> 2. current linus tree + tip tree + your tree - Peterz patch: 
+> > > >>>>    a. on fedora 14 gcc: will cost about 4s: like old times
+> > > >>>>    b. on opensuse 11.3 gcc: will cost about 10s.
+> > > >>>
+> > > >>> So some patch in my tree that is not yet in tip makes things better?
+> > > >>>
+> > > >>> If so, could you please see which one?  Maybe that would give me a hint
+> > > >>> that could make things better on opensuse 11.3 as well.
+> > > >>
+> > > >> today's tip:
+> > > >>
+> > > >> [   31.795597] cpu_dev_init done
+> > > >> [   40.930202] memory_dev_init done
+> > > > 
+> > > > One other question...  What is memory_dev_init() doing to wait for so
+> > > > many RCU grace periods?  (Yes, I do need to fix the slowdowns in any
+> > > > case, but I am curious.)
+> > > 
+> > > looks like it register some in sysfs
+> > 
+> > Use of synchronize_rcu() for unregistering would make sense, but
+> > I don't understand why it is needed when registering.
+> 
+> I guess writing a patch to remove it would be welcome by the sysfs folks - or 
+> some subtle reason would be pointed out (which reason could thus be added to 
+> the code in a comment).
+> 
+> Understanding the nondeterminism of grace periods would be extremely nice 
+> though, there *are* workloads that use rcu syncs rather frequently, and we have 
+> probably regressed them.
 
-Hi,
+Agreed, if I can help people speed up sysfs creation, that would be good,
+but avoiding/fixing RCU grace-period performance regressions is also a
+good thing.
 
-I don't see this patch in today's linux-next. Any objection against me
-applying it to the kbuild-2.6.git repository?
-
-Thanks,
-Michal
-
-
-> diff --git a/fs/gfs2/main.c b/fs/gfs2/main.c
-> index 72c31a3..07d057b 100644
-> --- a/fs/gfs2/main.c
-> +++ b/fs/gfs2/main.c
-> @@ -143,7 +143,7 @@ static int __init init_gfs2_fs(void)
->  
->  	gfs2_register_debugfs();
->  
-> -	printk("GFS2 (built %s %s) installed\n", __DATE__, __TIME__);
-> +	printk("GFS2 installed\n");
->  
->  	return 0;
->  
-
+							Thanx, Paul
