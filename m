@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab1EYLX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 07:23:58 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:53584 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753448Ab1EYLX4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 07:23:56 -0400
-Date: Wed, 25 May 2011 14:23:51 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: balbi@ti.com, "'Alan Stern'" <stern@rowland.harvard.edu>,
-        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-Message-ID: <20110525112350.GP14556@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <Pine.LNX.4.44L0.1105241012080.1913-100000@iolanthe.rowland.org>
- <013201cc1a96$bdda7910$398f6b30$@org>
- <20110525092124.GI14556@legolas.emea.dhcp.ti.com>
- <015801cc1abd$ca534e20$5ef9ea60$@org>
- <20110525092743.GK14556@legolas.emea.dhcp.ti.com>
- <018e01cc1ac0$2b09b040$811d10c0$@org>
- <20110525094902.GM14556@legolas.emea.dhcp.ti.com>
- <01a601cc1ac2$f0041a00$d00c4e00$@org>
- <20110525102945.GN14556@legolas.emea.dhcp.ti.com>
- <01b401cc1ac9$d1c57870$75506950$@org>
+	id S1754450Ab1EYL3U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 07:29:20 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38459 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752714Ab1EYL3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 07:29:19 -0400
+Date: Wed, 25 May 2011 13:28:52 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
+Message-ID: <20110525112852.GD30983@elte.hu>
+References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
+ <20110525065451.GC429@elte.hu>
+ <20110525080042.GA27183@liondog.tnic>
+ <20110525090501.GA28500@elte.hu>
+ <20110525105057.GA21830@gere.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HAv5+T9jbwMPl6Kw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <01b401cc1ac9$d1c57870$75506950$@org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110525105057.GA21830@gere.osrc.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---HAv5+T9jbwMPl6Kw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Borislav Petkov <bp@amd64.org> wrote:
 
-Hi,
+> Btw, can we dump the ucode version in hex since ours are much easier to
+> read that way:
+> 
+> [86483.770976] microcode: CPU0: patch_level=0x010000c4
+> [86483.826987] microcode: CPU1: patch_level=0x010000c4
+> [86483.835071] microcode: CPU2: patch_level=0x010000c4
+> ...
 
-On Wed, May 25, 2011 at 01:52:15PM +0300, Tanya Brokhman wrote:
-> > > > > following:
-> > > > > 1. if CONFIG_USB_GADGET_SUPERSPEED=3Dtrue, existing gadget drivers
-> > > > > are still functional with dummy_hcd since as I already mentioned,
-> > > > > they will be enumerated through HS root hub and thus the
-> > > > > gadget.speed will
-> > > > be set to HS.
-> > > > > This is true for all gadget drivers, including the once that
-> > don't
-> > > > > define SS descriptors.
-> > > >
-> > > > only due the module parameter, right ?
-> > >
-> > > Due to the module parameter default value being FALSE, yes.
-> >=20
-> > Ok, so let's take your approach but change the speed in the gadget
-> > driver structure, put your ifdef somewhere like here:
-> >=20
-> > diff --git a/drivers/usb/gadget/composite.c
-> > b/drivers/usb/gadget/composite.c index 1ba4bef..d02d6e8 100644
-> > --- a/drivers/usb/gadget/composite.c
-> > +++ b/drivers/usb/gadget/composite.c
-> > @@ -1224,7 +1224,11 @@ composite_resume(struct usb_gadget *gadget)  /*-
-> > -----------------------------------------------------------------------
-> > -*/
-> >=20
-> >  static struct usb_gadget_driver composite_driver =3D {
-> > +#ifdef CONFIG_USB_GADGET_SUPERSPEED
-> > +       .speed          =3D USB_SPEE_SUPER,
-> > +#else
-> >         .speed          =3D USB_SPEED_HIGH,
-> > +#endif
-> >=20
-> >         .unbind         =3D composite_unbind,
-> >=20
->=20
-> I have no problem updating static struct usb_gadget_driver composite_driv=
-er
-> as you suggested but it seems the same as updating it @
-> usb_composite_probe()...
+How is that version constructed and iterated, or example is the 
+0x01000000 bit always set?
 
-still, you will have two places poking at the same field. It's better to
-keep it at once, update only that and we will take your approach.
+If it's always set then it might make sense to turn this into a more 
+human-readable version number: mask out the 0x01000000 and report 
+0xc4 as 194? Or is the *real* version above just '4'?
 
---=20
-balbi
+Should 0x010000c4 perhaps be printed as 1.10.4?
 
---HAv5+T9jbwMPl6Kw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> I guess for Intel the ucode version format won't matter that much.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Well, if Intel does similar encodings as AMD, then it would be nice 
+to turn that into human-readable version strings as well.
 
-iQEcBAEBAgAGBQJN3ObGAAoJEAv8Txj19kN1U8AIAJxZnS3UiSSMRAhW8Vvpt1Kr
-aiODqQEq/lQQ4tbrOJkWJzzUDrwLLKM5C222SqfgL/pGwqfuZ2HB5Ge3Ri/9pVtT
-t9i0RLd9mtGwNld/xOQF61ZSRHoxAJCeDtRERnDMAHaYj569ESmjsu06ZxGR5yNg
-UiMfv7t47yuUqVJCEVVWDxp3Y0RCOIB5QTcP14x1gPTYly0IILwOXQXmQV4ZqVUE
-azLjTFvgdU8swYI6mEAhkZGdc02k2mslLAvHxiSgnwYENQPswfwE4ltshEkM8mTQ
-Nep2h+rpWIREXOMu9IXH5E3gbmUtS06Gk7yzvfCClEChsVhcWvp+xr0WUX9dcN4=
-=qtmj
------END PGP SIGNATURE-----
+Thanks,
 
---HAv5+T9jbwMPl6Kw--
+	Ingo
