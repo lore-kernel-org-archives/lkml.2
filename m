@@ -1,112 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933132Ab1EYIfJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 04:35:09 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:60970 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932782Ab1EYIfG (ORCPT
+	id S933171Ab1EYIgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 04:36:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61253 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932782Ab1EYIgB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 04:35:06 -0400
+	Wed, 25 May 2011 04:36:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=RDOlYL70X36BrkeR+Q0SfriN1++LaQaV0I+Lx/wDLDYIc824tzUo/E09erSLp+HqZg
-         EzdGN3tc8zqnzgiq0s6z3+aoi96pJc2nyzSRVRkR3Tmg7YTVoC5G9Tbqnk60ukRj2Udo
-         hrAAOVGN1fjf4y2rDajo/63zkIVA/wF7KOEPo=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=eiJIp+1nUauQaXtGBnZMy8VhkYuy4y2rjkP3nWJdWf/29OFOWblgLTo1ldUEtoDH66
+         mNKGqUhR0HV59uKzYx0s9uwkKyxpdO4pZhyMOg9bfMAgleNYMubEWdF8NAUUpCwKr6Eg
+         6wPYrmn2ue4dKN+nQnTQDby7J+W0DmiVV6ebo=
 MIME-Version: 1.0
-In-Reply-To: <20110524121343.GA17312@Chamillionaire.breakpoint.cc>
-References: <20110521105828.GA29442@Chamillionaire.breakpoint.cc>
-	<BANLkTinGZ0L4oQkBYo9H=R==X5Z+efjRaQ@mail.gmail.com>
-	<20110524121343.GA17312@Chamillionaire.breakpoint.cc>
-Date: Wed, 25 May 2011 16:35:05 +0800
-Message-ID: <BANLkTikNSa9otE_cFKRcThUZ5ZCtE7Kyxw@mail.gmail.com>
-Subject: Re: [PATCH] timers: consider slack value in mod_timer()
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=000e0cd73466d906b404a41594f1
+In-Reply-To: <20110525082514.GE21552@elte.hu>
+References: <m11uzrvd26.fsf@fess.ebiederm.org>
+	<BANLkTim4q5dK6nOb=pVKbk1c8b-Nh_hBfA@mail.gmail.com>
+	<m1boyvpo9r.fsf@fess.ebiederm.org>
+	<1306048393.4092.8.camel@mulgrave.site>
+	<20110522084224.GA12279@elte.hu>
+	<m1k4dgr35i.fsf@fess.ebiederm.org>
+	<20110524071628.GA31612@elte.hu>
+	<4508.1306283693@localhost>
+	<20110525082514.GE21552@elte.hu>
+Date: Wed, 25 May 2011 10:35:59 +0200
+X-Google-Sender-Auth: R9J4A15Ahd8gsoPB_WfLisdLEjI
+Message-ID: <BANLkTikVDrU7Nx6143gPuB=1vwqkMFiRiQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Valdis.Kletnieks@vt.edu, "Eric W. Biederman" <ebiederm@xmission.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd73466d906b404a41594f1
-Content-Type: text/plain; charset=UTF-8
-
-On Tue, May 24, 2011 at 8:13 PM, Sebastian Andrzej Siewior
-<sebastian@breakpoint.cc> wrote:
-> * Yong Zhang | 2011-05-24 15:54:17 [+0800]:
+On Wed, May 25, 2011 at 10:25, Ingo Molnar <mingo@elte.hu> wrote:
+> * Valdis.Kletnieks@vt.edu <Valdis.Kletnieks@vt.edu> wrote:
 >
->>> diff --git a/kernel/timer.c b/kernel/timer.c
->>> index fd61986..bf09726 100644
->>> --- a/kernel/timer.c
->>> +++ b/kernel/timer.c
->>> @@ -804,6 +804,8 @@ int mod_timer(struct timer_list *timer, unsigned long expires)
->>> ?? ?? ?? ?? ?? ?? ?? ??return 1;
->>>
->>> ?? ?? ?? ??expires = apply_slack(timer, expires);
+>> On Tue, 24 May 2011 09:16:28 +0200, Ingo Molnar said:
+>> > * Eric W. Biederman <ebiederm@xmission.com> wrote:
+>> > > My gut feel says we should really implement an
+>> > > include/asm-generic/unistd-common.h to include all new system calls.
+>> > >
+>> > > That way there would be only one file to touch instead of 50. Certainly it
+>> > > works for include/asm-generic/unistd.h for the architectures that use it.
+>> > > And all we really need is just a little abstraction on that concept.
+>> >
+>> > I suppose that could be tried, although in practice it would probably be
+>> > somewhat complex due to the various compat syscall handling differences.
 >>
->>So, why not move above line up, then we can use the recalculated
->>expires?
+>> Can somebody fill us newcomers in on the arch-aeology of why some syscalls have
+>> different numbers on different archs? I know it's partially because some simply
+>> didn't implement some syscalls so there were numbering mismatches, but would it
+>> have been *that* hard to wire all of those skipped syscalls up to one stub
+>> 'return -ENOSYS'?
 >
-> We leave often before apply_slack() kicks in. From printks() it looks
-> like we leave more often in first "return 1" than in the second. Moving
-> that line up would lead to more __mode_timer() calls.
+> It was done so for hysterical raisons mostly, and once a bad ABI is done it's
+> very hard to undo it: beyond pushing the 'good ABI' you'd also still have to
+> deal with the bad ABI for a decade or more.
+>
+> So the background is that most architectures start out as quick concept
+> prototypes, doing:
+>
+>        cp -a arch/existingarch arch/newarch
+>
+> where 'existingarch' used to be arch/i386/ in the early days. Now i386 had a
+> fair amount of x86 specific syscalls that were naturally removed from
+> 'newarch'. Those created 'holes' in the numbers, which were then filled in with
+> new syscalls - a nice idea in itself!
+>
+> Also sometimes 'newarch' did a 'clean', compressed list of syscall numbers
+> straight away, reordering syscalls. Once the 'quick prototype' hack starts
+> working on real hardware, once the syscall numbers get into the C library and
+> binutils it's very hard to ever transition away: you'd break the world!
+>
+> An added source of noise that architectures tend to add new syscalls in a
+> different order: some are more interesting to them - some less.
+>
+> So these syscall table hacks done very early during an arch's lifetime stick
+> around and create wild numbering noise in 20+ syscall tables:
+>
+>                                       [ slightly edited for readability ]
+>
+>  arch/alpha/include/asm/unistd.h:      #define __NR_perf_event_open 493
+>  arch/arm/include/asm/unistd.h:        #define __NR_perf_event_open 364
+>  arch/blackfin/include/asm/unistd.h:   #define __NR_perf_event_open 369
+>  arch/frv/include/asm/unistd.h:        #define __NR_perf_event_open 336
+>  arch/m68k/include/asm/unistd.h:       #define __NR_perf_event_open 332
+>  arch/microblaze/include/asm/unistd.h: #define __NR_perf_event_open 366
+>  arch/mips/include/asm/unistd.h:       #define __NR_perf_event_open 333
+>  arch/mips/include/asm/unistd.h:       #define __NR_perf_event_open 292
+>  arch/mips/include/asm/unistd.h:       #define __NR_perf_event_open 296
+>  arch/mn10300/include/asm/unistd.h:    #define __NR_perf_event_open 337
+>  arch/parisc/include/asm/unistd.h:     #define __NR_perf_event_open 318
+>  arch/powerpc/include/asm/unistd.h:    #define __NR_perf_event_open 319
+>  arch/s390/include/asm/unistd.h:       #define __NR_perf_event_open 331
+>  arch/sh/include/asm/unistd_32.h:      #define __NR_perf_event_open 336
+>  arch/sh/include/asm/unistd_64.h:      #define __NR_perf_event_open 364
+>  arch/sparc/include/asm/unistd.h:      #define __NR_perf_event_open 327
+>  arch/x86/include/asm/unistd_32.h:     #define __NR_perf_event_open 336
+>  arch/x86/include/asm/unistd_64.h:     #define __NR_perf_event_open 298
+>
+> To fix this we'd create a new, clean offset defined by each architecture, and a
+> generic enumeration of new syscalls.
+>
+> This would make it much easier to add new, generic syscalls to all
+> architectures indeed.
+>
+> It would still leave compat syscall wrappers unaddressed though: those are
+> often numbered differently and sometimes need arch specific wrapper entry
+> functions, which then call the real generic syscall.
+>
+> But at least the primary, 'native' syscall table of every arch could be kept
+> rather fresh via generic enumeration.
 
-Hmmm, so the reason is for a timer whose timer->slack is not set
-explicitly. when we recalculate expires, we will get different value
-sometimes.
+So we can start all over at offset 501 (alpha just started using 500)
+with a unified,
+clean, and compressed list of syscalls? Or do we have some more other-os-compat
+syscalls around in this range?
 
-Could you please try the attached patch(webmail will mangle it)
+Gr{oetje,eeting}s,
 
-Thanks,
-Yong
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
--- 
-Only stand for myself
-
---000e0cd73466d906b404a41594f1
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-timer-avoid-recount-slack-for-same-expire-pending-ti.patch"
-Content-Disposition: attachment; 
-	filename="0001-timer-avoid-recount-slack-for-same-expire-pending-ti.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_go40pvrg0
-
-RnJvbSAwMmZkMjNiMGJhZjZmNjgzZTg5ODkyN2VkMDE0Y2Y3ZDBlOGQ1YTkwIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBZb25nIFpoYW5nIDx5b25nLnpoYW5nMEBnbWFpbC5jb20+CkRh
-dGU6IFdlZCwgMjUgTWF5IDIwMTEgMTY6MjA6MTcgKzA4MDAKU3ViamVjdDogW1BBVENIXSB0aW1l
-cjogYXZvaWQgcmVjb3VudCBzbGFjayBmb3Igc2FtZS1leHBpcmUgcGVuZGluZyB0aW1lcgoKbW9k
-X3RpbWVyIGhhcyBhIG9wdGltaXplZCB3YXkgZm9yIHNhbWUtZXhwaXJlIHBlbmRpbmcgdGltZXIs
-CmJ1dCBhZnRlciB3ZSBpbnRyb2R1Y2VkIHNsYWNrLCB0aW1lci0+ZXhwaXJlcyB3aWxsIGJlCnJl
-Y291bnQgYmFzZWQgb24gdGltZXItPnNsYWNrLgpTbyB0aGUgY3VycmVudCAnaWYgKHRpbWVyX3Bl
-bmRpbmcodGltZXIpICYmIHRpbWVyLT5leHBpcmVzID09IGV4cGlyZXMpJwp3aWxsIGJlIHRydWUg
-b25seSB3aGVuICd0aW1lci0+c2xhY2sgPj0gMCcsIGJ1dCBmb3IgdGhlIGNhc2Ugd2hlcmUKdGlt
-ZXItPnNsYWNrIGlzIG5vdCBkZWZpbmVkIGV4cGxpY2l0bHksIHRoYXQgY2hlY2sgd2lsbCBmYWls
-IHNvbWV0aW1lcy4KClJlcG9ydGVkLWJ5OiBTZWJhc3RpYW4gQW5kcnplaiBTaWV3aW9yIDxzZWJh
-c3RpYW5AYnJlYWtwb2ludC5jYz4KU2lnbmVkLW9mZi1ieTogWW9uZyBaaGFuZyA8eW9uZy56aGFu
-ZzBAZ21haWwuY29tPgpDYzogVGhvbWFzIEdsZWl4bmVyIDx0Z2x4QGxpbnV0cm9uaXguZGU+Ci0t
-LQoga2VybmVsL3RpbWVyLmMgfCAgICA4ICsrKysrKy0tCiAxIGZpbGVzIGNoYW5nZWQsIDYgaW5z
-ZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9rZXJuZWwvdGltZXIuYyBi
-L2tlcm5lbC90aW1lci5jCmluZGV4IGZkNjE5ODYuLjczYWY1M2MgMTAwNjQ0Ci0tLSBhL2tlcm5l
-bC90aW1lci5jCisrKyBiL2tlcm5lbC90aW1lci5jCkBAIC03NDksNiArNzQ5LDEwIEBAIHVuc2ln
-bmVkIGxvbmcgYXBwbHlfc2xhY2soc3RydWN0IHRpbWVyX2xpc3QgKnRpbWVyLCB1bnNpZ25lZCBs
-b25nIGV4cGlyZXMpCiAJdW5zaWduZWQgbG9uZyBleHBpcmVzX2xpbWl0LCBtYXNrOwogCWludCBi
-aXQ7CiAKKwkvKiBubyBuZWVkIHRvIGFjY291bnQgc2xhY2sgYWdhaW4gZm9yIGEgc2FtZS1leHBp
-cmUgcGVuZGluZyB0aW1lciAqLworCWlmICh0aW1lcl9wZW5kaW5nKHRpbWVyKSAmJiB0aW1lX2Fm
-dGVyX2VxKHRpbWVyLT5leHBpcmVzLCBleHBpcmVzKSkKKwkJcmV0dXJuIHRpbWVyLT5leHBpcmVz
-OworCiAJZXhwaXJlc19saW1pdCA9IGV4cGlyZXM7CiAKIAlpZiAodGltZXItPnNsYWNrID49IDAp
-IHsKQEAgLTc5NSw2ICs3OTksOCBAQCB1bnNpZ25lZCBsb25nIGFwcGx5X3NsYWNrKHN0cnVjdCB0
-aW1lcl9saXN0ICp0aW1lciwgdW5zaWduZWQgbG9uZyBleHBpcmVzKQogICovCiBpbnQgbW9kX3Rp
-bWVyKHN0cnVjdCB0aW1lcl9saXN0ICp0aW1lciwgdW5zaWduZWQgbG9uZyBleHBpcmVzKQogewor
-CWV4cGlyZXMgPSBhcHBseV9zbGFjayh0aW1lciwgZXhwaXJlcyk7CisKIAkvKgogCSAqIFRoaXMg
-aXMgYSBjb21tb24gb3B0aW1pemF0aW9uIHRyaWdnZXJlZCBieSB0aGUKIAkgKiBuZXR3b3JraW5n
-IGNvZGUgLSBpZiB0aGUgdGltZXIgaXMgcmUtbW9kaWZpZWQKQEAgLTgwMyw4ICs4MDksNiBAQCBp
-bnQgbW9kX3RpbWVyKHN0cnVjdCB0aW1lcl9saXN0ICp0aW1lciwgdW5zaWduZWQgbG9uZyBleHBp
-cmVzKQogCWlmICh0aW1lcl9wZW5kaW5nKHRpbWVyKSAmJiB0aW1lci0+ZXhwaXJlcyA9PSBleHBp
-cmVzKQogCQlyZXR1cm4gMTsKIAotCWV4cGlyZXMgPSBhcHBseV9zbGFjayh0aW1lciwgZXhwaXJl
-cyk7Ci0KIAlyZXR1cm4gX19tb2RfdGltZXIodGltZXIsIGV4cGlyZXMsIGZhbHNlLCBUSU1FUl9O
-T1RfUElOTkVEKTsKIH0KIEVYUE9SVF9TWU1CT0wobW9kX3RpbWVyKTsKLS0gCjEuNy40LjEKCg==
---000e0cd73466d906b404a41594f1--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
