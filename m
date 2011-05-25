@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab1EYKIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 06:08:12 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52136 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750712Ab1EYKIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 06:08:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,266,1304319600"; 
-   d="scan'208";a="1272813"
-Subject: Re: [PATCH] dmaengine: Add API documentation for slave dma usage
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <BANLkTikn3BBeNyuUeZ9BhG5QLj-dmcGjTg@mail.gmail.com>
-References: <1306238657-30089-1-git-send-email-vinod.koul@intel.com>
-	 <BANLkTikDPeEFWdsVQ=Ak8jXEXsC-+uoOaw@mail.gmail.com>
-	 <1306253171.30236.9.camel@vkoul-udesk3>
-	 <BANLkTikjxECNAK5eS5hSu2bbEKpZX341Dw@mail.gmail.com>
-	 <BANLkTikAm=D_YNFt0Regeas6AX8116L0-A@mail.gmail.com>
-	 <1306312009.30236.110.camel@vkoul-udesk3>
-	 <BANLkTikn3BBeNyuUeZ9BhG5QLj-dmcGjTg@mail.gmail.com>
+	id S1754976Ab1EYJk1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 05:40:27 -0400
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:34707 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848Ab1EYJk1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 05:40:27 -0400
+Subject: Re: Mysterious CFQ crash and RCU
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Wed, 25 May 2011 11:40:25 +0200
+In-Reply-To: <4DDCCC4C.5030606@fusionio.com>
+References: <20110519222404.GG12600@redhat.com>
+				 <20110521210013.GJ2271@linux.vnet.ibm.com>
+				 <20110523152141.GB4019@redhat.com>
+				 <20110523153848.GC2310@linux.vnet.ibm.com>
+			 <1306189249.15900.10.camel@t41.thuisdomein> <4DDB7D36.60905@fusionio.com>
+		 <1306312155.9059.8.camel@t41.thuisdomein> <4DDCC1E4.706@fusionio.com>
+	 <1306314848.9059.17.camel@t41.thuisdomein> <4DDCCC4C.5030606@fusionio.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 15:04:42 +0530
-Message-ID: <1306316082.30236.137.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 3.1.1 (3.1.1-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1306316425.9059.23.camel@t41.thuisdomein>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 11:47 +0200, Per Forlin wrote:
-> On 25 May 2011 10:26, Koul, Vinod <vinod.koul@intel.com> wrote:
-> > I am okay with making this same for the slave devices as well.
-> >
-> > That would also require to change few drivers which start the txn in
-> > submit()
-> Yes,
-> The trivial part is to move enable from submit to issue_pending. I had
-> a quick look and it looks like the following drivers need to be
-> changed.
-> mpc512x_dma.c
-> imx-dma.c
-> imx-sdma.c
-> mxs-dma.c
+On Wed, 2011-05-25 at 11:30 +0200, Jens Axboe wrote:
+> If you build CFQ modular, then all you have to do is switch to using CFQ
+> before starting your testing:
 > 
-> The other part is more complex. To make submit only add descs to a
-> queue that will be pushed down to the DMA only after issue_pending. It
-> is not as trivial to identify which of the drivers support this or
-> not.
-> I still think it make sense to fix the documentation first and then
-> fix the drivers. Keep a list inside the dmaengine.txt of drivers that
-> need to be fixed in order to comply with the API. Over time drivers
-> will be fixed and removed from the list. When we have agreed upon the
-> API (we may not be there yet) I am willingly to make a draft of such a
-> list.
-Yes this sounds right, I will send updated version and now drivers would
-need to call issue_pending.
+> # echo cfq > /sys/block/sda/queue/scheduler
+> 
+> and switch sda to eg noop before you can remove cfq-iosched again. As
+> long as things crash, then you wont be able to remove cfq anyway and you
+> have to reboot to test something new anyway. So the modular nature of
+> cfq-iosched may not help you all that much in the end.
 
-I know dw_dmac, intel_mid_dma and ste_dma40 would need changes as well.
+The main advantage I hope for is to reduce build and install time (it's
+much quicker to rebuild a module, copy it into /lib/modules, perhaps
+upgrade the initramfs, etc., than it is to rebuild an entire kernel, all
+its modules, etc.).
 
-Was thinking to add TODO in drivers/dma with these and any other changes
-we feel are required moving forward.
-We need dw_dmac to be moved to new slave interface and remove old slave
-pointer mechanism when all are moved. 
 
--- 
-~Vinod
+Paul
 
