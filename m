@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab1EYXlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 19:41:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60009 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932391Ab1EYXlK (ORCPT
+	id S1756808Ab1EYXla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 19:41:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:45434 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753272Ab1EYXl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 19:41:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=TmISfgWuPghCAzNL/bHo6J2hv+y4pV4Jfc0Elly+QFWKTnWq3uMA+xAX8tZ//yaFox
-         XVmAsV/8ESyE93PeF4Iw==
-Date: Wed, 25 May 2011 16:40:43 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Abhijeet Joglekar (abjoglek)" <abjoglek@cisco.com>
-cc: Roland Dreier <roland@kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: RE: [patch 3/6] scsi, fnic: require DMA support for Cisco FNIC
-In-Reply-To: <13EBEADFAA5B5041B7FC8A3311E7DD1C044D22F3@XMB-RCD-104.cisco.com>
-Message-ID: <alpine.DEB.2.00.1105251639290.29729@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1105241650230.29780@chino.kir.corp.google.com> <alpine.DEB.2.00.1105241651350.29780@chino.kir.corp.google.com> <20110525080409.GA16582@infradead.org> <BANLkTi=Jc11hO3KXWFUaX1pia-MGa2SV+A@mail.gmail.com>
- <13EBEADFAA5B5041B7FC8A3311E7DD1C044D22F3@XMB-RCD-104.cisco.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 25 May 2011 19:41:29 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=oOzZnGprw0sA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=KqJEFJB4XiZQm5iJc7kA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH] ftrace: Add internal recursive checks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.02.1105260050250.3078@ionos>
+References: <1306348063.1465.116.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.02.1105252054270.3078@ionos>
+	 <1306355009.1465.119.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.02.1105260050250.3078@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 25 May 2011 19:41:26 -0400
+Message-ID: <1306366886.1465.124.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, Abhijeet Joglekar (abjoglek) wrote:
+On Thu, 2011-05-26 at 00:54 +0200, Thomas Gleixner wrote:
+> On Wed, 25 May 2011, Steven Rostedt wrote:
 
-> As Roland indicated, the correct fix would be to remove the 
-> SLAB_CACHE_DMA flag from the call to kmem_cache, and the GFP_DMA from 
-> the call to the mempool allocation routine.
+> > Any user of the function tracer (callbacks) may need to do the same
+> > thing, because the callbacks could be called without going though the
+> > list lookup and may need their own bit set.
 > 
-> I can create a patch (attributing the fix to David and Roland) and send 
-> out for review. Or if David wants, he can modify the patch he submitted 
-> to include this fix. David, please let me know how you want to proceed.
-> 
+> Errm, what means _MAY_? There are no users outside of kernel/trace/
+> for this right now. Are you saying that you forgot to update some code
+> or is this about random out of tree users?
 
-It'd be great if you could create a patch, you would certainly be able to 
-speak with more authority on the hardware requirements in the changelog 
-than I would :)
+Actually, I was thinking about perf, not some random out of tree user.
+But if this is needed, I hate to have to move the code then. It's not
+like it's modifying some internal to ftrace variable. It is modifying a
+variable in the task_struct. If there are other users that need it. Why
+not expose it in a core header? And it's not like ftrace.h is a bad
+location for this. ftrace.h is in fact made for function tracing.
 
-Thanks Roland, Christoph, and Abhijeet!
+This would not even work for out of tree users, as any bit they chose,
+could someday conflict with an internal user.
+
+-- Steve
+
+
