@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab1EYUwU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:52:20 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51603 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754304Ab1EYUwS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:52:18 -0400
-Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
- __elv_add_request OOPS]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar>
-	 <4DDB8BF6.2000304@fusionio.com>
-	 <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty>
-	 <4DDCB1C8.7040708@fusionio.com>
-	 <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty>
-	 <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
-	 <4DDD5240.2060308@fusionio.com>
-	 <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>
-	 <4DDD55D6.1080909@fusionio.com>
-	 <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty>
-	 <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com>
-	 <alpine.DEB.2.02.1105251613500.8972@ubuntu-natty>
-	 <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com>
-	 <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 15:52:14 -0500
-Message-ID: <1306356735.1641.61.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1756458Ab1EYUwn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:52:43 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49895 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756296Ab1EYUwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:52:42 -0400
+Date: Wed, 25 May 2011 22:52:34 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
+ on semi-formal proof"
+Message-ID: <20110525205234.GB28397@elte.hu>
+References: <4DDAE5FA.2030303@kernel.org>
+ <4DDAE6A5.6060701@kernel.org>
+ <20110524011824.GL7428@linux.vnet.ibm.com>
+ <4DDB093F.2060601@kernel.org>
+ <20110524013523.GO7428@linux.vnet.ibm.com>
+ <4DDC21E1.1070502@kernel.org>
+ <4DDC48E3.1060108@kernel.org>
+ <20110525045253.GB2262@linux.vnet.ibm.com>
+ <20110525072742.GI429@elte.hu>
+ <20110525204739.GJ2341@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110525204739.GJ2341@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 16:42 -0400, Parag Warudkar wrote:
-> Yeah - that makes sense. By that logic, looks like we can only disallow 
-> for SDEV_DEL (if we decide to do that check here).
 
-I don't think this is the root cause.  I think q is non-NULL but has
-already been released, so we're just getting a NULL deref on the actual
-list head.
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Does this fix it?  It adds the refcounting at approximately the correct
-places.  Of course, we'll now be trying elevator operations on an extant
-queue but one whose elevator functions have been destroyed, so there are
-probably additional state guards to place.
+> > We already fixed the worst problem via a revert, the semi-hang: 
+> > so i don't think there's pressure to do other reverts - other 
+> > than for diagnostic purposes, of course.
+> 
+> Given that I have to debug in any case, I am happier debugging in 
+> the forward direction rather than in the backwards direction.  ;-)
 
-James
+hehe, fair enough :-)
 
----
+Thanks,
 
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 58584dc..44e8ca3 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -297,7 +297,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
- 		kfree(sdev);
- 		goto out;
- 	}
--
-+	blk_get_queue(sdev->request_queue);
- 	sdev->request_queue->queuedata = sdev;
- 	scsi_adjust_queue_depth(sdev, 0, sdev->host->cmd_per_lun);
- 
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index e639125..e0bd3f7 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -322,6 +322,7 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
- 		kfree(evt);
- 	}
- 
-+	blk_put_queue(sdev->request_queue);
- 	/* NULL queue means the device can't be used */
- 	sdev->request_queue = NULL;
- 
-
-
+	Ingo
