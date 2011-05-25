@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025Ab1EYOZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:25:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:30358 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab1EYOZ3 (ORCPT
+	id S932487Ab1EYOZR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:25:17 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:24986 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751541Ab1EYOZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:25:29 -0400
-Date: Wed, 25 May 2011 10:25:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        tom.goetz@virtualcomputer.com
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Thomas Goetz <tcgoetz@gmail.com>
-Subject: Re: [PATCH] xen: use the trigger info we already have to choose the
- irq handler
-Message-ID: <20110525142510.GA32231@dumpdata.com>
-References: <alpine.DEB.2.00.1105251232020.12963@kaball-desktop>
+	Wed, 25 May 2011 10:25:15 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: pBzR.qAVM1kE8B2tfPX3RFGpZSWzjZJUBD5dV_4OeVSMb1C
+ ObKOlhL4hTUWEeQ0epECdsC0_GyWKGqxCFLQX6QxVHr_rcry1_G_LdoQhfkB
+ mnZse4DK1a3ip5tO642Yc1wjCWr3ULilWvRoxCCUE_iiLt7qRhjDvztAC8s3
+ EPNtvriAPOBh3wwT1JHsYB2ElUbBLWIMTyX3g7JSa_7nRFZJz0NW4eb0ezZI
+ 6vP_DThBnGUAS8JOhVoZh9zsLJDIAL9aONkiIWct4tBeIdcibjCmdsc28Y.j
+ L_.3jGtBq8RpaeRu3R7Gn6MXXGVq_CgwdGF0Mii604ScUOAmNk3IGg_wwlTG
+ 065bYdR422deUttb7obtdSqDN
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 25 May 2011 09:25:12 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: James Morris <jmorris@namei.org>, Pekka Enberg <penberg@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: SLUB regression in current Linus
+In-Reply-To: <BANLkTik=H=1+oqQ9_5ZZaHpFn8_9x5V-nQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1105250921560.23309@router.home>
+References: <alpine.LRH.2.00.1105242146240.12134@tundra.namei.org> <BANLkTik=H=1+oqQ9_5ZZaHpFn8_9x5V-nQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105251232020.12963@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090208.4DDD1153.0052:SCFSTAT5015188,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 12:33:23PM +0100, Stefano Stabellini wrote:
-> Do not use pirq_needs_eoi to decide which irq handler to use because Xen
-> always returns true if the guest does not support pirq_eoi_map.
-> Use the trigger information we already have from MP-tables and ACPI.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Reported-by: Thomas Goetz <tcgoetz@gmail.com>
-> Tested-by: Thomas Goetz <tcgoetz@gmail.com>
+On Tue, 24 May 2011, Linus Torvalds wrote:
 
-Tom,
+> Look at __slab_alloc: we have:
+>
+>
+>         page = c->page;
+>         if (!page)
+>                 goto new_slab;
+>
+>         slab_lock(page);
+>         if (unlikely(!node_match(c, node)))
+>                 goto another_slab;
+>
+> and let's assume we have two users racing on that "c->page". The
+> "slab_lock()" is going to work for one of them, right?
 
-Do you prefer those email addresses or tom.goetz@virtualcomputer.com ?
-..
-> -	if (pirq_needs_eoi(irq))
-> +	if (shareable)
+There cannot be two users racing through this code segment since we have
+interrupts disabled and c is pointing to a per cpu structure. c->page
+points to a page that can only be allocated from from the current
+processor (from the freelist in c->freelist) but it can be freed to from
+multiple cpus (via the page->freelist). The code that you are discussing
+is copying the freed objects from the page->freelist to the per cpu
+freelist and it needs to lock out the slab_free path to do that.
 
-Ok, so for dom0, the sharable flag is determined by the ACPI parsing.. good.
-And for MSI/MSI-X we use xen_bind_pirq_msi_to_irq which sets it to use handle_edge_irq.
 
-The only hazard which you asked me on IRC is for PV guests with Xen PCI front.
-In those cases, we have no idea whether the "GSI" IRQ is edge or level and we
-just assume that anything under 16 is edge. Which is 99% right, except if you
-are to pass in the ACPI IRQ to the guest, or some other weird creature. The MSI/MSI-X
-part of the PCI front are OK too - they use the xen_bind_pirq_msi_to_irq call.
-
-So, putting on the todo list an extension to the PCI PV protocol to pass information
-about the GSI's - whether they are edge or level.
-
-Patch is on the 2.6.40-rc1 train.
