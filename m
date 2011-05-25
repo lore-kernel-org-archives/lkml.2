@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab1EYS74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 14:59:56 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:57869 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751420Ab1EYS7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 14:59:55 -0400
-X-ASG-Debug-ID: 1306349994-03d6a50f582bf50001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DDD51A6.1030509@fusionio.com>
-Date: Wed, 25 May 2011 20:59:50 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754358Ab1EYTC4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 15:02:56 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45744 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753363Ab1EYTCy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 15:02:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EKeTgw9ErBtZwzLAzeEK5+RrgmCRKH8H4r8gymq2VchXp5JZRqMAWhhN2AmLQPWFoh
+         82ued9Ih5pHmDi3wXmTD+RQvMMyK8jx5lotbcwEQswmyieVYImc/k1YqplyQNcZO1L0J
+         SfomPaV5QVcJhk6DSkTBPL6SEg4qFfghqWn0Q=
+Date: Wed, 25 May 2011 22:00:55 +0300
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, hsweeten@visionengravers.com,
+        ryan@bluewatersys.com, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
+Message-ID: <20110525190055.GB2996@acer>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+ <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+ <1306310403.30236.94.camel@vkoul-udesk3>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: Mysterious CFQ crash and RCU
-References: <20110519222404.GG12600@redhat.com>			 <20110521210013.GJ2271@linux.vnet.ibm.com>			 <20110523152141.GB4019@redhat.com>			 <20110523153848.GC2310@linux.vnet.ibm.com>		 <1306189249.15900.10.camel@t41.thuisdomein> <4DDB7D36.60905@fusionio.com>	 <1306312155.9059.8.camel@t41.thuisdomein> <4DDCC1E4.706@fusionio.com> <1306344530.21978.5.camel@t41.thuisdomein>
-X-ASG-Orig-Subj: Re: Mysterious CFQ crash and RCU
-In-Reply-To: <1306344530.21978.5.camel@t41.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1306349994
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64662
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306310403.30236.94.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-25 19:28, Paul Bolle wrote:
-> On Wed, 2011-05-25 at 10:46 +0200, Jens Axboe wrote:
->> I don't think we are dealing with bad RCU usage in CFQ. My gut tells me
->> that this is related to the merging of cooperating queues. It fits
->> roughly with the time frame of when this issue started occuring, and
->> some of that reference logic looks fragile/racy.
->>
->> So if you _can_ test a patch easily, please try this one. It'll disable
->> that logic.
+On Wed, May 25, 2011 at 01:30:03PM +0530, Koul, Vinod wrote:
 > 
-> I'm sorry, but with that patch (adapted to out previous discussion, so
-> simply returning NULL) applied I still hit the same Oops:
+> Which tree are these patches going thru?
 
-No worries, it's still a data point. Back to the drawing board...
+I was hoping that the dmaengine driver itself would go via dmaengine tree (is
+it you or Dan who maintain it?) and rest of the patches probably through their
+respective trees. However, since there are dependencies between the patches,
+I'm not entirely sure how to proceed with these. Any ideas appreciated :)
 
--- 
-Jens Axboe
+Fortunately arch/arm/configs/ep93xx_defconfig doesn't have audio nor SPI
+enabled by default so it shouldn't matter if the patches go out of order to
+the mainline.
 
+Thanks,
+MW
