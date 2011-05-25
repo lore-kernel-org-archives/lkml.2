@@ -1,75 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab1EYJDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 05:03:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50171 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab1EYJD3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 05:03:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=QUB4cBORJu8Sq1VPTsk8PIlwjBKTso65x4Sez6ELH3/J9fsHxu6AMMyABiRbSI7b8i
-         HdWsi2++o0LvYi4QVElU8o2RcaUFmS2O0XIf6ibhKBgNzFptCmfyJMvIFHfQyFFYtRpU
-         WhcLlCwL25JByhhIMkxoWYxaA3Ds8TSKXiTm4=
+	id S1751988Ab1EYJFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 05:05:23 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54676 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751299Ab1EYJFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 05:05:22 -0400
+Date: Wed, 25 May 2011 11:05:01 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
+Message-ID: <20110525090501.GA28500@elte.hu>
+References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
+ <20110525065451.GC429@elte.hu>
+ <20110525080042.GA27183@liondog.tnic>
 MIME-Version: 1.0
-In-Reply-To: <201105221203.03970.arnd@arndb.de>
-References: <1305829704-11774-1-git-send-email-robherring2@gmail.com>
-	<a42f0c27-2811-4b68-bedf-7dfaa7bff6ff@VA3EHSMHS025.ehs.local>
-	<BANLkTi=8vX1Cs_fzpQXZBuuDuLYLu1FGmg@mail.gmail.com>
-	<201105221203.03970.arnd@arndb.de>
-Date: Wed, 25 May 2011 11:03:28 +0200
-X-Google-Sender-Auth: eH-4nSMgxPux9b_Qjt2-KjHcENk
-Message-ID: <BANLkTinrBgA8Zw03AzGFxAiY-84Hgxfcxg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] drivers/amba: probe via device tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>
-Cc: Kevin Hilman <khilman@ti.com>,
-        Segher Boessenkool <segher@kernel.crashing.org>,
-        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110525080042.GA27183@liondog.tnic>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/22 Arnd Bergmann <arnd@arndb.de>:
-> On Saturday 21 May 2011 19:42:34 Grant Likely wrote:
->> 1) drop amba-bus entirely and use platform_device everywhere, similar
->> to what OMAP has done
->> 2) strictly create amba_devices for nodes compatible with "arm,amba-device"
->> 3) be intelligent about amba device creation; create an amba_device
->> only for devices we know are driven with amba_driver.
->
-> Or maybe
->
-> 4) Use amba_device for all devices on an amba bus (identified by
-> the compatible property of the bus), but mark the ones that do
-> not have primecell compatible registers so that the amba bus
-> does not try to look at them but instead takes the information
-> from the device tree.
 
-Currently the amba/primecell bus driver in drivers/amba/bus.c
-will have the hardware registers override any data provided
-from the board.
+* Borislav Petkov <bp@alien8.de> wrote:
 
-There are pending patches to instead have the board potentially
-override the hardware, see:
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6829/1
+> On Wed, May 25, 2011 at 08:54:51AM +0200, Ingo Molnar wrote:
+> > 
+> > * Andi Kleen <andi@firstfloor.org> wrote:
+> > 
+> > > From: Andi Kleen <ak@linux.intel.com>
+> > > 
+> > > I got a request to make it easier to determine the microcode update level
+> > > on Intel CPUs. This patch adds a new "cpu update" field to /proc/cpuinfo,
+> > > which I added at the end to minimize impact on parsers.
+> > 
+> > Agreed, that is a good idea, adding this to cpuinfo makes sense.
+> 
+> Frankly, I'm not even 100% persuaded this is needed. The coretemp.c 
+> jump-through-hoops to get the ucode revision is maybe the only case 
+> that warrants adding that field to /proc/cpuinfo.
 
-The reason is that some of our hardware has newer revisions
-of the PrimeCells and still the hardware registers have not
-been updated properly. (Yes, the people involved have been
-informed.)
+I've often wondered whether the CPU involved in a particular 
+bugreport has the latest microcode installed.
 
-So you also have a case where you may want to provide an ID
-and have it override the ID present in the hardware.
+Sure we have /sys/devices/system/cpu/cpuN/microcode/version, but 
+that's both privileged to get and also has to be asked for 
+separately.
 
-Yours,
-Linus Walleij
+Arguably the microcode version is a natural extension to the existing 
+family/model/stepping sequence:
+
+ cpu family	: 6
+ model		: 26
+ stepping	: 5
+
+We'd now see:
+
+ cpu family	: 6
+ model		: 26
+ stepping	: 5
+ ucode_version  : 17
+
+Where 'stepping' is a hardware revison number and 'ucode_version' is 
+a dual software/hw revision number.
+
+> > > @@ -111,6 +111,8 @@ struct cpuinfo_x86 {
+> > >  	/* Index into per_cpu list: */
+> > >  	u16			cpu_index;
+> > >  #endif
+> > > +	/* CPU update signature */
+> > > +	u32			x86_cpu_update;
+> > 
+> > This should be cpu_microcode_version instead. We already know its x86 so the 
+> > x86_ prefix is superfluous. 'cpu_update' is also rather ambigious and does not 
+> > describe much.
+> 
+> Or shorter: 'cpu_ucode_version'.
+
+We already know it's a cpu data structure, since it's called 'struct 
+cpuinfo_x86' and the local variable is named 'c' which is the typical 
+shortcut for that data structure.
+
+so c->ucode_version is the right name here.
+
+Thanks,
+
+	Ingo
