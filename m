@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab1EYJOK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 05:14:10 -0400
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:39006 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab1EYJOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 05:14:09 -0400
-Subject: Re: Mysterious CFQ crash and RCU
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Wed, 25 May 2011 11:13:52 +0200
-In-Reply-To: <4DDCC1E4.706@fusionio.com>
-References: <20110519222404.GG12600@redhat.com>
-			 <20110521210013.GJ2271@linux.vnet.ibm.com>
-			 <20110523152141.GB4019@redhat.com>
-			 <20110523153848.GC2310@linux.vnet.ibm.com>
-		 <1306189249.15900.10.camel@t41.thuisdomein> <4DDB7D36.60905@fusionio.com>
-	 <1306312155.9059.8.camel@t41.thuisdomein> <4DDCC1E4.706@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.1 (3.1.1-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1306314848.9059.17.camel@t41.thuisdomein>
-Mime-Version: 1.0
+	id S1754321Ab1EYJQz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 05:16:55 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52993 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752517Ab1EYJQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 05:16:52 -0400
+Date: Wed, 25 May 2011 11:16:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Song, Youquan" <youquan.song@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: linux-next: manual merge of the dwmw2-iommu tree with Linus' tree
+Message-ID: <20110525091636.GC28500@elte.hu>
+References: <20110525130004.150c054f.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110525130004.150c054f.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 10:46 +0200, Jens Axboe wrote:
-> Are you easily able to test a patch out?
 
-Yes. 
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> Having a
-> test case on your machine that is as easily reproducible as it seems to
-> be, would be a great place to test ideas out.
+> Hi David,
+> 
+> Today's linux-next merge of the dwmw2-iommu tree got a conflict in
+> arch/x86/kernel/apic/apic.c between commit 31dce14a3269 ("x86, ioapic:
+> Use ioapic_saved_data while enabling intr-remapping") from Linus' tree and
+> commit 6a87c5ec6463 ("intel-iommu: enable x2apic opt out") from the
+> dwmw2-iommu tree.
 
-Maybe I should now also try to build CFQ (and the other schedulers, I
-guess) as a module (instead of Fedora's default of builtin). That might
-make it both easier and quicker to iterate over a number of ideas.
+David, please do not modify arch/x86/kernel/apic/apic.c but send such 
+patches to the x86 maintainers!
 
-Does using the schedulers as modules require any handholding (on your
-part, I'm afraid) or is it not really different from using any other
-kernel module?
+That particular change was still under discussion and i'm not at all 
+sure we want to do it like that. So please repost the latest version.
 
+Thanks,
 
-Paul Bolle
-
+	Ingo
