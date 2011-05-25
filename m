@@ -1,156 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932862Ab1EYOVE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:21:04 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:64743 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab1EYOVC (ORCPT
+	id S932946Ab1EYOXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:23:10 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45973 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932913Ab1EYOXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:21:02 -0400
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
-        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
-        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
-        penberg@kernel.org, hpa@zytor.com,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-In-Reply-To: <20110525112339.GC30983@elte.hu>
-References: <1306269105.21443.20.camel@dan> <20110524211644.GJ27634@elte.hu>
-	 <1306278038.1921.5.camel@dan>  <20110525112339.GC30983@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 10:20:51 -0400
-Message-ID: <1306333251.2211.22.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 25 May 2011 10:23:08 -0400
+Date: Wed, 25 May 2011 10:23:07 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tanya Brokhman <tlinder@codeaurora.org>
+cc: balbi@ti.com, "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>,
+        <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+In-Reply-To: <01c601cc1acf$8e28e920$aa7abb60$@org>
+Message-ID: <Pine.LNX.4.44L0.1105251010580.1987-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 13:23 +0200, Ingo Molnar wrote:
-> * Dan Rosenberg <drosenberg@vsecurity.com> wrote:
-> 
-> > > No, the right solution is what i suggested a few mails ago: 
-> > > /proc/kallsyms (and other RIP printing places) should report the 
-> > > non-randomized RIP.
-> > > 
-> > > That way we do not have to change the kptr_restrict default and 
-> > > tools will continue to work ...
-> > 
-> > Ok, I'll do it this way, and leave the kptr_restrict default to 0.  
-> > But I still think having the dmesg_restrict default depend on 
-> > randomization makes sense, since kernel .text is explicitly 
-> > revealed in the syslog.
-> 
-> Hm, where is it revealed beyond intcall addresses, which ought to be 
-> handled if they are printed via %pK?
-> 
-> All such information leaks need to be fixed. (This will be the 
-> slowest part of the process i suspect - there's many channels.)
-> 
-> in the syslog we obviously want any RIPs converted to the canonical 
-> 'unrandomized' address, so that it can be matched against 
-> /proc/kallsyms, etc. Their randomized value isnt very useful. That 
-> will also protect the randomization secret as a side effect.
-> 
+On Wed, 25 May 2011, Tanya Brokhman wrote:
 
-%pK doesn't seem like the right thing to do in many cases, since the
-capability check doesn't have proper meaning if the caller isn't in
-process context.  If I'm understanding you right (correct if I'm wrong),
-you're looking for kptr_restrict to be completely separate from this
-randomization, and when randomization is enabled, all pointers are
-unconditionally de-randomized.  It seems like the right way to do this
-is to include code in vsprintf.c for all %p-type specifiers that would
-normally print the actual pointer (as opposed to some of the specialized
-cases that print other data) that does something like this:
+> Ok so just to make sure I understand you correctly:
+> You want me to remove the modification made to usb_composite_probe() and
+> instead add:
+> static struct usb_gadget_driver composite_driver = {
+> +#ifdef CONFIG_USB_GADGET_SUPERSPEED
+> +       .speed          = USB_SPEE_SUPER,
+> +#else
+> 	  .speed          = USB_SPEED_HIGH,
+> +#endif
+> 	  .unbind         = composite_unbind,
+> 
+> And then you'll be ok with change? Or is there anything else?
+> 
+> If this is it then I'm relieved :) and of course will update the code.
 
-if((unsigned long)ptr >= (unsigned long)_stext &&
-   (unsigned long)ptr <= (unsigned long)_end)
-	ptr -= (_text - (CONFIG_PHYSICAL_START + PAGE_OFFSET));
+I have looked this over more carefully.  It turns out that both of you
+have misunderstood the purpose of CONFIG_USB_GADGET_DUALSPEED (and by
+extension, CONFIG_USB_GADGET_SUPERSPEED).  In fact, the existing
+Kconfig file is also wrong.
 
-This way, we don't have to go tracking down every printk caller and
-convert them to %pK, which isn't usable anyway in some cases.
+The _only_ reason for CONFIG_USB_GADGET_DUALSPEED is so that gadget
+drivers can use conditional compilation to avoid including the
+high-speed descriptors when the UDC doesn't support high-speed 
+operation.  That's all.  This means that the 
+CONFIG_USB_GAGDET_DUALSPEED option does not need to be 
+user-controllable in Kconfig.  It should default to N, and UDC drivers 
+that support high speed should select it.
 
-> The only thorny issue AFAICS are oopses. There's real value in having 
-> 'raw' data from a crash (interpreting crashes is hard enough even 
-> without randomization!), OTOH we could keep most of the value of them 
-> by converting them back to canonical addresses.
-> 
-> This would be more or less easy to do for the RIP and the registers, 
-> but less obvious for the stack: a kernel pointer can lie on the stack 
-> at arbitrary alignment. On 64-bit we could probably detect them 
-> rather reliably based on the randomized prefix of kernel addresses:
-> 
-> [   32.946003] Stack:
-> [   32.946003]  0000000000000202 0000000000000002 0000000000000001 0000000000000000
-> [   32.946003]  0000000000000198 0000000000000002 0000000000000000 00000000002ca5b0
-> [   32.946003]  0000000000000000 ffff88003e5533e0 ffff88003f977c00 ffffffff802225e3
-> 
-> the ffffffff8 prefix (assuming we end up randomizing the address 
-> within the 2GB window available to a RIP-relative addressed kernel) 
-> would be easy to detect even if it's not word aligned. There *would* 
-> be false positives (a 32-bit value of -7 is common), but as long as 
-> we marked any unrandomization clearly with an asterix:
-> 
-> [   32.946003] Stack:
-> [   32.946003]  0000000000000202 0000000000000002 0000000000000001 0000000000000000
-> [   32.946003]  0000000000000198 0000000000000002 0000000000000000 00000000002ca5b0
-> [   32.946003]  0000000000000000*ffff88003e5533e0*ffff88003f977c00*ffffffff802225e3
-> 
-> we'd be informed that the stack content was slighly different. If we 
-> fixed up register values, say the raw value is:
-> 
-> [   32.946003] RDX: 0000000000000000 RSI: ffffffff80ce0100 RDI: 0000000000000000
-> 
-> and randomization is -0x100000 then we'd print the normalized value 
-> for 'RSI':
-> 
-> [   32.946003] RDX: 0000000000000000 RSI:*ffffffff80de0100 RDI: 0000000000000000
-> 
-> And the '*' tells us that this value got normalized.
-> 
-> On 32-bit systems the rate of false positive is probably higher, he 
-> '0xc0' byte pattern is pretty common.
-> 
-> Now, theoretically there's still a tiny information hole here: if an 
-> attacker can crash a kernel in a non-fatal way that puts some known 
-> data on the kernel stack, then the unrandomization will reveal the 
-> secret ...
-> 
-> I guess we'll have to live with that: really paranoid places will 
-> disable dmesg access to unprivileged users.
+The same should be true of CONFIG_USB_GADGET_HIGHSPEED.  It should not
+be user-controllable.  It should default to N, and UDC drivers that
+support SuperSpeed operation (after these patches, only dummy-hcd)  
+should select it.
 
-I'm tempted to just say "leave OOPS alone", and if you want to preserve
-secrecy past an OOPS, you should be disabling dmesg access anyway.  But
-I'll think more about this.
+There remains the other question, about whether composite_driver.speed
+should be set to USB_SPEED_SUPER.  I think the matter can be settled at
+runtime.  Iterate through all the function drivers; if all of them
+support SuperSpeed and CONFIG_USB_GADGET_SUPERSPEED is enabled then set
+composite_driver.speed to USB_SPEED_SUPER.  Otherwise, if all of them
+support high speed and CONFIG_USB_GADGET_DUALSPEED is enabled then set
+composite_driver.speed to USB_SPEED_HIGH.  Otherwise set it to
+USB_SPEED_FULL.
 
-> 
-> [ They might also want to have a knob to not log kernel crashes at 
->   all - best protection is if *no one* (not even root) has a way to 
->   figure out the secret. That needs to go hand in hand with forced 
->   use of signed modules, sanitized /dev/mem, no root-controllable DMA 
->   access to any device, no ioperm() and iopl(), etc. - so a very 
->   locked down kernel that protects even root from being able to 
->   execute kernel code. Such systems are still useful btw even if root 
->   otherwise has access to all disks and has access to the kernel 
->   image and can install its own image: a reboot will generally set 
->   off an alarm. ]
-> 
-> > Thanks very much for the feedback.
-> 
-> Hey, thanks for taking up on implementing this rather non-trivial 
-> security feature!
-> 
-
-What can I say, I like a challenge. :)
-
--Dan
-
-> Thanks,
-> 
-> 	Ingo
-
+Alan Stern
 
