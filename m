@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab1EYVBC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 17:01:02 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:43072 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754754Ab1EYVBA (ORCPT
+	id S1755273Ab1EYVGC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 17:06:02 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:62284 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab1EYVGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 17:01:00 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>
-Date: Wed, 25 May 2011 14:00:49 -0700
-Message-ID: <m1pqn61on2.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 25 May 2011 17:06:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=xtfx.me; s=google;
+        h=mime-version:x-originating-ip:in-reply-to:references:from:date
+         :message-id:subject:to:cc:content-type;
+        b=MxSFgOMIdgi5z5DCzjtkFmsk8xJm7PQJPB45MhpY/FRqyBAgDgt6eoYz9nqxN6o+jA
+         jfKAb9yJeCE82c2hEfiAgJWIKgEiKsGsjdTZhctL26JZ6GIGgUHcMjgxKhnA2eHZaktV
+         8hrL/00xxsdURzm2AvYBJUGIlwO+c0Ja+HlhQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+6UNjOzwChZXvALL36OFCn7HwOxuAufnY=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [GIT PULL] namespace filedescriptors
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+X-Originating-IP: [98.103.195.251]
+In-Reply-To: <m1wrhh3z62.fsf@fess.ebiederm.org>
+References: <m1wrhh3z62.fsf@fess.ebiederm.org>
+From: C Anthony Risinger <anthony@xtfx.me>
+Date: Wed, 25 May 2011 16:05:39 -0500
+Message-ID: <BANLkTikW4vJbC8kcLSKuemUBbu36SO6hwg@mail.gmail.com>
+Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 23, 2011 at 4:05 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> This tree adds the files /proc/<pid>/ns/net, /proc/<pid>/ns/ipc,
+> /proc/<pid>/ns/uts that can be opened to refer to the namespaces of a
+> process at the time those files are opened, and can be bind mounted to
+> keep the specified namespace alive without a process.
+>
+> This tree adds the setns system call that can be used to change the
+> specified namespace of a process to the namespace specified by a system
+> call.
 
-I have ripped out all of my work to wire up the syscalls and make that
-work properly.
+i just have a quick question regarding these, apologies if wrong place
+to respond -- i trimmed to lists only.
 
-Please think about pulling:
-git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/linux-2.6-nsfd.git
+if i understand correctly, mount namespaces (for example), allow one
+to build such constructs as "private /tmp" and similar that even
+`root` cannot access ... and there are many reasons `root` does not
+deserve to completely know/interact with user processes (FUSE makes a
+good example ... just because i [user] have SSH access to a machine,
+why should `root`?)
 
-The code really cleans up working with namespaces.
+would these /proc additions break such guarantees?  IOW, would it now
+become possible for `root` to inject stuff into my private namespaces,
+and/or has these guarantees never existed and i am mistaken?  is there
+any kind of ACL mechanism that endows the origin process (or similar)
+with the ability to dictate who can hold and/or interact with these
+references?
 
-The killer feature is probably going to be that it becomes trivial to
-isolate a vpn connection into it's own network namespace, allowing
-all of the weirdness that comes with vpn connections to be isolated.
+Thanks for your time,
 
-If nothing happens with this until the next merge cycle I will
-understand.
+-- 
 
-Eric W. Biederman (8):
-      ns: proc files for namespace naming policy.
-      ns: Introduce the setns syscall
-      ns proc: Add support for the network namespace.
-      ns proc: Add support for the uts namespace
-      ns proc: Add support for the ipc namespace
-      net: Allow setting the network namespace by fd
-      ns: Declare sys_setns in syscalls.h
-      ns proc: Return -ENOENT for a nonexistent /proc/self/ns/ entry.
-
-Stephen Rothwell (1):
-      net: fix get_net_ns_by_fd for !CONFIG_NET_NS
-
-
- fs/proc/Makefile            |    1 +
- fs/proc/base.c              |   20 ++---
- fs/proc/inode.c             |    7 ++
- fs/proc/internal.h          |   18 ++++
- fs/proc/namespaces.c        |  198 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/if_link.h     |    1 +
- include/linux/proc_fs.h     |   21 +++++
- include/linux/syscalls.h    |    1 +
- include/net/net_namespace.h |    1 +
- ipc/namespace.c             |   37 ++++++++
- kernel/nsproxy.c            |   42 +++++++++
- kernel/utsname.c            |   39 +++++++++
- net/core/net_namespace.c    |   65 ++++++++++++++
- net/core/rtnetlink.c        |    5 +-
- 14 files changed, 444 insertions(+), 12 deletions(-)
+C Anthony
