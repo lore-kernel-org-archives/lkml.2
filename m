@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757768Ab1EYOzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:55:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57620 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756142Ab1EYOzI (ORCPT
+	id S933022Ab1EYPCW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 11:02:22 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:17044 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932994Ab1EYPCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:55:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110525085816.GA24233@elte.hu>
-References: <alpine.LRH.2.00.1105242146240.12134@tundra.namei.org>
- <20110525074040.GA9233@elte.hu> <20110525085816.GA24233@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 25 May 2011 07:54:42 -0700
-Message-ID: <BANLkTimSpDM4ZbDx92r7jkoGq8SkY2fMyA@mail.gmail.com>
-Subject: Re: [PATCH] Revert "slub: Remove node check in slab_free"
-To: Ingo Molnar <mingo@elte.hu>
-Cc: James Morris <jmorris@namei.org>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 May 2011 11:02:21 -0400
+X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 11:02:21 EDT
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=from:message-id;
+	b=09NtWKlKTYLnTnBziCsXsynIxLq+uSWd+/CnFY2i3Lc69rkjoFpqfQmp8KDt
+	csH+zJHGBKcKmFoXVsD4BF6/4EzkOS6ejsD3qLfyJoUUsR4a3/kh5oSkQ
+	TVjqIQJGh9HTGZ2a6myr8xIqQfI0PuB4eogAm0/RRbtjP/Y/7tTd9w=;
+X-Spam-Processed: mail.digidescorp.com, Wed, 25 May 2011 09:56:56 -0500
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1126de5331=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Subject: Re: [Bug #23902] 2.6.37-rc3 massive interactivity regression on ARM
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: andi@firstfloor.org, LKML <linux-kernel@vger.kernel.org>
+Cc: rjw@sisk.pl, stable@kernel.org, a.p.zijlstra@chello.nl
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 May 2011 09:56:51 -0500
+Message-ID: <1306335411.2643.21.camel@iscandar.digidescorp.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 1:58 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> As Linus explained it's broken. Quoting Linus:
+Andi -
 
-Actually, apparently Linus' explanation doesn't hold water.
+This bug appears to have crept into 2.6.35.12 via
+a3fe22ee824895aafdc1b788e19c081a2e6dd9da and is still present in
+2.6.35.13.
 
-There does seem to be something very broken in that commit, and a
-revert is appropriate, but as Christoph says, "c" is a local per-cpu
-thing that is protected by interrupts being disabled. So the case I
-thought looked bad cannot happen - it's not actually protected by the
-page lock.
+Mainline patch fe44d62122829959e960bc699318d58966922a69 (sched: Fix the
+irqtime code to deal with u64 wraps) seems to fix my system although I
+recommend also applying  8e92c20183ed0579d94501311b81c42b65cb2129
+(sched: Fix the irqtime code for 32bit). Any stable releases that have
+picked up 305e6835e05513406fa12820e40e4a8ecb63743c (sched: Do not
+account irq time to current task) should probably also apply these.
 
-That said, we have one bisect that pinpointed that commit, and you
-reporting that stability improves dramatically by reverting it, so I
-definitely will revert it. I would like to be able to figure out what
-the problem with it is, though.
+Before I could get these patches to apply to 2.6.35.13 I had to tweak
+sched.c:update_rq_clock() to match
+f26f9aff6aaf67e9a430d16c266f91b13a5bff64 (Sched: fix skip_clock_update
+optimization). That patch was applied to 2.6.35-longterm, except for the
+update_rq_clock() portion. I believe that was because that portion
+depended on a patch from Ventakesh that wasn't applied until later. It
+looks like the logic that ended up in 2.6.35.12 was slightly different
+than in mainline; I'm not familiar enough with the scheduler details to
+know what the effects would be.
 
-(Not that that will hold up the revert).
+------------------------------------------------------------------------
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+diff -uprN a/kernel/sched.c b/kernel/sched.c
+--- a/kernel/sched.c	2011-05-25 09:39:05.200320708 -0500
++++ b/kernel/sched.c	2011-05-25 09:39:27.990238065 -0500
+@@ -654,8 +654,10 @@ inline void update_rq_clock(struct rq *r
+ 	int cpu = cpu_of(rq);
+ 	u64 irq_time;
+ 
+-	if (!rq->skip_clock_update)
+-		rq->clock = sched_clock_cpu(cpu_of(rq));
++	if (rq->skip_clock_update)
++		return;
++
++	rq->clock = sched_clock_cpu(cpu);
+ 	irq_time = irq_time_cpu(cpu);
+ 	if (rq->clock - irq_time > rq->clock_task)
+ 		rq->clock_task = rq->clock - irq_time;
+------------------------------------------------------------------------
+ Steven J. Magnani               "I claim this network for MARS!
+ www.digidescorp.com              Earthling, return my space modulator!"
 
-One thing that I don't understand is why the debug case does *any* of
-that at all: it used to only do "c->node = NUMA_NO_NODE;" and even
-that looks bogus. A normal successful allocation doesn't do it, so why
-does the debug allocation? The normal allocation path just does
+ #include <standard.disclaimer>
 
-        c->freelist = get_freepointer(s, object);
-        page->inuse = page->objects;
-        page->freelist = NULL;
 
-so why does the debug path do something totally different:
 
-        page->inuse++;
-        page->freelist = get_freepointer(s, object);
-        deactivate_slab(s, c);
-        c->page = NULL;
-        c->node = NUMA_NO_NODE;
-
-(with that "decativate_slab + c->page = NULL" being the new part to
-the offending commit).
-
-The code is also ugly as hell. "deactivate_slab()" already sets
-c->page to NULL, and it probably should have set c->node too.
-Whatever.
-
-Christoph, please look into this. With the kind of confirmation we
-have, there is no question that commit gets reverted. So I'll revert
-it soon, but I'd still like to know what is going on.
-
-                                    Linus
