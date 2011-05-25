@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932855Ab1EYNgA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 09:36:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58545 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932805Ab1EYNf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 09:35:56 -0400
-Date: Wed, 25 May 2011 15:35:55 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH] kconfig: Only generate config_is_xxx for bool and
- tristate options
-Message-ID: <20110525133555.GG2276@sepie.suse.cz>
-References: <1305646532-29114-1-git-send-email-mmarek@suse.cz>
+	id S932894Ab1EYNg2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 09:36:28 -0400
+Received: from gretna.indigovision.com ([62.7.85.227]:39746 "EHLO
+	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932804Ab1EYNgZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 09:36:25 -0400
+From: Bruce Stenning <b.stenning@indigovision.com>
+To: Tejun Heo <htejun@gmail.com>
+CC: Mark Lord <kernel@teksavvy.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Date: Wed, 25 May 2011 14:36:20 +0100
+Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Index: AcwawRXG3oF7h9giTluT3tL547FYRgAHvs3A
+Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32C7770967B@gretna.indigovision.com>
+References: <20110423005610.GC1576@mtj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com>
+ <20110425162242.GB30828@mtj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com>
+ <20110426135027.GI878@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com>
+ <20110426155229.GM878@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com>
+ <20110430140109.GJ29280@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com>
+ <20110525094127.GF10146@htj.dyndns.org>
+In-Reply-To: <20110525094127.GF10146@htj.dyndns.org>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305646532-29114-1-git-send-email-mmarek@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 05:35:32PM +0200, Michal Marek wrote:
-> For strings and integers, the config_is_xxx macros are useless and
-> sometimes misleading:
-> 
->   #define CONFIG_INITRAMFS_SOURCE ""
->   #define config_is_initramfs_source() 1
-> 
-> Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
->  scripts/kconfig/confdata.c |    8 +++-----
->  1 files changed, 3 insertions(+), 5 deletions(-)
+> This is a different issue.  libata EH plugs the port if reset fails
+> repeatedly.  This behavior was implemented to avoid causing continuous
+> resets on a port in case it has flaky PHY state reporting; however, it
+> seems to cause more trouble than fixing issues - ie. plugging in a
+> broken device may end up plugging the port even after the offending
+> device is removed until manual rescan or reboot.  I've been pondering
+> about changing the behavior like the following.
 
-I applied this to kbuild-2.6.git#kconfig, but I won't be sending this
-and the config_is_xxx patch to Linus now. First, I'm a bit in hurry and
-there have been proposals for either a different name of the macro, or a
-different implementation, second, the fixdep fix is not here, so we
-wouldn't be able to make use of the feature anyway. So let's settle on a
-final solution for 2.6.41 or 3.1 or whatever comes second next.
+Thanks for the explanation, Tejun, and for sending those changes upstream.
+I shall incorporate these patches into my kernel and keep you informed as
+to how they behave.
 
-Michal
+Mark, did you get a chance to clean up the sata_mv spinlock addition in
+mv_set_main_irq_mask?
+
+Many Thanks,
+
+Bruce.
+
+
+Latest News at: http://www.indigovision.com/index.php/en/news.html
