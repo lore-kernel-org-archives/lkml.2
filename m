@@ -1,96 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab1EYQhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 12:37:23 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:34130 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754628Ab1EYQhW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 12:37:22 -0400
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 12:37:22 EDT
-Reply-To: <wyrles@ytram.com>
-From: "Tom Allebrandi" <wyrles@ytram.com>
-To: "'Cufi, Carles'" <carles.cufi@nordicsemi.no>, <corey@kansanian.com>
-Cc: "'Ed Tomlinson'" <edt@aei.ca>, "'Ville Tervo'" <ville.tervo@nokia.com>,
-        "'Bluettooth Linux'" <linux-bluetooth@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-References: <BANLkTinG_qCtHQYRYFQUJ9oGv4H1cuznWg@mail.gmail.com> <201105250711.17971.edt@aei.ca>	<20110525113614.GQ2480@null> <201105250812.43246.edt@aei.ca> <5B4B9A479BF6994B88EA975675EC5B79057A399D82@MES1OS2SXC003.mes1.tconet.net> <BANLkTi=ec3bh24=2r8f3tmj2g0n0bMnq1Q@mail.gmail.com> <5B4B9A479BF6994B88EA975675EC5B79057A60296D@MES1OS2SXC003.mes1.tconet.net>
-In-Reply-To: <5B4B9A479BF6994B88EA975675EC5B79057A60296D@MES1OS2SXC003.mes1.tconet.net>
-Subject: RE: Linux 2.6.39
-Date: Wed, 25 May 2011 09:31:13 -0700
-Message-ID: <013c01cc1af9$361b00e0$a25102a0$@ytram.com>
+	id S1757955Ab1EYQbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 12:31:46 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:37495 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756630Ab1EYQbp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 12:31:45 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 3MLe8yAVM1lSxdukAX4_.oxCibQu8xsoQwWs3fACB1jnQoj
+ zsz3PrwEPSkW3TU7bXSCoMKs39J8QBBu16lW.uK7amTDnKnjPwWucef_b4Rh
+ xjRAF6xL2Z5WpsmuyXlwCaEyDnO.ss87kEaUR.3icWYa.4xsZHhscf_QWWnH
+ pEIFbp4Q0CQXzz8FS4GkSqgNkmfccPnXhr84kFqVoIaigkwyW_6pOYyHgXkm
+ LSmfarvIPb77dngV1YwesleNZVjIApCax7axOhq5JRHx.qY9V5pFGBGMIrzu
+ y9GgEn4_UwGU0g9AzAC6.4HPv0UtP6P_8xj5MHEiujyrkZI_f
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 25 May 2011 11:31:42 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Pekka Enberg <penberg@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: SLUB regression in current Linus
+In-Reply-To: <1306338341.2820.28.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1105251130200.26118@router.home>
+References: <alpine.LRH.2.00.1105242146240.12134@tundra.namei.org>  <alpine.LRH.2.00.1105242204100.12283@tundra.namei.org>  <alpine.DEB.2.00.1105240908100.25760@router.home>  <alpine.LRH.2.00.1105250813290.16922@tundra.namei.org>  <alpine.DEB.2.00.1105250945240.23309@router.home>
+  <BANLkTiksf8NJ40twt1nxp6oRAqNv45QeCQ@mail.gmail.com>  <alpine.DEB.2.00.1105251003150.23309@router.home> <1306338341.2820.28.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQGUKt7R/T/916P1fB9/N50PhgUuCwGLqzLiAU0RkDMBZ9ryawGkHAjPAqaiMpsCHZd2SJS4Uodg
-Content-Language: en-us
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------Original Message-----
-From: linux-bluetooth-owner@vger.kernel.org
-[mailto:linux-bluetooth-owner@vger.kernel.org] On Behalf Of Cufi, Carles
-Sent: Wednesday, May 25, 2011 7:15 AM
-To: corey@kansanian.com
-Cc: Ed Tomlinson; Ville Tervo; Bluettooth Linux;
-linux-kernel@vger.kernel.org
-Subject: RE: Linux 2.6.39
+On Wed, 25 May 2011, Eric Dumazet wrote:
 
-(Snipping...)
-On Wed, May 25, 2011 at 8:46 AM, Cufi, Carles <carles.cufi@nordicsemi.no>
-wrote:
-> On Wednesday 25 May 2011 07:36:14 Ville Tervo wrote:
->> On Wed, May 25, 2011 at 07:11:17AM -0400, ext Ed Tomlinson wrote:
->> > On Wednesday 25 May 2011 06:54:54 Corey Boyle wrote:
->> > > > On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
->> > > > > On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
->> > > > > > On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
-...
->> > Read Local Version Information (0x04|0x0001) plen 0
->> > > HCI Event: Command Complete (0x0e) plen 12
->> >     Read Local Version Information (0x04|0x0001) ncmd 1
->> >     status 0x00
->> >     HCI Version: 1.1 (0x1) HCI Revision: 0x20d
-*************************
->> >     LMP Version: 1.1 (0x1) LMP Subversion: 0x20d
-*************************
->> >     Manufacturer: Cambridge Silicon Radio (10) < HCI Command: Set 
->> > Event Mask (0x03|0x0001) plen 8
->> >     Mask: 0xfffffbff00000000
-*************************
->> > > HCI Event: Command Complete (0x0e) plen 4
->> >     Set Event Mask (0x03|0x0001) ncmd 1
->> >     status 0x12
->> >     Error: Invalid HCI Command Parameters
+> > We always fall back to the slow path in the debug case. So the tid update
+> > is useless.
 >
->Set Event Mask has been in the Bluetooth Spec since day 1, so it must be
-the bitmask, which has been extended with each new spec release to cover
-newly >added events. Looking at the latest spec, and judging by the year
-your chipset was released in (it probably is a 1.1 compliant chipset) I
-believe that >0x000000008FFFFFFF is the highest event mask it would support
-(up until and including Page Scan Repetition Mode Change Event), but since I
-don't have the >old 1.1 spec around I may be one or two bits off.
+> tid change is updated anyway at the end of deactivate_slab()
 
-The device appears to have identified itself as CSR firmware using Bluetooth
-version 1.1.
-
-I do happen to have the 1.1 spec lying around :-), for Set_Event_Mask it
-says
-
-0x0000000100000000
-To                                          Reserved for future use
-0x8000000000000000
-
-0x00000000FFFFFFFF	Default (All events enabled)
-
-The mask above looks ok (no undefined bits), but are they supposed to be
-displayed in that order? (IOW, are the bytes in correct order?)
-
---- tom
-tom allebrandi
-wyrles@ytram.com
-
+That too is useless in the debug case since we already disable
+interrupts and do not need tid based synchronization.
 
