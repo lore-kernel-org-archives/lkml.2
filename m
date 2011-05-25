@@ -1,143 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab1EYP0s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 11:26:48 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:23170 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432Ab1EYP0r convert rfc822-to-8bit (ORCPT
+	id S1758002Ab1EYPUe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 11:20:34 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:43753 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757794Ab1EYPUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 11:26:47 -0400
-X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 11:26:47 EDT
-From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-To: Tomas Henzl <thenzl@redhat.com>
-CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Date: Wed, 25 May 2011 15:20:18 +0000
-Subject: RE: [PATCH 01/16] hpsa: do readl after writel in main i/o path to
- ensure commands don't get lost.
-Thread-Topic: [PATCH 01/16] hpsa: do readl after writel in main i/o path to
- ensure commands don't get lost.
-Thread-Index: AcwZPdWRhJh4EtY7Q/msg1vmiG5dywBsMQFA
-Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D5207690A@GVW0547EXC.americas.hpqcorp.net>
-References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com>
- <20110503195849.5478.13229.stgit@beardog.cce.hp.com>
- <4DC13566.5070203@redhat.com> <20110504125212.GC5997@beardog.cce.hp.com>
- <10639.1304530101@localhost> <20110504173735.GB22953@parisc-linux.org>
- <11821.1304531662@localhost> <20110505183515.GA14193@beardog.cce.hp.com>
- <4DDA46FD.904@redhat.com>
-In-Reply-To: <4DDA46FD.904@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: RAPD Rxkf TLJI YsE0 aFHA gd5n gvud jv0y nyRc 36gQ 9bpZ
- ACYjUw== ADra7Q== AD8dGQ== AENPDA==
- AEX4Ag==;7;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGEAeABiAG8AZQBAAGsAZQByAG4AZQBsAC4AZABrADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAHMAYwBzAGkAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHMAYwBhAG0AZQByAG8AbgBAAGIAZQBhAHIAZABvAGcALgBjAGMAZQAuAGgAcAAuAGMAbwBtADsAdABoAGUAbgB6AGwAQAByAGUAZABoAGEAdAAuAGMAbwBtADsAdgBhAGwAZABpAHMALgBrAGwAZQB0AG4AaQBlAGsAcwBAAHYAdAAuAGUAZAB1AA==;Sosha1_v1;7;{64A5491B-F4BE-4DE6-B154-70DEDC0EFBBE};bQBpAGsAZQAuAG0AaQBsAGwAZQByAEAAaABwAC4AYwBvAG0A;Wed,
- 25 May 2011 15:20:18
- GMT;UgBFADoAIABbAFAAQQBUAEMASAAgADAAMQAvADEANgBdACAAaABwAHMAYQA6ACAAZABvACAAcgBlAGEAZABsACAAYQBmAHQAZQByACAAdwByAGkAdABlAGwAIABpAG4AIABtAGEAaQBuACAAaQAvAG8AIABwAGEAdABoACAAdABvACAAZQBuAHMAdQByAGUAIABjAG8AbQBtAGEAbgBkAHMAIABkAG8AbgAnAHQAIABnAGUAdAAgAGwAbwBzAHQALgA=
-x-cr-puzzleid: {64A5491B-F4BE-4DE6-B154-70DEDC0EFBBE}
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 May 2011 11:20:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type;
+        b=TjOGF26XPZ1rqg0B7SUCHb8XWu/uHD5nZifGj3vm7BbCzy8jqspuXXpm0z96oNnetz
+         0GMX0LM/hruVhGTAOuGQIRm4SDHq11OQ23s/n7rSr8RXZ7Xp9lTc3eX2VjMRBWkmLviD
+         0zGxxUQEzp2/ld4CWbUVyfOmbTPrqRpla3NJY=
 MIME-Version: 1.0
+Date: Wed, 25 May 2011 17:20:29 +0200
+X-Google-Sender-Auth: 3y7SZAeltarjS_PcsW-ci5FcomY
+Message-ID: <BANLkTin+PPqSSqwHgo0kE0T2m3k9EKasnA@mail.gmail.com>
+Subject: merge of v2.6.33.14 with tip/rt/2.6.33
+From: John Kacur <jkacur@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Carsten Emde <Carsten.Emde@osadl.org>, stable@kernel.org,
+        Clark Williams <williams@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomas wrote:
+Hi Thomas
 
-> -----Original Message-----
-> From: Tomas Henzl [mailto:thenzl@redhat.com]
-> Sent: Monday, May 23, 2011 6:38 AM
-> To: Miller, Mike (OS Dev)
-> Cc: Valdis.Kletnieks@vt.edu; scameron@beardog.cce.hp.com; Andrew Morton;
-> LKML; LKML-scsi; Jens Axboe
-> Subject: Re: [PATCH 01/16] hpsa: do readl after writel in main i/o path
-> to ensure commands don't get lost.
-> 
-> On 05/05/2011 08:35 PM, Mike Miller wrote:
-> > On Wed, May 04, 2011 at 01:54:22PM -0400, Valdis.Kletnieks@vt.edu
-> wrote:
-> >
-> >> On Wed, 04 May 2011 11:37:35 MDT, Matthew Wilcox said:
-> >>
-> >>>> This probably needs a comment like
-> >>>> 	/* don't care - dummy read just to force write posting to chipset
-> */
-> >>>> or similar.  I'm assuming it's just functioning as a barrier-type
-> flush of some sort?
-> >>>>
-> >>> It's a PCI write flush.  It's not clear to me why it's needed here,
-> >>> though.  The write will eventually get to the device; why we need to
-> >>> make the CPU wait around for it to actually get there doesn't make
-> sense.
-> >>>
-> >> Exactly why I think it needs a one-liner comment. :)
-> >>
-> >>
-> > So we're not exactly sure why it's needed either. We've had reports of
-> > commands getting "lost" or "stuck" under some workloads. The extra
-> readl
-> > works around the issue but certainly may have negative side effects.
-> >
-> > I'm not sure I understand how writel works.
-> >
-> > From linux-2.6/arch/x86/include/asm/io.h:
-> >
-> > #define build_mmio_write(name, size, type, reg, barrier) \
-> > static inline void name(type val, volatile void __iomem *addr) \
-> > { asm volatile("mov" size " %0,%1": :reg (val), \
-> > "m" (*(volatile type __force *)addr) barrier); }
-> >
-> > This implies (at least to me) that a barrier is part of writel. I
-> don't know
-> > why a write operation needs a barrier but thats essentially what we've
-> done
-> > by adding the extra readl. Can someone confirm or deny that a barrier
-> is
-> > actually built into writel? Or used by writel? If so, does this
-> indicate
-> > that barrier is broken?
-> >
-> > At this point we (the software guys) are pretty much at a loss as to
-> how to
-> > continue debugging. We don't know what to trigger on for the PCIe
-> analyzer.
-> > If we track outstanding commands then trigger on one that doesn't
-> complete in
-> > some amount of time the problem could conceivably be far in the past
-> and
-> > difficult to correlate to the data in the trace.
-> >
-> I'd look at the firmware part, you could check what happens for example
-> when
-> the firmware gets send a command it doesn't understand.
-> You could also change the communication with the fw by adding a count
-> field, which can
-> be then checked for the !(next_value == previous_value + 1) and raise an
-> event.
-> tomas
+I'm still doing some testing but I have merged v2.6.33.14 with my own
+v2.6.33.13-rt31 which ultimately comes from tip/rt/2.6.33
+I see that Carsten has also already done the same thing.
 
-Tomas,
-We've tried something very similar to the counter idea in fw. It doesn't help because the controller thinks he's done with the request. We have a (pretty crude) counter in the driver but no timing mechanism. We could add a timer. But what's a suitable timeout value? Is 2 seconds too short, too long? Suggestions, please.
+This can be fetched from
 
--- mikem
+git://git.kernel.org/pub/scm/linux/kernel/git/jkacur/jk-2.6.git    rt/2.6.33
 
+What follows is the commit-log
 
-> 
-> 
-> > If anyone has any thoughts, suggestions, or flames they would be
-> greatly
-> > appreciated.
-> >
-> > -- mikem
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-scsi"
-> in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
+commit aac9a6b18a38b03f0d61a1b64c0a8762b6ad6a5f
+Merge: cbbe989 0413500
+Author: John Kacur <jkacur@redhat.com>
+Date:   Wed May 25 15:35:54 2011 +0200
 
+    Merge commit 'v2.6.33.14' into rt/2.6.33
+
+    * commit 'v2.6.33.14': (23 commits)
+      Linux 2.6.33.14
+      vmxnet3: Fix inconsistent LRO state after initialization
+      megaraid_sas: Sanity check user supplied length before passing it to dma_a
+      x86, mce, AMD: Fix leaving freed data in a list
+      x86, apic: Fix spurious error interrupts triggering on all non-boot APs
+      tick: Clear broadcast active bit when switching to oneshot
+      clocksource: Install completely before selecting
+      x86, AMD: Fix ARAT feature setting again
+      Revert "x86, AMD: Fix APIC timer erratum 400 affecting K8 Rev.A-E processo
+      cifs: add fallback in is_path_accessible for old servers
+      fixes for using make 3.82
+      zorro8390: Fix regression caused during net_device_ops conversion
+      libertas: fix cmdpendingq locking
+      hydra: Fix regression caused during net_device_ops conversion
+      ne-h8300: Fix regression caused during net_device_ops conversion
+      NET: slip, fix ldisc->open retval
+      ehea: fix wrongly reported speed and port
+      CIFS: Fix memory over bound bug in cifs_parse_mount_options
+      dccp: handle invalid feature options length
+      ptrace: Prepare to fix racy accesses on task breakpoints
+      ...
+
+    Conflicts:
+        Makefile
+        include/linux/sched.h
+
+    Signed-off-by: John Kacur <jkacur@redhat.com>
