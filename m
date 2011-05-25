@@ -1,109 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab1EYVKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 17:10:22 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38262 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab1EYVKV convert rfc822-to-8bit (ORCPT
+	id S932126Ab1EYVK4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 17:10:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51337 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450Ab1EYVKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 17:10:21 -0400
+	Wed, 25 May 2011 17:10:55 -0400
+Date: Wed, 25 May 2011 23:10:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [bisected] Strange slowdowns timerfd related
+In-Reply-To: <20110525202721.GA1738@x4.trippels.de>
+Message-ID: <alpine.LFD.2.02.1105252309040.3078@ionos>
+References: <20110525202721.GA1738@x4.trippels.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1105241435550.3207@xanadu.home>
-References: <BANLkTiknh4nCviohecbcJEiWnSW-JdMxDw@mail.gmail.com> <alpine.LFD.2.00.1105241435550.3207@xanadu.home>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 25 May 2011 15:10:00 -0600
-X-Google-Sender-Auth: 0GYCmdGjpcelrl4jgUW36_Y--lQ
-Message-ID: <BANLkTi=hCpCbNzi1ZiKmGnbhmCG2Ce=EkA@mail.gmail.com>
-Subject: [git pull] ARM Device tree support
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 25 May 2011, Markus Trippelsdorf wrote:
 
-As per discussion attached below.  Please pull this tree adding device
-tree support to ARM, plus some other minor device tree changes.
+> I've tested the latest git-kernel today and did experience long delays
+> in Firefox. Just opening a new tab would take a few seconds and after
+> typing a few characters into the "awesome bar" I would have to wait ages
+> before the results were shown.
+> 
+> This is the bisection result:
+> 
+>  commit 9ec2690758a5467f24beb301cca5098078073bba
+>  Author: Thomas Gleixner <tglx@linutronix.de>
+>  Date:   Fri May 20 16:18:50 2011 +0200
+> 
+>      timerfd: Manage cancelable timers in timerfd
+> 
+> Reverting the commit above fixes the problem.
+
+Yes, Linus came to the same result. Fix below.
 
 Thanks,
-g.
 
-The following changes since commit 4a7df24ddc7097cd789a7527187826552ea0765e:
+	tglx_hidden_under_a_brown_paperbag
 
-  Merge branch 'for-linus/2640/i2c' of
-git://git.fluff.org/bjdooks/linux (2011-05-24 16:39:23 -0700)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 devicetree/arm-next
-
-Andres Salomon (1):
-      of/flattree: minor cleanups
-
-Grant Likely (6):
-      dt/flattree: explicitly pass command line pointer to
-early_init_dt_scan_chosen
-      arm/dt: Make __vet_atags also accept a dtb image
-      arm/dt: Allow CONFIG_OF on ARM
-      arm/dt: consolidate atags setup into setup_machine_atags
-      arm/dt: probe for platforms via the device tree
-      dt: add documentation of ARM dt boot interface
-
- Documentation/arm/Booting                       |   33 +++++-
- Documentation/devicetree/booting-without-of.txt |   48 +++++++-
- arch/arm/Kconfig                                |    7 +
- arch/arm/include/asm/mach/arch.h                |    9 ++
- arch/arm/include/asm/prom.h                     |   37 ++++++
- arch/arm/include/asm/setup.h                    |    4 +
- arch/arm/kernel/Makefile                        |    1 +
- arch/arm/kernel/devtree.c                       |  145 +++++++++++++++++++++++
- arch/arm/kernel/head-common.S                   |   24 +++-
- arch/arm/kernel/head.S                          |    8 +-
- arch/arm/kernel/setup.c                         |   90 +++++++++-----
- arch/arm/mm/init.c                              |   11 ++
- arch/microblaze/kernel/prom.c                   |    2 +-
- arch/mips/include/asm/prom.h                    |    3 -
- arch/mips/kernel/prom.c                         |    3 +-
- arch/powerpc/kernel/prom.c                      |    2 +-
- drivers/of/fdt.c                                |    8 +-
- 17 files changed, 375 insertions(+), 60 deletions(-)
- create mode 100644 arch/arm/include/asm/prom.h
- create mode 100644 arch/arm/kernel/devtree.c
-
-
-On Tue, May 24, 2011 at 12:42 PM, Nicolas Pitre
-<nicolas.pitre@linaro.org> wrote:
-> On Mon, 23 May 2011, Grant Likely wrote:
->
->> Hi Russell,
->>
->> How do you want to handle merging the ARM DT support?  Do you want to
->> pull it into your tree, or would you like me to ask Linus to pull
->> directly?  As you can see, It does include a couple of pre-requisite
->> cross-arch cleanups that I normally push to Linus directly.
->
-> I don't think that Linus would object to you pushing that to him
-> directly, given that Russell has already agreed to those patches going
-> in this cycle.
->
-> Whatever the path, it is however important that they do get in _this_
-> cycle.  Most people are just too nervous committing themselves to DT if
-> the basic stuff doesn't hit mainline.  And if we are serious about
-> _trying_ to change the state of things in ARM land by going the DT route
-> then we must have this in mainline as soon as possible.
->
->
-> Nicolas
->
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+------->
+	
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index c541ee5..a9205e3 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -748,7 +748,7 @@ static inline void retrigger_next_event(void *arg) { }
+  */
+ void clock_was_set(void)
+ {
+-#ifdef CONFIG_HIGHRES_TIMERS
++#ifdef CONFIG_HIGH_RES_TIMERS
+ 	/* Retrigger the CPU local events everywhere */
+ 	on_each_cpu(retrigger_next_event, NULL, 1);
+ #endif
