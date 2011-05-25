@@ -1,133 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab1EYH1y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 03:27:54 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52272 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772Ab1EYH1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 03:27:53 -0400
-Date: Wed, 25 May 2011 09:27:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de
-Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
- on semi-formal proof"
-Message-ID: <20110525072742.GI429@elte.hu>
-References: <20110523212530.GF7428@linux.vnet.ibm.com>
- <4DDAD934.9010603@kernel.org>
- <4DDAE5FA.2030303@kernel.org>
- <4DDAE6A5.6060701@kernel.org>
- <20110524011824.GL7428@linux.vnet.ibm.com>
- <4DDB093F.2060601@kernel.org>
- <20110524013523.GO7428@linux.vnet.ibm.com>
- <4DDC21E1.1070502@kernel.org>
- <4DDC48E3.1060108@kernel.org>
- <20110525045253.GB2262@linux.vnet.ibm.com>
+	id S932068Ab1EYH2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 03:28:00 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38362 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab1EYH17 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 03:27:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=s9hvrDj+uSwqdkfg8iKSO/5kEUJPfDJk1/ECsetwYT/hNLZgCDfGfE33KQsACMvmSk
+         PeinIe+zzhJGdTAAOuupSwd7GzTpghHzz9kQAK5GkLEhVC7u3a8oeY1NRzX29yXeVxtN
+         /cy34yoNSg6wmDM/tvsK5rCpCmF2yEvTbRLI4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110525045253.GB2262@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110524162452.GA22936@pengutronix.de>
+References: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
+	<4DDB960F.4050902@monstr.eu>
+	<20110524123625.GC31517@suse.de>
+	<20110524150215.GA2723@local>
+	<20110524162452.GA22936@pengutronix.de>
+Date: Wed, 25 May 2011 09:27:57 +0200
+X-Google-Sender-Auth: RYFMT_SER8-kwjzpjx0puV_gvnc
+Message-ID: <BANLkTinOe5nDB27JKPTNpNyEgKgM0qS=rA@mail.gmail.com>
+Subject: Re: [PATCH v5] uio/pdrv_genirq: Add OF support
+From: Thomas De Schampheleire <patrickdepinguin+devicetree@gmail.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, devicetree-discuss@lists.ozlabs.org,
+        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        John Williams <john.williams@petalogix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On Tue, May 24, 2011 at 6:24 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+>
+>> There was some unanswered question by Thomas De Scham, though.
+>
+> The answers to his question can be found in the discussions around previous
+> versions of the patch.
+>
 
-> On Tue, May 24, 2011 at 05:10:11PM -0700, Yinghai Lu wrote:
-> > On 05/24/2011 02:23 PM, Yinghai Lu wrote:
-> > > On 05/23/2011 06:35 PM, Paul E. McKenney wrote:
-> > >> On Mon, May 23, 2011 at 06:26:23PM -0700, Yinghai Lu wrote:
-> > >>> On 05/23/2011 06:18 PM, Paul E. McKenney wrote:
-> > >>>
-> > >>>> OK, so it looks like I need to get this out of the way in order to track
-> > >>>> down the delays.  Or does reverting PeterZ's patch get you a stable
-> > >>>> system, but with the longish delays in memory_dev_init()?  If the latter,
-> > >>>> it might be more productive to handle the two problems separately.
-> > >>>>
-> > >>>> For whatever it is worth, I do see about 5% increase in grace-period
-> > >>>> duration when switching to kthreads.  This is acceptable -- your
-> > >>>> 30x increase clearly is completely unacceptable and must be fixed.
-> > >>>> Other than that, the main thing that affects grace period duration is
-> > >>>> the setting of CONFIG_HZ -- the smaller the HZ value, the longer the
-> > >>>> grace-period duration.
-> > >>>
-> > >>> for my 1024g system when memory hotadd is enabled in kernel config:
-> > >>> 1. current linus tree + tip tree:  memory_dev_init will take about 100s.
-> > >>> 2. current linus tree + tip tree + your tree - Peterz patch: 
-> > >>>    a. on fedora 14 gcc: will cost about 4s: like old times
-> > >>>    b. on opensuse 11.3 gcc: will cost about 10s.
-> > >>
-> > >> So some patch in my tree that is not yet in tip makes things better?
-> > >>
-> > >> If so, could you please see which one?  Maybe that would give me a hint
-> > >> that could make things better on opensuse 11.3 as well.
-> > > 
-> > > today's tip:
-> > > 
-> > > [   31.795597] cpu_dev_init done
-> > > [   40.930202] memory_dev_init done
-> > > 
-> > 
-> > another boot from tip got:
-> > 
-> > [   35.211927] cpu_dev_init done
-> > [  136.053698] memory_dev_init done
-> > 
-> > wonder if you can have clean revert for
-> > 
-> > commit a26ac2455ffcf3be5c6ef92bc6df7182700f2114
-> > > Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > Date:   Wed Jan 12 14:10:23 2011 -0800
-> > > 
-> > >     rcu: move TREE_RCU from softirq to kthread
-> > >     
-> > >     If RCU priority boosting is to be meaningful, callback invocation must
-> > >     be boosted in addition to preempted RCU readers.  Otherwise, in presence
-> > >     of CPU real-time threads, the grace period ends, but the callbacks don't
-> > >     get invoked.  If the callbacks don't get invoked, the associated memory
-> > >     doesn't get freed, so the system is still subject to OOM.
-> > >     
-> > >     But it is not reasonable to priority-boost RCU_SOFTIRQ, so this commit
-> > >     moves the callback invocations to a kthread, which can be boosted easily.
-> > >     
-> > >     Also add comments and properly synchronized all accesses to
-> > >     rcu_cpu_kthread_task, as suggested by Lai Jiangshan.
-> > >     
-> > >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > >     Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> There is a new branch yinghai.2011.05.24a on:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> 
-> Or will be as soon as kernel.org updates its mirrors.
-> 
-> I am not sure I could call this "clean", but it does revert that commit
-> and 11 of the subsequent commits that depend on it.  It does build,
-> and I will test it once my currently running tests complete.
+I agree. After reading the entire thread a second time, I found the
+answer: current 'workaround' is to let users modify the generic
+driver's match table, while the real fix is to add runtime adding of
+compatible strings to platform devices.
 
-Given that this is about a 1-2 minute delays with 1 *terabyte* of RAM, the per 
-gigabyte delay is like 60-120 msecs, right?
-
-So it's not a regression we are absolutely forced to address via a quick 
-revert, debugging it would be nicer. There's something we don't understand and 
-that's arguably worse than having unresolved non-fatal bugs :-)
-
-We already fixed the worst problem via a revert, the semi-hang: so i don't 
-think there's pressure to do other reverts - other than for diagnostic 
-purposes, of course.
+However, the latter functionality is not yet present, right?
 
 Thanks,
+Thomas
 
-	Ingo
+> Regards,
+>
+>   Wolfram
+>
+> --
+> Pengutronix e.K.                           | Wolfram Sang                |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
+>
+>
