@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab1EYOTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:19:51 -0400
-Received: from host1743200242118.direcway.com ([174.32.118.242]:51354 "EHLO
-	aexorsyst.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S932743Ab1EYOTu (ORCPT
+	id S1757964Ab1EYOMo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:12:44 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:29810 "EHLO
+	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756744Ab1EYOMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:19:50 -0400
-X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 10:19:48 EDT
-From: "John Z. Bohach" <jzb2@aexorsyst.com>
-To: linux-kernel@vger.kernel.org
-Subject: NO S5 poweroff with nfsroot (works with same kernel and same rootfs on local storage)
-Date: Wed, 25 May 2011 07:12:07 -0700
-User-Agent: KMail/1.9.6
+	Wed, 25 May 2011 10:12:41 -0400
+Message-ID: <4DDD0E5F.5080105@panasas.com>
+Date: Wed, 25 May 2011 17:12:47 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110430 Remi/fc12 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+To: Alexey Zaytsev <alexey.zaytsev@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
+Subject: Re: (Short?) merge window reminder
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>	<20110523192056.GC23629@elte.hu>	<BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com> <BANLkTinbrtzY66p+1NALP8BDfjXLx=Qp-A@mail.gmail.com>
+In-Reply-To: <BANLkTinbrtzY66p+1NALP8BDfjXLx=Qp-A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201105250712.07085.jzb2@aexorsyst.com>
+X-OriginalArrivalTime: 25 May 2011 14:12:40.0948 (UTC) FILETIME=[CEFDE340:01CC1AE5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 05/23/2011 11:52 PM, Alexey Zaytsev wrote:
+> On Tue, May 24, 2011 at 00:33, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Mon, May 23, 2011 at 12:20 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>>>
+>>> I really hope there's also a voice that tells you to wait until .42 before
+>>> cutting 3.0.0! :-)
+>>
+>> So I'm toying with 3.0 (and in that case, it really would be "3.0",
+>> not "3.0.0" - the stable team would get the third digit rather than
+>> the fourth one.
+>>
+>> But no, it wouldn't be for 42. Despite THHGTTG, I think "40" is a
+>> fairly nice round number.
+>>
+>> There's also the timing issue - since we no longer do version numbers
+>> based on features, but based on time, just saying "we're about to
+>> start the third decade" works as well as any other excuse.
+>>
+>> But we'll see.
+> 
+> Maybe, 2011.x, or 11.x, x increasing for every merge window started this year?
+> This would better reflect the steady nature of the releases, but would
+> certainly break a lot of scripts. ;)
 
-I'm running Linux version 2.6.36.1 on an LFS (linuxfromscratch)-based 
-distro. and am trying to get the host (AMD-athlon) to physically remove 
-power (S5) on a 'halt -n -d -f -p' command issued from runstate "init 
-1" from an NFS rootfs (and yes the eth0 rootfs mount is still up in my 
-run-level 1).
+My $0.017 on this. Clearly current process is time based. People have said.
 
-The results are the kernel code is entered, the "md" device is shutdown, 
-and the following:
+* Keep Three digit numbers to retain script compatibility
+* Make it clear from the version when it was released.
+* Linus said 3 as for 3rd decade
+* Nice single increment number progression
+* Please make it look like a nice version number sys-admins will feel
+  at home with
 
-pci 0000:00:07.0: wake-up cabability enabled by ACPI
-ACPI: Preparing to enter system sleep state S5
-Disabling non-boot CPU's
-SMP alternatives: switching to UP code
+So if you combine all the above:
 
-Then it hangs, though after a few minutes, I still get some NFS timeout 
-messages, though I can't tell which mount, probably the rootfs?
+D. Y. N
+D - Is the decade since birth (1991 not 1990)
+Y - is the year in the decade so you have 3.1.x, 3.2.x, .. 3.10.x, 4.1.X and so on
+    Nice incremental number.
+N - The Linus release of this Year. So this 3rd one goes up to 4 most probably.
 
-'reboot -n -d -f' does reset the machine from the same state.
+Linus always likes, and feels very poetic about the Christmas version release.
+He hates it when once it slipped into the next year. So now he gets to increment
+the second digit as a bonus.
 
-The reason I'm posting this here is because when I run the SAME kernel 
-and the SAME rootfs from a local disk (/dev/sda1), the system does 
-power-off successfully.  I have some custom tweaks to the rc-scripts to 
-allow running identical rootfs over NFS and local disk, but I try to 
-rule out any runtime differences by restricting my question to 
-run-level 1.
+The 2nd digit gets to start on a *one*, never zero and goes up to *10*, to symbolize
+the 1991 birth. And we never have .zero quality, right?
 
-Both BIOS and kernel support ACPI and I've fixed the rootfs to run in 
-r/o mode, and made some other customizations to allow proper shutdown 
-for nfsroot, but to rule out all non-interesting things, I run the 
-halt -n -d -f -p command from run-level 1, and I've even run some 
-manual commands to kill off every process and every mount that was 
-still around.  Obviously I can't kill the root mount over NFS and eth0 
-is still up.
+The first Digit gets incremented on decade from 1991 so on 2011 and not 2010
 
-Is this supported or is the root cause between the keyboard and the 
-chair?
+So here you have it, who said we need to compromise?
 
-Thanks,
-John Z. Bohach
+Free life
+Boaz
+ 
