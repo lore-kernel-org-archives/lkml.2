@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932853Ab1EYOgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:36:09 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:36490 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932280Ab1EYOgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:36:08 -0400
-Date: Wed, 25 May 2011 10:36:02 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Michael Witten <mfwitten@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>, Richard Yao <ryao@ic.sunysb.edu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: UNIX Compatibility
-Message-ID: <20110525143602.GE8476@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Michael Witten <mfwitten@gmail.com>, Mike Galbraith <efault@gmx.de>,
-	Richard Yao <ryao@ic.sunysb.edu>, linux-kernel@vger.kernel.org
-References: <BANLkTin4wu1HNDeo8Rv7iddM9KkgZdhfgA@mail.gmail.com>
- <A7E21A2F-4338-465D-933A-66B0C4D15BE1@mit.edu>
- <BANLkTi=q7tDVkahrnng7+BJhvxh=gx71ng@mail.gmail.com>
- <20110524181619.GC26055@thunk.org>
- <BANLkTi=QUS5WfAMWTw7vuEwuBOVHsww3mA@mail.gmail.com>
- <1306297108.4819.28.camel@marge.simson.net>
- <64e4614dda6f4558a68a314d7b5979b5-mfwitten@gmail.com>
+	id S1756993Ab1EYOiZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:38:25 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46142 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232Ab1EYOiX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 10:38:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=KBIm+gMJRWH61xQ2k3XRf3kvmVhyqV05B+n3pW09frpMhBzUTGbaAzcy7/izy/TesQ
+         Yc/RNkhQuCm8YUbJ/DfVDa//sEfNMZeK9gRmWX3fngdNSZU49leWgyr92YtCgEMDtnLA
+         SbbKcyQ58pIVcqLQJyTOlTPvf5mLURQKC4Rfo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <64e4614dda6f4558a68a314d7b5979b5-mfwitten@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Date: Wed, 25 May 2011 09:38:22 -0500
+Message-ID: <BANLkTik97bTogQoRcsaBKxFTeGSxxySNsQ@mail.gmail.com>
+Subject: [GIT PULL] 9p changes for 2.6.40 merge window
+From: Eric Van Hensbergen <ericvh@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 02:20:09PM +0000, Michael Witten wrote:
-> 
-> Ted just got finished telling Richard that Richard thinks about tiny,
-> nit-picky, really stupid stuff on which only egg-headed paper pushers
-> waste time that they'll never get back.
+The following changes since commit 4a7df24ddc7097cd789a7527187826552ea0765e:
 
-There are people who spend hours and hours worrying about the fact
-that if you try to unlink a directory, Linux will return EISDIR
-instead of EPERM.  They will kill forests of trees, and cause tons and
-tons of carbon dioxide to be released into the atmosphere travelling
-to distant meetings in Singapore, Zurich, Japan, etc., to debate
-standards that specify this kind of detail.  How much value does this
-really add to the Linux ecosystem?    What would you call these people?
+  Merge branch 'for-linus/2640/i2c' of
+git://git.fluff.org/bjdooks/linux (2011-05-24 16:39:23 -0700)
 
-Now that the people who tried to lobby governments and academic
-institutions (mostly in Europe) not to use Linux, all in the name of,
-"because it's not Unix" are largely in full retreat, the answer is,
-why, pretty much none.  This kind of requirement is largely gone in
-most procurement contracts.
+are available in the git repository at:
 
-And of course, the supreme irony is that if your OS is encumbered with
-AT&T copyrighted code, you can use the Unix trademark even if you are
-not conformant to the Single Unix Specification.  (There's an escape
-clause for AT&T derived-Unix systems, which are automatically "Unix"
-even if they fail the SUS.)
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git for-linus
 
-Given all of that, what _use_ is the Single Unix Specification at this
-point?  What's the _point_?
+Aneesh Kumar K.V (2):
+      fs/9p: Don't clunk dentry fid when we fail to get a writeback inode
+      net/9p: p9_idpool_get return -1 on error
 
-And what name would you propose to call people who are worried about
-whether or not Linux is "Unix compatible" (whatever the hell that
-means)?  Especially when the rest of the world is worried about being
-"Linux compatible", and a huge amount of software is targetted first
-for Linux.
+Eric Van Hensbergen (2):
+      9p: remove experimental tag from tested configurations
+      9p: update Documentation pointers
 
-This idea that Linux needs to care about being "Unix compatible" keeps
-coming back from the grave, like some Buffy-the-vampire-slayer
-monster.  It's time to slay it.
+Rob Landley (3):
+      net/9p: Change linuxdoc names to match functions.
+      9p: typo fixes and minor cleanups
+      net/9p: enable 9p to work in non-default network namespace
 
-						- Ted
+Sasha Levin (1):
+      9p: Small cleanup in <net/9p/9p.h>
+
+ Documentation/filesystems/9p.txt |   29 ++++++++++-------------------
+ fs/9p/Kconfig                    |    5 ++---
+ fs/9p/vfs_inode_dotl.c           |   11 ++++++-----
+ include/net/9p/9p.h              |   13 ++++++-------
+ include/net/9p/client.h          |    2 +-
+ include/net/9p/transport.h       |    3 ++-
+ net/9p/Kconfig                   |    8 ++++----
+ net/9p/client.c                  |   30 +++++++++++++++++-------------
+ net/9p/mod.c                     |    4 ++--
+ net/9p/trans_fd.c                |    7 ++++---
+ net/9p/util.c                    |    2 +-
+ 11 files changed, 55 insertions(+), 59 deletions(-)
