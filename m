@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933061Ab1EYIch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 04:32:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40572 "EHLO mga09.intel.com"
+	id S1757506Ab1EYIdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 04:33:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9217 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757453Ab1EYIcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 04:32:35 -0400
+	id S1755463Ab1EYIda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 04:33:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,266,1304319600"; 
-   d="scan'208";a="4441092"
-Subject: Re: [PATCH resend] dmaengine/dw_dmac: Update maintainer-ship
+   d="scan'208";a="8328473"
+Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
 From: "Koul, Vinod" <vinod.koul@intel.com>
-To: =?ISO-8859-1?Q?H=E5vard?= Skinnemoen <hskinnemoen@gmail.com>
-Cc: Viresh Kumar <viresh.kumar@st.com>, dan.j.williams@intel.com,
-        linux-kernel@vger.kernel.org, shiraz.hashim@st.com,
-        armando.visconti@st.com, viresh.linux@gmail.com
-In-Reply-To: <BANLkTikTEEgu_uq_ee=aZW+G7gfJaPrrWQ@mail.gmail.com>
-References: <fd5b04cbce5c1051dee3faf0719f6db3ee706e60.1306226016.git.viresh.kumar@st.com>
-	 <1306226815.28926.322.camel@vkoul-udesk3>
-	 <BANLkTikTEEgu_uq_ee=aZW+G7gfJaPrrWQ@mail.gmail.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: linux-arm-kernel@lists.infradead.org, hsweeten@visionengravers.com,
+        ryan@bluewatersys.com, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>
+In-Reply-To: <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+	 <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 13:29:08 +0530
-Message-ID: <1306310348.30236.92.camel@vkoul-udesk3>
+Date: Wed, 25 May 2011 13:30:03 +0530
+Message-ID: <1306310403.30236.94.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 09:30 -0700, Håvard Skinnemoen wrote:
-> On Tue, May 24, 2011 at 1:46 AM, Koul, Vinod <vinod.koul@intel.com> wrote:
-> > On Tue, 2011-05-24 at 14:04 +0530, Viresh Kumar wrote:
-> >> Nobody is currently maintaining dw_dmac. We are using dw_dmac for SPEAr13xx and
-> >> are currently maintaining it. After discussing with Vinod, sending this patch to
-> >> update maintainer-ship of dw_dmac.
-> >>
-> >> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> >> ---
-> >>  MAINTAINERS                |    7 +++++++
-> >>  drivers/dma/dw_dmac.c      |    2 ++
-> >>  drivers/dma/dw_dmac_regs.h |    1 +
-> >>  include/linux/dw_dmac.h    |    1 +
-> >>  4 files changed, 11 insertions(+), 0 deletions(-)
-> > Am okay if Havard is...
+On Sun, 2011-05-22 at 20:03 +0300, Mika Westerberg wrote:
+> The ep93xx DMA controller has 10 independent memory to peripheral (M2P)
+> channels, and 2 dedicated memory to memory (M2M) channels. M2M channels can
+> also be used by SPI and IDE to perform DMA transfers to/from their memory
+> mapped FIFOs.
 > 
-> Hard to say based on the diffstat alone, but the patch I found in the
-> archives looks sane, so it's ok with me. Hopefully it's the same one
-> ;-)
+> This driver supports both M2P and M2M channels with DMA_SLAVE, DMA_CYCLIC and
+> DMA_MEMCPY (M2M only) capabilities.
 > 
-> Havard
-My bad, should have send the whole patch :(
+Acked-by: Vinod Koul <vinod.koul@intel.com>
 
-Applied with Ack from Havard.
-
-Havard, would you like to update your email in dma files as well?
-I am planning to send merge request tomorrow.
+Which tree are these patches going thru?
 
 -- 
 ~Vinod
