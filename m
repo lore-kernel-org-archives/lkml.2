@@ -1,74 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890Ab1EYVfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 17:35:04 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52326 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754379Ab1EYVfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 17:35:01 -0400
-Date: Wed, 25 May 2011 21:34:51 GMT
-From: tip-bot for Nikhil P Rao <nikhil.rao@intel.com>
-Message-ID: <tip-8b27f2ff7a24f0735c96055e676872f05398d99b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        nikhil.rao@intel.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        nikhil.rao@intel.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1306343921.19325.1.camel@fedora13>
-References: <1306343921.19325.1.camel@fedora13>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Remove unnecessary check in detect_ht()
-Git-Commit-ID: 8b27f2ff7a24f0735c96055e676872f05398d99b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 May 2011 21:34:52 +0000 (UTC)
+	id S1756666Ab1EYVi7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 17:38:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49102 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812Ab1EYVi4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 17:38:56 -0400
+From: Konrad@dumpdata.com, Rzeszutek@dumpdata.com, Wilk@dumpdata.com
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Xen bug-fixes for 2.6.39 (already in 2.6.40)
+Date: Wed, 25 May 2011 17:37:32 -0400
+Message-Id: <1306359456-3627-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090203.4DDD76BA.00D4,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8b27f2ff7a24f0735c96055e676872f05398d99b
-Gitweb:     http://git.kernel.org/tip/8b27f2ff7a24f0735c96055e676872f05398d99b
-Author:     Nikhil P Rao <nikhil.rao@intel.com>
-AuthorDate: Wed, 25 May 2011 10:18:41 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 25 May 2011 23:01:08 +0200
+Hey stable-tree maintainer(s).
 
-x86: Remove unnecessary check in detect_ht()
+The follow four patches are in the 2.6.40 tree and should be back-ported to 2.6.39 (only).
+I forgot to CC:stable on them, so manually doing it here.
 
-This patch removes a check that causes incorrect scheduler
-domain setup (SMP instead of SMT) and bootlog warning messages
-when cpuid extensions for topology enumeration are not supported
-and the number of processors reported to the OS is smaller than
-smp_num_siblings.
+The four patches in question have the following git commits:
 
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Nikhil P Rao <nikhil.rao@intel.com>
-Link: http://lkml.kernel.org/r/1306343921.19325.1.camel@fedora13
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/common.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+8c5950881c3b5e6e350e4b0438a8ccc513d90df9
+    xen/p2m: Create entries in the P2M_MFN trees's to track 1-1 mappings
+0f16d0dfcdb5aab97d9e368f008b070b5b3ec6d3
+    xen/setup: Fix for incorrect xen_extra_mem_start initialization under 32-bit
+15bfc094517db2ddf38ca7ed47f3a1c0ad24f7c4
+    xen/setup: Ignore E820_UNUSABLE when setting 1-1 mappings.
+7899891c7d161752f29abcc9bc0a9c6c3a3af26c
+    xen mmu: fix a race window causing leave_mm BUG()
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index c8b4162..53f02f5 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -477,13 +477,6 @@ void __cpuinit detect_ht(struct cpuinfo_x86 *c)
- 	if (smp_num_siblings <= 1)
- 		goto out;
- 
--	if (smp_num_siblings > nr_cpu_ids) {
--		pr_warning("CPU: Unsupported number of siblings %d",
--			   smp_num_siblings);
--		smp_num_siblings = 1;
--		return;
--	}
--
- 	index_msb = get_count_order(smp_num_siblings);
- 	c->phys_proc_id = apic->phys_pkg_id(c->initial_apicid, index_msb);
- 
+And are part of this email chain. Please apply them to 2.6.39.1 tree.
+
+Thank you.
