@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab1EYUyX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:54:23 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:44527 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab1EYUyW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:54:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=BLETtF3bTPbY0BZSAhQKMGfTcTltM9MVSDavl642IwlBHnXtSPpLYQsbXUK6p2QeVf
-         6nhG9z5j5jnNtcEgKqVaXDlVPYbWpUdfWKwz/y0fFzEm7InZB2zfKSmV0SPCQrf7nPo6
-         EVVc8go61GCU3xrFjiz4pSNgsL1dv5+vSwo/4=
+	id S1754063Ab1EYU65 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:58:57 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56283 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751613Ab1EYU64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:58:56 -0400
+Date: Wed, 25 May 2011 22:58:43 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Youquan Song <youquan.song@intel.com>
+Cc: linux-kernel@vger.kernel.org, david.woodhouse@intel.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, hpa@zytor.com,
+        hpa@linux.intel.com, allen.m.kay@intel.com, suresh.b.siddha@intel.com,
+        rajesh.sankaran@intel.com, asit.k.mallick@intel.com,
+        kent.liu@intel.com, Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH v4] x86, vt-d: enable x2apic opt out
+Message-ID: <20110525205843.GC28397@elte.hu>
+References: <1306341418-10645-1-git-send-email-youquan.song@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <4DDD5A7E.4030903@fusionio.com>
-References: <201105252116.37839.linux@rainbow-software.org>
-	<4DDD5A7E.4030903@fusionio.com>
-Date: Wed, 25 May 2011 22:54:21 +0200
-X-Google-Sender-Auth: erVk6JvoFj5NQmIJ12J6Dn5q_sk
-Message-ID: <BANLkTimD31sNsWy0EzCREFj2oMWP+WQcWA@mail.gmail.com>
-Subject: Re: [bisected] 2.6.39 breaks floppy
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Ondrej Zary <linux@rainbow-software.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306341418-10645-1-git-send-email-youquan.song@intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Wed, May 25, 2011 at 9:37 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
->> Bisected it to 9fd097b14918875bd6f125ed699d7bbbba5893ee
->> (block: unexport DISK_EVENT_MEDIA_CHANGE for legacy/fringe drivers)
->>
->> Adding the removed line back to floppy.c fixes the problem.
+* Youquan Song <youquan.song@intel.com> wrote:
 
-It's the same one as the following.  Patch posted.  It's caused by
-genhd->ev not allocated when ->events | async_events is empty.
+> New version of VT-d2 specification 
+> (http://download.intel.com/technology 
+> /computing/vptech/Intel(r)_VT_for_Direct_IO.pdf) includes a new 
+> feature that provide firmware a way to request system software to 
+> opt out of enable x2APIC mode. DMAR ACPI table newly define flags.1 
+> bit: x2APIC_OPT_OUT which is set to request System software opt out 
+> xAPIC mode if flags.0 bit:INTR_REMAP is also set.
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=35832
+So why isnt the x2apic disabled in the CPUID? That's the canonical 
+way to unsupport a particular non-working CPU hw feature.
 
-Will soon post a patch.
+Thanks,
 
-Thanks.
-
--- 
-tejun
+	Ingo
