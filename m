@@ -1,85 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab1EYUpf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:45:35 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56929 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756513Ab1EYUpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:45:33 -0400
-Date: Wed, 25 May 2011 22:45:23 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jack Steiner <steiner@sgi.com>
-Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+	id S1756698Ab1EYUqh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:46:37 -0400
+Received: from outappmail003.snc4.facebook.com ([66.220.144.157]:50436 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756646Ab1EYUqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:46:35 -0400
+Date: Wed, 25 May 2011 13:46:34 -0700
+From: Arun Sharma <asharma@fb.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Arun Sharma <asharma@fb.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] x86, UV: Reformat uv_mmrs.h - no code changes
-Message-ID: <20110525204523.GA28397@elte.hu>
-References: <20110512133308.GA17113@sgi.com>
- <20110513124029.GB3924@elte.hu>
- <20110525161634.GA13451@sgi.com>
+Subject: Re: [PATCH 5/6] kbuild: Append RPM release to $KERNELRELEASE
+Message-ID: <20110525204634.GA31841@dev1756.snc6.facebook.com>
+References: <1305653779-3445-1-git-send-email-asharma@fb.com>
+ <1305653779-3445-5-git-send-email-asharma@fb.com>
+ <4DD2D703.4030908@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110525161634.GA13451@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4DD2D703.4030908@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jack Steiner <steiner@sgi.com> wrote:
-
-> No code changes.  Reformat file to eliminate errors caught
-> by checkpatch.pl
+On Tue, May 17, 2011 at 10:13:55PM +0200, Michal Marek wrote:
 > 
-> Signed-off-by: Jack Steiner <steiner@sgi.com>
-> 
-> ---
-> V2 - this patch applies on top of "[PATCH] x86, UV: Support for SGI UV2 hub chip".
-> 
-> I fixed alignment of comments in the structure definitions. All checkpatch.pl
-> ERRORS & WARNINGS are also fixed.
-> 
-> Some of the symbol names are still quite long. The file is based on post-processing
-> of verilog definitions that are used for the node controller chip design. Although
-> some symbol names are not what I would chose, I would like to maintain compatibility
-> with the names used by the chip designers. We have a number of cross-reference
-> utilities & having common names is important. Hope this is ok...
+> Please stop decorating the kernel release string for the sake of make
+> rpm, thanks. If you really want the kernel release string match rpm's
+> %{version}-%{release}, how about this: Let the user set
+> CONFIG_LOCALVERSION=-<number> and check in make rpm if $KERNELRELEASE
+> ends with -<number>. If so, use <number> in the Release: field and the
+> rest in Version:, otherwise use the same scheme as before. That way, you
+> won't force a new kernel release numbering scheme on anyone.
 
-I looked at the resulting file and while it improved with this patch, 
-it still has obvious problems with things like:
+This patch has been working better than the previous one for us and it
+has a similar property that it is a nop for developers who don't use
+rpm for packaging.
 
-#define UVH_BAU_DATA_CONFIG_VECTOR_SHFT 0
-#define UVH_BAU_DATA_CONFIG_VECTOR_MASK 0x00000000000000ffUL
-#define UVH_BAU_DATA_CONFIG_DM_SHFT 8
-#define UVH_BAU_DATA_CONFIG_DM_MASK 0x0000000000000700UL
-#define UVH_BAU_DATA_CONFIG_DESTMODE_SHFT 11
-#define UVH_BAU_DATA_CONFIG_DESTMODE_MASK 0x0000000000000800UL
-#define UVH_BAU_DATA_CONFIG_STATUS_SHFT 12
-#define UVH_BAU_DATA_CONFIG_STATUS_MASK 0x0000000000001000UL
-#define UVH_BAU_DATA_CONFIG_P_SHFT 13
-#define UVH_BAU_DATA_CONFIG_P_MASK 0x0000000000002000UL
-#define UVH_BAU_DATA_CONFIG_T_SHFT 15
-#define UVH_BAU_DATA_CONFIG_T_MASK 0x0000000000008000UL
-#define UVH_BAU_DATA_CONFIG_M_SHFT 16
-#define UVH_BAU_DATA_CONFIG_M_MASK 0x0000000000010000UL
-#define UVH_BAU_DATA_CONFIG_APIC_ID_SHFT 32
-#define UVH_BAU_DATA_CONFIG_APIC_ID_MASK 0xffffffff00000000UL
+commit 29cbbfa5d840ac1ecd80a2045f05f6440d2c4c04
+Author: Arun Sharma <asharma@fb.com>
+Date:   Fri May 20 14:48:01 2011 -0700
 
-and the same mistake repeated all over again. Does this sequence 
-really look visually good to you?
+    kbuild: Use KERNELRELEASE from packaging scripts
+    
+    This adds two changes to the kernel Makefile:
+    
+    * Honor KERNELRELEASE if it's already set
+    * Allow external scripts to append $LOCAL_VERSION to
+      $EXTRA_VERSION
 
-Check the enum declarations in include/linux/perf_event.h for 
-example. Do you see the visual difference?
-
-Btw., keeping the Verilog cross-reference compatibility is fine IMO.
-
-Thanks,
-
-	Ingo
+diff --git a/Makefile b/Makefile
+index 123d858..01c51e4 100644
+--- a/Makefile
++++ b/Makefile
+@@ -368,7 +368,11 @@ KBUILD_CFLAGS_MODULE  := -DMODULE
+ KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
+ 
+ # Read KERNELRELEASE from include/config/kernel.release (if it exists)
+-KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
++# and if it's not already defined
++KERNELRELEASE ?= $(shell cat include/config/kernel.release 2> /dev/null)
++ifdef LOCAL_VERSION
++EXTRAVERSION := $(EXTRAVERSION)_$(LOCAL_VERSION)
++endif
+ KERNELVERSION = $(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
+ 
+ export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
+diff --git a/scripts/package/mkspec b/scripts/package/mkspec
+index 001814e..c496bd5 100755
+--- a/scripts/package/mkspec
++++ b/scripts/package/mkspec
+@@ -23,13 +23,16 @@ fi
+ 
+ PROVIDES="$PROVIDES kernel-$KERNELRELEASE"
+ __KERNELRELEASE=`echo $KERNELRELEASE | sed -e "s/-/_/g"`
++LOCAL_VERSION=`. $srctree/scripts/mkversion``$srctree/scripts/setlocalversion | sed 's/-/_/g'`
++KERNELRELEASE=${__KERNELRELEASE}-${LOCAL_VERSION}
++
+ 
+ echo "Name: kernel"
+ echo "Summary: The Linux Kernel"
+ echo "Version: $__KERNELRELEASE"
+ # we need to determine the NEXT version number so that uname and
+ # rpm -q will agree
+-echo "Release: `. $srctree/scripts/mkversion`"
++echo "Release: $LOCAL_VERSION"
+ echo "License: GPL"
+ echo "Group: System Environment/Kernel"
+ echo "Vendor: The Linux Community"
+@@ -84,6 +87,8 @@ fi
+ 
+ echo "%build"
+ echo 'rm -rf $RPM_BUILD_ROOT'
++echo "export KERNELRELEASE=%{version}-%{release}"
++echo "export LOCAL_VERSION=%{release}"
+ 
+ if ! $PREBUILT; then
+ echo "make clean && make %{?_smp_mflags}"
+@@ -91,6 +96,8 @@ echo ""
+ fi
+ 
+ echo "%install"
++echo "export KERNELRELEASE=%{version}-%{release}"
++echo "export LOCAL_VERSION=%{release}"
+ echo "%ifarch ia64"
+ echo 'mkdir -p $RPM_BUILD_ROOT/boot/efi $RPM_BUILD_ROOT/lib/modules'
+ echo 'mkdir -p $RPM_BUILD_ROOT/lib/firmware'
