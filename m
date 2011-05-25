@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab1EYOJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:09:16 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58533 "EHLO mx2.mail.elte.hu"
+	id S1757959Ab1EYOLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:11:52 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:34792 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757227Ab1EYOJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:09:14 -0400
-Date: Wed, 25 May 2011 16:08:08 +0200
+	id S1753157Ab1EYOLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 10:11:51 -0400
+Date: Wed, 25 May 2011 16:11:15 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Huang, Ying" <ying.huang@intel.com>,
-        huang ying <huang.ying.caritas@gmail.com>, Len Brown <lenb@kernel.org>,
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: huang ying <huang.ying.caritas@gmail.com>,
+        Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         Andi Kleen <ak@linux.intel.com>,
         "Wu, Fengguang" <fengguang.wu@intel.com>,
@@ -21,21 +21,21 @@ Cc: "Huang, Ying" <ying.huang@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Borislav Petkov <bp@alien8.de>
 Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
-Message-ID: <20110525140808.GD19118@elte.hu>
-References: <20110517092620.GI22093@elte.hu>
+Message-ID: <20110525141115.GE19118@elte.hu>
+References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
+ <1305619719-7480-6-git-send-email-ying.huang@intel.com>
+ <20110517084622.GE22093@elte.hu>
+ <4DD23750.3030606@intel.com>
+ <20110517092620.GI22093@elte.hu>
  <4DD31C78.6000209@intel.com>
  <20110520115614.GH14745@elte.hu>
  <BANLkTi=5Y0fqsmhsoPm8si=nQBc-tCwtrw@mail.gmail.com>
  <20110522100021.GA28177@elte.hu>
- <BANLkTi=VDQMOfWe5tP7nXSv2AEsiUUEteg@mail.gmail.com>
- <20110522132515.GA13078@elte.hu>
- <4DD9C8B9.5070004@intel.com>
- <20110523110151.GD24674@elte.hu>
- <987664A83D2D224EAE907B061CE93D5301D5BF823C@orsmsx505.amr.corp.intel.com>
+ <4DDCB294.9000405@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301D5BF823C@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <4DDCB294.9000405@jp.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -49,74 +49,51 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Luck, Tony <tony.luck@intel.com> wrote:
+* Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com> wrote:
 
-> In your proposed solution, we'd generate an event that would be 
-> handled by some process/daemon ... but how would we ensure that the 
-> affected process does not run in the mean time? Could we create 
-> some analogous method to the ptrace stopped state, and hand control 
-> of the affected process to the daemon that gets the event?
-
-Ok, i think there is a bit of a misunderstanding here - which is not 
-a surprise really: we made generic arguments all along with very few 
-specifics.
-
-The RAS daemon would deal with 'slow' policy action: fully recovered 
-events. It would also log various events so that people can do post 
-mortem etc.
-
-The main point of defining events here is so that there's a single 
-method of transport and a single flexible method of defining and 
-extracting events.
-
-Some of the event processing would occur in the kernel: in code that 
-knows about memory_failure() and calls it while making sure we do not 
-execute any user-space instruction.
-
-Some of the code would execute *very* early and in a very atomic way, 
-still in NMI context: panicing the box if the error is so severe.
-
-Neither of these are steps that the RAS daemon can or wants to 
-handle.
-
-The RAS tools would interact with the regular perf facilities setting 
-and configuring the various RAS related events. They'd handle the 
-'severity' config bits, they'd initiate testing (injection), etc.
-
-Ideally the RAS daemon and tools would do what syslog does (and 
-more), with more structured events. In the end of the day most of the 
-'policy action' is taken by humans anyway, who want to take a look at 
-some ASCII output. So printk() integration and obvious ASCII output 
-for everything is important along the way.
-
-> 2) The memory error was found in certain special sections of the
->    kernel for which recovery is possible (e.g. while copying to/from
->    user memory, perhaps also page copy and page clear).
+> (2011/05/22 19:00), Ingo Molnar wrote:
+> > * huang ying <huang.ying.caritas@gmail.com> wrote:
+> >> How to do hardware error recovering in your perf framework?  IMHO, it can be 
+> >> something as follow:
+> >>
+> >> - NMI handler run for the hardware error, where hardware error
+> >> information is collected and put into a ring buffer, an irq_work is
+> >> triggered for further work
+> >> - In irq_work handler, memory_failure_queue() is called to do the real
+> >> recovering work for recoverable memory error in ring buffer.
+> >>
+> >> What's your idea about hardware error recovering in perf?
+> > 
+> > The first step, the whole irq_work and ring buffer already looks largely 
+> > duplicated: you can collect into a perf event ring-buffer from NMI context like 
+> > the regular perf events do.
+> > 
+> > The generalization that *would* make sense is not at the irq_work level really, 
+> > instead we could generalize a 'struct event' for kernel internal producers and 
+> > consumers of events that have no explicit PMU connection.
+> > 
+> > This new 'struct event' would be slimmer and would only contain the fields and 
+> > features that generic event consumers and producers need. Tracing events could 
+> > be updated to use these kinds of slimmer events.
+> > 
+> > It would still plug nicely into existing event ABIs, would work with event 
+> > filters, etc. so the tooling side would remain focused and unified.
+> > 
+> > Something like that. It is rather clear by now that splitting out irq_work was 
+> > a mistake. But mistakes can be fixed and some really nice code could come out 
+> > of it! Would you be interested in looking into this?
 > 
-> Here I don't have a solution. TIF_MCE_NOTIFY isn't checked when 
-> returning from do_machine_check() to kernel code.
+> Err...?
+> 
+> Then is it better to write some nice code and throw away the following patch?
 
-Well, since we are already in interrupt context (albeit in a very 
-atomic NMI context), sending a self-IPI is not strictly necessary. We 
-could fix up the return address and jump to the right handler 
-straight away during the IRET.
+No, i think your patch is already a pretty nice simplification of the 
+MCE code - using irq_work is obviously better than the open-coded MCE 
+vector approach!
 
-A self-IPI might also not execute *immediately* - there's always the 
-chance of APIC related delays.
-
-> In a CONFIG_PREEMPT=y kernel, all of the recoverable cases ought to 
-> be in places where pre-emption is allowed ... so perhaps we can 
-> also use the stop-and-switch option here?
-
-Yes, these are generally preemptible cases - and if they are not we 
-can make the error fatal (we do not have to handle *every* complex 
-case, giving up is a fair answer as well - we do not want rare code 
-to be complex really).
-
-But you don't need to stop-and-switch: just stack-nesting on top of 
-whatever preemptible code was running there would be enough, wouldnt 
-it? That stops a task from executing until the decision has been made 
-whether it can continue or not.
+These are exactly the kind of small steps towards generalizations 
+that i wanted to see: each step without being intrusive and breaking 
+stuff and working towards improving the status quo.
 
 Thanks,
 
