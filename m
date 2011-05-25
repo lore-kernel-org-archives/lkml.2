@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834Ab1EYXe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 19:34:56 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:5188 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756377Ab1EYXez (ORCPT
+	id S1756936Ab1EYXfP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 19:35:15 -0400
+Received: from sj-iport-2.cisco.com ([171.71.176.71]:34526 "EHLO
+	sj-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab1EYXfN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 19:34:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=ZMgdly1xI5YB8ReJ/y4LC425skDWyJ0LIrsPRKdo/SzGBvkZDeF0IqQ2/sTs9iKNcl
-         uhLuAPiyw8wgJvkcnuQQ==
-Date: Wed, 25 May 2011 16:34:48 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/6] slub: avoid compiling SLAB_CACHE_DMA without DMA
- support
-In-Reply-To: <alpine.DEB.2.00.1105250957180.23309@router.home>
-Message-ID: <alpine.DEB.2.00.1105251629020.29729@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1105241650230.29780@chino.kir.corp.google.com> <alpine.DEB.2.00.1105241652110.29780@chino.kir.corp.google.com> <alpine.DEB.2.00.1105250957180.23309@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 25 May 2011 19:35:13 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhMBACWR3U2tJV2Y/2dsb2JhbACXb45EeKhBnWCGHASGW44UimU
+X-IronPort-AV: E=Sophos;i="4.65,270,1304294400"; 
+   d="scan'208";a="364363062"
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [patch 3/6] scsi, fnic: require DMA support for Cisco FNIC
+Date: Wed, 25 May 2011 18:35:10 -0500
+Message-ID: <13EBEADFAA5B5041B7FC8A3311E7DD1C044D22F3@XMB-RCD-104.cisco.com>
+In-Reply-To: <BANLkTi=Jc11hO3KXWFUaX1pia-MGa2SV+A@mail.gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [patch 3/6] scsi, fnic: require DMA support for Cisco FNIC
+Thread-Index: AcwbEf7nP6PwsfFTT/Osl4Qa+yhc7AAHsHqQ
+References: <alpine.DEB.2.00.1105241650230.29780@chino.kir.corp.google.com> <alpine.DEB.2.00.1105241651350.29780@chino.kir.corp.google.com> <20110525080409.GA16582@infradead.org> <BANLkTi=Jc11hO3KXWFUaX1pia-MGa2SV+A@mail.gmail.com>
+From: "Abhijeet Joglekar (abjoglek)" <abjoglek@cisco.com>
+To: "Roland Dreier" <roland@kernel.org>,
+        "Christoph Hellwig" <hch@infradead.org>
+Cc: "David Rientjes" <rientjes@google.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        "Pekka Enberg" <penberg@kernel.org>,
+        "Christoph Lameter" <cl@linux.com>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 25 May 2011 23:35:11.0368 (UTC) FILETIME=[63CF4880:01CC1B34]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, Christoph Lameter wrote:
-
-> > If CONFIG_ZONE_DMA is disabled, SLAB_CACHE_DMA is a no-op.  Avoid
-> > compiling support for it on such a configuration.
+> -----Original Message-----
+> From: roland@purestorage.com [mailto:roland@purestorage.com] On Behalf
+> Of Roland Dreier
+> Sent: Wednesday, May 25, 2011 12:29 PM
+> To: Christoph Hellwig
+> Cc: David Rientjes; James E.J. Bottomley; Pekka Enberg; Christoph
+> Lameter; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org;
+> Abhijeet Joglekar (abjoglek); Joe Eykholt
+> Subject: Re: [patch 3/6] scsi, fnic: require DMA support for Cisco FNIC
 > 
-> Setting SLAB_CACHE_DMA to zero in the !ZONE_DMA case could avoid some of
-> the ifdeffery.
+> On Wed, May 25, 2011 at 1:04 AM, Christoph Hellwig <hch@infradead.org>
+> wrote:
+> >> The Cisco FNIC driver requires creating a SLAB_CACHE_DMA cache,
+> which is
+> >> not possible if CONFIG_ZONE_DMA is disasbled.  Avoid compiling it
+> without
+> >> DMA support.
+> >
+> > And you're sure it actually needs it and isn't some sort of typo?  It
+> > might help to Cc the maintainer to figure that out.
 > 
+> Yes, almost certainly it is due to a misunderstanding of what
+> SLAB_CACHE_DMA means.
+> (fnic is a modern PCIe device that doesn't have 24-bit DMA restrictions
+> ;)
+> 
+> So the correct fix would likely be to delete the SLAB_CACHE_DMA from
+> the driver.
+> 
+> In any case cc'ing Cisco people as hch suggested...
+> 
+>  - R.
 
-That doesn't actually accomplish anything since all SLAB_CACHE_DMA does is 
-set SLUB_DMA, which is already 0 in slub_def.h without CONFIG_ZONE_DMA:
+You are right, fnic hardware does not have any 24-bit DMA restrictions. When I coded it up, I misunderstood the flag as something that is required for allocating memory that hardware DMAs in/out of.
 
-	#ifdef CONFIG_ZONE_DMA
-	#define SLUB_DMA __GFP_DMA  
-	#else
-	/* Disable DMA functionality */
-	#define SLUB_DMA (__force gfp_t)0
-	#endif
+As Roland indicated, the correct fix would be to remove the SLAB_CACHE_DMA flag from the call to kmem_cache, and the GFP_DMA from the call to the mempool allocation routine.
 
-So doing the same for SLAB_CACHE_DMA wouldn't do anything.  The point of 
-the patchset is to break the build if SLAB_CACHE_DMA is passed to 
-kmem_cache_create() and the kernel is not compiled for DMA support.  That 
-should result in a build breakage rather than silently not supporting DMA 
-slab caches since it needs to be corrected at build.
+I can create a patch (attributing the fix to David and Roland) and send out for review. Or if David wants, he can modify the patch he submitted to include this fix. David, please let me know how you want to proceed.
+
+Thanks
+-- abhijeet
