@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab1EYFTs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 01:19:48 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54856 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab1EYFTr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 01:19:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Ot2+ghnlJ7z0jUf9ehXxT8EJZeu9gN2H2M/JKlgmhZoK+hXMGNiTbivma1U6o/4Ro/
-         Kj9A6fZg5xvl3Yx1U4scSXuubTXMlZhKQt0013KCdI9/UQoDMH7XkKOK1fJikkoENg/D
-         WxcxWYg0x/yd3LUYPDhwdxV2RKaRCT9nrstME=
-Subject: [PATCH] leds: leds-asic3: make LEDS_ASIC3 depend on LEDS_CLASS
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Paul Parsons <lost.distance@yahoo.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 13:19:40 +0800
-Message-ID: <1306300780.20042.7.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752431Ab1EYFVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 01:21:54 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:4901 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751961Ab1EYFVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 01:21:52 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Message-ID: <4DDC91E1.40104@broadcom.com>
+Date: Wed, 25 May 2011 07:21:37 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
+ Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: "George Spelvin" <linux@horizon.com>
+cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "error27@gmail.com" <error27@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>
+Subject: Re: [RFC] lib: crc8: add new library module providing crc8
+ algorithm
+References: <20110524225224.32163.qmail@science.horizon.com>
+In-Reply-To: <20110524225224.32163.qmail@science.horizon.com>
+X-WSS-ID: 61C24D463IC5272593-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We call led_classdev_unregister/led_classdev_register in
-asic3_led_remove/asic3_led_probe, thus make LEDS_ASIC3 depend on LEDS_CLASS.
+On 05/25/2011 12:52 AM, George Spelvin wrote:
+>> V3:
+>> - added function crc8_create().
+>> - crc8_create() takes polynomial and bit direction as parameters.
+> May I suggest that crc8_create is A Stupid Idea.  Since the bit order
+> (and polynomial) will always be compile-time constants, just let the
+> call sites call crc8_create_[lm]sb_first() directly.
 
-This patch fixes below build error if LEDS_CLASS is not configured.
+Thanks for be subtle in your suggestion. The crc8 module can have 
+multiple callers, which have their own bit order and polynomial. From 
+caller perspective they are likely compile-time constants. You are right 
+that the extra layer crc8_create is not adding much and callers should 
+the bit order specific create functions directly.
+> That way there's no need for the enum, and specifying something
+> other than lsb_first and msb_first is a compile-time error rather than
+> a run-time one
 
-  LD      .tmp_vmlinux1
-drivers/built-in.o: In function `asic3_led_remove':
-clkdev.c:(.devexit.text+0x1860): undefined reference to `led_classdev_unregister'
-drivers/built-in.o: In function `asic3_led_probe':
-clkdev.c:(.devinit.text+0xcee8): undefined reference to `led_classdev_register'
-make: *** [.tmp_vmlinux1] Error 1
+If callers use the specific function they can not specify a bit order so 
+no compile-time error.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/leds/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> It might be nice to add some const declarations, and use size_t
+> for the buffer length:
+> u8 crc8(u8 const *table, u8 const *pdata, size_t nbytes, u8 crc)
+> or
+> u8 crc8(u8 const table[256], u8 const *pdata, size_t nbytes, u8 crc)
+>
+>
+> Style points you might consider, but I do not consider essential:
+>
+> Personally, when a function parameter is a pointer to
+> a fixed-size array, I prefer to declare it as
+> 	void crc8_create_lsb_first(u8 table[256], u8 poly)
+> for better documentation, but that's your choice.
+>
+> The CRC8_GOOD_VALUE could be explained if you like.  "If a CRC is inverted
+> before transmission, the CRC computed over the while (message+crc)
+> is _table[x], when x is the bit pattern of the modification (almost
+> always 0xff)."
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 4a40561..cb8562a 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -381,6 +381,7 @@ config LEDS_NETXBIG
- 
- config LEDS_ASIC3
- 	bool "LED support for the HTC ASIC3"
-+	depends on LEDS_CLASS
- 	depends on MFD_ASIC3
- 	default y
- 	help
+Great remarks. Will update the code.
+
+> Thanks!
+
+Thanks.
+
+Gr. AvS
+
 -- 
-1.7.1
-
+Almost nobody dances sober, unless they happen to be insane.
+-- H.P. Lovecraft --
 
 
