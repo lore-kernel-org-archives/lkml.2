@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab1EYPUe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 11:20:34 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:43753 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757794Ab1EYPUa (ORCPT
+	id S1758042Ab1EYPWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 11:22:23 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48450 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757794Ab1EYPWW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 11:20:30 -0400
+	Wed, 25 May 2011 11:22:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type;
-        b=TjOGF26XPZ1rqg0B7SUCHb8XWu/uHD5nZifGj3vm7BbCzy8jqspuXXpm0z96oNnetz
-         0GMX0LM/hruVhGTAOuGQIRm4SDHq11OQ23s/n7rSr8RXZ7Xp9lTc3eX2VjMRBWkmLviD
-         0zGxxUQEzp2/ld4CWbUVyfOmbTPrqRpla3NJY=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=QkbMhTe68afoM8pD2FxpE/r2SDHx0eFIz5HD58M+1xHF1TdkVZjCcpHNywan7QxaAD
+         pWMNNBJzfZQjN8scAPPjgRMWZ7CKE366LnTC+aa6EjdhLf0hyqkRORYoRoCH0I3Q/0Xk
+         dQ53MCh0nla4x3MW51JYc2hbroWEHCkIbc6zs=
 MIME-Version: 1.0
-Date: Wed, 25 May 2011 17:20:29 +0200
-X-Google-Sender-Auth: 3y7SZAeltarjS_PcsW-ci5FcomY
-Message-ID: <BANLkTin+PPqSSqwHgo0kE0T2m3k9EKasnA@mail.gmail.com>
-Subject: merge of v2.6.33.14 with tip/rt/2.6.33
-From: John Kacur <jkacur@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Carsten Emde <Carsten.Emde@osadl.org>, stable@kernel.org,
-        Clark Williams <williams@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1306336629.15714.13.camel@marge.simson.net>
+References: <BANLkTin4wu1HNDeo8Rv7iddM9KkgZdhfgA@mail.gmail.com>
+ <A7E21A2F-4338-465D-933A-66B0C4D15BE1@mit.edu> <BANLkTi=q7tDVkahrnng7+BJhvxh=gx71ng@mail.gmail.com>
+ <20110524181619.GC26055@thunk.org> <BANLkTi=QUS5WfAMWTw7vuEwuBOVHsww3mA@mail.gmail.com>
+ <1306297108.4819.28.camel@marge.simson.net> <64e4614dda6f4558a68a314d7b5979b5-mfwitten@gmail.com>
+ <1306336629.15714.13.camel@marge.simson.net>
+From: Michael Witten <mfwitten@gmail.com>
+Date: Wed, 25 May 2011 15:21:52 +0000
+Message-ID: <BANLkTimEB7CrOjzE9tVL-rBoDeoqv2iS8w@mail.gmail.com>
+Subject: Re: UNIX Compatibility
+To: Mike Galbraith <efault@gmx.de>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Richard Yao <ryao@ic.sunysb.edu>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas
+On Wed, May 25, 2011 at 15:17, Mike Galbraith <efault@gmx.de> wrote:
+> On Wed, 2011-05-25 at 14:20 +0000, Michael Witten wrote:
+>> On Wed, 25 May 2011 06:18:28 +0200, Michael Galbraith wrote:
+>> > On Tue, 2011-05-24 at 18:31 +0000, Michael Witten wrote:
+>> >> On Tue, May 24, 2011 at 18:16, Ted Ts'o <tytso@mit.edu> wrote:
+>> >>
+>> >> > No one ever bothers to deal with issues because they are tiny,
+>> >> > nit-pitcky things that no one other than standards mavens would care
+>> >> > about.  You have to be someone who is extremely anal to really care
+>> >> > about this kind of stuff.  It's really stupid stuff... paper pushers...
+>> >> >
+>> >> > If you want to waste time out of your life that you'll never get back...
+>> >> > ...
+>> >> > ... standards committee, as full of ivory-tower eggheads as it is,
+>> >> > does have some folks who recognize that there is such a thing as
+>> >> > the Real World)...
+>> >>
+>> >> The world would be a better place if you weren't so needlessly
+>> >> confrontational when sharing your knoweldge, Ted.
+>> >
+>> > Ivory-tower eggheads is common vernacular, a colorful and communicative
+>> > description of a mindset.  Ted's usage added useful information to the
+>> > conversation, unlike the pompous interjection above.
+>>
+>> At first I thought you were labeling as `pompous' my suggestion that the
+>> world would be improved by the introduction of a little more civility in
+>> our discourse, and so I was confused.
+>
+> No you weren't.  I found your remark to be pompous sideline sniping.
 
-I'm still doing some testing but I have merged v2.6.33.14 with my own
-v2.6.33.13-rt31 which ultimately comes from tip/rt/2.6.33
-I see that Carsten has also already done the same thing.
-
-This can be fetched from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/jkacur/jk-2.6.git    rt/2.6.33
-
-What follows is the commit-log
-
-commit aac9a6b18a38b03f0d61a1b64c0a8762b6ad6a5f
-Merge: cbbe989 0413500
-Author: John Kacur <jkacur@redhat.com>
-Date:   Wed May 25 15:35:54 2011 +0200
-
-    Merge commit 'v2.6.33.14' into rt/2.6.33
-
-    * commit 'v2.6.33.14': (23 commits)
-      Linux 2.6.33.14
-      vmxnet3: Fix inconsistent LRO state after initialization
-      megaraid_sas: Sanity check user supplied length before passing it to dma_a
-      x86, mce, AMD: Fix leaving freed data in a list
-      x86, apic: Fix spurious error interrupts triggering on all non-boot APs
-      tick: Clear broadcast active bit when switching to oneshot
-      clocksource: Install completely before selecting
-      x86, AMD: Fix ARAT feature setting again
-      Revert "x86, AMD: Fix APIC timer erratum 400 affecting K8 Rev.A-E processo
-      cifs: add fallback in is_path_accessible for old servers
-      fixes for using make 3.82
-      zorro8390: Fix regression caused during net_device_ops conversion
-      libertas: fix cmdpendingq locking
-      hydra: Fix regression caused during net_device_ops conversion
-      ne-h8300: Fix regression caused during net_device_ops conversion
-      NET: slip, fix ldisc->open retval
-      ehea: fix wrongly reported speed and port
-      CIFS: Fix memory over bound bug in cifs_parse_mount_options
-      dccp: handle invalid feature options length
-      ptrace: Prepare to fix racy accesses on task breakpoints
-      ...
-
-    Conflicts:
-        Makefile
-        include/linux/sched.h
-
-    Signed-off-by: John Kacur <jkacur@redhat.com>
+I like your ironical humor.
