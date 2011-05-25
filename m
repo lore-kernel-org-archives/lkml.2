@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab1EYTMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 15:12:47 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:57016 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752290Ab1EYTMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 15:12:46 -0400
-Date: Wed, 25 May 2011 12:11:52 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-Message-ID: <20110525191152.GC19633@outflux.net>
-References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
- <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
- <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
- <1306254027.18455.47.camel@twins>
- <20110524195435.GC27634@elte.hu>
- <alpine.LFD.2.02.1105242239230.3078@ionos>
- <20110525150153.GE29179@elte.hu>
- <alpine.LFD.2.02.1105251836030.3078@ionos>
- <20110525180100.GY19633@outflux.net>
- <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S932068Ab1EYTNL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 15:13:11 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:39423 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299Ab1EYTNK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 15:13:10 -0400
+Date: Wed, 25 May 2011 21:12:53 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Fabio Erculiani <lxnay@sabayon.org>
+Cc: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fbmem: fix race condition between
+ register_framebuffer() and fb_open()
+Message-ID: <20110525211253.4985ee79@neptune.home>
+In-Reply-To: <BANLkTimtYvcN8kj+jnaKHNGmN36YvMt7Rg@mail.gmail.com>
+References: <1306266871-12464-1-git-send-email-lxnay@sabayon.org>
+	<20110524224545.08c53b1d@neptune.home>
+	<20110525181917.12cf97b8@neptune.home>
+	<BANLkTimxi-LZFzwv=z6RRBCX098hr-ViUg@mail.gmail.com>
+	<20110525204648.58983270@neptune.home>
+	<BANLkTi=207-bVi3pnOWk7zG61u4=YU4GFg@mail.gmail.com>
+	<20110525205707.12abc68c@neptune.home>
+	<BANLkTimtYvcN8kj+jnaKHNGmN36YvMt7Rg@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
+> On Wed, May 25, 2011 at 8:57 PM, Bruno Prémont wrote:
+> > On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
+> >> On Wed, May 25, 2011 at 8:46 PM, Bruno Prémont wrote:
+> >> > On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
+> >> >> I'm not a fbdev expert. So I leave the real fix to real men ( ;-) ).
+> >> >> It is causing deadlock during boot, so I would consider it quite critical.
+> >> >> Users using any fb driver will get into troubles.
+> >> >> The workaround is to boot with vga=normal.
+> >> >
+> >> > What is your system doing during boot? I've never seen it here but maybe
+> >> > my boot sequence is too simple.
+> >>
+> >> I'm using vesafb and vga=791. It is quite simple to reproduce.
+> >> Also see: http://bugs.gentoo.org/show_bug.cgi?id=368109
+> >
+> > Looks like gentoo kernel, might be splash is related to the hang
+> 
+> Then, if you say so, it must be the fbsplash patch for sure, I keep
+> forgetting of that :-/
 
-On Wed, May 25, 2011 at 11:42:44AM -0700, Linus Torvalds wrote:
-> And who would *use* this thing in real life? Nobody. In order to sell
-> me on a new security interface, give me a real actual use case that is
-> security-conscious and relevant to real users.
-> [...]
-> And per-system-call permissions are very dubious. What system calls
-> don't you want to succeed? That ioctl? You just made it impossible to
-> do a modern graphical application. Yet the kind of thing where we
-> would _want_ to help users is in making it easier to sandbox something
-> like the adobe flash player. But without accelerated direct rendering,
-> that's not going to fly, is it?
+I've had a look at the bug report which points at fbcon_decore
+patch.
 
-Uhm, what? Chrome would use it. And LXC would. Those were stated very
-early on as projects extremely interested in syscall filtering. And that's
-just the start, I can easily imagine Apache modules enforcing a very narrow
-band of syscalls, or just about anything else that could be in a position
-of running potentially malicious code. This could be very far-reaching, IMO.
+Looking into that patch confirms my impression:
+  fbcon_decor calls a userspace helper at the time fbcon takes over
+  console and that userspace helper then tries to open fb device
+  with the aim of calling some IOCTLs.
 
--Kees
+Probably changing fbcon_decor to just call the userspace helper in
+non-blocking mode (or having userspace helper "fork and detach") would
+avoid the deadlock as well.
+Though fbcon_decor seems to rely on helper's return code...
 
--- 
-Kees Cook
-Ubuntu Security Team
+What is the matching piece on userspace side so I can look at it as well?
+
+Bruno
