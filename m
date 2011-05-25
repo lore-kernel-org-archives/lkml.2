@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab1EYDYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 23:24:05 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53491 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab1EYDYD (ORCPT
+	id S1757078Ab1EYDYc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 23:24:32 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:57066 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944Ab1EYDYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 23:24:03 -0400
+	Tue, 24 May 2011 23:24:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=tpfofhXxW/n/K55xiEgha5Jitxp2uToHwX1h7oKff75yxH2TQmY3ZK7h48se8E9wr5
-         ARzNn8/Q41OUgl/e1rvUxTsZv21FWTcecP9CXcTisyoLEOhMXooUYfcuF5BMly6DGaAO
-         tLuUpKCtklT18ZnVhqBMmjppzPjF2CtlROcv0=
-Subject: [PATCH] drivers/misc: fix a memory leak in spear_pcie_gadget_probe
- error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pratyush Anand <pratyush.anand@st.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 11:23:55 +0800
-Message-ID: <1306293835.3358.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=bAJ0LvKPgptfslHx6d3KoMcbYSjdM9h7oIOdqhTfSDYk7PNwK8d/oJEU3DZVH++jM/
+         uej9l+yXXKKbK5mWT4WlH4nk56R9FtgMkNr3bShYRXi6FieSTV2yN6RhuGm7rzcLsAK8
+         zVVJaUhEQNSPJmthwaC9EgtxNbDJta3FvEhlI=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTin2r7omjQC9ro0f2_qEc8SzPX33Pg@mail.gmail.com>
+References: <BANLkTin4OiDiPO3znMvKTVZcYukHReydMQ@mail.gmail.com>
+	<1306244383.1465.59.camel@gandalf.stny.rr.com>
+	<BANLkTin2r7omjQC9ro0f2_qEc8SzPX33Pg@mail.gmail.com>
+Date: Wed, 25 May 2011 11:24:30 +0800
+Message-ID: <BANLkTi=-c_XQOP4FAQEH6FN-9D62HS+tLw@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix need_resched() when checking peempt
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case of goto err_kzalloc, we should kfree target.
+On Tue, May 24, 2011 at 9:50 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> On Tue, May 24, 2011 at 9:39 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> On Tue, 2011-05-24 at 21:27 +0800, Hillf Danton wrote:
+>>> When checking if current task could be preempted by a newly woken task,
+>>> further check could be bypassed if the current thread is different from
+>>> the current task of run-queue, and it is corrected accordingly.
+>>
+>> Ug, that change log is an obfuscated mess. But looking at the actual
+>> patch, I figured what you wanted to say. How about this:
+>>
+>> ----
+>> The RT preempt check tests the wrong task if NEED_RESCHED is set. It
+>> currently checks the local CPU task. It is suppose to check the task
+>> that is running on the run queue we are about to wake another task on.
+>> ----
+>>
+> Thanks, it is great changelog:)
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/misc/spear13xx_pcie_gadget.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Good catch.
 
-diff --git a/drivers/misc/spear13xx_pcie_gadget.c b/drivers/misc/spear13xx_pcie_gadget.c
-index 7aded90..cfbddbe 100644
---- a/drivers/misc/spear13xx_pcie_gadget.c
-+++ b/drivers/misc/spear13xx_pcie_gadget.c
-@@ -845,7 +845,7 @@ err_iounmap:
- err_iounmap_app:
- 	iounmap(config->va_app_base);
- err_kzalloc:
--	kfree(config);
-+	kfree(target);
- err_rel_res:
- 	release_mem_region(res1->start, resource_size(res1));
- err_rel_res0:
+Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
+
+BTW, this may be the reason for we could trigger
+WARN_ON_ONCE(test_tsk_need_resched(next));
+https://lkml.org/lkml/2010/12/20/28
+
+Peter, Mike, how do you think about it?
+
+Thanks,
+Yong
+
+
 -- 
-1.7.1
-
-
-
+Only stand for myself
