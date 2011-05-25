@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933217Ab1EYAgD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 20:36:03 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:52076 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757489Ab1EYAgB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 20:36:01 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
-In-Reply-To: Your message of "Tue, 24 May 2011 09:16:28 +0200."
-             <20110524071628.GA31612@elte.hu>
-From: Valdis.Kletnieks@vt.edu
-References: <m11uzrvd26.fsf@fess.ebiederm.org> <BANLkTim4q5dK6nOb=pVKbk1c8b-Nh_hBfA@mail.gmail.com> <m1boyvpo9r.fsf@fess.ebiederm.org> <1306048393.4092.8.camel@mulgrave.site> <20110522084224.GA12279@elte.hu> <m1k4dgr35i.fsf@fess.ebiederm.org>
-            <20110524071628.GA31612@elte.hu>
+	id S933296Ab1EYAiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 20:38:00 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39614 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757124Ab1EYAh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 20:37:59 -0400
+Date: Wed, 25 May 2011 10:37:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Antony Pavlov <antony@niisi.msk.ru>
+Subject: linux-next: build warning in Linus' tree
+Message-Id: <20110525103740.f8917fd8.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1306283693_2629P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 24 May 2011 20:34:53 -0400
-Message-ID: <4508.1306283693@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A010203.4DDC4EB5.0054,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__25_May_2011_10_37_40_+1000_otPgkjPJ2IPHqEqA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1306283693_2629P
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Wed__25_May_2011_10_37_40_+1000_otPgkjPJ2IPHqEqA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, 24 May 2011 09:16:28 +0200, Ingo Molnar said:
-> * Eric W. Biederman <ebiederm@xmission.com> wrote:
-> > My gut feel says we should really implement an
-> > include/asm-generic/unistd-common.h to include all new system calls.
-> >
-> > That way there would be only one file to touch instead of 50. Certainly it
-> > works for include/asm-generic/unistd.h for the architectures that use it. 
-> > And all we really need is just a little abstraction on that concept.
->
-> I suppose that could be tried, although in practice it would probably be
-> somewhat complex due to the various compat syscall handling differences.
+Hi Greg,
 
-Can somebody fill us newcomers in on the arch-aeology of why some syscalls have
-different numbers on different archs? I know it's partially because some simply
-didn't implement some syscalls so there were numbering mismatches, but would it
-have been *that* hard to wire all of those skipped syscalls up to one stub
-'return -ENOSYS'?
+In Linus' tree, today's linux-next build (powerpc ppc64_defconfig)
+produced this warning:
 
+drivers/tty/serial/8250_pci.c:1457: warning: initialization from incompatib=
+le pointer type
 
---==_Exmh_1306283693_2629P
+Introduced by commit d9a0fbfd7bc5 ("serial: 8250_pci: add support for
+Cronyx Omega PCI multiserial board").
+
+Sorry that I didn't notice this earlier.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__25_May_2011_10_37_40_+1000_otPgkjPJ2IPHqEqA
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFN3E6tcC3lWbTT17ARAoUzAKDkLdqvlB6vCeoSImcc2cdgyprBtgCeLf6P
-rJQ+3GeD0kVUaVPYr2AFv2w=
-=8lZN
+iQEcBAEBAgAGBQJN3E9UAAoJEDMEi1NhKgbst/AH/2wcnQLa1zXpXVvB3Wf373O2
+yBdnesb2gduM/RR7fVun59/PbuRrYxVMrTygnDvZr2pHP17EwzmxuymndBgjsJcO
+hshrtgqWYw8wlvrOevGHKQoxjwfPkRAL4NnT+ykEJJ8m2rBqL0BHicQMN5nOwkAQ
+pkrEgQ3L0cmfgju4iousZB7Jy3/pvAfSl3BgqGirhjeeJCDQekIO41CsqltuXBT1
+ERtjc808F3t8ElvmGvEkyz/6e1P5bL2sfKp8D53MQuUDMR6a4VTmjNX8M6FK+3lt
+BFAkDwM49j2I8pGB9eVB3PgfVZ/q9HdpfQL9hfPxBfj9lZQYqTILSk+YcuRU20w=
+=Esz7
 -----END PGP SIGNATURE-----
 
---==_Exmh_1306283693_2629P--
-
+--Signature=_Wed__25_May_2011_10_37_40_+1000_otPgkjPJ2IPHqEqA--
