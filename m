@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab1EYEtT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 00:49:19 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36634 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab1EYEtS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 00:49:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=T9HKUNkDSpJs+xqrCNOgrgXRzSULgXDBLtLe3sn/mdmJtRUEOBXMyI4IqYspwXcc3y
-         qlvax0lD0t/+OnnC4u/GLAdI1QJhanlEzU9Nmkl0eJy6FslktA10wFpKWkJtgedj7NDC
-         tQqX4VLUqptGzEivm0TuVsByTuOa7EZ21zsts=
-Date: Wed, 25 May 2011 00:47:18 -0400
-From: porpen <porpen@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: (Short?) merge window reminder
-Message-ID: <20110525044718.GA4647@bench>
-References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
+	id S1751708Ab1EYEw5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 00:52:57 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:59756 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750805Ab1EYEw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 00:52:56 -0400
+Date: Tue, 24 May 2011 21:52:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage
+ based on semi-formal proof"
+Message-ID: <20110525045253.GB2262@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4DDAC01E.7050602@kernel.org>
+ <20110523212530.GF7428@linux.vnet.ibm.com>
+ <4DDAD934.9010603@kernel.org>
+ <4DDAE5FA.2030303@kernel.org>
+ <4DDAE6A5.6060701@kernel.org>
+ <20110524011824.GL7428@linux.vnet.ibm.com>
+ <4DDB093F.2060601@kernel.org>
+ <20110524013523.GO7428@linux.vnet.ibm.com>
+ <4DDC21E1.1070502@kernel.org>
+ <4DDC48E3.1060108@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DDC48E3.1060108@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, May 24, 2011 at 05:10:11PM -0700, Yinghai Lu wrote:
+> On 05/24/2011 02:23 PM, Yinghai Lu wrote:
+> > On 05/23/2011 06:35 PM, Paul E. McKenney wrote:
+> >> On Mon, May 23, 2011 at 06:26:23PM -0700, Yinghai Lu wrote:
+> >>> On 05/23/2011 06:18 PM, Paul E. McKenney wrote:
+> >>>
+> >>>> OK, so it looks like I need to get this out of the way in order to track
+> >>>> down the delays.  Or does reverting PeterZ's patch get you a stable
+> >>>> system, but with the longish delays in memory_dev_init()?  If the latter,
+> >>>> it might be more productive to handle the two problems separately.
+> >>>>
+> >>>> For whatever it is worth, I do see about 5% increase in grace-period
+> >>>> duration when switching to kthreads.  This is acceptable -- your
+> >>>> 30x increase clearly is completely unacceptable and must be fixed.
+> >>>> Other than that, the main thing that affects grace period duration is
+> >>>> the setting of CONFIG_HZ -- the smaller the HZ value, the longer the
+> >>>> grace-period duration.
+> >>>
+> >>> for my 1024g system when memory hotadd is enabled in kernel config:
+> >>> 1. current linus tree + tip tree:  memory_dev_init will take about 100s.
+> >>> 2. current linus tree + tip tree + your tree - Peterz patch: 
+> >>>    a. on fedora 14 gcc: will cost about 4s: like old times
+> >>>    b. on opensuse 11.3 gcc: will cost about 10s.
+> >>
+> >> So some patch in my tree that is not yet in tip makes things better?
+> >>
+> >> If so, could you please see which one?  Maybe that would give me a hint
+> >> that could make things better on opensuse 11.3 as well.
+> > 
+> > today's tip:
+> > 
+> > [   31.795597] cpu_dev_init done
+> > [   40.930202] memory_dev_init done
+> > 
+> 
+> another boot from tip got:
+> 
+> [   35.211927] cpu_dev_init done
+> [  136.053698] memory_dev_init done
+> 
+> wonder if you can have clean revert for
+> 
+> commit a26ac2455ffcf3be5c6ef92bc6df7182700f2114
+> > Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Date:   Wed Jan 12 14:10:23 2011 -0800
+> > 
+> >     rcu: move TREE_RCU from softirq to kthread
+> >     
+> >     If RCU priority boosting is to be meaningful, callback invocation must
+> >     be boosted in addition to preempted RCU readers.  Otherwise, in presence
+> >     of CPU real-time threads, the grace period ends, but the callbacks don't
+> >     get invoked.  If the callbacks don't get invoked, the associated memory
+> >     doesn't get freed, so the system is still subject to OOM.
+> >     
+> >     But it is not reasonable to priority-boost RCU_SOFTIRQ, so this commit
+> >     moves the callback invocations to a kthread, which can be boosted easily.
+> >     
+> >     Also add comments and properly synchronized all accesses to
+> >     rcu_cpu_kthread_task, as suggested by Lai Jiangshan.
+> >     
+> >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >     Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-On Mon, May 23, 2011 at 12:13:29PM -0700, Linus Torvalds wrote:
-> PS. The voices in my head also tell me that the numbers are getting
-> too big. I may just call the thing 2.8.0. And I almost guarantee that
-> this PS is going to result in more discussion than the rest, but when
-> the voices tell me to do things, I listen.
+There is a new branch yinghai.2011.05.24a on:
 
-With all the discussion about matching the year, keeping the numbers smallish and breaking build/test scripts...
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
 
-Why not match the year this way: v2.11 = 2011
+Or will be as soon as kernel.org updates its mirrors.
 
-So, to get there, how about: 
-v2.6.39 current
-v2.6.40 
-v2.7.?  (see below)
-v2.11.0 sometime this year maybe or skipped.
-v2.12.? early 2012.
-v2.13.? early 2013.
-and so on...
+I am not sure I could call this "clean", but it does revert that commit
+and 11 of the subsequent commits that depend on it.  It does build,
+and I will test it once my currently running tests complete.
 
-To hell with making the months match up to anything.  IMHO, that's micromanaging BS that will cause recurring troubles forever.
-
-Advantages: 
- -Build & test scripts won't break for a while. (see note about this below)
- -Major and Minor numbers together approximately match the year of release.
- -Subreleases don't get too big. e.g. with 2 week releases, v2.12.x might reach .26 or .27 and resets with v2.13.0 
-
-Disadvantages:
- -in the year 2100 the version will have to leap to v21.0 and that numbering will last until v29.99 or so.
- -most of us won't live long enough to see v31.14 or v42.0
-
-The build scripts would finally break in the year 25500 with the step after kernel v254.99.?.  I suspect one of our decendants in the next 23.5 thousand years can figure out how to fix that.
-
-IMHO, this may be a least effort compromise between the keep-numbers-small camp, the match-the-year camp and the don't-break-scripts camp.
-
-Of course, math junkies like me would love to see v2.7.18.28 at some point in the process.  Could we jump straight to that just before we leap to v2.11.0 or whatever numbering is chosen please?
-
--phil
+							Thanx, Paul
