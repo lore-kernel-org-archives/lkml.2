@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932892Ab1EYISn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 04:18:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36462 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab1EYISl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 04:18:41 -0400
-Date: Wed, 25 May 2011 10:18:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Milton Miller <miltonm@bga.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] irq: radix_tree_insert can fail
-In-Reply-To: <radix-insert-can-fail@mdm.bga.com>
-Message-ID: <alpine.LFD.2.02.1105251017460.3078@ionos>
-References: <generic-irq-changes@mdm.bga.com> <radix-insert-can-fail@mdm.bga.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1752148Ab1EYIxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 04:53:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36354 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751180Ab1EYIxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 04:53:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,266,1304319600"; 
+   d="scan'208";a="4449797"
+Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@iki.fi>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        hsweeten@visionengravers.com, ryan@bluewatersys.com,
+        Dan Williams <dan.j.williams@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+In-Reply-To: <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+	 <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+	 <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 May 2011 13:49:53 +0530
+Message-ID: <1306311593.30236.103.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, Milton Miller wrote:
-
-> Check the insert, and if it fails cleanup and free all partial work.
+On Wed, 2011-05-25 at 10:39 +0200, Linus Walleij wrote:
+> 2011/5/22 Mika Westerberg <mika.westerberg@iki.fi>:
 > 
-> Sparse irq was not checking the return code from radix_tree_insert,
-> but it may need to allocate memory and can fail.  If it failed,
-> it still claimed success to the caller but the affected irq(s) are
-> unavailable and the reference to the affected descriptors is leaked.
+> > The ep93xx DMA controller has 10 independent memory to peripheral (M2P)
+> > channels, and 2 dedicated memory to memory (M2M) channels. M2M channels can
+> > also be used by SPI and IDE to perform DMA transfers to/from their memory
+> > mapped FIFOs.
 > 
-> Signed-off-by: Milton Miller <miltonm@bga.com>
-> ---
-> I started by tring to change free_desc to take the descriptor pointer
-> and pushing that down, but that soon ran into conflicts between the
-> array and sparse implementations, and/or the old dynamic irq cleanup
-> function that is still used by some architectures.  This version is
-> targeted, and also protects against scribbles to irq_data.irq.
+> No so much a review comment as an observation: I opposed the merge of the
+> EP93xx SPI driver in drivers/spi/ep93xx_spi.c on the grounds that it was close
+> enough to amba-pl022.c that it could use that driver instead.
+> 
+> One of the arguments against was that you were going to do custom DMA
+> and stuff. Now you're using the DMAengine, so can you please reconsider
+> refactoring amba-pl022.c to suit your needs and you'll get DMA support for
+> free mor or less.
+Linus is the dma IP same as existing ones? 
+In that case we shouldn't have a new driver for same IP.
 
-The simpler solution is to move irq_insert_desc() into alloc_desc()
-and deal with the error case there.
+-- 
+~Vinod
 
-Thanks,
-
-	tglx
