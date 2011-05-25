@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab1EYUh0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:37:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41500 "EHLO mx2.suse.de"
+	id S932336Ab1EYUk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:40:58 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39541 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755632Ab1EYUhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:37:25 -0400
-Message-ID: <4DDD68C3.7000004@suse.cz>
-Date: Wed, 25 May 2011 22:38:27 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1755232Ab1EYUk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:40:57 -0400
+Date: Wed, 25 May 2011 13:40:51 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Mysterious CFQ crash and RCU
+Message-ID: <20110525204051.GI2341@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110519222404.GG12600@redhat.com>
+ <20110521210013.GJ2271@linux.vnet.ibm.com>
+ <20110523152141.GB4019@redhat.com>
+ <20110523153848.GC2310@linux.vnet.ibm.com>
+ <1306318636.9059.33.camel@t41.thuisdomein>
+ <20110525153327.GA2341@linux.vnet.ibm.com>
+ <1306345492.21978.15.camel@t41.thuisdomein>
 MIME-Version: 1.0
-To: Armin Schindler <armin@melware.de>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 12/34] isdn/diva: Drop __TIME__ usage
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-13-git-send-email-mmarek@suse.cz> <alpine.DEB.2.00.1104051709040.7262@justus.melware.de>
-In-Reply-To: <alpine.DEB.2.00.1104051709040.7262@justus.melware.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306345492.21978.15.camel@t41.thuisdomein>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 5.4.2011 17:10, Armin Schindler napsal(a):
-> On Tue, 5 Apr 2011, Michal Marek wrote:
->> The kernel already prints its build timestamp during boot, no need to
->> repeat it in random drivers and produce different object files each
->> time.
+On Wed, May 25, 2011 at 07:44:51PM +0200, Paul Bolle wrote:
+> On Wed, 2011-05-25 at 08:33 -0700, Paul E. McKenney wrote:
+> > On Wed, May 25, 2011 at 12:17:16PM +0200, Paul Bolle wrote:
+> > > 2) So shouldn't either the config entry be set to "tristate" or the
+> > > module support removed from kernel/rcutree_trace.c?
+> > 
+> > No.
+> > 
+> > Just set CONFIG_RCU_TRACE=y and you will have RCU tracing.  Here is why:
+> > 
+> >[...]
+> >
+> > So you can set CONFIG_RCU_TRACE, and if you are running CONFIG_SMP=y,
+> > you will have RCU tracing in your kernel.
 > 
-> The module can be build separately from the kernel, therefore it can have
-> an own build timestamp.
+> The point - which I must have expressed poorly - is that there's a
+> mismatch between the code in kernel/rcutree_trace.c (which allows for
+> that file to be built as a module) and its kconfig setup (which requires
+> it to be either builtin or not built at all, since it's boolean).
+> Anyhow, your explanation makes clear that this kconfig setup is actually
+> correct and that the module support in kernel/rcutree_trace.c might as
+> well be removed, since that file can never be part of a module.
 
-So the module timestamp and kernel timestamp vary by a couple of
-minutes. But is it really a problem? I don't think so. So is there an
-objection against applying this patch?
+Ah -- this is using (perhaps abusing) the module capabilities to
+get initialization and cleanup done.
 
-thanks,
-Michal
+Interesting point, though -- might be worth allowing this to be built
+as a module.
+
+Regardless, apologies for missing your point.
+
+							Thanx, Paul
