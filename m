@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933137Ab1EYPHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 11:07:10 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:33792 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933014Ab1EYPHI convert rfc822-to-8bit (ORCPT
+	id S1757632Ab1EYPRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 11:17:16 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:50778 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753160Ab1EYPRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 11:07:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110525144400.GA26206@mail.hallyn.com>
-References: <BANLkTikfqV57AtCckh99jAT2O38mM6MzTA@mail.gmail.com>
-	<BANLkTikey3L4doiHY=__=690TZNsXqRHUQ@mail.gmail.com>
-	<alpine.DEB.2.00.1105231133580.29047@router.home>
-	<BANLkTi=-xRRxi4CtxMLt0VgTJWSdiVQugw@mail.gmail.com>
-	<BANLkTin1zhuA3z61cBWwJws+P1-xA5bGZA@mail.gmail.com>
-	<BANLkTikp4VweUE+JrkXRSJ-8kEEcPKpw8g@mail.gmail.com>
-	<BANLkTimB6pQyux4XEqqEUvuPGsZ2Bw0L8w@mail.gmail.com>
-	<20110525144400.GA26206@mail.hallyn.com>
-Date: Wed, 25 May 2011 17:07:05 +0200
-Message-ID: <BANLkTi=Y_+UBWGb5Kj9ga_bC0Fm7DosGVw@mail.gmail.com>
-Subject: Re: [Security] Fwd: Oops (bad memory deref) in slab_alloc() due to
- filp_cachep holding incorrect values
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Eugene Teo <eugeneteo@kernel.sg>, linux-kernel@vger.kernel.org,
-        security@kernel.org, kees@ubuntu.com,
-        Tavis Ormandy <taviso@cmpxchg8b.com>,
-        David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 May 2011 11:17:15 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18YUZpyAmEY+fOce2q+0QPY9eF5ctn0QL2AUhNosH
+	46zCptq3h1iSG2
+Subject: Re: UNIX Compatibility
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Witten <mfwitten@gmail.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Richard Yao <ryao@ic.sunysb.edu>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <64e4614dda6f4558a68a314d7b5979b5-mfwitten@gmail.com>
+References: <BANLkTin4wu1HNDeo8Rv7iddM9KkgZdhfgA@mail.gmail.com>
+	 <A7E21A2F-4338-465D-933A-66B0C4D15BE1@mit.edu>
+	 <BANLkTi=q7tDVkahrnng7+BJhvxh=gx71ng@mail.gmail.com>
+	 <20110524181619.GC26055@thunk.org>
+	 <BANLkTi=QUS5WfAMWTw7vuEwuBOVHsww3mA@mail.gmail.com>
+	 <1306297108.4819.28.camel@marge.simson.net>
+	 <64e4614dda6f4558a68a314d7b5979b5-mfwitten@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 May 2011 17:17:09 +0200
+Message-ID: <1306336629.15714.13.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Given that it doesn't seem to appear in 2.6.39-rc4, and judging by the
->> names of functions involved, this change looks suspiciously related to
->> this oops (even if it just made the keyctl problem visible)
->> http://git.itanic.dy.fi/?p=linux-stable;a=commitdiff;h=47a150edc2ae734c0f4bf50aa19499e23b9a46f8
->>
->> >> #include <sys/stat.h>
->> >> #include <sys/wait.h>
->> >> #include <unistd.h>
->> >> #include <sys/syscall.h>
->> >> #include <linux/keyctl.h>
->> >> #include <linux/sched.h>
->> >>
->> >> int TH1(void *dummy) {
->> >>        syscall(__NR_keyctl, KEYCTL_SESSION_TO_PARENT);
->
-> Thanks!
->
-> Fooi, it looks like all users of cred_alloc_blank() may need to be
-> audited wrt commit 47a150edc2ae734c0f4bf50aa19499e23b9a46f8.
->
-> Does this fix the bug you're seeing?
+On Wed, 2011-05-25 at 14:20 +0000, Michael Witten wrote:
+> On Wed, 25 May 2011 06:18:28 +0200, Michael Galbraith wrote:
+> > On Tue, 2011-05-24 at 18:31 +0000, Michael Witten wrote:
+> >> On Tue, May 24, 2011 at 18:16, Ted Ts'o <tytso@mit.edu> wrote:
+> >> 
+> >> > No one ever bothers to deal with issues because they are tiny,
+> >> > nit-pitcky things that no one other than standards mavens would care
+> >> > about.  You have to be someone who is extremely anal to really care
+> >> > about this kind of stuff.  It's really stupid stuff... paper pushers...
+> >> >
+> >> > If you want to waste time out of your life that you'll never get back...
+> >> > ...
+> >> > ... standards committee, as full of ivory-tower eggheads as it is,
+> >> > does have some folks who recognize that there is such a thing as
+> >> > the Real World)...
+> >> 
+> >> The world would be a better place if you weren't so needlessly
+> >> confrontational when sharing your knoweldge, Ted.
+> >
+> > Ivory-tower eggheads is common vernacular, a colorful and communicative
+> > description of a mindset.  Ted's usage added useful information to the
+> > conversation, unlike the pompous interjection above.
+> 
+> At first I thought you were labeling as `pompous' my suggestion that the
+> world would be improved by the introduction of a little more civility in
+> our discourse, and so I was confused.
 
-Yup, the kernel survives both the testcase and a short syscall fuzzing
-session. Thanks.
+No you weren't.  I found your remark to be pompous sideline sniping.  
 
-> From: Serge E. Hallyn <serge.hallyn@canonical.com>
-> Date: Wed, 25 May 2011 15:41:23 +0100
-> Subject: [PATCH 1/1] Set cred->user_ns in key_replace_session_keyring
->
-> Since this cred was not created with copy_creds(), it needs to get
-> initialized.
->
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> ---
->  security/keys/process_keys.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-> index 6c0480d..92a3a5d 100644
-> --- a/security/keys/process_keys.c
-> +++ b/security/keys/process_keys.c
-> @@ -847,6 +847,7 @@ void key_replace_session_keyring(void)
->        new-> sgid      = old-> sgid;
->        new->fsgid      = old->fsgid;
->        new->user       = get_uid(old->user);
-> +       new->user_ns    = new->user->user_ns;
->        new->group_info = get_group_info(old->group_info);
->
->        new->securebits = old->securebits;
-> --
-> 1.7.0.4
+	The End.
 
--- 
-Robert Święcki
+	-Mike
+
