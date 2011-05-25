@@ -1,127 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab1EYQkl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 12:40:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48528 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756044Ab1EYQkk convert rfc822-to-8bit (ORCPT
+	id S932919Ab1EYQnR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 12:43:17 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:53588 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757457Ab1EYQnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 12:40:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110524200815.GD27634@elte.hu>
-References: <1305563026.5456.19.camel@gandalf.stny.rr.com>
-	<20110516165249.GB10929@elte.hu>
-	<1305565422.5456.21.camel@gandalf.stny.rr.com>
-	<20110517124212.GB21441@elte.hu>
-	<1305637528.5456.723.camel@gandalf.stny.rr.com>
-	<20110517131902.GF21441@elte.hu>
-	<BANLkTikBK3-KZ10eErQ6Eex_L6Qe2aZang@mail.gmail.com>
-	<1305807728.11267.25.camel@gandalf.stny.rr.com>
-	<BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
-	<BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
-	<20110524200815.GD27634@elte.hu>
-Date: Wed, 25 May 2011 11:40:37 -0500
-Message-ID: <BANLkTi=iR2WhMPepc-Tct10UcF=_is1H8w@mail.gmail.com>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
-From: Will Drewry <wad@chromium.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, kees.cook@canonical.com,
-        "Serge E. Hallyn" <serge@hallyn.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 May 2011 12:43:15 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=LfgxiARImz5NPXXJXElhlz6q/2yDN0Z4jhOiNMl8bjZM1RWtjGSlCjRpb1QpkiGW1RDoXK1eQ/ay0/F4/06ybS8NBcL4PWe9arTqgnQnUr38Zv1Ly716oyDpkklLhgHN;
+Date: Wed, 25 May 2011 09:43:04 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "Arend van Spriel" <arend@broadcom.com>
+Cc: "Andrew Morton" <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Dan Carpenter" <error27@gmail.com>,
+        "George Spelvin" <linux@horizon.com>
+Subject: Re: [RFC V4] lib: crc8: add new library module providing crc8
+ algorithm
+Message-Id: <20110525094304.0769a189.rdunlap@xenotime.net>
+In-Reply-To: <1306320099-17970-1-git-send-email-arend@broadcom.com>
+References: <1306320099-17970-1-git-send-email-arend@broadcom.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[trimmed the cc list to those who've expressed interest or strong opinions]
+On Wed, 25 May 2011 12:41:39 +0200 Arend van Spriel wrote:
 
-On Tue, May 24, 2011 at 3:08 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Will Drewry <wad@chromium.org> wrote:
->
->> The change avoids defining a new trace call type or a huge number of internal
->> changes and hides seccomp.mode=2 from ABI-exposure in prctl, but the attack
->> surface is non-trivial to verify, and I'm not sure if this ABI change makes
->> sense. It amounts to:
->>
->>  include/linux/ftrace_event.h  |    4 +-
->>  include/linux/perf_event.h    |   10 +++++---
->>  kernel/perf_event.c           |   49 +++++++++++++++++++++++++++++++++++++---
->>  kernel/seccomp.c              |    8 ++++++
->>  kernel/trace/trace_syscalls.c |   27 +++++++++++++++++-----
->>  5 files changed, 82 insertions(+), 16 deletions(-)
->>
->> And can be found here: http://static.dataspill.org/perf_secure/v1/
->
-> Wow, i'm very impressed how few changes you needed to do to support this!
+>  include/linux/crc8.h |  101 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  lib/Kconfig          |    7 +++
+>  lib/Makefile         |    1 +
+>  lib/crc8.c           |   84 +++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 193 insertions(+), 0 deletions(-)
+>  create mode 100644 include/linux/crc8.h
+>  create mode 100644 lib/crc8.c
 
-There's definitely a large overlap in the needed infrastructure (event
-inheritance, event enabling, event registration) which makes changes
-using it pretty small!
 
-> So, firstly, i don't think we should change perf_tp_event() at all - the
-> 'observer' codepaths should be unaffected.
+[snip]
 
-Easy enough to do.
+> diff --git a/lib/crc8.c b/lib/crc8.c
+> new file mode 100644
+> index 0000000..0ce4238
+> --- /dev/null
+> +++ b/lib/crc8.c
+> @@ -0,0 +1,84 @@
+> +/*
+> + * Copyright (c) 2011 Broadcom Corporation
+> + *
+> + * Permission to use, copy, modify, and/or distribute this software for any
+> + * purpose with or without fee is hereby granted, provided that the above
+> + * copyright notice and this permission notice appear in all copies.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+> + * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+> + * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+> + * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+> + * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+> + * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+> + * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+> + */
 
-> But there could be a perf_tp_event_ret() or perf_tp_event_check() entry that
-> code like seccomp which wants to use event results can use.
->
-> Also, i'm not sure about the seccomp details and assumptions that were moved
-> into the perf core. How about passing in a helper function to
-> perf_tp_event_check(), where seccomp would define its seccomp specific helper
-> function?
+insert blank line here, please.
 
-I'm curious how we'd register the seccomp callback and/or know when to
-call it.  Would it just be a task-wide callback for task_context
-events?  If so, will that mean only one callback_event user will be
-able to function at a time (per task)?  [That's fine for seccomp
-purposes, of course, but may incur further internal api pain later
-unless it uses the list iterator function model that ftrace uses.]
+> +#define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
+> +#include <linux/module.h>
+> +#include <linux/crc8.h>
+> +#include <linux/printk.h>
+> +
+> +/*
+> + * crc8_populate_msb - fill crc table for given polynomial in reverse bit order.
+> + *
+> + * table:	table to be filled.
+> + * polynomial:	polynomial for which table is to be filled.
+> + */
 
-> That looks sufficiently flexible. That helper function could be an 'extra
-> filter' kind of thing, right?
->
-> Also, regarding the ABI and the attr.err_on_discard and attr.require_secure
-> bits, they look a bit too specific as well.
->
-> attr.err_on_discard: with the filter helper function passed in this is probably
-> not needed anymore, right?
->
-> attr.require_secure: this is basically used to *force* the creation of
-> security-controlling filters, right? It seems to me that this could be done via
-> a seccomp ABI extension as well, without adding this to the perf ABI. That
-> seccomp call could check whether the right events are created and move the task
-> to mode 2 only if that prereq is met - or something like that.
+Please convert all of these function comments to kernel-doc, like the header file has.
 
-Yeah - this can all be achieved with 0 changes to the perf path
-entirely.  The part that causes me concern is the idea of reusing perf
-events for a task that may or may not have been installed by the
-caller of prctl(PR_SET_SECCOMP, 2) without any clear demarcation to
-the API/ABI consumer.  It seems that to use this interface an
-application will need to:
-1. via libperf, drop all task-centric traces
-2. via libperf, install some perf_events for the "allowed" events
-3. call prctl(PR_SET_SECCOMP, 2).
+> +void crc8_populate_msb(u8 table[CRC8_TABLE_SIZE], u8 polynomial)
+> +{
+> +	int i, j;
+> +	const u8 msbit = 0x80;
+> +	u8 t = msbit;
+> +
+> +	table[0] = 0;
+> +
+> +	for (i = 1; i < CRC8_TABLE_SIZE; i *= 2) {
+> +		t = (t << 1) ^ (t & msbit ? polynomial : 0);
+> +		for (j = 0; j < i; j++)
+> +			table[i+j] = table[j] ^ t;
+> +	}
+> +}
+> +EXPORT_SYMBOL(crc8_populate_msb);
+> +
+> +/*
+> + * crc8_populate_lsb - fill crc table for given polynomial in regular bit order.
+> + *
+> + * table:	table to be filled.
+> + * polynomial:	polynomial for which table is to be filled.
+> + */
+> +void crc8_populate_lsb(u8 table[CRC8_TABLE_SIZE], u8 polynomial)
+> +{
+> +	int i, j;
+> +	u8 t = 1;
+> +
+> +	table[0] = 0;
+> +
+> +	for (i = (CRC8_TABLE_SIZE >> 1); i; i >>= 1) {
+> +		t = (t >> 1) ^ (t & 1 ? polynomial : 0);
+> +		for (j = 0; j < CRC8_TABLE_SIZE; j += 2*i)
+> +			table[i+j] = table[j] ^ t;
+> +	}
+> +}
+> +EXPORT_SYMBOL(crc8_populate_lsb);
+> +
+> +/*
+> + * crc8 - calculate a crc8 over the given input data.
+> + *
+> + * table: crc table used for calculation.
+> + * pdata: pointer to data buffer.
+> + * nbytes: number of bytes in data buffer.
+> + * crc:	previous returned crc8 value.
+> + */
+> +u8 crc8(const u8 table[CRC8_TABLE_SIZE], u8 *pdata, size_t nbytes, u8 crc)
+> +{
+> +	/* loop over the buffer data */
+> +	while (nbytes-- > 0)
+> +		crc = table[(crc ^ *pdata++) & 0xff];
+> +
+> +	return crc;
+> +}
+> +EXPORT_SYMBOL(crc8);
+> +
+> +MODULE_DESCRIPTION("CRC8 (by Williams, Ross N.) function");
+> +MODULE_AUTHOR("Broadcom Corporation");
+> +MODULE_LICENSE("Dual BSD/GPL");
+> -- 
 
-Even then, it isn't necessarily clear to the user which events will
-have a security impact and which won't.  It creates an implicit ABI
-(if that makes sense) that will be hard to ensure strong security
-guarantees for as perf changes.  It'd be possible to still do a
-(PR_SET_SECCOMP_FILTER, eventid) approach to indicate which events are
-expected, but at that point I'd be tempted to leave libperf out of it
-again :)  Regardless, I'll pull together the patch as I understand the
-proposal since code can be a bit easier to digest than the discussion.
- It seems to me that it's going to be hard to stay away from explicit
-ABI changes, but perhaps I'm misunderstanding the ultimate direction
-still.
 
-If I'm way off base, please let me know :)  It'll save some extra patch-churn.
-
-Thanks!
-will
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
