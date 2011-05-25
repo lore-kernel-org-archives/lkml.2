@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758074Ab1EYQTh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 12:19:37 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:54782 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754666Ab1EYQTf convert rfc822-to-8bit (ORCPT
+	id S932531Ab1EYQUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 12:20:12 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:26801 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757591Ab1EYQUK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 12:19:35 -0400
-Date: Wed, 25 May 2011 18:19:17 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Fabio Erculiani <lxnay@sabayon.org>
-Cc: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fbmem: fix race condition between
- register_framebuffer() and fb_open()
-Message-ID: <20110525181917.12cf97b8@neptune.home>
-In-Reply-To: <20110524224545.08c53b1d@neptune.home>
-References: <1306266871-12464-1-git-send-email-lxnay@sabayon.org>
-	<20110524224545.08c53b1d@neptune.home>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 25 May 2011 12:20:10 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-131.messagelabs.com!1306340400!25583553!8
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.32]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@fluxnic.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 25 May 2011 11:19:59 -0500
+Subject: RE: [RFC] ARM Subarchitecture group maintainership
+Thread-Topic: [RFC] ARM Subarchitecture group maintainership
+Thread-Index: AcwatU6dizU0qiZvQrKffxhM6ClDTAAQiWgg
+Message-ID: <0D753D10438DA54287A00B027084269764D323A714@AUSP01VMBX24.collaborationhost.net>
+References: <201105181047.17309.arnd@arndb.de>
+ <20110525082344.GF22096@pengutronix.de>
+In-Reply-To: <20110525082344.GF22096@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011 Bruno Prémont <bonbons@linux-vserver.org> wrote:
-> On Tue, 24 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
-> > register_framebuffer() acquires registration_lock, then calls
-> > do_register_framebuffer() which calls fb_notifier_call_chain()
-> > which calls fb_open() which calls get_fb_info() which tries
-> > (at last) to acquire registration_lock again.
-> > This is a workaround.
+On Wed, May 18, 2011 at 10:47:16AM +0200, Arnd Bergmann wrote:
+> This is the draft plan for maintaining the ARM subarchitectures in a common
+> tree, as a way to help coordinate the upstream merging of the
+> arch/arm/{plat,mach}-* changes into Linus' tree.
 > 
-> What calls fb_open() instead of just calling fb_info->fbops->fb_open
-> when it is set?
-> In other words what kernel handler of fb_notifier chain does file-based
-> open of the framebuffer or is the event pushed out synchronously to
-> userspace?
+> This was discussed in great length at the Linaro Developer Summit in Budapest
+> last week where we worked out an initial plan. We are modeling the maintainance
+> after how the linux-tip tree is used for the x86 architecture, with a set
+> of developers that have commit access to one tree on kernel.org and
+> have mutual trust in one another. Nicolas Pitre and me are funded
+> by Linaro to do the bulk of the work, while Thomas Gleixner will help
+> us part-time with his long time architecture maintainance experience.
+> Despite the funding by Linaro, this is not a Linaro project and all
+> ARM subarchitectures are welcome to go through our tree.
+> 
+> Russell King's role as ARM maintainer is of course unchanged by this, but
+> he has the same commit access to the new tree as the other maintainers and
+> is welcome to work in the same tree. We are also open to nominations for
+> further people outside of Linaro to join us as committers. Marc Zyngier from
+> ARM ltd is one of the candidates that has been suggested and I would also
+> like to see someone from Google. We have to find the right balance with the
+> number of committers so we get all the work done without stepping on each
+> other's toes.
+> 
+> Our tree will be strictly organized in topic brances so we can feed them
+> upstream in the bitesized chunks that Linus likes. The master branch
+> is an integration branch that pulls all other branches that are scheduled
+> for the next merge window and itself gets integrated into linux-next.
+> 
+> We will probably not be fully functional during the 2.6.40 merge window,
+> but we are trying our best to be useful. For 2.6.41, my hope is that
+> we can merge the bulk of the ARM subarchitecture changes through this
+> tree. Once Linus is happy with the way that the process works, we can
+> mandate that all ARM subarchitecture changes go through our tree, until
+> then it stays voluntary.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Nicolas Pitre <nico@fluxnic.net>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> 
+> ---
+> 
+> Maintainers: If you are happy with the layout of the process,
+> please ack this patch, otherwise please comment.
 
-Note that fb_info->lock is also taken on both sides:
-- per definition around all fb_notifier_call_chain() calls
-- as well in fb_open() to protect fb_info->fb_ops->fb_open call.
+As co-maintainer of ep93xx
 
-Bruno
-
-
-> > Signed-off-by: Fabio Erculiani <lxnay@sabayon.org>
-> > ---
-> >  drivers/video/fbmem.c |   13 ++++++++++++-
-> >  1 files changed, 12 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-> > index 5aac00e..b9831a0 100644
-> > --- a/drivers/video/fbmem.c
-> > +++ b/drivers/video/fbmem.c
-> > @@ -1628,6 +1628,11 @@ static int do_register_framebuffer(struct fb_info *fb_info)
-> >  	event.info = fb_info;
-> >  	if (!lock_fb_info(fb_info))
-> >  		return -ENODEV;
-> > +
-> > +	/* FIXME: unlock registration mutex before registration
-> > +	 * notification is sent, in order to avoid deadlock.
-> > +	 */
-> > +	mutex_unlock(&registration_lock);
-> >  	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
-> >  	unlock_fb_info(fb_info);
-> >  	return 0;
-> > @@ -1692,7 +1697,13 @@ register_framebuffer(struct fb_info *fb_info)
-> >  
-> >  	mutex_lock(&registration_lock);
-> >  	ret = do_register_framebuffer(fb_info);
-> > -	mutex_unlock(&registration_lock);
-> > +	if (ret != 0)
-> > +		/*
-> > +		 * FIXME: mutex is unlocked only if ret == 0.
-> > +		 * This is the second part of the workaround
-> > +		 * that prevents deadlocking.
-> > +		 */
-> > +		mutex_unlock(&registration_lock);
-> >  
-> >  	return ret;
-> >  }
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
