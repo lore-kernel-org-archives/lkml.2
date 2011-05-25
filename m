@@ -1,74 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab1EYPUM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 11:20:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38694 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757794Ab1EYPUK convert rfc822-to-8bit (ORCPT
+	id S1757930Ab1EYP0s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 11:26:48 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:23170 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432Ab1EYP0r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 11:20:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ggz+mf15LNu1Qsjf9+g1lyz6siMYDz6vhAVXFT+dN2QI2q7tWOwhiV4J4zs9a09DBm
-         0aJLujvnA7v6qg4qkhHSea2/KeQfdJqCqkSCB3ftFBVwBFoaDH0JACNAXCsaN1Deis9v
-         2SSAhCVJyQqekoRgs6MJdFxLcmBQjSdZwxkLg=
-MIME-Version: 1.0
-In-Reply-To: <1306334551.2298.89.camel@Joe-Laptop>
-References: <1306334551.2298.89.camel@Joe-Laptop>
-Date: Wed, 25 May 2011 17:20:08 +0200
-X-Google-Sender-Auth: pvScTW3U_lPNSV_ol3xigkrMTpM
-Message-ID: <BANLkTimo30L7feKr9_Ec=fMoe1erw8Rnag@mail.gmail.com>
-Subject: Re: [PATCH 1/4] include/linux/printk.h is not self-contained
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 25 May 2011 11:26:47 -0400
+X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 11:26:47 EDT
+From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+To: Tomas Henzl <thenzl@redhat.com>
+CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Date: Wed, 25 May 2011 15:20:18 +0000
+Subject: RE: [PATCH 01/16] hpsa: do readl after writel in main i/o path to
+ ensure commands don't get lost.
+Thread-Topic: [PATCH 01/16] hpsa: do readl after writel in main i/o path to
+ ensure commands don't get lost.
+Thread-Index: AcwZPdWRhJh4EtY7Q/msg1vmiG5dywBsMQFA
+Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D5207690A@GVW0547EXC.americas.hpqcorp.net>
+References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com>
+ <20110503195849.5478.13229.stgit@beardog.cce.hp.com>
+ <4DC13566.5070203@redhat.com> <20110504125212.GC5997@beardog.cce.hp.com>
+ <10639.1304530101@localhost> <20110504173735.GB22953@parisc-linux.org>
+ <11821.1304531662@localhost> <20110505183515.GA14193@beardog.cce.hp.com>
+ <4DDA46FD.904@redhat.com>
+In-Reply-To: <4DDA46FD.904@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: RAPD Rxkf TLJI YsE0 aFHA gd5n gvud jv0y nyRc 36gQ 9bpZ
+ ACYjUw== ADra7Q== AD8dGQ== AENPDA==
+ AEX4Ag==;7;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGEAeABiAG8AZQBAAGsAZQByAG4AZQBsAC4AZABrADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAHMAYwBzAGkAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHMAYwBhAG0AZQByAG8AbgBAAGIAZQBhAHIAZABvAGcALgBjAGMAZQAuAGgAcAAuAGMAbwBtADsAdABoAGUAbgB6AGwAQAByAGUAZABoAGEAdAAuAGMAbwBtADsAdgBhAGwAZABpAHMALgBrAGwAZQB0AG4AaQBlAGsAcwBAAHYAdAAuAGUAZAB1AA==;Sosha1_v1;7;{64A5491B-F4BE-4DE6-B154-70DEDC0EFBBE};bQBpAGsAZQAuAG0AaQBsAGwAZQByAEAAaABwAC4AYwBvAG0A;Wed,
+ 25 May 2011 15:20:18
+ GMT;UgBFADoAIABbAFAAQQBUAEMASAAgADAAMQAvADEANgBdACAAaABwAHMAYQA6ACAAZABvACAAcgBlAGEAZABsACAAYQBmAHQAZQByACAAdwByAGkAdABlAGwAIABpAG4AIABtAGEAaQBuACAAaQAvAG8AIABwAGEAdABoACAAdABvACAAZQBuAHMAdQByAGUAIABjAG8AbQBtAGEAbgBkAHMAIABkAG8AbgAnAHQAIABnAGUAdAAgAGwAbwBzAHQALgA=
+x-cr-puzzleid: {64A5491B-F4BE-4DE6-B154-70DEDC0EFBBE}
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 16:42, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2011-05-25 at 11:09 +0200, y@mail.of.borg wrote:
+Tomas wrote:
 
-Sorry, that email address is a relic from typing one too many "y" responses
-to git-send-email questions.
+> -----Original Message-----
+> From: Tomas Henzl [mailto:thenzl@redhat.com]
+> Sent: Monday, May 23, 2011 6:38 AM
+> To: Miller, Mike (OS Dev)
+> Cc: Valdis.Kletnieks@vt.edu; scameron@beardog.cce.hp.com; Andrew Morton;
+> LKML; LKML-scsi; Jens Axboe
+> Subject: Re: [PATCH 01/16] hpsa: do readl after writel in main i/o path
+> to ensure commands don't get lost.
+> 
+> On 05/05/2011 08:35 PM, Mike Miller wrote:
+> > On Wed, May 04, 2011 at 01:54:22PM -0400, Valdis.Kletnieks@vt.edu
+> wrote:
+> >
+> >> On Wed, 04 May 2011 11:37:35 MDT, Matthew Wilcox said:
+> >>
+> >>>> This probably needs a comment like
+> >>>> 	/* don't care - dummy read just to force write posting to chipset
+> */
+> >>>> or similar.  I'm assuming it's just functioning as a barrier-type
+> flush of some sort?
+> >>>>
+> >>> It's a PCI write flush.  It's not clear to me why it's needed here,
+> >>> though.  The write will eventually get to the device; why we need to
+> >>> make the CPU wait around for it to actually get there doesn't make
+> sense.
+> >>>
+> >> Exactly why I think it needs a one-liner comment. :)
+> >>
+> >>
+> > So we're not exactly sure why it's needed either. We've had reports of
+> > commands getting "lost" or "stuck" under some workloads. The extra
+> readl
+> > works around the issue but certainly may have negative side effects.
+> >
+> > I'm not sure I understand how writel works.
+> >
+> > From linux-2.6/arch/x86/include/asm/io.h:
+> >
+> > #define build_mmio_write(name, size, type, reg, barrier) \
+> > static inline void name(type val, volatile void __iomem *addr) \
+> > { asm volatile("mov" size " %0,%1": :reg (val), \
+> > "m" (*(volatile type __force *)addr) barrier); }
+> >
+> > This implies (at least to me) that a barrier is part of writel. I
+> don't know
+> > why a write operation needs a barrier but thats essentially what we've
+> done
+> > by adding the extra readl. Can someone confirm or deny that a barrier
+> is
+> > actually built into writel? Or used by writel? If so, does this
+> indicate
+> > that barrier is broken?
+> >
+> > At this point we (the software guys) are pretty much at a loss as to
+> how to
+> > continue debugging. We don't know what to trigger on for the PCIe
+> analyzer.
+> > If we track outstanding commands then trigger on one that doesn't
+> complete in
+> > some amount of time the problem could conceivably be far in the past
+> and
+> > difficult to correlate to the data in the trace.
+> >
+> I'd look at the firmware part, you could check what happens for example
+> when
+> the firmware gets send a command it doesn't understand.
+> You could also change the communication with the fw by adding a count
+> field, which can
+> be then checked for the !(next_value == previous_value + 1) and raise an
+> event.
+> tomas
 
->> From: Geert Uytterhoeven <geert@linux-m68k.org>
->> <linux/printk.h> needs to include
->>   - <stdarg.h> for "va_list",
->>   - <linux/linkage.h> for "asmlinkage",
->>   - <linux/types.h> for "bool".
->
-> I wonder if printk should be self-contained.
->
-> If so, this patch should also add:
->
-> #include <linux/dynamic_debug.h>
-> #include <linux/ratelimit.h>
+Tomas,
+We've tried something very similar to the counter idea in fw. It doesn't help because the controller thinks he's done with the request. We have a (pretty crude) counter in the driver but no timing mechanism. We could add a timer. But what's a suitable timeout value? Is 2 seconds too short, too long? Suggestions, please.
 
-Hmm, it does compile without those, as long as you don't use
-dynamic debug or ratelimit.
+-- mikem
 
-> If not, maybe add:
->
-> #ifndef _LINUX_KERNEL_H
-> #error don't include <linux/printk.h> directly, use <linux/kernel.h>
-> #endif
 
-That's another possibility. We already have several users, though.
+> 
+> 
+> > If anyone has any thoughts, suggestions, or flames they would be
+> greatly
+> > appreciated.
+> >
+> > -- mikem
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-scsi"
+> in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
