@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab1EYG7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 02:59:46 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55123 "EHLO mx3.mail.elte.hu"
+	id S1754872Ab1EYHGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 03:06:14 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46647 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753506Ab1EYG7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 02:59:45 -0400
-Date: Wed, 25 May 2011 08:59:18 +0200
+	id S1754484Ab1EYHGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 03:06:13 -0400
+Date: Wed, 25 May 2011 09:06:04 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/3] x86, intel: Use cpu_update for Atom errata check
-Message-ID: <20110525065918.GD429@elte.hu>
+        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
+Message-ID: <20110525070604.GE429@elte.hu>
 References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
- <1306278210-18285-2-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306278210-18285-2-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,26 +33,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Andi Kleen <andi@firstfloor.org> wrote:
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Now that the cpu update level is available the Atom PSE errata
-> check can use it directly without reading the MSR again.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/intel.c |   15 ++++-----------
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -111,6 +111,8 @@ struct cpuinfo_x86 {
+>  	/* Index into per_cpu list: */
+>  	u16			cpu_index;
+>  #endif
+> +	/* CPU update signature */
+> +	u32			x86_cpu_update;
 
-Ok, it's nice that you have split this one out.
+Btw,. there's one subtle thing here: it's possible to have *different* 
+microcode versions on different CPUs in te system.
 
-Please also split out the MCE printk change you did in the first patch - even 
-if it's a oneliner we want the first patch to only include changes focused to 
-the primary purpose alone: the introduction of x86_cpu::microcode_version.
+This can happen if for example the BIOS somehow does not apply the right 
+microcode to all CPUs. It can also happen if physically different microcode 
+version CPUs are mixed. In theory people can mix steppings as well.
 
-Also, please split the first patch into two other parts: a first one that 
-factors out the Intel microcode-version MSR function into a separate function, 
-and the second patch that introduces the x86_cpu::microcode_version field and 
-fills it in in the CPU detection code and keeps it updated in the microcode 
-driver.
+Would you be interested in adding a quick debugging check after all CPUs have 
+been brought online, and print some very visible boot warning message if 
+there's a mismatch between the steppings or microcode versions? Perhaps also 
+taint the kernel.
+
+Having non-updated microcode is one thing, but having *mixed* versions can 
+introduce its own set of problems: there are workarounds that have to be 
+activated on all CPUs, otherwise the result may be undefined.
+
+We did not check for this before, so this would be a separate patch as well.
+
+This should be done in a generic way, so it should work with other x86 CPUs as 
+well.
 
 Thanks,
 
