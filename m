@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757206Ab1EYM5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 08:57:06 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26880 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756960Ab1EYM5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 08:57:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,266,1304319600"; 
-   d="scan'208";a="7333479"
-Subject: Re: [PATCH 2/2] dmaengine: add TODO items for future work on dma
- drivers
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Per Forlin <per.forlin@linaro.org>, Dan <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <BANLkTinP-5z0ecf0zvrEnLOSDvOhLzMKDw@mail.gmail.com>
-References: <1306323570-11133-1-git-send-email-vinod.koul@intel.com>
-	 <1306323570-11133-3-git-send-email-vinod.koul@intel.com>
-	 <BANLkTinP-5z0ecf0zvrEnLOSDvOhLzMKDw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 17:53:36 +0530
-Message-ID: <1306326216.30236.196.camel@vkoul-udesk3>
+	id S1757575Ab1EYMeA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 08:34:00 -0400
+Received: from nfitmail.nfit.au.dk ([130.225.31.129]:36493 "EHLO
+	smtp.nfit.au.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757186Ab1EYMd7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 08:33:59 -0400
+X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 08:33:58 EDT
+Date: Wed, 25 May 2011 14:26:18 +0200
+From: Kasper Dupont <kasperd@nhnxn.25.may.2011.kasperd.net>
+To: Valdis.Kletnieks@vt.edu
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: (Short?) merge window reminder
+Message-ID: <20110525122618.GA14303@colin.search.kasperd.net>
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com> <20110523192056.GC23629@elte.hu> <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com> <20110523231721.GM10009@thunk.org> <4DDAEC68.30803@zytor.com> <BANLkTikGfVSAMY2a2yiXaNpvBVvF8YdMEA@mail.gmail.com> <6043.1306285994@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <6043.1306285994@localhost>
+User-Agent: Mutt/1.4.2.3i
+X-NFIT-ADSL: 2
+X-NFIT-RelayAddr: 130.225.16.160
+X-NFIT-MX: True
+X-Sim: 5b170ca98771493eef230891d2a96533cd035a237320acf425082ff4ee90feef 1158
+X-NFIT-Solido-Score: 3.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 14:47 +0200, Linus Walleij wrote:
-> 2011/5/25 Koul, Vinod <vinod.koul@intel.com>:
-> 
-> > From: Vinod Koul <vinod.koul@intel.com>
-> >
-> > Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-> > ---
-> >  drivers/dma/TODO |   12 ++++++++++++
-> >  1 files changed, 12 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/dma/TODO
-> >
-> > diff --git a/drivers/dma/TODO b/drivers/dma/TODO
-> > new file mode 100644
-> > index 0000000..b67d184
-> > --- /dev/null
-> > +++ b/drivers/dma/TODO
-> > @@ -0,0 +1,12 @@
-> > +TODO for slave dma
-> > +
-> > +1. Move remaining drivers to use new slave interface
-> 
-> Here is the hitlist:
-> - find arch/arm/ |grep -e "dma.c$"
-> - arch/arm/mach-s3c64xx/dma.c need to be merged into
->   drivers/dma/amba-pl08x.c - make adjustments for local
->   deviations
-> 
-> Or were you mainly talking about the drivers already in
-> drivers/dma?
-I was talking about current drivers still using old pointer mechanism
-for passing slave info.
+On 24/05/11 21.13, Valdis.Kletnieks@vt.edu wrote:
+> Well, if we're looking at ELF-sized ABI changes, how about 3.0 be the
+> release where we re-sync the syscall numbers on all the archs? ;)
 
-And yes this should be in list too, and this is where I may need your
-help :) I will try to compile the list for drivers which should be moved
+If you want to do that I think the best way to do it is to
+have both the old and the new numbers co-exist through the
+3.x series and the old ones go away in 4.0.
+
+You'd first have to find the highest number currently
+assigned and then add a bit of safety margin to decide on
+a starting point for the new numbers.
+
+Should architecture dependent system calls be assigned
+from a separate interval where they could overlap between
+architectures? Or should they be assigned from the same
+sequence as other calls and return -ENOSYS on other
+architectures than the one they were targeted for?
+
+Or was it all a joke, and you don't actually want that
+cleanup to happen because of too much breakage?
 
 -- 
-~Vinod
-
+Kasper Dupont -- Rigtige mænd skriver deres egne backupprogrammer
+#define _(_)"d.%.4s%."_"2s" /* This is my email address */
+char*_="@2kaspner"_()"%03"_("4s%.")"t\n";printf(_+11,_+6,_,11,_+2,_+7,_+6);
