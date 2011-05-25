@@ -1,84 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab1EYRH5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 13:07:57 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7427 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab1EYRHz (ORCPT
+	id S1752260Ab1EYRJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 13:09:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37310 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612Ab1EYRJa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 13:07:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6357"; a="93609383"
-Message-ID: <fa2182365beee6fa243f8d3957e2da2b.squirrel@www.codeaurora.org>
-In-Reply-To: <Pine.LNX.4.44L0.1105251010580.1987-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1105251010580.1987-100000@iolanthe.rowland.org>
-Date: Wed, 25 May 2011 10:07:25 -0700 (PDT)
-Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-From: "Brokhman Tatyana" <tlinder@codeaurora.org>
-To: "Alan Stern" <stern@rowland.harvard.edu>
-Cc: "Tanya Brokhman" <tlinder@codeaurora.org>, balbi@ti.com,
-        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
-Reply-To: tlinder@codeaurora.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Wed, 25 May 2011 13:09:30 -0400
+Subject: Re: [BUG]  "sched: Remove rq->lock from the first half of ttwu()" 
+ locks up on ARM
+From: Peter Zijlstra <peterz@infradead.org>
+To: Marc Zyngier <Marc.Zyngier@arm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Frank Rowand <frank.rowand@am.sony.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1306272750.2497.79.camel@laptop>
+References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
+	 <1306272750.2497.79.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 25 May 2011 19:08:55 +0200
+Message-ID: <1306343335.21578.65.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Tue, 2011-05-24 at 23:32 +0200, Peter Zijlstra wrote:
+> On Tue, 2011-05-24 at 19:13 +0100, Marc Zyngier wrote:
+> > Peter,
+> > 
+> > I've experienced all kind of lock-ups on ARM SMP platforms recently, and
+> > finally tracked it down to the following patch:
+> > 
+> > e4a52bcb9a18142d79e231b6733cabdbf2e67c1f [sched: Remove rq->lock from the first half of ttwu()].
+> > 
+> > Even on moderate load, the machine locks up, often silently, and
+> > sometimes with a few messages like:
+> > INFO: rcu_preempt_state detected stalls on CPUs/tasks: { 0} (detected by 1, t=12002 jiffies)
+> > 
+> > Another side effect of this patch is that the load average is always 0,
+> > whatever load I throw at the system.
+> > 
+> > Reverting the sched changes up to that patch (included) gives me a
+> > working system again, which happily survives parallel kernel
+> > compilations without complaining.
+> > 
+> > My knowledge of the scheduler being rather limited, I haven't been able
+> > to pinpoint the exact problem (though it probably have something to do
+> > with __ARCH_WANT_INTERRUPTS_ON_CTXSW being defined on ARM). The enclosed
+> > patch somehow papers over the load average problem, but the system ends
+> > up locking up anyway:
+> 
+> Hurm.. I'll try and make x86 use __ARCH_WANT_INTERRUPTS_ON_CTXSW, IIRC
+> Ingo once said that that is possible and try to see if I can reproduce.
+> No clear ideas atm.
 
-> I have looked this over more carefully.  It turns out that both of you
-> have misunderstood the purpose of CONFIG_USB_GADGET_DUALSPEED (and by
-> extension, CONFIG_USB_GADGET_SUPERSPEED).  In fact, the existing
-> Kconfig file is also wrong.
->
-> The _only_ reason for CONFIG_USB_GADGET_DUALSPEED is so that gadget
-> drivers can use conditional compilation to avoid including the
-> high-speed descriptors when the UDC doesn't support high-speed
-> operation.  That's all.  This means that the
-> CONFIG_USB_GAGDET_DUALSPEED option does not need to be
-> user-controllable in Kconfig.  It should default to N, and UDC drivers
-> that support high speed should select it.
->
-> The same should be true of CONFIG_USB_GADGET_HIGHSPEED.  It should not
-> be user-controllable.  It should default to N, and UDC drivers that
-> support SuperSpeed operation (after these patches, only dummy-hcd)
-> should select it.
+So I checked out that particular commit and build with the below patch
+on-top. grep __ARCH_WANT /proc/sched_debug did indeed return those
+strings so I'm assuming CPP did its magic and I'm indeed running a
+kernel that enables IRQs around context switches.
 
-Ok, agreed. Thanks for the clarification. I saw your patch, I'll update
-mine in the same way.
+The sad news however is that a make -j8 (on a dual core) seems to result
+in a kernel image, not an oops. 
 
-> There remains the other question, about whether composite_driver.speed
-> should be set to USB_SPEED_SUPER.  I think the matter can be settled at
-> runtime.  Iterate through all the function drivers; if all of them
-> support SuperSpeed and CONFIG_USB_GADGET_SUPERSPEED is enabled then set
-> composite_driver.speed to USB_SPEED_SUPER.
+Ooh, shiny, whilst typing this I got an NMI-watchdog error reporting me
+that CPU1 got stuck in try_to_wake_up(), so it looks like I can indeed
+reproduce some funnies.
 
-Not sure how to verify this. I need to know whether the driver that is
-registered with the UDC is SS or not. This is before the function drivers
-are binded to it. So how can I verify at that point that the function
-drivers that will bind to this driver will provide SS descriptors?
-(I'm sorry, I don't have the ability to view the code at the moment and
-due to the time differences between us I don't want to leave this question
-for tomorrow and loose another day...)
+/me goes dig in.
 
->Otherwise, if all of them
-> support high speed and CONFIG_USB_GADGET_DUALSPEED is enabled then set
-> composite_driver.speed to USB_SPEED_HIGH.  Otherwise set it to
-> USB_SPEED_FULL.
->
-> Alan Stern
->
+---
+ arch/x86/include/asm/system.h |    2 ++
+ kernel/sched_debug.c          |    7 +++++++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
 
-Thanks,
-Tanya Brokhman
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
+index 12569e6..56103bb 100644
+--- a/arch/x86/include/asm/system.h
++++ b/arch/x86/include/asm/system.h
+@@ -10,6 +10,8 @@
+ #include <linux/kernel.h>
+ #include <linux/irqflags.h>
+ 
++#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
++
+ /* entries in ARCH_DLINFO: */
+ #if defined(CONFIG_IA32_EMULATION) || !defined(CONFIG_X86_64)
+ # define AT_VECTOR_SIZE_ARCH 2
+diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
+index 3669bec6..18b4ace 100644
+--- a/kernel/sched_debug.c
++++ b/kernel/sched_debug.c
+@@ -335,6 +335,13 @@ static int sched_debug_show(struct seq_file *m, void *v)
+ 		(int)strcspn(init_utsname()->version, " "),
+ 		init_utsname()->version);
+ 
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++	SEQ_printf(m, "__ARCH_WANT_INTERRUPTS_ON_CTXSW\n");
++#endif
++#ifdef __ARCH_WANT_UNLOCKED_CTXSW
++	SEQ_printf(m, "__ARCH_WANT_UNLOCKED_CTXSW\n");                                  
++#endif
++
+ #define P(x) \
+ 	SEQ_printf(m, "%-40s: %Ld\n", #x, (long long)(x))
+ #define PN(x) \
 
