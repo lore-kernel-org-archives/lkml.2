@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab1EYUbe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:31:34 -0400
-Received: from outmail010.snc4.facebook.com ([66.220.144.142]:41830 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932343Ab1EYUbc (ORCPT
+	id S1755900Ab1EYUbu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:31:50 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:15327 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755737Ab1EYUbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:31:32 -0400
-Date: Wed, 25 May 2011 13:31:30 -0700
-From: Arun Sharma <asharma@fb.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Arun Sharma <asharma@fb.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] kbuild: Integrate with new-kernel-pkg
-Message-ID: <20110525203130.GA29304@dev1756.snc6.facebook.com>
-References: <1305653779-3445-1-git-send-email-asharma@fb.com>
- <4DD2D0B3.4070208@suse.cz>
- <20110517204520.GA21201@dev1756.snc6.facebook.com>
- <4DD2E9D9.7030207@suse.cz>
+	Wed, 25 May 2011 16:31:47 -0400
+Message-ID: <4DDD6729.7070201@tilera.com>
+Date: Wed, 25 May 2011 16:31:37 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DD2E9D9.7030207@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <virtualization@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/tile: add /proc/tile, /proc/sys/tile, and a sysfs
+ cpu attribute
+References: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com> <201105202159.50780.arnd@arndb.de> <4DDD55ED.2080607@tilera.com> <201105252220.23948.arnd@arndb.de>
+In-Reply-To: <201105252220.23948.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 11:34:17PM +0200, Michal Marek wrote:
-> 
-> Or use /sbin/installkernel and let distros handle it.
+On 5/25/2011 4:20 PM, Arnd Bergmann wrote:
+> On Wednesday 25 May 2011 21:18:05 Chris Metcalf wrote:
+>> The contents of the hardwall ID file are then just a cpulist of the cpus
+>> covered by the hardwall, rather than introducing a new convention (as
+>> quoted above, e.g. "2x2 1,1").  Individual tasks that are in the hardwall
+>> can be found by reading the "hardwall" files, and we can learn where they
+>> are bound in the hardwall by reading the "stat" file as is normal for
+>> learning process affinity.
+> Be careful with listing PID values in the hardwall files, as the PIDs
+> may not be unique or visible if you combine this with PID name spaces.
+> I guess the right solution would be to only list the tasks that are
+> present in the name space of the thread reading the file.
 
-Updated distro specific patch (not expecting you to apply it).
-The earlier version was mixed up with kernel-devel patch.
+Sorry not to be clearer -- I am no longer listing any PID values in the
+hardwall files, for that exact reason.  You have to look at
+/proc/*/hardwall (or /proc/*/tasks/*/hardwall) to find the files that are
+in a particular hardwall.  This pattern is not one that's normally directly
+useful, though, so I'm happy leaving it to userspace if it's desired.
 
- -Arun
+>>> When you do a /sys/hypervisor/ interface, put everything into a subdirectory
+>>> under /sys/hypervisor with the name of your hypervisor, to avoid naming
+>>> conflicts, e.g.
+>>>
+>>> /sys/hypervisor/tilera-hv/board/board_serial
+> I just checked for other users. The only one I could find was
+> drivers/xen/sys-hypervisor.c, and it also doesn't use a subdirectory to
+> identify that hypervisor. It's probably more consistent if you also don't
+> do it then.
+>
+> You can create a directory with multiple files using sysfs_create_group()
+> as the xen code does, but not nested directories.
 
-commit cb73fb35a588922344763c075b2fce159df41fc7
-Author: Arun Sharma <asharma@fb.com>
-Date:   Sun Mar 6 08:08:53 2011 -0800
+I'll look into sysfs_create_group(), and then send a revised patch with all
+the /proc and /sys changes.  Thanks!
 
-    kbuild: Integrate with new-kernel-pkg
-    
-    Handles mkinitrd, updating the bootloader among other things.
-    
-    Signed-off-by: Arun Sharma <asharma@fb.com>
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-diff --git a/scripts/package/mkspec b/scripts/package/mkspec
-index ed8b6a8..f5f0cb5 100755
---- a/scripts/package/mkspec
-+++ b/scripts/package/mkspec
-@@ -40,6 +40,8 @@ echo "Source: kernel-$__KERNELRELEASE.tar.gz"
- fi
- 
- echo "BuildRoot: %{_tmppath}/%{name}-%{PACKAGE_VERSION}-root"
-+echo "Requires(post): /sbin/new-kernel-pkg"
-+echo "Requires(preun): /sbin/new-kernel-pkg"
- echo "Provides: $PROVIDES"
- echo "%define __spec_install_post /usr/lib/rpm/brp-compress || :"
- echo "%define debug_package %{nil}"
-@@ -95,6 +97,14 @@ echo 'mv vmlinux.orig vmlinux'
- echo "%endif"
- 
- echo ""
-+echo "%preun"
-+echo '/sbin/new-kernel-pkg --rminitrd --rmmoddep --remove '"$KERNELRELEASE"' || exit $?'
-+
-+echo ""
-+echo "%post"
-+echo '/sbin/new-kernel-pkg --mkinitrd --depmod --install --make-default '"$KERNELRELEASE"' || exit $?'
-+
-+echo ""
- echo "%clean"
- echo 'rm -rf $RPM_BUILD_ROOT'
- echo ""
+
