@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab1EYTOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 15:14:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41275 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751605Ab1EYTOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 15:14:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,268,1304319600"; 
-   d="scan'208";a="8699583"
-Date: Wed, 25 May 2011 12:13:21 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
-Message-ID: <20110525191321.GB14151@tassilo.jf.intel.com>
-References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
- <20110525065451.GC429@elte.hu>
- <20110525165436.GA14958@tassilo.jf.intel.com>
- <20110525185912.GB17864@elte.hu>
+	id S1755138Ab1EYTOg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 15:14:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50524 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754947Ab1EYTOf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 15:14:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110525185912.GB17864@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DDD5240.2060308@fusionio.com>
+References: <alpine.DEB.2.02.1105232329040.1910@natty-nar> <4DDB8BF6.2000304@fusionio.com>
+ <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty> <4DDCB1C8.7040708@fusionio.com>
+ <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty> <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
+ <4DDD5240.2060308@fusionio.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 25 May 2011 12:13:44 -0700
+Message-ID: <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>
+Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
+ __elv_add_request OOPS]
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Parag Warudkar <parag.lkml@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 08:59:12PM +0200, Ingo Molnar wrote:
-> Look at the context diff above, it has 'cpu_index', so no, there was no
-> consistent convention to follow.
+On Wed, May 25, 2011 at 12:02 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>
+> This is before you get that far, it's actually oopsing on inserting the
+> request on sdev->sdev_queue that is now NULL. The prep state checking
+> happens when sr/sd pulls the request off the queue for processing.
 
-Well all the CPU specific fields. Anyways I renamed it now.
+Ok, please just add a "sdev_alive(sdev)" helper that checks for sdev
+&& sdev->sdev_queue. Apparently the issue isn't "this device is
+SDEV_DEL, so don't send commands". Apparently the issue is literally
+"don't oops".
 
-> attention to that lack of means of testing? :-)
-> 
-> > > > -	/* see notes above for revision 1.07.  Apparent chip bug */
-> > 
-> > This particular code pattern has no chip bug. The CPUID is required 
-> > by the documentation! So whoever wrote it didn't read the 
-> > documentation. So yes I dropped that obviously bogus comment.
-> 
-> And you thus 'obviously' forked away the reading of the microcode 
-> version into another file, with the same 'obviously wrong' comment 
-> left behind in another place?
+Or maybe the prep state checking could be moved earlier. It seems
+stupid to have a "can I do this command" function that is run too late
+to actually catch the problems..
 
-I just wrote new code with correct comments.
-
-> > It always was documented this way.
-> 
-> FYI, the x86 microcode driver actually predates official public 
-
-Are you sure you're not confusing that with the AMD driver?
-AFAIK Intel was always documented.
-
-
-> No, it's not a problem to add /proc/cpuinfo fields in the middle - 
-> please add this new field to the logical place.
-
-Ok.
-
-> > 
-> > Huh? There's only a single one now.
-> 
-> That's not actually true. With your patches applied a trivial git 
-> grep shows the two places reading the microcode version:
-
-Ok you count the re-reading. Fair enough. I guess I can remove
-the comment there too.
-
-BTW before my patches there were four places, I collapsed it down
-to two if you count that.
-
--Andi
+                    Linus
