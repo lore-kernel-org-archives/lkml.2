@@ -1,133 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab1EYLX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 07:23:59 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47404 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755256Ab1EYLX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756042Ab1EYLX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 07:23:58 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:53584 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753448Ab1EYLX4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 May 2011 07:23:56 -0400
-Date: Wed, 25 May 2011 13:23:39 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
-        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
-        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
-        penberg@kernel.org, hpa@zytor.com,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-Message-ID: <20110525112339.GC30983@elte.hu>
-References: <1306269105.21443.20.camel@dan>
- <20110524211644.GJ27634@elte.hu>
- <1306278038.1921.5.camel@dan>
+Date: Wed, 25 May 2011 14:23:51 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: balbi@ti.com, "'Alan Stern'" <stern@rowland.harvard.edu>,
+        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+Message-ID: <20110525112350.GP14556@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <Pine.LNX.4.44L0.1105241012080.1913-100000@iolanthe.rowland.org>
+ <013201cc1a96$bdda7910$398f6b30$@org>
+ <20110525092124.GI14556@legolas.emea.dhcp.ti.com>
+ <015801cc1abd$ca534e20$5ef9ea60$@org>
+ <20110525092743.GK14556@legolas.emea.dhcp.ti.com>
+ <018e01cc1ac0$2b09b040$811d10c0$@org>
+ <20110525094902.GM14556@legolas.emea.dhcp.ti.com>
+ <01a601cc1ac2$f0041a00$d00c4e00$@org>
+ <20110525102945.GN14556@legolas.emea.dhcp.ti.com>
+ <01b401cc1ac9$d1c57870$75506950$@org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HAv5+T9jbwMPl6Kw"
 Content-Disposition: inline
-In-Reply-To: <1306278038.1921.5.camel@dan>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <01b401cc1ac9$d1c57870$75506950$@org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+--HAv5+T9jbwMPl6Kw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > No, the right solution is what i suggested a few mails ago: 
-> > /proc/kallsyms (and other RIP printing places) should report the 
-> > non-randomized RIP.
-> > 
-> > That way we do not have to change the kptr_restrict default and 
-> > tools will continue to work ...
-> 
-> Ok, I'll do it this way, and leave the kptr_restrict default to 0.  
-> But I still think having the dmesg_restrict default depend on 
-> randomization makes sense, since kernel .text is explicitly 
-> revealed in the syslog.
+Hi,
 
-Hm, where is it revealed beyond intcall addresses, which ought to be 
-handled if they are printed via %pK?
+On Wed, May 25, 2011 at 01:52:15PM +0300, Tanya Brokhman wrote:
+> > > > > following:
+> > > > > 1. if CONFIG_USB_GADGET_SUPERSPEED=3Dtrue, existing gadget drivers
+> > > > > are still functional with dummy_hcd since as I already mentioned,
+> > > > > they will be enumerated through HS root hub and thus the
+> > > > > gadget.speed will
+> > > > be set to HS.
+> > > > > This is true for all gadget drivers, including the once that
+> > don't
+> > > > > define SS descriptors.
+> > > >
+> > > > only due the module parameter, right ?
+> > >
+> > > Due to the module parameter default value being FALSE, yes.
+> >=20
+> > Ok, so let's take your approach but change the speed in the gadget
+> > driver structure, put your ifdef somewhere like here:
+> >=20
+> > diff --git a/drivers/usb/gadget/composite.c
+> > b/drivers/usb/gadget/composite.c index 1ba4bef..d02d6e8 100644
+> > --- a/drivers/usb/gadget/composite.c
+> > +++ b/drivers/usb/gadget/composite.c
+> > @@ -1224,7 +1224,11 @@ composite_resume(struct usb_gadget *gadget)  /*-
+> > -----------------------------------------------------------------------
+> > -*/
+> >=20
+> >  static struct usb_gadget_driver composite_driver =3D {
+> > +#ifdef CONFIG_USB_GADGET_SUPERSPEED
+> > +       .speed          =3D USB_SPEE_SUPER,
+> > +#else
+> >         .speed          =3D USB_SPEED_HIGH,
+> > +#endif
+> >=20
+> >         .unbind         =3D composite_unbind,
+> >=20
+>=20
+> I have no problem updating static struct usb_gadget_driver composite_driv=
+er
+> as you suggested but it seems the same as updating it @
+> usb_composite_probe()...
 
-All such information leaks need to be fixed. (This will be the 
-slowest part of the process i suspect - there's many channels.)
+still, you will have two places poking at the same field. It's better to
+keep it at once, update only that and we will take your approach.
 
-in the syslog we obviously want any RIPs converted to the canonical 
-'unrandomized' address, so that it can be matched against 
-/proc/kallsyms, etc. Their randomized value isnt very useful. That 
-will also protect the randomization secret as a side effect.
+--=20
+balbi
 
-The only thorny issue AFAICS are oopses. There's real value in having 
-'raw' data from a crash (interpreting crashes is hard enough even 
-without randomization!), OTOH we could keep most of the value of them 
-by converting them back to canonical addresses.
+--HAv5+T9jbwMPl6Kw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This would be more or less easy to do for the RIP and the registers, 
-but less obvious for the stack: a kernel pointer can lie on the stack 
-at arbitrary alignment. On 64-bit we could probably detect them 
-rather reliably based on the randomized prefix of kernel addresses:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-[   32.946003] Stack:
-[   32.946003]  0000000000000202 0000000000000002 0000000000000001 0000000000000000
-[   32.946003]  0000000000000198 0000000000000002 0000000000000000 00000000002ca5b0
-[   32.946003]  0000000000000000 ffff88003e5533e0 ffff88003f977c00 ffffffff802225e3
+iQEcBAEBAgAGBQJN3ObGAAoJEAv8Txj19kN1U8AIAJxZnS3UiSSMRAhW8Vvpt1Kr
+aiODqQEq/lQQ4tbrOJkWJzzUDrwLLKM5C222SqfgL/pGwqfuZ2HB5Ge3Ri/9pVtT
+t9i0RLd9mtGwNld/xOQF61ZSRHoxAJCeDtRERnDMAHaYj569ESmjsu06ZxGR5yNg
+UiMfv7t47yuUqVJCEVVWDxp3Y0RCOIB5QTcP14x1gPTYly0IILwOXQXmQV4ZqVUE
+azLjTFvgdU8swYI6mEAhkZGdc02k2mslLAvHxiSgnwYENQPswfwE4ltshEkM8mTQ
+Nep2h+rpWIREXOMu9IXH5E3gbmUtS06Gk7yzvfCClEChsVhcWvp+xr0WUX9dcN4=
+=qtmj
+-----END PGP SIGNATURE-----
 
-the ffffffff8 prefix (assuming we end up randomizing the address 
-within the 2GB window available to a RIP-relative addressed kernel) 
-would be easy to detect even if it's not word aligned. There *would* 
-be false positives (a 32-bit value of -7 is common), but as long as 
-we marked any unrandomization clearly with an asterix:
-
-[   32.946003] Stack:
-[   32.946003]  0000000000000202 0000000000000002 0000000000000001 0000000000000000
-[   32.946003]  0000000000000198 0000000000000002 0000000000000000 00000000002ca5b0
-[   32.946003]  0000000000000000*ffff88003e5533e0*ffff88003f977c00*ffffffff802225e3
-
-we'd be informed that the stack content was slighly different. If we 
-fixed up register values, say the raw value is:
-
-[   32.946003] RDX: 0000000000000000 RSI: ffffffff80ce0100 RDI: 0000000000000000
-
-and randomization is -0x100000 then we'd print the normalized value 
-for 'RSI':
-
-[   32.946003] RDX: 0000000000000000 RSI:*ffffffff80de0100 RDI: 0000000000000000
-
-And the '*' tells us that this value got normalized.
-
-On 32-bit systems the rate of false positive is probably higher, he 
-'0xc0' byte pattern is pretty common.
-
-Now, theoretically there's still a tiny information hole here: if an 
-attacker can crash a kernel in a non-fatal way that puts some known 
-data on the kernel stack, then the unrandomization will reveal the 
-secret ...
-
-I guess we'll have to live with that: really paranoid places will 
-disable dmesg access to unprivileged users.
-
-[ They might also want to have a knob to not log kernel crashes at 
-  all - best protection is if *no one* (not even root) has a way to 
-  figure out the secret. That needs to go hand in hand with forced 
-  use of signed modules, sanitized /dev/mem, no root-controllable DMA 
-  access to any device, no ioperm() and iopl(), etc. - so a very 
-  locked down kernel that protects even root from being able to 
-  execute kernel code. Such systems are still useful btw even if root 
-  otherwise has access to all disks and has access to the kernel 
-  image and can install its own image: a reboot will generally set 
-  off an alarm. ]
-
-> Thanks very much for the feedback.
-
-Hey, thanks for taking up on implementing this rather non-trivial 
-security feature!
-
-Thanks,
-
-	Ingo
+--HAv5+T9jbwMPl6Kw--
