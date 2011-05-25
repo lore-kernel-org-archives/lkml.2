@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab1EYTxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 15:53:08 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49497 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250Ab1EYTxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 15:53:07 -0400
-Date: Wed, 25 May 2011 21:52:51 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision v2
-Message-ID: <20110525195251.GA31268@elte.hu>
-References: <1306351948-23382-1-git-send-email-andi@firstfloor.org>
+	id S1755421Ab1EYT4N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 15:56:13 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55970 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754194Ab1EYT4L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 15:56:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JZL6sdBwuTCchzIRGcZ4eqVH5I7Xqi/7JkIE8SN85R9WCs9N6pIHQIwDCVHvPoSK6q
+         +db7NJRvxYeAKySeByeBP/peCA+1apZlLV1QYnPXA9OjJPbCgO0dDEVV+X4ag177Z32E
+         g7LFLQHXztBmIlwvkyMlBabt8ybMv9stvhWV0=
+Date: Wed, 25 May 2011 22:54:13 +0300
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, hsweeten@visionengravers.com,
+        ryan@bluewatersys.com, Dan Williams <dan.j.williams@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
+Message-ID: <20110525195413.GC2996@acer>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+ <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+ <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306351948-23382-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 25, 2011 at 10:39:52AM +0200, Linus Walleij wrote:
+> 
+> No so much a review comment as an observation: I opposed the merge of the
+> EP93xx SPI driver in drivers/spi/ep93xx_spi.c on the grounds that it was close
+> enough to amba-pl022.c that it could use that driver instead.
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+I re-checked the specs and indeed, as discussed previously, it is clear that
+Cirrus (or ARM) copied the interface from other. Even the wording in the
+document is identical in many places. However, in ep93xx User's Guide, there
+is no mention about SSP being AMBA PrimeCell peripheral. For UARTs it is
+mentioned... go figure.
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> I got a request to make it easier to determine the microcode update level
-> on Intel CPUs. This patch adds a new "cpu update" field to /proc/cpuinfo,
-> which I added at the end to minimize impact on parsers.
-> 
-> The update level is also outputed on fatal machine checks together
-> with the other CPUID model information.
-> 
-> I removed the respective code from the microcode update driver, it
-> just reads the field from cpu_data. Also when the microcode is updated
-> it fills in the new values too.
-> 
-> I had to add a memory barrier to native_cpuid to prevent it being
-> optimized away when the result is not used.
-> 
-> This turns out to clean up further code which already got this
-> information manually. This is done in followon patches.
-> 
-> v2:  Lots of updates based on feedback.
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/include/asm/processor.h  |    5 ++++-
->  arch/x86/kernel/cpu/intel.c       |   14 ++++++++++++++
->  arch/x86/kernel/cpu/mcheck/mce.c  |    5 +++--
->  arch/x86/kernel/cpu/proc.c        |    3 ++-
->  arch/x86/kernel/microcode_intel.c |   14 +++++---------
->  5 files changed, 28 insertions(+), 13 deletions(-)
+There are differences also, some of the bits in control registers are in
+different places. Interrupt registers are completely different and there is no
+DMA control register at all. The same things we discussed before.
 
-You ignored the majority of the review suggestions i gave you in the 
-previous thread, and you know that i won't apply your patches without 
-you addressing all feedback.
+> One of the arguments against was that you were going to do custom DMA
+> and stuff. Now you're using the DMAengine, so can you please reconsider
+> refactoring amba-pl022.c to suit your needs and you'll get DMA support for
+> free mor or less.
 
-So why did you send this incomplete series?
+Back then, it wasn't known how the M2M DMA interface (the one used by SSP and
+IDE) was going to be implemented. Now that the dmaengine has become de facto
+API, it is clear that any "new" DMA implementations should implement that
+instead of some home grown API. Initially my M2M DMA experiments were just
+like their M2P counterparts but Ryan suggested dmaengine approach.
+
+IMHO it is better to have ep93xx implementation on its own driver since it is
+not a real AMBA PL022 peripheral but some weird hack made by Cirrus (although
+my opinions are bit biased).
 
 Thanks,
-
-	Ingo
+MW
