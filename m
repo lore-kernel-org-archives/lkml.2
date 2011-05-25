@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab1EYJHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 05:07:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50300 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab1EYJHT (ORCPT
+	id S1753120Ab1EYJJa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 05:09:30 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48900 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab1EYJJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 05:07:19 -0400
+	Wed, 25 May 2011 05:09:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=JNR5fC7WRDBqKg4v/R/DsCNtSiGGJa8EgBCQDB3BFCi+PmyoGNUwhYWVy4jjdAP0II
-         F4jmIW7lnc0SjqkkfK2jUm9AmADHbKS0es6XN4daclh/REm7DtAgZmzh1yzo742sdaQT
-         r/qVuzLrsbIojjEKqOpqCTcgK6b7PmXVvCWgU=
+        b=epfVaIdCVKgi4FWg4AJ4Bil/F4R+XLFITXDJc9CSoRPlkMQ9cSGEIu8Wey8OBKC1m2
+         JqAIeqR8ULHYMMIuLyAbfJ4qbewMvmJdx0zFmaJDZjxUAqOAS76Q0ugJchWLvDf1UcJk
+         IjgbfEZiDPDiHW++QfVHneVbgcLCy8VtFTkmc=
 MIME-Version: 1.0
-In-Reply-To: <4DDBC8C7.4000001@gmail.com>
-References: <1305829704-11774-1-git-send-email-robherring2@gmail.com>
-	<20110519233958.GB18181@ponder.secretlab.ca>
-	<4DD66B8A.5040404@gmail.com>
-	<201105201621.03801.arnd@arndb.de>
-	<4DD68614.6090209@gmail.com>
-	<a42f0c27-2811-4b68-bedf-7dfaa7bff6ff@VA3EHSMHS025.ehs.local>
-	<BANLkTi=8vX1Cs_fzpQXZBuuDuLYLu1FGmg@mail.gmail.com>
-	<4DDA2AC0.1060406@gaisler.com>
-	<20110523095829.GG17672@n2100.arm.linux.org.uk>
-	<BANLkTink1rrC8F3Gjhqt84gYzOibX+AgDQ@mail.gmail.com>
-	<4DDBC8C7.4000001@gmail.com>
-Date: Wed, 25 May 2011 11:07:18 +0200
-X-Google-Sender-Auth: f0-z9_BdYYDdbrmWJTU5xQdV1r0
-Message-ID: <BANLkTin4xKHbxysxN8M-5AP2143VkoLG=g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] drivers/amba: probe via device tree
+In-Reply-To: <1306311593.30236.103.camel@vkoul-udesk3>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+	<e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+	<BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
+	<1306311593.30236.103.camel@vkoul-udesk3>
+Date: Wed, 25 May 2011 11:09:26 +0200
+X-Google-Sender-Auth: PkcuHmsG9_OxfCnWdYd6ajLRZ6c
+Message-ID: <BANLkTi=X4XH0FL4HFXi4ZsJYy2O=mjnctg@mail.gmail.com>
+Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        devicetree-discuss@lists.ozlabs.org,
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Mika Westerberg <mika.westerberg@iki.fi>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>, hsweeten@visionengravers.com,
+        ryan@bluewatersys.com, Dan Williams <dan.j.williams@intel.com>,
         linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/24 Rob Herring <robherring2@gmail.com>:
+2011/5/25 Koul, Vinod <vinod.koul@intel.com>:
+> On Wed, 2011-05-25 at 10:39 +0200, Linus Walleij wrote:
+>> 2011/5/22 Mika Westerberg <mika.westerberg@iki.fi>:
+>>
+>> > The ep93xx DMA controller has 10 independent memory to peripheral (M2P)
+>> > channels, and 2 dedicated memory to memory (M2M) channels. M2M channels can
+>> > also be used by SPI and IDE to perform DMA transfers to/from their memory
+>> > mapped FIFOs.
+>>
+>> No so much a review comment as an observation: I opposed the merge of the
+>> EP93xx SPI driver in drivers/spi/ep93xx_spi.c on the grounds that it was close
+>> enough to amba-pl022.c that it could use that driver instead.
+>>
+>> One of the arguments against was that you were going to do custom DMA
+>> and stuff. Now you're using the DMAengine, so can you please reconsider
+>> refactoring amba-pl022.c to suit your needs and you'll get DMA support for
+>> free mor or less.
+>
+> Linus is the dma IP same as existing ones?
+> In that case we shouldn't have a new driver for same IP.
 
-> I think having "arm,amba-deviceid" is not needed. The current code does
-> nothing but warn if it doesn't match the h/w value. The drivers already have
-> a list of id's that they support and the amba bus only matches against the
-> h/w id value. The only use I can see is overriding a broken h/w value.
-
-We have this usecase in the Ux500. See these patches:
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6829/1
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6830/1
-
-Alas, it's not yet merged for the old boardfile world usecase, and
-causing us problems to drive our hardware already.
+Nope, not as far as I can tell. The fear of this IP being an amba-pl08x.c
+already hit med so I checked the register map, but it appears to be unique.
+I haven't compared it to amba-pl330.c though.
 
 Yours,
 Linus Walleij
