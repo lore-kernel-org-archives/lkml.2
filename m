@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab1EYVHE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 17:07:04 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:62096 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab1EYVHC (ORCPT
+	id S1753785Ab1EYVIR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 17:08:17 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:36080 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753346Ab1EYVIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 17:07:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=mrNZEfyrD9XU0Iruln7I4q6prdCxM5uMMHFuClaO12Wd68lHbCqTkafZhY+lsKKEDI
-         NgO+HFzN8smHNLjJM2kqatbGkgkyQTcLm/2J9JABA+77sURe1VC9U+F4dpsxtb1XlCc0
-         /UxOJfeYQYwuyycQjNRv4s7op7K5i/bWCbnW8=
-Date: Wed, 25 May 2011 23:06:56 +0200
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux@rainbow-software.org
-Subject: [PATCH] block: always allocate genhd->ev if check_events is
- implemented
-Message-ID: <20110525210656.GA18894@mtj.dyndns.org>
+	Wed, 25 May 2011 17:08:16 -0400
+Date: Wed, 25 May 2011 23:08:02 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
+        Andi Kleen <andi@firstfloor.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
+Message-ID: <20110525210802.GC16110@aftab>
+References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
+ <20110525065451.GC429@elte.hu>
+ <20110525080042.GA27183@liondog.tnic>
+ <20110525090501.GA28500@elte.hu>
+ <20110525105057.GA21830@gere.osrc.amd.com>
+ <20110525112852.GD30983@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110525112852.GD30983@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-9fd097b149 (block: unexport DISK_EVENT_MEDIA_CHANGE for legacy/fringe
-drivers) removed DISK_EVENT_MEDIA_CHANGE from legacy/fringe block
-drivers which have inadequate ->check_events().  Combined with earlier
-change 7c88a168da (block: don't propagate unlisted DISK_EVENTs to
-userland), this enables using ->check_events() for internal processing
-while avoiding enabling in-kernel block event polling which can lead
-to infinite event loop.
+On Wed, May 25, 2011 at 07:28:52AM -0400, Ingo Molnar wrote:
+> 
+> * Borislav Petkov <bp@amd64.org> wrote:
+> 
+> > Btw, can we dump the ucode version in hex since ours are much easier to
+> > read that way:
+> > 
+> > [86483.770976] microcode: CPU0: patch_level=0x010000c4
+> > [86483.826987] microcode: CPU1: patch_level=0x010000c4
+> > [86483.835071] microcode: CPU2: patch_level=0x010000c4
+> > ...
+> 
+> How is that version constructed and iterated, or example is the 
+> 0x01000000 bit always set?
+> 
+> If it's always set then it might make sense to turn this into a more 
+> human-readable version number: mask out the 0x01000000 and report 
+> 0xc4 as 194? Or is the *real* version above just '4'?
+> 
+> Should 0x010000c4 perhaps be printed as 1.10.4?
 
-Unfortunately, this made many drivers including floppy without any bit
-set in disk->events and ->async_events in which case disk_add_events()
-simply skipped allocation of disk->ev, which disables whole event
-handling.  As ->check_events() is still used during open processing
-for revalidation, this can lead to open failure.
+Nah, splitting this doesn't give you any information we could use,
+besides this format is the only format our ucode nomenclature uses so
+having it different in Linux might cause confusion.
 
-This patch always allocates disk->ev if ->check_events is implemented.
-In the long term, it would make sense to simply include the event
-structure inline into genhd as it's now used by virtually all block
-devices.
+> 
+> > I guess for Intel the ucode version format won't matter that much.
+> 
+> Well, if Intel does similar encodings as AMD,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Ondrej Zary <linux@rainbow-software.org>
-Reported-by: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
-Cc: stable@kernel.org
----
- block/genhd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I hardly doubt that.
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 2dd9887..95822ae 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1728,7 +1728,7 @@ static void disk_add_events(struct gendisk *disk)
- {
- 	struct disk_events *ev;
- 
--	if (!disk->fops->check_events || !(disk->events | disk->async_events))
-+	if (!disk->fops->check_events)
- 		return;
- 
- 	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
+> then it would be nice to turn that into human-readable version strings
+> as well.
+
+I think leaving it as a hex number would fit both vendors adequately.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
