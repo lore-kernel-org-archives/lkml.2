@@ -1,256 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab1EYVsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 17:48:07 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39813
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754450Ab1EYVsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 17:48:02 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
-        v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Subject: [PATCH 1/1] staging: hv: remove netvsc send buffer and related functions
-Date: Wed, 25 May 2011 15:02:24 -0700
-Message-Id: <1306360944-9796-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S932442Ab1EYWHt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 18:07:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61561 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab1EYWHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 18:07:46 -0400
+Message-ID: <4DDD7D9B.3060701@oracle.com>
+Date: Wed, 25 May 2011 15:07:23 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Josef Bacik <josef@redhat.com>
+CC: Andreas Dilger <adilger.kernel@dilger.ca>, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, viro@ZenIV.linux.org.uk
+Subject: Re: [PATCH 1/3] fs: add SEEK_HOLE and SEEK_DATA flags V4
+References: <1306186991-1905-1-git-send-email-josef@redhat.com> <0E7B812A-4057-4EB8-93F5-79ED9FCE2CCD@dilger.ca> <4DDD6AB9.3030906@redhat.com>
+In-Reply-To: <4DDD6AB9.3030906@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090209.4DDD7DAF.019D:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-netvsc send buffer is not used, so remove it.
+On 05/25/2011 01:46 PM, Josef Bacik wrote:
+> On 05/25/2011 03:45 PM, Andreas Dilger wrote:
+>> Most of the filesystem-specific ->llseek() methods don't do any error
+>> checking on "origin" because this is handled at the sys_llseek() level,
+>> and hasn't changed in many years.
+>>
+>> I assume this patch is also dependent upon the "remove default_llseek()"
+>> patch, so that the implementation of SEEK_DATA and SEEK_HOLE can be done
+>> in only generic_file_llseek()?
+>>
+>> Finally, while looking through the various ->llseek() methods I notice
+>> that many filesystems return "i_size" for SEEK_END, which clearly does
+>> not make sense for filesystems like ext3/ext4 htree, btrfs, etc that
+>> use hash keys instead of byte offsets for doing directory traversal.
+>> The comment at generic_file_llseek() is that it is intended for use by
+>> regular files.
+>>
+>> Should the ext4_llseek() code be changed to return 0x7ffffffff for the
+>> SEEK_END value?  That makes more sense compared to values returned for
+>> SEEK_CUR so that an application can compare the current "offset" with
+>> the final value for a progress bar.
+> So maybe we make SEEK_DATA/SEEK_HOLE only work on regular files and not
+> directories?  Sunil what does solaris do?  Thanks,
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+In Solaris the size of the directory appears to be equal to the number
+of entries and the offset is the file#, so to speak. SEEK_DATA returns
+the current offset and SEEK_HOLE the last one.
 
----
- drivers/staging/hv/hyperv_net.h |   10 ---
- drivers/staging/hv/netvsc.c     |  161 ---------------------------------------
- 2 files changed, 0 insertions(+), 171 deletions(-)
-
-diff --git a/drivers/staging/hv/hyperv_net.h b/drivers/staging/hv/hyperv_net.h
-index cf762bd..27f987b 100644
---- a/drivers/staging/hv/hyperv_net.h
-+++ b/drivers/staging/hv/hyperv_net.h
-@@ -355,10 +355,6 @@ struct nvsp_message {
- /* #define NVSC_MIN_PROTOCOL_VERSION		1 */
- /* #define NVSC_MAX_PROTOCOL_VERSION		1 */
- 
--#define NETVSC_SEND_BUFFER_SIZE			(64*1024)	/* 64K */
--#define NETVSC_SEND_BUFFER_ID			0xface
--
--
- #define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024)	/* 1MB */
- 
- #define NETVSC_RECEIVE_BUFFER_ID		0xcafe
-@@ -383,12 +379,6 @@ struct netvsc_device {
- 	struct list_head recv_pkt_list;
- 	spinlock_t recv_pkt_list_lock;
- 
--	/* Send buffer allocated by us but manages by NetVSP */
--	void *send_buf;
--	u32 send_buf_size;
--	u32 send_buf_gpadl_handle;
--	u32 send_section_size;
--
- 	/* Receive buffer allocated by us but manages by NetVSP */
- 	void *recv_buf;
- 	u32 recv_buf_size;
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 41cbb26..7b5bf0d 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -323,162 +323,6 @@ exit:
- 	return ret;
- }
- 
--static int netvsc_destroy_send_buf(struct netvsc_device *net_device)
--{
--	struct nvsp_message *revoke_packet;
--	int ret = 0;
--
--	/*
--	 * If we got a section count, it means we received a
--	 *  SendReceiveBufferComplete msg (ie sent
--	 *  NvspMessage1TypeSendReceiveBuffer msg) therefore, we need
--	 *  to send a revoke msg here
--	 */
--	if (net_device->send_section_size) {
--		/* Send the revoke send buffer */
--		revoke_packet = &net_device->revoke_packet;
--		memset(revoke_packet, 0, sizeof(struct nvsp_message));
--
--		revoke_packet->hdr.msg_type =
--			NVSP_MSG1_TYPE_REVOKE_SEND_BUF;
--		revoke_packet->msg.v1_msg.
--			revoke_send_buf.id = NETVSC_SEND_BUFFER_ID;
--
--		ret = vmbus_sendpacket(net_device->dev->channel,
--				       revoke_packet,
--				       sizeof(struct nvsp_message),
--				       (unsigned long)revoke_packet,
--				       VM_PKT_DATA_INBAND, 0);
--		/*
--		 * If we failed here, we might as well return and have a leak
--		 * rather than continue and a bugchk
--		 */
--		if (ret != 0) {
--			dev_err(&net_device->dev->device, "unable to send "
--				"revoke send buffer to netvsp");
--			return -1;
--		}
--	}
--
--	/* Teardown the gpadl on the vsp end */
--	if (net_device->send_buf_gpadl_handle) {
--		ret = vmbus_teardown_gpadl(net_device->dev->channel,
--					   net_device->send_buf_gpadl_handle);
--
--		/*
--		 * If we failed here, we might as well return and have a leak
--		 * rather than continue and a bugchk
--		 */
--		if (ret != 0) {
--			dev_err(&net_device->dev->device,
--				"unable to teardown send buffer's gpadl");
--			return -1;
--		}
--		net_device->send_buf_gpadl_handle = 0;
--	}
--
--	if (net_device->send_buf) {
--		/* Free up the receive buffer */
--		free_pages((unsigned long)net_device->send_buf,
--				get_order(net_device->send_buf_size));
--		net_device->send_buf = NULL;
--	}
--
--	return ret;
--}
--
--static int netvsc_init_send_buf(struct hv_device *device)
--{
--	int ret = 0;
--	int t;
--	struct netvsc_device *net_device;
--	struct nvsp_message *init_packet;
--
--	net_device = get_outbound_net_device(device);
--	if (!net_device) {
--		dev_err(&device->device, "unable to get net device..."
--			   "device being destroyed?");
--		return -1;
--	}
--	if (net_device->send_buf_size <= 0) {
--		ret = -EINVAL;
--		goto cleanup;
--	}
--
--	net_device->send_buf =
--		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
--				get_order(net_device->send_buf_size));
--	if (!net_device->send_buf) {
--		dev_err(&device->device, "unable to allocate send "
--			"buffer of size %d", net_device->send_buf_size);
--		ret = -1;
--		goto cleanup;
--	}
--
--	/*
--	 * Establish the gpadl handle for this buffer on this
--	 * channel.  Note: This call uses the vmbus connection rather
--	 * than the channel to establish the gpadl handle.
--	 */
--	ret = vmbus_establish_gpadl(device->channel, net_device->send_buf,
--				    net_device->send_buf_size,
--				    &net_device->send_buf_gpadl_handle);
--	if (ret != 0) {
--		dev_err(&device->device, "unable to establish send buffer's gpadl");
--		goto cleanup;
--	}
--
--	/* Notify the NetVsp of the gpadl handle */
--	init_packet = &net_device->channel_init_pkt;
--
--	memset(init_packet, 0, sizeof(struct nvsp_message));
--
--	init_packet->hdr.msg_type = NVSP_MSG1_TYPE_SEND_SEND_BUF;
--	init_packet->msg.v1_msg.send_recv_buf.
--		gpadl_handle = net_device->send_buf_gpadl_handle;
--	init_packet->msg.v1_msg.send_recv_buf.id =
--		NETVSC_SEND_BUFFER_ID;
--
--	/* Send the gpadl notification request */
--	ret = vmbus_sendpacket(device->channel, init_packet,
--			       sizeof(struct nvsp_message),
--			       (unsigned long)init_packet,
--			       VM_PKT_DATA_INBAND,
--			       VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
--	if (ret != 0) {
--		dev_err(&device->device,
--			   "unable to send receive buffer's gpadl to netvsp");
--		goto cleanup;
--	}
--
--	t = wait_for_completion_timeout(&net_device->channel_init_wait, HZ);
--
--	BUG_ON(t == 0);
--
--	/* Check the response */
--	if (init_packet->msg.v1_msg.
--	    send_send_buf_complete.status != NVSP_STAT_SUCCESS) {
--		dev_err(&device->device, "Unable to complete send buffer "
--			   "initialzation with NetVsp - status %d",
--			   init_packet->msg.v1_msg.
--			   send_send_buf_complete.status);
--		ret = -1;
--		goto cleanup;
--	}
--
--	net_device->send_section_size = init_packet->
--	msg.v1_msg.send_send_buf_complete.section_size;
--
--	goto exit;
--
--cleanup:
--	netvsc_destroy_send_buf(net_device);
--
--exit:
--	put_net_device(device);
--	return ret;
--}
--
- 
- static int netvsc_connect_vsp(struct hv_device *device)
- {
-@@ -556,8 +400,6 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 
- 	/* Post the big receive buffer to NetVSP */
- 	ret = netvsc_init_recv_buf(device);
--	if (ret == 0)
--		ret = netvsc_init_send_buf(device);
- 
- cleanup:
- 	put_net_device(device);
-@@ -567,7 +409,6 @@ cleanup:
- static void netvsc_disconnect_vsp(struct netvsc_device *net_device)
- {
- 	netvsc_destroy_recv_buf(net_device);
--	netvsc_destroy_send_buf(net_device);
- }
- 
- /*
-@@ -1099,8 +940,6 @@ int netvsc_device_add(struct hv_device *device, void *additional_info)
- 	net_device->recv_buf_size = NETVSC_RECEIVE_BUFFER_SIZE;
- 	spin_lock_init(&net_device->recv_pkt_list_lock);
- 
--	net_device->send_buf_size = NETVSC_SEND_BUFFER_SIZE;
--
- 	INIT_LIST_HEAD(&net_device->recv_pkt_list);
- 
- 	for (i = 0; i < NETVSC_RECEIVE_PACKETLIST_COUNT; i++) {
--- 
-1.6.3.2
-
+Just to be clear, I am not a Solaris expert. I just happen to have access
+to it. ;)
