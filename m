@@ -1,109 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab1EYIc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 04:32:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42139 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757476Ab1EYIc4 (ORCPT
+	id S933115Ab1EYIeB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 04:34:01 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:40228 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932782Ab1EYId7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 04:32:56 -0400
-Date: Wed, 25 May 2011 10:32:54 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Milton Miller <miltonm@bga.com>
-cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH RFC 4/4] irq: allow a per-allocation upper limit when
- allocating irqs
-In-Reply-To: <alloc-irq-range-v2@mdm.bga.com>
-Message-ID: <alpine.LFD.2.02.1105251022390.3078@ionos>
-References: <generic-irq-changes@mdm.bga.com> <alloc-irq-range-v2@mdm.bga.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 25 May 2011 04:33:59 -0400
+Subject: Re: [PATCH v6 00/18] ARM: Add support for the Large Physical
+ Address Extensions
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+In-Reply-To: <8yapqn7fyab.fsf@huya.qualcomm.com>
+References: <1306273164-18217-1-git-send-email-catalin.marinas@arm.com>
+	 <8yapqn7fyab.fsf@huya.qualcomm.com>
+Organization: ARM Limited
+Date: Wed, 25 May 2011 09:33:50 +0100
+Message-ID: <1306312430.31249.7.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 25 May 2011 08:34:05.0886 (UTC) FILETIME=[82456DE0:01CC1AB6]
+X-MC-Unique: 111052509335600101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, Milton Miller wrote:
->  
-> +int irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
+On Wed, 2011-05-25 at 00:56 +0100, David Brown wrote:
+> On Tue, May 24 2011, Catalin Marinas wrote:
+> 
+> > This set of patches adds support for the Large Physical Extensions on
+> > the ARM architecture (available with the Cortex-A15 processor). LPAE
+> > comes with a 3-level page table format (compared to 2-level for the
+> > classic one), allowing up to 40-bit physical address space.
+> 
+> Do you expect non LPAE targets to be able to boot with these changes
+> applied (and LPAE enabled)?  I am able to build this tree for the
+> MSM8660 (with a minor patch below), but it fails to boot with LPAE
+> enabled.  It seems to work fine with LPAE not enabled.
 
-You might want this to be inline :)
+As Nicolas replied already, we can't run an LPAE kernel on non-LPAE
+hardware. We could add some checks in head.S and branch to __error_p but
+it only works if you have CONFIG_DEBUG_LL enabled.
 
-> +{
-> +	if (irq < 0)
-> +		return irq_alloc_descs_range(from, 0, cnt, node);
-> +	/* fail if specified start at 4 and obtain 6 */
+> I did have to fix the msm timer code to get the branch you mentioned to
+> compile.  The return type of the function changed back to 'void' without
+> changing the returns:
 
-  -ENOPARSE
+I cc'ed Marc since he's maintaining the timer patches.
 
-> +	if (irq != from)
-> +		return -EEXIST;
+> ---
+>  arch/arm/mach-msm/timer.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+> index 50cc0bc..6e659e4 100644
+> --- a/arch/arm/mach-msm/timer.c
+> +++ b/arch/arm/mach-msm/timer.c
+> @@ -268,7 +268,7 @@ static void __cpuinit msm_local_timer_setup(struct clock_event_device *evt)
+> 
+>         /* Use existing clock_event for cpu 0 */
+>         if (!smp_processor_id())
+> -               return 0;
+> +               return;
+> 
+>         writel(DGT_CLK_CTL_DIV_4, MSM_TMR_BASE + DGT_CLK_CTL);
+> 
+> @@ -296,7 +296,8 @@ static void __cpuinit msm_local_timer_setup(struct clock_event_device *evt)
+>         if (res) {
+>                 pr_err("local_timer_setup: request_irq failed for %s\n",
+>                        clock->clockevent.name);
+> -               return res;
+> +               /* TODO: How to handle this error. */
+> +               return;
+>         }
+> 
+>         clockevents_register_device(evt);
 
-  -EINVAL perhaps ?
+Thanks.
 
-> +	return irq_alloc_descs_range(from, from + cnt, cnt, node);
-> +}
-> +
->  static inline int irq_alloc_desc(int node)
->  {
->  	return irq_alloc_descs(-1, 0, 1, node);
-> Index: work.git/kernel/irq/irqdesc.c
-> ===================================================================
-> --- work.git.orig/kernel/irq/irqdesc.c	2011-05-25 01:02:11.454480436 -0500
-> +++ work.git/kernel/irq/irqdesc.c	2011-05-25 01:04:03.441480315 -0500
-> @@ -343,27 +343,37 @@ void irq_free_descs(unsigned int from, u
->  EXPORT_SYMBOL_GPL(irq_free_descs);
->  
->  /**
-> - * irq_alloc_descs - allocate and initialize a range of irq descriptors
-> - * @irq:	Allocate for specific irq number if irq >= 0
-> + * irq_alloc_descs_range - allocate and initialize a range of irq descriptors
->   * @from:	Start the search from this irq number
-> + * @limit:	Unless zero, all irq numbers must be less than this value
->   * @cnt:	Number of consecutive irqs to allocate.
->   * @node:	Preferred node on which the irq descriptor should be allocated
->   *
->   * Returns the first irq number or error code
->   */
-> -int irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
-> +int irq_alloc_descs_range(unsigned int from, unsigned int limit,
-> +		unsigned int cnt, int node)
->  {
-> -	int start, ret;
-> +	unsigned int start, end;
-> +	int ret;
->  
->  	if (!cnt)
->  		return -EINVAL;
-> +	if (limit) {
+-- 
+Catalin
 
-Why 0 ? Just use UINT_MAX (or something like IRQ_ALLOC_ANY) for the
-limit when you want an unlimited allocation.
 
-> +		if (cnt > limit)
-> +			return -ENOMEM;
-> +		if (from > limit - cnt)
-> +			return -EINVAL;
-> +		end = min_t(unsigned int, limit, IRQ_BITMAP_BITS);
-> +	} else {
-> +		end = IRQ_BITMAP_BITS;
-> +	}
->  
->  	mutex_lock(&sparse_irq_lock);
->  
-> -	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
-> -					   from, cnt, 0);
-> +	start = bitmap_find_next_zero_area(allocated_irqs, end, from, cnt, 0);
->  	ret = -EEXIST;
-> -	if (irq >=0 && start != irq)
-> +	if (start >= end)
->  		goto err;
-
-Otherwise I like the approach in general.
-
-Thanks,
-
-	tglx
