@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab1EYTDu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 15:03:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39869 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754515Ab1EYTDs (ORCPT
+	id S1754916Ab1EYTE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 15:04:28 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:33254 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753064Ab1EYTE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 15:03:48 -0400
-Date: Wed, 25 May 2011 21:03:47 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-sh@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/4] clk: Implement clk_set_rate
-Message-ID: <20110525190347.GH22096@pengutronix.de>
-References: <1305876469.325655.313573683829.0.gpush@pororo>
- <1305876469.326620.351525457111.2.gpush@pororo>
+	Wed, 25 May 2011 15:04:27 -0400
+X-Sasl-enc: xghCKsVD63TbaZPzXwGoCiApMxT/SJ8hGWWslxKyYKtm 1306350267
+Date: Wed, 25 May 2011 16:04:24 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
+Message-ID: <20110525190424.GA17793@khazad-dum.debian.net>
+References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
+ <20110525070604.GE429@elte.hu>
+ <20110525160656.GB25225@khazad-dum.debian.net>
+ <20110525165803.GB14958@tassilo.jf.intel.com>
+ <20110525182405.GA17864@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305876469.326620.351525457111.2.gpush@pororo>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 20:48:50 up 5 days,  8:28, 25 users,  load average: 2.07, 1.49, 1.30
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20110525182405.GA17864@elte.hu>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeremy,
+On Wed, 25 May 2011, Ingo Molnar wrote:
+> So displaying a non-fatal 'info' message about it would in fact be 
+> rather wise. Nothing scary, but we'd like to be informed.
 
-On Fri, May 20, 2011 at 03:27:49PM +0800, Jeremy Kerr wrote:
-> Implemenent clk_set_rate by adding a set_rate callback to clk_hw_ops,
-> and core code to handle propagation of rate changes up and down the
-> clock tree.
-> 
-> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-> 
-> +
-> +propagate:
-> +	ret = clk->ops->set_rate(clk->hw, new_rate, &parent_rate);
-> +
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* ops->set_rate may require the parent's rate to change (to
-> +	 * parent_rate), we need to propagate the set_rate call to the
-> +	 * parent.
-> +	 */
-> +	if (ret == CLK_SET_RATE_PROPAGATE) {
-> +		new_rate = parent_rate;
-> +		clk = clk->parent;
-> +		goto propagate;
-> +	}
+A printk with levels info or notice, I do agree to be a good idea.  In fact,
+I like the idea a lot.
 
-I'm unsure about this one. Every clock should have the ability to stop
-or continue the rate propagation to the parent. This suggests to leave
-the decision whether or not to propagate to the core and not to the
-individual clocks.
-Right now each mux/div/gate needs an individual propagate flag. By
-adding the flag to the core the building block implementations could be
-simpler and the knowledge about propagatability might become handy for
-the core later.
+WARN() and kernel tainting, which is what I understand was being proposed
+before, I cannot agree with.
 
-Sascha
-
+OTOH, IMO mismatched microcode should be grounds for more serious measures.
+And that includes fixing the annoying userspace ABI that encourages bad
+behaviour in the first place and makes it harder to do the proper thing.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
