@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab1EYMPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 08:15:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56418 "EHLO mx2.suse.de"
+	id S1757347Ab1EYMPi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 08:15:38 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52821 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755931Ab1EYMPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 08:15:30 -0400
-Message-ID: <4DDCF2DF.9050200@suse.cz>
-Date: Wed, 25 May 2011 14:15:27 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1757055Ab1EYMPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 08:15:31 -0400
+Date: Wed, 25 May 2011 14:15:29 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH trivial] hwrng: Fix spelling mistake in header
+In-Reply-To: <1306325540-17934-1-git-send-email-levinsasha928@gmail.com>
+Message-ID: <alpine.LNX.2.00.1105251415240.28291@pobox.suse.cz>
+References: <1306325540-17934-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: rdunlap@xenotime.net, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 0/3 rev2] fix scripts/export_report.pl
-References: <1305966108-13399-4-git-send-email-jim.cromie@gmail.com> <1306176297-6964-1-git-send-email-jim.cromie@gmail.com> <20110524141031.GC2276@sepie.suse.cz> <BANLkTimoMJXG1jGmZcupgYEHa0Pd6d_0BA@mail.gmail.com>
-In-Reply-To: <BANLkTimoMJXG1jGmZcupgYEHa0Pd6d_0BA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.5.2011 19:53, Jim Cromie wrote:
-> can you point to the tree ?
-> (I want to see what rewording is better)
->
-> I didnt see it at git.kernel.org, nor where MAINTAINERS entry points
-> (at least after converting it to http)
+On Wed, 25 May 2011, Sasha Levin wrote:
 
-http://git.kernel.org/?p=linux/kernel/git/mmarek/kbuild-2.6.git;a=shortlog;h=refs/heads/misc
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: Matt Mackall <mpm@selenic.com>
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  include/linux/hw_random.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/hw_random.h b/include/linux/hw_random.h
+> index 9bede76..b4b0eef 100644
+> --- a/include/linux/hw_random.h
+> +++ b/include/linux/hw_random.h
+> @@ -25,7 +25,7 @@
+>   *			there is always data available.  *OBSOLETE*
+>   * @data_read:		Read data from the RNG device.
+>   *			Returns the number of lower random bytes in "data".
+> - *			Must not be NULL.    *OSOLETE*
+> + *			Must not be NULL.    *OBSOLETE*
+>   * @read:		New API. drivers can fill up to max bytes of data
+>   *			into the buffer. The buffer is aligned for any type.
+>   * @priv:		Private data, for use by the RNG driver.
+> -- 
+> 1.7.5.rc3
 
-Michal
+Applied, thanks.
+
+-- 
+Jiri Kosina
+SUSE Labs
