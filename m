@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab1EYUVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:21:24 -0400
-Received: from hyde.gogi.tv ([87.106.161.174]:36423 "EHLO hyde.gogi.tv"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754Ab1EYUVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:21:23 -0400
+	id S1755359Ab1EYUXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:23:01 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:49413 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab1EYUW7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:22:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=qGP51aMTVxcDRiiABu9H61F9IKBXAyPSkwHBuS1B5g2OTydsmJDpZ2dWXQ6gFPZso7
+         4WJv7u/WjCAArDd9+keb4NaLYzhDjPNGdpI2nb3j6cCCxV9XdHQKv2ERokHF+gIq7jJX
+         IBnjT0OZgKjtYkMDW+mEAgA6+dZ59g9Fdgu3M=
+Date: Wed, 25 May 2011 16:22:50 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: parag@ubuntu-natty
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Parag Warudkar <parag.lkml@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
+ __elv_add_request OOPS]
+In-Reply-To: <1306354818.1641.55.camel@mulgrave.site>
+Message-ID: <alpine.DEB.2.02.1105251622040.8972@ubuntu-natty>
+References: <alpine.DEB.2.02.1105232329040.1910@natty-nar> <4DDB8BF6.2000304@fusionio.com> <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty> <4DDCB1C8.7040708@fusionio.com> <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty> <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
+ <4DDD5240.2060308@fusionio.com> <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com> <4DDD55D6.1080909@fusionio.com> <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty> <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com>
+ <1306354818.1641.55.camel@mulgrave.site>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Wed, 25 May 2011 21:21:21 +0100
-From: Daniel Haid <d.haid@gogi.tv>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Andi Kleen <andi@firstfloor.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Question about iommu on =?UTF-8?Q?x=38=36=5F=36=34=20and=20ra?=
- =?UTF-8?Q?deon=20driver=2E?=
-In-Reply-To: <20110525125752.GB3467@dumpdata.com>
-References: <6ac3f6faad655602b767aa14b355e982@admin.gogi.tv>
- <20110523220536.GB11961@dumpdata.com>
- <756073831c36e0404199a4e8239bcb70@admin.gogi.tv>
- <m2wrhf4sw5.fsf@firstfloor.org>
- <08370791664f069624d25c757ed101c0@admin.gogi.tv>
- <20110525125752.GB3467@dumpdata.com>
-Message-ID: <ae8450396be43e94c1ea724312428d4f@admin.gogi.tv>
-User-Agent: Roundcube Webmail/0.4.2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Only if you allow 3GB or less in the machine. So you would have to do
-> mem=3G as well.
->
-> The reason is that (and you can see that yourself by looking at the
-> E820), is that 1GB is actually _above_ the 4GB.
 
- Just another question on this one:
 
- Why can a driver not simply ask for DMA-capable memory, is this not
- what memory zones are for?
+On Wed, 25 May 2011, James Bottomley wrote:
 
- So if a driver wants to do DMA it requests DMA-memory and gets it from
- the lower than 4GB address space.
+> On Wed, 2011-05-25 at 13:03 -0700, Linus Torvalds wrote:
+> > On Wed, May 25, 2011 at 12:52 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
+> > >
+> > > +static inline int sdev_early_check(struct scsi_device *sdev)
+> > > +{
+> > > +       if (!sdev || sdev->sdev_state == SDEV_DEL
+> > > +               || sdev->sdev_state > SDEV_QUIESCE)
+> > > +               return -ENXIO;
+> > > +       return 0;
+> > > +}
+> > 
+> > Can somebody explain why it's those states, and nothing else?
+> 
+> The states are definitely wrong.  QUIESCE shouldn't cause an error.
+> 
+QUIESCE is not causing an error above - > QUIESCE is which per the 
+documentation is correct.
 
- But for some reason it is not done like this, why?
+Parag
