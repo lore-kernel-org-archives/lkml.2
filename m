@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933296Ab1EYAiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 20:38:00 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39614 "EHLO smtps.tip.net.au"
+	id S933342Ab1EYAjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 20:39:53 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37100 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757124Ab1EYAh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 20:37:59 -0400
-Date: Wed, 25 May 2011 10:37:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Antony Pavlov <antony@niisi.msk.ru>
-Subject: linux-next: build warning in Linus' tree
-Message-Id: <20110525103740.f8917fd8.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1757628Ab1EYAjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 20:39:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,264,1304319600"; 
+   d="scan'208";a="1008291"
+Date: Tue, 24 May 2011 17:39:42 -0700
+From: Fenghua Yu <fenghua.yu@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
+Message-ID: <20110525003941.GA30997@linux-os.sc.intel.com>
+References: <1306278210-18285-1-git-send-email-andi@firstfloor.org> <1306278210-18285-3-git-send-email-andi@firstfloor.org>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__25_May_2011_10_37_40_+1000_otPgkjPJ2IPHqEqA"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306278210-18285-3-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__25_May_2011_10_37_40_+1000_otPgkjPJ2IPHqEqA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>@@ -300,6 +295,7 @@ static int apply_microcode(int cpu)
+>       struct ucode_cpu_info *uci;
+>      unsigned int val[2];
+>       int cpu_num;
+>+       struct cpuinfo_x86 *c = &cpu_data(cpu_num);
 
-Hi Greg,
+This is wrong. cpu_num is not initialized yet at this point. You need to assign c after cpu_num is initialized in the next statement.
 
-In Linus' tree, today's linux-next build (powerpc ppc64_defconfig)
-produced this warning:
+>
+>       cpu_num = raw_smp_processor_id();
+>       uci = ucode_cpu_info + cpu;
 
-drivers/tty/serial/8250_pci.c:1457: warning: initialization from incompatib=
-le pointer type
+Thanks.
 
-Introduced by commit d9a0fbfd7bc5 ("serial: 8250_pci: add support for
-Cronyx Omega PCI multiserial board").
-
-Sorry that I didn't notice this earlier.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__25_May_2011_10_37_40_+1000_otPgkjPJ2IPHqEqA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN3E9UAAoJEDMEi1NhKgbst/AH/2wcnQLa1zXpXVvB3Wf373O2
-yBdnesb2gduM/RR7fVun59/PbuRrYxVMrTygnDvZr2pHP17EwzmxuymndBgjsJcO
-hshrtgqWYw8wlvrOevGHKQoxjwfPkRAL4NnT+ykEJJ8m2rBqL0BHicQMN5nOwkAQ
-pkrEgQ3L0cmfgju4iousZB7Jy3/pvAfSl3BgqGirhjeeJCDQekIO41CsqltuXBT1
-ERtjc808F3t8ElvmGvEkyz/6e1P5bL2sfKp8D53MQuUDMR6a4VTmjNX8M6FK+3lt
-BFAkDwM49j2I8pGB9eVB3PgfVZ/q9HdpfQL9hfPxBfj9lZQYqTILSk+YcuRU20w=
-=Esz7
------END PGP SIGNATURE-----
-
---Signature=_Wed__25_May_2011_10_37_40_+1000_otPgkjPJ2IPHqEqA--
+-Fenghua
