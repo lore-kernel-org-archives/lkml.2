@@ -1,167 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab1EYGvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 02:51:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56740 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab1EYGvQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 02:51:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: CSR ARM SoC Subarchitecture preview
-Date: Wed, 25 May 2011 08:51:03 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
-Cc: Barry Song <21cnbao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <BANLkTikfje67KyyD+7Pn0D=afTyEde0euw@mail.gmail.com>
-In-Reply-To: <BANLkTikfje67KyyD+7Pn0D=afTyEde0euw@mail.gmail.com>
+	id S1754299Ab1EYGz0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 02:55:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48727 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752165Ab1EYGzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 02:55:25 -0400
+Date: Wed, 25 May 2011 08:54:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
+Message-ID: <20110525065451.GC429@elte.hu>
+References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105250851.03665.arnd@arndb.de>
-X-Provags-ID: V02:K0:ABsFlpV7fTH3FVt5K2u/6i+03AERUqNT7DRkXGaENDt
- yzlnWzIgw8b16N3Hr30dmppaaUno/EzBdjVMUMQ76Y/ngmzHnv
- Y4yVLoRKzcAM8fojlYA8tfK6RXvYVTj30DzejSlCPi7BOmUKOX
- R712nuEF+J3O9mFJPnYPpPrHPsXAZQ50WCFsK6yOEI94ngqWp9
- ryFhatHxLZPUbvlwg/5MQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 25 May 2011 04:15:12 Barry Song wrote:
 
-> >>  mach-prima2/include/mach/system.h                            |    5
-> >>  mach-prima2/include/mach/timex.h                             |    5
-> >>  mach-prima2/include/mach/uncompress.h                        |   45
-> >>  mach-prima2/include/mach/vmalloc.h                           |   19
-> >>  mach-prima2/lcdinit.c                                        |  136
-> >>  mach-prima2/mach-prima2cb.c                                  |  226 +
-> >>  mach-prima2/padmode.c                                        |  139
-> >>  mach-prima2/prima2.c                                         |   81
-> >>  mach-prima2/prima2cb-keypad.c                                |  136
-> >>  mach-prima2/pwrc.c                                           |  286 +
-> >>  mach-prima2/tsc2100_dev.c                                    |  137
-> >
-> > Any drivers in here should get moved to a proper place in drivers/*/
-> > eventually, out of the subarchitecture code.
+* Andi Kleen <andi@firstfloor.org> wrote:
+
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> things related with driver framework/callbacks will be moved out.
-> platform_device data/hardware-related callbacks will be kept. but if
-> device tree supports platform_device data/callbacks good, i will take
-> a look whether we can delete as many as possible.
+> I got a request to make it easier to determine the microcode update level
+> on Intel CPUs. This patch adds a new "cpu update" field to /proc/cpuinfo,
+> which I added at the end to minimize impact on parsers.
 
-Regarding platform data, the ideal case would be to not pass any,
-and have the driver itself enquire the settings by looking at device
-tree properties. There may be a few cases where that is not possible,
-or where a callback into platform code ends up simplifying things
-significantly, but that should stay the exception.
+Agreed, that is a good idea, adding this to cpuinfo makes sense.
 
-> > It's not clear yet what will happen in the long run to the split between
-> > mach-* and plat-* directories. Ideally, we would not need them to be
-> > separate if we can completely abstract the SoCs within their broader
-> > families, but we might not get that far before you merge your platform.
+Your patch is rather messy though:
+
+> The update level is also outputed on fatal machine checks together
+> with the other CPUID model information.
 > 
-> before prima2 SoC, we have mach-atlas4,  mach-atlas5 and mach-prima.
-> after prima2, we will have mach-atlas6. many ip cores are shared
-> between these SoCs, then there is a plat.
-> but we will not maintain old mach-atlas4,  mach-atlas5 and mach-prima
-> for the current and future kernel. the new mach-atlas6 is the coming
-> SoC we will upstream after mach-prima2.
-
-Ok, makes sense. It may be possible that after you have done all the
-work to convert prima2 to device tree, it will become trivial to support
-the older SoCs as well, but starting with prima2 as you say makes a lot
-of sense.
-
-> > What other mach-* do you expect to see in the future using plat-sirfsoc,
-> > and how similar are they to prima2?
+> I removed the respective code from the microcode update driver, it
+> just reads the field from cpu_data. Also when the microcode is updated
+> it fills in the new values too.
 > 
-> plat-sirfsoc should be things shared by mach-prima2/mach-atlas6 and
-> other future SoCs.
-
-I see. Note that in the long run, we definitely want to have the option
-to build kernel binaries across different SoC families. It would be
-good to make sure you don't have arbitrary differences in the mach-*
-implementation that get in the way of that later. If prima2 and atlas6
-turn out very similar in the end, it may be best to fold all them together
-with plat-sirfsoc into a single directory. E.g. the TI omap2/3/4
-platforms have all been merged into mach-omap2, despite being
-rather different.
-
-> >> for drivers/:
-> >>  Kconfig                             |    2
-> >>  Makefile                            |    1
-> >>  char/sirfsoc_gps.c                  |  878 +++++++++++++
-> >>  char/sirfsoc_gpsdrv.h               |  134 +
-> >>  input/misc/gpio_event.c             |  253 +++
-> >
-> > A new user space interface is always hard to establish. If you want these
-> > to get in, you should start way ahead of the other drivers that simply
-> > implement an existing interface.
-> >
-> > If the gps driver is just a tty device like a serial port, it should
-> > now be moved into drivers/tty.
+> I had to add a memory barrier to native_cpuid to prevent it being
+> optimized away when the result is not used.
 > 
-> most GPS are /dev/ttySn to userspace, they are connected to SoC by
-> uart.  DSP is one of CSR's main product lines. An internal DSP in SoC
-> handles GPS and we use this driver to communicate with the DSP. i will
-> take a look whether we can have better framework than a simple char
-> device.
-
->From the little I know about GPS, the controllers have a fairly standardized
-serial port interface even across vendors. It would be good to be
-compatible with the existing ones there, e.g. bluetooth or serial GPS that
-all provide a tty interface. If your's is very different and has a
-high-level API, you might want to create a new drivers/gps/ subsystem
-with an architected user interface that works with both your own
-implementation and the serial ones.
-Turning a tty into a high-level interface is normally done using a new tty
-line discipline, similar to how PPP or CAN work over serial lines.
-
-> >>  nanddisk/Kconfig                    |   17
-> >>  nanddisk/Makefile                   |    5
-> >>  nanddisk/nand.c                     |  937 +++++++++++++
-> >>  nanddisk/nanddisk.h                 |  702 ++++++++++
-> >
-> > How does this relate to drivers/mtd?
+> This turns out to clean up further code which already got this
+> information manually. This is done in followon patches.
+>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/include/asm/processor.h  |    5 ++++-
+>  arch/x86/kernel/cpu/intel.c       |   10 ++++++++++
+>  arch/x86/kernel/cpu/mcheck/mce.c  |    5 +++--
+>  arch/x86/kernel/cpu/proc.c        |    6 +++++-
+>  arch/x86/kernel/microcode_intel.c |    9 +++------
+>  5 files changed, 25 insertions(+), 10 deletions(-)
 > 
-> that is a big issue to upstream. CSR built a NTFL supporting both
-> WINCE/Linux with good performance and proved reliable products. the
-> NTFL is a binary. NAND disk is a up level block driver to call API in
-> the NTFL binary.
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index 4c25ab4..23b7e26 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -111,6 +111,8 @@ struct cpuinfo_x86 {
+>  	/* Index into per_cpu list: */
+>  	u16			cpu_index;
+>  #endif
+> +	/* CPU update signature */
+> +	u32			x86_cpu_update;
 
-Ok, no need to forward port or submit that driver for inclusion then.
+This should be cpu_microcode_version instead. We already know its x86 so the 
+x86_ prefix is superfluous. 'cpu_update' is also rather ambigious and does not 
+describe much.
 
-> that makes the NAND related codes very difficult to be accepted since
-> it is completely not based on MTD. i hope we can also have a MTD based
-> driver and compare the performance of  UBI on MTD and current
-> solution.
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> index 1edf5ba..150623a 100644
+> --- a/arch/x86/kernel/cpu/intel.c
+> +++ b/arch/x86/kernel/cpu/intel.c
+> @@ -364,6 +364,16 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
+>  
+>  	early_init_intel(c);
+>  
+> +	/* Determine CPU update level */
+> +	if (c->x86 >= 6 && !(cpu_has(c, X86_FEATURE_IA64))) {	
+> +		unsigned lo;
+> +
+> +		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+> +		/* The CPUID 1 fills in the MSR */
+> +		cpuid_eax(1);
+> +		rdmsr(MSR_IA32_UCODE_REV, lo, c->x86_cpu_update);
+> +	}
 
-Right, an MTD driver would be required for anyone to build products
-with the mainline kernel, so that sounds like an important thing to
-do. Comparing performance is also always good, so if you find that
-UBI or the FTL in the kernel are lacking there, the MTD maintainers
-will definitely want to know about that.
 
-> >>  video/Kconfig                       |   24
-> >>  video/Makefile                      |    2
-> >>  video/backlight/Makefile            |    1
-> >>  video/sirfsoc_clcdc.h               |  269 ++++
-> >>  video/sirfsoc_fb.c                  | 2369 +++++++++++++++++++++++++++++++++++
-> >>  video/sirfsoc_vpp.c                 | 1166 +++++++++++++++++
-> >
-> > Have you considered doing a KMS device driver instead of an old-style
-> > frame buffer?
-> 
-> it depends on the whole schedule and resources of the related teams.
-> i'd like to see the stronger KMS driver.
+So, during the course of developing this, did it occur to you that other x86 
+CPUs should fill in this information as well?
 
-There is definitely a trend towards KMS drivers, but no clear mandate yet.
-If you wait long enough, you may not have the choice any more as soon
-as KMS becomes a requirement for new display drivers.
+If yes, did it occur to you to do the obvious git log 
+arch/x86/kernel/microcode*.c command to figure out who else might be interested 
+in this, and add them to the Cc: instead of forcing the maintainer to do that?
 
-	Arnd
+Also, and this is a repeat pattern from you Andi, you've silently made code worse
+while moving it. You've changed this:
+
+> -	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+> -	/* see notes above for revision 1.07.  Apparent chip bug */
+> -	sync_core();
+> -	/* get the current revision from MSR 0x8B */
+> -	rdmsr(MSR_IA32_UCODE_REV, val[0], csig->rev);
+> -
+
+To:
+
+> +		unsigned lo;
+> +
+> +		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+> +		/* The CPUID 1 fills in the MSR */
+> +		cpuid_eax(1);
+> +		rdmsr(MSR_IA32_UCODE_REV, lo, c->x86_cpu_update);
+
+Firstly, name 'lo' appropriately - 'lo' in itself says nothing and keeps the 
+reader wondering about what recreational drugs the writer of this code was on.
+
+Obviously Secondly you've removed the reference to this chip bug:
+
+> -	/* see notes above for revision 1.07.  Apparent chip bug */
+
+Why? If you think it's not a bug (but got documented meanwhile as the official 
+way of updating the microcode and reading out the version) then update the 
+comments in a *separate* patch, and update the *other* reference to it as well.
+
+You are repeating the same mistakes again and again.
+
+>  	intel_workarounds(c);
+>  
+>  	/*
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index ff1ae9b..e93c41f 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -220,8 +220,9 @@ static void print_mce(struct mce *m)
+>  		pr_cont("MISC %llx ", m->misc);
+>  
+>  	pr_cont("\n");
+> -	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x\n",
+> -		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid);
+> +	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x CPU-UPDATE %u\n",
+> +		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid, 
+> +		cpu_data(m->extcpu).x86_cpu_update);
+
+This text too should be microcode-version or so. Also, while at it please fix 
+that printk() to not shout at users needlessly.
+
+> diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+> index 62ac8cb..cefcc27 100644
+> --- a/arch/x86/kernel/cpu/proc.c
+> +++ b/arch/x86/kernel/cpu/proc.c
+> @@ -132,8 +132,12 @@ static int show_cpuinfo(struct seq_file *m, void *v)
+>  				seq_printf(m, " [%d]", i);
+>  		}
+>  	}
+> +	seq_printf(m, "\n");
+>  
+> -	seq_printf(m, "\n\n");
+> +	if (c->x86_cpu_update)
+> +		seq_printf(m, "cpu update\t: %u\n", c->x86_cpu_update);
+> +
+> +	seq_printf(m, "\n");
+
+This too should say microcode version.
+
+Also, please move the field to the logical place, next to "stepping:". The 
+argument about parsers is bogus - anyone parsing /proc/cpuinfo is not in a 
+fastpath, full stop.
+
+Also, the above sequence is rather suboptimal to begin with - we can and only 
+want to execute a *single* seq_printf() there.
+
+> --- a/arch/x86/kernel/microcode_intel.c
+> +++ b/arch/x86/kernel/microcode_intel.c
+> @@ -161,12 +161,7 @@ static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
+>  		csig->pf = 1 << ((val[1] >> 18) & 7);
+>  	}
+>  
+> -	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+> -	/* see notes above for revision 1.07.  Apparent chip bug */
+> -	sync_core();
+> -	/* get the current revision from MSR 0x8B */
+> -	rdmsr(MSR_IA32_UCODE_REV, val[0], csig->rev);
+> -
+> +	csig->rev = c->x86_cpu_update;
+>  	pr_info("CPU%d sig=0x%x, pf=0x%x, revision=0x%x\n",
+>  		cpu_num, csig->sig, csig->pf, csig->rev);
+>
+>  
+> @@ -300,6 +295,7 @@ static int apply_microcode(int cpu)
+>  	struct ucode_cpu_info *uci;
+>  	unsigned int val[2];
+>  	int cpu_num;
+> +	struct cpuinfo_x86 *c = &cpu_data(cpu_num);
+>  
+>  	cpu_num = raw_smp_processor_id();
+>  	uci = ucode_cpu_info + cpu;
+> @@ -335,6 +331,7 @@ static int apply_microcode(int cpu)
+>  		(mc_intel->hdr.date >> 16) & 0xff);
+>  
+>  	uci->cpu_sig.rev = val[1];
+> +	c->x86_cpu_update = val[1];
+>  
+>  	return 0;
+
+Please factor out the reading of the microcode version - you have now created 
+two duplicated open-coded versions of it in cpu.c and microcode_intel.c, with 
+mismatching comments - not good.
+
+Also, in this branch:
+
+        if (val[1] != mc_intel->hdr.rev) {
+                pr_err("CPU%d update to revision 0x%x failed\n",
+                       cpu_num, mc_intel->hdr.rev);
+                return -1;
+        }
+
+it would be nice to put a check:
+
+		WARN_ON_ONCE(val[1] != c->x86_cpu_update);
+
+To make sure that our notion of the version is still in sync with what the 
+hardware's notion is. (it should be)
+
+Thanks,
+
+	Ingo
