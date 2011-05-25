@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab1EYHwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 03:52:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37349 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755235Ab1EYHv6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 03:51:58 -0400
-Date: Wed, 25 May 2011 09:51:54 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Colin Cross <ccross@google.com>
-cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH 0/4] Add a generic struct clk
-In-Reply-To: <BANLkTinVnFasvOmu0MWRDzv21P3vM8eM6g@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1105250911220.3078@ionos>
-References: <1305876469.325655.313573683829.0.gpush@pororo> <BANLkTik=EFayZW61TgfOni-XML+tRLOcqw@mail.gmail.com> <20110524062620.GA22096@pengutronix.de> <BANLkTimEoCaKwJtpbQTDSEDydNkZ1BkKog@mail.gmail.com> <20110524080936.GI20715@pengutronix.de>
- <BANLkTinVnFasvOmu0MWRDzv21P3vM8eM6g@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756893Ab1EYHzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 03:55:31 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54237 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752538Ab1EYHza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 03:55:30 -0400
+Date: Wed, 25 May 2011 09:55:17 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Milton Miller <miltonm@bga.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH RFC 4/4] irq: allow a per-allocation upper limit when
+ allocating irqs
+Message-ID: <20110525075517.GC21552@elte.hu>
+References: <generic-irq-changes@mdm.bga.com>
+ <alloc-irq-range-v2@mdm.bga.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alloc-irq-range-v2@mdm.bga.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011, Colin Cross wrote:
-> With multiple smaller building blocks that can fit inside a clock, all
-> you need is:
-> INIT_CLK(..., clk_mux_ops, clk_div_ops, clk_gate_ops)
-> You have one struct clk, which is exposed to the device and matches
-> the datasheet.  If the clock has rate ops, clk_set_rate works with no
 
-It matches what the datasheet shows you, but it's still separate
-building blocks in silicon. Creating uberclocks will fall flat in no
-time.
+* Milton Miller <miltonm@bga.com> wrote:
 
-Simply expand your example to:
+> Allow the option to specify an upper limit to the irq numbers for
+> each allocation.  The limit is non-inclusive, and 0 means no limit
+> needed by caller.
+> 
+> Some irq chips can support a relative large and arbitrary range,
+> but not infinite.  For example, they may use the linux irq number
+> as the msi desciptor data, which for msi is 16 bits.
+> 
+> Since e7bcecb7b1 (genirq: Make nr_irqs runtime expandable), checking
+> NR_IRQS or even nr_irqs is not sufficient to enforce such requirements
+> when sparse irqs are configured.
 
-    mux -> divider1 -> gate1
-    	|
-	---divider2--> gate2
-
-That's not doable with a combo clock and you end up with a mux and two
-combos of divider/gates.
-
-Having a straight simple building blocks view is way more easier to
-handle and allows arbitrary combinations and ordering at the tree
-level instead of moving the ordering decision into the hardware
-implementation level. We want the lowlevel ops implementation to be as
-simple and stupid as it gets and want to have as much complexity as
-necessary at the core code level.
-
-And it's not that complex. We can propagate set_rate from gateN down
-to the divider and it's not rocket science to make the divider consult
-the mux for a better suiting frequency, which implies that the mux
-decision checks and verifies the resulting damage for the other
-child. And this wants to be done at the core level not in the low
-level implementations.
+Would be nice to add some more background info to the changelog, like what bad 
+things happen if this change is not provided and what good things would happen 
+if it is provided.
 
 Thanks,
 
-	tglx
+	Ingo
