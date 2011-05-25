@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab1EYS5a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 14:57:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54091 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab1EYS52 (ORCPT
+	id S1754525Ab1EYS7E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 14:59:04 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50758 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752481Ab1EYS7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 14:57:28 -0400
-Date: Wed, 25 May 2011 20:57:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH] ftrace: Add internal recursive checks
-In-Reply-To: <1306348063.1465.116.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.02.1105252054270.3078@ionos>
-References: <1306348063.1465.116.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 25 May 2011 14:59:01 -0400
+Date: Wed, 25 May 2011 14:59:00 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Brokhman Tatyana <tlinder@codeaurora.org>
+cc: balbi@ti.com, "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>,
+        <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+In-Reply-To: <8ce4e30b4a406fadf08af2daff163984.squirrel@www.codeaurora.org>
+Message-ID: <Pine.LNX.4.44L0.1105251443040.1987-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, Steven Rostedt wrote:
-> +
-> +	/* Only current can touch these values */
-> +#define trace_recursion_inc() (current)->trace_recursion++
-> +#define trace_recursion_dec() (current)->trace_recursion--
-> +	/* Ring buffer has the 10 LSB bits to count */
-> +#define trace_recursion_buffer() ((current)->trace_recursion & 0x3ff)
-> +#define TRACE_INTERNAL_BIT		(1<<11)
-> +#define TRACE_GLOBAL_BIT		(1<<12)
-> +#define trace_recursion_set(bit)	(current)->trace_recursion |= (bit)
-> +#define trace_recursion_clear(bit)	(current)->trace_recursion &= ~(bit)
-> +#define trace_recursion_test(bit)	((current)->trace_recursion & (bit))
-> +
->  #endif /* CONFIG_TRACING */
+On Wed, 25 May 2011, Brokhman Tatyana wrote:
 
-Bah, these are only used in kernel/trace/. So can you please add them
-to a kernel/trace local header file instead of cramming it mindlessly
-into task_struct just because you're lazy?
+> 
+>  composite_driver.speed to USB_SPEED_SUPER.
+> >>
+> >> Not sure how to verify this. I need to know whether the driver that is
+> >> registered with the UDC is SS or not. This is before the function
+> >> drivers
+> >> are binded to it. So how can I verify at that point that the function
+> >> drivers that will bind to this driver will provide SS descriptors?
+> >> (I'm sorry, I don't have the ability to view the code at the moment and
+> >> due to the time differences between us I don't want to leave this
+> >> question
+> >> for tomorrow and loose another day...)
+> >
+> > I'm not sure about this either.  I have never used the composite
+> > framework so I'm not familiar with its details.  This has to be decided
+> > before the composite gadget driver registers with the UDC driver ...
+> Right, but at this point there is no way of knowing what function drivers
+> will bind to it and what descriptors they will provide. Most of the
+> function drivers allocate their descriptors at bind() that occurs after
+> the UDC already registers.
 
-Thanks,
+Well, there must be an appropriate spot to do this.
 
-	tglx
+It looks like you need to add a "max_speed" field to struct 
+usb_composite_driver.  Each driver will initialize this to the highest 
+speed it supports, and it must guarantee that the necessary descriptors 
+are available.
+
+Since these structures are passed to usb_composite_probe() before the 
+gadget driver is registered, the necessary calculations can be done 
+there.
+
+Alan Stern
+
