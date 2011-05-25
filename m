@@ -1,200 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab1EYGXX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 02:23:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43870 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab1EYGXW (ORCPT
+	id S1753929Ab1EYGeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 02:34:22 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:53363 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab1EYGeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 02:23:22 -0400
-Date: Wed, 25 May 2011 08:23:12 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Colin Cross <ccross@google.com>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, linux-sh@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Add a generic struct clk
-Message-ID: <20110525062312.GE22096@pengutronix.de>
-References: <1305876469.325655.313573683829.0.gpush@pororo>
- <BANLkTik=EFayZW61TgfOni-XML+tRLOcqw@mail.gmail.com>
- <20110524062620.GA22096@pengutronix.de>
- <BANLkTimEoCaKwJtpbQTDSEDydNkZ1BkKog@mail.gmail.com>
- <20110524080936.GI20715@pengutronix.de>
- <BANLkTinVnFasvOmu0MWRDzv21P3vM8eM6g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinVnFasvOmu0MWRDzv21P3vM8eM6g@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 23:02:47 up 4 days, 10:42, 26 users,  load average: 0.45, 0.44, 0.47
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 25 May 2011 02:34:21 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+Subject: [PATCH RFC 4/4] irq: allow a per-allocation upper limit when allocating irqs
+From: Milton Miller <miltonm@bga.com>
+Message-Id: <alloc-irq-range-v2@mdm.bga.com>
+In-Reply-To: <generic-irq-changes@mdm.bga.com>
+References: <generic-irq-changes@mdm.bga.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 25 May 2011 01:34:18 -0500
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 12:41:20PM -0700, Colin Cross wrote:
-> On Tue, May 24, 2011 at 1:09 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> > On Tue, May 24, 2011 at 12:31:13AM -0700, Colin Cross wrote:
-> >> On Mon, May 23, 2011 at 11:26 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> >> > On Mon, May 23, 2011 at 04:12:24PM -0700, Colin Cross wrote:
-> >> >> >
-> >> >> >   tglx's plan is to create a separate struct clk_hwdata, which contains a
-> >> >> >   union of base data structures for common clocks: div, mux, gate, etc. The
-> >> >> >   ops callbacks are passed a clk_hw, plus a clk_hwdata, and most of the base
-> >> >> >   hwdata fields are handled within the core clock code. This means less
-> >> >> >   encapsulation of clock implementation logic, but more coverage of
-> >> >> >   clock basics through the core code.
-> >> >>
-> >> >> I don't think they should be a union, I think there should be 3
-> >> >> separate private datas, and three sets of clock ops, for the three
-> >> >> different types of clock blocks: rate changers (dividers and plls),
-> >> >> muxes, and gates.  These blocks are very often combined - a device
-> >> >> clock often has a mux and a divider, and clk_set_parent and
-> >> >> clk_set_rate on the same struct clk both need to work.
-> >> >
-> >> > The idea is to being able to propagate functions to the parent. It's
-> >> > very convenient for the implementation of clocks when they only
-> >> > implement either a divider, a mux or a gate. Combining all of these
-> >> > into a single clock leads to complicated clock trees and many different
-> >> > clocks where you can't factor out the common stuff.
-> >>
-> >> That seems complicated.  You end up with lots of extra clocks (meaning
-> >> more boilerplate in the platform files) that have no meaning in the
-> >> system (what is the clock between the mux and the divider in Tegra's
-> >> i2c1 clock, it can never feed any devices), and you have to figure out
-> >> at the framework level when to propagate and when to error out.  I'm
-> >> not even sure you can always find the right place to stop propagating
-> >> - do you just keep going up until the set_parent callback succeeds, or
-> >> exists, or what?
-> >
-> > For the set_parent there would be no propagating at all. For set_rate I
-> > can imagine a flag in the generic clock which tells whether to propagate
-> > set_rate or not.
-> >
-> >>
-> >> I think you can still factor out all the common code if you treat each
-> >> clock as a possible mux, divider, and gate combination.  Each part of
-> >> the clock is still just as abstractable as before - you can set the
-> >> rate_ops to be the generic single register divider implementation, and
-> >> the gate ops to be the generic single bit enable implementation.  The
-> >> idea of what a clock node is matches the HW design,
-> >
-> > The hardware design consists of only discrete rate changers (plls,
-> > dividers), muxes and gates. These are the only building blocks
-> > *every* hardware design has. I believe that many of the problems
-> > the current implementations have are due to the multiple building
-> > blocks stuffed into one clock. If you haven't already take a look
-> > at my i.MX5 clock patches:
-> >
-> > http://thread.gmane.org/gmane.linux.ports.arm.kernel/113631
-> >
-> > They need changes to fit onto the current patches and the rate
-> > propagation problem is not solved there, but the resulting clock
-> > data files are really short and nice to read. Furthermore it's easy
-> > to implement. Just look at the diagrams in the datasheet and go through
-> > them.
-> 
-> Propagation is what I'm trying simplify, because it's impossible at
-> the framework level to determine the right time to propagate, and the
-> right time to return an error, and I don't like pushing it down to
-> each clock implementation either, because then you need a "propagating
-> clk gate" and a "non-propagating clk gate".
+Allow the option to specify an upper limit to the irq numbers for
+each allocation.  The limit is non-inclusive, and 0 means no limit
+needed by caller.
 
-Or a single flag on either the gate/mux/div or in the clock framework.
+Some irq chips can support a relative large and arbitrary range,
+but not infinite.  For example, they may use the linux irq number
+as the msi desciptor data, which for msi is 16 bits.
 
-> 
-> Your building blocks implement every op - clk_gate_ops implements
-> set_rate as clk_parent_set_rate (won't that cause a deadlock on
-> prepare_lock when it calls clk_set_rate?).  I'm suggesting breaking
-> out the clock gate ops into a struct that only contains:
-> enable
-> disable
-> prepare
-> unprepare
-> And a rate ops struct that contains:
-> round_rate
-> set_rate
+Since e7bcecb7b1 (genirq: Make nr_irqs runtime expandable), checking
+NR_IRQS or even nr_irqs is not sufficient to enforce such requirements
+when sparse irqs are configured.
 
-+ get_rate?
+Based on an irc discussion, make the limit per call instead of an
+arch callback or global setting.
 
-> And a mux ops struct that contains
-> set_parent
-> 
-> For a single HW clock that has a mux, a gate, and a divider, the
-> existing implementation requires:
-> INIT_CLK(..., clk_mux_ops)
-> INIT_CLK(..., clk_div_ops)
-> INIT_CLK(..., clk_gate_ops)
-> which creates 3 clocks, and requires lots of propagation logic to
-> figure out how to call clk_set_rate on the single clock that is
-> exposed to the device, but not propagate it past the device clock if
-> the device clock doesn't have a divider (propagating it up to an
-> active pll feeding other devices results in disaster, at least on
-> Tegra).  This combination doesn't seem to be common in your MX code,
-> but _every_ Tegra device clock has these three parts.
+If the requested count is above the limit, return -ENOMEM as if
+nr_irqs could not be expanded, assuming the limit was specified at
+a different layer than the count.
 
-Lucky you. Maybe the Tegra hardware designers have better drugs or just
-take less of them...
+This code does not try to keep the prior semantics of irq_alloc_descs
+when irq was non-negative but not equal to from.  I believe it was an
+implementation artifact instead of a designed feature that one could
+specify search starting from 4 and fail if the allocated irq was not
+exactly 6, confirming that the intervening irqs were reserved.
 
-> 
-> With multiple smaller building blocks that can fit inside a clock, all
-> you need is:
-> INIT_CLK(..., clk_mux_ops, clk_div_ops, clk_gate_ops)
-> You have one struct clk, which is exposed to the device and matches
-> the datasheet.  If the clock has rate ops, clk_set_rate works with no
-> propagation.
-
-No, we have cascaded dividers and thus still need rate propagation.
-Also we have the situation where a device is not allowed to adjust the
-divider because other clocks are derived from the same divider. Still
-the driver needs the rate. Here's an example from the i.MX51
-(simplified):
-
--> PLL ----> divider -----> gate ---> MMC1
-                     \
-                      \
-                       ---> gate ---> MMC2
-
-Neither MMC1 nor MMC2 can be allowed to change the rate because it would
-change the rate of the other MMC. Both MMCs need the rate to adjust the
-card to the correct speed. In this case the platform code needs a
-possibility to adjust the rate initially to a value suitable for both
-MMC cores (50MHz). For this is needs access to the divider, preferably
-as a clock to be able to use standard clock functions.
-
-There are also many many dividers and muxes which are standalone
-somewhere in the clock tree, not directly associated with any device.
-With a clock which can be a mux and a divider together one is tempted
-to combine these into the least possible number of clocks leading to
-some random combination of clocks.
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Milton Miller <miltonm@bga.com>
 
 
-> If it doesn't have a rate, clk_rate_ops is NULL, and the
-> framework deal with propagation only in the case where it is really
-> propagation - a child clock that requires changing a parent clock.
-> The block abstraction is still in place, there are just 3 slots for
-> blocks within each clock.
-> 
-> Using a flag to mark clocks as "non-propagatable" is also not correct
-> - propagatability is a feature of the parent, not the child.
+Thomas,
 
-this flag could also be added to the parent if we wish to.
+This is still RFC because I haven't gotten far enough in my series
+to actually use the patch yet.  If you choose not to apply it now,
+should I submit a patch to enforce irq matches from if its not -1
+(or otherwise negative)?
 
-Sascha
+Contrasting to Grant's earlier proposal, this patch:
+(1) has a non-inclusive limit, sutiable for showing size of an array etc.
+(2) has no redundant parameter for a specific irq to be allocated after inlines
+(3) avoids searching areas that will be rejected by calculating the end,
+    which also simpifies the search result check.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+milton
+
+Index: work.git/include/linux/irq.h
+===================================================================
+--- work.git.orig/include/linux/irq.h	2011-05-25 01:01:50.230468165 -0500
++++ work.git/include/linux/irq.h	2011-05-25 01:02:11.478479716 -0500
+@@ -546,10 +546,20 @@ static inline struct msi_desc *irq_data_
+ 	return d->msi_desc;
+ }
+ 
+-int irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node);
++int irq_alloc_descs_range(unsigned int from, unsigned int limit, unsigned int cnt, int node);
+ void irq_free_descs(unsigned int irq, unsigned int cnt);
+ int irq_reserve_irqs(unsigned int from, unsigned int cnt);
+ 
++int irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
++{
++	if (irq < 0)
++		return irq_alloc_descs_range(from, 0, cnt, node);
++	/* fail if specified start at 4 and obtain 6 */
++	if (irq != from)
++		return -EEXIST;
++	return irq_alloc_descs_range(from, from + cnt, cnt, node);
++}
++
+ static inline int irq_alloc_desc(int node)
+ {
+ 	return irq_alloc_descs(-1, 0, 1, node);
+Index: work.git/kernel/irq/irqdesc.c
+===================================================================
+--- work.git.orig/kernel/irq/irqdesc.c	2011-05-25 01:02:11.454480436 -0500
++++ work.git/kernel/irq/irqdesc.c	2011-05-25 01:04:03.441480315 -0500
+@@ -343,27 +343,37 @@ void irq_free_descs(unsigned int from, u
+ EXPORT_SYMBOL_GPL(irq_free_descs);
+ 
+ /**
+- * irq_alloc_descs - allocate and initialize a range of irq descriptors
+- * @irq:	Allocate for specific irq number if irq >= 0
++ * irq_alloc_descs_range - allocate and initialize a range of irq descriptors
+  * @from:	Start the search from this irq number
++ * @limit:	Unless zero, all irq numbers must be less than this value
+  * @cnt:	Number of consecutive irqs to allocate.
+  * @node:	Preferred node on which the irq descriptor should be allocated
+  *
+  * Returns the first irq number or error code
+  */
+-int irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
++int irq_alloc_descs_range(unsigned int from, unsigned int limit,
++		unsigned int cnt, int node)
+ {
+-	int start, ret;
++	unsigned int start, end;
++	int ret;
+ 
+ 	if (!cnt)
+ 		return -EINVAL;
++	if (limit) {
++		if (cnt > limit)
++			return -ENOMEM;
++		if (from > limit - cnt)
++			return -EINVAL;
++		end = min_t(unsigned int, limit, IRQ_BITMAP_BITS);
++	} else {
++		end = IRQ_BITMAP_BITS;
++	}
+ 
+ 	mutex_lock(&sparse_irq_lock);
+ 
+-	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
+-					   from, cnt, 0);
++	start = bitmap_find_next_zero_area(allocated_irqs, end, from, cnt, 0);
+ 	ret = -EEXIST;
+-	if (irq >=0 && start != irq)
++	if (start >= end)
+ 		goto err;
+ 
+ 	if (start + cnt > nr_irqs) {
+@@ -380,7 +390,7 @@ err:
+ 	mutex_unlock(&sparse_irq_lock);
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(irq_alloc_descs);
++EXPORT_SYMBOL_GPL(irq_alloc_descs_range);
+ 
+ /**
+  * irq_reserve_irqs - mark irqs allocated
