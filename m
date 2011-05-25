@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581Ab1EYXPU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 19:15:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49442 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754299Ab1EYXPR (ORCPT
+	id S1756834Ab1EYXe4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 19:34:56 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:5188 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756377Ab1EYXez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 19:15:17 -0400
+	Wed, 25 May 2011 19:34:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=ZMgdly1xI5YB8ReJ/y4LC425skDWyJ0LIrsPRKdo/SzGBvkZDeF0IqQ2/sTs9iKNcl
+         uhLuAPiyw8wgJvkcnuQQ==
+Date: Wed, 25 May 2011 16:34:48 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/6] slub: avoid compiling SLAB_CACHE_DMA without DMA
+ support
+In-Reply-To: <alpine.DEB.2.00.1105250957180.23309@router.home>
+Message-ID: <alpine.DEB.2.00.1105251629020.29729@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1105241650230.29780@chino.kir.corp.google.com> <alpine.DEB.2.00.1105241652110.29780@chino.kir.corp.google.com> <alpine.DEB.2.00.1105250957180.23309@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimuomu=_JuMr7SWrMVvboMX4BX0fA@mail.gmail.com>
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar> <4DDB8BF6.2000304@fusionio.com>
- <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty> <4DDCB1C8.7040708@fusionio.com>
- <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty> <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
- <4DDD5240.2060308@fusionio.com> <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>
- <4DDD55D6.1080909@fusionio.com> <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty>
- <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com> <alpine.DEB.2.02.1105251613500.8972@ubuntu-natty>
- <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com> <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>
- <1306356735.1641.61.camel@mulgrave.site> <BANLkTimuomu=_JuMr7SWrMVvboMX4BX0fA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 25 May 2011 16:14:52 -0700
-Message-ID: <BANLkTik+BDbex5-LTjBzhUXf34WuyM0Jmw@mail.gmail.com>
-Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
- __elv_add_request OOPS]
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 4:00 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
->
-> It doesn't seem to help. Machine locked up and I was dropped to text
-> console. I could only capture the oops by a camera.
+On Wed, 25 May 2011, Christoph Lameter wrote:
 
-Hmm. That's a different oops. It is now in scsi_prep_state_check().
+> > If CONFIG_ZONE_DMA is disabled, SLAB_CACHE_DMA is a no-op.  Avoid
+> > compiling support for it on such a configuration.
+> 
+> Setting SLAB_CACHE_DMA to zero in the !ZONE_DMA case could avoid some of
+> the ifdeffery.
+> 
 
-At the beginning of it too. You can't see the "Code: " line in the
-pictures, but the only dereference I see there is "sdev" itself being
-NULL. And %cr2 is 0x640, which would seem to agree (the 'sdev'
-structure is absolutely disgustingly big, and sdev->sdev_state is
-indeed at an offset in that region.
+That doesn't actually accomplish anything since all SLAB_CACHE_DMA does is 
+set SLUB_DMA, which is already 0 in slub_def.h without CONFIG_ZONE_DMA:
 
-That 'sdev' comes from scsi_prep_fn() doing
+	#ifdef CONFIG_ZONE_DMA
+	#define SLUB_DMA __GFP_DMA  
+	#else
+	/* Disable DMA functionality */
+	#define SLUB_DMA (__force gfp_t)0
+	#endif
 
-    struct scsi_device *sdev = q->queuedata;
-
-is that queuedata perhaps cleared even if the queue itself stays
-around due to refcounts?
-
-                       Linus
+So doing the same for SLAB_CACHE_DMA wouldn't do anything.  The point of 
+the patchset is to break the build if SLAB_CACHE_DMA is passed to 
+kmem_cache_create() and the kernel is not compiled for DMA support.  That 
+should result in a build breakage rather than silently not supporting DMA 
+slab caches since it needs to be corrected at build.
