@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109Ab1EYPg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 11:36:57 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:53929 "EHLO smtp2.it.da.ut.ee"
+	id S1758125Ab1EYPhp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 11:37:45 -0400
+Received: from linux-sh.org ([111.68.239.195]:48797 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755054Ab1EYPgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 11:36:55 -0400
-Date: Wed, 25 May 2011 18:36:53 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
-cc: linux-scsi@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: BUG on dpt_i2o module removal
-Message-ID: <alpine.SOC.1.00.1105251206580.19636@math.ut.ee>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758111Ab1EYPho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 11:37:44 -0400
+Date: Thu, 26 May 2011 00:37:09 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] rmobile updates for 2.6.40-rc1
+Message-ID: <20110525153708.GA20089@linux-sh.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While trying to "rmmod dpt_i2o" in 1.6.39 with one unused DPT SmartRAID 
-V card in the system, I got the following BUG:
+Please pull from:
 
-[  776.979914] BUG: unable to handle kernel NULL pointer dereference at 00000004
-[  776.980018] IP: [<c11845ea>] scsi_unregister+0xf/0x34
-[  776.980018] *pde = 00000000 
-[  776.980018] Oops: 0002 [#1] PREEMPT 
-[  776.980018] last sysfs file: /sys/devices/pci0000:00/0000:00:1e.0/class
-[  776.980018] Modules linked in: snd_hrtimer ppdev lp uinput fuse nfsd nfs lockd auth_rpcgss nfs_acl sunrpc ipv6 adm1025 hwmon_vid smsc47m1 usb_storage usb_libusual udf crc_itu_t isofs zlib_inflate vfat fat eeprom ntfs i2o_core snd_intel8x0 snd_ac97_codec ac97_bus snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq sg snd_timer sr_mod snd_seq_device radeon cdrom snd ttm evdev uhci_hcd soundcore drm_kms_helper hwmon cfbcopyarea ehci_hcd snd_page_alloc dpt_i2o(-) cfbimgblt usbcore cfbfillrect parport_pc i2c_i801 parport processor button
-[  776.980018] 
-[  776.980018] Pid: 2051, comm: rmmod Not tainted 2.6.39 #373                  /D815EEA2                       
-[  776.980018] EIP: 0060:[<c11845ea>] EFLAGS: 00210292 CPU: 0
-[  776.980018] EIP is at scsi_unregister+0xf/0x34
-[  776.980018] EAX: dea27000 EBX: dea27000 ECX: 00000000 EDX: 00000000
-[  776.980018] ESI: 00000000 EDI: 00000880 EBP: d8ca9f4c ESP: d8ca9f4c
-[  776.980018]  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
-[  776.980018] Process rmmod (pid: 2051, ti=d8ca8000 task=df791b40 task.ti=d8ca8000)
-[  776.980018] Stack:
-[  776.980018]  d8ca9f5c e083bc42 e083e164 00000000 d8ca9fac c1042d18 5f747064 006f3269
-[  776.980018]  df70aa60 df79822c d8ca9f9c c106a12e ffffffff b785e000 b785d000 b785e000
-[  776.980018]  df798e34 df70aa60 df70aa94 00000000 00ca9fac cff7145c bff033a0 bff033a0
-[  776.980018] Call Trace:
-[  776.980018]  [<e083bc42>] adpt_exit+0x39/0x3f7 [dpt_i2o]
-[  776.980018]  [<c1042d18>] sys_delete_module+0x151/0x1ad
-[  776.980018]  [<c106a12e>] ? do_munmap+0x183/0x19a
-[  776.980018]  [<c1249777>] sysenter_do_call+0x12/0x26
-[  776.980018] Code: a4 00 00 00 89 e5 e8 25 3b ff ff 5d c3 55 05 e0 00 00 00 89 e5 e8 16 3b ff ff 5d c3 55 8b 88 28 02 00 00 89 e5 8b 90 2c 02 00 00 
-[  776.980018]  51 04 89 0a c7 80 28 02 00 00 00 01 10 00 c7 80 2c 02 00 00 
-[  776.980018] EIP: [<c11845ea>] scsi_unregister+0xf/0x34 SS:ESP 0068:d8ca9f4c
-[  776.980018] CR2: 0000000000000004
-[  777.209807] ---[ end trace 3feb5860cd6a778d ]---
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git rmobile-latest
 
-It seems list_del gets NULL shost->sht_legacy_list.
+Which contains:
 
-scsi_register is never called, this seems to be the reason why 
-sht_legacy_list is not filled?
+Damian Hobson-Garcia (1):
+      sh_mobile: Add MSTP clock for MERAM
 
--- 
-Meelis Roos (mroos@linux.ee)
+Guennadi Liakhovetski (5):
+      ARM: mach-shmobile: MMCIF on mackerel can also be a module
+      ARM: mach-shmobile: add DMA for MMCIF on mackerel
+      ARM: mach-shmobile: PLL does not have to run constantly for HDMI
+      ARM: switch mackerel to dynamically manage the platform camera
+      ARM: mach-shmobile: mark DMA slave ID 0 as invalid
+
+Kuninori Morimoto (3):
+      ARM: mach-shmobile: clock-sh7372: remove status check from fsidiv_recalc
+      ARM: arch-shmobile: sh7372: add renesas_usbhs irq support
+      ARM: mach-shmobile: mackerel: add renesas_usbhs support for USB1
+
+Magnus Damm (20):
+      ARM: mach-shmobile: Use SCIFA and SCIFB port types on sh7377
+      ARM: mach-shmobile: sh7367 UIO platform data V3
+      ARM: mach-shmobile: sh7372 UIO platform data V3
+      ARM: mach-shmobile: sh7377 UIO platform data V3
+      ARM: mach-shmobile: Disable sh7372 RT side MSTP bits
+      ARM: mach-shmobile: headsmp.S build fix
+      ARM: mach-shmobile: sh73a0 twd_base fix
+      ARM: mach-shmobile: AG5EVM DSI resource string update
+      ARM: mach-shmobile: Add SDHI support for AG5EVM and sh73a0
+      ARM: mach-shmobile: Suspend-to-RAM support
+      ARM: mach-shmobile: sh7372 Core Standby Suspend-to-RAM
+      ARM: mach-shmobile: CPUIdle support
+      ARM: mach-shmobile: sh7372 Core Standby CPUIdle
+      dmaengine: shdma: Make second memory window optional
+      dmaengine: shdma: Fix SH_DMAC_MAX_CHANNELS handling
+      dmaengine: shdma: Update SH_DMAC_MAX_CHANNELS to 20
+      ARM: mach-shmobile: sh73a0 DMA Engine support for SY-DMAC
+      ARM: mach-shmobile: Enable DMAEngine for MMCIF on AG5EVM
+      ARM: mach-shmobile: Enable DMAEngine for SDHI on AG5EVM
+      ARM: mach-shmobile: sh73a0: mark DMA slave ID 0 as invalid
+
+Paul Mundt (3):
+      mailmap: Add entry for Damian Hobson-Garcia.
+      ARM: mach-shmobile: Tidy up after SH7372 pm changes.
+      ARM: mach-shmobile: Correct the G4EVM SDHI0 I/O range.
+
+Simon Horman (2):
+      ARM: mach-shmobile: ap4evb, mackerel: fixup scif initialisation for zboot
+      ARM: arch-shmobile: Use multiple irq vectors for SDHI
+
+ .mailmap                                           |    1 +
+ arch/arm/mach-shmobile/Makefile                    |    5 +
+ arch/arm/mach-shmobile/board-ag5evm.c              |  118 +++++++++
+ arch/arm/mach-shmobile/board-ap4evb.c              |   30 ++-
+ arch/arm/mach-shmobile/board-g4evm.c               |    2 +-
+ arch/arm/mach-shmobile/board-mackerel.c            |  272 +++++++++++++++++---
+ arch/arm/mach-shmobile/clock-sh7372.c              |   21 ++-
+ arch/arm/mach-shmobile/clock-sh73a0.c              |   19 ++-
+ arch/arm/mach-shmobile/cpuidle.c                   |   92 +++++++
+ arch/arm/mach-shmobile/headsmp.S                   |    2 +-
+ arch/arm/mach-shmobile/include/mach/common.h       |    7 +
+ .../arm/mach-shmobile/include/mach/head-ap4evb.txt |    3 +-
+ .../mach-shmobile/include/mach/head-mackerel.txt   |    3 +-
+ arch/arm/mach-shmobile/include/mach/sh7372.h       |    1 +
+ arch/arm/mach-shmobile/include/mach/sh73a0.h       |   30 +++
+ arch/arm/mach-shmobile/intc-sh7372.c               |   46 ++--
+ arch/arm/mach-shmobile/pm-sh7372.c                 |  108 ++++++++
+ arch/arm/mach-shmobile/setup-sh7367.c              |  223 ++++++++++++++++
+ arch/arm/mach-shmobile/setup-sh7372.c              |  217 ++++++++++++++++
+ arch/arm/mach-shmobile/setup-sh7377.c              |  239 +++++++++++++++++-
+ arch/arm/mach-shmobile/setup-sh73a0.c              |  244 ++++++++++++++++++
+ arch/arm/mach-shmobile/sleep-sh7372.S              |  260 +++++++++++++++++++
+ arch/arm/mach-shmobile/smp-sh73a0.c                |    9 +-
+ arch/arm/mach-shmobile/suspend.c                   |   47 ++++
+ drivers/dma/shdma.c                                |   42 +++-
+ drivers/dma/shdma.h                                |    2 +-
+ 26 files changed, 1942 insertions(+), 101 deletions(-)
+ create mode 100644 arch/arm/mach-shmobile/cpuidle.c
+ create mode 100644 arch/arm/mach-shmobile/pm-sh7372.c
+ create mode 100644 arch/arm/mach-shmobile/sleep-sh7372.S
+ create mode 100644 arch/arm/mach-shmobile/suspend.c
