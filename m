@@ -1,128 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab1EYMoP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 08:44:15 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40733 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757758Ab1EYMoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 08:44:13 -0400
-Date: Wed, 25 May 2011 14:44:01 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        acme@ghostprotocols.net
-Subject: Re: [PATCH 2/2] dont commify big numbers by default, let -B do it
-Message-ID: <20110525124401.GB29300@elte.hu>
-References: <1305968203-14240-1-git-send-email-jim.cromie@gmail.com>
- <1305968203-14240-3-git-send-email-jim.cromie@gmail.com>
- <20110521103315.GA23651@elte.hu>
- <BANLkTikSMR7AyJi-LEr8iA2x9TxobJr9gA@mail.gmail.com>
+	id S1756817Ab1EYM4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 08:56:35 -0400
+Received: from relay02.telecomputing.no ([217.173.253.102]:16447 "EHLO
+	relay02.telecomputing.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab1EYM4e convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 08:56:34 -0400
+X-Greylist: delayed 593 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 08:56:33 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAOj53E3ZrfjH/2dsb2JhbACmKniIcLx0hhwElQKKNQ
+X-IronPort-AV: E=Sophos;i="4.65,266,1304287200"; 
+   d="scan'208";a="135107550"
+From: "Cufi, Carles" <carles.cufi@nordicsemi.no>
+To: Ed Tomlinson <edt@aei.ca>, Ville Tervo <ville.tervo@nokia.com>
+CC: Corey Boyle <corey.j.boyle@gmail.com>,
+        Bluettooth Linux <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 25 May 2011 14:46:36 +0200
+Subject: RE: Linux 2.6.39
+Thread-Topic: Linux 2.6.39
+Thread-Index: Acwa1RkimGXERG5TRNK3ATr+J5Q+SgABC7LQ
+Message-ID: <5B4B9A479BF6994B88EA975675EC5B79057A399D82@MES1OS2SXC003.mes1.tconet.net>
+References: <BANLkTinG_qCtHQYRYFQUJ9oGv4H1cuznWg@mail.gmail.com>
+ <201105250711.17971.edt@aei.ca> <20110525113614.GQ2480@null>
+ <201105250812.43246.edt@aei.ca>
+In-Reply-To: <201105250812.43246.edt@aei.ca>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikSMR7AyJi-LEr8iA2x9TxobJr9gA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Jim Cromie <jim.cromie@gmail.com> wrote:
 
-> > Also, i think for automation we'd also like to have a 'simple 
-> > output' mode, would you like to add that?
+On Wednesday 25 May 2011 07:36:14 Ville Tervo wrote:
+> On Wed, May 25, 2011 at 07:11:17AM -0400, ext Ed Tomlinson wrote:
+> > On Wednesday 25 May 2011 06:54:54 Corey Boyle wrote:
+> > > > On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
+> > > > > On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
+> > > > > > On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
+> > > > > > > Hi Linus, I'm sorry bothering you, but my usb-bluetooth 
+> > > > > > > dongle stop working in
+> > > > > > > 2.6.39 kernel series.
+> > > > > > > I know it is nothing ground breaking but it is bug.
+> > > > > > > I'm using this hardware from 2.6.11 kernel series.
+> > > > > > > Details are included in this thread:
+> > > > > > >
+> > > > > > > https://lkml.org/lkml/2011/4/18/481
+> > > > > > >
+> > > > > > > I hope I'm doing nothing false writing this email.
+> > > > > >
+> > > > > > Same device, same problem here.
+> > > > > >
+> > > > > > You are not alone
+> > > > >
+> > > > > I had some time this afternood so I tried bisecting without 
+> > > > > much luck.  I ended up \ somewhere rc1 ish with a system that 
+> > > > > would paniced during boot.  Here is the bisect \ log incase it helps:
+> > > > > # bad: [61c4f2c81c61f73549928dfd9f3e8f26aa36a8cf] Linux 2.6.39 
+> > > > > # good: [521cb40b0c44418a4fd36dc633f575813d59a43d] Linux 
+> > > > > 2.6.38 git bisect start 'v2.6.39' 'v2.6.38' '--' 'drivers/bluetooth'
+> > > > > # bad: [7a6362800cb7d1d618a697a650c7aaed3eb39320] Merge \
+> > > > > git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2
+> > > > > .6 git bisect bad \
+> > > > > 7a6362800cb7d1d618a697a650c7aaed3eb39320 # bad: \ 
+> > > > > [0a0e9ae1bd788bc19adc4d4ae08c98b233697402] Merge branch 
+> > > > > 'master' of \
+> > > > > master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6 git 
+> > > > > bisect bad \
+> > > > > 0a0e9ae1bd788bc19adc4d4ae08c98b233697402 # skip: \ 
+> > > > > [03c2d0e89409b59c1ec9d9511533cedc0b7aaa69] Bluetooth: Use 
+> > > > > usb_fill_int_urb() git \ bisect skip 
+> > > > > 03c2d0e89409b59c1ec9d9511533cedc0b7aaa69 # skip: \ 
+> > > > > [7f4b2b04c88377af30c022f36c060190182850fb] Bluetooth: Make hci 
+> > > > > a child of the \ corresponding tty device. git bisect skip 
+> > > > > 7f4b2b04c88377af30c022f36c060190182850fb
+> > > > > # skip: [84f0e17f78471857104a20dfc57711409f68d7bf] Bluetooth: 
+> > > > > ath3k: Avoid \ duplication of code git bisect skip 
+> > > > > 84f0e17f78471857104a20dfc57711409f68d7bf
+> > > > >
+> > > > > Ring any bells for anyone?
+> > > > >
+> > > > > Probably should open a regression bug for this too....
+> > > >
+> > > > I think this is regression with 
+> > > > d5859e22cd40b73164b3e5d8d5d796f96edcc6af
+> > > > commit. Probably the code tries to enable something that is not supported.
+> > > >
+> > > > Could you pastebin hcidump while doing hciconfig hci0 up?
 > 
-> OK, heres 1st cut at it, adding option --simple, for review / 
-> feedback
+> Some cutting done
 > 
-> Its based upon the csv-output code mostly, with some vestiges of 
-> verbose..
-
-Ok, we can do something like this - but please see the comments on 
-the patch further below:
-
-> > Something a bit like what you can see in 'perf stat -v true': 
-> > Without the human output later on, and with elapsed time added as 
-> > well.
+> > 
+> > hcidump
+> > HCI sniffer - Bluetooth packet analyzer ver 2.0 < HCI Command: Read 
+> > Local Supported Features (0x04|0x0003) plen 0
+> > > HCI Event: Command Complete (0x0e) plen 12
+> >     Read Local Supported Features (0x04|0x0003) ncmd 1
+> >     status 0x00
+> >     Features: 0xff 0xff 0x0f 0x00 0x00 0x00 0x00 0x00 < HCI Command: 
+> > Read Local Version Information (0x04|0x0001) plen 0
+> > > HCI Event: Command Complete (0x0e) plen 12
+> >     Read Local Version Information (0x04|0x0001) ncmd 1
+> >     status 0x00
+> >     HCI Version: 1.1 (0x1) HCI Revision: 0x20d
+> >     LMP Version: 1.1 (0x1) LMP Subversion: 0x20d
+> >     Manufacturer: Cambridge Silicon Radio (10) < HCI Command: Set 
+> > Event Mask (0x03|0x0001) plen 8
+> >     Mask: 0xfffffbff00000000
+> > > HCI Event: Command Complete (0x0e) plen 4
+> >     Set Event Mask (0x03|0x0001) ncmd 1
+> >     status 0x12
+> >     Error: Invalid HCI Command Parameters
+> > 
 > 
-> for my part, Id like the moral equivalent of time(s)? output too, 
-> though I suspect thats a separate patch..
-
-yeah. No objection to that either: time is well known and the stddev 
-output by perf stat --repeat is well liked. Wanna combine the two?
-
-> [jimc@groucho perf]$ time ./perf stat -x'  ' -- sh -c 'sleep 3'
-> task-clock-msecs6.830999
-> context-switches  2
-> CPU-migrations  1
-> page-faults  477
-> cycles  5404163  (scaled from 72.07%)
-> instructions  3302699
-> branches  804750
-> branch-misses  51870
-> cache-references  1584532  (scaled from 45.93%)
-> cache-misses  36616  (scaled from 31.36%)
+> Yes the HCI_OP_SET_EVENT_MASK cmd seems to be the source of problems. 
 > 
-> real	0m3.019s
-> user	0m0.005s
-> sys	0m0.012s
+> Maybe is rejects it because two reserved bits are being enabled. Could 
+> you try this patch?
 > 
-> are these timings already taken by perf-stat ?
-> is it a simple matter of addition and printing ?
-> If not, whats involved ?
+> diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c 
+> index 19cd4af..e483e30 100644
+> --- a/net/bluetooth/hci_event.c
+> +++ b/net/bluetooth/hci_event.c
+> @@ -475,7 +475,7 @@ static void hci_setup_event_mask(struct hci_dev *hdev)
+>         /* The second byte is 0xff instead of 0x9f (two reserved bits
+>          * disabled) since a Broadcom 1.2 dongle doesn't respond to the
+>          * command otherwise */
+> -       u8 events[8] = { 0xff, 0xff, 0xfb, 0xff, 0x00, 0x00, 0x00, 0x00 };
+> +       u8 events[8] = { 0xff, 0x9f, 0xfb, 0xff, 0x00, 0x00, 0x00, 
+> + 0x00 };
+>  
+>         /* Events for 1.2 and newer controllers */
+>         if (hdev->lmp_ver > 1) {
 
-Do you mean the real/user/sys bits? Elapsed time is already measured, 
-but you'd have to extract the rusage bits to get to the stime/utime 
-values.
+> No luck here - same results.
 
-We could also add those as explicit events.
+For what it's worth:
 
-> Also, task-clock-msec doesnt quite match up with times' user number 
-> Whats going on here ?
+With a (recent)CSR chipset, with 2.6.38 only Set Event Filter is used (with a 0 filter) and no Set Event Mask is sent at all. With Bluetooth-next, I get the following:
 
-task-clock-msec is generally much more accurate than the 0.005 
-printed by 'time'.
+< HCI Command: Set Event Mask (0x03|0x0001) plen 8
+    Mask: 0xfffffbff07f8bf3d
+> HCI Event: Command Complete (0x0e) plen 4
+    Set Event Mask (0x03|0x0001) ncmd 1
+    status 0x00
 
-About the patch:
+So Set Event Mask actually seems to go through without any problems.
 
-> -	fprintf(logfp, "   ( +- %7.3f%% )",
-> -			100 * stddev_stats(&ps->res_stats[0]) / avg);
-> +	if (!csv_output)
-> +		fprintf(logfp, "   ( +- %7.3f%% )",
-> +				100 * stddev_stats(&ps->res_stats[0]) / avg);
-> +	else
-> +	  fprintf(logfp, "%s%.3f%%",
-> +		  csv_sep, 100 * stddev_stats(&ps->res_stats[0]) / avg);
+Carles
 
-We *really* want something cleaner here: a print_ops vector of 
-function pointers which would contain a handful of helper functions 
-called by the higher level code?
 
-That way adding a new format method would not uglify the highlevel 
-code but could be done by adding a new print_ops 'driver' which would 
-be selected if the right option is provided.
-
-Also, instead of adding -s/--simple we really want a single 
-print-format option that knows about all the format 'drivers':
-
-  --print simple
-  --print csv
-  --print default
-  --print verbose
-
-or so.
-
-Also, please run scripts/checkpatch.pl over your patches, the above 
-is i think not matching the coding style we use in the kernel (unless 
-webmail mangled your patch).
-
-Thanks,
-
-	Ingo
