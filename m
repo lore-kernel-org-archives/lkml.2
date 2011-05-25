@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192Ab1EYIjz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 04:39:55 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36740 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932782Ab1EYIjx (ORCPT
+	id S1751752Ab1EYIvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 04:51:46 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12451 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab1EYIvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 04:39:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=VKlyLhU4NgsFMB7AOLxgk9LlFUlS/Shvq/wifDk4ghrkNOjLOvUiOL0ODAzNLZP5XP
-         FiCpRYzsfTVDK642EHdQkfupAXWK+RtPp93X3omhKiNQ0o3tDMNMdV+DIfswdGHrBqKj
-         5DiKl/Ax/HFq2IjPZ4BA7y2CUH90nBqqMF8aA=
+	Wed, 25 May 2011 04:51:45 -0400
+Date: Wed, 25 May 2011 10:44:08 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Bob Liu <lliubbo@gmail.com>
+cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: vfs: where is get_sb_single()?
+In-Reply-To: <BANLkTin0GwQYc+fAgSSFcsVysOPfxrin0A@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1105251043220.12052@swampdragon.chaosbits.net>
+References: <BANLkTin0GwQYc+fAgSSFcsVysOPfxrin0A@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
-References: <cover.1306082097.git.mika.westerberg@iki.fi>
-	<e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
-Date: Wed, 25 May 2011 10:39:52 +0200
-X-Google-Sender-Auth: rvPZQt6VKK6IjSbcDGuMsiPC5iw
-Message-ID: <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
-Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@iki.fi>
-Cc: linux-arm-kernel@lists.infradead.org, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, hsweeten@visionengravers.com,
-        ryan@bluewatersys.com, Dan Williams <dan.j.williams@intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/22 Mika Westerberg <mika.westerberg@iki.fi>:
+On Wed, 25 May 2011, Bob Liu wrote:
 
-> The ep93xx DMA controller has 10 independent memory to peripheral (M2P)
-> channels, and 2 dedicated memory to memory (M2M) channels. M2M channels can
-> also be used by SPI and IDE to perform DMA transfers to/from their memory
-> mapped FIFOs.
+> Hi, folks
+> 
+> I found that fs/super.c doesn't have get_sb_single() anymore.
+> 
+> But I can't find the git log which delete that function.
+> Some out of tree file systems depends on that function.
+> 
 
-No so much a review comment as an observation: I opposed the merge of the
-EP93xx SPI driver in drivers/spi/ep93xx_spi.c on the grounds that it was close
-enough to amba-pl022.c that it could use that driver instead.
+commit 1a102ff92579edeff5e3d5d3c76ca49977898f00 by Al Viro removed that.
 
-One of the arguments against was that you were going to do custom DMA
-and stuff. Now you're using the DMAengine, so can you please reconsider
-refactoring amba-pl022.c to suit your needs and you'll get DMA support for
-free mor or less.
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Yours,
-Linus Walleij
