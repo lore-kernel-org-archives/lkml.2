@@ -1,81 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab1EYLbC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 07:31:02 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:8001 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab1EYLa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 07:30:59 -0400
-X-IronPort-AV: E=Sophos;i="4.65,266,1304294400"; 
-   d="scan'208";a="5938711"
-Date: Wed, 25 May 2011 12:33:23 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: <linux-kernel@vger.kernel.org>
-CC: <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Goetz <tcgoetz@gmail.com>
-Subject: [PATCH] xen: use the trigger info we already have to choose the irq
- handler
-Message-ID: <alpine.DEB.2.00.1105251232020.12963@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755654Ab1EYLgk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 07:36:40 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:62961 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752048Ab1EYLgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 07:36:38 -0400
+Date: Wed, 25 May 2011 14:36:14 +0300
+From: Ville Tervo <ville.tervo@nokia.com>
+To: ext Ed Tomlinson <edt@aei.ca>
+Cc: Corey Boyle <corey.j.boyle@gmail.com>,
+        Bluettooth Linux <linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.39
+Message-ID: <20110525113614.GQ2480@null>
+References: <BANLkTinG_qCtHQYRYFQUJ9oGv4H1cuznWg@mail.gmail.com>
+ <201105250711.17971.edt@aei.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105250711.17971.edt@aei.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not use pirq_needs_eoi to decide which irq handler to use because Xen
-always returns true if the guest does not support pirq_eoi_map.
-Use the trigger information we already have from MP-tables and ACPI.
+On Wed, May 25, 2011 at 07:11:17AM -0400, ext Ed Tomlinson wrote:
+> On Wednesday 25 May 2011 06:54:54 Corey Boyle wrote:
+> > > On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
+> > > > On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
+> > > > > On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
+> > > > > > Hi Linus, I'm sorry bothering you, but my usb-bluetooth dongle stop working in
+> > > > > > 2.6.39 kernel series.
+> > > > > > I know it is nothing ground breaking but it is bug.
+> > > > > > I'm using this hardware from 2.6.11 kernel series.
+> > > > > > Details are included in this thread:
+> > > > > >
+> > > > > > https://lkml.org/lkml/2011/4/18/481
+> > > > > >
+> > > > > > I hope I'm doing nothing false writing this email.
+> > > > >
+> > > > > Same device, same problem here.
+> > > > >
+> > > > > You are not alone
+> > > >
+> > > > I had some time this afternood so I tried bisecting without much luck.  I ended up \
+> > > > somewhere rc1 ish with a system that would paniced during boot.  Here is the bisect \
+> > > > log incase it helps:
+> > > > # bad: [61c4f2c81c61f73549928dfd9f3e8f26aa36a8cf] Linux 2.6.39
+> > > > # good: [521cb40b0c44418a4fd36dc633f575813d59a43d] Linux 2.6.38
+> > > > git bisect start 'v2.6.39' 'v2.6.38' '--' 'drivers/bluetooth'
+> > > > # bad: [7a6362800cb7d1d618a697a650c7aaed3eb39320] Merge \
+> > > > git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6 git bisect bad \
+> > > > 7a6362800cb7d1d618a697a650c7aaed3eb39320 # bad: \
+> > > > [0a0e9ae1bd788bc19adc4d4ae08c98b233697402] Merge branch 'master' of \
+> > > > master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6 git bisect bad \
+> > > > 0a0e9ae1bd788bc19adc4d4ae08c98b233697402 # skip: \
+> > > > [03c2d0e89409b59c1ec9d9511533cedc0b7aaa69] Bluetooth: Use usb_fill_int_urb() git \
+> > > > bisect skip 03c2d0e89409b59c1ec9d9511533cedc0b7aaa69 # skip: \
+> > > > [7f4b2b04c88377af30c022f36c060190182850fb] Bluetooth: Make hci a child of the \
+> > > > corresponding tty device. git bisect skip 7f4b2b04c88377af30c022f36c060190182850fb
+> > > > # skip: [84f0e17f78471857104a20dfc57711409f68d7bf] Bluetooth: ath3k: Avoid \
+> > > > duplication of code git bisect skip 84f0e17f78471857104a20dfc57711409f68d7bf
+> > > >
+> > > > Ring any bells for anyone?
+> > > >
+> > > > Probably should open a regression bug for this too....
+> > >
+> > > I think this is regression with d5859e22cd40b73164b3e5d8d5d796f96edcc6af
+> > > commit. Probably the code tries to enable something that is not supported.
+> > >
+> > > Could you pastebin hcidump while doing hciconfig hci0 up?
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reported-by: Thomas Goetz <tcgoetz@gmail.com>
-Tested-by: Thomas Goetz <tcgoetz@gmail.com>
+Some cutting done
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 7f676f8..8418398 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -627,6 +627,9 @@ int xen_allocate_pirq_gsi(unsigned gsi)
-  *
-  * Note: We don't assign an event channel until the irq actually started
-  * up.  Return an existing irq if we've already got one for the gsi.
-+ *
-+ * Shareable implies level triggered, not shareable implies edge
-+ * triggered here.
-  */
- int xen_bind_pirq_gsi_to_irq(unsigned gsi,
- 			     unsigned pirq, int shareable, char *name)
-@@ -665,16 +668,13 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
+> 
+> hcidump
+> HCI sniffer - Bluetooth packet analyzer ver 2.0
+> < HCI Command: Read Local Supported Features (0x04|0x0003) plen 0
+> > HCI Event: Command Complete (0x0e) plen 12
+>     Read Local Supported Features (0x04|0x0003) ncmd 1
+>     status 0x00
+>     Features: 0xff 0xff 0x0f 0x00 0x00 0x00 0x00 0x00
+> < HCI Command: Read Local Version Information (0x04|0x0001) plen 0
+> > HCI Event: Command Complete (0x0e) plen 12
+>     Read Local Version Information (0x04|0x0001) ncmd 1
+>     status 0x00
+>     HCI Version: 1.1 (0x1) HCI Revision: 0x20d
+>     LMP Version: 1.1 (0x1) LMP Subversion: 0x20d
+>     Manufacturer: Cambridge Silicon Radio (10)
+> < HCI Command: Set Event Mask (0x03|0x0001) plen 8
+>     Mask: 0xfffffbff00000000
+> > HCI Event: Command Complete (0x0e) plen 4
+>     Set Event Mask (0x03|0x0001) ncmd 1
+>     status 0x12
+>     Error: Invalid HCI Command Parameters
+> 
+
+Yes the HCI_OP_SET_EVENT_MASK cmd seems to be the source of problems. 
+
+Maybe is rejects it because two reserved bits are being enabled. Could you try
+this patch?
+
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 19cd4af..e483e30 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -475,7 +475,7 @@ static void hci_setup_event_mask(struct hci_dev *hdev)
+        /* The second byte is 0xff instead of 0x9f (two reserved bits
+         * disabled) since a Broadcom 1.2 dongle doesn't respond to the
+         * command otherwise */
+-       u8 events[8] = { 0xff, 0xff, 0xfb, 0xff, 0x00, 0x00, 0x00, 0x00 };
++       u8 events[8] = { 0xff, 0x9f, 0xfb, 0xff, 0x00, 0x00, 0x00, 0x00 };
  
- 	pirq_query_unmask(irq);
- 	/* We try to use the handler with the appropriate semantic for the
--	 * type of interrupt: if the interrupt doesn't need an eoi
--	 * (pirq_needs_eoi returns false), we treat it like an edge
--	 * triggered interrupt so we use handle_edge_irq.
--	 * As a matter of fact this only happens when the corresponding
--	 * physical interrupt is edge triggered or an msi.
-+	 * type of interrupt: if the interrupt is an edge triggered
-+	 * interrupt we use handle_edge_irq.
- 	 *
--	 * On the other hand if the interrupt needs an eoi (pirq_needs_eoi
--	 * returns true) we treat it like a level triggered interrupt so we
--	 * use handle_fasteoi_irq like the native code does for this kind of
-+	 * On the other hand if the interrupt is level triggered we use
-+	 * handle_fasteoi_irq like the native code does for this kind of
- 	 * interrupts.
-+	 *
- 	 * Depending on the Xen version, pirq_needs_eoi might return true
- 	 * not only for level triggered interrupts but for edge triggered
- 	 * interrupts too. In any case Xen always honors the eoi mechanism,
-@@ -682,7 +682,7 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
- 	 * hasn't received an eoi yet. Therefore using the fasteoi handler
- 	 * is the right choice either way.
- 	 */
--	if (pirq_needs_eoi(irq))
-+	if (shareable)
- 		irq_set_chip_and_handler_name(irq, &xen_pirq_chip,
- 				handle_fasteoi_irq, name);
- 	else
+        /* Events for 1.2 and newer controllers */
+        if (hdev->lmp_ver > 1) {
+
+
+-- 
+Ville
