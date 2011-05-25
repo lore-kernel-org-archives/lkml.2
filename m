@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab1EYLbk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 07:31:40 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:31658 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab1EYLbi (ORCPT
+	id S1756053Ab1EYLbC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 07:31:02 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:8001 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892Ab1EYLa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 07:31:38 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6356"; a="93518955"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: <balbi@ti.com>
-Cc: "'Alan Stern'" <stern@rowland.harvard.edu>,
-        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, <greg@kroah.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1105241012080.1913-100000@iolanthe.rowland.org> <013201cc1a96$bdda7910$398f6b30$@org> <20110525092124.GI14556@legolas.emea.dhcp.ti.com> <015801cc1abd$ca534e20$5ef9ea60$@org> <20110525092743.GK14556@legolas.emea.dhcp.ti.com> <018e01cc1ac0$2b09b040$811d10c0$@org> <20110525094902.GM14556@legolas.emea.dhcp.ti.com> <01a601cc1ac2$f0041a00$d00c4e00$@org> <20110525102945.GN14556@legolas.emea.dhcp.ti.com> <01b401cc1ac9$d1c57870$75506950$@org> <20110525112350.GP14556@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110525112350.GP14556@legolas.emea.dhcp.ti.com>
-Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-Date: Wed, 25 May 2011 14:33:18 +0300
-Message-ID: <01c601cc1acf$8e28e920$aa7abb60$@org>
+	Wed, 25 May 2011 07:30:59 -0400
+X-IronPort-AV: E=Sophos;i="4.65,266,1304294400"; 
+   d="scan'208";a="5938711"
+Date: Wed, 25 May 2011 12:33:23 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: <linux-kernel@vger.kernel.org>
+CC: <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Goetz <tcgoetz@gmail.com>
+Subject: [PATCH] xen: use the trigger info we already have to choose the irq
+ handler
+Message-ID: <alpine.DEB.2.00.1105251232020.12963@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acwazj3XMalZc8oORm65sA2posm3IQAAIHeA
-Content-Language: en-us
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe
+Do not use pirq_needs_eoi to decide which irq handler to use because Xen
+always returns true if the guest does not support pirq_eoi_map.
+Use the trigger information we already have from MP-tables and ACPI.
 
-> > > ---
-> > > -*/
-> > >
-> > >  static struct usb_gadget_driver composite_driver = {
-> > > +#ifdef CONFIG_USB_GADGET_SUPERSPEED
-> > > +       .speed          = USB_SPEE_SUPER,
-> > > +#else
-> > >         .speed          = USB_SPEED_HIGH,
-> > > +#endif
-> > >
-> > >         .unbind         = composite_unbind,
-> > >
-> >
-> > I have no problem updating static struct usb_gadget_driver
-> > composite_driver as you suggested but it seems the same as updating
-> it
-> > @ usb_composite_probe()...
-> 
-> still, you will have two places poking at the same field. It's better
-> to keep it at once, update only that and we will take your approach.
-> 
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reported-by: Thomas Goetz <tcgoetz@gmail.com>
+Tested-by: Thomas Goetz <tcgoetz@gmail.com>
 
-Ok so just to make sure I understand you correctly:
-You want me to remove the modification made to usb_composite_probe() and
-instead add:
-static struct usb_gadget_driver composite_driver = {
-+#ifdef CONFIG_USB_GADGET_SUPERSPEED
-+       .speed          = USB_SPEE_SUPER,
-+#else
-	  .speed          = USB_SPEED_HIGH,
-+#endif
-	  .unbind         = composite_unbind,
-
-And then you'll be ok with change? Or is there anything else?
-
-If this is it then I'm relieved :) and of course will update the code.
-
-
-Best regards,
-Tanya Brokhman
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-
-
-
-
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 7f676f8..8418398 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -627,6 +627,9 @@ int xen_allocate_pirq_gsi(unsigned gsi)
+  *
+  * Note: We don't assign an event channel until the irq actually started
+  * up.  Return an existing irq if we've already got one for the gsi.
++ *
++ * Shareable implies level triggered, not shareable implies edge
++ * triggered here.
+  */
+ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
+ 			     unsigned pirq, int shareable, char *name)
+@@ -665,16 +668,13 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
+ 
+ 	pirq_query_unmask(irq);
+ 	/* We try to use the handler with the appropriate semantic for the
+-	 * type of interrupt: if the interrupt doesn't need an eoi
+-	 * (pirq_needs_eoi returns false), we treat it like an edge
+-	 * triggered interrupt so we use handle_edge_irq.
+-	 * As a matter of fact this only happens when the corresponding
+-	 * physical interrupt is edge triggered or an msi.
++	 * type of interrupt: if the interrupt is an edge triggered
++	 * interrupt we use handle_edge_irq.
+ 	 *
+-	 * On the other hand if the interrupt needs an eoi (pirq_needs_eoi
+-	 * returns true) we treat it like a level triggered interrupt so we
+-	 * use handle_fasteoi_irq like the native code does for this kind of
++	 * On the other hand if the interrupt is level triggered we use
++	 * handle_fasteoi_irq like the native code does for this kind of
+ 	 * interrupts.
++	 *
+ 	 * Depending on the Xen version, pirq_needs_eoi might return true
+ 	 * not only for level triggered interrupts but for edge triggered
+ 	 * interrupts too. In any case Xen always honors the eoi mechanism,
+@@ -682,7 +682,7 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
+ 	 * hasn't received an eoi yet. Therefore using the fasteoi handler
+ 	 * is the right choice either way.
+ 	 */
+-	if (pirq_needs_eoi(irq))
++	if (shareable)
+ 		irq_set_chip_and_handler_name(irq, &xen_pirq_chip,
+ 				handle_fasteoi_irq, name);
+ 	else
