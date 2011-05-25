@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab1EYUoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:44:54 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:33399 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754425Ab1EYUox (ORCPT
+	id S1756426Ab1EYUpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:45:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37880 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756372Ab1EYUpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:44:53 -0400
-Date: Wed, 25 May 2011 16:44:44 -0400 (EDT)
-Message-Id: <20110525.164444.2193508932003281317.davem@davemloft.net>
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 18/34] wan/pc300: Drop __TIME__ usage
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4DDD69DD.7030601@suse.cz>
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
-	<1302015561-21047-19-git-send-email-mmarek@suse.cz>
-	<4DDD69DD.7030601@suse.cz>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 25 May 2011 13:44:49 -0700 (PDT)
+	Wed, 25 May 2011 16:45:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=f1FC1s+f7EJPSFx94y5eM08zeNdSWo+KylRXsZsEMr/wEmhMYSyYTpLL2YyQAOwqt4
+         oCx4mhsh4YoZPA0ZHMvWLYv5pxmyPTnk4YYZQQ/jK6npU2U0ttxRdG8+LGHpRCGETC2B
+         NYK7Wi35HNrkKUrOhfIN7wA173BZbDbobZndk=
+Date: Wed, 25 May 2011 22:45:06 +0200
+From: Luca Tettamanti <kronos.it@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH] bio_attempt_front_merge: remove unused variable.
+Message-ID: <20110525204506.GA24207@nb-core2.darkstar.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Marek <mmarek@suse.cz>
-Date: Wed, 25 May 2011 22:43:09 +0200
+sector is never read inside the function.
 
-> Dne 5.4.2011 16:59, Michal Marek napsal(a):
->> The kernel already prints its build timestamp during boot, no need to
->> repeat it in random drivers and produce different object files each
->> time.
->> 
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: netdev@vger.kernel.org
->> Signed-off-by: Michal Marek <mmarek@suse.cz>
->> ---
->>  drivers/net/wan/pc300_drv.c |    3 +--
->>  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> I don't see the patch in today's linux-next. Does anyone object against
-> me applying it to kbuild-2.6.git?
+Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
+---
+ block/blk-core.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-Just do it :-)
-
-Acked-by: David S. Miller <davem@davemloft.net>
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 3fe00a1..1439bac 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1139,7 +1139,6 @@ static bool bio_attempt_front_merge(struct request_queue *q,
+ 				    struct request *req, struct bio *bio)
+ {
+ 	const int ff = bio->bi_rw & REQ_FAILFAST_MASK;
+-	sector_t sector;
+ 
+ 	/*
+ 	 * Debug stuff, kill later
+@@ -1157,8 +1156,6 @@ static bool bio_attempt_front_merge(struct request_queue *q,
+ 	if ((req->cmd_flags & REQ_FAILFAST_MASK) != ff)
+ 		blk_rq_set_mixed_merge(req);
+ 
+-	sector = bio->bi_sector;
+-
+ 	bio->bi_next = req->bio;
+ 	req->bio = bio;
+ 
+-- 
+1.7.5.1
