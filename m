@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab1EYTNL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 15:13:11 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:39423 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299Ab1EYTNK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 15:13:10 -0400
-Date: Wed, 25 May 2011 21:12:53 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Fabio Erculiani <lxnay@sabayon.org>
-Cc: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fbmem: fix race condition between
- register_framebuffer() and fb_open()
-Message-ID: <20110525211253.4985ee79@neptune.home>
-In-Reply-To: <BANLkTimtYvcN8kj+jnaKHNGmN36YvMt7Rg@mail.gmail.com>
-References: <1306266871-12464-1-git-send-email-lxnay@sabayon.org>
-	<20110524224545.08c53b1d@neptune.home>
-	<20110525181917.12cf97b8@neptune.home>
-	<BANLkTimxi-LZFzwv=z6RRBCX098hr-ViUg@mail.gmail.com>
-	<20110525204648.58983270@neptune.home>
-	<BANLkTi=207-bVi3pnOWk7zG61u4=YU4GFg@mail.gmail.com>
-	<20110525205707.12abc68c@neptune.home>
-	<BANLkTimtYvcN8kj+jnaKHNGmN36YvMt7Rg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932093Ab1EYTOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 15:14:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41275 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751605Ab1EYTOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 15:14:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,268,1304319600"; 
+   d="scan'208";a="8699583"
+Date: Wed, 25 May 2011 12:13:21 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
+Message-ID: <20110525191321.GB14151@tassilo.jf.intel.com>
+References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
+ <20110525065451.GC429@elte.hu>
+ <20110525165436.GA14958@tassilo.jf.intel.com>
+ <20110525185912.GB17864@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110525185912.GB17864@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
-> On Wed, May 25, 2011 at 8:57 PM, Bruno Prémont wrote:
-> > On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
-> >> On Wed, May 25, 2011 at 8:46 PM, Bruno Prémont wrote:
-> >> > On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
-> >> >> I'm not a fbdev expert. So I leave the real fix to real men ( ;-) ).
-> >> >> It is causing deadlock during boot, so I would consider it quite critical.
-> >> >> Users using any fb driver will get into troubles.
-> >> >> The workaround is to boot with vga=normal.
-> >> >
-> >> > What is your system doing during boot? I've never seen it here but maybe
-> >> > my boot sequence is too simple.
-> >>
-> >> I'm using vesafb and vga=791. It is quite simple to reproduce.
-> >> Also see: http://bugs.gentoo.org/show_bug.cgi?id=368109
-> >
-> > Looks like gentoo kernel, might be splash is related to the hang
+On Wed, May 25, 2011 at 08:59:12PM +0200, Ingo Molnar wrote:
+> Look at the context diff above, it has 'cpu_index', so no, there was no
+> consistent convention to follow.
+
+Well all the CPU specific fields. Anyways I renamed it now.
+
+> attention to that lack of means of testing? :-)
 > 
-> Then, if you say so, it must be the fbsplash patch for sure, I keep
-> forgetting of that :-/
+> > > > -	/* see notes above for revision 1.07.  Apparent chip bug */
+> > 
+> > This particular code pattern has no chip bug. The CPUID is required 
+> > by the documentation! So whoever wrote it didn't read the 
+> > documentation. So yes I dropped that obviously bogus comment.
+> 
+> And you thus 'obviously' forked away the reading of the microcode 
+> version into another file, with the same 'obviously wrong' comment 
+> left behind in another place?
 
-I've had a look at the bug report which points at fbcon_decore
-patch.
+I just wrote new code with correct comments.
 
-Looking into that patch confirms my impression:
-  fbcon_decor calls a userspace helper at the time fbcon takes over
-  console and that userspace helper then tries to open fb device
-  with the aim of calling some IOCTLs.
+> > It always was documented this way.
+> 
+> FYI, the x86 microcode driver actually predates official public 
 
-Probably changing fbcon_decor to just call the userspace helper in
-non-blocking mode (or having userspace helper "fork and detach") would
-avoid the deadlock as well.
-Though fbcon_decor seems to rely on helper's return code...
+Are you sure you're not confusing that with the AMD driver?
+AFAIK Intel was always documented.
 
-What is the matching piece on userspace side so I can look at it as well?
 
-Bruno
+> No, it's not a problem to add /proc/cpuinfo fields in the middle - 
+> please add this new field to the logical place.
+
+Ok.
+
+> > 
+> > Huh? There's only a single one now.
+> 
+> That's not actually true. With your patches applied a trivial git 
+> grep shows the two places reading the microcode version:
+
+Ok you count the re-reading. Fair enough. I guess I can remove
+the comment there too.
+
+BTW before my patches there were four places, I collapsed it down
+to two if you count that.
+
+-Andi
