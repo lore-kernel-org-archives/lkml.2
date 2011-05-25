@@ -1,142 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402Ab1EYRCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 13:02:52 -0400
-Received: from mail.perches.com ([173.55.12.10]:2013 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756096Ab1EYRCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 13:02:47 -0400
-From: Joe Perches <joe@perches.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Xiantao Zhang <xiantao.zhang@intel.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kvm-ia64@vger.kernel.org, kvm@vger.kernel.org,
-        linux-ia64@vger.kernel.org
-Subject: [PATCH 4/4] treewide: Remove asmlinkage from printk
-Date: Wed, 25 May 2011 10:02:41 -0700
-Message-Id: <2053d1648f4f33f99ed8e096346e2133b2328951.1306342673.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.4.rc3
-In-Reply-To: <BANLkTimo30L7feKr9_Ec=fMoe1erw8Rnag@mail.gmail.com>
-References: <BANLkTimo30L7feKr9_Ec=fMoe1erw8Rnag@mail.gmail.com>
-In-Reply-To: <cover.1306342673.git.joe@perches.com>
-References: <cover.1306342673.git.joe@perches.com>
+	id S1756800Ab1EYRE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 13:04:28 -0400
+Received: from relay02.telecomputing.no ([217.173.253.102]:56917 "EHLO
+	relay02.telecomputing.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756728Ab1EYREZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 13:04:25 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAG013U3ZrfjG/2dsb2JhbACmLHjFYoYcBJUDijU
+X-IronPort-AV: E=Sophos;i="4.65,268,1304287200"; 
+   d="scan'208";a="135151566"
+From: "Cufi, Carles" <carles.cufi@nordicsemi.no>
+To: "wyrles@ytram.com" <wyrles@ytram.com>,
+        "corey@kansanian.com" <corey@kansanian.com>
+CC: "'Ed Tomlinson'" <edt@aei.ca>, "'Ville Tervo'" <ville.tervo@nokia.com>,
+        "'Bluettooth Linux'" <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 25 May 2011 19:04:21 +0200
+Subject: RE: Linux 2.6.39
+Thread-Topic: Linux 2.6.39
+Thread-Index: AQGUKt7R/T/916P1fB9/N50PhgUuCwGLqzLiAU0RkDMBZ9ryawGkHAjPAqaiMpsCHZd2SJS4UodggAAGfzA=
+Message-ID: <5B4B9A479BF6994B88EA975675EC5B79057A6029C4@MES1OS2SXC003.mes1.tconet.net>
+References: <BANLkTinG_qCtHQYRYFQUJ9oGv4H1cuznWg@mail.gmail.com>
+ <201105250711.17971.edt@aei.ca>	<20110525113614.GQ2480@null>
+ <201105250812.43246.edt@aei.ca>
+ <5B4B9A479BF6994B88EA975675EC5B79057A399D82@MES1OS2SXC003.mes1.tconet.net>
+ <BANLkTi=ec3bh24=2r8f3tmj2g0n0bMnq1Q@mail.gmail.com>
+ <5B4B9A479BF6994B88EA975675EC5B79057A60296D@MES1OS2SXC003.mes1.tconet.net>
+ <013c01cc1af9$361b00e0$a25102a0$@ytram.com>
+In-Reply-To: <013c01cc1af9$361b00e0$a25102a0$@ytram.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the now unnecessary asmlinkage attribute from the various
-printk prototypes and uses.
+ (Snipping...)
+On Wed, May 25, 2011 at 8:46 AM, Cufi, Carles <carles.cufi@nordicsemi.no>
+wrote:
+> On Wednesday 25 May 2011 07:36:14 Ville Tervo wrote:
+>> On Wed, May 25, 2011 at 07:11:17AM -0400, ext Ed Tomlinson wrote:
+>> > On Wednesday 25 May 2011 06:54:54 Corey Boyle wrote:
+>> > > > On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
+>> > > > > On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
+>> > > > > > On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
+...
+>> > Read Local Version Information (0x04|0x0001) plen 0
+>> > > HCI Event: Command Complete (0x0e) plen 12
+>> >     Read Local Version Information (0x04|0x0001) ncmd 1
+>> >     status 0x00
+>> >     HCI Version: 1.1 (0x1) HCI Revision: 0x20d
+*************************
+>> >     LMP Version: 1.1 (0x1) LMP Subversion: 0x20d
+*************************
+>> >     Manufacturer: Cambridge Silicon Radio (10) < HCI Command: Set 
+>> > Event Mask (0x03|0x0001) plen 8
+>> >     Mask: 0xfffffbff00000000
+*************************
+>> > > HCI Event: Command Complete (0x0e) plen 4
+>> >     Set Event Mask (0x03|0x0001) ncmd 1
+>> >     status 0x12
+>> >     Error: Invalid HCI Command Parameters
+>
+>Set Event Mask has been in the Bluetooth Spec since day 1, so it must 
+>be
+>the bitmask, which has been extended with each new spec release to cover newly >added events. Looking at the latest spec, and judging >by the year your chipset was released in (it probably is a 1.1 compliant chipset) I believe that >0x000000008FFFFFFF is the highest >event mask it would support (up until and including Page Scan Repetition Mode Change Event), but since I don't have the >old 1.1 spec >around I may be one or two bits off.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- arch/arm/kernel/early_printk.c |    2 +-
- arch/ia64/kvm/vmm.c            |    2 +-
- arch/x86/kernel/early_printk.c |    2 +-
- include/linux/printk.h         |    6 +++---
- kernel/printk.c                |    6 +++---
- 5 files changed, 9 insertions(+), 9 deletions(-)
+>The device appears to have identified itself as CSR firmware using Bluetooth version 1.1.
+>I do happen to have the 1.1 spec lying around :-), for Set_Event_Mask it says
+>0x0000000100000000
+>To                                          Reserved for future use
+>0x8000000000000000
+>0x00000000FFFFFFFF	Default (All events enabled)
+>The mask above looks ok (no undefined bits), but are they supposed to be displayed in that order? (IOW, are the bytes in correct >order?)
 
-diff --git a/arch/arm/kernel/early_printk.c b/arch/arm/kernel/early_printk.c
-index 85aa2b2..46798d5 100644
---- a/arch/arm/kernel/early_printk.c
-+++ b/arch/arm/kernel/early_printk.c
-@@ -36,7 +36,7 @@ static struct console early_console = {
- 	.index =	-1,
- };
- 
--asmlinkage void early_printk(const char *fmt, ...)
-+void early_printk(const char *fmt, ...)
- {
- 	char buf[512];
- 	int n;
-diff --git a/arch/ia64/kvm/vmm.c b/arch/ia64/kvm/vmm.c
-index f0b9cac..40331ac 100644
---- a/arch/ia64/kvm/vmm.c
-+++ b/arch/ia64/kvm/vmm.c
-@@ -81,7 +81,7 @@ static void vcpu_debug_exit(struct kvm_vcpu *vcpu)
- 	local_irq_restore(psr);
- }
- 
--asmlinkage int printk(const char *fmt, ...)
-+int printk(const char *fmt, ...)
- {
- 	struct kvm_vcpu *vcpu = current_vcpu;
- 	va_list args;
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index cd28a35..b9b323a 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -173,7 +173,7 @@ static struct console early_serial_console = {
- static struct console *early_console = &early_vga_console;
- static int __initdata early_console_initialized;
- 
--asmlinkage void early_printk(const char *fmt, ...)
-+void early_printk(const char *fmt, ...)
- {
- 	char buf[512];
- 	int n;
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 3736545..e52bc4b 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -90,16 +90,16 @@ int no_printk(const char *fmt, ...)
- 	return 0;
- }
- 
--extern asmlinkage __attribute__ ((format (printf, 1, 2)))
-+extern __attribute__ ((format (printf, 1, 2)))
- void early_printk(const char *fmt, ...);
- 
- extern int printk_needs_cpu(int cpu);
- extern void printk_tick(void);
- 
- #ifdef CONFIG_PRINTK
--asmlinkage __attribute__ ((format (printf, 1, 0)))
-+__attribute__ ((format (printf, 1, 0)))
- int vprintk(const char *fmt, va_list args);
--asmlinkage __attribute__ ((format (printf, 1, 2))) __cold
-+__attribute__ ((format (printf, 1, 2))) __cold
- int printk(const char *fmt, ...);
- 
- /*
-diff --git a/kernel/printk.c b/kernel/printk.c
-index da8ca81..735056c 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -46,7 +46,7 @@
- /*
-  * Architectures can override it:
-  */
--void asmlinkage __attribute__((weak)) early_printk(const char *fmt, ...)
-+void __attribute__((weak)) early_printk(const char *fmt, ...)
- {
- }
- 
-@@ -704,7 +704,7 @@ static int have_callable_console(void)
-  * See the vsnprintf() documentation for format string extensions over C99.
-  */
- 
--asmlinkage int printk(const char *fmt, ...)
-+int printk(const char *fmt, ...)
- {
- 	va_list args;
- 	int r;
-@@ -794,7 +794,7 @@ static inline void printk_delay(void)
- 	}
- }
- 
--asmlinkage int vprintk(const char *fmt, va_list args)
-+int vprintk(const char *fmt, va_list args)
- {
- 	int printed_len = 0;
- 	int current_log_level = default_message_loglevel;
--- 
-1.7.4.rc3
+The HCI spec lists this as a 64-bit number but it must be sent in Little Endian to the controller, hence the reverse order in Ville Tervo's patch earlier in the email thread. 
+
+Carles
 
