@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab1EYRCu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 13:02:50 -0400
+	id S1753531Ab1EYRFD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 13:05:03 -0400
 Received: from mail.perches.com ([173.55.12.10]:2013 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756057Ab1EYRCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756063Ab1EYRCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 May 2011 13:02:45 -0400
 From: Joe Perches <joe@perches.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Robert Richter <robert.richter@amd.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, oprofile-list@lists.sf.net
-Subject: [PATCH 1/4] treewide: Remove direct includes of printk.h
-Date: Wed, 25 May 2011 10:02:38 -0700
-Message-Id: <16b4d3f7016443ed5e9ab580cde3c5e7cf1cc553.1306342673.git.joe@perches.com>
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Brett Rudley <brudley@broadcom.com>,
+        Henry Ptasinski <henryp@broadcom.com>, Dowan Kim <dowan@broadcom.com>,
+        Roland Vossen <rvossen@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-wireless@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] staging: Remove direct includes of printk.h
+Date: Wed, 25 May 2011 10:02:39 -0700
+Message-Id: <a605f8a8039f83fae3fbf61b58f846bc3c58c379.1306342673.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.4.rc3
 In-Reply-To: <BANLkTimo30L7feKr9_Ec=fMoe1erw8Rnag@mail.gmail.com>
 References: <BANLkTimo30L7feKr9_Ec=fMoe1erw8Rnag@mail.gmail.com>
@@ -29,59 +32,48 @@ Make the uses kernel.h instead.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/ext4/inode.c          |    1 -
- include/linux/oprofile.h |    2 +-
- kernel/sysctl.c          |    3 +--
- 3 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/staging/brcm80211/brcmfmac/dhd_sdio.c |    1 -
+ drivers/staging/brcm80211/util/bcmutils.c     |    1 -
+ drivers/staging/usbip/usbip_common.h          |    2 +-
+ 3 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 2e95819..cffecac 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -39,7 +39,6 @@
- #include <linux/bio.h>
- #include <linux/workqueue.h>
- #include <linux/kernel.h>
--#include <linux/printk.h>
- #include <linux/slab.h>
- #include <linux/ratelimit.h>
- 
-diff --git a/include/linux/oprofile.h b/include/linux/oprofile.h
-index 7f5cfd3..ef7d5b1 100644
---- a/include/linux/oprofile.h
-+++ b/include/linux/oprofile.h
-@@ -14,10 +14,10 @@
- #define OPROFILE_H
+diff --git a/drivers/staging/brcm80211/brcmfmac/dhd_sdio.c b/drivers/staging/brcm80211/brcmfmac/dhd_sdio.c
+index a71c6f8..b00029a 100644
+--- a/drivers/staging/brcm80211/brcmfmac/dhd_sdio.c
++++ b/drivers/staging/brcm80211/brcmfmac/dhd_sdio.c
+@@ -16,7 +16,6 @@
  
  #include <linux/types.h>
+ #include <linux/kernel.h>
+-#include <linux/printk.h>
+ #include <linux/pci_ids.h>
+ #include <linux/netdevice.h>
+ #include <bcmdefs.h>
+diff --git a/drivers/staging/brcm80211/util/bcmutils.c b/drivers/staging/brcm80211/util/bcmutils.c
+index 43e5bb3..1c8b6c6 100644
+--- a/drivers/staging/brcm80211/util/bcmutils.c
++++ b/drivers/staging/brcm80211/util/bcmutils.c
+@@ -21,7 +21,6 @@
+ #include <linux/pci.h>
+ #include <linux/netdevice.h>
+ #include <linux/sched.h>
+-#include <linux/printk.h>
+ #include <bcmdefs.h>
+ #include <stdarg.h>
+ #include <bcmutils.h>
+diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
+index 4a641c5..0f9176d 100644
+--- a/drivers/staging/usbip/usbip_common.h
++++ b/drivers/staging/usbip/usbip_common.h
+@@ -24,7 +24,7 @@
+ #include <linux/device.h>
+ #include <linux/interrupt.h>
+ #include <linux/net.h>
+-#include <linux/printk.h>
 +#include <linux/kernel.h>
  #include <linux/spinlock.h>
- #include <linux/init.h>
- #include <linux/errno.h>
--#include <linux/printk.h>
- #include <asm/atomic.h>
-  
- /* Each escaped entry is prefixed by ESCAPE_CODE
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4fc9244..814d227 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -24,14 +24,13 @@
- #include <linux/slab.h>
- #include <linux/sysctl.h>
- #include <linux/signal.h>
--#include <linux/printk.h>
-+#include <linux/kernel.h>
- #include <linux/proc_fs.h>
- #include <linux/security.h>
- #include <linux/ctype.h>
- #include <linux/kmemcheck.h>
- #include <linux/fs.h>
- #include <linux/init.h>
--#include <linux/kernel.h>
- #include <linux/kobject.h>
- #include <linux/net.h>
- #include <linux/sysrq.h>
+ #include <linux/types.h>
+ #include <linux/usb.h>
 -- 
 1.7.4.rc3
 
