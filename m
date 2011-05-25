@@ -1,90 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab1EYLkY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 07:40:24 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58055 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753490Ab1EYLkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 07:40:22 -0400
-Date: Wed, 25 May 2011 13:40:10 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Song, Youquan" <youquan.song@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: linux-next: manual merge of the dwmw2-iommu tree with Linus' tree
-Message-ID: <20110525114010.GF30983@elte.hu>
-References: <20110525130004.150c054f.sfr@canb.auug.org.au>
- <20110525091636.GC28500@elte.hu>
- <alpine.LFD.2.02.1105251133001.3164@localhost6.localdomain6>
+	id S1755881Ab1EYLoD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 07:44:03 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53706 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab1EYLoB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 07:44:01 -0400
+Date: Wed, 25 May 2011 13:43:56 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Colin Cross <ccross@google.com>
+cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH 1/4] clk: Add a generic clock infrastructure
+In-Reply-To: <BANLkTinmRt_fv1oJwFuJQ34aAky_5SB4Rw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1105251324500.3078@ionos>
+References: <1305876469.325655.313573683829.0.gpush@pororo> <1305876469.326305.518470530485.1.gpush@pororo> <BANLkTin2Ho-Ce-4RurtHfAST7hqTLDrJ+g@mail.gmail.com> <20110524070236.GB22096@pengutronix.de> <BANLkTinmRt_fv1oJwFuJQ34aAky_5SB4Rw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1105251133001.3164@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1286234412-1306323837=:3078"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-* David Woodhouse <dwmw2@infradead.org> wrote:
+--8323328-1286234412-1306323837=:3078
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-> On Wed, 25 May 2011, Ingo Molnar wrote:
+On Tue, 24 May 2011, Colin Cross wrote:
+> On Tue, May 24, 2011 at 12:02 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> >> > +       struct clk              *parent;
+> >>
+> >> Storing the list of possible parents at this level can help abstract
+> >> some common code from mux ops if you pass the index into the list of
+> >> the new parent into the op - most mux ops only need to know which of
+> >> their mux inputs needs to be enabled.
+> >
+> > Please don't. Only muxes have more than one possible parent, so this
+> > should be handled there.
 > 
-> > That particular change was still under discussion and i'm not at all 
-> > sure we want to do it like that. So please repost the latest version.
+> The cost is one pointer per clock that is not actually a mux, and the
+> benefit is that you can move a very common search loop out of every
+> mux implementation into the framework.  It also lets you determine
+> which clocks are connected, which becomes necessary if you try to do
+> per-tree locking or sysfs controls for clocks.
+
+We can be more clever than storing the world and some more in the
+internal implementation.
+
+struct clk should be just the basic data structure to hold the
+information which is shared by all clk types. The way I see it is:
+
+struct clk {
+       struct clk_ops *ops;
+       struct clk_data *data;
+       void *hwdata;
+       unsigned long flags;
+       ....
+};
+
+Now have
+
+struct clk_data {
+       union {
+       	     struct clk_divider_data;
+	     struct clk_mux_data;
+	     struct clk_pll_data;
+	     .....
+       };
+};
+
+Now on registration time you tell the core which type you are handing
+in. struct clk_mux_data would contain the list of possible parent
+clocks and clk_pll_data the possible multiplier values (linear or
+table based). Same for dividers. Now the core can do the evaluation of
+clock rate settings or parents and hand in the index or the linear
+range value into ops->set_rate/set_parent. And with the information
+available to the core you can do even complex settings which involve
+selecting the proper pll for your pixelclock example below.
+
+> > I hope we can avoid that. The decision of the best parent should be left
+> > up to the user. Doing this in the mux/divider implementation would
+> > torpedo attempts to implement generic building blocks.
 > 
-> I had not seen such discussion; I had the impression that having dealt 
-> with my feedback about making the thing more visible to the user, Youquan
-> considered the patch complete.
+> I agree it would be nice, but it does push some knowledge of the clock
+> tree into device drivers.  For example, on Tegra the display driver
+> may need to change the source pll of the display clock to get the
+> required pclk, which requires passing all the possible parents of the
+> display clock into the display driver.  If this is a common usage
+> pattern, there needs to be a hook in the ops to allow the clock or
+> clock chip to make a more global decision.
 
-I lurked your discussion with Youquan and expected another iteration 
-posted. I was keeping my gun powder dry for the next round because i 
-saw you reaping the patch to pieces already and there was nothing 
-more to say really :)
+No, we really dont want to have that knowledge at the driver level. A
+driver should just say: Enable "pixelclk" at rate X.
 
-> I am more than happy to absolve responsibility for this patch 
-> altogether and drop it from tree, though. It is *absolutely* the 
-> wrong approach, in my opinion. If the BIOS is broken and cannot 
-> cope with x2apic, the solution is to line the "engineers" 
-> responsible up against the wall and shoot them. And then to 
-> implement a "quiesce all SMI" feature that the OS can invoke, and 
-> make it mandatory. Presumably that's the underlying problem they 
-> were trying to solve?
-> 
-> The answer certainly isn't to add a flag in the DMAR table to opt 
-> out of x2apic use, when afaict the kernel is capable of using 
-> x2apic in some cases even when the *is* no DMAR. (Either that, or 
-> we have a lot of dead code in that area which *looks* like it copes 
-> with x2apic+!dmar).
-
-Yeah, that was exactly my main concern as well: why should we allow 
-the BIOS to tell us not to use a CPU feature that the CPU tells us is 
-usable?
-
-We generally do not allow such level of BIOS control. They should fix 
-the BIOS to not generate DMAR tables at all if they want us to 'opt 
-out', or ship a CPU without x2apic (or a CPU microcode version that 
-turns off the x2apic CPUID bit or whatever).
-
-So unless i missed some fine detail of control here, the whole idea 
-of generating DMAR tables (which were always inherently connected to 
-x2apic really) that tell us 'never mind about x2apic!' seems rather 
-counter-productive ...
-
-> I'll drop this patch from my tree when I get home and happily wash 
-> my hands of it. It's all yours; have fun :)
-
-Thanks. Youquan, mind resending the latest and greatest version so we 
-can continue flami^W iterating it? Please also Cc: David.
-
+So then a mapper converts pixelclk to the particular clock on the SoC
+it's running on and the clk framework level needs to figure out how to
+achieve that by looking at the full chain down from the clk gate which
+feeds the pixelclk. We don't want drivers to be aware about that at
+all. They simply do not care and that's a preliminary for making
+drivers usable on different SoC incarnations.
+ 
 Thanks,
 
-	Ingo
+	tglx
+--8323328-1286234412-1306323837=:3078--
