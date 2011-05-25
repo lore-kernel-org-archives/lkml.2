@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798Ab1EYOj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:39:28 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58051 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757154Ab1EYOj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:39:26 -0400
-Date: Wed, 25 May 2011 10:39:24 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tanya Brokhman <tlinder@codeaurora.org>
-cc: balbi@ti.com, "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>,
-        <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-In-Reply-To: <Pine.LNX.4.44L0.1105251010580.1987-100000@iolanthe.rowland.org>
-Message-ID: <Pine.LNX.4.44L0.1105251033550.1987-100000@iolanthe.rowland.org>
+	id S1757974Ab1EYOko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:40:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29376 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757948Ab1EYOkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 10:40:42 -0400
+Date: Wed, 25 May 2011 10:40:37 -0400
+From: Andy Gospodarek <andy@greyhouse.net>
+To: Weiping Pan <panweiping3@gmail.com>
+Cc: jpirko@redhat.com, Jay Vosburgh <fubar@us.ibm.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        "open list:BONDING DRIVER" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] bonding:update xmit_hash_policy description
+Message-ID: <20110525144036.GJ21309@gospo.rdu.redhat.com>
+References: <1306317904-18740-1-git-send-email-panweiping3@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306317904-18740-1-git-send-email-panweiping3@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, Alan Stern wrote:
-
-> I have looked this over more carefully.  It turns out that both of you
-> have misunderstood the purpose of CONFIG_USB_GADGET_DUALSPEED (and by
-> extension, CONFIG_USB_GADGET_SUPERSPEED).  In fact, the existing
-> Kconfig file is also wrong.
+On Wed, May 25, 2011 at 06:05:04PM +0800, Weiping Pan wrote:
+> xmit_hash_policy supports layer2+3 now,
+> and both balance-xor and 802.3ad use xmit_hash_policy.
 > 
-> The _only_ reason for CONFIG_USB_GADGET_DUALSPEED is so that gadget
-> drivers can use conditional compilation to avoid including the
-> high-speed descriptors when the UDC doesn't support high-speed 
-> operation.  That's all.  This means that the 
-> CONFIG_USB_GAGDET_DUALSPEED option does not need to be 
-> user-controllable in Kconfig.  It should default to N, and UDC drivers 
-> that support high speed should select it.
+> Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+> ---
+>  drivers/net/bonding/bond_main.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+> index 088fd84..d1f5606 100644
+> --- a/drivers/net/bonding/bond_main.c
+> +++ b/drivers/net/bonding/bond_main.c
+> @@ -147,8 +147,7 @@ MODULE_PARM_DESC(lacp_rate, "LACPDU tx rate to request from 802.3ad partner "
+>  module_param(ad_select, charp, 0);
+>  MODULE_PARM_DESC(ad_select, "803.ad aggregation selection logic: stable (0, default), bandwidth (1), count (2)");
+>  module_param(xmit_hash_policy, charp, 0);
+> -MODULE_PARM_DESC(xmit_hash_policy, "XOR hashing method: 0 for layer 2 (default)"
+> -				   ", 1 for layer 3+4");
+> +MODULE_PARM_DESC(xmit_hash_policy, "balance-xor and 802.3ad hashing method: 0 for layer 2 (default), 1 for layer 3+4, 2 for layer 2+3");
 
-In other words, we should merge the following patch and the new 
-SuperSpeed support should follow the same pattern.
+This is a good idea and a definite bug-fix.  Thanks for posting it.
 
-Alan Stern
+I do not want to create a description that is longer than 80 characters
+in the source if I can help it.  I went ahead and cleaned up all the
+descriptions and have posted a followup patch.
 
-
----------------------------------------------------------------------
-
-
-This patch (as1468) changes the Kconfig definition for
-USB_GADGET_DUALSPEED.  This option is determined entirely by which
-device controller drivers are to be built, through Select statements;
-it does not need to be (and should not be) configurable by the user.
-
-Also, the "default n" line is superfluous -- everything defaults to N.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-
----
-
- drivers/usb/gadget/Kconfig |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
-
-Index: usb-2.6/drivers/usb/gadget/Kconfig
-===================================================================
---- usb-2.6.orig/drivers/usb/gadget/Kconfig
-+++ usb-2.6/drivers/usb/gadget/Kconfig
-@@ -597,13 +597,10 @@ config USB_DUMMY_HCD
- 
- endchoice
- 
-+# Selected by UDC drivers that support high-speed operation.
- config USB_GADGET_DUALSPEED
- 	bool
- 	depends on USB_GADGET
--	default n
--	help
--	  Means that gadget drivers should include extra descriptors
--	  and code to handle dual-speed controllers.
- 
- #
- # USB Gadget Drivers
 
