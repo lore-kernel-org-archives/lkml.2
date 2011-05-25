@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab1EYS4v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 14:56:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35994 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751180Ab1EYS4t (ORCPT
+	id S1754322Ab1EYS5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 14:57:25 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:39276 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab1EYS5Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 14:56:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty>
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar> <4DDB8BF6.2000304@fusionio.com>
- <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty> <4DDCB1C8.7040708@fusionio.com>
- <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 25 May 2011 11:55:57 -0700
-Message-ID: <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
-Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
- __elv_add_request OOPS]
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        akpm@linux-foundation.org,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 May 2011 14:57:24 -0400
+Date: Wed, 25 May 2011 20:57:07 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Fabio Erculiani <lxnay@sabayon.org>
+Cc: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fbmem: fix race condition between
+ register_framebuffer() and fb_open()
+Message-ID: <20110525205707.12abc68c@neptune.home>
+In-Reply-To: <BANLkTi=207-bVi3pnOWk7zG61u4=YU4GFg@mail.gmail.com>
+References: <1306266871-12464-1-git-send-email-lxnay@sabayon.org>
+	<20110524224545.08c53b1d@neptune.home>
+	<20110525181917.12cf97b8@neptune.home>
+	<BANLkTimxi-LZFzwv=z6RRBCX098hr-ViUg@mail.gmail.com>
+	<20110525204648.58983270@neptune.home>
+	<BANLkTi=207-bVi3pnOWk7zG61u4=YU4GFg@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 11:44 AM, Parag Warudkar <parag.lkml@gmail.com> wrote:
->
-> Below patch pushes the check down to ioctl functions and hopefully should
-> cover more ioctl-on-gone-device cases by returning -ENXIO if an attempt
-> was made to submit request to a non-running device.
+On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
+> On Wed, May 25, 2011 at 8:46 PM, Bruno Prémont wrote:
+> > On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
+> >> I'm not a fbdev expert. So I leave the real fix to real men ( ;-) ).
+> >> It is causing deadlock during boot, so I would consider it quite critical.
+> >> Users using any fb driver will get into troubles.
+> >> The workaround is to boot with vga=normal.
+> >
+> > What is your system doing during boot? I've never seen it here but maybe
+> > my boot sequence is too simple.
+> 
+> I'm using vesafb and vga=791. It is quite simple to reproduce.
+> Also see: http://bugs.gentoo.org/show_bug.cgi?id=368109
 
-Can we please not duplicate complicated logic like that?
+Looks like gentoo kernel, might be splash is related to the hang
 
-IOW, just make a helper function for it.
+> > Could you tell if it deadlocks before init gets started or afterwards,
+> > which fb drivers (and extra kernel patches if any) are in use.
+> 
+> Exactly when register_framebuffer() is called, in my case, early in
+> the boot phase, before init.
+> 
+> >
+> > If you have the complete backtrace of the deadlocked processes it would
+> > help getting a better idea of what is affected and how (and why just the
+> > framebuffer's lock is not causing trouble with earlier kernel versions).
+> 
+> Because that code got a HUGE rewrite in the latest cycle, where
+> registration_lock has been introduce.
+> Just make a diff between 2.6.38 and 2.6.39. It will be easy to see
+> that SO MANY lines have changed ;-)
+> Anyway, since I'm out of office these days, I won't be able to send
+> you the traceback this week, but since so many people have run into
+> it, I guess it's fairly simple to reproduce.
 
-That said, isn't this all *exactly* what scsi_prep_state_check() is
-supposed to check for? Why isn't that called, or if called, why isn't
-it doing the right thing?
+Rewrite was not so huge, and I'm not affected here (running with KMS
+compiled in though and vanilla kernel).
+Probably the cause is related to one of the extra patches provided by
+Gentoo and subscribing to framebuffer registration notifications.
 
-                     Linus
+Will have a look.
+
+Bruno
