@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab1EYUmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:42:22 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42128 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264Ab1EYUmT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:42:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=bBnM2VEo3isMsaoLW3uXa7xv9TTI1w3ghuhtG2pPedeOQVLqYPhKD3lzBQZjvfC8Cp
-         gELH4aFumxrn5pb6eBox7dPtIBAoVycu4AN6A/TBoBDkrQrafo2nOLtgwigmlLTRJjiS
-         Gkxvp3Xgs//aWi3sXrx/5UEYNV8n4m8eFFxtw=
-Date: Wed, 25 May 2011 16:42:15 -0400 (EDT)
-From: Parag Warudkar <parag.lkml@gmail.com>
-X-X-Sender: parag@ubuntu-natty
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Parag Warudkar <parag.lkml@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
- __elv_add_request OOPS]
-In-Reply-To: <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar> <4DDB8BF6.2000304@fusionio.com> <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty> <4DDCB1C8.7040708@fusionio.com> <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty> <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
- <4DDD5240.2060308@fusionio.com> <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com> <4DDD55D6.1080909@fusionio.com> <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty> <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com> <alpine.DEB.2.02.1105251613500.8972@ubuntu-natty>
- <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932538Ab1EYUmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:42:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41599 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932417Ab1EYUmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:42:07 -0400
+Message-ID: <4DDD69DD.7030601@suse.cz>
+Date: Wed, 25 May 2011 22:43:09 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1854863386-1306356137=:8972"
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 18/34] wan/pc300: Drop __TIME__ usage
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-19-git-send-email-mmarek@suse.cz>
+In-Reply-To: <1302015561-21047-19-git-send-email-mmarek@suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323329-1854863386-1306356137=:8972
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-
-
-On Wed, 25 May 2011, Linus Torvalds wrote:
-
-> On Wed, May 25, 2011 at 1:18 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
-> >        SDEV_OFFLINE,           /* Device offlined (by error handling or
-> >                                 * user request */
+Dne 5.4.2011 16:59, Michal Marek napsal(a):
+> The kernel already prints its build timestamp during boot, no need to
+> repeat it in random drivers and produce different object files each
+> time.
 > 
-> So how do you fix the error or online it again? No chance it should
-> have commands passed to it to do that?
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+>  drivers/net/wan/pc300_drv.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 
-Yeah - that makes sense. By that logic, looks like we can only disallow 
-for SDEV_DEL (if we decide to do that check here).
+I don't see the patch in today's linux-next. Does anyone object against
+me applying it to kbuild-2.6.git?
 
-> I don't know. My point is that I don't see why we should look at the
-> state at this point at all. We do that _later_.
+Thanks,
+Michal
 
-If we can do it later, well and good. I just didn't think it would hurt to 
-check upfront in ioctl if we are dealing with a dead device.
 
-Parag
---8323329-1854863386-1306356137=:8972--
+> diff --git a/drivers/net/wan/pc300_drv.c b/drivers/net/wan/pc300_drv.c
+> index f875cfa..80ae503 100644
+> --- a/drivers/net/wan/pc300_drv.c
+> +++ b/drivers/net/wan/pc300_drv.c
+> @@ -3242,8 +3242,7 @@ static inline void show_version(void)
+>  	rcsdate++;
+>  	tmp = strrchr(rcsdate, ' ');
+>  	*tmp = '\0';
+> -	printk(KERN_INFO "Cyclades-PC300 driver %s %s (built %s %s)\n", 
+> -		rcsvers, rcsdate, __DATE__, __TIME__);
+> +	printk(KERN_INFO "Cyclades-PC300 driver %s %s\n", rcsvers, rcsdate);
+>  }				/* show_version */
+>  
+>  static const struct net_device_ops cpc_netdev_ops = {
+
