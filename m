@@ -1,36 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab1EYSRK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 14:17:10 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58188 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab1EYSRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 14:17:09 -0400
+	id S1752661Ab1EYSVK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 14:21:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8540 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752343Ab1EYSVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 14:21:09 -0400
+Date: Wed, 25 May 2011 20:18:56 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Pedro Alves <pedro@codesourcery.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+Message-ID: <20110525181856.GA16575@redhat.com>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <201105241049.58921.pedro@codesourcery.com> <20110524120013.GD10334@htj.dyndns.org> <201105241336.04298.pedro@codesourcery.com> <20110524140215.GF10334@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20110525181917.12cf97b8@neptune.home>
-References: <1306266871-12464-1-git-send-email-lxnay@sabayon.org>
-	<20110524224545.08c53b1d@neptune.home>
-	<20110525181917.12cf97b8@neptune.home>
-Date: Wed, 25 May 2011 20:17:08 +0200
-X-Google-Sender-Auth: PGMetK6cqJY9MO6TsnT8z-MkfgE
-Message-ID: <BANLkTimxi-LZFzwv=z6RRBCX098hr-ViUg@mail.gmail.com>
-Subject: Re: [PATCH] fbmem: fix race condition between register_framebuffer()
- and fb_open()
-From: Fabio Erculiani <lxnay@sabayon.org>
-To: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>
-Cc: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110524140215.GF10334@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not a fbdev expert. So I leave the real fix to real men ( ;-) ).
-It is causing deadlock during boot, so I would consider it quite critical.
-Users using any fb driver will get into troubles.
-The workaround is to boot with vga=normal.
+Sorry for delay again, I was a bit offline.
 
-Cheers,
--- 
-Fabio Erculiani
+On 05/24, Tejun Heo wrote:
+>
+> Hello,
+>
+> On Tue, May 24, 2011 at 01:36:03PM +0100, Pedro Alves wrote:
+> > On Tuesday 24 May 2011 13:00:13, Tejun Heo wrote:
+> > > Hello,
+> > >
+> > > On Tue, May 24, 2011 at 10:49:58AM +0100, Pedro Alves wrote:
+> > > > A couple interface questions that just crossed my mind:
+> > > >
+> > > >  - on a fork/vfork/clone, if PTRACE_EVENT_FORK|VFORK|CLONE have been
+> > > >    enabled, will the tracer still see the new child stop with a
+> > > >    SIGSTOP, or will it see a PTRACE_EVENT_INTERRUPT?
+> > >
+> > > This won't change, so SIGSTOP although we probably want to improve it
+> > > such that this can be distinguished from SIGTRAP from userland.
+> >
+> > (I assume you meant SIGSTOP from userland.)  So that if a SIGSTOPs
+> > from userland is sent before the tracer waits for the child, the
+> > tracer sees a siginfo corresponding to the userland SIGSTOP?  Sounds
+> > like it might work.
+>
+> Now that thinking more about it, TRAP_STOP (INTERRUPT trap) would
+> probably be better.  I'll think more about it.  For fork, it doesn't
+> really matter but deliverying SIGSTOP on CLONE isn't too good.  From
+> user's POV, TRAP_STOP should work too, right?
+
+I am a bit confused, sorry if I missed/misunderstood the context...
+
+I thought, we already discussed this. Obviously, PT_SEIZED should be
+inherited by the child during the auto-attach (and it is indeed copied
+by ptrace_init_task). Why should we send SIGSTOP to the child then?
+Even in the fork case, this leads to the same problems as the current
+PTRACE_ATTACH has with the bogus SIGSTOP it sends. I think TRAP_STOP
+is the only sane option, no?
+
+
+Btw. Speaking of SEIZE->execvd->INTERRUPT which makes the tracee see
+a SIGTRAP. Stupid question. Perhaps PTRACE_SEIZE should set
+PT_TRACESYSGOOD | PT_TRACE_EXEC along with PT_SEIZED automatically?
+PT_SEIZED implies the new behaviour anyway.
+
+Oleg.
+
