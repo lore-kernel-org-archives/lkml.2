@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab1EYTE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 15:04:28 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:33254 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753064Ab1EYTE1 (ORCPT
+	id S1754997Ab1EYTEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 15:04:47 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55717 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab1EYTEq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 15:04:27 -0400
-X-Sasl-enc: xghCKsVD63TbaZPzXwGoCiApMxT/SJ8hGWWslxKyYKtm 1306350267
-Date: Wed, 25 May 2011 16:04:24 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
-Message-ID: <20110525190424.GA17793@khazad-dum.debian.net>
-References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
- <20110525070604.GE429@elte.hu>
- <20110525160656.GB25225@khazad-dum.debian.net>
- <20110525165803.GB14958@tassilo.jf.intel.com>
- <20110525182405.GA17864@elte.hu>
+	Wed, 25 May 2011 15:04:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110525182405.GA17864@elte.hu>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110525205707.12abc68c@neptune.home>
+References: <1306266871-12464-1-git-send-email-lxnay@sabayon.org>
+	<20110524224545.08c53b1d@neptune.home>
+	<20110525181917.12cf97b8@neptune.home>
+	<BANLkTimxi-LZFzwv=z6RRBCX098hr-ViUg@mail.gmail.com>
+	<20110525204648.58983270@neptune.home>
+	<BANLkTi=207-bVi3pnOWk7zG61u4=YU4GFg@mail.gmail.com>
+	<20110525205707.12abc68c@neptune.home>
+Date: Wed, 25 May 2011 21:04:45 +0200
+X-Google-Sender-Auth: AjDD1fQ2SEB6Gol2zEVbsmKY35U
+Message-ID: <BANLkTimtYvcN8kj+jnaKHNGmN36YvMt7Rg@mail.gmail.com>
+Subject: Re: [PATCH] fbmem: fix race condition between register_framebuffer()
+ and fb_open()
+From: Fabio Erculiani <lxnay@sabayon.org>
+To: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>
+Cc: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, Ingo Molnar wrote:
-> So displaying a non-fatal 'info' message about it would in fact be 
-> rather wise. Nothing scary, but we'd like to be informed.
+On Wed, May 25, 2011 at 8:57 PM, Bruno Prémont
+<bonbons@linux-vserver.org> wrote:
+> On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
+>> On Wed, May 25, 2011 at 8:46 PM, Bruno Prémont wrote:
+>> > On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
+>> >> I'm not a fbdev expert. So I leave the real fix to real men ( ;-) ).
+>> >> It is causing deadlock during boot, so I would consider it quite critical.
+>> >> Users using any fb driver will get into troubles.
+>> >> The workaround is to boot with vga=normal.
+>> >
+>> > What is your system doing during boot? I've never seen it here but maybe
+>> > my boot sequence is too simple.
+>>
+>> I'm using vesafb and vga=791. It is quite simple to reproduce.
+>> Also see: http://bugs.gentoo.org/show_bug.cgi?id=368109
+>
+> Looks like gentoo kernel, might be splash is related to the hang
 
-A printk with levels info or notice, I do agree to be a good idea.  In fact,
-I like the idea a lot.
+Then, if you say so, it must be the fbsplash patch for sure, I keep
+forgetting of that :-/
 
-WARN() and kernel tainting, which is what I understand was being proposed
-before, I cannot agree with.
+>
+>> > Could you tell if it deadlocks before init gets started or afterwards,
+>> > which fb drivers (and extra kernel patches if any) are in use.
+>>
+>> Exactly when register_framebuffer() is called, in my case, early in
+>> the boot phase, before init.
+>>
+>> >
+>> > If you have the complete backtrace of the deadlocked processes it would
+>> > help getting a better idea of what is affected and how (and why just the
+>> > framebuffer's lock is not causing trouble with earlier kernel versions).
+>>
+>> Because that code got a HUGE rewrite in the latest cycle, where
+>> registration_lock has been introduce.
+>> Just make a diff between 2.6.38 and 2.6.39. It will be easy to see
+>> that SO MANY lines have changed ;-)
+>> Anyway, since I'm out of office these days, I won't be able to send
+>> you the traceback this week, but since so many people have run into
+>> it, I guess it's fairly simple to reproduce.
+>
+> Rewrite was not so huge, and I'm not affected here (running with KMS
+> compiled in though and vanilla kernel).
+> Probably the cause is related to one of the extra patches provided by
+> Gentoo and subscribing to framebuffer registration notifications.
+>
+> Will have a look.
 
-OTOH, IMO mismatched microcode should be grounds for more serious measures.
-And that includes fixing the annoying userspace ABI that encourages bad
-behaviour in the first place and makes it harder to do the proper thing.
+Thanks a lot, let me know if I can help out next week.
+
+>
+> Bruno
+>
+
+
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Fabio Erculiani
