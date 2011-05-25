@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab1EYWt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 18:49:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18075 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254Ab1EYWt6 (ORCPT
+	id S1756513Ab1EYWvf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 18:51:35 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50805 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab1EYWvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 18:49:58 -0400
-Message-ID: <4DDD8775.1000501@kernel.org>
-Date: Wed, 25 May 2011 15:49:25 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
- on semi-formal proof"
-References: <4DDAD934.9010603@kernel.org> <4DDAE5FA.2030303@kernel.org> <4DDAE6A5.6060701@kernel.org> <20110524011824.GL7428@linux.vnet.ibm.com> <4DDB093F.2060601@kernel.org> <20110524013523.GO7428@linux.vnet.ibm.com> <4DDC21E1.1070502@kernel.org> <4DDC48E3.1060108@kernel.org> <20110525045253.GB2262@linux.vnet.ibm.com> <4DDD7F96.3090408@kernel.org> <20110525223437.GO2341@linux.vnet.ibm.com>
-In-Reply-To: <20110525223437.GO2341@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 May 2011 18:51:33 -0400
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
+ netdevice
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirqus@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110519234154.GA13784@redhat.com>
+References: <20110518111734.GO7589@redhat.com>
+	 <BANLkTi=g_PFfS5653K8ZoQ2Jhp8DhCV1hg@mail.gmail.com>
+	 <1305729507.32080.6.camel@localhost.localdomain>
+	 <20110518154746.GA21378@redhat.com>
+	 <1305734857.32080.53.camel@localhost.localdomain>
+	 <20110518163633.GB22001@redhat.com>
+	 <1305737140.32080.59.camel@localhost.localdomain>
+	 <20110518165138.GD22001@redhat.com>
+	 <1305738028.32080.66.camel@localhost.localdomain>
+	 <1305834169.32080.81.camel@localhost.localdomain>
+	 <20110519234154.GA13784@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 May 2011 15:49:40 -0700
+Message-ID: <1306363780.26270.44.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DDD877A.00DD,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2011 03:34 PM, Paul E. McKenney wrote:
-> On Wed, May 25, 2011 at 03:15:50PM -0700, Yinghai Lu wrote:
->>> There is a new branch yinghai.2011.05.24a on:
->>>
->>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
->>>
->>> Or will be as soon as kernel.org updates its mirrors.
->>>
->>> I am not sure I could call this "clean", but it does revert that commit
->>> and 11 of the subsequent commits that depend on it.  It does build,
->>> and I will test it once my currently running tests complete.
->>
->> yes, with those revert, there is no delay in 10 times booting.
-> 
-> Unfortunately, there are rcutorture test failures with the revert...
+On Fri, 2011-05-20 at 02:41 +0300, Michael S. Tsirkin wrote:
+> So the requirements are
+> - data must be released in a timely fashion (e.g. unlike virtio-net
+>   tun or bridge)
+The current patch doesn't enable tun zero-copy. tun will copy data It's
+not an issue now. We can disallow macvtap attach to bridge when
+zero-copy is enabled.
 
-confused.
+> - SG support
+> - HIGHDMA support (on arches where this makes sense)
 
-what is the next?
+This can be checked by device flags.
 
-Yinghai
+> - no filtering based on data (data is mapped in guest)
+
+> - on fast path no calls to skb_copy, skb_clone, pskb_copy,
+>   pskb_expand_head as these are slow
+
+Any calls to skb_copy, skb_clone, pskb_copy, pskb_expand_head will do a
+copy. The performance should be the same as none zero-copy case before.
+I have done/tested the patch V6, will send it out for review tomorrow.
+
+I am looking at where there are some cases, skb remains the same for
+filtering.
+
+> First 2 requirements are a must, all other requirements
+> are just dependencies to make sure zero copy will be faster
+> than non zero copy.
+> Using a new feature bit is probably the simplest approach to
+> this. macvtap on top of most physical NICs most likely works
+> correctly so it seems a bit more work than it needs to be,
+> but it's also the safest one I think ... 
+
+For "macvtap/vhost zero-copy" we can use SG & HIGHDMA to enable it, it
+looks safe to me once patching skb_copy, skb_clone, pskb_copy,
+pskb_expand_head.
+
+To extend zero-copy in other usages, we can have a new feature bit
+later.
+
+Is that reasonable?
+
+Thanks
+Shirley
+
+
+
 
