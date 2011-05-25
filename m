@@ -1,38 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932594Ab1EYUoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:44:24 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:60306 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756296Ab1EYUoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:44:23 -0400
-X-Authenticated: #1474915
-X-Provags-ID: V01U2FsdGVkX18WOlEXU6MWIiyfJgLaVfPAEbL9cbsW0CNhsR4zIo
-	jwY0708nb+xQCF
-Message-ID: <4DDD6A23.9030903@gmx.de>
-Date: Wed, 25 May 2011 22:44:19 +0200
-From: Thomas Sattler <tsattler@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1756255Ab1EYUn2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:43:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38428 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751885Ab1EYUn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:43:27 -0400
+Message-ID: <4DDD6A2D.7050506@suse.cz>
+Date: Wed, 25 May 2011 22:44:29 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Ulrich Keller <uhkeller@googlemail.com>, linux-kernel@vger.kernel.org
-Subject: Re: iotop: khugepaged at 99.99% (2.6.38.3)
-References: <4DAF6C0B.3070009@gmx.de> <loom.20110511T124036-180@post.gmane.org> <20110512140352.GG11579@random.random> <201105232005.56840.johannes.hirte@fem.tu-ilmenau.de> <20110525160659.GE19505@random.random>
-In-Reply-To: <20110525160659.GE19505@random.random>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+To: Arnaud Giersch <arnaud.giersch@free.fr>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 20/34] parport: Drop __TIME__ usage
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>	<1302015561-21047-21-git-send-email-mmarek@suse.cz> <wwetyeclb8x.fsf@powwow.iut-bm.univ-fcomte.fr>
+In-Reply-To: <wwetyeclb8x.fsf@powwow.iut-bm.univ-fcomte.fr>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You and Ulrich both have PREEMPT=y so it may be a preempt
-> bug. What about you Thomas, do you have PREEMPT=y too?
+Dne 5.4.2011 22:00, Arnaud Giersch napsal(a):
+> Mardi 05 avril 2011, vers 16:59:07 (+0200), Michal Marek a écrit :
+> 
+>> The kernel already prints its build timestamp during boot, no need to
+>> repeat it in random drivers and produce different object files each
+>> time.
+>>
+>> Cc: Arnaud Giersch <arnaud.giersch@free.fr>
+>> Signed-off-by: Michal Marek <mmarek@suse.cz>
+>> ---
+>>  drivers/parport/parport_ip32.c |    1 -
+>>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> I do not use this module anymore, but anyway...
+> 
+> Acked-by: Arnaud Giersch <arnaud.giersch@free.fr>
 
-Yes, I have CONFIG_PREEMPT=y on both affected machines too.
+Applied to kbuild-2.6.git#trivial
 
-Thomas
-
+Michal
