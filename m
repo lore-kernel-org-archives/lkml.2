@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757347Ab1EYMPi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 08:15:38 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52821 "EHLO mx1.suse.de"
+	id S1757495Ab1EYMVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 08:21:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38442 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757055Ab1EYMPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 08:15:31 -0400
-Date: Wed, 25 May 2011 14:15:29 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        Matt Mackall <mpm@selenic.com>
-Subject: Re: [PATCH trivial] hwrng: Fix spelling mistake in header
-In-Reply-To: <1306325540-17934-1-git-send-email-levinsasha928@gmail.com>
-Message-ID: <alpine.LNX.2.00.1105251415240.28291@pobox.suse.cz>
-References: <1306325540-17934-1-git-send-email-levinsasha928@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757462Ab1EYMVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 08:21:53 -0400
+Message-ID: <4DDCF453.3070805@ti.com>
+Date: Wed, 25 May 2011 13:21:39 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ASoc: sam9g20_wm8731: use the proper SYSCKL value
+References: <1306230676-28688-1-git-send-email-nicolas.ferre@atmel.com> <20110525111545.GD10797@opensource.wolfsonmicro.com>
+In-Reply-To: <20110525111545.GD10797@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, Sasha Levin wrote:
-
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  include/linux/hw_random.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On 25/05/11 12:15, Mark Brown wrote:
+> On Tue, May 24, 2011 at 11:51:16AM +0200, Nicolas Ferre wrote:
+>> at91sam9g20 is providing master clock to wm8731: not using a crystal but an
+>> external MCLK. We can avoid conflict and save power using WM8731_SYSCLK_MCLK as
+>> we do not need oscillator to be powered.
+>>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 > 
-> diff --git a/include/linux/hw_random.h b/include/linux/hw_random.h
-> index 9bede76..b4b0eef 100644
-> --- a/include/linux/hw_random.h
-> +++ b/include/linux/hw_random.h
-> @@ -25,7 +25,7 @@
->   *			there is always data available.  *OBSOLETE*
->   * @data_read:		Read data from the RNG device.
->   *			Returns the number of lower random bytes in "data".
-> - *			Must not be NULL.    *OSOLETE*
-> + *			Must not be NULL.    *OBSOLETE*
->   * @read:		New API. drivers can fill up to max bytes of data
->   *			into the buffer. The buffer is aligned for any type.
->   * @priv:		Private data, for use by the RNG driver.
-> -- 
-> 1.7.5.rc3
+> Adding Liam.
+> 
 
-Applied, thanks.
-
--- 
-Jiri Kosina
-SUSE Labs
+Acked-by: Liam Girdwood <lrg@ti.com>
