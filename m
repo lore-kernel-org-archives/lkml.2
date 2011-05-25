@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946Ab1EYOXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:23:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45973 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932913Ab1EYOXI (ORCPT
+	id S933025Ab1EYOZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:25:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30358 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab1EYOZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:23:08 -0400
-Date: Wed, 25 May 2011 10:23:07 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tanya Brokhman <tlinder@codeaurora.org>
-cc: balbi@ti.com, "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>,
-        <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-In-Reply-To: <01c601cc1acf$8e28e920$aa7abb60$@org>
-Message-ID: <Pine.LNX.4.44L0.1105251010580.1987-100000@iolanthe.rowland.org>
+	Wed, 25 May 2011 10:25:29 -0400
+Date: Wed, 25 May 2011 10:25:10 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        tom.goetz@virtualcomputer.com
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Thomas Goetz <tcgoetz@gmail.com>
+Subject: Re: [PATCH] xen: use the trigger info we already have to choose the
+ irq handler
+Message-ID: <20110525142510.GA32231@dumpdata.com>
+References: <alpine.DEB.2.00.1105251232020.12963@kaball-desktop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1105251232020.12963@kaball-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090208.4DDD1153.0052:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, Tanya Brokhman wrote:
-
-> Ok so just to make sure I understand you correctly:
-> You want me to remove the modification made to usb_composite_probe() and
-> instead add:
-> static struct usb_gadget_driver composite_driver = {
-> +#ifdef CONFIG_USB_GADGET_SUPERSPEED
-> +       .speed          = USB_SPEE_SUPER,
-> +#else
-> 	  .speed          = USB_SPEED_HIGH,
-> +#endif
-> 	  .unbind         = composite_unbind,
+On Wed, May 25, 2011 at 12:33:23PM +0100, Stefano Stabellini wrote:
+> Do not use pirq_needs_eoi to decide which irq handler to use because Xen
+> always returns true if the guest does not support pirq_eoi_map.
+> Use the trigger information we already have from MP-tables and ACPI.
 > 
-> And then you'll be ok with change? Or is there anything else?
-> 
-> If this is it then I'm relieved :) and of course will update the code.
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Reported-by: Thomas Goetz <tcgoetz@gmail.com>
+> Tested-by: Thomas Goetz <tcgoetz@gmail.com>
 
-I have looked this over more carefully.  It turns out that both of you
-have misunderstood the purpose of CONFIG_USB_GADGET_DUALSPEED (and by
-extension, CONFIG_USB_GADGET_SUPERSPEED).  In fact, the existing
-Kconfig file is also wrong.
+Tom,
 
-The _only_ reason for CONFIG_USB_GADGET_DUALSPEED is so that gadget
-drivers can use conditional compilation to avoid including the
-high-speed descriptors when the UDC doesn't support high-speed 
-operation.  That's all.  This means that the 
-CONFIG_USB_GAGDET_DUALSPEED option does not need to be 
-user-controllable in Kconfig.  It should default to N, and UDC drivers 
-that support high speed should select it.
+Do you prefer those email addresses or tom.goetz@virtualcomputer.com ?
+..
+> -	if (pirq_needs_eoi(irq))
+> +	if (shareable)
 
-The same should be true of CONFIG_USB_GADGET_HIGHSPEED.  It should not
-be user-controllable.  It should default to N, and UDC drivers that
-support SuperSpeed operation (after these patches, only dummy-hcd)  
-should select it.
+Ok, so for dom0, the sharable flag is determined by the ACPI parsing.. good.
+And for MSI/MSI-X we use xen_bind_pirq_msi_to_irq which sets it to use handle_edge_irq.
 
-There remains the other question, about whether composite_driver.speed
-should be set to USB_SPEED_SUPER.  I think the matter can be settled at
-runtime.  Iterate through all the function drivers; if all of them
-support SuperSpeed and CONFIG_USB_GADGET_SUPERSPEED is enabled then set
-composite_driver.speed to USB_SPEED_SUPER.  Otherwise, if all of them
-support high speed and CONFIG_USB_GADGET_DUALSPEED is enabled then set
-composite_driver.speed to USB_SPEED_HIGH.  Otherwise set it to
-USB_SPEED_FULL.
+The only hazard which you asked me on IRC is for PV guests with Xen PCI front.
+In those cases, we have no idea whether the "GSI" IRQ is edge or level and we
+just assume that anything under 16 is edge. Which is 99% right, except if you
+are to pass in the ACPI IRQ to the guest, or some other weird creature. The MSI/MSI-X
+part of the PCI front are OK too - they use the xen_bind_pirq_msi_to_irq call.
 
-Alan Stern
+So, putting on the todo list an extension to the PCI PV protocol to pass information
+about the GSI's - whether they are edge or level.
 
+Patch is on the 2.6.40-rc1 train.
