@@ -1,93 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab1EYTSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 15:18:10 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:35205 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab1EYTSI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 15:18:08 -0400
-Message-ID: <4DDD55ED.2080607@tilera.com>
-Date: Wed, 25 May 2011 15:18:05 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <virtualization@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/tile: add /proc/tile, /proc/sys/tile, and a sysfs
- cpu attribute
-References: <201105181807.p4II7C5g015224@farm-0002.internal.tilera.com> <4DD6821F.6060707@tilera.com> <201105201713.25364.arnd@arndb.de> <201105202159.50780.arnd@arndb.de>
-In-Reply-To: <201105202159.50780.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755644Ab1EYTXn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 15:23:43 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:39178 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754112Ab1EYTXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 15:23:42 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Subject: Pull request blackfin.git (for-linus branch)
+Date: Wed, 25 May 2011 15:23:43 -0400
+Message-Id: <1306351423-14620-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.5.rc3
+In-Reply-To: <1306349080-12793-1-git-send-email-vapier@gentoo.org>
+References: <1306349080-12793-1-git-send-email-vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Resending with no HTML for LKML.)
+The following changes since commit 4a7df24ddc7097cd789a7527187826552ea0765e:
 
-On 5/20/2011 3:59 PM, Arnd Bergmann wrote:
-> Any chance you can still restructure the information? I would recommend
-> making it a first-class procfs member, since the data is really per-task.
->
-> You can add a conditional entry to tgid_base_stuff[] in fs/proc/base.c
-> to make it show up for each pid, and then just have the per-task information
-> in there to do the lookup the other way round:
->
-> # cat /proc/484/hardwall
-> 2x2 1,1 @2,1
->
-> # cat /proc/479/hardwall
-> 2x2 1,1 @1,1
-> Another problem with the existing interface is that it doesn't currently
-> support PID name spaces. That could of course be retrofitted, but having
-> the data split by pid directory would make it work implicitly.
->
-> Another approach would be to have a /proc/hardwall/ directory with
-> one entry per hardwall instance, and symlinks from /proc/<pid>/hardwall
-> to the respective file.
+  Merge branch 'for-linus/2640/i2c' of git://git.fluff.org/bjdooks/linux (2011-05-24 16:39:23 -0700)
 
-I went ahead and implemented this, and will send out a v2 patch shortly.  I
-added the "hardwall" entry to both the tgid_base (since everything is
-reflected there) but also to the tid_base_stuff[], since it can be
-different (in principle) for different threads.
+are available in the git repository at:
 
-I played around with using a symlink, but the bottom line seems to be that
-if I make it a symlink (via a SYM() macro in the table) it always has to
-exist -- so what does it point to when there's no hardwall activated?  I
-tried making it point to /dev/null, but that just seemed silly.  In the end
-I made /proc/PID/hardwall a file, either empty, or else containing the
-hardwall id.
+  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
 
-The actual hardwalls are then in /proc/tile/hardwall/NN, where NN is the
-hardwall id.  I wrote a very simple hardwall id allocate/free pair; the pid
-allocator seemed too tied to task_structs.  We only need at most NR_CPUS
-hardwall ids, so it's pretty simple to just use a cpumask to hold the set
-of allocated hardwall IDs.
+Alexey Dobriyan (2):
+      Blackfin: switch /proc/gpio to seq_file
+      Blackfin: convert /proc/sram to seq_file
 
-The contents of the hardwall ID file are then just a cpulist of the cpus
-covered by the hardwall, rather than introducing a new convention (as
-quoted above, e.g. "2x2 1,1").  Individual tasks that are in the hardwall
-can be found by reading the "hardwall" files, and we can learn where they
-are bound in the hardwall by reading the "stat" file as is normal for
-learning process affinity.
+KOSAKI Motohiro (3):
+      Blackfin: don't touch cpu_possible_map and cpu_present_map directly
+      Blackfin: don't touch task->cpus_allowed directly
+      Blackfin: convert old cpumask API to new one
 
-> When you do a /sys/hypervisor/ interface, put everything into a subdirectory
-> under /sys/hypervisor with the name of your hypervisor, to avoid naming
-> conflicts, e.g.
->
-> /sys/hypervisor/tilera-hv/board/board_serial
+Lars-Peter Clausen (1):
+      MAINTAINERS: Fix Analog Devices mailinglist address
 
-I don't see an easy way to put a directory in /sys/hypervisor.  It seems
-complex to create a kobject and a suitable class, etc., just for a
-subdirectory.  Or is there something simple I'm missing?  I'll keep looking.
+Mike Frysinger (27):
+      Blackfin: first pass at debug mmr support
+      Blackfin: ints-priority: clean up some local vars
+      Blackfin: ints-priority: unify duplicate vec to irq lookup logic
+      Blackfin: unify core IRQ definitions
+      Blackfin: clean up style in irq defines
+      Blackfin: bf533/bf537/bf561: convert to BFIN_IRQ helper
+      Blackfin: bf527-ezkit: tweak sound defconfig
+      Blackfin: clean up /proc/cpuinfo output
+      Blackfin: SMP: fix cpudata cache setup
+      Blackfin: SMP: drop unused blackfin_cpudata.idle pointer
+      Blackfin: delete duplicated user single step prototypes
+      Blackfin: bf51x/bf52x: fix typo in hysteresis MMR names
+      Blackfin: clean up irq ifdef logic a bit
+      Blackfin: move internal irq prototypes out of global namespace
+      Blackfin: move bf537-specific irq code out of common code
+      Blackfin: bf54x: drop unused pm gpio handling
+      Blackfin: bf537: fix excessive gpio int demuxing
+      Blackfin: bf537: demux port H mask A and emac rx ints
+      Blackfin: optimize MMR reads during startup a bit
+      Blackfin: bf533-stamp/bf537-stamp: drop ad1980 from defconfigs
+      Blackfin: use on-chip reset func with newer parts
+      Blackfin: update anomaly lists to latest public info
+      Blackfin: initial perf_event support
+      Blackfin: bf548-ezkit/bf561-ezkit: update nor flash layout
+      Blackfin: fix indentation with bfin_read() helper
+      Blackfin: fix addr type with bfin_write_{or,and} helpers
+      Blackfin: use new common PERCPU_INPUT define
 
-I also suspect just "tile" is an adequate subdirectory name here in the
-context of /sys/hypervisor, e.g. /sys/hypervisor/tile/version.
+Scott Jiang (1):
+      Blackfin: boards: update ASoC resources after machine driver overhaul
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Sonic Zhang (2):
+      Blackfin: don't attempt to flush on-chip L1 SRAM regions
+      Blackfin: kgdb: cache flushing is not safe in SMP mode
 
+Steven Miao (1):
+      Blackfin: work around anomaly 05000480
 
+ MAINTAINERS                                       |   20 +-
+ arch/blackfin/Kconfig                             |    2 +
+ arch/blackfin/Kconfig.debug                       |    2 +-
+ arch/blackfin/configs/BF527-EZKIT-V2_defconfig    |   12 +-
+ arch/blackfin/configs/BF527-EZKIT_defconfig       |   14 +-
+ arch/blackfin/configs/BF533-STAMP_defconfig       |    2 -
+ arch/blackfin/configs/BF537-STAMP_defconfig       |    2 -
+ arch/blackfin/include/asm/bfin-global.h           |   10 -
+ arch/blackfin/include/asm/bfin_pfmon.h            |   44 +
+ arch/blackfin/include/asm/bfin_sport.h            |    4 +
+ arch/blackfin/include/asm/cacheflush.h            |   23 +-
+ arch/blackfin/include/asm/cpu.h                   |    3 -
+ arch/blackfin/include/asm/def_LPBlackfin.h        |   12 +-
+ arch/blackfin/include/asm/irq_handler.h           |   25 +
+ arch/blackfin/include/asm/kgdb.h                  |    6 +-
+ arch/blackfin/include/asm/perf_event.h            |    1 +
+ arch/blackfin/include/asm/ptrace.h                |    2 -
+ arch/blackfin/include/mach-common/irq.h           |   57 +
+ arch/blackfin/kernel/Makefile                     |    3 +
+ arch/blackfin/kernel/bfin_dma_5xx.c               |    5 +
+ arch/blackfin/kernel/bfin_gpio.c                  |   34 +-
+ arch/blackfin/kernel/bfin_ksyms.c                 |    1 +
+ arch/blackfin/kernel/debug-mmrs.c                 | 1860 +++++++++++++++++++++
+ arch/blackfin/kernel/ipipe.c                      |    1 +
+ arch/blackfin/kernel/irqchip.c                    |    1 +
+ arch/blackfin/kernel/nmi.c                        |    8 +-
+ arch/blackfin/kernel/perf_event.c                 |  498 ++++++
+ arch/blackfin/kernel/process.c                    |    6 +-
+ arch/blackfin/kernel/reboot.c                     |   65 +-
+ arch/blackfin/kernel/setup.c                      |   54 +-
+ arch/blackfin/kernel/vmlinux.lds.S                |    8 +-
+ arch/blackfin/mach-bf518/include/mach/anomaly.h   |    4 +-
+ arch/blackfin/mach-bf518/include/mach/cdefBF512.h |   16 +-
+ arch/blackfin/mach-bf518/include/mach/defBF512.h  |    8 +-
+ arch/blackfin/mach-bf518/include/mach/irq.h       |  262 ++--
+ arch/blackfin/mach-bf527/boards/ezkit.c           |   74 +-
+ arch/blackfin/mach-bf527/include/mach/anomaly.h   |    8 +-
+ arch/blackfin/mach-bf527/include/mach/cdefBF522.h |   16 +-
+ arch/blackfin/mach-bf527/include/mach/defBF522.h  |    8 +-
+ arch/blackfin/mach-bf527/include/mach/irq.h       |  266 ++--
+ arch/blackfin/mach-bf533/include/mach/anomaly.h   |   11 +-
+ arch/blackfin/mach-bf533/include/mach/irq.h       |  168 +--
+ arch/blackfin/mach-bf537/boards/stamp.c           |  106 ++-
+ arch/blackfin/mach-bf537/include/mach/anomaly.h   |   10 +-
+ arch/blackfin/mach-bf537/include/mach/irq.h       |  365 ++---
+ arch/blackfin/mach-bf537/ints-priority.c          |  163 ++
+ arch/blackfin/mach-bf538/include/mach/anomaly.h   |    9 +-
+ arch/blackfin/mach-bf538/include/mach/irq.h       |   89 +-
+ arch/blackfin/mach-bf548/boards/ezkit.c           |  116 ++-
+ arch/blackfin/mach-bf548/include/mach/anomaly.h   |    8 +-
+ arch/blackfin/mach-bf548/include/mach/irq.h       |   89 +-
+ arch/blackfin/mach-bf561/boards/ezkit.c           |   10 +-
+ arch/blackfin/mach-bf561/include/mach/anomaly.h   |   15 +-
+ arch/blackfin/mach-bf561/include/mach/irq.h       |  505 ++----
+ arch/blackfin/mach-bf561/smp.c                    |   17 +-
+ arch/blackfin/mach-common/dpmc.c                  |    7 +-
+ arch/blackfin/mach-common/ints-priority.c         |  476 ++----
+ arch/blackfin/mach-common/smp.c                   |   28 +-
+ arch/blackfin/mm/sram-alloc.c                     |   43 +-
+ 59 files changed, 4011 insertions(+), 1671 deletions(-)
+ create mode 100644 arch/blackfin/include/asm/bfin_pfmon.h
+ create mode 100644 arch/blackfin/include/asm/perf_event.h
+ create mode 100644 arch/blackfin/include/mach-common/irq.h
+ create mode 100644 arch/blackfin/kernel/debug-mmrs.c
+ create mode 100644 arch/blackfin/kernel/perf_event.c
