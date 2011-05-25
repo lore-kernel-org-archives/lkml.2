@@ -1,83 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab1EYOWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:22:25 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:49019 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab1EYOWX (ORCPT
+	id S932862Ab1EYOVE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:21:04 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:64743 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932176Ab1EYOVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:22:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:date:from:to:cc:message-id:in-reply-to:references;
-        b=EaPRdvudwgJjYP/L1KBOeCDeODIiH/Hjr5ZDsmI6P9itPf2SgSL1UU8dWIH2MN5cI4
-         CrpK/8eJ06ISO5WrEXFkFr6azEzsILvMjSolprg0D1TnDB3e/PcVkgmmoQjj3BIx6fLh
-         L2DCzYBljaIaswerjZZav62tLq/boSR7+7Jk4=
-Subject: Re: UNIX Compatibility
-Date: Wed, 25 May 2011 14:20:09 +0000
-From: Michael Witten <mfwitten@gmail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Richard Yao <ryao@ic.sunysb.edu>,
-        linux-kernel@vger.kernel.org
-Message-ID: <64e4614dda6f4558a68a314d7b5979b5-mfwitten@gmail.com>
-In-Reply-To: <1306297108.4819.28.camel@marge.simson.net>
-References: <BANLkTin4wu1HNDeo8Rv7iddM9KkgZdhfgA@mail.gmail.com>
-	 <A7E21A2F-4338-465D-933A-66B0C4D15BE1@mit.edu>
-	 <BANLkTi=q7tDVkahrnng7+BJhvxh=gx71ng@mail.gmail.com>
-	 <20110524181619.GC26055@thunk.org>
-	 <BANLkTi=QUS5WfAMWTw7vuEwuBOVHsww3mA@mail.gmail.com>
-	 <1306297108.4819.28.camel@marge.simson.net>
+	Wed, 25 May 2011 10:21:02 -0400
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
+        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
+        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
+        penberg@kernel.org, hpa@zytor.com,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+In-Reply-To: <20110525112339.GC30983@elte.hu>
+References: <1306269105.21443.20.camel@dan> <20110524211644.GJ27634@elte.hu>
+	 <1306278038.1921.5.camel@dan>  <20110525112339.GC30983@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 May 2011 10:20:51 -0400
+Message-ID: <1306333251.2211.22.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011 06:18:28 +0200, Michael Galbraith wrote:
-> On Tue, 2011-05-24 at 18:31 +0000, Michael Witten wrote:
->> On Tue, May 24, 2011 at 18:16, Ted Ts'o <tytso@mit.edu> wrote:
->> 
->> > No one ever bothers to deal with issues because they are tiny,
->> > nit-pitcky things that no one other than standards mavens would care
->> > about.  You have to be someone who is extremely anal to really care
->> > about this kind of stuff.  It's really stupid stuff... paper pushers...
->> >
->> > If you want to waste time out of your life that you'll never get back...
->> > ...
->> > ... standards committee, as full of ivory-tower eggheads as it is,
->> > does have some folks who recognize that there is such a thing as
->> > the Real World)...
->> 
->> The world would be a better place if you weren't so needlessly
->> confrontational when sharing your knoweldge, Ted.
->
-> Ivory-tower eggheads is common vernacular, a colorful and communicative
-> description of a mindset.  Ted's usage added useful information to the
-> conversation, unlike the pompous interjection above.
+On Wed, 2011-05-25 at 13:23 +0200, Ingo Molnar wrote:
+> * Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+> 
+> > > No, the right solution is what i suggested a few mails ago: 
+> > > /proc/kallsyms (and other RIP printing places) should report the 
+> > > non-randomized RIP.
+> > > 
+> > > That way we do not have to change the kptr_restrict default and 
+> > > tools will continue to work ...
+> > 
+> > Ok, I'll do it this way, and leave the kptr_restrict default to 0.  
+> > But I still think having the dmesg_restrict default depend on 
+> > randomization makes sense, since kernel .text is explicitly 
+> > revealed in the syslog.
+> 
+> Hm, where is it revealed beyond intcall addresses, which ought to be 
+> handled if they are printed via %pK?
+> 
+> All such information leaks need to be fixed. (This will be the 
+> slowest part of the process i suspect - there's many channels.)
+> 
+> in the syslog we obviously want any RIPs converted to the canonical 
+> 'unrandomized' address, so that it can be matched against 
+> /proc/kallsyms, etc. Their randomized value isnt very useful. That 
+> will also protect the randomization secret as a side effect.
+> 
 
-At first I thought you were labeling as `pompous' my suggestion that the
-world would be improved by the introduction of a little more civility in
-our discourse, and so I was confused.
+%pK doesn't seem like the right thing to do in many cases, since the
+capability check doesn't have proper meaning if the caller isn't in
+process context.  If I'm understanding you right (correct if I'm wrong),
+you're looking for kptr_restrict to be completely separate from this
+randomization, and when randomization is enabled, all pointers are
+unconditionally de-randomized.  It seems like the right way to do this
+is to include code in vsprintf.c for all %p-type specifiers that would
+normally print the actual pointer (as opposed to some of the specialized
+cases that print other data) that does something like this:
 
-However, it ocurred to me that you were actually admonishing yourself
-for your preceding sentence:
+if((unsigned long)ptr >= (unsigned long)_stext &&
+   (unsigned long)ptr <= (unsigned long)_end)
+	ptr -= (_text - (CONFIG_PHYSICAL_START + PAGE_OFFSET));
 
-> Ivory-tower eggheads is common vernacular, a colorful and communicative
-> description of a mindset.
+This way, we don't have to go tracking down every printk caller and
+convert them to %pK, which isn't usable anyway in some cases.
 
-Common vernacular among whom? Among the leathered-handed thick-necked
-hacks bumping around mindlessly in the fog at the base of the ivory-tower?
+> The only thorny issue AFAICS are oopses. There's real value in having 
+> 'raw' data from a crash (interpreting crashes is hard enough even 
+> without randomization!), OTOH we could keep most of the value of them 
+> by converting them back to canonical addresses.
+> 
+> This would be more or less easy to do for the RIP and the registers, 
+> but less obvious for the stack: a kernel pointer can lie on the stack 
+> at arbitrary alignment. On 64-bit we could probably detect them 
+> rather reliably based on the randomized prefix of kernel addresses:
+> 
+> [   32.946003] Stack:
+> [   32.946003]  0000000000000202 0000000000000002 0000000000000001 0000000000000000
+> [   32.946003]  0000000000000198 0000000000000002 0000000000000000 00000000002ca5b0
+> [   32.946003]  0000000000000000 ffff88003e5533e0 ffff88003f977c00 ffffffff802225e3
+> 
+> the ffffffff8 prefix (assuming we end up randomizing the address 
+> within the 2GB window available to a RIP-relative addressed kernel) 
+> would be easy to detect even if it's not word aligned. There *would* 
+> be false positives (a 32-bit value of -7 is common), but as long as 
+> we marked any unrandomization clearly with an asterix:
+> 
+> [   32.946003] Stack:
+> [   32.946003]  0000000000000202 0000000000000002 0000000000000001 0000000000000000
+> [   32.946003]  0000000000000198 0000000000000002 0000000000000000 00000000002ca5b0
+> [   32.946003]  0000000000000000*ffff88003e5533e0*ffff88003f977c00*ffffffff802225e3
+> 
+> we'd be informed that the stack content was slighly different. If we 
+> fixed up register values, say the raw value is:
+> 
+> [   32.946003] RDX: 0000000000000000 RSI: ffffffff80ce0100 RDI: 0000000000000000
+> 
+> and randomization is -0x100000 then we'd print the normalized value 
+> for 'RSI':
+> 
+> [   32.946003] RDX: 0000000000000000 RSI:*ffffffff80de0100 RDI: 0000000000000000
+> 
+> And the '*' tells us that this value got normalized.
+> 
+> On 32-bit systems the rate of false positive is probably higher, he 
+> '0xc0' byte pattern is pretty common.
+> 
+> Now, theoretically there's still a tiny information hole here: if an 
+> attacker can crash a kernel in a non-fatal way that puts some known 
+> data on the kernel stack, then the unrandomization will reveal the 
+> secret ...
+> 
+> I guess we'll have to live with that: really paranoid places will 
+> disable dmesg access to unprivileged users.
 
-Oh. Perhaps, though, you are unfamiliar with that particular
-common vernacular for colorfully describing a mindset...
+I'm tempted to just say "leave OOPS alone", and if you want to preserve
+secrecy past an OOPS, you should be disabling dmesg access anyway.  But
+I'll think more about this.
 
-Everybody brings a different brain to the task at hand, and it is foolish
-to dismiss an entire class of brain, especially by indirectly insulting
-a particular person.
+> 
+> [ They might also want to have a knob to not log kernel crashes at 
+>   all - best protection is if *no one* (not even root) has a way to 
+>   figure out the secret. That needs to go hand in hand with forced 
+>   use of signed modules, sanitized /dev/mem, no root-controllable DMA 
+>   access to any device, no ioperm() and iopl(), etc. - so a very 
+>   locked down kernel that protects even root from being able to 
+>   execute kernel code. Such systems are still useful btw even if root 
+>   otherwise has access to all disks and has access to the kernel 
+>   image and can install its own image: a reboot will generally set 
+>   off an alarm. ]
+> 
+> > Thanks very much for the feedback.
+> 
+> Hey, thanks for taking up on implementing this rather non-trivial 
+> security feature!
+> 
 
-Ted just got finished telling Richard that Richard thinks about tiny,
-nit-picky, really stupid stuff on which only egg-headed paper pushers
-waste time that they'll never get back.
+What can I say, I like a challenge. :)
 
-We don't need that kind of thing.
+-Dan
 
-Sincerely,
-Michael Witten
+> Thanks,
+> 
+> 	Ingo
+
+
