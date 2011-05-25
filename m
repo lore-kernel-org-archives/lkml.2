@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab1EYOme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:42:34 -0400
-Received: from mail.perches.com ([173.55.12.10]:1994 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757457Ab1EYOmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:42:33 -0400
-Subject: Re: [PATCH 1/4] include/linux/printk.h is not self-contained
-From: Joe Perches <joe@perches.com>
-To: y@mail.of.borg
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-In-Reply-To: <1306314554-19198-1-git-send-email-y>
-References: <1306314554-19198-1-git-send-email-y>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 07:42:31 -0700
-Message-ID: <1306334551.2298.89.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932318Ab1EYOoH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:44:07 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:52877 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758076Ab1EYOoE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 10:44:04 -0400
+Date: Wed, 25 May 2011 09:44:00 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Robert =?utf-8?B?xZp3acSZY2tp?= <robert@swiecki.net>
+Cc: Eugene Teo <eugeneteo@kernel.sg>, linux-kernel@vger.kernel.org,
+        security@kernel.org, kees@ubuntu.com,
+        Tavis Ormandy <taviso@cmpxchg8b.com>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [Security] Fwd: Oops (bad memory deref) in slab_alloc() due to
+ filp_cachep holding incorrect values
+Message-ID: <20110525144400.GA26206@mail.hallyn.com>
+References: <BANLkTikfqV57AtCckh99jAT2O38mM6MzTA@mail.gmail.com>
+ <BANLkTikey3L4doiHY=__=690TZNsXqRHUQ@mail.gmail.com>
+ <alpine.DEB.2.00.1105231133580.29047@router.home>
+ <BANLkTi=-xRRxi4CtxMLt0VgTJWSdiVQugw@mail.gmail.com>
+ <BANLkTin1zhuA3z61cBWwJws+P1-xA5bGZA@mail.gmail.com>
+ <BANLkTikp4VweUE+JrkXRSJ-8kEEcPKpw8g@mail.gmail.com>
+ <BANLkTimB6pQyux4XEqqEUvuPGsZ2Bw0L8w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTimB6pQyux4XEqqEUvuPGsZ2Bw0L8w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 11:09 +0200, y@mail.of.borg wrote:
-> From: Geert Uytterhoeven <geert@linux-m68k.org>
-> <linux/printk.h> needs to include
->   - <stdarg.h> for "va_list",
->   - <linux/linkage.h> for "asmlinkage",
->   - <linux/types.h> for "bool".
+Quoting Robert Święcki (robert@swiecki.net):
+> On Wed, May 25, 2011 at 10:28 AM, Eugene Teo <eugeneteo@kernel.sg> wrote:
+> > Cc'ed David as well.
+> >
+> > On Tue, May 24, 2011 at 8:52 PM, Robert Święcki <robert@swiecki.net> wrote:
+> >> And the repro - I think this might be exploitable (user-space NULL ptr
+> >> deref at the first glance, in cap_capable() while in sys_setgid()).
+> >> Works for me with 2.6.39 and the following config:
+> >> http://alt.swiecki.net/linux_kernel/ise-test-2.6.39-kernel-config.txt
+> >>
+> >> It works for me with apparmor loaded, but looking at the code it
+> >> should work with SELinux as well (both call cap_capable()). Could be
+> >> some regression of http://securitytracker.com/id?1024384
+> >>
+> >> It works with 2.6.39 but not with 2.6.39-rc4. Found with Tavis
+> >> Ormandy's http://code.google.com/p/iknowthis/
+> 
+> Given that it doesn't seem to appear in 2.6.39-rc4, and judging by the
+> names of functions involved, this change looks suspiciously related to
+> this oops (even if it just made the keyctl problem visible)
+> http://git.itanic.dy.fi/?p=linux-stable;a=commitdiff;h=47a150edc2ae734c0f4bf50aa19499e23b9a46f8
+> 
+> >> #include <sys/stat.h>
+> >> #include <sys/wait.h>
+> >> #include <unistd.h>
+> >> #include <sys/syscall.h>
+> >> #include <linux/keyctl.h>
+> >> #include <linux/sched.h>
+> >>
+> >> int TH1(void *dummy) {
+> >>        syscall(__NR_keyctl, KEYCTL_SESSION_TO_PARENT);
 
-I wonder if printk should be self-contained.
+Thanks!
 
-If so, this patch should also add:
+Fooi, it looks like all users of cred_alloc_blank() may need to be
+audited wrt commit 47a150edc2ae734c0f4bf50aa19499e23b9a46f8.
 
-#include <linux/dynamic_debug.h>
-#include <linux/ratelimit.h>
+Does this fix the bug you're seeing?
 
-If not, maybe add:
+From: Serge E. Hallyn <serge.hallyn@canonical.com>
+Date: Wed, 25 May 2011 15:41:23 +0100
+Subject: [PATCH 1/1] Set cred->user_ns in key_replace_session_keyring
 
-#ifndef _LINUX_KERNEL_H
-#error don't include <linux/printk.h> directly, use <linux/kernel.h>
-#endif
+Since this cred was not created with copy_creds(), it needs to get
+initialized.
 
-Also asmlinkage is an ancient artifact and should
-be removed from the declarations of early_printk,
-vprintk, and printk.
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+---
+ security/keys/process_keys.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 6c0480d..92a3a5d 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -847,6 +847,7 @@ void key_replace_session_keyring(void)
+ 	new-> sgid	= old-> sgid;
+ 	new->fsgid	= old->fsgid;
+ 	new->user	= get_uid(old->user);
++	new->user_ns	= new->user->user_ns;
+ 	new->group_info	= get_group_info(old->group_info);
+ 
+ 	new->securebits	= old->securebits;
+-- 
+1.7.0.4
 
