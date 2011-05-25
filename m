@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab1EYVIR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 17:08:17 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:36080 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab1EYVIQ (ORCPT
+	id S1754736Ab1EYVId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 17:08:33 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57836 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab1EYVIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 17:08:16 -0400
-Date: Wed, 25 May 2011 23:08:02 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
-        Andi Kleen <andi@firstfloor.org>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
-Message-ID: <20110525210802.GC16110@aftab>
-References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
- <20110525065451.GC429@elte.hu>
- <20110525080042.GA27183@liondog.tnic>
- <20110525090501.GA28500@elte.hu>
- <20110525105057.GA21830@gere.osrc.amd.com>
- <20110525112852.GD30983@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110525112852.GD30983@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 25 May 2011 17:08:31 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, oleg@redhat.com,
+        vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, indan@nul.nu,
+        bdonlan@gmail.com, pedro@codesourcery.com
+Subject: Re: [PATCH 07/19] ptrace: use bit_waitqueue for TRAPPING instead of wait_chldexit
+In-Reply-To: Your message of "Wed, 25 May 2011 16:42:14 +0200."
+             <20110525144214.GK10146@htj.dyndns.org>
+From: Valdis.Kletnieks@vt.edu
+References: <1306262259-7285-1-git-send-email-tj@kernel.org> <1306262259-7285-8-git-send-email-tj@kernel.org> <BANLkTi=6KNJnaXO+guTke_kkinfBXNunBA@mail.gmail.com> <20110525084411.GB10146@htj.dyndns.org> <BANLkTi=O5vG=pgaYsE-6GXODwF910Q2qwA@mail.gmail.com>
+            <20110525144214.GK10146@htj.dyndns.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1306357694_2932P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 25 May 2011 17:08:14 -0400
+Message-ID: <25746.1306357694@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4DDD6FC1.008A,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 07:28:52AM -0400, Ingo Molnar wrote:
-> 
-> * Borislav Petkov <bp@amd64.org> wrote:
-> 
-> > Btw, can we dump the ucode version in hex since ours are much easier to
-> > read that way:
-> > 
-> > [86483.770976] microcode: CPU0: patch_level=0x010000c4
-> > [86483.826987] microcode: CPU1: patch_level=0x010000c4
-> > [86483.835071] microcode: CPU2: patch_level=0x010000c4
-> > ...
-> 
-> How is that version constructed and iterated, or example is the 
-> 0x01000000 bit always set?
-> 
-> If it's always set then it might make sense to turn this into a more 
-> human-readable version number: mask out the 0x01000000 and report 
-> 0xc4 as 194? Or is the *real* version above just '4'?
-> 
-> Should 0x010000c4 perhaps be printed as 1.10.4?
+--==_Exmh_1306357694_2932P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Nah, splitting this doesn't give you any information we could use,
-besides this format is the only format our ucode nomenclature uses so
-having it different in Linux might cause confusion.
+On Wed, 25 May 2011 16:42:14 +0200, Tejun Heo said:
 
-> 
-> > I guess for Intel the ucode version format won't matter that much.
-> 
-> Well, if Intel does similar encodings as AMD,
+> > You can get a good idea of the code quality if you grep for users. I
+> > don't think it's an accident at all that the two big blocks are
+> > ide-tape and some infiniband drivers.
+>=20
+> Maybe, but also ilog2() is relatively new and most already had ways to
+> deal with bit positions and masks, so the uptake is expected to be
+> slow.
 
-I hardly doubt that.
+One has to wonder how ide-tape got to be a early-adopter user of *anythin=
+g*.
 
-> then it would be nice to turn that into human-readable version strings
-> as well.
+--==_Exmh_1306357694_2932P
+Content-Type: application/pgp-signature
 
-I think leaving it as a hex number would fit both vendors adequately.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Thanks.
+iD8DBQFN3W++cC3lWbTT17ARAi8NAJsHCSbld7FtF7C98I+XyHPa2MFImACfQceQ
+WQ36C3eYuS29Qyve+qxQRm0=
+=R6qY
+-----END PGP SIGNATURE-----
 
--- 
-Regards/Gruss,
-Boris.
+--==_Exmh_1306357694_2932P--
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
