@@ -1,86 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757644Ab1EYNAe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 09:00:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55874 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756863Ab1EYNAc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 09:00:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Lx9+YsvB7n1GaLG/7uQw1d4LXVf0hJCj4vpFKSX/WDdrohRB1eYvHJRicUP5UhHZUF
-         wE7h3R10XcdYWnIVaMCp7G5V/CcR376kxgM3R+b0Twtmjaeehrc5u9PquKuW1HKlvJYj
-         MtiLCEQEV0wPFG4LPoP+QOymCLW/VYqxhY5zg=
+	id S1757818Ab1EYNDg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 09:03:36 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:34746 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757480Ab1EYNDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 09:03:35 -0400
+X-ASG-Debug-ID: 1306328612-01de28096b664e0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DDCFE21.80003@fusionio.com>
+Date: Wed, 25 May 2011 15:03:29 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <20110525124741.GC29300@elte.hu>
-References: <m11uzrvd26.fsf@fess.ebiederm.org>
-	<BANLkTim4q5dK6nOb=pVKbk1c8b-Nh_hBfA@mail.gmail.com>
-	<m1boyvpo9r.fsf@fess.ebiederm.org>
-	<1306048393.4092.8.camel@mulgrave.site>
-	<20110522084224.GA12279@elte.hu>
-	<m1k4dgr35i.fsf@fess.ebiederm.org>
-	<20110524071628.GA31612@elte.hu>
-	<4508.1306283693@localhost>
-	<20110525082514.GE21552@elte.hu>
-	<BANLkTikVDrU7Nx6143gPuB=1vwqkMFiRiQ@mail.gmail.com>
-	<20110525124741.GC29300@elte.hu>
-Date: Wed, 25 May 2011 15:00:30 +0200
-X-Google-Sender-Auth: HMhgE7zmynQPdXE8wPHqLiMSlT8
-Message-ID: <BANLkTimQcyX9XSY__9Bpg3tg7-P7gtOTkw@mail.gmail.com>
-Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Valdis.Kletnieks@vt.edu, "Eric W. Biederman" <ebiederm@xmission.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Core block bits for 2.6.40
+Content-Type: text/plain; charset="ISO-8859-1"
+X-ASG-Orig-Subj: [GIT PULL] Core block bits for 2.6.40
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1306328612
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64662
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 14:47, Ingo Molnar <mingo@elte.hu> wrote:
-> * Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->
->> > But at least the primary, 'native' syscall table of every arch
->> > could be kept rather fresh via generic enumeration.
->>
->> So we can start all over at offset 501 (alpha just started using
->> 500) with a unified, clean, and compressed list of syscalls? Or do
->> we have some more other-os-compat syscalls around in this range?
->
-> No, that would leave a big hole in the syscall table of most
-> architectures.
+Hi Linus,
 
-Sure, but we could (a) optimize for the case where the syscall number is
-larger than 500 and/or (b) drop support for syscall numbers smaller than
-501, depending on a config option.
+A real pull request this time. These are the core bits for the next
+kernel. Nothing exciting in here in this round, with the churn in
+the last release, this release will be mellow.
 
-> So what would be needed is for each architecture to define a 'generic
-> syscall table base index', ARCH_SYSCALL_BASE or so, and the generic
-> syscalls would be added for that.
->
-> Alpha would have 501, the others lower numbers.
->
-> The only general assumption we can rely on is that there's a range of
-> not yet used syscall numbers starting at the end of the current
-> syscall table.
+- Optimizations for queue flushing on SATA devices, where we
+  can't queue a FLUSH command. This fixes up a performance regression
+  caused by a bug fix to prevent potential live lock on adding
+  FLUSH commands at the head of the queue.
 
-Yep, that would work too.
+- Make stats lockless for blk-cgroup.
 
-Gr{oetje,eeting}s,
+- Various bug fixes for blk-cgroup.
 
-                        Geert
+- Various little fixes and improvements to CFQ.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+- Last round of media event changes.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+- Fixes for discard topology reporting and sysfs documentation update
+  for the same.
+
+- Add support for batched discards. This greatly speeds up discarding
+  an entire device.
+
+- Fix for bad return value in the discard ioctl.
+
+- Remove request plug state debug checks. Haven't triggered even during
+  the 2.6.39-rc devel cycle, so get rid of them.
+
+
+Please pull!
+
+
+  git://git.kernel.dk/linux-2.6-block.git for-2.6.40/core
+
+Gustavo F. Padovan (1):
+      backing-dev: Kill set but not used var in  bdi_debug_stats_show()
+
+James Bottomley (1):
+      block: add proper state guards to __elv_next_request
+
+Jens Axboe (4):
+      fs: fixup warning part_discard_alignment_show()
+      Merge commit 'v2.6.39' into for-2.6.40/core
+      Merge branch 'for-linus' into for-2.6.40/core
+      block: get rid of on-stack plugging debug checks
+
+Kees Cook (1):
+      iosched: remove redundant sprintf
+
+Lukas Czerner (3):
+      blkdev: Submit discard bio in batches in blkdev_issue_discard()
+      blkdev: Simple cleanup in blkdev_issue_zeroout()
+      blkdev: Do not return -EOPNOTSUPP if discard is supported
+
+Martin K. Petersen (2):
+      block: Fix discard topology stacking and reporting
+      block: Add sysfs documentation for the discard topology parameters
+
+Namhyung Kim (4):
+      cfq-iosched: algebraic simplification in cfq_prio_to_maxrq()
+      cfq-iosched: reduce bit operations in cfq_choose_req()
+      cfq-iosched: remove unused 'group_changed' in cfq_service_tree_add()
+      cfq-iosched: free cic_index if cfqd allocation fails
+
+Tao Ma (2):
+      block: Remove 'plug/unplug' comment in blk_execute_rq_nowait
+      block: Remove extra discard_alignment from hd_struct.
+
+Tejun Heo (4):
+      cdrom: always check_disk_change() on open
+      block: rescan partitions on invalidated devices on -ENOMEDIA too
+      block: don't block events on excl write for non-optical devices
+      block: move bd_set_size() above rescan_partitions() in __blkdev_get()
+
+Vivek Goyal (17):
+      blk-throttle: Do the new group initialization with the help of a function
+      blk-cgroup: move some fields of unaccounted_time file under right config option
+      cfq-iosched: Get rid of redundant function parameter "create"
+      cfq-iosched: Fix a possible race with cfq cgroup removal code
+      blk-cgroup: Allow sleeping while dynamically allocating a group
+      blk-throttle: Dynamically allocate root group
+      blk-throttle: Introduce a helper function to fill in device details
+      blk-throttle: Use helper function to add root throtl group to lists
+      blk-throttle: Free up a group only after one rcu grace period
+      blk-throttle: Make dispatch stats per cpu
+      blk-cgroup: Make 64bit per cpu stats safe on 32bit arch
+      blk-cgroup: Make cgroup stat reset path blkg->lock free for dispatch stats
+      blk-throttle: Make no throttling rule group processing lockless
+      cfq-iosched: Fix a memory leak of per cpu stats for root group
+      cfq-iosched: Make IO merge related stats per cpu
+      block: call elv_bio_merged() when merged
+      blk-cgroup: Initialize ioc->cgroup_changed at ioc creation time
+
+shaohua.li@intel.com (3):
+      block: add a non-queueable flush flag
+      block: hold queue if flush is running for non-queueable flush drive
+      SATA: enable non-queueable flush flag
+
+ Documentation/ABI/testing/sysfs-block |   64 +++++++
+ block/blk-cgroup.c                    |  200 +++++++++++++++++----
+ block/blk-cgroup.h                    |   40 +++--
+ block/blk-core.c                      |   32 +---
+ block/blk-exec.c                      |    2 +-
+ block/blk-flush.c                     |   16 ++-
+ block/blk-ioc.c                       |    3 +
+ block/blk-lib.c                       |   82 +++------
+ block/blk-settings.c                  |    9 +-
+ block/blk-sysfs.c                     |    3 +-
+ block/blk-throttle.c                  |  313 +++++++++++++++++++++++++--------
+ block/blk.h                           |   23 +++-
+ block/cfq-iosched.c                   |  232 ++++++++++++++++++-------
+ block/elevator.c                      |   11 +-
+ drivers/ata/libata-scsi.c             |   13 +-
+ drivers/block/paride/pcd.c            |    2 +
+ drivers/cdrom/viocd.c                 |    4 +-
+ drivers/ide/ide-cd.c                  |    3 +-
+ drivers/scsi/sr.c                     |    2 +-
+ fs/block_dev.c                        |   34 ++--
+ fs/partitions/check.c                 |    8 +-
+ include/linux/blk_types.h             |    2 -
+ include/linux/blkdev.h                |   15 ++-
+ include/linux/genhd.h                 |    2 +-
+ mm/backing-dev.c                      |    4 +-
+ 25 files changed, 794 insertions(+), 325 deletions(-)
+
+-- 
+Jens Axboe
+
