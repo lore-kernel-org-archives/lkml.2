@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028Ab1EYMyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 08:54:08 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38586 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753456Ab1EYMyH convert rfc822-to-8bit (ORCPT
+	id S1757682Ab1EYNDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 09:03:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47656 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756101Ab1EYNDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 08:54:07 -0400
+	Wed, 25 May 2011 09:03:10 -0400
+Date: Wed, 25 May 2011 08:57:52 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Haid <d.haid@gogi.tv>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: Question about iommu on x86_64 and radeon driver.
+Message-ID: <20110525125752.GB3467@dumpdata.com>
+References: <6ac3f6faad655602b767aa14b355e982@admin.gogi.tv>
+ <20110523220536.GB11961@dumpdata.com>
+ <756073831c36e0404199a4e8239bcb70@admin.gogi.tv>
+ <m2wrhf4sw5.fsf@firstfloor.org>
+ <08370791664f069624d25c757ed101c0@admin.gogi.tv>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikV3qT7owEuLmsGu+ORMNv77DgXSQ@mail.gmail.com>
-References: <1306323570-11133-1-git-send-email-vinod.koul@intel.com>
-	<1306323570-11133-3-git-send-email-vinod.koul@intel.com>
-	<BANLkTikV3qT7owEuLmsGu+ORMNv77DgXSQ@mail.gmail.com>
-Date: Wed, 25 May 2011 14:54:06 +0200
-Message-ID: <BANLkTi=g9VAEhKJ3RhakRtUk8cqY+PpgEg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] dmaengine: add TODO items for future work on dma drivers
-From: Per Forlin <per.forlin@linaro.org>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dan <dan.j.williams@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <08370791664f069624d25c757ed101c0@admin.gogi.tv>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090201.4DDCFCDD.004D:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 May 2011 14:39, Per Forlin <per.forlin@linaro.org> wrote:
-> On 25 May 2011 13:39, Koul, Vinod <vinod.koul@intel.com> wrote:
->> From: Vinod Koul <vinod.koul@intel.com>
->>
->> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
->> ---
->>  drivers/dma/TODO |   12 ++++++++++++
->>  1 files changed, 12 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/dma/TODO
->>
->> diff --git a/drivers/dma/TODO b/drivers/dma/TODO
->> new file mode 100644
->> index 0000000..b67d184
->> --- /dev/null
->> +++ b/drivers/dma/TODO
->> @@ -0,0 +1,12 @@
->> +TODO for slave dma
->> +
->> +1. Move remaining drivers to use new slave interface
->> +2. Remove old slave pointer machansim
->> +3. Make issue_pending to start the transaction in below drivers
->> +       - mpc512x_dma
->> +       - imx-dma
->> +       - imx-sdma
->> +       - mxs-dma.c
->> +       - dw_dmac
->> +       - intel_mid_dma
->> +       - ste_dma40
-> ste_dma40 already does this. At least is does so in 2.6.39. I may not
-> be up to date of what is merged for 2.6.40.
->
-I looked at the code once more and ste_dam40 should be on this list :)
-ste_dm40 only treats issue_pending accordingly if the DMA driver is in
-idle. If the dma is active the desc:s submitted from submit() will be
-started later on from dma-irq-function. The dma-irq-function simply
-checks if there are pending desc are start them if any. I will fix a
-patch for this.
+On Wed, May 25, 2011 at 11:00:33AM +0100, Daniel Haid wrote:
+> >I added it originally. The VIA chipset seems to hang on most
+> >DMAs through the IOMMU, so it was disabled.
+> 
+> I see. Now, maybe this will not work for some reason, but
+> would it be possible to somehow disable both IOMMU and SWIOTLB
+> and tell all drivers only to do DMA with the lower 4GB of memory?
 
-/Per
+Only if you allow 3GB or less in the machine. So you would have to do
+mem=3G as well.
+
+The reason is that (and you can see that yourself by looking at the
+E820), is that 1GB is actually _above_ the 4GB.
+> 
+> Unfortunately simply turning "iommu=off" does not work for me
+> as the sata and pata drivers stop working.
+
+Right, no surprise there either - they are 32-bit and can't DMA to
+memory above 4GB (2^32).
