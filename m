@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab1EYTGW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 15:06:22 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34222 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754010Ab1EYTGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 15:06:20 -0400
-Date: Wed, 25 May 2011 21:06:02 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kees Cook <kees.cook@canonical.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-Message-ID: <20110525190602.GC17864@elte.hu>
-References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
- <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
- <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
- <1306254027.18455.47.camel@twins>
- <20110524195435.GC27634@elte.hu>
- <alpine.LFD.2.02.1105242239230.3078@ionos>
- <20110525150153.GE29179@elte.hu>
- <alpine.LFD.2.02.1105251836030.3078@ionos>
- <20110525180100.GY19633@outflux.net>
- <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
+	id S1755298Ab1EYTI1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 15:08:27 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45362 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab1EYTI0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 15:08:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=NqC4NuUW9JmK0KLxJ7jJMAUVyPNCJR9CokP3PJFM391yXY0uUVZKpYImOfWJZqBoFk
+         Iz4/xW26xCtpisqNKT0Yp//PU5Pn5sxDdTFGMTgTX17cz+lfL2Wp0xx1c4Xm2WkwzdCD
+         iqme9o6X05FbATk4bBtKnGn/tYKA1sdkkpPRE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Wed, 25 May 2011 19:08:06 +0000
+Message-ID: <BANLkTimR2ggkjDiB9fZDuHJOuFX1Pb=rMw@mail.gmail.com>
+Subject: [PATCH] cs5535 mfgpt - fix wrong if condition
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+This patch fixes the wrong if condition for the check if the
+requested timer is available.
 
-> And per-system-call permissions are very dubious. What system calls 
-> don't you want to succeed? That ioctl? You just made it impossible 
-> to do a modern graphical application. Yet the kind of thing where 
-> we would _want_ to help users is in making it easier to sandbox 
-> something like the adobe flash player. But without accelerated 
-> direct rendering, that's not going to fly, is it?
+The bitmap avail is used to store if a timer is used already.
+test_bit() is used to check if the requested timer is
+available. If a bit in the avail bitmap is set it means that the
+timer is available.
 
-I was under the impression that Will had a very specific application 
-in mind which actually works today and uses the inferior version of 
-seccomp.
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+---
+ drivers/misc/cs5535-mfgpt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Will, mind filling us in on that?
+diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
+index e01e08c..bc685bf 100644
+--- a/drivers/misc/cs5535-mfgpt.c
++++ b/drivers/misc/cs5535-mfgpt.c
+@@ -174,7 +174,7 @@ struct cs5535_mfgpt_timer
+*cs5535_mfgpt_alloc_timer(int timer_nr, int domain)
+                timer_nr = t < max ? (int) t : -1;
+        } else {
+                /* check if the requested timer's available */
+-               if (test_bit(timer_nr, mfgpt->avail))
++               if (!test_bit(timer_nr, mfgpt->avail))
+                        timer_nr = -1;
+        }
 
-I'd agree that adding any of this without a real serious app making 
-real use of it would be pointless. I discussed this under the 
-impression that the app existed :-)
+-- 
+1.7.5.rc3
 
-I also got the very distinct impression from the various iterations 
-that a real usecase existed behind it - all the fixes and 
-considerations looked very realistic, not designed up for security's 
-sake.
-
-> So I'm sorry for throwing cold water on you guys, but the whole 
-> "let's come up with a new security gadget" thing just makes me go 
-> "oh no, not again".
-
-Fair enough :-)
-
-Thanks,
-
-	Ingo
+--
+Christian Gmeiner, MSc
