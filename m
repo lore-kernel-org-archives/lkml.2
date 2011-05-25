@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014Ab1EYPt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 11:49:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39801 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932975Ab1EYPt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 11:49:28 -0400
-Message-ID: <4DDD24E2.4010602@zytor.com>
-Date: Wed, 25 May 2011 08:48:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1757957Ab1EYPwL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 11:52:11 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61172 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab1EYPwJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 11:52:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LF8ZCHkjB6MFcL0J+6l6J+i3f1L4C8OgKsXVW0OaWB0p1SHMcfhx8W8eZ8YwObg3/2
+         m9k16Ha/yyLB1TwzC+8xiLvunsTPahOIzjuAyP/qO7i1ixkQSVDTtdU9b+YN+4Ef3yT6
+         y+6rZPD0GN4psUMP4mv+iGo0cFnPf+sHyAGAw=
 MIME-Version: 1.0
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-CC: Ingo Molnar <mingo@elte.hu>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-References: <1306269105.21443.20.camel@dan> <20110524211644.GJ27634@elte.hu>	 <4DDC39F1.2060903@zytor.com> <1306332225.2211.9.camel@dan>
-In-Reply-To: <1306332225.2211.9.camel@dan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTimo30L7feKr9_Ec=fMoe1erw8Rnag@mail.gmail.com>
+References: <1306334551.2298.89.camel@Joe-Laptop>
+	<BANLkTimo30L7feKr9_Ec=fMoe1erw8Rnag@mail.gmail.com>
+Date: Wed, 25 May 2011 18:52:08 +0300
+Message-ID: <BANLkTinHMx_esp8miCb6XzJG=f-BF-84Hw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] include/linux/printk.h is not self-contained
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2011 07:03 AM, Dan Rosenberg wrote:
-> 
-> My current idea is to use int 0x15, eax = 0xe801 (which seems to be
-> nearly universally supported) and use bx/dx to determine the amount of
-> contiguous, usable memory above 16 MB, which seems to be exactly what we
-> want to know.  If the BIOS does not support this function I'll be sure
-> to catch that and skip the randomization.  Likewise, if the amount of
-> returned memory seems insufficient or otherwise confusing, I'll skip the
-> randomization.
-> 
+On Wed, May 25, 2011 at 6:20 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+>> If not, maybe add:
+>>
+>> #ifndef _LINUX_KERNEL_H
+>> #error don't include <linux/printk.h> directly, use <linux/kernel.h>
+>> #endif
+>
+> That's another possibility. We already have several users, though.
 
-No, sorry.  This has been wrong for over 10 years; there is no
-substitute for the full (e820) memory map.  *Furthermore*, based on
-where in the bootup sequence you are doing this, you also have to
-consider any other memory structures that the kernel needs to be aware
-of (initramfs, any chunks in the linked list, the command line, EFI
-handover structures, etc.)  This is in fact an arbitrarily complex
-operation... we have *finally* gotten the kernel to the point where (a)
-the boot loader can actually do the right thing in all cases and (b) the
-kernel will reserve or copy all the auxiliary memory chunks it needs at
-a very early point.
-
-Sorry, this cannot be short-circuited.
-
-> Given this information, do you have a conservative guess for how close
-> to the top of available memory we can put the kernel?  As in, let's say
-> we have an XYZ MB chunk of contiguous, free memory, how should I
-> calculate the highest, safe place to put the kernel in that region?
-> 
-> I'm going to continue to enforce the requirement that 16 MB is the
-> lowest address we can safely load the kernel, and I'd still appreciate
-> any information on why 2/4 MB default alignment might cause problems.
-
-The problem with all of that was backwards compatibility with existing
-relocating bootloaders.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Eh, it is because of sheer amount of printk() users headers aren't switched,
+from kernel.h to printk.h
