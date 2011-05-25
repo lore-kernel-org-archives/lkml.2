@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab1EYUq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:46:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65066 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756651Ab1EYUq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:46:56 -0400
-Message-ID: <4DDD6AB9.3030906@redhat.com>
-Date: Wed, 25 May 2011 16:46:49 -0400
-From: Josef Bacik <josef@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b2 Thunderbird/3.1.10
+	id S932692Ab1EYUrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:47:18 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61703 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932237Ab1EYUrP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:47:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=FDsKU+MSAdlEWaVSGeJfyFFOVqKfE+8IjWdriy2jo+JtZJEWd6T/pCR0tWAsJ3oYHI
+         WWANBXBUN4UzAwQdfsmwj/FLxI5iQMbW7dDZFj0/tzdj1HFZYC07SbUrkfQXkxKK/r+0
+         T7z0H15iSPXQ+i776DXuSswKJrmEwBTVQS77o=
 MIME-Version: 1.0
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-CC: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        sunil.mushran@oracle.com, viro@ZenIV.linux.org.uk
-Subject: Re: [PATCH 1/3] fs: add SEEK_HOLE and SEEK_DATA flags V4
-References: <1306186991-1905-1-git-send-email-josef@redhat.com> <0E7B812A-4057-4EB8-93F5-79ED9FCE2CCD@dilger.ca>
-In-Reply-To: <0E7B812A-4057-4EB8-93F5-79ED9FCE2CCD@dilger.ca>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <20110525195413.GC2996@acer>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+	<e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+	<BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
+	<20110525195413.GC2996@acer>
+Date: Wed, 25 May 2011 22:47:14 +0200
+X-Google-Sender-Auth: kZ-7G7Mw8h3x2E4QSqmblxpkXsc
+Message-ID: <BANLkTin8Trn-44Op+GbxrgocFrnPuXUZ2w@mail.gmail.com>
+Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: linux-arm-kernel@lists.infradead.org, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, hsweeten@visionengravers.com,
+        ryan@bluewatersys.com, Dan Williams <dan.j.williams@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi mailing list <spi-devel-general@lists.sourceforge.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2011 03:45 PM, Andreas Dilger wrote:
-> On May 23, 2011, at 15:43, Josef Bacik wrote:
->> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.  Turns out
->> using fiemap in things like cp cause more problems than it solves, so lets try
->> and give userspace an interface that doesn't suck.  We need to match solaris
->> here, and the definitions are
->>
->> diff --git a/fs/read_write.c b/fs/read_write.c
->> index 5520f8a..9c3b453 100644
->> --- a/fs/read_write.c
->> +++ b/fs/read_write.c
->> @@ -64,6 +64,23 @@ generic_file_llseek_unlocked(struct file *file, loff_t offset, int origin)
->> 			return file->f_pos;
->> 		offset += file->f_pos;
->> 		break;
->> +	case SEEK_DATA:
->> +		/*
->> +		 * In the generic case the entire file is data, so as long as
->> +		 * offset isn't at the end of the file then the offset is data.
->> +		 */
->> +		if (offset >= inode->i_size)
->> +			return -ENXIO;
->> +		break;
->> +	case SEEK_HOLE:
->> +		/*
->> +		 * There is a virtual hole at the end of the file, so as long as
->> +		 * offset isn't i_size or larger, return i_size.
->> +		 */
->> +		if (offset >= inode->i_size)
->> +			return -ENXIO;
->> +		offset = inode->i_size;
->> +		break;
->> 	}
-> 
-> What about all of the existing filesystems that currently just ignore
-> values of "origin" that they don't understand?  Looking through those
-> it appears that most of them will return "offset" for unknown values
-> of "origin", which I guess is OK for SEEK_DATA, but is confusing for
-> SEEK_HOLE.  Some filesystems will return -EINVAL for values of origin
-> that are unknown.
-> 
+2011/5/25 Mika Westerberg <mika.westerberg@iki.fi>:
 
-Yeah I just didn't want to do all that work until I was sure the base of
-what I had was acceptable.  If people think this set is good to go then
-I will go through and fix everybody who does their own lseek.
+> I re-checked the specs and indeed, as discussed previously, it is clear that
+> Cirrus (or ARM) copied the interface from other. Even the wording in the
+> document is identical in many places. However, in ep93xx User's Guide, there
+> is no mention about SSP being AMBA PrimeCell peripheral. For UARTs it is
+> mentioned... go figure.
+>
+> There are differences also, some of the bits in control registers are in
+> different places. Interrupt registers are completely different and there is no
+> DMA control register at all. The same things we discussed before.
 
-> Most of the filesystem-specific ->llseek() methods don't do any error
-> checking on "origin" because this is handled at the sys_llseek() level,
-> and hasn't changed in many years.
-> 
-> I assume this patch is also dependent upon the "remove default_llseek()"
-> patch, so that the implementation of SEEK_DATA and SEEK_HOLE can be done
-> in only generic_file_llseek()?
-> 
-> Finally, while looking through the various ->llseek() methods I notice
-> that many filesystems return "i_size" for SEEK_END, which clearly does
-> not make sense for filesystems like ext3/ext4 htree, btrfs, etc that
-> use hash keys instead of byte offsets for doing directory traversal.
-> The comment at generic_file_llseek() is that it is intended for use by
-> regular files.
-> 
-> Should the ext4_llseek() code be changed to return 0x7ffffffff for the
-> SEEK_END value?  That makes more sense compared to values returned for
-> SEEK_CUR so that an application can compare the current "offset" with
-> the final value for a progress bar.
+But it really does not matter. The amba-pl022.c driver has all the same
+deviations for things called "PL023" that are not pure PL022 either.
+I just made the driver a bit more flexible, supporting both.
 
-So maybe we make SEEK_DATA/SEEK_HOLE only work on regular files and not
-directories?  Sunil what does solaris do?  Thanks,
+If the people doing drivers/usb/musb/* had done the same thing we
+would have had what, 5 drivers for similar hardware?
 
-Josef
+> Back then, it wasn't known how the M2M DMA interface (the one used
+> by SSP and IDE) was going to be implemented.
+
+But I knew, having just written the needed extensions to dmaengine.
+And I said so. But I realize I'm maybe not considered an authoritative
+source on the subject, and I'm biased.
+
+> IMHO it is better to have ep93xx implementation on its own driver since it is
+> not a real AMBA PL022 peripheral but some weird hack made by Cirrus (although
+> my opinions are bit biased).
+
+I disagree because it's IMO at first sight no more deviant than our "PL023"
+variants that still use the same pl022 driver.
+
+Is there some inexepensive hardware with EP93xx I can get to fix this
+myself?
+
+Yours,
+Linus Walleij
