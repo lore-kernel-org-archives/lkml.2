@@ -1,105 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab1EYPhp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 11:37:45 -0400
-Received: from linux-sh.org ([111.68.239.195]:48797 "EHLO linux-sh.org"
+	id S932912Ab1EYPpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 11:45:09 -0400
+Received: from lo.gmane.org ([80.91.229.12]:60337 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758111Ab1EYPho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 11:37:44 -0400
-Date: Thu, 26 May 2011 00:37:09 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] rmobile updates for 2.6.40-rc1
-Message-ID: <20110525153708.GA20089@linux-sh.org>
+	id S932560Ab1EYPpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 11:45:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Olaf Freyer <aaron667@gmx.net>
+Subject: Re: Erroneous package power limit notification since kernel 2.6.39
+Date: Wed, 25 May 2011 15:40:24 +0000 (UTC)
+Message-ID: <loom.20110525T172412-101@post.gmane.org>
+References: <4DD9092A.4080507@gmx.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 92.231.219.237 (Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1) Gecko/20110525 Firefox/4.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
+Hi,
 
-	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git rmobile-latest
+I tried to git-bisect to find the root cause of this issue, but feel somewhat
+lost after spending two evening without any usefull results.
 
-Which contains:
+I started with v2.6.38 as last known good and v2.6.39-rc1 as first known bad
+version. My presumption was that bisection would now just happen between those
+two versions - but somehow I ended up building 2.6.38.rc3,+ 2.6.38.rc7+,
+2.6.38.rc2+ and 2.6.38.rc1+ during this process. Versions that are beyond the
+starting range I intended to use. Or maybe I just haven't understood the whole
+process yet.
 
-Damian Hobson-Garcia (1):
-      sh_mobile: Add MSTP clock for MERAM
+Both of my bisection attempts ended near the same set of drm/i915 changes that
+resulted in non-bootable kernels. Considering I'm using a Intel(R) Core(TM)
+i7-2720QM with some Intel Sandybridge Chipset graphics those might sound
+somewhat plausible to someone knowing the internals, but don't help me at all.
 
-Guennadi Liakhovetski (5):
-      ARM: mach-shmobile: MMCIF on mackerel can also be a module
-      ARM: mach-shmobile: add DMA for MMCIF on mackerel
-      ARM: mach-shmobile: PLL does not have to run constantly for HDMI
-      ARM: switch mackerel to dynamically manage the platform camera
-      ARM: mach-shmobile: mark DMA slave ID 0 as invalid
+I'm not yet 100% sure, but I think the package power limit notification events I
+see in /var/log/messages might coincide with the moment of my xorg startup. (But
+those are just wall clock time estimations.) I will try some bootups without X
+later this evening and report back if those package power limit notification
+events also trigger without X running.
 
-Kuninori Morimoto (3):
-      ARM: mach-shmobile: clock-sh7372: remove status check from fsidiv_recalc
-      ARM: arch-shmobile: sh7372: add renesas_usbhs irq support
-      ARM: mach-shmobile: mackerel: add renesas_usbhs support for USB1
+The "result" of my last git bisection attempt was:
 
-Magnus Damm (20):
-      ARM: mach-shmobile: Use SCIFA and SCIFB port types on sh7377
-      ARM: mach-shmobile: sh7367 UIO platform data V3
-      ARM: mach-shmobile: sh7372 UIO platform data V3
-      ARM: mach-shmobile: sh7377 UIO platform data V3
-      ARM: mach-shmobile: Disable sh7372 RT side MSTP bits
-      ARM: mach-shmobile: headsmp.S build fix
-      ARM: mach-shmobile: sh73a0 twd_base fix
-      ARM: mach-shmobile: AG5EVM DSI resource string update
-      ARM: mach-shmobile: Add SDHI support for AG5EVM and sh73a0
-      ARM: mach-shmobile: Suspend-to-RAM support
-      ARM: mach-shmobile: sh7372 Core Standby Suspend-to-RAM
-      ARM: mach-shmobile: CPUIdle support
-      ARM: mach-shmobile: sh7372 Core Standby CPUIdle
-      dmaengine: shdma: Make second memory window optional
-      dmaengine: shdma: Fix SH_DMAC_MAX_CHANNELS handling
-      dmaengine: shdma: Update SH_DMAC_MAX_CHANNELS to 20
-      ARM: mach-shmobile: sh73a0 DMA Engine support for SY-DMAC
-      ARM: mach-shmobile: Enable DMAEngine for MMCIF on AG5EVM
-      ARM: mach-shmobile: Enable DMAEngine for SDHI on AG5EVM
-      ARM: mach-shmobile: sh73a0: mark DMA slave ID 0 as invalid
+git bisect start
+# good: [521cb40b0c44418a4fd36dc633f575813d59a43d] Linux 2.6.38
+git bisect good 521cb40b0c44418a4fd36dc633f575813d59a43d
+# bad: [0ce790e7d736cedc563e1fb4e998babf5a4dbc3d] Linux 2.6.39-rc1
+git bisect bad 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d
+# bad: [179198373cf374f0ef793f1023c1cdd83b53674d] Merge branch 'nfs-for-2.6.39'
+of git://git.linux-nfs.org/projects/trondmy/nfs-2.6
+git bisect bad 179198373cf374f0ef793f1023c1cdd83b53674d
+# good: [6445ced8670f37cfc2c5e24a9de9b413dbfc788d] Merge branch 'staging-next'
+of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
+git bisect good 6445ced8670f37cfc2c5e24a9de9b413dbfc788d
+# good: [d72751ede1b9bf993d7bd3377305c8e9e36a3cc4] Merge branch 'for-davem' of
+ssh://master.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6
+git bisect good d72751ede1b9bf993d7bd3377305c8e9e36a3cc4
+# good: [16d8775700f1815076f879719ce14b33f50a3171] Merge branch 'for-linus' of
+master.kernel.org:/home/rmk/linux-2.6-arm
+git bisect good 16d8775700f1815076f879719ce14b33f50a3171
+# bad: [fd34b0dee4d237ce9332cc62b03adebfe4fa9f9d] Merge
+git://git.kernel.org/pub/scm/linux/kernel/git/lethal/fbdev-2.6
+git bisect bad fd34b0dee4d237ce9332cc62b03adebfe4fa9f9d
+# good: [bd35fe5a7930bf83ed56422ea4e4b6471ee6f739] drm/nouveau: fix
+__nouveau_fence_wait performance
+git bisect good bd35fe5a7930bf83ed56422ea4e4b6471ee6f739
+# bad: [942b0e95c34f1ba432d08e1c0288ed032d32c3b2] drm/radeon/kms: fix typo in
+atom overscan setup
+git bisect bad 942b0e95c34f1ba432d08e1c0288ed032d32c3b2
+# bad: [308977ac03117706c342099a40919b3da2667cce] drm/i915: Use DEBUG_KMS for
+the self-refresh watermarks
+git bisect bad 308977ac03117706c342099a40919b3da2667cce
+# skip: [417ae1476de3ae9689a374d70565f41b3474641e] drm/i915: Include TLB miss
+latency in g4x watermark computations
+git bisect skip 417ae1476de3ae9689a374d70565f41b3474641e
+# skip: [b0b544cd37c060e261afb2cf486296983fcb56da] drm/i915: Use PM QoS to
+prevent C-State starvation of gen3 GPU
+git bisect skip b0b544cd37c060e261afb2cf486296983fcb56da
+# skip: [fe4402931e43e81a4129eba41d05cf8907603af5] Merge branch
+'drm-intel-fixes' into drm-intel-next
+git bisect skip fe4402931e43e81a4129eba41d05cf8907603af5
+# bad: [987a709e1589cf10e250e04ce9df910b735d4f60] drm/i915: remove now
+unnecessary delays in eDP panel power sequencing
+git bisect bad 987a709e1589cf10e250e04ce9df910b735d4f60
+# skip: [18b2190ca5bd3f19717421b1591c79c9b0372428] drm/i915: allow 945 to
+control self refresh (CxSR) automatically
+git bisect skip 18b2190ca5bd3f19717421b1591c79c9b0372428
+# skip: [6f06ce184c765fd8d50669a8d12fdd566c920859] drm/i915: set phase sync
+pointer override enable before setting phase sync pointer
+git bisect skip 6f06ce184c765fd8d50669a8d12fdd566c920859
+# skip: [b24e71798871089da1a4ab049db2800afc1aac0c] drm/i915: add pipe/plane
+enable/disable functions
+git bisect skip b24e71798871089da1a4ab049db2800afc1aac0c
+# skip: [f67a559daaa0e2ba616bfe9438f202bc57bc8c72] drm/i915: skip FDI & PCH
+enabling for DP_A
+git bisect skip f67a559daaa0e2ba616bfe9438f202bc57bc8c72
+# skip: [ea0760cfc00b9e534423fdaf630d1c8ce7a5ede0] drm/i915: add panel lock
+assertion function
+git bisect skip ea0760cfc00b9e534423fdaf630d1c8ce7a5ede0
+# skip: [ccab5c82759e2ace74b2e84f82d1e0eedd932571] drm/i915: tune Sandy Bridge
+DRPS constants
+git bisect skip ccab5c82759e2ace74b2e84f82d1e0eedd932571
+# skip: [a37f2f87edc1b6e5932becf6e51535d36b690f2a] drm/i915: Remove unused code:
+i915_enable_interrupt()
+git bisect skip a37f2f87edc1b6e5932becf6e51535d36b690f2a
+# skip: [aa9b500ddf1a6318e7cf8b1754696edddae86db9] drm/i915: Honour LVDS sync
+polarity from EDID
+git bisect skip aa9b500ddf1a6318e7cf8b1754696edddae86db9
+# skip: [c0c06bd244179f754d68684fd87674585a153e40] drm/i915/ringbuffer: Kill an
+annoyingly frequent debug message
+git bisect skip c0c06bd244179f754d68684fd87674585a153e40
+# skip: [311bd68e024f9006db66cbadc3bd9f62fd663f4b] drm/i915: Trivial sparse fixes
+git bisect skip 311bd68e024f9006db66cbadc3bd9f62fd663f4b
+# skip: [63d7bbe9ded4146e3f78e5742b119fa1fdb52665] drm/i915: add PLL
+enable/disable functions
+git bisect skip 63d7bbe9ded4146e3f78e5742b119fa1fdb52665
+# skip: [0fc932b8ec36116bb759105ce910b0475e63112a] drm/i915: factor out FDI
+disable and add FDI assertions
+git bisect skip 0fc932b8ec36116bb759105ce910b0475e63112a
+# bad: [bdd92c9ad287e03a2ec52f5a89c470cd5caae1c2] Merge branch 'drm-intel-fixes'
+into drm-intel-next
+git bisect bad bdd92c9ad287e03a2ec52f5a89c470cd5caae1c2
+# skip: [040484af3a4efa65786b6e107fbe74747679e17c] drm/i915: add transcoder
+enable/disable functions
+git bisect skip 040484af3a4efa65786b6e107fbe74747679e17c
+# skip: [633f2ea26665d37bb3c8ae30799aa14988622653] drm/i915: Disable SSC for
+outputs other than LVDS or DP
+git bisect skip 633f2ea26665d37bb3c8ae30799aa14988622653
+# skip: [d9b6cb568bc6eca8db88357bf8bbb92d42a91b1e] drm/i915: assert panel is
+unlocked before writing transcoder timing regs
+git bisect skip d9b6cb568bc6eca8db88357bf8bbb92d42a91b1e
+# skip: [9a4114ffa7b6f5f4635e3745a8dc051d15d4596a] drm/i915/bios: Change default
+clock source on PineView to use SSC
+git bisect skip 9a4114ffa7b6f5f4635e3745a8dc051d15d4596a
+# skip: [92f2584a083986c05fc811bbdf380c3fa7c12296] drm/i915: add PCH DPLL
+enable/disable functions
+git bisect skip 92f2584a083986c05fc811bbdf380c3fa7c12296
+# skip: [65993d64a31844ad444694efb2d159eb9c883e49] drm/i915: don't enable plane,
+pipe and PLL prematurely
+git bisect skip 65993d64a31844ad444694efb2d159eb9c883e49
+# skip: [01fe9dbde19a1a27b8ee63e2d964562962e1eb78] drm/i915: Use ACPI OpRegion
+to determine lid status
+git bisect skip 01fe9dbde19a1a27b8ee63e2d964562962e1eb78
 
-Paul Mundt (3):
-      mailmap: Add entry for Damian Hobson-Garcia.
-      ARM: mach-shmobile: Tidy up after SH7372 pm changes.
-      ARM: mach-shmobile: Correct the G4EVM SDHI0 I/O range.
+Regards
+  Olaf Freyer
 
-Simon Horman (2):
-      ARM: mach-shmobile: ap4evb, mackerel: fixup scif initialisation for zboot
-      ARM: arch-shmobile: Use multiple irq vectors for SDHI
-
- .mailmap                                           |    1 +
- arch/arm/mach-shmobile/Makefile                    |    5 +
- arch/arm/mach-shmobile/board-ag5evm.c              |  118 +++++++++
- arch/arm/mach-shmobile/board-ap4evb.c              |   30 ++-
- arch/arm/mach-shmobile/board-g4evm.c               |    2 +-
- arch/arm/mach-shmobile/board-mackerel.c            |  272 +++++++++++++++++---
- arch/arm/mach-shmobile/clock-sh7372.c              |   21 ++-
- arch/arm/mach-shmobile/clock-sh73a0.c              |   19 ++-
- arch/arm/mach-shmobile/cpuidle.c                   |   92 +++++++
- arch/arm/mach-shmobile/headsmp.S                   |    2 +-
- arch/arm/mach-shmobile/include/mach/common.h       |    7 +
- .../arm/mach-shmobile/include/mach/head-ap4evb.txt |    3 +-
- .../mach-shmobile/include/mach/head-mackerel.txt   |    3 +-
- arch/arm/mach-shmobile/include/mach/sh7372.h       |    1 +
- arch/arm/mach-shmobile/include/mach/sh73a0.h       |   30 +++
- arch/arm/mach-shmobile/intc-sh7372.c               |   46 ++--
- arch/arm/mach-shmobile/pm-sh7372.c                 |  108 ++++++++
- arch/arm/mach-shmobile/setup-sh7367.c              |  223 ++++++++++++++++
- arch/arm/mach-shmobile/setup-sh7372.c              |  217 ++++++++++++++++
- arch/arm/mach-shmobile/setup-sh7377.c              |  239 +++++++++++++++++-
- arch/arm/mach-shmobile/setup-sh73a0.c              |  244 ++++++++++++++++++
- arch/arm/mach-shmobile/sleep-sh7372.S              |  260 +++++++++++++++++++
- arch/arm/mach-shmobile/smp-sh73a0.c                |    9 +-
- arch/arm/mach-shmobile/suspend.c                   |   47 ++++
- drivers/dma/shdma.c                                |   42 +++-
- drivers/dma/shdma.h                                |    2 +-
- 26 files changed, 1942 insertions(+), 101 deletions(-)
- create mode 100644 arch/arm/mach-shmobile/cpuidle.c
- create mode 100644 arch/arm/mach-shmobile/pm-sh7372.c
- create mode 100644 arch/arm/mach-shmobile/sleep-sh7372.S
- create mode 100644 arch/arm/mach-shmobile/suspend.c
