@@ -1,87 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1EYKt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 06:49:56 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:39569 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab1EYKtz (ORCPT
+	id S1754781Ab1EYKvB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 06:51:01 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58302 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab1EYKvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 06:49:55 -0400
-Date: Wed, 25 May 2011 12:49:52 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/6] slab: only define SLAB_CACHE_DMA for CONFIG_ZONE_DMA
-Message-ID: <20110525104952.GD2498@osiris.boeblingen.de.ibm.com>
-References: <alpine.DEB.2.00.1105241650230.29780@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1105241653180.29780@chino.kir.corp.google.com>
+	Wed, 25 May 2011 06:51:00 -0400
+Date: Wed, 25 May 2011 12:50:57 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
+Message-ID: <20110525105057.GA21830@gere.osrc.amd.com>
+References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
+ <20110525065451.GC429@elte.hu>
+ <20110525080042.GA27183@liondog.tnic>
+ <20110525090501.GA28500@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105241653180.29780@chino.kir.corp.google.com>
+In-Reply-To: <20110525090501.GA28500@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 04:53:57PM -0700, David Rientjes wrote:
-> Only define SLAB_CACHE_DMA support if CONFIG_ZONE_DMA is enabled.  This
-> catches build errors when used on an invalid configuration.
+On Wed, May 25, 2011 at 11:05:01AM +0200, Ingo Molnar wrote:
+> > Frankly, I'm not even 100% persuaded this is needed. The coretemp.c 
+> > jump-through-hoops to get the ucode revision is maybe the only case 
+> > that warrants adding that field to /proc/cpuinfo.
+
+> I've often wondered whether the CPU involved in a particular bugreport
+> has the latest microcode installed.
+
+Ok, that's a good point, actually.
+
+> Sure we have /sys/devices/system/cpu/cpuN/microcode/version, but
+> that's both privileged to get
+
+Not only that but you have to load the ucode driver to be able to read
+it. /proc/cpuinfo looks like the easiest and most generic place.
+
+> and also has to be asked for separately.
+
+yes.
+
 > 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  include/linux/slab.h |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+> Arguably the microcode version is a natural extension to the existing 
+> family/model/stepping sequence:
 > 
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -20,7 +20,9 @@
->  #define SLAB_RED_ZONE		0x00000400UL	/* DEBUG: Red zone objs in a cache */
->  #define SLAB_POISON		0x00000800UL	/* DEBUG: Poison objects */
->  #define SLAB_HWCACHE_ALIGN	0x00002000UL	/* Align objs on cache lines */
-> -#define SLAB_CACHE_DMA		0x00004000UL	/* Use GFP_DMA memory */
-> +#ifdef CONFIG_ZONE_DMA
-> +# define SLAB_CACHE_DMA		0x00004000UL	/* Use GFP_DMA memory */
-> +#endif
->  #define SLAB_STORE_USER		0x00010000UL	/* DEBUG: Store the last owner for bug hunting */
->  #define SLAB_PANIC		0x00040000UL	/* Panic if kmem_cache_create() fails */
->  /*
+>  cpu family	: 6
+>  model		: 26
+>  stepping	: 5
+> 
+> We'd now see:
+> 
+>  cpu family	: 6
+>  model		: 26
+>  stepping	: 5
+>  ucode_version  : 17
+> 
+> Where 'stepping' is a hardware revison number and 'ucode_version' is 
+> a dual software/hw revision number.
 
-Ok, now I see what you want. But please let's don't add an
-#ifdef CONFIG_ZONE_DMA
-to the dasd driver. Instead just re-add ZONE_DMA to 31-bit s390. Everything
-would be in ZONE_DMA again and ZONE_NORMAL would be empty. Doesn't matter
-if we have an additional zone, since 31-bit support isn't important anymore.
+Right.
 
-So I could add the following patch to the s390 tree, if wanted:
+Btw, can we dump the ucode version in hex since ours are much easier to
+read that way:
 
----
- arch/s390/Kconfig   |    2 +-
- arch/s390/mm/init.c |    2 --
- 2 files changed, 1 insertion(+), 3 deletions(-)
+[86483.770976] microcode: CPU0: patch_level=0x010000c4
+[86483.826987] microcode: CPU1: patch_level=0x010000c4
+[86483.835071] microcode: CPU2: patch_level=0x010000c4
+...
 
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -2,7 +2,7 @@ config MMU
- 	def_bool y
- 
- config ZONE_DMA
--	def_bool y if 64BIT
-+	def_bool y
- 
- config LOCKDEP_SUPPORT
- 	def_bool y
---- a/arch/s390/mm/init.c
-+++ b/arch/s390/mm/init.c
-@@ -119,9 +119,7 @@ void __init paging_init(void)
- 	sparse_memory_present_with_active_regions(MAX_NUMNODES);
- 	sparse_init();
- 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
--#ifdef CONFIG_ZONE_DMA
- 	max_zone_pfns[ZONE_DMA] = PFN_DOWN(MAX_DMA_ADDRESS);
--#endif
- 	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
- 	free_area_init_nodes(max_zone_pfns);
- 	fault_init();
+I guess for Intel the ucode version format won't matter that much.
+
+> > > > @@ -111,6 +111,8 @@ struct cpuinfo_x86 {
+> > > >  	/* Index into per_cpu list: */
+> > > >  	u16			cpu_index;
+> > > >  #endif
+> > > > +	/* CPU update signature */
+> > > > +	u32			x86_cpu_update;
+> > > 
+> > > This should be cpu_microcode_version instead. We already know its x86 so the 
+> > > x86_ prefix is superfluous. 'cpu_update' is also rather ambigious and does not 
+> > > describe much.
+> > 
+> > Or shorter: 'cpu_ucode_version'.
+> 
+> We already know it's a cpu data structure, since it's called 'struct 
+> cpuinfo_x86' and the local variable is named 'c' which is the typical 
+> shortcut for that data structure.
+> 
+> so c->ucode_version is the right name here.
+
+even better.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
