@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab1EYL3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 07:29:20 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38459 "EHLO mx2.mail.elte.hu"
+	id S1754938Ab1EYLar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 07:30:47 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35869 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752714Ab1EYL3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 07:29:19 -0400
-Date: Wed, 25 May 2011 13:28:52 +0200
+	id S1751884Ab1EYLaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 07:30:46 -0400
+Date: Wed, 25 May 2011 13:30:17 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Borislav Petkov <bp@amd64.org>
 Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
@@ -14,7 +14,7 @@ Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
         Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>
 Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
-Message-ID: <20110525112852.GD30983@elte.hu>
+Message-ID: <20110525113017.GE30983@elte.hu>
 References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
  <20110525065451.GC429@elte.hu>
  <20110525080042.GA27183@liondog.tnic>
@@ -39,27 +39,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Borislav Petkov <bp@amd64.org> wrote:
 
-> Btw, can we dump the ucode version in hex since ours are much easier to
-> read that way:
+> > Sure we have /sys/devices/system/cpu/cpuN/microcode/version, but 
+> > that's both privileged to get
 > 
-> [86483.770976] microcode: CPU0: patch_level=0x010000c4
-> [86483.826987] microcode: CPU1: patch_level=0x010000c4
-> [86483.835071] microcode: CPU2: patch_level=0x010000c4
-> ...
+> Not only that but you have to load the ucode driver to be able to 
+> read it. /proc/cpuinfo looks like the easiest and most generic 
+> place.
 
-How is that version constructed and iterated, or example is the 
-0x01000000 bit always set?
-
-If it's always set then it might make sense to turn this into a more 
-human-readable version number: mask out the 0x01000000 and report 
-0xc4 as 194? Or is the *real* version above just '4'?
-
-Should 0x010000c4 perhaps be printed as 1.10.4?
-
-> I guess for Intel the ucode version format won't matter that much.
-
-Well, if Intel does similar encodings as AMD, then it would be nice 
-to turn that into human-readable version strings as well.
+Indeed, that's a good point - i sometimes boot kernels without the 
+microcode driver built in, so then no microcode gets loaded. If i 
+report a weird bug then whoever looks at my bug report might notice 
+the ancient ucode version number in /proc/cpuinfo.
 
 Thanks,
 
