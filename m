@@ -1,149 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806Ab1EYUtd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:49:33 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50398 "EHLO hera.kernel.org"
+	id S932567Ab1EYUs2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:48:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38516 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932590Ab1EYUtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:49:31 -0400
-Date: Wed, 25 May 2011 20:49:19 GMT
-From: tip-bot for Michal Marek <mmarek@suse.cz>
-Message-ID: <tip-079f85e624189292d1c818b47764916bf8cf84a8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, pebolle@tiscali.nl, hpa@zytor.com,
-        mingo@redhat.com, mmarek@suse.cz, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, pebolle@tiscali.nl,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mmarek@suse.cz,
-        hpa@linux.intel.com
-In-Reply-To: <1302607824-24699-1-git-send-email-mmarek@suse.cz>
-References: <1302607824-24699-1-git-send-email-mmarek@suse.cz>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/build] x86, build: Do not set the root_dev field in bzImage
-Git-Commit-ID: 079f85e624189292d1c818b47764916bf8cf84a8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756382Ab1EYUs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:48:26 -0400
+Message-ID: <4DDD6B59.9000108@suse.cz>
+Date: Wed, 25 May 2011 22:49:29 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 May 2011 20:49:19 +0000 (UTC)
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 28/34] atm: Drop __TIME__ usage
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-29-git-send-email-mmarek@suse.cz>
+In-Reply-To: <1302015561-21047-29-git-send-email-mmarek@suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  079f85e624189292d1c818b47764916bf8cf84a8
-Gitweb:     http://git.kernel.org/tip/079f85e624189292d1c818b47764916bf8cf84a8
-Author:     Michal Marek <mmarek@suse.cz>
-AuthorDate: Tue, 12 Apr 2011 13:30:24 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 25 May 2011 12:46:05 -0700
+Dne 5.4.2011 16:59, Michal Marek napsal(a):
+> The kernel already prints its build timestamp during boot, no need to
+> repeat it in random drivers and produce different object files each
+> time.
+> 
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+>  net/atm/lec.c |    2 +-
+>  net/atm/mpc.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 
-x86, build: Do not set the root_dev field in bzImage
+Hi,
 
-This has been obsoleted by the root= commandline and the rdev utility
-for many, many years.  People who still depend on this will surely
-have a copy of the rdev utility around, the rest of the world gets rid
-of another piece of buildhost-dependent data in the build. Thanks to
-Paul Bolle for the build.c cleanup.
+I don't see this patch in today's linux-next. Any objection against me
+applying it to the kbuild-2.6.git repository?
 
-Cc: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-Link: http://lkml.kernel.org/r/1302607824-24699-1-git-send-email-mmarek@suse.cz
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/Makefile      |    9 +--------
- arch/x86/boot/tools/build.c |   33 ++++-----------------------------
- 2 files changed, 5 insertions(+), 37 deletions(-)
+Thanks,
+Michal
 
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index f7cb086..95365a8 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -9,12 +9,6 @@
- # Changed by many, many contributors over the years.
- #
- 
--# ROOT_DEV specifies the default root-device when making the image.
--# This can be either FLOPPY, CURRENT, /dev/xxxx or empty, in which case
--# the default of FLOPPY is used by 'build'.
--
--ROOT_DEV	:= CURRENT
--
- # If you want to preset the SVGA mode, uncomment the next line and
- # set SVGA_MODE to whatever number you want.
- # Set it to -DSVGA_MODE=NORMAL_VGA if you just want the EGA/VGA mode.
-@@ -75,8 +69,7 @@ GCOV_PROFILE := n
- $(obj)/bzImage: asflags-y  := $(SVGA_MODE)
- 
- quiet_cmd_image = BUILD   $@
--cmd_image = $(obj)/tools/build $(obj)/setup.bin $(obj)/vmlinux.bin \
--	$(ROOT_DEV) > $@
-+cmd_image = $(obj)/tools/build $(obj)/setup.bin $(obj)/vmlinux.bin > $@
- 
- $(obj)/bzImage: $(obj)/setup.bin $(obj)/vmlinux.bin $(obj)/tools/build FORCE
- 	$(call if_changed,image)
-diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
-index ee3a4ea..fdc60a0 100644
---- a/arch/x86/boot/tools/build.c
-+++ b/arch/x86/boot/tools/build.c
-@@ -130,7 +130,7 @@ static void die(const char * str, ...)
- 
- static void usage(void)
- {
--	die("Usage: build setup system [rootdev] [> image]");
-+	die("Usage: build setup system [> image]");
- }
- 
- int main(int argc, char ** argv)
-@@ -138,39 +138,14 @@ int main(int argc, char ** argv)
- 	unsigned int i, sz, setup_sectors;
- 	int c;
- 	u32 sys_size;
--	u8 major_root, minor_root;
- 	struct stat sb;
- 	FILE *file;
- 	int fd;
- 	void *kernel;
- 	u32 crc = 0xffffffffUL;
- 
--	if ((argc < 3) || (argc > 4))
-+	if (argc != 3)
- 		usage();
--	if (argc > 3) {
--		if (!strcmp(argv[3], "CURRENT")) {
--			if (stat("/", &sb)) {
--				perror("/");
--				die("Couldn't stat /");
--			}
--			major_root = major(sb.st_dev);
--			minor_root = minor(sb.st_dev);
--		} else if (strcmp(argv[3], "FLOPPY")) {
--			if (stat(argv[3], &sb)) {
--				perror(argv[3]);
--				die("Couldn't stat root device.");
--			}
--			major_root = major(sb.st_rdev);
--			minor_root = minor(sb.st_rdev);
--		} else {
--			major_root = 0;
--			minor_root = 0;
--		}
--	} else {
--		major_root = DEFAULT_MAJOR_ROOT;
--		minor_root = DEFAULT_MINOR_ROOT;
--	}
--	fprintf(stderr, "Root device is (%d, %d)\n", major_root, minor_root);
- 
- 	/* Copy the setup code */
- 	file = fopen(argv[1], "r");
-@@ -193,8 +168,8 @@ int main(int argc, char ** argv)
- 	memset(buf+c, 0, i-c);
- 
- 	/* Set the default root device */
--	buf[508] = minor_root;
--	buf[509] = major_root;
-+	buf[508] = DEFAULT_MINOR_ROOT;
-+	buf[509] = DEFAULT_MAJOR_ROOT;
- 
- 	fprintf(stderr, "Setup is %d bytes (padded to %d bytes).\n", c, i);
- 
+
+> diff --git a/net/atm/lec.c b/net/atm/lec.c
+> index 38754fd..cb14ddf 100644
+> --- a/net/atm/lec.c
+> +++ b/net/atm/lec.c
+> @@ -1173,7 +1173,7 @@ static int __init lane_module_init(void)
+>  #endif
+>  
+>  	register_atm_ioctl(&lane_ioctl_ops);
+> -	pr_info("lec.c: " __DATE__ " " __TIME__ " initialized\n");
+> +	pr_info("lec.c: initialized\n");
+>  	return 0;
+>  }
+>  
+> diff --git a/net/atm/mpc.c b/net/atm/mpc.c
+> index 644cdf0..3ccca42 100644
+> --- a/net/atm/mpc.c
+> +++ b/net/atm/mpc.c
+> @@ -1482,7 +1482,7 @@ static __init int atm_mpoa_init(void)
+>  	if (mpc_proc_init() != 0)
+>  		pr_info("failed to initialize /proc/mpoa\n");
+>  
+> -	pr_info("mpc.c: " __DATE__ " " __TIME__ " initialized\n");
+> +	pr_info("mpc.c: initialized\n");
+>  
+>  	return 0;
+>  }
+
