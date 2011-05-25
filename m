@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923Ab1EYE63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 00:58:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57855 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751454Ab1EYE61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 00:58:27 -0400
-Date: Wed, 25 May 2011 04:58:17 GMT
-From: tip-bot for Kees Cook <kees.cook@canonical.com>
-Message-ID: <tip-7ccafc5f75c87853f3c49845d5a884f2376e03ce@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        fenghua.yu@intel.com, kees.cook@canonical.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, fenghua.yu@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <20110524232926.GA27728@outflux.net>
-References: <20110524232926.GA27728@outflux.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, cpufeature: Update CPU feature RDRND to RDRAND
-Git-Commit-ID: 7ccafc5f75c87853f3c49845d5a884f2376e03ce
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 May 2011 04:58:18 +0000 (UTC)
+	id S1752145Ab1EYFTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 01:19:48 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54856 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab1EYFTr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 01:19:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Ot2+ghnlJ7z0jUf9ehXxT8EJZeu9gN2H2M/JKlgmhZoK+hXMGNiTbivma1U6o/4Ro/
+         Kj9A6fZg5xvl3Yx1U4scSXuubTXMlZhKQt0013KCdI9/UQoDMH7XkKOK1fJikkoENg/D
+         WxcxWYg0x/yd3LUYPDhwdxV2RKaRCT9nrstME=
+Subject: [PATCH] leds: leds-asic3: make LEDS_ASIC3 depend on LEDS_CLASS
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Paul Parsons <lost.distance@yahoo.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 May 2011 13:19:40 +0800
+Message-ID: <1306300780.20042.7.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7ccafc5f75c87853f3c49845d5a884f2376e03ce
-Gitweb:     http://git.kernel.org/tip/7ccafc5f75c87853f3c49845d5a884f2376e03ce
-Author:     Kees Cook <kees.cook@canonical.com>
-AuthorDate: Tue, 24 May 2011 16:29:26 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 24 May 2011 16:37:27 -0700
+We call led_classdev_unregister/led_classdev_register in
+asic3_led_remove/asic3_led_probe, thus make LEDS_ASIC3 depend on LEDS_CLASS.
 
-x86, cpufeature: Update CPU feature RDRND to RDRAND
+This patch fixes below build error if LEDS_CLASS is not configured.
 
-The Intel manual changed the name of the CPUID bit to match the
-instruction name. We should follow suit for sanity's sake. (See Intel SDM
-Volume 2, Table 3-20 "Feature Information Returned in the ECX Register".)
+  LD      .tmp_vmlinux1
+drivers/built-in.o: In function `asic3_led_remove':
+clkdev.c:(.devexit.text+0x1860): undefined reference to `led_classdev_unregister'
+drivers/built-in.o: In function `asic3_led_probe':
+clkdev.c:(.devinit.text+0xcee8): undefined reference to `led_classdev_register'
+make: *** [.tmp_vmlinux1] Error 1
 
-[ hpa: we can only do this at this time because there are currently no CPUs
-  with this feature on the market, hence this is pre-hardware enabling.
-  However, Cc:'ing stable so that stable can present a consistent ABI. ]
-
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Link: http://lkml.kernel.org/r/20110524232926.GA27728@outflux.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: <stable@kernel.org> v2.6.36-39
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- arch/x86/include/asm/cpufeature.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/leds/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 5dc6acc..71cc380 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -125,7 +125,7 @@
- #define X86_FEATURE_OSXSAVE	(4*32+27) /* "" XSAVE enabled in the OS */
- #define X86_FEATURE_AVX		(4*32+28) /* Advanced Vector Extensions */
- #define X86_FEATURE_F16C	(4*32+29) /* 16-bit fp conversions */
--#define X86_FEATURE_RDRND	(4*32+30) /* The RDRAND instruction */
-+#define X86_FEATURE_RDRAND	(4*32+30) /* The RDRAND instruction */
- #define X86_FEATURE_HYPERVISOR	(4*32+31) /* Running on a hypervisor */
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index 4a40561..cb8562a 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -381,6 +381,7 @@ config LEDS_NETXBIG
  
- /* VIA/Cyrix/Centaur-defined CPU features, CPUID level 0xC0000001, word 5 */
+ config LEDS_ASIC3
+ 	bool "LED support for the HTC ASIC3"
++	depends on LEDS_CLASS
+ 	depends on MFD_ASIC3
+ 	default y
+ 	help
+-- 
+1.7.1
+
+
+
