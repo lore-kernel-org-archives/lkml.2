@@ -1,220 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab1EYCPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 22:15:32 -0400
-Received: from [58.250.33.3] ([58.250.33.3]:47886 "EHLO b20223-02"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751648Ab1EYCPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 22:15:31 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 May 2011 22:15:30 EDT
-Date: Wed, 25 May 2011 10:08:51 +0800
-From: Richard Zhao <linuxzsc@gmail.com>
-To: Colin Cross <ccross@google.com>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, linux-sh@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Add a generic struct clk
-Message-ID: <20110525020850.GA2173@b20223-02.ap.freescale.net>
-References: <1305876469.325655.313573683829.0.gpush@pororo>
- <BANLkTik=EFayZW61TgfOni-XML+tRLOcqw@mail.gmail.com>
- <20110524172231.GA2764@b20223-02.ap.freescale.net>
- <BANLkTimY1cxqaPG1T=_xKPustXR1GSmUKQ@mail.gmail.com>
+	id S1754725Ab1EYCPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 22:15:38 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47650 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab1EYCPf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 22:15:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=MjhGdAP+K5l1MLPxv/A9jnedykPNJizT+FIb+t5FWhNtDmjA5FL34Oi4VvM6thTCOz
+         m3+dIJW5JfBGkhs1UQ+nf+rEhMAkN2rim/Jny4HbyuhS83TrcqAOk0bCYO5NWOh0IZhP
+         X9P2kJCXhSNr30/2Usb8VWib+eYNwAFcIoU/s=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimY1cxqaPG1T=_xKPustXR1GSmUKQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 25 May 2011 10:15:12 +0800
+Message-ID: <BANLkTikfje67KyyD+7Pn0D=afTyEde0euw@mail.gmail.com>
+Subject: CSR ARM SoC Subarchitecture preview
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Pitre <nico@fluxnic.net>, linux-arm-kernel@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4P2G18G005892
 
-On Tue, May 24, 2011 at 10:52:53AM -0700, Colin Cross wrote:
-> On Tue, May 24, 2011 at 10:22 AM, Richard Zhao <linuxzsc@gmail.com> wrote:
-> > On Mon, May 23, 2011 at 04:12:24PM -0700, Colin Cross wrote:
-> >> On Fri, May 20, 2011 at 12:27 AM, Jeremy Kerr <jeremy.kerr@canonical.com> wrote:
-> >> > [This series was originally titled 'Add a common struct clk', but
-> >> > the goals have changed since that first set of patches. We're now aiming
-> >> > for a more complete generic clock infrastructure, rather than just
-> >> > abstracting struct clk]
-> >> >
-> >> > [This series still needs work, see the TODO section below]
-> >> >
-> >> > [Totally RFC at the moment]
-> >> >
-> >> > Hi all,
-> >> >
-> >> > These patches are an attempt to allow platforms to share clock code. At
-> >> > present, the definitions of 'struct clk' are local to platform code,
-> >> > which makes allocating and initialising cross-platform clock sources
-> >> > difficult, and makes it impossible to compile a single image containing
-> >> > support for two ARM platforms with different struct clks.
-> >> >
-> >> > The three patches are for the architecture-independent kernel code,
-> >> > introducing the common clk infrastructure. The changelog for the first
-> >> > patch includes details about the new clock definitions.
-> >> >
-> >> > The second patch implements clk_set_rate, and in doing so adds
-> >> > functionality to walk the clock tree in both directions.
-> >> >
-> >> > clk_set_parent is left unimplemented, see TODO below for why.
-> >> >
-> >> > The third and fourth patches provide some basic clocks (fixed-rate and
-> >> > gated), mostly to serve as an example of the hardware implementation.
-> >> > I'm intending to later provide similar base clocks for mux and divider
-> >> > hardware clocks.
-> >> >
-> >> > Many thanks to the following for their input:
-> >> > �* Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> >> > �* Thomas Gleixner <tglx@linutronix.de>
-> >> > �* Ben Dooks <ben-linux@fluff.org>
-> >> > �* Baruch Siach <baruch@tkos.co.il>
-> >> > �* Russell King <linux@arm.linux.org.uk>
-> >> > �* Uwe Kleine-K�nig <u.kleine-koenig@pengutronix.de>
-> >> > �* Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-> >> > �* Vincent Guittot <vincent.guittot@linaro.org>
-> >> > �* Sascha Hauer <s.hauer@pengutronix.de>
-> >> > �* Ryan Mallon <ryan@bluewatersys.com>
-> >> > �* Colin Cross <ccross@google.com>
-> >> > �* Jassi Brar <jassisinghbrar@gmail.com>
-> >> > �* Saravana Kannan <skannan@codeaurora.org>
-> >>
-> >> I have a similar set of patches I was working on that handles a little
-> >> more of the common code than these. �I can post them if you want, but
-> >> for now I'll just point out where I had different ideas, and not muddy
-> >> the waters with conflicting patches.
-> >>
-> >> > TODO:
-> >> >
-> >> > �* Need to figure out the locking around clk_set_parent. Changing the in-kernel
-> >> > � clock topology requires acquiring both the mutex (to prevent against races
-> >> > � with clk_prepare, which may propagate to the parent clock) and the spinlock
-> >> > � (to prevent the same race with clk_enable).
-> >> >
-> >> > � However, we should also be changing the hardware clock topology in sync with
-> >> > � the in-kernel clock topology, which would imply that both locks *also* need
-> >> > � to be held while updating the parent in the hardware (ie, in
-> >> > � clk_hw_ops->set_parent) too. �However, I believe some platform clock
-> >> > � implementations may require this callback to be able to sleep. Comments?
-> >>
-> >> This sequence is the best I could come up with without adding a
-> >> temporary 2nd parent:
-> >> 1. lock prepare mutex
-> > Maybe tell child clocks "I'm going to change clock rate, please stop work if needed"
-> >> 2. call prepare on the new parent if prepare_count > 0
-> >> 3. lock the enable spinlock
-> >> 4. call enable on the new parent if enable_count > 0
-> >> 5. change the parent pointer to the new parent
-> >> 6. unlock the spinlock
-> >> 7. call the set_parent callback
-> > Why do it need to sleep if it only set some hw registers?
-> 
-> Most implementations don't, and I would be fine with saying
-> clk_set_parent sleeps, but the set_parent op does not, but that
-> prevents clock chips on sleeping busses like i2c.
-So it worth to involve a flag here, which says hw_ops may sleep. At least for
-on-SoC clocks, we don't need to take risk.
-> 
-> >> 8. lock the enable spinlock
-> >> 9. call disable on the old parent iff you called enable on the new
-> >> parent (enable_count may have changed)
-> >> 10. unlock the enable spinlock
-> >> 11. call unprepare on the old parent if prepare_count
-> > propagate rate here and also tell child clocks "rate changed already, change your
-> > parameters and go on to work".
-> 
-> Yes, propagate rate is needed.
-> 
-> >> 12. unlock prepare mutex
-> >>
-> >> The only possible problem I see is that if a clock starts disabled at
-> >> step 1., and clk_enable is called on it between steps 6 and 7,
-> >> clk_enable will return having enabled the new parent, but the clock is
-> >> still running off the old parent. �As soon as the clock gets switched
-> >> to the new parent, the clock will be properly enabled. �I don't see
-> >> this as a huge problem - calling clk_set_parent on a clock while it is
-> >> enabled may not even work without causing glitches on some platforms.
-> > some do be glitch free, especially for cpu clock parents.
-> >>
-> >> I guess the only way around it would be to store a temporary
-> >> "new_parent" pointer between steps 5 and 9, and have
-> >> clk_enable/disable operate on both the current parent and the new
-> >> parent. �They would also need to refcount the extra enables separately
-> >> to undo on the old parent.
-> >>
-> >> > �* tglx and I have been discussing different ways of passing clock information
-> >> > � to the clock hardware implementation. I'm proposing providing a base 'struct
-> >> > � clk_hw', which implementations subclass by wrapping in their own structure
-> >> > � (or one of a set of simple 'library' structures, like clk_hw_mux or
-> >> > � clk_hw_gate). �The clk_hw base is passed as the first argument to all
-> >> > � clk_hw_ops callbacks.
-> >> >
-> >> > � tglx's plan is to create a separate struct clk_hwdata, which contains a
-> >> > � union of base data structures for common clocks: div, mux, gate, etc. The
-> >> > � ops callbacks are passed a clk_hw, plus a clk_hwdata, and most of the base
-> >> > � hwdata fields are handled within the core clock code. This means less
-> >> > � encapsulation of clock implementation logic, but more coverage of
-> >> > � clock basics through the core code.
-> >>
-> >> I don't think they should be a union, I think there should be 3
-> >> separate private datas, and three sets of clock ops, for the three
-> >> different types of clock blocks: rate changers (dividers and plls),
-> >> muxes, and gates. �These blocks are very often combined - a device
-> >> clock often has a mux and a divider, and clk_set_parent and
-> >> clk_set_rate on the same struct clk both need to work.
-> >>
-> >> > � tglx, could you send some details about your approach? I'm aiming to refine
-> >> > � this series with the good bits from each technique.
-> >> >
-> >> > �* The clock registration code probably needs work. This is the domain
-> >> > � of the platform/board maintainers, any wishes here?
-> > When clock init, data in struct clk may not be synced with hw registers. After
-> > enabled minimal needed clk (cpu, core bus etc), we need sync the whole tree,
-> > disable zero enable_count clocks, set correct .rate ... . The sync function
-> > is also common code, right? but not have to be called all times I think.
-> 
-> I believe each clock is synced with its hardware during clk_register
-> by calling the recalc_rate and get_parent callbacks.
-so how to sync gate bits? Let subarch to set registers directly or clk_enable and
-clk_disable to make sure clk is disabled? Neither way is good I think.
+Hi Arnd,
+thanks! since the discussion has been much different with original
+subject. i move to a new thread.
 
-Thanks
-Richard
-> 
-> > Thanks
-> > Richard
-> >> >
-> >> > Cheers,
-> >> >
-> >> >
-> >> > Jeremy
-> >> >
-> >> > --
-> >> >
-> >> > ---
-> >> > Jeremy Kerr (4):
-> >> > � � �clk: Add a generic clock infrastructure
-> >> > � � �clk: Implement clk_set_rate
-> >> > � � �clk: Add fixed-rate clock
-> >> > � � �clk: Add simple gated clock
-> >> >
-> >> > --
-> >> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> > the body of a message to majordomo@vger.kernel.org
-> >> > More majordomo info at �http://vger.kernel.org/majordomo-info.html
-> >> > Please read the FAQ at �http://www.tux.org/lkml/
-> >> >
-> >>
-> >> _______________________________________________
-> >> linux-arm-kernel mailing list
-> >> linux-arm-kernel@lists.infradead.org
-> >> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> >
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+2011/5/24 Arnd Bergmann <arnd@arndb.de>:
+> On Tuesday 24 May 2011, Barry Song wrote:
+>> 2011/5/19 Arnd Bergmann <arnd@arndb.de>
+>>
+>> > If you can just post a diffstat of the stuff you currently have,
+>> > we also get an impression of the amount of code that you are
+>> > talking about.
+>> Arnd, thanks very much for thinking. Now the codes are based on 2.6.38
+>> and not quanified for sending patches. we will port them to be
+>> againest linux's tree.
+>
+> Thanks for the diffstat, that is very helpful as an estimate. It appears
+> that there is a large amount of work ahead of you in this, so by the
+> time you get ready for inclusion, we will most certainly require this
+> to be based on device tree for probing of all devices. I'd strongly
+> recommend that you investigate what that means for you before you port
+> a lot of the code to 2.6.39 or 2.6.40.
+>
+> Since the timing is a bit unfortunate for you, you might want to stay
+> on 2.6.38 with the full port and not spend too much time on forward
+> porting all of it, but instead migrate the drivers to be based on
+> device tree properties rather than platform data, so you can submit
+> the drivers individually upstream.
+
+good idea. then i will branch 2.6.38 for merging device tree and other
+new changes.
+
+>
+>>  mach-prima2/Kconfig                                          |   32
+>>  mach-prima2/Makefile                                         |   11
+>>  mach-prima2/Makefile.boot                                    |    3
+>>  mach-prima2/devices.c                                        |  191 +
+>>  mach-prima2/include/mach/cache-sirfsoc-prima2-l2.h           |   12
+>>  mach-prima2/include/mach/clkdev.h                            |    5
+>>  mach-prima2/include/mach/debug-macro.S                       |   38
+>>  mach-prima2/include/mach/entry-macro.S                       |   31
+>>  mach-prima2/include/mach/gpio.h                              |    5
+>>  mach-prima2/include/mach/hardware.h                          |   10
+>>  mach-prima2/include/mach/io.h                                |   20
+>>  mach-prima2/include/mach/irqs.h                              |  284 +
+>>  mach-prima2/include/mach/isa-dma.h                           |   13
+>>  mach-prima2/include/mach/map.h                               |  263 +
+>>  mach-prima2/include/mach/memory.h                            |   56
+>
+> The irqs.h and map.h are the largest by far here, and they should go
+> away for the most part with the move to device tree.
+>
+>>  mach-prima2/include/mach/prima2.h                            |   20
+>>  mach-prima2/include/mach/prima2_pinmux.h                     |   39
+>>  mach-prima2/include/mach/prima2cb.h                          |  111
+>
+> There is a new pinmux subsystem in the works, so you probably
+> end up having to write a new driver for that subsystem.
+
+i have noticed the pinmux from Linus Walleij. that is a task we want to do.
+
+>
+>>  mach-prima2/include/mach/regs-iobrg.h                        |   54
+>>  mach-prima2/include/mach/regs-irq.h                          |   42
+>>  mach-prima2/include/mach/regs-reset.h                        |   88
+>>  mach-prima2/include/mach/regs-rsc.h                          |   76
+>
+> For the registers, they can go together with the respective drivers
+> using them.
+
+ok. looks like they should be limited to use in special drivers for
+low coupling and other drivers call functions not access registers
+directly.
+then i will check whether they are overall shared, which cause them be
+in mach head files.
+
+>
+>>  mach-prima2/include/mach/system.h                            |    5
+>>  mach-prima2/include/mach/timex.h                             |    5
+>>  mach-prima2/include/mach/uncompress.h                        |   45
+>>  mach-prima2/include/mach/vmalloc.h                           |   19
+>>  mach-prima2/lcdinit.c                                        |  136
+>>  mach-prima2/mach-prima2cb.c                                  |  226 +
+>>  mach-prima2/padmode.c                                        |  139
+>>  mach-prima2/prima2.c                                         |   81
+>>  mach-prima2/prima2cb-keypad.c                                |  136
+>>  mach-prima2/pwrc.c                                           |  286 +
+>>  mach-prima2/tsc2100_dev.c                                    |  137
+>
+> Any drivers in here should get moved to a proper place in drivers/*/
+> eventually, out of the subarchitecture code.
+
+things related with driver framework/callbacks will be moved out.
+platform_device data/hardware-related callbacks will be kept. but if
+device tree supports platform_device data/callbacks good, i will take
+a look whether we can delete as many as possible.
+
+>
+>>  mm/Kconfig                                                   |   13
+>>  mm/Makefile                                                  |    1
+>>  mm/cache-sirfsoc-prima2-l2.c                                 |  342 +
+>>  plat-sirfsoc/Kconfig                                         |  108
+>>  plat-sirfsoc/Makefile                                        |   34
+>>  plat-sirfsoc/adc.c                                           | 1395 ++++++++
+>>  plat-sirfsoc/adcprocfs.c                                     |  348 ++
+>>  plat-sirfsoc/apm.c                                           |  107
+>>  plat-sirfsoc/clock.c                                         | 1045 ++++++
+>>  plat-sirfsoc/clock.h                                         |   32
+>>  plat-sirfsoc/core.c                                          |  245 +
+>>  plat-sirfsoc/cpufreq.c                                       |  239 +
+>>  plat-sirfsoc/deepsleep.S                                     |  425 ++
+>>  plat-sirfsoc/dma.c                                           |  386 ++
+>>  plat-sirfsoc/hibernate.h                                     |  118
+>
+> Same here.
+>
+>>  plat-sirfsoc/include/plat/audio_controller.h                 |  333 +
+>>  plat-sirfsoc/include/plat/belmont.h                          |   92
+>>  plat-sirfsoc/include/plat/bootmem.h                          |   45
+>>  plat-sirfsoc/include/plat/clkdev.h                           |   15
+>>  plat-sirfsoc/include/plat/cpld.h                             |   27
+>>  plat-sirfsoc/include/plat/cpld_evb.h                         |  200 +
+>>  plat-sirfsoc/include/plat/cpld_fpga.h                        |  201 +
+>>  plat-sirfsoc/include/plat/cpu.h                              |   51
+>>  plat-sirfsoc/include/plat/debug-macro.S                      |   34
+>>  plat-sirfsoc/include/plat/gpio.h                             |   92
+>>  plat-sirfsoc/include/plat/hardware.h                         |   28
+>>  plat-sirfsoc/include/plat/iobrg.h                            |   17
+>>  plat-sirfsoc/include/plat/irqs.h                             |  320 +
+>>  plat-sirfsoc/include/plat/isa-dma.h                          |  111
+>>  plat-sirfsoc/include/plat/lcd_panels.h                       |   33
+>>  plat-sirfsoc/include/plat/map.h                              |  233 +
+>>  plat-sirfsoc/include/plat/memory.h                           |   43
+>>  plat-sirfsoc/include/plat/perfmon.h                          |   62
+>>  plat-sirfsoc/include/plat/pinmux.h                           |   23
+>
+> It's not clear yet what will happen in the long run to the split between
+> mach-* and plat-* directories. Ideally, we would not need them to be
+> separate if we can completely abstract the SoCs within their broader
+> families, but we might not get that far before you merge your platform.
+
+before prima2 SoC, we have mach-atlas4,  mach-atlas5 and mach-prima.
+after prima2, we will have mach-atlas6. many ip cores are shared
+between these SoCs, then there is a plat.
+but we will not maintain old mach-atlas4,  mach-atlas5 and mach-prima
+for the current and future kernel. the new mach-atlas6 is the coming
+SoC we will upstream after mach-prima2.
+
+>
+> What other mach-* do you expect to see in the future using plat-sirfsoc,
+> and how similar are they to prima2?
+
+plat-sirfsoc should be things shared by mach-prima2/mach-atlas6 and
+other future SoCs.
+
+>
+>>  plat-sirfsoc/include/plat/platform_device/android_usb_dev.h  |   27
+>>  plat-sirfsoc/include/plat/platform_device/audio.h            |   28
+>>  plat-sirfsoc/include/plat/platform_device/bt_codec.h         |   26
+>>  plat-sirfsoc/include/plat/platform_device/eth.h              |   26
+>>  plat-sirfsoc/include/plat/platform_device/gps.h              |   40
+>>  plat-sirfsoc/include/plat/platform_device/i2c.h              |   27
+>>  plat-sirfsoc/include/plat/platform_device/inner_audio.h      |   26
+>>  plat-sirfsoc/include/plat/platform_device/lcd.h              |   85
+>>  plat-sirfsoc/include/plat/platform_device/mbx.h              |   37
+>>  plat-sirfsoc/include/plat/platform_device/modac.h            |   26
+>>  plat-sirfsoc/include/plat/platform_device/mved.h             |   36
+>>  plat-sirfsoc/include/plat/platform_device/nand.h             |   27
+>>  plat-sirfsoc/include/plat/platform_device/pmem.h             |   27
+>>  plat-sirfsoc/include/plat/platform_device/pwm_dev.h          |   31
+>>  plat-sirfsoc/include/plat/platform_device/rtc.h              |   27
+>>  plat-sirfsoc/include/plat/platform_device/sata.h             |   33
+>>  plat-sirfsoc/include/plat/platform_device/sd.h               |   31
+>>  plat-sirfsoc/include/plat/platform_device/serial.h           |   82
+>>  plat-sirfsoc/include/plat/platform_device/sirfsoc_ts.h       |   31
+>>  plat-sirfsoc/include/plat/platform_device/snd.h              |   30
+>>  plat-sirfsoc/include/plat/platform_device/spi.h              |   53
+>>  plat-sirfsoc/include/plat/platform_device/spi_sirfsoc_gpio.h |   34
+>>  plat-sirfsoc/include/plat/platform_device/ts_stream_mode.h   |   26
+>>  plat-sirfsoc/include/plat/platform_device/usb.h              |   40
+>>  plat-sirfsoc/include/plat/platform_device/usppcm.h           |   25
+>>  plat-sirfsoc/include/plat/platform_device/uspserial.h        |   45
+>>  plat-sirfsoc/include/plat/platform_device/uspspi.h           |   33
+>>  plat-sirfsoc/include/plat/platform_device/vpp.h              |   27
+>>  plat-sirfsoc/include/plat/platform_device/vxd.h              |   27
+>>  plat-sirfsoc/include/plat/platform_device/wdt.h              |   26
+>>  plat-sirfsoc/platform_device/Makefile                        |   36
+>>  plat-sirfsoc/platform_device/android_usb_dev.c               |   60
+>>  plat-sirfsoc/platform_device/audio_dev.c                     |   88
+>>  plat-sirfsoc/platform_device/bt_codec_dev.c                  |   26
+>>  plat-sirfsoc/platform_device/camera_dev.c                    |  286 +
+>>  plat-sirfsoc/platform_device/eth_dev.c                       |   75
+>>  plat-sirfsoc/platform_device/gps_dev.c                       |  106
+>>  plat-sirfsoc/platform_device/i2c_dev.c                       |  124
+>>  plat-sirfsoc/platform_device/inner_audio_dev.c               |   75
+>>  plat-sirfsoc/platform_device/lcd_dev.c                       |  156
+>>  plat-sirfsoc/platform_device/mbx_dev.c                       |   74
+>>  plat-sirfsoc/platform_device/modac_dev.c                     |   67
+>>  plat-sirfsoc/platform_device/mved_dev.c                      |   70
+>>  plat-sirfsoc/platform_device/nand_dev.c                      |   75
+>>  plat-sirfsoc/platform_device/pmem_dev.c                      |   59
+>>  plat-sirfsoc/platform_device/pwm_device.c                    |   79
+>>  plat-sirfsoc/platform_device/sata_dev.c                      |   64
+>>  plat-sirfsoc/platform_device/sdmmc_dev.c                     |  108
+>>  plat-sirfsoc/platform_device/serial_dev.c                    |  241 +
+>>  plat-sirfsoc/platform_device/sirfsoc_rtcdev.c                |   78
+>>  plat-sirfsoc/platform_device/sirfsoc_tsdev.c                 |   65
+>>  plat-sirfsoc/platform_device/spi_dev.c                       |  163
+>>  plat-sirfsoc/platform_device/spigpio_dev.c                   |   75
+>>  plat-sirfsoc/platform_device/ts_stream_mode_dev.c            |   64
+>>  plat-sirfsoc/platform_device/usb_dev.c                       |  120
+>>  plat-sirfsoc/platform_device/usppcm_dev.c                    |   69
+>>  plat-sirfsoc/platform_device/uspserial_dev.c                 |  197 +
+>>  plat-sirfsoc/platform_device/uspspi_dev.c                    |   97
+>>  plat-sirfsoc/platform_device/vpp_dev.c                       |   70
+>>  plat-sirfsoc/platform_device/vxd_dev.c                       |   68
+>>  plat-sirfsoc/platform_device/wdt_dev.c                       |   41
+>
+> These will probably all get replaced with device tree bindings.
+
+good.
+
+>
+>>  plat-sirfsoc/include/plat/pm.h                               |   41
+>>  plat-sirfsoc/include/plat/pwm.h                              |   63
+>>  plat-sirfsoc/include/plat/regs-clkc.h                        |   33
+>>  plat-sirfsoc/include/plat/regs-gpio.h                        |   43
+>>  plat-sirfsoc/include/plat/regs-irq.h                         |   39
+>>  plat-sirfsoc/include/plat/regs-modac.h                       |  114
+>>  plat-sirfsoc/include/plat/regs-power.h                       |   77
+>>  plat-sirfsoc/include/plat/regs-pwm.h                         |   37
+>>  plat-sirfsoc/include/plat/regs-pwrc.h                        |   62
+>>  plat-sirfsoc/include/plat/regs-reset.h                       |   73
+>>  plat-sirfsoc/include/plat/regs-rsc.h                         |   78
+>>  plat-sirfsoc/include/plat/regs-rtc.h                         |   41
+>>  plat-sirfsoc/include/plat/regs-serial.h                      |   87
+>>  plat-sirfsoc/include/plat/regs-timer.h                       |   39
+>>  plat-sirfsoc/include/plat/regs-vip.h                         |   98
+>>  plat-sirfsoc/include/plat/sd.h                               |  110
+>>  plat-sirfsoc/include/plat/sirfsoc_adc.h                      |  261 +
+>>  plat-sirfsoc/include/plat/sirfsoc_usp.h                      |  288 +
+>
+> And these can hopefully all get moved next to the respective drivers.
+
+good.
+
+>
+>>  plat-sirfsoc/include/plat/system.h                           |   39
+>>  plat-sirfsoc/include/plat/timex.h                            |   33
+>>  plat-sirfsoc/include/plat/uncompress.h                       |   46
+>>  plat-sirfsoc/include/plat/vmalloc.h                          |   26
+>>  plat-sirfsoc/irq.c                                           |  102
+>>  plat-sirfsoc/lcd_panels.c                                    |  281 +
+>>  plat-sirfsoc/led.c                                           |  340 +
+>>  plat-sirfsoc/perfmon.c                                       | 1347 +++++++
+>
+> For the perfmon implementation, I would recommend splitting it out of the
+> submission at the beginning. If it's based on perf, it should be easy to
+> add at a later stage. Otherwise, it's not going anywhere. If it's related
+> to the ARM system trace macrocell, I'd recommend posting the code now
+> (independent of the rest), because other people are interested in getting
+> that to work.
+sorry for not exculding this file in diff.
+perfmon is a IP included by our old atlas5 and doesn't exist in
+prima2, which exports bus bandwidth and latency. it is not related
+with STM. and it is not based on perf too.  people wrote this driver a
+long time ago and simply exported some registers to userspace by proc.
+it should not be in our final patches.
+
+>
+>>  plat-sirfsoc/pinmux.c                                        |  992 +++++
+>
+> -> pinmux subsystem
+>
+>> for drivers/:
+>>  Kconfig                             |    2
+>>  Makefile                            |    1
+>>  char/sirfsoc_gps.c                  |  878 +++++++++++++
+>>  char/sirfsoc_gpsdrv.h               |  134 +
+>>  input/misc/gpio_event.c             |  253 +++
+>
+> A new user space interface is always hard to establish. If you want these
+> to get in, you should start way ahead of the other drivers that simply
+> implement an existing interface.
+>
+> If the gps driver is just a tty device like a serial port, it should
+> now be moved into drivers/tty.
+
+most GPS are /dev/ttySn to userspace, they are connected to SoC by
+uart.  DSP is one of CSR's main product lines. An internal DSP in SoC
+handles GPS and we use this driver to communicate with the DSP. i will
+take a look whether we can have better framework than a simple char
+device.
+
+>
+>>  nanddisk/Kconfig                    |   17
+>>  nanddisk/Makefile                   |    5
+>>  nanddisk/nand.c                     |  937 +++++++++++++
+>>  nanddisk/nanddisk.h                 |  702 ++++++++++
+>
+> How does this relate to drivers/mtd?
+
+that is a big issue to upstream. CSR built a NTFL supporting both
+WINCE/Linux with good performance and proved reliable products. the
+NTFL is a binary. NAND disk is a up level block driver to call API in
+the NTFL binary.
+that makes the NAND related codes very difficult to be accepted since
+it is completely not based on MTD. i hope we can also have a MTD based
+driver and compare the performance of  UBI on MTD and current
+solution.
+
+>
+>>  net/dm9000.c                        |  290 +---
+>>  net/dm9000.h                        |    8
+>
+> Ah, code removal ;-)
+
+sure. some guys hacked dm9000 to make it work on my debug board. but
+it is unneccessary since we can modify related platform data in
+arch/arm.
+
+>
+>>  video/Kconfig                       |   24
+>>  video/Makefile                      |    2
+>>  video/backlight/Makefile            |    1
+>>  video/sirfsoc_clcdc.h               |  269 ++++
+>>  video/sirfsoc_fb.c                  | 2369 +++++++++++++++++++++++++++++++++++
+>>  video/sirfsoc_vpp.c                 | 1166 +++++++++++++++++
+>
+> Have you considered doing a KMS device driver instead of an old-style
+> frame buffer?
+
+it depends on the whole schedule and resources of the related teams.
+i'd like to see the stronger KMS driver.
+
+>
+>> i want to upstream steps by steps. send arch/arm patches for reviewing
+>> at first, then clean-up drivers and send patches to subsystem for
+>> reviewing. There are really too many issues waiting for refination in
+>> arch/arm for the moment, we have more than 20 tasks for team to work.
+>
+> Ok, no problem.
+>
+>        Arnd
+>
+-barry
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
