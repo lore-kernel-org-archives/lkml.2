@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab1EYKvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 06:51:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46696 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754811Ab1EYKvL (ORCPT
+	id S1754617Ab1EYKvk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 06:51:40 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37029 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714Ab1EYKvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 06:51:11 -0400
-Date: Wed, 25 May 2011 12:51:05 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kasper Pedersen <kkp2010@kasperkp.dk>
-cc: linux-kernel@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        John Stultz <johnstul@us.ibm.com>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH v3] x86: tsc: make TSC calibration immune to interrupts
-In-Reply-To: <4DDC0B4F.6060202@kasperkp.dk>
-Message-ID: <alpine.LFD.2.02.1105251243330.3078@ionos>
-References: <4DDC0B4F.6060202@kasperkp.dk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 25 May 2011 06:51:39 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1306316082.30236.137.camel@vkoul-udesk3>
+References: <1306238657-30089-1-git-send-email-vinod.koul@intel.com>
+	<BANLkTikDPeEFWdsVQ=Ak8jXEXsC-+uoOaw@mail.gmail.com>
+	<1306253171.30236.9.camel@vkoul-udesk3>
+	<BANLkTikjxECNAK5eS5hSu2bbEKpZX341Dw@mail.gmail.com>
+	<BANLkTikAm=D_YNFt0Regeas6AX8116L0-A@mail.gmail.com>
+	<1306312009.30236.110.camel@vkoul-udesk3>
+	<BANLkTikn3BBeNyuUeZ9BhG5QLj-dmcGjTg@mail.gmail.com>
+	<1306316082.30236.137.camel@vkoul-udesk3>
+Date: Wed, 25 May 2011 12:51:38 +0200
+Message-ID: <BANLkTinbSAxozR6NivY6wddre1nRF5RmZA@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: Add API documentation for slave dma usage
+From: Per Forlin <per.forlin@linaro.org>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It is safe to use the first value that passes SMI_TRESHOLD
-> for the initial calibration: As long as tsc_khz is above
-> 100MHz, SMI_TRESHOLD represents less than 1% of error.
-> 
-> The 8 additional samples costs us 28 microseconds in startup
-> time.
+On 25 May 2011 11:34, Koul, Vinod <vinod.koul@intel.com> wrote:
+> On Wed, 2011-05-25 at 11:47 +0200, Per Forlin wrote:
+>> On 25 May 2011 10:26, Koul, Vinod <vinod.koul@intel.com> wrote:
+>> > I am okay with making this same for the slave devices as well.
+>> >
+>> > That would also require to change few drivers which start the txn in
+>> > submit()
+>> Yes,
+>> The trivial part is to move enable from submit to issue_pending. I had
+>> a quick look and it looks like the following drivers need to be
+>> changed.
+>> mpc512x_dma.c
+>> imx-dma.c
+>> imx-sdma.c
+>> mxs-dma.c
+>>
+>> The other part is more complex. To make submit only add descs to a
+>> queue that will be pushed down to the DMA only after issue_pending. It
+>> is not as trivial to identify which of the drivers support this or
+>> not.
+>> I still think it make sense to fix the documentation first and then
+>> fix the drivers. Keep a list inside the dmaengine.txt of drivers that
+>> need to be fixed in order to comply with the API. Over time drivers
+>> will be fixed and removed from the list. When we have agreed upon the
+>> API (we may not be there yet) I am willingly to make a draft of such a
+>> list.
+> Yes this sounds right, I will send updated version and now drivers would
+> need to call issue_pending.
+>
+> I know dw_dmac, intel_mid_dma and ste_dma40 would need changes as well.
+>
+I think ste_dma40 treats issue_pending and submit correctly but it may
+be other things not aligned. I need to double check this since it was
+a long time since I did any work in this driver. I can update
+ste_dma40 where it need changes.
 
-That's a good reason to avoid the whole conditional thing and just do
-the best of 5 always.
- 
->  /*
->   * Read TSC and the reference counters. Take care of SMI disturbance
->   */
-> -static u64 tsc_read_refs(u64 *p, int hpet)
-> +static u64 tsc_read_refs(u64 *p, int hpet, int find_best)
->  {
-> -	u64 t1, t2;
-> +	u64 t1, t2, tp, best_uncertainty, uncertainty, best_t2;
->  	int i;
-> +	unsigned long flags;
->  
-> -	for (i = 0; i < MAX_RETRIES; i++) {
-> +	best_uncertainty = SMI_TRESHOLD;
-> +	best_t2 = 0;
-> +	for (i = 0; i < BESTOF_SAMPLES; i++) {
-> +		local_irq_save(flags);
->  		t1 = get_cycles();
->  		if (hpet)
-> -			*p = hpet_readl(HPET_COUNTER) & 0xFFFFFFFF;
-> +			tp = hpet_readl(HPET_COUNTER) & 0xFFFFFFFF;
->  		else
-> -			*p = acpi_pm_read_early();
-> +			tp = acpi_pm_read_early();
->  		t2 = get_cycles();
-> -		if ((t2 - t1) < SMI_TRESHOLD)
-> -			return t2;
-> +		local_irq_restore(flags);
-> +		uncertainty = t2 - t1;
-> +		if (uncertainty < best_uncertainty) {
-> +			best_uncertainty = uncertainty;
-> +			best_t2 = t2;
-> +			*p = tp;
-> +			if (!find_best)
-> +				break;
-> +		}
->  	}
-> +	if (best_uncertainty < SMI_TRESHOLD)
-> +		return best_t2;
-> +
-> +	*p = tp;
+> Was thinking to add TODO in drivers/dma with these and any other changes
+> we feel are required moving forward.
+> We need dw_dmac to be moved to new slave interface and remove old slave
+> pointer mechanism when all are moved.
+>
+I agree, TODO is a better place for it.
 
-The value is completely uninteresting when we return ULLONG_MAX.
+I would like to ask a question on usage of DMA_CTRL_ACK while we're at it.
+In ste_dma40 I added support to reuse descriptors if DMA_CTRL_ACK is
+clear. The purpose of DMA_CTRL_ACK is to set up dependency but is it
+also a valid to reuse it?
+I mean submit the same descriptor again and again without having to
+call prepare_slave_sg.
+Example:
+desc = prepare_slave_sg()
+submit(desc)
+issue_pending(desc)
 
-Thanks,
+wait_for_callback()
 
-	tglx
+submit(desc)
+issue_pending(desc)
+
+/Per
