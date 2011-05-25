@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab1EYWXo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 18:23:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55508 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753628Ab1EYWXn (ORCPT
+	id S1755269Ab1EYW1O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 18:27:14 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:14246 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754275Ab1EYW1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 18:23:43 -0400
-Date: Thu, 26 May 2011 00:23:38 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kasper Pedersen <kkp2010@kasperkp.dk>
-cc: linux-kernel@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        John Stultz <johnstul@us.ibm.com>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH v3] x86: tsc: make TSC calibration immune to interrupts
-In-Reply-To: <4DDD7D9E.60100@kasperkp.dk>
-Message-ID: <alpine.LFD.2.02.1105260021570.3078@ionos>
-References: <4DDC0B4F.6060202@kasperkp.dk> <alpine.LFD.2.02.1105251243330.3078@ionos> <4DDD7D9E.60100@kasperkp.dk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 25 May 2011 18:27:13 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBABqB3U1Ld/sX/2dsb2JhbAAMhFDXc5BZgSuDaoEHBJdkh24
+X-IronPort-AV: E=Sophos;i="4.65,269,1304308800"; 
+   d="scan'208";a="114678412"
+Message-ID: <4DDD823F.5090904@teksavvy.com>
+Date: Wed, 25 May 2011 18:27:11 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Bruce Stenning <b.stenning@indigovision.com>
+CC: Tejun Heo <htejun@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+References: <20110423005610.GC1576@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com> <20110425162242.GB30828@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com> <20110426135027.GI878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com> <20110426155229.GM878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com> <20110430140109.GJ29280@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com> <20110525094127.GF10146@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C7770967B@gretna.indigovision.com>
+In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32C7770967B@gretna.indigovision.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 May 2011, Kasper Pedersen wrote:
-
-> On 05/25/2011 12:51 PM, Thomas Gleixner wrote:
-> >> The 8 additional samples costs us 28 microseconds in startup
-> >> time.
-> > 
-> > That's a good reason to avoid the whole conditional thing and just do
-> > the best of 5 always.
+On 11-05-25 09:36 AM, Bruce Stenning wrote:
+>> This is a different issue.  libata EH plugs the port if reset fails
+>> repeatedly.  This behavior was implemented to avoid causing continuous
+>> resets on a port in case it has flaky PHY state reporting; however, it
+>> seems to cause more trouble than fixing issues - ie. plugging in a
+>> broken device may end up plugging the port even after the offending
+>> device is removed until manual rescan or reboot.  I've been pondering
+>> about changing the behavior like the following.
 > 
-> I do not mind removing it again.
-> The additional 170us only happen when quick_pit_calibrate fails,
-> and then native_calibrate_tsc burns 30ms extra anyway.
-
-Yes, not worth the extra conditional.
- 
-> >> +
-> >> +	*p = tp;
-> > 
-> > The value is completely uninteresting when we return ULLONG_MAX.
-> > 
+> Thanks for the explanation, Tejun, and for sending those changes upstream.
+> I shall incorporate these patches into my kernel and keep you informed as
+> to how they behave.
 > 
-> native_calibrate_tsc() depends on *p being written regardless of
-> whether we can get a SMI-free reading:
-> 
-> 	/* We don't have an alternative source, disable TSC */
-> 	if (!hpet && !ref1 && !ref2) {
-> 		printk("TSC: No reference (HPET/PMTIMER) available\n");
-> 		return 0;
-> 	}
-> 
-> this works since acpi_pm_read_early() returns 0 when pmtmr_ioport 
-> is 0, or CONFIG_X86_PM_TIMER is not set.
-> 
-> Without it we would report "calibration failed" rather than 
-> "No reference" or "Using PIT" when there is neither pmtimer nor 
-> hpet.
+> Mark, did you get a chance to clean up the sata_mv spinlock addition in
+> mv_set_main_irq_mask?
 
-Fair enough. So a comment might be in order :) That code is fricking
-complex just to figure out on which frequency that damn thing runs :(
-
-Thanks,
-
-	tglx
+Not yet.  I've been waiting to hear back from you as to
+whether they visibly fix anything or not.
