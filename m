@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852Ab1EYNKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 09:10:09 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:59891 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754163Ab1EYNKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 09:10:08 -0400
-X-ASG-Debug-ID: 1306329007-03d6a50f5325f40001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DDCFFAC.5010901@fusionio.com>
-Date: Wed, 25 May 2011 15:10:04 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754280Ab1EYU7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:59:11 -0400
+Received: from sd-29334.apfee.asso.fr ([88.190.21.117]:55507 "EHLO
+	sd-29334.apfee.asso.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab1EYU7H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:59:07 -0400
+X-Greylist: delayed 7932 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 16:59:07 EDT
+Message-ID: <20110525151422.182026rgugakos74@webmail.apfee.asso.fr>
+Date: Wed, 25 May 2011 15:14:22 +0200
+From: "Mr. Garry Moore." <jeason@apfee.asso.fr>
+Reply-to: western101@algish.com
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Splice fix for 2.6.40
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] Splice fix for 2.6.40
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1306329007
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64662
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-A code consolidation fix for splice, unifying the if-pipe-waiters,
-wake-up logic.
+My associate has helped me to send your first payment
+of $7,500 USD to you as instructed by Mr. David Cameron
+the United Kingdom prime minister after the last G20
+meeting that was held in United Kingdom, making you one
+of the beneficiaries. Here is the information below.
 
-Please pull.
+MTCN Numbers: 6096147516
+Sender First Name Is = Johannes
+Second Name = Davis
 
-  git://git.kernel.dk/linux-2.6-block.git for-2.6.40/splice
+I told him to keep sending you $7,500 USD twice a week
+until the FULL payment of ($820000.00 United State Dollars)
+is completed.
 
-Namhyung Kim (1):
-      splice: add wakeup_pipe_readers()
+A certificate will be made to change the Receiver Name as
+stated by the British prime minister, send your Full Names
+and address via Email to: Mr Garry Moore
 
- fs/splice.c |   33 +++++++++++++++------------------
- 1 files changed, 15 insertions(+), 18 deletions(-)
+You cannot pickup the money until the certificate is issued to you.
 
--- 
-Jens Axboe
+Regards
+Mr. Garry Moore.
+Tel: +(44) 70 240 117 47.
+
+
+
 
