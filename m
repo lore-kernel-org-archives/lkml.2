@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab1EYRSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 13:18:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11083 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752378Ab1EYRSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 13:18:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,268,1304319600"; 
-   d="scan'208";a="4724673"
-Subject: Re: [PATCH]  x86: Removing unnecessary check in detect_ht
-From: Nikhil P Rao <nikhil.rao@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110520114620.GE14745@elte.hu>
-References: <43F901BD926A4E43B106BF17856F0755018E1CF69D@orsmsx508.amr.corp.intel.com>
-	 <1305048201.2736.17.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <1F668163772FA946975B9466A9DFF729B5E5@ORSMSX101.amr.corp.intel.com>
-	 <1F668163772FA946975B9466A9DFF729B64C@ORSMSX101.amr.corp.intel.com>
-	 <20110518210754.GA28476@elte.hu>
-	 <1F668163772FA946975B9466A9DFF729B6A3@ORSMSX101.amr.corp.intel.com>
-	 <20110518212351.GE28476@elte.hu>
-	 <1F668163772FA946975B9466A9DFF729B7E4@ORSMSX101.amr.corp.intel.com>
-	 <20110519180940.GD6139@elte.hu>
-	 <1F668163772FA946975B9466A9DFF729BEDD@ORSMSX101.amr.corp.intel.com>
-	 <20110520114620.GE14745@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 10:18:41 -0700
-Message-ID: <1306343921.19325.1.camel@fedora13>
+	id S1753044Ab1EYR2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 13:28:22 -0400
+Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:59070
+	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751621Ab1EYR2V convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 13:28:21 -0400
+X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 13:28:21 EDT
+Reply-To: <wyrles@ytram.com>
+From: "Tom Allebrandi" <wyrles@ytram.com>
+To: "'Cufi, Carles'" <carles.cufi@nordicsemi.no>, <corey@kansanian.com>
+Cc: "'Ed Tomlinson'" <edt@aei.ca>, "'Ville Tervo'" <ville.tervo@nokia.com>,
+        "'Bluettooth Linux'" <linux-bluetooth@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+References: <BANLkTinG_qCtHQYRYFQUJ9oGv4H1cuznWg@mail.gmail.com> <201105250711.17971.edt@aei.ca>	<20110525113614.GQ2480@null> <201105250812.43246.edt@aei.ca> <5B4B9A479BF6994B88EA975675EC5B79057A399D82@MES1OS2SXC003.mes1.tconet.net> <BANLkTi=ec3bh24=2r8f3tmj2g0n0bMnq1Q@mail.gmail.com> <5B4B9A479BF6994B88EA975675EC5B79057A60296D@MES1OS2SXC003.mes1.tconet.net> <013c01cc1af9$361b00e0$a25102a0$@ytram.com> <5B4B9A479BF6994B88EA975675EC5B79057A6029C4@MES1OS2SXC003.mes1.tconet.net>
+In-Reply-To: <5B4B9A479BF6994B88EA975675EC5B79057A6029C4@MES1OS2SXC003.mes1.tconet.net>
+Subject: RE: Linux 2.6.39
+Date: Wed, 25 May 2011 10:21:53 -0700
+Message-ID: <019601cc1b00$52f91fb0$f8eb5f10$@ytram.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.34.73]
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQGUKt7R/T/916P1fB9/N50PhgUuCwGLqzLiAU0RkDMBZ9ryawGkHAjPAqaiMpsCHZd2SACsfoNwAmFbiAOUn/PIcA==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes a check that causes incorrect scheduler domain
-setup (SMP instead of SMT) and bootlog warning messages when cpuid
-extensions for topology enumeration are not supported and the number
-of processors reported to the OS is smaller than smp_num_siblings
 
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Nikhil P Rao <nikhil.rao@intel.com>
----
- arch/x86/kernel/cpu/common.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index cbc70a2..d2bcd54 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -477,13 +477,6 @@ void __cpuinit detect_ht(struct cpuinfo_x86 *c)
- 	if (smp_num_siblings <= 1)
- 		goto out;
- 
--	if (smp_num_siblings > nr_cpu_ids) {
--		pr_warning("CPU: Unsupported number of siblings %d",
--			   smp_num_siblings);
--		smp_num_siblings = 1;
--		return;
--	}
--
- 	index_msb = get_count_order(smp_num_siblings);
- 	c->phys_proc_id = apic->phys_pkg_id(c->initial_apicid, index_msb);
- 
--- 
-1.7.4.4
-
-
-On Fri, 2011-05-20 at 13:46 +0200, Ingo Molnar wrote:
-
-> Your patch does not apply because it's whitespace damaged (all tabs got 
-> converted to spaces). Please see Documentation/email-clients.txt.
+> >> > Read Local Version Information (0x04|0x0001) plen 0
+> >> > > HCI Event: Command Complete (0x0e) plen 12
+> >> >     Read Local Version Information (0x04|0x0001) ncmd 1
+> >> >     HCI Version: 1.1 (0x1) HCI Revision: 0x20d
+> >> >     LMP Version: 1.1 (0x1) LMP Subversion: 0x20d
+> >> >     Manufacturer: Cambridge Silicon Radio (10) < HCI Command: Set
+> >> > Event Mask (0x03|0x0001) plen 8
+> >> >     Mask: 0xfffffbff00000000
 > 
-> Thanks,
-> 
-> 	Ingo
+> The HCI spec lists this as a 64-bit number but it must be sent in Little
+Endian to
+> the controller, hence the reverse order in Ville Tervo's patch earlier in
+the
+> email thread.
+
+That I knew. I was just checking that 64 bit values are displayed left to
+right since other little endian values (0x020d, 0x0001 above) are displayed
+right to left.
+
+Cheers!
+
+--- tom
+tom allebrandi
+wyrles@ytram.com
 
 
