@@ -1,109 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab1EYP4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 11:56:07 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:53465 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757475Ab1EYP4E convert rfc822-to-8bit (ORCPT
+	id S933011Ab1EYQGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 12:06:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38753 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756929Ab1EYQGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 11:56:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=R/FNN96BZ9H5KUdksOWUSS7jLqejDsm/YP/7grkoiYHAumj1d1USU7PLQT61WYih0Q
-         mMEDt9Fr885v+Ykr6f5g==
+	Wed, 25 May 2011 12:06:21 -0400
+Date: Wed, 25 May 2011 18:06:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tony Lindgren <tony@atomide.com>
+cc: Nicolas Pitre <nico@fluxnic.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [RFC] ARM Subarchitecture group maintainership
+In-Reply-To: <20110525153459.GE27250@atomide.com>
+Message-ID: <alpine.LFD.2.02.1105251803120.3078@ionos>
+References: <201105181047.17309.arnd@arndb.de> <BANLkTi=xzrLhHTBynWf4huA9EusfaDwPbA@mail.gmail.com> <20110525075902.GH30799@atomide.com> <alpine.LFD.2.00.1105251021550.3207@xanadu.home> <20110525153459.GE27250@atomide.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <334319B2EBE0B144BAE1402B79D82DC5CE13B07E@srvpegasus>
-References: <334319B2EBE0B144BAE1402B79D82DC5CE13B056@srvpegasus>
- <BANLkTimNSe5JjM2+_-XzS7D8XPeZrPL0oA@mail.gmail.com> <334319B2EBE0B144BAE1402B79D82DC5CE13B05A@srvpegasus>
- <BANLkTimX1KG-BZ98LH_NweOUOaUbQtZirg@mail.gmail.com> <BANLkTimrpnCdzRArjAn2NOZMu0Bhf6Pn8Q@mail.gmail.com>
- <334319B2EBE0B144BAE1402B79D82DC5CE13B07E@srvpegasus>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 25 May 2011 09:55:31 -0600
-Message-ID: <BANLkTikgg_4Xj2Z3q6pR+QJSxg6c6cQ32w@mail.gmail.com>
-Subject: Re: Kernel > 2.6.30: PCI issue causes Kernel freeze at booting
-To: "Hornung, Michael" <mhornung@init-ka.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 6:28 AM, Hornung, Michael <mhornung@init-ka.de> wrote:
->>>>>> There is an UART (FPGA IP Core) in that system located at address 1900h using interrupt 3. In order to get Kernel messages at boot time,
->>>>>> I changed file arch/x86/include/asm/serial.h as follows:
->>>>>>
->>>>>> -        { 0, BASE_BAUD, 0x3F8, 4, STD_COM_FLAGS },      /* ttyS0 */     \
->>>>>> +        { 0, BASE_BAUD, 0x1900, 3, STD_COM_FLAGS },     /* ttyS0 */    \
->>>>>>
->>>>>> that is the only change I made to the kernel sources.
->>>>
->>>>> Is this UART connected via PCI?  I don't think so, because I don't see
->>>>> any I/O BARs that include 0x1900.
->>>>
->>>> The UART is connected via LPC bus.
->>>
->>> Makes sense; that's a common way for attaching UARTs, and they are
->>> normally described via ACPI.  When you do that, I think it will show
->>> up as ttyS4 (be sure you build with CONFIG_SERIAL_8250_PNP=y), so
->>> you'll have to use "console=ttyS4" when you boot.  ttyS0-ttyS3 are
->>> taken by the hard-coded ports in serial.h, even though they may not
->>> exist on your platform.
->>
->> Hi Michael,
->>
->> Any update on this problem?  Did it make any difference to put the
->> UART in the ACPI namespace?
->
-> thank you very much for your support. Unfortunately I'm not able to get it to work. I changed
-> the BIOS and added PNP0500 device nodes for all 21 UARTS (all located in the FPGA, all connected
-> via LPC, all located at addresses between 0x1900 and 0x19a7h and all using IRQ3), but the kernel does not care about
-> that nodes. CONFIG_SERIAL_8250_PNP is set to "y" (see attached config.txt) but the kernel output does not show
-> up any differences (2.6.38.6.log).
+On Wed, 25 May 2011, Tony Lindgren wrote:
+> * Nicolas Pitre <nico@fluxnic.net> [110525 07:24]:
+> > 
+> > No.  We'll start merging stuff once this merge window is over.  In other 
+> > words, you are still on your own for the current one.
+> 
+> OK
+>  
+> > Also, I want stuff merged in this subarch tree way before the next merge 
+> > window opens on a continuous basis, not in a big rush before it opens, 
+> > or worse, while it is already open.
+> 
+> OK that sounds good to me. There's at least one more thing to sort out
+> though:
+> 
+> What do you want to do with with the various for-next branches?
+> 
+> Do you want to queue things into your tree before hitting for-next?
 
-Hmm, let's see...  It's been a while since I really worked in this area.
+The stuff which gets pulled in from the various suppliers is
+aggregated in a separate for -next branch.
 
-I think there are two problems here:
+Thanks,
 
-1) Something must be wrong with your PNP0500 devices because we only
-found seven PNP/ACPI devices, the same as we found in the original
-boot.  Your most recent boot didn't have "debug" on the command line;
-that should show us the PNP devices we did find.  Can you post the
-DSDT?  Maybe it will have a clue about why we didn't find 28 (the
-original 7 + the new 21 UARTs) devices.
-
-2) Even if the PNP0500 devices were all there, Linux has a
-long-standing problem that we don't actually *do* anything with PNP
-resources until a driver claims the device.  This PCI assignment is
-happening before the serial driver would claim the devices, so I'm
-afraid it won't help with the problem you're seeing.  Ugh.  I've been
-wanting to fix this for years, but haven't had a chance to dig into
-it.
-
-It does seem unnecessary to assign I/O resources to the 00:1c.1 bridge
-at all, since there's no device below the bridge that needs I/O
-resources.  But changing that is a bigger project, too.
-
-There *is* an exception to the "Linux ignores PNP resources" rule,
-though -- maybe we could take advantage of that.  We do reserve
-"motherboard" resources (PNP0C01 and PNP0C02 devices), and there's
-even a comment in drivers/pnp/system.c about doing it early, before
-PCI assigns resources.  So if you change your new PNP0500 devices to
-PNP0C02 (and fix whatever is preventing PNPACPI from finding them),
-that might fix the PCI bridge assignment.  Then you'd have to keep the
-serial.h hack, since the serial driver wouldn't be able to claim the
-UARTs.
-
-Ugh.  I'm really sorry you're tripping over this ugliness in Linux.
-The way this is *supposed* to work is that first, ACPI tells us where
-all the fixed hardware is.  The UARTs and PCI host bridges are
-examples of this fixed hardware.  Then we're supposed to enumerate
-things below the host bridges and assign unused space when necessary.
-But Linux has always discovered PCI stuff first, mostly ignoring ACPI,
-so keep tripping over problems like this.
-
-Bjorn
+	tglx
