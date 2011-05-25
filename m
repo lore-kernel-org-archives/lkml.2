@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab1EYOlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:41:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57076 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754647Ab1EYOls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:41:48 -0400
-Date: Wed, 25 May 2011 16:41:46 +0200
-From: Michal Marek <mmarek@suse.cz>
+	id S1758010Ab1EYOmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:42:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37621 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757457Ab1EYOmT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 10:42:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=jrymZQC316PS+Wjdr/Fov5gvfP/Fin5jaF2dsFJQnPKofAfII/B9HvU1XxwvPe9Ki9
+         3ZEi2ShvYOdELcp5wRktj7VCo1kBg9PBHMPpjX96f38Q/9IzfUs0r58x1aXMsUE51bsv
+         Cl3GkZtmKzl2BDpFu9OSmGWIBAPjqfW9wCLnM=
+Date: Wed, 25 May 2011 16:42:14 +0200
+From: Tejun Heo <tj@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: andi@lisas.de, jim.cromie@gmail.com, pefoley2@verizon.net,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild/misc for 2.6.40
-Message-ID: <20110525144146.GA17486@sepie.suse.cz>
+Cc: oleg@redhat.com, vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, indan@nul.nu,
+        bdonlan@gmail.com, pedro@codesourcery.com
+Subject: Re: [PATCH 07/19] ptrace: use bit_waitqueue for TRAPPING instead
+ of wait_chldexit
+Message-ID: <20110525144214.GK10146@htj.dyndns.org>
+References: <1306262259-7285-1-git-send-email-tj@kernel.org>
+ <1306262259-7285-8-git-send-email-tj@kernel.org>
+ <BANLkTi=6KNJnaXO+guTke_kkinfBXNunBA@mail.gmail.com>
+ <20110525084411.GB10146@htj.dyndns.org>
+ <BANLkTi=O5vG=pgaYsE-6GXODwF910Q2qwA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=O5vG=pgaYsE-6GXODwF910Q2qwA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, May 25, 2011 at 07:34:27AM -0700, Linus Torvalds wrote:
+> On Wed, May 25, 2011 at 1:44 AM, Tejun Heo <tj@kernel.org> wrote:
+> > Sure, but can you at least explain why you dislike it so much?  This
+> > is the only place bit position is needed and having two variants with
+> > _BIT can be confusing (I did that more than once with workqueue code).
+> > ilog2() could be, I don't know, unfamiliar, but what's so crappy about
+> > it?
+> 
+> Have you looked at ilog2()?
 
-Misc kbuild updates:
-* export_report.pl fixes
-* fixes for make *check
-* scripts/patch-kernel fix to not require bash
+Yeap, I did.
 
-Please pull.
-Michal
+> Do you realize how much extra crap it is for the compiler? For
+> absolutely *no* reason.
+>
+> I hate that disgusting thing. It basically screams to everybody "I'm a
+> f*cking moron, I did things the wrong way around, so now I use this
+> thing to undo my braindamage".
 
-The following changes since commit 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d:
+I don't know.  The overhead is compile-time and if the bit position
+usage is very rare compared to bitmask usage, it is convenient.
 
-  Linux 2.6.39-rc1 (2011-03-29 12:09:47 -0700)
+> You can get a good idea of the code quality if you grep for users. I
+> don't think it's an accident at all that the two big blocks are
+> ide-tape and some infiniband drivers.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git misc
+Maybe, but also ilog2() is relatively new and most already had ways to
+deal with bit positions and masks, so the uptake is expected to be
+slow.
 
-Andreas Mohr (1):
-      eradicate bashisms in scripts/patch-kernel
+Anyways, understood.  Linus hates ilog2().  Will convert to _BIT
+macros on the next round and stay the f$@? away from it from now on.
 
-Jim Cromie (3):
-      export_report: do collectcfiles work in perl itself
-      export_report: sort SECTION 2 output
-      export_report: use warn() to issue WARNING, so they go to stderr
+Thanks.
 
-Peter Foley (5):
-      kbuild: don't warn about include/linux/version.h not including itself
-      kbuild: add targets to PHONY
-      kbuild: make headerdep work in KBUILD_OUTDIR
-      kbuild: make includecheck work in KBUILD_OUTDIR
-      kbuild: make versioncheck work in KBUILD_OUTDIR
-
- Makefile                 |    9 ++++++---
- scripts/checkversion.pl  |    1 +
- scripts/export_report.pl |   26 ++++++++++++++++++++------
- scripts/patch-kernel     |    2 +-
- 4 files changed, 28 insertions(+), 10 deletions(-)
+-- 
+tejun
