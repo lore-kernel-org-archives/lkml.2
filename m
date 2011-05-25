@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757698Ab1EYMnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 08:43:04 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47406 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993Ab1EYMnB (ORCPT
+	id S1757760Ab1EYMnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 08:43:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65141 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757714Ab1EYMnM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 08:43:01 -0400
+	Wed, 25 May 2011 08:43:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=ubZjHX2Fj+BieLw/DLTbEZQvFhxoXB8VONqJuNMW0w/niblFFFCJHnmIzNboyP7rQF
-         583Nu1UUD6SBZH8KG85M1pN1gBfzx5P/9UUuy2RQZ+0Y9h1YOFIPN7Fz0+DcxdILzJ2r
-         mfvLQUkw++bRx+Q/UKiuJsAQvvA0gcABDdVdU=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=qTbfUo2nmsA5MeVzE4wXs+qdqM/I2wi3iK5AnE+IUh90BN+drRdBmecss2z2db+3wb
+         a1tYZAkrV3qiw0HnVl1oNqrNlqevpAy1ANM7DgA+QSbJLjoUXoeJ8s3eIiBh8YJQPUNg
+         21Oaa52dVZeyQDojPmBt8MFSut5Qrn7lp0rpk=
 MIME-Version: 1.0
-Date: Wed, 25 May 2011 20:42:59 +0800
-Message-ID: <BANLkTimT+Tut-3TshCDm-NiLLXrOznibNA@mail.gmail.com>
-Subject: [PATCH] sched: remove noop in lowest_flag_domain()
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1306322535.31249.14.camel@e102109-lin.cambridge.arm.com>
+References: <1306273164-18217-1-git-send-email-catalin.marinas@arm.com>
+	<8yapqn7fyab.fsf@huya.qualcomm.com>
+	<alpine.LFD.2.00.1105242042340.3207@xanadu.home>
+	<201105251310.39609.arnd@arndb.de>
+	<1306322535.31249.14.camel@e102109-lin.cambridge.arm.com>
+Date: Wed, 25 May 2011 13:43:11 +0100
+X-Google-Sender-Auth: -O3TEF7OSXTre0Q3T9xefS0fILk
+Message-ID: <BANLkTin_1Xu20rdjLR3HQTmr=ntwD85BdA@mail.gmail.com>
+Subject: Re: [PATCH v6 00/18] ARM: Add support for the Large Physical Address Extensions
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@fluxnic.net>,
+        David Brown <davidb@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checking for the validity of sd is removed, since it is already
-checked by the for_each_domain macro.
+On 25 May 2011 12:22, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Wed, 2011-05-25 at 12:10 +0100, Arnd Bergmann wrote:
+>> On Wednesday 25 May 2011, Nicolas Pitre wrote:
+>> > > Do you expect non LPAE targets to be able to boot with these changes
+>> > > applied (and LPAE enabled)?  I am able to build this tree for the
+>> > > MSM8660 (with a minor patch below), but it fails to boot with LPAE
+>> > > enabled.  It seems to work fine with LPAE not enabled.
+>> >
+>> > I wouldn't expect a LPAE kernel to boot on non LPAE capable hardware.
+>> >
+>> > And I don't think we'll ever try to support both LPAE and non-LPAE modes
+>> > in the same kernel binary either since this has implications all over
+>> > the place in core kernel mm code.
+>>
+>> Just for information and to complete the picture, what other of these
+>> combinations are possible?
+>>
+>> * Non-LPAE kernel on LPAE-capable hardware
+>
+> Works fine. The LPAE-capable processors like A15 support the classic
+> page table format as well, it's only a configuration bit to switch to
+> LPAE.
+>
+>> * LPAE kernel as KVM guest of LPAE kernel
+>
+> Should work when KVM for A15 becomes available
+>
+>> * non-LPAE kernel as KVM guest of LPAE kernel
+>
+> Same as above. KVM shouldn't care much about the underlying OS, it just
+> sets up the IPA (Intermediate Physical Address) translations and you can
+> have classic page tables on top.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+Just a clarification here - KVM with support for LPAE also requires
+the virtualisation extensions (which are present in Cortex-A15). The
+virtualisation extensions require LPAE in hardware but I'm not sure
+the opposite is true.
 
---- tip-git/kernel/sched_fair.c	Sat May 14 15:21:56 2011
-+++ sched_fair.c	Wed May 25 20:15:34 2011
-@@ -3652,7 +3652,7 @@ static inline struct sched_domain *lowes
- 	struct sched_domain *sd;
-
- 	for_each_domain(cpu, sd)
--		if (sd && (sd->flags & flag))
-+		if (sd->flags & flag)
- 			break;
-
- 	return sd;
+-- 
+Catalin
