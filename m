@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932602Ab1EYJlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 05:41:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47268 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932336Ab1EYJlc (ORCPT
+	id S932777Ab1EYJlt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 05:41:49 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:54754 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932336Ab1EYJlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 05:41:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=canFQTchwEcHfmMknzx6AUd93xIAsdWIDs+wRzR+ve1ATWcx/s+hLPQiznXXQXzvxr
-         uIyzS9C0uaFyXlpxJbvVzwy3DMz7xKcYlv2oD8jtJ8plOi06oTE2K+6S1FerBrgGQysa
-         wDVEo+zMIvP4cdKwuLkyQlC3ISuPopjgfFEgg=
-Date: Wed, 25 May 2011 11:41:27 +0200
-From: Tejun Heo <htejun@gmail.com>
-To: Bruce Stenning <b.stenning@indigovision.com>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Message-ID: <20110525094127.GF10146@htj.dyndns.org>
-References: <20110423005610.GC1576@mtj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com>
- <20110425162242.GB30828@mtj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com>
- <20110426135027.GI878@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com>
- <20110426155229.GM878@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com>
- <20110430140109.GJ29280@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com>
+	Wed, 25 May 2011 05:41:47 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: Re: [PATCH] viafb: use display information in info not in var for panning
+Date: Wed, 25 May 2011 11:41:59 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r3; KDE/4.6.2; x86_64; ; )
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+References: <201105232211.40154.laurent.pinchart@ideasonboard.com> <1306188446-5160-1-git-send-email-FlorianSchandinat@gmx.de>
+In-Reply-To: <1306188446-5160-1-git-send-email-FlorianSchandinat@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105251142.00164.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, sorry about the long delay.
+Hi Florian,
 
-On Tue, May 17, 2011 at 04:30:20PM +0100, Bruce Stenning wrote:
-> __ata_port_freeze: ata4 port frozen
-> ata4: hard resetting link
-> sata_link_hardreset: ENTER
-> ata4: COMRESET failed (errno=-32)
-> sata_link_hardreset: EXIT, rc=-32
-> ata4: reset failed (errno=-32), retrying in 33 secs
-> __ata_port_freeze: ata4 port frozen
-> ata4: hard resetting link
-> sata_link_hardreset: ENTER
-> ata4: COMRESET failed (errno=-32)
-> sata_link_hardreset: EXIT, rc=-32
-> ata4: reset failed, giving up
-> ata_eh_recover: EXIT, rc=-32
-> ata4.00: disabled
-> ata4: EH complete
-> ata_scsi_error: EXIT
+On Tuesday 24 May 2011 00:07:26 Florian Tobias Schandinat wrote:
+> As Laurent pointed out we must not use any information in the passed
+> var besides xoffset, yoffset and vmode as otherwise applications
+> might abuse it. Also use the aligned fix.line_length and not the
+> (possible) unaligned xres_virtual.
 > 
-> The IRQ for that port is masked off afterwards.
+> Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> Reported-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: stable@kernel.org
 
-This is a different issue.  libata EH plugs the port if reset fails
-repeatedly.  This behavior was implemented to avoid causing continuous
-resets on a port in case it has flaky PHY state reporting; however, it
-seems to cause more trouble than fixing issues - ie. plugging in a
-broken device may end up plugging the port even after the offending
-device is removed until manual rescan or reboot.  I've been pondering
-about changing the behavior like the following.
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index dfb6e9d..05797fe 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -2885,8 +2885,17 @@ int ata_eh_reset(struct ata_link *link, int classify,
- 	    sata_scr_read(link, SCR_STATUS, &sstatus))
- 		rc = -ERESTART;
- 
--	if (rc == -ERESTART || try >= max_tries)
-+	if (rc == -ERESTART || try >= max_tries) {
-+		/*
-+		 * Thaw host port even if reset failed, so that the port
-+		 * can be retried on the next phy event.  This risks
-+		 * repeated EH runs but seems to be a better tradeoff than
-+		 * shutting down a port after a botched hotplug attempt.
-+		 */
-+		if (ata_is_host_link(link))
-+			ata_eh_thaw_port(ap);
- 		goto out;
-+	}
- 
- 	now = jiffies;
- 	if (time_before(now, deadline)) {
+> ---
+>  drivers/video/via/viafbdev.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+> index 3114a87..aa87529 100644
+> --- a/drivers/video/via/viafbdev.c
+> +++ b/drivers/video/via/viafbdev.c
+> @@ -348,8 +348,9 @@ static int viafb_pan_display(struct fb_var_screeninfo
+> *var, struct fb_info *info)
+>  {
+>  	struct viafb_par *viapar = info->par;
+> -	u32 vram_addr = (var->yoffset * var->xres_virtual + var->xoffset)
+> -		* (var->bits_per_pixel / 8) + viapar->vram_addr;
+> +	u32 vram_addr = viapar->vram_addr
+> +		+ var->yoffset * info->fix.line_length
+> +		+ var->xoffset * info->var.bits_per_pixel / 8;
+> 
+>  	DEBUG_MSG(KERN_DEBUG "viafb_pan_display, address = %d\n", vram_addr);
+>  	if (!viafb_dual_fb) {
+
+-- 
+Regards,
+
+Laurent Pinchart
