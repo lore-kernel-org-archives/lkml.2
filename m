@@ -1,47 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab1EYKRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 06:17:19 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:55520 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab1EYKRS (ORCPT
+	id S1753217Ab1EYKSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 06:18:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57514 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab1EYKSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 06:17:18 -0400
-Subject: Re: Mysterious CFQ crash and RCU
-From: Paul Bolle <pebolle@tiscali.nl>
-To: paulmck@linux.vnet.ibm.com
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Wed, 25 May 2011 12:17:16 +0200
-In-Reply-To: <20110523153848.GC2310@linux.vnet.ibm.com>
-References: <20110519222404.GG12600@redhat.com>
-	 <20110521210013.GJ2271@linux.vnet.ibm.com>
-	 <20110523152141.GB4019@redhat.com>
-	 <20110523153848.GC2310@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.1 (3.1.1-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1306318636.9059.33.camel@t41.thuisdomein>
-Mime-Version: 1.0
+	Wed, 25 May 2011 06:18:05 -0400
+Date: Wed, 25 May 2011 12:17:50 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH] timers: consider slack value in mod_timer()
+In-Reply-To: <BANLkTikNSa9otE_cFKRcThUZ5ZCtE7Kyxw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1105251126590.3078@ionos>
+References: <20110521105828.GA29442@Chamillionaire.breakpoint.cc> <BANLkTinGZ0L4oQkBYo9H=R==X5Z+efjRaQ@mail.gmail.com> <20110524121343.GA17312@Chamillionaire.breakpoint.cc> <BANLkTikNSa9otE_cFKRcThUZ5ZCtE7Kyxw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Polling is fine.  Please see attached for a script to poll at 15-second
-> intervals.  Please also feel free to adjust, just tell me what you
-> adjusted.
+On Wed, 25 May 2011, Yong Zhang wrote:
 
-0) I have not yet tried this script, but I did have a look at it (to see
-what's needed to run it).
+> On Tue, May 24, 2011 at 8:13 PM, Sebastian Andrzej Siewior
+> <sebastian@breakpoint.cc> wrote:
+> > * Yong Zhang | 2011-05-24 15:54:17 [+0800]:
+> >
+> >>> diff --git a/kernel/timer.c b/kernel/timer.c
+> >>> index fd61986..bf09726 100644
+> >>> --- a/kernel/timer.c
+> >>> +++ b/kernel/timer.c
+> >>> @@ -804,6 +804,8 @@ int mod_timer(struct timer_list *timer, unsigned long expires)
+> >>> ?? ?? ?? ?? ?? ?? ?? ??return 1;
+> >>>
+> >>> ?? ?? ?? ??expires = apply_slack(timer, expires);
+> >>
+> >>So, why not move above line up, then we can use the recalculated
+> >>expires?
+> >
+> > We leave often before apply_slack() kicks in. From printks() it looks
+> > like we leave more often in first "return 1" than in the second. Moving
+> > that line up would lead to more __mode_timer() calls.
+> 
+> Hmmm, so the reason is for a timer whose timer->slack is not set
+> explicitly. when we recalculate expires, we will get different value
+> sometimes.
 
-1) All debugfs files it polls come from kernel/rcutree_trace.c. That
-file is written as a module (and will only be built if
-CONFIG_TREE_RCU_TRACE isn't "n"). But in init/Kconfig, the
-TREE_RCU_TRACE config entry is set to "def_bool".
+No, that's not the problem.
+ 
+> Could you please try the attached patch(webmail will mangle it)
 
-2) So shouldn't either the config entry be set to "tristate" or the
-module support removed from kernel/rcutree_trace.c?
+Grrr. gmail allows usage of real mail clients, doesn't it ?
 
+> diff --git a/kernel/timer.c b/kernel/timer.c
+> index fd61986..73af53c 100644
+> --- a/kernel/timer.c
+> +++ b/kernel/timer.c
+> @@ -749,6 +749,10 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+>  	unsigned long expires_limit, mask;
+>  	int bit;
+>  
+> +	/* no need to account slack again for a same-expire pending timer */
+> +	if (timer_pending(timer) && time_after_eq(timer->expires, expires))
+> +		return timer->expires;
 
-Paul Bolle
+That's total crap. Assume some code sets the timer with 5 seconds for
+some purpose and after a second it wants it to fire in 50ms from now
+because some state change happened. The above will keep the original 5
+seconds timeout no matter what, so the requested 50ms timeout will
+fire about 4 seconds late.
 
+>  	expires_limit = expires;
+>  
+>  	if (timer->slack >= 0) {
+> @@ -795,6 +799,8 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+>   */
+>  int mod_timer(struct timer_list *timer, unsigned long expires)
+>  {
+> +	expires = apply_slack(timer, expires);
+> +
+
+We need to analyse the problem thoroughly and not slap random changes
+into the code without knowing about the consequences. And the problem
+is mostly in the call sites because they are not aware of the slack
+effect.
+
+The sunrpc code is one of those which are affected by the slack magic
+simply because it makes the mod_timer() call basically unconditional
+even if the jiffies value is unchanged.
+
+diff --git a/net/sunrpc/xprt.c b/net/sunrpc/xprt.c
+index ce5eb68..cb0574f 100644
+--- a/net/sunrpc/xprt.c
++++ b/net/sunrpc/xprt.c
+@@ -1053,10 +1053,12 @@ void xprt_release(struct rpc_task *task)
+ 		xprt->ops->release_request(task);
+ 	if (!list_empty(&req->rq_list))
+ 		list_del(&req->rq_list);
+-	xprt->last_used = jiffies;
+-	if (list_empty(&xprt->recv) && xprt_has_timer(xprt))
+-		mod_timer(&xprt->timer,
+-				xprt->last_used + xprt->idle_timeout);
++	if (xprt->last_used = jiffies) {
++		xprt->last_used = jiffies;
++		if (list_empty(&xprt->recv) && xprt_has_timer(xprt))
++			mod_timer(&xprt->timer,
++				  xprt->last_used + xprt->idle_timeout);
++	}
+ 	spin_unlock_bh(&xprt->transport_lock);
+ 	if (req->rq_buffer)
+ 		xprt->ops->buf_free(req->rq_buffer);
+
+The above patch does not solve the problem when the resulting new
+timeout is rounded up to the same expiry value after the slack is
+applied, which is not unlikely when jiffies only advanced by a small
+amount.
+
+So we must check after apply_slack() and the reason why the first
+check before apply_slack triggers very often is that auto slack only
+changes the expiry value for timeouts >= 256 jiffies.
+
+And the main caller is the networking code via
+tcp_send_delayed_ack(). The standard delay we see from there is 40ms
+(10 jiffies for HZ=250) and that falls below the 256 jiffies treshold.
+
+The patch below is a reasonable compromise between overhead and
+correctness.
+
+Thanks,
+
+	tglx
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index fd61986..458fd81 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -749,16 +749,15 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+ 	unsigned long expires_limit, mask;
+ 	int bit;
+ 
+-	expires_limit = expires;
+-
+ 	if (timer->slack >= 0) {
+ 		expires_limit = expires + timer->slack;
+ 	} else {
+-		unsigned long now = jiffies;
++		long delta = expires - jiffies;
++
++		if (delta < 256)
++			return expires;
+ 
+-		/* No slack, if already expired else auto slack 0.4% */
+-		if (time_after(expires, now))
+-			expires_limit = expires + (expires - now)/256;
++		expires_limit = expires + (expires - now)/256;
+ 	}
+ 	mask = expires ^ expires_limit;
+ 	if (mask == 0)
+@@ -795,6 +794,8 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+  */
+ int mod_timer(struct timer_list *timer, unsigned long expires)
+ {
++	expires = apply_slack(timer, expires);
++
+ 	/*
+ 	 * This is a common optimization triggered by the
+ 	 * networking code - if the timer is re-modified
+@@ -803,8 +804,6 @@ int mod_timer(struct timer_list *timer, unsigned long expires)
+ 	if (timer_pending(timer) && timer->expires == expires)
+ 		return 1;
+ 
+-	expires = apply_slack(timer, expires);
+-
+ 	return __mod_timer(timer, expires, false, TIMER_NOT_PINNED);
+ }
+ EXPORT_SYMBOL(mod_timer);
