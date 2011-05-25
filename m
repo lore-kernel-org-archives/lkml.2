@@ -1,49 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab1EYW1O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 18:27:14 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:14246 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754275Ab1EYW1N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 18:27:13 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBABqB3U1Ld/sX/2dsb2JhbAAMhFDXc5BZgSuDaoEHBJdkh24
-X-IronPort-AV: E=Sophos;i="4.65,269,1304308800"; 
-   d="scan'208";a="114678412"
-Message-ID: <4DDD823F.5090904@teksavvy.com>
-Date: Wed, 25 May 2011 18:27:11 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S932286Ab1EYWel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 18:34:41 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:34221 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932090Ab1EYWek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 18:34:40 -0400
+Date: Wed, 25 May 2011 15:34:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage
+ based on semi-formal proof"
+Message-ID: <20110525223437.GO2341@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4DDAD934.9010603@kernel.org>
+ <4DDAE5FA.2030303@kernel.org>
+ <4DDAE6A5.6060701@kernel.org>
+ <20110524011824.GL7428@linux.vnet.ibm.com>
+ <4DDB093F.2060601@kernel.org>
+ <20110524013523.GO7428@linux.vnet.ibm.com>
+ <4DDC21E1.1070502@kernel.org>
+ <4DDC48E3.1060108@kernel.org>
+ <20110525045253.GB2262@linux.vnet.ibm.com>
+ <4DDD7F96.3090408@kernel.org>
 MIME-Version: 1.0
-To: Bruce Stenning <b.stenning@indigovision.com>
-CC: Tejun Heo <htejun@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-References: <20110423005610.GC1576@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com> <20110425162242.GB30828@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com> <20110426135027.GI878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com> <20110426155229.GM878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com> <20110430140109.GJ29280@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com> <20110525094127.GF10146@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C7770967B@gretna.indigovision.com>
-In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32C7770967B@gretna.indigovision.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DDD7F96.3090408@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-05-25 09:36 AM, Bruce Stenning wrote:
->> This is a different issue.  libata EH plugs the port if reset fails
->> repeatedly.  This behavior was implemented to avoid causing continuous
->> resets on a port in case it has flaky PHY state reporting; however, it
->> seems to cause more trouble than fixing issues - ie. plugging in a
->> broken device may end up plugging the port even after the offending
->> device is removed until manual rescan or reboot.  I've been pondering
->> about changing the behavior like the following.
+On Wed, May 25, 2011 at 03:15:50PM -0700, Yinghai Lu wrote:
+> On 05/24/2011 09:52 PM, Paul E. McKenney wrote:
+> > On Tue, May 24, 2011 at 05:10:11PM -0700, Yinghai Lu wrote:
+> >> On 05/24/2011 02:23 PM, Yinghai Lu wrote:
+> >>> On 05/23/2011 06:35 PM, Paul E. McKenney wrote:
+> >>>> On Mon, May 23, 2011 at 06:26:23PM -0700, Yinghai Lu wrote:
+> >>>>> On 05/23/2011 06:18 PM, Paul E. McKenney wrote:
+> >>>>>
+> >>>>>> OK, so it looks like I need to get this out of the way in order to track
+> >>>>>> down the delays.  Or does reverting PeterZ's patch get you a stable
+> >>>>>> system, but with the longish delays in memory_dev_init()?  If the latter,
+> >>>>>> it might be more productive to handle the two problems separately.
+> >>>>>>
+> >>>>>> For whatever it is worth, I do see about 5% increase in grace-period
+> >>>>>> duration when switching to kthreads.  This is acceptable -- your
+> >>>>>> 30x increase clearly is completely unacceptable and must be fixed.
+> >>>>>> Other than that, the main thing that affects grace period duration is
+> >>>>>> the setting of CONFIG_HZ -- the smaller the HZ value, the longer the
+> >>>>>> grace-period duration.
+> >>>>>
+> >>>>> for my 1024g system when memory hotadd is enabled in kernel config:
+> >>>>> 1. current linus tree + tip tree:  memory_dev_init will take about 100s.
+> >>>>> 2. current linus tree + tip tree + your tree - Peterz patch: 
+> >>>>>    a. on fedora 14 gcc: will cost about 4s: like old times
+> >>>>>    b. on opensuse 11.3 gcc: will cost about 10s.
+> >>>>
+> >>>> So some patch in my tree that is not yet in tip makes things better?
+> >>>>
+> >>>> If so, could you please see which one?  Maybe that would give me a hint
+> >>>> that could make things better on opensuse 11.3 as well.
+> >>>
+> >>> today's tip:
+> >>>
+> >>> [   31.795597] cpu_dev_init done
+> >>> [   40.930202] memory_dev_init done
+> >>>
+> >>
+> >> another boot from tip got:
+> >>
+> >> [   35.211927] cpu_dev_init done
+> >> [  136.053698] memory_dev_init done
+> >>
+> >> wonder if you can have clean revert for
+> >>
+> >> commit a26ac2455ffcf3be5c6ef92bc6df7182700f2114
+> >>> Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> >>> Date:   Wed Jan 12 14:10:23 2011 -0800
+> >>>
+> >>>     rcu: move TREE_RCU from softirq to kthread
+> >>>     
+> >>>     If RCU priority boosting is to be meaningful, callback invocation must
+> >>>     be boosted in addition to preempted RCU readers.  Otherwise, in presence
+> >>>     of CPU real-time threads, the grace period ends, but the callbacks don't
+> >>>     get invoked.  If the callbacks don't get invoked, the associated memory
+> >>>     doesn't get freed, so the system is still subject to OOM.
+> >>>     
+> >>>     But it is not reasonable to priority-boost RCU_SOFTIRQ, so this commit
+> >>>     moves the callback invocations to a kthread, which can be boosted easily.
+> >>>     
+> >>>     Also add comments and properly synchronized all accesses to
+> >>>     rcu_cpu_kthread_task, as suggested by Lai Jiangshan.
+> >>>     
+> >>>     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> >>>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >>>     Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > 
+> > There is a new branch yinghai.2011.05.24a on:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> > 
+> > Or will be as soon as kernel.org updates its mirrors.
+> > 
+> > I am not sure I could call this "clean", but it does revert that commit
+> > and 11 of the subsequent commits that depend on it.  It does build,
+> > and I will test it once my currently running tests complete.
 > 
-> Thanks for the explanation, Tejun, and for sending those changes upstream.
-> I shall incorporate these patches into my kernel and keep you informed as
-> to how they behave.
-> 
-> Mark, did you get a chance to clean up the sata_mv spinlock addition in
-> mv_set_main_irq_mask?
+> yes, with those revert, there is no delay in 10 times booting.
 
-Not yet.  I've been waiting to hear back from you as to
-whether they visibly fix anything or not.
+Unfortunately, there are rcutorture test failures with the revert...
+
+							Thanx, Paul
