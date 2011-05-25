@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933101Ab1EYQt5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 12:49:57 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:2539 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932998Ab1EYQtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 12:49:55 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Message-ID: <4DDD3324.3020407@broadcom.com>
-Date: Wed, 25 May 2011 18:49:40 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
- Gecko/20110424 Thunderbird/3.1.10
+	id S933116Ab1EYQu5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 12:50:57 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41633 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab1EYQu4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 12:50:56 -0400
+Message-ID: <4DDD335B.8000904@oracle.com>
+Date: Wed, 25 May 2011 09:50:35 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-To: "Randy Dunlap" <rdunlap@xenotime.net>
-cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Dan Carpenter" <error27@gmail.com>,
-        "George Spelvin" <linux@horizon.com>
-Subject: Re: [RFC V4] lib: crc8: add new library module providing crc8
- algorithm
-References: <1306320099-17970-1-git-send-email-arend@broadcom.com>
- <20110525094304.0769a189.rdunlap@xenotime.net>
-In-Reply-To: <20110525094304.0769a189.rdunlap@xenotime.net>
-X-WSS-ID: 61C3EB8D4NS11894002-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: liubo <liubo2009@cn.fujitsu.com>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [PATCH 1/2] tracing: add __print_symbolic_u64 to avoid warnings
+ on 32bit machine
+References: <4D9573DB.4010009@cn.fujitsu.com>	 <1301665762.2160.22.camel@gandalf.stny.rr.com>	 <4D9C2FF6.7090607@cn.fujitsu.com>	 <1303150309.7181.51.camel@gandalf.stny.rr.com>	 <4DACE6E0.7000507@cn.fujitsu.com> <4DBA8C95.4000300@cn.fujitsu.com>	 <1304264124.25414.1079.camel@gandalf.stny.rr.com>	 <4DDDE9E6.7090303@cn.fujitsu.com>	 <1306326464.1465.85.camel@gandalf.stny.rr.com>	 <20110525091252.8899385e.randy.dunlap@oracle.com> <1306342064.1465.101.camel@gandalf.stny.rr.com>
+In-Reply-To: <1306342064.1465.101.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090203.4DDD336A.00F1:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2011 06:43 PM, Randy Dunlap wrote:
->
->> diff --git a/lib/crc8.c b/lib/crc8.c
->> new file mode 100644
->> index 0000000..0ce4238
->> --- /dev/null
->> +++ b/lib/crc8.c
->> @@ -0,0 +1,84 @@
->> +/*
->> + * Copyright (c) 2011 Broadcom Corporation
->> + *
->> + * Permission to use, copy, modify, and/or distribute this software for any
->> + * purpose with or without fee is hereby granted, provided that the above
->> + * copyright notice and this permission notice appear in all copies.
->> + *
->> + * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
->> + * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
->> + * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
->> + * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
->> + * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
->> + * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
->> + * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
->> + */
-> insert blank line here, please.
+On 05/25/11 09:47, Steven Rostedt wrote:
+> On Wed, 2011-05-25 at 09:12 -0700, Randy Dunlap wrote:
+>>  
+>>> But what I sent out previously is not going into 2.6.40 anyway. Ingo
+>>> feels that it's too late in the merge window to pull those changes and
+>>> wants to wait till the next merge window. Since there's some fixes in
+>>> that pull request, I'll need to cherry pick them out and rebase the rest
+>>> for the next window.
+>>
+>> Sorry to hear all of that.  This fix is needed in mainline.
+>>
+> 
+> Hmm, it is a warning fix. Well, I could add this to the cherry picking
+> I'm doing (fixes only).
 
-Will do that.
+Yes, I know.  And it clutters up a build file with 59 warnings for btrfs.h.  :(
 
->> +#define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
->> +#include<linux/module.h>
->> +#include<linux/crc8.h>
->> +#include<linux/printk.h>
->> +
->> +/*
->> + * crc8_populate_msb - fill crc table for given polynomial in reverse bit order.
->> + *
->> + * table:	table to be filled.
->> + * polynomial:	polynomial for which table is to be filled.
->> + */
-> Please convert all of these function comments to kernel-doc, like the header file has.
+> I'm currently making a fix for a triple fault in the function tracer
+> caused by PROVE_RCU causing recursive tracing. When I get this fixed,
+> I'll be pushing the "fixes" next.
 
-Can be done easily, but what would be the added value to describe a 
-function twice. I am not fully aware of the usage of kernel-doc, but if 
-it were run over the full kernel tree I would expect the same function 
-to popup twice if I the kernel-doc markup  to the source file as well.
-
-Gr. AvS
 
 -- 
-Almost nobody dances sober, unless they happen to be insane.
--- H.P. Lovecraft --
-
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
