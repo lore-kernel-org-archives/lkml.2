@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab1EYSrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 14:47:09 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:37530 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab1EYSrH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 14:47:07 -0400
-Date: Wed, 25 May 2011 20:46:48 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Fabio Erculiani <lxnay@sabayon.org>
-Cc: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fbmem: fix race condition between
- register_framebuffer() and fb_open()
-Message-ID: <20110525204648.58983270@neptune.home>
-In-Reply-To: <BANLkTimxi-LZFzwv=z6RRBCX098hr-ViUg@mail.gmail.com>
-References: <1306266871-12464-1-git-send-email-lxnay@sabayon.org>
-	<20110524224545.08c53b1d@neptune.home>
-	<20110525181917.12cf97b8@neptune.home>
-	<BANLkTimxi-LZFzwv=z6RRBCX098hr-ViUg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753573Ab1EYSsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 14:48:51 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:57090 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751513Ab1EYSst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 14:48:49 -0400
+Date: Wed, 25 May 2011 11:47:38 -0700
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Milton Miller <miltonm@bga.com>, Paul Mackerras <paulus@samba.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Anton Blanchard <anton@samba.org>,
+        Sonny Rao <sonnyrao@linux.vnet.ibm.com>,
+        Will Schmidt <will_schmidt@vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        cbe-oss-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 5/8] powerpc: override dma_get_required_mask by platform
+ hook and ops
+Message-ID: <20110525184738.GA10283@us.ibm.com>
+References: <1305152704-4864-1-git-send-email-nacc@us.ibm.com>
+ <1305152704-4864-6-git-send-email-nacc@us.ibm.com>
+ <1305791036.7481.52.camel@pasglop>
+ <20110519174625.GA3338@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110519174625.GA3338@us.ibm.com>
+X-Operating-System: Linux 2.6.38-8-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011 Fabio Erculiani <lxnay@sabayon.org> wrote:
-> I'm not a fbdev expert. So I leave the real fix to real men ( ;-) ).
-> It is causing deadlock during boot, so I would consider it quite critical.
-> Users using any fb driver will get into troubles.
-> The workaround is to boot with vga=normal.
+Ben,
 
-What is your system doing during boot? I've never seen it here but maybe
-my boot sequence is too simple.
+On 19.05.2011 [10:46:25 -0700], Nishanth Aravamudan wrote:
+> On 19.05.2011 [17:43:56 +1000], Benjamin Herrenschmidt wrote:
+> > On Wed, 2011-05-11 at 15:25 -0700, Nishanth Aravamudan wrote:
+> > > From: Milton Miller <miltonm@bga.com>
+> > > 
+> > > The hook dma_get_required_mask is supposed to return the mask required
+> > > by the platform to operate efficently.  The generic version of
+> > > dma_get_required_mask in driver/base/platform.c returns a mask based
+> > > only on max_pfn.  However, this is likely too big for iommu systems
+> > > and could be too small for platforms that require a dma offset or have
+> > > a secondary window at a high offset.
+> > 
+> > The result of those 3 patches doesn't build on top of my current tree,
+> > the generic dma_ops lacks the dma_get_required_mask hook. I'll have a
+> > look again after the merge window.
+> 
+> Hrm, I think it's because for whatever reason [1] I forgot to cc you on 6/8?
+> 
+> https://lkml.org/lkml/2011/5/11/473
 
-Could you tell if it deadlocks before init gets started or afterwards,
-which fb drivers (and extra kernel patches if any) are in use.
+Were you able to find the patch I refer to above?
 
-If you have the complete backtrace of the deadlocked processes it would
-help getting a better idea of what is affected and how (and why just the
-framebuffer's lock is not causing trouble with earlier kernel versions).
+Thanks,
+Nish
 
-Bruno
-
-
-> Cheers,
+-- 
+Nishanth Aravamudan <nacc@us.ibm.com>
+IBM Linux Technology Center
