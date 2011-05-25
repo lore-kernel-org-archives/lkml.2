@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932531Ab1EYQUM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 12:20:12 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:26801 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757591Ab1EYQUK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 12:20:10 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-13.tower-131.messagelabs.com!1306340400!25583553!8
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.32]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@fluxnic.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 25 May 2011 11:19:59 -0500
-Subject: RE: [RFC] ARM Subarchitecture group maintainership
-Thread-Topic: [RFC] ARM Subarchitecture group maintainership
-Thread-Index: AcwatU6dizU0qiZvQrKffxhM6ClDTAAQiWgg
-Message-ID: <0D753D10438DA54287A00B027084269764D323A714@AUSP01VMBX24.collaborationhost.net>
-References: <201105181047.17309.arnd@arndb.de>
- <20110525082344.GF22096@pengutronix.de>
-In-Reply-To: <20110525082344.GF22096@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758116Ab1EYQZP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 12:25:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34822 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755353Ab1EYQZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 12:25:14 -0400
+Message-ID: <4DDD2D40.1020305@zytor.com>
+Date: Wed, 25 May 2011 09:24:32 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+CC: Ingo Molnar <mingo@elte.hu>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, davej@redhat.com,
+        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
+        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+References: <1306269105.21443.20.camel@dan> <20110524211644.GJ27634@elte.hu>	 <4DDC39F1.2060903@zytor.com> <1306332225.2211.9.camel@dan>	 <4DDD24E2.4010602@zytor.com> <1306340141.2211.32.camel@dan>
+In-Reply-To: <1306340141.2211.32.camel@dan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 18, 2011 at 10:47:16AM +0200, Arnd Bergmann wrote:
-> This is the draft plan for maintaining the ARM subarchitectures in a common
-> tree, as a way to help coordinate the upstream merging of the
-> arch/arm/{plat,mach}-* changes into Linus' tree.
+On 05/25/2011 09:15 AM, Dan Rosenberg wrote:
 > 
-> This was discussed in great length at the Linaro Developer Summit in Budapest
-> last week where we worked out an initial plan. We are modeling the maintainance
-> after how the linux-tip tree is used for the x86 architecture, with a set
-> of developers that have commit access to one tree on kernel.org and
-> have mutual trust in one another. Nicolas Pitre and me are funded
-> by Linaro to do the bulk of the work, while Thomas Gleixner will help
-> us part-time with his long time architecture maintainance experience.
-> Despite the funding by Linaro, this is not a Linaro project and all
-> ARM subarchitectures are welcome to go through our tree.
+> Ok, checking the e820 memory map seems like the way to go then.  As a
+> first attempt, I'd assume that if I find a contiguous free chunk that
+> begins before (or at) 16 MB and continues beyond 16 MB, then that
+> represents space where it's safe to load the kernel (up to a certain
+> point before the end of that chunk), assuming the chunk has enough space
+> and I do some degree of checking that I'm not decompressing on top of
+> something else (I'll start to gather a list of what to watch out for).
+> Is this a fair assumption?
 > 
-> Russell King's role as ARM maintainer is of course unchanged by this, but
-> he has the same commit access to the new tree as the other maintainers and
-> is welcome to work in the same tree. We are also open to nominations for
-> further people outside of Linaro to join us as committers. Marc Zyngier from
-> ARM ltd is one of the candidates that has been suggested and I would also
-> like to see someone from Google. We have to find the right balance with the
-> number of committers so we get all the work done without stepping on each
-> other's toes.
-> 
-> Our tree will be strictly organized in topic brances so we can feed them
-> upstream in the bitesized chunks that Linus likes. The master branch
-> is an integration branch that pulls all other branches that are scheduled
-> for the next merge window and itself gets integrated into linux-next.
-> 
-> We will probably not be fully functional during the 2.6.40 merge window,
-> but we are trying our best to be useful. For 2.6.41, my hope is that
-> we can merge the bulk of the ARM subarchitecture changes through this
-> tree. Once Linus is happy with the way that the process works, we can
-> mandate that all ARM subarchitecture changes go through our tree, until
-> then it stays voluntary.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Nicolas Pitre <nico@fluxnic.net>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> 
-> ---
-> 
-> Maintainers: If you are happy with the layout of the process,
-> please ack this patch, otherwise please comment.
 
-As co-maintainer of ep93xx
+There is already code that calculates exactly how much space is needed,
+so that part is good -- you should have a tight bound available to you.
 
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+The important and messy part, though, is that you get the "raw" e820 map
+at that point (including not even having had the e801 and 88 fallback
+information merged into it.)  This information has to be sanitized (to
+deal with overlaps and broken-up chunks) and reserved areas merged in.
+This is done in the kernel proper, and bootloaders have some equivalent
+code, but you don't have it in that particular boot stage.
+
+> 
+> Do you have any alternatives that allow maintaining compatibility while
+> giving us finer-grained alignment?  It seems it should be possible,
+> since alignment was lower than 16 MB for years before this change was
+> introduced...
+> 
+
+Basically, you end up having to have a "real alignment" that is internal
+to the kernel.  We already expose a "minimum alignment" field in the
+header (the legacy field is now "recommended alignment"); however, the
+"minimum alignment" is really too aggressive.
+
+Since this can be buried in the kernel itself the key is to not change
+the existing header fields.
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
