@@ -1,111 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708Ab1EYEw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 00:52:57 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:59756 "EHLO e8.ny.us.ibm.com"
+	id S1751923Ab1EYE63 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 00:58:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57855 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805Ab1EYEw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 00:52:56 -0400
-Date: Tue, 24 May 2011 21:52:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage
- based on semi-formal proof"
-Message-ID: <20110525045253.GB2262@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4DDAC01E.7050602@kernel.org>
- <20110523212530.GF7428@linux.vnet.ibm.com>
- <4DDAD934.9010603@kernel.org>
- <4DDAE5FA.2030303@kernel.org>
- <4DDAE6A5.6060701@kernel.org>
- <20110524011824.GL7428@linux.vnet.ibm.com>
- <4DDB093F.2060601@kernel.org>
- <20110524013523.GO7428@linux.vnet.ibm.com>
- <4DDC21E1.1070502@kernel.org>
- <4DDC48E3.1060108@kernel.org>
+	id S1751454Ab1EYE61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 00:58:27 -0400
+Date: Wed, 25 May 2011 04:58:17 GMT
+From: tip-bot for Kees Cook <kees.cook@canonical.com>
+Message-ID: <tip-7ccafc5f75c87853f3c49845d5a884f2376e03ce@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        fenghua.yu@intel.com, kees.cook@canonical.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20110524232926.GA27728@outflux.net>
+References: <20110524232926.GA27728@outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, cpufeature: Update CPU feature RDRND to RDRAND
+Git-Commit-ID: 7ccafc5f75c87853f3c49845d5a884f2376e03ce
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4DDC48E3.1060108@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 25 May 2011 04:58:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 05:10:11PM -0700, Yinghai Lu wrote:
-> On 05/24/2011 02:23 PM, Yinghai Lu wrote:
-> > On 05/23/2011 06:35 PM, Paul E. McKenney wrote:
-> >> On Mon, May 23, 2011 at 06:26:23PM -0700, Yinghai Lu wrote:
-> >>> On 05/23/2011 06:18 PM, Paul E. McKenney wrote:
-> >>>
-> >>>> OK, so it looks like I need to get this out of the way in order to track
-> >>>> down the delays.  Or does reverting PeterZ's patch get you a stable
-> >>>> system, but with the longish delays in memory_dev_init()?  If the latter,
-> >>>> it might be more productive to handle the two problems separately.
-> >>>>
-> >>>> For whatever it is worth, I do see about 5% increase in grace-period
-> >>>> duration when switching to kthreads.  This is acceptable -- your
-> >>>> 30x increase clearly is completely unacceptable and must be fixed.
-> >>>> Other than that, the main thing that affects grace period duration is
-> >>>> the setting of CONFIG_HZ -- the smaller the HZ value, the longer the
-> >>>> grace-period duration.
-> >>>
-> >>> for my 1024g system when memory hotadd is enabled in kernel config:
-> >>> 1. current linus tree + tip tree:  memory_dev_init will take about 100s.
-> >>> 2. current linus tree + tip tree + your tree - Peterz patch: 
-> >>>    a. on fedora 14 gcc: will cost about 4s: like old times
-> >>>    b. on opensuse 11.3 gcc: will cost about 10s.
-> >>
-> >> So some patch in my tree that is not yet in tip makes things better?
-> >>
-> >> If so, could you please see which one?  Maybe that would give me a hint
-> >> that could make things better on opensuse 11.3 as well.
-> > 
-> > today's tip:
-> > 
-> > [   31.795597] cpu_dev_init done
-> > [   40.930202] memory_dev_init done
-> > 
-> 
-> another boot from tip got:
-> 
-> [   35.211927] cpu_dev_init done
-> [  136.053698] memory_dev_init done
-> 
-> wonder if you can have clean revert for
-> 
-> commit a26ac2455ffcf3be5c6ef92bc6df7182700f2114
-> > Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> > Date:   Wed Jan 12 14:10:23 2011 -0800
-> > 
-> >     rcu: move TREE_RCU from softirq to kthread
-> >     
-> >     If RCU priority boosting is to be meaningful, callback invocation must
-> >     be boosted in addition to preempted RCU readers.  Otherwise, in presence
-> >     of CPU real-time threads, the grace period ends, but the callbacks don't
-> >     get invoked.  If the callbacks don't get invoked, the associated memory
-> >     doesn't get freed, so the system is still subject to OOM.
-> >     
-> >     But it is not reasonable to priority-boost RCU_SOFTIRQ, so this commit
-> >     moves the callback invocations to a kthread, which can be boosted easily.
-> >     
-> >     Also add comments and properly synchronized all accesses to
-> >     rcu_cpu_kthread_task, as suggested by Lai Jiangshan.
-> >     
-> >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >     Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Commit-ID:  7ccafc5f75c87853f3c49845d5a884f2376e03ce
+Gitweb:     http://git.kernel.org/tip/7ccafc5f75c87853f3c49845d5a884f2376e03ce
+Author:     Kees Cook <kees.cook@canonical.com>
+AuthorDate: Tue, 24 May 2011 16:29:26 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 24 May 2011 16:37:27 -0700
 
-There is a new branch yinghai.2011.05.24a on:
+x86, cpufeature: Update CPU feature RDRND to RDRAND
 
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+The Intel manual changed the name of the CPUID bit to match the
+instruction name. We should follow suit for sanity's sake. (See Intel SDM
+Volume 2, Table 3-20 "Feature Information Returned in the ECX Register".)
 
-Or will be as soon as kernel.org updates its mirrors.
+[ hpa: we can only do this at this time because there are currently no CPUs
+  with this feature on the market, hence this is pre-hardware enabling.
+  However, Cc:'ing stable so that stable can present a consistent ABI. ]
 
-I am not sure I could call this "clean", but it does revert that commit
-and 11 of the subsequent commits that depend on it.  It does build,
-and I will test it once my currently running tests complete.
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Link: http://lkml.kernel.org/r/20110524232926.GA27728@outflux.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: <stable@kernel.org> v2.6.36-39
+---
+ arch/x86/include/asm/cpufeature.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-							Thanx, Paul
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 5dc6acc..71cc380 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -125,7 +125,7 @@
+ #define X86_FEATURE_OSXSAVE	(4*32+27) /* "" XSAVE enabled in the OS */
+ #define X86_FEATURE_AVX		(4*32+28) /* Advanced Vector Extensions */
+ #define X86_FEATURE_F16C	(4*32+29) /* 16-bit fp conversions */
+-#define X86_FEATURE_RDRND	(4*32+30) /* The RDRAND instruction */
++#define X86_FEATURE_RDRAND	(4*32+30) /* The RDRAND instruction */
+ #define X86_FEATURE_HYPERVISOR	(4*32+31) /* Running on a hypervisor */
+ 
+ /* VIA/Cyrix/Centaur-defined CPU features, CPUID level 0xC0000001, word 5 */
