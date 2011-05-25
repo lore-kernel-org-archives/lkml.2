@@ -1,116 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1EYUzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:55:36 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:10242 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab1EYUzg (ORCPT
+	id S1753265Ab1EYUyX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:54:23 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:44527 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab1EYUyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:55:36 -0400
-Date: Wed, 25 May 2011 22:53:59 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, jbeulich@novell.com,
-        fenghua.yu@intel.com
-Subject: Re: [PATCH 3/3] coretemp: Get microcode revision from cpu_data v2
-Message-ID: <20110525225359.60d819d5@endymion.delvare>
-In-Reply-To: <1306351948-23382-3-git-send-email-andi@firstfloor.org>
-References: <1306351948-23382-1-git-send-email-andi@firstfloor.org>
-	<1306351948-23382-3-git-send-email-andi@firstfloor.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 May 2011 16:54:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=BLETtF3bTPbY0BZSAhQKMGfTcTltM9MVSDavl642IwlBHnXtSPpLYQsbXUK6p2QeVf
+         6nhG9z5j5jnNtcEgKqVaXDlVPYbWpUdfWKwz/y0fFzEm7InZB2zfKSmV0SPCQrf7nPo6
+         EVVc8go61GCU3xrFjiz4pSNgsL1dv5+vSwo/4=
+MIME-Version: 1.0
+In-Reply-To: <4DDD5A7E.4030903@fusionio.com>
+References: <201105252116.37839.linux@rainbow-software.org>
+	<4DDD5A7E.4030903@fusionio.com>
+Date: Wed, 25 May 2011 22:54:21 +0200
+X-Google-Sender-Auth: erVk6JvoFj5NQmIJ12J6Dn5q_sk
+Message-ID: <BANLkTimD31sNsWy0EzCREFj2oMWP+WQcWA@mail.gmail.com>
+Subject: Re: [bisected] 2.6.39 breaks floppy
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+Hello,
 
-On Wed, 25 May 2011 12:32:28 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Now that the ucode revision is available in cpu_data remove
-> the existing code in coretemp.c to query it manually. Read the ucode
-> revision from cpu_data instead
+On Wed, May 25, 2011 at 9:37 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>> Bisected it to 9fd097b14918875bd6f125ed699d7bbbba5893ee
+>> (block: unexport DISK_EVENT_MEDIA_CHANGE for legacy/fringe drivers)
+>>
+>> Adding the removed line back to floppy.c fixes the problem.
 
-Where is this available? Not upstream yet, apparently. I get a build
-failure here.
+It's the same one as the following.  Patch posted.  It's caused by
+genhd->ev not allocated when ->events | async_events is empty.
 
-> 
-> v2: Fix misplaced variable init. Remove unused variables.
-> Cc: jbeulich@novell.com
-> Cc: fenghua.yu@intel.com
-> Cc: khali@linux-fr.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  drivers/hwmon/coretemp.c |   31 +++++--------------------------
->  1 files changed, 5 insertions(+), 26 deletions(-)
-> 
-> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> index 9577c43..eec29d6 100644
-> --- a/drivers/hwmon/coretemp.c
-> +++ b/drivers/hwmon/coretemp.c
-> @@ -324,15 +324,6 @@ static int get_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *dev)
->  	}
->  }
->  
-> -static void __devinit get_ucode_rev_on_cpu(void *edx)
-> -{
-> -	u32 eax;
-> -
-> -	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
-> -	sync_core();
-> -	rdmsr(MSR_IA32_UCODE_REV, eax, *(u32 *)edx);
-> -}
-> -
->  static int get_pkg_tjmax(unsigned int cpu, struct device *dev)
->  {
->  	int err;
-> @@ -425,29 +416,17 @@ static void update_ttarget(__u8 cpu_model, struct temp_data *tdata,
->  static int chk_ucode_version(struct platform_device *pdev)
->  {
->  	struct cpuinfo_x86 *c = &cpu_data(pdev->id);
-> -	int err;
-> -	u32 edx;
->  
->  	/*
->  	 * Check if we have problem with errata AE18 of Core processors:
->  	 * Readings might stop update when processor visited too deep sleep,
->  	 * fixed for stepping D0 (6EC).
->  	 */
-> -	if (c->x86_model == 0xe && c->x86_mask < 0xc) {
-> -		/* check for microcode update */
-> -		err = smp_call_function_single(pdev->id, get_ucode_rev_on_cpu,
-> -					       &edx, 1);
+  https://bugzilla.kernel.org/show_bug.cgi?id=35832
 
-As a side note, this is fixing a section mismatch, as
-get_ucode_rev_on_cpu() was declared __devinit but chk_ucode_version()
-isn't. Thankfully this doesn't affect previous kernels. As far as I can
-see, chk_ucode_version could be made __devinit. I'll send a patch.
+Will soon post a patch.
 
-> -		if (err) {
-> -			dev_err(&pdev->dev,
-> -				"Cannot determine microcode revision of "
-> -				"CPU#%u (%d)!\n", pdev->id, err);
-> -			return -ENODEV;
-> -		} else if (edx < 0x39) {
-> -			dev_err(&pdev->dev,
-> -				"Errata AE18 not fixed, update BIOS or "
-> -				"microcode of the CPU!\n");
-> -			return -ENODEV;
-> -		}
-> +	if (c->x86_model == 0xe && c->x86_mask < 0xc && c->cpu_update < 0x39) {
-> +		dev_err(&pdev->dev,
-> +			"Errata AE18 not fixed, update BIOS or "
-> +			"microcode of the CPU!\n");
-> +		return -ENODEV;
->  	}
->  	return 0;
->  }
-
-This all looks reasonable, but I am not able to test it.
+Thanks.
 
 -- 
-Jean Delvare
+tejun
