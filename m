@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab1EYJVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 05:21:33 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:51112 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754378Ab1EYJVb (ORCPT
+	id S1753376Ab1EYJZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 05:25:08 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:46116 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751722Ab1EYJZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 05:21:31 -0400
-Date: Wed, 25 May 2011 12:21:26 +0300
+	Wed, 25 May 2011 05:25:05 -0400
+Date: Wed, 25 May 2011 12:24:55 +0300
 From: Felipe Balbi <balbi@ti.com>
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: "'Alan Stern'" <stern@rowland.harvard.edu>, balbi@ti.com,
-        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-Message-ID: <20110525092124.GI14556@legolas.emea.dhcp.ti.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, "Balbi, Felipe" <balbi@ti.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20110525092449.GJ14556@legolas.emea.dhcp.ti.com>
 Reply-To: balbi@ti.com
-References: <011d01cc19ff$616055c0$24210140$@org>
- <Pine.LNX.4.44L0.1105241012080.1913-100000@iolanthe.rowland.org>
- <013201cc1a96$bdda7910$398f6b30$@org>
+References: <20110520161816.dda6f1fd.sfr@canb.auug.org.au>
+ <BANLkTimjzzqTS1fELmpb0UivqseLsYOfPw@mail.gmail.com>
+ <BANLkTine2kobQA8TkmtiuXdKL=07NCo2vA@mail.gmail.com>
+ <BANLkTim-zRShhy49d7yn5WTJYzR6A2DtZQ@mail.gmail.com>
+ <BANLkTi=U8ikZo65AoxGznCopGMTFOUXWhQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="o7gdRJTuwFmWapyH"
+	protocol="application/pgp-signature"; boundary="CxDuMX1Cv2n9FQfo"
 Content-Disposition: inline
-In-Reply-To: <013201cc1a96$bdda7910$398f6b30$@org>
+In-Reply-To: <BANLkTi=U8ikZo65AoxGznCopGMTFOUXWhQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---o7gdRJTuwFmWapyH
-Content-Type: text/plain; charset=us-ascii
+--CxDuMX1Cv2n9FQfo
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On Tue, May 24, 2011 at 01:10:42PM -0400, Mike Frysinger wrote:
+> On Tue, May 24, 2011 at 00:10, Mike Frysinger wrote:
+> > On Tue, May 24, 2011 at 00:01, Linus Torvalds wrote:
+> >> On Mon, May 23, 2011 at 7:06 PM, Mike Frysinger wrote:
+> >>>
+> >>> more failures:
+> >>
+> >> Is this blackfin or something?
+> >
+> > let's go with "something" ...
+> >
+> >> I did an allyesconfig with a special x86 patch that should have caught
+> >> everything that didn't have the proper prefetch.h include, but non-x86
+> >> drivers would have passed that.
+> >
+> > the isp1362-hcd failure probably is before your
+> > 268bb0ce3e87872cb9290c322b0d35bce230d88f. =A0i think i was reading a log
+> > that is a few days old (ive been traveling and am playing catch up
+> > atm). =A0i'll refresh and see what's what still.
+> >
+> > the common musb code only allows it to be built if the arch glue is
+> > available, and there is no x86 glue. =A0so an allyesconfig on x86
+> > wouldnt have picked up the failure. =A0it'll bomb though for any target
+> > which does have the glue.
 
-On Wed, May 25, 2011 at 07:46:38AM +0300, Tanya Brokhman wrote:
-> > Which leaves a question about the composite gadget framework.  Should
-> > it be updated with SS support?  Probably not until the various function
-> > drivers have all been updated.
->=20
-> As I mentioned, updating all of the gadget drivers will take a long time =
-and
-> I don't fill confident enough doing since I'm not familiar with all of th=
-em
-> and don't have the ability to test each of them properly. I can add SS
-> descriptors to f_mass_storage, g_zero if it helps and of course f_uasp
-> already has them.
-> I'm a bit confused by this actually... We've been discussing this patch
-> series for quite a while now and I got the impression that except for some
-> minor comments you were all for excepting this. Was I wrong or am I
-> misunderstanding the above?
-> In any case, I don't feel that adding SS support for the Gadget framework
-> should be delayed until all gadget drivers add SS descriptors because this
-> patch series will give the developers the ability to test these gadget
-> drivers at SS. Also, several developers addressed me offline with questio=
-ns
-> on this series so I know people are using it in their work. And of course=
- we
-> do :)
+anyone with a PCI OPT card to help adding a PCI glue layer for MUSB ?
 
-just remove the hunk which changes composite.c speed field and it should
-all be ok :-)
+> latest tree seems to only fail for me now on the musb driver.  i can
+> send out a patch later today if no one else has gotten to it yet.
+
+please do send out, but what was the compile breakage with musb ?
 
 --=20
 balbi
 
---o7gdRJTuwFmWapyH
+--CxDuMX1Cv2n9FQfo
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJN3MoUAAoJEAv8Txj19kN1ycgH/jjw8nBM9aYE//KnNU3d48Fi
-o6kRFFAvrigr9u454LlOU3NIHOf9/fk2QKQqgWtdQpAhNoza0EqMcgS+yejhKw3M
-fGbnfI0pVN2exxW0cOqlNO+2VmaUCqDt6bAb/SaKF0w48DKTtHAkc4bEo/Aqlrsd
-ZKKeVYbMVa/GRl17K4jmvyJiC6x/IzEW+AdxMeQlryMmZoXoez8MJD/dY2XU8JN7
-9fJbKVYsB0DqKxtWH4wQ8K6z8rKHhusACVVvs+VWLAj5Pj/4odR1KGkQwbJ2gF/W
-+/7HPRtncE3WoJHxfEGplYbGg12JyWBbVN10PlkTaN7spOBD4xlJXef3t4/xYZM=
-=YZNu
+iQEcBAEBAgAGBQJN3MrhAAoJEAv8Txj19kN13eUH/2sPqkGsBmMQwQoKZwX3haUA
+PhugOZGGAlhYCmJgUr4p7AfXyzyol6ZRrnU5sPGu6kM+j9/KRWO5dQFhNHW/Tlg2
+gfm9Gx8ikCCxIFIqfb/J9DB15h5RNlLMkl3iHsTr6z3a+cNyev6Cb+vq8DOflIou
+Kv9yURY9N4xVUFPY45Rv3RXZqQD2+JoWAHaRiJk0FbEVKJ1ABi7Tm+iNxbSjnQon
+LvgQSQP8MCUPUqZxeZPcLKXbkxrh9GdkxlpAIX1QglGDuifiG73mT8MvNovxlKQC
+ReZfQiKXJv5LIrOLvaCs7QjIrIRu8qoQ02GPAs83y8sz5Lj7VOQ43H8ciS2ky8c=
+=aMEA
 -----END PGP SIGNATURE-----
 
---o7gdRJTuwFmWapyH--
+--CxDuMX1Cv2n9FQfo--
