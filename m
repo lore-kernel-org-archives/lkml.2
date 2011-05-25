@@ -1,74 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933661Ab1EYALP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 20:11:15 -0400
-Received: from mail.perches.com ([173.55.12.10]:1988 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933241Ab1EYALP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 20:11:15 -0400
-Subject: Re: [PATCH] checkpatch: Suggest using min_t or max_t
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110524163503.0cd73903.akpm@linux-foundation.org>
-References: <4DD50B35.2000005@indesign-llc.com>
-	 <20110519115859.e11a7ca3.akpm@linux-foundation.org>
-	 <1305909981.4209.33.camel@Joe-Laptop>
-	 <20110520095037.25eadc0a.akpm@linux-foundation.org>
-	 <1305912602.4209.41.camel@Joe-Laptop>
-	 <20110520103529.1ef3917c.akpm@linux-foundation.org>
-	 <1305915161.4209.56.camel@Joe-Laptop>
-	 <20110520113830.3faf5230.akpm@linux-foundation.org>
-	 <1305923088.4209.79.camel@Joe-Laptop>
-	 <20110524163503.0cd73903.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 May 2011 17:11:13 -0700
-Message-ID: <1306282273.2298.62.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S933313Ab1EYANZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 20:13:25 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18918 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab1EYANX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 20:13:23 -0400
+Message-ID: <4DDC4992.2020505@kernel.org>
+Date: Tue, 24 May 2011 17:13:06 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
+ on semi-formal proof"
+References: <20110521140845.GA12157@linux.vnet.ibm.com> <4DDAC01E.7050602@kernel.org> <20110523212530.GF7428@linux.vnet.ibm.com> <4DDAD934.9010603@kernel.org> <4DDAE5FA.2030303@kernel.org> <4DDAE6A5.6060701@kernel.org> <20110524011824.GL7428@linux.vnet.ibm.com> <4DDB093F.2060601@kernel.org> <20110524013523.GO7428@linux.vnet.ibm.com> <4DDC21E1.1070502@kernel.org> <20110525000530.GK2266@linux.vnet.ibm.com>
+In-Reply-To: <20110525000530.GK2266@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4DDC4996.009D,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 16:35 -0700, Andrew Morton wrote:
-> On Fri, 20 May 2011 13:24:48 -0700
-> Joe Perches <joe@perches.com> wrote:
+On 05/24/2011 05:05 PM, Paul E. McKenney wrote:
+> On Tue, May 24, 2011 at 02:23:45PM -0700, Yinghai Lu wrote:
+>> On 05/23/2011 06:35 PM, Paul E. McKenney wrote:
+>>> On Mon, May 23, 2011 at 06:26:23PM -0700, Yinghai Lu wrote:
+>>>> On 05/23/2011 06:18 PM, Paul E. McKenney wrote:
+>>>>
+>>>>> OK, so it looks like I need to get this out of the way in order to track
+>>>>> down the delays.  Or does reverting PeterZ's patch get you a stable
+>>>>> system, but with the longish delays in memory_dev_init()?  If the latter,
+>>>>> it might be more productive to handle the two problems separately.
+>>>>>
+>>>>> For whatever it is worth, I do see about 5% increase in grace-period
+>>>>> duration when switching to kthreads.  This is acceptable -- your
+>>>>> 30x increase clearly is completely unacceptable and must be fixed.
+>>>>> Other than that, the main thing that affects grace period duration is
+>>>>> the setting of CONFIG_HZ -- the smaller the HZ value, the longer the
+>>>>> grace-period duration.
+>>>>
+>>>> for my 1024g system when memory hotadd is enabled in kernel config:
+>>>> 1. current linus tree + tip tree:  memory_dev_init will take about 100s.
+>>>> 2. current linus tree + tip tree + your tree - Peterz patch: 
+>>>>    a. on fedora 14 gcc: will cost about 4s: like old times
+>>>>    b. on opensuse 11.3 gcc: will cost about 10s.
+>>>
+>>> So some patch in my tree that is not yet in tip makes things better?
+>>>
+>>> If so, could you please see which one?  Maybe that would give me a hint
+>>> that could make things better on opensuse 11.3 as well.
+>>
+>> today's tip:
+>>
+>> [   31.795597] cpu_dev_init done
+>> [   40.930202] memory_dev_init done
 > 
-> > A common issue with min() or max() is using a cast on
-> > one or both of the arguments when using min_t/max_t could
-> > be better.
-> > 
-> > Add cast detection to uses of min/max and suggest an
-> > appropriate use of min_t or max_t instead.
+> One other question...  What is memory_dev_init() doing to wait for so
+> many RCU grace periods?  (Yes, I do need to fix the slowdowns in any
+> case, but I am curious.)
+
+looks like it register some in sysfs
+
+/*
+ * Initialize the sysfs support for memory devices...
+ */
+int __init memory_dev_init(void)
+{
+        unsigned int i;
+        int ret;
+        int err;
+        unsigned long block_sz;
+
+        memory_sysdev_class.kset.uevent_ops = &memory_uevent_ops;
+        ret = sysdev_class_register(&memory_sysdev_class);
+        if (ret)
+                goto out;
+
+        block_sz = get_memory_block_size();
+        sections_per_block = block_sz / MIN_MEMORY_BLOCK_SIZE;
+
+        /*
+         * Create entries for memory sections that were found
+         * during boot and have been initialized
+         */
+        for (i = 0; i < NR_MEM_SECTIONS; i++) {
+                if (!present_section_nr(i))
+                        continue;
+                err = add_memory_section(0, __nr_to_section(i), MEM_ONLINE,
+                                         BOOT);
+                if (!ret)
+                        ret = err;
+        }
+
+        err = memory_probe_init();
+        if (!ret)
+                ret = err;
+        err = memory_fail_init();
+        if (!ret)
+                ret = err;
+        err = block_size_init();
+        if (!ret)
+                ret = err;
+out:
+        if (ret)
+                printk(KERN_ERR "%s() failed: %d\n", __func__, ret);
+        return ret;
+}
+
+
 > 
-> Causes this:
+>> after
+>>
+>> commit e219b351fc90c0f5304e16efbc603b3b78843ea1
+>> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> Date:   Mon May 16 02:44:06 2011 -0700
+>>
+>>     rcu: Remove old memory barriers from rcu_process_callbacks()
+>>     
+>>     Second step of partitioning of commit e59fb3120b.
+>>     
+>>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>
+>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+>> index 3731141..011bf6f 100644
+>> --- a/kernel/rcutree.c
+>> +++ b/kernel/rcutree.c
+>> @@ -1460,25 +1460,11 @@ __rcu_process_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
+>>   */
+>>  static void rcu_process_callbacks(void)
+>>  {
+>> -	/*
+>> -	 * Memory references from any prior RCU read-side critical sections
+>> -	 * executed by the interrupted code must be seen before any RCU
+>> -	 * grace-period manipulations below.
+>> -	 */
+>> -	smp_mb(); /* See above block comment. */
+>> -
+>>  	__rcu_process_callbacks(&rcu_sched_state,
+>>  				&__get_cpu_var(rcu_sched_data));
+>>  	__rcu_process_callbacks(&rcu_bh_state, &__get_cpu_var(rcu_bh_data));
+>>  	rcu_preempt_process_callbacks();
+>>
+>> -	/*
+>> -	 * Memory references from any later RCU read-side critical sections
+>> -	 * executed by the interrupted code must be seen after any RCU
+>> -	 * grace-period manipulations above.
+>> -	 */
+>> -	smp_mb(); /* See above block comment. */
+>> -
+>>  	/* If we are last CPU on way to dyntick-idle mode, accelerate it. */
+>>  	rcu_needs_cpu_flush();
+>>  }
+>>
+>> cause
+>>
+>> [   32.235103] cpu_dev_init done
+>> [   74.897943] memory_dev_init done
+>>
+>> then add
+>>
+>> commit d0d642680d4cf5cc2ccf542b74a3c8b7e197306b
+>> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> Date:   Mon May 16 02:52:04 2011 -0700
+>>
+>>     rcu: Don't do reschedule unless in irq
+>>     
+>>     Condition the set_need_resched() in rcu_irq_exit() on in_irq().  This
+>>     should be a no-op, because rcu_irq_exit() should only be called from irq.
+>>     
+>>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>
+>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+>> index 011bf6f..195b3a3 100644
+>> --- a/kernel/rcutree.c
+>> +++ b/kernel/rcutree.c
+>> @@ -421,8 +421,9 @@ void rcu_irq_exit(void)
+>>  	WARN_ON_ONCE(rdtp->dynticks & 0x1);
+>>
+>>  	/* If the interrupt queued a callback, get out of dyntick mode. */
+>> -	if (__this_cpu_read(rcu_sched_data.nxtlist) ||
+>> -	    __this_cpu_read(rcu_bh_data.nxtlist))
+>> +	if (in_irq() &&
+>> +	    (__this_cpu_read(rcu_sched_data.nxtlist) ||
+>> +	     __this_cpu_read(rcu_bh_data.nxtlist)))
+>>  		set_need_resched();
+>>  }
+>>
+>> got:
+>>
+>> [   34.384490] cpu_dev_init done
+>> [   86.656322] memory_dev_init done
+>>
+>>
+>> after
+>>
+>> commit fcfc28801f5b3b9c70616fc57e3a2c6f52014e14
+>> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> Date:   Mon May 16 14:27:31 2011 -0700
+>>
+>>     rcu: Make rcu_enter_nohz() pay attention to nesting
+>>     
+>>     The old version of rcu_enter_nohz() forced RCU into nohz mode even if
+>>     the nesting count was non-zero.  This change causes rcu_enter_nohz()
+>>     to hold off for non-zero nesting counts.
+>>     
+>>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>
+>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+>> index 195b3a3..99c6038 100644
+>> --- a/kernel/rcutree.c
+>> +++ b/kernel/rcutree.c
+>> @@ -324,8 +324,8 @@ void rcu_enter_nohz(void)
+>>  	smp_mb(); /* CPUs seeing ++ must see prior RCU read-side crit sects */
+>>  	local_irq_save(flags);
+>>  	rdtp = &__get_cpu_var(rcu_dynticks);
+>> -	rdtp->dynticks++;
+>> -	rdtp->dynticks_nesting--;
+>> +	if (--rdtp->dynticks_nesting == 0)
+>> +		rdtp->dynticks++;
+>>  	WARN_ON_ONCE(rdtp->dynticks & 0x1);
+>>  	local_irq_restore(flags);
+>>  }
+>>
+>> got: 
+>>
+>> [   32.414049] cpu_dev_init done
+>> [   38.237979] memory_dev_init done
 > 
-> akpm2:/usr/src/25> perl scripts/checkpatch.pl patches/drivers-gpio-vx855_gpioc-needs-slabh.patch
-> Nested quantifiers in regex; marked by <-- HERE in m/(\((?:[^\(\)]++ <-- HERE |(?-1))*\))/ at scripts/checkpatch.pl line 271.
+> So this is best for you -- where we have done all but the last commit
+> of restoring "Decrease memory-barrier usage based on semi-formal proof".
+> It makes sense that this one would help, as it is eliminating delays
+> due to misnesting.  These delays are not hangs, as force_quiescent_state()
+> will eventually force the right thing to happen, but getting rid of these
+> delays should indeed speed things up.
+> 
+>> after:
+>> commit bcd6e68330f893a81b3519ab3c5fc2bebbc9988c
+>> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> Date:   Tue Sep 7 10:38:22 2010 -0700
+>>
+>>     rcu: Decrease memory-barrier usage based on semi-formal proof
+>> ...
+>>
+>> got:
+>>
+>> [   32.447936] cpu_dev_init done
+>> [  111.027066] memory_dev_init done
+> 
+> So there is something nasty in this patch.
+> 
+> Not seeing it immediately, but it does give me some focus for both
+> code inspection and possible diagnostic patches.
+> 
+>> after 
+>>
+>> commit fbb753fb9dd62318d27fa070c686423ced139817
+>> Author: Paul E. McKenney <paul.mckenney@linaro.org>
+>> Date:   Wed May 11 05:33:33 2011 -0700
+>>
+>>     atomic: Add atomic_or()
+>>     
+>>     An atomic_or() function is needed by TREE_RCU to avoid deadlock, so
+>>     add a generic version.
+>>     
+>>     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+>>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>
+>> diff --git a/include/linux/atomic.h b/include/linux/atomic.h
+>> index 96c038e..ee456c7 100644
+>> --- a/include/linux/atomic.h
+>> +++ b/include/linux/atomic.h
+>> @@ -34,4 +34,17 @@ static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
+>>  }
+>>  #endif
+>>
+>> +#ifndef CONFIG_ARCH_HAS_ATOMIC_OR
+>> +static inline void atomic_or(int i, atomic_t *v)
+>> +{
+>> +	int old;
+>> +	int new;
+>> +
+>> +	do {
+>> +		old = atomic_read(v);
+>> +		new = old | i;
+>> +	} while (atomic_cmpxchg(v, old, new) != old);
+>> +}
+>> +#endif /* #ifndef CONFIG_ARCH_HAS_ATOMIC_OR */
+>> +
+>>  #endif /* _LINUX_ATOMIC_H */
+>>
+>> got:
+>>
+>> [   32.803704] cpu_dev_init done
+>> [   99.171292] memory_dev_init done
+> 
+> So the difference between these two is noise, I hope.  Adding a static
+> inline function that is not used should not have an effect on performance.
+> Still, the difference between 6 seconds and 60 seconds rises far above
+> this noise level, so the big differences are likely quite real.
 
-Something not making sense here.
-I get no report when I try your patch.
-(using checkpatch with the regex I sent)
-
-Send the patch again?
-
-$ perl --version
-
-This is perl, v5.10.1 (*) built for i686-linux-gnu-thread-multi
-(with 53 registered patches, see perl -V for more detail)
-
-Copyright 1987-2009, Larry Wall
-
-Perl may be copied only under the terms of either the Artistic License or the
-GNU General Public License, which may be found in the Perl 5 source kit.
-
-Complete documentation for Perl, including FAQ lists, should be found on
-this system using "man perl" or "perldoc perl".  If you have access to the
-Internet, point your browser at http://www.perl.org/, the Perl Home Page.
-
-$ ./scripts/checkpatch.pl gpio.mbox 
-total: 0 errors, 0 warnings, 7 lines checked
-
-gpio.mbox has no obvious style problems and is ready for submission.
-
+could be softirq to kthread change...
