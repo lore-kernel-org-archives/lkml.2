@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1EYL2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 07:28:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:45203 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752714Ab1EYL2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 07:28:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,266,1304319600"; 
-   d="scan'208";a="7292657"
-Subject: Re: [PATCH] dmaengine: Add API documentation for slave dma usage
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <BANLkTinbSAxozR6NivY6wddre1nRF5RmZA@mail.gmail.com>
-References: <1306238657-30089-1-git-send-email-vinod.koul@intel.com>
-	 <BANLkTikDPeEFWdsVQ=Ak8jXEXsC-+uoOaw@mail.gmail.com>
-	 <1306253171.30236.9.camel@vkoul-udesk3>
-	 <BANLkTikjxECNAK5eS5hSu2bbEKpZX341Dw@mail.gmail.com>
-	 <BANLkTikAm=D_YNFt0Regeas6AX8116L0-A@mail.gmail.com>
-	 <1306312009.30236.110.camel@vkoul-udesk3>
-	 <BANLkTikn3BBeNyuUeZ9BhG5QLj-dmcGjTg@mail.gmail.com>
-	 <1306316082.30236.137.camel@vkoul-udesk3>
-	 <BANLkTinbSAxozR6NivY6wddre1nRF5RmZA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 16:25:23 +0530
-Message-ID: <1306320923.30236.158.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753768Ab1EYK5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 06:57:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53259 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab1EYK5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 06:57:20 -0400
+Date: Wed, 25 May 2011 11:57:06 +0100 (BST)
+From: David Woodhouse <dwmw2@infradead.org>
+X-X-Sender: dwmw2@localhost6.localdomain6
+To: Ingo Molnar <mingo@elte.hu>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Song, Youquan" <youquan.song@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: linux-next: manual merge of the dwmw2-iommu tree with Linus'
+ tree
+In-Reply-To: <20110525091636.GC28500@elte.hu>
+Message-ID: <alpine.LFD.2.02.1105251133001.3164@localhost6.localdomain6>
+References: <20110525130004.150c054f.sfr@canb.auug.org.au> <20110525091636.GC28500@elte.hu>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 16:21 +0530, Per Forlin wrote:
-> On 25 May 2011 11:34, Koul, Vinod <vinod.koul@intel.com> wrote:
+On Wed, 25 May 2011, Ingo Molnar wrote:
 
-> I would like to ask a question on usage of DMA_CTRL_ACK while we're at it.
-> In ste_dma40 I added support to reuse descriptors if DMA_CTRL_ACK is
-> clear. The purpose of DMA_CTRL_ACK is to set up dependency but is it
-> also a valid to reuse it?
-> I mean submit the same descriptor again and again without having to
-> call prepare_slave_sg.
-> Example:
-> desc = prepare_slave_sg()
-> submit(desc)
-> issue_pending(desc)
-> 
-> wait_for_callback()
-> 
-> submit(desc)
-> issue_pending(desc)
-> 
-I think your question is answered in dmaengine.h. Quoting here:
-* @DMA_CTRL_ACK - if clear, the descriptor cannot be reused until the 
-* client acknowledges receipt, i.e. has has a chance to establish any
-* dependency chains
+> That particular change was still under discussion and i'm not at all 
+> sure we want to do it like that. So please repost the latest version.
 
-The DMA driver recycles the descriptors which it returns for the
-transfer APIs. The DMA_CTRL_ACK flag would tell driver explicitly not to
-reuse this descriptor until the client clears this flag.
-Since the descriptor is still valid after callback notification it can
-be reused by client in the way you described.
+I had not seen such discussion; I had the impression that having dealt 
+with my feedback about making the thing more visible to the user, Youquan
+considered the patch complete.
 
-Again, Dan can you please confirm if my interpretation is correct.
+I am more than happy to absolve responsibility for this patch altogether 
+and drop it from tree, though. It is *absolutely* the wrong approach, in 
+my opinion. If the BIOS is broken and cannot cope with x2apic, the 
+solution is to line the "engineers" responsible up against the wall and 
+shoot them. And then to implement a "quiesce all SMI" feature that the OS 
+can invoke, and make it mandatory. Presumably that's the underlying 
+problem they were trying to solve?
 
+The answer certainly isn't to add a flag in the DMAR table to opt out of 
+x2apic use, when afaict the kernel is capable of using x2apic in some 
+cases even when the *is* no DMAR. (Either that, or we have a lot of dead 
+code in that area which *looks* like it copes with x2apic+!dmar).
+
+I'll drop this patch from my tree when I get home and happily wash my 
+hands of it. It's all yours; have fun :)
 
 -- 
-~Vinod
+dwmw2
 
