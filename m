@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab1EYHzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 03:55:31 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54237 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538Ab1EYHza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 03:55:30 -0400
-Date: Wed, 25 May 2011 09:55:17 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Milton Miller <miltonm@bga.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH RFC 4/4] irq: allow a per-allocation upper limit when
- allocating irqs
-Message-ID: <20110525075517.GC21552@elte.hu>
-References: <generic-irq-changes@mdm.bga.com>
- <alloc-irq-range-v2@mdm.bga.com>
+	id S1757268Ab1EYH7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 03:59:11 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:56466 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751554Ab1EYH7K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 03:59:10 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+G9qLIe1Hp5S1q8cBXLYiG
+Date: Wed, 25 May 2011 10:59:02 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Nicolas Pitre <nico@fluxnic.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [RFC] ARM Subarchitecture group maintainership
+Message-ID: <20110525075902.GH30799@atomide.com>
+References: <201105181047.17309.arnd@arndb.de>
+ <BANLkTi=xzrLhHTBynWf4huA9EusfaDwPbA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alloc-irq-range-v2@mdm.bga.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <BANLkTi=xzrLhHTBynWf4huA9EusfaDwPbA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Milton Miller <miltonm@bga.com> wrote:
-
-> Allow the option to specify an upper limit to the irq numbers for
-> each allocation.  The limit is non-inclusive, and 0 means no limit
-> needed by caller.
+* Catalin Marinas <catalin.marinas@arm.com> [110518 17:49]:
+> Arnd,
 > 
-> Some irq chips can support a relative large and arbitrary range,
-> but not infinite.  For example, they may use the linux irq number
-> as the msi desciptor data, which for msi is 16 bits.
+> On 18 May 2011 09:47, Arnd Bergmann <arnd@arndb.de> wrote:
+> > This is the draft plan for maintaining the ARM subarchitectures in a common
+> > tree, as a way to help coordinate the upstream merging of the
+> > arch/arm/{plat,mach}-* changes into Linus' tree.
 > 
-> Since e7bcecb7b1 (genirq: Make nr_irqs runtime expandable), checking
-> NR_IRQS or even nr_irqs is not sufficient to enforce such requirements
-> when sparse irqs are configured.
+> For clarification - the aim of this subarchitecture group is not only
+> to coordinate the upstream merging but also take an active (primary)
+> role in consolidating the existing code across various
+> subarchitectures under arch/arm/.
 
-Would be nice to add some more background info to the changelog, like what bad 
-things happen if this change is not provided and what good things would happen 
-if it is provided.
+It's good to see organized effort on consolidating the code.
+And Linaro is probably the best place to organize this effort.
 
-Thanks,
+Naturally I assume that you guys won't be merging any platform
+specific patches without proper acks from the platform maintainers:
 
-	Ingo
+Acked-by: Tony Lindgren <tony@atomide.com>
+
+Arnd, do you want to do a practise run with pulling in the omap
+code and merging to Linus for this merge window?
+
+Regards,
+
+Tony
