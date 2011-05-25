@@ -1,82 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab1EYTpQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 15:45:16 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43621 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755213Ab1EYTpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 15:45:14 -0400
-Date: Wed, 25 May 2011 21:45:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
-Message-ID: <20110525194503.GF17864@elte.hu>
-References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
- <20110525070604.GE429@elte.hu>
- <20110525160656.GB25225@khazad-dum.debian.net>
- <20110525165803.GB14958@tassilo.jf.intel.com>
- <20110525182405.GA17864@elte.hu>
- <20110525190523.GA14151@tassilo.jf.intel.com>
-MIME-Version: 1.0
+	id S1756093Ab1EYTp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 15:45:59 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:7410 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755677Ab1EYTp5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 15:45:57 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=AcJjKCdO+C1gfaz5PU+ZhOHJ3th58JHw7dR6QJZP96w= c=1 sm=1
+ a=VJsRE-3oRgMA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=L5fEqeLBQRqOar6yNpsA:9
+ a=ZmEfefP40puh5TkrreUA:7 a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 1/3] fs: add SEEK_HOLE and SEEK_DATA flags V4
+Mime-Version: 1.0 (Apple Message framework v1082)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110525190523.GA14151@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <1306186991-1905-1-git-send-email-josef@redhat.com>
+Date: Wed, 25 May 2011 13:45:56 -0600
+Cc: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        sunil.mushran@oracle.com, viro@ZenIV.linux.org.uk
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0E7B812A-4057-4EB8-93F5-79ED9FCE2CCD@dilger.ca>
+References: <1306186991-1905-1-git-send-email-josef@redhat.com>
+To: Josef Bacik <josef@redhat.com>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andi Kleen <ak@linux.intel.com> wrote:
-
-> I hadn't really expected this simple patchkit to generate
-> that much email :-) 
+On May 23, 2011, at 15:43, Josef Bacik wrote:
+> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.  Turns out
+> using fiemap in things like cp cause more problems than it solves, so lets try
+> and give userspace an interface that doesn't suck.  We need to match solaris
+> here, and the definitions are
 > 
-> > Many years ago i had an old P3 system where i mixed steppings and 
-> > it was not stable, it would crash after i have put some load on 
-> > the system.
-> 
-> Ok.
-> 
-> But it's not clear to me how to reliably do it for the microcode at 
-> boot.  Because a future microcode update could fix it up, but the 
-> kernel can't know if there will be a microcode update or not. So I 
-> don't think it can be done at boot at least.
+> diff --git a/fs/read_write.c b/fs/read_write.c
+> index 5520f8a..9c3b453 100644
+> --- a/fs/read_write.c
+> +++ b/fs/read_write.c
+> @@ -64,6 +64,23 @@ generic_file_llseek_unlocked(struct file *file, loff_t offset, int origin)
+> 			return file->f_pos;
+> 		offset += file->f_pos;
+> 		break;
+> +	case SEEK_DATA:
+> +		/*
+> +		 * In the generic case the entire file is data, so as long as
+> +		 * offset isn't at the end of the file then the offset is data.
+> +		 */
+> +		if (offset >= inode->i_size)
+> +			return -ENXIO;
+> +		break;
+> +	case SEEK_HOLE:
+> +		/*
+> +		 * There is a virtual hole at the end of the file, so as long as
+> +		 * offset isn't i_size or larger, return i_size.
+> +		 */
+> +		if (offset >= inode->i_size)
+> +			return -ENXIO;
+> +		offset = inode->i_size;
+> +		break;
+> 	}
 
-Well, my suggestion was mainly about stepping mismatches, and 
-microcode updates do not generally change the stepping.
+What about all of the existing filesystems that currently just ignore
+values of "origin" that they don't understand?  Looking through those
+it appears that most of them will return "offset" for unknown values
+of "origin", which I guess is OK for SEEK_DATA, but is confusing for
+SEEK_HOLE.  Some filesystems will return -EINVAL for values of origin
+that are unknown.
 
-If the steppings are the same and the microcode version is not the 
-same, doesn't that at least indicate some potential BIOS badness? 
-Most BIOSes will load a certain version of the microcode straight 
-away, and do that on all CPUs.
+Most of the filesystem-specific ->llseek() methods don't do any error
+checking on "origin" because this is handled at the sys_llseek() level,
+and hasn't changed in many years.
 
-So warning about that might be useful as well.
+I assume this patch is also dependent upon the "remove default_llseek()"
+patch, so that the implementation of SEEK_DATA and SEEK_HOLE can be done
+in only generic_file_llseek()?
 
-But yeah, i could be wrong about this, if there's many false 
-positives we can tone it down or remove it altogether - right now we 
-simply do not know. We could float it a bit and see what happens, 
-it's not like these kinds of checks are expensive.
+Finally, while looking through the various ->llseek() methods I notice
+that many filesystems return "i_size" for SEEK_END, which clearly does
+not make sense for filesystems like ext3/ext4 htree, btrfs, etc that
+use hash keys instead of byte offsets for doing directory traversal.
+The comment at generic_file_llseek() is that it is intended for use by
+regular files.
 
-> If you want me to rewrite the microcode update driver or something 
-> like that that's outside the scope of my patchkit, sorry.
+Should the ext4_llseek() code be changed to return 0x7ffffffff for the
+SEEK_END value?  That makes more sense compared to values returned for
+SEEK_CUR so that an application can compare the current "offset" with
+the final value for a progress bar.
 
-No, i'd be perfectly happy if you began sending obviously correct 
-small patches already, without me having to baby-sit you through 
-trivial cleanliness issues *every* *single* *time*. You are a very 
-maintenance-intense contributor with an attitude right now. If that 
-situation improves we can do more complex things.
+Another interesting use is for N threads to process a large directory
+in parallel by using max_off = llseek(dirfd, 0, SEEK_END) and then
+each thread calls llseek(dirfd, thread_nr * max_off / N, SEEK_SET)
+to process 1/N of the directory.
 
-Thanks,
 
-	Ingo
+Cheers, Andreas
+
+
+
+
+
+
+Cheers, Andreas
+
+
+
+
+
