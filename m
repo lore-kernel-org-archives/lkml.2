@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933510Ab1EYABL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 20:01:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24965 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932838Ab1EYABJ convert rfc822-to-8bit (ORCPT
+	id S932822Ab1EYAAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 20:00:09 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:21265 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933278Ab1EYAAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 20:01:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,264,1304319600"; 
-   d="scan'208";a="4237797"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Andi Kleen <andi@firstfloor.org>, "x86@kernel.org" <x86@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "jbeulich@novell.com" <jbeulich@novell.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>
-Date: Tue, 24 May 2011 16:58:56 -0700
-Subject: RE: [PATCH 3/3] coretemp: Get microcode revision from cpu_data
-Thread-Topic: [PATCH 3/3] coretemp: Get microcode revision from cpu_data
-Thread-Index: AcwaZuy6LJjIN6lsSBKJMajMNx7xFQABrnPA
-Message-ID: <493994B35A117E4F832F97C4719C4C04011E214E85@orsmsx505.amr.corp.intel.com>
-References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
- <1306278210-18285-3-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1306278210-18285-3-git-send-email-andi@firstfloor.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 May 2011 20:00:06 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvADAJRD3E15LCoegWdsb2JhbACmKBUBARYmJcgbDoYNBJdRh2E
+Date: Wed, 25 May 2011 10:00:03 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: "D. Jansen" <d.g.jansen@googlemail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tytso@mit.edu
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+Message-ID: <20110525000003.GJ32466@dastard>
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
+ <BANLkTikVLFMX_U6brQ5OALbvJkOGuz6++Q@mail.gmail.com>
+ <20110522004833.GY32466@dastard>
+ <201105231012.06928.oneukum@suse.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105231012.06928.oneukum@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH 3/3] coretemp: Get microcode revision from cpu_data
+On Mon, May 23, 2011 at 10:12:06AM +0200, Oliver Neukum wrote:
+> Am Sonntag, 22. Mai 2011, 02:48:33 schrieb Dave Chinner:
+> > On Fri, May 20, 2011 at 08:01:17AM +0200, D. Jansen wrote:
+> > > On Fri, May 20, 2011 at 5:39 AM, Dave Chinner <david@fromorbit.com> wrote:
 > 
-> From: Andi Kleen <ak@linux.intel.com>
+> > > 1. I thought I (may) make that decision by using laptop mode.
+> > 
+> > Laptop mode does not change fsync guarantees, so no, you ar enot
+> > making a decision to throw data away when you select laptop mode.
 > 
-> Now that the ucode revision is available in cpu_data remove
-> the existing code in coretemp.c to query it manually. Read the ucode
-> revision from cpu_data instead
+> You do however decide to sync less often, resulting in a potentially
+> larger loss of data.
 > 
-> Cc: jbeulich@novell.com
-> Cc: fenghua.yu@intel.com
-> Cc: khali@linux-fr.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  drivers/hwmon/coretemp.c |   29 +++++------------------------
->  1 files changed, 5 insertions(+), 24 deletions(-)
+> > > 3. A lib doesn't fix the ordering guarantee problem.
+> > 
+> > A properly implemented filesystem will not have ordering problems
+> > just because fsyncs are not issued.
 > 
-> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> index 9577c43..aff3e2c 100644
-> --- a/drivers/hwmon/coretemp.c
-> +++ b/drivers/hwmon/coretemp.c
-> @@ -324,15 +324,6 @@ static int get_tjmax(struct cpuinfo_x86 *c, u32
-> id, struct device *dev)
->  	}
->  }
-> 
-> -static void __devinit get_ucode_rev_on_cpu(void *edx)
-> -{
-> -	u32 eax;
-> -
-> -	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
-> -	sync_core();
-> -	rdmsr(MSR_IA32_UCODE_REV, eax, *(u32 *)edx);
-> -}
-> -
->  static int get_pkg_tjmax(unsigned int cpu, struct device *dev)
->  {
->  	int err;
-> @@ -433,21 +424,11 @@ static int chk_ucode_version(struct
-> platform_device *pdev)
->  	 * Readings might stop update when processor visited too deep
-> sleep,
->  	 * fixed for stepping D0 (6EC).
->  	 */
-> -	if (c->x86_model == 0xe && c->x86_mask < 0xc) {
-> -		/* check for microcode update */
-> -		err = smp_call_function_single(pdev->id,
-> get_ucode_rev_on_cpu,
-> -					       &edx, 1);
-> -		if (err) {
-> -			dev_err(&pdev->dev,
-> -				"Cannot determine microcode revision of "
-> -				"CPU#%u (%d)!\n", pdev->id, err);
-> -			return -ENODEV;
-> -		} else if (edx < 0x39) {
-> -			dev_err(&pdev->dev,
-> -				"Errata AE18 not fixed, update BIOS or "
-> -				"microcode of the CPU!\n");
-> -			return -ENODEV;
-> -		}
-> +	if (c->x86_model == 0xe && c->x86_mask < 0xc && c->x86_cpu_update
-> < 0x39) {
-> +		dev_err(&pdev->dev,
-> +			"Errata AE18 not fixed, update BIOS or "
-> +			"microcode of the CPU!\n");
-> +		return -ENODEV;
->  	}
->  	return 0;
->  }
-> --
-> 1.7.4.4
+> But user space will have this problem. A single task's sequence of
+> write(); fsync(); write(); does give an implicit guarantee of ordering
+> to user space.
 
-With this patch, the variable err and edx defined in chk_ucode_version() won't be used and should be removed to avoid compilation warnings.
+Oh, you're talking about application level write ordering. IO
+"ordering" in filesystem speak is about guaranteeing the order of
+data vs metadata writes for ensuring consistency after a crash
+(e.g. ext3/4 default "data=ordered" mode). that's what I was
+refering to, not anythign to do with applications.
 
-Thanks.
+Besides, having to work out how to handle subtle application write
+ordering bugs because you changed fsync semantics is simply another
+reason for not changing behaviour in the first place.
 
--Fenghua
+Cheers,
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
