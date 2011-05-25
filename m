@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab1EYJJa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 05:09:30 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48900 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab1EYJJ1 (ORCPT
+	id S1753406Ab1EYJJg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 05:09:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43949 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab1EYJJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 05:09:27 -0400
+	Wed, 25 May 2011 05:09:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=epfVaIdCVKgi4FWg4AJ4Bil/F4R+XLFITXDJc9CSoRPlkMQ9cSGEIu8Wey8OBKC1m2
-         JqAIeqR8ULHYMMIuLyAbfJ4qbewMvmJdx0zFmaJDZjxUAqOAS76Q0ugJchWLvDf1UcJk
-         IjgbfEZiDPDiHW++QfVHneVbgcLCy8VtFTkmc=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mmXHbVx1sojB6ISUAi4S44lH1grG7sk/UslzQY7EDrJ75WR4JSKtawpKokIpWtnzxa
+         G4tavVn+JrxxKn2nhWYY5XBy35iyoCJqGm4eNlhyYO9mQc4Ew0o/VzeibJJTjf64QilG
+         qjCnoPMNtaF5/N5PiuR+pKTbA6ihzQP8CyyBg=
+Date: Wed, 25 May 2011 11:09:27 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [57/71] block: rescan partitions on invalidated devices on
+ -ENOMEDIA too
+Message-ID: <20110525090927.GD10146@htj.dyndns.org>
+References: <20110519180626.GA16555@kroah.com>
+ <20110519180559.722522150@clark.kroah.org>
+ <BANLkTi=dKXo=TeTU7a--r3YCxrptNU3VVg@mail.gmail.com>
+ <20110519181814.GA17816@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <1306311593.30236.103.camel@vkoul-udesk3>
-References: <cover.1306082097.git.mika.westerberg@iki.fi>
-	<e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
-	<BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
-	<1306311593.30236.103.camel@vkoul-udesk3>
-Date: Wed, 25 May 2011 11:09:26 +0200
-X-Google-Sender-Auth: PkcuHmsG9_OxfCnWdYd6ajLRZ6c
-Message-ID: <BANLkTi=X4XH0FL4HFXi4ZsJYy2O=mjnctg@mail.gmail.com>
-Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: Mika Westerberg <mika.westerberg@iki.fi>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, hsweeten@visionengravers.com,
-        ryan@bluewatersys.com, Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110519181814.GA17816@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/25 Koul, Vinod <vinod.koul@intel.com>:
-> On Wed, 2011-05-25 at 10:39 +0200, Linus Walleij wrote:
->> 2011/5/22 Mika Westerberg <mika.westerberg@iki.fi>:
->>
->> > The ep93xx DMA controller has 10 independent memory to peripheral (M2P)
->> > channels, and 2 dedicated memory to memory (M2M) channels. M2M channels can
->> > also be used by SPI and IDE to perform DMA transfers to/from their memory
->> > mapped FIFOs.
->>
->> No so much a review comment as an observation: I opposed the merge of the
->> EP93xx SPI driver in drivers/spi/ep93xx_spi.c on the grounds that it was close
->> enough to amba-pl022.c that it could use that driver instead.
->>
->> One of the arguments against was that you were going to do custom DMA
->> and stuff. Now you're using the DMAengine, so can you please reconsider
->> refactoring amba-pl022.c to suit your needs and you'll get DMA support for
->> free mor or less.
->
-> Linus is the dma IP same as existing ones?
-> In that case we shouldn't have a new driver for same IP.
+Hello, Greg.
 
-Nope, not as far as I can tell. The fear of this IP being an amba-pl08x.c
-already hit med so I checked the register map, but it appears to be unique.
-I haven't compared it to amba-pl330.c though.
+On Thu, May 19, 2011 at 11:18:14AM -0700, Greg KH wrote:
+> On Thu, May 19, 2011 at 08:12:44PM +0200, Tejun Heo wrote:
+> > Can you please hold this for a while?  It causes an extra warning
+> > message to be printed during device detection.  It isn't harmful but
+> > still.  I'll soon send a patch to resolve the issue and it would be
+> > better for them to go together.
+> 
+> Sure, I've dropped this one for now.  Let me know when I should add it
+> back to the next round of stable releases.
 
-Yours,
-Linus Walleij
+ff2a9941ca (block: move bd_set_size() above rescan_partitions() in
+__blkdev_get()) which fixes the warning is now in mainline.  Please
+apply this and ff2a9941ca to the next -stable.  I also noted it in the
+commit message of ff2a9941ca.
+
+Thanks.
+
+-- 
+tejun
