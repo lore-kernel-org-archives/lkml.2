@@ -1,90 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab1EYGIX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 02:08:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27882 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752324Ab1EYGIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 02:08:21 -0400
-Date: Wed, 25 May 2011 09:07:59 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCHv2 10/14] virtio_net: limit xmit polling
-Message-ID: <20110525060759.GC26352@redhat.com>
-References: <cover.1305846412.git.mst@redhat.com>
- <aced8619c07018b5495f9ceb2c02d4fbf897a098.1305846412.git.mst@redhat.com>
- <877h9kvlps.fsf@rustcorp.com.au>
- <20110522121008.GA12155@redhat.com>
- <87boyutbjg.fsf@rustcorp.com.au>
- <20110523111900.GB27212@redhat.com>
- <8739k3k1fb.fsf@rustcorp.com.au>
+	id S1752335Ab1EYGXX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 02:23:23 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43870 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab1EYGXW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 02:23:22 -0400
+Date: Wed, 25 May 2011 08:23:12 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Colin Cross <ccross@google.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, linux-sh@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Add a generic struct clk
+Message-ID: <20110525062312.GE22096@pengutronix.de>
+References: <1305876469.325655.313573683829.0.gpush@pororo>
+ <BANLkTik=EFayZW61TgfOni-XML+tRLOcqw@mail.gmail.com>
+ <20110524062620.GA22096@pengutronix.de>
+ <BANLkTimEoCaKwJtpbQTDSEDydNkZ1BkKog@mail.gmail.com>
+ <20110524080936.GI20715@pengutronix.de>
+ <BANLkTinVnFasvOmu0MWRDzv21P3vM8eM6g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <8739k3k1fb.fsf@rustcorp.com.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinVnFasvOmu0MWRDzv21P3vM8eM6g@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 23:02:47 up 4 days, 10:42, 26 users,  load average: 0.45, 0.44, 0.47
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 11:05:04AM +0930, Rusty Russell wrote:
-> On Mon, 23 May 2011 14:19:00 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > I do understand how it seems a waste to leave direct space
-> > in the ring while we might in practice have space
-> > due to indirect. Didn't come up with a nice way to
-> > solve this yet - but 'no worse than now :)'
+On Tue, May 24, 2011 at 12:41:20PM -0700, Colin Cross wrote:
+> On Tue, May 24, 2011 at 1:09 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > On Tue, May 24, 2011 at 12:31:13AM -0700, Colin Cross wrote:
+> >> On Mon, May 23, 2011 at 11:26 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> >> > On Mon, May 23, 2011 at 04:12:24PM -0700, Colin Cross wrote:
+> >> >> >
+> >> >> >   tglx's plan is to create a separate struct clk_hwdata, which contains a
+> >> >> >   union of base data structures for common clocks: div, mux, gate, etc. The
+> >> >> >   ops callbacks are passed a clk_hw, plus a clk_hwdata, and most of the base
+> >> >> >   hwdata fields are handled within the core clock code. This means less
+> >> >> >   encapsulation of clock implementation logic, but more coverage of
+> >> >> >   clock basics through the core code.
+> >> >>
+> >> >> I don't think they should be a union, I think there should be 3
+> >> >> separate private datas, and three sets of clock ops, for the three
+> >> >> different types of clock blocks: rate changers (dividers and plls),
+> >> >> muxes, and gates.  These blocks are very often combined - a device
+> >> >> clock often has a mux and a divider, and clk_set_parent and
+> >> >> clk_set_rate on the same struct clk both need to work.
+> >> >
+> >> > The idea is to being able to propagate functions to the parent. It's
+> >> > very convenient for the implementation of clocks when they only
+> >> > implement either a divider, a mux or a gate. Combining all of these
+> >> > into a single clock leads to complicated clock trees and many different
+> >> > clocks where you can't factor out the common stuff.
+> >>
+> >> That seems complicated.  You end up with lots of extra clocks (meaning
+> >> more boilerplate in the platform files) that have no meaning in the
+> >> system (what is the clock between the mux and the divider in Tegra's
+> >> i2c1 clock, it can never feed any devices), and you have to figure out
+> >> at the framework level when to propagate and when to error out.  I'm
+> >> not even sure you can always find the right place to stop propagating
+> >> - do you just keep going up until the set_parent callback succeeds, or
+> >> exists, or what?
+> >
+> > For the set_parent there would be no propagating at all. For set_rate I
+> > can imagine a flag in the generic clock which tells whether to propagate
+> > set_rate or not.
+> >
+> >>
+> >> I think you can still factor out all the common code if you treat each
+> >> clock as a possible mux, divider, and gate combination.  Each part of
+> >> the clock is still just as abstractable as before - you can set the
+> >> rate_ops to be the generic single register divider implementation, and
+> >> the gate ops to be the generic single bit enable implementation.  The
+> >> idea of what a clock node is matches the HW design,
+> >
+> > The hardware design consists of only discrete rate changers (plls,
+> > dividers), muxes and gates. These are the only building blocks
+> > *every* hardware design has. I believe that many of the problems
+> > the current implementations have are due to the multiple building
+> > blocks stuffed into one clock. If you haven't already take a look
+> > at my i.MX5 clock patches:
+> >
+> > http://thread.gmane.org/gmane.linux.ports.arm.kernel/113631
+> >
+> > They need changes to fit onto the current patches and the rate
+> > propagation problem is not solved there, but the resulting clock
+> > data files are really short and nice to read. Furthermore it's easy
+> > to implement. Just look at the diagrams in the datasheet and go through
+> > them.
 > 
-> Let's just make it "bool free_old_xmit_skbs(unsigned int max)".  max ==
-> 2 for the normal xmit path, so we're low latency but we keep ahead on
-> average.  max == -1 for the "we're out of capacity, we may have to stop
-> the queue".
+> Propagation is what I'm trying simplify, because it's impossible at
+> the framework level to determine the right time to propagate, and the
+> right time to return an error, and I don't like pushing it down to
+> each clock implementation either, because then you need a "propagating
+> clk gate" and a "non-propagating clk gate".
+
+Or a single flag on either the gate/mux/div or in the clock framework.
+
 > 
-> That keeps it simple and probably the right thing...
+> Your building blocks implement every op - clk_gate_ops implements
+> set_rate as clk_parent_set_rate (won't that cause a deadlock on
+> prepare_lock when it calls clk_set_rate?).  I'm suggesting breaking
+> out the clock gate ops into a struct that only contains:
+> enable
+> disable
+> prepare
+> unprepare
+> And a rate ops struct that contains:
+> round_rate
+> set_rate
+
++ get_rate?
+
+> And a mux ops struct that contains
+> set_parent
 > 
-> Thanks,
-> Rusty.
+> For a single HW clock that has a mux, a gate, and a divider, the
+> existing implementation requires:
+> INIT_CLK(..., clk_mux_ops)
+> INIT_CLK(..., clk_div_ops)
+> INIT_CLK(..., clk_gate_ops)
+> which creates 3 clocks, and requires lots of propagation logic to
+> figure out how to call clk_set_rate on the single clock that is
+> exposed to the device, but not propagate it past the device clock if
+> the device clock doesn't have a divider (propagating it up to an
+> active pll feeding other devices results in disaster, at least on
+> Tegra).  This combination doesn't seem to be common in your MX code,
+> but _every_ Tegra device clock has these three parts.
 
-Hmm I'm not sure I got it, need to think about this.
-I'd like to go back and document how my design was supposed to work.
-This really should have been in commit log or even a comment.
-I thought we need a min, not a max.
-We start with this:
+Lucky you. Maybe the Tegra hardware designers have better drugs or just
+take less of them...
 
-	while ((c = (virtqueue_get_capacity(vq) < 2 + MAX_SKB_FRAGS) &&
-		(skb = get_buf)))
-		kfree_skb(skb);
-	return !c;
+> 
+> With multiple smaller building blocks that can fit inside a clock, all
+> you need is:
+> INIT_CLK(..., clk_mux_ops, clk_div_ops, clk_gate_ops)
+> You have one struct clk, which is exposed to the device and matches
+> the datasheet.  If the clock has rate ops, clk_set_rate works with no
+> propagation.
 
-This is clean and simple, right? And it's exactly asking for what we need.
+No, we have cascaded dividers and thus still need rate propagation.
+Also we have the situation where a device is not allowed to adjust the
+divider because other clocks are derived from the same divider. Still
+the driver needs the rate. Here's an example from the i.MX51
+(simplified):
 
-But this way we always keep a lot of memory in skbs even when rate of
-communication is low.
+-> PLL ----> divider -----> gate ---> MMC1
+                     \
+                      \
+                       ---> gate ---> MMC2
 
-So we add the min parameter:
+Neither MMC1 nor MMC2 can be allowed to change the rate because it would
+change the rate of the other MMC. Both MMCs need the rate to adjust the
+card to the correct speed. In this case the platform code needs a
+possibility to adjust the rate initially to a value suitable for both
+MMC cores (50MHz). For this is needs access to the divider, preferably
+as a clock to be able to use standard clock functions.
 
-	int n = 0;
+There are also many many dividers and muxes which are standalone
+somewhere in the clock tree, not directly associated with any device.
+With a clock which can be a mux and a divider together one is tempted
+to combine these into the least possible number of clocks leading to
+some random combination of clocks.
 
-	while ((((c = (virtqueue_get_capacity(vq) < 2 + MAX_SKB_FRAGS)) ||
-		 n++ < min) && (skb = get_buf)))
-		kfree_skb(skb);
-	return !c;
 
+> If it doesn't have a rate, clk_rate_ops is NULL, and the
+> framework deal with propagation only in the case where it is really
+> propagation - a child clock that requires changing a parent clock.
+> The block abstraction is still in place, there are just 3 slots for
+> blocks within each clock.
+> 
+> Using a flag to mark clocks as "non-propagatable" is also not correct
+> - propagatability is a feature of the parent, not the child.
 
-on the normal path min == 2 so we're low latency but we keep ahead on
-average. min == 0 for the "we're out of capacity, we may have to stop
-the queue".
+this flag could also be added to the parent if we wish to.
 
-Does the above make sense at all?
+Sascha
 
 -- 
-MST
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
