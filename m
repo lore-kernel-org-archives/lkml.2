@@ -1,269 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab1EYUfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:35:21 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:34013 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754563Ab1EYUfS (ORCPT
+	id S1756184Ab1EYUgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:36:50 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:15393 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754135Ab1EYUgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:35:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=w2Tg4n7LpQ2j04RGUK0npO44H0Fj1YBGu8mK7aVtEzSUP0chyDpiCxAbIVXy2+21t1
-         gZEiUauobesnqGn0aYK/dt72Knv6AthHykR6x8QzUrHe11iKWjY88IjFKot2pKPhq4/k
-         pHt0n75gommCNpYTBxlNYztUy9V9YtH+F69w4=
-Message-ID: <4DDD6801.4010100@lwfinger.net>
-Date: Wed, 25 May 2011 15:35:13 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Wed, 25 May 2011 16:36:49 -0400
+Message-ID: <4DDD685C.9080100@tilera.com>
+Date: Wed, 25 May 2011 16:36:44 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Dan Carpenter <error27@gmail.com>
-Subject: Re: [RFC V1] lib: cordic: add library module for cordic angle calculation
-References: <1306352426-1899-1-git-send-email-arend@broadcom.com>
-In-Reply-To: <1306352426-1899-1-git-send-email-arend@broadcom.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [GIT PULL] arch/tile updates for v2.6.40
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2011 02:40 PM, Arend van Spriel wrote:
-> The brcm80211 driver in the staging tree has a cordic function to
-> determine cosine and sine for a given angle. Feedback received from
-> John Linville suggested that these kind of functions should be made
-> available to others as a library function in the kernel tree.
->
-> V1:
-> - code taken from brcm80211 driver and added kernel-doc comments.
-> - code compiled and tested for x86 architecture using brcm80211 driver.
-> - code compiled for x86_64, ARM, and MIPS architectures.
->
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-wireless@vger.kernel.org
-> Cc: "John W. Linville"<linville@tuxdriver.com>
-> Cc: Greg Kroah-Hartman<gregkh@suse.de>
-> Cc: Dan Carpenter<error27@gmail.com>
-> Reviewed-by: Roland Vossen<rvossen@broadcom.com>
-> Reviewed-by: Henry Ptasinski<henryp@broadcom.com>
-> Reviewed-by: Franky (Zhenhui) Lin<frankyl@broadcom.com>
-> Signed-off-by: Arend van Spriel<arend@broadcom.com>
-> ---
->   include/linux/cordic.h |   48 +++++++++++++++++++++++
->   lib/Kconfig            |    7 +++
->   lib/Makefile           |    2 +
->   lib/cordic.c           |   99 ++++++++++++++++++++++++++++++++++++++++++++++++
->   4 files changed, 156 insertions(+), 0 deletions(-)
->   create mode 100644 include/linux/cordic.h
->   create mode 100644 lib/cordic.c
+Linus,
 
-There is a similar routine in b43, thus this library function will likely have 
-at least 2 users.
+Please pull for 2.6.40 from:
 
-> diff --git a/include/linux/cordic.h b/include/linux/cordic.h
-> new file mode 100644
-> index 0000000..28443a6
-> --- /dev/null
-> +++ b/include/linux/cordic.h
-> @@ -0,0 +1,48 @@
-> +/*
-> + * Copyright (c) 2011 Broadcom Corporation
-> + *
-> + * Permission to use, copy, modify, and/or distribute this software for any
-> + * purpose with or without fee is hereby granted, provided that the above
-> + * copyright notice and this permission notice appear in all copies.
-> + *
-> + * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-> + * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-> + * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-> + * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-> + * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-> + * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-> + * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-> + */
-> +#ifndef __CORDIC_H_
-> +#define __CORDIC_H_
-> +
-> +#include<linux/types.h>
-> +
-> +/**
-> + * struct - i/q coordinate.
-> + *
-> + * @i: real part of coordinate (in phase).
-> + * @q: imaginary part of coordinate (quadrature).
-> + */
-> +struct cordic_iq {
-> +	s32 i;
-> +	s32 q;
-> +};
-> +
-> +/**
-> + * cordic_calc_iq() - calculates the i/q coordinate for given angle.
-> + *
-> + * @theta: angle in degrees for which i/q coordinate is to be calculated.
-> + * @coord: function output parameter holding the i/q coordinate.
-> + *
-> + * The function calculates the i/q coordinate for a given angle using
-> + * cordic algorithm. The coordinate consists of a real (i) and an
-> + * imaginary (q) part. The real part is essentially the cosine of the
-> + * angle and the imaginary part is the sine of the angle. The returned
-> + * values are scaled by 2^16 for precision. The range for theta is
-> + * for -180 degrees to +180 degrees. Passed values outside this range are
-> + * converted before doing the actual calculation.
-> + */
-> +void cordic_calc_iq(s32 theta, struct cordic_iq *coord);
-> +
-> +#endif /* __CORDIC_H_ */
-> diff --git a/lib/Kconfig b/lib/Kconfig
-> index ff9e5a3..5c70204 100644
-> --- a/lib/Kconfig
-> +++ b/lib/Kconfig
-> @@ -279,4 +279,11 @@ config AVERAGE
->
->   	  If unsure, say N.
->
-> +config CORDIC
-> +	tristate "Cordic function"
-> +	help
-> +	  The option provides arithmetic function using cordic algorithm
-> +	  so its calculations are in fixed point. Modules can select this
-> +	  when they require this function. Module will be called cordic.
-> +
->   endmenu
-> diff --git a/lib/Makefile b/lib/Makefile
-> index 704959d..9e3c1b0 100644
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -117,6 +117,8 @@ obj-$(CONFIG_AVERAGE) += average.o
->
->   obj-$(CONFIG_CPU_RMAP) += cpu_rmap.o
->
-> +obj-$(CONFIG_CORDIC) += cordic.o
-> +
->   hostprogs-y	:= gen_crc32table
->   clean-files	:= crc32table.h
->
-> diff --git a/lib/cordic.c b/lib/cordic.c
-> new file mode 100644
-> index 0000000..3952258
-> --- /dev/null
-> +++ b/lib/cordic.c
-> @@ -0,0 +1,99 @@
-> +/*
-> + * Copyright (c) 2011 Broadcom Corporation
-> + *
-> + * Permission to use, copy, modify, and/or distribute this software for any
-> + * purpose with or without fee is hereby granted, provided that the above
-> + * copyright notice and this permission notice appear in all copies.
-> + *
-> + * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-> + * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-> + * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-> + * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-> + * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-> + * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-> + * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-> + */
-> +#include<linux/module.h>
-> +#include<linux/cordic.h>
-> +
-> +#define CORDIC_ANGLE_GEN	39797
-> +#define CORDIC_PRECISION_SHIFT	16
-> +#define	CORDIC_NUM_ITER		(CORDIC_PRECISION_SHIFT + 2)
-> +
-> +#define	FIXED(X)	((s32)((X)<<  CORDIC_PRECISION_SHIFT))
-> +#define	FLOAT(X)	(((X)>= 0) \
-> +		? ((((X)>>  (CORDIC_PRECISION_SHIFT - 1)) + 1)>>  1) \
-> +		: -((((-(X))>>  (CORDIC_PRECISION_SHIFT - 1)) + 1)>>  1))
-> +
-> +static const s32 AtanTbl[] = {
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
 
-In Documentation/CodingStyle, variables with mixed-case names are frownid upon.
+The most interesting part of this batch is that it includes initial
+support for the new 64-bit Tilera architecture (TILE-Gx), which was
+previously only "accidentally" present in various places in arch/tile.
+It also changes the preferred 32-bit architecture name to "tilepro"
+(though "tile" will still build the 32-bit kernel).
 
-> +	2949120,
-> +	1740967,
-> +	919879,
-> +	466945,
-> +	234379,
-> +	117304,
-> +	58666,
-> +	29335,
-> +	14668,
-> +	7334,
-> +	3667,
-> +	1833,
-> +	917,
-> +	458,
-> +	229,
-> +	115,
-> +	57,
-> +	29
-> +};
-> +
-> +/*
-> + * cordic_calc_iq() - calculates the i/q coordinate for given angle
-> + *
-> + * theta: angle in degrees for which i/q coordinate is to be calculated
-> + * coord: function output parameter holding the i/q coordinate
-> + */
-> +void cordic_calc_iq(s32 theta, struct cordic_iq *coord)
+It also includes some fixes related to being able to build the kernel
+either with 4KB or 64KB page size, depending on the target use; and, it
+adds support for the tile hypervisor RTC driver.
 
-As "coord" is only for output, why not have this be a function returning a 
-struct cordic_iq?
+The platform-independent changes relate to the asm-generic syscall ABI,
+for audit and for 64-bit "compat" mode.
 
-> +{
-> +	s32 angle, valtmp;
-> +	unsigned iter;
-> +	int signx = 1;
-> +	int signtheta;
-> +
-> +	coord->i = CORDIC_ANGLE_GEN;
-> +	coord->q = 0;
-> +	angle = 0;
-> +
-> +	theta = FIXED(theta);
-> +	signtheta = (theta<  0) ? -1 : 1;
-> +	theta = ((theta + FIXED(180) * signtheta) % FIXED(360)) -
-> +		FIXED(180) * signtheta;
-> +
-> +	if (FLOAT(theta)>  90) {
-> +		theta -= FIXED(180);
-> +		signx = -1;
-> +	} else if (FLOAT(theta)<  -90) {
-> +		theta += FIXED(180);
-> +		signx = -1;
-> +	}
-> +
-> +	for (iter = 0; iter<  CORDIC_NUM_ITER; iter++) {
-> +		if (theta>  angle) {
-> +			valtmp = coord->i - (coord->q>>  iter);
+All the changes are in linux-next and have been sent to LKML plus
+any other relevant lists.  (Some other changes, for some /proc and
+/sys hooks, and for an SPI ROM driver, are still being discussed on LKML,
+and I may ask you to pull them later in the merge window.)
 
-I think the whitespace should be the same on both sides of the >> operator. 
-Either "coord->q>>iter" or "coord->q >> iter" would be OK. I know checkpatch.pl 
-does not complain, but it does for other binary operators.
+Chris Metcalf (22):
+      arch/tile: refactor backtracing code
+      arch/tile: support TIF_NOTIFY_RESUME
+      arch/tile: improve support for PCI hotplug
+      arch/tile: allow nonatomic stores to interoperate with fast atomic syscalls
+      arch/tile: disable SD_WAKE_AFFINE flag on CPU/NODE scheduling domain
+      arch/tile: properly flush the I$ when unloading kernel modules
+      arch/tile: tolerate disabling CONFIG_BLK_DEV_INITRD
+      arch/tile: disable GX prefetcher during cache flush
+      arch/tile: various header improvements for building drivers
+      arch/tile: kernel-related cleanups from removing static page size
+      arch/tile: clarify flush_buffer()/finv_buffer() function names
+      audit: support the "standard" <asm-generic/unistd.h>
+      arch/tile: update defconfig file to something more useful
+      compat: fixes to allow working with tile arch
+      arch/tile: finish enabling support for TILE-Gx 64-bit chip
+      tile: add an RTC driver for the Tilera hypervisor
+      include/linux/compat.h: coding-style fixes
+      arch/tile: use better definitions of xchg() and cmpxchg()
+      arch/tile: support signal "exception-trace" hook
+      arch/tile: allocate PCI IRQs later in boot
+      arch/tile: cleanups for tilegx compat mode
+      arch/tile: prefer "tilepro" as the name of the 32-bit architecture
 
-> +			coord->q += (coord->i>>  iter);
-> +			angle += AtanTbl[iter];
-> +		} else {
-> +			valtmp = coord->i + (coord->q>>  iter);
-> +			coord->q -= (coord->i>>  iter);
-> +			angle -= AtanTbl[iter];
-> +		}
-> +		coord->i = valtmp;
-> +	}
-> +
-> +	coord->i *= signx;
-> +	coord->q *= signx;
-> +}
-> +EXPORT_SYMBOL(cordic_calc_iq);
-> +
-> +MODULE_DESCRIPTION("Cordic functions");
-> +MODULE_AUTHOR("Broadcom Corporation");
-> +MODULE_LICENSE("Dual BSD/GPL");
+James Hogan (1):
+      tile,mn10300: add device parameter to dma_cache_sync()
 
-Larry
+KOSAKI Motohiro (1):
+      tile: replace mm->cpu_vm_mask with mm_cpumask()
+
+Oleg Nesterov (1):
+      tile: do_hardwall_trap: do not play with task->sighand
+
+Stephen Rothwell (1):
+      compat: include aio_abi.h for aio_context_t
+
+ Makefile                                       |    8 +
+ arch/tile/Kconfig                              |    8 +
+ arch/tile/configs/tile_defconfig               |   71 -
+ arch/tile/configs/tilegx_defconfig             | 1833 ++++++++++++++++++++
+ arch/tile/configs/tilepro_defconfig            | 1163 +++++++++++++
+ arch/tile/include/arch/chip_tilegx.h           |  258 +++
+ arch/tile/include/arch/icache.h                |   11 +-
+ arch/tile/include/arch/interrupts_64.h         |  276 +++
+ arch/tile/include/arch/spr_def.h               |   13 +-
+ arch/tile/include/arch/spr_def_64.h            |  173 ++
+ arch/tile/include/asm/atomic.h                 |   49 +-
+ arch/tile/include/asm/atomic_32.h              |   10 -
+ arch/tile/include/asm/atomic_64.h              |  156 ++
+ arch/tile/include/asm/backtrace.h              |   82 +-
+ arch/tile/include/asm/bitops.h                 |    1 +
+ arch/tile/include/asm/bitops_32.h              |    1 -
+ arch/tile/include/asm/bitops_64.h              |  105 ++
+ arch/tile/include/asm/cacheflush.h             |   18 +-
+ arch/tile/include/asm/compat.h                 |    4 +-
+ arch/tile/include/asm/dma-mapping.h            |    3 +-
+ arch/tile/include/asm/fb.h                     |    1 +
+ arch/tile/include/asm/io.h                     |   18 +
+ arch/tile/include/asm/irq.h                    |    2 +
+ arch/tile/include/asm/mmu_context.h            |    4 +-
+ arch/tile/include/asm/opcode-tile_32.h         |    7 +
+ arch/tile/include/asm/opcode-tile_64.h         | 1500 +++++++----------
+ arch/tile/include/asm/opcode_constants_64.h    | 1043 +++++++-----
+ arch/tile/include/asm/page.h                   |   18 +-
+ arch/tile/include/asm/parport.h                |    1 +
+ arch/tile/include/asm/pci.h                    |    3 +-
+ arch/tile/include/asm/pgtable_64.h             |  175 ++
+ arch/tile/include/asm/processor.h              |    9 +-
+ arch/tile/include/asm/serial.h                 |    1 +
+ arch/tile/include/asm/signal.h                 |    4 +
+ arch/tile/include/asm/spinlock_64.h            |  161 ++
+ arch/tile/include/asm/stat.h                   |    2 +-
+ arch/tile/include/asm/swab.h                   |    6 -
+ arch/tile/include/asm/thread_info.h            |    5 +-
+ arch/tile/include/asm/topology.h               |   75 +-
+ arch/tile/include/asm/traps.h                  |    4 +
+ arch/tile/include/asm/unistd.h                 |    2 +-
+ arch/tile/include/{hv/pagesize.h => asm/vga.h} |   35 +-
+ arch/tile/include/hv/hypervisor.h              |   12 +-
+ arch/tile/kernel/backtrace.c                   |  103 +-
+ arch/tile/kernel/compat.c                      |   13 +-
+ arch/tile/kernel/compat_signal.c               |    4 +-
+ arch/tile/kernel/futex_64.S                    |   55 +
+ arch/tile/kernel/hardwall.c                    |    6 +-
+ arch/tile/kernel/head_64.S                     |  269 +++
+ arch/tile/kernel/intvec_32.S                   |  175 +--
+ arch/tile/kernel/intvec_64.S                   | 1231 +++++++++++++
+ arch/tile/kernel/module.c                      |    8 +-
+ arch/tile/kernel/pci-dma.c                     |    2 +-
+ arch/tile/kernel/pci.c                         |  206 ++-
+ arch/tile/kernel/process.c                     |   52 +-
+ arch/tile/kernel/regs_64.S                     |  145 ++
+ arch/tile/kernel/setup.c                       |    6 +
+ arch/tile/kernel/signal.c                      |  128 ++-
+ arch/tile/kernel/single_step.c                 |   12 +
+ arch/tile/kernel/stack.c                       |   14 +-
+ arch/tile/kernel/sys.c                         |    9 -
+ arch/tile/kernel/tile-desc_32.c                |   11 +-
+ arch/tile/kernel/tile-desc_64.c                | 2200 ++++++++++++++++++++++++
+ arch/tile/kernel/time.c                        |    2 +
+ arch/tile/kernel/tlb.c                         |   12 +-
+ arch/tile/kernel/traps.c                       |    1 +
+ arch/tile/lib/atomic_asm_32.S                  |    2 +-
+ arch/tile/lib/cacheflush.c                     |   18 +
+ arch/tile/lib/memchr_64.c                      |   71 +
+ arch/tile/lib/memcpy_64.c                      |  220 +++
+ arch/tile/lib/memcpy_user_64.c                 |   86 +
+ arch/tile/lib/memset_64.c                      |  145 ++
+ arch/tile/lib/spinlock_64.c                    |  104 ++
+ arch/tile/lib/strchr_64.c                      |   67 +
+ arch/tile/lib/strlen_64.c                      |   38 +
+ arch/tile/lib/usercopy_64.S                    |  196 +++
+ arch/tile/mm/fault.c                           |   30 +-
+ arch/tile/mm/migrate_64.S                      |  187 ++
+ drivers/input/input-compat.h                   |    2 +-
+ drivers/net/tile/tilepro.c                     |    8 +-
+ drivers/rtc/Kconfig                            |    7 +
+ drivers/rtc/Makefile                           |    1 +
+ drivers/rtc/rtc-tile.c                         |  162 ++
+ include/asm-generic/audit_change_attr.h        |    4 +
+ include/asm-generic/audit_dir_write.h          |   14 +
+ include/asm-generic/audit_read.h               |    5 +
+ include/asm-generic/audit_write.h              |    2 +
+ include/asm-generic/unistd.h                   |  221 ++--
+ include/linux/compat.h                         |  236 +++-
+ kernel/compat.c                                |    8 +
+ kernel/sysctl.c                                |    2 +-
+ lib/audit.c                                    |    2 +
+ 92 files changed, 11799 insertions(+), 2034 deletions(-)
+ delete mode 100644 arch/tile/configs/tile_defconfig
+ create mode 100644 arch/tile/configs/tilegx_defconfig
+ create mode 100644 arch/tile/configs/tilepro_defconfig
+ create mode 100644 arch/tile/include/arch/chip_tilegx.h
+ create mode 100644 arch/tile/include/arch/interrupts_64.h
+ create mode 100644 arch/tile/include/arch/spr_def_64.h
+ create mode 100644 arch/tile/include/asm/atomic_64.h
+ create mode 100644 arch/tile/include/asm/bitops_64.h
+ create mode 100644 arch/tile/include/asm/fb.h
+ create mode 100644 arch/tile/include/asm/parport.h
+ create mode 100644 arch/tile/include/asm/pgtable_64.h
+ create mode 100644 arch/tile/include/asm/serial.h
+ create mode 100644 arch/tile/include/asm/spinlock_64.h
+ rename arch/tile/include/{hv/pagesize.h => asm/vga.h} (52%)
+ create mode 100644 arch/tile/kernel/futex_64.S
+ create mode 100644 arch/tile/kernel/head_64.S
+ create mode 100644 arch/tile/kernel/intvec_64.S
+ create mode 100644 arch/tile/kernel/regs_64.S
+ create mode 100644 arch/tile/kernel/tile-desc_64.c
+ create mode 100644 arch/tile/lib/memchr_64.c
+ create mode 100644 arch/tile/lib/memcpy_64.c
+ create mode 100644 arch/tile/lib/memcpy_user_64.c
+ create mode 100644 arch/tile/lib/memset_64.c
+ create mode 100644 arch/tile/lib/spinlock_64.c
+ create mode 100644 arch/tile/lib/strchr_64.c
+ create mode 100644 arch/tile/lib/strlen_64.c
+ create mode 100644 arch/tile/lib/usercopy_64.S
+ create mode 100644 arch/tile/mm/migrate_64.S
+ create mode 100644 drivers/rtc/rtc-tile.c
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
+
