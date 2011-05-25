@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab1EYIxW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 04:53:22 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36354 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180Ab1EYIxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 04:53:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,266,1304319600"; 
-   d="scan'208";a="4449797"
-Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mika Westerberg <mika.westerberg@iki.fi>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        hsweeten@visionengravers.com, ryan@bluewatersys.com,
-        Dan Williams <dan.j.williams@intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-In-Reply-To: <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
-References: <cover.1306082097.git.mika.westerberg@iki.fi>
-	 <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
-	 <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 13:49:53 +0530
-Message-ID: <1306311593.30236.103.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756964Ab1EYQJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 12:09:27 -0400
+Received: from server-178.211.55.208.as42926.net ([178.211.55.208]:33681 "EHLO
+	dns.regs.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751337Ab1EYQJZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 12:09:25 -0400
+X-Greylist: delayed 27941 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 May 2011 12:09:25 EDT
+Reply-To: kartusmurek@hotmail.com
+Message-ID: <78b5fa7af45cb566e78f7a5419d7f712@hotmail.com>
+From: "murekkep" <kartusmurek@hotmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-9?B?S2VuZGkga2FydHX+dW51enUga2VuZGluaXogZG9sZHVydW4=?=
+Date: Wed, 25 May 2011 11:23:20 +0300
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-9"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 10:39 +0200, Linus Walleij wrote:
-> 2011/5/22 Mika Westerberg <mika.westerberg@iki.fi>:
-> 
-> > The ep93xx DMA controller has 10 independent memory to peripheral (M2P)
-> > channels, and 2 dedicated memory to memory (M2M) channels. M2M channels can
-> > also be used by SPI and IDE to perform DMA transfers to/from their memory
-> > mapped FIFOs.
-> 
-> No so much a review comment as an observation: I opposed the merge of the
-> EP93xx SPI driver in drivers/spi/ep93xx_spi.c on the grounds that it was close
-> enough to amba-pl022.c that it could use that driver instead.
-> 
-> One of the arguments against was that you were going to do custom DMA
-> and stuff. Now you're using the DMAengine, so can you please reconsider
-> refactoring amba-pl022.c to suit your needs and you'll get DMA support for
-> free mor or less.
-Linus is the dma IP same as existing ones? 
-In that case we shouldn't have a new driver for same IP.
+YAZICI KARTUÞLARINA SERVET ÖDEMEYÝN.!
+KENDÝ YAZICI KARTUÞUNUZU. KENDÝNÝZ DOLDURABÝLÝRSÝNÝZ.
+Aþaðýdaki videodan Nasýl Yapýldýðýný 5 sn Ýçinde öðrenebilirsiniz.
+http://www.izlesene.com/video/kartus-dolumu-nasil-yapilir/1244022
+Gerekli olan dolum malzemesini 4 Kg Pigment mürekkep
+1 er Kg Mavi,Kýrmýzý,Sarý ve siyah olarak Bütün yazýcýlara uyumlu unýversal mürekkeplerimizi
+http://www.uzmanburom.com
+Adresinden online olarak satýn alabilirsiniz.
+Ýstanbul Ýçerisinde Teslimat Dahil + 4 Kg Ultra likit Pigment mürekkep, ve dolum eðitimi.
+Adresinizde Kartuþlarýn nasýl dolduðunu gösteriyoruz 60.00 Tl
+Adresinize teslim ve eðitim hizmeti.
+Kendi Yazýcý Kartuþunu Kendin doldurmak istemezmisin?
+Sipariþ için 0535082 45 40
 
--- 
-~Vinod
+
+
 
