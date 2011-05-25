@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab1EYKyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 06:54:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46720 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab1EYKyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 06:54:09 -0400
-Date: Wed, 25 May 2011 12:54:07 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Milton Miller <miltonm@bga.com>
-cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/4] sparse irq: protect irq_to_desc against
- irq_free_descs
-In-Reply-To: <sparse-irq-rcu-reply@mdm.bga.com>
-Message-ID: <alpine.LFD.2.02.1105251253070.3078@ionos>
-References: <generic-irq-changes@mdm.bga.com> <rcu-lock-radix-lookup-sparse-irq@mdm.bga.com>  <alpine.LFD.2.02.1105250958380.3078@ionos> <sparse-irq-rcu-reply@mdm.bga.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1754107Ab1EYL2x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 07:28:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:45203 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752714Ab1EYL2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 07:28:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,266,1304319600"; 
+   d="scan'208";a="7292657"
+Subject: Re: [PATCH] dmaengine: Add API documentation for slave dma usage
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <BANLkTinbSAxozR6NivY6wddre1nRF5RmZA@mail.gmail.com>
+References: <1306238657-30089-1-git-send-email-vinod.koul@intel.com>
+	 <BANLkTikDPeEFWdsVQ=Ak8jXEXsC-+uoOaw@mail.gmail.com>
+	 <1306253171.30236.9.camel@vkoul-udesk3>
+	 <BANLkTikjxECNAK5eS5hSu2bbEKpZX341Dw@mail.gmail.com>
+	 <BANLkTikAm=D_YNFt0Regeas6AX8116L0-A@mail.gmail.com>
+	 <1306312009.30236.110.camel@vkoul-udesk3>
+	 <BANLkTikn3BBeNyuUeZ9BhG5QLj-dmcGjTg@mail.gmail.com>
+	 <1306316082.30236.137.camel@vkoul-udesk3>
+	 <BANLkTinbSAxozR6NivY6wddre1nRF5RmZA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 May 2011 16:25:23 +0530
+Message-ID: <1306320923.30236.158.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, Milton Miller wrote:
-> On Wed, 25 May 2011 about 10:14:20 +0200 (CEST), Thomas Gleixner wrote:
-> > 
-> > The reason why nobody ever noticed is that the free happens in the
-> > teardown path of PCI devices and at this point nothing accesses that
-> > irq anymore.
+On Wed, 2011-05-25 at 16:21 +0530, Per Forlin wrote:
+> On 25 May 2011 11:34, Koul, Vinod <vinod.koul@intel.com> wrote:
+
+> I would like to ask a question on usage of DMA_CTRL_ACK while we're at it.
+> In ste_dma40 I added support to reuse descriptors if DMA_CTRL_ACK is
+> clear. The purpose of DMA_CTRL_ACK is to set up dependency but is it
+> also a valid to reuse it?
+> I mean submit the same descriptor again and again without having to
+> call prepare_slave_sg.
+> Example:
+> desc = prepare_slave_sg()
+> submit(desc)
+> issue_pending(desc)
 > 
-> I'm not talking about the irq_desc that is being removed from the
-> tree, instead I'm talking about the internal elements in the
-> radix tree that are used to find the pointers at the bottom of
-> the tree (that in turn point to the irq_desc in the irq tree case).
+> wait_for_callback()
+> 
+> submit(desc)
+> issue_pending(desc)
+> 
+I think your question is answered in dmaengine.h. Quoting here:
+* @DMA_CTRL_ACK - if clear, the descriptor cannot be reused until the 
+* client acknowledges receipt, i.e. has has a chance to establish any
+* dependency chains
 
-Oops, did not think about that one :)
+The DMA driver recycles the descriptors which it returns for the
+transfer APIs. The DMA_CTRL_ACK flag would tell driver explicitly not to
+reuse this descriptor until the client clears this flag.
+Since the descriptor is still valid after callback notification it can
+be reused by client in the way you described.
 
--ENOTENOUGHCOFFEE
+Again, Dan can you please confirm if my interpretation is correct.
 
-Thanks,
 
-	tglx
+-- 
+~Vinod
+
