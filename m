@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708Ab1EYQ6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 12:58:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61858 "EHLO mga11.intel.com"
+	id S1756210Ab1EYRCs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 13:02:48 -0400
+Received: from mail.perches.com ([173.55.12.10]:2004 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab1EYQ6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 12:58:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,268,1304319600"; 
-   d="scan'208";a="7469960"
-Date: Wed, 25 May 2011 09:58:03 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision
-Message-ID: <20110525165803.GB14958@tassilo.jf.intel.com>
-References: <1306278210-18285-1-git-send-email-andi@firstfloor.org>
- <20110525070604.GE429@elte.hu>
- <20110525160656.GB25225@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110525160656.GB25225@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756045Ab1EYRCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 13:02:44 -0400
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>, kvm-ia64@vger.kernel.org,
+        kvm@vger.kernel.org, linux-ext4@vger.kernel.org,
+        oprofile-list@lists.sf.net
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-wireless@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: [PATCH 0/4] printk: cleanups of direct includes
+Date: Wed, 25 May 2011 10:02:37 -0700
+Message-Id: <cover.1306342673.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.4.rc3
+In-Reply-To: <BANLkTimo30L7feKr9_Ec=fMoe1erw8Rnag@mail.gmail.com>
+References: <BANLkTimo30L7feKr9_Ec=fMoe1erw8Rnag@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > This can happen if for example the BIOS somehow does not apply the right 
-> > microcode to all CPUs. It can also happen if physically different microcode 
-> > version CPUs are mixed. In theory people can mix steppings as well.
-> 
-> In PRACTICE people WILL mix steppings as well.
+printk.h is a subfile of kernel.h, do not allow it to
+be included directly.
 
-Yes exactly. I used to have a system with one P3 supporting FXSAVE
-and other not :-) I had to fix the kernel back then to support this.
-The system worked perfectly fine after the kernel was fixed.
+Joe Perches (4):
+  treewide: Remove direct includes of printk.h
+  staging: Remove direct includes of printk.h
+  printk: Don't allow direct inclusion
+  treewide: Remove asmlinkage from printk
 
-So the check proposed is a bad idea. It would trigger
-on real boxes which don't have any obvious problems.
+ arch/arm/kernel/early_printk.c                |    2 +-
+ arch/ia64/kvm/vmm.c                           |    2 +-
+ arch/x86/kernel/early_printk.c                |    2 +-
+ drivers/staging/brcm80211/brcmfmac/dhd_sdio.c |    1 -
+ drivers/staging/brcm80211/util/bcmutils.c     |    1 -
+ drivers/staging/usbip/usbip_common.h          |    2 +-
+ fs/ext4/inode.c                               |    1 -
+ include/linux/oprofile.h                      |    2 +-
+ include/linux/printk.h                        |   10 +++++++---
+ kernel/printk.c                               |    6 +++---
+ kernel/sysctl.c                               |    3 +--
+ 11 files changed, 16 insertions(+), 16 deletions(-)
 
--Andi
+-- 
+1.7.4.rc3
+
