@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab1EYSnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 14:43:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31549 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753269Ab1EYSnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 14:43:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,268,1304319600"; 
-   d="scan'208";a="1627086"
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, Dan <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: [PATCH] mainatiners: add dma engine tree details
-Date: Wed, 25 May 2011 23:39:26 +0530
-Message-Id: <1306346966-16385-1-git-send-email-vinod.koul@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1752510Ab1EYSOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 14:14:23 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:53020 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab1EYSOV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 14:14:21 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6357"; a="93435917"
+Message-ID: <8ce4e30b4a406fadf08af2daff163984.squirrel@www.codeaurora.org>
+In-Reply-To: <Pine.LNX.4.44L0.1105251316170.1987-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1105251316170.1987-100000@iolanthe.rowland.org>
+Date: Wed, 25 May 2011 11:13:51 -0700 (PDT)
+Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+From: "Brokhman Tatyana" <tlinder@codeaurora.org>
+To: "Alan Stern" <stern@rowland.harvard.edu>
+Cc: "Brokhman Tatyana" <tlinder@codeaurora.org>, balbi@ti.com,
+        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
+Reply-To: tlinder@codeaurora.org
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vinod Koul <vinod.koul@intel.com>
 
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
----
- MAINTAINERS |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ composite_driver.speed to USB_SPEED_SUPER.
+>>
+>> Not sure how to verify this. I need to know whether the driver that is
+>> registered with the UDC is SS or not. This is before the function
+>> drivers
+>> are binded to it. So how can I verify at that point that the function
+>> drivers that will bind to this driver will provide SS descriptors?
+>> (I'm sorry, I don't have the ability to view the code at the moment and
+>> due to the time differences between us I don't want to leave this
+>> question
+>> for tomorrow and loose another day...)
+>
+> I'm not sure about this either.  I have never used the composite
+> framework so I'm not familiar with its details.  This has to be decided
+> before the composite gadget driver registers with the UDC driver ...
+Right, but at this point there is no way of knowing what function drivers
+will bind to it and what descriptors they will provide. Most of the
+function drivers allocate their descriptors at bind() that occurs after
+the UDC already registers.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8f44130..4435893 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2169,6 +2169,8 @@ M:	Dan Williams <dan.j.williams@intel.com>
- S:	Supported
- F:	drivers/dma/
- F:	include/linux/dma*
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/djbw/async_tx.git
-+T:	git git://git.infradead.org/users/vkoul/slave-dma.git (slave-dma)
- 
- DME1737 HARDWARE MONITOR DRIVER
- M:	Juerg Haefliger <juergh@gmail.com>
+> and surely that can't happen until all the function drivers have
+> registered with the composite driver?  After all, the gadget can't be
+> enumerated until all the function drivers are registered.
+Right, but it doesn't mean that the composite driver can't register with
+the UDC until all the function drivers are registered. Actually, the
+composite driver binds when no function driver has yet registered with it.
+
+> Maybe this logic can be put in usb_add_function()?  That routine
+> already deals with issues involving device speed and available
+> descriptors.
+That's too late. The composite driver is registered by the time
+usb_add_function() is called.
+
+Tanya Brokhman
 -- 
-1.7.0.4
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
 
