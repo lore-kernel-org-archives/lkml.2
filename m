@@ -1,140 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab1EYIgG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 04:36:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61253 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932782Ab1EYIgB convert rfc822-to-8bit (ORCPT
+	id S933192Ab1EYIjz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 04:39:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36740 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932782Ab1EYIjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 04:36:01 -0400
+	Wed, 25 May 2011 04:39:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=eiJIp+1nUauQaXtGBnZMy8VhkYuy4y2rjkP3nWJdWf/29OFOWblgLTo1ldUEtoDH66
-         mNKGqUhR0HV59uKzYx0s9uwkKyxpdO4pZhyMOg9bfMAgleNYMubEWdF8NAUUpCwKr6Eg
-         6wPYrmn2ue4dKN+nQnTQDby7J+W0DmiVV6ebo=
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=VKlyLhU4NgsFMB7AOLxgk9LlFUlS/Shvq/wifDk4ghrkNOjLOvUiOL0ODAzNLZP5XP
+         FiCpRYzsfTVDK642EHdQkfupAXWK+RtPp93X3omhKiNQ0o3tDMNMdV+DIfswdGHrBqKj
+         5DiKl/Ax/HFq2IjPZ4BA7y2CUH90nBqqMF8aA=
 MIME-Version: 1.0
-In-Reply-To: <20110525082514.GE21552@elte.hu>
-References: <m11uzrvd26.fsf@fess.ebiederm.org>
-	<BANLkTim4q5dK6nOb=pVKbk1c8b-Nh_hBfA@mail.gmail.com>
-	<m1boyvpo9r.fsf@fess.ebiederm.org>
-	<1306048393.4092.8.camel@mulgrave.site>
-	<20110522084224.GA12279@elte.hu>
-	<m1k4dgr35i.fsf@fess.ebiederm.org>
-	<20110524071628.GA31612@elte.hu>
-	<4508.1306283693@localhost>
-	<20110525082514.GE21552@elte.hu>
-Date: Wed, 25 May 2011 10:35:59 +0200
-X-Google-Sender-Auth: R9J4A15Ahd8gsoPB_WfLisdLEjI
-Message-ID: <BANLkTikVDrU7Nx6143gPuB=1vwqkMFiRiQ@mail.gmail.com>
-Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Valdis.Kletnieks@vt.edu, "Eric W. Biederman" <ebiederm@xmission.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+	<e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+Date: Wed, 25 May 2011 10:39:52 +0200
+X-Google-Sender-Auth: rvPZQt6VKK6IjSbcDGuMsiPC5iw
+Message-ID: <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
+Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: linux-arm-kernel@lists.infradead.org, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, hsweeten@visionengravers.com,
+        ryan@bluewatersys.com, Dan Williams <dan.j.williams@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 10:25, Ingo Molnar <mingo@elte.hu> wrote:
-> * Valdis.Kletnieks@vt.edu <Valdis.Kletnieks@vt.edu> wrote:
->
->> On Tue, 24 May 2011 09:16:28 +0200, Ingo Molnar said:
->> > * Eric W. Biederman <ebiederm@xmission.com> wrote:
->> > > My gut feel says we should really implement an
->> > > include/asm-generic/unistd-common.h to include all new system calls.
->> > >
->> > > That way there would be only one file to touch instead of 50. Certainly it
->> > > works for include/asm-generic/unistd.h for the architectures that use it.
->> > > And all we really need is just a little abstraction on that concept.
->> >
->> > I suppose that could be tried, although in practice it would probably be
->> > somewhat complex due to the various compat syscall handling differences.
->>
->> Can somebody fill us newcomers in on the arch-aeology of why some syscalls have
->> different numbers on different archs? I know it's partially because some simply
->> didn't implement some syscalls so there were numbering mismatches, but would it
->> have been *that* hard to wire all of those skipped syscalls up to one stub
->> 'return -ENOSYS'?
->
-> It was done so for hysterical raisons mostly, and once a bad ABI is done it's
-> very hard to undo it: beyond pushing the 'good ABI' you'd also still have to
-> deal with the bad ABI for a decade or more.
->
-> So the background is that most architectures start out as quick concept
-> prototypes, doing:
->
->        cp -a arch/existingarch arch/newarch
->
-> where 'existingarch' used to be arch/i386/ in the early days. Now i386 had a
-> fair amount of x86 specific syscalls that were naturally removed from
-> 'newarch'. Those created 'holes' in the numbers, which were then filled in with
-> new syscalls - a nice idea in itself!
->
-> Also sometimes 'newarch' did a 'clean', compressed list of syscall numbers
-> straight away, reordering syscalls. Once the 'quick prototype' hack starts
-> working on real hardware, once the syscall numbers get into the C library and
-> binutils it's very hard to ever transition away: you'd break the world!
->
-> An added source of noise that architectures tend to add new syscalls in a
-> different order: some are more interesting to them - some less.
->
-> So these syscall table hacks done very early during an arch's lifetime stick
-> around and create wild numbering noise in 20+ syscall tables:
->
->                                       [ slightly edited for readability ]
->
->  arch/alpha/include/asm/unistd.h:      #define __NR_perf_event_open 493
->  arch/arm/include/asm/unistd.h:        #define __NR_perf_event_open 364
->  arch/blackfin/include/asm/unistd.h:   #define __NR_perf_event_open 369
->  arch/frv/include/asm/unistd.h:        #define __NR_perf_event_open 336
->  arch/m68k/include/asm/unistd.h:       #define __NR_perf_event_open 332
->  arch/microblaze/include/asm/unistd.h: #define __NR_perf_event_open 366
->  arch/mips/include/asm/unistd.h:       #define __NR_perf_event_open 333
->  arch/mips/include/asm/unistd.h:       #define __NR_perf_event_open 292
->  arch/mips/include/asm/unistd.h:       #define __NR_perf_event_open 296
->  arch/mn10300/include/asm/unistd.h:    #define __NR_perf_event_open 337
->  arch/parisc/include/asm/unistd.h:     #define __NR_perf_event_open 318
->  arch/powerpc/include/asm/unistd.h:    #define __NR_perf_event_open 319
->  arch/s390/include/asm/unistd.h:       #define __NR_perf_event_open 331
->  arch/sh/include/asm/unistd_32.h:      #define __NR_perf_event_open 336
->  arch/sh/include/asm/unistd_64.h:      #define __NR_perf_event_open 364
->  arch/sparc/include/asm/unistd.h:      #define __NR_perf_event_open 327
->  arch/x86/include/asm/unistd_32.h:     #define __NR_perf_event_open 336
->  arch/x86/include/asm/unistd_64.h:     #define __NR_perf_event_open 298
->
-> To fix this we'd create a new, clean offset defined by each architecture, and a
-> generic enumeration of new syscalls.
->
-> This would make it much easier to add new, generic syscalls to all
-> architectures indeed.
->
-> It would still leave compat syscall wrappers unaddressed though: those are
-> often numbered differently and sometimes need arch specific wrapper entry
-> functions, which then call the real generic syscall.
->
-> But at least the primary, 'native' syscall table of every arch could be kept
-> rather fresh via generic enumeration.
+2011/5/22 Mika Westerberg <mika.westerberg@iki.fi>:
 
-So we can start all over at offset 501 (alpha just started using 500)
-with a unified,
-clean, and compressed list of syscalls? Or do we have some more other-os-compat
-syscalls around in this range?
+> The ep93xx DMA controller has 10 independent memory to peripheral (M2P)
+> channels, and 2 dedicated memory to memory (M2M) channels. M2M channels can
+> also be used by SPI and IDE to perform DMA transfers to/from their memory
+> mapped FIFOs.
 
-Gr{oetje,eeting}s,
+No so much a review comment as an observation: I opposed the merge of the
+EP93xx SPI driver in drivers/spi/ep93xx_spi.c on the grounds that it was close
+enough to amba-pl022.c that it could use that driver instead.
 
-                        Geert
+One of the arguments against was that you were going to do custom DMA
+and stuff. Now you're using the DMAengine, so can you please reconsider
+refactoring amba-pl022.c to suit your needs and you'll get DMA support for
+free mor or less.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Yours,
+Linus Walleij
