@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978Ab1EYXyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 19:54:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59570 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754737Ab1EYXyS (ORCPT
+	id S1756973Ab1EYX6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 19:58:34 -0400
+Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:47464 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754349Ab1EYX6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 19:54:18 -0400
-Date: Wed, 25 May 2011 16:53:45 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: Suggest using min_t or max_t
-Message-Id: <20110525165345.5f775c7b.akpm@linux-foundation.org>
-In-Reply-To: <1306282273.2298.62.camel@Joe-Laptop>
-References: <4DD50B35.2000005@indesign-llc.com>
-	<20110519115859.e11a7ca3.akpm@linux-foundation.org>
-	<1305909981.4209.33.camel@Joe-Laptop>
-	<20110520095037.25eadc0a.akpm@linux-foundation.org>
-	<1305912602.4209.41.camel@Joe-Laptop>
-	<20110520103529.1ef3917c.akpm@linux-foundation.org>
-	<1305915161.4209.56.camel@Joe-Laptop>
-	<20110520113830.3faf5230.akpm@linux-foundation.org>
-	<1305923088.4209.79.camel@Joe-Laptop>
-	<20110524163503.0cd73903.akpm@linux-foundation.org>
-	<1306282273.2298.62.camel@Joe-Laptop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 25 May 2011 19:58:33 -0400
+X-AuditID: 1209190e-b7c39ae000000a8c-c5-4ddd97a295f3
+Message-ID: <4DDD97A2.5030304@mit.edu>
+Date: Wed, 25 May 2011 19:58:26 -0400
+From: Andy Lutomirski <luto@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision v2
+References: <1306351948-23382-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1306351948-23382-1-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42IR4hTV1l00/a6vwaqXEhbHJ1haHLn2nd3i
+	8q45bBY/NjxmdWDxmL/zI6PHplWdbB7zTgZ6fN4kF8ASxWWTkpqTWZZapG+XwJUx6+wk5oJH
+	rBXnjy9ib2CcytLFyMkhIWAiseLmAWYIW0ziwr31bF2MXBxCAvsYJebs2sIM4WxglJi0/SsL
+	hHOBSaJl/2ZWkBZeATWJ/o8PmEBsFgFVif3Pe8HibAIqEh1LIeKiApUS79ZsYYeoF5Q4OfMJ
+	0CAODhGgmuOn+EDCzAJREhcufmUHCQsLOEpsnq0CYgoJOEv8fu4PUsEp4CJx9Op3JpAws4C1
+	xLfdRRCN8hLb385hnsAoOAvJ+FkIVbOQVC1gZF7FKJuSW6Wbm5iZU5yarFucnJiXl1qka6yX
+	m1mil5pSuokRHNqSfDsYvx5UOsQowMGoxMPbqHDXV4g1say4MvcQoyQHk5Io74WpQCG+pPyU
+	yozE4oz4otKc1OJDjBIczEoivE0sQDnelMTKqtSifJiUNAeLkjjvTEl1XyGB9MSS1OzU1ILU
+	IpisDAeHkgQvIzCGhQSLUtNTK9Iyc0oQ0kwcnCDDeYCG75sGMry4IDG3ODMdIn+KUVFKnJcT
+	pFkAJJFRmgfXC0s9rxjFgV4R5hUCaecBpi247ldAg5mABkv8vQkyuCQRISXVwFi7tpSlIWlJ
+	vlPyDLeVemyqPmKb/7xz1uf7Ixw7JSQmoiF77kyOLk1tZ76Poqf+vzcqPLsma3nSZJeJP7+8
+	1T4Rvtr71FmdjlNTWNlF1T5q/4i5+pNrbsOnUwmV+3+na+w1qO2KO6EuYXdMSeleIANXd4pL
+	XiBfufuWwmctbV9j1U+ovZy2WYmlOCPRUIu5qDgRAPKtscgYAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011 17:11:13 -0700
-Joe Perches <joe@perches.com> wrote:
+On 05/25/2011 03:32 PM, Andi Kleen wrote:
+> From: Andi Kleen<ak@linux.intel.com>
+>
 
-> On Tue, 2011-05-24 at 16:35 -0700, Andrew Morton wrote:
-> > On Fri, 20 May 2011 13:24:48 -0700
-> > Joe Perches <joe@perches.com> wrote:
-> > 
-> > > A common issue with min() or max() is using a cast on
-> > > one or both of the arguments when using min_t/max_t could
-> > > be better.
-> > > 
-> > > Add cast detection to uses of min/max and suggest an
-> > > appropriate use of min_t or max_t instead.
-> > 
-> > Causes this:
-> > 
-> > akpm2:/usr/src/25> perl scripts/checkpatch.pl patches/drivers-gpio-vx855_gpioc-needs-slabh.patch
-> > Nested quantifiers in regex; marked by <-- HERE in m/(\((?:[^\(\)]++ <-- HERE |(?-1))*\))/ at scripts/checkpatch.pl line 271.
-> 
-> Something not making sense here.
-> I get no report when I try your patch.
-> (using checkpatch with the regex I sent)
-> 
-> Send the patch again?
-> 
-> $ perl --version
-> 
-> This is perl, v5.10.1 (*) built for i686-linux-gnu-thread-multi
-> (with 53 registered patches, see perl -V for more detail)
-> 
+[...]
 
-It happens with perl v5.8.8:
+>
+> I had to add a memory barrier to native_cpuid to prevent it being
+> optimized away when the result is not used.
+>
 
-akpm2:/usr/src/25> perl scripts/checkpatch.pl this-file-does-not-exist
-Nested quantifiers in regex; marked by <-- HERE in m/(\((?:[^\(\)]++ <-- HERE |(?-1))*\))/ at scripts/checkpatch.pl line 271.
+[...]
 
+> @@ -179,7 +181,8 @@ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
+>   	      "=b" (*ebx),
+>   	      "=c" (*ecx),
+>   	      "=d" (*edx)
+> -	    : "0" (*eax), "2" (*ecx));
+> +	    : "0" (*eax), "2" (*ecx)
+> +	    : "memory");
+>   }
+>
 
+[...]
 
+> +		cpuid_eax(1);
+
+I'm confused.  Doesn't "asm volatile" (in native_cpuid) mean "don't 
+optimize me out"?
+
+I can't reproduce the disappearance of the cpuid instruction when I 
+copied and pasted all the macros.
+
+--Andy
