@@ -1,75 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab1EYVId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 17:08:33 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:57836 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab1EYVIb (ORCPT
+	id S1753899Ab1EYVKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 17:10:22 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38262 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309Ab1EYVKV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 17:08:31 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, oleg@redhat.com,
-        vda.linux@googlemail.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, indan@nul.nu,
-        bdonlan@gmail.com, pedro@codesourcery.com
-Subject: Re: [PATCH 07/19] ptrace: use bit_waitqueue for TRAPPING instead of wait_chldexit
-In-Reply-To: Your message of "Wed, 25 May 2011 16:42:14 +0200."
-             <20110525144214.GK10146@htj.dyndns.org>
-From: Valdis.Kletnieks@vt.edu
-References: <1306262259-7285-1-git-send-email-tj@kernel.org> <1306262259-7285-8-git-send-email-tj@kernel.org> <BANLkTi=6KNJnaXO+guTke_kkinfBXNunBA@mail.gmail.com> <20110525084411.GB10146@htj.dyndns.org> <BANLkTi=O5vG=pgaYsE-6GXODwF910Q2qwA@mail.gmail.com>
-            <20110525144214.GK10146@htj.dyndns.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1306357694_2932P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 25 May 2011 17:08:14 -0400
-Message-ID: <25746.1306357694@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4DDD6FC1.008A,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 25 May 2011 17:10:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1105241435550.3207@xanadu.home>
+References: <BANLkTiknh4nCviohecbcJEiWnSW-JdMxDw@mail.gmail.com> <alpine.LFD.2.00.1105241435550.3207@xanadu.home>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 25 May 2011 15:10:00 -0600
+X-Google-Sender-Auth: 0GYCmdGjpcelrl4jgUW36_Y--lQ
+Message-ID: <BANLkTi=hCpCbNzi1ZiKmGnbhmCG2Ce=EkA@mail.gmail.com>
+Subject: [git pull] ARM Device tree support
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1306357694_2932P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-On Wed, 25 May 2011 16:42:14 +0200, Tejun Heo said:
+As per discussion attached below.  Please pull this tree adding device
+tree support to ARM, plus some other minor device tree changes.
 
-> > You can get a good idea of the code quality if you grep for users. I
-> > don't think it's an accident at all that the two big blocks are
-> > ide-tape and some infiniband drivers.
->=20
-> Maybe, but also ilog2() is relatively new and most already had ways to
-> deal with bit positions and masks, so the uptake is expected to be
-> slow.
+Thanks,
+g.
 
-One has to wonder how ide-tape got to be a early-adopter user of *anythin=
-g*.
+The following changes since commit 4a7df24ddc7097cd789a7527187826552ea0765e:
 
---==_Exmh_1306357694_2932P
-Content-Type: application/pgp-signature
+  Merge branch 'for-linus/2640/i2c' of
+git://git.fluff.org/bjdooks/linux (2011-05-24 16:39:23 -0700)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+are available in the git repository at:
 
-iD8DBQFN3W++cC3lWbTT17ARAi8NAJsHCSbld7FtF7C98I+XyHPa2MFImACfQceQ
-WQ36C3eYuS29Qyve+qxQRm0=
-=R6qY
------END PGP SIGNATURE-----
+  git://git.secretlab.ca/git/linux-2.6 devicetree/arm-next
 
---==_Exmh_1306357694_2932P--
+Andres Salomon (1):
+      of/flattree: minor cleanups
 
+Grant Likely (6):
+      dt/flattree: explicitly pass command line pointer to
+early_init_dt_scan_chosen
+      arm/dt: Make __vet_atags also accept a dtb image
+      arm/dt: Allow CONFIG_OF on ARM
+      arm/dt: consolidate atags setup into setup_machine_atags
+      arm/dt: probe for platforms via the device tree
+      dt: add documentation of ARM dt boot interface
+
+ Documentation/arm/Booting                       |   33 +++++-
+ Documentation/devicetree/booting-without-of.txt |   48 +++++++-
+ arch/arm/Kconfig                                |    7 +
+ arch/arm/include/asm/mach/arch.h                |    9 ++
+ arch/arm/include/asm/prom.h                     |   37 ++++++
+ arch/arm/include/asm/setup.h                    |    4 +
+ arch/arm/kernel/Makefile                        |    1 +
+ arch/arm/kernel/devtree.c                       |  145 +++++++++++++++++++++++
+ arch/arm/kernel/head-common.S                   |   24 +++-
+ arch/arm/kernel/head.S                          |    8 +-
+ arch/arm/kernel/setup.c                         |   90 +++++++++-----
+ arch/arm/mm/init.c                              |   11 ++
+ arch/microblaze/kernel/prom.c                   |    2 +-
+ arch/mips/include/asm/prom.h                    |    3 -
+ arch/mips/kernel/prom.c                         |    3 +-
+ arch/powerpc/kernel/prom.c                      |    2 +-
+ drivers/of/fdt.c                                |    8 +-
+ 17 files changed, 375 insertions(+), 60 deletions(-)
+ create mode 100644 arch/arm/include/asm/prom.h
+ create mode 100644 arch/arm/kernel/devtree.c
+
+
+On Tue, May 24, 2011 at 12:42 PM, Nicolas Pitre
+<nicolas.pitre@linaro.org> wrote:
+> On Mon, 23 May 2011, Grant Likely wrote:
+>
+>> Hi Russell,
+>>
+>> How do you want to handle merging the ARM DT support?  Do you want to
+>> pull it into your tree, or would you like me to ask Linus to pull
+>> directly?  As you can see, It does include a couple of pre-requisite
+>> cross-arch cleanups that I normally push to Linus directly.
+>
+> I don't think that Linus would object to you pushing that to him
+> directly, given that Russell has already agreed to those patches going
+> in this cycle.
+>
+> Whatever the path, it is however important that they do get in _this_
+> cycle.  Most people are just too nervous committing themselves to DT if
+> the basic stuff doesn't hit mainline.  And if we are serious about
+> _trying_ to change the state of things in ARM land by going the DT route
+> then we must have this in mainline as soon as possible.
+>
+>
+> Nicolas
+>
+
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
