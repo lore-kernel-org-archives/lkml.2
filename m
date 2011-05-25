@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab1EYO6G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 10:58:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36059 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754489Ab1EYO6E (ORCPT
+	id S932885Ab1EYO6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 10:58:19 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:28549 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754489Ab1EYO6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 10:58:04 -0400
+	Wed, 25 May 2011 10:58:16 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: r3YOEfEVM1mgGlBH5..MUj5cDLWqrtJ51k_qh8Nm7dGBJC8
+ .lSnxZmoeW8gEwv2NXA711L8uyMYTTq3aTBYXNCVX91yAr.uVcu3HPuff3b0
+ eGVPP3VGLLSpbL.sXW4hHifyb.WLQvpybcHXuVHM9RsrtHA8X6PzeJaW2mOP
+ SueQWjHU4gKFYrp.0jIWi8qga_WwnlsIVS8FQCrqYCOz8VK2QjRYw5L1gnrB
+ up64_5tC_oASOfeSgqXiiAF4IfvWw69QhVe33p_9eIwQhD9e6S0_vWqvliBw
+ KCjWzVZVeDEV27AS35EFVjsNdM1yUgBr2m4uxqa7OugARuVF2z4Z_eq9EHe5
+ gKEySTLe_oyi2FR.HILivaDY-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 25 May 2011 09:58:13 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/6] slub: avoid compiling SLAB_CACHE_DMA without DMA
+ support
+In-Reply-To: <alpine.DEB.2.00.1105241652110.29780@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1105250957180.23309@router.home>
+References: <alpine.DEB.2.00.1105241650230.29780@chino.kir.corp.google.com> <alpine.DEB.2.00.1105241652110.29780@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1105250945240.23309@router.home>
-References: <alpine.LRH.2.00.1105242146240.12134@tundra.namei.org>
- <alpine.LRH.2.00.1105242204100.12283@tundra.namei.org> <alpine.DEB.2.00.1105240908100.25760@router.home>
- <alpine.LRH.2.00.1105250813290.16922@tundra.namei.org> <alpine.DEB.2.00.1105250945240.23309@router.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 25 May 2011 07:57:42 -0700
-Message-ID: <BANLkTiksf8NJ40twt1nxp6oRAqNv45QeCQ@mail.gmail.com>
-Subject: Re: SLUB regression in current Linus
-To: Christoph Lameter <cl@linux.com>
-Cc: James Morris <jmorris@namei.org>, Pekka Enberg <penberg@kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 7:47 AM, Christoph Lameter <cl@linux.com> wrote:
->
-> So simply return the object. In the debug case we do not need all the other
-> processing that unlock_out: does.
+On Tue, 24 May 2011, David Rientjes wrote:
 
-So that patch looks like it should explain things.
+> If CONFIG_ZONE_DMA is disabled, SLAB_CACHE_DMA is a no-op.  Avoid
+> compiling support for it on such a configuration.
 
-But exactly why don't we need the ->tid update and the ALLOC_SLOWPATH
-stats? Both of them would seem to be equally valid for the debug case.
+Setting SLAB_CACHE_DMA to zero in the !ZONE_DMA case could avoid some of
+the ifdeffery.
 
-                             Linus
