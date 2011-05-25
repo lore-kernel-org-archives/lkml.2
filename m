@@ -1,172 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab1EYC3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 22:29:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52822 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754988Ab1EYC3J (ORCPT
+	id S1754096Ab1EYCFn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 22:05:43 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:49339 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752356Ab1EYCFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 22:29:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=vkUMepElNEhWosH9pl6xLogmqGxU75r2tIk7l+dCnViZCMWqPn/0VViPyq67f4N0c1
-         7HvQMaUZG22U8NfDBd5CRMUDyoVCp3J5FmiLBn22h9+4Ts13MvX34Fsa30iVO2epHO2Y
-         Lb0leRKyN0WA4vFlE3AV4Kh9G30FuNeqT6vzQ=
-MIME-Version: 1.0
-From: Wan ZongShun <mcuos.com@gmail.com>
-Date: Wed, 25 May 2011 10:05:01 +0800
-Message-ID: <BANLkTikmS2RQYkxc4+5CFQPbhe01QSfXRg@mail.gmail.com>
-Subject: [PATCH] nuc900: add new mfp implement
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 24 May 2011 22:05:41 -0400
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: linux-kernel@vger.kernel.org, davej@redhat.com, kees.cook@canonical.com,
+        davem@davemloft.net, eranian@google.com, torvalds@linux-foundation.org,
+        adobriyan@gmail.com, penberg@kernel.org, hpa@zytor.com,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
+In-Reply-To: <1306278525.1921.14.camel@dan>
+References: <1306269105.21443.20.camel@dan>  <1306278525.1921.14.camel@dan>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 May 2011 22:05:30 -0400
+Message-ID: <1306289130.1921.22.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Russell.
+On Tue, 2011-05-24 at 19:08 -0400, Dan Rosenberg wrote:
+> On Tue, 2011-05-24 at 16:31 -0400, Dan Rosenberg wrote:
+> > This introduces CONFIG_RANDOMIZE_BASE, which randomizes the address at
+> > which the kernel is decompressed at boot as a security feature that
+> > deters exploit attempts relying on knowledge of the location of kernel
+> > internals.  The default values of the kptr_restrict and dmesg_restrict
+> > sysctls are set to (1) when this is enabled, since hiding kernel
+> > pointers is necessary to preserve the secrecy of the randomized base
+> > address.
+> 
+> > diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+> > index 67a655a..2680db0 100644
+> > --- a/arch/x86/boot/compressed/head_32.S
+> > +++ b/arch/x86/boot/compressed/head_32.S
+> > @@ -69,12 +69,75 @@ ENTRY(startup_32)
+> >   */
+> >  
+> >  #ifdef CONFIG_RELOCATABLE
+> > +#ifdef CONFIG_RANDOMIZE_BASE
+> > +
+> > +	/* Standard check for cpuid */
+> > +	pushfl
+> > +	popl	%eax
+> > +	movl	%eax, %ebx
+> > +	xorl	$0x200000, %eax
+> > +	pushl	%eax
+> > +	popfl
+> > +	pushfl
+> > +	popl	%eax
+> > +	cmpl	%eax, %ebx
+> > +	jz	4f
+> > +
+> > +	/* Check for cpuid 1 */
+> > +	movl	$0x0, %eax
+> > +	cpuid
+> > +	cmpl	$0x1, %eax
+> > +	jb	4f
+> > +
+> > +	movl	$0x1, %eax
+> > +	cpuid
+> > +	xor	%eax, %eax
+> > +
+> > +	/* RDRAND is bit 30 */
+> > +	testl	$0x4000000, %ecx
+> > +	jnz	1f
+> > +
+> > +	/* RDTSC is bit 4 */
+> > +	testl	$0x10, %edx
+> > +	jnz	3f
+> > +
+> > +	/* Nothing is supported */
+> > +	jmp	4f
+> > +1:
+> > +	/* RDRAND sets carry bit on success, otherwise we should try
+> > +	 * again. */
+> > +	movl	$0x10, %ecx
+> > +2:
+> > +	/* rdrand %eax */
+> > +	.byte	0x0f, 0xc7, 0xf0
+> > +	jc	4f
+> > +	loop	2b
+> > +
+> > +	/* Fall through: if RDRAND is supported but fails, use RDTSC,
+> > +	 * which is guaranteed to be supported. */
+> > +3:
+> > +	rdtsc
+> > +	shll	$0xc, %eax
+> > +4:
+> > +	/* Maximum offset at 64mb to be safe */
+> > +	andl	$0x3ffffff, %eax
+> > +	movl	%ebp, %ebx
+> > +	addl	%eax, %ebx
+> > +#else
+> >  	movl	%ebp, %ebx
+> > +#endif
+> >  	movl	BP_kernel_alignment(%esi), %eax
+> >  	decl	%eax
+> >  	addl    %eax, %ebx
+> >  	notl	%eax
+> >  	andl    %eax, %ebx
+> > +
+> > +	/* LOAD_PHSYICAL_ADDR is the minimum safe address we can
+> > +	 * decompress at. */
+> > +	cmpl	$LOAD_PHYSICAL_ADDR, %ebx
+> > +	jae	1f
+> > +	movl	$LOAD_PHYSICAL_ADDR, %ebx
+> > +1:
+> >  #else
+> >  	movl	$LOAD_PHYSICAL_ADDR, %ebx
+> >  #endif
+> > diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+> > index 35af09d..6a05219 100644
+> > --- a/arch/x86/boot/compressed/head_64.S
+> > +++ b/arch/x86/boot/compressed/head_64.S
+> > @@ -90,6 +90,13 @@ ENTRY(startup_32)
+> >  	addl	%eax, %ebx
+> >  	notl	%eax
+> >  	andl	%eax, %ebx
+> > +
+> > +	/* LOAD_PHYSICAL_ADDR is the minimum safe address we can
+> > +	 * decompress at. */
+> > +	cmpl	$LOAD_PHYSICAL_ADDR, %ebx
+> > +	jae	1f
+> > +	movl	$LOAD_PHYSICAL_ADDR, %ebx
+> > +1:
+> >  #else
+> >  	movl	$LOAD_PHYSICAL_ADDR, %ebx
+> >  #endif
+> > @@ -191,7 +198,7 @@ no_longmode:
+> >  	 * it may change in the future.
+> >  	 */
+> >  	.code64
+> > -	.org 0x200
+> > +	.org 0x300
+> >  ENTRY(startup_64)
+> >  	/*
+> >  	 * We come here either from startup_32 or directly from a
+> > @@ -232,6 +239,13 @@ ENTRY(startup_64)
+> >  	addq	%rax, %rbp
+> >  	notq	%rax
+> >  	andq	%rax, %rbp
+> > +
+> > +	/* LOAD_PHYSICAL_ADDR is the minimum safe address we can
+> > +	 * decompress at. */
+> > +	cmpq	$LOAD_PHYSICAL_ADDR, %rbp
+> > +	jae	1f
+> > +	movq	$LOAD_PHYSICAL_ADDR, %rbp
+> > +1:
+> >  #else
+> >  	movq	$LOAD_PHYSICAL_ADDR, %rbp
+> >  #endif
+> 
+> Thanks to Kees Cook for noticing that I didn't clear %eax before jumping
+> to my "nothing supported" (4) label.  This would have just used the
+> flags as "randomness", but it's still wrong and I'll fix it.  Next
+> version will have a fallback of using the BIOS signature instead anyway.
+> 
 
-The nuc900 mmc driver requires new mfp implement, so add this patch.
+Also thanks to someone who prefers to remain nameless for pointing out
+that this logic also results in the kernel being loaded at
+LOAD_PHYSICAL_ADDR about one in four times (because it rounds up).  This
+will be fixed as well.
 
-Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
----
- arch/arm/mach-w90x900/include/mach/mfp.h        |    3 +-
- arch/arm/mach-w90x900/include/mach/nuc900_spi.h |    2 +-
- arch/arm/mach-w90x900/mfp.c                     |   49 ++++++++++++++++++++---
- 3 files changed, 46 insertions(+), 8 deletions(-)
+-Dan
 
-diff --git a/arch/arm/mach-w90x900/include/mach/mfp.h
-b/arch/arm/mach-w90x900/include/mach/mfp.h
-index 94c0e71..23ef1f5 100644
---- a/arch/arm/mach-w90x900/include/mach/mfp.h
-+++ b/arch/arm/mach-w90x900/include/mach/mfp.h
-@@ -19,6 +19,7 @@
- extern void mfp_set_groupf(struct device *dev);
- extern void mfp_set_groupc(struct device *dev);
- extern void mfp_set_groupi(struct device *dev);
--extern void mfp_set_groupg(struct device *dev);
-+extern void mfp_set_groupg(struct device *dev, const char *subname);
-+extern void mfp_set_groupd(struct device *dev, const char *subname);
-
- #endif /* __ASM_ARCH_MFP_H */
-diff --git a/arch/arm/mach-w90x900/include/mach/nuc900_spi.h
-b/arch/arm/mach-w90x900/include/mach/nuc900_spi.h
-index bd94819..2c4e0c1 100644
---- a/arch/arm/mach-w90x900/include/mach/nuc900_spi.h
-+++ b/arch/arm/mach-w90x900/include/mach/nuc900_spi.h
-@@ -14,7 +14,7 @@
- #ifndef __ASM_ARCH_SPI_H
- #define __ASM_ARCH_SPI_H
-
--extern void mfp_set_groupg(struct device *dev);
-+extern void mfp_set_groupg(struct device *dev, const char *subname);
-
- struct nuc900_spi_info {
- 	unsigned int num_cs;
-diff --git a/arch/arm/mach-w90x900/mfp.c b/arch/arm/mach-w90x900/mfp.c
-index fb7fb62..435aa8b 100644
---- a/arch/arm/mach-w90x900/mfp.c
-+++ b/arch/arm/mach-w90x900/mfp.c
-@@ -26,10 +26,8 @@
- #define REG_MFSEL	(W90X900_VA_GCR + 0xC)
-
- #define GPSELF		(0x01 << 1)
--
- #define GPSELC		(0x03 << 2)
--#define ENKPI		(0x02 << 2)
--#define ENNAND		(0x01 << 2)
-+#define GPSELD		(0x0f << 4)
-
- #define GPSELEI0	(0x01 << 26)
- #define GPSELEI1	(0x01 << 27)
-@@ -37,11 +35,16 @@
- #define GPIOG0TO1	(0x03 << 14)
- #define GPIOG2TO3	(0x03 << 16)
- #define GPIOG22TO23	(0x03 << 22)
-+#define GPIOG18TO20	(0x07 << 18)
-
- #define ENSPI		(0x0a << 14)
- #define ENI2C0		(0x01 << 14)
- #define ENI2C1		(0x01 << 16)
- #define ENAC97		(0x02 << 22)
-+#define ENSD1		(0x02 << 18)
-+#define ENSD0		(0x0a << 4)
-+#define ENKPI		(0x02 << 2)
-+#define ENNAND		(0x01 << 2)
-
- static DEFINE_MUTEX(mfp_mutex);
-
-@@ -127,16 +130,19 @@ void mfp_set_groupi(struct device *dev)
- }
- EXPORT_SYMBOL(mfp_set_groupi);
-
--void mfp_set_groupg(struct device *dev)
-+void mfp_set_groupg(struct device *dev, const char *subname)
- {
- 	unsigned long mfpen;
- 	const char *dev_id;
-
--	BUG_ON(!dev);
-+	BUG_ON((!dev) && (!subname));
-
- 	mutex_lock(&mfp_mutex);
-
--	dev_id = dev_name(dev);
-+	if (subname != NULL)
-+		dev_id = subname;
-+	else
-+		dev_id = dev_name(dev);
-
- 	mfpen = __raw_readl(REG_MFSEL);
-
-@@ -152,6 +158,9 @@ void mfp_set_groupg(struct device *dev)
- 	} else if (strcmp(dev_id, "nuc900-audio") == 0) {
- 		mfpen &= ~(GPIOG22TO23);
- 		mfpen |= ENAC97;/*enable AC97*/
-+	} else if (strcmp(dev_id, "nuc900-mmc-port1") == 0) {
-+		mfpen &= ~(GPIOG18TO20);
-+		mfpen |= (ENSD1 | 0x01);/*enable sd1*/
- 	} else {
- 		mfpen &= ~(GPIOG0TO1 | GPIOG2TO3);/*GPIOG[3:0]*/
- 	}
-@@ -162,3 +171,31 @@ void mfp_set_groupg(struct device *dev)
- }
- EXPORT_SYMBOL(mfp_set_groupg);
-
-+void mfp_set_groupd(struct device *dev, const char *subname)
-+{
-+	unsigned long mfpen;
-+	const char *dev_id;
-+
-+	BUG_ON((!dev) && (!subname));
-+
-+	mutex_lock(&mfp_mutex);
-+
-+	if (subname != NULL)
-+		dev_id = subname;
-+	else
-+		dev_id = dev_name(dev);
-+
-+	mfpen = __raw_readl(REG_MFSEL);
-+
-+	if (strcmp(dev_id, "nuc900-mmc-port0") == 0) {
-+		mfpen &= ~GPSELD;/*enable sd0*/
-+		mfpen |= ENSD0;
-+	} else
-+		mfpen &= (~GPSELD);
-+
-+	__raw_writel(mfpen, REG_MFSEL);
-+
-+	mutex_unlock(&mfp_mutex);
-+}
-+EXPORT_SYMBOL(mfp_set_groupd);
-+
--- 
-1.6.3.3
-
-
--- 
-Wan ZongShun.
-www.mcuos.com
