@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab1EYU65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:58:57 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56283 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613Ab1EYU64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:58:56 -0400
-Date: Wed, 25 May 2011 22:58:43 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Youquan Song <youquan.song@intel.com>
-Cc: linux-kernel@vger.kernel.org, david.woodhouse@intel.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, hpa@zytor.com,
-        hpa@linux.intel.com, allen.m.kay@intel.com, suresh.b.siddha@intel.com,
-        rajesh.sankaran@intel.com, asit.k.mallick@intel.com,
-        kent.liu@intel.com, Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH v4] x86, vt-d: enable x2apic opt out
-Message-ID: <20110525205843.GC28397@elte.hu>
-References: <1306341418-10645-1-git-send-email-youquan.song@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306341418-10645-1-git-send-email-youquan.song@intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754680Ab1EYU7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:59:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43366 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754424Ab1EYU7R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 16:59:17 -0400
+Subject: Re: linux-next: manual merge of the dwmw2-iommu tree with Linus'
+ tree
+From: David Woodhouse <dwmw2@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Song, Youquan" <youquan.song@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>
+Date: Wed, 25 May 2011 21:59:06 +0100
+In-Reply-To: <20110525130004.150c054f.sfr@canb.auug.org.au>
+References: <20110525130004.150c054f.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1306357154.2029.12.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-05-25 at 13:00 +1000, Stephen Rothwell wrote:
+> Today's linux-next merge of the dwmw2-iommu tree got a conflict in
+> arch/x86/kernel/apic/apic.c between commit 31dce14a3269 ("x86, ioapic:
+> Use ioapic_saved_data while enabling intr-remapping") from Linus' tree and
+> commit 6a87c5ec6463 ("intel-iommu: enable x2apic opt out") from the
+> dwmw2-iommu tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary. 
 
-* Youquan Song <youquan.song@intel.com> wrote:
+Offending patch dropped.
 
-> New version of VT-d2 specification 
-> (http://download.intel.com/technology 
-> /computing/vptech/Intel(r)_VT_for_Direct_IO.pdf) includes a new 
-> feature that provide firmware a way to request system software to 
-> opt out of enable x2APIC mode. DMAR ACPI table newly define flags.1 
-> bit: x2APIC_OPT_OUT which is set to request System software opt out 
-> xAPIC mode if flags.0 bit:INTR_REMAP is also set.
+The machine hosting git.infradead.org is going down shortly, and will be
+coming up in a new home tomorrow morning Boston time (EDT/GMT-5). Please
+could you use this git repository instead for the iommu tree, for
+"tonight's" linux-next:
+    git://git.kernel.org/pub/scm/linux/kernel/git/dwmw2/iommu-2.6.git
 
-So why isnt the x2apic disabled in the CPUID? That's the canonical 
-way to unsupport a particular non-working CPU hw feature.
+(or ssh://master.kernel.org/pub/scm/linux/kernel/git/dwmw2/iommu-2.6.git
+if it hasn't propagated to the mirrors in time)
 
-Thanks,
+Thanks.
 
-	Ingo
+The mtd tree hasn't changed in the last day, so no need to use a
+separate URL for that; the last pull is fine, right?
+
+-- 
+dwmw2
+
