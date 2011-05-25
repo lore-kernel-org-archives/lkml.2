@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab1EYRE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 13:04:28 -0400
-Received: from relay02.telecomputing.no ([217.173.253.102]:56917 "EHLO
-	relay02.telecomputing.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756728Ab1EYREZ convert rfc822-to-8bit (ORCPT
+	id S1753690Ab1EYRH5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 13:07:57 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:7427 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab1EYRHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 13:04:25 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAG013U3ZrfjG/2dsb2JhbACmLHjFYoYcBJUDijU
-X-IronPort-AV: E=Sophos;i="4.65,268,1304287200"; 
-   d="scan'208";a="135151566"
-From: "Cufi, Carles" <carles.cufi@nordicsemi.no>
-To: "wyrles@ytram.com" <wyrles@ytram.com>,
-        "corey@kansanian.com" <corey@kansanian.com>
-CC: "'Ed Tomlinson'" <edt@aei.ca>, "'Ville Tervo'" <ville.tervo@nokia.com>,
-        "'Bluettooth Linux'" <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 25 May 2011 19:04:21 +0200
-Subject: RE: Linux 2.6.39
-Thread-Topic: Linux 2.6.39
-Thread-Index: AQGUKt7R/T/916P1fB9/N50PhgUuCwGLqzLiAU0RkDMBZ9ryawGkHAjPAqaiMpsCHZd2SJS4UodggAAGfzA=
-Message-ID: <5B4B9A479BF6994B88EA975675EC5B79057A6029C4@MES1OS2SXC003.mes1.tconet.net>
-References: <BANLkTinG_qCtHQYRYFQUJ9oGv4H1cuznWg@mail.gmail.com>
- <201105250711.17971.edt@aei.ca>	<20110525113614.GQ2480@null>
- <201105250812.43246.edt@aei.ca>
- <5B4B9A479BF6994B88EA975675EC5B79057A399D82@MES1OS2SXC003.mes1.tconet.net>
- <BANLkTi=ec3bh24=2r8f3tmj2g0n0bMnq1Q@mail.gmail.com>
- <5B4B9A479BF6994B88EA975675EC5B79057A60296D@MES1OS2SXC003.mes1.tconet.net>
- <013c01cc1af9$361b00e0$a25102a0$@ytram.com>
-In-Reply-To: <013c01cc1af9$361b00e0$a25102a0$@ytram.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 May 2011 13:07:55 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6357"; a="93609383"
+Message-ID: <fa2182365beee6fa243f8d3957e2da2b.squirrel@www.codeaurora.org>
+In-Reply-To: <Pine.LNX.4.44L0.1105251010580.1987-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1105251010580.1987-100000@iolanthe.rowland.org>
+Date: Wed, 25 May 2011 10:07:25 -0700 (PDT)
+Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+From: "Brokhman Tatyana" <tlinder@codeaurora.org>
+To: "Alan Stern" <stern@rowland.harvard.edu>
+Cc: "Tanya Brokhman" <tlinder@codeaurora.org>, balbi@ti.com,
+        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
+Reply-To: tlinder@codeaurora.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- (Snipping...)
-On Wed, May 25, 2011 at 8:46 AM, Cufi, Carles <carles.cufi@nordicsemi.no>
-wrote:
-> On Wednesday 25 May 2011 07:36:14 Ville Tervo wrote:
->> On Wed, May 25, 2011 at 07:11:17AM -0400, ext Ed Tomlinson wrote:
->> > On Wednesday 25 May 2011 06:54:54 Corey Boyle wrote:
->> > > > On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
->> > > > > On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
->> > > > > > On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
-...
->> > Read Local Version Information (0x04|0x0001) plen 0
->> > > HCI Event: Command Complete (0x0e) plen 12
->> >     Read Local Version Information (0x04|0x0001) ncmd 1
->> >     status 0x00
->> >     HCI Version: 1.1 (0x1) HCI Revision: 0x20d
-*************************
->> >     LMP Version: 1.1 (0x1) LMP Subversion: 0x20d
-*************************
->> >     Manufacturer: Cambridge Silicon Radio (10) < HCI Command: Set 
->> > Event Mask (0x03|0x0001) plen 8
->> >     Mask: 0xfffffbff00000000
-*************************
->> > > HCI Event: Command Complete (0x0e) plen 4
->> >     Set Event Mask (0x03|0x0001) ncmd 1
->> >     status 0x12
->> >     Error: Invalid HCI Command Parameters
+Hi Alan,
+
+> I have looked this over more carefully.  It turns out that both of you
+> have misunderstood the purpose of CONFIG_USB_GADGET_DUALSPEED (and by
+> extension, CONFIG_USB_GADGET_SUPERSPEED).  In fact, the existing
+> Kconfig file is also wrong.
 >
->Set Event Mask has been in the Bluetooth Spec since day 1, so it must 
->be
->the bitmask, which has been extended with each new spec release to cover newly >added events. Looking at the latest spec, and judging >by the year your chipset was released in (it probably is a 1.1 compliant chipset) I believe that >0x000000008FFFFFFF is the highest >event mask it would support (up until and including Page Scan Repetition Mode Change Event), but since I don't have the >old 1.1 spec >around I may be one or two bits off.
+> The _only_ reason for CONFIG_USB_GADGET_DUALSPEED is so that gadget
+> drivers can use conditional compilation to avoid including the
+> high-speed descriptors when the UDC doesn't support high-speed
+> operation.  That's all.  This means that the
+> CONFIG_USB_GAGDET_DUALSPEED option does not need to be
+> user-controllable in Kconfig.  It should default to N, and UDC drivers
+> that support high speed should select it.
+>
+> The same should be true of CONFIG_USB_GADGET_HIGHSPEED.  It should not
+> be user-controllable.  It should default to N, and UDC drivers that
+> support SuperSpeed operation (after these patches, only dummy-hcd)
+> should select it.
 
->The device appears to have identified itself as CSR firmware using Bluetooth version 1.1.
->I do happen to have the 1.1 spec lying around :-), for Set_Event_Mask it says
->0x0000000100000000
->To                                          Reserved for future use
->0x8000000000000000
->0x00000000FFFFFFFF	Default (All events enabled)
->The mask above looks ok (no undefined bits), but are they supposed to be displayed in that order? (IOW, are the bytes in correct >order?)
+Ok, agreed. Thanks for the clarification. I saw your patch, I'll update
+mine in the same way.
 
-The HCI spec lists this as a 64-bit number but it must be sent in Little Endian to the controller, hence the reverse order in Ville Tervo's patch earlier in the email thread. 
+> There remains the other question, about whether composite_driver.speed
+> should be set to USB_SPEED_SUPER.  I think the matter can be settled at
+> runtime.  Iterate through all the function drivers; if all of them
+> support SuperSpeed and CONFIG_USB_GADGET_SUPERSPEED is enabled then set
+> composite_driver.speed to USB_SPEED_SUPER.
 
-Carles
+Not sure how to verify this. I need to know whether the driver that is
+registered with the UDC is SS or not. This is before the function drivers
+are binded to it. So how can I verify at that point that the function
+drivers that will bind to this driver will provide SS descriptors?
+(I'm sorry, I don't have the ability to view the code at the moment and
+due to the time differences between us I don't want to leave this question
+for tomorrow and loose another day...)
+
+>Otherwise, if all of them
+> support high speed and CONFIG_USB_GADGET_DUALSPEED is enabled then set
+> composite_driver.speed to USB_SPEED_HIGH.  Otherwise set it to
+> USB_SPEED_FULL.
+>
+> Alan Stern
+>
+
+Thanks,
+Tanya Brokhman
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
 
