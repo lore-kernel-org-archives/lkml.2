@@ -1,186 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab1EYCoh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 22:44:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42486 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235Ab1EYCof (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 22:44:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=T+MdLKdCl6UZEqtLUiLISSUTt/vje0UJdhWjJ1tqks0+oNGC64tZWDzCkrJn6PMvrb
-         C0J1hTR4NGbHuywpF5GIr0f5DDviq389s6M5Vv7cSXsVQI6mZeB7v0E0mF+q46P0HeRl
-         wXDdNlz6mI58fwDqXIrAADorV9hSgdpfoaxs0=
-Subject: Re: Kernel crash after using new Intel NIC (igb)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: Maximilian Engelhardt <maxi@daemonizer.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, StuStaNet Vorstand <vorstand@stusta.mhn.de>
-In-Reply-To: <20110524213327.GA3917@dev1756.snc6.facebook.com>
-References: <201104250033.03401.maxi@daemonizer.de>
-	 <1303878240.2699.41.camel@edumazet-laptop>
-	 <1303878771.2699.44.camel@edumazet-laptop>
-	 <201104271352.00601.maxi@daemonizer.de>
-	 <20110512211033.GA3468@dev1756.snc6.facebook.com>
-	 <1305234953.2831.2.camel@edumazet-laptop>
-	 <20110524213327.GA3917@dev1756.snc6.facebook.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 04:44:29 +0200
-Message-ID: <1306291469.3305.11.camel@edumazet-laptop>
+	id S1755359Ab1EYDAK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 23:00:10 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60756 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752356Ab1EYDAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 May 2011 23:00:09 -0400
+Date: Wed, 25 May 2011 13:00:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Song, Youquan" <youquan.song@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: linux-next: manual merge of the dwmw2-iommu tree with Linus' tree
+Message-Id: <20110525130004.150c054f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 24 mai 2011 à 14:33 -0700, Arun Sharma a écrit :
-> On Thu, May 12, 2011 at 11:15:53PM +0200, Eric Dumazet wrote:
-> > 
-> > Probably not.
-> > 
-> > What gives slub_nomerge=1   for you ?
-> > 
-> 
-> It took me a while to get a new kernel on a large enough sample
-> of machines to get some data.
-> 
-> Like you observed in the other thread, this is unlikely to be a random
-> memory corruption.
-> 
-> The panics stopped after we moved the list_empty() check under the lock.
-> 
-> --- a/net/ipv4/inetpeer.c
-> +++ b/net/ipv4/inetpeer.c
-> @@ -154,11 +154,11 @@ void __init inet_initpeers(void)
->  /* Called with or without local BH being disabled. */
->  static void unlink_from_unused(struct inet_peer *p)
->  {
-> +	spin_lock_bh(&unused_peers.lock);
->  	if (!list_empty(&p->unused)) {
-> -		spin_lock_bh(&unused_peers.lock);
->  		list_del_init(&p->unused);
-> -		spin_unlock_bh(&unused_peers.lock);
->  	}
-> +	spin_unlock_bh(&unused_peers.lock);
->  }
->  
->  static int addr_compare(const struct inetpeer_addr *a,
-> 
-> The idea being that the list gets corrupted under some kind of a race
-> condition. Two threads racing on list_empty() and executing
-> list_del_init() seems harmless.
-> 
-> There is probably a different race condition that is mitigated by doing
-> the list_empty() check under the lock.
-> 
+Hi David,
 
-Hmm, thanks for the report. Are you running x86 or another arch ?
+Today's linux-next merge of the dwmw2-iommu tree got a conflict in
+arch/x86/kernel/apic/apic.c between commit 31dce14a3269 ("x86, ioapic:
+Use ioapic_saved_data while enabling intr-remapping") from Linus' tree and
+commit 6a87c5ec6463 ("intel-iommu: enable x2apic opt out") from the
+dwmw2-iommu tree.
 
-We probably need some sort of memory barrier.
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-However, locking this central lock makes the thing too slow, I'll try to
-use an atomic_inc_return on p->refcnt instead. (and then lock
-unused_peers.lock if we got a 0->1 transition)
-
-I am testing following patch :
-
-
-diff --git a/net/ipv4/inetpeer.c b/net/ipv4/inetpeer.c
-index 9df4e63..43aacbf 100644
---- a/net/ipv4/inetpeer.c
-+++ b/net/ipv4/inetpeer.c
-@@ -154,11 +154,9 @@ void __init inet_initpeers(void)
- /* Called with or without local BH being disabled. */
- static void unlink_from_unused(struct inet_peer *p)
- {
--	if (!list_empty(&p->unused)) {
--		spin_lock_bh(&unused_peers.lock);
--		list_del_init(&p->unused);
--		spin_unlock_bh(&unused_peers.lock);
--	}
-+	spin_lock_bh(&unused_peers.lock);
-+	list_del_init(&p->unused);
-+	spin_unlock_bh(&unused_peers.lock);
- }
- 
- static int addr_compare(const struct inetpeer_addr *a,
-@@ -213,10 +211,11 @@ static int addr_compare(const struct inetpeer_addr *a,
-  * We exit from this function if number of links exceeds PEER_MAXDEPTH
-  */
- static struct inet_peer *lookup_rcu(const struct inetpeer_addr *daddr,
--				    struct inet_peer_base *base)
-+				    struct inet_peer_base *base,
-+				    int *newrefcnt)
- {
- 	struct inet_peer *u = rcu_dereference(base->root);
--	int count = 0;
-+	int old, new, count = 0;
- 
- 	while (u != peer_avl_empty) {
- 		int cmp = addr_compare(daddr, &u->daddr);
-@@ -226,8 +225,16 @@ static struct inet_peer *lookup_rcu(const struct inetpeer_addr *daddr,
- 			 * distinction between an unused entry (refcnt=0) and
- 			 * a freed one.
- 			 */
--			if (unlikely(!atomic_add_unless(&u->refcnt, 1, -1)))
--				u = NULL;
-+			while (1) {
-+				old = atomic_read(&u->refcnt);
-+				if (old == -1)
-+					return NULL;
-+				new = old + 1;
-+				if (atomic_cmpxchg(&u->refcnt,
-+						   old, new) == old)
-+					break;
-+			}
-+			*newrefcnt = new;
- 			return u;
- 		}
- 		if (cmp == -1)
-@@ -465,14 +472,14 @@ struct inet_peer *inet_getpeer(struct inetpeer_addr *daddr, int create)
- 	struct inet_peer_base *base = family_to_base(daddr->family);
- 	struct inet_peer *p;
- 	unsigned int sequence;
--	int invalidated;
-+	int invalidated, newrefcnt = 0;
- 
- 	/* Look up for the address quickly, lockless.
- 	 * Because of a concurrent writer, we might not find an existing entry.
- 	 */
- 	rcu_read_lock();
- 	sequence = read_seqbegin(&base->lock);
--	p = lookup_rcu(daddr, base);
-+	p = lookup_rcu(daddr, base, &newrefcnt);
- 	invalidated = read_seqretry(&base->lock, sequence);
- 	rcu_read_unlock();
- 
-@@ -480,7 +487,8 @@ struct inet_peer *inet_getpeer(struct inetpeer_addr *daddr, int create)
- 		/* The existing node has been found.
- 		 * Remove the entry from unused list if it was there.
- 		 */
--		unlink_from_unused(p);
-+		if (newrefcnt == 1)
-+			unlink_from_unused(p);
- 		return p;
- 	}
- 
-@@ -494,10 +502,11 @@ struct inet_peer *inet_getpeer(struct inetpeer_addr *daddr, int create)
- 	write_seqlock_bh(&base->lock);
- 	p = lookup(daddr, stack, base);
- 	if (p != peer_avl_empty) {
--		atomic_inc(&p->refcnt);
-+		newrefcnt = atomic_inc_return(&p->refcnt);
- 		write_sequnlock_bh(&base->lock);
- 		/* Remove the entry from unused list if it was there. */
--		unlink_from_unused(p);
-+		if (newrefcnt == 1)
-+			unlink_from_unused(p);
- 		return p;
- 	}
- 	p = create ? kmem_cache_alloc(peer_cachep, GFP_ATOMIC) : NULL;
-
-
+diff --cc arch/x86/kernel/apic/apic.c
+index b961af8,fb1c36c..0000000
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@@ -1461,16 -1450,24 +1461,17 @@@ int __init enable_IR(void
+  void __init enable_IR_x2apic(void)
+  {
+  	unsigned long flags;
+- 	int ret, x2apic_enabled = 0;
+ -	struct IO_APIC_route_entry **ioapic_entries;
++ 	int ret = 0, x2apic_enabled = 0;
+  	int dmar_table_init_ret;
+  
+  	dmar_table_init_ret = dmar_table_init();
+- 	if (dmar_table_init_ret && !x2apic_supported())
++ 	if (dmar_table_init_ret && !cpu_has_x2apic)
+  		return;
+  
+ -	ioapic_entries = alloc_ioapic_entries();
+ -	if (!ioapic_entries) {
+ -		pr_err("Allocate ioapic_entries failed\n");
+ -		goto out;
+ -	}
+ -
+ -	ret = save_IO_APIC_setup(ioapic_entries);
+ +	ret = save_ioapic_entries();
+  	if (ret) {
+  		pr_info("Saving IO-APIC state failed: %d\n", ret);
++ 		ret = 0;
+  		goto out;
+  	}
+  
