@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab1EYDXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 May 2011 23:23:42 -0400
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:54322 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753793Ab1EYDXl (ORCPT
+	id S1757132Ab1EYDYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 May 2011 23:24:05 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53491 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793Ab1EYDYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 May 2011 23:23:41 -0400
-Date: Wed, 25 May 2011 04:23:38 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] Squashfs: add extra sanity checks at mount time
-Message-ID: <4ddc763a.iEroXVA5QW9QMuO1%phillip@lougher.demon.co.uk>
-User-Agent: Heirloom mailx 12.4 7/29/08
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 24 May 2011 23:24:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=tpfofhXxW/n/K55xiEgha5Jitxp2uToHwX1h7oKff75yxH2TQmY3ZK7h48se8E9wr5
+         ARzNn8/Q41OUgl/e1rvUxTsZv21FWTcecP9CXcTisyoLEOhMXooUYfcuF5BMly6DGaAO
+         tLuUpKCtklT18ZnVhqBMmjppzPjF2CtlROcv0=
+Subject: [PATCH] drivers/misc: fix a memory leak in spear_pcie_gadget_probe
+ error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Pratyush Anand <pratyush.anand@st.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 May 2011 11:23:55 +0800
+Message-ID: <1306293835.3358.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add some extra sanity checks of the inode and directory structures.
+In the case of goto err_kzalloc, we should kfree target.
 
-Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- fs/squashfs/super.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+ drivers/misc/spear13xx_pcie_gadget.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
-index efa8118..984d6c8 100644
---- a/fs/squashfs/super.c
-+++ b/fs/squashfs/super.c
-@@ -268,7 +268,7 @@ allocate_id_index_table:
- handle_fragments:
- 	fragments = le32_to_cpu(sblk->fragments);
- 	if (fragments == 0)
--		goto allocate_root;
-+		goto check_directory_table;
- 
- 	msblk->fragment_cache = squashfs_cache_init("fragment",
- 		SQUASHFS_CACHED_FRAGMENTS, msblk->block_size);
-@@ -286,8 +286,22 @@ handle_fragments:
- 		msblk->fragment_index = NULL;
- 		goto failed_mount;
- 	}
-+	next_table = msblk->fragment_index[0];
- 
--allocate_root:
-+check_directory_table:
-+	/* Sanity check directory_table */
-+	if (msblk->directory_table >= next_table) {
-+		err = -EINVAL;
-+		goto failed_mount;
-+	}
-+
-+	/* Sanity check inode_table */
-+	if (msblk->inode_table >= msblk->directory_table) {
-+		err = -EINVAL;
-+		goto failed_mount;
-+	}
-+
-+	/* allocate root */
- 	root = new_inode(sb);
- 	if (!root) {
- 		err = -ENOMEM;
+diff --git a/drivers/misc/spear13xx_pcie_gadget.c b/drivers/misc/spear13xx_pcie_gadget.c
+index 7aded90..cfbddbe 100644
+--- a/drivers/misc/spear13xx_pcie_gadget.c
++++ b/drivers/misc/spear13xx_pcie_gadget.c
+@@ -845,7 +845,7 @@ err_iounmap:
+ err_iounmap_app:
+ 	iounmap(config->va_app_base);
+ err_kzalloc:
+-	kfree(config);
++	kfree(target);
+ err_rel_res:
+ 	release_mem_region(res1->start, resource_size(res1));
+ err_rel_res0:
 -- 
 1.7.1
+
+
 
