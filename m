@@ -1,309 +1,490 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab1EYKly (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 06:41:54 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:3531 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751392Ab1EYKlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 06:41:51 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-From: "Arend van Spriel" <arend@broadcom.com>
-To: "Andrew Morton" <akpm@linux-foundation.org>
-cc: "Arend van Spriel" <arend@broadcom.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Dan Carpenter" <error27@gmail.com>,
-        "George Spelvin" <linux@horizon.com>
-Subject: [RFC V4] lib: crc8: add new library module providing crc8
- algorithm
-Date: Wed, 25 May 2011 12:41:39 +0200
-Message-ID: <1306320099-17970-1-git-send-email-arend@broadcom.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754194Ab1EYKsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 06:48:21 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47501 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab1EYKsM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 06:48:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IDEjmPphae0qbYN8FmBYxCE9uxC+Vb4AfbVSH3islal6NqQkRjAElTBMU5IxfZVz0S
+         foA3/rbMVgNoynz9jC8AUKpPLDrSdVudCTfyUx5sZDkFxAaHVjIMuCYf5aMJLdPMQhxP
+         ADkhZ5yWG/rJAuhvJOiLW6Sn0rgOCDt306Uto=
+Date: Wed, 25 May 2011 18:47:50 +0800
+From: Richard Zhao <linuxzsc@gmail.com>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/4] clk: Add a generic clock infrastructure
+Message-ID: <20110525104750.GA3959@richard-laptop>
+References: <1305876469.325655.313573683829.0.gpush@pororo>
+ <1305876469.326305.518470530485.1.gpush@pororo>
 MIME-Version: 1.0
-X-WSS-ID: 61C2024C4NS11783332-01-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305876469.326305.518470530485.1.gpush@pororo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-!!REMARK!!:
-	Which tree maintainer is willing to take this patch when ready?
-	As it is mainly used in (wireless) networking protocols propose
-	either wireless-next or net-next maintainers.
+On Fri, May 20, 2011 at 03:27:49PM +0800, Jeremy Kerr wrote:
+> We currently have ~21 definitions of struct clk in the ARM architecture,
+> each defined on a per-platform basis. This makes it difficult to define
+> platform- (or architecture-) independent clock sources without making
+> assumptions about struct clk, and impossible to compile two
+> platforms with different struct clks into a single image.
+> 
+> This change is an effort to unify struct clk where possible, by defining
+> a common struct clk, and a set of clock operations. Different clock
+> implementations can set their own operations, and have a standard
+> interface for generic code. The callback interface is exposed to the
+> kernel proper, while the clock implementations only need to be seen by
+> the platform internals.
+> 
+> The interface is split into two halves:
+> 
+>  * struct clk, which is the generic-device-driver interface. This
+>    provides a set of functions which drivers may use to request
+>    enable/disable, query or manipulate in a hardware-independent manner.
+> 
+>  * struct clk_hw and struct clk_hw_ops, which is the hardware-specific
+>    interface. Clock drivers implement the ops, which allow the core
+>    clock code to implement the generic 'struct clk' API.
+> 
+> This allows us to share clock code among platforms, and makes it
+> possible to dynamically create clock devices in platform-independent
+> code.
+> 
+> Platforms can enable the generic struct clock through
+> CONFIG_GENERIC_CLK. In this case, the clock infrastructure consists of a
+> common, opaque struct clk, and a set of clock operations (defined per
+> type of clock):
+> 
+>   struct clk_hw_ops {
+>   	int		(*prepare)(struct clk_hw *);
+>   	void		(*unprepare)(struct clk_hw *);
+>   	int		(*enable)(struct clk_hw *);
+>   	void		(*disable)(struct clk_hw *);
+>   	unsigned long	(*recalc_rate)(struct clk_hw *);
+why not pass down parent rate?
+>   	int		(*set_rate)(struct clk_hw *,
+>   					unsigned long, unsigned long *);
+>   	long		(*round_rate)(struct clk_hw *, unsigned long);
+ditto
+>   	int		(*set_parent)(struct clk_hw *, struct clk *);
+>   	struct clk *	(*get_parent)(struct clk_hw *);
+>   };
+> 
+[...]
 
-The brcm80211 driver in staging tree uses a crc8 function. Based on
-feedback from John Linville to move this to lib directory, the linux
-source has been searched. Although there is currently only one other
-kernel driver using this algorithm (ie. drivers/ssb) we are providing
-this as a library function for others to use.
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> new file mode 100644
+> index 0000000..ad90a90
+> --- /dev/null
+> +++ b/drivers/clk/clk.c
+> @@ -0,0 +1,229 @@
+> +/*
+> + * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * Standard functionality for the common clock API.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/module.h>
+> +#include <linux/mutex.h>
+> +#include <linux/slab.h>
+> +#include <linux/spinlock.h>
+> +
+> +struct clk {
+> +	const char		*name;
+> +	struct clk_hw_ops	*ops;
+> +	struct clk_hw		*hw;
+If we don't let it void *, why not put clk_hw_ops into clk_hw too? It'll be
+more easy to define static clocks.
+> +	unsigned int		enable_count;
+> +	unsigned int		prepare_count;
+> +	struct clk		*parent;
+> +	unsigned long		rate;
+> +};
+> +
+> +static DEFINE_SPINLOCK(enable_lock);
+> +static DEFINE_MUTEX(prepare_lock);
+> +
+> +static void __clk_unprepare(struct clk *clk)
+> +{
+> +	if (!clk)
+> +		return;
+> +
+> +	if (WARN_ON(clk->prepare_count == 0))
+> +		return;
+> +
+> +	if (--clk->prepare_count > 0)
+> +		return;
+> +
+> +	WARN_ON(clk->enable_count > 0);
+> +
+> +	if (clk->ops->unprepare)
+> +		clk->ops->unprepare(clk->hw);
+> +
+> +	__clk_unprepare(clk->parent);
+> +}
+> +
+> +void clk_unprepare(struct clk *clk)
+> +{
+> +	mutex_lock(&prepare_lock);
+> +	__clk_unprepare(clk);
+> +	mutex_unlock(&prepare_lock);
+> +}
+> +EXPORT_SYMBOL_GPL(clk_unprepare);
+> +
+> +static int __clk_prepare(struct clk *clk)
+> +{
+> +	int ret = 0;
+> +
+> +	if (!clk)
+> +		return 0;
+> +
+> +	if (clk->prepare_count == 0) {
+> +		ret = __clk_prepare(clk->parent);
+> +		if (ret)
+> +			return ret;
+> +
+> +		if (clk->ops->prepare) {
+> +			ret = clk->ops->prepare(clk->hw);
+> +			if (ret) {
+> +				__clk_unprepare(clk->parent);
+> +				return ret;
+> +			}
+> +		}
+> +	}
+> +
+> +	clk->prepare_count++;
+> +
+> +	return 0;
+> +}
+> +
+> +int clk_prepare(struct clk *clk)
+> +{
+> +	int ret;
+> +
+> +	mutex_lock(&prepare_lock);
+> +	ret = __clk_prepare(clk);
+> +	mutex_unlock(&prepare_lock);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_prepare);
+> +
+> +static void __clk_disable(struct clk *clk)
+> +{
+> +	if (!clk)
+> +		return;
+> +
+> +	if (WARN_ON(clk->enable_count == 0))
+> +		return;
+> +
+> +	if (--clk->enable_count > 0)
+> +		return;
+> +
+> +	if (clk->ops->disable)
+> +		clk->ops->disable(clk->hw);
+> +	__clk_disable(clk->parent);
+> +}
+> +
+> +void clk_disable(struct clk *clk)
+> +{
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&enable_lock, flags);
+> +	__clk_disable(clk);
+> +	spin_unlock_irqrestore(&enable_lock, flags);
+> +}
+> +EXPORT_SYMBOL_GPL(clk_disable);
+> +
+> +static int __clk_enable(struct clk *clk)
+> +{
+> +	int ret;
+> +
+> +	if (!clk)
+> +		return 0;
+> +
+> +	if (WARN_ON(clk->prepare_count == 0))
+> +		return -ESHUTDOWN;
+> +
+> +
+> +	if (clk->enable_count == 0) {
+> +		ret = __clk_enable(clk->parent);
+> +		if (ret)
+> +			return ret;
+> +
+> +		if (clk->ops->enable) {
+> +			ret = clk->ops->enable(clk->hw);
+> +			if (ret) {
+> +				__clk_disable(clk->parent);
+> +				return ret;
+> +			}
+> +		}
+> +	}
+> +
+> +	clk->enable_count++;
+> +	return 0;
+> +}
+> +
+> +int clk_enable(struct clk *clk)
+> +{
+> +	unsigned long flags;
+> +	int ret;
+> +
+> +	spin_lock_irqsave(&enable_lock, flags);
+> +	ret = __clk_enable(clk);
+> +	spin_unlock_irqrestore(&enable_lock, flags);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_enable);
+> +
+> +unsigned long clk_get_rate(struct clk *clk)
+> +{
+> +	if (!clk)
+> +		return 0;
+> +	return clk->rate;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_get_rate);
+> +
+> +long clk_round_rate(struct clk *clk, unsigned long rate)
+> +{
+> +	if (clk && clk->ops->round_rate)
+> +		return clk->ops->round_rate(clk->hw, rate);
+pass parent rate? IMHO, common code can handle parent as much as possible.
+> +	return rate;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_round_rate);
+> +
+> +int clk_set_rate(struct clk *clk, unsigned long rate)
+> +{
+> +	/* not yet implemented */
+> +	return -ENOSYS;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_set_rate);
+> +
+> +struct clk *clk_get_parent(struct clk *clk)
+> +{
+> +	if (!clk)
+> +		return NULL;
+> +
+> +	return clk->parent;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_get_parent);
+> +
+> +int clk_set_parent(struct clk *clk, struct clk *parent)
+> +{
+> +	/* not yet implemented */
+> +	return -ENOSYS;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_set_parent);
+> +
+> +struct clk *clk_register(struct clk_hw_ops *ops, struct clk_hw *hw,
+> +		const char *name)
+> +{
+> +	struct clk *clk;
+> +
+> +	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
+> +	if (!clk)
+> +		return NULL;
+> +
+> +	clk->name = name;
+> +	clk->ops = ops;
+> +	clk->hw = hw;
+> +	hw->clk = clk;
+> +
+> +	/* Query the hardware for parent and initial rate */
+> +
+> +	if (clk->ops->get_parent)
+> +		/* We don't to lock against prepare/enable here, as
+> +		 * the clock is not yet accessible from anywhere */
+> +		clk->parent = clk->ops->get_parent(clk->hw);
+> +
+> +	if (clk->ops->recalc_rate)
+> +		clk->rate = clk->ops->recalc_rate(clk->hw);
+ditto
 
-V1:
-- functionality taken from brcm80211 utility function as is.
-- documented the crc8 header file using kernel-doc syntax.
-- compilation verified in-kernel and as module for x86, x86_64, arm, and mips.
-
-V2:
-- ran checkpatch after sending V1 (sorry for that mortal sin) so fixed that.
-
-V3:
-- added function crc8_create().
-- crc8_create() takes polynomial and bit direction as parameters.
-
-V4:
-- exported bit direction specific functions for crc table creation.
-- remove bit direction enumeration as it is no longer needed.
-- change function signatures to reflect expected table size.
-- used size_t for buffer length parameter in crc8() function.
-
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Dan Carpenter <error27@gmail.com>
-Cc: George Spelvin <linux@horizon.com>
-Reviewed-by: Henry Ptasinski <henryp@broadcom.com>
-Reviewed-by: Roland Vossen <rvossen@broadcom.com>
-Reviewed-by: "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
----
- include/linux/crc8.h |  101 ++++++++++++++++++++++++++++++++++++++++++++++++++
- lib/Kconfig          |    7 +++
- lib/Makefile         |    1 +
- lib/crc8.c           |   84 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 193 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/crc8.h
- create mode 100644 lib/crc8.c
-
-diff --git a/include/linux/crc8.h b/include/linux/crc8.h
-new file mode 100644
-index 0000000..13c8dab
---- /dev/null
-+++ b/include/linux/crc8.h
-@@ -0,0 +1,101 @@
-+/*
-+ * Copyright (c) 2011 Broadcom Corporation
-+ *
-+ * Permission to use, copy, modify, and/or distribute this software for any
-+ * purpose with or without fee is hereby granted, provided that the above
-+ * copyright notice and this permission notice appear in all copies.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-+ * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-+ * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-+ */
-+#ifndef __CRC8_H_
-+#define __CRC8_H_
-+
-+#include <linux/types.h>
-+
-+/* see usage of this value in crc8() description */
-+#define CRC8_INIT_VALUE		0xFF
-+
-+/*
-+ * Return value of crc8() indicating valid message+crc. This is true
-+ * if a CRC is inverted before transmission. The CRC computed over the
-+ * whole received bitstream is _table[x], where x is the bit pattern
-+ * of the modification (almost always 0xff).
-+ */
-+#define CRC8_GOOD_VALUE(_table)	(_table[0xFF])
-+
-+/* required table size for crc8 algorithm */
-+#define CRC8_TABLE_SIZE			256
-+
-+/* helper macro assuring right table size is used */
-+#define DECLARE_CRC8_TABLE(_table) \
-+	static u8 _table[CRC8_TABLE_SIZE]
-+
-+/**
-+ * crc8_populate_lsb - fill crc table for given polynomial in regular bit order.
-+ *
-+ * @table:	table to be filled.
-+ * @polynomial:	polynomial for which table is to be filled.
-+ *
-+ * This function fills the provided table according the polynomial provided for
-+ * regular bit order (lsb first). Polynomials in CRC algorithms are typically
-+ * represented as shown below.
-+ *
-+ *	poly = x^8 + x^7 + x^6 + x^4 + x^2 + 1
-+ *
-+ * For lsb first direction x^7 maps to the lsb. So the polynomial is as below.
-+ *
-+ * - lsb first: poly = 10101011(1) = 0xAB
-+ */
-+void crc8_populate_lsb(u8 table[CRC8_TABLE_SIZE], u8 polynomial);
-+
-+/**
-+ * crc8_populate_msb - fill crc table for given polynomial in reverse bit order.
-+ *
-+ * @table:	table to be filled.
-+ * @polynomial:	polynomial for which table is to be filled.
-+ *
-+ * This function fills the provided table according the polynomial provided for
-+ * reverse bit order (msb first). Polynomials in CRC algorithms are typically
-+ * represented as shown below.
-+ *
-+ *	poly = x^8 + x^7 + x^6 + x^4 + x^2 + 1
-+ *
-+ * For msb first direction x^7 maps to the msb. So the polynomial is as below.
-+ *
-+ * - msb first: poly = (1)11010101 = 0xD5
-+ */
-+void crc8_populate_msb(u8 table[CRC8_TABLE_SIZE], u8 polynomial);
-+
-+/**
-+ * crc8() - calculate a crc8 over the given input data.
-+ *
-+ * @table:	crc table used for calculation.
-+ * @pdata:	pointer to data buffer.
-+ * @nbytes:	number of bytes in data buffer.
-+ * @crc:	previous returned crc8 value.
-+ *
-+ * The CRC8 is calculated using the polynomial given in crc8_populate_msb()
-+ * or crc8_populate_lsb().
-+ *
-+ * The caller provides the initial value (either %CRC8_INIT_VALUE
-+ * or the previous returned value) to allow for processing of
-+ * discontiguous blocks of data.  When generating the CRC the
-+ * caller is responsible for complementing the final return value
-+ * and inserting it into the byte stream.  When validating a byte
-+ * stream (including CRC8), a final return value of %CRC8_GOOD_VALUE
-+ * indicates the byte stream data can be considered valid.
-+ *
-+ * Reference:
-+ * "A Painless Guide to CRC Error Detection Algorithms", ver 3, Aug 1993
-+ * Williams, Ross N., ross<at>ross.net
-+ * (see URL http://www.ross.net/crc/download/crc_v3.txt).
-+ */
-+u8 crc8(const u8 table[CRC8_TABLE_SIZE], u8 *pdata, size_t nbytes, u8 crc);
-+
-+#endif /* __CRC8_H_ */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 9c10e38..ff9e5a3 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -89,6 +89,13 @@ config LIBCRC32C
- 	  require M here.  See Castagnoli93.
- 	  Module will be libcrc32c.
- 
-+config CRC8
-+	tristate "CRC8 function"
-+	help
-+	  This option provides CRC8 function. Drivers may select this
-+	  when they need to do cyclic redundancy check according CRC8
-+	  algorithm. Module will be called crc8.
-+
- config AUDIT_GENERIC
- 	bool
- 	depends on AUDIT && !AUDIT_ARCH
-diff --git a/lib/Makefile b/lib/Makefile
-index 4b49a24..704959d 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -65,6 +65,7 @@ obj-$(CONFIG_CRC_ITU_T)	+= crc-itu-t.o
- obj-$(CONFIG_CRC32)	+= crc32.o
- obj-$(CONFIG_CRC7)	+= crc7.o
- obj-$(CONFIG_LIBCRC32C)	+= libcrc32c.o
-+obj-$(CONFIG_CRC8)	+= crc8.o
- obj-$(CONFIG_GENERIC_ALLOCATOR) += genalloc.o
- 
- obj-$(CONFIG_ZLIB_INFLATE) += zlib_inflate/
-diff --git a/lib/crc8.c b/lib/crc8.c
-new file mode 100644
-index 0000000..0ce4238
---- /dev/null
-+++ b/lib/crc8.c
-@@ -0,0 +1,84 @@
-+/*
-+ * Copyright (c) 2011 Broadcom Corporation
-+ *
-+ * Permission to use, copy, modify, and/or distribute this software for any
-+ * purpose with or without fee is hereby granted, provided that the above
-+ * copyright notice and this permission notice appear in all copies.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-+ * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-+ * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-+ */
-+#define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
-+#include <linux/module.h>
-+#include <linux/crc8.h>
-+#include <linux/printk.h>
-+
-+/*
-+ * crc8_populate_msb - fill crc table for given polynomial in reverse bit order.
-+ *
-+ * table:	table to be filled.
-+ * polynomial:	polynomial for which table is to be filled.
-+ */
-+void crc8_populate_msb(u8 table[CRC8_TABLE_SIZE], u8 polynomial)
-+{
-+	int i, j;
-+	const u8 msbit = 0x80;
-+	u8 t = msbit;
-+
-+	table[0] = 0;
-+
-+	for (i = 1; i < CRC8_TABLE_SIZE; i *= 2) {
-+		t = (t << 1) ^ (t & msbit ? polynomial : 0);
-+		for (j = 0; j < i; j++)
-+			table[i+j] = table[j] ^ t;
-+	}
-+}
-+EXPORT_SYMBOL(crc8_populate_msb);
-+
-+/*
-+ * crc8_populate_lsb - fill crc table for given polynomial in regular bit order.
-+ *
-+ * table:	table to be filled.
-+ * polynomial:	polynomial for which table is to be filled.
-+ */
-+void crc8_populate_lsb(u8 table[CRC8_TABLE_SIZE], u8 polynomial)
-+{
-+	int i, j;
-+	u8 t = 1;
-+
-+	table[0] = 0;
-+
-+	for (i = (CRC8_TABLE_SIZE >> 1); i; i >>= 1) {
-+		t = (t >> 1) ^ (t & 1 ? polynomial : 0);
-+		for (j = 0; j < CRC8_TABLE_SIZE; j += 2*i)
-+			table[i+j] = table[j] ^ t;
-+	}
-+}
-+EXPORT_SYMBOL(crc8_populate_lsb);
-+
-+/*
-+ * crc8 - calculate a crc8 over the given input data.
-+ *
-+ * table: crc table used for calculation.
-+ * pdata: pointer to data buffer.
-+ * nbytes: number of bytes in data buffer.
-+ * crc:	previous returned crc8 value.
-+ */
-+u8 crc8(const u8 table[CRC8_TABLE_SIZE], u8 *pdata, size_t nbytes, u8 crc)
-+{
-+	/* loop over the buffer data */
-+	while (nbytes-- > 0)
-+		crc = table[(crc ^ *pdata++) & 0xff];
-+
-+	return crc;
-+}
-+EXPORT_SYMBOL(crc8);
-+
-+MODULE_DESCRIPTION("CRC8 (by Williams, Ross N.) function");
-+MODULE_AUTHOR("Broadcom Corporation");
-+MODULE_LICENSE("Dual BSD/GPL");
--- 
-1.7.4.1
-
-
+Thanks
+Richard
+> +
+> +
+> +	return clk;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_register);
+> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+> index 6db161f..e2a9719 100644
+> --- a/drivers/clk/clkdev.c
+> +++ b/drivers/clk/clkdev.c
+> @@ -23,6 +23,13 @@
+>  static LIST_HEAD(clocks);
+>  static DEFINE_MUTEX(clocks_mutex);
+>  
+> +/* For USE_COMMON_STRUCT_CLK, these are provided in clk.c, but not exported
+> + * through other headers; we don't want them used anywhere but here. */
+> +#ifdef CONFIG_USE_COMMON_STRUCT_CLK
+> +extern int __clk_get(struct clk *clk);
+> +extern void __clk_put(struct clk *clk);
+> +#endif
+> +
+>  /*
+>   * Find the correct struct clk for the device and connection ID.
+>   * We do slightly fuzzy matching here:
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index 1d37f42..93ff870 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -3,6 +3,7 @@
+>   *
+>   *  Copyright (C) 2004 ARM Limited.
+>   *  Written by Deep Blue Solutions Limited.
+> + *  Copyright (c) 2010-2011 Jeremy Kerr <jeremy.kerr@canonical.com>
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+> @@ -11,17 +12,103 @@
+>  #ifndef __LINUX_CLK_H
+>  #define __LINUX_CLK_H
+>  
+> +#include <linux/err.h>
+> +#include <linux/spinlock.h>
+> +
+>  struct device;
+>  
+> -/*
+> - * The base API.
+> +struct clk;
+> +
+> +#ifdef CONFIG_GENERIC_CLK
+> +
+> +struct clk_hw {
+> +	struct clk *clk;
+> +};
+> +
+> +/**
+> + * struct clk_hw_ops -  Callback operations for hardware clocks; these are to
+> + * be provided by the clock implementation, and will be called by drivers
+> + * through the clk_* API.
+> + *
+> + * @prepare:	Prepare the clock for enabling. This must not return until
+> + *		the clock is fully prepared, and it's safe to call clk_enable.
+> + *		This callback is intended to allow clock implementations to
+> + *		do any initialisation that may sleep. Called with
+> + *		prepare_lock held.
+> + *
+> + * @unprepare:	Release the clock from its prepared state. This will typically
+> + *		undo any work done in the @prepare callback. Called with
+> + *		prepare_lock held.
+> + *
+> + * @enable:	Enable the clock atomically. This must not return until the
+> + *		clock is generating a valid clock signal, usable by consumer
+> + *		devices. Called with enable_lock held. This function must not
+> + *		sleep.
+> + *
+> + * @disable:	Disable the clock atomically. Called with enable_lock held.
+> + *		This function must not sleep.
+> + *
+> + * @recalc_rate	Recalculate the rate of this clock, by quering hardware
+> + *		and/or the clock's parent. Called with the global clock mutex
+> + *		held. Optional, but recommended - if this op is not set,
+> + *		clk_get_rate will return 0.
+> + *
+> + * @get_parent	Query the parent of this clock; for clocks with multiple
+> + *		possible parents, query the hardware for the current
+> + *		parent. Currently only called when the clock is first
+> + *		registered.
+> + *
+> + * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
+> + * implementations to split any work between atomic (enable) and sleepable
+> + * (prepare) contexts.  If a clock requires sleeping code to be turned on, this
+> + * should be done in clk_prepare. Switching that will not sleep should be done
+> + * in clk_enable.
+> + *
+> + * Typically, drivers will call clk_prepare when a clock may be needed later
+> + * (eg. when a device is opened), and clk_enable when the clock is actually
+> + * required (eg. from an interrupt). Note that clk_prepare *must* have been
+> + * called before clk_enable.
+> + */
+> +struct clk_hw_ops {
+> +	int		(*prepare)(struct clk_hw *);
+> +	void		(*unprepare)(struct clk_hw *);
+> +	int		(*enable)(struct clk_hw *);
+> +	void		(*disable)(struct clk_hw *);
+> +	unsigned long	(*recalc_rate)(struct clk_hw *);
+> +	long		(*round_rate)(struct clk_hw *, unsigned long);
+> +	struct clk *	(*get_parent)(struct clk_hw *);
+> +};
+> +
+> +/**
+> + * clk_prepare - prepare clock for atomic enabling.
+> + *
+> + * @clk: The clock to prepare
+> + *
+> + * Do any possibly sleeping initialisation on @clk, allowing the clock to be
+> + * later enabled atomically (via clk_enable). This function may sleep.
+>   */
+> +int clk_prepare(struct clk *clk);
+>  
+> +/**
+> + * clk_unprepare - release clock from prepared state
+> + *
+> + * @clk: The clock to release
+> + *
+> + * Do any (possibly sleeping) cleanup on clk. This function may sleep.
+> + */
+> +void clk_unprepare(struct clk *clk);
+> +
+> +#else /* !CONFIG_GENERIC_CLK */
+>  
+>  /*
+> - * struct clk - an machine class defined object / cookie.
+> + * For !CONFIG_GENERIC_CLK, we don't enforce any atomicity
+> + * requirements for clk_enable/clk_disable, so the prepare and unprepare
+> + * functions are no-ops
+>   */
+> -struct clk;
+> +static inline int clk_prepare(struct clk *clk) { return 0; }
+> +static inline void clk_unprepare(struct clk *clk) { }
+> +
+> +#endif /* !CONFIG_GENERIC_CLK */
+>  
+>  /**
+>   * clk_get - lookup and obtain a reference to a clock producer.
+> @@ -67,6 +154,7 @@ void clk_disable(struct clk *clk);
+>  /**
+>   * clk_get_rate - obtain the current clock rate (in Hz) for a clock source.
+>   *		  This is only valid once the clock source has been enabled.
+> + *		  Returns zero if the clock rate is unknown.
+>   * @clk: clock source
+>   */
+>  unsigned long clk_get_rate(struct clk *clk);
+> @@ -83,12 +171,6 @@ unsigned long clk_get_rate(struct clk *clk);
+>   */
+>  void clk_put(struct clk *clk);
+>  
+> -
+> -/*
+> - * The remaining APIs are optional for machine class support.
+> - */
+> -
+> -
+>  /**
+>   * clk_round_rate - adjust a rate to the exact rate a clock can provide
+>   * @clk: clock source
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
