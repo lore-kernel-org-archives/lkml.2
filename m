@@ -1,149 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052Ab1EYXqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 19:46:55 -0400
-Received: from mga03.intel.com ([143.182.124.21]:40668 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753075Ab1EYXqx convert rfc822-to-8bit (ORCPT
+	id S1757101Ab1EYXrY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 19:47:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51856 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840Ab1EYXrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 19:46:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,270,1304319600"; 
-   d="scan'208";a="1826544"
-From: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-net@vger.kernel.org" <linux-net@vger.kernel.org>
-Date: Wed, 25 May 2011 16:46:44 -0700
-Subject: RE: [E1000-devel] 2.6.39: kernel igb and e1000e-1.3.17 driver
-	broken?
-Thread-Topic: [E1000-devel] 2.6.39: kernel igb and e1000e-1.3.17 driver
-	broken?
-Thread-Index: AcwbNcvTXdX7cvx8SByeOT+a3yAIkwAABy/Q
-Message-ID: <EDC0E76513226749BFBC9C3FB031318F016C14D36B@orsmsx508.amr.corp.intel.com>
-References: <alpine.DEB.2.02.1105251926070.9120@p34.internal.lan>
- <alpine.DEB.2.02.1105251941550.9120@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.02.1105251941550.9120@p34.internal.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 25 May 2011 19:47:23 -0400
+X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=oOzZnGprw0sA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=xor9eh15-SmmYCskkikA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH] ftrace: Add internal recursive checks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1306366886.1465.124.camel@gandalf.stny.rr.com>
+References: <1306348063.1465.116.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.02.1105252054270.3078@ionos>
+	 <1306355009.1465.119.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.02.1105260050250.3078@ionos>
+	 <1306366886.1465.124.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 25 May 2011 19:47:21 -0400
+Message-ID: <1306367241.1465.127.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-05-25 at 19:41 -0400, Steven Rostedt wrote:
+> On Thu, 2011-05-26 at 00:54 +0200, Thomas Gleixner wrote:
+> > On Wed, 25 May 2011, Steven Rostedt wrote:
 
+> > Errm, what means _MAY_? There are no users outside of kernel/trace/
+> > for this right now. Are you saying that you forgot to update some code
+> > or is this about random out of tree users?
+> 
+> Actually, I was thinking about perf, not some random out of tree user.
+> But if this is needed, I hate to have to move the code then. It's not
+> like it's modifying some internal to ftrace variable. It is modifying a
+> variable in the task_struct. If there are other users that need it. Why
+> not expose it in a core header? And it's not like ftrace.h is a bad
+> location for this. ftrace.h is in fact made for function tracing.
 
->-----Original Message-----
->From: Justin Piszcz [mailto:jpiszcz@lucidpixels.com]
->Sent: Wednesday, May 25, 2011 4:43 PM
->To: linux-kernel@vger.kernel.org
->Cc: e1000-devel@lists.sourceforge.net; linux-net@vger.kernel.org
->Subject: Re: [E1000-devel] 2.6.39: kernel igb and e1000e-1.3.17 driver
->broken?
->
->
->On Wed, 25 May 2011, Justin Piszcz wrote:
->
->> Hello,
->>
->> I recently bought a 4-port Intel NIC (82580)
->>
->> 03:00.0 Ethernet controller: Intel Corporation 82580 Gigabit Network
->> Connection (rev 01)
->> 03:00.1 Ethernet controller: Intel Corporation 82580 Gigabit Network
->> Connection (rev 01)
->> 03:00.2 Ethernet controller: Intel Corporation 82580 Gigabit Network
->> Connection (rev 01)
->> 03:00.3 Ethernet controller: Intel Corporation 82580 Gigabit Network
->> Connection (rev 01)
->>
->> Model name: Intel I340 Server Adapter
->>
->> Which uses this driver:
->> | |    <M>   Intel(R) 82575/82576 PCI-Express Gigabit Ethernet support
->| |
->> | |    [ ]     Direct Cache Access (DCA) Support
->| |
->>
->> I have tried with and without the DCA support.
->>
->> Out of the four ports in the back, only two work, why is this?
->>
->> [ CARD ]
->> 1 2 3 4
->>  X X
->>
->> Where X = working.
->>
->> I've tried the built-in kernel driver from 2.6.39 as well as the
->latest
->> e1000e driver from sf.net (1.3.17), any thoughts?
->>
->> eth0: negotiated 1000baseT-FD flow-control, link ok <- onboard
->> eth1: negotiated 100baseTx-FD, link ok              <- middle port 1
->> eth2: negotiated 1000baseT-FD flow-control, link ok <- middle port 2
->> eth3: no link                                       <- left most port
->> (plugged in)
->> eth4: no link                                       <- right most port
->> (plugged in)
->>
->> The last two parts of each mac addr:
->>
->> eth1      Link encap:Ethernet  HWaddr XX:XX:XX:XX:3b:f9  WORKING
->> eth2      Link encap:Ethernet  HWaddr XX:XX:XX:XX:3b:fa  WORKING
->> eth3      Link encap:Ethernet  HWaddr XX:XX:XX:XX:3b:f8  no link
->> eth4      Link encap:Ethernet  HWaddr XX:XX:XX:XX:3b:fb  no link
->>
->> Thoughts?
->>
->> Justin.
->>
->
->Whoa,
->
->Sent this out too early =)
->My mistake, configuration error on user end :)
->Problem was interfaces were not initialized properly (not UP).
->Please disregard, sorry for the noise!
->
->eth1: negotiated 100baseTx-FD, link ok
->eth2: negotiated 1000baseT-FD flow-control, link ok
->eth3: negotiated 1000baseT-FD flow-control, link ok
->eth4: negotiated 1000baseT-FD flow-control, link ok
->
->Justin.
->
->
->------------------------------------------------------------------------
->------
->vRanger cuts backup time in half-while increasing security.
->With the market-leading solution for virtual backup and recovery,
->you get blazing-fast, flexible, and affordable data protection.
->Download your free trial now.
->http://p.sf.net/sfu/quest-d2dcopy1
->_______________________________________________
->E1000-devel mailing list
->E1000-devel@lists.sourceforge.net
->https://lists.sourceforge.net/lists/listinfo/e1000-devel
->To learn more about Intel&#174; Ethernet, visit
->http://communities.intel.com/community/wired
+Thinking about this a little more. I think I will put this in
+kernel/trace/trace.h. Not for the reasons you give, but because the next
+change in this area (for the next merge window) I want to have mcount do
+the work, and then we only need one recursive bit set, and it will
+handle function recursion by all users, and then we don't need to worry
+about recursions due to the function tracer anymore :)
 
-No problem Justin, let us know if you still find a problem.
-
-Thanks,
-
-Carolyn
-
-Carolyn Wyborny
-Linux Development
-LAN Access Division
-Intel Corporation
+-- Steve
 
 
