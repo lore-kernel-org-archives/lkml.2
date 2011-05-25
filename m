@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab1EYU3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 16:29:54 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56484 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754628Ab1EYU3v (ORCPT
+	id S932393Ab1EYUbe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 16:31:34 -0400
+Received: from outmail010.snc4.facebook.com ([66.220.144.142]:41830 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932343Ab1EYUbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 16:29:51 -0400
-Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
- __elv_add_request OOPS]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.02.1105251622040.8972@ubuntu-natty>
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar>
-	 <4DDB8BF6.2000304@fusionio.com>
-	 <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty>
-	 <4DDCB1C8.7040708@fusionio.com>
-	 <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty>
-	 <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
-	 <4DDD5240.2060308@fusionio.com>
-	 <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>
-	 <4DDD55D6.1080909@fusionio.com>
-	 <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty>
-	 <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com>
-	 <1306354818.1641.55.camel@mulgrave.site>
-	 <alpine.DEB.2.02.1105251622040.8972@ubuntu-natty>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 15:29:47 -0500
-Message-ID: <1306355387.1641.58.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 25 May 2011 16:31:32 -0400
+Date: Wed, 25 May 2011 13:31:30 -0700
+From: Arun Sharma <asharma@fb.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Arun Sharma <asharma@fb.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] kbuild: Integrate with new-kernel-pkg
+Message-ID: <20110525203130.GA29304@dev1756.snc6.facebook.com>
+References: <1305653779-3445-1-git-send-email-asharma@fb.com>
+ <4DD2D0B3.4070208@suse.cz>
+ <20110517204520.GA21201@dev1756.snc6.facebook.com>
+ <4DD2E9D9.7030207@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DD2E9D9.7030207@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 16:22 -0400, Parag Warudkar wrote:
+On Tue, May 17, 2011 at 11:34:17PM +0200, Michal Marek wrote:
 > 
-> On Wed, 25 May 2011, James Bottomley wrote:
-> 
-> > On Wed, 2011-05-25 at 13:03 -0700, Linus Torvalds wrote:
-> > > On Wed, May 25, 2011 at 12:52 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
-> > > >
-> > > > +static inline int sdev_early_check(struct scsi_device *sdev)
-> > > > +{
-> > > > +       if (!sdev || sdev->sdev_state == SDEV_DEL
-> > > > +               || sdev->sdev_state > SDEV_QUIESCE)
-> > > > +               return -ENXIO;
-> > > > +       return 0;
-> > > > +}
-> > > 
-> > > Can somebody explain why it's those states, and nothing else?
-> > 
-> > The states are definitely wrong.  QUIESCE shouldn't cause an error.
-> > 
-> QUIESCE is not causing an error above - > QUIESCE is which per the 
-> documentation is correct.
+> Or use /sbin/installkernel and let distros handle it.
 
-BLOCK means a similar thing.
+Updated distro specific patch (not expecting you to apply it).
+The earlier version was mixed up with kernel-devel patch.
 
-James
+ -Arun
 
+commit cb73fb35a588922344763c075b2fce159df41fc7
+Author: Arun Sharma <asharma@fb.com>
+Date:   Sun Mar 6 08:08:53 2011 -0800
 
+    kbuild: Integrate with new-kernel-pkg
+    
+    Handles mkinitrd, updating the bootloader among other things.
+    
+    Signed-off-by: Arun Sharma <asharma@fb.com>
+
+diff --git a/scripts/package/mkspec b/scripts/package/mkspec
+index ed8b6a8..f5f0cb5 100755
+--- a/scripts/package/mkspec
++++ b/scripts/package/mkspec
+@@ -40,6 +40,8 @@ echo "Source: kernel-$__KERNELRELEASE.tar.gz"
+ fi
+ 
+ echo "BuildRoot: %{_tmppath}/%{name}-%{PACKAGE_VERSION}-root"
++echo "Requires(post): /sbin/new-kernel-pkg"
++echo "Requires(preun): /sbin/new-kernel-pkg"
+ echo "Provides: $PROVIDES"
+ echo "%define __spec_install_post /usr/lib/rpm/brp-compress || :"
+ echo "%define debug_package %{nil}"
+@@ -95,6 +97,14 @@ echo 'mv vmlinux.orig vmlinux'
+ echo "%endif"
+ 
+ echo ""
++echo "%preun"
++echo '/sbin/new-kernel-pkg --rminitrd --rmmoddep --remove '"$KERNELRELEASE"' || exit $?'
++
++echo ""
++echo "%post"
++echo '/sbin/new-kernel-pkg --mkinitrd --depmod --install --make-default '"$KERNELRELEASE"' || exit $?'
++
++echo ""
+ echo "%clean"
+ echo 'rm -rf $RPM_BUILD_ROOT'
+ echo ""
