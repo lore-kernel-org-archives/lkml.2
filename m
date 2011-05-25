@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab1EYQNM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 12:13:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41735 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756044Ab1EYQNK (ORCPT
+	id S932113Ab1EYQPz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 12:15:55 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:52670 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757548Ab1EYQPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 12:13:10 -0400
-Date: Wed, 25 May 2011 09:12:52 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: liubo <liubo2009@cn.fujitsu.com>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH 1/2] tracing: add __print_symbolic_u64 to avoid warnings
- on 32bit machine
-Message-Id: <20110525091252.8899385e.randy.dunlap@oracle.com>
-In-Reply-To: <1306326464.1465.85.camel@gandalf.stny.rr.com>
-References: <4D9573DB.4010009@cn.fujitsu.com>
-	<1301665762.2160.22.camel@gandalf.stny.rr.com>
-	<4D9C2FF6.7090607@cn.fujitsu.com>
-	<1303150309.7181.51.camel@gandalf.stny.rr.com>
-	<4DACE6E0.7000507@cn.fujitsu.com>
-	<4DBA8C95.4000300@cn.fujitsu.com>
-	<1304264124.25414.1079.camel@gandalf.stny.rr.com>
-	<4DDDE9E6.7090303@cn.fujitsu.com>
-	<1306326464.1465.85.camel@gandalf.stny.rr.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Wed, 25 May 2011 12:15:53 -0400
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, davej@redhat.com,
+        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
+        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+In-Reply-To: <4DDD24E2.4010602@zytor.com>
+References: <1306269105.21443.20.camel@dan> <20110524211644.GJ27634@elte.hu>
+	 <4DDC39F1.2060903@zytor.com> <1306332225.2211.9.camel@dan>
+	 <4DDD24E2.4010602@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 May 2011 12:15:41 -0400
+Message-ID: <1306340141.2211.32.camel@dan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090203.4DDD2A91.016D:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011 08:27:44 -0400 Steven Rostedt wrote:
-
-> On Thu, 2011-05-26 at 01:49 -0400, liubo wrote:
-> > On 05/01/2011 11:35 AM, Steven Rostedt wrote:
-> > > On Fri, 2011-04-29 at 18:01 +0800, liubo wrote:
-> > >> ping?
-> > > 
-> > > Sorry, I've been trying to get the new ftrace function tracer features
-> > > out ASAP. I plan on looking at this when I'm done.
-> > > 
-> > > Thanks,
-> > > 
+On Wed, 2011-05-25 at 08:48 -0700, H. Peter Anvin wrote:
+> On 05/25/2011 07:03 AM, Dan Rosenberg wrote:
 > > 
-> > Hi, Steven,
+> > My current idea is to use int 0x15, eax = 0xe801 (which seems to be
+> > nearly universally supported) and use bx/dx to determine the amount of
+> > contiguous, usable memory above 16 MB, which seems to be exactly what we
+> > want to know.  If the BIOS does not support this function I'll be sure
+> > to catch that and skip the randomization.  Likewise, if the amount of
+> > returned memory seems insufficient or otherwise confusing, I'll skip the
+> > randomization.
 > > 
-> > I've seen your latest git-pull, but these 2 patches are not included yet,
-> > so is there any problem with them?
 > 
-> Actually, I was trying to get out what I had. There's a bit more patches
-> that I need to process still. This being one of them.
+> No, sorry.  This has been wrong for over 10 years; there is no
+> substitute for the full (e820) memory map.  *Furthermore*, based on
+> where in the bootup sequence you are doing this, you also have to
+> consider any other memory structures that the kernel needs to be aware
+> of (initramfs, any chunks in the linked list, the command line, EFI
+> handover structures, etc.)  This is in fact an arbitrarily complex
+> operation... we have *finally* gotten the kernel to the point where (a)
+> the boot loader can actually do the right thing in all cases and (b) the
+> kernel will reserve or copy all the auxiliary memory chunks it needs at
+> a very early point.
 > 
-> But what I sent out previously is not going into 2.6.40 anyway. Ingo
-> feels that it's too late in the merge window to pull those changes and
-> wants to wait till the next merge window. Since there's some fixes in
-> that pull request, I'll need to cherry pick them out and rebase the rest
-> for the next window.
+> Sorry, this cannot be short-circuited.
+> 
 
-Sorry to hear all of that.  This fix is needed in mainline.
+Ok, checking the e820 memory map seems like the way to go then.  As a
+first attempt, I'd assume that if I find a contiguous free chunk that
+begins before (or at) 16 MB and continues beyond 16 MB, then that
+represents space where it's safe to load the kernel (up to a certain
+point before the end of that chunk), assuming the chunk has enough space
+and I do some degree of checking that I'm not decompressing on top of
+something else (I'll start to gather a list of what to watch out for).
+Is this a fair assumption?
 
-> I'll look at this patch soon. It's still in my queue "todo" ;)
-> 
-> -- Steve
-> 
+> > Given this information, do you have a conservative guess for how close
+> > to the top of available memory we can put the kernel?  As in, let's say
+> > we have an XYZ MB chunk of contiguous, free memory, how should I
+> > calculate the highest, safe place to put the kernel in that region?
 > > 
-> > If it does, I can be helpful. :)
+> > I'm going to continue to enforce the requirement that 16 MB is the
+> > lowest address we can safely load the kernel, and I'd still appreciate
+> > any information on why 2/4 MB default alignment might cause problems.
+> 
+> The problem with all of that was backwards compatibility with existing
+> relocating bootloaders.
+> 
+
+Do you have any alternatives that allow maintaining compatibility while
+giving us finer-grained alignment?  It seems it should be possible,
+since alignment was lower than 16 MB for years before this change was
+introduced...
+
+Thanks,
+Dan
+
+> 	-hpa
+> 
+> -- 
+> H. Peter Anvin, Intel Open Source Technology Center
+> I work for Intel.  I don't speak on their behalf.
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
