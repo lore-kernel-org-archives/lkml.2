@@ -1,88 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758344Ab1EZSY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:24:27 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:42656 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758019Ab1EZSYZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:24:25 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Will Drewry <wad@chromium.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin Walters <walters@verbum.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
-In-Reply-To: Your message of "Thu, 26 May 2011 13:08:10 CDT."
-             <BANLkTimhcqSyQjwbXTn00Huu_5++3MczDw@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1305807728.11267.25.camel@gandalf.stny.rr.com> <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com> <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com> <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu> <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu> <alpine.LFD.2.02.1105251836030.3078@ionos> <20110525180100.GY19633@outflux.net> <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <20110525191152.GC19633@outflux.net> <BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com> <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com> <BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com> <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com> <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com> <BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com> <17077.1306431502@turing-police.cc.vt.edu>
-            <BANLkTimhcqSyQjwbXTn00Huu_5++3MczDw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1306434174_8338P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 26 May 2011 14:22:54 -0400
-Message-ID: <19490.1306434174@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020204.4DDE9A80.00C7,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S933218Ab1EZSXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:23:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15917 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755482Ab1EZSXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:23:33 -0400
+Date: Thu, 26 May 2011 14:23:21 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, jrbarnette@chromium.org,
+        Neil Brown <neilb@suse.de>, Jens Axboe <jaxboe@fusionio.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com
+Subject: Re: dm: pass up rotational flag
+Message-ID: <20110526182321.GA26219@redhat.com>
+References: <1306356648-30730-1-git-send-email-msb@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306356648-30730-1-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1306434174_8338P
-Content-Type: text/plain; charset=us-ascii
+On Wed, May 25 2011 at  4:50pm -0400,
+Mandeep Singh Baines <msb@chromium.org> wrote:
 
-On Thu, 26 May 2011 13:08:10 CDT, Will Drewry said:
+> Allow the NONROT flag to be passed through to linear mappings if all
+> underlying device are non-rotational. Tools like ureadahead will
+> schedule IOs differently based on the rotational flag.
+> 
+> With this patch, I see boot time go from 7.75 s to 7.46 s on my device.
+> 
+> Suggested-by: J. Richard Barnette <jrbarnette@chromium.org>
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: Mike Snitzer <snitzer@redhat.com>
+> Cc: Jens Axboe <jaxboe@fusionio.com>
+> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> Cc: Alasdair G Kergon <agk@redhat.com>
+> Cc: dm-devel@redhat.com
 
-> Depending on the need, there is work involved, and there are many ways
-> to determine your bounding box.  It can be very tight -- where you
-> analyze normal workloads (perf,strace,objdump) and accept the fact
-> that pathological workloads may result in process death -- or it can
-> be quite loose and enable most system calls, just not newer ones,
-> let's say.  In practice, you might get bit a few times if you're
-> overly zealous (I know I have), but it's the difference between
-> failing open and failing closed.  There are some scenarios where you
-> never, ever want to fail-open even at the cost of process death and
-> lack of solid insight into a valid failure path.
+Thanks for doing this, looks good in general.
 
-> Hope that makes sense and isn't too general,
+Just a few small nits:
+ - rename device_nonrot to device_is_nonrot
+ - rename dm_table_all_nonrot to dm_table_is_nonrot
+ - add missing whitespace in dm_table_set_restrictions
+ - move ti declaration outside of dm_table_is_nonrot's while loop
+ - dm doesn't use 'true' or 'false' bool returns even though we have
+   functions that return bool -- odd but best to keep consistent for now
 
-Oh, I already understood all that. :)   I'd have to double-check the actual
-patch, does it give a (hopefully rate-limited) printk or other hint which
-syscall caused the issue, to help in making up the list of needed syscalls?
+I'll respond with v2 that folds these changes in and my Signed-off-by
+---
+ drivers/md/dm-table.c |   18 ++++++++++--------
+ 1 files changed, 10 insertions(+), 8 deletions(-)
 
-And we probably want a cleaned-up copy of the quoted paragraph in the
-documentation for this feature when it hits the streets.  People tuning in late
-will need guidance on how to use this in their projects.
-
-
---==_Exmh_1306434174_8338P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFN3pp+cC3lWbTT17ARAqv7AKC/7Ty91KRh9UxgLpJLfaIp+P1EkwCgrXFh
-5u0++YZ1HsENpqPXUvGhUYQ=
-=tuk9
------END PGP SIGNATURE-----
-
---==_Exmh_1306434174_8338P--
-
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index 40c6071..a173828 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -1177,28 +1177,29 @@ static void dm_table_set_integrity(struct dm_table *t)
+ 			       blk_get_integrity(template_disk));
+ }
+ 
+-static int device_nonrot(struct dm_target *ti, struct dm_dev *dev,
+-			       sector_t start, sector_t len, void *data)
++static int device_is_nonrot(struct dm_target *ti, struct dm_dev *dev,
++			    sector_t start, sector_t len, void *data)
+ {
+ 	struct request_queue *q = bdev_get_queue(dev->bdev);
+ 
+ 	return q && blk_queue_nonrot(q);
+ }
+ 
+-static bool dm_table_all_nonrot(struct dm_table *t)
++static bool dm_table_is_nonrot(struct dm_table *t)
+ {
++	struct dm_target *ti;
+ 	unsigned i = 0;
+ 
+ 	/* Ensure that all underlying device are non rotational. */
+ 	while (i < dm_table_get_num_targets(t)) {
+-		struct dm_target *ti = dm_table_get_target(t, i++);
++		ti = dm_table_get_target(t, i++);
+ 
+ 		if (!ti->type->iterate_devices ||
+-		    !ti->type->iterate_devices(ti, device_nonrot, NULL))
+-			return false;
++		    !ti->type->iterate_devices(ti, device_is_nonrot, NULL))
++			return 0;
+ 	}
+ 
+-	return true;
++	return 1;
+ }
+ 
+ void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
+@@ -1213,7 +1214,8 @@ void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
+ 		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, q);
+ 	else
+ 		queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
+-	if (!dm_table_all_nonrot(t))
++
++	if (!dm_table_is_nonrot(t))
+ 		queue_flag_clear_unlocked(QUEUE_FLAG_NONROT, q);
+ 	else
+ 		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, q);
