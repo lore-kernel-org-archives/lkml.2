@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880Ab1EZQTp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 12:19:45 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:41624 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932608Ab1EZQTo convert rfc822-to-8bit (ORCPT
+	id S932714Ab1EZQSo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 12:18:44 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:57438 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab1EZQSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 12:19:44 -0400
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
- locks up on ARM
-From: Marc Zyngier <Marc.Zyngier@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Yong Zhang <yong.zhang0@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Frank Rowand <frank.rowand@am.sony.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1306426148.2497.83.camel@laptop>
-References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
-	 <1306272750.2497.79.camel@laptop> <1306343335.21578.65.camel@twins>
-	 <1306358128.21578.107.camel@twins>
-	 <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
-	 <1306405979.1200.63.camel@twins>
-	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
-	 <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins>
-	 <20110526154508.GA13788@redhat.com>  <1306425584.2497.81.camel@laptop>
-	 <1306426148.2497.83.camel@laptop>
-Organization: ARM Ltd
-Date: Thu, 26 May 2011 17:20:23 +0100
-Message-ID: <1306426823.27474.241.camel@e102391-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-X-OriginalArrivalTime: 26 May 2011 16:19:48.0658 (UTC) FILETIME=[BBDFD120:01CC1BC0]
-X-MC-Unique: 111052617193802301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 May 2011 12:18:42 -0400
+In-Reply-To: <OFE30C8D78.526FF88D-ON8725789C.00563B8C-8825789C.0056469F@us.ibm.com>
+References: <cover.1305846412.git.mst@redhat.com> <OF0EFA7BA9.BB2C2860-ON6525789C.0053EE3A-6525789C.005513CC@in.ibm.com> <OFE30C8D78.526FF88D-ON8725789C.00563B8C-8825789C.0056469F@us.ibm.com>
+Subject: Re: [PERF RESULTS] virtio and vhost-net performance enhancements
+X-KeepSent: F9D0E604:B865A006-6525789C:00597010;
+ type=4; name=$KeepSent
+To: Shirley Ma <xma@us.ibm.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux390@de.ibm.com,
+        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Steve Dobbelstein <steved@us.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org
+X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
+Message-ID: <OFF9D0E604.B865A006-ON6525789C.00597010-6525789C.0059987A@in.ibm.com>
+From: Krishna Kumar2 <krkumar2@in.ibm.com>
+Date: Thu, 26 May 2011 21:51:32 +0530
+X-MIMETrack: Serialize by Router on d23ml172/23/M/IBM(Release 8.5.1FP5|September 29, 2010) at
+ 26/05/2011 21:51:38
+MIME-Version: 1.0
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 18:09 +0200, Peter Zijlstra wrote:
-> On Thu, 2011-05-26 at 17:59 +0200, Peter Zijlstra wrote:
-> > On Thu, 2011-05-26 at 17:45 +0200, Oleg Nesterov wrote:
-> > > Stupid question. Can't we fix this problem if we do
-> > > 
-> > >         -       if (p == current)
-> > >         +       if (cpu == raw_smp_processor_id())
-> > > 
-> > > ?
-> > > 
-> > > I forgot the rules... but iirc task_cpu(p) can't be changed under us?
-> > 
-> > Easy enough to test.. brain gave out again,. hold on ;-)
-> 
-> The below seems to run all-right so far, I'll let it run for a while.
+Shirley Ma <xma@us.ibm.com> wrote on 05/26/2011 09:12:22 PM:
 
-Doesn't look very good here. The serial console basically locks up as
-soon as the system gets busy, even if the kernel compilation seem to
-progress at a decent pace.
+> Could you please try TCP_RRs as well?
 
-	M.
+Right. Here's the result for TCP_RR:
 
--- 
-Reality is an implementation detail.
+__________________________________
+#       RR%     SD%     CPU%
+__________________________________
+1       4.5       -31.4    -27.9
+2       5.1       -9.7      -5.4
+4       60.4     -13.4     38.8
+8       67.8     -13.5     45.0
+16     55.8     -8.0       43.2
+32     66.9     -14.1     43.3
+64     47.2     -23.7     12.2
+96     29.7     -11.8     14.3
+128    8.0       2.2       10.7
+___________________________________
+BW: 37.3%   SD: -6.7%   CPU: 15.7%
+___________________________________
 
+Thanks,
+
+- KK
 
