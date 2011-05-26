@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab1EZHOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 03:14:53 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:33870 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751779Ab1EZHOv (ORCPT
+	id S1754580Ab1EZHP1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 03:15:27 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:59695 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab1EZHP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 03:14:51 -0400
-X-Sasl-enc: k+amruzu/ZGkbJlkMylS3DXqXVd8qiqv5c/WLvvqzy5z 1306394089
-Date: Thu, 26 May 2011 00:15:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Antony Pavlov <antony@niisi.msk.ru>
-Subject: Re: linux-next: build warning in Linus' tree
-Message-ID: <20110526071506.GH29833@kroah.com>
-References: <20110525103740.f8917fd8.sfr@canb.auug.org.au>
+	Thu, 26 May 2011 03:15:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110525103740.f8917fd8.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110526043344.GA2749@acer>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+	<e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+	<BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
+	<20110525195413.GC2996@acer>
+	<BANLkTin8Trn-44Op+GbxrgocFrnPuXUZ2w@mail.gmail.com>
+	<20110526043344.GA2749@acer>
+Date: Thu, 26 May 2011 09:15:25 +0200
+Message-ID: <BANLkTikzrXRmdnv_v_nmJw7Nvsr6TY-5RQ@mail.gmail.com>
+Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: linux-arm-kernel@lists.infradead.org, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, hsweeten@visionengravers.com,
+        ryan@bluewatersys.com, Dan Williams <dan.j.williams@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi mailing list <spi-devel-general@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 10:37:40AM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> In Linus' tree, today's linux-next build (powerpc ppc64_defconfig)
-> produced this warning:
-> 
-> drivers/tty/serial/8250_pci.c:1457: warning: initialization from incompatible pointer type
-> 
-> Introduced by commit d9a0fbfd7bc5 ("serial: 8250_pci: add support for
-> Cronyx Omega PCI multiserial board").
-> 
-> Sorry that I didn't notice this earlier.
+On Thu, May 26, 2011 at 6:33 AM, Mika Westerberg <mika.westerberg@iki.fi> wrote:
 
-Thanks, I'll work on this.
+> Do you think that we can go forward with this patch series if I drop the last
+> patch (spi/ep93xx: add DMA support)? This way we will have dmaengine
+> implementation in place, whatever SPI driver we choose to use with ep93xx.
 
-greg k-h
+Yes and you don't have to drop any DMA support for the existing driver
+for me alone, now that it's in the tree it should be maintained. I only
+wanted to raise the issue of code duplication, not block any patches.
+
+> We can then try to use amba-pl022 driver with ep93xx and see if it works or
+> not, and how much work is needed. I would like some comments from Hartley and
+> Ryan also.
+
+Sure.
+
+Thanks,
+Linus Walleij
