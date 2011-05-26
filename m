@@ -1,87 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757736Ab1EZM4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 08:56:20 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:51405 "EHLO
+	id S1757590Ab1EZNAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 09:00:33 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:49049 "EHLO
 	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757670Ab1EZM4S (ORCPT
+	with ESMTP id S1754802Ab1EZNAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 08:56:18 -0400
+	Thu, 26 May 2011 09:00:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=MqYI2ynprbRhbjUqkfk07lmMwr34dydQp9Kb+j3h7fOCcI8cTLuU2H277T1CrC3OLb
-         O2Pz+eGES/CibFweNP8C7qJRVVoI7Vfw3MlrciAbk2oPRG6Gdcxj65J8TmaxhtoXevIf
-         A9EMHtD1jk1twPePXPwE8HD8PbGwHZvabb28w=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>, Nick Piggin <npiggin@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Laurent Vivier <Laurent.Vivier@bull.net>
-Subject: [PATCH 5/5] brd: export module parameters
-Date: Thu, 26 May 2011 21:55:57 +0900
-Message-Id: <1306414557-2441-6-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
-In-Reply-To: <1306414557-2441-1-git-send-email-namhyung@gmail.com>
-References: <1306414557-2441-1-git-send-email-namhyung@gmail.com>
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=v3YZoEfc5w9kGABT2gOXKuhMA8DGsuF64nCTbpYs7XqMgKoTE9aelYr75vqbDXAbHI
+         aVo9ciULZYI50UVCTEC+LVxrJzJoo+TU1tibIR3z/26p4c7PsWQhkHPiKOP7jMl1eto1
+         XRBWSfOem5FYrqCeTNns6+Q/NHN70/hcbPXfY=
+Subject: [PATCH v2] regulator: Group TI TPSxxxxx regulators together
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Rapoport <mike@compulab.co.il>, Cyril Chemparathy <cyril@ti.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 21:00:25 +0800
+Message-ID: <1306414825.4042.11.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export 'rd_nr', 'rd_size' and 'max_part' parameters to sysfs so user can
-know that how many devices are allowed, how big each device is and how
-many partitions are supported. If 'max_part' is 0, it means simply the
-device doesn't support partitioning.
+Group TI TPSxxxxx regulators together and sort in alphabetical order.
+This change make it easier for users to find config options.
 
-Also note that 'max_part' can be adjusted to power of 2 minus 1 form if
-needed. User should check this value after the module loading if he/she
-want to use that number correctly (i.e. fdisk, mknod, etc.).
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Laurent Vivier <Laurent.Vivier@bull.net>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Mike Rapoport <mike@compulab.co.il>
+Cc: Cyril Chemparathy <cyril@ti.com>
+Cc: Graeme Gregory <gg@slimlogic.co.uk>
 ---
- drivers/block/brd.c |   19 +++++++++++++++----
- 1 files changed, 15 insertions(+), 4 deletions(-)
+v2: also move newly added TI TPS65910 regulator to proper location in Kconfig
 
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index d904d0da2928..dba1c32e1ddf 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -436,11 +436,11 @@ static int rd_nr;
- int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
- static int max_part;
- static int part_shift;
--module_param(rd_nr, int, 0);
-+module_param(rd_nr, int, S_IRUGO);
- MODULE_PARM_DESC(rd_nr, "Maximum number of brd devices");
--module_param(rd_size, int, 0);
-+module_param(rd_size, int, S_IRUGO);
- MODULE_PARM_DESC(rd_size, "Size of each RAM disk in kbytes.");
--module_param(max_part, int, 0);
-+module_param(max_part, int, S_IRUGO);
- MODULE_PARM_DESC(max_part, "Maximum number of partitions per RAM disk");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_BLOCKDEV_MAJOR(RAMDISK_MAJOR);
-@@ -578,9 +578,20 @@ static int __init brd_init(void)
- 	 */
+ drivers/regulator/Kconfig |   44 ++++++++++++++++++++++----------------------
+ 1 files changed, 22 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index d7ed20f..bcfb52c 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -248,6 +248,28 @@ config REGULATOR_TPS6507X
+ 	  three step-down converters and two general-purpose LDO voltage regulators.
+ 	  It supports TI's software based Class-2 SmartReflex implementation.
  
- 	part_shift = 0;
--	if (max_part > 0)
-+	if (max_part > 0) {
- 		part_shift = fls(max_part);
- 
-+		/*
-+		 * Adjust max_part according to part_shift as it is exported
-+		 * to user space so that user can decide correct minor number
-+		 * if [s]he want to create more devices.
-+		 *
-+		 * Note that -1 is required because partition 0 is reserved
-+		 * for the whole disk.
-+		 */
-+		max_part = (1UL << part_shift) - 1;
-+	}
++config REGULATOR_TPS6524X
++	tristate "TI TPS6524X Power regulators"
++	depends on SPI
++	help
++	  This driver supports TPS6524X voltage regulator chips. TPS6524X
++	  provides three step-down converters and two general-purpose LDO
++	  voltage regulators.  This device is interfaced using a customized
++	  serial interface currently supported on the sequencer serial
++	  port controller.
 +
- 	if ((1UL << part_shift) > DISK_MAX_PARTS)
- 		return -EINVAL;
++config REGULATOR_TPS6586X
++	tristate "TI TPS6586X Power regulators"
++	depends on MFD_TPS6586X
++	help
++	  This driver supports TPS6586X voltage regulator chips.
++
++config REGULATOR_TPS65910
++	tristate "TI TPS65910 Power Regulator"
++	depends on MFD_TPS65910
++	help
++	  This driver supports TPS65910 voltage regulator chips.
++
+ config REGULATOR_88PM8607
+ 	bool "Marvell 88PM8607 Power regulators"
+ 	depends on MFD_88PM860X=y
+@@ -281,27 +303,5 @@ config REGULATOR_DB8500_PRCMU
+ 	  This driver supports the voltage domain regulators controlled by the
+ 	  DB8500 PRCMU
+ 
+-config REGULATOR_TPS6586X
+-	tristate "TI TPS6586X Power regulators"
+-	depends on MFD_TPS6586X
+-	help
+-	  This driver supports TPS6586X voltage regulator chips.
+-
+-config REGULATOR_TPS6524X
+-	tristate "TI TPS6524X Power regulators"
+-	depends on SPI
+-	help
+-	  This driver supports TPS6524X voltage regulator chips. TPS6524X
+-	  provides three step-down converters and two general-purpose LDO
+-	  voltage regulators.  This device is interfaced using a customized
+-	  serial interface currently supported on the sequencer serial
+-	  port controller.
+-
+-config REGULATOR_TPS65910
+-	tristate "TI TPS65910 Power Regulator"
+-	depends on MFD_TPS65910
+-	help
+-	  This driver supports TPS65910 voltage regulator chips.
+-
+ endif
  
 -- 
-1.7.5.2
+1.7.1
+
+
 
