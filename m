@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab1EZHP1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 03:15:27 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59695 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab1EZHP0 (ORCPT
+	id S1755079Ab1EZHYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 03:24:53 -0400
+Received: from relay01.digicable.hu ([92.249.128.189]:34172 "EHLO
+	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137Ab1EZHYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 03:15:26 -0400
+	Thu, 26 May 2011 03:24:52 -0400
+Message-ID: <4DDE003D.6040702@freemail.hu>
+Date: Thu, 26 May 2011 09:24:45 +0200
+From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
-In-Reply-To: <20110526043344.GA2749@acer>
-References: <cover.1306082097.git.mika.westerberg@iki.fi>
-	<e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
-	<BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
-	<20110525195413.GC2996@acer>
-	<BANLkTin8Trn-44Op+GbxrgocFrnPuXUZ2w@mail.gmail.com>
-	<20110526043344.GA2749@acer>
-Date: Thu, 26 May 2011 09:15:25 +0200
-Message-ID: <BANLkTikzrXRmdnv_v_nmJw7Nvsr6TY-5RQ@mail.gmail.com>
-Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@iki.fi>
-Cc: linux-arm-kernel@lists.infradead.org, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, hsweeten@visionengravers.com,
-        ryan@bluewatersys.com, Dan Williams <dan.j.williams@intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi mailing list <spi-devel-general@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
+        Max Vozeler <max@hinterhof.net>, Arnd Bergmann <arnd@arndb.de>
+CC: Julia Lawall <julia@diku.dk>, usbip-devel@lists.sourceforge.net,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] usbip: remove check for negative values for an unsigned value
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Original: 94.21.49.67
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 6:33 AM, Mika Westerberg <mika.westerberg@iki.fi> wrote:
+From: Márton Németh <nm127@freemail.hu>
 
-> Do you think that we can go forward with this patch series if I drop the last
-> patch (spi/ep93xx: add DMA support)? This way we will have dmaengine
-> implementation in place, whatever SPI driver we choose to use with ep93xx.
+The parameter rhport is unsigned so there is no need checking for
+negative values.
 
-Yes and you don't have to drop any DMA support for the existing driver
-for me alone, now that it's in the tree it should be maintained. I only
-wanted to raise the issue of code duplication, not block any patches.
+This will remove the following warning message when compiling with "make W=1 ...":
+  drivers/staging/usbip/vhci_sysfs.c: In function ‘valid_args’:
+  drivers/staging/usbip/vhci_sysfs.c:138: warning: comparison of unsigned expression < 0 is always false
 
-> We can then try to use amba-pl022 driver with ep93xx and see if it works or
-> not, and how much work is needed. I would like some comments from Hartley and
-> Ryan also.
-
-Sure.
-
-Thanks,
-Linus Walleij
+Signed-off-by: Márton Németh <nm127@freemail.hu>
+---
+diff --git a/drivers/staging/usbip/vhci_sysfs.c b/drivers/staging/usbip/vhci_sysfs.c
+index d9736f9..7b6e4a9 100644
+--- a/drivers/staging/usbip/vhci_sysfs.c
++++ b/drivers/staging/usbip/vhci_sysfs.c
+@@ -135,7 +135,7 @@ static DEVICE_ATTR(detach, S_IWUSR, NULL, store_detach);
+ static int valid_args(__u32 rhport, enum usb_device_speed speed)
+ {
+ 	/* check rhport */
+-	if ((rhport < 0) || (rhport >= VHCI_NPORTS)) {
++	if (rhport >= VHCI_NPORTS) {
+ 		pr_err("port %u\n", rhport);
+ 		return -EINVAL;
+ 	}
