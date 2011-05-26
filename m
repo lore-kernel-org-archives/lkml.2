@@ -1,120 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884Ab1EZUjX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:39:23 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:42129 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758238Ab1EZUjW (ORCPT
+	id S932965Ab1EZUjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:39:40 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:50035 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932148Ab1EZUji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 16:39:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=yhVe+I3Nm9dZdA5fwQn5nHyyPuuwQPYPNN/lS9y8XN3LJruGNqqbxp5hHb7BdH8phi
-         SBfuQpGQUitRbWCBHmDw==
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=FTkPCVEMdKBgwg61hKDvgpJ6oRA@mail.gmail.com>
-References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
- <sig.512079e334.4DD57D44.50009@radicalsystems.co.za> <BANLkTikHQNQdWoDS2dXUC9gTPWvtmUM=yA@mail.gmail.com>
- <sig.51214cae32.4DD61B48.8010601@radicalsystems.co.za> <BANLkTi=jTKp9+_KDmTxYfGXe6Ln02GLmDA@mail.gmail.com>
- <sig.6125c0d242.4DDB86FE.5090809@radicalsystems.co.za> <BANLkTi=FTkPCVEMdKBgwg61hKDvgpJ6oRA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 26 May 2011 14:38:55 -0600
-Message-ID: <BANLkTikm0fkii_SyoJ4W1j+nZD-ErS+o-A@mail.gmail.com>
-Subject: Re: PCI BAR1 Unassigned
-To: Jan Zwiegers <jan@radicalsystems.co.za>
-Cc: Xianghua Xiao <xiaoxianghua@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=000e0cd299a6c0217504a433d099
-X-System-Of-Record: true
+	Thu, 26 May 2011 16:39:38 -0400
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, davej@redhat.com,
+        torvalds@linux-foundation.org, adobriyan@gmail.com, eranian@google.com,
+        penberg@kernel.org, davem@davemloft.net,
+        Arjan van de Ven <arjan@infradead.org>, hpa@zytor.com,
+        Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
+        pageexec@freemail.hu, Ingo Molnar <mingo@elte.hu>,
+        Vivek Goyal <vgoyal@redhat.com>
+In-Reply-To: <1306269105.21443.20.camel@dan>
+References: <1306269105.21443.20.camel@dan>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 16:39:27 -0400
+Message-ID: <1306442367.2279.25.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd299a6c0217504a433d099
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, 2011-05-24 at 16:31 -0400, Dan Rosenberg wrote:
+> This introduces CONFIG_RANDOMIZE_BASE, which randomizes the address at
+> which the kernel is decompressed at boot as a security feature that
+> deters exploit attempts relying on knowledge of the location of kernel
+> internals.  The default values of the kptr_restrict and dmesg_restrict
+> sysctls are set to (1) when this is enabled, since hiding kernel
+> pointers is necessary to preserve the secrecy of the randomized base
+> address.
+> 
+> This feature also uses a fixed mapping to move the IDT (if not already
+> done as a fix for the F00F bug), to avoid exposing the location of
+> kernel internals relative to the original IDT.  This has the additional
+> security benefit of marking the new virtual address of the IDT
+> read-only.
+> 
+> Entropy is generated using the RDRAND instruction if it is supported. If
+> not, then RDTSC is used, if supported. If neither RDRAND nor RDTSC are
+> supported, then no randomness is introduced. Support for the CPUID
+> instruction is required to check for the availability of these two
+> instructions.
+> 
+> Thanks to everyone who contributed helpful suggestions and feedback so
+> far.
+> 
 
-Jan, would you mind testing the attached patch?  This is against
-current upstream, but I think it will apply without much trouble to
-2.6.35; I don't think there have been many changes in that area.
-Thanks.
+I wanted to send out an update email that consolidated the feedback and
+suggestions I've received so far:
 
---000e0cd299a6c0217504a433d099
-Content-Type: application/octet-stream; name="patch.pci"
-Content-Disposition: attachment; filename="patch.pci"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_go65y64i0
+1. I'm nearly finished a first draft of code to parse the BIOS E820
+memory map to determine where it's safe to place the randomized kernel.
+This code accounts for overlapping regions, as well as potential
+conflicts in region types (free vs. reserved, etc.), in favor of
+non-free types.  The end result is, I'll have a reasonable upper bound.
 
-Y29tbWl0IGZiZWVkOTQ2YmU4MjdiNDZmNjgwMTMzMmVmMGZkYzliMDA5MzllODEKQXV0aG9yOiBC
-am9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpEYXRlOiAgIFR1ZSBNYXkgMjQgMDY6
-NDg6MjIgMjAxMSAtMDYwMAoKICAgIFBDSTogcGFzcyBwY2lfZGV2IHRvIGRlY29kZV9iYXIoKSBm
-b3IgdXNlIGluIGRldl93YXJuKCkKICAgIAogICAgUGFzcyBpbiBwY2lfZGV2IHBvaW50ZXIgZm9y
-IGZ1dHVyZSB1c2UgaW4gd2FybmluZyBtZXNzYWdlcy4KICAgIAogICAgU2lnbmVkLW9mZi1ieTog
-Qmpvcm4gSGVsZ2FhcyA8YmhlbGdhYXNAZ29vZ2xlLmNvbT4KCmRpZmYgLS1naXQgYS9kcml2ZXJz
-L3BjaS9wcm9iZS5jIGIvZHJpdmVycy9wY2kvcHJvYmUuYwppbmRleCA0NGNiYmJhLi43NzBiNjMy
-IDEwMDY0NAotLS0gYS9kcml2ZXJzL3BjaS9wcm9iZS5jCisrKyBiL2RyaXZlcnMvcGNpL3Byb2Jl
-LmMKQEAgLTEzNiw3ICsxMzYsOCBAQCBzdGF0aWMgdTY0IHBjaV9zaXplKHU2NCBiYXNlLCB1NjQg
-bWF4YmFzZSwgdTY0IG1hc2spCiAJcmV0dXJuIHNpemU7CiB9CiAKLXN0YXRpYyBpbmxpbmUgZW51
-bSBwY2lfYmFyX3R5cGUgZGVjb2RlX2JhcihzdHJ1Y3QgcmVzb3VyY2UgKnJlcywgdTMyIGJhcikK
-K3N0YXRpYyBpbmxpbmUgZW51bSBwY2lfYmFyX3R5cGUgZGVjb2RlX2JhcihzdHJ1Y3QgcGNpX2Rl
-diAqZGV2LAorCQkJCQkgICBzdHJ1Y3QgcmVzb3VyY2UgKnJlcywgdTMyIGJhcikKIHsKIAlpZiAo
-KGJhciAmIFBDSV9CQVNFX0FERFJFU1NfU1BBQ0UpID09IFBDSV9CQVNFX0FERFJFU1NfU1BBQ0Vf
-SU8pIHsKIAkJcmVzLT5mbGFncyA9IGJhciAmIH5QQ0lfQkFTRV9BRERSRVNTX0lPX01BU0s7CkBA
-IC0yMDAsNyArMjAxLDcgQEAgaW50IF9fcGNpX3JlYWRfYmFzZShzdHJ1Y3QgcGNpX2RldiAqZGV2
-LCBlbnVtIHBjaV9iYXJfdHlwZSB0eXBlLAogCQlsID0gMDsKIAogCWlmICh0eXBlID09IHBjaV9i
-YXJfdW5rbm93bikgewotCQl0eXBlID0gZGVjb2RlX2JhcihyZXMsIGwpOworCQl0eXBlID0gZGVj
-b2RlX2JhcihkZXYsIHJlcywgbCk7CiAJCXJlcy0+ZmxhZ3MgfD0gcGNpX2NhbGNfcmVzb3VyY2Vf
-ZmxhZ3MobCkgfCBJT1JFU09VUkNFX1NJWkVBTElHTjsKIAkJaWYgKHR5cGUgPT0gcGNpX2Jhcl9p
-bykgewogCQkJbCAmPSBQQ0lfQkFTRV9BRERSRVNTX0lPX01BU0s7CmNvbW1pdCA1ZDIwZTJkMDQ2
-YmU2ODY3MTg4OTg2ZWVmNGI0Y2Q2ZWM5ZjI3ODgyCkF1dGhvcjogQmpvcm4gSGVsZ2FhcyA8Ymhl
-bGdhYXNAZ29vZ2xlLmNvbT4KRGF0ZTogICBGcmkgTWF5IDIwIDA4OjM2OjMwIDIwMTEgLTA2MDAK
-CiAgICBQQ0k6IGRvbid0IHRyZWF0IG1lbSBCQVIgdHlwZSAiMTEiIChyZXNlcnZlZCkgYXMgNjQt
-Yml0IEJBUgogICAgCiAgICBUaGUgbG93IGZvdXIgYml0cyBvZiBhIGEgbWVtb3J5IEJBUiBhcmUg
-InB0dDAiIHdoZXJlIHA9MSBmb3IgcHJlZmV0Y2hhYmxlCiAgICBCQVJzLCBhbmQgdHQgaXMgYXMg
-Zm9sbG93czoKICAgIAogICAgICAwMCAgMzItYml0IEJBUiwgYW55d2hlcmUgaW4gbG93ZXIgNEdC
-CiAgICAgIDAxICBhbnl3aGVyZSBiZWxvdyAxTUIgKHJlc2VydmVkIGFzIG9mIFBDSSAyLjIpCiAg
-ICAgIDEwICA2NC1iaXQgQkFSCiAgICAgIDExICByZXNlcnZlZAogICAgCiAgICBQcmlvciB0byBl
-MzU0NTk3Y2NlLCB3ZSB0cmVhdGVkICIwMTAwIiBhcyBhIDY0LWJpdCBCQVIgYW5kIGFsbCBvdGhl
-cnMgYXMKICAgIDMyLWJpdCBCQVJzLiAgVGhpcyB3YXMgb2J2aW91c2x5IHdyb25nIGJlY2F1c2Ug
-cHJlZmV0Y2hhYmxlIDY0LWJpdCBCQVJzCiAgICAoIjExMDAiKSB3ZXJlIHRyZWF0ZWQgYXMgMzIt
-Yml0IEJBUnMuCiAgICAKICAgIFRoZSBlMzU0NTk3Y2NlIGZpeCwgd2hpY2ggYXBwZWFyZWQgaW4g
-Mi42LjI4LCB3YXMgdG8gdHJlYXQgIngxeDAiIGFzIDY0LWJpdAogICAgQkFScywgYnV0IHRoaXMg
-dW5pbnRlbnRpb25hbGx5IGNoYW5nZWQgb3VyIGhhbmRsaW5nIG9mIHJlc2VydmVkIHR5cGUgIngx
-MTAiCiAgICBmcm9tIDMyLWJpdCB0byA2NC1iaXQuCiAgICAKICAgIEhhcmR3YXJlIHNob3VsZCBu
-b3QgYmUgdXNpbmcgdGhlICIxMSIgdHlwZSwgYnV0IGlmIGl0IGRpZCBoYXBwZW4gdG8gdXNlIGl0
-CiAgICBmb3IgYSAzMi1iaXQgQkFSLCBpdCB3b3JrZWQgYmVmb3JlIGUzNTQ1OTdjY2UgYW5kIGRp
-ZG4ndCB3b3JrIGFmdGVyd2FyZHMuCiAgICBKYW4gaGFzIGEgcGllY2Ugb2Ygc3VjaCBoYXJkd2Fy
-ZS4KICAgIAogICAgVGhpcyBwYXRjaCByZXR1cm5zIHRvIHRyZWF0aW5nIHRoZSByZXNlcnZlZCAi
-MTEiIHR5cGUgYXMgYSAzMi1iaXQgQkFSIGFuZAogICAgYWRkcyBhIHdhcm5pbmcgaWYgd2Ugc2Vl
-IGl0LgogICAgCiAgICBJdCBhbHNvIGxvZ3MgYSBub3RlIGlmIHdlIHNlZSBhIDFNIEJBUi4gIFRo
-aXMgaXMgbm90IGEgd2FybmluZywgYmVjYXVzZQogICAgc3VjaCBoYXJkd2FyZSBjb25mb3JtcyB0
-byBwcmUtUENJIDIuMiBzcGVjLCBidXQgSSB0aGluayBpdCdzIHdvcnRoIG5vdGluZwogICAgYmVj
-YXVzZSBMaW51eCBpZ25vcmVzIHRoZSAxTSByZXN0cmljdGlvbiBpZiBpdCBldmVyIGhhcyB0byBh
-c3NpZ24gdGhlIEJBUi4KICAgIAogICAgQ0M6IFBldGVyIENodWJiIDxwZXRlcmNAZ2VsYXRvLnVu
-c3cuZWR1LmF1PgogICAgQnVnemlsbGE6IGh0dHBzOi8vYnVnemlsbGEua2VybmVsLm9yZy9zaG93
-X2J1Zy5jZ2k/aWQ9MzU5NTIKICAgIFJlcG9ydGVkLWJ5OiBKYW4gWndpZWdlcnMgPGphbkByYWRp
-Y2Fsc3lzdGVtcy5jby56YT4KICAgIFNpZ25lZC1vZmYtYnk6IEJqb3JuIEhlbGdhYXMgPGJoZWxn
-YWFzQGdvb2dsZS5jb20+CgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9wY2kvcHJvYmUuYyBiL2RyaXZl
-cnMvcGNpL3Byb2JlLmMKaW5kZXggNzcwYjYzMi4uNjAyYjJjNCAxMDA2NDQKLS0tIGEvZHJpdmVy
-cy9wY2kvcHJvYmUuYworKysgYi9kcml2ZXJzL3BjaS9wcm9iZS5jCkBAIC0xMzksMTYgKzEzOSwz
-MSBAQCBzdGF0aWMgdTY0IHBjaV9zaXplKHU2NCBiYXNlLCB1NjQgbWF4YmFzZSwgdTY0IG1hc2sp
-CiBzdGF0aWMgaW5saW5lIGVudW0gcGNpX2Jhcl90eXBlIGRlY29kZV9iYXIoc3RydWN0IHBjaV9k
-ZXYgKmRldiwKIAkJCQkJICAgc3RydWN0IHJlc291cmNlICpyZXMsIHUzMiBiYXIpCiB7CisJdTMy
-IG1lbV90eXBlOworCiAJaWYgKChiYXIgJiBQQ0lfQkFTRV9BRERSRVNTX1NQQUNFKSA9PSBQQ0lf
-QkFTRV9BRERSRVNTX1NQQUNFX0lPKSB7CiAJCXJlcy0+ZmxhZ3MgPSBiYXIgJiB+UENJX0JBU0Vf
-QUREUkVTU19JT19NQVNLOwogCQlyZXR1cm4gcGNpX2Jhcl9pbzsKIAl9CiAKLQlyZXMtPmZsYWdz
-ID0gYmFyICYgflBDSV9CQVNFX0FERFJFU1NfTUVNX01BU0s7Ci0KLQlpZiAocmVzLT5mbGFncyAm
-IFBDSV9CQVNFX0FERFJFU1NfTUVNX1RZUEVfNjQpCisJcmVzLT5mbGFncyA9IGJhciAmIFBDSV9C
-QVNFX0FERFJFU1NfTUVNX1BSRUZFVENIOworCisJbWVtX3R5cGUgPSBiYXIgJiBQQ0lfQkFTRV9B
-RERSRVNTX01FTV9UWVBFX01BU0s7CisJc3dpdGNoIChtZW1fdHlwZSkgeworCWNhc2UgUENJX0JB
-U0VfQUREUkVTU19NRU1fVFlQRV8zMjoKKwkJcmV0dXJuIHBjaV9iYXJfbWVtMzI7CisJY2FzZSBQ
-Q0lfQkFTRV9BRERSRVNTX01FTV9UWVBFXzFNOgorCQlkZXZfaW5mbygmZGV2LT5kZXYsICIxTSBt
-ZW0gQkFSIHRyZWF0ZWQgYXMgMzItYml0IEJBUlxuIik7CisJCXJldHVybiBwY2lfYmFyX21lbTMy
-OworCWNhc2UgUENJX0JBU0VfQUREUkVTU19NRU1fVFlQRV82NDoKKwkJcmVzLT5mbGFncyB8PSBQ
-Q0lfQkFTRV9BRERSRVNTX01FTV9UWVBFXzY0OwogCQlyZXR1cm4gcGNpX2Jhcl9tZW02NDsKLQly
-ZXR1cm4gcGNpX2Jhcl9tZW0zMjsKKwlkZWZhdWx0OgorCQlkZXZfd2FybigmZGV2LT5kZXYsCisJ
-CQkgIm1lbSB1bmtub3duIHR5cGUgJXggdHJlYXRlZCBhcyAzMi1iaXQgQkFSXG4iLAorCQkJIG1l
-bV90eXBlKTsKKwkJcmV0dXJuIHBjaV9iYXJfbWVtMzI7CisJfQogfQogCiAvKioK
---000e0cd299a6c0217504a433d099--
+2. I'll parse the kernel command line for crashkernel arguments and
+avoid placing a randomized kernel in any regions marked as reserved.  A
+new command line argument for kdump might be a good idea as well
+(discussion on-going).
+
+3. I'll be introducing a new format specifier (perhaps %pk) that
+unconditionally de-randomizes kernel pointers, and switch callers where
+appropriate.
+
+4. The perf call chains that rely on kernel pointers will account for
+the randomization.
+
+5. I'll be switching to per-cpu IDTs, basing my work on the following
+patch:
+
+http://marc.info/?l=linux-kernel&m=112767117501231&w=2
+
+Any review or comments on the above patch would be helpful.  I'm
+considering submitting this portion separately, as it may provide
+performance and scalability benefits regardless of randomization.
+
+6. As per H. Peter Anvin's suggestion, it seems there's some demand for
+a way to opt-out at the boot-loader level, possibly via a command-line
+option and boot protocol flag.
+
+7. Still need to figure out exactly what's ok and what's not regarding
+altering alignment and PHYSICAL_START.  It seems there's some consensus
+on "don't do it", but perhaps it's ok to partially ignore the alignment
+config at runtime in favor of hard-coded, known-safe, finer-grained
+alternatives.
+
+8. Other pieces of feedback, such as comment suggestions, changes to
+kptr_restrict/dmesg_restrict defaults, etc. have been incorporated.
+
+8. x86-64 will present its own set of challenges.  One thing at a time.
+
+Thanks for all the feedback and guidance so far.  Let me know if
+anything above is objectionable, or if you have any more suggestions.
+There's lots to do, but I haven't given up yet. :)
+
+Regards,
+Dan
+
