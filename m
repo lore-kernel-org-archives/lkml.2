@@ -1,114 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757824Ab1EZRHp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:07:45 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57277 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab1EZRHn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:07:43 -0400
-Date: Thu, 26 May 2011 22:37:22 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
-Subject: [RFC Patch 0/6] slimdump: Enable slimdump if crashing kernel memory
- is not required
-Message-ID: <20110526170722.GB23266@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
+	id S1757990Ab1EZRIF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:08:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57874 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757923Ab1EZRID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 13:08:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,275,1304319600"; 
+   d="scan'208";a="5443114"
+Date: Thu, 26 May 2011 19:07:56 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH -next] regulator: fix 88pm8607.c printk format warning
+Message-ID: <20110526170756.GA20068@sortiz-mobl>
+References: <20110518145412.f6cba4ef.sfr@canb.auug.org.au>
+ <20110518100722.76bd6fb6.randy.dunlap@oracle.com>
+ <20110518194311.GB5077@opensource.wolfsonmicro.com>
+ <1305978663.3317.7.camel@odin>
+ <20110526090522.5d8c684b.randy.dunlap@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110526090522.5d8c684b.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
-	Please find a patchset that implements 'slimdump' - a new type
-of coredump (captured through kdump) which will retain only essential
-debugging information but will discard old kernel memory (which is mostly
-irrelevant) in case of system crashes triggered through fatal hardware errors.
+Hi Randy,
 
-When a system crashes due to an unrecoverable memory error, kdump would
-ordinarily attempt to read/capture the crashing kernel's memory which has
-the following undesirable consequences:
-- The old kernel memory is irrelevant for debugging crashes initiated due
-  to hardware errors (such as physical memory corruption causing fatal
-  machine check exceptions - MCE).
-- The kdump capture kernel might experience a second MCE when attempting
-  to read the corrupt memory area having fatal results (and failure to
-  capture the coredump).
+On Thu, May 26, 2011 at 09:05:22AM -0700, Randy Dunlap wrote:
+> On Sat, 21 May 2011 12:51:03 +0100 Liam Girdwood wrote:
+> 
+> > On Wed, 2011-05-18 at 12:43 -0700, Mark Brown wrote:
+> > > On Wed, May 18, 2011 at 10:07:22AM -0700, Randy Dunlap wrote:
+> > > > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > > > 
+> > > > Fix printk format warning (seen on x86_64) and change to unsigned
+> > > > output format:
+> > > > 
+> > > > drivers/regulator/88pm8607.c:417: warning: format '%d' expects type 'int', but argument 3 has type 'resource_size_t'
+> > > 
+> > > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > > --
+> > 
+> > Samuel, this doesn't apply against regulator-next. Iirc, the patches
+> > this is against went via mfd-next ? If, so any chance you could take
+> > this ?
+> > 
+> > Thanks !
+> > 
+> > Liam  
+> 
+> Samuel,
+> Do you need this patch resent to you?
+I never got the patch. I'd appreciate if you could resend it to me, yes.
 
-'slimdump' is particularly useful in avoiding the above hazards. It is a
-light-weight dump and increases the reliability of the system by avoiding
-unsafe operations.
+Cheers,
+Samuel.
 
-In essence slimdump enables light-weight coredumps and increases the
-reliability of the system by avoiding unsafe operations.
-
-Summary of the patches
-----
-Patch 1, 2 - Patches from Andi Kleen's tree
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git which
-introduce an enhanced panic function - xpanic().
-
-Patch 3 - Introduces a new PANIC_MCE flag to signal the need for
-SlimDump for
-MCE initiated panic calls.
-
-Patch 4 - Append a new elf-note inside coredump containing MCE related
-registers
-
-Patch 5 - Create a SlimDump by discarding old kernel's memory
-
-Patch 6 - Patch for 'crash' tool
-(http://people.redhat.com/anderson/crash-5.1.5.tar.gz) to recognise the
-new
-elf-notes section.
-
-The patches have been tested from inside a VM and have been found to
-work fine. The user-space tool used for copying the coredump is 'cp'
-(makedumpfile testing will be done soon).
-
-Example
---------
-Normal vmcore
------------
-# ls -lh /home/prasadkr/vmcore.usual
--r-------- 1 root root 1.6G May 17 01:07 /home/prasadkr/vmcore.usual
-
-slimdump
------------
-# ls -lh /home/prasadkr/vmcore.SlimDump
--r-------- 1 root root 1.8K May 18 23:28 /home/prasadkr/vmcore.SlimDump
-# ./crash vmlinux vmcore.SlimDump
-
-crash 5.1.5
-Copyright (C) 2002-2011  Red Hat, Inc.
-Copyright (C) 2004, 2005, 2006  IBM Corporation
-Copyright (C) 1999-2006  Hewlett-Packard Co
-Copyright (C) 2005, 2006  Fujitsu Limited
-Copyright (C) 2006, 2007  VA Linux Systems Japan K.K.
-Copyright (C) 2005  NEC Corporation
-Copyright (C) 1999, 2002, 2007  Silicon Graphics, Inc.
-Copyright (C) 1999, 2000, 2001, 2002  Mission Critical Linux, Inc.
-This program is free software, covered by the GNU General Public
-License,
-and you are welcome to change it and/or distribute copies of it under
-certain conditions.  Enter "help copying" to see the conditions.
-This program has absolutely no warranty.  Enter "help warranty" for
-details.
-
-"System crashed due to a hardware memory error. No coredump available."
-#
-#
-
-Thanks,
-K.Prasad
-_______________________________________________________
-ltcras mailing list ltcras@lists.linux.ibm.com
-To unsubscribe from the list, change your list options
-or if you have forgotten your list password visit:
-http://lists.linux.ibm.com/mailman/listinfo/ltcras
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
