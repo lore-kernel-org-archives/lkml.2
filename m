@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932927Ab1EZQyQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 12:54:16 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52706 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932472Ab1EZQyP (ORCPT
+	id S932732Ab1EZQqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 12:46:48 -0400
+Received: from na3sys010aog102.obsmtp.com ([74.125.245.72]:58612 "HELO
+	na3sys010aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932347Ab1EZQqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 12:54:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
-References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
- <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com> <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
- <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu>
- <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu>
- <alpine.LFD.2.02.1105251836030.3078@ionos> <20110525180100.GY19633@outflux.net>
- <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <20110525191152.GC19633@outflux.net>
- <BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com> <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
- <BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com> <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 26 May 2011 09:46:38 -0700
-Message-ID: <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
-To: Will Drewry <wad@chromium.org>
-Cc: Colin Walters <walters@verbum.org>, Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 May 2011 12:46:46 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Thu, 26 May 2011 09:46:41 -0700
+Message-Id: <1306428401-18830-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 9:33 AM, Will Drewry <wad@chromium.org> wrote:
->
-> FWIW, none of the patches deal with privilege escalation via setuid
-> files or file capabilities.
+Linus, please pull from
 
-That is NOT AT ALL what I'm talking about.
+    master.kernel.org:/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
-I'm talking about the "setuid()" system call (and all its cousins:
-setgit/setreuid etc). And the whole thread has been about filtering
-system calls, no?
+This tree is also available from kernel.org mirrors at:
 
-Do a google code search for setuid.
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
-In good code, it will look something like
+This will get the second, main batch of 2.6.40 changes:
+ - Add netlink-based way to dump active RDMA connections
+ - Update char devices to use /dev/infiniband/... paths
+ - Chelsio driver fixes
+ - Fix for crash on access to QP0 with IBoE devices
+ - Couple of warning fixes
 
-  uid = getuid();
+Ira Weiny (1):
+      IB/mad: Return EPROTONOSUPPORT when an RDMA device lacks the QP required
 
-  if (setuid(uid)) {
-    fprintf(stderr, "Unable to drop provileges\n");
-    exit(1);
-  }
+Liu Yuan (1):
+      RDMA/nes: Add a check for strict_strtoul()
 
-but I guarantee you that there are cases where people just blindly
-drop privileges. google code search found me at least the "heirloom"
-source code doing exactly that.
+Nir Muchtar (4):
+      RDMA: Add error handling to ib_core_init()
+      RDMA/cma: Export enum cma_state in <rdma/rdma_cm.h>
+      RDMA/cma: Add support for netlink statistics export
+      RDMA/cma: Save PID of ID's owner
 
-And if you filter system calls, it's entirely possible that you can
-attack suid executables through such a vector. Your "limit system
-calls for security" security suddenly turned into "avoid the system
-call that made things secure"!
+Roland Dreier (7):
+      RDMA: Add netlink infrastructure
+      RDMA/ucma: Add .nodename/.mode to tell userspace where to create device node
+      IB/uverbs: Add devnode method to set path/mode
+      IB: Add devnode methods to cm_class and umad_class
+      IB/srp: Fix integer -> pointer cast warnings
+      RDMA: Update exported headers list
+      Merge branches 'cma', 'cxgb3', 'cxgb4', 'misc', 'nes', 'netlink', 'srp' and 'uverbs' into for-next
 
-See what I'm saying?
+Sean Hefty (1):
+      RDMA/cma: Pass QP type into rdma_create_id()
 
-                       Linus
+Steve Wise (2):
+      RDMA/cxgb4: Use completion objects for event blocking
+      RDMA/cxgb3: Don't post zero-byte read if endpoint is going away
+
+ drivers/infiniband/Kconfig                  |    1 +
+ drivers/infiniband/core/Makefile            |    2 +-
+ drivers/infiniband/core/cm.c                |    8 +
+ drivers/infiniband/core/cma.c               |  308 +++++++++++++++++----------
+ drivers/infiniband/core/device.c            |   25 ++-
+ drivers/infiniband/core/mad.c               |    7 +
+ drivers/infiniband/core/netlink.c           |  190 +++++++++++++++++
+ drivers/infiniband/core/ucma.c              |   35 +++-
+ drivers/infiniband/core/user_mad.c          |    7 +
+ drivers/infiniband/core/uverbs_main.c       |    8 +
+ drivers/infiniband/hw/cxgb3/iwch_cm.c       |   26 ++-
+ drivers/infiniband/hw/cxgb3/iwch_provider.h |    2 +-
+ drivers/infiniband/hw/cxgb3/iwch_qp.c       |    6 +-
+ drivers/infiniband/hw/cxgb4/iw_cxgb4.h      |   18 +--
+ drivers/infiniband/hw/nes/nes.c             |    4 +-
+ drivers/infiniband/hw/qib/Kconfig           |    2 +-
+ drivers/infiniband/ulp/iser/iser_verbs.c    |    2 +-
+ drivers/infiniband/ulp/srp/ib_srp.c         |    4 +-
+ include/linux/netlink.h                     |    1 +
+ include/rdma/Kbuild                         |    5 +
+ include/rdma/ib_user_cm.h                   |    1 +
+ include/rdma/rdma_cm.h                      |   19 ++-
+ include/rdma/rdma_netlink.h                 |   92 ++++++++
+ net/9p/trans_rdma.c                         |    3 +-
+ net/rds/ib.c                                |    2 +-
+ net/rds/ib_cm.c                             |    2 +-
+ net/rds/iw.c                                |    2 +-
+ net/rds/iw_cm.c                             |    2 +-
+ net/rds/rdma_transport.c                    |    3 +-
+ net/sunrpc/xprtrdma/svc_rdma_transport.c    |    3 +-
+ net/sunrpc/xprtrdma/verbs.c                 |    2 +-
+ 31 files changed, 633 insertions(+), 159 deletions(-)
+ create mode 100644 drivers/infiniband/core/netlink.c
+ create mode 100644 include/rdma/rdma_netlink.h
