@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab1EZMpG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 08:45:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:35572 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757500Ab1EZMpF convert rfc822-to-8bit (ORCPT
+	id S1757578Ab1EZMpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 08:45:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:49924 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757500Ab1EZMpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 08:45:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,272,1304319600"; 
-   d="scan'208";a="2261299"
-From: "Tian, Kevin" <kevin.tian@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, Greg KH <greg@kroah.com>,
-        "dkiper@net-space.pl" <dkiper@net-space.pl>
-CC: "Rzeszutek@dumpdata.com" <Rzeszutek@dumpdata.com>,
-        "Wilk@dumpdata.com" <Wilk@dumpdata.com>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 26 May 2011 20:44:47 +0800
-Subject: RE: [stable] [PATCH] Xen bug-fixes for 2.6.39 (already in 2.6.40)
-Thread-Topic: [stable] [PATCH] Xen bug-fixes for 2.6.39 (already in 2.6.40)
-Thread-Index: Acwbofh8ILgmqGukRKqsQEQBTuAGwQAAKszw
-Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C9C008822@shsmsx502.ccr.corp.intel.com>
-References: <1306359456-3627-1-git-send-email-konrad.wilk@oracle.com>
- <20110526070239.GB29833@kroah.com> <20110526123921.GB3386@dumpdata.com>
-In-Reply-To: <20110526123921.GB3386@dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 May 2011 08:45:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: GuanXuetao <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH 6/6] unicore32: using generic-y format for one line asm-generic files
+Date: Thu, 26 May 2011 14:45:01 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-28-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, greg@kroah.com,
+        Sam Ravnborg <sam@ravnborg.org>
+References: <cover.1306408804.git.gxt@mprc.pku.edu.cn> <48ec206f634cad2019c92eef7ba1a87566c743fe.1306408804.git.gxt@mprc.pku.edu.cn>
+In-Reply-To: <48ec206f634cad2019c92eef7ba1a87566c743fe.1306408804.git.gxt@mprc.pku.edu.cn>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105261445.01390.arnd@arndb.de>
+X-Provags-ID: V02:K0:OSMGJMXE1Io5828YNSD95ZpRYOQg5zNyz0LGcD1bbAp
+ s5qkx9O0r2Uim/dwglJK6+xlmbT0gwleq4Or3WQoUdHzQuduUS
+ P1Trs4vHNeTv6EBrsu9gJNw5F4IEddbrG/5JpptJ52YEFZVkZE
+ usNd3sNX6CbZkxhJ3GtlxxO3nmnGXMET2RkE3Szd/0Wcf5a1yz
+ LKawtPIJbM/znn09APVVQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> Sent: Thursday, May 26, 2011 8:39 PM
+On Thursday 26 May 2011, GuanXuetao wrote:
+> From: Guan Xuetao <gxt@mprc.pku.edu.cn>
 > 
-> On Thu, May 26, 2011 at 12:02:39AM -0700, Greg KH wrote:
-> > On Wed, May 25, 2011 at 05:37:32PM -0400, Konrad@dumpdata.com wrote:
-> > > Hey stable-tree maintainer(s).
-> > >
-> > > The follow four patches are in the 2.6.40 tree and should be back-ported to
-> 2.6.39 (only).
-> > > I forgot to CC:stable on them, so manually doing it here.
-> > >
-> > > The four patches in question have the following git commits:
-> > >
-> > > 8c5950881c3b5e6e350e4b0438a8ccc513d90df9
-> > >     xen/p2m: Create entries in the P2M_MFN trees's to track 1-1
-> mappings
-> > > 0f16d0dfcdb5aab97d9e368f008b070b5b3ec6d3
-> > >     xen/setup: Fix for incorrect xen_extra_mem_start initialization under
-> 32-bit
-> > > 15bfc094517db2ddf38ca7ed47f3a1c0ad24f7c4
-> > >     xen/setup: Ignore E820_UNUSABLE when setting 1-1 mappings.
-> > > 7899891c7d161752f29abcc9bc0a9c6c3a3af26c
-> > >     xen mmu: fix a race window causing leave_mm BUG()
-> > >
-> > > And are part of this email chain. Please apply them to 2.6.39.1 tree.
-> >
-> > I need an ack from the Xen maintainer and the original patch author
-> > before I can accept these.  Please get them to provide this and I will
+> see commit from Sam Ravnborg <d8ecc5cd8e227bc318513b5306ae88a474b8886d>
+>   kbuild: asm-generic support
 > 
-> OK
-> 
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> (who is the Xen maintainer)
-> 
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> (who is also the original patch author on some of the patches)
-> 
-> Daniel and Kevin, can you guys Ack them please?
-> 
+> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> ---
+>  arch/unicore32/Makefile           |   35 ----------------------
+>  arch/unicore32/include/asm/Kbuild |   59 +++++++++++++++++++++++++++++++++++++
+>  2 files changed, 59 insertions(+), 35 deletions(-)
 
-Acked-by: Kevin Tian <kevin.tian@intel.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Thanks
-Kevin
+This reminds me that I should do the same for ARM and maybe some others.
