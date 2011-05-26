@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab1EZWHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 18:07:06 -0400
-Received: from host1743200242118.direcway.com ([174.32.118.242]:60921 "EHLO
-	aexorsyst.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab1EZWHE (ORCPT
+	id S1758586Ab1EZWKZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 18:10:25 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:52263 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755731Ab1EZWKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 18:07:04 -0400
-From: "John Z. Bohach" <jzb2@aexorsyst.com>
-To: linux-kernel@vger.kernel.org
-Subject: __raw_notify_call_chain() stops in kernel_power_off path BUT ONLY with nfsroot
-Date: Thu, 26 May 2011 15:04:17 -0700
-User-Agent: KMail/1.9.6
+	Thu, 26 May 2011 18:10:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=QKkr7yc1C9t3QlLQE1xEI8lqByFBm3tStxYtdgKPuCRldFMyYcvmWGW2bAaiiwEjpH
+         VCDfUa++7wsCa/sY6mReuQTnkEzfesLJ5CsahBYaK0fihn3x+GawYoxLuOJMJLxR4gHY
+         bYupJUdGYcYXcrALXDHNcGhFH0Jrg3pb9KqJU=
+Message-ID: <4DDECFC8.7090903@gmail.com>
+Date: Thu, 26 May 2011 16:10:16 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain;
-  charset="us-ascii"
+To: Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: perf: h/w counters not counted and no error/info reported to user
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105261504.17243.jzb2@aexorsyst.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To try to duplicate this, boot an nfsroot-ed machine into run-level 1, 
-and run 'halt -n -d -f -p'.
 
-I'm debugging why the machine will not physically remove power on a 
-power down path, and I've traced it to __raw_notify_call_chain() which 
-simply calls notify_call_chain() to do the work.
+By default (tip-perf-core) perf-stat enables a number of H/W counters:
 
-I'm running Linux version 2.6.36.1 and the code path I've traced with 
-added printk()'s is the following (with some uninteresting paths not 
-listed):
+perf stat  -- sleep 1
 
-(This code is in kernel/sys.c and kernel/notifier.c and a few other 
-arch.-specific places)
+Performance counter stats for 'sleep 1':
 
-kernel_power_off()
-  ...
-  disable_nonboot_cpus()
-    _cpu_down()
-      ...
-      cpu_die()
-      cpu_notify_nofail()
-        cpu_notify()
-          ...
-          __cpu_notify()
-            __raw_notifier_call_chain()
-              notifier_call_chain()
-            ?? strange second call from unknown location to:
-              __raw_notifier_call_chain()
-            then it just stops...
+     1.346889 task-clock
+            1 context-switches
+            0 CPU-migrations
+          157 page-faults
+<not counted> cycles
+<not counted> stalled-cycles-frontend
+<not counted> stalled-cycles-backend
+      493,740 instructions
+      137,062 branches
+        6,773 branch-misses
 
-Machine does not hang as I can see NFS timeout messages after a few 
-minutes (probably interrupt context), but no further printk's are 
-manifest, and system stays in this state until physically reset and is 
-unresponsive.
+In this case 3 of them are not counted and perf does not tell me why.
+I'm guessing that my processor (Core2 Duo T9550) does not support the
+stalled cycles counters. Should perf not emit a message telling me that?
 
-Two additional pieces of information:
+However, cycles is supported by the processor:
 
-1)  there is a single return from one of the __raw_notifier_call_chain() 
-invocations, likely the second one (but no evidence to this effect), 
-which I can see due to printk() 
-immediately before 'return' statement at the end of the 
-__raw_notifier_call_chain() function.
+perf stat -e cycles -- sleep 1
 
-2) more interesting, with the same kernel and same rootfs booted from a 
-local harddisk, the path continues, with a 'return' from the other 
-__raw_notifier_call_chain() function, and this code path continues 
-normally until the machine is powered down via 
-acpi_enter_sleep_state(S5) acpi code.
+Performance counter stats for 'sleep 1':
 
-Since this code works on local disk, it should work on nfsroot.  I think 
-the question that needs an answer is
+         1,091,102 cycles
 
-What is different about the notifier list when root=/dev/nfsroot vs. 
-localdisk or is there some other interrupt-based issue going on away 
-from my prying eyes...?
+Based on that I am guessing that only the last N requested events are
+counted where N is processor specific. In my case N is apparently 3 as
+this works:
 
-Other question, is why are there two CONSECUTIVE entries to 
-__raw_notifier_call_chain() EVEN IN the working case without a return() 
-of some sort in between?  Is it a dual-cpu issue?  Is this code running 
-on both CPUs?  Its a dual-cpu AMD machine...I ask because the source 
-code does not appear recursive and I'm just wondering if that is an 
-issue even though it works most of the time (i.e., is the real bug that 
-it works when it shouldn't due to some strange alignment of the stars 
-that is not present with nfsroot, but that is a just random thought).
+perf stat -e cycles -e instructions -e branches -- sleep 1
 
-Thanks,
-John Z. Bohach
+ Performance counter stats for 'sleep 1':
+
+    1,028,331 cycles
+      634,101 instructions
+      130,253 branches
+
+but adding a fourth causes the first one to roll off -- again without
+any message from perf:
+
+perf stat -e cycles -e instructions -e branches -e branch-misses -v --
+sleep 1
+Performance counter stats for 'sleep 1':
+
+<not counted> cycles
+      219,727 instructions
+      128,071 branches
+        6,625 branch-misses
+
+Which is confusing -- cycles are not counted, yet it should be given
+that it is supported.
+
+David
