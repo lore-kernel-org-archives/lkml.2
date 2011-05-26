@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933053Ab1EZTJy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:09:54 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57735 "EHLO mx3.mail.elte.hu"
+	id S933152Ab1EZTL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:11:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43462 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756464Ab1EZTJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:09:52 -0400
-Date: Thu, 26 May 2011 21:09:39 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, greearb@candelatech.com, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, arnd@arndb.de, netdev@vger.kernel.org
-Subject: Re: [patch] net/core/filter.c: Fix build error
-Message-ID: <20110526190939.GC3476@elte.hu>
-References: <efa062542c692c3f7743bf2d97b5987ab989e27e.1305999731.git.joe@perches.com>
- <20110526123153.GA16002@elte.hu>
- <1306423866.16087.10.camel@Joe-Laptop>
- <20110526.143843.205897228685761536.davem@davemloft.net>
+	id S1758281Ab1EZTL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:11:58 -0400
+Date: Thu, 26 May 2011 15:10:08 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "K.Prasad" <prasad@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, kexec@lists.infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
+Subject: Re: [RFC Patch 5/6] slimdump: Capture slimdump for fatal MCE
+ generated crashes
+Message-ID: <20110526191008.GF29496@redhat.com>
+References: <20110526170722.GB23266@in.ibm.com>
+ <20110526172305.GA18295@in.ibm.com>
+ <20110526174447.GC29496@redhat.com>
+ <20110526180931.GF4065@one.firstfloor.org>
+ <20110526182618.GD29496@redhat.com>
+ <20110526185838.GG4065@one.firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110526.143843.205897228685761536.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110526185838.GG4065@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Miller <davem@davemloft.net> wrote:
-
-> From: Joe Perches <joe@perches.com>
-> Date: Thu, 26 May 2011 08:31:06 -0700
+On Thu, May 26, 2011 at 08:58:38PM +0200, Andi Kleen wrote:
+> > If we are just extracting and saving MCE registers from vmcore, then
+> > reboot time does not increase. It increases only if user decides to
+> > extract and save extra data from vmcore.
 > 
-> > My suggestion would be to see about again adding
-> > #include <linux/ratelimit.h> somehow
-> > back to kernel.h which commit 3fff4c42bd0a removed
-> > in 2009 because of the spinlock issues.
-> > 
-> > Any suggestion on how best to fix it generically?
-> 
-> I don't think we want spinlock_t's definition being sucked
-> into kernel.h's dependency food chain.
+> Hmm I was thinking of user space usually saving the dump first
+> before analyzing it. But yes it could probably do some minimal
+> analysis first.
 
-Agreed.
+In RHEL, now we filter out the dump by default until and unless user
+decides to no filter the dump with the help of config options. 
 
-Also, i don't think it's unreasonable to require code that uses 
-DEFINE_RATELIMIT_STATE() to #include ratelimit.h. That's what we 
-require from DEFINE_MUTEX() and DEFINE_SPINLOCK() users and many 
-other users as well.
+So I think in this case we can just introduce an extra filtering
+option in "makedumpfile" and ask it to save only MCE registers
+if it notices that there is NT_MCE type of ELF note in vmcore.
 
-The only exception is printk_ratelimit() itself - that should not - 
-and currently does not - require the inclusion of ratelimit.h.
+I can very well imaging that extracting dmesg along with MCE registers
+can be useful. If nothing else, it can give us useful information about
+the system configuration.
 
-The *real* solution here would be to remove the spurious and .config 
-dependent inclusion of ratelimit.h in include/linux/net.h.  It's fine 
-to provide the net_ratelimit() interface (it'sanalogous to 
-printk_ratelimit()), but it's not fine to declare net_ratelimit_state 
-in that header and include that header in half of all networking 
-code, bringing in ratelimit.h implicitly.
+Zeroing out all the other ELF headers in vmcore takes away the
+capability to extract log buffers in case of MCE and I think
+it probably is not the best idea.
 
-So no, i don't think your patch is the real solution. The problem was 
-that the .config's you tested had CONFIG_SYSCTL=y, which brought in 
-ratelimit.h into half of the networking code. That's unnecessary and 
-problematic - the interface between net/core/sysctl_net_core.c and 
-net/core/utils.c should be done via a dedicated header (not included 
-by other code), or via explicit extern declared in the .c file (more 
-dangerous, but used by pretty much all sysctl code in the kernel).
-
-Thanks,
-
-	Ingo
+Thanks
+Vivek
