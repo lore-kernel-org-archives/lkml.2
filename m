@@ -1,432 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758541Ab1EZUAV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:00:21 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:34202 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758431Ab1EZUAS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 16:00:18 -0400
-Date: Thu, 26 May 2011 14:00:15 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk
-Subject: Re: [PATCH 01/01] gpio: support pca9574 and pca9575
-Message-ID: <20110526200015.GA29060@ponder.secretlab.ca>
-References: <2011041802>
- <1303135966-29400-1-git-send-email-haojian.zhuang@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303135966-29400-1-git-send-email-haojian.zhuang@marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933179Ab1EZUAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:00:31 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39258 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933118Ab1EZUAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 16:00:25 -0400
+Subject: [PATCH V6 0/4 net-next] macvtap/vhost TX zero-copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 13:00:20 -0700
+Message-ID: <1306440020.5180.47.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 10:12:46PM +0800, Haojian Zhuang wrote:
-> PCA957x is i2c gpio expander, and similar to PCA953x. Although register
-> configurations are different between PCA957x and PCA953x. They can share
-> a lot of components, such as IRQ handling, GPIO IN/OUT. So updating PCA953x
-> driver to support PCA957x chips.
-> 
-> Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
+This patchset add supports for TX zero-copy between guest and host
+kernel through vhost. It significantly reduces CPU utilization on the
+local host on which the guest is located (It reduced about 50% CPU usage
+for single stream test on the host, while 4K message size BW has
+increased about 50%). The patchset is based on previous submission and
+comments from the community regarding when/how to handle guest kernel
+buffers to be released. This is the simplest approach I can think of
+after comparing with several other solutions.
 
-Applied, thanks.
+This patchset has integrated V3 review comments from community: 
 
-g.
+1. Add more comments on how to use device ZEROCOPY flag;
 
-> ---
->  drivers/gpio/pca953x.c |  249 +++++++++++++++++++++++++++++++++++++-----------
->  1 files changed, 191 insertions(+), 58 deletions(-)
-> 
-> diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
-> index b473429..0de208f 100644
-> --- a/drivers/gpio/pca953x.c
-> +++ b/drivers/gpio/pca953x.c
-> @@ -24,33 +24,46 @@
->  #include <linux/of_gpio.h>
->  #endif
->  
-> -#define PCA953X_INPUT          0
-> -#define PCA953X_OUTPUT         1
-> -#define PCA953X_INVERT         2
-> -#define PCA953X_DIRECTION      3
-> -
-> -#define PCA953X_GPIOS	       0x00FF
-> -#define PCA953X_INT	       0x0100
-> +#define PCA953X_INPUT		0
-> +#define PCA953X_OUTPUT		1
-> +#define PCA953X_INVERT		2
-> +#define PCA953X_DIRECTION	3
-> +
-> +#define PCA957X_IN		0
-> +#define PCA957X_INVRT		1
-> +#define PCA957X_BKEN		2
-> +#define PCA957X_PUPD		3
-> +#define PCA957X_CFG		4
-> +#define PCA957X_OUT		5
-> +#define PCA957X_MSK		6
-> +#define PCA957X_INTS		7
-> +
-> +#define PCA_GPIO_MASK		0x00FF
-> +#define PCA_INT			0x0100
-> +#define PCA953X_TYPE		0x1000
-> +#define PCA957X_TYPE		0x2000
->  
->  static const struct i2c_device_id pca953x_id[] = {
-> -	{ "pca9534", 8  | PCA953X_INT, },
-> -	{ "pca9535", 16 | PCA953X_INT, },
-> -	{ "pca9536", 4, },
-> -	{ "pca9537", 4  | PCA953X_INT, },
-> -	{ "pca9538", 8  | PCA953X_INT, },
-> -	{ "pca9539", 16 | PCA953X_INT, },
-> -	{ "pca9554", 8  | PCA953X_INT, },
-> -	{ "pca9555", 16 | PCA953X_INT, },
-> -	{ "pca9556", 8, },
-> -	{ "pca9557", 8, },
-> -
-> -	{ "max7310", 8, },
-> -	{ "max7312", 16 | PCA953X_INT, },
-> -	{ "max7313", 16 | PCA953X_INT, },
-> -	{ "max7315", 8  | PCA953X_INT, },
-> -	{ "pca6107", 8  | PCA953X_INT, },
-> -	{ "tca6408", 8  | PCA953X_INT, },
-> -	{ "tca6416", 16 | PCA953X_INT, },
-> +	{ "pca9534", 8  | PCA953X_TYPE | PCA_INT, },
-> +	{ "pca9535", 16 | PCA953X_TYPE | PCA_INT, },
-> +	{ "pca9536", 4  | PCA953X_TYPE, },
-> +	{ "pca9537", 4  | PCA953X_TYPE | PCA_INT, },
-> +	{ "pca9538", 8  | PCA953X_TYPE | PCA_INT, },
-> +	{ "pca9539", 16 | PCA953X_TYPE | PCA_INT, },
-> +	{ "pca9554", 8  | PCA953X_TYPE | PCA_INT, },
-> +	{ "pca9555", 16 | PCA953X_TYPE | PCA_INT, },
-> +	{ "pca9556", 8  | PCA953X_TYPE, },
-> +	{ "pca9557", 8  | PCA953X_TYPE, },
-> +	{ "pca9574", 8  | PCA957X_TYPE | PCA_INT, },
-> +	{ "pca9575", 16 | PCA957X_TYPE | PCA_INT, },
-> +
-> +	{ "max7310", 8  | PCA953X_TYPE, },
-> +	{ "max7312", 16 | PCA953X_TYPE | PCA_INT, },
-> +	{ "max7313", 16 | PCA953X_TYPE | PCA_INT, },
-> +	{ "max7315", 8  | PCA953X_TYPE | PCA_INT, },
-> +	{ "pca6107", 8  | PCA953X_TYPE | PCA_INT, },
-> +	{ "tca6408", 8  | PCA953X_TYPE | PCA_INT, },
-> +	{ "tca6416", 16 | PCA953X_TYPE | PCA_INT, },
->  	/* NYET:  { "tca6424", 24, }, */
->  	{ }
->  };
-> @@ -75,16 +88,32 @@ struct pca953x_chip {
->  	struct pca953x_platform_data *dyn_pdata;
->  	struct gpio_chip gpio_chip;
->  	const char *const *names;
-> +	int	chip_type;
->  };
->  
->  static int pca953x_write_reg(struct pca953x_chip *chip, int reg, uint16_t val)
->  {
-> -	int ret;
-> +	int ret = 0;
->  
->  	if (chip->gpio_chip.ngpio <= 8)
->  		ret = i2c_smbus_write_byte_data(chip->client, reg, val);
-> -	else
-> -		ret = i2c_smbus_write_word_data(chip->client, reg << 1, val);
-> +	else {
-> +		switch (chip->chip_type) {
-> +		case PCA953X_TYPE:
-> +			ret = i2c_smbus_write_word_data(chip->client,
-> +							reg << 1, val);
-> +			break;
-> +		case PCA957X_TYPE:
-> +			ret = i2c_smbus_write_byte_data(chip->client, reg << 1,
-> +							val & 0xff);
-> +			if (ret < 0)
-> +				break;
-> +			ret = i2c_smbus_write_byte_data(chip->client,
-> +							(reg << 1) + 1,
-> +							(val & 0xff00) >> 8);
-> +			break;
-> +		}
-> +	}
->  
->  	if (ret < 0) {
->  		dev_err(&chip->client->dev, "failed writing register\n");
-> @@ -116,13 +145,22 @@ static int pca953x_gpio_direction_input(struct gpio_chip *gc, unsigned off)
->  {
->  	struct pca953x_chip *chip;
->  	uint16_t reg_val;
-> -	int ret;
-> +	int ret, offset = 0;
->  
->  	chip = container_of(gc, struct pca953x_chip, gpio_chip);
->  
->  	mutex_lock(&chip->i2c_lock);
->  	reg_val = chip->reg_direction | (1u << off);
-> -	ret = pca953x_write_reg(chip, PCA953X_DIRECTION, reg_val);
-> +
-> +	switch (chip->chip_type) {
-> +	case PCA953X_TYPE:
-> +		offset = PCA953X_DIRECTION;
-> +		break;
-> +	case PCA957X_TYPE:
-> +		offset = PCA957X_CFG;
-> +		break;
-> +	}
-> +	ret = pca953x_write_reg(chip, offset, reg_val);
->  	if (ret)
->  		goto exit;
->  
-> @@ -138,7 +176,7 @@ static int pca953x_gpio_direction_output(struct gpio_chip *gc,
->  {
->  	struct pca953x_chip *chip;
->  	uint16_t reg_val;
-> -	int ret;
-> +	int ret, offset = 0;
->  
->  	chip = container_of(gc, struct pca953x_chip, gpio_chip);
->  
-> @@ -149,7 +187,15 @@ static int pca953x_gpio_direction_output(struct gpio_chip *gc,
->  	else
->  		reg_val = chip->reg_output & ~(1u << off);
->  
-> -	ret = pca953x_write_reg(chip, PCA953X_OUTPUT, reg_val);
-> +	switch (chip->chip_type) {
-> +	case PCA953X_TYPE:
-> +		offset = PCA953X_OUTPUT;
-> +		break;
-> +	case PCA957X_TYPE:
-> +		offset = PCA957X_OUT;
-> +		break;
-> +	}
-> +	ret = pca953x_write_reg(chip, offset, reg_val);
->  	if (ret)
->  		goto exit;
->  
-> @@ -157,7 +203,15 @@ static int pca953x_gpio_direction_output(struct gpio_chip *gc,
->  
->  	/* then direction */
->  	reg_val = chip->reg_direction & ~(1u << off);
-> -	ret = pca953x_write_reg(chip, PCA953X_DIRECTION, reg_val);
-> +	switch (chip->chip_type) {
-> +	case PCA953X_TYPE:
-> +		offset = PCA953X_DIRECTION;
-> +		break;
-> +	case PCA957X_TYPE:
-> +		offset = PCA957X_CFG;
-> +		break;
-> +	}
-> +	ret = pca953x_write_reg(chip, offset, reg_val);
->  	if (ret)
->  		goto exit;
->  
-> @@ -172,12 +226,20 @@ static int pca953x_gpio_get_value(struct gpio_chip *gc, unsigned off)
->  {
->  	struct pca953x_chip *chip;
->  	uint16_t reg_val;
-> -	int ret;
-> +	int ret, offset = 0;
->  
->  	chip = container_of(gc, struct pca953x_chip, gpio_chip);
->  
->  	mutex_lock(&chip->i2c_lock);
-> -	ret = pca953x_read_reg(chip, PCA953X_INPUT, &reg_val);
-> +	switch (chip->chip_type) {
-> +	case PCA953X_TYPE:
-> +		offset = PCA953X_INPUT;
-> +		break;
-> +	case PCA957X_TYPE:
-> +		offset = PCA957X_IN;
-> +		break;
-> +	}
-> +	ret = pca953x_read_reg(chip, offset, &reg_val);
->  	mutex_unlock(&chip->i2c_lock);
->  	if (ret < 0) {
->  		/* NOTE:  diagnostic already emitted; that's all we should
-> @@ -194,7 +256,7 @@ static void pca953x_gpio_set_value(struct gpio_chip *gc, unsigned off, int val)
->  {
->  	struct pca953x_chip *chip;
->  	uint16_t reg_val;
-> -	int ret;
-> +	int ret, offset = 0;
->  
->  	chip = container_of(gc, struct pca953x_chip, gpio_chip);
->  
-> @@ -204,7 +266,15 @@ static void pca953x_gpio_set_value(struct gpio_chip *gc, unsigned off, int val)
->  	else
->  		reg_val = chip->reg_output & ~(1u << off);
->  
-> -	ret = pca953x_write_reg(chip, PCA953X_OUTPUT, reg_val);
-> +	switch (chip->chip_type) {
-> +	case PCA953X_TYPE:
-> +		offset = PCA953X_OUTPUT;
-> +		break;
-> +	case PCA957X_TYPE:
-> +		offset = PCA957X_OUT;
-> +		break;
-> +	}
-> +	ret = pca953x_write_reg(chip, offset, reg_val);
->  	if (ret)
->  		goto exit;
->  
-> @@ -322,9 +392,17 @@ static uint16_t pca953x_irq_pending(struct pca953x_chip *chip)
->  	uint16_t old_stat;
->  	uint16_t pending;
->  	uint16_t trigger;
-> -	int ret;
-> -
-> -	ret = pca953x_read_reg(chip, PCA953X_INPUT, &cur_stat);
-> +	int ret, offset = 0;
-> +
-> +	switch (chip->chip_type) {
-> +	case PCA953X_TYPE:
-> +		offset = PCA953X_INPUT;
-> +		break;
-> +	case PCA957X_TYPE:
-> +		offset = PCA957X_IN;
-> +		break;
-> +	}
-> +	ret = pca953x_read_reg(chip, offset, &cur_stat);
->  	if (ret)
->  		return 0;
->  
-> @@ -372,14 +450,21 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
->  {
->  	struct i2c_client *client = chip->client;
->  	struct pca953x_platform_data *pdata = client->dev.platform_data;
-> -	int ret;
-> +	int ret, offset = 0;
->  
->  	if (pdata->irq_base != -1
-> -			&& (id->driver_data & PCA953X_INT)) {
-> +			&& (id->driver_data & PCA_INT)) {
->  		int lvl;
->  
-> -		ret = pca953x_read_reg(chip, PCA953X_INPUT,
-> -				       &chip->irq_stat);
-> +		switch (chip->chip_type) {
-> +		case PCA953X_TYPE:
-> +			offset = PCA953X_INPUT;
-> +			break;
-> +		case PCA957X_TYPE:
-> +			offset = PCA957X_IN;
-> +			break;
-> +		}
-> +		ret = pca953x_read_reg(chip, offset, &chip->irq_stat);
->  		if (ret)
->  			goto out_failed;
->  
-> @@ -439,7 +524,7 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
->  	struct i2c_client *client = chip->client;
->  	struct pca953x_platform_data *pdata = client->dev.platform_data;
->  
-> -	if (pdata->irq_base != -1 && (id->driver_data & PCA953X_INT))
-> +	if (pdata->irq_base != -1 && (id->driver_data & PCA_INT))
->  		dev_warn(&client->dev, "interrupt support not compiled in\n");
->  
->  	return 0;
-> @@ -498,12 +583,65 @@ pca953x_get_alt_pdata(struct i2c_client *client)
->  }
->  #endif
->  
-> +static int __devinit device_pca953x_init(struct pca953x_chip *chip, int invert)
-> +{
-> +	int ret;
-> +
-> +	ret = pca953x_read_reg(chip, PCA953X_OUTPUT, &chip->reg_output);
-> +	if (ret)
-> +		goto out;
-> +
-> +	ret = pca953x_read_reg(chip, PCA953X_DIRECTION,
-> +			       &chip->reg_direction);
-> +	if (ret)
-> +		goto out;
-> +
-> +	/* set platform specific polarity inversion */
-> +	ret = pca953x_write_reg(chip, PCA953X_INVERT, invert);
-> +	if (ret)
-> +		goto out;
-> +	return 0;
-> +out:
-> +	return ret;
-> +}
-> +
-> +static int __devinit device_pca957x_init(struct pca953x_chip *chip, int invert)
-> +{
-> +	int ret;
-> +	uint16_t val = 0;
-> +
-> +	/* Let every port in proper state, that could save power */
-> +	pca953x_write_reg(chip, PCA957X_PUPD, 0x0);
-> +	pca953x_write_reg(chip, PCA957X_CFG, 0xffff);
-> +	pca953x_write_reg(chip, PCA957X_OUT, 0x0);
-> +
-> +	ret = pca953x_read_reg(chip, PCA957X_IN, &val);
-> +	if (ret)
-> +		goto out;
-> +	ret = pca953x_read_reg(chip, PCA957X_OUT, &chip->reg_output);
-> +	if (ret)
-> +		goto out;
-> +	ret = pca953x_read_reg(chip, PCA957X_CFG, &chip->reg_direction);
-> +	if (ret)
-> +		goto out;
-> +
-> +	/* set platform specific polarity inversion */
-> +	pca953x_write_reg(chip, PCA957X_INVRT, invert);
-> +
-> +	/* To enable register 6, 7 to controll pull up and pull down */
-> +	pca953x_write_reg(chip, PCA957X_BKEN, 0x202);
-> +
-> +	return 0;
-> +out:
-> +	return ret;
-> +}
-> +
->  static int __devinit pca953x_probe(struct i2c_client *client,
->  				   const struct i2c_device_id *id)
->  {
->  	struct pca953x_platform_data *pdata;
->  	struct pca953x_chip *chip;
-> -	int ret;
-> +	int ret = 0;
->  
->  	chip = kzalloc(sizeof(struct pca953x_chip), GFP_KERNEL);
->  	if (chip == NULL)
-> @@ -530,25 +668,20 @@ static int __devinit pca953x_probe(struct i2c_client *client,
->  	chip->gpio_start = pdata->gpio_base;
->  
->  	chip->names = pdata->names;
-> +	chip->chip_type = id->driver_data & (PCA953X_TYPE | PCA957X_TYPE);
->  
->  	mutex_init(&chip->i2c_lock);
->  
->  	/* initialize cached registers from their original values.
->  	 * we can't share this chip with another i2c master.
->  	 */
-> -	pca953x_setup_gpio(chip, id->driver_data & PCA953X_GPIOS);
-> +	pca953x_setup_gpio(chip, id->driver_data & PCA_GPIO_MASK);
->  
-> -	ret = pca953x_read_reg(chip, PCA953X_OUTPUT, &chip->reg_output);
-> -	if (ret)
-> -		goto out_failed;
-> -
-> -	ret = pca953x_read_reg(chip, PCA953X_DIRECTION, &chip->reg_direction);
-> -	if (ret)
-> -		goto out_failed;
-> -
-> -	/* set platform specific polarity inversion */
-> -	ret = pca953x_write_reg(chip, PCA953X_INVERT, pdata->invert);
-> -	if (ret)
-> +	if (chip->chip_type == PCA953X_TYPE)
-> +		device_pca953x_init(chip, pdata->invert);
-> +	else if (chip->chip_type == PCA957X_TYPE)
-> +		device_pca957x_init(chip, pdata->invert);
-> +	else
->  		goto out_failed;
->  
->  	ret = pca953x_irq_setup(chip, id);
-> -- 
-> 1.5.6.5
-> 
+2. Change device ZEROCOPY to available bit 31
+
+3. Fix skb header linear allocation when virtio_net GSO is not enabled
+
+It has integrated V4 review comments from MST and Sridhar:
+
+1. In vhost, using socket poll wake up for outstanding DMAs
+
+2. Add detailed comments for vhost_zerocopy_signal_used call
+
+3. Add sleep in vhost shutting down instead of busy-wait for outstanding
+   DMAs.
+
+4. Copy small packets, don't do zero-copy callback in mavtap, mark it's
+   DMA done in vhost
+
+5. change zerocopy to bool in macvtap.
+
+It integrates V5 review comments from MST and 
+
+
+Michał Mirosław <mirqus@gmail.com>
+
+1. Prevent userspace apps from holding skb userspace buffers by copying
+userspace buffers to kernel in skb_clone, skb_copy, pskb_copy,
+pskb_expand_head.
+
+2. It is also used HIGHDMA, SG feature bits to enable ZEROCOPY to remove
+the dependency of a new feature bit, we can add it later when new
+feature bit is available.
+
+This patchset includes:
+
+1/4: Add a new sock zero-copy flag, SOCK_ZEROCOPY;
+
+2/4: Add a new struct skb_ubuf_info in skb_share_info for userspace
+buffers release callback when lower device DMA has done for that skb,
+which is the last reference count gone; Or whenever skb_clone, skb_copy,
+pskb_copy, pskb_expand_head get call from tcpdump, filtering, these
+userspace
+buffers will be copied into kernel ... we don't want userspace apps to
+hold
+userspace buffers too long.
+
+3/4: Add vhost zero-copy callback in vhost when skb last refcnt is gone;
+add vhost_zerocopy_signal_used to notify guest to release TX skb
+buffers.
+
+4/4: Add macvtap zero-copy in lower device when sending packet is
+greater than 256 bytes.
+
+The patchset is built against most recent net-next linux 2.6.39-rc7. It
+has passed netperf/netserver multiple streams stress test, tcpdump
+suspended test, dynamically SG change test.
+
+Single TCP_STREAM 120 secs test results over ixgbe 10Gb NIC results:
+
+Message BW(Gb/s)qemu-kvm (NumCPU)vhost-net(NumCPU) PerfTop irq/s
+4K      7408.57         92.1%           22.6%           1229
+4K(Orig)4913.17         118.1%          84.1%           2086    
+8K      9129.90         89.3%           23.3%           1141
+8K(Orig)7094.55         115.9%          84.7%           2157
+16K     9178.81         89.1%           23.3%           1139
+16K(Orig)8927.1         118.7%          83.4%           2262
+64K     9171.43         88.4%           24.9%           1253
+64K(Orig)9085.85        115.9%          82.4%           2229
+
+For message size less or equal than 2K, there is a known KVM guest TX
+overrun issue. With this zero-copy patch, the issue becomes more severe,
+guest io_exits has tripled than before, so the performance is not good.
+Once the TX overrun problem has been addressed, I will retest the small
+message size performance.
+
+ drivers/net/macvtap.c          |  132
+++++++++++++++++++++++++++++++++++++---
+ drivers/vhost/net.c            |   44 +++++++++++++-
+ drivers/vhost/vhost.c          |   49 +++++++++++++++
+ drivers/vhost/vhost.h          |   13 ++++
+ include/linux/netdevice.h      |   10 +++
+ include/linux/skbuff.h         |   26 ++++++++
+ include/net/sock.h             |    1 +
+ net/core/skbuff.c              |   81 ++++++++++++++++++++++++-
+ 8 files changed, 345 insertions(+), 17 deletions(-)
+
+
