@@ -1,185 +1,537 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab1EZMO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 08:14:26 -0400
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:43982
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753816Ab1EZMOZ (ORCPT
+	id S1757497Ab1EZMUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 08:20:40 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:15796 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757430Ab1EZMUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 08:14:25 -0400
-Message-ID: <4DDE441C.2080808@compulab.co.il>
-Date: Thu, 26 May 2011 15:14:20 +0300
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.13) Gecko/20101211 Lightning/1.0b2 Thunderbird/3.1.7
+	Thu, 26 May 2011 08:20:38 -0400
+X-SpamScore: -1
+X-BigFish: VPS-1(zz2176Mc8kzz1202hzz8275bhz32i2a8h668h839h65h)
+X-Spam-TCS-SCL: 4:0
+X-Forefront-Antispam-Report: CIP:220.225.38.51;KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+        Dajun Chen <Dajun.Chen@diasemi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Date: Thu, 26 May 2011 17:49:12 +0530
+Subject: [PATCHv3 6/11] HWMON: Support of fixed point conversion for bat
+ temperature
+Thread-Topic: [PATCHv3 6/11] HWMON: Support of fixed point conversion for
+ bat temperature
+Thread-Index: Acwbnx89fcwdHfV+ST2EdqMCQ7JD0g==
+Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BF303C2@KCINPUNHJCMS01.kpit.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [GIT PULL] omap updates for 2.6.40
-References: <20110526113905.GG27250@atomide.com>
-In-Reply-To: <20110526113905.GG27250@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4QCKknK013964
 
-Tony,
+Hi Guenter,
+
+Existing fixed point conversion logic is modified to support battery temperature. This modified logic was compiled, linked & tested successfully.
+
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+--
+diff --git a/Documentation/hwmon/da9052 b/Documentation/hwmon/da9052
+new file mode 100755
+index 0000000..aab7318
+--- /dev/null
++++ b/Documentation/hwmon/da9052
+@@ -0,0 +1,61 @@
++Kernel driver da9052-hwmon
++==========================
++
++Supported chips:
++  * Dialog Semiconductors DA9052 PMICs
++    Prefix: 'da9052'
++    Datasheet: Kindly visit www.dialog-semiconductor.com and request for the
++               official datasheet.
++
++Authors: David Dajun Chen <dchen@diasemi.com>
++
++Description
++-----------
++
++The DA9052 provides an Analogue to Digital Converter (ADC) with 10 bits
++resolution and track and hold circuitry combined with an analogue input
++multiplexer. The analogue input multiplexer will allow conversion of up to 10
++different inputs. The track and hold circuit ensures stable input voltages at
++the input of the ADC during the conversion.
++
++The ADC is used to measure the following inputs:
++Channel 0: VDDOUT - measurement of the system voltage
++Channel 1: ICH - internal battery charger current measurement
++Channel 2: TBAT - output from the battery NTC
++Channel 3: VBAT - measurement of the battery voltage
++Channel 4: ADC_IN4 - high impedance input (0 - 2.5V)
++Channel 5: ADC_IN5 - high impedance input (0 - 2.5V)
++Channel 6: ADC_IN6 - high impedance input (0 - 2.5V)
++Channel 7: XY - TSI interface to measure the X and Y voltage of the touch
++screen resistive potentiometers
++Channel 8: Internal Tjunc. - sense (internal temp. sensor)
++Channel 9: VBBAT - measurement of the backup battery voltage
++
++By using sysfs attributes we can measure the system voltage VDDOUT, the battery
++charging current ICH, battery temperature TBAT, battery junction temperature
++TJUNC, battery voltage VBAT and the back up battery voltage VBBAT.
++
++Voltage Monitoring
++------------------
++
++Voltages are sampled by a 10 bit ADC.  Voltages in millivolts are 1.465
++times the ADC value.
++
++Temperature Monitoring
++----------------------
++
++Temperatures are sampled by a 10 bit ADC.  Junction and battery temperatures
++are monitored by the ADC channels.
++
++The junction temperature is calculated:
++       Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
++The junction temperature attribute is supported by the driver.
++
++The battery temperature is calculated:
++       Degree Celcius = 1 / (t1 + 1/298)- 273
++where t1 = (1/B)* ln(( ADCval * 2.5)/(R25*ITBAT*255))
++Default values of R25, B, ITBAT are 10e3, 3380 and 50e-6 respectively.
++As the battery temperature computation depends on floating point
++computation and taking natural log the battery temperature attribute is
++not supported by the driver.
++
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 3236a45..da5ff6d 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -303,6 +303,16 @@ config SENSORS_DS1621
+          This driver can also be built as a module.  If so, the module
+          will be called ds1621.
+
++config SENSORS_DA9052_ADC
++        tristate "Dialog DA9052 HWMON"
++        depends on PMIC_DA9052
++        help
++          Say y here to support the ADC found on
++          Dialog Semiconductor DA9052 PMIC.
++
++          This driver can also be built as module. If so, the module
++          will be called da9052-hwmon.
++
+ config SENSORS_I5K_AMB
+        tristate "FB-DIMM AMB temperature sensor on Intel 5000 series chipsets"
+        depends on PCI && EXPERIMENTAL
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index f7c0c28..88b81ca 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -42,6 +42,7 @@ obj-$(CONFIG_SENSORS_ASC7621) += asc7621.o
+ obj-$(CONFIG_SENSORS_ATXP1)    += atxp1.o
+ obj-$(CONFIG_SENSORS_CORETEMP) += coretemp.o
+ obj-$(CONFIG_SENSORS_PKGTEMP)  += pkgtemp.o
++obj-$(CONFIG_SENSORS_DA9052_ADC)       += da9052-hwmon.o
+ obj-$(CONFIG_SENSORS_DME1737)  += dme1737.o
+ obj-$(CONFIG_SENSORS_DS620)    += ds620.o
+ obj-$(CONFIG_SENSORS_DS1621)   += ds1621.o
+diff --git a/drivers/hwmon/da9052-hwmon.c b/drivers/hwmon/da9052-hwmon.c
+new file mode 100755
+index 0000000..f961d0b
+--- /dev/null
++++ b/drivers/hwmon/da9052-hwmon.c
+@@ -0,0 +1,379 @@
++/*
++ * HWMON Driver for Dialog DA9052
++ *
++ * Copyright(c) 2011 Dialog Semiconductor Ltd.
++ *
++ * Author: David Dajun Chen <dchen@diasemi.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/log2.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/da9052/da9052.h>
++#include <linux/mfd/da9052/reg.h>
++
++struct da9052_hwmon {
++       struct da9052   *da9052;
++       struct device   *class_device;
++       struct mutex    hwmon_lock;
++};
++static const char * const input_names[] = {
++       [DA9052_ADC_VDDOUT]     =       "VDDOUT",
++       [DA9052_ADC_ICH]        =       "CHARGING CURRENT",
++       [DA9052_ADC_TBAT]       =       "BATTERY TEMP",
++       [DA9052_ADC_VBAT]       =       "BATTERY VOLTAGE",
++       [DA9052_ADC_IN4]        =       "ADC IN4",
++       [DA9052_ADC_IN5]        =       "ADC IN5",
++       [DA9052_ADC_IN6]        =       "ADC IN6",
++       [DA9052_ADC_TJUNC]      =       "BATTERY JUNCTION TEMP",
++       [DA9052_ADC_VBBAT]      =       "BACK-UP BATTERY VOLTAGE",
++};
++
++static int da9052_enable_vddout_channel(struct da9052 *da9052)
++{
++       int ret;
++
++       ret = da9052_reg_read(da9052, DA9052_ADC_CONT_REG);
++       if (ret < 0)
++               return ret;
++
++       ret |= DA9052_ADCCONT_AUTOVDDEN;
++       return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
++}
++
++static int da9052_disable_vddout_channel(struct da9052 *da9052)
++{
++       int ret;
++
++       ret = da9052_reg_read(da9052, DA9052_ADC_CONT_REG);
++       if (ret < 0)
++               return ret;
++
++       ret &= ~DA9052_ADCCONT_AUTOVDDEN;
++       return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
++
++}
++
++static ssize_t da9052_read_vddout(struct device *dev,
++       struct device_attribute *devattr, char *buf)
++{
++       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
++       int ret;
++       int vdd = -1;
++
++       mutex_lock(&hwmon->hwmon_lock);
++
++       ret = da9052_enable_vddout_channel(hwmon->da9052);
++       if (ret < 0)
++               goto hwmon_err;
++
++       ret = da9052_reg_read(hwmon->da9052, DA9052_VDD_RES_REG);
++       if (ret < 0)
++               pr_err("failed to read VDD_RES_REG\n");
++       else
++               vdd = ret;
++
++       ret = da9052_disable_vddout_channel(hwmon->da9052);
++       if (ret < 0)
++               goto hwmon_err;
++
++       if (vdd) {
++               mutex_unlock(&hwmon->hwmon_lock);
++               return sprintf(buf, "%d\n", vdd);
++       }
++hwmon_err:
++       mutex_unlock(&hwmon->hwmon_lock);
++       return ret;
++}
++
++static ssize_t da9052_read_ich(struct device *dev,
++       struct device_attribute *devattr, char *buf)
++{
++       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
++       int ret;
++
++       ret = da9052_reg_read(hwmon->da9052, DA9052_ICHG_AV_REG);
++       if (ret < 0)
++               return ret;
++
++       /* Equivalent to 3.9mA/bit in register ICHG_AV */
++       ret = DIV_ROUND_CLOSEST(ret * 39, 10);
++       return sprintf(buf, "%d\n", ret);
++}
++
++#define BCONST         3
++#define TBAT           3355705
++#define CAL_LOG2(nr) ((int)((ilog2(nr) - ilog2(100)) * 693147181LL))
++/*
++       The battery temperature is calculated:
++       Degree Celcius = 1 / (t1 + 1/298)- 273
++       where t1 = (1/B)* ln((ADCval * 2.5)/(R25*ITBAT*255))
++       And R25 = 10e3, B = 3380 and ITBAT = 50e-6
++*/
++static int cal_temperature(int adc_val)
++{
++
++       int log_val;
++       unsigned int temp, deg_celcius;
++
++       /* Formula 2.5/(R25*ITBAT*255) gets reduced to 0.02
++        Convert float value to fixed point using a multiplier */
++       log_val = adc_val * 2;
++
++       temp = BCONST * (CAL_LOG2(log_val) * 10000) + TBAT;
++
++       /* ln(x) = log2(x) * ln(2) = log2(x) * 0.693147181
++       log2(float) is converted to fixed point as log2(nr) - log2(dr) */
++       deg_celcius = ((1000000000/temp) - 273);
++
++       /* Battery temperature in degree celcius */
++       return deg_celcius;
++}
++
++static ssize_t da9052_read_tbat(struct device *dev,
++                       struct device_attribute *devattr, char *buf)
++{
++       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
++       int ret;
++       int tbat;
++
++       ret = da9052_reg_read(hwmon->da9052, DA9052_TBAT_RES_REG);
++       if (ret < 0)
++               return ret;
++
++       tbat = cal_temperature(ret);
++
++       return sprintf(buf, "%d\n", (tbat*1000));
++}
++
++static ssize_t da9052_read_vbat(struct device *dev,
++       struct device_attribute *devattr, char *buf)
++{
++       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
++       int ret;
++
++       ret = da9052_adc_manual_read(hwmon->da9052, DA9052_ADC_VBAT);
++       if (ret < 0)
++               return ret;
++
++       return sprintf(buf, "%d\n", ret);
++}
++
++static ssize_t da9052_read_misc_channel(struct device *dev,
++       struct device_attribute *devattr, char *buf)
++{
++       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
++       int channel = to_sensor_dev_attr(devattr)->index;
++       int ret;
++
++       ret = da9052_adc_manual_read(hwmon->da9052, channel);
++       if (ret < 0)
++               return ret;
++
++       return sprintf(buf, "%d\n", ret);
++}
++
++static ssize_t da9052_read_tjunc(struct device *dev,
++       struct device_attribute *devattr, char *buf)
++{
++       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
++       int temp;
++       int ret;
++
++       ret = da9052_reg_read(hwmon->da9052, DA9052_TJUNC_RES_REG);
++       if (ret < 0)
++               return ret;
++
++       temp = ret;
++
++       ret = da9052_reg_read(hwmon->da9052, DA9052_T_OFFSET_REG);
++       if (ret < 0)
++               return ret;
++
++       /* Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8 */
++       ret = 1708 * (temp - ret) - 108800;
++       return sprintf(buf, "%d\n", ret);
++}
++
++static ssize_t da9052_read_vbbat(struct device *dev,
++       struct device_attribute *devattr, char *buf)
++{
++       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
++       int ret;
++
++       ret = da9052_adc_manual_read(hwmon->da9052, DA9052_ADC_VBBAT);
++       if (ret < 0)
++               return ret;
++
++       return sprintf(buf, "%d\n", ret);
++
++}
++
++static ssize_t da9052_hwmon_show_name(struct device *dev,
++               struct device_attribute *devattr, char *buf)
++{
++       return sprintf(buf, "da9052-hwmon\n");
++}
++
++static ssize_t show_label(struct device *dev,
++                         struct device_attribute *devattr, char *buf)
++{
++       return sprintf(buf, "%s\n",
++                       input_names[to_sensor_dev_attr(devattr)->index]);
++}
++
++static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, da9052_read_vddout, NULL,
++                               DA9052_ADC_ICH);
++static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, show_label, NULL,
++                               DA9052_ADC_ICH);
++static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, da9052_read_vbat, NULL,
++                               DA9052_ADC_VBAT);
++static SENSOR_DEVICE_ATTR(in3_label, S_IRUGO, show_label, NULL,
++                               DA9052_ADC_VBAT);
++static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, da9052_read_misc_channel, NULL,
++                               DA9052_ADC_IN4);
++static SENSOR_DEVICE_ATTR(in4_label, S_IRUGO, show_label, NULL,
++                               DA9052_ADC_IN4);
++static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, da9052_read_misc_channel, NULL,
++                               DA9052_ADC_IN5);
++static SENSOR_DEVICE_ATTR(in5_label, S_IRUGO, show_label, NULL,
++                               DA9052_ADC_IN5);
++static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, da9052_read_misc_channel, NULL,
++                               DA9052_ADC_IN6);
++static SENSOR_DEVICE_ATTR(in6_label, S_IRUGO, show_label, NULL,
++                               DA9052_ADC_IN6);
++static SENSOR_DEVICE_ATTR(in9_input, S_IRUGO, da9052_read_vbbat, NULL,
++                               DA9052_ADC_VBBAT);
++static SENSOR_DEVICE_ATTR(in9_label, S_IRUGO, show_label, NULL,
++                               DA9052_ADC_VBBAT);
++static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, da9052_read_ich, NULL,
++                               DA9052_ADC_ICH);
++static SENSOR_DEVICE_ATTR(curr1_label, S_IRUGO, show_label, NULL,
++                               DA9052_ADC_ICH);
++
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, da9052_read_tbat, NULL,
++                               DA9052_ADC_TBAT);
++static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, show_label, NULL,
++                               DA9052_ADC_TBAT);
++
++static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, da9052_read_tjunc, NULL,
++                               DA9052_ADC_TJUNC);
++static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, show_label, NULL,
++                               DA9052_ADC_TJUNC);
++
++static DEVICE_ATTR(name, S_IRUGO, da9052_hwmon_show_name, NULL);
++
++static struct attribute *da9052_attr[] = {
++       &dev_attr_name.attr,
++
++       &sensor_dev_attr_in0_input.dev_attr.attr,
++       &sensor_dev_attr_in0_label.dev_attr.attr,
++       &sensor_dev_attr_curr1_input.dev_attr.attr,
++       &sensor_dev_attr_curr1_label.dev_attr.attr,
++       &sensor_dev_attr_temp1_input.dev_attr.attr,
++       &sensor_dev_attr_temp1_label.dev_attr.attr,
++       &sensor_dev_attr_in3_input.dev_attr.attr,
++       &sensor_dev_attr_in3_label.dev_attr.attr,
++       &sensor_dev_attr_in4_input.dev_attr.attr,
++       &sensor_dev_attr_in4_label.dev_attr.attr,
++       &sensor_dev_attr_in5_input.dev_attr.attr,
++       &sensor_dev_attr_in5_label.dev_attr.attr,
++       &sensor_dev_attr_in6_input.dev_attr.attr,
++       &sensor_dev_attr_in6_label.dev_attr.attr,
++       &sensor_dev_attr_temp1_input.dev_attr.attr,
++       &sensor_dev_attr_temp1_label.dev_attr.attr,
++       &sensor_dev_attr_temp2_input.dev_attr.attr,
++       &sensor_dev_attr_temp2_label.dev_attr.attr,
++       &sensor_dev_attr_in9_input.dev_attr.attr,
++       &sensor_dev_attr_in9_label.dev_attr.attr,
++       NULL
++};
++
++static const struct attribute_group da9052_attr_group = {.attrs = da9052_attr};
++
++static int __init da9052_hwmon_probe(struct platform_device *pdev)
++{
++       struct da9052_hwmon *hwmon;
++       int ret;
++
++       hwmon = kzalloc(sizeof(struct da9052_hwmon), GFP_KERNEL);
++       if (!hwmon)
++               return -ENOMEM;
++
++       mutex_init(&hwmon->hwmon_lock);
++       hwmon->da9052 = dev_get_drvdata(pdev->dev.parent);
++
++       platform_set_drvdata(pdev, hwmon);
++
++       ret = sysfs_create_group(&pdev->dev.kobj, &da9052_attr_group);
++       if (ret)
++               goto err_mem;
++
++       hwmon->class_device = hwmon_device_register(&pdev->dev);
++       if (IS_ERR(hwmon->class_device)) {
++               ret = PTR_ERR(hwmon->class_device);
++               sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
++               goto err_mem;
++       }
++
++       return 0;
++
++err_mem:
++       kfree(hwmon);
++       return ret;
++}
++
++static int __devexit da9052_hwmon_remove(struct platform_device *pdev)
++{
++       struct da9052_hwmon *hwmon = platform_get_drvdata(pdev);
++
++       hwmon_device_unregister(hwmon->class_device);
++       sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
++       mutex_destroy(&hwmon->hwmon_lock);
++       kfree(hwmon);
++
++       return 0;
++}
++
++static struct platform_driver da9052_hwmon_driver = {
++       .driver = {
++               .name           = "da9052-hwmon",
++               .owner  = THIS_MODULE,
++       },
++       .probe  = da9052_hwmon_probe,
++       .remove = __devexit_p(da9052_hwmon_remove),
++
++};
++
++static int __init da9052_hwmon_init(void)
++{
++
++       return platform_driver_register(&da9052_hwmon_driver);
++}
++module_init(da9052_hwmon_init);
++
++static void __exit da9052_hwmon_exit(void)
++{
++       platform_driver_unregister(&da9052_hwmon_driver);
++}
++module_exit(da9052_hwmon_exit);
++
++MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
++MODULE_DESCRIPTION("DA9052 HWMON driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:da9052-hwmon");
 
 
-What about this one: [PATCH v2] arm: omap2plus: move NAND_BLOCK_SIZE out of boards
-
-Why not include it? It is no new code, just generalize stuff and 11 lines off... not much but still.
-
-
-
-On 05/26/11 14:39, Tony Lindgren wrote:
-
-> Hi Linus,
->
-> Please pull omap updates for this merge window from:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-for-linus
->
-> This contains clean-up to shrink down omap specific code a bit. Also included
-> are some fixes. But basically no new code at this point.
->
-> Regards,
->
-> Tony
->
->
-> Aaro Koskinen (5):
->       OMAP3+: smartreflex: fix sr_late_init() error path in probe
->       OMAP3+: smartreflex: request the memory region
->       OMAP3+: smartreflex: fix ioremap leak on probe error
->       OMAP3+: smartreflex: delete instance from sr_list on probe error
->       OMAP3+: smartreflex: delete debugfs entries on probe error
->
-> Felipe Balbi (1):
->       usb: musb: am35x: fix compile error when building am35x
->
-> Hema HK (3):
->       usb: musb: OMAP4430: Power down the PHY during board init
->       usb: otg: OMAP4430: Fixing the omap4430_phy_init function
->       usb: otg: OMAP4430: Powerdown the internal PHY when USB is disabled
->
-> Igor Grinberg (2):
->       arm: omap: gpmc-smsc911x: minor style fixes
->       arm: omap2plus: GPIO cleanup
->
-> Jean Pihet (5):
->       OMAP3 cpuidle: remove useless SDP specific timings
->       OMAP3: clean-up mach specific cpuidle data structures
->       OMAP3: cpuidle: re-organize the C-states data
->       OMAP3: cpuidle: code rework for improved readability
->       OMAP3: cpuidle: change the power domains modes determination logic
->
-> Mike Rapoport (10):
->       omap: gpmc-smsc911x: always set irq flags to IORESOURCE_IRQ_LOWLEVEL
->       omap: convert boards that use SMSC911x to use gpmc-smsc911x
->       omap: consolidate touch screen initialization among different boards
->       omap: use common initialization for PMIC i2c bus
->       omap: move detection of NAND CS to common-board-devices
->       omap: musb: introduce default board config
->       omap: igep0020: name refactoring for future merge with IGEP3
->       omap: igep0020: minor refactoring
->       omap: igep0020: add support for IGEP3
->       omap: drop board-igep0030.c
->
-> Nishanth Menon (2):
->       OMAP4: PM: remove redundant #ifdef CONFIG_PM
->       OMAP3+: voltage: remove spurious pr_notice for debugfs
->
-> Sanjeev Premi (1):
->       OMAP3: PM: Boot message is not an error, and not helpful, remove it
->
-> Tony Lindgren (5):
->       omap: Run make savedefconfig on omap2plus_defconfig to shrink it
->       omap: Remove support for omap2evm
->       Merge branches 'devel-fixes', 'devel-cleanup' and 'devel-genirq' into for-next
->       Merge branch 'for-tony' of master.kernel.org:/.../balbi/usb into omap-for-linus
->       Merge branch 'for_2.6.40/pm-cleanup' of ssh://master.kernel.org/.../khilman/linux-omap-pm into omap-for-linus
->
-> omar ramirez (2):
->       OMAP3/4: l3: fix omap3_l3_probe error path
->       OMAP3/4: l3: minor cleanup for parenthesis and extra spaces
->
->  arch/arm/configs/omap2plus_defconfig            |   83 +----
->  arch/arm/mach-omap2/Kconfig                     |    1 +
->  arch/arm/mach-omap2/Makefile                    |    4 +-
->  arch/arm/mach-omap2/board-2430sdp.c             |   27 +--
->  arch/arm/mach-omap2/board-3430sdp.c             |  151 ++-------
->  arch/arm/mach-omap2/board-4430sdp.c             |  114 ++-----
->  arch/arm/mach-omap2/board-am3517crane.c         |   10 +-
->  arch/arm/mach-omap2/board-am3517evm.c           |   56 +--
->  arch/arm/mach-omap2/board-apollon.c             |   29 +-
->  arch/arm/mach-omap2/board-cm-t35.c              |  236 ++----------
->  arch/arm/mach-omap2/board-cm-t3517.c            |    9 +-
->  arch/arm/mach-omap2/board-devkit8000.c          |  131 +------
->  arch/arm/mach-omap2/board-igep0020.c            |  449 +++++++++++-----------
->  arch/arm/mach-omap2/board-igep0030.c            |  458 -----------------------
->  arch/arm/mach-omap2/board-ldp.c                 |  138 +-------
->  arch/arm/mach-omap2/board-n8x0.c                |   28 +-
->  arch/arm/mach-omap2/board-omap3beagle.c         |  194 +++-------
->  arch/arm/mach-omap2/board-omap3evm.c            |  242 +++----------
->  arch/arm/mach-omap2/board-omap3logic.c          |   14 +-
->  arch/arm/mach-omap2/board-omap3pandora.c        |   90 +----
->  arch/arm/mach-omap2/board-omap3stalker.c        |  133 +------
->  arch/arm/mach-omap2/board-omap3touchbook.c      |  121 +------
->  arch/arm/mach-omap2/board-omap4panda.c          |   79 ++---
->  arch/arm/mach-omap2/board-overo.c               |  265 +++-----------
->  arch/arm/mach-omap2/board-rm680.c               |   21 +-
->  arch/arm/mach-omap2/board-rx51-peripherals.c    |   42 +--
->  arch/arm/mach-omap2/board-rx51-video.c          |    5 +-
->  arch/arm/mach-omap2/board-rx51.c                |   18 +-
->  arch/arm/mach-omap2/board-zoom-debugboard.c     |   65 +---
->  arch/arm/mach-omap2/board-zoom-display.c        |   31 +--
->  arch/arm/mach-omap2/board-zoom-peripherals.c    |   29 +--
->  arch/arm/mach-omap2/common-board-devices.c      |  163 ++++++++
->  arch/arm/mach-omap2/common-board-devices.h      |   35 ++
->  arch/arm/mach-omap2/cpuidle34xx.c               |  436 +++++++--------------
->  arch/arm/mach-omap2/gpmc-smc91x.c               |   11 +-
->  arch/arm/mach-omap2/gpmc-smsc911x.c             |   44 +--
->  arch/arm/mach-omap2/omap_l3_noc.c               |   51 ++--
->  arch/arm/mach-omap2/omap_l3_smx.c               |   42 +--
->  arch/arm/mach-omap2/omap_phy_internal.c         |    9 +-
->  arch/arm/mach-omap2/pm.h                        |   17 +-
->  arch/arm/mach-omap2/pm34xx.c                    |   14 -
->  arch/arm/mach-omap2/pm44xx.c                    |    2 -
->  arch/arm/mach-omap2/smartreflex.c               |   23 +-
->  arch/arm/mach-omap2/usb-musb.c                  |   22 +-
->  arch/arm/mach-omap2/usb-tusb6010.c              |    3 +-
->  arch/arm/mach-omap2/voltage.c                   |    1 -
->  arch/arm/plat-omap/include/plat/gpmc-smsc911x.h |    4 +-
->  arch/arm/plat-omap/include/plat/uncompress.h    |    1 -
->  arch/arm/plat-omap/include/plat/usb.h           |    2 +-
->  drivers/video/omap/Makefile                     |    1 -
->  drivers/video/omap/lcd_omap2evm.c               |  192 ----------
->  sound/soc/omap/Kconfig                          |    8 -
->  sound/soc/omap/Makefile                         |    1 -
->  sound/soc/omap/omap2evm.c                       |  139 -------
->  54 files changed, 1110 insertions(+), 3384 deletions(-)
->  delete mode 100644 arch/arm/mach-omap2/board-igep0030.c
->  create mode 100644 arch/arm/mach-omap2/common-board-devices.c
->  create mode 100644 arch/arm/mach-omap2/common-board-devices.h
->  delete mode 100644 drivers/video/omap/lcd_omap2evm.c
->  delete mode 100644 sound/soc/omap/omap2evm.c
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
--- 
 Regards,
-Igor.
+Ashish
 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
