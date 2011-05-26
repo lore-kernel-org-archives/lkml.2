@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab1EZTqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:46:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42617 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757775Ab1EZTqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:46:38 -0400
-Date: Thu, 26 May 2011 21:46:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: david@lang.hm
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Drewry <wad@chromium.org>, Colin Walters <walters@verbum.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-Message-ID: <20110526194621.GB6363@elte.hu>
-References: <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
- <BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>
- <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
- <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
- <BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
- <BANLkTi=UFB6PLfsSTVpFEQbveMs-W4MjUg@mail.gmail.com>
- <BANLkTim44ziUsEbYVOjfLPvOLfhUgH9itw@mail.gmail.com>
- <BANLkTineHBZ-oHRsfc9R6bpcp_oyczL5pA@mail.gmail.com>
- <20110526184723.GA3177@elte.hu>
- <alpine.DEB.2.02.1105261204020.4413@asgard.lang.hm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1105261204020.4413@asgard.lang.hm>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1758357Ab1EZTrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:47:32 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38356 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab1EZTrb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:47:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=cKUK/6uPC441AFGe8WQbDauOjGRAjJllfcvNbyM/c+QWoCiCw+oXb4aP+sIiKZMOoj
+         843A3nAnUIqWWeWOu0x3uCiZUsIuQsdd9HUMhne1RHcYR+w6SclJXa89XAoUAvp4qwuO
+         rtVveDvGeWtin/pp97TISYHrqqbnpwmlQKZKM=
+Subject: Re: Kernel crash after using new Intel NIC (igb)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Maximilian Engelhardt <maxi@daemonizer.de>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, StuStaNet Vorstand <vorstand@stusta.mhn.de>
+In-Reply-To: <4DDEAA3C.7020502@fb.com>
+References: <201104250033.03401.maxi@daemonizer.de>
+	 <1303878240.2699.41.camel@edumazet-laptop>
+	 <1303878771.2699.44.camel@edumazet-laptop>
+	 <201104271352.00601.maxi@daemonizer.de>
+	 <20110512211033.GA3468@dev1756.snc6.facebook.com>
+	 <1305234953.2831.2.camel@edumazet-laptop>
+	 <20110524213327.GA3917@dev1756.snc6.facebook.com>
+	 <1306291469.3305.11.camel@edumazet-laptop>
+	 <20110525060609.GA32244@dev1756.snc6.facebook.com>
+	 <1306305331.3305.22.camel@edumazet-laptop>  <4DDEAA3C.7020502@fb.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 21:47:26 +0200
+Message-ID: <1306439246.2543.10.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* david@lang.hm <david@lang.hm> wrote:
-
-> On Thu, 26 May 2011, Ingo Molnar wrote:
+Le jeudi 26 mai 2011 à 12:30 -0700, Arun Sharma a écrit :
+> On 5/24/11 11:35 PM, Eric Dumazet wrote:
 > 
-> >* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> >> Another possibility is to do the list_empty() check twice. Once without
+> >> taking the lock and again with the spinlock held.
+> >>
 > >
-> >>It also gets rid of all configuration - one of the things that
-> >>makes most security frameworks (look at selinux, but also just
-> >>ACL's etc) such a crazy rats nest is the whole "set up for other
-> >>processes". If it's designed very much to be about just the "self"
-> >>process (after initialization etc), then I think that avoids pretty
-> >>much all the serious issues.
+> > Why ?
 > >
-> >That's how the event filters work currently: even when inherited they
-> >get removed when exec-ing a setuid task, so they cannot leak into
-> >privileged context and cannot modify execution there.
-> >
-> >Inheritance works when requested, covering only same-credential child
-> >tasks, not privileged successors.
 > 
-> this is a very reasonable default, but there should be some way of 
-> saying that you want the restrictions to carry over to the suid 
-> task (I really know what I'm doing switch)
+> Part of the problem is that I don't have a precise understanding of the 
+> race condition that's causing the list to become corrupted.
+> 
+> All I know is that doing it under the lock fixes it. If it's slowing 
+> things down, we do a check outside the lock (since it's cheap). But if 
+> we get the wrong answer, we verify it again under the lock.
+> 
 
-Unless you mean that root should be able to do it it's a security 
-hole both for events and for filters:
+You dont get the problem. Problem is : We can do the empty() test only
+if protected by the lock.
 
- - for example we dont want really finegrained events to be used to 
-   BTS hw-trace sshd and thus enable it to discover cryptographic 
-   properties of the private key sshd is using.
+If not locked, result can be wrong. [ false positive or negative ]
 
- - we do not want to *modify* the execution flow of a setuid program,
-   that can lead to exploits: by pushing the privileged codepath into 
-   a condition that can never occur on a normal system - and thus can 
-   push it into doing something it was not intended to do.
 
-   data damage could be done as well: for example if the privileged 
-   code is logging into a system file then modifying execution can 
-   damage the log file.
+> > list_del_init(&p->unused); (done under lock of course) is safe, you can
+> > call it twice, no problem.
+> 
+> Doing it twice is not a problem. But doing it when we shouldn't be doing 
+> it could be the problem.
+> 
+> The list modification under unused_peers.lock looks generally safe. But 
+> the control flow (based on refcnt) done outside the lock might have races.
+> 
 
-So it's not a good idea in general to allow unprivileged code to 
-modify the execution of privileged code. In fact it's not a good idea 
-to allow it to simply *observe* privileged code. It must remain a 
-black box with very few information leaking outwards.
+"might" is not a good word when dealing with this ;)
 
-Thanks,
+> Eg: inet_putpeer() might find the refcnt go to zero, but before it adds 
+> it to the unused list, another thread may be doing inet_getpeer() and 
+> set refcnt to 1. In the end, we end up with a node that's potentially in 
+> use, but ends up on the unused list.
+> 
 
-	Ingo
+Did you test my fix ?
+
+Its doing the right thing : Using refcnt as the only marker to say if
+the item must be removed from unused list (and lock the central lock
+protecting this list only when needed)
+
+Since we already must do an atomic operation on refcnt, using
+atomic_inc_return [ or similar full barrier op ] is enough to tell us
+the truth.
+
+
+
