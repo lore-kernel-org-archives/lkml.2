@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab1EZOzo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 10:55:44 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:54574 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753168Ab1EZOzn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 10:55:43 -0400
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
- locks up on ARM
-From: Marc Zyngier <Marc.Zyngier@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Frank Rowand <frank.rowand@am.sony.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <1306412511.1200.90.camel@twins>
-References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
-	 <1306272750.2497.79.camel@laptop> <1306343335.21578.65.camel@twins>
-	 <1306358128.21578.107.camel@twins>
-	 <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
-	 <1306405979.1200.63.camel@twins>
-	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
-	 <1306409575.1200.71.camel@twins>  <1306412511.1200.90.camel@twins>
-Organization: ARM Ltd
-Date: Thu, 26 May 2011 15:56:21 +0100
-Message-ID: <1306421781.27474.224.camel@e102391-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-X-OriginalArrivalTime: 26 May 2011 14:55:46.0772 (UTC) FILETIME=[FEAD1140:01CC1BB4]
-X-MC-Unique: 111052615553604001
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757808Ab1EZPD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 11:03:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50582 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751930Ab1EZPD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 11:03:26 -0400
+Date: Thu, 26 May 2011 17:01:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+Message-ID: <20110526150150.GD12525@redhat.com>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-4-git-send-email-tj@kernel.org> <201105180240.56754.vda.linux@googlemail.com> <20110518095539.GU20624@htj.dyndns.org> <20110523124314.GA7232@redhat.com> <20110524102834.GC10334@htj.dyndns.org> <20110525182919.GB16575@redhat.com> <20110526091401.GD9715@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526091401.GD9715@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 14:21 +0200, Peter Zijlstra wrote:
-> On Thu, 2011-05-26 at 13:32 +0200, Peter Zijlstra wrote:
-> > 
-> > The bad news is of course that I've got a little more head-scratching to
-> > do, will keep you informed. 
-> 
-> OK, that wasn't too hard.. (/me crosses fingers and prays Marc doesn't
-> find more funnies ;-).
-> 
-> Does the below cure all woes?
+On 05/26, Tejun Heo wrote:
+>
+> Hello,
+>
+> On Wed, May 25, 2011 at 08:29:19PM +0200, Oleg Nesterov wrote:
+> > > > And. Currently there is no way to detach a zombie leader. Perhaps we
+> > > > should change do_wait(), but it is not clear what should we do if the
+> > > > tracer is the real parent (we already discussed this a bit).
+> > >
+> > > Hmmm... maybe just allow detaching zombie leader?
+> >
+> > Yes, I think we should do this.
+> >
+> > If we change PTRACE_DETACH (or add the new request) to allow this, then
+> > I think it it should detach any zombie, leader or not.
+>
+> I think we can just make PTRACE_DETACH to succeed for zombies.  No
+> reason to add a new request for this.
 
-So far so good. The box just went through it's two first iterations of
-kernel building without a sweat, carried on, and still feels snappy
-enough.
+OK.
 
-Thanks for having fixed that quickly!
+> > Or we can change do_wait() to detach a zombie leader. In this case it
+> > is not clear what should we do if the debugger is the real parent.
+> > Perhaps do_wait() should do the same: detach a leader (but not reap).
+> > When the last thread does, the real parent will be notified again.
+> > IOW, wait(tgid) can succeed twice.
+>
+> Just letting PTRACE_DETACH work for zombies sounds much simpler to me.
 
-> ---
-> Subject: sched: Fix ttwu() for __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Thu May 26 14:21:33 CEST 2011
-> 
-> Marc reported that e4a52bcb9 (sched: Remove rq->lock from the first
-> half of ttwu()) broke his ARM-SMP machine. Now ARM is one of the few
-> __ARCH_WANT_INTERRUPTS_ON_CTXSW users, so that exception in the ttwu()
-> code was suspect.
-> 
-> Yong found that the interrupt could hit hits after context_switch() changes
-> current but before it clears p->on_cpu, if that interrupt were to
-> attempt a wake-up of p we would indeed find ourselves spinning in IRQ
-> context.
-> 
-> Sort this by reverting to the old behaviour for this situation and
-> perform a full remote wake-up.
-> 
-> Cc: Frank Rowand <frank.rowand@am.sony.com>
-> Cc: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Reported-by: Marc Zyngier <Marc.Zyngier@arm.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Probably, but please note we have to modify do_wait() anyway. Otherwise
+in general the tracer simply can not know the tracee has exited. IOW,
+waitpid(zombie_leader_pid, WEXITED) should succeed without reaping if
+delay_group_leader(), then the tracer can do PTRACE_DETACH. But this is
+not symmetrical with sub-thread zombies.
 
-Tested-by: Marc Zyngier <marc.zyngier@arm.com>
-
-	M.
--- 
-Reality is an implementation detail.
-
+Oleg.
 
