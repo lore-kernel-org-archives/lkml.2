@@ -1,208 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab1EZEz5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 00:55:57 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:57337 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751054Ab1EZEz4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 00:55:56 -0400
-From: Bibek BASU <bibek.basu@stericsson.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 26 May 2011 06:55:05 +0200
-Subject: RE: Need Implementation Guidance : GPIO : AB8500 : Marked Broken
-Thread-Topic: Need Implementation Guidance : GPIO : AB8500 : Marked Broken
-Thread-Index: Acwa7PUsbdFh/xLVQPybapW8N8EvtgAcoN6A
-Message-ID: <4E253D605AF50140A55CF6396EC99A241CC3E68778@EXDCVYMBSTM005.EQ1STM.local>
-References: <4E253D605AF50140A55CF6396EC99A241CC3E681EE@EXDCVYMBSTM005.EQ1STM.local>
- <alpine.LFD.2.02.1105251536210.3078@ionos>
-In-Reply-To: <alpine.LFD.2.02.1105251536210.3078@ionos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751511Ab1EZFEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 01:04:04 -0400
+Received: from mailx.hitachi.co.jp ([133.145.228.49]:51294 "EHLO
+	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab1EZFEC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 01:04:02 -0400
+X-AuditID: b753bd60-a32aeba0000019f4-d6-4ddddebb1cde
+X-AuditID: b753bd60-a32aeba0000019f4-d6-4ddddebb1cde
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Subject: [PATCH -tip v4 0/7] perf: Introduce branch sub commands
+To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        pp-manager@sdl.hitachi.co.jp
+Date: Thu, 26 May 2011 14:02:46 +0900
+Message-ID: <20110526050246.30011.86048.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+Hi,
 
-Thanks for the input. Will do the needful and repost the patch.
+This patch series provides the commands 'perf branch record' and
+'perf branch trace' version 4. These commands record and analyze
+a BTS (Branch Trace Store) log. And, they provide the interface
+to use BTS log for application developers.
 
-Regards
-Bibek
+BTS is a facility of Intel x86 processors, which records the address of
+'branch to/from' on every branch/jump instruction and interrupt.
+This facility is very useful for developers to test their software,
+for example, coverage test, execution path analysis, dynamic step count ...etc.
+These test tools have a big advantage, which user doesn't have to modify target
+executable binaries, because the BTS is a hardware feauture.
 
------Original Message-----
-From: Thomas Gleixner [mailto:tglx@linutronix.de] 
-Sent: Wednesday, May 25, 2011 8:34 PM
-To: Bibek BASU
-Subject: Re: Need Implementation Guidance : GPIO : AB8500 : Marked Broken
+But, there are few applications using BTS. Reasons I guess are ...
+ - Few people know what BTS is.
+ - Few people know how to use BTS on Linux box.
+ - It's hard to analyze the BTS log because it includes just a series of
+   addresses.
 
-On Wed, 25 May 2011, Bibek BASU wrote:
+So, I want to provide a user-friendly interface to BTS for application
+developers.
 
-> Hi Thomas,
 
-Please keep such questions on the mailing list.
- 
-> I want to rectify the error pointed out by you in the ab8500-gpio
-> driver present in driver/gpio/
+ About new sub commands
+========================
+'perf branch record' provides an easy way to record BTS log.
+Usage is 'perf branch record <command>'.  This command is just an alias to
+'perf record -e branches:u -c 1 -d <command>'. But, new one is more simple
+and more intuitive.
 
-> Your first point I am taking care off. Regarding 2nd point I need
-> you to comment on how to implement.
+'perf branch trace' can parse and analyze recorded BTS log and print various
+information of execution path. This command can show address, pid, command name,
+function+offset, file path of elf.
+You can choose the printed information with option.
 
-> Below is the architecture & requirement I have for ab8500 gpio driver
-> 
-> Architecture:
-> 1>AB8500 Chipset supports 42 gpio pins.
-> 2>Out of the 42 pins, random 8 pins has interrupt support .
-> 3> Separate interrupt is generated for falling edge and rising edge
-> on each of these 8 GPIO pins. So total 16 interrupts.
+Example: 'perf branch trace'
 
-According to the code you have 16 gpio pins with 2 interrupts each and
-16 virtual interrupts :)
+function+offset
+_start+0x3      => _dl_start+0x0
+_dl_start+0x71  => _dl_start+0x93
+_dl_start+0x97  => _dl_start+0x78
+_dl_start+0x97  => _dl_start+0x78
+_dl_start+0xa3  => _dl_start+0x3c0
+_dl_start+0x3c8 => _dl_start+0x3e8
+...
 
-> Requirement:
+This is the default behavior of 'perf branch trace'. It prints function+offset.
 
-> Driver user will only request once for any irq on any interrupt
-> capable GPIO with any combination of flags IRQF_TRIGGER_RISING,
-> IRQF_TRIGGER_FALLING or IRQ_TYPE_EDGE_BOTH. Internally it's the gpio
-> driver's job to request for irq separately for rising and falling
-> edge based on the user request.
+Example2: 'perf branch -cas trace'
+command address            function+offset
+ls      0x0000003e9b000b23 _start+0x3      => 0x0000003e9b004540 _dl_start+0x0
+ls      0x0000003e9b0045b1 _dl_start+0x71  => 0x0000003e9b0045d3 _dl_start+0x93
+ls      0x0000003e9b0045d7 _dl_start+0x97  => 0x0000003e9b0045b8 _dl_start+0x78
+ls      0x0000003e9b0045d7 _dl_start+0x97  => 0x0000003e9b0045b8 _dl_start+0x78
+ls      0x0000003e9b0045e3 _dl_start+0xa3  => 0x0000003e9b004900 _dl_start+0x3c0
+ls      0x0000003e9b004908 _dl_start+0x3c8 => 0x0000003e9b004928 _dl_start+0x3e8
+...
 
-> So the irq number given to user is a virtual irq. Which in
-> internally mapped to actual irqs in the system.
+In the future, I'd like to make this more informative. For example
+ - Show source file path
+ - Show line number
+ - Show inlined function name
+ - Draw call graph
+ - Browse source code and coloring
+ - Make BTS record fast
+and more!
 
-So that makes 2 physical interrupts per virtual interrupt line and you
-need to enable either one of them or both depending on the trigger
-type, right ?
+Changes in V4:
+ - Add kenel filter
+ - Print PID and command only once in a line
+ - Add output TSV mode
 
-I think the concept of having virtual interrupts for this is just
-wrong, the right place to deal with that absurdity is ab8500-core.
+Changes in V3:
+ - Update to the latest -tip tree
+ - Rename to 'perf branch'
+ - Process only BTS records
+ - Fix bug of getting elf_filepath
+ - Fix return value of __cmd_trace
 
-Create a new irq chip for the gpio lines. Install that chip and the
-handler only for the 16 rising interrupts and ignore the 16 falling
-bits, so they cannot be requested ....
-
-static void gpio_mask(struct irq_data *data)
-{
-	struct ab8500 *ab8500 = irq_data_get_irq_chip_data(data);
-	int offset = data->irq - ab8500->irq_base;
-	int index = offset / 8;
-	int mask = 1 << (offset % 8);
-
-	ab8500->mask[index] |= mask;
-	ab8500->mask[index + 2] |= mask;
-}
-
-static void gpio_unmask(struct irq_data *data)
-{
-	struct ab8500 *ab8500 = irq_data_get_irq_chip_data(data);
-	unsigned int type = irqd_get_trigger_type(data);
-	int offset = data->irq - ab8500->irq_base;
-	int index = offset / 8;
-	int mask = 1 << (offset % 8);
-
-	if (type & IRQ_TYPE_EDGE_RISING)
-		ab8500->mask[index] &= ~mask;
-	if (type & IRQ_TYPE_EDGE_FALLING)
-		ab8500->mask[index + 2] &= ~mask;
-}
-
-static int gpio_set_type(struct irq_data *data, unsigned int type)
-
-	if (valid_trigger(type))
-		return 0;
-	return -EINVAL;
-}
-
-in sync_unlock() you need to deal with the two types. Btw, the current
-unlock function is stupid anyway. It's called for a specific
-interrupt, so you only ever have one bit changed, no need to iterate
-over all registers.
-
-static void ab8500_irq_sync_unlock(struct irq_data *data)
-{
-	struct ab8500 *ab8500 = irq_data_get_irq_chip_data(data);
-        int offset = data->irq - ab8500->irq_base;
-        int index = offset / 8;
-
-	if (ab8500->oldmask[index] != ab8500->newmask[index])
-	   	update_register(index);
-	mutex_unlock();
-}
-
-Now split out the code into
-
-static void  __ab8500_irq_sync_unlock(unsigned int irq, struct ab8500 *ab8500)
-{
-        int offset = irq - ab8500->irq_base;
-        int index = offset / 8;
-
-	if (ab8500->oldmask[index] != ab8500->newmask[index])
-	   	update_register(index);
-}
-
-static void ab8500_irq_sync_unlock(struct irq_data *data)
-{
-	struct ab8500 *ab8500 = irq_data_get_irq_chip_data(data);
-
-	__ab8500_irq_sync_unlock(data->irq, ab8500);
-	mutex_unlock();
-}
-
-and for the gpio you have
-
-static void ab8500_irq_sync_unlock(struct irq_data *data)
-{
-	struct ab8500 *ab8500 = irq_data_get_irq_chip_data(data);
-
-	__ab8500_irq_sync_unlock(data->irq, ab8500);
-	__ab8500_irq_sync_unlock(data->irq + 16, ab8500);
-	mutex_unlock();
-}
-
-So the last thing is to have the following quirk in your demux
-function:
-
-static inline bool irq_is_gpio_falling(unsigned int irq)
-{
-	return irq >= AB8500_INT_GPIO6F && irq <= AB8500_INT_GPIO41F;
-}
-
-static irqreturn_t ab8500_irq(int irq, void *dev)
-{
-	....
-		do {
-			int bit = __ffs(value);
-			int line = i * 8 + bit;
-			int irq = ab8500->irq_base + line;
-
-			if (irq_is_gpio_falling(irq))
-				irq -= 16;
-
-			handle_nested_irq(irq);
-			value &= ~(1 << bit);
-		} while (value);
-}
-
-That makes the complete irq mess in your gpio controller driver go
-away and you just need the irq mapping function for your pins which
-always hands out the rising edge numbers.
+Changes in V2:
+ - Update to the latest -tip tree
+ - Add bts explanation to the subcommand list
+ - Remove the patch already merged (add OPT_CALLBACK_DEFAULT_NOOPT)
+ - Add comments
+ - Add new function to the todo list
 
 Thanks,
 
-	tglx
+---
+
+Akihiro Nagai (7):
+      perf branch trace: add kernel filter
+      perf branch trace: add print all option
+      perf branch trace: print function+offset
+      perf branch trace: print file path of the executed elf
+      perf branch trace: print pid and command
+      perf branch: Introduce new sub command 'perf branch trace'
+      perf: new subcommand perf branch record
+
+
+ tools/perf/Documentation/perf-branch.txt |   62 +++++
+ tools/perf/Makefile                      |    1 
+ tools/perf/builtin-branch.c              |  361 ++++++++++++++++++++++++++++++
+ tools/perf/builtin.h                     |    1 
+ tools/perf/command-list.txt              |    1 
+ tools/perf/perf.c                        |    1 
+ 6 files changed, 427 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/Documentation/perf-branch.txt
+ create mode 100644 tools/perf/builtin-branch.c
+
+-- 
+Akihiro Nagai (akihiro.nagai.hw@hitachi.com)
