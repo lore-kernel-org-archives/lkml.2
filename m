@@ -1,287 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435Ab1EZKQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 06:16:42 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55300 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757114Ab1EZKQi (ORCPT
+	id S1757453Ab1EZKRY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 06:17:24 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52881 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757330Ab1EZKRW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 06:16:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DDE2873.7060409@jp.fujitsu.com>
-Date: Thu, 26 May 2011 19:16:19 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Thu, 26 May 2011 06:17:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=JcFix9knl6nShhO01/yRoe/YbWEIJnU5XQN58O0TNc54sGLyvDecK/D18E+aEoB/Di
+         qbreNgGkv8Pm9E7kk52P++YIhyaK5B3vpIpvfsfjqymNPOGmqTpJILt3q2fedwrDotoA
+         D5doUSfYEl/zqCRnwwHV1kGpQP7Tcoz1J4e0Y=
 MIME-Version: 1.0
-To: benh@kernel.crashing.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, hughd@google.com,
-        akpm@linux-foundation.org, dave@linux.vnet.ibm.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-CC: kosaki.motohiro@jp.fujitsu.com
-Subject: [PATCH] mm: don't access vm_flags as 'int'
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Reply-To: corey@kansanian.com
+In-Reply-To: <20110526083746.GT2480@null>
+References: <BANLkTinG_qCtHQYRYFQUJ9oGv4H1cuznWg@mail.gmail.com>
+	<201105250711.17971.edt@aei.ca>
+	<20110525113614.GQ2480@null>
+	<201105250812.43246.edt@aei.ca>
+	<5B4B9A479BF6994B88EA975675EC5B79057A399D82@MES1OS2SXC003.mes1.tconet.net>
+	<BANLkTi=ec3bh24=2r8f3tmj2g0n0bMnq1Q@mail.gmail.com>
+	<5B4B9A479BF6994B88EA975675EC5B79057A60296D@MES1OS2SXC003.mes1.tconet.net>
+	<013c01cc1af9$361b00e0$a25102a0$@ytram.com>
+	<BANLkTikxR3AZJK5Bhc5b=7dq6CbXd2iBtQ@mail.gmail.com>
+	<20110526083746.GT2480@null>
+Date: Thu, 26 May 2011 06:17:20 -0400
+X-Google-Sender-Auth: jT9DEojsWkuqu2fwaanJnPyUpfo
+Message-ID: <BANLkTi=473CVADx9D-5m6jjvDjZGWMu3BA@mail.gmail.com>
+Subject: Re: Linux 2.6.39
+From: Corey Boyle <corey@kansanian.com>
+To: Ville Tervo <ville.tervo@nokia.com>
+Cc: wyrles@ytram.com, "Cufi, Carles" <carles.cufi@nordicsemi.no>,
+        Ed Tomlinson <edt@aei.ca>,
+        Bluettooth Linux <linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The type of vma->vm_flags is 'unsigned long'. Neither 'int' nor
-'unsigned int'. This patch fixes such misuse.
+On Thu, May 26, 2011 at 4:37 AM, Ville Tervo <ville.tervo@nokia.com> wrote:
+> On Wed, May 25, 2011 at 09:11:19PM -0400, ext Corey Boyle wrote:
+>> On Wed, May 25, 2011 at 12:31 PM, Tom Allebrandi <wyrles@ytram.com> wrote:
+>> > -----Original Message-----
+>> > From: linux-bluetooth-owner@vger.kernel.org
+>> > [mailto:linux-bluetooth-owner@vger.kernel.org] On Behalf Of Cufi, Carles
+>> > Sent: Wednesday, May 25, 2011 7:15 AM
+>> > To: corey@kansanian.com
+>> > Cc: Ed Tomlinson; Ville Tervo; Bluettooth Linux;
+>> > linux-kernel@vger.kernel.org
+>> > Subject: RE: Linux 2.6.39
+>> >
+>> > (Snipping...)
+>> > On Wed, May 25, 2011 at 8:46 AM, Cufi, Carles <carles.cufi@nordicsemi.no>
+>> > wrote:
+>> >> On Wednesday 25 May 2011 07:36:14 Ville Tervo wrote:
+>> >>> On Wed, May 25, 2011 at 07:11:17AM -0400, ext Ed Tomlinson wrote:
+>> >>> > On Wednesday 25 May 2011 06:54:54 Corey Boyle wrote:
+>> >>> > > > On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
+>> >>> > > > > On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
+>> >>> > > > > > On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
+>> > ...
+>> >>> > Read Local Version Information (0x04|0x0001) plen 0
+>> >>> > > HCI Event: Command Complete (0x0e) plen 12
+>> >>> >     Read Local Version Information (0x04|0x0001) ncmd 1
+>> >>> >     status 0x00
+>> >>> >     HCI Version: 1.1 (0x1) HCI Revision: 0x20d
+>> > *************************
+>> >>> >     LMP Version: 1.1 (0x1) LMP Subversion: 0x20d
+>> > *************************
+>> >>> >     Manufacturer: Cambridge Silicon Radio (10) < HCI Command: Set
+>> >>> > Event Mask (0x03|0x0001) plen 8
+>> >>> >     Mask: 0xfffffbff00000000
+>> > *************************
+>> >>> > > HCI Event: Command Complete (0x0e) plen 4
+>> >>> >     Set Event Mask (0x03|0x0001) ncmd 1
+>> >>> >     status 0x12
+>> >>> >     Error: Invalid HCI Command Parameters
+>> >>
+>> >>Set Event Mask has been in the Bluetooth Spec since day 1, so it must be
+>> > the bitmask, which has been extended with each new spec release to cover
+>> > newly >added events. Looking at the latest spec, and judging by the year
+>> > your chipset was released in (it probably is a 1.1 compliant chipset) I
+>> > believe that >0x000000008FFFFFFF is the highest event mask it would support
+>> > (up until and including Page Scan Repetition Mode Change Event), but since I
+>> > don't have the >old 1.1 spec around I may be one or two bits off.
+>> >
+>> > The device appears to have identified itself as CSR firmware using Bluetooth
+>> > version 1.1.
+>> >
+>> > I do happen to have the 1.1 spec lying around :-), for Set_Event_Mask it
+>> > says
+>> >
+>> > 0x0000000100000000
+>> > To                                          Reserved for future use
+>> > 0x8000000000000000
+>> >
+>> > 0x00000000FFFFFFFF      Default (All events enabled)
+>> >
+>>
+>> I am beginning to think that my adapter simply does not support this
+>> command.  I have tried with all the suggested bitmasks, all zeros, all
+>> ones, all combinations where a single bit is set, etc.  I'm not sure
+>> where to go from here other than add a flag which incidates that
+>> certain devices don't support this command so it can be skipped.
+>> Again, the only way I have gotten it to work is by not sending the
+>> command at all.  Thoughts?
+>
+> I also played a bit with 1.1 CSR dongle and couldn't find any mask that would
+> be accepted. I think this command can be left out for older than 1.2 devices.
+>
+> Following patch should do it. Could you verify it. I don't have access to old
+> hw ATM.
+>
+> diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+> index 19cd4af..86d1e26 100644
+> --- a/net/bluetooth/hci_event.c
+> +++ b/net/bluetooth/hci_event.c
+> @@ -477,14 +477,16 @@ static void hci_setup_event_mask(struct hci_dev *hdev)
+>         * command otherwise */
+>        u8 events[8] = { 0xff, 0xff, 0xfb, 0xff, 0x00, 0x00, 0x00, 0x00 };
+>
+> -       /* Events for 1.2 and newer controllers */
+> -       if (hdev->lmp_ver > 1) {
+> -               events[4] |= 0x01; /* Flow Specification Complete */
+> -               events[4] |= 0x02; /* Inquiry Result with RSSI */
+> -               events[4] |= 0x04; /* Read Remote Extended Features Complete */
+> -               events[5] |= 0x08; /* Synchronous Connection Complete */
+> -               events[5] |= 0x10; /* Synchronous Connection Changed */
+> -       }
+> +       /* CSR 1.1 dongles does not accept any bitfield so don't try to set
+> +        * any event mask for pre 1.2 devices */
+> +       if (hdev->lmp_ver <= 1)
+> +               return;
+> +
+> +       events[4] |= 0x01; /* Flow Specification Complete */
+> +       events[4] |= 0x02; /* Inquiry Result with RSSI */
+> +       events[4] |= 0x04; /* Read Remote Extended Features Complete */
+> +       events[5] |= 0x08; /* Synchronous Connection Complete */
+> +       events[5] |= 0x10; /* Synchronous Connection Changed */
+>
+>        if (hdev->features[3] & LMP_RSSI_INQ)
+>                events[4] |= 0x04; /* Inquiry Result with RSSI */
+> --
+>
+>
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- fs/hugetlbfs/inode.c           |    3 ++-
- fs/proc/task_mmu.c             |    2 +-
- include/linux/hugetlb.h        |    6 +++---
- include/linux/hugetlb_inline.h |    2 +-
- include/linux/mm.h             |    6 +++---
- ipc/shm.c                      |    2 +-
- mm/fremap.c                    |    2 +-
- mm/hugetlb.c                   |    4 ++--
- mm/memory.c                    |    2 +-
- mm/mlock.c                     |    8 ++++----
- mm/mmap.c                      |    8 ++++----
- 11 files changed, 23 insertions(+), 22 deletions(-)
-
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index e7a0357..1eb08d0 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -921,7 +921,8 @@ static int can_do_hugetlb_shm(void)
- 	return capable(CAP_IPC_LOCK) || in_group_p(sysctl_hugetlb_shm_group);
- }
-
--struct file *hugetlb_file_setup(const char *name, size_t size, int acctflag,
-+struct file *hugetlb_file_setup(const char *name, size_t size,
-+				unsigned long acctflag,
- 				struct user_struct **user, int creat_flags)
- {
- 	int error = -ENOMEM;
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 2c9db29..f0f9d29 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -211,7 +211,7 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	struct file *file = vma->vm_file;
--	int flags = vma->vm_flags;
-+	unsigned long flags = vma->vm_flags;
- 	unsigned long ino = 0;
- 	unsigned long long pgoff = 0;
- 	unsigned long start, end;
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 943c76b..a0e0c6a 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -41,7 +41,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, unsigned int flags);
- int hugetlb_reserve_pages(struct inode *inode, long from, long to,
- 						struct vm_area_struct *vma,
--						int acctflags);
-+						unsigned long vm_flags);
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
- int dequeue_hwpoisoned_huge_page(struct page *page);
- void copy_huge_page(struct page *dst, struct page *src);
-@@ -168,7 +168,7 @@ static inline struct hugetlbfs_sb_info *HUGETLBFS_SB(struct super_block *sb)
-
- extern const struct file_operations hugetlbfs_file_operations;
- extern const struct vm_operations_struct hugetlb_vm_ops;
--struct file *hugetlb_file_setup(const char *name, size_t size, int acct,
-+struct file *hugetlb_file_setup(const char *name, size_t size, unsigned long acct,
- 				struct user_struct **user, int creat_flags);
- int hugetlb_get_quota(struct address_space *mapping, long delta);
- void hugetlb_put_quota(struct address_space *mapping, long delta);
-@@ -192,7 +192,7 @@ static inline void set_file_hugepages(struct file *file)
- #define is_file_hugepages(file)			0
- #define set_file_hugepages(file)		BUG()
- static inline struct file *hugetlb_file_setup(const char *name, size_t size,
--		int acctflag, struct user_struct **user, int creat_flags)
-+		unsigned long acctflag, struct user_struct **user, int creat_flags)
- {
- 	return ERR_PTR(-ENOSYS);
- }
-diff --git a/include/linux/hugetlb_inline.h b/include/linux/hugetlb_inline.h
-index 6931489..2bb681f 100644
---- a/include/linux/hugetlb_inline.h
-+++ b/include/linux/hugetlb_inline.h
-@@ -7,7 +7,7 @@
-
- static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
- {
--	return vma->vm_flags & VM_HUGETLB;
-+	return !!(vma->vm_flags & VM_HUGETLB);
- }
-
- #else
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 8eb969e..6edc831 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -165,12 +165,12 @@ extern pgprot_t protection_map[16];
-  */
- static inline int is_linear_pfn_mapping(struct vm_area_struct *vma)
- {
--	return (vma->vm_flags & VM_PFN_AT_MMAP);
-+	return !!(vma->vm_flags & VM_PFN_AT_MMAP);
- }
-
- static inline int is_pfn_mapping(struct vm_area_struct *vma)
- {
--	return (vma->vm_flags & VM_PFNMAP);
-+	return !!(vma->vm_flags & VM_PFNMAP);
- }
-
- /*
-@@ -1432,7 +1432,7 @@ extern unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- 	unsigned long flag, unsigned long pgoff);
- extern unsigned long mmap_region(struct file *file, unsigned long addr,
- 	unsigned long len, unsigned long flags,
--	unsigned int vm_flags, unsigned long pgoff);
-+	unsigned long vm_flags, unsigned long pgoff);
-
- static inline unsigned long do_mmap(struct file *file, unsigned long addr,
- 	unsigned long len, unsigned long prot,
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 729acb7..f924655 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -347,7 +347,7 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 	struct file * file;
- 	char name[13];
- 	int id;
--	int acctflag = 0;
-+	unsigned long acctflag = 0;
-
- 	if (size < SHMMIN || size > ns->shm_ctlmax)
- 		return -EINVAL;
-diff --git a/mm/fremap.c b/mm/fremap.c
-index 7f41230..59e677f 100644
---- a/mm/fremap.c
-+++ b/mm/fremap.c
-@@ -224,7 +224,7 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
- 		/*
- 		 * drop PG_Mlocked flag for over-mapped range
- 		 */
--		unsigned int saved_flags = vma->vm_flags;
-+		unsigned long saved_flags = vma->vm_flags;
- 		munlock_vma_pages_range(vma, start, start + size);
- 		vma->vm_flags = saved_flags;
- 	}
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 5fd68b9..450b59c 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2833,7 +2833,7 @@ void hugetlb_change_protection(struct vm_area_struct *vma,
- int hugetlb_reserve_pages(struct inode *inode,
- 					long from, long to,
- 					struct vm_area_struct *vma,
--					int acctflag)
-+					unsigned long vm_flags)
- {
- 	long ret, chg;
- 	struct hstate *h = hstate_inode(inode);
-@@ -2843,7 +2843,7 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	 * attempt will be made for VM_NORESERVE to allocate a page
- 	 * and filesystem quota without using reserves
- 	 */
--	if (acctflag & VM_NORESERVE)
-+	if (vm_flags & VM_NORESERVE)
- 		return 0;
-
- 	/*
-diff --git a/mm/memory.c b/mm/memory.c
-index b73f677..69cfed5 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -730,7 +730,7 @@ static void print_bad_pte(struct vm_area_struct *vma, unsigned long addr,
- 	add_taint(TAINT_BAD_PAGE);
- }
-
--static inline int is_cow_mapping(unsigned int flags)
-+static inline int is_cow_mapping(unsigned long flags)
- {
- 	return (flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
- }
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 516b2c2..c92b16c 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -307,13 +307,13 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
-  * For vmas that pass the filters, merge/split as appropriate.
-  */
- static int mlock_fixup(struct vm_area_struct *vma, struct vm_area_struct **prev,
--	unsigned long start, unsigned long end, unsigned int newflags)
-+	unsigned long start, unsigned long end, unsigned long newflags)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	pgoff_t pgoff;
- 	int nr_pages;
- 	int ret = 0;
--	int lock = newflags & VM_LOCKED;
-+	int lock = !!(newflags & VM_LOCKED);
-
- 	if (newflags == vma->vm_flags || (vma->vm_flags & VM_SPECIAL) ||
- 	    is_vm_hugetlb_page(vma) || vma == get_gate_vma(current->mm))
-@@ -385,7 +385,7 @@ static int do_mlock(unsigned long start, size_t len, int on)
- 		prev = vma;
-
- 	for (nstart = start ; ; ) {
--		unsigned int newflags;
-+		unsigned long newflags;
-
- 		/* Here we know that  vma->vm_start <= nstart < vma->vm_end. */
-
-@@ -524,7 +524,7 @@ static int do_mlockall(int flags)
- 		goto out;
-
- 	for (vma = current->mm->mmap; vma ; vma = prev->vm_next) {
--		unsigned int newflags;
-+		unsigned long newflags;
-
- 		newflags = vma->vm_flags | VM_LOCKED;
- 		if (!(flags & MCL_CURRENT))
-diff --git a/mm/mmap.c b/mm/mmap.c
-index ac2631b..6ffb885 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -960,7 +960,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- {
- 	struct mm_struct * mm = current->mm;
- 	struct inode *inode;
--	unsigned int vm_flags;
-+	unsigned long vm_flags;
- 	int error;
- 	unsigned long reqprot = prot;
-
-@@ -1165,7 +1165,7 @@ SYSCALL_DEFINE1(old_mmap, struct mmap_arg_struct __user *, arg)
-  */
- int vma_wants_writenotify(struct vm_area_struct *vma)
- {
--	unsigned int vm_flags = vma->vm_flags;
-+	unsigned long vm_flags = vma->vm_flags;
-
- 	/* If it was private or non-writable, the write bit is already clear */
- 	if ((vm_flags & (VM_WRITE|VM_SHARED)) != ((VM_WRITE|VM_SHARED)))
-@@ -1193,7 +1193,7 @@ int vma_wants_writenotify(struct vm_area_struct *vma)
-  * We account for memory if it's a private writeable mapping,
-  * not hugepages and VM_NORESERVE wasn't set.
-  */
--static inline int accountable_mapping(struct file *file, unsigned int vm_flags)
-+static inline int accountable_mapping(struct file *file, unsigned long vm_flags)
- {
- 	/*
- 	 * hugetlb has its own accounting separate from the core VM
-@@ -1207,7 +1207,7 @@ static inline int accountable_mapping(struct file *file, unsigned int vm_flags)
-
- unsigned long mmap_region(struct file *file, unsigned long addr,
- 			  unsigned long len, unsigned long flags,
--			  unsigned int vm_flags, unsigned long pgoff)
-+			  unsigned long vm_flags, unsigned long pgoff)
- {
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma, *prev;
--- 
-1.7.3.1
-
-
+Patch works great - typing this email from my bluetooth keyboard.
