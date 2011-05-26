@@ -1,42 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab1EZJpv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 05:45:51 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54687 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757280Ab1EZJpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 05:45:50 -0400
-Message-ID: <4DDE2127.7090309@ti.com>
-Date: Thu, 26 May 2011 10:45:11 +0100
-From: Liam Girdwood <lrg@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1757397Ab1EZJqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 05:46:48 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54699 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab1EZJqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 05:46:47 -0400
+Date: Thu, 26 May 2011 02:46:33 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
+        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ocfs2 features for $next_version
+Message-ID: <20110526094632.GB8252@noexit.corp.google.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Mark Fasheh <mfasheh@suse.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "trivial@kernel.org" <trivial@kernel.org>
-Subject: Re: [Patch][Trivial] sound, soc, codec, WM8915: Remove duplicate
- linux/delay.h inclusion.
-References: <alpine.LNX.2.00.1105261028060.17400@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1105261028060.17400@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/05/11 09:32, Jesper Juhl wrote:
-> It's enough to include linux/delay.h just once in 
-> sound/soc/codecs/wm8915.c, so remove the duplicate.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  wm8915.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
->  Patch against Linus' tree as of a few minutes ago.
-> 
- Acked-by: Liam Girdwood <lrg@ti.com>
+Linus et al,
+	Here are the new ocfs2 changes for the $next_version merge
+window.  They include FITRIM support and the basics of online
+defragmentation.
+	Please pull.
+
+Joel
+
+The following changes since commit 4db70f73e56961b9bcdfd0c36c62847a18b7dbb5:
+
+  tmpfs: fix XATTR N overriding POSIX_ACL Y (2011-05-25 19:53:02 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git linux-next
+
+Amerigo Wang (1):
+      ocfs2: remove the /sys/o2cb symlink
+
+Joel Becker (1):
+      Merge branch 'move_extents' of git://oss.oracle.com/git/tye/linux-2.6 into ocfs2-merge-window
+
+Robin Dong (1):
+      ocfs2: change incorrect 'extern' keyword to 'static' in dlmfs
+
+Sunil Mushran (3):
+      ocfs2/dlm: dlm_is_lockres_migrateable() returns boolean
+      ocfs2/dlm: Add new dlm message DLM_BEGIN_EXIT_DOMAIN_MSG
+      ocfs2/dlm: Do not migrate resource to a node that is leaving the domain
+
+Tao Ma (3):
+      ocfs2: Add ocfs2_trim_fs for SSD trim support.
+      ocfs2: Add FITRIM ioctl.
+      ocfs2: Add trace event for trim.
+
+Tiger Yang (1):
+      ocfs2: clean up mount option about atime in ocfs2.txt
+
+Tristan Ye (19):
+      Ocfs2: Using inline funcs to set/clear *FILLED* flags in info handler.
+      Ocfs2: Add a new code 'OCFS2_INFO_FREEINODE' for o2info ioctl.
+      Ocfs2: Add a new code 'OCFS2_INFO_FREEFRAG' for o2info ioctl.
+      Ocfs2/refcounttree: Publicize couple of funcs from refcounttree.c
+      Ocfs2/move_extents: Adding new ioctl code 'OCFS2_IOC_MOVE_EXT' to ocfs2.
+      Ocfs2/move_extents: Add basic framework and source files for extent moving.
+      Ocfs2/move_extents: lock allocators and reserve metadata blocks and data clusters for extents moving.
+      Ocfs2/move_extents: move a range of extent.
+      Ocfs2/move_extents: defrag a range of extent.
+      Ocfs2/move_extents: find the victim alloc group, where the given #blk fits.
+      Ocfs2/move_extents: helper to validate and adjust moving goal.
+      Ocfs2/move_extents: helper to probe a proper region to move in an alloc group.
+      Ocfs2/move_extents: helpers to update the group descriptor and global bitmap inode.
+      Ocfs2/move_extents: move entire/partial extent.
+      Ocfs2/move_extents: helper to calculate the defraging length in one run.
+      Ocfs2/move_extents: move/defrag extents within a certain range.
+      Ocfs2/move_extents: Let defrag handle partial extent moving.
+      Ocfs2/move_extents: Set several trivial constraints for threshold.
+      Ocfs2: Teach local-mounted ocfs2 to handle unwritten_extents correctly.
+
+ Documentation/ABI/{obsolete => removed}/o2cb |    9 +-
+ Documentation/feature-removal-schedule.txt   |   10 -
+ Documentation/filesystems/ocfs2.txt          |    8 +-
+ fs/ocfs2/Makefile                            |    1 +
+ fs/ocfs2/alloc.c                             |  166 ++++
+ fs/ocfs2/alloc.h                             |    1 +
+ fs/ocfs2/cluster/sys.c                       |    9 -
+ fs/ocfs2/dlm/dlmcommon.h                     |   14 +
+ fs/ocfs2/dlm/dlmdebug.c                      |    6 +
+ fs/ocfs2/dlm/dlmdomain.c                     |   94 ++-
+ fs/ocfs2/dlm/dlmmaster.c                     |  255 ++----
+ fs/ocfs2/dlm/dlmrecovery.c                   |    1 +
+ fs/ocfs2/dlmfs/dlmfs.c                       |    2 +-
+ fs/ocfs2/file.c                              |    1 +
+ fs/ocfs2/ioctl.c                             |  492 +++++++++++-
+ fs/ocfs2/move_extents.c                      | 1153 ++++++++++++++++++++++++++
+ fs/ocfs2/move_extents.h                      |   22 +
+ fs/ocfs2/ocfs2_ioctl.h                       |   68 ++
+ fs/ocfs2/ocfs2_trace.h                       |   25 +
+ fs/ocfs2/refcounttree.c                      |   58 +-
+ fs/ocfs2/refcounttree.h                      |   11 +
+ fs/ocfs2/super.c                             |    2 +-
+ 22 files changed, 2146 insertions(+), 262 deletions(-)
+ rename Documentation/ABI/{obsolete => removed}/o2cb (65%)
+ create mode 100644 fs/ocfs2/move_extents.c
+ create mode 100644 fs/ocfs2/move_extents.h
