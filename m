@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132Ab1EZRdA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:33:00 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:52961 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab1EZRc7 (ORCPT
+	id S1758165Ab1EZRiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:38:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48588 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758005Ab1EZRiV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:32:59 -0400
-Date: Thu, 26 May 2011 19:32:57 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
-Subject: Re: [RFC Patch 5/6] slimdump: Capture slimdump for fatal MCE generated crashes
-Message-ID: <20110526173257.GC4065@one.firstfloor.org>
-References: <20110526170722.GB23266@in.ibm.com> <20110526172305.GA18295@in.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526172305.GA18295@in.ibm.com>
-User-Agent: Mutt/1.4.2.2i
+	Thu, 26 May 2011 13:38:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTi=UFB6PLfsSTVpFEQbveMs-W4MjUg@mail.gmail.com>
+References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
+	<BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
+	<BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
+	<1306254027.18455.47.camel@twins>
+	<20110524195435.GC27634@elte.hu>
+	<alpine.LFD.2.02.1105242239230.3078@ionos>
+	<20110525150153.GE29179@elte.hu>
+	<alpine.LFD.2.02.1105251836030.3078@ionos>
+	<20110525180100.GY19633@outflux.net>
+	<BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
+	<20110525191152.GC19633@outflux.net>
+	<BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com>
+	<BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
+	<BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>
+	<BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
+	<BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
+	<BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
+	<BANLkTi=UFB6PLfsSTVpFEQbveMs-W4MjUg@mail.gmail.com>
+Date: Thu, 26 May 2011 12:38:19 -0500
+Message-ID: <BANLkTim44ziUsEbYVOjfLPvOLfhUgH9itw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
+From: Will Drewry <wad@chromium.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Colin Walters <walters@verbum.org>, Kees Cook <kees.cook@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 10:53:05PM +0530, K.Prasad wrote:
-> 
-> slimdump: Capture slimdump for fatal MCE generated crashes
-> 
-> System crashes resulting from fatal hardware errors (such as MCE) don't need
-> all the contents from crashing-kernel's memory. Generate a new 'slimdump' that
-> retains only essential information while discarding the old memory.
+On Thu, May 26, 2011 at 12:17 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, May 26, 2011 at 10:02 AM, Will Drewry <wad@chromium.org> wrote:
+>>
+>> Absolutely - that was what I meant :/  The patches do not currently
+>> check creds at creation or again at use, which would lead to
+>> unprivileged filters being used in a privileged context.  Right now,
+>> though, if setuid() is not allowed by the seccomp-filter, the process
+>> will be immediately killed with do_exit(SIGKILL) on call -- thus
+>> avoiding a silent failure.
+>
+> Umm.
+>
+> You do realize that there is a reason we don't allow random kill()
+> system calls to succeed without privileges either?
+>
+> So no, "we kill it with sigkill" is not safe *either*. It now is
+> potentially a way to kill privileged processes that you didn't have
+> permission to kill.
+>
+> My point is that it all sounds designed for well-behaved processes.
+> "kill it if it does something bad" sounds like a *wonderful* idea if
+> you're doing a sandbox.
 
-While this is a good idea, note there may be still poisoned lines
-in memory that haven't resulted in a machine check yet, but could
-still be fatal when read after a full crash dump for some other
-reason.
+Yeah - we end up in a weird place, because for many suid executables,
+the failure would be immediate (at priv drop), but it introduces bugs
+that will be less obvious in more complex scenarios.
 
-So you still need 
+> But it is suddenly potentially deadly if that capability is used by a
+> malicious user for a process that isn't ready for it.
+>
+> One option is to just not ever allow execve() from inside a restricted
+> environment.
 
-http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=commit;h=fe61906edce9e70d02481a77a617ba1397573dce
-and
-http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=commit;h=cb58f049ae6709ddbab71be199390dc6852018cd
+That'd certainly be fine with me.  Another option could be adding a
+cred checking (from set to use) or execve time checking or ..., but
+simple works for me.  I'm not hung up on the implementation details
+specifically if the end result is that the syscalls can be _safely_
+whitelisted.
 
-in addition.
-
--Andi
+Thanks!
