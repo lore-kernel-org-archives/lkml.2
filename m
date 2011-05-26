@@ -1,105 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab1EZPbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 11:31:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:37581 "EHLO
+	id S932918Ab1EZPaE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 11:30:04 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63133 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932835Ab1EZP37 (ORCPT
+	with ESMTP id S932776Ab1EZP37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 May 2011 11:29:59 -0400
-X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=vhdKIqpQuCYA:10 a=1vgTBY-mN1YA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=dsnFOJNUReSOVdIJBxQA:9 a=HkCJI2x4HqHXiI6saZgA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=AI1k_3ZI-j8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=Bt9n-Y5hIFqW04YhDGIA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110526152957.420914882@goodmis.org>
+Message-Id: <20110526152957.728612252@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 26 May 2011 11:25:49 -0400
+Date: Thu, 26 May 2011 11:25:50 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 07/12] ftrace: Have ftrace_startup() return failure code
+Subject: [PATCH 08/12] tracing: Have event with function tracer check error return
 References: <20110526152541.995963172@goodmis.org>
-Content-Disposition: inline; filename=0007-ftrace-Have-ftrace_startup-return-failure-code.patch
+Content-Disposition: inline; filename=0008-tracing-Have-event-with-function-tracer-check-error-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The register_ftrace_function() returns an error code on failure
-except if the call to ftrace_startup() fails. Add a error return to
-ftrace_startup() if it fails to start, allowing register_ftrace_funtion()
-to return a proper error value.
+The self tests for event tracer does not check if the function
+tracing was successfully activated. It needs to before it continues
+the tests, otherwise the wrong errors may be reported.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ kernel/trace/trace_events.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index d017c2c..bebbc95 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1638,12 +1638,12 @@ static void ftrace_startup_enable(int command)
- 	ftrace_run_update_code(command);
- }
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 2fe1103..686ec39 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1657,7 +1657,12 @@ static struct ftrace_ops trace_ops __initdata  =
  
--static void ftrace_startup(struct ftrace_ops *ops, int command)
-+static int ftrace_startup(struct ftrace_ops *ops, int command)
+ static __init void event_trace_self_test_with_function(void)
  {
- 	bool hash_enable = true;
- 
- 	if (unlikely(ftrace_disabled))
--		return;
-+		return -ENODEV;
- 
- 	ftrace_start_up++;
- 	command |= FTRACE_ENABLE_CALLS;
-@@ -1662,6 +1662,8 @@ static void ftrace_startup(struct ftrace_ops *ops, int command)
- 		ftrace_hash_rec_enable(ops, 1);
- 
- 	ftrace_startup_enable(command);
-+
-+	return 0;
- }
- 
- static void ftrace_shutdown(struct ftrace_ops *ops, int command)
-@@ -2501,7 +2503,7 @@ static void __enable_ftrace_function_probe(void)
- 
- 	ret = __register_ftrace_function(&trace_probe_ops);
- 	if (!ret)
--		ftrace_startup(&trace_probe_ops, 0);
-+		ret = ftrace_startup(&trace_probe_ops, 0);
- 
- 	ftrace_probe_registered = 1;
- }
-@@ -3466,7 +3468,7 @@ device_initcall(ftrace_nodyn_init);
- static inline int ftrace_init_dyn_debugfs(struct dentry *d_tracer) { return 0; }
- static inline void ftrace_startup_enable(int command) { }
- /* Keep as macros so we do not need to define the commands */
--# define ftrace_startup(ops, command)	do { } while (0)
-+# define ftrace_startup(ops, command)	({0;})
- # define ftrace_shutdown(ops, command)	do { } while (0)
- # define ftrace_startup_sysctl()	do { } while (0)
- # define ftrace_shutdown_sysctl()	do { } while (0)
-@@ -3799,7 +3801,7 @@ int register_ftrace_function(struct ftrace_ops *ops)
- 
- 	ret = __register_ftrace_function(ops);
- 	if (!ret)
--		ftrace_startup(ops, 0);
-+		ret = ftrace_startup(ops, 0);
- 
- 
-  out_unlock:
-@@ -4045,7 +4047,7 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 	ftrace_graph_return = retfunc;
- 	ftrace_graph_entry = entryfunc;
- 
--	ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
-+	ret = ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
- 
- out:
- 	mutex_unlock(&ftrace_lock);
+-	register_ftrace_function(&trace_ops);
++	int ret;
++	ret = register_ftrace_function(&trace_ops);
++	if (WARN_ON(ret < 0)) {
++		pr_info("Failed to enable function tracer for event tests\n");
++		return;
++	}
+ 	pr_info("Running tests again, along with the function tracer\n");
+ 	event_trace_self_tests();
+ 	unregister_ftrace_function(&trace_ops);
 -- 
 1.7.4.4
 
