@@ -1,95 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757186Ab1EZJKt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 05:10:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46692 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806Ab1EZJKr (ORCPT
+	id S1757248Ab1EZJUf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 05:20:35 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26277 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757125Ab1EZJUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 05:10:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=l5JbXf6HGU9RhL7c/fy80K9geC5wEc2/RHh1yH9enOlBUiJeHbTys40AGyEMe7xLgu
-         66A8r3VHtw4mGsp2TnPxVFpFVMv2Q7D/g1XgZ3Hxaxn/FOXn+cYuQqFrVkiV1pNNz+YU
-         iPGWAgOrW4E+BLQQ1Ug+5QmjSXs3AvFhPzaT8=
-Date: Thu, 26 May 2011 11:10:41 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Pedro Alves <pedro@codesourcery.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Message-ID: <20110526091041.GC9715@htj.dyndns.org>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org>
- <201105241049.58921.pedro@codesourcery.com>
- <20110524120013.GD10334@htj.dyndns.org>
- <201105241336.04298.pedro@codesourcery.com>
- <20110524140215.GF10334@htj.dyndns.org>
- <20110525181856.GA16575@redhat.com>
+	Thu, 26 May 2011 05:20:34 -0400
+Date: Thu, 26 May 2011 11:12:53 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: linux-watchdog@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Wim Van Sebroeck <wim@iguana.be>,
+        Robert Richter <robert.richter@amd.com>,
+        Donald Johnson <donald.k.johnson@intel.com>
+Subject: [PATCH] Intel SCU Watchdog: Fix build failure and duplicate
+ include
+Message-ID: <alpine.LNX.2.00.1105261057130.17400@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110525181856.GA16575@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1577101167-1306401173=:17400"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Wed, May 25, 2011 at 08:18:56PM +0200, Oleg Nesterov wrote:
-> > Now that thinking more about it, TRAP_STOP (INTERRUPT trap) would
-> > probably be better.  I'll think more about it.  For fork, it doesn't
-> > really matter but deliverying SIGSTOP on CLONE isn't too good.  From
-> > user's POV, TRAP_STOP should work too, right?
-> 
-> I am a bit confused, sorry if I missed/misunderstood the context...
-> 
-> I thought, we already discussed this. Obviously, PT_SEIZED should be
-> inherited by the child during the auto-attach (and it is indeed copied
-> by ptrace_init_task). Why should we send SIGSTOP to the child then?
-> Even in the fork case, this leads to the same problems as the current
-> PTRACE_ATTACH has with the bogus SIGSTOP it sends. I think TRAP_STOP
-> is the only sane option, no?
+--8323328-1577101167-1306401173=:17400
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 
-I forgot about that and was thinking about events reported by
-SIGTRAPs.  :)
+Trying to build the Intel SCU Watchdog fails for me with gcc 4.6.0 -
+$ gcc --version | head -n 1
+gcc (GCC) 4.6.0 20110513 (prerelease)
 
-Yes, in this case, TRAP_STOP is the only sane solution.
+like this :
+  CC      drivers/watchdog/intel_scu_watchdog.o
+In file included from drivers/watchdog/intel_scu_watchdog.c:49:0:
+/home/jj/src/linux-2.6/arch/x86/include/asm/apb_timer.h: In function ¡apbt_time_init¢:
+/home/jj/src/linux-2.6/arch/x86/include/asm/apb_timer.h:65:42: warning: ¡return¢ with a value, in function returning void [enabled by default]
+drivers/watchdog/intel_scu_watchdog.c: In function ¡intel_scu_watchdog_init¢:
+drivers/watchdog/intel_scu_watchdog.c:468:2: error: implicit declaration of function ¡sfi_get_mtmr¢ [-Werror=implicit-function-declaration]
+drivers/watchdog/intel_scu_watchdog.c:468:32: warning: assignment makes pointer from integer without a cast [enabled by default]
+cc1: some warnings being treated as errors
 
-> Btw. Speaking of SEIZE->execvd->INTERRUPT which makes the tracee see
-> a SIGTRAP. Stupid question. Perhaps PTRACE_SEIZE should set
-> PT_TRACESYSGOOD | PT_TRACE_EXEC along with PT_SEIZED automatically?
-> PT_SEIZED implies the new behaviour anyway.
+make[1]: *** [drivers/watchdog/intel_scu_watchdog.o] Error 1
+make: *** [drivers/watchdog/intel_scu_watchdog.o] Error 2
 
-Yeap, it makes sense to set them by default.  I was thinking about
-defining a new PTRACE_EVENT_* rather than using 0x80 tho.  That way we
-should be able to distinguish between enter and exit too.
+Additionally, linux/types.h is needlessly being included twice in 
+drivers/watchdog/intel_scu_watchdog.c
 
-This reminded me of another issue.  Currently we have two different
-methods of reporting debug events.  One is direct ptrace event trap,
-which ends up in ptrace_stop() from the event site and thus is
-synchronous.  The other is sending SIGTRAP, literally.  Besides the
-usual problems related with implicitly sending signals, this also
-makes it difficult to determine which event is happening exactly and
-makes the whole signal delivery/injection thing much worse.
+This patch fixes it all and I can now build the code.
 
-I suspect that all ptrace traps probably started as actual SIGTRAPs
-and so all the events were reported via signal delivery path and so
-the signal "injection" worked; however, now we have synchronous traps
-and some SIGTRAPs, which are confusing and unreliable.  I don't see
-any reason why the events which are currently reported via SIGTRAPs
-can't be reported via ptrace traps with unique PTRACE_EVENT_*.  I
-don't think we can take synchronous traps directly but we can schedule
-them, record relevant information in preallocated area and just set
-TIF_SIGPENDING and let the signal delivery path report the trap.  This
-will make all the events reliable and easily distinguishible and we
-can fix the SIGTRAP signal problem.  What do you think?
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ arch/x86/include/asm/apb_timer.h      |    2 +-
+ drivers/watchdog/intel_scu_watchdog.c |    1 -
+ drivers/watchdog/intel_scu_watchdog.h |    2 +-
+ 3 files changed, 2 insertions(+), 3 deletions(-)
 
-Thanks.
+ Patch has been compile tested only.
+
+diff --git a/arch/x86/include/asm/apb_timer.h b/arch/x86/include/asm/apb_timer.h
+index 2fefa50..af60d8a 100644
+--- a/arch/x86/include/asm/apb_timer.h
++++ b/arch/x86/include/asm/apb_timer.h
+@@ -62,7 +62,7 @@ extern int sfi_mtimer_num;
+ #else /* CONFIG_APB_TIMER */
+ 
+ static inline unsigned long apbt_quick_calibrate(void) {return 0; }
+-static inline void apbt_time_init(void) {return 0; }
++static inline void apbt_time_init(void) { }
+ 
+ #endif
+ #endif /* ASM_X86_APBT_H */
+diff --git a/drivers/watchdog/intel_scu_watchdog.c b/drivers/watchdog/intel_scu_watchdog.c
+index 919bdd1..ba43860 100644
+--- a/drivers/watchdog/intel_scu_watchdog.c
++++ b/drivers/watchdog/intel_scu_watchdog.c
+@@ -42,7 +42,6 @@
+ #include <linux/sched.h>
+ #include <linux/signal.h>
+ #include <linux/sfi.h>
+-#include <linux/types.h>
+ #include <asm/irq.h>
+ #include <asm/atomic.h>
+ #include <asm/intel_scu_ipc.h>
+diff --git a/drivers/watchdog/intel_scu_watchdog.h b/drivers/watchdog/intel_scu_watchdog.h
+index d2b074a..a9ca0d7 100644
+--- a/drivers/watchdog/intel_scu_watchdog.h
++++ b/drivers/watchdog/intel_scu_watchdog.h
+@@ -62,5 +62,5 @@ struct intel_scu_watchdog_dev {
+ 
+ extern int sfi_mtimer_num;
+ 
+-/* extern struct sfi_timer_table_entry *sfi_get_mtmr(int hint); */
++extern struct sfi_timer_table_entry *sfi_get_mtmr(int hint);
+ #endif /* __INTEL_SCU_WATCHDOG_H */
+
 
 -- 
-tejun
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
+--8323328-1577101167-1306401173=:17400--
