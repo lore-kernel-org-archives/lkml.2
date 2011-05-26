@@ -1,64 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534Ab1EZVbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 17:31:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39072 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755767Ab1EZVbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 17:31:37 -0400
-Date: Thu, 26 May 2011 18:30:58 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@redhat.com, eranian@google.com, tzanussi@gmail.com,
-        penberg@cs.helsinki.fi, torvalds@linux-foundation.org, efault@gmx.de,
-        peterz@infradead.org, davej@redhat.com, davem@davemloft.net,
-        fweisbec@gmail.com, kees.cook@canonical.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf symbols: Handle
-	/proc/sys/kernel/kptr_restrict
-Message-ID: <20110526213058.GC30593@ghostprotocols.net>
-References: <tip-mt512joaxxbhhp1odop04yit@git.kernel.org> <20110526193946.GA6363@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526193946.GA6363@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1758556Ab1EZVlc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 17:41:32 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:55121 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440Ab1EZVla (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 17:41:30 -0400
+Subject: Re: [PATCH-v5 07/13] iscsi-target: Add iSCSI Login Negotiation +
+	Parameter logic
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
+        hare@suse.de, agrover@redhat.com, michaelc@cs.wisc.edu,
+        bharrosh@panasas.com, akpm@linux-foundation.org, martin.svec@zoner.cz,
+        Jerome Martin <jxm@risingtidesystems.com>
+In-Reply-To: <1306440882.4048.47.camel@mulgrave.site>
+References: <1305862678-30150-8-git-send-email-nab@linux-iscsi.org>
+	 <1306428415.4048.22.camel@mulgrave.site>
+	 <1306436832.5807.127.camel@haakon2.linux-iscsi.org>
+	 <20110527042934U.fujita.tomonori@lab.ntt.co.jp>
+	 <1306439399.19113.22.camel@haakon2.linux-iscsi.org>
+	 <1306440882.4048.47.camel@mulgrave.site>
+Content-Type: text/plain
+Date: Thu, 26 May 2011 14:33:07 -0700
+Message-Id: <1306445587.23461.22.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 26, 2011 at 09:39:46PM +0200, Ingo Molnar escreveu:
-> 
-> * tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> 
-> > Commit-ID:  ec80fde746e3ccf93895d25ae1a7071c9af52585
-> > Gitweb:     http://git.kernel.org/tip/ec80fde746e3ccf93895d25ae1a7071c9af52585
-> > Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-> > AuthorDate: Thu, 26 May 2011 09:53:51 -0300
-> > Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-> > CommitDate: Thu, 26 May 2011 11:15:25 -0300
+On Thu, 2011-05-26 at 15:14 -0500, James Bottomley wrote:
+> On Thu, 2011-05-26 at 12:49 -0700, Nicholas A. Bellinger wrote:
+> > On Fri, 2011-05-27 at 04:29 +0900, FUJITA Tomonori wrote:
+> > > On Thu, 26 May 2011 12:07:12 -0700
+> > > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> > > 
+> > > > On Thu, 2011-05-26 at 11:46 -0500, James Bottomley wrote:
+> > > > > On Thu, 2011-05-19 at 20:37 -0700, Nicholas A. Bellinger wrote:
+> > > > > > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > > > > > 
+> > > > > > This patch adds the princple RFC-3720 compatiable iSCSI Login
+> > > > > > phase negotiation for iscsi_target_mod.  This also includes the
+> > > > > > target RX/TX thread queue logic which is called directly from iSCSI
+> > > > > > login associated code.
+> > > > > > 
+> > > > > > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org> 
+> > > > > 
+> > > > > I thought the upshot of the thread with Tomo was that we wouldn't be
+> > > > > doing all of this in-kernel.  Where's the userspace upcall for this?
+> > > > > 
+> > > > 
+> > > > The technical reasons why I want to avoid this have not changed for the
+> > > > 1) authentication disabled and 2) 'required-to-implement' CHAP
+> > > > authentication cases.  These where discussed at the bottom of the thread
+> > > > from March with Tomo-san here:
+> > > > 
+> > > > http://marc.info/?l=linux-scsi&m=130108812405710&w=2
+> > > > 
+> > > > As mentioned, I am open to adding a userspace upcall for authentication
+> > > > payloads post merge in order to support the 'optional-to-implement'
+> > > > authentication cases.  However, pushing the above two cases out to
+> > > 
+> > > We don't need such, passing payloads from kernel to user space. You do the pre
+> > > SCSI nexus operations in user space then kernel takes care of established
+> > > nexuses.
+> > > 
 > > 
-> > perf symbols: Handle /proc/sys/kernel/kptr_restrict
+> > I understand what you have in mind, but I still think this the wrong
+> > approach for the default cases.  For an in-kernel iscsi-target capable
+> > of changing any aspect of the control plane on the fly, this type of
+> > split is problematic to support and maintain and does not actually buy
+> > us anything for the default cases.
 > 
-> Ok, things are much better now with kptr_restrict turned on - but i 
-> still see a few rough edges in practice.
+> Handling the default case separately from the less usual ones is
+> actually the bigger recipe for disaster because the less used path
+> becomes less well tested.
 > 
-> For example 'perf top' says:
+> I don't really see how a kernel/user split is problematic.  After all,
+> it's what we use for a lot of things (udev being the most notable).
 > 
->   aldebaran:~/linux> perf top
->   [kernel.kallsyms] with build id 122214021a666675f6e5ff97d70a85ce7139c0e7 not found, continuing without symbols
->   The (null) file can't be used
+
+The fact is that none of the mainstream initiators support anything
+beyond CHAP at this point, so the default cases are realistically what
+everyone will be using for 2.8.0 and need to be rock solid for all
+cases.
+
+> > > > userspace really does add unnecessary complexity and limitiations that I
+> > > > want to avoid for the default iSCSI login cases.
+> > > > 
+> > > > It also would break existing rtslib/rtsadmin-v2 userspace code, and
+> > > 
+> > > I don't think breaking the existing code matters.
+> > 
+> > Sure it does.  It means the difference between if the
+> > 'required-to-implement' cases can be exposed via configfs to a native
+> > python object library and shell, or if we need to have an external
+> > daemon + configuration that has to be kept in sync between the two,
+> > parse external configuration files, et al.
 > 
-> Now we've confused the user, havent we? :-)
+>      1. We can always handle this in an ABI shim in userspace
+>      2. The current *kernel* code doesn't exist, therefore it has no
+>         users.  Maintaining compatibility with the out of tree code is
+>         fine, but not at the expense of less optimal design decisions.
+> 
+> > With the current design, the NodeACLs + authentication are available
+> > directly as part of the rtslib python object library, and python code
+> > including rtslib can reference all aspects of the initiator
+> > configuration directly.  Breaking this up to an external daemon and
+> > configuration is a step backwards for the default cases from the
+> > perspective of rtslib, and making it work with an external
+> > configuration / daemon for the NodeACLs + default authentication case is
+> > an hack compared to how iscsi-target functionality is exposed to
+> > application level progammers via rtslib today.
+> 
+> I don't buy this.  It doesn't have to be a daemon (udev isn't).  And
+> udev certainly isn't a hack compared to what went before (which was
+> fully in-kernel).
+> 
 
-The ones that do:
+To elaborate a bit more with an rtslib example (Jerome CC'ed).
 
-# echo -1 > /proc/sys/kernel/perf_event_paranoid
+Consider the following python code that uses rtslib to create a iSCSI
+target+tpgt, iSCSI Initiator NodeACL, and set+read authentication
+information for said NodeACL using native library objects:
 
-Right?
+#!/usr/bin/python
 
-Trying that, not usually something I do :)
+import rtslib
 
-- Arnaldo
+fabric = rtslib.FabricModule('iscsi')
+
+print("Creating a new iqn.2003-01.org.linux-iscsi.rtslinux.foobar iscsi target")
+target = rtslib.Target(fabric, "iqn.2003-01.org.linux-iscsi.rtslinux.foobar")
+
+print
+print("Creating a new iscsi TPG, TPG5 in that target")
+tpg = rtslib.TPG(target, 5)
+
+print
+print("Creating a node ACL for initiator iqn.2003-01.org.linux-iscsi.rtslinux.initiator")
+node_acl = tpg.node_acl("iqn.2003-01.org.linux-iscsi.rtslinux.initiator")
+
+print
+print("Setting the CHAP password and username to foo/bar for that initiator")
+node_acl.chap_username = "foo"
+node_acl.chap_password = "bar"
+
+print
+print("Reading CHAP password and username for that initiator")
+print("Username: %s\n Password: %s" % (node_acl.chap_username, node_acl.chap_password))
+
+print
+print("For fun, let's list all of our existing node ACLs paths, accross all fabric/targets/etc.")
+acls = [acl.path for acl in rtslib.RTSRoot().node_acls]
+print "\n".join(acls)
+
+-----------------------------------------------------------------------
+
+Being able to have access to the complete set of underlying iscsi-target
+features in native python library code is very important for target mode
+userspace, and the current kernel+user code is solving this elegantly
+for the two default iSCSI login cases.
+
+We are open to looking at how to extend the kernel+user code to support
+other 'optional-to-implement' iscsi authentication cases, but not at the
+expense making drastic changes to kernel code this late, or removing /
+breaking python library object functionality for the default
+'required-to-implement' cases.
+
+--nab
+
