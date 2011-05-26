@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab1EZUZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:25:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40148 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758456Ab1EZUZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 16:25:08 -0400
-X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=wom5GMh1gUkA:10 a=CeA-nHI1PCoA:10 a=Rj1_iGo3bfgA:10 a=IkcTkHD0fZMA:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=DfNHnWVPAAAA:8 a=2g7al-zkAAAA:8 a=20KFwNOVAAAA:8 a=1DYln7H3HAjjbXTcpGcA:9 a=QEXdDO2ut3YA:10 a=lBRciGGoxdUA:10 a=JZonRkAYZ_cA:10 a=jEp0ucaQiEUA:10 a=g3F5VGk0NOMZWSIEWMgijA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.158.191
-Date: Thu, 26 May 2011 15:25:05 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Robert =?utf-8?B?xZp3acSZY2tp?= <robert@swiecki.net>,
-        David Howells <dhowells@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Set cred->user_ns in key_replace_session_keyring
-Message-ID: <20110526202505.GA6367@mail.hallyn.com>
+	id S1758456Ab1EZU1Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:27:16 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51507 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757892Ab1EZU1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 16:27:14 -0400
+Date: Thu, 26 May 2011 22:26:53 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
+ on semi-formal proof"
+Message-ID: <20110526202653.GB2765@elte.hu>
+References: <4DDC48E3.1060108@kernel.org>
+ <20110525045253.GB2262@linux.vnet.ibm.com>
+ <4DDD7F96.3090408@kernel.org>
+ <20110525223437.GO2341@linux.vnet.ibm.com>
+ <4DDD8775.1000501@kernel.org>
+ <20110526011310.GP2341@linux.vnet.ibm.com>
+ <20110526013029.GA28103@linux.vnet.ibm.com>
+ <20110526061348.GA26775@elte.hu>
+ <20110526142553.GA2386@linux.vnet.ibm.com>
+ <20110526174301.GA9649@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110526174301.GA9649@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this cred was not created with copy_creds(), it needs to get
-initialized.  Otherwise use of syscall(__NR_keyctl, KEYCTL_SESSION_TO_PARENT);
-can lead to a NULL deref.  Thanks to Robert for finding this.
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Reported-by: Robert Święcki <robert@swiecki.net>
-Cc: David Howells <dhowells@redhat.com>
----
- security/keys/process_keys.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 6c0480d..92a3a5d 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -847,6 +847,7 @@ void key_replace_session_keyring(void)
- 	new-> sgid	= old-> sgid;
- 	new->fsgid	= old->fsgid;
- 	new->user	= get_uid(old->user);
-+	new->user_ns	= new->user->user_ns;
- 	new->group_info	= get_group_info(old->group_info);
- 
- 	new->securebits	= old->securebits;
--- 
-1.7.0.4
+> > > this should also solve load average artifacts - do not 
+> > > TASK_UNINTERRUPTIBLE tasks skew the load upwards?
+> > 
+> > Quite possibly -- in this case the artifacts would appear just 
+> > after boot, and would disappear as soon as the RCU kthreads had 
+> > something to do.
+> 
+> By the way, how would you like to proceed with the fixes thus far? 
+> I have put them on -rcu for -next testing, FWIW.
 
+I'd suggest to push them to me ASAP, they should get to Linus before 
+-rc1.
+
+Thanks,
+
+	Ingo
