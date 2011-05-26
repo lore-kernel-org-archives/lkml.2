@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab1EZSri (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:47:38 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53682 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757947Ab1EZSrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:47:37 -0400
-Date: Thu, 26 May 2011 20:47:23 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Drewry <wad@chromium.org>, Colin Walters <walters@verbum.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-Message-ID: <20110526184723.GA3177@elte.hu>
-References: <20110525191152.GC19633@outflux.net>
- <BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com>
- <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
- <BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>
- <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
- <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
- <BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
- <BANLkTi=UFB6PLfsSTVpFEQbveMs-W4MjUg@mail.gmail.com>
- <BANLkTim44ziUsEbYVOjfLPvOLfhUgH9itw@mail.gmail.com>
- <BANLkTineHBZ-oHRsfc9R6bpcp_oyczL5pA@mail.gmail.com>
+	id S1758307Ab1EZSsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:48:19 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:49351 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab1EZSsS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:48:18 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-131.messagelabs.com!1306435676!25771982!32
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.69]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ryan@bluewatersys.com" <ryan@bluewatersys.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi mailing list <spi-devel-general@lists.sourceforge.net>
+Date: Thu, 26 May 2011 13:48:12 -0500
+Subject: RE: [PATCH 1/5] dmaengine: add ep93xx DMA support
+Thread-Topic: [PATCH 1/5] dmaengine: add ep93xx DMA support
+Thread-Index: Acwb1FWbkgwYzaFORuSCd5huHhXeagAALG/g
+Message-ID: <0D753D10438DA54287A00B027084269764D3319EC4@AUSP01VMBX24.collaborationhost.net>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+ <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+ <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
+ <20110525195413.GC2996@acer>
+ <BANLkTin8Trn-44Op+GbxrgocFrnPuXUZ2w@mail.gmail.com>
+ <20110526043344.GA2749@acer>
+ <BANLkTikzrXRmdnv_v_nmJw7Nvsr6TY-5RQ@mail.gmail.com>
+ <20110526183800.GE2957@acer>
+In-Reply-To: <20110526183800.GE2957@acer>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTineHBZ-oHRsfc9R6bpcp_oyczL5pA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday, May 26, 2011 11:38 AM, Mika Westerberg wrote:
+> On Thu, May 26, 2011 at 09:15:25AM +0200, Linus Walleij wrote:
+>> On Thu, May 26, 2011 at 6:33 AM, Mika Westerberg <mika.westerberg@iki.fi> wrote:
+>> 
+>>> Do you think that we can go forward with this patch series if I drop the last
+>>> patch (spi/ep93xx: add DMA support)? This way we will have dmaengine
+>>> implementation in place, whatever SPI driver we choose to use with ep93xx.
+>> 
+>> Yes and you don't have to drop any DMA support for the existing driver
+>> for me alone, now that it's in the tree it should be maintained. I only
+>> wanted to raise the issue of code duplication, not block any patches.
+>
+> Ok, so I'll keep the last patch for now.
+>
+> BTW: if we get amba-pl022 driver to work with ep93xx, do you have any ideas
+> how to proceed from there? I mean, should we convert existing users to use
+> that driver instead and finally remove the ep93xx_spi driver?
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+I think the biggest hurdle with using the amba-pl022 driver is that the ep93xx
+spi peripheral does not have the registers with the pid and cid id's.  Without
+those I don't think the amba bus driver will be able to match the device to
+the driver.
 
-> It also gets rid of all configuration - one of the things that 
-> makes most security frameworks (look at selinux, but also just 
-> ACL's etc) such a crazy rats nest is the whole "set up for other 
-> processes". If it's designed very much to be about just the "self" 
-> process (after initialization etc), then I think that avoids pretty 
-> much all the serious issues.
-
-That's how the event filters work currently: even when inherited they 
-get removed when exec-ing a setuid task, so they cannot leak into 
-privileged context and cannot modify execution there.
-
-Inheritance works when requested, covering only same-credential child 
-tasks, not privileged successors.
-
-Thanks,
-
-	Ingo
+Regards,
+Hartley
