@@ -1,127 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab1EZRVe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:21:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58269 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757582Ab1EZRVd (ORCPT
+	id S1758030Ab1EZR0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:26:39 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:46495 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757627Ab1EZR0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:21:33 -0400
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
- locks up on ARM
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>, Yong Zhang <yong.zhang0@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Frank Rowand <frank.rowand@am.sony.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1306430264.2497.88.camel@laptop>
-References: <1306343335.21578.65.camel@twins>
-	 <1306358128.21578.107.camel@twins>
-	 <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
-	 <1306405979.1200.63.camel@twins>
-	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
-	 <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins>
-	 <20110526154508.GA13788@redhat.com> <1306425584.2497.81.camel@laptop>
-	 <1306426148.2497.83.camel@laptop>  <20110526170422.GA18413@redhat.com>
-	 <1306430264.2497.88.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 19:23:53 +0200
-Message-ID: <1306430633.2497.91.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 13:26:38 -0400
+Date: Thu, 26 May 2011 22:56:18 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        crash-utility@redhat.com
+Cc: Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
+        Wang Chao <wang.chao@cn.fujitsu.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Mahesh Jagannath Salgaonkar <mahesh@linux.vnet.ibm.com>
+Subject: [RFC Patch 6/6] Crash: Recognise slim coredumps and process new
+ elf-note sections
+Message-ID: <20110526172618.GB18295@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20110526170722.GB23266@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526170722.GB23266@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 19:17 +0200, Peter Zijlstra wrote:
-> On Thu, 2011-05-26 at 19:04 +0200, Oleg Nesterov wrote:
-> > On 05/26, Peter Zijlstra wrote:
-> > >
-> > > @@ -2636,7 +2636,8 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
-> > >  		 * to spin on ->on_cpu if p is current, since that would
-> > >  		 * deadlock.
-> > >  		 */
-> > > -		if (p == current) {
-> > > +		if (cpu == smp_processor_id()) {
-> > > +			p->sched_contributes_to_load = 0;
-> > >  			ttwu_queue(p, cpu);
-> > 
-> > Btw. I do not pretend I really understand se->vruntime, but in this
-> > case we are doing enqueue_task() without ->task_waking(), however we
-> > pass ENQUEUE_WAKING. Is it correct?
-> 
-> No its not, that's the thing that I got wrong the first time and caused
-> these pauses.
 
-We'd end up with something like the below, which isn't too different
-from what I've now got queued.
+Crash: Recognise slim coredumps and process new elf-note sections
 
-It has the extra cpu == smp_processor_id() check, but I'm not sure this
-whole case is worth the trouble. I could go stick some counters in to
-verify how often all this happens I guess.
+The Linux kernel will begin to support SlimDump for certain types of crashes
+and the 'crash' tool needs to recognise them. For these types of coredumps, it
+need not lookout for usual elf-structures and start gdb. Also process new
+elf-note sections that contain additional information about the crash.
 
+Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/system.h |    2 ++
- kernel/sched.c                |   14 +++++++++++---
- kernel/sched_debug.c          |    7 +++++++
- 3 files changed, 20 insertions(+), 3 deletions(-)
+ diskdump.c |   84 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ netdump.c  |    8 +++++
+ x86.h      |   91 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 183 insertions(+)
 
-diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
-index c2ff2a1..2c597e8 100644
---- a/arch/x86/include/asm/system.h
-+++ b/arch/x86/include/asm/system.h
-@@ -10,6 +10,8 @@
- #include <linux/kernel.h>
- #include <linux/irqflags.h>
- 
-+#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
+Index: crash-5.1.5.slim_kdump/x86.h
+===================================================================
+--- /dev/null
++++ crash-5.1.5.slim_kdump/x86.h
+@@ -0,0 +1,91 @@
++/*
++ * x86.h - x86 Architecture specific definitions
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2011
++ *
++ * Author: K.Prasad <prasad@linux.vnet.ibm.com>
++ */
 +
- /* entries in ARCH_DLINFO: */
- #if defined(CONFIG_IA32_EMULATION) || !defined(CONFIG_X86_64)
- # define AT_VECTOR_SIZE_ARCH 2
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 2d12893..e4f7a9f 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2636,9 +2636,17 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
- 		 * to spin on ->on_cpu if p is current, since that would
- 		 * deadlock.
- 		 */
--		if (p == current) {
--			ttwu_queue(p, cpu);
--			goto stat;
-+		if (cpu == smp_processor_id()) {
-+			struct rq *rq;
++typedef unsigned long long u64;
++typedef unsigned int u32;
++typedef unsigned short u16;
++typedef unsigned char u8;
 +
-+			rq = __task_rq_lock(p);
-+			if (p->on_cpu) {
-+				ttwu_activate(rq, p, ENQUEUE_WAKEUP);
-+				ttwu_do_wakeup(rq, p, wake_flags);
-+				__task_rq_unlock(rq);
-+				goto stat;
-+			}
-+			__task_rq_unlock(rq);
++#define __u64 u64
++#define __u32 u32
++#define __u16 u16
++#define __u8  u8
++
++/* Mask for finding the address mode in IA32_MCi_MISC[8:6] register */
++#define MCI_MISC_ADDR_MODE	0X1C0
++/* Number of bits to shift the IA32_MCi_MISC to read the address-mode bits */
++#define MISC_ADDR_MODE_POS	6
++
++/* Address Modes in IA32_MCi_MISC[8:6] */
++#define MCM_ADDR_SEGOFF  0      /* segment offset */
++#define MCM_ADDR_LINEAR  1      /* linear address */
++#define MCM_ADDR_PHYS    2      /* physical address */
++#define MCM_ADDR_MEM     3      /* memory address */
++#define MCM_ADDR_GENERIC 7      /* generic */
++
++#define MCI_STATUS_MISCV (1ULL<<59)  /* misc error reg. valid */
++#define MCI_STATUS_ADDRV (1ULL<<58)  /* addr reg. valid */
++
++#define PAGE_SHIFT 12
++
++static const char *mce_addr_mode[] =
++{
++	"Segment offset",	/* MCM_ADDR_SEGOFF */
++	"Linear address",	/* MCM_ADDR_LINEAR */
++	"Physical address",	/* MCM_ADDR_PHYS */
++	"Memory address",	/* MCM_ADDR_MEM */
++	"",			/* reserved */
++	"",			/* reserved */
++	"",			/* reserved */
++	"Generic"		/* MCM_ADDR_GENERIC */
++};
++
++/*
++ * kernel structure: Keep this in sync with the definition in
++ * arch/x86/include/asm/mce.h of linux source code.
++ *
++ * Fields are zero when not available
++ *
++ */
++struct mce {
++	__u64 status;
++	__u64 misc;
++	__u64 addr;
++	__u64 mcgstatus;
++	__u64 ip;
++	__u64 tsc;	/* cpu time stamp counter */
++	__u64 time;	/* wall time_t when error was detected */
++	__u8  cpuvendor;	/* cpu vendor as encoded in system.h */
++	__u8  pad1;
++	__u16 pad2;
++	__u32 cpuid;	/* CPUID 1 EAX */
++	__u8  cs;		/* code segment */
++	__u8  bank;	/* machine check bank */
++	__u8  cpu;	/* cpu number; obsolete; use extcpu now */
++	__u8  finished;   /* entry is valid */
++	__u32 extcpu;	/* linux cpu number that detected the error */
++	__u32 socketid;	/* CPU socket ID */
++	__u32 apicid;	/* CPU initial apic ID */
++	__u64 mcgcap;	/* MCGCAP MSR: machine check capabilities of CPU */
++	__u64 aux0;
++	__u64 aux1;
++};
+Index: crash-5.1.5.slim_kdump/netdump.c
+===================================================================
+--- crash-5.1.5.slim_kdump.orig/netdump.c
++++ crash-5.1.5.slim_kdump/netdump.c
+@@ -331,6 +331,10 @@ is_netdump(char *file, ulong source_quer
  		}
- #endif
- 		cpu_relax();
-diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
-index a6710a1..f0ff1de 100644
---- a/kernel/sched_debug.c
-+++ b/kernel/sched_debug.c
-@@ -332,6 +332,13 @@ static int sched_debug_show(struct seq_file *m, void *v)
- 		(int)strcspn(init_utsname()->version, " "),
- 		init_utsname()->version);
- 
-+#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-+	SEQ_printf(m, "__ARCH_WANT_INTERRUPTS_ON_CTXSW\n");
-+#endif
-+#ifdef __ARCH_WANT_UNLOCKED_CTXSW
-+	SEQ_printf(m, "__ARCH_WANT_UNLOCKED_CTXSW\n");                                  
-+#endif
+         	nd->notes32 = (Elf32_Phdr *)
+ 		    &nd->elf_header[sizeof(Elf32_Ehdr)];
++		if (machdep->process_elf_notes)
++			machdep->process_elf_notes((char *)nd->elf32 +
++							nd->notes32->p_offset,
++							nd->notes32->p_filesz);
+         	nd->load32 = (Elf32_Phdr *)
+ 		    &nd->elf_header[sizeof(Elf32_Ehdr)+sizeof(Elf32_Phdr)];
+ 		if (DUMPFILE_FORMAT(nd->flags) == NETDUMP_ELF32)
+@@ -360,6 +364,10 @@ is_netdump(char *file, ulong source_quer
+                 }
+                 nd->notes64 = (Elf64_Phdr *)
+                     &nd->elf_header[sizeof(Elf64_Ehdr)];
++		if (machdep->process_elf_notes)
++			machdep->process_elf_notes((char *)nd->elf64 +
++							nd->notes64->p_offset,
++							nd->notes64->p_filesz);
+                 nd->load64 = (Elf64_Phdr *)
+                     &nd->elf_header[sizeof(Elf64_Ehdr)+sizeof(Elf64_Phdr)];
+ 		if (DUMPFILE_FORMAT(nd->flags) == NETDUMP_ELF64)
+Index: crash-5.1.5.slim_kdump/diskdump.c
+===================================================================
+--- crash-5.1.5.slim_kdump.orig/diskdump.c
++++ crash-5.1.5.slim_kdump/diskdump.c
+@@ -231,6 +231,27 @@ open_dump_file(char *file)
+ 	dd->dfd = fd;
+ 	return TRUE;
+ }
++#if defined(X86_64) || defined(X86)
++#include "x86.h"
 +
- #define P(x) \
- 	SEQ_printf(m, "%-40s: %Ld\n", #x, (long long)(x))
- #define PN(x) \
-
-
++/*
++ * Check if the address reported by the CPU is in a format we can parse.
++ * It would be possible to add code for most other cases, but all would
++ * be somewhat complicated (e.g. segment offset would require an instruction
++ * parser). So only support physical addresses up to page granuality for now.
++ *
++ * Function derived from arch/x86/kernel/cpu/mcheck/mce.c in Linux source
++ *
++ */
++static int mce_usable_address(struct mce *m)
++{
++	if (!(m->status & MCI_STATUS_MISCV) || !(m->status & MCI_STATUS_ADDRV))
++		return 0;
++	if ((m->misc & 0x3f) > PAGE_SHIFT)
++		return 0;
++	return 1;
++}
++#endif /* defined(X86_64) || defined(X86) */
+ 
+ void 
+ x86_process_elf_notes(void *note_ptr, unsigned long size_note)
+@@ -239,10 +260,43 @@ x86_process_elf_notes(void *note_ptr, un
+ 	Elf64_Nhdr *note64 = NULL;
+ 	size_t tot, len = 0;
+ 	int num = 0;
++#if defined(X86_64) || defined(X86)
++	struct mce *mce;
++	ushort addr_mode;
++#endif /* defined(X86_64) || defined(X86) */
+ 
+ 	for (tot = 0; tot < size_note; tot += len) {
+ 		if (machine_type("X86_64")) {
+ 			note64 = note_ptr + tot;
++#ifdef X86_64
++			/*
++			 * If vmcore is generated due to fatal Machine Check
++			 * Exception, we only have a 'slim' crashdump. Don't
++			 * analyse further, inform the user about it and exit.
++			 */
++			if (note64->n_type == NT_MCE) {
++				fprintf(fp, "\"System crashed due to a hardware"
++					" memory error. No coredump"
++					" available.\"\n");
++
++				/* Do we have a copy of 'struct mce'? */
++				if (note64->n_descsz == 0)
++					goto exit;
++
++				mce = (struct mce *)((char *)note64 +
++					sizeof(Elf64_Nhdr) + note64->n_namesz);
++				if (!mce_usable_address(mce))
++					goto exit;
++
++				addr_mode = (mce->misc >> MISC_ADDR_MODE_POS) &
++						MCI_MISC_ADDR_MODE;
++				fprintf(fp, "Memory error occured at %llx "
++					"(address type: %s\n)", mce->addr,
++					mce_addr_mode[addr_mode]);
++exit:
++				clean_exit(0);
++			}
++#endif /* X86_64 */
+ 
+ 			if (note64->n_type == NT_PRSTATUS) {
+ 				dd->nt_prstatus_percpu[num] = note64;
+@@ -255,6 +309,36 @@ x86_process_elf_notes(void *note_ptr, un
+ 		} else if (machine_type("X86")) {
+ 			note32 = note_ptr + tot;
+ 
++#ifdef X86
++			/*
++			 * If vmcore is generated due to fatal Machine Check
++			 * Exception, we only have a 'slim' crashdump. Don't
++			 * analyse further, inform the user about it and exit.
++			 */
++			if (note32->n_type == NT_MCE) {
++				fprintf(fp, "\"System crashed due to a hardware"
++					" memory error. No coredump"
++					" available.\"\n");
++
++				/* Do we have a copy of 'struct mce'? */
++				if (note32->n_descsz == 0)
++					goto exit;
++
++				mce = (struct mce *)((char *)note32 +
++					sizeof(Elf32_Nhdr) + note32->n_namesz);
++				if (!mce_usable_address(mce))
++					goto exit;
++
++				addr_mode = (mce->misc >> MISC_ADDR_MODE_POS) &
++						MCI_MISC_ADDR_MODE;
++				fprintf(fp, "Memory error occured at %llx "
++					"(address type: %s\n)", mce->addr,
++					mce_addr_mode[addr_mode]);
++exit:
++				clean_exit(0);
++			}
++#endif /* X86 */
++
+ 			if (note32->n_type == NT_PRSTATUS) {
+ 				dd->nt_prstatus_percpu[num] = note32;
+ 				num++;
