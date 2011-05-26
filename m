@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab1EZCKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 22:10:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43858 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755711Ab1EZCKm convert rfc822-to-8bit (ORCPT
+	id S1757257Ab1EZCRl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 22:17:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51243 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762Ab1EZCRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 22:10:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,270,1304319600"; 
-   d="scan'208";a="5013779"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Jean Delvare <khali@linux-fr.org>, Andi Kleen <andi@firstfloor.org>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "jbeulich@novell.com" <jbeulich@novell.com>
-Date: Wed, 25 May 2011 19:08:27 -0700
-Subject: RE: [PATCH 3/3] coretemp: Get microcode revision from cpu_data v2
-Thread-Topic: [PATCH 3/3] coretemp: Get microcode revision from cpu_data v2
-Thread-Index: AcwbHh1AY33x+JtYRGCdDm4HJFLcnQAK1cpw
-Message-ID: <493994B35A117E4F832F97C4719C4C04011E2157D6@orsmsx505.amr.corp.intel.com>
-References: <1306351948-23382-1-git-send-email-andi@firstfloor.org>
-	<1306351948-23382-3-git-send-email-andi@firstfloor.org>
- <20110525225359.60d819d5@endymion.delvare>
-In-Reply-To: <20110525225359.60d819d5@endymion.delvare>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 25 May 2011 22:17:39 -0400
+Date: Wed, 25 May 2011 19:17:06 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>, gregkh <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>
+Subject: [PATCH] staging: fix olpc_dcon build, needs BACKLIGHT_CLASS_DEVICE
+Message-Id: <20110525191706.a6b0f357.randy.dunlap@oracle.com>
+In-Reply-To: <20110525135844.2a25f858.sfr@canb.auug.org.au>
+References: <20110525135844.2a25f858.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DDDB82E.0113:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jean Delvare [mailto:khali@linux-fr.org]
-> Sent: Wednesday, May 25, 2011 1:54 PM
-> To: Andi Kleen
-> Cc: x86@kernel.org; linux-kernel@vger.kernel.org; Andi Kleen;
-> jbeulich@novell.com; Yu, Fenghua
-> Subject: Re: [PATCH 3/3] coretemp: Get microcode revision from cpu_data
-> v2
-> 
-> Hi Andi,
-> 
-> On Wed, 25 May 2011 12:32:28 -0700, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> >
-> > Now that the ucode revision is available in cpu_data remove
-> > the existing code in coretemp.c to query it manually. Read the ucode
-> > revision from cpu_data instead
-> 
-> Where is this available? Not upstream yet, apparently. I get a build
-> failure here.
-> 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-This is one of three patches. Cpu_data is defined in the first patch. You need to get the other two to test them.
+Fix olpc_dcon.c build by selecting the needed kconfig symbol
+BACKLIGHT_CLASS_DEVICE.
 
-But I think Andi will send out a newer version with some changes. So we can test the newer patch set then.
+olpc_dcon.c:(.text+0x11588b): undefined reference to `backlight_device_register'
 
-Thanks.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Andres Salomon <dilinger@queued.net>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: Jon Nettleton <jon.nettleton@gmail.com>
+---
+ drivers/staging/olpc_dcon/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
--Fenghua
+--- linux-next-20110525.orig/drivers/staging/olpc_dcon/Kconfig
++++ linux-next-20110525/drivers/staging/olpc_dcon/Kconfig
+@@ -2,6 +2,7 @@ config FB_OLPC_DCON
+ 	tristate "One Laptop Per Child Display CONtroller support"
+ 	depends on OLPC && FB
+ 	select I2C
++	select BACKLIGHT_CLASS_DEVICE
+ 	---help---
+ 	  Add support for the OLPC XO DCON controller.  This controller is
+ 	  only available on OLPC platforms.   Unless you have one of these
