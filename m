@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab1EZSjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:39:08 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:38245 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753523Ab1EZSjE (ORCPT
+	id S932945Ab1EZSmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:42:51 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:63599 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab1EZSmu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:39:04 -0400
-Date: Thu, 26 May 2011 20:38:50 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: David Safford <safford@watson.ibm.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-Subject: Re: [PATCH v5 00/21] EVM
-Message-ID: <20110526183849.GA4563@ucw.cz>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
- <20110518172552.6d482c7a.akpm@linux-foundation.org>
- <20110526060842.GA13933@localhost.ucw.cz>
- <4DDE80FE.7010005@schaufler-ca.com>
- <1306433514.24986.26.camel@localhost.localdomain>
+	Thu, 26 May 2011 14:42:50 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-132.messagelabs.com!1306435320!26993634!19
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.72]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>,
+        "Koul, Vinod" <vinod.koul@intel.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "ryan@bluewatersys.com" <ryan@bluewatersys.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>
+Date: Thu, 26 May 2011 13:42:38 -0500
+Subject: RE: [PATCH 1/5] dmaengine: add ep93xx DMA support
+Thread-Topic: [PATCH 1/5] dmaengine: add ep93xx DMA support
+Thread-Index: Acwb0SwnGhFbclU4SPapCEdUdc10pgAA2T+A
+Message-ID: <0D753D10438DA54287A00B027084269764D3319E9D@AUSP01VMBX24.collaborationhost.net>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+ <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+ <1306310403.30236.94.camel@vkoul-udesk3> <20110525190055.GB2996@acer>
+ <1306384690.30236.202.camel@vkoul-udesk3> <20110526181524.GD2957@acer>
+In-Reply-To: <20110526181524.GD2957@acer>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306433514.24986.26.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2011-05-26 14:11:54, David Safford wrote:
-> On Thu, 2011-05-26 at 09:34 -0700, Casey Schaufler wrote:
-> > On 5/25/2011 11:08 PM, Pavel Machek wrote:
-> > > ...
-> > > Fourthly, is it likely to find its way to the next cellphone I buy,
-> > > and will it prevent me from rooting it?
-> > 
-> > That will of course depend on the phone vendor. You are certainly
-> > going to be able to vote with your checkbook (digital wallet?) but
-> > odds are pretty good that should EVM prove effective it will be
-> > ubiquitous within the next five years on embedded devices.
+On Thursday, May 26, 2011 11:15 AM, Mika Westerberg wrote:
+> On Thu, May 26, 2011 at 10:08:10AM +0530, Koul, Vinod wrote:
+>> On Thu, 2011-05-26 at 00:30 +0530, Mika Westerberg wrote:
+>>> On Wed, May 25, 2011 at 01:30:03PM +0530, Koul, Vinod wrote:
+>>>> 
+>>>> Which tree are these patches going thru?
+>>> 
+>>> I was hoping that the dmaengine driver itself would go via dmaengine tree (is
+>>> it you or Dan who maintain it?) and rest of the patches probably through their
+>>> respective trees. However, since there are dependencies between the patches,
+>>> I'm not entirely sure how to proceed with these. Any ideas appreciated :)
+>> Okay, I can take the DMA one only. 
+>> It stoo late for .40, I can take it for .41 or whatever that turns out to be 
+>
+> Great, thanks.
+>
+> I'll send updated version of the patches soon where I have gathered all the acks
+> and updated Ryan's email address.
 
-Hmm. But maybe it is more effective to vote with NAKs, now? It does
-not seem to have any non-evil uses.
+Mika,
 
-Phone vendors will play nasty tricks on us, but... why make it easy
-for them?
+I'll try to test the patches on my setup today.
 
-> um, not quite the right threat model...
-> 
-> Rooting is normally done through an exploit of the loader
-> or the kernel, neither of which EVM can prevent. The phones
-
-Androids are often rooted by exploiting kernel or userspace
-security holes. G1 was rooted by shell that was left running on
-console...
-
-> Whether or not the phone is rooted, IMA-Appraisal, EVM, and 
-> the Digital Signature Extensions help protect against remote
-> software attacks, and offline hardware attacks on individual
-> files, but not against rooting itself.
-
-As far as I can tell, file signatures only prevent "offline hardware
-attacks"; that is  user trying to "attack" (== root) his own computer.
-
-								Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Regards,
+Hartley
