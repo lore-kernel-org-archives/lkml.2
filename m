@@ -1,104 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758523Ab1EZUcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:32:36 -0400
-Received: from smtp103.prem.mail.sp1.yahoo.com ([98.136.44.58]:30892 "HELO
-	smtp103.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758499Ab1EZUcd (ORCPT
+	id S1758489Ab1EZUdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:33:53 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:1707 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab1EZUdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 16:32:33 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: gBkeNNsVM1lVGx4pWB3y_qKI7XuwySxMF4Q92dVSkXg85R4
- r.T45loeHUjAyh8KjyrGDfor3xR3ZGFn6gnawJLOkbWePcKh43Hfi0.WnEgM
- GFVohNhHdFLWifaIWr4sixX5mYYBY0A1hzL0emD5_EJzkm.k2pj6fCJgvt4u
- Uno.9GD0mr6.q3TqGmSeDGcK5yPdnFcZvuzDbHI_qb.XqN0F3TA1wG4hFHhR
- elc9DgaZhchRqyTT42V4suCulzLOs5jWQ1opSwRpTFgUFNiw069NQvY2Ii74
- MBG8HA.V1HwKKad0rwm6d.k2saZV8LPZs1O0MhjgbNZm3a9tPfQBvtKtYX56
- bQGOQNLHdKUes9WrX9DtRSh0QkntRh60lEg--
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4DDEB8DC.5070908@schaufler-ca.com>
-Date: Thu, 26 May 2011 13:32:28 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Thu, 26 May 2011 16:33:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=w+CdguNtcLNKnAf2ouWble6p1gVNWzIkD7chPB/yx1nwlov71n7yHDQlfD/7TJkQed
+         lsca9Q5J3U6vVzVMmozQ==
+Date: Thu, 26 May 2011 13:33:48 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trace: Set oom_score_adj to maximum for ring buffer
+ allocating process
+In-Reply-To: <BANLkTi=dEHG4zEZ2xRF7VEDdM6fsd9Hr=g@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1105261328200.29812@chino.kir.corp.google.com>
+References: <1306439537-23706-1-git-send-email-vnagarnaik@google.com> <1306440288.3857.9.camel@gandalf.stny.rr.com> <BANLkTi=dEHG4zEZ2xRF7VEDdM6fsd9Hr=g@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-Subject: Re: [PATCH v5 00/21] EVM
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com> <20110518172552.6d482c7a.akpm@linux-foundation.org> <20110526060842.GA13933@localhost.ucw.cz> <4DDE80FE.7010005@schaufler-ca.com> <1306433514.24986.26.camel@localhost.localdomain> <20110526183849.GA4563@ucw.cz> <4DDEAA3F.3030008@schaufler-ca.com> <20110526200207.GB15959@elf.ucw.cz>
-In-Reply-To: <20110526200207.GB15959@elf.ucw.cz>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/26/2011 1:02 PM, Pavel Machek wrote:
-> On Thu 2011-05-26 12:30:07, Casey Schaufler wrote:
->> On 5/26/2011 11:38 AM, Pavel Machek wrote:
->>> On Thu 2011-05-26 14:11:54, David Safford wrote:
->>>> On Thu, 2011-05-26 at 09:34 -0700, Casey Schaufler wrote:
->>>>> On 5/25/2011 11:08 PM, Pavel Machek wrote:
->>>>>> ...
->>>>>> Fourthly, is it likely to find its way to the next cellphone I buy,
->>>>>> and will it prevent me from rooting it?
->>>>> That will of course depend on the phone vendor. You are certainly
->>>>> going to be able to vote with your checkbook (digital wallet?) but
->>>>> odds are pretty good that should EVM prove effective it will be
->>>>> ubiquitous within the next five years on embedded devices.
->>> Hmm. But maybe it is more effective to vote with NAKs, now? It does
->>> not seem to have any non-evil uses.
->>>
->>> Phone vendors will play nasty tricks on us, but... why make it easy
->>> for them?
->> For one thing, it is probable that in the not-too-distant future
->> the phone will not be yours. Many service providers are moving in
->> the direction of zero-cost phones. The subscriber will pay the
-> Really? References?
+On Thu, 26 May 2011, Vaibhav Nagarnaik wrote:
 
-Yes, and no.
+> > Hmm, have you tried this in practice? Yes we may kill the "echo" command
+> > but it doesn't stop the ring buffer from being allocated, and thus
+> > killing the echo command may not be enough, and those critical processes
+> > that you are trying to protect will be killed next.
+> >
+> 
+> Yes I did try this and found that it works as we intend it to. When
+> oom-killer is invoked, it picks the process which has lowest
+> oom_score_adj and kills it or one of its children.
 
-> No, I don't think this is going to happen, for variety of reasons. 1)
-> prepaid cards, 2) phones are easily damaged, 3) phones are often stolen.
+s/lowest/highest/
 
-I have no idea how prepaid cards make a difference, but I'm willing
-to be educated.
+> When the process is
+> getting killed, any memory allocation from it would be returned -ENOMEM,
+> which gets handled in our allocation process and we free up previously
+> allocated memory.
+> 
 
-Phones are commodity electronics. If they get damaged they get replaced.
-That's another selling point for the scheme. Clumsy customers will love
-it.
+Not sure that's true, this is allocating with kzalloc_node(GFP_KERNEL), 
+correct?  If current is oom killed, it will have access to all memory 
+reserves which will increase the liklihood that the allocation will 
+succeed before handling the SIGKILL.
 
-"Someone stole my SSRBQ phone!"
-"Thank you sir, we'll track down our phone using the GPS software we
- put on it. Now we'll use the battery overload software we just downloaded
- to it to heat it up and set the magnesium case on fire. What's that sir?
- your dog just exploded?"
+> This API is now being used in other parts of kernel too, where it knows
+> that the allocation could cause OOM.
+> 
 
-Seriously, the service provider will download meltdown software to
-the stolen phone and treat it as broken. The customer gets a new phone
-to use. No worries.
-
->> Most people will not notice the difference. Consider this a
->> nasty trick if you want to. I expect that the average consumer
-> I _do_ consider it nasty trick...
-
-It's only "nasty" if the customer doesn't like it.
-It's only a trick if the fact that the customer does not own the phone
-is hidden. I fully expect the providers to tout it as a feature.
-
->> Welcome to computers in the 21st century.
-> ...and I do not want to help people playing nasty tricks. Protection
-> against offline attacks should not be merged.
->
-> 								Pavel
-
-OK, but what about the owners of loaned phones, set top boxes or aircraft
-entertainment systems, who routinely put their hardware in the hands of
-people they have no reason to trust? I suppose they can run WinCE. Or
-Symbian.
-
+What's wrong with using __GFP_NORETRY to avoid oom killing entirely and 
+then failing the ring buffer memory allocation?  Seems like a better 
+solution than relying on the oom killer, since there may be other threads 
+with a max oom_score_adj as well that would appear in the tasklist first 
+and get killed unnecessarily.  Is there some ring buffer code that can't 
+handle failing allocations appropriately?
