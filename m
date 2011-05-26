@@ -1,36 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab1EZDIB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 23:08:01 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:54230 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab1EZDIA (ORCPT
+	id S1755187Ab1EZDLn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 23:11:43 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:13945 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab1EZDLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 23:08:00 -0400
-X-Nat-Received: from [202.181.97.72]:52786 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1306379273.9389
-Message-Id: <201105260307.p4Q37qeV067663@www262.sakura.ne.jp>
-Subject: PTRACE: compat_sys_ptrace(PTRACE_TRACEME) lacks arch_ptrace_attach()?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: hskinnemoen@atmel.com, roland@redhat.com
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Thu, 26 May 2011 12:07:52 +0900
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 26052011 #5433493, status: clean
+	Wed, 25 May 2011 23:11:42 -0400
+From: Mandeep Singh Baines <msb@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
+Subject: [PATCH] crypto: sha1: modify sha1_update to use SHA1_BLOCK_SIZE
+Date: Wed, 25 May 2011 20:11:17 -0700
+Message-Id: <1306379477-24552-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed that commit 6ea6dd93 "ptrace: Call arch_ptrace_attach() when
-request=PTRACE_TRACEME" added
+Plus some other minor cleanup.
 
-	if (!ret)
-		arch_ptrace_attach(current);
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: linux-crypto@vger.kernel.org
+---
+ crypto/sha1_generic.c |   39 +++++++++++++++++++--------------------
+ 1 files changed, 19 insertions(+), 20 deletions(-)
 
-call to sys_ptrace(PTRACE_TRACEME) but commit c269f196 "x86: compat_sys_ptrace"
-did not add that call to compat_sys_ptrace(PTRACE_TRACEME).
+diff --git a/crypto/sha1_generic.c b/crypto/sha1_generic.c
+index 0416091..4bdd228 100644
+--- a/crypto/sha1_generic.c
++++ b/crypto/sha1_generic.c
+@@ -40,33 +40,32 @@ static int sha1_update(struct shash_desc *desc, const u8 *data,
+ 			unsigned int len)
+ {
+ 	struct sha1_state *sctx = shash_desc_ctx(desc);
+-	unsigned int partial, done;
+-	const u8 *src;
++	unsigned int partial = sctx->count % SHA1_BLOCK_SIZE;
++	u32 temp[SHA_WORKSPACE_WORDS];
++	const u8 *src = data;
+ 
+-	partial = sctx->count & 0x3f;
+ 	sctx->count += len;
+-	done = 0;
+-	src = data;
+ 
+-	if ((partial + len) > 63) {
+-		u32 temp[SHA_WORKSPACE_WORDS];
++	if (partial && ((partial + len) >= SHA1_BLOCK_SIZE)) {
++		unsigned int done = SHA1_BLOCK_SIZE - partial;
+ 
+-		if (partial) {
+-			done = -partial;
+-			memcpy(sctx->buffer + partial, data, done + 64);
+-			src = sctx->buffer;
+-		}
++		memcpy(sctx->buffer + partial, src, done);
++		sha_transform(sctx->state, sctx->buffer, temp);
++		len -= done;
++		src += done;
++		partial = 0;
++	}
+ 
+-		do {
+-			sha_transform(sctx->state, src, temp);
+-			done += 64;
+-			src = data + done;
+-		} while (done + 63 < len);
++	while (len >= SHA1_BLOCK_SIZE) {
++		sha_transform(sctx->state, src, temp);
++		len -= SHA1_BLOCK_SIZE;
++		src += SHA1_BLOCK_SIZE;
++	}
+ 
++	if (src != data)
+ 		memset(temp, 0, sizeof(temp));
+-		partial = 0;
+-	}
+-	memcpy(sctx->buffer + partial, src, len - done);
++
++	memcpy(sctx->buffer + partial, src, len);
+ 
+ 	return 0;
+ }
+-- 
+1.7.3.1
 
-If compat_sys_ptrace(PTRACE_ATTACH) needs arch_ptrace_attach(), maybe
-compat_sys_ptrace(PTRACE_TRACEME) needs arch_ptrace_attach() as well.
