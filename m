@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab1EZLTI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 07:19:08 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49138 "EHLO hera.kernel.org"
+	id S1757249Ab1EZLXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 07:23:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58035 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755670Ab1EZLTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 07:19:05 -0400
-Date: Thu, 26 May 2011 11:18:57 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-def945eeb920b94e710574454043f080831aefe5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, travis@sgi.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, travis@sgi.com, tglx@linutronix.de
-In-Reply-To: <4DDDE094.6050505@kernel.org>
-References: <4DDDE094.6050505@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] irq: Remove smp_affinity_list when unregister irq proc
-Git-Commit-ID: def945eeb920b94e710574454043f080831aefe5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754293Ab1EZLXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 07:23:32 -0400
+Date: Thu, 26 May 2011 13:23:30 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] trivial __TIME__ and __DATE__ removal
+Message-ID: <20110526112330.GA5325@sepie.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 May 2011 11:18:57 +0000 (UTC)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  def945eeb920b94e710574454043f080831aefe5
-Gitweb:     http://git.kernel.org/tip/def945eeb920b94e710574454043f080831aefe5
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Wed, 25 May 2011 22:09:40 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 26 May 2011 13:15:28 +0200
+Hi Linus,
 
-irq: Remove smp_affinity_list when unregister irq proc
+This series removes most of the remaining occurences of __TIME__ and
+__DATE__ in the kernel source. Two more patches will be sent by
+subsystem maintainers:
 
-commit 4b06042(bitmap, irq: add smp_affinity_list interface to
-/proc/irq) causes the following warning:
+    nand/denali: Drop __TIME__ usage
+    x86: Do not set the root_dev field in bzImage
 
-[  274.239500] WARNING: at fs/proc/generic.c:850 remove_proc_entry+0x24c/0x27a()
-[  274.251761] remove_proc_entry: removing non-empty directory 'irq/184',
-    	       leaking at least 'smp_affinity_list'
+Afterwards, a build with
 
-Remove the new file in the exit path.
+export KBUILD_TIMESTAMP=<some fixed date>
+export KBUILD_BUILD_USER=tux
+export KBUILD_BUILD_HOST=machine
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Mike Travis <travis@sgi.com>
-Link: http://lkml.kernel.org/r/4DDDE094.6050505@kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/proc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+will produce identical results if the source is the same. A script
+testing this is at http://userweb.kernel.org/~mmarek/test-reproducible.sh .
 
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 64e3df6..4bd4faa 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -352,6 +352,7 @@ void unregister_irq_proc(unsigned int irq, struct irq_desc *desc)
- #ifdef CONFIG_SMP
- 	remove_proc_entry("smp_affinity", desc->dir);
- 	remove_proc_entry("affinity_hint", desc->dir);
-+	remove_proc_entry("smp_affinity_list", desc->dir);
- 	remove_proc_entry("node", desc->dir);
- #endif
- 	remove_proc_entry("spurious", desc->dir);
+Michal
+
+The following changes since commit 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d:
+
+  Linux 2.6.39-rc1 (2011-03-29 12:09:47 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git trivial
+
+Michal Marek (18):
+      cyclades: Drop __TIME__ usage
+      nozomi: Drop __TIME__ usage
+      media/radio-maxiradio: Drop __TIME__ usage
+      media/cx231xx: Drop __TIME__ usage
+      aacraid: Drop __TIME__ usage
+      scsi/in2000: Drop __TIME__ usage
+      scsi/wd33c93: Drop __TIME__ usage
+      rio: Drop __DATE__ usage
+      edac: Drop __DATE__ usage
+      pmcraid: Drop __DATE__ usage
+      baycom: Drop __TIME__ usage
+      hdlcdrv: Drop __TIME__ usage
+      parport: Drop __TIME__ usage
+      wan/pc300: Drop __TIME__ usage
+      dlm: Drop __TIME__ usage
+      atm: Drop __TIME__ usage
+      isdn/diva: Drop __TIME__ usage
+      gfs2: Drop __TIME__ usage
+
+ drivers/edac/amd76x_edac.c                   |    2 +-
+ drivers/edac/amd8111_edac.c                  |    2 +-
+ drivers/edac/amd8131_edac.c                  |    2 +-
+ drivers/edac/cpc925_edac.c                   |    2 +-
+ drivers/edac/e752x_edac.c                    |    2 +-
+ drivers/edac/e7xxx_edac.c                    |    2 +-
+ drivers/edac/edac_module.c                   |    2 +-
+ drivers/edac/i5000_edac.c                    |    2 +-
+ drivers/edac/i5400_edac.c                    |    2 +-
+ drivers/edac/i7300_edac.c                    |    2 +-
+ drivers/edac/i7core_edac.c                   |    2 +-
+ drivers/edac/i82860_edac.c                   |    2 +-
+ drivers/edac/i82875p_edac.c                  |    2 +-
+ drivers/edac/i82975x_edac.c                  |    2 +-
+ drivers/edac/mpc85xx_edac.h                  |    2 +-
+ drivers/edac/mv64x60_edac.h                  |    2 +-
+ drivers/edac/ppc4xx_edac.c                   |    2 +-
+ drivers/edac/r82600_edac.c                   |    2 +-
+ drivers/isdn/hardware/eicon/divasfunc.c      |    5 ++---
+ drivers/media/radio/radio-maxiradio.c        |    3 +--
+ drivers/media/video/cx231xx/cx231xx-avcore.c |    2 +-
+ drivers/net/hamradio/baycom_epp.c            |    2 +-
+ drivers/net/hamradio/baycom_par.c            |    2 +-
+ drivers/net/hamradio/baycom_ser_fdx.c        |    2 +-
+ drivers/net/hamradio/baycom_ser_hdx.c        |    2 +-
+ drivers/net/hamradio/hdlcdrv.c               |    2 +-
+ drivers/net/wan/pc300_drv.c                  |    3 +--
+ drivers/parport/parport_ip32.c               |    1 -
+ drivers/scsi/aacraid/linit.c                 |    3 +--
+ drivers/scsi/in2000.c                        |    2 +-
+ drivers/scsi/pmcraid.c                       |    9 ++++-----
+ drivers/scsi/pmcraid.h                       |    1 -
+ drivers/scsi/wd33c93.c                       |    7 +++----
+ drivers/staging/generic_serial/rio/rioinit.c |    2 +-
+ drivers/tty/cyclades.c                       |    3 +--
+ drivers/tty/nozomi.c                         |    3 +--
+ fs/dlm/main.c                                |    2 +-
+ fs/gfs2/main.c                               |    2 +-
+ net/atm/lec.c                                |    2 +-
+ net/atm/mpc.c                                |    2 +-
+ 40 files changed, 44 insertions(+), 54 deletions(-)
