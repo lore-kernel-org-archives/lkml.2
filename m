@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758276Ab1EZSXw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:23:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33913 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755482Ab1EZSXu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:23:50 -0400
-X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=vVy0PQ3ZQx8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=76pVKIetd4Xcx1ojzN4A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] trace: Add a free on close control mechanism for
- buffer_size_kb
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>
-In-Reply-To: <BANLkTin+WYW6Eahgn+yw2eTX44Erc5yBMg@mail.gmail.com>
-References: <1304106356-11277-1-git-send-email-vnagarnaik@google.com>
-	 <1304118968-6620-1-git-send-email-vnagarnaik@google.com>
-	 <1306380591.1465.140.camel@gandalf.stny.rr.com>
-	 <BANLkTin+WYW6Eahgn+yw2eTX44Erc5yBMg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 26 May 2011 14:23:48 -0400
-Message-ID: <1306434228.3857.5.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1757897Ab1EZS1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:27:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31484 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753892Ab1EZS1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:27:09 -0400
+Date: Thu, 26 May 2011 14:26:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "K.Prasad" <prasad@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, kexec@lists.infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
+Subject: Re: [RFC Patch 5/6] slimdump: Capture slimdump for fatal MCE
+ generated crashes
+Message-ID: <20110526182618.GD29496@redhat.com>
+References: <20110526170722.GB23266@in.ibm.com>
+ <20110526172305.GA18295@in.ibm.com>
+ <20110526174447.GC29496@redhat.com>
+ <20110526180931.GF4065@one.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526180931.GF4065@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 11:00 -0700, Vaibhav Nagarnaik wrote:
-> On Wed, May 25, 2011 at 8:29 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> >
-> > What you should do is just check if ret is less than zero here.
-> >
-> >        if (ret < 0)
-> >                ret = -ENOMEM;
+On Thu, May 26, 2011 at 08:09:31PM +0200, Andi Kleen wrote:
+> On Thu, May 26, 2011 at 01:44:47PM -0400, Vivek Goyal wrote:
+> > On Thu, May 26, 2011 at 10:53:05PM +0530, K.Prasad wrote:
+> > > 
+> > > slimdump: Capture slimdump for fatal MCE generated crashes
+> > > 
+> > > System crashes resulting from fatal hardware errors (such as MCE) don't need
+> > > all the contents from crashing-kernel's memory. Generate a new 'slimdump' that
+> > > retains only essential information while discarding the old memory.
+> > > 
+> > 
+> > Why to enforce zeroing out of rest of the vmcore data in kernel. Why not
+> > leave it to user space. 
 > 
-> Instead, I don't have to check/set the return value. I can just return
-> "ret" to the caller.
+> I think it's a good default to not do a full dump on MCE.
+> It's very unlikely to be useful for anything, and will just waste
+> reboot time (aka nines).
 
-Actually, ret could be -1, if we end up with a miss match in global vs
-max buffers. But that is more of an anomaly. Maybe the solution there is
-to have that return -ENOMEM as well?
+If we are just extracting and saving MCE registers from vmcore, then
+reboot time does not increase. It increases only if user decides to
+extract and save extra data from vmcore.
 
--- Steve
+> 
+> That said including the dmesg too may be a good idea.
 
+dmesg is already part of vmcore and user space tools can easily find
+it. 
 
+I can easily imagine a default policy of a distro in user space where
+in case of MCE crash, we just extract dmesg and MCE registers (from vmcore
+notes section) reboot. This will be fast and will reduce the amount of code
+in kernel.
+
+IMHO, we should not introduce any additional notion of slimdump as such in
+kernel. A better thing would be to just read MCE registers and export to
+user space through ELF notes and then let user space automate the rest of
+it.
+
+Thanks
+Vivek
