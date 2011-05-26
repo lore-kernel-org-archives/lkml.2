@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196Ab1EZSNe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:13:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44431 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757810Ab1EZSNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:13:33 -0400
-Date: Thu, 26 May 2011 18:13:16 GMT
-From: tip-bot for Boris Ostrovsky <ostr@amd64.org>
-Message-ID: <tip-e9cdd343a5e42c43bcda01e609fa23089e026470@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        Andreas.Herrmann3@amd.com, cebbert@redhat.com, tglx@linutronix.de,
-        hpa@linux.intel.com, ostr@amd64.org, borislav.petkov@amd.com,
-        Hans.Rosenfeld@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        Andreas.Herrmann3@amd.com, cebbert@redhat.com, tglx@linutronix.de,
-        hpa@linux.intel.com, ostr@amd64.org, Hans.Rosenfeld@amd.com,
-        borislav.petkov@amd.com
-In-Reply-To: <1306423192-19774-1-git-send-email-ostr@amd64.org>
-References: <1306423192-19774-1-git-send-email-ostr@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, amd: Do not enable ARAT feature on AMD processors below family 0x12
-Git-Commit-ID: e9cdd343a5e42c43bcda01e609fa23089e026470
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 May 2011 18:13:17 +0000 (UTC)
+	id S1758255Ab1EZSPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:15:07 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:31475 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757468Ab1EZSPE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:15:04 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: E124OHIVM1mkCK1rFxw2UzHWzrEie.Jz0W0ESLTDyDatI1f
+ RKFe1OoRxTrfW3zErD2MK6_MgkZwSGDM_PRgZKkfr1Y7oJijVyvS_qo5.Cy1
+ THaciOdR7hT8f7XonXUuICsDNTjBmbvYwgJkUNriZwQGimYkI7ammd7uwWPq
+ Mmvay4yoEyyLI0hRulOoWbp5BmWld5wYXMtLsqXlp77WSiOnwe.nyaCNnVqO
+ ej8yv65Zj_0CApQYZHNYKPN9vUQC9QEKLbaqWVWLsEKaCqjmjbbt.1AikBIg
+ 2N9khuCQneTrnrC3xmIFyo5gfq8cH8AQcHtQKTpuKvICnbHBMz9EJeBHDcJ6
+ rfRzYA9MvCVsRtllCdQGMBZqg
+X-Yahoo-Newman-Property: ymail-3
+Message-Id: <20110526181442.789868308@linux.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 26 May 2011 13:14:42 -0500
+From: Christoph Lameter <cl@linux.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: [slubllv6 00/17] SLUB: Lockless freelists for objects V6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e9cdd343a5e42c43bcda01e609fa23089e026470
-Gitweb:     http://git.kernel.org/tip/e9cdd343a5e42c43bcda01e609fa23089e026470
-Author:     Boris Ostrovsky <ostr@amd64.org>
-AuthorDate: Thu, 26 May 2011 11:19:52 -0400
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 26 May 2011 10:38:30 -0700
+V5->V6  - Diffed against current Linus for -next integration.
+	- Rework descriptions
+	- Patches could use some review.
 
-x86, amd: Do not enable ARAT feature on AMD processors below family 0x12
+V4->V5	- More cleanup. Remove gotos from __slab_alloc and __slab_free
+	- Some structural changes to alloc and free to clean up the code
+	- Statistics modifications folded in other patches.
+	- Fixes to patches already in Pekka's slabnext.
+	- Include missing upstream fixes
 
-Commit b87cf80af3ba4b4c008b4face3c68d604e1715c6 added support for
-ARAT (Always Running APIC timer) on AMD processors that are not
-affected by erratum 400. This erratum is present on certain processor
-families and prevents APIC timer from waking up the CPU when it
-is in a deep C state, including C1E state.
+V3->V4	- Diffed against Pekka's slab/next tree.
+	- Numerous cleanups in particular as a result of the removal of the
+	  #ifdef CMPXCHG_LOCAL stuff.
+	- Smaller cleanups whereever I saw something.
 
-Determining whether a processor is affected by this erratum may
-have some corner cases and handling these cases is somewhat
-complicated. In the interest of simplicity we won't claim ARAT
-support on processor families below 0x12 and will go back to
-broadcasting timer when going idle.
+V2->V3
+	- Provide statistics
+	- Fallback logic to page lock if cmpxchg16b is not available.
+	- Better counter support
+	- More cleanups and clarifications
 
-Signed-off-by: Boris Ostrovsky <ostr@amd64.org>
-Link: http://lkml.kernel.org/r/1306423192-19774-1-git-send-email-ostr@amd64.org
-Tested-by: Boris Petkov <borislav.petkov@amd.com>
-Cc: Hans Rosenfeld <Hans.Rosenfeld@amd.com>
-Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
-Cc: Chuck Ebbert <cebbert@redhat.com>
-Cc: stable@kernel.org # 32.x, 38.x, 39.x
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/cpu/amd.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+Well here is another result of my obsession with SLAB allocators. There must be
+some way to get an allocator done that is faster without queueing and I hope
+that we are now there (maybe only almost...). Any help with cleaning up the
+rough edges would be appreciated.
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 8f5cabb..b13ed39 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -612,8 +612,11 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 	}
- #endif
- 
--	/* As a rule processors have APIC timer running in deep C states */
--	if (c->x86 > 0xf && !cpu_has_amd_erratum(amd_erratum_400))
-+	/*
-+	 * Family 0x12 and above processors have APIC timer
-+	 * running in deep C states.
-+	 */
-+	if (c->x86 > 0x11)
- 		set_cpu_cap(c, X86_FEATURE_ARAT);
- 
- 	/*
+This patchset implement wider lockless operations in slub affecting most of the
+slowpaths. In particular the patch decreases the overhead in the performance
+critical section of __slab_free.
+
+One test that I ran was "hackbench 200 process 200" on 2.6.39-rc3 under KVM
+
+Run	SLAB	SLUB	SLUB LL
+1st	35.2	35.9	31.9
+2nd	34.6	30.8	27.9
+3rd	33.8	29.9	28.8
+
+Note that the SLUB version in 2.6.29-rc1 already has an optimized allocation
+and free path using this_cpu_cmpxchg_double(). SLUB LL takes it to new heights
+by also using cmpxchg_double() in the slowpaths (especially in the kfree()
+case where we frequently cannot use the fastpath because there is no queue).
+
+The patch uses a cmpxchg_double (also introduced here) to do an atomic change
+on the state of a slab page that includes the following pieces of information:
+
+1. Freelist pointer
+2. Number of objects inuse
+3. Frozen state of a slab
+
+Disabling of interrupts (which is a significant latency in the
+allocator paths) is avoided in the __slab_free case.
+
+There are some concerns with this patch. The use of cmpxchg_double on
+fields of the page struct requires alignment of the fields to double
+word boundaries. That can only be accomplished by adding some padding
+to struct page which blows it up to 64 byte (on x86_64). Comments
+in the source describe these things in more detail.
+
+The cmpxchg_double() operation introduced here could also be used to
+update other doublewords in the page struct in a lockless fashion. One
+can envision page state changes that involved flags and mappings or
+maybe do list operations locklessly (but with the current scheme we
+would need to update two other words elsewhere at the same time too,
+so another scheme would be needed).
+
