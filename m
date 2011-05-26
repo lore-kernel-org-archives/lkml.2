@@ -1,141 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab1EZIiS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 04:38:18 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:32718 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752752Ab1EZIiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 04:38:15 -0400
-Date: Thu, 26 May 2011 11:37:46 +0300
-From: Ville Tervo <ville.tervo@nokia.com>
-To: ext Corey Boyle <corey@kansanian.com>
-Cc: wyrles@ytram.com, "Cufi, Carles" <carles.cufi@nordicsemi.no>,
-        Ed Tomlinson <edt@aei.ca>,
-        Bluettooth Linux <linux-bluetooth@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Linux 2.6.39
-Message-ID: <20110526083746.GT2480@null>
-References: <BANLkTinG_qCtHQYRYFQUJ9oGv4H1cuznWg@mail.gmail.com>
- <201105250711.17971.edt@aei.ca>
- <20110525113614.GQ2480@null>
- <201105250812.43246.edt@aei.ca>
- <5B4B9A479BF6994B88EA975675EC5B79057A399D82@MES1OS2SXC003.mes1.tconet.net>
- <BANLkTi=ec3bh24=2r8f3tmj2g0n0bMnq1Q@mail.gmail.com>
- <5B4B9A479BF6994B88EA975675EC5B79057A60296D@MES1OS2SXC003.mes1.tconet.net>
- <013c01cc1af9$361b00e0$a25102a0$@ytram.com>
- <BANLkTikxR3AZJK5Bhc5b=7dq6CbXd2iBtQ@mail.gmail.com>
+	id S1756843Ab1EZIlZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 04:41:25 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52631 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731Ab1EZIlY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 04:41:24 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Alan Cox <alan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: [PATCH] serial/pch: use global div helper instead of creating a private one
+Date: Thu, 26 May 2011 10:41:17 +0200
+Message-Id: <1306399277-17094-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.5.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikxR3AZJK5Bhc5b=7dq6CbXd2iBtQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Nokia-AV: Clean
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 09:11:19PM -0400, ext Corey Boyle wrote:
-> On Wed, May 25, 2011 at 12:31 PM, Tom Allebrandi <wyrles@ytram.com> wrote:
-> > -----Original Message-----
-> > From: linux-bluetooth-owner@vger.kernel.org
-> > [mailto:linux-bluetooth-owner@vger.kernel.org] On Behalf Of Cufi, Carles
-> > Sent: Wednesday, May 25, 2011 7:15 AM
-> > To: corey@kansanian.com
-> > Cc: Ed Tomlinson; Ville Tervo; Bluettooth Linux;
-> > linux-kernel@vger.kernel.org
-> > Subject: RE: Linux 2.6.39
-> >
-> > (Snipping...)
-> > On Wed, May 25, 2011 at 8:46 AM, Cufi, Carles <carles.cufi@nordicsemi.no>
-> > wrote:
-> >> On Wednesday 25 May 2011 07:36:14 Ville Tervo wrote:
-> >>> On Wed, May 25, 2011 at 07:11:17AM -0400, ext Ed Tomlinson wrote:
-> >>> > On Wednesday 25 May 2011 06:54:54 Corey Boyle wrote:
-> >>> > > > On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
-> >>> > > > > On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
-> >>> > > > > > On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
-> > ...
-> >>> > Read Local Version Information (0x04|0x0001) plen 0
-> >>> > > HCI Event: Command Complete (0x0e) plen 12
-> >>> >     Read Local Version Information (0x04|0x0001) ncmd 1
-> >>> >     status 0x00
-> >>> >     HCI Version: 1.1 (0x1) HCI Revision: 0x20d
-> > *************************
-> >>> >     LMP Version: 1.1 (0x1) LMP Subversion: 0x20d
-> > *************************
-> >>> >     Manufacturer: Cambridge Silicon Radio (10) < HCI Command: Set
-> >>> > Event Mask (0x03|0x0001) plen 8
-> >>> >     Mask: 0xfffffbff00000000
-> > *************************
-> >>> > > HCI Event: Command Complete (0x0e) plen 4
-> >>> >     Set Event Mask (0x03|0x0001) ncmd 1
-> >>> >     status 0x12
-> >>> >     Error: Invalid HCI Command Parameters
-> >>
-> >>Set Event Mask has been in the Bluetooth Spec since day 1, so it must be
-> > the bitmask, which has been extended with each new spec release to cover
-> > newly >added events. Looking at the latest spec, and judging by the year
-> > your chipset was released in (it probably is a 1.1 compliant chipset) I
-> > believe that >0x000000008FFFFFFF is the highest event mask it would support
-> > (up until and including Page Scan Repetition Mode Change Event), but since I
-> > don't have the >old 1.1 spec around I may be one or two bits off.
-> >
-> > The device appears to have identified itself as CSR firmware using Bluetooth
-> > version 1.1.
-> >
-> > I do happen to have the 1.1 spec lying around :-), for Set_Event_Mask it
-> > says
-> >
-> > 0x0000000100000000
-> > To                                          Reserved for future use
-> > 0x8000000000000000
-> >
-> > 0x00000000FFFFFFFF      Default (All events enabled)
-> >
-> 
-> I am beginning to think that my adapter simply does not support this
-> command.  I have tried with all the suggested bitmasks, all zeros, all
-> ones, all combinations where a single bit is set, etc.  I'm not sure
-> where to go from here other than add a flag which incidates that
-> certain devices don't support this command so it can be skipped.
-> Again, the only way I have gotten it to work is by not sending the
-> command at all.  Thoughts?
+Signed-off-by: Uwe Kleine-KÃ¶nig <u.kleine-koenig@pengutronix.de>
+---
+ drivers/tty/serial/pch_uart.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-I also played a bit with 1.1 CSR dongle and couldn't find any mask that would
-be accepted. I think this command can be left out for older than 1.2 devices.
-
-Following patch should do it. Could you verify it. I don't have access to old
-hw ATM.
-
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 19cd4af..86d1e26 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -477,14 +477,16 @@ static void hci_setup_event_mask(struct hci_dev *hdev)
- 	 * command otherwise */
- 	u8 events[8] = { 0xff, 0xff, 0xfb, 0xff, 0x00, 0x00, 0x00, 0x00 };
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index f2cb750..ae28250 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -14,6 +14,7 @@
+  *along with this program; if not, write to the Free Software
+  *Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
+  */
++#include <linux/kernel.h>
+ #include <linux/serial_reg.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+@@ -137,8 +138,6 @@ enum {
+ #define PCH_UART_DLL		0x00
+ #define PCH_UART_DLM		0x01
  
--	/* Events for 1.2 and newer controllers */
--	if (hdev->lmp_ver > 1) {
--		events[4] |= 0x01; /* Flow Specification Complete */
--		events[4] |= 0x02; /* Inquiry Result with RSSI */
--		events[4] |= 0x04; /* Read Remote Extended Features Complete */
--		events[5] |= 0x08; /* Synchronous Connection Complete */
--		events[5] |= 0x10; /* Synchronous Connection Changed */
--	}
-+	/* CSR 1.1 dongles does not accept any bitfield so don't try to set
-+	 * any event mask for pre 1.2 devices */
-+	if (hdev->lmp_ver <= 1)
-+		return;
-+
-+	events[4] |= 0x01; /* Flow Specification Complete */
-+	events[4] |= 0x02; /* Inquiry Result with RSSI */
-+	events[4] |= 0x04; /* Read Remote Extended Features Complete */
-+	events[5] |= 0x08; /* Synchronous Connection Complete */
-+	events[5] |= 0x10; /* Synchronous Connection Changed */
+-#define DIV_ROUND(a, b)	(((a) + ((b)/2)) / (b))
+-
+ #define PCH_UART_IID_RLS	(PCH_UART_IIR_REI)
+ #define PCH_UART_IID_RDR	(PCH_UART_IIR_RRI)
+ #define PCH_UART_IID_RDR_TO	(PCH_UART_IIR_RRI | PCH_UART_IIR_TOI)
+@@ -316,7 +315,7 @@ static int pch_uart_hal_set_line(struct eg20t_port *priv, int baud,
+ 	unsigned int dll, dlm, lcr;
+ 	int div;
  
- 	if (hdev->features[3] & LMP_RSSI_INQ)
- 		events[4] |= 0x04; /* Inquiry Result with RSSI */
+-	div = DIV_ROUND(priv->base_baud / 16, baud);
++	div = DIV_ROUND_CLOSEST(priv->base_baud / 16, baud);
+ 	if (div < 0 || USHRT_MAX <= div) {
+ 		dev_err(priv->port.dev, "Invalid Baud(div=0x%x)\n", div);
+ 		return -EINVAL;
 -- 
+1.7.5.1
 
