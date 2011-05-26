@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab1EZSnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:43:33 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:36172 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754200Ab1EZSnc (ORCPT
+	id S1758257Ab1EZSpt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:45:49 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:40047 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758117Ab1EZSps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:43:32 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: vIDRCuUVM1mJSQKKbCBvOAm3t_9AuF0zq.UKFbgIGHEZEMy
- iJpMi7FtHgpyjoXTfSetVK0DdqOwJcZKEW_SA5SrLBwSdlsoVzXrk8SqaA0I
- vV1UpLznPp9J1MPWW5qroW3qhx4ay5dse.2zmF9icEqQZJxNFhuStQ25p20I
- XyLM7mPpoRlR4cAXjVn5aqYlWeRbPCeSOzWkfGxUDpCg2xJqmCVFswW7sXFH
- igzj5.zruK9eOd9F91K3QwZZVV7E5uWsnWQK57SZ1Ta1Xu0S5hPB_8KrorMG
- plm0U7lFwUHWnlGVUSAANSXk5255jrfUnMXYOqyTRaYso_H_KmjwwmsWf7Ot
- 34bLY56wJAcbDdtYtP8PPamE8hIrJVPGuL5HS1o7RnbB..8TVNjnbIh.oxPs
- U8P_TolQDSbCPDHQgMYp36IbVWbzSDJ6N_qQraGa8
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4DDE9F4E.9090303@schaufler-ca.com>
-Date: Thu, 26 May 2011 11:43:26 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Drewry <wad@chromium.org>, Colin Walters <walters@verbum.org>,
+	Thu, 26 May 2011 14:45:48 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Avi Kivity <avi@redhat.com>, James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-References: <1305807728.11267.25.camel@gandalf.stny.rr.com>	 <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>	 <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>	 <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu>	 <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu>	 <alpine.LFD.2.02.1105251836030.3078@ionos>	 <20110525180100.GY19633@outflux.net>	 <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>	 <20110525191152.GC19633@outflux.net>	 <BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com>	 <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>	 <BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>	 <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>	 <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com> <1306429636.3857.3.camel@gandalf.stny.rr.com>
-In-Reply-To: <1306429636.3857.3.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-15
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        gnatapov@redhat.com, Chris Wright <chrisw@sous-sol.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
+In-Reply-To: Your message of "Thu, 26 May 2011 20:36:35 +0200."
+             <20110526183635.GA2490@elte.hu>
+From: Valdis.Kletnieks@vt.edu
+References: <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org> <20110526082451.GB26775@elte.hu> <4DDE1419.3000708@redhat.com> <20110526093040.GB19536@elte.hu> <4DDE31D6.4070209@redhat.com> <20110526113842.GA27618@elte.hu> <4DDE96B7.8030006@redhat.com> <20110526181554.GB3572@elte.hu> <4DDE99F6.4030804@redhat.com>
+            <20110526183635.GA2490@elte.hu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1306435422_8338P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 26 May 2011 14:43:42 -0400
+Message-ID: <20614.1306435422@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4DDE9F60.0091,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/26/2011 10:07 AM, Steven Rostedt wrote:
-> On Thu, 2011-05-26 at 09:46 -0700, Linus Torvalds wrote:
->
->> And if you filter system calls, it's entirely possible that you can
->> attack suid executables through such a vector. Your "limit system
->> calls for security" security suddenly turned into "avoid the system
->> call that made things secure"!
->>
->> See what I'm saying?
-> So you are not complaining about this implementation, but the use of
-> syscall filtering?
->
-> There may be some user that says, "oh I don't want my other apps to be
-> able to call setuid" thinking it will secure their application even
-> more. But because that application did the brain dead thing to not check
-> the return code of setuid, and it just happened to be running
-> privileged, it then execs off another application that can root the box.
->
-> Because, originally that setuid would have succeeded if the user did
-> nothing special, but now with this filtering, and the user thinking that
-> they could limit their app from doing harm, they just opened up a hole
-> that caused their app to do the exact opposite and give the exec'd app
-> full root privileges.
->
-> Did I get this right?
+--==_Exmh_1306435422_8338P
+Content-Type: text/plain; charset=us-ascii
 
-Yes. Some system calls are there so that you can turn off
-privilege. There was a major exploit with sendmail when capabilities
-were first introduced that brought the potential for this sort of
-problem into the public eye. Kernel mechanisms intended to provide
-additional security have to be massively careful about the impact
-they may have on applications that are currently security aware and
-that make use of the existing mechanisms. The ACL mechanism is much
-more complicated than it probably ought to be to accommodate chmod()
-and capabilities go way over the top to deal with traditional root
-behavior.
+On Thu, 26 May 2011 20:36:35 +0200, Ingo Molnar said:
 
-> -- Steve
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+> I suspect we are really offtopic here, but an initial rsync, then 
+> stopping the guest, final rsync + restart the guest at the target 
+> would work with minimal interruption.
+
+Actually, after you kick off the migrate, you really want to be tracking in
+real time what pages get dirtied while you're doing the initial copy, so that
+the second rsync doesn't have to walk through the file finding the differences.
+ But that requires some extra instrumentation.
+
+
+--==_Exmh_1306435422_8338P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFN3p9ecC3lWbTT17ARAqEVAJwNve8j+tXaEfXOEy2EP+RCByBU6QCg+L9y
+tS46V2pR0cEoJpGc8PVoH3g=
+=fwI1
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1306435422_8338P--
 
