@@ -1,48 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758392Ab1EZSsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:48:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46956 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758199Ab1EZSso (ORCPT
+	id S1758336Ab1EZSse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:48:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43277 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758269Ab1EZSsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:48:44 -0400
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        jrbarnette@chromium.org, Neil Brown <neilb@suse.de>,
-        Jens Axboe <jaxboe@fusionio.com>, Alasdair G Kergon <agk@redhat.com>,
-        dm-devel@redhat.com
-Subject: Re: dm: pass up rotational flag
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1306356648-30730-1-git-send-email-msb@chromium.org>
-	<20110526182321.GA26219@redhat.com>
-	<yq1zkm948oa.fsf@sermon.lab.mkp.net>
-	<20110526184321.GC26219@redhat.com>
-Date: Thu, 26 May 2011 14:48:23 -0400
-In-Reply-To: <20110526184321.GC26219@redhat.com> (Mike Snitzer's message of
-	"Thu, 26 May 2011 14:43:21 -0400")
-Message-ID: <yq1vcwx47t4.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110013 (No Gnus v0.13) Emacs/23.2 (gnu/linux)
+	Thu, 26 May 2011 14:48:33 -0400
+Date: Thu, 26 May 2011 20:48:30 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [GIT pull] Core updates for ....
+Message-ID: <alpine.LFD.2.02.1105262042360.3078@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4DDEA082.00E9:SCFMA922111,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
+Linus,
 
-Mike> Similarly, couldn't the discard flag be made part of topology?
+Please pull the latest core-fixes-for-linus git tree from:
 
-Actually, now that I think about it I'm fairly sure my patch nuked the
-discard queue flag because I was tired of keeping the flag and the
-topology in sync. I don't think I mucked with the rotational flag.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-fixes-for-linus
 
-Let me grep my patch queue and see. It must be in there somewhere...
+Thanks,
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+	tglx
+
+------------------>
+Eric Dumazet (1):
+      seqlock: Get rid of SEQLOCK_UNLOCKED
+
+
+ arch/ia64/kernel/time.c         |    2 +-
+ arch/x86/kernel/vsyscall_64.c   |    2 +-
+ include/linux/seqlock.h         |    3 ---
+ net/ipv4/inet_connection_sock.c |    2 +-
+ 4 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+index 04440cc..85118df 100644
+--- a/arch/ia64/kernel/time.c
++++ b/arch/ia64/kernel/time.c
+@@ -36,7 +36,7 @@
+ static cycle_t itc_get_cycles(struct clocksource *cs);
+ 
+ struct fsyscall_gtod_data_t fsyscall_gtod_data = {
+-	.lock = SEQLOCK_UNLOCKED,
++	.lock = __SEQLOCK_UNLOCKED(fsyscall_gtod_data.lock),
+ };
+ 
+ struct itc_jitter_data_t itc_jitter_data;
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index dcbb28c..59be48d 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -59,7 +59,7 @@ int __vgetcpu_mode __section_vgetcpu_mode;
+ 
+ struct vsyscall_gtod_data __vsyscall_gtod_data __section_vsyscall_gtod_data =
+ {
+-	.lock = SEQLOCK_UNLOCKED,
++	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
+ 	.sysctl_enabled = 1,
+ };
+ 
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index 06d6964..e981189 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -41,9 +41,6 @@ typedef struct {
+ #define __SEQLOCK_UNLOCKED(lockname) \
+ 		 { 0, __SPIN_LOCK_UNLOCKED(lockname) }
+ 
+-#define SEQLOCK_UNLOCKED \
+-		 __SEQLOCK_UNLOCKED(old_style_seqlock_init)
+-
+ #define seqlock_init(x)					\
+ 	do {						\
+ 		(x)->sequence = 0;			\
+diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
+index 61fac4c..c14d88a 100644
+--- a/net/ipv4/inet_connection_sock.c
++++ b/net/ipv4/inet_connection_sock.c
+@@ -33,7 +33,7 @@ EXPORT_SYMBOL(inet_csk_timer_bug_msg);
+  * This struct holds the first and last local port number.
+  */
+ struct local_ports sysctl_local_ports __read_mostly = {
+-	.lock = SEQLOCK_UNLOCKED,
++	.lock = __SEQLOCK_UNLOCKED(sysctl_local_ports.lock),
+ 	.range = { 32768, 61000 },
+ };
+ 
