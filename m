@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757746Ab1EZNRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 09:17:34 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:50344 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757684Ab1EZNRb (ORCPT
+	id S932362Ab1EZNSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 09:18:45 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:46419 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757685Ab1EZNRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 09:17:31 -0400
+	Thu, 26 May 2011 09:17:32 -0400
 From: matt mooney <mfm@muteddisk.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: Arjan Mels <arjan.mels@nxp.com>, usbip-devel@lists.sourceforge.net,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] staging: usbip: userspace: set kernel module names in one place
-Date: Thu, 26 May 2011 06:17:08 -0700
-Message-Id: <d8bbe57055b9f7b97349a6fdeb6253fe759f8cb2.1306414175.git.mfm@muteddisk.com>
+Subject: [PATCH 2/6] staging: usbip: userspace: change struct class_device to usbip_class_device
+Date: Thu, 26 May 2011 06:17:09 -0700
+Message-Id: <69201f07ed1c328826924863c362320ac9acbe1d.1306414175.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1306414175.git.mfm@muteddisk.com>
 References: <cover.1306414175.git.mfm@muteddisk.com>
@@ -21,163 +21,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move kernel module name setting to usbip_common.h so that macros can
-be used instead of hard coding the names in multiple places.
+Rename class_device struct to avoid confusion and change member names.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- .../staging/usbip/userspace/libsrc/stub_driver.c   |   12 ++++------
- .../staging/usbip/userspace/libsrc/usbip_common.h  |    6 ++++-
- .../staging/usbip/userspace/libsrc/vhci_driver.c   |    8 ++----
- drivers/staging/usbip/userspace/src/bind-driver.c  |   23 +++++++++++++------
- 4 files changed, 29 insertions(+), 20 deletions(-)
+ .../staging/usbip/userspace/libsrc/vhci_driver.c   |   48 ++++++++++---------
+ .../staging/usbip/userspace/libsrc/vhci_driver.h   |   17 ++++---
+ drivers/staging/usbip/userspace/src/usbip.c        |    9 ++--
+ 3 files changed, 40 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/staging/usbip/userspace/libsrc/stub_driver.c b/drivers/staging/usbip/userspace/libsrc/stub_driver.c
-index cc33643..0355604 100644
---- a/drivers/staging/usbip/userspace/libsrc/stub_driver.c
-+++ b/drivers/staging/usbip/userspace/libsrc/stub_driver.c
-@@ -8,10 +8,6 @@
- 
- #include "usbip.h"
- 
--/* kernel module name */
--static const char *usbip_stub_driver_name = "usbip-host";
--
--
- struct usbip_stub_driver *stub_driver;
- 
- static struct sysfs_driver *open_sysfs_stub_driver(void)
-@@ -31,11 +27,12 @@ static struct sysfs_driver *open_sysfs_stub_driver(void)
- 
- 	snprintf(stub_driver_path, SYSFS_PATH_MAX, "%s/%s/usb/%s/%s",
- 			sysfs_mntpath, SYSFS_BUS_NAME, SYSFS_DRIVERS_NAME,
--			usbip_stub_driver_name);
-+			USBIP_HOST_DRV_NAME);
- 
- 	stub_driver = sysfs_open_driver_path(stub_driver_path);
- 	if (!stub_driver) {
--		err("usbip-core.ko and usbip-host.ko must be loaded");
-+		err(USBIP_CORE_MOD_NAME ".ko and " USBIP_HOST_DRV_NAME
-+		    ".ko must be loaded");
- 		return NULL;
- 	}
- 
-@@ -200,7 +197,8 @@ static int refresh_exported_devices(void)
- 
- 	suinf_list = sysfs_get_driver_devices(stub_driver->sysfs_driver);
- 	if (!suinf_list) {
--		printf("Bind usbip-host.ko to a usb device to be exportable!\n");
-+		info("bind " USBIP_HOST_DRV_NAME ".ko to a usb device to be "
-+		     "exportable!\n");
- 		goto bye;
- 	}
- 
-diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.h b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
-index c254b54..2c58af5 100644
---- a/drivers/staging/usbip/userspace/libsrc/usbip_common.h
-+++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
-@@ -26,7 +26,11 @@
- #define VHCI_STATE_PATH "/var/run/vhci_hcd"
- #endif
- 
--//#include <linux/usb_ch9.h>
-+/* kernel module names */
-+#define USBIP_CORE_MOD_NAME	"usbip-core"
-+#define USBIP_HOST_DRV_NAME	"usbip-host"
-+#define USBIP_VHCI_DRV_NAME	"vhci_hcd"
-+
- enum usb_device_speed {
- 	USB_SPEED_UNKNOWN = 0,                  /* enumerating */
- 	USB_SPEED_LOW, USB_SPEED_FULL,          /* usb 1.1 */
 diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-index db43f8d..aa439c6 100644
+index aa439c6..9296f96 100644
 --- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
 +++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-@@ -5,9 +5,6 @@
+@@ -20,10 +20,12 @@ static struct usbip_imported_device *imported_device_init(struct usbip_imported_
+ 	sysfs_close_device(sudev);
  
- #include "usbip.h"
+ 	/* add class devices of this imported device */
+-	struct class_device *cdev;
+-	dlist_for_each_data(vhci_driver->cdev_list, cdev, struct class_device) {
+-		if (!strncmp(cdev->devpath, idev->udev.path, strlen(idev->udev.path))) {
+-			struct class_device *new_cdev;
++	struct usbip_class_device *cdev;
++	dlist_for_each_data(vhci_driver->cdev_list, cdev,
++			    struct usbip_class_device) {
++		if (!strncmp(cdev->dev_path, idev->udev.path,
++			     strlen(idev->udev.path))) {
++			struct usbip_class_device *new_cdev;
  
+ 			/* alloc and copy because dlist is linked from only one list */
+ 			new_cdev = calloc(1, sizeof(*new_cdev));
+@@ -87,7 +89,7 @@ static int parse_status(char *value)
+ 			idev->busnum	= (devid >> 16);
+ 			idev->devnum	= (devid & 0x0000ffff);
+ 
+-			idev->cdev_list = dlist_new(sizeof(struct class_device));
++			idev->cdev_list = dlist_new(sizeof(struct usbip_class_device));
+ 			if (!idev->cdev_list) {
+ 				err("init new device");
+ 				return -1;
+@@ -115,29 +117,29 @@ static int parse_status(char *value)
+ 
+ static int check_usbip_device(struct sysfs_class_device *cdev)
+ {
+-	char clspath[SYSFS_PATH_MAX];	/* /sys/class/video4linux/video0/device     */
+-	char devpath[SYSFS_PATH_MAX];	/* /sys/devices/platform/vhci_hcd/usb6/6-1:1.1  */
 -
--static const char vhci_driver_name[] = "vhci_hcd";
++	char class_path[SYSFS_PATH_MAX]; /* /sys/class/video4linux/video0/device */
++	char dev_path[SYSFS_PATH_MAX];	 /* /sys/devices/platform/vhci_hcd/usb6/6-1:1.1 */
+ 	int ret;
++	struct usbip_class_device *usbip_cdev;
+ 
+-	snprintf(clspath, sizeof(clspath), "%s/device", cdev->path);
++	snprintf(class_path, sizeof(class_path), "%s/device", cdev->path);
+ 
+-	ret = sysfs_get_link(clspath, devpath, SYSFS_PATH_MAX);
+-	if (!ret) {
+-		if (!strncmp(devpath, vhci_driver->hc_device->path,
+-					strlen(vhci_driver->hc_device->path))) {
++	ret = sysfs_get_link(class_path, dev_path, sizeof(dev_path));
++	if (ret == 0) {
++		if (!strncmp(dev_path, vhci_driver->hc_device->path,
++			     strlen(vhci_driver->hc_device->path))) {
+ 			/* found usbip device */
+-			struct class_device *cdev;
 -
- struct usbip_vhci_driver *vhci_driver;
+-			cdev = calloc(1, sizeof(*cdev));
++			usbip_cdev = calloc(1, sizeof(*usbip_cdev));
+ 			if (!cdev) {
+-				err("calloc cdev");
++				err("calloc usbip_cdev");
+ 				return -1;
+ 			}
+-			dlist_unshift(vhci_driver->cdev_list, (void*) cdev);
+-			strncpy(cdev->clspath, clspath, sizeof(cdev->clspath));
+-			strncpy(cdev->devpath, devpath, sizeof(cdev->clspath));
+-			dbg("  found %s %s", clspath, devpath);
++			dlist_unshift(vhci_driver->cdev_list, usbip_cdev);
++			strncpy(usbip_cdev->class_path, class_path,
++				sizeof(usbip_cdev->class_path));
++			strncpy(usbip_cdev->dev_path, dev_path,
++				sizeof(usbip_cdev->dev_path));
++			dbg("  found %s %s", class_path, dev_path);
+ 		}
+ 	}
  
- static struct usbip_imported_device *imported_device_init(struct usbip_imported_device *idev, char *busid)
-@@ -277,12 +274,13 @@ static int get_hc_busid(char *sysfs_mntpath, char *hc_busid)
+@@ -341,7 +343,7 @@ int usbip_vhci_driver_open(void)
  
-         snprintf(sdriver_path, SYSFS_PATH_MAX, "%s/%s/platform/%s/%s",
-                                 sysfs_mntpath, SYSFS_BUS_NAME, SYSFS_DRIVERS_NAME,
--                                vhci_driver_name);
-+                                USBIP_VHCI_DRV_NAME);
+ 	info("%d ports available\n", vhci_driver->nports);
  
-         sdriver = sysfs_open_driver_path(sdriver_path);
-         if (!sdriver) {
- 		info("%s is not found", sdriver_path);
--                info("load usbip-core.ko and vhci-hcd.ko !");
-+                info("please load " USBIP_CORE_MOD_NAME ".ko and "
-+		     USBIP_VHCI_DRV_NAME ".ko!");
-                 return -1;
-         }
+-	vhci_driver->cdev_list = dlist_new(sizeof(struct class_device));
++	vhci_driver->cdev_list = dlist_new(sizeof(struct usbip_class_device));
+ 	if (!vhci_driver->cdev_list)
+ 		goto err;
  
-diff --git a/drivers/staging/usbip/userspace/src/bind-driver.c b/drivers/staging/usbip/userspace/src/bind-driver.c
-index dcc540a..1396ff9 100644
---- a/drivers/staging/usbip/userspace/src/bind-driver.c
-+++ b/drivers/staging/usbip/userspace/src/bind-driver.c
-@@ -3,13 +3,12 @@
-  * Copyright (C) 2005-2007 Takahiro Hirofuchi
-  */
+@@ -400,7 +402,7 @@ int usbip_vhci_refresh_device_list(void)
+ 			dlist_destroy(vhci_driver->idev[i].cdev_list);
+ 	}
  
--#include "utils.h"
--
- #define _GNU_SOURCE
- #include <getopt.h>
- #include <glib.h>
+-	vhci_driver->cdev_list = dlist_new(sizeof(struct class_device));
++	vhci_driver->cdev_list = dlist_new(sizeof(struct usbip_class_device));
+ 	if (!vhci_driver->cdev_list)
+ 		goto err;
  
--
-+#include "usbip.h"
-+#include "utils.h"
+diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h b/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
+index cad8ad7..3af41c5 100644
+--- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
++++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
+@@ -11,9 +11,9 @@
  
- static const struct option longopts[] = {
- 	{"usbip",	required_argument,	NULL, 'u'},
-@@ -27,9 +26,6 @@ static const struct option longopts[] = {
- 	{NULL,		0,			NULL,  0}
+ #define MAXNPORT 128
+ 
+-struct class_device {
+-	char clspath[SYSFS_PATH_MAX];
+-	char devpath[SYSFS_PATH_MAX];
++struct usbip_class_device {
++	char class_path[SYSFS_PATH_MAX];
++	char dev_path[SYSFS_PATH_MAX];
  };
  
--static const char match_busid_path[] = "/sys/bus/usb/drivers/usbip-host/match_busid";
--
--
- static void show_help(void)
- {
- 	printf("Usage: usbip_bind_driver [OPTION]\n");
-@@ -51,6 +47,18 @@ static int modify_match_busid(char *busid, int add)
- 	int fd;
- 	int ret;
- 	char buff[BUS_ID_SIZE + 4];
-+	char sysfs_mntpath[SYSFS_PATH_MAX];
-+	char match_busid_path[SYSFS_PATH_MAX];
-+
-+	ret = sysfs_get_mnt_path(sysfs_mntpath, SYSFS_PATH_MAX);
-+	if (ret < 0) {
-+		err("sysfs must be mounted");
-+		return -1;
-+	}
-+
-+	snprintf(match_busid_path, sizeof(match_busid_path),
-+		 "%s/%s/usb/%s/%s/match_busid", sysfs_mntpath, SYSFS_BUS_NAME,
-+		 SYSFS_DRIVERS_NAME, USBIP_HOST_DRV_NAME);
+ struct usbip_imported_device {
+@@ -25,16 +25,19 @@ struct usbip_imported_device {
+ 	uint8_t busnum;
+ 	uint8_t devnum;
  
- 	/* BUS_IS_SIZE includes NULL termination? */
- 	if (strnlen(busid, BUS_ID_SIZE) > BUS_ID_SIZE - 1) {
-@@ -228,7 +236,8 @@ static int bind_to_usbip(char *busid)
- 	for (i = 0; i < ninterface; i++) {
- 		int ret;
+-
+-	struct dlist *cdev_list;	/* list of class device */
++	/* usbip_class_device list */
++	struct dlist *cdev_list;
+ 	struct usb_device udev;
+ };
  
--		ret = bind_interface(busid, configvalue, i, "usbip-host");
-+		ret = bind_interface(busid, configvalue, i,
-+				     USBIP_HOST_DRV_NAME);
- 		if (ret < 0) {
- 			g_warning("bind usbip at %s:%d.%d, failed",
- 					busid, configvalue, i);
+ struct usbip_vhci_driver {
+ 	char sysfs_mntpath[SYSFS_PATH_MAX];
+-	struct sysfs_device *hc_device; /* /sys/devices/platform/vhci_hcd */
+ 
+-	struct dlist *cdev_list;	/* list of class device */
++	/* /sys/devices/platform/vhci_hcd */
++	struct sysfs_device *hc_device;
++
++	/* usbip_class_device list */
++	struct dlist *cdev_list;
+ 
+ 	int nports;
+ 	struct usbip_imported_device idev[MAXNPORT];
+diff --git a/drivers/staging/usbip/userspace/src/usbip.c b/drivers/staging/usbip/userspace/src/usbip.c
+index 01a5628..c73b355 100644
+--- a/drivers/staging/usbip/userspace/src/usbip.c
++++ b/drivers/staging/usbip/userspace/src/usbip.c
+@@ -174,12 +174,13 @@ int usbip_vhci_imported_device_dump(struct usbip_imported_device *idev)
+ 		sysfs_close_device(suinf);
+ 
+ 		/* show class device information */
+-		struct class_device *cdev;
++		struct usbip_class_device *cdev;
+ 
+-		dlist_for_each_data(idev->cdev_list, cdev, struct class_device) {
+-			int ifnum = get_interface_number(cdev->devpath);
++		dlist_for_each_data(idev->cdev_list, cdev,
++				    struct usbip_class_device) {
++			int ifnum = get_interface_number(cdev->dev_path);
+ 			if (ifnum == i) {
+-				info("           %s", cdev->clspath);
++				info("           %s", cdev->class_path);
+ 			}
+ 		}
+ 	}
 -- 
 1.7.5.1
 
