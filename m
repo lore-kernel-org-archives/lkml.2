@@ -1,289 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab1EZSe5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:34:57 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:47049 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab1EZSe4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:34:56 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=vi/vvypTmggX4rUfGodESJ62/hR66Yc/XGwwRmu4rHYiwfeHOfFbwhjTGtqj/M83I
-	8OT5fBRwmSJuJVZHuSJsA==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH v2] trace: Add a free on close control mechanism for buffer_size_kb
-Date: Thu, 26 May 2011 11:34:46 -0700
-Message-Id: <1306434886-16384-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1306433810-15091-1-git-send-email-vnagarnaik@google.com>
-References: <1306433810-15091-1-git-send-email-vnagarnaik@google.com>
+	id S932647Ab1EZSfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:35:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52024 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932308Ab1EZSfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:35:45 -0400
+Date: Thu, 26 May 2011 14:35:31 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, jrbarnette@chromium.org,
+        Neil Brown <neilb@suse.de>, Jens Axboe <jaxboe@fusionio.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com
+Subject: [PATCH v2] dm: pass up non-rotational flag
+Message-ID: <20110526183531.GB26219@redhat.com>
+References: <1306356648-30730-1-git-send-email-msb@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306356648-30730-1-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The proc file entry buffer_size_kb is used to set the size of tracing
-buffer. The memory to expand the buffer size is kernel memory. Consider
-a use case where tracing is handled by a user space utility, which acts
-as a gate keeper for tracing requests. In an OOM condition, tracing is
-considered a low priority task and if the utility gets killed the ring
-buffer memory cannot be released back to the kernel.
+Allow QUEUE_FLAG_NONROT to propagate up the device stack if all
+underlying devices are non-rotational.  Tools like ureadahead will
+schedule IOs differently based on the rotational flag.
 
-This patch adds an IOCTL on the buffer_size_kb file to set a boolean.
-When this boolean is enabled, closing buffer_size_kb file will cause
-tracing to stop and free up the ring buffer memory.
+With this patch, I see boot time go from 7.75 s to 7.46 s on my device.
 
-The user space process can then open the buffer_size_kb file to set the
-new buffer size for tracing, enable the boolean through IOCTL and keep
-the file open. Under OOM condition, if the process gets killed, the
-kernel closes the file descriptor for buffer_size_kb. The release
-handler stops the tracing and releases the kernel memory automatically.
-
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Suggested-by: J. Richard Barnette <jrbarnette@chromium.org>
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Cc: Neil Brown <neilb@suse.de>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Alasdair G Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
 ---
-Changelog:
-v2-v1
-* Fixed the return value in tracing_resize_ring_buffer()
+ drivers/md/dm-table.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
- include/linux/ftrace.h |    3 +
- kernel/trace/trace.c   |  140 +++++++++++++++++++++++++++++++++++------------
- 2 files changed, 107 insertions(+), 36 deletions(-)
+v2: last minute edit was to avoid double-negative in
+    dm_table_set_restrictions's dm_table_is_nonrot conditional
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 9d88e1c..72a2f0d 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -127,6 +127,9 @@ struct ftrace_func_command {
- 					char *params, int enable);
- };
- 
-+/* enable/disable auto free ring buffer on file close */
-+#define TRACE_RINGBUF_FREE_ON_CLOSE _IOW('t', 0x01, int)
-+
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
- int ftrace_arch_code_modify_prepare(void);
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index ee9c921..0824f55 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2767,7 +2767,7 @@ int tracer_init(struct tracer *t, struct trace_array *tr)
- 	return t->init(tr);
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index cb8380c..a173828 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -1177,6 +1177,31 @@ static void dm_table_set_integrity(struct dm_table *t)
+ 			       blk_get_integrity(template_disk));
  }
  
--static int tracing_resize_ring_buffer(unsigned long size)
-+static int __tracing_resize_ring_buffer(unsigned long size)
- {
- 	int ret;
- 
-@@ -2819,6 +2819,41 @@ static int tracing_resize_ring_buffer(unsigned long size)
- 	return ret;
- }
- 
-+static ssize_t tracing_resize_ring_buffer(unsigned long size)
++static int device_is_nonrot(struct dm_target *ti, struct dm_dev *dev,
++			    sector_t start, sector_t len, void *data)
 +{
-+	int cpu, ret = size;
++	struct request_queue *q = bdev_get_queue(dev->bdev);
 +
-+	mutex_lock(&trace_types_lock);
++	return q && blk_queue_nonrot(q);
++}
 +
-+	tracing_stop();
++static bool dm_table_is_nonrot(struct dm_table *t)
++{
++	struct dm_target *ti;
++	unsigned i = 0;
 +
-+	/* disable all cpu buffers */
-+	for_each_tracing_cpu(cpu) {
-+		if (global_trace.data[cpu])
-+			atomic_inc(&global_trace.data[cpu]->disabled);
-+		if (max_tr.data[cpu])
-+			atomic_inc(&max_tr.data[cpu]->disabled);
++	/* Ensure that all underlying device are non-rotational. */
++	while (i < dm_table_get_num_targets(t)) {
++		ti = dm_table_get_target(t, i++);
++
++		if (!ti->type->iterate_devices ||
++		    !ti->type->iterate_devices(ti, device_is_nonrot, NULL))
++			return 0;
 +	}
 +
-+	if (size != global_trace.entries)
-+		ret = __tracing_resize_ring_buffer(size);
-+
-+	if (ret < 0)
-+		ret = -ENOMEM;
-+
-+	for_each_tracing_cpu(cpu) {
-+		if (global_trace.data[cpu])
-+			atomic_dec(&global_trace.data[cpu]->disabled);
-+		if (max_tr.data[cpu])
-+			atomic_dec(&max_tr.data[cpu]->disabled);
-+	}
-+
-+	tracing_start();
-+	mutex_unlock(&trace_types_lock);
-+
-+	return ret;
++	return 1;
 +}
 +
- 
- /**
-  * tracing_update_buffers - used by tracing facility to expand ring buffers
-@@ -2836,7 +2871,7 @@ int tracing_update_buffers(void)
- 
- 	mutex_lock(&trace_types_lock);
- 	if (!ring_buffer_expanded)
--		ret = tracing_resize_ring_buffer(trace_buf_size);
-+		ret = __tracing_resize_ring_buffer(trace_buf_size);
- 	mutex_unlock(&trace_types_lock);
- 
- 	return ret;
-@@ -2860,7 +2895,7 @@ static int tracing_set_tracer(const char *buf)
- 	mutex_lock(&trace_types_lock);
- 
- 	if (!ring_buffer_expanded) {
--		ret = tracing_resize_ring_buffer(trace_buf_size);
-+		ret = __tracing_resize_ring_buffer(trace_buf_size);
- 		if (ret < 0)
- 			goto out;
- 		ret = 0;
-@@ -3409,11 +3444,37 @@ out_err:
- 	goto out;
- }
- 
-+struct ftrace_entries_info {
-+	struct trace_array	*tr;
-+	int			free_buffer_on_close;
-+};
-+
-+static int
-+tracing_entries_open(struct inode *inode, struct file *filp)
-+{
-+	struct ftrace_entries_info *info;
-+
-+	if (tracing_disabled)
-+		return -ENODEV;
-+
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+
-+	info->tr = (struct trace_array *)inode->i_private;
-+	info->free_buffer_on_close = 0;
-+
-+	filp->private_data = info;
-+
-+	return 0;
-+}
-+
- static ssize_t
- tracing_entries_read(struct file *filp, char __user *ubuf,
- 		     size_t cnt, loff_t *ppos)
+ void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
+ 			       struct queue_limits *limits)
  {
--	struct trace_array *tr = filp->private_data;
-+	struct ftrace_entries_info *info = filp->private_data;
-+	struct trace_array *tr = info->tr;
- 	char buf[96];
- 	int r;
+@@ -1190,6 +1215,11 @@ void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
+ 	else
+ 		queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
  
-@@ -3435,7 +3496,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- {
- 	unsigned long val;
- 	char buf[64];
--	int ret, cpu;
-+	int ret;
- 
- 	if (cnt >= sizeof(buf))
- 		return -EINVAL;
-@@ -3453,46 +3514,50 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	if (!val)
- 		return -EINVAL;
- 
--	mutex_lock(&trace_types_lock);
-+	/* value is in KB */
-+	val <<= 10;
- 
--	tracing_stop();
-+	ret = tracing_resize_ring_buffer(val);
-+	if (ret < 0)
-+		return ret;
- 
--	/* disable all cpu buffers */
--	for_each_tracing_cpu(cpu) {
--		if (global_trace.data[cpu])
--			atomic_inc(&global_trace.data[cpu]->disabled);
--		if (max_tr.data[cpu])
--			atomic_inc(&max_tr.data[cpu]->disabled);
--	}
-+	*ppos += cnt;
- 
--	/* value is in KB */
--	val <<= 10;
-+	return cnt;
-+}
- 
--	if (val != global_trace.entries) {
--		ret = tracing_resize_ring_buffer(val);
--		if (ret < 0) {
--			cnt = ret;
--			goto out;
--		}
-+static long
-+tracing_entries_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-+{
-+	int ret = -ENOIOCTLCMD;
-+	struct ftrace_entries_info *info = filp->private_data;
++	if (dm_table_is_nonrot(t))
++		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, q);
++	else
++		queue_flag_clear_unlocked(QUEUE_FLAG_NONROT, q);
 +
-+	switch (cmd) {
-+	case TRACE_RINGBUF_FREE_ON_CLOSE: {
-+		info->free_buffer_on_close = !!arg;
-+		ret = 0;
-+		break;
-+	}
- 	}
+ 	dm_table_set_integrity(t);
  
--	*ppos += cnt;
-+	return ret;
-+}
- 
--	/* If check pages failed, return ENOMEM */
--	if (tracing_disabled)
--		cnt = -ENOMEM;
-- out:
--	for_each_tracing_cpu(cpu) {
--		if (global_trace.data[cpu])
--			atomic_dec(&global_trace.data[cpu]->disabled);
--		if (max_tr.data[cpu])
--			atomic_dec(&max_tr.data[cpu]->disabled);
-+static int
-+tracing_entries_release(struct inode *inode, struct file *filp)
-+{
-+	struct ftrace_entries_info *info = filp->private_data;
-+
-+	if (info->free_buffer_on_close) {
-+		/* disable tracing */
-+		tracing_off();
-+		/* resize the ring buffer to 0 */
-+		tracing_resize_ring_buffer(0);
- 	}
- 
--	tracing_start();
--	mutex_unlock(&trace_types_lock);
-+	kfree(info);
- 
--	return cnt;
-+	return 0;
- }
- 
- static int mark_printk(const char *fmt, ...)
-@@ -3634,9 +3699,12 @@ static const struct file_operations tracing_pipe_fops = {
- };
- 
- static const struct file_operations tracing_entries_fops = {
--	.open		= tracing_open_generic,
-+	.open		= tracing_entries_open,
- 	.read		= tracing_entries_read,
- 	.write		= tracing_entries_write,
-+	.unlocked_ioctl	= tracing_entries_ioctl,
-+	.compat_ioctl	= tracing_entries_ioctl,
-+	.release	= tracing_entries_release,
- 	.llseek		= generic_file_llseek,
- };
- 
--- 
-1.7.3.1
-
+ 	/*
