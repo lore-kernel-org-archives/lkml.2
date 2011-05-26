@@ -1,117 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757093Ab1EZKy5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 06:54:57 -0400
-Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:61233 "EHLO
-	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756856Ab1EZKy4 (ORCPT
+	id S1757160Ab1EZK5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 06:57:10 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41800 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab1EZK5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 06:54:56 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 May 2011 06:54:56 EDT
-X-AuditID: 12074425-b7b78ae000007e02-4a-4dde30434619
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
-Date: Thu, 26 May 2011 06:49:46 -0400
-Cc: Oliver Neukum <oneukum@suse.de>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+	Thu, 26 May 2011 06:57:09 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 26 May 2011 19:50:19 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Ying Han <yinghan@google.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH v3 7/10] workqueue: add WQ_IDLEPRI
+Message-Id: <20110526195019.8af6d882.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110526193018.12b3ddea.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110526143024.7f66e797.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110526093808.GE9715@htj.dyndns.org>
+	<20110526193018.12b3ddea.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu>
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard> <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
-To: "D. Jansen" <d.g.jansen@googlemail.com>
-X-Mailer: Apple Mail (2.1084)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsUixCmqretscM/X4O5aZYs569ewWVy7PYnN
-	Ysuxe4wWl3fNYbNYfHE2qwOrx6lFEh5PJ0xm9zgx4zeLx+bT1R6fN8kFsEZx2aSk5mSWpRbp
-	2yVwZZzYcI61YIt0RUfDT+YGxm+iXYycHBICJhKft9xlhrDFJC7cW8/WxcjFISSwj1Gi/fNv
-	ZghnA6PE9X2NrBDOaSaJ1U09TCAtwkDtE7dPAGvnFTCUWLqpnR3EZhbQkrjx7yVYDZuAksSd
-	T/tZQGxOAUeJacv+Ag3i4GARUJVo6UgCmcks0MkoMbNzDyNEr7zE9rdzoGZaSbybvBjqpAeM
-	Ei3H1oEtEBHQljg66QITyCAJAVmJpmUZExgFZyE5YxaSM2YhGbuAkXkVo2xKbpVubmJmTnFq
-	sm5xcmJeXmqRroVebmaJXmpK6SZGUOCzu6juYJxwSOkQowAHoxIP70KFu75CrIllxZW5hxgl
-	OZiURHmb9O/5CvEl5adUZiQWZ8QXleakFh9ilOBgVhLhbWIBKudNSaysSi3Kh0lJc7AoifPO
-	l1T3FRJITyxJzU5NLUgtgsnKcHAoSfCeBRkqWJSanlqRlplTgpBm4uAEGc4DNHw3SA1vcUFi
-	bnFmOkT+FKOilDjvcZCEAEgiozQPrheWmF4xigO9IgxRxQNManDdr4AGMwEN1vkNcnVxSSJC
-	SqqBsXTV2482Fz8t3hCkL37e6FrNPd9rD0IuvG4VWH+f+cQ6p1Ut12snnnK2ub7wUO+UZvEX
-	S/oi2Waa/Z04zZztRMW5j+4Llu7hjQo//fFqD3tHnmnB/0/Be2Zo7JH7oCEZtSPhcuov6zV7
-	Jx8vcz99uGD1hdku15zmK5YeOdLPvrf/hXK3v8bz2qtKLMUZiYZazEXFiQC1arjIJwMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 26 May 2011 19:30:18 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-On May 26, 2011, at 3:01 AM, D. Jansen wrote:
-
-> That seems to be the big ordering issue. I had always assumed that
-> user space writes (by the same app to the same file) would be
-> committed in order. Is that really not the case?
+> On Thu, 26 May 2011 11:38:08 +0200
+> Tejun Heo <tj@kernel.org> wrote:
 > 
-> Wouldn't most app programmers assume ordering? Wouldn't that always
-> possibly be an issue? Or do all the apps that require ordered writes
-> use fsync. There will surely be some who require ordering but don't
-> fsync. And without ordering, some apps won't be able to avoid fsync
-> without data safety issues.
+> > Hello, KAMEZAWA.
+> > 
+> > On Thu, May 26, 2011 at 02:30:24PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > When this idea came to me, I wonder which is better to maintain
+> > > memcg's thread pool or add support in workqueue for generic use. In
+> > > genral, I feel enhancing genric one is better...so, wrote this one.
+> > 
+> > Sure, if it's something which can be useful for other users, it makes
+> > sense to make it generic.
+> > 
+> Thank you for review.
+> 
+> 
+> > > Index: memcg_async/include/linux/workqueue.h
+> > > ===================================================================
+> > > --- memcg_async.orig/include/linux/workqueue.h
+> > > +++ memcg_async/include/linux/workqueue.h
+> > > @@ -56,7 +56,8 @@ enum {
+> > >  
+> > >  	/* special cpu IDs */
+> > >  	WORK_CPU_UNBOUND	= NR_CPUS,
+> > > -	WORK_CPU_NONE		= NR_CPUS + 1,
+> > > +	WORK_CPU_IDLEPRI	= NR_CPUS + 1,
+> > > +	WORK_CPU_NONE		= NR_CPUS + 2,
+> > >  	WORK_CPU_LAST		= WORK_CPU_NONE,
+> > 
+> > Hmmm... so, you're defining another fake CPU a la unbound CPU.  I'm
+> > not sure whether it's really necessary to create its own worker pool
+> > tho.  The reason why SCHED_OTHER is necessary is because it may
+> > consume large amount of CPU cycles.  Workqueue already has UNBOUND -
+> > for an unbound one, workqueue code simply acts as generic worker pool
+> > provider and everything other than work item dispatching and worker
+> > management are deferred to scheduler and the workqueue user.
+> > 
+> yes.
+> 
+> > Is there any reason memcg can't just use UNBOUND workqueue and set
+> > scheduling priority when the work item starts and restore it when it's
+> > done? 
+> 
+> I thought of that. But I didn't do that because I wasn't sure how others
+> will think about changing exisitng workqueue priority...and I was curious
+> to know how workqueue works.
+> 
+> > If it's gonna be using UNBOUND at all, I don't think changing
+> > scheduling policy would be a noticeable overhead and I find having
+> > separate worker pools depending on scheduling priority somewhat silly.
+> > 
+> ok.
+> 
+> > We can add a mechanism to manage work item scheduler priority to
+> > workqueue if necessary tho, I think.  But that would be per-workqueue
+> > attribute which is applied during execution, not something per-gcwq.
+> > 
+> 
+> In the next version, I'll try some like..
+> ==
+> 	process_one_work(...) {
+> 		.....
+> 		spin_unlock_irq(&gcwq->lock);
+> 		.....
+> 		if (cwq->wq->flags & WQ_IDLEPRI) {
+> 			set_scheduler(...SCHED_IDLE...)
+> 			cond_resched();
+> 			scheduler_switched = true;
+> 		}
+> 		f(work) 
+> 		if (scheduler_switched)
+> 			set_scheduler(...SCHED_OTHER...)
+> 		spin_lock_irq(&gcwq->lock);
+> 	}
+> ==
+> Patch size will be much smaller. (Should I do this in memcg's code ??)
+> 
 
-I really don't like using the word "ordering" the way Dave used it,
-because it's a file system lingo that *always* confuses civilians.
-And "Insider" language like that isn't help for communication,
-unless you're certain there are only experts in the room...
+BTW, my concern is that if f(work) is enough short,effect of SCHED_IDLE will never
+be found because SCHED_OTHER -> SCHED_IDLE -> SCHED_OTHER switch is very fast.
+Changed "weight" of CFQ never affects the next calculation of vruntime..of the
+thread and the work will show the same behavior with SCHED_OTHER.
 
-As Dave said earlier, "ordering" in the sense he was using it
-refers strictly to ensuring consistency after a crash.
+I'm sorry if I misunderstand CFQ and setscheduler().
 
-Now, there are two levels of consistency; one is file system
-level consistency, and the other is application level 
-consistency.   It used to be that desktop drives would
-lie about forcing data to disk in response to a FLUSH 
-CACHE command, "yes sir, I promise the data is on
-the disk, sir!", because it resulted in higher WINBENCH
-scores.  File systems engineers hated this, because
-a primary tool we have for assuring that file systems
-don't look like swiss cheese after a crash was completely
-unreliable.   Fortunately, those disks have largely
-disappeared from the market place.
+Thanks,
+-Kame
 
-The suggestion of making fsync a no-op is essentially
-asking for a knob that breaks application-level consistency
-the same way those broken hard drives broke file system
-consistency by making the FLUSH CACHE command
-unreliable.   Maybe improving battery lifetime is a more
-honorable excuse than the purely mercenary goal of
-selling more disk drives, but it can still break applications
-after a crash.
 
-Now, you may think that you're prepared by that.   After all,
-you're already prepared to say that you're willing to lose
-the last 15 minutes of work or whatever, right?
 
-Well, wrong.  It's not so simple as that.  If you're only
-talking about simple, flat, human-readable text files,
-maybe it would work that way.   But what about complex,
-binary databases?  Like sqllite databases used by 
-Firefox and Chrome?   Or MySQL databases?   More
-and more, sophisticated applications, even desktop
-applications, are using these complex data stores,
-and the libraries which update these complex data
-stores rely on fsync() to prevent their database files
-from looking like swiss cheese.   If you crash while
-fsync() has been disabled, the entire database file
-could be completely trashed, which could be hours,
-days, weeks, or months of work lost.
-
-So the resistance that people like Dave have to your 
-proposal can be summed up by Confucious if you are
-Chinese: ""Never impose on others what you would
-not choose for yourself."  Or if you are Jewish, the Rabbi
-Hillel said: "That which is hateful to you, do not do to
-your fellow. That is the whole Torah; the rest is the
-explanation; go and learn."   Or if you are a Muslim,
-the Prophet Mohammed: "Hurt no one so that no one
-may hurt you."   Breaking fsync() is like hard drives that
-break faith with file system authors by lying when they 
-say everything is safely written to stable storage.  And 
-what are databases but complex file systems living inside
-a single file?
-
--- Ted
 
