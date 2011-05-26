@@ -1,103 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090Ab1EZPc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 11:32:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:56338 "EHLO
+	id S1758106Ab1EZPbR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 11:31:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:37581 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932570Ab1EZP36 (ORCPT
+	with ESMTP id S932835Ab1EZP37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 11:29:58 -0400
-X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=vhdKIqpQuCYA:10 a=WTA-_JLw6QEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=MrzxreWBbIlLGQBSyVkA:9 a=89mRCNkwxmUSt_BR_XEA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=zASoJWZpUSAb4RT5:21 a=WqXpYbBIR0NGjGNs:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Thu, 26 May 2011 11:29:59 -0400
+X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=vhdKIqpQuCYA:10 a=1vgTBY-mN1YA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=dsnFOJNUReSOVdIJBxQA:9 a=HkCJI2x4HqHXiI6saZgA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110526152957.100391899@goodmis.org>
+Message-Id: <20110526152957.420914882@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 26 May 2011 11:25:48 -0400
+Date: Thu, 26 May 2011 11:25:49 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Jason Baron <jbaron@redhat.com>
-Subject: [PATCH 06/12] jump_label: Check entries limit in __jump_label_update
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 07/12] ftrace: Have ftrace_startup() return failure code
 References: <20110526152541.995963172@goodmis.org>
-Content-Disposition: inline; filename=0006-jump_label-Check-entries-limit-in-__jump_label_updat.patch
+Content-Disposition: inline; filename=0007-ftrace-Have-ftrace_startup-return-failure-code.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-When iterating the jump_label entries array (core or modules),
-the __jump_label_update function peeks over the last entry.
+The register_ftrace_function() returns an error code on failure
+except if the call to ftrace_startup() fails. Add a error return to
+ftrace_startup() if it fails to start, allowing register_ftrace_funtion()
+to return a proper error value.
 
-The reason is that the end of the for loop depends on the key
-value of the processed entry. Thus when going through the
-last array entry, we will touch the memory behind the array
-limit.
-
-This bug probably will never be triggered, since most likely the
-memory behind the jump_label entries will be accesable and the
-entry->key will be different than the expected value.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Jason Baron <jbaron@redhat.com>
-Link: http://lkml.kernel.org/r/20110510104346.GC1899@jolsa.brq.redhat.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/jump_label.c |   18 +++++++++++++-----
- 1 files changed, 13 insertions(+), 5 deletions(-)
+ kernel/trace/ftrace.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index 74d1c09..fa27e75 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -105,9 +105,12 @@ static int __jump_label_text_reserved(struct jump_entry *iter_start,
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index d017c2c..bebbc95 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1638,12 +1638,12 @@ static void ftrace_startup_enable(int command)
+ 	ftrace_run_update_code(command);
  }
  
- static void __jump_label_update(struct jump_label_key *key,
--		struct jump_entry *entry, int enable)
-+				struct jump_entry *entry,
-+				struct jump_entry *stop, int enable)
+-static void ftrace_startup(struct ftrace_ops *ops, int command)
++static int ftrace_startup(struct ftrace_ops *ops, int command)
  {
--	for (; entry->key == (jump_label_t)(unsigned long)key; entry++) {
-+	for (; (entry < stop) &&
-+	      (entry->key == (jump_label_t)(unsigned long)key);
-+	      entry++) {
- 		/*
- 		 * entry->code set to 0 invalidates module init text sections
- 		 * kernel_text_address() verifies we are not in core kernel
-@@ -181,7 +184,11 @@ static void __jump_label_mod_update(struct jump_label_key *key, int enable)
- 	struct jump_label_mod *mod = key->next;
+ 	bool hash_enable = true;
  
- 	while (mod) {
--		__jump_label_update(key, mod->entries, enable);
-+		struct module *m = mod->mod;
+ 	if (unlikely(ftrace_disabled))
+-		return;
++		return -ENODEV;
+ 
+ 	ftrace_start_up++;
+ 	command |= FTRACE_ENABLE_CALLS;
+@@ -1662,6 +1662,8 @@ static void ftrace_startup(struct ftrace_ops *ops, int command)
+ 		ftrace_hash_rec_enable(ops, 1);
+ 
+ 	ftrace_startup_enable(command);
 +
-+		__jump_label_update(key, mod->entries,
-+				    m->jump_entries + m->num_jump_entries,
-+				    enable);
- 		mod = mod->next;
- 	}
++	return 0;
  }
-@@ -245,7 +252,8 @@ static int jump_label_add_module(struct module *mod)
- 		key->next = jlm;
  
- 		if (jump_label_enabled(key))
--			__jump_label_update(key, iter, JUMP_LABEL_ENABLE);
-+			__jump_label_update(key, iter, iter_stop,
-+					    JUMP_LABEL_ENABLE);
- 	}
+ static void ftrace_shutdown(struct ftrace_ops *ops, int command)
+@@ -2501,7 +2503,7 @@ static void __enable_ftrace_function_probe(void)
  
- 	return 0;
-@@ -371,7 +379,7 @@ static void jump_label_update(struct jump_label_key *key, int enable)
+ 	ret = __register_ftrace_function(&trace_probe_ops);
+ 	if (!ret)
+-		ftrace_startup(&trace_probe_ops, 0);
++		ret = ftrace_startup(&trace_probe_ops, 0);
  
- 	/* if there are no users, entry can be NULL */
- 	if (entry)
--		__jump_label_update(key, entry, enable);
-+		__jump_label_update(key, entry, __stop___jump_table, enable);
+ 	ftrace_probe_registered = 1;
+ }
+@@ -3466,7 +3468,7 @@ device_initcall(ftrace_nodyn_init);
+ static inline int ftrace_init_dyn_debugfs(struct dentry *d_tracer) { return 0; }
+ static inline void ftrace_startup_enable(int command) { }
+ /* Keep as macros so we do not need to define the commands */
+-# define ftrace_startup(ops, command)	do { } while (0)
++# define ftrace_startup(ops, command)	({0;})
+ # define ftrace_shutdown(ops, command)	do { } while (0)
+ # define ftrace_startup_sysctl()	do { } while (0)
+ # define ftrace_shutdown_sysctl()	do { } while (0)
+@@ -3799,7 +3801,7 @@ int register_ftrace_function(struct ftrace_ops *ops)
  
- #ifdef CONFIG_MODULES
- 	__jump_label_mod_update(key, enable);
+ 	ret = __register_ftrace_function(ops);
+ 	if (!ret)
+-		ftrace_startup(ops, 0);
++		ret = ftrace_startup(ops, 0);
+ 
+ 
+  out_unlock:
+@@ -4045,7 +4047,7 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 	ftrace_graph_return = retfunc;
+ 	ftrace_graph_entry = entryfunc;
+ 
+-	ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
++	ret = ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
+ 
+ out:
+ 	mutex_unlock(&ftrace_lock);
 -- 
 1.7.4.4
 
