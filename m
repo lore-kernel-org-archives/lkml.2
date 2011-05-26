@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab1EZLiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 07:38:21 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57299 "EHLO hera.kernel.org"
+	id S1757424Ab1EZLiA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 07:38:00 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57278 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932148Ab1EZLiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 07:38:16 -0400
+	id S1757344Ab1EZLhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 07:37:55 -0400
 From: GuanXuetao <gxt@mprc.pku.edu.cn>
 To: arnd@arndb.de
 Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, greg@kroah.com,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Subject: [PATCH 1/6] unicore32: move rtc-puv3.c to drivers/rtc directory
-Date: Thu, 26 May 2011 11:36:53 +0000
-Message-Id: <b30d22dd12bdba6360749aab88157bb0f2a0303d.1306408804.git.gxt@mprc.pku.edu.cn>
+        linux-arch@vger.kernel.org, greg@kroah.com, netdev@vger.kernel.org
+Subject: [PATCH 2/6] unicore32: add pkunity-v3 mac/net driver (umal)
+Date: Thu, 26 May 2011 11:36:54 +0000
+Message-Id: <556924396ee34f4af94a2f03767973f1cec35e22.1306408804.git.gxt@mprc.pku.edu.cn>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
 References: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
 In-Reply-To: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
 References: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 May 2011 11:37:44 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 May 2011 11:37:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,495 +28,81 @@ From: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
  MAINTAINERS                            |    1 +
- arch/unicore32/Kconfig                 |    4 -
- arch/unicore32/configs/debug_defconfig |    6 +-
- arch/unicore32/kernel/Makefile         |    1 -
- arch/unicore32/kernel/rtc.c            |  371 --------------------------------
- drivers/rtc/Kconfig                    |    9 +
- drivers/rtc/Makefile                   |    1 +
- drivers/rtc/rtc-puv3.c                 |  359 ++++++++++++++++++++++++++++++
- 8 files changed, 373 insertions(+), 379 deletions(-)
- delete mode 100644 arch/unicore32/kernel/rtc.c
- create mode 100644 drivers/rtc/rtc-puv3.c
+ arch/unicore32/configs/debug_defconfig |    2 +-
+ drivers/net/Kconfig                    |    5 +
+ drivers/net/Makefile                   |    1 +
+ drivers/net/mac-puv3.c                 | 1942 ++++++++++++++++++++++++++++++++
+ 5 files changed, 1950 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/net/mac-puv3.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 98c324b..6ff33ec 100644
+index 6ff33ec..4e0b495 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -4929,6 +4929,7 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.gi
- F:	drivers/input/serio/i8042-unicore32io.h
+@@ -4930,6 +4930,7 @@ F:	drivers/input/serio/i8042-unicore32io.h
  F:	drivers/i2c/busses/i2c-puv3.c
  F:	drivers/video/fb-puv3.c
-+F:	drivers/rtc/rtc-puv3.c
+ F:	drivers/rtc/rtc-puv3.c
++F:	drivers/net/mac-puv3.c
  
  PMC SIERRA MaxRAID DRIVER
  M:	Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
-diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
-index d3a3032..e57dcce 100644
---- a/arch/unicore32/Kconfig
-+++ b/arch/unicore32/Kconfig
-@@ -231,10 +231,6 @@ config PUV3_PWM
- 	help
- 	  Enable support for NB0916 PWM controllers
- 
--config PUV3_RTC
--	tristate "PKUnity v3 RTC Support"
--	depends on !ARCH_FPGA
--
- if PUV3_NB0916
- 
- menu "PKUnity NetBook-0916 Features"
 diff --git a/arch/unicore32/configs/debug_defconfig b/arch/unicore32/configs/debug_defconfig
-index b5fbde9..9b9c251 100644
+index 9b9c251..69b002c 100644
 --- a/arch/unicore32/configs/debug_defconfig
 +++ b/arch/unicore32/configs/debug_defconfig
 @@ -64,7 +64,6 @@ CONFIG_I2C_BATTERY_BQ27200=n
  CONFIG_I2C_EEPROM_AT24=n
  CONFIG_LCD_BACKLIGHT=n
  
--CONFIG_PUV3_RTC=y
- CONFIG_PUV3_UMAL=y
+-CONFIG_PUV3_UMAL=y
  CONFIG_PUV3_MUSB=n
  CONFIG_PUV3_AC97=n
-@@ -167,8 +166,9 @@ CONFIG_LEDS_TRIGGER_IDE_DISK=y
- CONFIG_LEDS_TRIGGER_HEARTBEAT=y
+ CONFIG_PUV3_NAND=n
+@@ -101,6 +100,7 @@ CONFIG_SATA_VIA=y
+ #	Network device support
+ CONFIG_NETDEVICES=y
+ CONFIG_NET_ETHERNET=y
++CONFIG_MAC_PUV3=y
+ CONFIG_NETDEV_1000=y
+ #	Wireless LAN
+ CONFIG_WLAN_80211=n
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index 19f04a3..8f8e82d 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -2023,6 +2023,11 @@ config LANTIQ_ETOP
+ 	help
+ 	  Support for the MII0 inside the Lantiq SoC
  
- #	Real Time Clock
--CONFIG_RTC_LIB=m
--CONFIG_RTC_CLASS=m
-+CONFIG_RTC_LIB=y
-+CONFIG_RTC_CLASS=y
-+CONFIG_RTC_DRV_PUV3=y
++config MAC_PUV3
++	tristate "PKUnity v3 UMAL Gigabit Network Adapter support"
++	depends on UNICORE32 && ARCH_PUV3
++	select MII
++	select PHYLIB
  
- ### File systems
- CONFIG_EXT2_FS=m
-diff --git a/arch/unicore32/kernel/Makefile b/arch/unicore32/kernel/Makefile
-index ec23a2f..aeb0f18 100644
---- a/arch/unicore32/kernel/Makefile
-+++ b/arch/unicore32/kernel/Makefile
-@@ -16,7 +16,6 @@ obj-$(CONFIG_UNICORE_FPU_F64)	+= fpu-ucf64.o
- obj-$(CONFIG_ARCH_PUV3)		+= clock.o irq.o time.o
+ source "drivers/net/fs_enet/Kconfig"
  
- obj-$(CONFIG_PUV3_GPIO)		+= gpio.o
--obj-$(CONFIG_PUV3_RTC)		+= rtc.o
- obj-$(CONFIG_PUV3_PWM)		+= pwm.o
- obj-$(CONFIG_PUV3_PM)		+= pm.o sleep.o
- obj-$(CONFIG_HIBERNATION)	+= hibernate.o hibernate_asm.o
-diff --git a/arch/unicore32/kernel/rtc.c b/arch/unicore32/kernel/rtc.c
-deleted file mode 100644
-index 8cad70b..0000000
---- a/arch/unicore32/kernel/rtc.c
-+++ /dev/null
-@@ -1,371 +0,0 @@
--/*
-- * linux/arch/unicore32/kernel/rtc.c
-- *
-- * Code specific to PKUnity SoC and UniCore ISA
-- *
-- *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
-- *	Copyright (C) 2001-2010 Guan Xuetao
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/module.h>
--#include <linux/fs.h>
--#include <linux/string.h>
--#include <linux/init.h>
--#include <linux/platform_device.h>
--#include <linux/interrupt.h>
--#include <linux/rtc.h>
--#include <linux/bcd.h>
--#include <linux/clk.h>
--#include <linux/log2.h>
--#include <linux/slab.h>
--#include <linux/uaccess.h>
--#include <linux/io.h>
--
--#include <asm/irq.h>
--#include <mach/hardware.h>
--
--static struct resource *puv3_rtc_mem;
--
--static int puv3_rtc_alarmno = IRQ_RTCAlarm;
--static int puv3_rtc_tickno  = IRQ_RTC;
--
--static DEFINE_SPINLOCK(puv3_rtc_pie_lock);
--
--/* IRQ Handlers */
--
--static irqreturn_t puv3_rtc_alarmirq(int irq, void *id)
--{
--	struct rtc_device *rdev = id;
--
--	writel(readl(RTC_RTSR) | RTC_RTSR_AL, RTC_RTSR);
--	rtc_update_irq(rdev, 1, RTC_AF | RTC_IRQF);
--	return IRQ_HANDLED;
--}
--
--static irqreturn_t puv3_rtc_tickirq(int irq, void *id)
--{
--	struct rtc_device *rdev = id;
--
--	writel(readl(RTC_RTSR) | RTC_RTSR_HZ, RTC_RTSR);
--	rtc_update_irq(rdev, 1, RTC_PF | RTC_IRQF);
--	return IRQ_HANDLED;
--}
--
--/* Update control registers */
--static void puv3_rtc_setaie(int to)
--{
--	unsigned int tmp;
--
--	pr_debug("%s: aie=%d\n", __func__, to);
--
--	tmp = readl(RTC_RTSR) & ~RTC_RTSR_ALE;
--
--	if (to)
--		tmp |= RTC_RTSR_ALE;
--
--	writel(tmp, RTC_RTSR);
--}
--
--static int puv3_rtc_setpie(struct device *dev, int enabled)
--{
--	unsigned int tmp;
--
--	pr_debug("%s: pie=%d\n", __func__, enabled);
--
--	spin_lock_irq(&puv3_rtc_pie_lock);
--	tmp = readl(RTC_RTSR) & ~RTC_RTSR_HZE;
--
--	if (enabled)
--		tmp |= RTC_RTSR_HZE;
--
--	writel(tmp, RTC_RTSR);
--	spin_unlock_irq(&puv3_rtc_pie_lock);
--
--	return 0;
--}
--
--/* Time read/write */
--
--static int puv3_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
--{
--	rtc_time_to_tm(readl(RTC_RCNR), rtc_tm);
--
--	pr_debug("read time %02x.%02x.%02x %02x/%02x/%02x\n",
--		 rtc_tm->tm_year, rtc_tm->tm_mon, rtc_tm->tm_mday,
--		 rtc_tm->tm_hour, rtc_tm->tm_min, rtc_tm->tm_sec);
--
--	return 0;
--}
--
--static int puv3_rtc_settime(struct device *dev, struct rtc_time *tm)
--{
--	unsigned long rtc_count = 0;
--
--	pr_debug("set time %02d.%02d.%02d %02d/%02d/%02d\n",
--		 tm->tm_year, tm->tm_mon, tm->tm_mday,
--		 tm->tm_hour, tm->tm_min, tm->tm_sec);
--
--	rtc_tm_to_time(tm, &rtc_count);
--	writel(rtc_count, RTC_RCNR);
--
--	return 0;
--}
--
--static int puv3_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
--{
--	struct rtc_time *alm_tm = &alrm->time;
--
--	rtc_time_to_tm(readl(RTC_RTAR), alm_tm);
--
--	alrm->enabled = readl(RTC_RTSR) & RTC_RTSR_ALE;
--
--	pr_debug("read alarm %02x %02x.%02x.%02x %02x/%02x/%02x\n",
--		 alrm->enabled,
--		 alm_tm->tm_year, alm_tm->tm_mon, alm_tm->tm_mday,
--		 alm_tm->tm_hour, alm_tm->tm_min, alm_tm->tm_sec);
--
--	return 0;
--}
--
--static int puv3_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
--{
--	struct rtc_time *tm = &alrm->time;
--	unsigned long rtcalarm_count = 0;
--
--	pr_debug("puv3_rtc_setalarm: %d, %02x/%02x/%02x %02x.%02x.%02x\n",
--		 alrm->enabled,
--		 tm->tm_mday & 0xff, tm->tm_mon & 0xff, tm->tm_year & 0xff,
--		 tm->tm_hour & 0xff, tm->tm_min & 0xff, tm->tm_sec);
--
--	rtc_tm_to_time(tm, &rtcalarm_count);
--	writel(rtcalarm_count, RTC_RTAR);
--
--	puv3_rtc_setaie(alrm->enabled);
--
--	if (alrm->enabled)
--		enable_irq_wake(puv3_rtc_alarmno);
--	else
--		disable_irq_wake(puv3_rtc_alarmno);
--
--	return 0;
--}
--
--static int puv3_rtc_proc(struct device *dev, struct seq_file *seq)
--{
--	seq_printf(seq, "periodic_IRQ\t: %s\n",
--		     (readl(RTC_RTSR) & RTC_RTSR_HZE) ? "yes" : "no");
--	return 0;
--}
--
--static int puv3_rtc_open(struct device *dev)
--{
--	struct platform_device *pdev = to_platform_device(dev);
--	struct rtc_device *rtc_dev = platform_get_drvdata(pdev);
--	int ret;
--
--	ret = request_irq(puv3_rtc_alarmno, puv3_rtc_alarmirq,
--			  IRQF_DISABLED,  "pkunity-rtc alarm", rtc_dev);
--
--	if (ret) {
--		dev_err(dev, "IRQ%d error %d\n", puv3_rtc_alarmno, ret);
--		return ret;
--	}
--
--	ret = request_irq(puv3_rtc_tickno, puv3_rtc_tickirq,
--			  IRQF_DISABLED,  "pkunity-rtc tick", rtc_dev);
--
--	if (ret) {
--		dev_err(dev, "IRQ%d error %d\n", puv3_rtc_tickno, ret);
--		goto tick_err;
--	}
--
--	return ret;
--
-- tick_err:
--	free_irq(puv3_rtc_alarmno, rtc_dev);
--	return ret;
--}
--
--static void puv3_rtc_release(struct device *dev)
--{
--	struct platform_device *pdev = to_platform_device(dev);
--	struct rtc_device *rtc_dev = platform_get_drvdata(pdev);
--
--	/* do not clear AIE here, it may be needed for wake */
--
--	puv3_rtc_setpie(dev, 0);
--	free_irq(puv3_rtc_alarmno, rtc_dev);
--	free_irq(puv3_rtc_tickno, rtc_dev);
--}
--
--static const struct rtc_class_ops puv3_rtcops = {
--	.open		= puv3_rtc_open,
--	.release	= puv3_rtc_release,
--	.read_time	= puv3_rtc_gettime,
--	.set_time	= puv3_rtc_settime,
--	.read_alarm	= puv3_rtc_getalarm,
--	.set_alarm	= puv3_rtc_setalarm,
--	.proc	        = puv3_rtc_proc,
--};
--
--static void puv3_rtc_enable(struct platform_device *pdev, int en)
--{
--	if (!en) {
--		writel(readl(RTC_RTSR) & ~RTC_RTSR_HZE, RTC_RTSR);
--	} else {
--		/* re-enable the device, and check it is ok */
--
--		if ((readl(RTC_RTSR) & RTC_RTSR_HZE) == 0) {
--			dev_info(&pdev->dev, "rtc disabled, re-enabling\n");
--			writel(readl(RTC_RTSR) | RTC_RTSR_HZE, RTC_RTSR);
--		}
--	}
--}
--
--static int puv3_rtc_remove(struct platform_device *dev)
--{
--	struct rtc_device *rtc = platform_get_drvdata(dev);
--
--	platform_set_drvdata(dev, NULL);
--	rtc_device_unregister(rtc);
--
--	puv3_rtc_setpie(&dev->dev, 0);
--	puv3_rtc_setaie(0);
--
--	release_resource(puv3_rtc_mem);
--	kfree(puv3_rtc_mem);
--
--	return 0;
--}
--
--static int puv3_rtc_probe(struct platform_device *pdev)
--{
--	struct rtc_device *rtc;
--	struct resource *res;
--	int ret;
--
--	pr_debug("%s: probe=%p\n", __func__, pdev);
--
--	/* find the IRQs */
--
--	puv3_rtc_tickno = platform_get_irq(pdev, 1);
--	if (puv3_rtc_tickno < 0) {
--		dev_err(&pdev->dev, "no irq for rtc tick\n");
--		return -ENOENT;
--	}
--
--	puv3_rtc_alarmno = platform_get_irq(pdev, 0);
--	if (puv3_rtc_alarmno < 0) {
--		dev_err(&pdev->dev, "no irq for alarm\n");
--		return -ENOENT;
--	}
--
--	pr_debug("PKUnity_rtc: tick irq %d, alarm irq %d\n",
--		 puv3_rtc_tickno, puv3_rtc_alarmno);
--
--	/* get the memory region */
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
--		dev_err(&pdev->dev, "failed to get memory region resource\n");
--		return -ENOENT;
--	}
--
--	puv3_rtc_mem = request_mem_region(res->start,
--					 res->end-res->start+1,
--					 pdev->name);
--
--	if (puv3_rtc_mem == NULL) {
--		dev_err(&pdev->dev, "failed to reserve memory region\n");
--		ret = -ENOENT;
--		goto err_nores;
--	}
--
--	puv3_rtc_enable(pdev, 1);
--
--	/* register RTC and exit */
--
--	rtc = rtc_device_register("pkunity", &pdev->dev, &puv3_rtcops,
--				  THIS_MODULE);
--
--	if (IS_ERR(rtc)) {
--		dev_err(&pdev->dev, "cannot attach rtc\n");
--		ret = PTR_ERR(rtc);
--		goto err_nortc;
--	}
--
--	/* platform setup code should have handled this; sigh */
--	if (!device_can_wakeup(&pdev->dev))
--		device_init_wakeup(&pdev->dev, 1);
--
--	platform_set_drvdata(pdev, rtc);
--	return 0;
--
-- err_nortc:
--	puv3_rtc_enable(pdev, 0);
--	release_resource(puv3_rtc_mem);
--
-- err_nores:
--	return ret;
--}
--
--#ifdef CONFIG_PM
--
--/* RTC Power management control */
--
--static int ticnt_save;
--
--static int puv3_rtc_suspend(struct platform_device *pdev, pm_message_t state)
--{
--	/* save RTAR for anyone using periodic interrupts */
--	ticnt_save = readl(RTC_RTAR);
--	puv3_rtc_enable(pdev, 0);
--	return 0;
--}
--
--static int puv3_rtc_resume(struct platform_device *pdev)
--{
--	puv3_rtc_enable(pdev, 1);
--	writel(ticnt_save, RTC_RTAR);
--	return 0;
--}
--#else
--#define puv3_rtc_suspend NULL
--#define puv3_rtc_resume  NULL
--#endif
--
--static struct platform_driver puv3_rtcdrv = {
--	.probe		= puv3_rtc_probe,
--	.remove		= __devexit_p(puv3_rtc_remove),
--	.suspend	= puv3_rtc_suspend,
--	.resume		= puv3_rtc_resume,
--	.driver		= {
--		.name	= "PKUnity-v3-RTC",
--		.owner	= THIS_MODULE,
--	}
--};
--
--static char __initdata banner[] = "PKUnity-v3 RTC, (c) 2009 PKUnity Co.\n";
--
--static int __init puv3_rtc_init(void)
--{
--	printk(banner);
--	return platform_driver_register(&puv3_rtcdrv);
--}
--
--static void __exit puv3_rtc_exit(void)
--{
--	platform_driver_unregister(&puv3_rtcdrv);
--}
--
--module_init(puv3_rtc_init);
--module_exit(puv3_rtc_exit);
--
--MODULE_DESCRIPTION("RTC Driver for the PKUnity v3 chip");
--MODULE_AUTHOR("Hu Dongliang");
--MODULE_LICENSE("GPL v2");
--
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 4289172..7052ec7 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -992,4 +992,13 @@ config RTC_DRV_TEGRA
- 	  This drive can also be built as a module. If so, the module
- 	  will be called rtc-tegra.
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index 209fbb7..4c96359 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -148,6 +148,7 @@ obj-$(CONFIG_NE_H8300) += ne-h8300.o
+ obj-$(CONFIG_AX88796) += ax88796.o
+ obj-$(CONFIG_BCM63XX_ENET) += bcm63xx_enet.o
+ obj-$(CONFIG_FTMAC100) += ftmac100.o
++obj-$(CONFIG_MAC_PUV3) += mac-puv3.o
  
-+config RTC_DRV_PUV3
-+	tristate "PKUnity v3 RTC support"
-+	depends on ARCH_PUV3
-+	help
-+	  This enables support for the RTC in the PKUnity-v3 SoCs.
-+
-+	  This drive can also be built as a module. If so, the module
-+	  will be called rtc-puv3.
-+
- endif # RTC_CLASS
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index ca91c3c..0eacb7c 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -75,6 +75,7 @@ obj-$(CONFIG_RTC_DRV_PCF50633)	+= rtc-pcf50633.o
- obj-$(CONFIG_RTC_DRV_PL030)	+= rtc-pl030.o
- obj-$(CONFIG_RTC_DRV_PL031)	+= rtc-pl031.o
- obj-$(CONFIG_RTC_DRV_PS3)	+= rtc-ps3.o
-+obj-$(CONFIG_RTC_DRV_PUV3)	+= rtc-puv3.o
- obj-$(CONFIG_RTC_DRV_PXA)	+= rtc-pxa.o
- obj-$(CONFIG_RTC_DRV_R9701)	+= rtc-r9701.o
- obj-$(CONFIG_RTC_DRV_RP5C01)	+= rtc-rp5c01.o
-diff --git a/drivers/rtc/rtc-puv3.c b/drivers/rtc/rtc-puv3.c
+ obj-$(CONFIG_TSI108_ETH) += tsi108_eth.o
+ obj-$(CONFIG_MV643XX_ETH) += mv643xx_eth.o
+diff --git a/drivers/net/mac-puv3.c b/drivers/net/mac-puv3.c
 new file mode 100644
-index 0000000..46f14b8
+index 0000000..d5163a5
 --- /dev/null
-+++ b/drivers/rtc/rtc-puv3.c
-@@ -0,0 +1,359 @@
++++ b/drivers/net/mac-puv3.c
+@@ -0,0 +1,1942 @@
 +/*
-+ * RTC driver code specific to PKUnity SoC and UniCore ISA
++ * Code specific to PKUnity SoC and UniCore ISA
 + *
 + *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
 + *	Copyright (C) 2001-2010 Guan Xuetao
@@ -526,355 +111,1938 @@ index 0000000..46f14b8
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+
++#include <linux/bug.h>
 +#include <linux/module.h>
-+#include <linux/fs.h>
++#include <linux/kernel.h>
 +#include <linux/string.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
-+#include <linux/rtc.h>
-+#include <linux/bcd.h>
-+#include <linux/clk.h>
-+#include <linux/log2.h>
++#include <linux/timer.h>
++#include <linux/errno.h>
++#include <linux/ioport.h>
 +#include <linux/slab.h>
-+#include <linux/uaccess.h>
++#include <linux/interrupt.h>
++#include <linux/netdevice.h>
++#include <linux/etherdevice.h>
++#include <linux/skbuff.h>
++#include <linux/init.h>
++#include <linux/bitops.h>
++#include <linux/err.h>
++#include <linux/ethtool.h>
++#include <linux/mii.h>
++#include <linux/phy.h>
++#include <linux/platform_device.h>
++#include <linux/cache.h>
 +#include <linux/io.h>
 +
-+#include <asm/irq.h>
 +#include <mach/hardware.h>
 +
-+static struct resource *puv3_rtc_mem;
++MODULE_DESCRIPTION("PKUNITY-3 SoC Ethernet driver");
++MODULE_LICENSE("GPL v2");
 +
-+static int puv3_rtc_alarmno = IRQ_RTCAlarm;
-+static int puv3_rtc_tickno  = IRQ_RTC;
++/**********************************************************************
++ *  Globals
++ ********************************************************************* */
++static const char umal_string[] = "PKUnity-v3-UMAL";
++static const char umal_mdio_string[] = "umal-mdio";
 +
-+static DEFINE_SPINLOCK(puv3_rtc_pie_lock);
-+
-+/* IRQ Handlers */
-+static irqreturn_t puv3_rtc_alarmirq(int irq, void *id)
-+{
-+	struct rtc_device *rdev = id;
-+
-+	writel(readl(RTC_RTSR) | RTC_RTSR_AL, RTC_RTSR);
-+	rtc_update_irq(rdev, 1, RTC_AF | RTC_IRQF);
-+	return IRQ_HANDLED;
-+}
-+
-+static irqreturn_t puv3_rtc_tickirq(int irq, void *id)
-+{
-+	struct rtc_device *rdev = id;
-+
-+	writel(readl(RTC_RTSR) | RTC_RTSR_HZ, RTC_RTSR);
-+	rtc_update_irq(rdev, 1, RTC_PF | RTC_IRQF);
-+	return IRQ_HANDLED;
-+}
-+
-+/* Update control registers */
-+static void puv3_rtc_setaie(int to)
-+{
-+	unsigned int tmp;
-+
-+	pr_debug("%s: aie=%d\n", __func__, to);
-+
-+	tmp = readl(RTC_RTSR) & ~RTC_RTSR_ALE;
-+
-+	if (to)
-+		tmp |= RTC_RTSR_ALE;
-+
-+	writel(tmp, RTC_RTSR);
-+}
-+
-+static int puv3_rtc_setpie(struct device *dev, int enabled)
-+{
-+	unsigned int tmp;
-+
-+	pr_debug("%s: pie=%d\n", __func__, enabled);
-+
-+	spin_lock_irq(&puv3_rtc_pie_lock);
-+	tmp = readl(RTC_RTSR) & ~RTC_RTSR_HZE;
-+
-+	if (enabled)
-+		tmp |= RTC_RTSR_HZE;
-+
-+	writel(tmp, RTC_RTSR);
-+	spin_unlock_irq(&puv3_rtc_pie_lock);
-+
-+	return 0;
-+}
-+
-+/* Time read/write */
-+static int puv3_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
-+{
-+	rtc_time_to_tm(readl(RTC_RCNR), rtc_tm);
-+
-+	pr_debug("read time %02x.%02x.%02x %02x/%02x/%02x\n",
-+		 rtc_tm->tm_year, rtc_tm->tm_mon, rtc_tm->tm_mday,
-+		 rtc_tm->tm_hour, rtc_tm->tm_min, rtc_tm->tm_sec);
-+
-+	return 0;
-+}
-+
-+static int puv3_rtc_settime(struct device *dev, struct rtc_time *tm)
-+{
-+	unsigned long rtc_count = 0;
-+
-+	pr_debug("set time %02d.%02d.%02d %02d/%02d/%02d\n",
-+		 tm->tm_year, tm->tm_mon, tm->tm_mday,
-+		 tm->tm_hour, tm->tm_min, tm->tm_sec);
-+
-+	rtc_tm_to_time(tm, &rtc_count);
-+	writel(rtc_count, RTC_RCNR);
-+
-+	return 0;
-+}
-+
-+static int puv3_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct rtc_time *alm_tm = &alrm->time;
-+
-+	rtc_time_to_tm(readl(RTC_RTAR), alm_tm);
-+
-+	alrm->enabled = readl(RTC_RTSR) & RTC_RTSR_ALE;
-+
-+	pr_debug("read alarm %02x %02x.%02x.%02x %02x/%02x/%02x\n",
-+		 alrm->enabled,
-+		 alm_tm->tm_year, alm_tm->tm_mon, alm_tm->tm_mday,
-+		 alm_tm->tm_hour, alm_tm->tm_min, alm_tm->tm_sec);
-+
-+	return 0;
-+}
-+
-+static int puv3_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct rtc_time *tm = &alrm->time;
-+	unsigned long rtcalarm_count = 0;
-+
-+	pr_debug("puv3_rtc_setalarm: %d, %02x/%02x/%02x %02x.%02x.%02x\n",
-+		 alrm->enabled,
-+		 tm->tm_mday & 0xff, tm->tm_mon & 0xff, tm->tm_year & 0xff,
-+		 tm->tm_hour & 0xff, tm->tm_min & 0xff, tm->tm_sec);
-+
-+	rtc_tm_to_time(tm, &rtcalarm_count);
-+	writel(rtcalarm_count, RTC_RTAR);
-+
-+	puv3_rtc_setaie(alrm->enabled);
-+
-+	if (alrm->enabled)
-+		enable_irq_wake(puv3_rtc_alarmno);
-+	else
-+		disable_irq_wake(puv3_rtc_alarmno);
-+
-+	return 0;
-+}
-+
-+static int puv3_rtc_proc(struct device *dev, struct seq_file *seq)
-+{
-+	seq_printf(seq, "periodic_IRQ\t: %s\n",
-+		     (readl(RTC_RTSR) & RTC_RTSR_HZE) ? "yes" : "no");
-+	return 0;
-+}
-+
-+static int puv3_rtc_open(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct rtc_device *rtc_dev = platform_get_drvdata(pdev);
-+	int ret;
-+
-+	ret = request_irq(puv3_rtc_alarmno, puv3_rtc_alarmirq,
-+			  IRQF_DISABLED,  "pkunity-rtc alarm", rtc_dev);
-+
-+	if (ret) {
-+		dev_err(dev, "IRQ%d error %d\n", puv3_rtc_alarmno, ret);
-+		return ret;
-+	}
-+
-+	ret = request_irq(puv3_rtc_tickno, puv3_rtc_tickirq,
-+			  IRQF_DISABLED,  "pkunity-rtc tick", rtc_dev);
-+
-+	if (ret) {
-+		dev_err(dev, "IRQ%d error %d\n", puv3_rtc_tickno, ret);
-+		goto tick_err;
-+	}
-+
-+	return ret;
-+
-+ tick_err:
-+	free_irq(puv3_rtc_alarmno, rtc_dev);
-+	return ret;
-+}
-+
-+static void puv3_rtc_release(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct rtc_device *rtc_dev = platform_get_drvdata(pdev);
-+
-+	/* do not clear AIE here, it may be needed for wake */
-+	puv3_rtc_setpie(dev, 0);
-+	free_irq(puv3_rtc_alarmno, rtc_dev);
-+	free_irq(puv3_rtc_tickno, rtc_dev);
-+}
-+
-+static const struct rtc_class_ops puv3_rtcops = {
-+	.open		= puv3_rtc_open,
-+	.release	= puv3_rtc_release,
-+	.read_time	= puv3_rtc_gettime,
-+	.set_time	= puv3_rtc_settime,
-+	.read_alarm	= puv3_rtc_getalarm,
-+	.set_alarm	= puv3_rtc_setalarm,
-+	.proc	        = puv3_rtc_proc,
++/**********************************************************************
++ *  Simple types
++ ********************************************************************* */
++enum umal_speed {
++	umal_speed_none = 0,
++	umal_speed_10 = SPEED_10,
++	umal_speed_100 = SPEED_100,
++	umal_speed_1000 = SPEED_1000,
 +};
 +
-+static void puv3_rtc_enable(struct platform_device *pdev, int en)
++enum umal_duplex {
++	umal_duplex_none = -1,
++	umal_duplex_half = DUPLEX_HALF,
++	umal_duplex_full = DUPLEX_FULL,
++};
++
++enum umal_fc {
++	umal_fc_none,
++	umal_fc_disabled,
++	umal_fc_frame,
++	umal_fc_collision,
++	umal_fc_carrier,
++};
++
++enum umal_state {
++	umal_state_uninit,
++	umal_state_off,
++	umal_state_on,
++	umal_state_broken,
++};
++
++/**********************************************************************
++ *  Macros
++ ********************************************************************* */
++#define UMALDMA_NEXTBUF(d, f) ((((d)->f+1) == (d)->umaldma_dscrtable_end) ? \
++			  (d)->umaldma_dscrtable : (d)->f+1)
++
++#define DMA_RX			0
++#define DMA_TX			1
++
++#define UMAL_MAX_TXDESCR	256
++#define UMAL_MAX_RXDESCR	256
++
++#define ETHER_ADDR_LEN		6
++#define ENET_PACKET_SIZE	1518
++
++/* Time in jiffies before concluding the transmitter is hung. */
++#define TX_TIMEOUT		(2*HZ)
++
++/**********************************************************************
++ *  DMA Descriptor structure
++ ********************************************************************* */
++struct umaldmadscr {
++	dma_addr_t   PacketStartAddr;
++	int          PacketSize;
++	dma_addr_t   NextDescriptor;
++	struct umaldmadscr *NextDescriptor_Virt;
++};
++
++/**********************************************************************
++ *  DMA Controller structure
++ ********************************************************************* */
++struct umaldma {
++	/*
++	 * This stuff is used to identify the channel and the registers
++	 * associated with it.
++	 */
++	/* back pointer to associated MAC */
++	struct umal_softc	*umaldma_eth;
++	/* direction (1=transmit) */
++	int			umaldma_txdir;
++	/* total # of descriptors in ring */
++	int			umaldma_maxdescr;
++	/*
++	 * This stuff is for maintenance of the ring
++	 */
++	/* base of descriptor table */
++	struct umaldmadscr	*umaldma_dscrtable;
++	void			*umaldma_dscrtable_unaligned;
++	/* and also the phys addr */
++	dma_addr_t		umaldma_dscrtable_phys;
++	/* and also the phys addr */
++	dma_addr_t		umaldma_dscrtable_phys_unaligned;
++	/* end of descriptor table */
++	struct umaldmadscr	*umaldma_dscrtable_end;
++	/* context table, one per descr */
++	struct sk_buff		**umaldma_ctxtable;
++	/* next dscr for sw to add */
++	struct umaldmadscr	*umaldma_addptr;
++	/* next dscr for sw to remove */
++	struct umaldmadscr	*umaldma_remptr;
++};
++
++/**********************************************************************
++ *  Ethernet softc structure
++ ********************************************************************* */
++struct umal_softc {
++	/* Linux-specific things */
++	struct net_device	*umal_dev;	/* pointer to linux device */
++	int			umal_idx;
++	struct phy_device	*phy_dev;	/* the associated PHY device */
++	struct mii_bus		*mii_bus;	/* the MII bus */
++	int			phy_irq[PHY_MAX_ADDR];
++	spinlock_t		umal_lock;	/* spin lock */
++	int			umal_devflags;	/* current device flags */
++
++	/* Controller-specific things */
++	enum umal_state		umal_state;	/* current state */
++	unsigned char		umal_hwaddr[ETHER_ADDR_LEN];
++
++	enum umal_speed		umal_speed;	/* current speed */
++	enum umal_duplex	umal_duplex;	/* current duplex */
++	enum umal_fc		umal_fc;	/* cur. flow control setting */
++	int			umal_pause;	/* current pause setting */
++	int			umal_link;	/* current link state */
++
++	struct umaldma		umal_rxdma;	/* rx dma channel */
++	struct umaldma		umal_txdma;	/* tx dma channel */
++};
++
++/**********************************************************************
++ *  Prototypes
++ ********************************************************************* */
++static int umal_mii_reset(struct mii_bus *bus);
++static int umal_mii_read(struct mii_bus *bus, int phyaddr, int regidx);
++static int umal_mii_write(struct mii_bus *bus, int phyaddr, int regidx,
++		u16 val);
++static int umal_mii_probe(struct net_device *dev);
++
++static void umaldma_initctx(struct umaldma *d, struct umal_softc *s,
++		int rxtx, int maxdescr);
++static void umaldma_uninitctx(struct umaldma *d);
++static void umaldma_channel_start(struct umaldma *d, int rxtx);
++static void umaldma_channel_stop(struct umaldma *d);
++static int umaldma_add_rcvbuffer(struct umal_softc *sc, struct umaldma *d,
++		struct sk_buff *m);
++static int umaldma_add_txbuffer(struct umaldma *d, struct sk_buff *m);
++static void umaldma_emptyring(struct umaldma *d);
++static void umaldma_fillring(struct umal_softc *sc, struct umaldma *d);
++static int umaldma_rx_process(struct umal_softc *sc, struct umaldma *d,
++		int work_to_do, int poll);
++static void umaldma_tx_process(struct umal_softc *sc, struct umaldma *d,
++		int poll);
++
++static int umal_initctx(struct umal_softc *s);
++static void umal_uninitctx(struct umal_softc *s);
++static void umal_channel_start(struct umal_softc *s);
++static void umal_channel_stop(struct umal_softc *s);
++static enum umal_state umal_set_channel_state(struct umal_softc *,
++		enum umal_state);
++
++static int umal_init(struct platform_device *pldev, long long base);
++static int umal_open(struct net_device *dev);
++static int umal_close(struct net_device *dev);
++static int umal_mii_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
++static irqreturn_t umal_intr(int irq, void *dev_instance);
++static void umal_clr_intr(struct net_device *dev);
++static int umal_start_tx(struct sk_buff *skb, struct net_device *dev);
++static void umal_tx_timeout(struct net_device *dev);
++static void umal_set_rx_mode(struct net_device *dev);
++static void umal_promiscuous_mode(struct umal_softc *sc, int onoff);
++static void umal_setmulti(struct umal_softc *sc);
++static int umal_set_speed(struct umal_softc *s, enum umal_speed speed);
++static int umal_set_duplex(struct umal_softc *s, enum umal_duplex duplex,
++		enum umal_fc fc);
++static int umal_change_mtu(struct net_device *_dev, int new_mtu);
++static void umal_miipoll(struct net_device *dev);
++
++/**********************************************************************
++ *  MII Bus functions for PAL (phy abstraction layer)
++ ********************************************************************* */
++
++/**********************************************************************
++ *  UMAL_MII_RESET(bus)
++ *
++ *  Reset MII bus.
++ *
++ *  Input parameters:
++ *	   bus     - MDIO bus handle
++ *
++ *  Return value:
++ *	   0 if ok
++ ********************************************************************* */
++static int umal_mii_reset(struct mii_bus *bus)
 +{
-+	if (!en) {
-+		writel(readl(RTC_RTSR) & ~RTC_RTSR_HZE, RTC_RTSR);
++	/* reset the MII management */
++	writel(UMAL_MIICFG_RESET, UMAL_MIICFG);
++	/* enable the MII management */
++	writel(0, UMAL_MIICFG);
++	/* source clock division = 28 */
++	writel(readl(UMAL_MIICFG) | 0x7, UMAL_MIICFG);
++
++	return 0;
++}
++
++/**********************************************************************
++ *  UMAL_MII_READ(bus, phyaddr, regidx)
++ *  Read a PHY register.
++ *
++ *  Input parameters:
++ *	   bus     - MDIO bus handle
++ *	   phyaddr - PHY's address
++ *	   regnum  - index of register to read
++ *
++ *  Return value:
++ *	   value read, or 0xffff if an error occurred.
++ ********************************************************************* */
++static int umal_mii_read(struct mii_bus *bus, int phyaddr, int regidx)
++{
++	int tmp = 0;
++
++	writel((phyaddr<<8) | regidx, UMAL_MIIADDR);
++	writel(UMAL_MIICMD_READ, UMAL_MIICMD);
++
++	tmp = readl(UMAL_MIIIDCT);
++	while (tmp & UMAL_MIIIDCT_BUSY)
++		tmp = readl(UMAL_MIIIDCT);
++
++	if (tmp & UMAL_MIIIDCT_NOTVALID)
++		return 0xffff;
++
++	writel(0, UMAL_MIICMD);
++
++	tmp = readl(UMAL_MIISTATUS);
++	return tmp;
++}
++
++/**********************************************************************
++ *  UMAL_MII_WRITE(bus, phyaddr, regidx, regval)
++ *
++ *  Write a value to a PHY register.
++ *
++ *  Input parameters:
++ *	   bus     - MDIO bus handle
++ *	   phyaddr - PHY to use
++ *	   regidx  - register within the PHY
++ *	   regval  - data to write to register
++ *
++ *  Return value:
++ *	   0 if ok
++ ********************************************************************* */
++static int umal_mii_write(struct mii_bus *bus, int phyaddr, int regidx, u16 val)
++{
++	int tmp = 0;
++
++	writel((phyaddr<<8) | regidx, UMAL_MIIADDR);
++	writel(val, UMAL_MIICTRL);
++
++	tmp = readl(UMAL_MIIIDCT);
++	while (tmp & UMAL_MIIIDCT_BUSY)
++		tmp = readl(UMAL_MIIIDCT);
++
++	return 0;
++}
++
++/**********************************************************************
++ *  UMAL_MII_PROBE(dev)
++ *
++ *  Write a value to a PHY register.
++ *
++ *  Input parameters:
++ *	   dev - net_device structure
++ *
++ *  Return value:
++ *	   0 if ok
++ ********************************************************************* */
++static int umal_mii_probe(struct net_device *dev)
++{
++	struct umal_softc *sc = netdev_priv(dev);
++	struct phy_device *phy_dev;
++	int i;
++
++	for (i = 0; i < PHY_MAX_ADDR; i++) {
++		phy_dev = sc->mii_bus->phy_map[i];
++		if (phy_dev)
++			break;
++	}
++	if (!phy_dev) {
++		printk(KERN_ERR "%s: no PHY found\n", dev->name);
++		return -ENXIO;
++	}
++
++	phy_dev = phy_connect(dev, dev_name(&phy_dev->dev), &umal_miipoll, 0,
++			      PHY_INTERFACE_MODE_MII);
++	if (IS_ERR(phy_dev)) {
++		printk(KERN_ERR "%s: could not attach to PHY\n", dev->name);
++		return PTR_ERR(phy_dev);
++	}
++
++	/* Remove any features not supported by the controller */
++	phy_dev->supported &= SUPPORTED_10baseT_Half |
++			      SUPPORTED_10baseT_Full |
++			      SUPPORTED_100baseT_Half |
++			      SUPPORTED_100baseT_Full |
++			      SUPPORTED_Autoneg |
++			      SUPPORTED_MII;
++	phy_dev->advertising = phy_dev->supported;
++
++	pr_info("%s: attached PHY driver [%s] (mii_bus:phy_addr=%s, irq=%d)\n",
++		dev->name, phy_dev->drv->name,
++		dev_name(&phy_dev->dev), phy_dev->irq);
++
++	sc->phy_dev = phy_dev;
++
++	return 0;
++}
++
++/**********************************************************************
++ *  UMAL DMA functions
++ ********************************************************************* */
++
++/**********************************************************************
++ *  UMALDMA_INITCTX(d,s,txrx,maxdescr)
++ *
++ *  Initialize a DMA channel context.  Since there are potentially
++ *  eight DMA channels per MAC, it's nice to do this in a standard
++ *  way.
++ *
++ *  Input parameters:
++ *	   d - struct umaldma (DMA channel context)
++ *	   s - struct umal_softc (pointer to a MAC)
++ *	   txrx - Identifies DMA_TX or DMA_RX for channel direction
++ *	   maxdescr - number of descriptors
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umaldma_initctx(struct umaldma *d, struct umal_softc *s, int rxtx,
++		int maxdescr)
++{
++	struct umaldmadscr *dscr_item;
++	int idx;
++
++	/*
++	 * Save away interesting stuff in the structure
++	 */
++	d->umaldma_eth   = s;
++	d->umaldma_txdir = rxtx;
++	d->umaldma_maxdescr = maxdescr;
++
++	/*
++	 * Allocate memory for the ring
++	 */
++	d->umaldma_dscrtable_unaligned = dma_alloc_coherent(NULL,
++					sizeof(*d->umaldma_dscrtable),
++					&d->umaldma_dscrtable_phys_unaligned,
++					GFP_KERNEL | GFP_DMA);
++	dma_cache_sync(NULL, d->umaldma_dscrtable_unaligned,
++			sizeof(*d->umaldma_dscrtable), DMA_BIDIRECTIONAL);
++
++	/*
++	 * The descriptor table must be aligned to at least 16 bytes or the
++	 * MAC will corrupt it.
++	 */
++	d->umaldma_dscrtable = (struct umaldmadscr *)
++			ALIGN((unsigned long)d->umaldma_dscrtable_unaligned,
++			sizeof(*d->umaldma_dscrtable));
++	d->umaldma_dscrtable_end = d->umaldma_dscrtable + d->umaldma_maxdescr;
++	d->umaldma_dscrtable_phys = ALIGN((unsigned long)
++				d->umaldma_dscrtable_phys_unaligned,
++				sizeof(*d->umaldma_dscrtable));
++
++	for (idx = 0; idx < d->umaldma_maxdescr; idx++) {
++		dscr_item                      = d->umaldma_dscrtable + idx;
++		dscr_item->PacketStartAddr     = 0;
++		dscr_item->PacketSize          = UMAL_DESC_PACKETSIZE_EMPTY;
++		dscr_item->NextDescriptor      = (dma_addr_t)(
++				(struct umaldmadscr *)d->umaldma_dscrtable_phys
++				+ (idx+1));
++		dscr_item->NextDescriptor_Virt = d->umaldma_dscrtable + (idx+1);
++	}
++	dscr_item                      = d->umaldma_dscrtable +
++					(d->umaldma_maxdescr - 1);
++	dscr_item->NextDescriptor      = d->umaldma_dscrtable_phys;
++	dscr_item->NextDescriptor_Virt = d->umaldma_dscrtable;
++
++	d->umaldma_addptr = d->umaldma_dscrtable;
++	d->umaldma_remptr = d->umaldma_dscrtable;
++
++	/*
++	 * And context table
++	 */
++	d->umaldma_ctxtable = kcalloc(d->umaldma_maxdescr,
++				    sizeof(*d->umaldma_ctxtable), GFP_KERNEL);
++}
++
++/**********************************************************************
++ *  UMALDMA_UNINITCTX(d)
++ *
++ *  Uninitialize a DMA channel context.
++ *
++ *  Input parameters:
++ *	   d - struct umaldma (DMA channel context)
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umaldma_uninitctx(struct umaldma *d)
++{
++	if (d->umaldma_dscrtable_unaligned) {
++		dma_free_coherent(NULL, sizeof(*d->umaldma_dscrtable),
++				d->umaldma_dscrtable_unaligned,
++				d->umaldma_dscrtable_phys_unaligned);
++		d->umaldma_dscrtable_unaligned = d->umaldma_dscrtable = NULL;
++		d->umaldma_dscrtable_phys_unaligned = 0;
++		d->umaldma_dscrtable_phys = 0;
++	}
++
++	kfree(d->umaldma_ctxtable);
++	d->umaldma_ctxtable = NULL;
++}
++
++/**********************************************************************
++ *  UMALDMA_CHANNEL_START(d)
++ *
++ *  Open a DMA channel.
++ *
++ *  Input parameters:
++ *	   d - DMA channel to init (context must be previously init'd)
++ *	   rxtx - DMA_RX or DMA_TX depending on what type of channel
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umaldma_channel_start(struct umaldma *d, int rxtx)
++{
++	/*
++	 * Turn on the DMA channel
++	 */
++	if (rxtx == DMA_TX) {
++		writel(d->umaldma_dscrtable_phys, UMAL_DMATxDescriptor);
++		writel(UMAL_DMA_Enable, UMAL_DMATxCtrl);
 +	} else {
-+		/* re-enable the device, and check it is ok */
-+		if ((readl(RTC_RTSR) & RTC_RTSR_HZE) == 0) {
-+			dev_info(&pdev->dev, "rtc disabled, re-enabling\n");
-+			writel(readl(RTC_RTSR) | RTC_RTSR_HZE, RTC_RTSR);
++		writel(d->umaldma_dscrtable_phys, UMAL_DMARxDescriptor);
++		writel(UMAL_DMA_Enable, UMAL_DMARxCtrl);
++	}
++}
++
++/**********************************************************************
++ *  UMALDMA_CHANNEL_STOP(d)
++ *
++ *  Close DMA channel.
++ *
++ *  Input parameters:
++ *	   d - DMA channel to init (context must be previously init'd
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umaldma_channel_stop(struct umaldma *d)
++{
++	/*
++	 * Turn off the DMA channel
++	 */
++	if (d->umaldma_txdir == DMA_TX) {
++		writel(0, UMAL_DMATxCtrl);
++		writel(0, UMAL_DMATxDescriptor);
++	} else {
++		writel(0, UMAL_DMARxCtrl);
++		writel(0, UMAL_DMARxDescriptor);
++	}
++
++	/*
++	 * Zero ring pointers
++	 */
++	d->umaldma_addptr = d->umaldma_dscrtable;
++	d->umaldma_remptr = d->umaldma_dscrtable;
++}
++
++/**********************************************************************
++ *  UMALDMA_ADD_RCVBUFFER(d,sb)
++ *
++ *  Add a buffer to the specified DMA channel.
++ *  For receive channels, this queues a buffer for inbound packets.
++ *
++ *  Input parameters:
++ *	   sc - softc structure
++ *	    d - DMA channel descriptor
++ *	   sb - sk_buff to add, or NULL if we should allocate one
++ *
++ *  Return value:
++ *	   0 if buffer could not be added (ring is full)
++ *	   1 if buffer added successfully
++ ********************************************************************* */
++static int umaldma_add_rcvbuffer(struct umal_softc *sc, struct umaldma *d,
++		struct sk_buff *sb)
++{
++	struct net_device *dev = sc->umal_dev;
++	struct umaldmadscr *dsc;
++	struct umaldmadscr *nextdsc;
++	struct sk_buff *sb_new = NULL;
++
++	/* get pointer to our current place in the ring */
++	dsc = d->umaldma_addptr;
++	nextdsc = UMALDMA_NEXTBUF(d, umaldma_addptr);
++
++	/*
++	 * figure out if the ring is full - if the next descriptor
++	 * is the same as the one that we're going to remove from
++	 * the ring, the ring is full
++	 */
++	if (nextdsc == d->umaldma_remptr)
++		return -ENOSPC;
++
++	/*
++	 * Allocate a sk_buff if we don't already have one.
++	 * If we do have an sk_buff, reset it so that it's empty.
++	 *
++	 * Note: sk_buffs don't seem to be guaranteed to have any sort
++	 * of alignment when they are allocated.  Therefore, allocate enough
++	 * extra space to make sure that:
++	 *
++	 *    1. the data does not start in the middle of a cache line.
++	 *    2. The data does not end in the middle of a cache line
++	 *    3. The buffer can be aligned such that the IP addresses are
++	 *       naturally aligned.
++	 *
++	 *  Remember, the SOCs MAC writes whole cache lines at a time,
++	 *  without reading the old contents first.  So, if the sk_buff's
++	 *  data portion starts in the middle of a cache line, the SOC
++	 *  DMA will trash the beginning (and ending) portions.
++	 */
++	if (sb == NULL) {
++		sb_new = netdev_alloc_skb(dev, ENET_PACKET_SIZE +
++		       SMP_CACHE_BYTES * 2 + NET_IP_ALIGN);
++		if (sb_new == NULL) {
++			pr_info("%s: sk_buff allocation failed\n",
++			       d->umaldma_eth->umal_dev->name);
++			return -ENOBUFS;
++		}
++		skb_reserve(sb_new, 2);
++	} else {
++		sb_new = sb;
++		/*
++		 * nothing special to reinit buffer, it's already aligned
++		 * and sb->data already points to a good place.
++		 */
++	}
++
++	/* fill in the descriptor */
++	dsc->PacketStartAddr = virt_to_phys(sb_new->data);
++	dsc->PacketSize      = UMAL_DESC_PACKETSIZE_EMPTY;
++
++	/* fill in the context */
++	d->umaldma_ctxtable[dsc-d->umaldma_dscrtable] = sb_new;
++
++	/* point at next packet */
++	d->umaldma_addptr = nextdsc;
++
++	return 0;
++}
++
++/**********************************************************************
++ *  UMALDMA_ADD_TXBUFFER(d,sb)
++ *
++ *  Add a transmit buffer to the specified DMA channel, causing a
++ *  transmit to start.
++ *
++ *  Input parameters:
++ *	   d - DMA channel descriptor
++ *	   sb - sk_buff to add
++ *
++ *  Return value:
++ *	   0 transmit queued successfully
++ *	   otherwise error code
++ ********************************************************************* */
++static int umaldma_add_txbuffer(struct umaldma *d, struct sk_buff *sb)
++{
++	struct umaldmadscr *dsc;
++	struct umaldmadscr *nextdsc;
++
++	/* get pointer to our current place in the ring */
++	dsc = d->umaldma_addptr;
++	nextdsc = UMALDMA_NEXTBUF(d, umaldma_addptr);
++
++	/*
++	 * figure out if the ring is full - if the next descriptor
++	 * is the same as the one that we're going to remove from
++	 * the ring, the ring is full
++	 */
++	if (nextdsc == d->umaldma_remptr)
++		return -ENOSPC;
++
++	/*
++	 * fill in the descriptor.  Note that the number of cache
++	 * blocks in the descriptor is the number of blocks
++	 * *spanned*, so we need to add in the offset (if any)
++	 * while doing the calculation.
++	 */
++	dsc->PacketStartAddr = virt_to_phys(sb->data);
++	dsc->PacketSize      = sb->len | UMAL_DESC_PACKETSIZE_NONEMPTY;
++
++	dma_map_single(NULL, sb->data, sb->len, DMA_BIDIRECTIONAL);
++	dma_cache_sync(NULL, sb->data, sb->len, DMA_BIDIRECTIONAL);
++
++	/* fill in the context */
++	d->umaldma_ctxtable[dsc-d->umaldma_dscrtable] = sb;
++
++	/* point at next packet */
++	d->umaldma_addptr = nextdsc;
++
++	return 0;
++}
++
++/**********************************************************************
++ *  UMALDMA_EMPTYRING(d)
++ *
++ *  Free all allocated sk_buffs on the specified DMA channel;
++ *
++ *  Input parameters:
++ *	   d  - DMA channel
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umaldma_emptyring(struct umaldma *d)
++{
++	int idx;
++	struct sk_buff *sb;
++
++	for (idx = 0; idx < d->umaldma_maxdescr; idx++) {
++		sb = d->umaldma_ctxtable[idx];
++		if (sb) {
++			dev_kfree_skb(sb);
++			d->umaldma_ctxtable[idx] = NULL;
 +		}
 +	}
 +}
 +
-+static int puv3_rtc_remove(struct platform_device *dev)
++/**********************************************************************
++ *  UMALDMA_FILLRING(sc,d)
++ *
++ *  Fill the specified DMA channel (must be receive channel) with sk_buffs
++ *
++ *  Input parameters:
++ *	   sc - softc structure
++ *	    d - DMA channel
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umaldma_fillring(struct umal_softc *sc, struct umaldma *d)
 +{
-+	struct rtc_device *rtc = platform_get_drvdata(dev);
++	int idx;
++	for (idx = 0; idx < UMAL_MAX_RXDESCR - 1; idx++) {
++		if (umaldma_add_rcvbuffer(sc, d, NULL) != 0)
++			break;
++	}
++}
 +
-+	platform_set_drvdata(dev, NULL);
-+	rtc_device_unregister(rtc);
++/**********************************************************************
++ *  UMALDMA_RX_PROCESS(sc,d,work_to_do,poll)
++ *
++ *  Process "completed" receive buffers on the specified DMA channel.
++ *
++ *  Input parameters:
++ *            sc - softc structure
++ *	       d - DMA channel context
++ *    work_to_do - no. of packets to process before enabling interrupt
++ *                 again (for NAPI)
++ *          poll - 1: using polling (for NAPI)
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static int umaldma_rx_process(struct umal_softc *sc, struct umaldma *d,
++		int work_to_do, int poll)
++{
++	struct net_device *dev = sc->umal_dev;
++	int curidx;
++	int hwidx;
++	struct umaldmadscr *dsc;
++	struct sk_buff *sb;
++	int len;
++	int work_done = 0;
++	int dropped = 0;
++	unsigned int int_status;
 +
-+	puv3_rtc_setpie(&dev->dev, 0);
-+	puv3_rtc_setaie(0);
++	if (!netif_device_present(dev))
++		return 0;
 +
-+	release_resource(puv3_rtc_mem);
-+	kfree(puv3_rtc_mem);
++	int_status = readl(UMAL_DMAInterrupt);
++
++	if (int_status & INT_RX_BUS_ERR) {
++		writel(CLR_RX_BUS_ERR, UMAL_DMARxStatus);
++		writel(readl(UMAL_DMARxCtrl) | UMAL_DMA_Enable, UMAL_DMARxCtrl);
++	}
++
++	if (int_status & INT_RX_OVERFLOW) {
++		writel(CLR_RX_OVERFLOW, UMAL_DMARxStatus);
++		writel(readl(UMAL_DMARxCtrl) | UMAL_DMA_Enable, UMAL_DMARxCtrl);
++	}
++
++	if (!(int_status & INT_RX_PKT))
++		return 0;
++
++	while (work_to_do-- > 0) {
++		/*
++		 * figure out where we are (as an index) and where
++		 * the hardware is (also as an index)
++		 *
++		 * This could be done faster if (for example) the
++		 * descriptor table was page-aligned and contiguous in
++		 * both virtual and physical memory -- you could then
++		 * just compare the low-order bits of the virtual
++		 * address (sbdma_remptr) and the physical address
++		 * (sbdma_curdscr CSR)
++		 */
++		dsc = d->umaldma_remptr;
++		curidx = dsc - d->umaldma_dscrtable;
++
++		hwidx = (struct umaldmadscr *) readl(UMAL_DMARxDescriptor) -
++			(struct umaldmadscr *)d->umaldma_dscrtable_phys;
++
++		writel(CLR_RX_PKT, UMAL_DMARxStatus);
++
++		/*
++		 * If they're the same, that means we've processed all
++		 * of the descriptors up to (but not including) the one
++		 * that the hardware is working on right now.
++		 */
++		if (curidx == hwidx)
++			goto done;
++
++		/*
++		 * Otherwise, get the packet's sk_buff ptr back
++		 */
++		sb = d->umaldma_ctxtable[curidx];
++		len = dsc->PacketSize & 0xfff;
++		d->umaldma_ctxtable[curidx] = NULL;
++
++		/* .. and advance to the next buffer.  */
++		d->umaldma_remptr = UMALDMA_NEXTBUF(d, umaldma_remptr);
++
++		/*
++		 * Check packet status.  If good, process it.
++		 * If not, silently drop it and put it back on the
++		 * receive ring.
++		 */
++		if (likely(!(dsc->PacketSize & UMAL_DESC_PACKETSIZE_EMPTY))) {
++			/*
++			 * Add a new buffer to replace the old one.
++			 * If we fail to allocate a buffer, we're going
++			 * to drop this packet and put it right back on
++			 * the receive ring.
++			 */
++			if (unlikely(umaldma_add_rcvbuffer(sc, d, NULL)
++					== -ENOBUFS)) {
++				dev->stats.rx_dropped++;
++				/* Re-add old buffer */
++				umaldma_add_rcvbuffer(sc, d, sb);
++				/* No point in continuing */
++				printk(KERN_ERR "dropped packet (1)\n");
++				d->umaldma_remptr = UMALDMA_NEXTBUF(d,
++						umaldma_remptr);
++				goto done;
++			} else {
++				/* Set length into the packet */
++				skb_put(sb, len + 4);
++
++				/*
++				 * Buffer has been replaced on the
++				 * receive ring.  Pass the buffer to
++				 * the kernel
++				 */
++				sb->protocol = eth_type_trans(sb,
++					d->umaldma_eth->umal_dev);
++				/*
++				 * Check hw IPv4/TCP checksum
++				 * if supported
++				 */
++				skb_checksum_none_assert(sb);
++
++				if (poll)
++					dropped = netif_receive_skb(sb);
++				else
++					dropped = netif_rx(sb);
++
++				if (dropped == NET_RX_DROP) {
++					dev->stats.rx_dropped++;
++					d->umaldma_remptr = UMALDMA_NEXTBUF(d,
++							umaldma_remptr);
++					goto done;
++				} else {
++					dev->stats.rx_bytes += len;
++					dev->stats.rx_packets++;
++				}
++			}
++		} else {
++			/*
++			 * Packet was mangled somehow.  Just drop it and
++			 * put it back on the receive ring.
++			 */
++			dev->stats.rx_errors++;
++			umaldma_add_rcvbuffer(sc, d, sb);
++		}
++		work_done++;
++	}
++done:
++	return work_done;
++}
++
++/**********************************************************************
++ *  UMALDMA_TX_PROCESS(sc,d,poll)
++ *
++ *  Process "completed" transmit buffers on the specified DMA channel.
++ *  This is normally called within the interrupt service routine.
++ *  Note that this isn't really ideal for priority channels, since
++ *  it processes all of the packets on a given channel before
++ *  returning.
++ *
++ *  Input parameters:
++ *      sc - softc structure
++ *	 d - DMA channel context
++ *    poll - 1: using polling (for NAPI)
++ *
++ *  Return value:
++ *	   nothing
++ **********************************************************************/
++static void umaldma_tx_process(struct umal_softc *sc, struct umaldma *d,
++		int poll)
++{
++	struct net_device *dev = sc->umal_dev;
++	int curidx;
++	int hwidx;
++	struct umaldmadscr *dsc;
++	struct sk_buff *sb;
++	unsigned long flags;
++	int packets_handled = 0;
++	unsigned int int_status;
++
++	spin_lock_irqsave(&(sc->umal_lock), flags);
++
++	if (!netif_device_present(dev))
++		return;
++
++	int_status = readl(UMAL_DMAInterrupt);
++
++	if (int_status & INT_TX_BUS_ERR)
++		writel(CLR_TX_BUS_ERR, UMAL_DMATxStatus);
++
++	if (int_status & INT_TX_UNDERRUN)
++		writel(CLR_TX_UNDERRUN, UMAL_DMATxStatus);
++
++	if (int_status & INT_TX_PKT) {
++		hwidx = (struct umaldmadscr *)readl(UMAL_DMATxDescriptor) -
++			(struct umaldmadscr *)d->umaldma_dscrtable_phys;
++
++		if (d->umaldma_remptr == d->umaldma_addptr)
++			goto end_unlock;
++
++		for (;;) {
++			/*
++			 * figure out where we are (as an index) and where
++			 * the hardware is (also as an index)
++			 *
++			 * This could be done faster if (for example) the
++			 * descriptor table was page-aligned and contiguous in
++			 * both virtual and physical memory -- you could then
++			 * just compare the low-order bits of the virtual
++			 * address (sbdma_remptr) and the physical address
++			 * (sbdma_curdscr CSR)
++			 */
++			curidx = d->umaldma_remptr - d->umaldma_dscrtable;
++
++			/*
++			 * If they're the same, that means we've processed all
++			 * of the descriptors up to (but not including) the one
++			 * that the hardware is working on right now.
++			 */
++			if (curidx == hwidx)
++				break;
++
++			/* Otherwise, get the packet's sk_buff ptr back */
++			dsc = &(d->umaldma_dscrtable[curidx]);
++			sb = d->umaldma_ctxtable[curidx];
++
++			/* Stats */
++			dev->stats.tx_bytes += sb->len;
++			dev->stats.tx_packets++;
++
++			/* for transmits, we just free buffers.  */
++			dev_kfree_skb_irq(sb);
++			d->umaldma_ctxtable[curidx] = NULL;
++			writel(CLR_TX_PKT, UMAL_DMATxStatus);
++
++			/* .. and advance to the next buffer.  */
++			d->umaldma_remptr = UMALDMA_NEXTBUF(d, umaldma_remptr);
++			packets_handled++;
++		}
++
++		/*
++		 * Decide if we should wake up the protocol or not.
++		 * Other drivers seem to do this when we reach a low
++		 * watermark on the transmit queue.
++		 */
++		if (packets_handled)
++			netif_wake_queue(d->umaldma_eth->umal_dev);
++	}
++
++end_unlock:
++	spin_unlock_irqrestore(&(sc->umal_lock), flags);
++}
++
++/**********************************************************************
++ *  UMAL Channel functions
++ ********************************************************************* */
++
++/**********************************************************************
++ *  UMAL_INITCTX(s)
++ *
++ *  Initialize an Ethernet context structure - this is called
++ *  once per MAC. Memory is allocated here, so don't
++ *  call it again from inside the ioctl routines that bring the
++ *  interface up/down
++ *
++ *  Input parameters:
++ *	   s - umal context structure
++ *
++ *  Return value:
++ *	   0
++ ********************************************************************* */
++static int umal_initctx(struct umal_softc *s)
++{
++	/*
++	 * Initialize the DMA channels.
++	 * Note: Only do this _once_, as it allocates memory from the kernel!
++	 */
++	umaldma_initctx(&(s->umal_txdma), s, DMA_TX, UMAL_MAX_TXDESCR);
++	umaldma_initctx(&(s->umal_rxdma), s, DMA_RX, UMAL_MAX_RXDESCR);
++
++	/* initial state is OFF */
++	s->umal_state = umal_state_off;
 +
 +	return 0;
 +}
 +
-+static int puv3_rtc_probe(struct platform_device *pdev)
++/**********************************************************************
++ *  UMAL_UNINITCTX(s)
++ *
++ *  Initialize an Ethernet context structure.
++ *  Memory is allocated here, so don't call it again from inside the
++ *  ioctl routines that bring the interface up/down
++ *
++ *  Input parameters:
++ *	   s - umal context structure
++ *
++ *  Return value:
++ *	   Nothing
++ ********************************************************************* */
++static void umal_uninitctx(struct umal_softc *s)
 +{
-+	struct rtc_device *rtc;
++	umaldma_uninitctx(&(s->umal_txdma));
++	umaldma_uninitctx(&(s->umal_rxdma));
++}
++
++/**********************************************************************
++ *  UMAL_CHANNEL_START(s)
++ *
++ *  Start packet processing on this MAC.
++ *
++ *  Input parameters:
++ *	   s - umal context structure
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umal_channel_start(struct umal_softc *s)
++{
++	/*
++	 * Don't do this if running
++	 */
++	if (s->umal_state == umal_state_on)
++		return;
++
++	/* don't accept any packets, disable all interrupts */
++	umaldma_channel_stop(&(s->umal_rxdma));
++	umaldma_channel_stop(&(s->umal_txdma));
++
++	writel(0, UMAL_DMAIntrMask);
++	umal_clr_intr(s->umal_dev);
++
++	/*
++	 * Program the hardware address.  It goes into the hardware-address
++	 * register as well as the first filter register.
++	 */
++	writel(s->umal_hwaddr[0]<<24 | s->umal_hwaddr[1]<<16 |
++			s->umal_hwaddr[2]<<8 | s->umal_hwaddr[3], UMAL_STADDR1);
++	writel(s->umal_hwaddr[4]<<24 |  s->umal_hwaddr[5]<<16, UMAL_STADDR2);
++
++	/* Configure the speed, duplex, and flow control */
++	umal_set_speed(s, s->umal_speed);
++	umal_set_duplex(s, s->umal_duplex, s->umal_fc);
++
++	/* Program multicast addresses */
++	umal_setmulti(s);
++
++	/* If channel was in promiscuous mode before, turn that on */
++	if (s->umal_devflags & IFF_PROMISC)
++		umal_promiscuous_mode(s, 1);
++
++	/* Fill the receive ring */
++	umaldma_fillring(s, &(s->umal_rxdma));
++
++	umaldma_channel_start(&(s->umal_rxdma), DMA_RX);
++	umaldma_channel_start(&(s->umal_txdma), DMA_TX);
++
++	s->umal_state = umal_state_on;
++
++	/* Initialize DMA channels (rings should be ok now) */
++	writel(INT_RX_BUS_ERR | INT_RX_OVERFLOW |
++			INT_RX_PKT        | INT_TX_BUS_ERR |
++			INT_TX_UNDERRUN   | INT_TX_PKT |
++			UMAL_DMAIntrMask_ENABLEHALFWORD, UMAL_DMAIntrMask);
++
++	/* we're running now.  */
++	writel(readl(UMAL_CFG1) | UMAL_CFG1_RXENABLE | UMAL_CFG1_TXENABLE,
++			UMAL_CFG1);
++}
++
++/**********************************************************************
++ *  UMAL_CHANNEL_STOP(s)
++ *
++ *  Stop packet processing on this MAC.
++ *
++ *  Input parameters:
++ *	   s - umal context structure
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umal_channel_stop(struct umal_softc *s)
++{
++	/* don't do this if already stopped */
++	if (s->umal_state == umal_state_off)
++		return;
++
++	/* don't accept any packets, disable all interrupts */
++	writel(0, UMAL_DMAIntrMask);
++	umal_clr_intr(s->umal_dev);
++
++	/* turn off receiver and transmitter */
++	writel(UMAL_CFG1_RESET, UMAL_CFG1);	/* reset MAC */
++	writel(0, UMAL_CFG1);
++
++	/* We're stopped now. */
++	s->umal_state = umal_state_off;
++
++	/* Stop DMA channels (rings should be ok now) */
++	umaldma_channel_stop(&(s->umal_rxdma));
++	umaldma_channel_stop(&(s->umal_txdma));
++
++	/* Empty the receive and transmit rings */
++	umaldma_emptyring(&(s->umal_rxdma));
++	umaldma_emptyring(&(s->umal_txdma));
++}
++
++/**********************************************************************
++ *  UMAL_SET_CHANNEL_STATE(s,state)
++ *
++ *  Set the channel's state ON or OFF
++ *
++ *  Input parameters:
++ *	   s - umal context structure
++ *	   state - new state
++ *
++ *  Return value:
++ *	   old state
++ ********************************************************************* */
++static enum umal_state umal_set_channel_state(struct umal_softc *s,
++		enum umal_state state)
++{
++	enum umal_state oldstate = s->umal_state;
++
++	/* If same as previous state, return */
++	if (state == oldstate)
++		return oldstate;
++
++	/* If new state is ON, turn channel on */
++	if (state == umal_state_on)
++		umal_channel_start(s);
++	else
++		umal_channel_stop(s);
++
++	/* Return previous state */
++	return oldstate;
++}
++
++/**********************************************************************
++ *  UMAL functions
++ ********************************************************************* */
++static const struct net_device_ops umal_netdev_ops = {
++	.ndo_open		= umal_open,
++	.ndo_stop		= umal_close,
++	.ndo_start_xmit		= umal_start_tx,
++	.ndo_set_multicast_list	= umal_set_rx_mode,
++	.ndo_tx_timeout		= umal_tx_timeout,
++	.ndo_do_ioctl		= umal_mii_ioctl,
++	.ndo_change_mtu		= umal_change_mtu,
++	.ndo_validate_addr	= eth_validate_addr,
++	.ndo_set_mac_address	= eth_mac_addr,
++};
++
++/**********************************************************************
++ *  UMAL_INIT(dev)
++ *
++ *  Attach routine - init hardware and hook ourselves into linux
++ *
++ *  Input parameters:
++ *	   dev - net_device structure
++ *
++ *  Return value:
++ *	   0 if ok
++ ********************************************************************* */
++static int umal_init(struct platform_device *pldev, long long base)
++{
++	struct net_device *dev = dev_get_drvdata(&pldev->dev);
++	int idx = pldev->id;
++	struct umal_softc *sc = netdev_priv(dev);
++	unsigned char *eaddr;
++	int i;
++	int err;
++
++	sc->umal_dev = dev;
++	sc->umal_idx = idx;
++
++	eaddr = sc->umal_hwaddr;
++
++#ifdef CONFIG_CMDLINE_FORCE
++	eaddr[0] = 0x00;
++	eaddr[1] = 0x25;
++	eaddr[2] = 0x9b;
++	eaddr[3] = 0xff;
++	eaddr[4] = 0x00;
++	eaddr[5] = 0x00;
++#endif
++
++	for (i = 0; i < 6; i++)
++		dev->dev_addr[i] = eaddr[i];
++
++	/* Set up Linux device callins */
++	spin_lock_init(&(sc->umal_lock));
++
++	dev->netdev_ops = &umal_netdev_ops;
++	dev->watchdog_timeo = TX_TIMEOUT;
++	dev->irq = IRQ_UMAL;
++
++	sc->mii_bus = mdiobus_alloc();
++	if (sc->mii_bus == NULL) {
++		err = -ENOMEM;
++		goto uninit_ctx;
++	}
++
++	sc->mii_bus->name = umal_mdio_string;
++	snprintf(sc->mii_bus->id, MII_BUS_ID_SIZE, "%x", idx);
++	sc->mii_bus->priv = sc;
++	sc->mii_bus->read = umal_mii_read;
++	sc->mii_bus->write = umal_mii_write;
++	sc->mii_bus->reset = umal_mii_reset;
++	sc->mii_bus->irq = sc->phy_irq;
++	for (i = 0; i < PHY_MAX_ADDR; ++i)
++		sc->mii_bus->irq[i] = PHY_POLL;
++
++	sc->mii_bus->parent = &pldev->dev;
++
++	/* Probe PHY address */
++	err = mdiobus_register(sc->mii_bus);
++	if (err) {
++		printk(KERN_ERR "%s: unable to register MDIO bus\n",
++		       dev->name);
++		goto free_mdio;
++	}
++	dev_set_drvdata(&pldev->dev, sc->mii_bus);
++
++	err = register_netdev(dev);
++	if (err) {
++		printk(KERN_ERR "%s.%d: unable to register netdev\n",
++		       umal_string, idx);
++		goto unreg_mdio;
++	}
++
++	pr_info("%s.%d: registered as %s\n", umal_string, idx, dev->name);
++
++	/*
++	 * Initialize context (get pointers to registers and stuff), then
++	 * allocate the memory for the descriptor tables.
++	 */
++	dev->dev.coherent_dma_mask = 0xFFFFFFFF;
++	umal_initctx(sc);
++
++	/*
++	 * Display Ethernet address (this is called during the config
++	 * process so we need to finish off the config message that
++	 * was being displayed)
++	 */
++	pr_info("%s: UMAL Ethernet at 0x%08Lx, address: %pM\n",
++	       dev->name, base, eaddr);
++
++	return 0;
++unreg_mdio:
++	mdiobus_unregister(sc->mii_bus);
++	dev_set_drvdata(&pldev->dev, NULL);
++free_mdio:
++	mdiobus_free(sc->mii_bus);
++uninit_ctx:
++	umal_uninitctx(sc);
++	return err;
++}
++
++/**********************************************************************
++ *  UMAL_OPEN(dev)
++ *
++ *  Open umal device
++ *
++ *  Input parameters:
++ *	   dev - net_device structure
++ *
++ *  Return value:
++ *	   0 if ok
++ *	   otherwise error
++ ********************************************************************* */
++static int umal_open(struct net_device *dev)
++{
++	struct umal_softc *sc = netdev_priv(dev);
++	int err;
++
++	sc->umal_speed = umal_speed_none;
++	sc->umal_duplex = umal_duplex_none;
++	sc->umal_fc = umal_fc_none;
++	sc->umal_pause = -1;
++	sc->umal_link = 0;
++
++	/* reset mac and interface */
++	writel(UMAL_CFG1_RESET, UMAL_CFG1);	/* reset MAC */
++	writel(0, UMAL_CFG1);			/* clear the reset bit of MAC */
++	writel(UMAL_IFCTRL_RESET, UMAL_IFCTRL);	/* reset the MAC Interface */
++	writel(0, UMAL_DMAIntrMask);
++
++	/* Attach to the PHY */
++	err = umal_mii_probe(dev);
++	if (err)
++		goto out_unregister;
++
++	/* Turn on the channel */
++	phy_start(sc->phy_dev);
++
++	/* config fifo */
++	writel(0x000000ff, UMAL_FIFOCFG0);	/* reset FIFO */
++	writel(0x0fff0fff, UMAL_FIFOCFG1);
++	writel(0x0aaa0555, UMAL_FIFOCFG2);
++	writel(0x02800fff, UMAL_FIFOCFG3);
++	writel(0x00000070, UMAL_FIFOCFG4);
++	writel(0x0007ff8f, UMAL_FIFOCFG5);
++	writel(0x0000ff00, UMAL_FIFOCFG0);
++
++	writel(0x7016, UMAL_CFG2);
++
++	/*
++	 * map/route interrupt (clear status first, in case something
++	 * weird is pending; we haven't initialized the mac registers
++	 * yet)
++	 */
++	umal_clr_intr(dev);
++
++	err = request_irq(dev->irq, umal_intr, IRQF_SHARED, dev->name, dev);
++	if (err) {
++		printk(KERN_ERR "%s: unable to get IRQ %d\n", dev->name,
++		       dev->irq);
++		goto out_err;
++	}
++
++	umal_set_channel_state(sc, umal_state_on);
++
++	netif_start_queue(dev);
++
++	umal_set_rx_mode(dev);
++
++	return 0;
++
++out_unregister:
++	free_irq(dev->irq, dev);
++out_err:
++	return err;
++}
++
++/**********************************************************************
++ *  UMAL_CLSOE(dev)
++ *
++ *  Close umal device
++ *
++ *  Input parameters:
++ *	   dev - net_device structure
++ *
++ *  Return value:
++ *	   0 if ok
++ ********************************************************************* */
++static int umal_close(struct net_device *dev)
++{
++	struct umal_softc *sc = netdev_priv(dev);
++
++	phy_stop(sc->phy_dev);
++
++	umal_set_channel_state(sc, umal_state_off);
++
++	netif_stop_queue(dev);
++
++	phy_disconnect(sc->phy_dev);
++	sc->phy_dev = NULL;
++
++	free_irq(dev->irq, dev);
++
++	umaldma_emptyring(&(sc->umal_rxdma));
++	umaldma_emptyring(&(sc->umal_txdma));
++
++	return 0;
++}
++
++/**********************************************************************
++ *  UMAL_MII_IOCTL(dev,rq,cmd)
++ *
++ *  Umal device ioctrl routine
++ *
++ *  Input parameters:
++ *	   dev - net_device structure
++ *	   rq  - interface request structure
++ *	   cmd - ioctrl command
++ *
++ *  Return value:
++ *	   ioctrl command result
++ ********************************************************************* */
++static int umal_mii_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
++{
++	struct umal_softc *sc = netdev_priv(dev);
++
++	if (!netif_running(dev) || !sc->phy_dev)
++		return -EINVAL;
++
++	return phy_mii_ioctl(sc->phy_dev, rq, cmd);
++}
++
++/**********************************************************************
++ *  UMAL_INTR(irq,dev_instance)
++ *
++ *  Interrupt handler for MAC interrupts
++ *
++ *  Input parameters:
++ *	   irq - irq number
++ *	   dev_instance - net_device structure
++ *
++ *  Return value:
++ *	   irq handling result
++ ********************************************************************* */
++static irqreturn_t umal_intr(int irq, void *dev_instance)
++{
++	struct net_device *dev = (struct net_device *) dev_instance;
++	struct umal_softc *sc = netdev_priv(dev);
++	uint64_t isr;
++	int handled = 0;
++
++	/*
++	 * Read the ISR (this clears the bits in the real
++	 * register, except for counter addr)
++	 */
++	isr = readl(UMAL_DMAInterrupt);
++	if (isr == 0)
++		return IRQ_RETVAL(0);
++
++	if (sc->umal_state != umal_state_on) {
++		umal_clr_intr(dev);
++		return IRQ_RETVAL(0);
++	}
++	handled = 1;
++
++	/* Transmits on channel 0 */
++	if (isr & INT_TX_MASK)
++		umaldma_tx_process(sc, &(sc->umal_txdma), 0);
++	if (isr & INT_RX_MASK)
++		umaldma_rx_process(sc, &(sc->umal_rxdma),
++				 UMAL_MAX_RXDESCR * 2, 0);
++
++	return IRQ_RETVAL(handled);
++}
++
++/**********************************************************************
++ *  UMAL_CLR_INTR(dev)
++ *
++ *  Clear all interrupt of umal
++ *
++ *  Input parameters:
++ *	   dev - net_device structure
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umal_clr_intr(struct net_device *dev)
++{
++	unsigned int int_status;
++
++	if (!netif_device_present(dev))
++		return;
++	int_status = readl(UMAL_DMAInterrupt);
++	if (int_status & INT_RX_PKT)
++		writel(CLR_RX_PKT, UMAL_DMARxStatus);
++
++	if (int_status & INT_RX_BUS_ERR)
++		writel(CLR_RX_BUS_ERR, UMAL_DMARxStatus);
++
++	if (int_status & INT_RX_OVERFLOW)
++		writel(CLR_RX_OVERFLOW, UMAL_DMARxStatus);
++
++	if (int_status & INT_TX_PKT)
++		writel(CLR_TX_PKT, UMAL_DMATxStatus);
++
++	if (int_status & INT_TX_BUS_ERR)
++		writel(CLR_TX_BUS_ERR, UMAL_DMATxStatus);
++
++	if (int_status & INT_TX_UNDERRUN)
++		writel(CLR_TX_UNDERRUN, UMAL_DMATxStatus);
++}
++
++/**********************************************************************
++ *  UMAL_START_TX(skb,dev)
++ *
++ *  Start output on the specified interface.  Basically, we
++ *  queue as many buffers as we can until the ring fills up, or
++ *  we run off the end of the queue, whichever comes first.
++ *
++ *  Input parameters:
++ *	   skb - sk_buff structure
++ *	   dev - net_device structure
++ *
++ *  Return value:
++ *	   0 if ok
++ *	   otherwise error
++ ********************************************************************* */
++static int umal_start_tx(struct sk_buff *skb, struct net_device *dev)
++{
++	struct umal_softc *sc = netdev_priv(dev);
++	unsigned long flags;
++
++	/* lock eth irq */
++	spin_lock_irqsave(&sc->umal_lock, flags);
++
++	/*
++	 * Put the buffer on the transmit ring.  If we
++	 * don't have room, stop the queue.
++	 */
++	if (umaldma_add_txbuffer(&(sc->umal_txdma), skb)) {
++		/* XXX: save skb that we could not send */
++		netif_stop_queue(dev);
++		spin_unlock_irqrestore(&sc->umal_lock, flags);
++
++		return NETDEV_TX_BUSY;
++	}
++
++	writel(readl(UMAL_CFG1) | UMAL_CFG1_TXENABLE, UMAL_CFG1);
++	writel(readl(UMAL_DMATxCtrl) | UMAL_DMA_Enable, UMAL_DMATxCtrl);
++
++	spin_unlock_irqrestore(&sc->umal_lock, flags);
++
++	return 0;
++}
++
++/**********************************************************************
++ *  UMAL_TX_TIMEOUT(dev)
++ *
++ *  Tx timeout, update statistic structure
++ *
++ *  Input parameters:
++ *	   dev - net_device structure
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umal_tx_timeout(struct net_device *dev)
++{
++	struct umal_softc *sc = netdev_priv(dev);
++	unsigned long flags;
++
++	spin_lock_irqsave(&sc->umal_lock, flags);
++
++	dev->trans_start = jiffies; /* prevent tx timeout */
++	dev->stats.tx_errors++;
++
++	spin_unlock_irqrestore(&sc->umal_lock, flags);
++
++	printk(KERN_WARNING "%s: Transmit timed out\n", dev->name);
++}
++
++/**********************************************************************
++ *  UMAL_SET_RX_MODE(dev)
++ *
++ *  Set promiscuous mode and multicast list
++ *
++ *  Input parameters:
++ *	   dev - net_device structure
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umal_set_rx_mode(struct net_device *dev)
++{
++	unsigned long flags;
++	struct umal_softc *sc = netdev_priv(dev);
++
++	spin_lock_irqsave(&sc->umal_lock, flags);
++	if ((dev->flags ^ sc->umal_devflags) & IFF_PROMISC) {
++		/* Promiscuous changed.  */
++		if (dev->flags & IFF_PROMISC)
++			umal_promiscuous_mode(sc, 1);
++		else
++			umal_promiscuous_mode(sc, 0);
++	}
++	spin_unlock_irqrestore(&sc->umal_lock, flags);
++
++	/* Program the multicasts.  Do this every time.  */
++	umal_setmulti(sc);
++}
++
++/**********************************************************************
++ *  UMAL_PROMISCUOUS_MODE(sc,onoff)
++ *
++ *  Turn on or off promiscuous mode
++ *
++ *  Input parameters:
++ *	   sc - softc
++ *      onoff - 1 to turn on, 0 to turn off
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umal_promiscuous_mode(struct umal_softc *sc, int onoff)
++{
++	if (onoff) {
++		writel(readl(UMAL_FIFOCFG4) & ~0x40000, UMAL_FIFOCFG4);
++		writel(readl(UMAL_FIFOCFG5) | 0x40000, UMAL_FIFOCFG5);
++	} else {
++		writel(readl(UMAL_FIFOCFG4) | 0x40000, UMAL_FIFOCFG4);
++		writel(readl(UMAL_FIFOCFG5) & ~0x40000, UMAL_FIFOCFG5);
++	}
++}
++
++/**********************************************************************
++ *  UMAL_SETMULTI(sc)
++ *
++ *  Reprogram the multicast table into the hardware, given
++ *  the list of multicasts associated with the interface
++ *  structure.
++ *
++ *  Input parameters:
++ *	   sc - softc
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umal_setmulti(struct umal_softc *sc)
++{
++}
++
++/**********************************************************************
++ *  UMAL_SET_SPEED(s,speed)
++ *
++ *  Configure LAN speed for the specified MAC.
++ *  Warning: must be called when MAC is off!
++ *
++ *  Input parameters:
++ *	   s - sbmac structure
++ *	   speed - speed to set MAC to (see enum sbmac_speed)
++ *
++ *  Return value:
++ *	   1 if successful
++ *	   0 indicates invalid parameters
++ ********************************************************************* */
++static int umal_set_speed(struct umal_softc *s, enum umal_speed speed)
++{
++	unsigned int cfg;
++
++	/* Save new current values */
++	s->umal_speed = speed;
++
++	if (s->umal_state == umal_state_on)
++		return 0;	/* save for next restart */
++
++	/* Read current register values */
++	cfg = readl(UMAL_CFG2);
++
++	/* Mask out the stuff we want to change */
++	cfg &= ~(UMAL_CFG2_MODEMASK);
++
++	/* Now add in the new bits */
++	switch (speed) {
++	case umal_speed_10:
++	case umal_speed_100:
++		cfg |= UMAL_CFG2_NIBBLEMODE;
++		break;
++
++	default:
++		return 0;
++	}
++
++	/* Send the bits back to the hardware */
++	writel(cfg, UMAL_CFG2);
++
++	return 1;
++}
++
++/**********************************************************************
++ *  UMAL_SET_DUPLEX(s,duplex,fc)
++ *
++ *  Set Ethernet duplex and flow control options for this MAC
++ *  Warning: must be called when MAC is off!
++ *
++ *  Input parameters:
++ *	   s - umal structure
++ *	   duplex - duplex setting (see enum sbmac_duplex)
++ *	   fc - flow control setting (see enum sbmac_fc)
++ *
++ *  Return value:
++ *	   1 if ok
++ *	   0 if an invalid parameter combination was specified
++ ********************************************************************* */
++static int umal_set_duplex(struct umal_softc *s, enum umal_duplex duplex,
++		enum umal_fc fc)
++{
++	unsigned int cfg1, cfg2;
++	int err = 0;
++
++	/* Save new current values */
++	s->umal_duplex = duplex;
++	s->umal_fc = fc;
++
++	if (s->umal_state == umal_state_on)
++		return 0;	/* save for next restart */
++
++	/* Read current register values */
++	cfg1 = readl(UMAL_CFG1);
++	cfg2 = readl(UMAL_CFG2);
++
++	/* Mask off the stuff we're about to change */
++	cfg1 &= ~(UMAL_CFG1_TXFLOWCTL | UMAL_CFG1_RXFLOWCTL);
++	cfg2 &= ~(UMAL_CFG2_FULLDUPLEX);
++
++	err = 0;
++	switch (duplex) {
++	case umal_duplex_half:
++		break;
++
++	case umal_duplex_full:
++		cfg2 |= UMAL_CFG2_FULLDUPLEX;
++		break;
++
++	default:
++		err = 1;
++	}
++	if (!err)
++		writel(cfg2, UMAL_CFG2);
++
++	err = 0;
++	switch (fc) {
++	case umal_fc_disabled:
++		break;
++
++	case umal_fc_collision:
++		break;
++
++	case umal_fc_carrier:
++		break;
++
++	case umal_fc_frame:
++		cfg1 |= UMAL_CFG1_TXFLOWCTL | UMAL_CFG1_RXFLOWCTL;
++		break;
++
++	default:
++		err = 1;
++	}
++
++	if (!err)
++		writel(cfg1, UMAL_CFG1);
++
++	/* Send the bits back to the hardware */
++	return 1;
++}
++
++/**********************************************************************
++ *  UMAL_CHANGE_MTU(dev,new_mtu)
++ *
++ *  Change MTU value
++ *
++ *  Input parameters:
++ *	   dev - net_device structure
++ *	   new_mtu - new mtu value
++ *
++ *  Return value:
++ *	   1 if ok
++ ********************************************************************* */
++static int umal_change_mtu(struct net_device *dev, int new_mtu)
++{
++	if (new_mtu > ENET_PACKET_SIZE)
++		return -EINVAL;
++
++	dev->mtu = new_mtu;
++
++	pr_info("changing the mtu to %d\n", new_mtu);
++
++	return 0;
++}
++
++/**********************************************************************
++ *  UMAL_MIIPOLL(dev)
++ *
++ *  Phy statemachine call back routine for link change
++ *
++ *  Input parameters:
++ *	   dev - net_device structure
++ *
++ *  Return value:
++ *	   nothing
++ ********************************************************************* */
++static void umal_miipoll(struct net_device *dev)
++{
++	struct umal_softc *sc = netdev_priv(dev);
++	struct phy_device *phy_dev = sc->phy_dev;
++	unsigned long flags;
++	enum umal_fc fc;
++	int link_chg, speed_chg, duplex_chg, pause_chg, fc_chg;
++
++	link_chg = (sc->umal_link != phy_dev->link);
++	speed_chg = (sc->umal_speed != phy_dev->speed);
++	duplex_chg = (sc->umal_duplex != phy_dev->duplex);
++	pause_chg = (sc->umal_pause != phy_dev->pause);
++
++	if (!link_chg && !speed_chg && !duplex_chg && !pause_chg)
++		return;
++
++	if (!phy_dev->link) {
++		if (link_chg) {
++			sc->umal_link = phy_dev->link;
++			sc->umal_speed = umal_speed_none;
++			sc->umal_duplex = umal_duplex_none;
++			sc->umal_fc = umal_fc_disabled;
++			sc->umal_pause = -1;
++			pr_info("%s: link unavailable\n", dev->name);
++		}
++		return;
++	}
++
++	if (phy_dev->duplex == DUPLEX_FULL) {
++		if (phy_dev->pause)
++			fc = umal_fc_frame;
++		else
++			fc = umal_fc_disabled;
++	} else
++		fc = umal_fc_collision;
++	fc_chg = (sc->umal_fc != fc);
++
++	pr_info("%s: link available: %dbase-%cD\n", dev->name, phy_dev->speed,
++		phy_dev->duplex == DUPLEX_FULL ? 'F' : 'H');
++
++	spin_lock_irqsave(&sc->umal_lock, flags);
++
++	sc->umal_speed = phy_dev->speed;
++	sc->umal_duplex = phy_dev->duplex;
++	sc->umal_fc = fc;
++	sc->umal_pause = phy_dev->pause;
++	sc->umal_link = phy_dev->link;
++
++	if ((speed_chg || duplex_chg || fc_chg) &&
++		sc->umal_state != umal_state_off) {
++		/* something changed, restart the channel */
++		umal_channel_stop(sc);
++		umal_channel_start(sc);
++	}
++
++	spin_unlock_irqrestore(&sc->umal_lock, flags);
++}
++
++static int umal_probe(struct platform_device *pldev)
++{
++	struct net_device *dev;
++	struct umal_softc *sc;
 +	struct resource *res;
-+	int ret;
++	int err;
 +
-+	pr_debug("%s: probe=%p\n", __func__, pdev);
++	res = platform_get_resource(pldev, IORESOURCE_MEM, 0);
++	BUG_ON(!res);
 +
-+	/* find the IRQs */
-+	puv3_rtc_tickno = platform_get_irq(pdev, 1);
-+	if (puv3_rtc_tickno < 0) {
-+		dev_err(&pdev->dev, "no irq for rtc tick\n");
-+		return -ENOENT;
++	/* Okay.  Initialize this MAC.  */
++	dev = alloc_etherdev(sizeof(struct umal_softc));
++	if (!dev) {
++		printk(KERN_ERR "%s: unable to allocate etherdev\n",
++		       dev_name(&pldev->dev));
++		err = -ENOMEM;
++		goto out_out;
 +	}
 +
-+	puv3_rtc_alarmno = platform_get_irq(pdev, 0);
-+	if (puv3_rtc_alarmno < 0) {
-+		dev_err(&pdev->dev, "no irq for alarm\n");
-+		return -ENOENT;
-+	}
++	dev_set_drvdata(&pldev->dev, dev);
++	SET_NETDEV_DEV(dev, &pldev->dev);
 +
-+	pr_debug("PKUnity_rtc: tick irq %d, alarm irq %d\n",
-+		 puv3_rtc_tickno, puv3_rtc_alarmno);
++	sc = netdev_priv(dev);
 +
-+	/* get the memory region */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res == NULL) {
-+		dev_err(&pdev->dev, "failed to get memory region resource\n");
-+		return -ENOENT;
-+	}
++	err = umal_init(pldev, res->start);
++	if (err)
++		goto out_kfree;
 +
-+	puv3_rtc_mem = request_mem_region(res->start,
-+					 res->end-res->start+1,
-+					 pdev->name);
-+
-+	if (puv3_rtc_mem == NULL) {
-+		dev_err(&pdev->dev, "failed to reserve memory region\n");
-+		ret = -ENOENT;
-+		goto err_nores;
-+	}
-+
-+	puv3_rtc_enable(pdev, 1);
-+
-+	/* register RTC and exit */
-+	rtc = rtc_device_register("pkunity", &pdev->dev, &puv3_rtcops,
-+				  THIS_MODULE);
-+
-+	if (IS_ERR(rtc)) {
-+		dev_err(&pdev->dev, "cannot attach rtc\n");
-+		ret = PTR_ERR(rtc);
-+		goto err_nortc;
-+	}
-+
-+	/* platform setup code should have handled this; sigh */
-+	if (!device_can_wakeup(&pdev->dev))
-+		device_init_wakeup(&pdev->dev, 1);
-+
-+	platform_set_drvdata(pdev, rtc);
 +	return 0;
 +
-+ err_nortc:
-+	puv3_rtc_enable(pdev, 0);
-+	release_resource(puv3_rtc_mem);
++out_kfree:
++	free_netdev(dev);
 +
-+ err_nores:
-+	return ret;
++out_out:
++	return err;
 +}
 +
-+#ifdef CONFIG_PM
-+
-+static int ticnt_save;
-+
-+static int puv3_rtc_suspend(struct platform_device *pdev, pm_message_t state)
++static int __exit umal_remove(struct platform_device *pldev)
 +{
-+	/* save RTAR for anyone using periodic interrupts */
-+	ticnt_save = readl(RTC_RTAR);
-+	puv3_rtc_enable(pdev, 0);
++	struct net_device *dev = dev_get_drvdata(&pldev->dev);
++	struct umal_softc *sc = netdev_priv(dev);
++
++	unregister_netdev(dev);
++	umal_uninitctx(sc);
++	mdiobus_unregister(sc->mii_bus);
++	free_netdev(dev);
++
 +	return 0;
 +}
 +
-+static int puv3_rtc_resume(struct platform_device *pdev)
++#if CONFIG_PM
++static void umal_reset(struct net_device *ndev)
 +{
-+	puv3_rtc_enable(pdev, 1);
-+	writel(ticnt_save, RTC_RTAR);
++	writel(UMAL_CFG1_RESET, UMAL_CFG1);	/* reset MAC */
++	writel(0, UMAL_CFG1);			/* clear the reset bit of MAC */
++	writel(UMAL_IFCTRL_RESET, UMAL_IFCTRL); /* reset the MAC Interface */
++	writel(1, UMAL_DMAIntrMask);
++
++	writel(0x000000ff, UMAL_FIFOCFG0);	/* reset FIFO */
++	writel(0x0fff0fff, UMAL_FIFOCFG1);
++	writel(0x0aaa0555, UMAL_FIFOCFG2);
++	writel(0x02800fff, UMAL_FIFOCFG3);
++	writel(0x00000070, UMAL_FIFOCFG4);
++	writel(0x0007ff8f, UMAL_FIFOCFG5);
++	writel(0x0000ff00, UMAL_FIFOCFG0);
++
++	writel(0x7016, UMAL_CFG2);
++}
++
++static void umal_shutdown(struct net_device *ndev)
++{
++	/* XXX: something should be cleared */
++	return;
++}
++
++static int umal_suspend(struct platform_device *pldev, pm_message_t state)
++{
++	struct net_device *ndev = platform_get_drvdata(pldev);
++
++	if (netif_running(ndev)) {
++		netif_device_detach(ndev);
++		umal_shutdown(ndev);
++	}
++	return 0;
++}
++
++static int umal_resume(struct platform_device *pldev)
++{
++	struct net_device *dev = platform_get_drvdata(pldev);
++
++	if (netif_running(dev)) {
++		umal_reset(dev);
++		netif_device_attach(dev);
++	}
 +	return 0;
 +}
 +#else
-+#define puv3_rtc_suspend NULL
-+#define puv3_rtc_resume  NULL
++static int umal_suspend(struct platform_device *pldev, pm_message_t state) { }
++static int umal_resume(struct platform_device *pldev) { }
 +#endif
-+
-+static struct platform_driver puv3_rtcdrv = {
-+	.probe		= puv3_rtc_probe,
-+	.remove		= __devexit_p(puv3_rtc_remove),
-+	.suspend	= puv3_rtc_suspend,
-+	.resume		= puv3_rtc_resume,
-+	.driver		= {
-+		.name	= "PKUnity-v3-RTC",
-+		.owner	= THIS_MODULE,
-+	}
++static struct platform_driver umal_driver = {
++	.probe = umal_probe,
++	.remove = __exit_p(umal_remove),
++	.driver = {
++		.name = umal_string,
++		.owner  = THIS_MODULE,
++	},
++	.suspend = umal_suspend,
++	.resume	 = umal_resume,
 +};
 +
-+static char __initdata banner[] = "PKUnity-v3 RTC, (c) 2009 PKUnity Co.\n";
-+
-+static int __init puv3_rtc_init(void)
++static int __init umal_init_module(void)
 +{
-+	printk(banner);
-+	return platform_driver_register(&puv3_rtcdrv);
++	return platform_driver_register(&umal_driver);
 +}
 +
-+static void __exit puv3_rtc_exit(void)
++static void __exit umal_cleanup_module(void)
 +{
-+	platform_driver_unregister(&puv3_rtcdrv);
++	platform_driver_unregister(&umal_driver);
 +}
 +
-+module_init(puv3_rtc_init);
-+module_exit(puv3_rtc_exit);
-+
-+MODULE_DESCRIPTION("RTC Driver for the PKUnity v3 chip");
-+MODULE_AUTHOR("Hu Dongliang");
-+MODULE_LICENSE("GPL v2");
++module_init(umal_init_module);
++module_exit(umal_cleanup_module);
 -- 
 1.7.5.2
 
