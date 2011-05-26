@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab1EZMZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 08:25:21 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:1994 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757288Ab1EZMZU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 08:25:20 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host p4QCOxq2020137
-Subject: Re: UNIX Compatibility
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Valdis.Kletnieks@vt.edu
-Cc: Michael Witten <mfwitten@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Mike Galbraith <efault@gmx.de>, Richard Yao <ryao@ic.sunysb.edu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <38084.1306411679@localhost>
-References: <BANLkTin4wu1HNDeo8Rv7iddM9KkgZdhfgA@mail.gmail.com>
-	 <A7E21A2F-4338-465D-933A-66B0C4D15BE1@mit.edu>
-	 <BANLkTi=q7tDVkahrnng7+BJhvxh=gx71ng@mail.gmail.com>
-	 <20110524181619.GC26055@thunk.org>
-	 <BANLkTi=QUS5WfAMWTw7vuEwuBOVHsww3mA@mail.gmail.com>
-	 <1306297108.4819.28.camel@marge.simson.net>
-	 <64e4614dda6f4558a68a314d7b5979b5-mfwitten@gmail.com>
-	 <20110525143602.GE8476@thunk.org>
-	 <c943132c8c364f95a91e3cf81cb0f2bd-mfwitten@gmail.com>
-	 <1306409439.28597.81.camel@thorin>  <38084.1306411679@localhost>
+	id S932154Ab1EZM7E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 08:59:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5658 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753277Ab1EZM7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 08:59:02 -0400
+X-ExtLoop1: 1
+Subject: Re: [PATCH 2/2] dmaengine: add TODO items for future work on dma
+ drivers
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Per Forlin <per.forlin@linaro.org>
+In-Reply-To: <20110526073620.GF24876@n2100.arm.linux.org.uk>
+References: <1306323570-11133-1-git-send-email-vinod.koul@intel.com>
+	 <1306323570-11133-3-git-send-email-vinod.koul@intel.com>
+	 <20110526073620.GF24876@n2100.arm.linux.org.uk>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 14:24:59 +0200
-Message-ID: <1306412699.28597.90.camel@thorin>
+Date: Thu, 26 May 2011 17:55:30 +0530
+Message-ID: <1306412730.2230.0.camel@vkoul-udesk3>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-DCC-URT-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Don, 2011-05-26 at 08:07 -0400, Valdis.Kletnieks@vt.edu wrote: 
-> On Thu, 26 May 2011 13:30:39 +0200, Bernd Petrovitsch said:
+On Thu, 2011-05-26 at 13:06 +0530, Russell King - ARM Linux wrote:
+> On Wed, May 25, 2011 at 05:09:30PM +0530, Koul, Vinod wrote:
+> > +1. Move remaining drivers to use new slave interface
+> > +2. Remove old slave pointer machansim
+> > +3. Make issue_pending to start the transaction in below drivers
+> > +	- mpc512x_dma
+> > +	- imx-dma
+> > +	- imx-sdma
+> > +	- mxs-dma.c
+> > +	- dw_dmac
+> > +	- intel_mid_dma
+> > +	- ste_dma40
 > 
-> > Or take the "unlink a directory gives EPERM" example: why is it
-> > specified with an errno that indicates that the user is not allowed to
-> > remove it (and not that the sys-call is the wrong one).
+> I'd suggest adding some more to this:
 > 
-> Because on some old Unix's, it wasn't the wrong syscall...
-
-Oh well, I'm probably too young for that ....
-
-> RATIONALE
+> 4. Remove dma_slave_config's dma direction.
 > 
-> Unlinking a directory is restricted to the superuser in many historical
-> implementations for reasons given in link() (see also rename()).
+> It's pointless that dma_slave_config carries the DMA direction (to/from
+> device) and the prepare function does too.  It leads to DMA engine drivers
+> having to verify that the two match, and DMA engine users having to issue
+> two calls every time they change direction.
 > 
-> http://pubs.opengroup.org/onlinepubs/009695399/functions/unlink.html
+> Instead, lets specify that dma_slave_config carries the _device_ side
+> parameters, which are selected according to the direction given to the
+> prepare function.  The memory-side parameters should be selected by the
+> DMA engine driver according to its knowledge of the system.
+> 
+> This is sensible as M2M transfers don't allow configuration and therefore
+> already have to select these parameters internally.
+Sure, I am adding this as well and applying both patches
 
-So someone changes the semantics of the unlink() sys-call (obviously in
-some compatible, standards-compliant way) as it no longer unlinks
-directories but it is not possible to define the returned errno for
-the new error case to something sane?
-
-What did I miss?
-
-Bernd
+Thanks
 -- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
+~Vinod
 
