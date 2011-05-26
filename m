@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab1EZRcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:32:08 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:46829 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757725Ab1EZRcH (ORCPT
+	id S1758132Ab1EZRdA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:33:00 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:52961 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754225Ab1EZRc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:32:07 -0400
-Date: Thu, 26 May 2011 23:01:56 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+	Thu, 26 May 2011 13:32:59 -0400
+Date: Thu, 26 May 2011 19:32:57 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "K.Prasad" <prasad@linux.vnet.ibm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
         Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
         "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
-Subject: Re: [RFC Patch 0/6] slimdump: Enable slimdump if crashing kernel
- memory is not required
-Message-ID: <20110526173156.GC18295@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20110526170722.GB23266@in.ibm.com>
-MIME-Version: 1.0
+Subject: Re: [RFC Patch 5/6] slimdump: Capture slimdump for fatal MCE generated crashes
+Message-ID: <20110526173257.GC4065@one.firstfloor.org>
+References: <20110526170722.GB23266@in.ibm.com> <20110526172305.GA18295@in.ibm.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110526170722.GB23266@in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110526172305.GA18295@in.ibm.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 10:37:22PM +0530, K.Prasad wrote:
-> Hi All,
-
-A small correction related to patch description...
-
+On Thu, May 26, 2011 at 10:53:05PM +0530, K.Prasad wrote:
 > 
-> Summary of the patches
-> ----
-> Patch 1, 2 - Patches from Andi Kleen's tree
-> git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git which
-> introduce an enhanced panic function - xpanic().
+> slimdump: Capture slimdump for fatal MCE generated crashes
 > 
+> System crashes resulting from fatal hardware errors (such as MCE) don't need
+> all the contents from crashing-kernel's memory. Generate a new 'slimdump' that
+> retains only essential information while discarding the old memory.
 
-Patch 3 - A small bugfix for patch 1,2
+While this is a good idea, note there may be still poisoned lines
+in memory that haven't resulted in a machine check yet, but could
+still be fatal when read after a full crash dump for some other
+reason.
 
-Patch 4 - Introduces a new PANIC_MCE flag to signal the need for slimdump
-for MCE initiated panic calls. Appends a new elf-note inside coredump
-containing MCE related registers.
+So you still need 
 
-Thanks,
-K.Prasad
+http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=commit;h=fe61906edce9e70d02481a77a617ba1397573dce
+and
+http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=commit;h=cb58f049ae6709ddbab71be199390dc6852018cd
 
+in addition.
+
+-Andi
