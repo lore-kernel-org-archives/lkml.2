@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab1EZG1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 02:27:07 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:26640
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754137Ab1EZG1E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 02:27:04 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Shawn Guo <shawn.guo@linaro.org>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <vinod.koul@intel.com>,
-        <dan.j.williams@intel.com>, <patches@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 3/3] mmc: mxs-mmc: call dmaengine API to set mmc->max_segs
-Date: Thu, 26 May 2011 14:31:33 +0800
-Message-ID: <1306391493-29425-3-git-send-email-shawn.guo@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1306391493-29425-1-git-send-email-shawn.guo@linaro.org>
-References: <1306391493-29425-1-git-send-email-shawn.guo@linaro.org>
+	id S1752646Ab1EZGyY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 02:54:24 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:46001 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750753Ab1EZGyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 02:54:22 -0400
+X-Greylist: delayed 1294 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 May 2011 02:54:22 EDT
+Message-ID: <4DDDF3EA.6050501@ispras.ru>
+Date: Thu, 26 May 2011 10:32:10 +0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
+To: Greg KH <greg@kroah.com>
+CC: David Brownell <dbrownell@users.sourceforge.net>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] usb-gadget: unlock data->lock mutex on error path in ep_write()
+Content-Type: text/plain; charset=windows-1251
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With dmaengine API dma_get_max_seg_number added, we now can call
-the API to get and number and then set mmc->max_segs instead of
-hard-coding it.
+ep_write() acquires data->lock mutex in get_ready_ep() and releases it on
+all paths except for one: when usb_endpoint_xfer_isoc() failed. The
+patch adds mutex_unlock(&data->lock) at that path.
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+It is similar to commit 00cc7a5faf25b3ba5cf30fcffc62249bdd152006 for ep_read(),
+it was not fixed at that time by accident.
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- drivers/mmc/host/mxs-mmc.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/usb/gadget/inode.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index 99d39a6..d783af3 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -745,11 +745,15 @@ static int mxs_mmc_probe(struct platform_device *pdev)
- 	mmc->f_max = 288000000;
- 	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
- 
--	mmc->max_segs = 52;
- 	mmc->max_blk_size = 1 << 0xf;
- 	mmc->max_blk_count = (ssp_is_old()) ? 0xff : 0xffffff;
- 	mmc->max_req_size = (ssp_is_old()) ? 0xffff : 0xffffffff;
- 	mmc->max_seg_size = dma_get_max_seg_size(host->dmach->device->dev);
-+	/*
-+	 * Reserve one segment for carrying on pio words to get dma engine
-+	 * program mmc controller registers
-+	 */
-+	mmc->max_segs = dma_get_max_seg_number(host->dmach->device->dev) - 1;
- 
- 	platform_set_drvdata(pdev, mmc);
- 
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index a01383f..a56876a 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -431,8 +431,10 @@ ep_write (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+
+ 	/* halt any endpoint by doing a "wrong direction" i/o call */
+ 	if (!usb_endpoint_dir_in(&data->desc)) {
+-		if (usb_endpoint_xfer_isoc(&data->desc))
++		if (usb_endpoint_xfer_isoc(&data->desc)) {
++			mutex_unlock(&data->lock);
+ 			return -EINVAL;
++		}
+ 		DBG (data->dev, "%s halt\n", data->name);
+ 		spin_lock_irq (&data->dev->lock);
+ 		if (likely (data->ep != NULL))
 -- 
 1.7.4.1
-
-
