@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207Ab1EZSM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:12:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59183 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932491Ab1EZSM1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:12:27 -0400
+	id S933196Ab1EZSNe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:13:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44431 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757810Ab1EZSNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:13:33 -0400
+Date: Thu, 26 May 2011 18:13:16 GMT
+From: tip-bot for Boris Ostrovsky <ostr@amd64.org>
+Message-ID: <tip-e9cdd343a5e42c43bcda01e609fa23089e026470@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        Andreas.Herrmann3@amd.com, cebbert@redhat.com, tglx@linutronix.de,
+        hpa@linux.intel.com, ostr@amd64.org, borislav.petkov@amd.com,
+        Hans.Rosenfeld@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Andreas.Herrmann3@amd.com, cebbert@redhat.com, tglx@linutronix.de,
+        hpa@linux.intel.com, ostr@amd64.org, Hans.Rosenfeld@amd.com,
+        borislav.petkov@amd.com
+In-Reply-To: <1306423192-19774-1-git-send-email-ostr@amd64.org>
+References: <1306423192-19774-1-git-send-email-ostr@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, amd: Do not enable ARAT feature on AMD processors below family 0x12
+Git-Commit-ID: e9cdd343a5e42c43bcda01e609fa23089e026470
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 26 May 2011 12:12:02 -0600
-X-Google-Sender-Auth: 1Ib5xHObMlIL6s-y7TjlxIzT-sQ
-Message-ID: <BANLkTi=S2quduA7-8Emqw7vE0J1eto6bgA@mail.gmail.com>
-Subject: [git pull] gpio changes for $NEXT_KERNEL
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 May 2011 18:13:17 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Commit-ID:  e9cdd343a5e42c43bcda01e609fa23089e026470
+Gitweb:     http://git.kernel.org/tip/e9cdd343a5e42c43bcda01e609fa23089e026470
+Author:     Boris Ostrovsky <ostr@amd64.org>
+AuthorDate: Thu, 26 May 2011 11:19:52 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 26 May 2011 10:38:30 -0700
 
-Due to my own stupidity, this branch as /not/ been tested through
-linux-next.  I put it in a branch that I negelcted to ask Stephen to
-include.  :-(  I'm asking him to add it for tonight.  At the very
-least, it has been build tested on various x86, powerpc, mips, sparc
-and arm defconfigs.
+x86, amd: Do not enable ARAT feature on AMD processors below family 0x12
 
-You'll probably want to hold off on actually pulling this one, but I
-wanted to give you a heads up that I have it still pending.  If you've
-not picked it up, then I can resend the pull req tomorrow afternoon
-after confirming it hasn't messed up anything in linux-next.
+Commit b87cf80af3ba4b4c008b4face3c68d604e1715c6 added support for
+ARAT (Always Running APIC timer) on AMD processors that are not
+affected by erratum 400. This erratum is present on certain processor
+families and prevents APIC timer from waking up the CPU when it
+is in a deep C state, including C1E state.
 
-There's nothing earth shattering here.  Just a bunch of driver updates
-and some faltering steps towards unifying a bunch of the mmio gpio
-logic.
+Determining whether a processor is affected by this erratum may
+have some corner cases and handling these cases is somewhat
+complicated. In the interest of simplicity we won't claim ARAT
+support on processor families below 0x12 and will go back to
+broadcasting timer when going idle.
 
-g.
+Signed-off-by: Boris Ostrovsky <ostr@amd64.org>
+Link: http://lkml.kernel.org/r/1306423192-19774-1-git-send-email-ostr@amd64.org
+Tested-by: Boris Petkov <borislav.petkov@amd.com>
+Cc: Hans Rosenfeld <Hans.Rosenfeld@amd.com>
+Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
+Cc: Chuck Ebbert <cebbert@redhat.com>
+Cc: stable@kernel.org # 32.x, 38.x, 39.x
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/cpu/amd.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-The following changes since commit 4db70f73e56961b9bcdfd0c36c62847a18b7dbb5:
-
-  tmpfs: fix XATTR N overriding POSIX_ACL Y (2011-05-25 19:53:02 -0700)
-
-are available in the git repository at:
-  git://git.secretlab.ca/git/linux-2.6 gpio/next
-
-Erik Botö (1):
-      gpio/pca953x: Use handle_simple_irq instead of handle_edge_irq
-
-H Hartley Sweeten (1):
-      gpio: remove redundant Kconfig depends on GPIOLIB
-
-Jamie Iles (9):
-      basic_mmio_gpio: remove runtime width/endianness evaluation
-      basic_mmio_gpio: convert to platform_{get,set}_drvdata()
-      basic_mmio_gpio: allow overriding number of gpio
-      basic_mmio_gpio: request register regions
-      basic_mmio_gpio: detect output method at probe time
-      basic_mmio_gpio: support different input/output registers
-      basic_mmio_gpio: support direction registers
-      basic_mmio_gpio: convert to non-__raw* accessors
-      basic_mmio_gpio: split into a gpio library and platform device
-
-Jean Delvare (1):
-      gpiolib: export gpiochip_find
-
-Linus Walleij (2):
-      gpio: remove some legacy comments in build files
-      gpio/via: rename VIA local config struct
-
-Uwe Kleine-König (1):
-      gpio: add trace events for setting direction and value
-
- drivers/gpio/Kconfig            |   23 +-
- drivers/gpio/Makefile           |    7 +-
- drivers/gpio/basic_mmio_gpio.c  |  517 +++++++++++++++++++++++++++++----------
- drivers/gpio/gpiolib.c          |   19 ++-
- drivers/gpio/pca953x.c          |    2 +-
- drivers/video/via/via-gpio.c    |   49 ++--
- include/linux/basic_mmio_gpio.h |   56 +++++
- include/trace/events/gpio.h     |   56 +++++
- 8 files changed, 555 insertions(+), 174 deletions(-)
- create mode 100644 include/trace/events/gpio.h
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 8f5cabb..b13ed39 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -612,8 +612,11 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	}
+ #endif
+ 
+-	/* As a rule processors have APIC timer running in deep C states */
+-	if (c->x86 > 0xf && !cpu_has_amd_erratum(amd_erratum_400))
++	/*
++	 * Family 0x12 and above processors have APIC timer
++	 * running in deep C states.
++	 */
++	if (c->x86 > 0x11)
+ 		set_cpu_cap(c, X86_FEATURE_ARAT);
+ 
+ 	/*
