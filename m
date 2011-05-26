@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758423Ab1EZTPc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:15:32 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:56535 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758358Ab1EZTPa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:15:30 -0400
-Subject: Re: [PATCH-v5 07/13] iscsi-target: Add iSCSI Login Negotiation +
-	Parameter logic
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Martin Svec <martin.svec@zoner.cz>
-In-Reply-To: <1306428415.4048.22.camel@mulgrave.site>
-References: <1305862678-30150-1-git-send-email-nab@linux-iscsi.org>
-	 <1305862678-30150-8-git-send-email-nab@linux-iscsi.org>
-	 <1306428415.4048.22.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Thu, 26 May 2011 12:07:12 -0700
-Message-Id: <1306436832.5807.127.camel@haakon2.linux-iscsi.org>
+	id S933076Ab1EZTH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:07:58 -0400
+Received: from mail.perches.com ([173.55.12.10]:2069 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932746Ab1EZTH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:07:57 -0400
+Subject: Re: [patch] net/core/filter.c: Fix build error
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>, Jiri Kosina <trivial@kernel.org>
+Cc: mingo@elte.hu, greearb@candelatech.com, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, arnd@arndb.de, netdev@vger.kernel.org
+In-Reply-To: <20110526.143843.205897228685761536.davem@davemloft.net>
+References: <efa062542c692c3f7743bf2d97b5987ab989e27e.1305999731.git.joe@perches.com>
+	 <20110526123153.GA16002@elte.hu> <1306423866.16087.10.camel@Joe-Laptop>
+	 <20110526.143843.205897228685761536.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 12:07:55 -0700
+Message-ID: <1306436876.16087.25.camel@Joe-Laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 11:46 -0500, James Bottomley wrote:
-> On Thu, 2011-05-19 at 20:37 -0700, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > This patch adds the princple RFC-3720 compatiable iSCSI Login
-> > phase negotiation for iscsi_target_mod.  This also includes the
-> > target RX/TX thread queue logic which is called directly from iSCSI
-> > login associated code.
-> > 
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org> 
-> 
-> I thought the upshot of the thread with Tomo was that we wouldn't be
-> doing all of this in-kernel.  Where's the userspace upcall for this?
-> 
+On Thu, 2011-05-26 at 14:38 -0400, David Miller wrote:
+> From: Joe Perches <joe@perches.com>
+> Date: Thu, 26 May 2011 08:31:06 -0700
+> > My suggestion would be to see about again adding
+> > #include <linux/ratelimit.h> somehow
+> > back to kernel.h which commit 3fff4c42bd0a removed
+> > in 2009 because of the spinlock issues.
+> > Any suggestion on how best to fix it generically?
+> I don't think we want spinlock_t's definition being sucked
+> into kernel.h's dependency food chain.
+> Even if desirable, I think it'd be quite a bit of surgery,
+> too much to do at this stage.
+> So for now how about we make the ratelimit warn interfaces be a true,
+> instead of a pseudo, dependency on ratelimit.h by moving those
+> definitions into ratelimit.h?
 
-The technical reasons why I want to avoid this have not changed for the
-1) authentication disabled and 2) 'required-to-implement' CHAP
-authentication cases.  These where discussed at the bottom of the thread
-from March with Tomo-san here:
+Thanks, I suppose that's good enough for now.
 
-http://marc.info/?l=linux-scsi&m=130108812405710&w=2
+Perhaps it'd also be good to move the pr_<level>_ratelimited
+declarations from printk.h.
 
-As mentioned, I am open to adding a userspace upcall for authentication
-payloads post merge in order to support the 'optional-to-implement'
-authentication cases.  However, pushing the above two cases out to
-userspace really does add unnecessary complexity and limitiations that I
-want to avoid for the default iSCSI login cases.
+It seems that would not cause new compilation problems.
 
-It also would break existing rtslib/rtsadmin-v2 userspace code, and
-require a userspace daemon be aware of the necessary initiator NodeACL
-information and keep the current configuration state in sync between
-kernel + userspace.  The current code avoids this type of mess all
-together for the default cases, and I still only see downsides and
-endless maintainability headaches and delays for going back to this type
-of design for a kernel-level iscsi-target.
+$ grep -rP --include=*.[ch] -wl "pr_[a-z]+_ratelimited" * | \
+  xargs grep -L "include.*ratelimit\.h"
+include/linux/printk.h
 
---nab
+And, though it's sure to cause some compilation problems:
 
+$ grep -rP --include=*.[ch] -wl "printk_ratelimit" * | \
+  xargs grep -L "include.*ratelimit\.h" | wc -l
+127
+
+Perhaps it'd also be good to move the printk_ratelimit
+block from printk.h into ratelimited.h and add
+#include <linux/ratelimited.h> to the current source
+files that use it in a later patchset.
+
+Maybe Jiri could pick it up through trivial.  Jiri?
 
