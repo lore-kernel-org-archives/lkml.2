@@ -1,283 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758030Ab1EZR0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:26:39 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:46495 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757627Ab1EZR0i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:26:38 -0400
-Date: Thu, 26 May 2011 22:56:18 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        crash-utility@redhat.com
-Cc: Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-        Wang Chao <wang.chao@cn.fujitsu.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Mahesh Jagannath Salgaonkar <mahesh@linux.vnet.ibm.com>
-Subject: [RFC Patch 6/6] Crash: Recognise slim coredumps and process new
- elf-note sections
-Message-ID: <20110526172618.GB18295@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20110526170722.GB23266@in.ibm.com>
+	id S1758110Ab1EZRbl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:31:41 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:57233 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757803Ab1EZRbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 13:31:39 -0400
+Date: Thu, 26 May 2011 10:31:28 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: sedat.dilek@gmail.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 26 (RCU stalls)
+Message-ID: <20110526173128.GE2386@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <BANLkTink15DRi6WJT2g07zd6-=MtW2hODw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110526170722.GB23266@in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTink15DRi6WJT2g07zd6-=MtW2hODw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 26, 2011 at 05:48:32PM +0200, Sedat Dilek wrote:
+> On Thu, May 26, 2011 at 8:39 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Hi all,
+> >
+> > [The kernel.org mirroring is being slow today]
+> >
+> > Changes since 20110525:
+> >
+> > Linus' tree gained a build failure for which I applied a patch.
+> >
+> > The m68knommu tree lost its conflicts.
+> >
+> > The hwmon-staging lost its conflict.
+> >
+> > The wireless lost its conflict.
+> >
+> > The mmc lost its conflict.
+> >
+> > The dwmw2-iommu tree lost its conflict.
+> >
+> > The kvm tree still had its build failure so I used the version from
+> > next-20110524.
+> >
+> > The namespace lost its conflicts.
+> >
+> > ----------------------------------------------------------------------------
+> >
+> 
+> Hi,
+> 
+> I see these call-traces on x86 UP machine:
+> 
+> [  240.268061] INFO: task rcun0:8 blocked for more than 120 seconds.
+> [  240.268069] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> disables this message.
+> [  240.268072] rcun0           D 00000000     0     8      2 0x00000000
+> [  240.268079]  f6473fb8 00000046 013131b6 00000000 c1461ac0 00000000
+> 00000000 c1461ac0
+> [  240.268089]  00000000 00000000 f645dc70 f645bf60 00000003 f6473f78
+> c102a570 f6473f9c
+> [  240.268097]  c1021476 00000000 f645bf6c 00000001 00000000 00000286
+> f6473f9c c129b35a
+> [  240.268106] Call Trace:
+> [  240.268121]  [<c102a570>] ? default_wake_function+0xb/0xd
+> [  240.268127]  [<c1021476>] ? __wake_up_common+0x33/0x5b
+> [  240.268134]  [<c129b35a>] ? _raw_spin_unlock_irqrestore+0xe/0x10
+> [  240.268140]  [<c10234ed>] ? complete+0x34/0x3e
+> [  240.268147]  [<c1074d23>] ? cpumask_weight+0xc/0xc
+> [  240.268157]  [<c1044c97>] kthread+0x53/0x67
+> [  240.268162]  [<c1044c44>] ? kthread_worker_fn+0x111/0x111
+> [  240.268169]  [<c12a123e>] kernel_thread_helper+0x6/0xd
+> 
+> dmesg and kernel-config are attached.
 
-Crash: Recognise slim coredumps and process new elf-note sections
+Hello, Sedat,
 
-The Linux kernel will begin to support SlimDump for certain types of crashes
-and the 'crash' tool needs to recognise them. For these types of coredumps, it
-need not lookout for usual elf-structures and start gdb. Also process new
-elf-note sections that contain additional information about the crash.
+Does the following patch clear things up?
 
-Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
----
- diskdump.c |   84 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- netdump.c  |    8 +++++
- x86.h      |   91 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 183 insertions(+)
+							Thanx, Paul
 
-Index: crash-5.1.5.slim_kdump/x86.h
-===================================================================
---- /dev/null
-+++ crash-5.1.5.slim_kdump/x86.h
-@@ -0,0 +1,91 @@
-+/*
-+ * x86.h - x86 Architecture specific definitions
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2011
-+ *
-+ * Author: K.Prasad <prasad@linux.vnet.ibm.com>
-+ */
-+
-+typedef unsigned long long u64;
-+typedef unsigned int u32;
-+typedef unsigned short u16;
-+typedef unsigned char u8;
-+
-+#define __u64 u64
-+#define __u32 u32
-+#define __u16 u16
-+#define __u8  u8
-+
-+/* Mask for finding the address mode in IA32_MCi_MISC[8:6] register */
-+#define MCI_MISC_ADDR_MODE	0X1C0
-+/* Number of bits to shift the IA32_MCi_MISC to read the address-mode bits */
-+#define MISC_ADDR_MODE_POS	6
-+
-+/* Address Modes in IA32_MCi_MISC[8:6] */
-+#define MCM_ADDR_SEGOFF  0      /* segment offset */
-+#define MCM_ADDR_LINEAR  1      /* linear address */
-+#define MCM_ADDR_PHYS    2      /* physical address */
-+#define MCM_ADDR_MEM     3      /* memory address */
-+#define MCM_ADDR_GENERIC 7      /* generic */
-+
-+#define MCI_STATUS_MISCV (1ULL<<59)  /* misc error reg. valid */
-+#define MCI_STATUS_ADDRV (1ULL<<58)  /* addr reg. valid */
-+
-+#define PAGE_SHIFT 12
-+
-+static const char *mce_addr_mode[] =
-+{
-+	"Segment offset",	/* MCM_ADDR_SEGOFF */
-+	"Linear address",	/* MCM_ADDR_LINEAR */
-+	"Physical address",	/* MCM_ADDR_PHYS */
-+	"Memory address",	/* MCM_ADDR_MEM */
-+	"",			/* reserved */
-+	"",			/* reserved */
-+	"",			/* reserved */
-+	"Generic"		/* MCM_ADDR_GENERIC */
-+};
-+
-+/*
-+ * kernel structure: Keep this in sync with the definition in
-+ * arch/x86/include/asm/mce.h of linux source code.
-+ *
-+ * Fields are zero when not available
-+ *
-+ */
-+struct mce {
-+	__u64 status;
-+	__u64 misc;
-+	__u64 addr;
-+	__u64 mcgstatus;
-+	__u64 ip;
-+	__u64 tsc;	/* cpu time stamp counter */
-+	__u64 time;	/* wall time_t when error was detected */
-+	__u8  cpuvendor;	/* cpu vendor as encoded in system.h */
-+	__u8  pad1;
-+	__u16 pad2;
-+	__u32 cpuid;	/* CPUID 1 EAX */
-+	__u8  cs;		/* code segment */
-+	__u8  bank;	/* machine check bank */
-+	__u8  cpu;	/* cpu number; obsolete; use extcpu now */
-+	__u8  finished;   /* entry is valid */
-+	__u32 extcpu;	/* linux cpu number that detected the error */
-+	__u32 socketid;	/* CPU socket ID */
-+	__u32 apicid;	/* CPU initial apic ID */
-+	__u64 mcgcap;	/* MCGCAP MSR: machine check capabilities of CPU */
-+	__u64 aux0;
-+	__u64 aux1;
-+};
-Index: crash-5.1.5.slim_kdump/netdump.c
-===================================================================
---- crash-5.1.5.slim_kdump.orig/netdump.c
-+++ crash-5.1.5.slim_kdump/netdump.c
-@@ -331,6 +331,10 @@ is_netdump(char *file, ulong source_quer
- 		}
-         	nd->notes32 = (Elf32_Phdr *)
- 		    &nd->elf_header[sizeof(Elf32_Ehdr)];
-+		if (machdep->process_elf_notes)
-+			machdep->process_elf_notes((char *)nd->elf32 +
-+							nd->notes32->p_offset,
-+							nd->notes32->p_filesz);
-         	nd->load32 = (Elf32_Phdr *)
- 		    &nd->elf_header[sizeof(Elf32_Ehdr)+sizeof(Elf32_Phdr)];
- 		if (DUMPFILE_FORMAT(nd->flags) == NETDUMP_ELF32)
-@@ -360,6 +364,10 @@ is_netdump(char *file, ulong source_quer
-                 }
-                 nd->notes64 = (Elf64_Phdr *)
-                     &nd->elf_header[sizeof(Elf64_Ehdr)];
-+		if (machdep->process_elf_notes)
-+			machdep->process_elf_notes((char *)nd->elf64 +
-+							nd->notes64->p_offset,
-+							nd->notes64->p_filesz);
-                 nd->load64 = (Elf64_Phdr *)
-                     &nd->elf_header[sizeof(Elf64_Ehdr)+sizeof(Elf64_Phdr)];
- 		if (DUMPFILE_FORMAT(nd->flags) == NETDUMP_ELF64)
-Index: crash-5.1.5.slim_kdump/diskdump.c
-===================================================================
---- crash-5.1.5.slim_kdump.orig/diskdump.c
-+++ crash-5.1.5.slim_kdump/diskdump.c
-@@ -231,6 +231,27 @@ open_dump_file(char *file)
- 	dd->dfd = fd;
- 	return TRUE;
- }
-+#if defined(X86_64) || defined(X86)
-+#include "x86.h"
-+
-+/*
-+ * Check if the address reported by the CPU is in a format we can parse.
-+ * It would be possible to add code for most other cases, but all would
-+ * be somewhat complicated (e.g. segment offset would require an instruction
-+ * parser). So only support physical addresses up to page granuality for now.
-+ *
-+ * Function derived from arch/x86/kernel/cpu/mcheck/mce.c in Linux source
-+ *
-+ */
-+static int mce_usable_address(struct mce *m)
-+{
-+	if (!(m->status & MCI_STATUS_MISCV) || !(m->status & MCI_STATUS_ADDRV))
-+		return 0;
-+	if ((m->misc & 0x3f) > PAGE_SHIFT)
-+		return 0;
-+	return 1;
-+}
-+#endif /* defined(X86_64) || defined(X86) */
- 
- void 
- x86_process_elf_notes(void *note_ptr, unsigned long size_note)
-@@ -239,10 +260,43 @@ x86_process_elf_notes(void *note_ptr, un
- 	Elf64_Nhdr *note64 = NULL;
- 	size_t tot, len = 0;
- 	int num = 0;
-+#if defined(X86_64) || defined(X86)
-+	struct mce *mce;
-+	ushort addr_mode;
-+#endif /* defined(X86_64) || defined(X86) */
- 
- 	for (tot = 0; tot < size_note; tot += len) {
- 		if (machine_type("X86_64")) {
- 			note64 = note_ptr + tot;
-+#ifdef X86_64
-+			/*
-+			 * If vmcore is generated due to fatal Machine Check
-+			 * Exception, we only have a 'slim' crashdump. Don't
-+			 * analyse further, inform the user about it and exit.
-+			 */
-+			if (note64->n_type == NT_MCE) {
-+				fprintf(fp, "\"System crashed due to a hardware"
-+					" memory error. No coredump"
-+					" available.\"\n");
-+
-+				/* Do we have a copy of 'struct mce'? */
-+				if (note64->n_descsz == 0)
-+					goto exit;
-+
-+				mce = (struct mce *)((char *)note64 +
-+					sizeof(Elf64_Nhdr) + note64->n_namesz);
-+				if (!mce_usable_address(mce))
-+					goto exit;
-+
-+				addr_mode = (mce->misc >> MISC_ADDR_MODE_POS) &
-+						MCI_MISC_ADDR_MODE;
-+				fprintf(fp, "Memory error occured at %llx "
-+					"(address type: %s\n)", mce->addr,
-+					mce_addr_mode[addr_mode]);
-+exit:
-+				clean_exit(0);
-+			}
-+#endif /* X86_64 */
- 
- 			if (note64->n_type == NT_PRSTATUS) {
- 				dd->nt_prstatus_percpu[num] = note64;
-@@ -255,6 +309,36 @@ x86_process_elf_notes(void *note_ptr, un
- 		} else if (machine_type("X86")) {
- 			note32 = note_ptr + tot;
- 
-+#ifdef X86
-+			/*
-+			 * If vmcore is generated due to fatal Machine Check
-+			 * Exception, we only have a 'slim' crashdump. Don't
-+			 * analyse further, inform the user about it and exit.
-+			 */
-+			if (note32->n_type == NT_MCE) {
-+				fprintf(fp, "\"System crashed due to a hardware"
-+					" memory error. No coredump"
-+					" available.\"\n");
-+
-+				/* Do we have a copy of 'struct mce'? */
-+				if (note32->n_descsz == 0)
-+					goto exit;
-+
-+				mce = (struct mce *)((char *)note32 +
-+					sizeof(Elf32_Nhdr) + note32->n_namesz);
-+				if (!mce_usable_address(mce))
-+					goto exit;
-+
-+				addr_mode = (mce->misc >> MISC_ADDR_MODE_POS) &
-+						MCI_MISC_ADDR_MODE;
-+				fprintf(fp, "Memory error occured at %llx "
-+					"(address type: %s\n)", mce->addr,
-+					mce_addr_mode[addr_mode]);
-+exit:
-+				clean_exit(0);
-+			}
-+#endif /* X86 */
-+
- 			if (note32->n_type == NT_PRSTATUS) {
- 				dd->nt_prstatus_percpu[num] = note32;
- 				num++;
+------------------------------------------------------------------------
+
+rcu: Start RCU kthreads in TASK_INTERRUPTIBLE state
+
+Upon creation, kthreads are in TASK_UNINTERRUPTIBLE state, which can
+result in softlockup warnings.  Because some of RCU's kthreads can
+legitimately be idle indefinitely, start them in TASK_INTERRUPTIBLE
+state in order to avoid those warnings.
+
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Yinghai Lu <yinghai@kernel.org>
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index a1a8bb6..40aab8d 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1647,6 +1647,7 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
+ 	if (IS_ERR(t))
+ 		return PTR_ERR(t);
+ 	kthread_bind(t, cpu);
++	set_task_state(t, TASK_INTERRUPTIBLE);
+ 	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
+ 	WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
+ 	per_cpu(rcu_cpu_kthread_task, cpu) = t;
+@@ -1754,6 +1755,7 @@ static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
+ 		if (IS_ERR(t))
+ 			return PTR_ERR(t);
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
++		set_task_state(t, TASK_INTERRUPTIBLE);
+ 		rnp->node_kthread_task = t;
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 		sp.sched_priority = 99;
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 049f278..a767b7d 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1295,6 +1295,7 @@ static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
+ 	if (IS_ERR(t))
+ 		return PTR_ERR(t);
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
++	set_task_state(t, TASK_INTERRUPTIBLE);
+ 	rnp->boost_kthread_task = t;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	sp.sched_priority = RCU_KTHREAD_PRIO;
