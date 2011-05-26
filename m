@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab1EZGme (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 02:42:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3821 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab1EZGmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 02:42:32 -0400
-Message-ID: <4DDDF64F.30207@redhat.com>
-Date: Thu, 26 May 2011 09:42:23 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Marcelo Tosatti <mtosatti@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (kvm
- tree related)
-References: <20110525132809.6d85b3c2.sfr@canb.auug.org.au> <20110525080223.GC2498@osiris.boeblingen.de.ibm.com>
-In-Reply-To: <20110525080223.GC2498@osiris.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752656Ab1EZGs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 02:48:26 -0400
+Received: from mail.active-venture.com ([67.228.131.195]:60568 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab1EZGsZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 02:48:25 -0400
+X-Virus-Scan: Scanned by ClamAV 0.94.2 (no viruses);
+  Thu, 26 May 2011 01:48:24 -0500
+X-Originating-IP: 68.125.166.242
+From: Guenter Roeck <linux@roeck-us.net>
+To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] dma: Initialize uninitialized variable
+Date: Wed, 25 May 2011 23:48:36 -0700
+Message-Id: <1306392516-5906-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2011 11:02 AM, Heiko Carstens wrote:
-> On Wed, May 25, 2011 at 01:28:09PM +1000, Stephen Rothwell wrote:
-> >  Hi all,
-> >
-> >  After merging the final tree, today's linux-next build (powerpc
-> >  ppc44x_defconfig) failed like this:
-> >
-> >  cc1: warnings being treated as errors
-> >  arch/powerpc/kvm/../../../virt/kvm/kvm_main.c: In function '__kvm_set_memory_region':
-> >  arch/powerpc/kvm/../../../virt/kvm/kvm_main.c:654: error: cast to pointer from integer of different size
-> >  arch/powerpc/kvm/../../../virt/kvm/kvm_main.c:654: error: cast to pointer from integer of different size
-> >
-> >  Caused by commit 95de6ce677d6 ("KVM: add missing void __user * cast to
-> >  access_ok() call").
-> >
-> >  I have reverted that commit for today.
->
-> My fault.. sigh.
->
-> Avi could you apply the patch below as well (or merge with the previous one)?
->
+Uninitialized variable results in random debug output.
+Fix by initializing to 0.
 
-Thanks for the quick fix, applied.
+This commit fixes the following warning:
 
+drivers/dma/pch_dma.c: In function pdc_desc_get:
+drivers/dma/pch_dma.c:406: warning: i may be used uninitialized in this function
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/dma/pch_dma.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+index 8d8fef1..6eebc62 100644
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -403,7 +403,7 @@ static struct pch_dma_desc *pdc_desc_get(struct pch_dma_chan *pd_chan)
+ {
+ 	struct pch_dma_desc *desc, *_d;
+ 	struct pch_dma_desc *ret = NULL;
+-	int i;
++	int i = 0;
+ 
+ 	spin_lock(&pd_chan->lock);
+ 	list_for_each_entry_safe(desc, _d, &pd_chan->free_list, desc_node) {
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+1.7.1
 
