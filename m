@@ -1,127 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab1EZCnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 22:43:09 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:42810 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab1EZCnH (ORCPT
+	id S1753616Ab1EZCyU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 22:54:20 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38105 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974Ab1EZCyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 22:43:07 -0400
-Subject: Re: [PATCH-v5 00/13] iscsi-target: initial .40-rc1 merge
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Martin Svec <martin.svec@zoner.cz>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1306217216.29724.144.camel@haakon2.linux-iscsi.org>
-References: <1305862678-30150-1-git-send-email-nab@linux-iscsi.org>
-	 <1306217216.29724.144.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain
-Date: Wed, 25 May 2011 19:34:41 -0700
-Message-Id: <1306377281.5807.89.camel@haakon2.linux-iscsi.org>
+	Wed, 25 May 2011 22:54:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=DF2d/VxQXa9+mhKuCpsItrLNPrQnJG3rRGAZ+wfhN8Zb9tSX4PArYcGioGxEzZJKGP
+         snaZvrDX0VpKqPH0misShZbVfE3cSxKe9oYyyKzWTlOJm/pTJC4zi3QyhfEprnzA4wyw
+         4URQ3HnKIJN/gQ0sy7NrJ3z9P5j0tXn/44suw=
+Subject: [PATCH] ASoC: wm1250-ev1: Define "WM1250 Output" with
+ SND_SOC_DAPM_OUTPUT
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 10:54:12 +0800
+Message-ID: <1306378452.10398.9.camel@phoenix>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-23 at 23:06 -0700, Nicholas A. Bellinger wrote:
-> On Thu, 2011-05-19 at 20:37 -0700, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > Hi James,
-> > 
-> > Here is an updated v5 mergeable + squashable .40-rc1 series of iscsi-target
-> > against scsi-misc .39-rc7 target core intrastructure with (round 1) .40
-> > target core patches from this evening applied:
-> > 
+Codec output pin should be defined with SND_SOC_DAPM_OUTPUT.
 
-Hi James,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+Note: 
+Just found this bug while reading the code.
+I don't have this hardware handy. I appreciate if someone can test it.
 
-Just a heads up that this patch was sent out to the list here:
+Axel
 
-[PATCH] iscsi-target: Fix SessionType=Discovery RX context conn->conn_logout_comp hang
-http://marc.info/?l=linux-scsi&m=130637348407180&w=2
+ sound/soc/codecs/wm1250-ev1.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This now puts the PATCH-v5 series in sync wrt to bugfixes for LIO
-upstream iscsi-target v4.1 code..
+diff --git a/sound/soc/codecs/wm1250-ev1.c b/sound/soc/codecs/wm1250-ev1.c
+index 14d0716..bcc2089 100644
+--- a/sound/soc/codecs/wm1250-ev1.c
++++ b/sound/soc/codecs/wm1250-ev1.c
+@@ -22,7 +22,7 @@ SND_SOC_DAPM_ADC("ADC", "wm1250-ev1 Capture", SND_SOC_NOPM, 0, 0),
+ SND_SOC_DAPM_DAC("DAC", "wm1250-ev1 Playback", SND_SOC_NOPM, 0, 0),
+ 
+ SND_SOC_DAPM_INPUT("WM1250 Input"),
+-SND_SOC_DAPM_INPUT("WM1250 Output"),
++SND_SOC_DAPM_OUTPUT("WM1250 Output"),
+ };
+ 
+ static const struct snd_soc_dapm_route wm1250_ev1_dapm_routes[] = {
+-- 
+1.7.1
 
-More comments below..
 
-> > As before, please merge patch #1 + #2 as seperate libiscsi commits with
-> > Mike's signoff.  From there go ahead and squash #3 -> #13 using the commit
-> > message of patch #3 for an initial commit of drivers/target/iscsi/
-> > 
-> > This patch has been made against the latest scsi-misc HEAD:
-> > 
-> > commit 6ad11eaa8a689a27e0c99905bcf800a37cd432a0
-> > Author: Joe Carnuccio <joe.carnuccio@qlogic.com>
-> > Date:   Tue May 10 11:30:16 2011 -0700
-> > 
-> >     [SCSI] qla2xxx: Refactor call to qla2xxx_read_sfp for thermal temperature.
-> > 
-> > 
-> > The complete series for an initial merge including (round 1) .40 changes is
-> > available directly here:
-> > 
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-40-iscsi-target-merge-v3
-> > 
-> > 
-> > At this point there is one outstanding bug + patch being tested by Martin wrt
-> > to SessionType=Discovery logout exception handling during an iscsi-target
-> > failure/shutdown event.  Please expect an rc-fixes patch to address this
-> > specific issue after the initial merge.
-> > 
-> > Thanks folks!
-> > 
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > 
-> 
-
-<SNIP>
-
-> I have no further changes nor gotten any further review feedback at this
-> point for an initial merge for .40-rc1 (or 2.8.0-rc1) , and one
-> iscsi-target bugfix is currently in my queue for rc-fixes that has been
-> resolved recently with Martin's help.
-> 
-> Considering the short term window this time around, can you please have
-> a look at getting this merged ASAP so that it can send a few days in
-> linux-next..?
-> 
-
-There have been no further review comments for an initial merge, and we
-are ready to move forward.  :)
-
-So at this point I think providing the three 'mass-market' software
-fabric drivers (tcm_loop, tcm_fc and iscsi-target) makes the most sense
-for mainline .40 / 2.8.0 moving forward, and focus on outstanding HW
-target driver items for the next merge window.
-
-I know things are still very busy on your side with /drivers/scsi/ code,
-but wanted to ensure that iscsi-target is still included for this short
-merge window considering the extensive amount of linux-scsi review, code
-conversion + cleanups, and testing it has undergone in the last 6 months
-since the mainline drivers/target/ merge.
-
-Please let me know if you need anything else to get this merged
-scsi-misc, or if it makes more sense given the time pressures to ask
-Linus (CC'ed) to merge this directly with appropriate Signed-off-bys
-from Christoph, Mike, Tomo-san, Dr. Hannes, Boaz and yourself..
-
-I am happy either way, but just want to avoid having this slip (again)
-given the large amount of efforts involved and mass market applicability
-of this particular target fabric code.
-
---nab
 
