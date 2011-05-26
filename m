@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab1EZQF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 12:05:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:48846 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757023Ab1EZQFs (ORCPT
+	id S932735Ab1EZQG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 12:06:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35417 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758036Ab1EZQGY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 12:05:48 -0400
-Date: Thu, 26 May 2011 09:05:22 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH -next] regulator: fix 88pm8607.c printk format warning
-Message-Id: <20110526090522.5d8c684b.randy.dunlap@oracle.com>
-In-Reply-To: <1305978663.3317.7.camel@odin>
-References: <20110518145412.f6cba4ef.sfr@canb.auug.org.au>
-	<20110518100722.76bd6fb6.randy.dunlap@oracle.com>
-	<20110518194311.GB5077@opensource.wolfsonmicro.com>
-	<1305978663.3317.7.camel@odin>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4DDE7A52.0002:SCFMA922111,ss=1,fgs=0
+	Thu, 26 May 2011 12:06:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=qc3MxfOS7piZFfsRVC22G6wrk0ipNnNIJBqe2ZqCqRjevKB73t8vzMJ59tcIhubQCd
+         jUPOidNLUfrN9OSIrl+FPw2N1tGp3STCjPb/+yMJ6Hp00Tlbec2DJr08sNzFEBP4o/gA
+         /xwL2DdXIZeg8ljz3XDK/NYY5JTylkYVDvP/0=
+MIME-Version: 1.0
+In-Reply-To: <20110526133155.GH9520@thunk.org>
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
+ <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard>
+ <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
+ <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu> <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com>
+ <20110526133155.GH9520@thunk.org>
+From: "D. Jansen" <d.g.jansen@googlemail.com>
+Date: Thu, 26 May 2011 18:05:43 +0200
+Message-ID: <BANLkTinTzNN2P45tgZAQ9FsL43CqyAJR3Q@mail.gmail.com>
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+To: "Ted Ts'o" <tytso@mit.edu>, "D. Jansen" <d.g.jansen@googlemail.com>,
+        Oliver Neukum <oneukum@suse.de>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+        njs@pobox.com, bart@samwel.tk, jens.axboe@oracle.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 May 2011 12:51:03 +0100 Liam Girdwood wrote:
+Problem: any fsync call by any application spins up the hard disk any
+time even in laptop_mode
 
-> On Wed, 2011-05-18 at 12:43 -0700, Mark Brown wrote:
-> > On Wed, May 18, 2011 at 10:07:22AM -0700, Randy Dunlap wrote:
-> > > From: Randy Dunlap <randy.dunlap@oracle.com>
-> > > 
-> > > Fix printk format warning (seen on x86_64) and change to unsigned
-> > > output format:
-> > > 
-> > > drivers/regulator/88pm8607.c:417: warning: format '%d' expects type 'int', but argument 3 has type 'resource_size_t'
-> > 
-> > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > --
-> 
-> Samuel, this doesn't apply against regulator-next. Iirc, the patches
-> this is against went via mfd-next ? If, so any chance you could take
-> this ?
-> 
-> Thanks !
-> 
-> Liam  
+On Thu, May 26, 2011 at 3:31 PM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Thu, May 26, 2011 at 01:16:45PM +0200, D. Jansen wrote:
+>> exactly. so what now?
 
-Samuel,
-Do you need this patch resent to you?
+> This needs to be solved at the application level.  So what we need is
+> a coordinating daemon which sends a message to all applications
+> saying, "ok, here's an opportunity to flush data to the disk; if you
+> have dirty files, or databases that has data that needs to be flushed,
+> send it now", and then a little while later, it sends a message to all
+> applications, "ok, we're going to let the disk spin down now, hold
+> your horses and don't send any data to the disk".
 
-thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I'm not sure this approach is straight forward.
+
+Because though there is no possibility to destroy data that is on disk
+due to non FIFO flushing of application writes queued in the kernel,
+which seems to be the main kernel level problem, yet new problems come
+up.
+
+Now there is
+1) special support needed on the application side.
+2) need for new out-of-kernel buffers.
+3) need for inter-application write alignment nightmares. This sort of
+structure could cause very uncomfortable bugs that prevent writes from
+happening at all in cases that were not foreseen at all.
+4) need for resources wasted through yet another daemon.
+5) If the _application_, but not the kernel crashes, the data is safe.
+In my experience this is the much more likely case than that the mail
+server on my netbook optimized for battery time receives an email in
+laptop mode, sends the other server "200" and then before the next
+commit window my battery slips out and it's all gone.
+6) _If_ there would be a special daemon I think it would make sense
+for that daemon to provide all the infrastructure, buffering and
+manage the fsync calls itself. This shouldn't and wouldn't be
+replicated by every single application.
+
+I think the alternative of ensuring the application writes are
+committed in order would make more sense:
+e..g a _user space library_ disables fsync etc. in laptop_mode if the
+user chooses to do so and kernel support for forced FIFO ordering or
+writes.
+This would fix 1) 2) 3) 4) 5) 6).
+
+Cheers,
+
+Dennis
+
+ps.
+So you've re-thought this "All that is necessary is a kernel patch to
+allow laptop_mode to disable fsync() calls(...)"
+(http://tytso.livejournal.com/2009/03/15/). That post had inspired my
+patch.
+pps.
+I know that an email getting lost is everyone's nightmare. But these
+things do happen, anyway. It's not the end of the world if one email
+is lost. (There's still a copy in the sent box. People will probably
+notice, eventually. I recently found out an email properly sent and
+filed in my gmail sent box never arrived for several of the people
+without any error reports. If people need to be 100% sure an email
+arrived they should ask for a confirmation and/or use a different
+medium.) This just makes it much more likely.
