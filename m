@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab1EZSIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:08:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39526 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab1EZSIM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:08:12 -0400
+	id S1758243Ab1EZSI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:08:56 -0400
+Received: from mail.us.es ([193.147.175.20]:47682 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758096Ab1EZSIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:08:54 -0400
+Message-ID: <4DDE9730.3050405@netfilter.org>
+Date: Thu, 26 May 2011 20:08:48 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110506 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <17077.1306431502@turing-police.cc.vt.edu>
-References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
-	<BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
-	<BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
-	<1306254027.18455.47.camel@twins>
-	<20110524195435.GC27634@elte.hu>
-	<alpine.LFD.2.02.1105242239230.3078@ionos>
-	<20110525150153.GE29179@elte.hu>
-	<alpine.LFD.2.02.1105251836030.3078@ionos>
-	<20110525180100.GY19633@outflux.net>
-	<BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
-	<20110525191152.GC19633@outflux.net>
-	<BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com>
-	<BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
-	<BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>
-	<BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
-	<BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
-	<BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
-	<17077.1306431502@turing-police.cc.vt.edu>
-Date: Thu, 26 May 2011 13:08:10 -0500
-Message-ID: <BANLkTimhcqSyQjwbXTn00Huu_5++3MczDw@mail.gmail.com>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
-From: Will Drewry <wad@chromium.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin Walters <walters@verbum.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Kevin Cernekee <cernekee@gmail.com>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3 resend] netfilter: nf_conntrack_sip: Handle Cisco 7941/7945
+ IP phones
+References: <bc781b295b38241533a2d90c1aea15b3@localhost>	 <4DDE84F2.7080706@netfilter.org> <1306432664.2543.2.camel@edumazet-laptop>
+In-Reply-To: <1306432664.2543.2.camel@edumazet-laptop>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 12:38 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Thu, 26 May 2011 12:02:45 CDT, Will Drewry said:
->
->> Absolutely - that was what I meant :/  The patches do not currently
->> check creds at creation or again at use, which would lead to
->> unprivileged filters being used in a privileged context.  Right now,
->> though, if setuid() is not allowed by the seccomp-filter, the process
->> will be immediately killed with do_exit(SIGKILL) on call -- thus
->> avoiding a silent failure.
->
-> How do you know you have the bounding set correct?
->
-> This has been a long-standing issue for SELinux policy writing - it's usually
-> easy to get 95% of the bounding box right (you need these rules for shared
-> libraries, you need these rules to access the user's home directory, you need
-> these other rules to talk TCP to the net, etc).  There's a nice tool that
-> converts any remaining rejection messages into rules you can add to the policy.
->
-> The problem is twofold: (a) that way you can never be sure you got *all* the
-> rules right and (b) the missing rules are almost always in squirrelly little
-> error-handling code that gets invoked once in a blue moon.  So in this case,
-> you end up with trying to debug the SIGKILL that happened when the process was
-> already in trouble for some other reason...
->
-> "Wow. Who would have guessed that program only called gettimeofday() in
-> the error handler for when it was formatting its crash message?"
->
-> Exactly.
+On 26/05/11 19:57, Eric Dumazet wrote:
+> Le jeudi 26 mai 2011 Ã  18:50 +0200, Pablo Neira Ayuso a Ã©crit :
+>> Hi Eric,
+>>
+>> On 20/05/11 06:36, Kevin Cernekee wrote:
+>>> Most SIP devices use a source port of 5060/udp on SIP requests, so the
+>>> response automatically comes back to port 5060:
+>>>
+>>> phone_ip:5060 -> proxy_ip:5060   REGISTER
+>>> proxy_ip:5060 -> phone_ip:5060   100 Trying
+>>>
+>>> The newer Cisco IP phones, however, use a randomly chosen high source
+>>> port for the SIP request but expect the response on port 5060:
+>>>
+>>> phone_ip:49173 -> proxy_ip:5060  REGISTER
+>>> proxy_ip:5060 -> phone_ip:5060   100 Trying
+>>>
+>>> Standard Linux NAT, with or without nf_nat_sip, will send the reply back
+>>> to port 49173, not 5060:
+>>>
+>>> phone_ip:49173 -> proxy_ip:5060  REGISTER
+>>> proxy_ip:5060 -> phone_ip:49173  100 Trying
+>>>
+>>> But the phone is not listening on 49173, so it will never see the reply.
+>>>
+>>> This patch modifies nf_*_sip to work around this quirk by extracting
+>>> the SIP response port from the Via: header, iff the source IP in the
+>>> packet header matches the source IP in the SIP request.
+>>>
+>>> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+>>> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+>>> Cc: Patrick McHardy <kaber@trash.net>
+>>
+>> @Eric: could you please confirm that you ack'ed this patch? I don't find
+>> the email with your explicit ack.
+> 
+> Yes I did it ;)
+> 
+> http://www.spinics.net/lists/netfilter/msg49632.html
+> 
+> Thanks !
 
-Depending on the need, there is work involved, and there are many ways
-to determine your bounding box.  It can be very tight -- where you
-analyze normal workloads (perf,strace,objdump) and accept the fact
-that pathological workloads may result in process death -- or it can
-be quite loose and enable most system calls, just not newer ones,
-let's say.  In practice, you might get bit a few times if you're
-overly zealous (I know I have), but it's the difference between
-failing open and failing closed.  There are some scenarios where you
-never, ever want to fail-open even at the cost of process death and
-lack of solid insight into a valid failure path.
-
-Hope that makes sense and isn't too general,
-will
+OK, applied, thanks!
