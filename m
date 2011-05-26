@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab1EZOLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 10:11:40 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:36410 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932360Ab1EZOLi (ORCPT
+	id S932484Ab1EZOPz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 10:15:55 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:34708 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757976Ab1EZOPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 10:11:38 -0400
-From: Manoj Iyer <manoj.iyer@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: chris@cnpbagwell.com
-Subject: [PATCH] mmc: Enable MMC card reader for RICOH [1180:e823]
-Date: Thu, 26 May 2011 09:11:18 -0500
-Message-Id: <1306419078-2669-2-git-send-email-manoj.iyer@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1306419078-2669-1-git-send-email-manoj.iyer@canonical.com>
-References: <1306419078-2669-1-git-send-email-manoj.iyer@canonical.com>
+	Thu, 26 May 2011 10:15:53 -0400
+X-Sasl-enc: AoPTMhRohXszrRh29RYcN3UdL44yozmhbNHUWiajvlYN 1306419352
+Date: Thu, 26 May 2011 07:14:30 -0700
+From: Greg KH <greg@kroah.com>
+To: Xiangliang Yu <yuxiangl@marvell.com>
+Cc: "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jacky Feng <jfeng@marvell.com>
+Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
+ coalescing to device 	attributes in sysfs
+Message-ID: <20110526141430.GD4164@kroah.com>
+References: <mvsas-intr-coal>
+ <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
+ <20110526021809.GA22496@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
----
- drivers/pci/quirks.c    |    2 ++
- include/linux/pci_ids.h |    1 +
- 2 files changed, 3 insertions(+), 0 deletions(-)
+On Thu, May 26, 2011 at 02:00:21AM -0700, Xiangliang Yu wrote:
+> 
+> >Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt >coalescing to device attributes in sysfs
+> >> 
+> >> -- Add support for driver version and interrupt coalescing device attributes.
+> 
+> >When you add a sysfs file, you must also add a Documentation/ABI file as
+> >well.  Please do that here.
+> 
+> These device attributes are sysft class properties for the scsi host,
+> and the sysfs files are within scsi host sysfs directory. so, do you
+> think I need add a ABI file?  and , I can't find anything about scsi
+> host sysfs file under directory Documentation/ABI.
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index e8a1406..02145e9 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2761,6 +2761,8 @@ static void ricoh_mmc_fixup_r5c832(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
-+DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
- #endif /*CONFIG_MMC_RICOH_MMC*/
- 
- #if defined(CONFIG_DMAR) || defined(CONFIG_INTR_REMAP)
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 24787b7..2269dac 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1537,6 +1537,7 @@
- #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
- #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
- #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
-+#define PCI_DEVICE_ID_RICOH_R5CE823	0xe823
- #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
- #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
- 
--- 
-1.7.4.1
+Yes, again, if you add a sysfs file, you need to add documentation
+explaining exactly what it is there for and what it does.
 
+And if there isn't already a file for this device, then please add it.
+
+thanks,
+
+greg k-h
