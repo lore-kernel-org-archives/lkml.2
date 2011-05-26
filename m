@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758647Ab1EZWOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 18:14:11 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:47489 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756862Ab1EZWOG convert rfc822-to-8bit (ORCPT
+	id S1758617Ab1EZWN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 18:13:59 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:61476 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756862Ab1EZWN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 18:14:06 -0400
+	Thu, 26 May 2011 18:13:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=rfyTsURuChGVbd5ZOZrqwnfDOTTqxAQYV8u2gjWi2MKE3q0LeXgdK8G+3S5vHTFpdb
+         +c2uKwMELfEDW6VH5oGw==
+Date: Thu, 26 May 2011 15:13:52 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [slubllv6 03/17] slub: Move page->frozen handling near where
+ the page->freelist handling occurs
+In-Reply-To: <20110526181503.129943104@linux.com>
+Message-ID: <alpine.DEB.2.00.1105261441460.10790@chino.kir.corp.google.com>
+References: <20110526181442.789868308@linux.com> <20110526181503.129943104@linux.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110526220120.GN24876@n2100.arm.linux.org.uk>
-References: <BANLkTiknh4nCviohecbcJEiWnSW-JdMxDw@mail.gmail.com>
- <alpine.LFD.2.00.1105241435550.3207@xanadu.home> <BANLkTi=hCpCbNzi1ZiKmGnbhmCG2Ce=EkA@mail.gmail.com>
- <201105261559.41993.arnd@arndb.de> <20110526150655.GA26661@ponder.secretlab.ca>
- <20110526220120.GN24876@n2100.arm.linux.org.uk>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 26 May 2011 16:13:46 -0600
-X-Google-Sender-Auth: E4GZ-2Cm7oKzVjdwF96zLgLjZeM
-Message-ID: <BANLkTi=mL=J4UeKgFEa9y3C==8f9eKkboA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Xilinx: Adding zynq platform support
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 4:01 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, May 26, 2011 at 09:06:55AM -0600, Grant Likely wrote:
->> On Thu, May 26, 2011 at 03:59:41PM +0200, Arnd Bergmann wrote:
->> > On Wednesday 25 May 2011, Grant Likely wrote:
->> > >
->> > > As per discussion attached below.  Please pull this tree adding device
->> > > tree support to ARM, plus some other minor device tree changes.
->> >
->> > Hi Grant and Linus,
->> >
->> > There is also the new Xilinx zynq subarchitecture pending that depends
->> > on this, see below. Should we also include that right away, in order
->> > to have an example for other platforms? I think the code is clean
->> > enough and it would be good to have.
->> >
->> >     Arnd
->>
->> Yes, this one definitely should (as we discussed in Budapest 2 weeks back).
->> Its been in linux-next for a while now too.
->>
->> I've picked it up into devicetree/arm-next and run through a few build
->> tests before I push it out and update the pull request.
->
-> Note that I've pulled the dt stuff into my tree a few days ago already.
+On Thu, 26 May 2011, Christoph Lameter wrote:
 
-Even better.  Thanks.
+> This is necessary because the frozen bit has to be handled in the same cmpxchg_double
+> with the freelist and the counters.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-g.
+Acked-by: David Rientjes <rientjes@google.com>
