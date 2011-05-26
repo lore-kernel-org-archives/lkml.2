@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab1EZTOY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:14:24 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:58720 "EHLO mx1.fusionio.com"
+	id S1758166Ab1EZTSl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:18:41 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41538 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758357Ab1EZTOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:14:23 -0400
-X-ASG-Debug-ID: 1306437261-03d6a512a807780001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DDEA689.2090004@fusionio.com>
-Date: Thu, 26 May 2011 21:14:17 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1751992Ab1EZTSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:18:40 -0400
+Date: Thu, 26 May 2011 21:17:21 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Kees Cook <kees.cook@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/2] perf/urgent fixes
+Message-ID: <20110526191721.GD3476@elte.hu>
+References: <1306433134-31869-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Mike Snitzer <snitzer@redhat.com>, Mandeep Singh Baines <msb@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jrbarnette@chromium.org" <jrbarnette@chromium.org>,
-        Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>
-Subject: Re: dm: pass up rotational flag
-References: <1306356648-30730-1-git-send-email-msb@chromium.org>	<20110526182321.GA26219@redhat.com> <yq1zkm948oa.fsf@sermon.lab.mkp.net>
-X-ASG-Orig-Subj: Re: dm: pass up rotational flag
-In-Reply-To: <yq1zkm948oa.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1306437261
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64744
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306433134-31869-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-26 20:29, Martin K. Petersen wrote:
->>>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
-> 
->>> Allow the NONROT flag to be passed through to linear mappings if all
->>> underlying device are non-rotational. Tools like ureadahead will
->>> schedule IOs differently based on the rotational flag.
-> 
-> Mike> Thanks for doing this, looks good in general.
-> 
-> I'd rather we made the rotational property part of the topology instead
-> of having to special-case it in DM. I seem to recall posting a patch
-> that did that at some point but I can't seem to find it...
 
-Agree, would be a better idea.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
--- 
-Jens Axboe
+> Hi Ingo,
+> 
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (2):
+>   perf symbols: Handle /proc/sys/kernel/kptr_restrict
+>   perf tools: Fix build on older systems
+> 
+>  tools/perf/Makefile                   |    2 +
+>  tools/perf/builtin-record.c           |   13 +++++++++
+>  tools/perf/builtin-report.c           |   26 ++++++++++++++++++
+>  tools/perf/util/event.c               |   15 ++++++++--
+>  tools/perf/util/header.c              |    8 ++++-
+>  tools/perf/util/include/linux/const.h |    1 +
+>  tools/perf/util/symbol.c              |   48 +++++++++++++++++++++++++++++++++
+>  tools/perf/util/symbol.h              |    3 +-
+>  8 files changed, 110 insertions(+), 6 deletions(-)
+>  create mode 100644 tools/perf/util/include/linux/const.h
 
+Pulled, thanks a lot Arnaldo!
+
+	Ingo
