@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758307Ab1EZSsT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:48:19 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:49351 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755482Ab1EZSsS convert rfc822-to-8bit (ORCPT
+	id S1758392Ab1EZSsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:48:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46956 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758199Ab1EZSso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:48:18 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-131.messagelabs.com!1306435676!25771982!32
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.69]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Mika Westerberg <mika.westerberg@iki.fi>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ryan@bluewatersys.com" <ryan@bluewatersys.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi mailing list <spi-devel-general@lists.sourceforge.net>
-Date: Thu, 26 May 2011 13:48:12 -0500
-Subject: RE: [PATCH 1/5] dmaengine: add ep93xx DMA support
-Thread-Topic: [PATCH 1/5] dmaengine: add ep93xx DMA support
-Thread-Index: Acwb1FWbkgwYzaFORuSCd5huHhXeagAALG/g
-Message-ID: <0D753D10438DA54287A00B027084269764D3319EC4@AUSP01VMBX24.collaborationhost.net>
-References: <cover.1306082097.git.mika.westerberg@iki.fi>
- <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
- <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com>
- <20110525195413.GC2996@acer>
- <BANLkTin8Trn-44Op+GbxrgocFrnPuXUZ2w@mail.gmail.com>
- <20110526043344.GA2749@acer>
- <BANLkTikzrXRmdnv_v_nmJw7Nvsr6TY-5RQ@mail.gmail.com>
- <20110526183800.GE2957@acer>
-In-Reply-To: <20110526183800.GE2957@acer>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 May 2011 14:48:44 -0400
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        jrbarnette@chromium.org, Neil Brown <neilb@suse.de>,
+        Jens Axboe <jaxboe@fusionio.com>, Alasdair G Kergon <agk@redhat.com>,
+        dm-devel@redhat.com
+Subject: Re: dm: pass up rotational flag
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <1306356648-30730-1-git-send-email-msb@chromium.org>
+	<20110526182321.GA26219@redhat.com>
+	<yq1zkm948oa.fsf@sermon.lab.mkp.net>
+	<20110526184321.GC26219@redhat.com>
+Date: Thu, 26 May 2011 14:48:23 -0400
+In-Reply-To: <20110526184321.GC26219@redhat.com> (Mike Snitzer's message of
+	"Thu, 26 May 2011 14:43:21 -0400")
+Message-ID: <yq1vcwx47t4.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.110013 (No Gnus v0.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4DDEA082.00E9:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 26, 2011 11:38 AM, Mika Westerberg wrote:
-> On Thu, May 26, 2011 at 09:15:25AM +0200, Linus Walleij wrote:
->> On Thu, May 26, 2011 at 6:33 AM, Mika Westerberg <mika.westerberg@iki.fi> wrote:
->> 
->>> Do you think that we can go forward with this patch series if I drop the last
->>> patch (spi/ep93xx: add DMA support)? This way we will have dmaengine
->>> implementation in place, whatever SPI driver we choose to use with ep93xx.
->> 
->> Yes and you don't have to drop any DMA support for the existing driver
->> for me alone, now that it's in the tree it should be maintained. I only
->> wanted to raise the issue of code duplication, not block any patches.
->
-> Ok, so I'll keep the last patch for now.
->
-> BTW: if we get amba-pl022 driver to work with ep93xx, do you have any ideas
-> how to proceed from there? I mean, should we convert existing users to use
-> that driver instead and finally remove the ep93xx_spi driver?
+>>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
 
-I think the biggest hurdle with using the amba-pl022 driver is that the ep93xx
-spi peripheral does not have the registers with the pid and cid id's.  Without
-those I don't think the amba bus driver will be able to match the device to
-the driver.
+Mike> Similarly, couldn't the discard flag be made part of topology?
 
-Regards,
-Hartley
+Actually, now that I think about it I'm fairly sure my patch nuked the
+discard queue flag because I was tired of keeping the flag and the
+topology in sync. I don't think I mucked with the rotational flag.
+
+Let me grep my patch queue and see. It must be in there somewhere...
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
