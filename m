@@ -1,207 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932938Ab1EZQym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 12:54:42 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35694 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932472Ab1EZQyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 12:54:41 -0400
-Date: Thu, 26 May 2011 09:54:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Witold Baryluk <baryluk@smp.if.uj.edu.pl>
-Subject: Re: [PATCH 12/12] ftrace: Add internal recursive checks
-Message-ID: <20110526165424.GD2386@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110526152541.995963172@goodmis.org>
- <20110526152958.961788971@goodmis.org>
+	id S1755125Ab1EZRCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:02:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44251 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1EZRCq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 13:02:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526152958.961788971@goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
+References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
+	<BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
+	<BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
+	<1306254027.18455.47.camel@twins>
+	<20110524195435.GC27634@elte.hu>
+	<alpine.LFD.2.02.1105242239230.3078@ionos>
+	<20110525150153.GE29179@elte.hu>
+	<alpine.LFD.2.02.1105251836030.3078@ionos>
+	<20110525180100.GY19633@outflux.net>
+	<BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
+	<20110525191152.GC19633@outflux.net>
+	<BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com>
+	<BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
+	<BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>
+	<BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
+	<BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
+Date: Thu, 26 May 2011 12:02:45 -0500
+Message-ID: <BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
+From: Will Drewry <wad@chromium.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Colin Walters <walters@verbum.org>, Kees Cook <kees.cook@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 11:25:54AM -0400, Steven Rostedt wrote:
-> From: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Witold reported a reboot caused by the selftests of the dynamic function
-> tracer. He sent me a config and I used ktest to do a config_bisect on it
-> (as my config did not cause the crash). It pointed out that the problem
-> config was CONFIG_PROVE_RCU.
-> 
-> What happened was that if multiple callbacks are attached to the
-> function tracer, we iterate a list of callbacks. Because the list is
-> managed by synchronize_sched() and preempt_disable, the access to the
-> pointers uses rcu_dereference_raw().
-> 
-> When PROVE_RCU is enabled, the rcu_dereference_raw() calls some
-> debugging functions, which happen to be traced. The tracing of the debug
-> function would then call rcu_dereference_raw() which would then call the
-> debug function and then... well you get the idea.
-> 
-> I first wrote two different patches to solve this bug.
-> 
-> 1) add a __rcu_dereference_raw() that would not do any checks.
-> 2) add notrace to the offending debug functions.
-> 
-> Both of these patches worked.
-> 
-> Talking with Paul McKenney on IRC, he suggested to add recursion
-> detection instead. This seemed to be a better solution, so I decided to
-> implement it. As the task_struct already has a trace_recursion to detect
-> recursion in the ring buffer, and that has a very small number it
-> allows, I decided to use that same variable to add flags that can detect
-> the recursion inside the infrastructure of the function tracer.
-> 
-> I plan to change it so that the task struct bit can be checked in
-> mcount, but as that requires changes to all archs, I will hold that off
-> to the next merge window.
+On Thu, May 26, 2011 at 11:46 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, May 26, 2011 at 9:33 AM, Will Drewry <wad@chromium.org> wrote:
+>>
+>> FWIW, none of the patches deal with privilege escalation via setuid
+>> files or file capabilities.
+>
+> That is NOT AT ALL what I'm talking about.
+>
+> I'm talking about the "setuid()" system call (and all its cousins:
+> setgit/setreuid etc). And the whole thread has been about filtering
+> system calls, no?
+>
+> Do a google code search for setuid.
+>
+> In good code, it will look something like
+>
+>  uid = getuid();
+>
+>  if (setuid(uid)) {
+>    fprintf(stderr, "Unable to drop provileges\n");
+>    exit(1);
+>  }
+>
+> but I guarantee you that there are cases where people just blindly
+> drop privileges. google code search found me at least the "heirloom"
+> source code doing exactly that.
+>
+> And if you filter system calls, it's entirely possible that you can
+> attack suid executables through such a vector. Your "limit system
+> calls for security" security suddenly turned into "avoid the system
+> call that made things secure"!
+>
+> See what I'm saying?
 
-Looks good to me.
+Absolutely - that was what I meant :/  The patches do not currently
+check creds at creation or again at use, which would lead to
+unprivileged filters being used in a privileged context.  Right now,
+though, if setuid() is not allowed by the seccomp-filter, the process
+will be immediately killed with do_exit(SIGKILL) on call -- thus
+avoiding a silent failure. I mentioned file capabilities because they
+can have setuid-like side effects, too.  As long as system call
+rejection results in a process death, I *think* it helps with some of
+this complexity, but I haven't fully vetted the patches for these
+scenarios to be 100% confident.
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Link: http://lkml.kernel.org/r/1306348063.1465.116.camel@gandalf.stny.rr.com
-> Reported-by: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/linux/sched.h      |    2 +-
->  kernel/trace/ftrace.c      |   13 ++++++++++++-
->  kernel/trace/ring_buffer.c |   10 +++++-----
->  kernel/trace/trace.h       |   15 +++++++++++++++
->  4 files changed, 33 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index d8b2d0b..7b78d9c 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1513,7 +1513,7 @@ struct task_struct {
->  #ifdef CONFIG_TRACING
->  	/* state flags for use by tracers */
->  	unsigned long trace;
-> -	/* bitmask of trace recursion */
-> +	/* bitmask and counter of trace recursion */
->  	unsigned long trace_recursion;
->  #endif /* CONFIG_TRACING */
->  #ifdef CONFIG_CGROUP_MEM_RES_CTLR /* memcg uses this to do batch job */
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 25949b3..1ee417f 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -109,12 +109,18 @@ ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip);
->  static void ftrace_global_list_func(unsigned long ip,
->  				    unsigned long parent_ip)
->  {
-> -	struct ftrace_ops *op = rcu_dereference_raw(ftrace_global_list); /*see above*/
-> +	struct ftrace_ops *op;
-> +
-> +	if (unlikely(trace_recursion_test(TRACE_GLOBAL_BIT)))
-> +		return;
-> 
-> +	trace_recursion_set(TRACE_GLOBAL_BIT);
-> +	op = rcu_dereference_raw(ftrace_global_list); /*see above*/
->  	while (op != &ftrace_list_end) {
->  		op->func(ip, parent_ip);
->  		op = rcu_dereference_raw(op->next); /*see above*/
->  	};
-> +	trace_recursion_clear(TRACE_GLOBAL_BIT);
->  }
-> 
->  static void ftrace_pid_func(unsigned long ip, unsigned long parent_ip)
-> @@ -3490,6 +3496,10 @@ ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip)
->  {
->  	struct ftrace_ops *op;
-> 
-> +	if (unlikely(trace_recursion_test(TRACE_INTERNAL_BIT)))
-> +		return;
-> +
-> +	trace_recursion_set(TRACE_INTERNAL_BIT);
->  	/*
->  	 * Some of the ops may be dynamically allocated,
->  	 * they must be freed after a synchronize_sched().
-> @@ -3502,6 +3512,7 @@ ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip)
->  		op = rcu_dereference_raw(op->next);
->  	};
->  	preempt_enable_notrace();
-> +	trace_recursion_clear(TRACE_INTERNAL_BIT);
->  }
-> 
->  static void clear_ftrace_swapper(void)
-> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-> index 0ef7b4b..b0c7aa4 100644
-> --- a/kernel/trace/ring_buffer.c
-> +++ b/kernel/trace/ring_buffer.c
-> @@ -2216,7 +2216,7 @@ static noinline void trace_recursive_fail(void)
-> 
->  	printk_once(KERN_WARNING "Tracing recursion: depth[%ld]:"
->  		    "HC[%lu]:SC[%lu]:NMI[%lu]\n",
-> -		    current->trace_recursion,
-> +		    trace_recursion_buffer(),
->  		    hardirq_count() >> HARDIRQ_SHIFT,
->  		    softirq_count() >> SOFTIRQ_SHIFT,
->  		    in_nmi());
-> @@ -2226,9 +2226,9 @@ static noinline void trace_recursive_fail(void)
-> 
->  static inline int trace_recursive_lock(void)
->  {
-> -	current->trace_recursion++;
-> +	trace_recursion_inc();
-> 
-> -	if (likely(current->trace_recursion < TRACE_RECURSIVE_DEPTH))
-> +	if (likely(trace_recursion_buffer() < TRACE_RECURSIVE_DEPTH))
->  		return 0;
-> 
->  	trace_recursive_fail();
-> @@ -2238,9 +2238,9 @@ static inline int trace_recursive_lock(void)
-> 
->  static inline void trace_recursive_unlock(void)
->  {
-> -	WARN_ON_ONCE(!current->trace_recursion);
-> +	WARN_ON_ONCE(!trace_recursion_buffer());
-> 
-> -	current->trace_recursion--;
-> +	trace_recursion_dec();
->  }
-> 
->  #else
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 6b69c4b..229f859 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -784,4 +784,19 @@ extern const char *__stop___trace_bprintk_fmt[];
->  	FTRACE_ENTRY(call, struct_name, id, PARAMS(tstruct), PARAMS(print))
->  #include "trace_entries.h"
-> 
-> +/* Only current can touch trace_recursion */
-> +#define trace_recursion_inc() do { (current)->trace_recursion++; } while (0)
-> +#define trace_recursion_dec() do { (current)->trace_recursion--; } while (0)
-> +
-> +/* Ring buffer has the 10 LSB bits to count */
-> +#define trace_recursion_buffer() ((current)->trace_recursion & 0x3ff)
-> +
-> +/* for function tracing recursion */
-> +#define TRACE_INTERNAL_BIT		(1<<11)
-> +#define TRACE_GLOBAL_BIT		(1<<12)
-> +
-> +#define trace_recursion_set(bit)	do { (current)->trace_recursion |= (bit); } while (0)
-> +#define trace_recursion_clear(bit)	do { (current)->trace_recursion &= ~(bit); } while (0)
-> +#define trace_recursion_test(bit)	((current)->trace_recursion & (bit))
-> +
->  #endif /* _LINUX_KERNEL_TRACE_H */
-> -- 
-> 1.7.4.4
-> 
-> 
+Sorry I wasn't clear!
+will
