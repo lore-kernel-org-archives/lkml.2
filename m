@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab1EZUiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:38:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:49225 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086Ab1EZUiV (ORCPT
+	id S1758622Ab1E0BHh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 21:07:37 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41238
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752156Ab1E0BHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 16:38:21 -0400
-X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=wom5GMh1gUkA:10 a=tyV8ermOv9cA:10 a=Rj1_iGo3bfgA:10 a=IkcTkHD0fZMA:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=Z4Rwk6OoAAAA:8 a=hBqU3vQJAAAA:8 a=DfNHnWVPAAAA:8 a=2g7al-zkAAAA:8 a=20KFwNOVAAAA:8 a=8jBD6fuDfVJSUOwCvcYA:9 a=QEXdDO2ut3YA:10 a=jbrJJM5MRmoA:10 a=4gZ4WExUoD4A:10 a=lBRciGGoxdUA:10 a=JZonRkAYZ_cA:10 a=jEp0ucaQiEUA:10 a=g3F5VGk0NOMZWSIEWMgijA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.158.191
-Date: Thu, 26 May 2011 15:38:20 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Robert =?utf-8?B?xZp3acSZY2tp?= <robert@swiecki.net>,
-        David Howells <dhowells@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>, stable@kernel.org
-Subject: Re: [PATCH] Set cred->user_ns in key_replace_session_keyring
-Message-ID: <20110526203819.GA27529@mail.hallyn.com>
-References: <20110526202505.GA6367@mail.hallyn.com>
- <BANLkTi=dhwdPGj=yU=NRaSkK-BBTPQNKOA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=dhwdPGj=yU=NRaSkK-BBTPQNKOA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 May 2011 21:07:36 -0400
+X-Greylist: delayed 9730 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 May 2011 21:07:36 EDT
+Subject: Re: [PATCH] cpumask: convert cpumask_of_cpu() with cpumask_of()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20110427193419.D17F.A69D9226@jp.fujitsu.com>
+References: <1303814572.20212.249.camel@twins>
+	 <20110426203520.F3AE.A69D9226@jp.fujitsu.com>
+	 <20110427193419.D17F.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 22:38:47 +0200
+Message-ID: <1306442327.2497.108.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Linus Torvalds (torvalds@linux-foundation.org):
-> Shouldn't this also be "Cc: stable" for 2.6.39?
+On Wed, 2011-04-27 at 19:32 +0900, KOSAKI Motohiro wrote:
 > 
-> Bug introduced by commit 47a150edc2a, no?
-
-Yup, introduced there.
-
-Stable/whoever, should I re-send this patch separately, or does this suffice?
-
-thanks,
--serge
-
->                 Linus
+> I've made concept proof patch today. The result is better than I expected.
 > 
-> On Thu, May 26, 2011 at 1:25 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> > Since this cred was not created with copy_creds(), it needs to get
-> > initialized.  Otherwise use of syscall(__NR_keyctl, KEYCTL_SESSION_TO_PARENT);
-> > can lead to a NULL deref.  Thanks to Robert for finding this.
-> >
-> > Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> > Reported-by: Robert Święcki <robert@swiecki.net>
-> > Cc: David Howells <dhowells@redhat.com>
-> > ---
-> >  security/keys/process_keys.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-> > index 6c0480d..92a3a5d 100644
-> > --- a/security/keys/process_keys.c
-> > +++ b/security/keys/process_keys.c
-> > @@ -847,6 +847,7 @@ void key_replace_session_keyring(void)
-> >        new-> sgid      = old-> sgid;
-> >        new->fsgid      = old->fsgid;
-> >        new->user       = get_uid(old->user);
-> > +       new->user_ns    = new->user->user_ns;
-> >        new->group_info = get_group_info(old->group_info);
-> >
-> >        new->securebits = old->securebits;
-> > --
-> > 1.7.0.4
-> >
-> >
+> <before>
+>  Performance counter stats for 'hackbench 10 thread 1000' (10 runs):
+> 
+>          1603777813  cache-references         #     56.987 M/sec   ( +-   1.824% )  (scaled from 25.36%)
+>            13780381  cache-misses             #      0.490 M/sec   ( +-   1.360% )  (scaled from 25.55%)
+>         24872032348  L1-dcache-loads          #    883.770 M/sec   ( +-   0.666% )  (scaled from 25.51%)
+>           640394580  L1-dcache-load-misses    #     22.755 M/sec   ( +-   0.796% )  (scaled from 25.47%)
+> 
+>        14.162411769  seconds time elapsed   ( +-   0.675% )
+> 
+> <after>
+>  Performance counter stats for 'hackbench 10 thread 1000' (10 runs):
+> 
+>          1416147603  cache-references         #     51.566 M/sec   ( +-   4.407% )  (scaled from 25.40%)
+>            10920284  cache-misses             #      0.398 M/sec   ( +-   5.454% )  (scaled from 25.56%)
+>         24666962632  L1-dcache-loads          #    898.196 M/sec   ( +-   1.747% )  (scaled from 25.54%)
+>           598640329  L1-dcache-load-misses    #     21.798 M/sec   ( +-   2.504% )  (scaled from 25.50%)
+> 
+>        13.812193312  seconds time elapsed   ( +-   1.696% )
+> 
+>  * datail data is in result.txt
+> 
+> 
+> The trick is,
+>  - Typical linux userland applications don't use mempolicy and/or cpusets
+>    API at all.
+>  - Then, 99.99% thread's  tsk->cpus_alloed have cpu_all_mask.
+>  - cpu_all_mask case, every thread can share the same bitmap. It may help to
+>    reduce L1 cache miss in scheduler.
+> 
+> What do you think? 
+
+Nice!
+
+If you finish the first patch (sort the TODOs) I'll take it.
+
+I'm unsure about the PF_THREAD_UNBOUND thing though, then again, the
+alternative is adding another struct cpumask * and have that point to
+the shared mask or the private mask.
+
+But yeah, looks quite feasible.
+
