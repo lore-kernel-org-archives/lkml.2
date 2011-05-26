@@ -1,61 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758207Ab1EZR65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:58:57 -0400
-Received: from smtp-sjl2.savagebeast.com ([208.85.40.101]:56387 "EHLO
-	smtp-sjl2.savagebeast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758181Ab1EZR64 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:58:56 -0400
-X-Greylist: delayed 900 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 May 2011 13:58:56 EDT
-X-AuditID: 0a0a5020-b7c9bae000000b2d-5e-4dde915b017f
-Message-ID: <4DDE916E.3070803@pandora.com>
-Date: Thu, 26 May 2011 10:44:14 -0700
-From: Dave Rawks <dave@pandora.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1758156Ab1EZRpk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:45:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24408 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751748Ab1EZRpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 13:45:39 -0400
+Date: Thu, 26 May 2011 13:44:47 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "K.Prasad" <prasad@linux.vnet.ibm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        anderson@redhat.com
+Subject: Re: [RFC Patch 5/6] slimdump: Capture slimdump for fatal MCE
+ generated crashes
+Message-ID: <20110526174447.GC29496@redhat.com>
+References: <20110526170722.GB23266@in.ibm.com>
+ <20110526172305.GA18295@in.ibm.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: inconsistent behavior of MS_RELATIME F_FLAG
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526172305.GA18295@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	I've been trying to figure this out for the past few days and I'm at a
-loss as to what exactly the expected behavior of the MS_RELATIME bit in
-F_FLAG is supposed to reflect when I stat a mounted filesystem. The
-comments in fs.h state that the MS_RELATIME flag is one of the
-filesystem independent flags available in the regular 32 bit F_FLAG
-mask. However observationally I notice that /proc/mounts indicates that
-relatime is set even on mount which return 0 for the relatime bit when
-stat'd.
+On Thu, May 26, 2011 at 10:53:05PM +0530, K.Prasad wrote:
+> 
+> slimdump: Capture slimdump for fatal MCE generated crashes
+> 
+> System crashes resulting from fatal hardware errors (such as MCE) don't need
+> all the contents from crashing-kernel's memory. Generate a new 'slimdump' that
+> retains only essential information while discarding the old memory.
+> 
 
-For instance:
+Why to enforce zeroing out of rest of the vmcore data in kernel. Why not
+leave it to user space. 
 
-/etc/fstab:
->/dev/sda3 /var            ext3    defaults        0       2
+As Andi said, you anyway will require disabling MCE temporarily in second
+kernel. So that should allay the concern that we might run into second
+MCE while trying to read the vmcore.
 
-/proc/mounts:
-> /dev/sda3 /var ext3 rw,relatime,errors=continue,data=ordered 0 0
+A user might want to extract just the dmesg buffers also after MCE from
+vmcore.
 
-yet when I stat the filesystem (excuse my python):
+What I am saying is that this sounds more like a policy. Don't enforce
+it in kernel. Probably give user MCE registers as part of ELF note of
+vmcore. Now leave it up to user what data he wants to extract from vmcore.
+Just the MCE registers or something more then that.
 
-> >>> import os,statvfs
-> >>> os.statvfs('/var')[statvfs.F_FLAG]
-> 4096
-> >>> 4096 & (1<<21)
-> 0
+Thanks
+Vivek
 
-
->From a quick search back through the list archive, I see that the
-default atime behavior has been a contentious subject at times, but I'm
-left wondering how we came to a state where apparently relatime is the
-default but the normal programmatic way of interrogating the mount's
-state does not reflect that.
-
-Any insight would be greatly appreciated. Also, this is my first post to
-lkml so I apologize in advance if I've asked in the wrong place.
-
--Dave Rawks
+> Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
+> ---
+>  fs/proc/vmcore.c |  130 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 128 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6.slim_kdump/fs/proc/vmcore.c
+> ===================================================================
+> --- linux-2.6.slim_kdump.orig/fs/proc/vmcore.c
+> +++ linux-2.6.slim_kdump/fs/proc/vmcore.c
+> @@ -483,9 +483,60 @@ static void __init set_vmcore_list_offse
+>  	}
+>  }
+>  
+> +/*
+> + * Check if the crash was due to a fatal Memory Check Exception
+> + */
+> +static int is_mce_crash64(void)
+> +{
+> +	int i, j, len = 0, rc;
+> +	Elf64_Ehdr *ehdr_ptr;
+> +	Elf64_Phdr *phdr_ptr;
+> +	Elf64_Nhdr *nhdr_ptr;
+> +
+> +	ehdr_ptr = (Elf64_Ehdr *)elfcorebuf;
+> +	phdr_ptr = (Elf64_Phdr *)(elfcorebuf + sizeof(Elf64_Ehdr));
+> +
+> +	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+> +		void *notes_section;
+> +		u64 offset, max_sz;
+> +		if (phdr_ptr->p_type != PT_NOTE)
+> +			continue;
+> +		max_sz = phdr_ptr->p_memsz;
+> +		offset = phdr_ptr->p_offset;
+> +		notes_section = kmalloc(max_sz, GFP_KERNEL);
+> +		if (!notes_section)
+> +			return -ENOMEM;
+> +		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
+> +		if (rc < 0) {
+> +			kfree(notes_section);
+> +			return rc;
+> +		}
+> +
+> +		for (j = 0; j < phdr_ptr->p_filesz; j += len) {
+> +			nhdr_ptr = notes_section + j;
+> +			if (nhdr_ptr->n_type == NT_MCE)
+> +			{
+> +				kfree(notes_section);
+> +				return 1;
+> +			}
+> +			/*
+> +			 * The elf-64 standard specifies 8-byte alignment while
+> +			 * append_elf_note function does only 4-byte roundup.
+> +			 * Hence this code also does a 4-byte roundup.
+> +			 */
+> +			len = sizeof(Elf64_Nhdr);
+> +			len = roundup(len + nhdr_ptr->n_namesz, 4);
+> +			len = roundup(len + nhdr_ptr->n_descsz, 4);
+> +		}
+> +		kfree(notes_section);
+> +	}
+> +	return 0;
+> +}
+> +
+>  static int __init parse_crash_elf64_headers(void)
+>  {
+> -	int rc=0;
+> +	int i, rc = 0;
+> +	Elf64_Phdr *phdr_ptr;
+>  	Elf64_Ehdr ehdr;
+>  	u64 addr;
+>  
+> @@ -523,6 +574,18 @@ static int __init parse_crash_elf64_head
+>  		return rc;
+>  	}
+>  
+> +	phdr_ptr = (Elf64_Phdr *)(elfcorebuf + sizeof(Elf64_Ehdr));
+> +	if (is_mce_crash64() > 0) {
+> +		/*
+> +		 * If crash is due to Machine Check exception, don't populate
+> +		 * sections other than elf-notes. Mark their sizes as zero.
+> +		 */
+> +		for (i = 0; i < ehdr.e_phnum; i++, phdr_ptr++) {
+> +			if (phdr_ptr->p_type != PT_NOTE)
+> +				phdr_ptr->p_memsz = phdr_ptr->p_filesz = 0;
+> +		}
+> +	}
+> +
+>  	/* Merge all PT_NOTE headers into one. */
+>  	rc = merge_note_headers_elf64(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
+>  	if (rc) {
+> @@ -539,9 +602,60 @@ static int __init parse_crash_elf64_head
+>  	return 0;
+>  }
+>  
+> +/*
+> + * Check if the crash was due to a fatal Memory Check Exception
+> + */
+> +static int is_mce_crash32(void)
+> +{
+> +	int i, j, len = 0, rc;
+> +	Elf32_Ehdr *ehdr_ptr;
+> +	Elf32_Phdr *phdr_ptr;
+> +	Elf32_Nhdr *nhdr_ptr;
+> +
+> +	ehdr_ptr = (Elf32_Ehdr *)elfcorebuf;
+> +	phdr_ptr = (Elf32_Phdr *)(elfcorebuf + sizeof(Elf32_Ehdr));
+> +
+> +	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+> +		void *notes_section;
+> +		u64 offset, max_sz;
+> +		if (phdr_ptr->p_type != PT_NOTE)
+> +			continue;
+> +		max_sz = phdr_ptr->p_memsz;
+> +		offset = phdr_ptr->p_offset;
+> +		notes_section = kmalloc(max_sz, GFP_KERNEL);
+> +		if (!notes_section)
+> +			return -ENOMEM;
+> +		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
+> +		if (rc < 0) {
+> +			kfree(notes_section);
+> +			return rc;
+> +		}
+> +
+> +		for (j = 0; j < phdr_ptr->p_filesz; j += len) {
+> +			nhdr_ptr = notes_section + j;
+> +			if (nhdr_ptr->n_type == NT_MCE)
+> +			{
+> +				kfree(notes_section);
+> +				return 1;
+> +			}
+> +			/*
+> +			 * The elf-64 standard specifies 8-byte alignment while
+> +			 * append_elf_note function does only 4-byte roundup.
+> +			 * Hence this code also does a 4-byte roundup.
+> +			 */
+> +			len = sizeof(Elf64_Nhdr);
+> +			len = roundup(len + nhdr_ptr->n_namesz, 4);
+> +			len = roundup(len + nhdr_ptr->n_descsz, 4);
+> +		}
+> +		kfree(notes_section);
+> +	}
+> +	return 0;
+> +}
+> +
+>  static int __init parse_crash_elf32_headers(void)
+>  {
+> -	int rc=0;
+> +	int i, rc = 0;
+> +	Elf32_Phdr *phdr_ptr;
+>  	Elf32_Ehdr ehdr;
+>  	u64 addr;
+>  
+> @@ -579,6 +693,18 @@ static int __init parse_crash_elf32_head
+>  		return rc;
+>  	}
+>  
+> +	phdr_ptr = (Elf32_Phdr *)(elfcorebuf + sizeof(Elf32_Ehdr));
+> +	if (is_mce_crash32() > 0) {
+> +		/*
+> +		 * If crash is due to Machine Check exception, don't populate
+> +		 * sections other than elf-notes. Mark their sizes as zero.
+> +		 */
+> +		for (i = 0; i < ehdr.e_phnum; i++, phdr_ptr++) {
+> +			if (phdr_ptr->p_type != PT_NOTE)
+> +				phdr_ptr->p_memsz = phdr_ptr->p_filesz = 0;
+> +		}
+> +	}
+> +
+>  	/* Merge all PT_NOTE headers into one. */
+>  	rc = merge_note_headers_elf32(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
+>  	if (rc) {
