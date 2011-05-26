@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab1EZIS5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 04:18:57 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51616 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482Ab1EZISy (ORCPT
+	id S1756337Ab1EZI2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 04:28:48 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:25991 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab1EZI2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 04:18:54 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DDE0CDD.5050000@jp.fujitsu.com>
-Date: Thu, 26 May 2011 17:18:37 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Thu, 26 May 2011 04:28:47 -0400
+Date: Thu, 26 May 2011 10:21:05 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, trivial@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH][Trivial] perf: remove duplicate util/parse-options.h include
+ from builtin-script.c
+Message-ID: <alpine.LNX.2.00.1105261011290.17400@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: luto@mit.edu
-CC: minchan.kim@gmail.com, aarcange@redhat.com, kamezawa.hiroyu@jp.fujitsu.com,
-        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, hannes@cmpxchg.org,
-        riel@redhat.com
-Subject: Re: Easy portable testcase! (Re: Kernel falls apart under light memory
- pressure (i.e. linking vmlinux))
-References: <BANLkTinptn4-+u+jgOr2vf2iuiVS3mmYXA@mail.gmail.com>
-In-Reply-To: <BANLkTinptn4-+u+jgOr2vf2iuiVS3mmYXA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/26 5:17), Andrew Lutomirski wrote:
-> On Tue, May 24, 2011 at 8:43 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
->>
->> Unfortnately, this log don't tell us why DM don't issue any swap io. ;-)
->> I doubt it's DM issue. Can you please try to make swap on out of DM?
->>
->>
-> 
-> I can do one better: I can tell you how to reproduce the OOM in the
-> comfort of your own VM without using dm_crypt or a Sandy Bridge
-> laptop.  This is on Fedora 15, but it really ought to work on any
-> x86_64 distribution that has kvm.  You'll probably want at least 6GB
-> on your host machine because the VM wants 4GB ram.
+Including util/parse-options.h once in tools/perf/builtin-script.c is 
+enough.
 
-Hmmm....
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ builtin-script.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-I don't have 6GB memory. :-)
-I'll try to borrow it from anywhere, but I'd expect my response is delayed
-some time.
+ Patch is against Linus' tree as of a few minutes ago.
+
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 974f6d3..22747de 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -10,7 +10,6 @@
+ #include "util/symbol.h"
+ #include "util/thread.h"
+ #include "util/trace-event.h"
+-#include "util/parse-options.h"
+ #include "util/util.h"
+ #include "util/evlist.h"
+ #include "util/evsel.h"
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
