@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702Ab1EZQOr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 12:14:47 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:52758 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758054Ab1EZQOq (ORCPT
+	id S1758121Ab1EZQPz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 12:15:55 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:9818 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274Ab1EZQPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 12:14:46 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] ARM Subarchitecture group maintainership
-Organization: Texas Instruments, Inc.
-References: <201105181047.17309.arnd@arndb.de>
-Date: Thu, 26 May 2011 09:14:42 -0700
-In-Reply-To: <201105181047.17309.arnd@arndb.de> (Arnd Bergmann's message of
-	"Wed, 18 May 2011 10:47:16 +0200")
-Message-ID: <87k4ddiglp.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Thu, 26 May 2011 12:15:54 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6357"; a="93872155"
+Message-ID: <744ad016b77694e43f07d8bbc8f5b439.squirrel@www.codeaurora.org>
+In-Reply-To: <Pine.LNX.4.44L0.1105261028040.1960-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1105261028040.1960-100000@iolanthe.rowland.org>
+Date: Thu, 26 May 2011 09:15:10 -0700 (PDT)
+Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+From: "Brokhman Tatyana" <tlinder@codeaurora.org>
+To: "Alan Stern" <stern@rowland.harvard.edu>
+Cc: "Tanya Brokhman" <tlinder@codeaurora.org>, balbi@ti.com,
+        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
+Reply-To: tlinder@codeaurora.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
 
-> This is the draft plan for maintaining the ARM subarchitectures in a common
-> tree, as a way to help coordinate the upstream merging of the
-> arch/arm/{plat,mach}-* changes into Linus' tree.
+Hi Alan,
 
-[...]
-
+>> I also thought of that. This can be done...
+>> Just to make sure we're on the same page:
+>> We can add a "max_sup_speed" field to struct usb_composite_driver. Each
+>> of
+>> the Gadget drivers will set this field prior to calling
+>> usb_composite_probe(). Then, in usb_composite_probe(), we'll update the
+>> composite_driver.speed as follows:
+>>
+>> 	composite_driver.speed = min(composite_driver.speed,
+>> driver->max_sup_speed);
 >
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Nicolas Pitre <nico@fluxnic.net>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
->
-> ---
->
-> Maintainers: If you are happy with the layout of the process,
-> please ack this patch, otherwise please comment.
+> Just call it max_speed.  You can mention in the kerneldoc that it is
+> the maximum speed supported by the driver.
 
-Acked-by: Kevin Hilman <khilman@ti.com>
+No problem. I understand that you agree to this approach?
+I was going to wait for Felipe to comment but he'll be out of reach for
+several days so I'll post a new patch set on Sunday.
 
-for davinci and OMAP stuff I maintain.
+Thanks for you help!
 
-Kevin
+Tanya Brokhman
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
