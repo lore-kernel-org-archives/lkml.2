@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758336Ab1EZSse (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:48:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43277 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758269Ab1EZSsd (ORCPT
+	id S932986Ab1EZStG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:49:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51090 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758196Ab1EZStE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:48:33 -0400
-Date: Thu, 26 May 2011 20:48:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [GIT pull] Core updates for ....
-Message-ID: <alpine.LFD.2.02.1105262042360.3078@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 26 May 2011 14:49:04 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <BANLkTineHBZ-oHRsfc9R6bpcp_oyczL5pA@mail.gmail.com>
+References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
+	<BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
+	<BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
+	<1306254027.18455.47.camel@twins>
+	<20110524195435.GC27634@elte.hu>
+	<alpine.LFD.2.02.1105242239230.3078@ionos>
+	<20110525150153.GE29179@elte.hu>
+	<alpine.LFD.2.02.1105251836030.3078@ionos>
+	<20110525180100.GY19633@outflux.net>
+	<BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
+	<20110525191152.GC19633@outflux.net>
+	<BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com>
+	<BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
+	<BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>
+	<BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
+	<BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
+	<BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
+	<BANLkTi=UFB6PLfsSTVpFEQbveMs-W4MjUg@mail.gmail.com>
+	<BANLkTim44ziUsEbYVOjfLPvOLfhUgH9itw@mail.gmail.com>
+	<BANLkTineHBZ-oHRsfc9R6bpcp_oyczL5pA@mail.gmail.com>
+Date: Thu, 26 May 2011 13:49:01 -0500
+Message-ID: <BANLkTimNcag-ZmVTXjUoTyiuJm6jtW0DgA@mail.gmail.com>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
+From: Will Drewry <wad@chromium.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Colin Walters <walters@verbum.org>, Kees Cook <kees.cook@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, May 26, 2011 at 1:33 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, May 26, 2011 at 10:38 AM, Will Drewry <wad@chromium.org> wrote:
+>>>
+>>> One option is to just not ever allow execve() from inside a restricted
+>>> environment.
+>>
+>> That'd certainly be fine with me.
+>
+> So if it ends up being purely a "internal to the process" thing, then
+> I'm much happier about it - it not only limits the scope of things
+> sufficiently that I don't worry too much about security issues, but it
+> makes it very clear that it's about a process going into "lock-down"
+> mode on its own.
+>
+> It also gets rid of all configuration - one of the things that makes
+> most security frameworks (look at selinux, but also just ACL's etc)
+> such a crazy rats nest is the whole "set up for other processes". If
+> it's designed very much to be about just the "self" process (after
+> initialization etc), then I think that avoids pretty much all the
+> serious issues.
+>
+> A lot of server processes could probably use it as a way to say "Hey,
+> I guarantee that I will only open new files read-only, and will only
+> write to the socket that was already opened for me by the accept", and
+> explicitly limit their worker threads that way.
+>
+> If that is really sufficient for some chrome sandboxing, then hey,
+> that's all fine.
 
-Please pull the latest core-fixes-for-linus git tree from:
+It adds some hoops, but less than exist today.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-fixes-for-linus
+> Sometimes limiting yourself (rather than looking for some bigger
+> "generic" solution) is the right answer.
 
-Thanks,
+I will very happily validate usage and repost with a self-limited
+patch series.  Doing so makes the change much more explicitly an
+expansion of seccomp, which keeps things sane.
 
-	tglx
-
------------------->
-Eric Dumazet (1):
-      seqlock: Get rid of SEQLOCK_UNLOCKED
-
-
- arch/ia64/kernel/time.c         |    2 +-
- arch/x86/kernel/vsyscall_64.c   |    2 +-
- include/linux/seqlock.h         |    3 ---
- net/ipv4/inet_connection_sock.c |    2 +-
- 4 files changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 04440cc..85118df 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -36,7 +36,7 @@
- static cycle_t itc_get_cycles(struct clocksource *cs);
- 
- struct fsyscall_gtod_data_t fsyscall_gtod_data = {
--	.lock = SEQLOCK_UNLOCKED,
-+	.lock = __SEQLOCK_UNLOCKED(fsyscall_gtod_data.lock),
- };
- 
- struct itc_jitter_data_t itc_jitter_data;
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index dcbb28c..59be48d 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -59,7 +59,7 @@ int __vgetcpu_mode __section_vgetcpu_mode;
- 
- struct vsyscall_gtod_data __vsyscall_gtod_data __section_vsyscall_gtod_data =
- {
--	.lock = SEQLOCK_UNLOCKED,
-+	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
- 	.sysctl_enabled = 1,
- };
- 
-diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-index 06d6964..e981189 100644
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -41,9 +41,6 @@ typedef struct {
- #define __SEQLOCK_UNLOCKED(lockname) \
- 		 { 0, __SPIN_LOCK_UNLOCKED(lockname) }
- 
--#define SEQLOCK_UNLOCKED \
--		 __SEQLOCK_UNLOCKED(old_style_seqlock_init)
--
- #define seqlock_init(x)					\
- 	do {						\
- 		(x)->sequence = 0;			\
-diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
-index 61fac4c..c14d88a 100644
---- a/net/ipv4/inet_connection_sock.c
-+++ b/net/ipv4/inet_connection_sock.c
-@@ -33,7 +33,7 @@ EXPORT_SYMBOL(inet_csk_timer_bug_msg);
-  * This struct holds the first and last local port number.
-  */
- struct local_ports sysctl_local_ports __read_mostly = {
--	.lock = SEQLOCK_UNLOCKED,
-+	.lock = __SEQLOCK_UNLOCKED(sysctl_local_ports.lock),
- 	.range = { 32768, 61000 },
- };
- 
+Thanks!
+will
