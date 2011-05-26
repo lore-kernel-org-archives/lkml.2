@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab1EZBRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 21:17:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63772 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018Ab1EZBRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 21:17:09 -0400
-X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=inQdEuNhf_oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pLFooxhX5uaH7BxyBKsA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 1/2] tracing: add __print_symbolic_u64 to avoid
- warnings on 32bit machine
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, liubo <liubo2009@cn.fujitsu.com>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-In-Reply-To: <4DDDA7F5.9020001@cn.fujitsu.com>
-References: <4D9573DB.4010009@cn.fujitsu.com>
-	 <1301665762.2160.22.camel@gandalf.stny.rr.com>
-	 <4D9C2FF6.7090607@cn.fujitsu.com>
-	 <1303150309.7181.51.camel@gandalf.stny.rr.com>
-	 <4DACE6E0.7000507@cn.fujitsu.com> <4DBA8C95.4000300@cn.fujitsu.com>
-	 <1304264124.25414.1079.camel@gandalf.stny.rr.com>
-	 <4DDDE9E6.7090303@cn.fujitsu.com>
-	 <1306326464.1465.85.camel@gandalf.stny.rr.com>
-	 <20110525091252.8899385e.randy.dunlap@oracle.com>
-	 <1306342064.1465.101.camel@gandalf.stny.rr.com>
-	 <4DDDA7F5.9020001@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 25 May 2011 21:17:07 -0400
-Message-ID: <1306372627.1465.131.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756359Ab1EZBUR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 21:20:17 -0400
+Received: from tundra.namei.org ([65.99.196.166]:58395 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754018Ab1EZBUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 21:20:16 -0400
+Date: Thu, 26 May 2011 11:19:34 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Kees Cook <kees.cook@canonical.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        gnatapov@redhat.com, Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
+ filtering
+In-Reply-To: <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org>
+References: <20110517131902.GF21441@elte.hu> <BANLkTikBK3-KZ10eErQ6Eex_L6Qe2aZang@mail.gmail.com> <1305807728.11267.25.camel@gandalf.stny.rr.com> <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com> <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
+ <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu> <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu> <alpine.LFD.2.02.1105251836030.3078@ionos> <20110525180100.GY19633@outflux.net>
+ <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 09:08 +0800, Li Zefan wrote:
-> Steven Rostedt wrote:
+On Wed, 25 May 2011, Linus Torvalds wrote:
 
-> Actually it's more than a compile warning fix.
-> 
-> After a variable is cast from u64 to u32 and passed to __print_symbolic(),
-> we'll see incorrect result in the trace output.
+> And per-system-call permissions are very dubious. What system calls
+> don't you want to succeed? That ioctl? You just made it impossible to
+> do a modern graphical application. Yet the kind of thing where we
+> would _want_ to help users is in making it easier to sandbox something
+> like the adobe flash player. But without accelerated direct rendering,
+> that's not going to fly, is it?
 
-Don't worry, I didn't even say a warning fix was not reason to get into
-this merge window.
+Going back to the initial idea proposed by Will, where seccomp is simply 
+extended to filter all syscalls, there is potential benefit in being able 
+to limit the attack surface of the syscall API.
 
-There was only two patches in my last pull request that were not fixing
-a bug and/or warning, but adding enhancements. I rebased without them
-and even added this patch and another bug fix patch to get ready to push
-out.
+This is not security mediation in terms of interaction between things 
+(e.g. "allow A to read B").  It's a _hardening_ feature which prevents a 
+process from being able to invoke potentially hundreds of syscalls is has 
+no need for.  It would allow us to usefully restrict some well-established 
+attack modes, e.g. triggering bugs in kernel code via unneeded syscalls.
 
-After my ktest runs are done (I test each patch on x86_64 and x86_32,
-and then compile test them on a bunch of other archs), I'll do another
-git pull request for this merge window.
+This is orthogonal to access control schemes (such as SELinux), which are 
+about mediating security-relevant interactions between objects.
 
-Thanks!
+One area of possible use is KVM/Qemu, where processes now contain entire 
+operating systems, and the attack surface between them is now much broader 
+e.g. a local unprivileged vulnerability is now effectively a 'remote' full 
+system compromise.
 
--- Steve
+There has been some discussion of this within the KVM project.  Using the 
+existing seccomp facility is problematic in that it requires significant 
+reworking of Qemu to a privsep model, which would also then incur a likely 
+unacceptable context switching overhead.  The generalized seccomp filter 
+as proposed by Will would provide a significant reduction in exposed 
+syscalls and thus guest->host attack surface.
+
+I've cc'd some KVM folk for more input on how this may or may not meet 
+their requirements -- Avi/Gleb, there's a background writeup here: 
+http://lwn.net/Articles/442569/ .  We may need a proof of concept and/or 
+commitment to use this feature for it to be accepted upstream.
 
 
+- James
+-- 
+James Morris
+<jmorris@namei.org>
