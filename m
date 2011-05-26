@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758587Ab1EZXKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 19:10:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55670 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754820Ab1EZXKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 19:10:48 -0400
-Date: Fri, 27 May 2011 01:10:45 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/18] writeback: sync expired inodes first in
- background writeback
-Message-ID: <20110526231045.GN5123@quack.suse.cz>
-References: <20110524051411.924582719@intel.com>
- <20110524051858.972440561@intel.com>
- <20110524155205.GC5390@quack.suse.cz>
- <20110525143857.GA25536@localhost>
+	id S1758252Ab1EZXVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 19:21:31 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:26580 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab1EZXVa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 19:21:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=K7ctQ4N7cHy8A+luLBqyamdUW+tB895iiT0j/lGqGbbCw0y5mh4KzzuHsuGJp9YyPg
+         zRW3mjMDRKB88tGMtvug==
+Date: Thu, 26 May 2011 16:20:58 -0700
+From: Mandeep Singh Baines <msb@chromium.org>
+To: David Miller <davem@davemloft.net>
+Cc: msb@chromium.org, linux-kernel@vger.kernel.org,
+        herbert@gondor.hengli.com.au, linux-crypto@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH v2] crypto: sha1: modify sha1_update to use SHA1_BLOCK_SIZE
+Message-ID: <20110526232058.GQ11023@google.com>
+References: <1306379477-24552-1-git-send-email-msb@chromium.org>
+ <20110525.233411.1372538972166578285.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110525143857.GA25536@localhost>
+In-Reply-To: <20110525.233411.1372538972166578285.davem@davemloft.net>
+X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 25-05-11 22:38:57, Wu Fengguang wrote:
-> > and I was wondering: Assume there is one continuously redirtied file and
-> > untar starts in parallel. With the new logic, background writeback will
-> > never consider inodes that are not expired in this situation (we never
-> > switch to "all dirty inodes" phase - or even if we switched, we would just
-> > queue all inodes and then return back to queueing only expired inodes). So
-> > the net effect is that for 30 seconds we will be only continuously writing
-> > pages of the continuously dirtied file instead of (possibly older) pages of
-> > other files that are written. Is this really desirable? Wasn't the old
-> > behavior simpler and not worse than the new one?
+David Miller (davem@davemloft.net) wrote:
 > 
-> Good question! Yes sadly in this case the new behavior could be worse
-> than the old one.
+> The temp[] buffer is explicitly places inside the inner most
+> basic block so that the compiler doesn't allocate the stack
+> space unless that code path is taken.
 > 
-> In fact this patch do not improve the small files (< 4MB) case at all,
-> except for the side effect that less unexpired inodes will leave in
-> s_io when the background work quit and the later kupdate work will
-> write less unexpired inodes.
-> 
-> And for the mixed small/large files case, it actually results in worse
-> behavior on your mentioned case.
-> 
-> However the root cause here is the file being _actively_ written to,
-> somehow a livelock scheme. We could add a simple livelock prevention
-> scheme that works for the common case of file appending:
-> 
-> - save i_size when the range_cyclic writeback starts from 0, for
->   limiting the writeback scope
-  Hmm, but for this we'd have to store additional 'unsigned long' (page
-index) for each inode. Not sure if it's really worth it.
 
-> - when range_cyclic writeback hits the saved i_size, quit the current
->   inode instead of immediately restarting from 0. This will not only
->   avoid a possible extra seek, but also redirty_tail() the inode and
->   hence get out of possible livelock.
-  But I like the idea of doing redirty_tail() when we write out some inode
-for too long. Maybe we could just do redirty_tail() instead of requeue_io()
-whenever write_cache_pages() had to wrap the index? We could communicate
-this by setting a flag in wbc in write_cache_pages()...
+Fixed in V2 (this patch). Thanks for the review.
 
-> The livelock prevention scheme may not only eliminate the undesirable
-> behavior you observed for this patch, but also prevent the "some old
-> pages may not get the chance to get written to disk in an actively
-> dirtied file" data security issue discussed in an old email. What do
-> you think?
-  So my scheme would not solve this but it does not require per-inode
-overhead...
+-- >8 -- (snip)
 
-								Honza
+Plus some other minor cleanup.
+
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Joe Perches <joe@perches.com>
+Cc: linux-crypto@vger.kernel.org
+---
+ crypto/sha1_generic.c |   33 +++++++++++++++------------------
+ 1 files changed, 15 insertions(+), 18 deletions(-)
+
+diff --git a/crypto/sha1_generic.c b/crypto/sha1_generic.c
+index 0416091..0b56719 100644
+--- a/crypto/sha1_generic.c
++++ b/crypto/sha1_generic.c
+@@ -40,33 +40,30 @@ static int sha1_update(struct shash_desc *desc, const u8 *data,
+ 			unsigned int len)
+ {
+ 	struct sha1_state *sctx = shash_desc_ctx(desc);
+-	unsigned int partial, done;
+-	const u8 *src;
++	unsigned int partial = sctx->count % SHA1_BLOCK_SIZE;
+ 
+-	partial = sctx->count & 0x3f;
+ 	sctx->count += len;
+-	done = 0;
+-	src = data;
+ 
+-	if ((partial + len) > 63) {
++	if ((partial + len) >= SHA1_BLOCK_SIZE) {
+ 		u32 temp[SHA_WORKSPACE_WORDS];
+ 
+ 		if (partial) {
+-			done = -partial;
+-			memcpy(sctx->buffer + partial, data, done + 64);
+-			src = sctx->buffer;
+-		}
+-
+-		do {
+-			sha_transform(sctx->state, src, temp);
+-			done += 64;
+-			src = data + done;
+-		} while (done + 63 < len);
++			unsigned int done = SHA1_BLOCK_SIZE - partial;
+ 
++			memcpy(sctx->buffer + partial, data, done);
++			sha_transform(sctx->state, sctx->buffer, temp);
++			len -= done;
++			data += done;
++			partial = 0;
++		}
++		while (len >= SHA1_BLOCK_SIZE) {
++			sha_transform(sctx->state, data, temp);
++			len -= SHA1_BLOCK_SIZE;
++			data += SHA1_BLOCK_SIZE;
++		}
+ 		memset(temp, 0, sizeof(temp));
+-		partial = 0;
+ 	}
+-	memcpy(sctx->buffer + partial, src, len - done);
++	memcpy(sctx->buffer + partial, data, len);
+ 
+ 	return 0;
+ }
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.3.1
+
