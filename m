@@ -1,110 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab1EZLXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 07:23:34 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58035 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754293Ab1EZLXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 07:23:32 -0400
-Date: Thu, 26 May 2011 13:23:30 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] trivial __TIME__ and __DATE__ removal
-Message-ID: <20110526112330.GA5325@sepie.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757450Ab1EZLsE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 07:48:04 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:6240 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754909Ab1EZLsB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 07:48:01 -0400
+X-Greylist: delayed 1035 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 May 2011 07:48:00 EDT
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host p4QBUSkK019598
+Subject: Re: UNIX Compatibility
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Michael Witten <mfwitten@gmail.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Mike Galbraith <efault@gmx.de>,
+        Richard Yao <ryao@ic.sunysb.edu>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110525173846.GG8476@thunk.org>
+References: <BANLkTin4wu1HNDeo8Rv7iddM9KkgZdhfgA@mail.gmail.com>
+	 <A7E21A2F-4338-465D-933A-66B0C4D15BE1@mit.edu>
+	 <BANLkTi=q7tDVkahrnng7+BJhvxh=gx71ng@mail.gmail.com>
+	 <20110524181619.GC26055@thunk.org>
+	 <BANLkTi=QUS5WfAMWTw7vuEwuBOVHsww3mA@mail.gmail.com>
+	 <1306297108.4819.28.camel@marge.simson.net>
+	 <64e4614dda6f4558a68a314d7b5979b5-mfwitten@gmail.com>
+	 <20110525143602.GE8476@thunk.org>
+	 <c943132c8c364f95a91e3cf81cb0f2bd-mfwitten@gmail.com>
+	 <20110525173846.GG8476@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 13:30:28 +0200
+Message-ID: <1306409428.28597.79.camel@thorin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-DCC-URT-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mit, 2011-05-25 at 18:51 +0000, Michael Witten wrote:
+[...] 
+> A user should be able to request (possibly dynamically) as many
+> standards-compliant interfaces as possible from Linux (even if that
+> precludes new features or optimizations).
 
-This series removes most of the remaining occurences of __TIME__ and
-__DATE__ in the kernel source. Two more patches will be sent by
-subsystem maintainers:
+A user can request anything anytime since ages. But if no one implements
+and maintains it, s/he can't so anything anyways - except to implement
+and maintain it on his/her own.
 
-    nand/denali: Drop __TIME__ usage
-    x86: Do not set the root_dev field in bzImage
+Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
-Afterwards, a build with
-
-export KBUILD_TIMESTAMP=<some fixed date>
-export KBUILD_BUILD_USER=tux
-export KBUILD_BUILD_HOST=machine
-
-will produce identical results if the source is the same. A script
-testing this is at http://userweb.kernel.org/~mmarek/test-reproducible.sh .
-
-Michal
-
-The following changes since commit 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d:
-
-  Linux 2.6.39-rc1 (2011-03-29 12:09:47 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git trivial
-
-Michal Marek (18):
-      cyclades: Drop __TIME__ usage
-      nozomi: Drop __TIME__ usage
-      media/radio-maxiradio: Drop __TIME__ usage
-      media/cx231xx: Drop __TIME__ usage
-      aacraid: Drop __TIME__ usage
-      scsi/in2000: Drop __TIME__ usage
-      scsi/wd33c93: Drop __TIME__ usage
-      rio: Drop __DATE__ usage
-      edac: Drop __DATE__ usage
-      pmcraid: Drop __DATE__ usage
-      baycom: Drop __TIME__ usage
-      hdlcdrv: Drop __TIME__ usage
-      parport: Drop __TIME__ usage
-      wan/pc300: Drop __TIME__ usage
-      dlm: Drop __TIME__ usage
-      atm: Drop __TIME__ usage
-      isdn/diva: Drop __TIME__ usage
-      gfs2: Drop __TIME__ usage
-
- drivers/edac/amd76x_edac.c                   |    2 +-
- drivers/edac/amd8111_edac.c                  |    2 +-
- drivers/edac/amd8131_edac.c                  |    2 +-
- drivers/edac/cpc925_edac.c                   |    2 +-
- drivers/edac/e752x_edac.c                    |    2 +-
- drivers/edac/e7xxx_edac.c                    |    2 +-
- drivers/edac/edac_module.c                   |    2 +-
- drivers/edac/i5000_edac.c                    |    2 +-
- drivers/edac/i5400_edac.c                    |    2 +-
- drivers/edac/i7300_edac.c                    |    2 +-
- drivers/edac/i7core_edac.c                   |    2 +-
- drivers/edac/i82860_edac.c                   |    2 +-
- drivers/edac/i82875p_edac.c                  |    2 +-
- drivers/edac/i82975x_edac.c                  |    2 +-
- drivers/edac/mpc85xx_edac.h                  |    2 +-
- drivers/edac/mv64x60_edac.h                  |    2 +-
- drivers/edac/ppc4xx_edac.c                   |    2 +-
- drivers/edac/r82600_edac.c                   |    2 +-
- drivers/isdn/hardware/eicon/divasfunc.c      |    5 ++---
- drivers/media/radio/radio-maxiradio.c        |    3 +--
- drivers/media/video/cx231xx/cx231xx-avcore.c |    2 +-
- drivers/net/hamradio/baycom_epp.c            |    2 +-
- drivers/net/hamradio/baycom_par.c            |    2 +-
- drivers/net/hamradio/baycom_ser_fdx.c        |    2 +-
- drivers/net/hamradio/baycom_ser_hdx.c        |    2 +-
- drivers/net/hamradio/hdlcdrv.c               |    2 +-
- drivers/net/wan/pc300_drv.c                  |    3 +--
- drivers/parport/parport_ip32.c               |    1 -
- drivers/scsi/aacraid/linit.c                 |    3 +--
- drivers/scsi/in2000.c                        |    2 +-
- drivers/scsi/pmcraid.c                       |    9 ++++-----
- drivers/scsi/pmcraid.h                       |    1 -
- drivers/scsi/wd33c93.c                       |    7 +++----
- drivers/staging/generic_serial/rio/rioinit.c |    2 +-
- drivers/tty/cyclades.c                       |    3 +--
- drivers/tty/nozomi.c                         |    3 +--
- fs/dlm/main.c                                |    2 +-
- fs/gfs2/main.c                               |    2 +-
- net/atm/lec.c                                |    2 +-
- net/atm/mpc.c                                |    2 +-
- 40 files changed, 44 insertions(+), 54 deletions(-)
