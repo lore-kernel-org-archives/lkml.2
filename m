@@ -1,117 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab1EZKhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 06:37:19 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34323 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab1EZKhS (ORCPT
+	id S1755620Ab1EZKzQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 06:55:16 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:50149 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757139Ab1EZKzO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 06:37:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 26 May 2011 19:30:18 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ying Han <yinghan@google.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH v3 7/10] workqueue: add WQ_IDLEPRI
-Message-Id: <20110526193018.12b3ddea.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110526093808.GE9715@htj.dyndns.org>
-References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110526143024.7f66e797.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110526093808.GE9715@htj.dyndns.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 26 May 2011 06:55:14 -0400
+X-Greylist: delayed 1295 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 May 2011 06:55:14 EDT
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        Frank Rowand <frank.rowand@am.sony.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
+	 <1306272750.2497.79.camel@laptop> <1306343335.21578.65.camel@twins>
+	 <1306358128.21578.107.camel@twins>
+	 <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 26 May 2011 12:32:59 +0200
+Message-ID: <1306405979.1200.63.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 May 2011 11:38:08 +0200
-Tejun Heo <tj@kernel.org> wrote:
-
-> Hello, KAMEZAWA.
+On Thu, 2011-05-26 at 15:29 +0800, Yong Zhang wrote:
+> > Figuring out why the existing condition failed
 > 
-> On Thu, May 26, 2011 at 02:30:24PM +0900, KAMEZAWA Hiroyuki wrote:
-> > When this idea came to me, I wonder which is better to maintain
-> > memcg's thread pool or add support in workqueue for generic use. In
-> > genral, I feel enhancing genric one is better...so, wrote this one.
-> 
-> Sure, if it's something which can be useful for other users, it makes
-> sense to make it generic.
-> 
-Thank you for review.
+> Seems  'current' will change before/after switch_to since it's derived from
+> sp register.
+> So that means if interrupt come before we switch sp, 'p == current' will
+> catch it, but if interrupt comes after we switch sp, we will lose a wake up.
 
+Well, loosing a wakeup isn't the problem here (although it would be a
+problem), the immediate problem is that we're getting stuck
+(life-locked) in that while (p->on_cpu) loop.
 
-> > Index: memcg_async/include/linux/workqueue.h
-> > ===================================================================
-> > --- memcg_async.orig/include/linux/workqueue.h
-> > +++ memcg_async/include/linux/workqueue.h
-> > @@ -56,7 +56,8 @@ enum {
-> >  
-> >  	/* special cpu IDs */
-> >  	WORK_CPU_UNBOUND	= NR_CPUS,
-> > -	WORK_CPU_NONE		= NR_CPUS + 1,
-> > +	WORK_CPU_IDLEPRI	= NR_CPUS + 1,
-> > +	WORK_CPU_NONE		= NR_CPUS + 2,
-> >  	WORK_CPU_LAST		= WORK_CPU_NONE,
-> 
-> Hmmm... so, you're defining another fake CPU a la unbound CPU.  I'm
-> not sure whether it's really necessary to create its own worker pool
-> tho.  The reason why SCHED_OTHER is necessary is because it may
-> consume large amount of CPU cycles.  Workqueue already has UNBOUND -
-> for an unbound one, workqueue code simply acts as generic worker pool
-> provider and everything other than work item dispatching and worker
-> management are deferred to scheduler and the workqueue user.
-> 
-yes.
+But yes, I think that explains it, if the interrupts hits
+context_switch() after current was changed but before clearing
+p->on_cpu, we would life-lock in interrupt context.
 
-> Is there any reason memcg can't just use UNBOUND workqueue and set
-> scheduling priority when the work item starts and restore it when it's
-> done? 
+Now we could of course go add in_interrupt() checks there, but that
+would make this already fragile path more interesting, so I think I'll
+stick with the proposed patch -- again provided it actually works.
 
-I thought of that. But I didn't do that because I wasn't sure how others
-will think about changing exisitng workqueue priority...and I was curious
-to know how workqueue works.
-
-> If it's gonna be using UNBOUND at all, I don't think changing
-> scheduling policy would be a noticeable overhead and I find having
-> separate worker pools depending on scheduling priority somewhat silly.
-> 
-ok.
-
-> We can add a mechanism to manage work item scheduler priority to
-> workqueue if necessary tho, I think.  But that would be per-workqueue
-> attribute which is applied during execution, not something per-gcwq.
-> 
-
-In the next version, I'll try some like..
-==
-	process_one_work(...) {
-		.....
-		spin_unlock_irq(&gcwq->lock);
-		.....
-		if (cwq->wq->flags & WQ_IDLEPRI) {
-			set_scheduler(...SCHED_IDLE...)
-			cond_resched();
-			scheduler_switched = true;
-		}
-		f(work) 
-		if (scheduler_switched)
-			set_scheduler(...SCHED_OTHER...)
-		spin_lock_irq(&gcwq->lock);
-	}
-==
-Patch size will be much smaller. (Should I do this in memcg's code ??)
-
-Thank you for your advices.
-
-Thanks,
--Kame
-
-
+Marc, any word on that?
