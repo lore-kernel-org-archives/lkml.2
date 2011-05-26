@@ -1,117 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758493Ab1EZWBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 18:01:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61738 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754440Ab1EZWBg (ORCPT
+	id S932713Ab1EZWHG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 18:07:06 -0400
+Received: from host1743200242118.direcway.com ([174.32.118.242]:60921 "EHLO
+	aexorsyst.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301Ab1EZWHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 18:01:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=cU891bLBA6VIxURck2uJzuQdq1FVwspobrftKtEjVju1RsggqVd3fDGs1pd4SallwW
-         e4X0RiDJebe6ylHz2PESZBN2mmihHSeJ79T6KwOKjYYmhZ/zDkDyRtPcEEgrAXS/BuEB
-         JmNfD2FwN8Bhh3Sp694+XMnmt+Y5wsBpOyWqo=
-Subject: Re: Kernel crash after using new Intel NIC (igb)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: Maximilian Engelhardt <maxi@daemonizer.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, StuStaNet Vorstand <vorstand@stusta.mhn.de>
-In-Reply-To: <4DDECA9B.8080206@fb.com>
-References: <201104250033.03401.maxi@daemonizer.de>
-	 <1303878240.2699.41.camel@edumazet-laptop>
-	 <1303878771.2699.44.camel@edumazet-laptop>
-	 <201104271352.00601.maxi@daemonizer.de>
-	 <20110512211033.GA3468@dev1756.snc6.facebook.com>
-	 <1305234953.2831.2.camel@edumazet-laptop>
-	 <20110524213327.GA3917@dev1756.snc6.facebook.com>
-	 <1306291469.3305.11.camel@edumazet-laptop>
-	 <20110525060609.GA32244@dev1756.snc6.facebook.com>
-	 <1306305331.3305.22.camel@edumazet-laptop>  <4DDEAA3C.7020502@fb.com>
-	 <1306439246.2543.10.camel@edumazet-laptop>  <4DDECA9B.8080206@fb.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 May 2011 00:01:32 +0200
-Message-ID: <1306447292.2543.32.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Thu, 26 May 2011 18:07:04 -0400
+From: "John Z. Bohach" <jzb2@aexorsyst.com>
+To: linux-kernel@vger.kernel.org
+Subject: __raw_notify_call_chain() stops in kernel_power_off path BUT ONLY with nfsroot
+Date: Thu, 26 May 2011 15:04:17 -0700
+User-Agent: KMail/1.9.6
+MIME-Version: 1.0
+Content-Disposition: inline
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105261504.17243.jzb2@aexorsyst.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 26 mai 2011 à 14:48 -0700, Arun Sharma a écrit :
-> On 5/26/11 12:47 PM, Eric Dumazet wrote:
-> 
-> > You dont get the problem. Problem is : We can do the empty() test only
-> > if protected by the lock.
-> >
-> > If not locked, result can be wrong. [ false positive or negative ]
-> >
-> 
-> 
-> Agreed. Failing to unlink from unused list when we should have sounds wrong.
-> 
-> >> The list modification under unused_peers.lock looks generally safe. But
-> >> the control flow (based on refcnt) done outside the lock might have races.
-> >>
-> >
-> > "might" is not a good word when dealing with this ;)
-> 
-> Potential race in the current code:
-> 
-> initial refcnt = 1
-> 
->         T1:                                        T2
-> 
-> atomic_dec_and_lock(refcnt)
-> // refcnt == 0
-> 
->                                         atomic_add_unless(refcnt)
->                                         unlink_from_unused()
-> 
-> list_add_tail(unused)
->                                         // T2 using "unused" entry
-> 
-> 
-> > Did you test my fix ?
-> 
-> I could try it on one or two machines - but it won't tell us anything 
-> for weeks if not months. Unfortunately my next window to try a new 
-> kernel on a large enough sample is several months away.
-> 
-> >
-> > Its doing the right thing : Using refcnt as the only marker to say if
-> > the item must be removed from unused list (and lock the central lock
-> > protecting this list only when needed)
-> >
-> > Since we already must do an atomic operation on refcnt, using
-> > atomic_inc_return [ or similar full barrier op ] is enough to tell us
-> > the truth.
-> 
-> Yeah - using the refcnt seems better than list_empty(), but I'm not sure 
-> that your patch addresses the race above.
+To try to duplicate this, boot an nfsroot-ed machine into run-level 1, 
+and run 'halt -n -d -f -p'.
 
-It does.
+I'm debugging why the machine will not physically remove power on a 
+power down path, and I've traced it to __raw_notify_call_chain() which 
+simply calls notify_call_chain() to do the work.
 
-It becomes
+I'm running Linux version 2.6.36.1 and the code path I've traced with 
+added printk()'s is the following (with some uninteresting paths not 
+listed):
 
-        T1:                                        T2
-> 
-> atomic_dec_and_lock(refcnt)
-> // refcnt == 0
-> 
->                          newref = atomic_add_unless_and_return(refcnt)
-> 
-> list_add_tail(unused)
-  unlock();
->                                         
-> 			   if (newref == 1) {
-				   lock()
-                                   unlink_from_unused()
-				   unlock()
-			   }
+(This code is in kernel/sys.c and kernel/notifier.c and a few other 
+arch.-specific places)
 
+kernel_power_off()
+  ...
+  disable_nonboot_cpus()
+    _cpu_down()
+      ...
+      cpu_die()
+      cpu_notify_nofail()
+        cpu_notify()
+          ...
+          __cpu_notify()
+            __raw_notifier_call_chain()
+              notifier_call_chain()
+            ?? strange second call from unknown location to:
+              __raw_notifier_call_chain()
+            then it just stops...
 
+Machine does not hang as I can see NFS timeout messages after a few 
+minutes (probably interrupt context), but no further printk's are 
+manifest, and system stays in this state until physically reset and is 
+unresponsive.
 
+Two additional pieces of information:
+
+1)  there is a single return from one of the __raw_notifier_call_chain() 
+invocations, likely the second one (but no evidence to this effect), 
+which I can see due to printk() 
+immediately before 'return' statement at the end of the 
+__raw_notifier_call_chain() function.
+
+2) more interesting, with the same kernel and same rootfs booted from a 
+local harddisk, the path continues, with a 'return' from the other 
+__raw_notifier_call_chain() function, and this code path continues 
+normally until the machine is powered down via 
+acpi_enter_sleep_state(S5) acpi code.
+
+Since this code works on local disk, it should work on nfsroot.  I think 
+the question that needs an answer is
+
+What is different about the notifier list when root=/dev/nfsroot vs. 
+localdisk or is there some other interrupt-based issue going on away 
+from my prying eyes...?
+
+Other question, is why are there two CONSECUTIVE entries to 
+__raw_notifier_call_chain() EVEN IN the working case without a return() 
+of some sort in between?  Is it a dual-cpu issue?  Is this code running 
+on both CPUs?  Its a dual-cpu AMD machine...I ask because the source 
+code does not appear recursive and I'm just wondering if that is an 
+issue even though it works most of the time (i.e., is the real bug that 
+it works when it shouldn't due to some strange alignment of the stars 
+that is not present with nfsroot, but that is a just random thought).
+
+Thanks,
+John Z. Bohach
