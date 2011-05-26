@@ -1,111 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933218Ab1EZSXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:23:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755482Ab1EZSXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:23:33 -0400
-Date: Thu, 26 May 2011 14:23:21 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, jrbarnette@chromium.org,
-        Neil Brown <neilb@suse.de>, Jens Axboe <jaxboe@fusionio.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com
-Subject: Re: dm: pass up rotational flag
-Message-ID: <20110526182321.GA26219@redhat.com>
-References: <1306356648-30730-1-git-send-email-msb@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306356648-30730-1-git-send-email-msb@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758276Ab1EZSXw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:23:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33913 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab1EZSXu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:23:50 -0400
+X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=vVy0PQ3ZQx8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=76pVKIetd4Xcx1ojzN4A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] trace: Add a free on close control mechanism for
+ buffer_size_kb
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>
+In-Reply-To: <BANLkTin+WYW6Eahgn+yw2eTX44Erc5yBMg@mail.gmail.com>
+References: <1304106356-11277-1-git-send-email-vnagarnaik@google.com>
+	 <1304118968-6620-1-git-send-email-vnagarnaik@google.com>
+	 <1306380591.1465.140.camel@gandalf.stny.rr.com>
+	 <BANLkTin+WYW6Eahgn+yw2eTX44Erc5yBMg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 26 May 2011 14:23:48 -0400
+Message-ID: <1306434228.3857.5.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25 2011 at  4:50pm -0400,
-Mandeep Singh Baines <msb@chromium.org> wrote:
+On Thu, 2011-05-26 at 11:00 -0700, Vaibhav Nagarnaik wrote:
+> On Wed, May 25, 2011 at 8:29 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> Allow the NONROT flag to be passed through to linear mappings if all
-> underlying device are non-rotational. Tools like ureadahead will
-> schedule IOs differently based on the rotational flag.
+> >
+> > What you should do is just check if ret is less than zero here.
+> >
+> >        if (ret < 0)
+> >                ret = -ENOMEM;
 > 
-> With this patch, I see boot time go from 7.75 s to 7.46 s on my device.
-> 
-> Suggested-by: J. Richard Barnette <jrbarnette@chromium.org>
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> Cc: Neil Brown <neilb@suse.de>
-> Cc: Mike Snitzer <snitzer@redhat.com>
-> Cc: Jens Axboe <jaxboe@fusionio.com>
-> Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> Cc: Alasdair G Kergon <agk@redhat.com>
-> Cc: dm-devel@redhat.com
+> Instead, I don't have to check/set the return value. I can just return
+> "ret" to the caller.
 
-Thanks for doing this, looks good in general.
+Actually, ret could be -1, if we end up with a miss match in global vs
+max buffers. But that is more of an anomaly. Maybe the solution there is
+to have that return -ENOMEM as well?
 
-Just a few small nits:
- - rename device_nonrot to device_is_nonrot
- - rename dm_table_all_nonrot to dm_table_is_nonrot
- - add missing whitespace in dm_table_set_restrictions
- - move ti declaration outside of dm_table_is_nonrot's while loop
- - dm doesn't use 'true' or 'false' bool returns even though we have
-   functions that return bool -- odd but best to keep consistent for now
+-- Steve
 
-I'll respond with v2 that folds these changes in and my Signed-off-by
----
- drivers/md/dm-table.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index 40c6071..a173828 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -1177,28 +1177,29 @@ static void dm_table_set_integrity(struct dm_table *t)
- 			       blk_get_integrity(template_disk));
- }
- 
--static int device_nonrot(struct dm_target *ti, struct dm_dev *dev,
--			       sector_t start, sector_t len, void *data)
-+static int device_is_nonrot(struct dm_target *ti, struct dm_dev *dev,
-+			    sector_t start, sector_t len, void *data)
- {
- 	struct request_queue *q = bdev_get_queue(dev->bdev);
- 
- 	return q && blk_queue_nonrot(q);
- }
- 
--static bool dm_table_all_nonrot(struct dm_table *t)
-+static bool dm_table_is_nonrot(struct dm_table *t)
- {
-+	struct dm_target *ti;
- 	unsigned i = 0;
- 
- 	/* Ensure that all underlying device are non rotational. */
- 	while (i < dm_table_get_num_targets(t)) {
--		struct dm_target *ti = dm_table_get_target(t, i++);
-+		ti = dm_table_get_target(t, i++);
- 
- 		if (!ti->type->iterate_devices ||
--		    !ti->type->iterate_devices(ti, device_nonrot, NULL))
--			return false;
-+		    !ti->type->iterate_devices(ti, device_is_nonrot, NULL))
-+			return 0;
- 	}
- 
--	return true;
-+	return 1;
- }
- 
- void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
-@@ -1213,7 +1214,8 @@ void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
- 		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, q);
- 	else
- 		queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
--	if (!dm_table_all_nonrot(t))
-+
-+	if (!dm_table_is_nonrot(t))
- 		queue_flag_clear_unlocked(QUEUE_FLAG_NONROT, q);
- 	else
- 		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, q);
