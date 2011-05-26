@@ -1,129 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757160Ab1EZK5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 06:57:10 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41800 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab1EZK5J (ORCPT
+	id S1756578Ab1EZKyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 06:54:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59971 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753723Ab1EZKyh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 06:57:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 26 May 2011 19:50:19 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Tejun Heo <tj@kernel.org>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ying Han <yinghan@google.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH v3 7/10] workqueue: add WQ_IDLEPRI
-Message-Id: <20110526195019.8af6d882.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110526193018.12b3ddea.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110526143024.7f66e797.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110526093808.GE9715@htj.dyndns.org>
-	<20110526193018.12b3ddea.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 06:54:37 -0400
+Date: Thu, 26 May 2011 12:54:29 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Greg KH <gregkh@suse.de>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [GIT PATCH] TTY/serial driver patches for .40
+In-Reply-To: <20110523190539.GA17519@kroah.com>
+Message-ID: <Pine.LNX.4.64.1105261248060.9307@axis700.grange>
+References: <20110523190539.GA17519@kroah.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V02:K0:efPREdWN5pilCX0C5rlDvy9qp5jyN10tblGYY8Zyvtb
+ Zho3+IVcF3rcJNZ7TifvmKnYBU5iTtmeBZuHEh7J1gqneKZolB
+ zzwTF7oq0LNwqxQZtc5x6dIrep2oeIL+ZBEROAI1Cp4f3CLNnt
+ qt9hJH+Kv4PGRwdU/RJkabQ6SadM4dxzYM5uguIFMto+YNiBqd
+ 9oNTjFgDp6eTSL3vJta66AjF7IjZlFiI4knOsnBN5M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 May 2011 19:30:18 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Mon, 23 May 2011, Greg KH wrote:
 
-> On Thu, 26 May 2011 11:38:08 +0200
-> Tejun Heo <tj@kernel.org> wrote:
+> Here's the big tty/serial merge for .40
+
+/me confused: this patch
+
+> Felipe Balbi (1):
+>       tty: make receive_buf() return the amout of bytes received
+
+is more than one year old, which I wouldn't care about, if it didn't 
+introduce a regression on my mackerel 
+(arch/arm/mach-shmobile/board-mackerel.c) board. With it in place printing 
+a lot of text over ssh pauses the output multiple times for several 
+seconds. With this patch reverted the behaviour is back to normal. To 
+reproduce one can either cat a few largish files under /etc or just dmesg 
+- if there have been enough messages accumulated.
+
+Thanks
+Guennadi
+
 > 
-> > Hello, KAMEZAWA.
-> > 
-> > On Thu, May 26, 2011 at 02:30:24PM +0900, KAMEZAWA Hiroyuki wrote:
-> > > When this idea came to me, I wonder which is better to maintain
-> > > memcg's thread pool or add support in workqueue for generic use. In
-> > > genral, I feel enhancing genric one is better...so, wrote this one.
-> > 
-> > Sure, if it's something which can be useful for other users, it makes
-> > sense to make it generic.
-> > 
-> Thank you for review.
+> Some api cleanups, and driver updates, nothing really major.  You will
+> get two conflicts when you merge this to your tree (one in the tty
+> Makefile and one in the bluetooth driver), but they should be "obvious"
+> as to what to do.  If you want me to do the merge, just let me know and
+> I will.
 > 
+> Please pull from:
+> 	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/tty-2.6.git/ tty-next
 > 
-> > > Index: memcg_async/include/linux/workqueue.h
-> > > ===================================================================
-> > > --- memcg_async.orig/include/linux/workqueue.h
-> > > +++ memcg_async/include/linux/workqueue.h
-> > > @@ -56,7 +56,8 @@ enum {
-> > >  
-> > >  	/* special cpu IDs */
-> > >  	WORK_CPU_UNBOUND	= NR_CPUS,
-> > > -	WORK_CPU_NONE		= NR_CPUS + 1,
-> > > +	WORK_CPU_IDLEPRI	= NR_CPUS + 1,
-> > > +	WORK_CPU_NONE		= NR_CPUS + 2,
-> > >  	WORK_CPU_LAST		= WORK_CPU_NONE,
-> > 
-> > Hmmm... so, you're defining another fake CPU a la unbound CPU.  I'm
-> > not sure whether it's really necessary to create its own worker pool
-> > tho.  The reason why SCHED_OTHER is necessary is because it may
-> > consume large amount of CPU cycles.  Workqueue already has UNBOUND -
-> > for an unbound one, workqueue code simply acts as generic worker pool
-> > provider and everything other than work item dispatching and worker
-> > management are deferred to scheduler and the workqueue user.
-> > 
-> yes.
+> All of these patches have been in the -mm and -next trees for a while.
 > 
-> > Is there any reason memcg can't just use UNBOUND workqueue and set
-> > scheduling priority when the work item starts and restore it when it's
-> > done? 
+> Patches will be sent to the linux-serial mailing list, if anyone wants
+> to see them.
 > 
-> I thought of that. But I didn't do that because I wasn't sure how others
-> will think about changing exisitng workqueue priority...and I was curious
-> to know how workqueue works.
+> thanks,
 > 
-> > If it's gonna be using UNBOUND at all, I don't think changing
-> > scheduling policy would be a noticeable overhead and I find having
-> > separate worker pools depending on scheduling priority somewhat silly.
-> > 
-> ok.
+> greg k-h
 > 
-> > We can add a mechanism to manage work item scheduler priority to
-> > workqueue if necessary tho, I think.  But that would be per-workqueue
-> > attribute which is applied during execution, not something per-gcwq.
-> > 
+> ------------
 > 
-> In the next version, I'll try some like..
-> ==
-> 	process_one_work(...) {
-> 		.....
-> 		spin_unlock_irq(&gcwq->lock);
-> 		.....
-> 		if (cwq->wq->flags & WQ_IDLEPRI) {
-> 			set_scheduler(...SCHED_IDLE...)
-> 			cond_resched();
-> 			scheduler_switched = true;
-> 		}
-> 		f(work) 
-> 		if (scheduler_switched)
-> 			set_scheduler(...SCHED_OTHER...)
-> 		spin_lock_irq(&gcwq->lock);
-> 	}
-> ==
-> Patch size will be much smaller. (Should I do this in memcg's code ??)
+>  Documentation/pti/pti_intel_mid.txt         |   99 +++
+>  drivers/bluetooth/hci_ldisc.c               |   10 +-
+>  drivers/input/serio/serport.c               |   10 +-
+>  drivers/isdn/gigaset/ser-gigaset.c          |    8 +-
+>  drivers/misc/Kconfig                        |   25 +-
+>  drivers/misc/Makefile                       |    1 +
+>  drivers/misc/pch_phub.c                     |  153 +++-
+>  drivers/misc/pti.c                          |  980 +++++++++++++++++++++++
+>  drivers/misc/ti-st/st_core.c                |    6 +-
+>  drivers/net/caif/caif_serial.c              |    6 +-
+>  drivers/net/can/slcan.c                     |    9 +-
+>  drivers/net/hamradio/6pack.c                |    8 +-
+>  drivers/net/hamradio/mkiss.c                |   11 +-
+>  drivers/net/irda/irtty-sir.c                |   16 +-
+>  drivers/net/ppp_async.c                     |    6 +-
+>  drivers/net/ppp_synctty.c                   |    6 +-
+>  drivers/net/slip.c                          |   11 +-
+>  drivers/net/wan/x25_asy.c                   |    7 +-
+>  drivers/parport/parport_pc.c                |    2 +-
+>  drivers/tty/Kconfig                         |   31 +
+>  drivers/tty/Makefile                        |    2 +
+>  drivers/tty/amiserial.c                     |    2 -
+>  drivers/tty/cyclades.c                      |    5 +-
+>  drivers/tty/ipwireless/Makefile             |    2 -
+>  drivers/tty/moxa.c                          |   18 +-
+>  drivers/tty/n_gsm.c                         |   41 +-
+>  drivers/tty/n_hdlc.c                        |   18 +-
+>  drivers/tty/n_r3964.c                       |   10 +-
+>  drivers/tty/n_tracerouter.c                 |  243 ++++++
+>  drivers/tty/n_tracesink.c                   |  238 ++++++
+>  drivers/tty/n_tracesink.h                   |   36 +
+>  drivers/tty/n_tty.c                         |   61 +--
+>  drivers/tty/nozomi.c                        |   29 +-
+>  drivers/tty/pty.c                           |   35 +-
+>  drivers/tty/rocket.c                        |   47 --
+>  drivers/tty/serial/21285.c                  |    2 -
+>  drivers/tty/serial/8250.c                   |   44 +-
+>  drivers/tty/serial/8250.h                   |    3 +-
+>  drivers/tty/serial/8250_accent.c            |    2 -
+>  drivers/tty/serial/8250_boca.c              |    2 -
+>  drivers/tty/serial/8250_exar_st16c554.c     |    2 -
+>  drivers/tty/serial/8250_fourport.c          |    2 -
+>  drivers/tty/serial/8250_hub6.c              |    2 -
+>  drivers/tty/serial/8250_mca.c               |    2 -
+>  drivers/tty/serial/8250_pci.c               |   53 ++-
+>  drivers/tty/serial/8250_pnp.c               |    2 -
+>  drivers/tty/serial/Kconfig                  |   27 +-
+>  drivers/tty/serial/Makefile                 |    1 +
+>  drivers/tty/serial/altera_uart.c            |   26 +-
+>  drivers/tty/serial/amba-pl010.c             |    2 -
+>  drivers/tty/serial/amba-pl011.c             |    2 -
+>  drivers/tty/serial/atmel_serial.c           |    2 -
+>  drivers/tty/serial/clps711x.c               |    2 -
+>  drivers/tty/serial/cpm_uart/cpm_uart.h      |    2 -
+>  drivers/tty/serial/cpm_uart/cpm_uart_core.c |    2 -
+>  drivers/tty/serial/cpm_uart/cpm_uart_cpm1.c |    2 -
+>  drivers/tty/serial/cpm_uart/cpm_uart_cpm1.h |    2 -
+>  drivers/tty/serial/cpm_uart/cpm_uart_cpm2.c |    2 -
+>  drivers/tty/serial/cpm_uart/cpm_uart_cpm2.h |    2 -
+>  drivers/tty/serial/ifx6x60.c                |    2 -
+>  drivers/tty/serial/imx.c                    |    2 -
+>  drivers/tty/serial/msm_serial.c             |    2 +-
+>  drivers/tty/serial/msm_serial.h             |    2 -
+>  drivers/tty/serial/msm_smd_tty.c            |    3 +-
+>  drivers/tty/serial/netx-serial.c            |    2 -
+>  drivers/tty/serial/pch_uart.c               |    8 +
+>  drivers/tty/serial/pmac_zilog.c             |    2 -
+>  drivers/tty/serial/pxa.c                    |    2 -
+>  drivers/tty/serial/s3c2400.c                |    3 +-
+>  drivers/tty/serial/s3c2410.c                |    3 +-
+>  drivers/tty/serial/s3c2412.c                |    3 +-
+>  drivers/tty/serial/s3c2440.c                |    3 +-
+>  drivers/tty/serial/s3c24a0.c                |    3 +-
+>  drivers/tty/serial/s3c6400.c                |    3 +-
+>  drivers/tty/serial/s5pv210.c                |    3 +-
+>  drivers/tty/serial/sa1100.c                 |    2 -
+>  drivers/tty/serial/samsung.c                |    3 +-
+>  drivers/tty/serial/samsung.h                |    3 +-
+>  drivers/tty/serial/sb1250-duart.c           |    2 -
+>  drivers/tty/serial/serial_core.c            |   90 +--
+>  drivers/tty/serial/serial_ks8695.c          |    2 -
+>  drivers/tty/serial/serial_txx9.c            |    2 -
+>  drivers/tty/serial/sh-sci.c                 |    2 -
+>  drivers/tty/serial/vt8500_serial.c          |    2 -
+>  drivers/tty/serial/xilinx_uartps.c          | 1113 +++++++++++++++++++++++++++
+>  drivers/tty/synclink.c                      |    2 -
+>  drivers/tty/tty_buffer.c                    |   15 +-
+>  drivers/tty/tty_io.c                        |   53 +-
+>  drivers/tty/tty_ioctl.c                     |    2 -
+>  drivers/tty/tty_ldisc.c                     |   13 +
+>  drivers/tty/tty_mutex.c                     |    3 -
+>  drivers/tty/vt/keyboard.c                   |    2 -
+>  drivers/tty/vt/selection.c                  |    5 +-
+>  drivers/tty/vt/vc_screen.c                  |    2 -
+>  drivers/tty/vt/vt.c                         |   13 +-
+>  drivers/tty/vt/vt_ioctl.c                   |   25 +-
+>  fs/exec.c                                   |    1 +
+>  include/linux/pti.h                         |   42 +
+>  include/linux/serial_core.h                 |    6 +-
+>  include/linux/serial_reg.h                  |    2 +
+>  include/linux/tty.h                         |    4 +
+>  include/linux/tty_ldisc.h                   |    9 +-
+>  sound/soc/codecs/cx20442.c                  |    8 +-
+>  103 files changed, 3344 insertions(+), 512 deletions(-)
+>  create mode 100644 Documentation/pti/pti_intel_mid.txt
+>  create mode 100644 drivers/misc/pti.c
+>  create mode 100644 drivers/tty/n_tracerouter.c
+>  create mode 100644 drivers/tty/n_tracesink.c
+>  create mode 100644 drivers/tty/n_tracesink.h
+>  create mode 100644 drivers/tty/serial/xilinx_uartps.c
+>  create mode 100644 include/linux/pti.h
+> 
+> ---------------
+> 
+> Alan Cox (1):
+>       parport: Use request_muxed_region for IT87 probe and lock
+> 
+> Andrew Morton (1):
+>       drivers/tty/vt/vt_ioctl.c: repair insane ?: expression
+> 
+> Antony Pavlov (1):
+>       serial: 8250_pci: add support for Cronyx Omega PCI multiserial board.
+> 
+> Arthur Taylor (1):
+>       vt: Add K_OFF return value to vt_ioctl KDGKBMODE
+> 
+> Felipe Balbi (1):
+>       tty: make receive_buf() return the amout of bytes received
+> 
+> Govindraj.R (1):
+>       Serial: Remove unused code.
+> 
+> Herton Ronaldo Krzesinski (1):
+>       vt: remove uneeded retval check before tty->ops->open inside tty_open
+> 
+> J Freyensee (4):
+>       export kernel call get_task_comm().
+>       Kernel documentation for the PTI feature.
+>       Intel PTI implementaiton of MIPI 1149.7.
+>       n_tracerouter and n_tracesink ldisc additions.
+> 
+> Jesper Juhl (1):
+>       Serial: ifx6x60c: Remove duplicate includes of linux/tty.h
+> 
+> Jiri Slaby (23):
+>       tty: VT, remove unused variable
+>       TTY: serial_core, remove unused variable
+>       Char: cyclades, fix unused variable
+>       TTY: VT, remove unused variables
+>       Char: moxa, remove unused variables
+>       TTY: rocket, remove unused variables
+>       TTY: unify tty_init_dev fail path handling
+>       TTY: unify pty_install fail path handling
+>       TTY: unify pty_unix98_install fail path handling
+>       TTY: introduce deinit helpers for proper ldisc shutdown
+>       TTY: plug in deinitialize_tty_struct
+>       TTY: fix fail path in tty_open
+>       Char: moxa, do not touch NORMAL_ACTIVE bit
+>       serial: core, move termios handling to uart_startup
+>       serial: core, do not set DTR/RTS twice on startup
+>       serial: core, remove uart_update_termios
+>       Char: nozomi, use GFP_KERNEL for kfifo allocation
+>       Char: nozomi, remove port.count checks
+>       Char: nozomi, remove useless tty_sem
+>       Char: moxa, fix locking in moxa_write
+>       TTY: serial_core, remove invalid test
+>       TTY: serial_core, remove superfluous set_task_state
+>       TTY: tty_io, annotate locking functions
+> 
+> Joe Perches (1):
+>       n_gsm: Use print_hex_dump_bytes
+> 
+> John Linn (1):
+>       tty/serial: add support for Xilinx PS UART
+> 
+> Jovi Zhang (1):
+>       tty: remove invalid location line in file header
+> 
+> Julia Lawall (1):
+>       drivers/tty/moxa.c: Put correct tty value
+> 
+> Kukjin Kim (1):
+>       tty: Remove to support serial for S5P6442
+> 
+> Mark Brown (1):
+>       ASoC: Update cx20442 for TTY API change
+> 
+> Petr Písař (1):
+>       tty: Clean console safely
+> 
+> Scott Kilau (1):
+>       8250_pci: Add support for the Digi/IBM PCIe 2-port Adapter
+> 
+> Stephen Warren (2):
+>       tty/serial: Add explicit PORT_TEGRA type
+>       tty/serial: Fix break handling for PORT_TEGRA
+> 
+> Tobias Klauser (1):
+>       serial: altera_uart: Scan for a free port if platform device id is -1
+> 
+> Tomoya MORINAGA (2):
+>       pch_uart: Support new device ML7223 IOH
+>       pch_phub: Support new device ML7223
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
-BTW, my concern is that if f(work) is enough short,effect of SCHED_IDLE will never
-be found because SCHED_OTHER -> SCHED_IDLE -> SCHED_OTHER switch is very fast.
-Changed "weight" of CFQ never affects the next calculation of vruntime..of the
-thread and the work will show the same behavior with SCHED_OTHER.
-
-I'm sorry if I misunderstand CFQ and setscheduler().
-
-Thanks,
--Kame
-
-
-
-
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
