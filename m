@@ -1,67 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab1EZIfP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 04:35:15 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:41009 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab1EZIfM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 04:35:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=BiG2BMJBnu8WG8NT6SzkTCbKq7B0usIdhAioRGYCaGBCsOI5bPnKPI8HH8Z/TuXXdH
-         lHkzAVPBhQmZSvGDL46h+v0BvQnyXnjLFBzylWKF5gDZ5SKPvBTfhSRbih2oWfqOtpPh
-         SkAa5wj5y0o/SoB/uesEVeu+QXV8FfxkoAxxA=
+	id S1756594Ab1EZIiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 04:38:18 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:32718 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752752Ab1EZIiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 04:38:15 -0400
+Date: Thu, 26 May 2011 11:37:46 +0300
+From: Ville Tervo <ville.tervo@nokia.com>
+To: ext Corey Boyle <corey@kansanian.com>
+Cc: wyrles@ytram.com, "Cufi, Carles" <carles.cufi@nordicsemi.no>,
+        Ed Tomlinson <edt@aei.ca>,
+        Bluettooth Linux <linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.39
+Message-ID: <20110526083746.GT2480@null>
+References: <BANLkTinG_qCtHQYRYFQUJ9oGv4H1cuznWg@mail.gmail.com>
+ <201105250711.17971.edt@aei.ca>
+ <20110525113614.GQ2480@null>
+ <201105250812.43246.edt@aei.ca>
+ <5B4B9A479BF6994B88EA975675EC5B79057A399D82@MES1OS2SXC003.mes1.tconet.net>
+ <BANLkTi=ec3bh24=2r8f3tmj2g0n0bMnq1Q@mail.gmail.com>
+ <5B4B9A479BF6994B88EA975675EC5B79057A60296D@MES1OS2SXC003.mes1.tconet.net>
+ <013c01cc1af9$361b00e0$a25102a0$@ytram.com>
+ <BANLkTikxR3AZJK5Bhc5b=7dq6CbXd2iBtQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110526082451.GB26775@elte.hu>
-References: <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
-	<BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
-	<1306254027.18455.47.camel@twins>
-	<20110524195435.GC27634@elte.hu>
-	<alpine.LFD.2.02.1105242239230.3078@ionos>
-	<20110525150153.GE29179@elte.hu>
-	<alpine.LFD.2.02.1105251836030.3078@ionos>
-	<20110525180100.GY19633@outflux.net>
-	<BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
-	<alpine.LRH.2.00.1105261034200.29690@tundra.namei.org>
-	<20110526082451.GB26775@elte.hu>
-Date: Thu, 26 May 2011 11:35:11 +0300
-X-Google-Sender-Auth: RiCPUFNX0_gnJJHDpe6gMqJyblM
-Message-ID: <BANLkTi=22rgFJ-7edOf41e013uDnYuVAAg@mail.gmail.com>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
-From: Pekka Enberg <penberg@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, gnatapov@redhat.com,
-        Chris Wright <chrisw@sous-sol.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Sasha Levin <levinsasha928@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikxR3AZJK5Bhc5b=7dq6CbXd2iBtQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Wed, May 25, 2011 at 09:11:19PM -0400, ext Corey Boyle wrote:
+> On Wed, May 25, 2011 at 12:31 PM, Tom Allebrandi <wyrles@ytram.com> wrote:
+> > -----Original Message-----
+> > From: linux-bluetooth-owner@vger.kernel.org
+> > [mailto:linux-bluetooth-owner@vger.kernel.org] On Behalf Of Cufi, Carles
+> > Sent: Wednesday, May 25, 2011 7:15 AM
+> > To: corey@kansanian.com
+> > Cc: Ed Tomlinson; Ville Tervo; Bluettooth Linux;
+> > linux-kernel@vger.kernel.org
+> > Subject: RE: Linux 2.6.39
+> >
+> > (Snipping...)
+> > On Wed, May 25, 2011 at 8:46 AM, Cufi, Carles <carles.cufi@nordicsemi.no>
+> > wrote:
+> >> On Wednesday 25 May 2011 07:36:14 Ville Tervo wrote:
+> >>> On Wed, May 25, 2011 at 07:11:17AM -0400, ext Ed Tomlinson wrote:
+> >>> > On Wednesday 25 May 2011 06:54:54 Corey Boyle wrote:
+> >>> > > > On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
+> >>> > > > > On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
+> >>> > > > > > On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
+> > ...
+> >>> > Read Local Version Information (0x04|0x0001) plen 0
+> >>> > > HCI Event: Command Complete (0x0e) plen 12
+> >>> >     Read Local Version Information (0x04|0x0001) ncmd 1
+> >>> >     status 0x00
+> >>> >     HCI Version: 1.1 (0x1) HCI Revision: 0x20d
+> > *************************
+> >>> >     LMP Version: 1.1 (0x1) LMP Subversion: 0x20d
+> > *************************
+> >>> >     Manufacturer: Cambridge Silicon Radio (10) < HCI Command: Set
+> >>> > Event Mask (0x03|0x0001) plen 8
+> >>> >     Mask: 0xfffffbff00000000
+> > *************************
+> >>> > > HCI Event: Command Complete (0x0e) plen 4
+> >>> >     Set Event Mask (0x03|0x0001) ncmd 1
+> >>> >     status 0x12
+> >>> >     Error: Invalid HCI Command Parameters
+> >>
+> >>Set Event Mask has been in the Bluetooth Spec since day 1, so it must be
+> > the bitmask, which has been extended with each new spec release to cover
+> > newly >added events. Looking at the latest spec, and judging by the year
+> > your chipset was released in (it probably is a 1.1 compliant chipset) I
+> > believe that >0x000000008FFFFFFF is the highest event mask it would support
+> > (up until and including Page Scan Repetition Mode Change Event), but since I
+> > don't have the >old 1.1 spec around I may be one or two bits off.
+> >
+> > The device appears to have identified itself as CSR firmware using Bluetooth
+> > version 1.1.
+> >
+> > I do happen to have the 1.1 spec lying around :-), for Set_Event_Mask it
+> > says
+> >
+> > 0x0000000100000000
+> > To                                          Reserved for future use
+> > 0x8000000000000000
+> >
+> > 0x00000000FFFFFFFF      Default (All events enabled)
+> >
+> 
+> I am beginning to think that my adapter simply does not support this
+> command.  I have tried with all the suggested bitmasks, all zeros, all
+> ones, all combinations where a single bit is set, etc.  I'm not sure
+> where to go from here other than add a flag which incidates that
+> certain devices don't support this command so it can be skipped.
+> Again, the only way I have gotten it to work is by not sending the
+> command at all.  Thoughts?
 
-On Thu, May 26, 2011 at 11:24 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> Unlike Qemu tools/kvm/ has a design that is very fit for MAC
-> concepts: it uses separate helper threads for separate resources
-> (this could in many cases even be changed to be separate processes
-> which only share access to the guest RAM image) - while Qemu is in
-> most parts a state machine, so in tools/kvm/ we can realistically
-> have a good object manager and keep an exploit in a networking
-> interface driver from being able to access disk driver state.
+I also played a bit with 1.1 CSR dongle and couldn't find any mask that would
+be accepted. I think this command can be left out for older than 1.2 devices.
 
-I haven't really followed this particular discussion nor do I know if
-Qemu is good or bad fit but sure, for tools/kvm Chrome-style
-sandboxing makes tons of sense and would be a pretty good fit for how
-our device model works now.
+Following patch should do it. Could you verify it. I don't have access to old
+hw ATM.
 
-                        Pekka
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 19cd4af..86d1e26 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -477,14 +477,16 @@ static void hci_setup_event_mask(struct hci_dev *hdev)
+ 	 * command otherwise */
+ 	u8 events[8] = { 0xff, 0xff, 0xfb, 0xff, 0x00, 0x00, 0x00, 0x00 };
+ 
+-	/* Events for 1.2 and newer controllers */
+-	if (hdev->lmp_ver > 1) {
+-		events[4] |= 0x01; /* Flow Specification Complete */
+-		events[4] |= 0x02; /* Inquiry Result with RSSI */
+-		events[4] |= 0x04; /* Read Remote Extended Features Complete */
+-		events[5] |= 0x08; /* Synchronous Connection Complete */
+-		events[5] |= 0x10; /* Synchronous Connection Changed */
+-	}
++	/* CSR 1.1 dongles does not accept any bitfield so don't try to set
++	 * any event mask for pre 1.2 devices */
++	if (hdev->lmp_ver <= 1)
++		return;
++
++	events[4] |= 0x01; /* Flow Specification Complete */
++	events[4] |= 0x02; /* Inquiry Result with RSSI */
++	events[4] |= 0x04; /* Read Remote Extended Features Complete */
++	events[5] |= 0x08; /* Synchronous Connection Complete */
++	events[5] |= 0x10; /* Synchronous Connection Changed */
+ 
+ 	if (hdev->features[3] & LMP_RSSI_INQ)
+ 		events[4] |= 0x04; /* Inquiry Result with RSSI */
+-- 
+
