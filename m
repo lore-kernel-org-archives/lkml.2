@@ -1,119 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758475Ab1EZTa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:30:59 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:48411 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751992Ab1EZTa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:30:57 -0400
-Subject: [PATCH V6 0/4]
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>, mst@redhat.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 12:29:56 -0700
-Message-ID: <1306438196.5180.27.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
+	id S1758297Ab1EZT3p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:29:45 -0400
+Received: from outmail015.snc4.facebook.com ([66.220.144.147]:47365 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752503Ab1EZT3n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:29:43 -0400
+Message-ID: <4DDEAA3C.7020502@fb.com>
+Date: Thu, 26 May 2011 12:30:04 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Maximilian Engelhardt <maxi@daemonizer.de>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, StuStaNet Vorstand <vorstand@stusta.mhn.de>
+Subject: Re: Kernel crash after using new Intel NIC (igb)
+References: <201104250033.03401.maxi@daemonizer.de>	 <1303878240.2699.41.camel@edumazet-laptop>	 <1303878771.2699.44.camel@edumazet-laptop>	 <201104271352.00601.maxi@daemonizer.de>	 <20110512211033.GA3468@dev1756.snc6.facebook.com>	 <1305234953.2831.2.camel@edumazet-laptop>	 <20110524213327.GA3917@dev1756.snc6.facebook.com>	 <1306291469.3305.11.camel@edumazet-laptop>	 <20110525060609.GA32244@dev1756.snc6.facebook.com> <1306305331.3305.22.camel@edumazet-laptop>
+In-Reply-To: <1306305331.3305.22.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset add supports for TX zero-copy between guest and host
-kernel through vhost. It significantly reduces CPU utilization on the
-local host on which the guest is located (It reduced about 50% CPU usage
-for single stream test on the host, while 4K message size BW has
-increased about 50%). The patchset is based on previous submission and
-comments from the community regarding when/how to handle guest kernel
-buffers to be released. This is the simplest approach I can think of
-after comparing with several other solutions.
+On 5/24/11 11:35 PM, Eric Dumazet wrote:
 
-This patchset has integrated V3 review comments from community: 
+>> Another possibility is to do the list_empty() check twice. Once without
+>> taking the lock and again with the spinlock held.
+>>
+>
+> Why ?
+>
 
-1. Add more comments on how to use device ZEROCOPY flag;
+Part of the problem is that I don't have a precise understanding of the 
+race condition that's causing the list to become corrupted.
 
-2. Change device ZEROCOPY to available bit 31
+All I know is that doing it under the lock fixes it. If it's slowing 
+things down, we do a check outside the lock (since it's cheap). But if 
+we get the wrong answer, we verify it again under the lock.
 
-3. Fix skb header linear allocation when virtio_net GSO is not enabled
+> list_del_init(&p->unused); (done under lock of course) is safe, you can
+> call it twice, no problem.
 
-It has integrated V4 review comments from MST and Sridhar:
+Doing it twice is not a problem. But doing it when we shouldn't be doing 
+it could be the problem.
 
-1. In vhost, using socket poll wake up for outstanding DMAs
+The list modification under unused_peers.lock looks generally safe. But 
+the control flow (based on refcnt) done outside the lock might have races.
 
-2. Add detailed comments for vhost_zerocopy_signal_used call
+Eg: inet_putpeer() might find the refcnt go to zero, but before it adds 
+it to the unused list, another thread may be doing inet_getpeer() and 
+set refcnt to 1. In the end, we end up with a node that's potentially in 
+use, but ends up on the unused list.
 
-3. Add sleep in vhost shutting down instead of busy-wait for outstanding
-   DMAs.
-
-4. Copy small packets, don't do zero-copy callback in mavtap, mark it's
-   DMA done in vhost
-
-5. change zerocopy to bool in macvtap.
-
-It integrates V5 review comments from MST and 
-
-
-Michał Mirosław <mirqus@gmail.com>
-
-1. Prevent userspace apps from holding skb userspace buffers by copying
-userspace buffers to kernel in skb_clone, skb_copy, pskb_copy,
-pskb_expand_head.
-
-2. It is also used HIGHDMA, SG feature bits to enable ZEROCOPY to remove
-the dependency of a new feature bit, we can add it later when new
-feature bit is available.
-
-This patchset includes:
-
-1/4: Add a new sock zero-copy flag, SOCK_ZEROCOPY;
-
-2/4: Add a new struct skb_ubuf_info in skb_share_info for userspace
-buffers release callback when lower device DMA has done for that skb,
-which is the last reference count gone; Or whenever skb_clone, skb_copy,
-pskb_copy, pskb_expand_head get call from tcpdump, filtering, these userspace
-buffers will be copied into kernel ... we don't want userspace apps to hold
-userspace buffers too long.
-
-3/4: Add vhost zero-copy callback in vhost when skb last refcnt is gone;
-add vhost_zerocopy_signal_used to notify guest to release TX skb
-buffers.
-
-4/4: Add macvtap zero-copy in lower device when sending packet is
-greater than 256 bytes.
-
-The patchset is built against most recent net-next linux 2.6.39-rc7. It
-has passed netperf/netserver multiple streams stress test, tcpdump
-suspended test, dynamically SG change test.
-
-Single TCP_STREAM 120 secs test results over ixgbe 10Gb NIC results:
-
-Message BW(Gb/s)qemu-kvm (NumCPU)vhost-net(NumCPU) PerfTop irq/s
-4K      7408.57         92.1%           22.6%           1229
-4K(Orig)4913.17         118.1%          84.1%           2086    
-8K      9129.90         89.3%           23.3%           1141
-8K(Orig)7094.55         115.9%          84.7%           2157
-16K     9178.81         89.1%           23.3%           1139
-16K(Orig)8927.1         118.7%          83.4%           2262
-64K     9171.43         88.4%           24.9%           1253
-64K(Orig)9085.85        115.9%          82.4%           2229
-
-For message size less or equal than 2K, there is a known KVM guest TX
-overrun issue. With this zero-copy patch, the issue becomes more severe,
-guest io_exits has tripled than before, so the performance is not good.
-Once the TX overrun problem has been addressed, I will retest the small
-message size performance.
-
- drivers/net/macvtap.c          |  132 ++++++++++++++++++++++++++++++++++++---
- drivers/vhost/net.c            |   44 +++++++++++++-
- drivers/vhost/vhost.c          |   49 +++++++++++++++
- drivers/vhost/vhost.h          |   13 ++++
- include/linux/netdevice.h      |   10 +++
- include/linux/skbuff.h         |   26 ++++++++
- include/net/sock.h             |    1 +
- net/core/skbuff.c              |   81 ++++++++++++++++++++++++-
- 8 files changed, 345 insertions(+), 17 deletions(-)
-
-
+  -Arun
