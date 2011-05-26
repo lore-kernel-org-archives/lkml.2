@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab1EZMuI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 08:50:08 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50751 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab1EZMuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 08:50:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: GuanXuetao <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH 0/6] unicore32 subsystem: 6 patches for 2.6.39
-Date: Thu, 26 May 2011 14:50:01 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-28-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, greg@kroah.com
-References: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
-In-Reply-To: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
+	id S1757605Ab1EZMu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 08:50:27 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44728 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750827Ab1EZMu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 08:50:26 -0400
+Date: Thu, 26 May 2011 14:50:07 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Peter Zijlstra <peterz@infradead.org>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+Message-ID: <20110526125007.GA27083@elte.hu>
+References: <1306272750.2497.79.camel@laptop>
+ <1306343335.21578.65.camel@twins>
+ <1306358128.21578.107.camel@twins>
+ <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+ <1306405979.1200.63.camel@twins>
+ <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
+ <1306409575.1200.71.camel@twins>
+ <1306412511.1200.90.camel@twins>
+ <20110526122623.GA11875@elte.hu>
+ <20110526123137.GG24876@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105261450.01277.arnd@arndb.de>
-X-Provags-ID: V02:K0:KKo7+a4JkWb65ScHWdFaq9VxREaltxCc4mUUGhJ8ZfV
- 4os2YGKdFmfjelPxoF3edXSuHj0XreyzGFXIsPhCHMEmVsTJ0R
- nhDxS+n/lANbwXol/24Ou9YgXivGv469w2Q+NaQ/cPU5bKB7Dk
- HISzYkKxNr7XD1aZsQLnZuW8JFk6CVpEG78OuMrVCEtZCQ5Krq
- 9LFz4n7bFEx2nza5qZkbg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526123137.GG24876@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 26 May 2011, GuanXuetao wrote:
-> Two patches for PKUnity v3 SoC drivers:
->         add mac driver, and move rtc driver to appropriate place
-> Two patches for new 2.6.39 updates:
->         using generic-y and modify PERCPU macro
-> Other two patches are small fixes.
+
+* Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+
+> On Thu, May 26, 2011 at 02:26:23PM +0200, Ingo Molnar wrote:
+> > 
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > Sort this by reverting to the old behaviour for this situation 
+> > > and perform a full remote wake-up.
+> > 
+> > Btw., ARM should consider switching most of its subarchitectures 
+> > to !__ARCH_WANT_INTERRUPTS_ON_CTXSW - enabling irqs during 
+> > context switches is silly and now expensive as well.
 > 
-> ---
-> Guan Xuetao (6):
->   unicore32: move rtc-puv3.c to drivers/rtc directory
->   unicore32: add pkunity-v3 mac/net driver (umal)
->   unicore32: change zImage physical address, though it's PIC codes
->   unicore32: add KBUILD_DEFCONFIG with unicore32_defconfig (old
->     debug_defconfig)
->   unicore32: change PERCPU to PERCPU_SECTION
->   unicore32: using generic-y format for one line asm-generic files
-> 
+> Not going to happen.  The reason we do it is because most of the 
+> CPUs have to (slowly) flush their caches during switch_mm(), and to 
+> have IRQs off over the cache flush means that we lose IRQs.
 
-The patches look basically ok, but two points to remember:
+How much time does that take on contemporary ARM hardware, typically 
+(and worst-case)?
 
-* The merge window is not the time to post patches for review, if you
-  want to collect Acked-by's from other people, do that in the
-  time between the merge windows, then put the patches in your git
-  tree with the Acked-by for linux-next. During the merge window, just
-  send stuff that was already in your tree to Linus.
+Thanks,
 
-  Bug fixes should get sent to Linus at any time, but I think you already
-  did that, all of these were either new features or cleanups.
-
-* Add a small text explaining why you do something to each patch. The
-  one-line summary that you always have is too short for this and only
-  serves to list what you change, not why.
-
-	Arnd
+	Ingo
