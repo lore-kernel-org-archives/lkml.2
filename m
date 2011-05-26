@@ -1,134 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212Ab1EZTlo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:41:44 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:45771 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab1EZTlm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:41:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=p1lnTg+O+17Gc/2qhCEvNAodhpclHf9KcJXbKTIEoPor893ms8bRxngAXzLJ7mvuDp
-         nj//NisSwdPHpGv5XxszdEYnaHETfjyeFo2AAQPp/tBPqOkLd6AB64/tQJ2n2ok0b9x8
-         qDii2YK1k8GrdJ/Q79IfqG2CJdSJ+3jEkZ7I4=
-MIME-Version: 1.0
-In-Reply-To: <20110525124401.GB29300@elte.hu>
-References: <1305968203-14240-1-git-send-email-jim.cromie@gmail.com>
- <1305968203-14240-3-git-send-email-jim.cromie@gmail.com> <20110521103315.GA23651@elte.hu>
- <BANLkTikSMR7AyJi-LEr8iA2x9TxobJr9gA@mail.gmail.com> <20110525124401.GB29300@elte.hu>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Thu, 26 May 2011 13:41:12 -0600
-Message-ID: <BANLkTimJp9o5_P73eNn5rMJbfRC2sCRdJA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] dont commify big numbers by default, let -B do it
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        acme@ghostprotocols.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1758261Ab1EZTmr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:42:47 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:43057 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753168Ab1EZTmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:42:45 -0400
+Subject: [PATCH V6 3/4]macvtap: macvtap TX zero-copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 12:42:40 -0700
+Message-ID: <1306438960.5180.39.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 6:44 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Jim Cromie <jim.cromie@gmail.com> wrote:
->
->> > Also, i think for automation we'd also like to have a 'simple
->> > output' mode, would you like to add that?
->>
->> OK, heres 1st cut at it, adding option --simple, for review /
->> feedback
->>
->> Its based upon the csv-output code mostly, with some vestiges of
->> verbose..
->
-> Ok, we can do something like this - but please see the comments on
-> the patch further below:
->
->> > Something a bit like what you can see in 'perf stat -v true':
->> > Without the human output later on, and with elapsed time added as
->> > well.
->>
->> for my part, Id like the moral equivalent of time(s)? output too,
->> though I suspect thats a separate patch..
->
-> yeah. No objection to that either: time is well known and the stddev
-> output by perf stat --repeat is well liked. Wanna combine the two?
+Only when buffer size is greater than GOODCOPY_LEN (256), macvtap
+enables zero-copy.
 
-I think so, depending upon what exactly 'combining' means.
+Signed-off-by: Shirley Ma <xma@us.ibm.com>
+---
 
->>
->> real  0m3.019s
->> user  0m0.005s
->> sys   0m0.012s
->>
->> are these timings already taken by perf-stat ?
->> is it a simple matter of addition and printing ?
->> If not, whats involved ?
->
-> Do you mean the real/user/sys bits? Elapsed time is already measured,
-> but you'd have to extract the rusage bits to get to the stime/utime
-> values.
->
+ drivers/net/macvtap.c |  132 ++++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 121 insertions(+), 11 deletions(-)
 
-> We could also add those as explicit events.
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 6696e56..97ad224 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -60,6 +60,7 @@ static struct proto macvtap_proto = {
+  */
+ static dev_t macvtap_major;
+ #define MACVTAP_NUM_DEVS 65536
++#define GOODCOPY_LEN 256
+ static struct class *macvtap_class;
+ static struct cdev macvtap_cdev;
+ 
+@@ -340,6 +341,7 @@ static int macvtap_open(struct inode *inode, struct file *file)
+ {
+ 	struct net *net = current->nsproxy->net_ns;
+ 	struct net_device *dev = dev_get_by_index(net, iminor(inode));
++	struct macvlan_dev *vlan = netdev_priv(dev);
+ 	struct macvtap_queue *q;
+ 	int err;
+ 
+@@ -369,6 +371,16 @@ static int macvtap_open(struct inode *inode, struct file *file)
+ 	q->flags = IFF_VNET_HDR | IFF_NO_PI | IFF_TAP;
+ 	q->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
+ 
++	/*
++	 * so far only KVM virtio_net uses macvtap, enable zero copy between
++	 * guest kernel and host kernel when lower device supports highdma
++	 * and sg
++	 */
++	if (vlan) {
++		if (vlan->lowerdev->features & (NETIF_F_HIGHDMA | NETIF_F_SG))
++			sock_set_flag(&q->sk, SOCK_ZEROCOPY);
++	}
++
+ 	err = macvtap_set_queue(dev, file, q);
+ 	if (err)
+ 		sock_put(&q->sk);
+@@ -433,6 +445,80 @@ static inline struct sk_buff *macvtap_alloc_skb(struct sock *sk, size_t prepad,
+ 	return skb;
+ }
+ 
++/* set skb frags from iovec, this can move to core network code for reuse */
++static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
++				  int offset, size_t count)
++{
++	int len = iov_length(from, count) - offset;
++	int copy = skb_headlen(skb);
++	int size, offset1 = 0;
++	int i = 0;
++	skb_frag_t *f;
++
++	/* Skip over from offset */
++	while (count && (offset >= from->iov_len)) {
++		offset -= from->iov_len;
++		++from;
++		--count;
++	}
++
++	/* copy up to skb headlen */
++	while (count && (copy > 0)) {
++		size = min_t(unsigned int, copy, from->iov_len - offset);
++		if (copy_from_user(skb->data + offset1, from->iov_base + offset,
++				   size))
++			return -EFAULT;
++		if (copy > size) {
++			++from;
++			--count;
++		}
++		copy -= size;
++		offset1 += size;
++		offset = 0;
++	}
++
++	if (len == offset1)
++		return 0;
++
++	while (count--) {
++		struct page *page[MAX_SKB_FRAGS];
++		int num_pages;
++		unsigned long base;
++
++		len = from->iov_len - offset1;
++		if (!len) {
++			offset1 = 0;
++			++from;
++			continue;
++		}
++		base = (unsigned long)from->iov_base + offset1;
++		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
++		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
++		if ((num_pages != size) ||
++		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
++			/* put_page is in skb free */
++			return -EFAULT;
++		skb->data_len += len;
++		skb->len += len;
++		skb->truesize += len;
++		atomic_add(len, &skb->sk->sk_wmem_alloc);
++		while (len) {
++			f = &skb_shinfo(skb)->frags[i];
++			f->page = page[i];
++			f->page_offset = base & ~PAGE_MASK;
++			f->size = min_t(int, len, PAGE_SIZE - f->page_offset);
++			skb_shinfo(skb)->nr_frags++;
++			/* increase sk_wmem_alloc */
++			base += f->size;
++			len -= f->size;
++			i++;
++		}
++		offset1 = 0;
++		++from;
++	}
++	return 0;
++}
++
+ /*
+  * macvtap_skb_from_vnet_hdr and macvtap_skb_to_vnet_hdr should
+  * be shared with the tun/tap driver.
+@@ -515,16 +601,18 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+ 
+ 
+ /* Get packet from user space buffer */
+-static ssize_t macvtap_get_user(struct macvtap_queue *q,
+-				const struct iovec *iv, size_t count,
+-				int noblock)
++static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
++				const struct iovec *iv, unsigned long total_len,
++				size_t count, int noblock)
+ {
+ 	struct sk_buff *skb;
+ 	struct macvlan_dev *vlan;
+-	size_t len = count;
++	unsigned long len = total_len;
+ 	int err;
+ 	struct virtio_net_hdr vnet_hdr = { 0 };
+ 	int vnet_hdr_len = 0;
++	int copylen;
++	bool zerocopy = false;
+ 
+ 	if (q->flags & IFF_VNET_HDR) {
+ 		vnet_hdr_len = q->vnet_hdr_sz;
+@@ -552,12 +640,30 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q,
+ 	if (unlikely(len < ETH_HLEN))
+ 		goto err;
+ 
+-	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, len, vnet_hdr.hdr_len,
+-				noblock, &err);
++	if (m && m->msg_control)
++		zerocopy = true;
++
++	if (zerocopy) {
++		/* There are 256 bytes to be copied in skb, so there is enough
++		 * room for skb expand head in case it is used.
++		 * The rest buffer is mapped from userspace.
++		 */
++		copylen = vnet_hdr.hdr_len;
++		if (!copylen)
++			copylen = GOODCOPY_LEN;
++	} else
++		copylen = len;
++
++	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
++				vnet_hdr.hdr_len, noblock, &err);
+ 	if (!skb)
+ 		goto err;
+ 
+-	err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len, len);
++	if (zerocopy)
++		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
++	else
++		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
++						   len);
+ 	if (err)
+ 		goto err_kfree;
+ 
+@@ -573,13 +679,17 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q,
+ 
+ 	rcu_read_lock_bh();
+ 	vlan = rcu_dereference_bh(q->vlan);
++	/* copy skb_ubuf_info for callback when skb has no error */
++	if (zerocopy)
++		memcpy(&skb_shinfo(skb)->ubuf, m->msg_control,
++		       sizeof(struct skb_ubuf_info));
+ 	if (vlan)
+ 		macvlan_start_xmit(skb, vlan->dev);
+ 	else
+ 		kfree_skb(skb);
+ 	rcu_read_unlock_bh();
+ 
+-	return count;
++	return total_len;
+ 
+ err_kfree:
+ 	kfree_skb(skb);
+@@ -601,8 +711,8 @@ static ssize_t macvtap_aio_write(struct kiocb *iocb, const struct iovec *iv,
+ 	ssize_t result = -ENOLINK;
+ 	struct macvtap_queue *q = file->private_data;
+ 
+-	result = macvtap_get_user(q, iv, iov_length(iv, count),
+-			      file->f_flags & O_NONBLOCK);
++	result = macvtap_get_user(q, NULL, iv, iov_length(iv, count), count,
++				  file->f_flags & O_NONBLOCK);
+ 	return result;
+ }
+ 
+@@ -815,7 +925,7 @@ static int macvtap_sendmsg(struct kiocb *iocb, struct socket *sock,
+ 			   struct msghdr *m, size_t total_len)
+ {
+ 	struct macvtap_queue *q = container_of(sock, struct macvtap_queue, sock);
+-	return macvtap_get_user(q, m->msg_iov, total_len,
++	return macvtap_get_user(q, m, m->msg_iov, total_len, m->msg_iovlen,
+ 			    m->msg_flags & MSG_DONTWAIT);
+ }
+ 
 
-ISTM this makes sense - make them 1st class objects,
-rather than some crufty fiddling in builtin-stats.
-Can you give me a few hints re what/where to add ?
 
-Also, is it sensible/practical to add self / +children flavors
-
->
->> Also, task-clock-msec doesnt quite match up with times' user number
->> Whats going on here ?
->
-> task-clock-msec is generally much more accurate than the 0.005
-> printed by 'time'.
->
-> About the patch:
-> We *really* want something cleaner here: a print_ops vector of
-> function pointers which would contain a handful of helper functions
-> called by the higher level code?
-
-added struct print_ops:
-0001-perf-stat-refactor-print-formatting-into-print-ops-f.patch
-0002-perf-stat-fix-nan-in-Aa-runs.patch
-0003-perf-stat-clean-up-no-count-handling-CPUx-prefixing.patch
-
-sending separately, will attempt to in-reply-to them here.
-
-> Also, instead of adding -s/--simple we really want a single
-> print-format option that knows about all the format 'drivers':
->
->  --print simple
->  --print csv
->  --print default
->  --print verbose
->
-> or so.
-
-I left it as -x <delim> , since simple is basically csv.
-in csv, "<not counted>" becomes "<not-counted>"
-since latter makes -x ' ' useful.
-also added -x '\t'  --> tab
-
-
-> Also, please run scripts/checkpatch.pl over your patches, the above
-> is i think not matching the coding style we use in the kernel (unless
-> webmail mangled your patch).
-
-emacs did it.  I didnt fuss to correct cuz patch wasnt for prime-time.
-Now corrected with .emacs additions from CodingStyle.
-and checkpatched.
-
-thanks
-
->
-> Thanks,
->
->        Ingo
->
