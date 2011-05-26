@@ -1,82 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab1EZTzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:55:09 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:35331 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab1EZTzH (ORCPT
+	id S1758263Ab1EZT5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:57:15 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50948 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab1EZT5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:55:07 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=Ce41RDl2QvEGSWr+HF0Xhs5Gpvt0+pLN09+IVlCGEO5HoFiBjud/1ZPklBGBkZNae
-	pVbCyzVsd9Gr6VqDez5sw==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH] trace: Set oom_score_adj to maximum for ring buffer allocating process
-Date: Thu, 26 May 2011 12:52:17 -0700
-Message-Id: <1306439537-23706-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Thu, 26 May 2011 15:57:13 -0400
+Subject: [PATCH V6 4/4 net-next] vhost: vhost TX zero-copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 12:56:48 -0700
+Message-ID: <1306439808.5180.44.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tracing ring buffer is allocated from kernel memory. While
-allocating the memory, if OOM happens, the allocating process might not
-be the one that gets killed, since the ring-buffer memory is not
-allocated as process memory. Thus random processes might get killed
-during the allocation.
+Hello Michael,
 
-This patch makes sure that the allocating process is considered the most
-likely oom-kill-able process while the allocating is going on. Thus if
-oom-killer is invoked because of ring-buffer allocation, it is easier
-for the ring buffer memory to be freed and save important system
-processes from being killed.
+Let me anything I might miss from your preview's review.
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Thanks
+Shirley
+
+-----------
+
+This patch maintains the outstanding userspace buffers in the 
+sequence it is delivered to vhost. The outstanding userspace buffers 
+will be marked as done once the lower device buffers DMA has finished. 
+This is monitored through last reference of kfree_skb callback. Two
+buffer index are used for this purpose.
+
+The vhost passes the userspace buffers info to lower device skb 
+through message control. Since there will be some done DMAs when
+entering vhost handle_tx. The worse case is all buffers in the vq are
+in pending/done status, so we need to notify guest to release DMA done 
+buffers first before get any new buffers from the vq.
+
+Signed-off-by: Shirley <xma@us.ibm.com>
 ---
- kernel/trace/trace.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index b926578..15a667a 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -37,6 +37,7 @@
- #include <linux/init.h>
- #include <linux/poll.h>
- #include <linux/fs.h>
-+#include <linux/oom.h>
+ drivers/vhost/net.c   |   44 +++++++++++++++++++++++++++++++++++++++++++-
+ drivers/vhost/vhost.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/vhost/vhost.h |   13 +++++++++++++
+ 3 files changed, 105 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 2f7c76a..b27ba64 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -32,6 +32,10 @@
+  * Using this limit prevents one virtqueue from starving others. */
+ #define VHOST_NET_WEIGHT 0x80000
  
- #include "trace.h"
- #include "trace_output.h"
-@@ -3498,6 +3499,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	unsigned long val;
- 	char buf[64];
- 	int ret;
-+	int oom_score_adj;
++/* MAX number of TX used buffers for outstanding zerocopy */
++#define VHOST_MAX_PEND 128
++#define VHOST_GOODCOPY_LEN 256
++
+ enum {
+ 	VHOST_NET_VQ_RX = 0,
+ 	VHOST_NET_VQ_TX = 1,
+@@ -129,6 +133,7 @@ static void handle_tx(struct vhost_net *net)
+ 	int err, wmem;
+ 	size_t hdr_size;
+ 	struct socket *sock;
++	struct skb_ubuf_info pend;
  
- 	if (cnt >= sizeof(buf))
- 		return -EINVAL;
-@@ -3518,7 +3520,14 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	/* value is in KB */
- 	val <<= 10;
+ 	/* TODO: check that we are running from vhost_worker? */
+ 	sock = rcu_dereference_check(vq->private_data, 1);
+@@ -151,6 +156,10 @@ static void handle_tx(struct vhost_net *net)
+ 	hdr_size = vq->vhost_hlen;
  
-+	/*
-+	 * make sure this process is picked over others to be killed in OOM
-+	 * condition
-+	 */
-+	oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
- 	ret = tracing_resize_ring_buffer(val);
-+	/* restore the original oom_score_adj value */
-+	test_set_oom_score_adj(oom_score_adj);
- 	if (ret < 0)
- 		return ret;
+ 	for (;;) {
++		/* Release DMAs done buffers first */
++		if (atomic_read(&vq->refcnt) > VHOST_MAX_PEND)
++			vhost_zerocopy_signal_used(vq, false);
++
+ 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+ 					 ARRAY_SIZE(vq->iov),
+ 					 &out, &in,
+@@ -166,6 +175,12 @@ static void handle_tx(struct vhost_net *net)
+ 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+ 				break;
+ 			}
++			/* If more outstanding DMAs, queue the work */
++			if (atomic_read(&vq->refcnt) > VHOST_MAX_PEND) {
++				tx_poll_start(net, sock);
++				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
++				break;
++			}
+ 			if (unlikely(vhost_enable_notify(vq))) {
+ 				vhost_disable_notify(vq);
+ 				continue;
+@@ -188,6 +203,24 @@ static void handle_tx(struct vhost_net *net)
+ 			       iov_length(vq->hdr, s), hdr_size);
+ 			break;
+ 		}
++		/* use msg_control to pass vhost zerocopy ubuf info to skb */
++		if (sock_flag(sock->sk, SOCK_ZEROCOPY)) {
++			vq->heads[vq->upend_idx].id = head;
++			if (len < VHOST_GOODCOPY_LEN)
++				/* copy don't need to wait for DMA done */
++				vq->heads[vq->upend_idx].len =
++							VHOST_DMA_DONE_LEN;
++			else {
++				vq->heads[vq->upend_idx].len = len;
++				pend.callback = vhost_zerocopy_callback;
++				pend.arg = vq;
++				pend.desc = vq->upend_idx;
++				msg.msg_control = &pend;
++				msg.msg_controllen = sizeof(pend);
++			}
++			atomic_inc(&vq->refcnt);
++			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
++		}
+ 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+ 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+ 		if (unlikely(err < 0)) {
+@@ -198,12 +231,21 @@ static void handle_tx(struct vhost_net *net)
+ 		if (err != len)
+ 			pr_debug("Truncated TX packet: "
+ 				 " len %d != %zd\n", err, len);
+-		vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
++			vhost_add_used_and_signal(&net->dev, vq, head, 0);
+ 		total_len += len;
+ 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+ 			vhost_poll_queue(&vq->poll);
+ 			break;
+ 		}
++		/* if upend_idx is full, then wait for free more */
++/*
++		if (unlikely(vq->upend_idx == vq->done_idx)) {
++			tx_poll_start(net, sock);
++			set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
++				break;
++		}
++*/
+ 	}
  
--- 
-1.7.3.1
+ 	mutex_unlock(&vq->mutex);
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 2ab2912..0424c97 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -174,6 +174,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+ 	vq->call_ctx = NULL;
+ 	vq->call = NULL;
+ 	vq->log_ctx = NULL;
++	vq->upend_idx = 0;
++	vq->done_idx = 0;
++	atomic_set(&vq->refcnt, 0);
+ }
+ 
+ static int vhost_worker(void *data)
+@@ -385,16 +388,49 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+ 	return 0;
+ }
+ 
++/* In case of DMA done not in order in lower device driver for some reason.
++ * upend_idx is used to track end of used idx, done_idx is used to track head
++ * of used idx. Once lower device DMA done contiguously, we will signal KVM
++ * guest used idx.
++ */
++void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq, bool shutdown)
++{
++	int i, j = 0;
++
++	for (i = vq->done_idx; i != vq->upend_idx; i = ++i % UIO_MAXIOV) {
++		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN) || shutdown) {
++			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
++			vhost_add_used_and_signal(vq->dev, vq,
++						  vq->heads[i].id, 0);
++			++j;
++		} else
++			break;
++	}
++	if (j) {
++		vq->done_idx = i;
++		atomic_sub(j, &vq->refcnt);
++	}
++}
++
+ /* Caller should have device mutex */
+ void vhost_dev_cleanup(struct vhost_dev *dev)
+ {
+ 	int i;
++	unsigned long begin = jiffies;
+ 
+ 	for (i = 0; i < dev->nvqs; ++i) {
+ 		if (dev->vqs[i].kick && dev->vqs[i].handle_kick) {
+ 			vhost_poll_stop(&dev->vqs[i].poll);
+ 			vhost_poll_flush(&dev->vqs[i].poll);
+ 		}
++		/* Wait for all lower device DMAs done, then notify virtio_net
++		 * or just notify it without waiting for all DMA done here ?
++		 * in case of DMAs never done for some reason */
++		if (atomic_read(&dev->vqs[i].refcnt)) {
++			/* how long should we wait ? */
++			msleep(1000);
++			vhost_zerocopy_signal_used(&dev->vqs[i], true);
++		}
+ 		if (dev->vqs[i].error_ctx)
+ 			eventfd_ctx_put(dev->vqs[i].error_ctx);
+ 		if (dev->vqs[i].error)
+@@ -603,6 +639,10 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+ 
+ 	mutex_lock(&vq->mutex);
+ 
++	/* clean up lower device outstanding DMAs, before setting ring */
++	if (atomic_read(&vq->refcnt))
++		vhost_zerocopy_signal_used(vq, true);
++
+ 	switch (ioctl) {
+ 	case VHOST_SET_VRING_NUM:
+ 		/* Resizing ring with an active backend?
+@@ -1416,3 +1456,12 @@ void vhost_disable_notify(struct vhost_virtqueue *vq)
+ 		vq_err(vq, "Failed to enable notification at %p: %d\n",
+ 		       &vq->used->flags, r);
+ }
++
++void vhost_zerocopy_callback(struct sk_buff *skb)
++{
++	int idx = skb_shinfo(skb)->ubuf.desc;
++	struct vhost_virtqueue *vq = skb_shinfo(skb)->ubuf.arg;
++
++	/* set len = 1 to mark this desc buffers done DMA */
++	vq->heads[idx].len = VHOST_DMA_DONE_LEN;
++}
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index b3363ae..d0e7ac6 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -13,6 +13,11 @@
+ #include <linux/virtio_ring.h>
+ #include <asm/atomic.h>
+ 
++/* This is for zerocopy, used buffer len is set to 1 when lower device DMA
++ * done */
++#define VHOST_DMA_DONE_LEN	1
++#define VHOST_DMA_CLEAR_LEN	0
++
+ struct vhost_device;
+ 
+ struct vhost_work;
+@@ -108,6 +113,12 @@ struct vhost_virtqueue {
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+ 	struct vhost_log *log;
++	/* vhost zerocopy support */
++	atomic_t refcnt; /* num of outstanding zerocopy DMAs */
++	/* last used idx for outstanding DMA zerocopy buffers */
++	int upend_idx;
++	/* first used idx for DMA done zerocopy buffers */
++	int done_idx;
+ };
+ 
+ struct vhost_dev {
+@@ -154,6 +165,8 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
+ 
+ int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+ 		    unsigned int log_num, u64 len);
++void vhost_zerocopy_callback(struct sk_buff *skb);
++void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq, bool shutdown);
+ 
+ #define vq_err(vq, fmt, ...) do {                                  \
+ 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+
 
