@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758601Ab1EZXsf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 19:48:35 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48491 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756405Ab1EZXse (ORCPT
+	id S1758552Ab1EZXoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 19:44:08 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:49187 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab1EZXoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 19:48:34 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 27 May 2011 08:41:39 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ying Han <yinghan@google.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH v3 7/10] workqueue: add WQ_IDLEPRI
-Message-Id: <20110527084139.d334819f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110526114406.GG9715@htj.dyndns.org>
-References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110526143024.7f66e797.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110526093808.GE9715@htj.dyndns.org>
-	<20110526193018.12b3ddea.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110526195019.8af6d882.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110526114406.GG9715@htj.dyndns.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 19:44:07 -0400
+Date: Fri, 27 May 2011 08:44:01 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, "K.Prasad" <prasad@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, kexec@lists.infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
+Subject: Re: [RFC Patch 5/6] slimdump: Capture slimdump for fatal MCE
+ generated crashes
+Message-ID: <20110526234401.GE2815@verge.net.au>
+References: <20110526170722.GB23266@in.ibm.com>
+ <20110526172305.GA18295@in.ibm.com>
+ <20110526174447.GC29496@redhat.com>
+ <20110526180931.GF4065@one.firstfloor.org>
+ <20110526182618.GD29496@redhat.com>
+ <20110526185838.GG4065@one.firstfloor.org>
+ <20110526191008.GF29496@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526191008.GF29496@redhat.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 May 2011 13:44:06 +0200
-Tejun Heo <tj@kernel.org> wrote:
-
-> Hello,
-> 
-> On Thu, May 26, 2011 at 07:50:19PM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Thu, 26 May 2011 19:30:18 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > > In the next version, I'll try some like..
-> > > ==
-> > > 	process_one_work(...) {
-> > > 		.....
-> > > 		spin_unlock_irq(&gcwq->lock);
-> > > 		.....
-> > > 		if (cwq->wq->flags & WQ_IDLEPRI) {
-> > > 			set_scheduler(...SCHED_IDLE...)
-> > > 			cond_resched();
-> > > 			scheduler_switched = true;
-> > > 		}
-> > > 		f(work) 
-> > > 		if (scheduler_switched)
-> > > 			set_scheduler(...SCHED_OTHER...)
-> > > 		spin_lock_irq(&gcwq->lock);
-> > > 	}
-> > > ==
-> > > Patch size will be much smaller. (Should I do this in memcg's code ??)
-> > > 
+On Thu, May 26, 2011 at 03:10:08PM -0400, Vivek Goyal wrote:
+> On Thu, May 26, 2011 at 08:58:38PM +0200, Andi Kleen wrote:
+> > > If we are just extracting and saving MCE registers from vmcore, then
+> > > reboot time does not increase. It increases only if user decides to
+> > > extract and save extra data from vmcore.
 > > 
-> > BTW, my concern is that if f(work) is enough short,effect of SCHED_IDLE will never
-> > be found because SCHED_OTHER -> SCHED_IDLE -> SCHED_OTHER switch is very fast.
-> > Changed "weight" of CFQ never affects the next calculation of vruntime..of the
-> > thread and the work will show the same behavior with SCHED_OTHER.
-> > 
-> > I'm sorry if I misunderstand CFQ and setscheduler().
+> > Hmm I was thinking of user space usually saving the dump first
+> > before analyzing it. But yes it could probably do some minimal
+> > analysis first.
 > 
-> Hmm... I'm not too familiar there either but,
+> In RHEL, now we filter out the dump by default until and unless user
+> decides to no filter the dump with the help of config options. 
 > 
-> * If prio is lowered (you're gonna lower it too, right?),
->   prio_changed_fair() is called which in turn does resched_task() as
->   necessary.
+> So I think in this case we can just introduce an extra filtering
+> option in "makedumpfile" and ask it to save only MCE registers
+> if it notices that there is NT_MCE type of ELF note in vmcore.
 > 
-> * More importantly, for short work items, it's likely to not matter at
->   all.  If you can determine beforehand that it's not gonna take very
->   long time, queueing on system_wq would be more efficient.
+> I can very well imaging that extracting dmesg along with MCE registers
+> can be useful. If nothing else, it can give us useful information about
+> the system configuration.
 > 
-> Thanks.
+> Zeroing out all the other ELF headers in vmcore takes away the
+> capability to extract log buffers in case of MCE and I think
+> it probably is not the best idea.
 > 
 
-Ok, Now, I use following style.
-
-	(short work)->requeue->(short work)->requeue
-I'll change this as
-	(set SCHED_IDLE)->long work (until the end)->(set SCHED_OTHER)
-
-Then, I'll see what I want.
-
-Thanks.
--Kame
-
-
-
+FWIW, my initial thoughts are inline with Vivek's.
+I think that the bulk of this, if not all of it, can
+be done in user space. And that user space is the preferable
+location for such logic.
 
