@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758250Ab1EZTHU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:07:20 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39610 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757630Ab1EZTHS (ORCPT
+	id S1758423Ab1EZTPc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:15:32 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:56535 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758358Ab1EZTPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:07:18 -0400
-Date: Thu, 26 May 2011 12:07:02 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Sjur Braendeland <sjur.brandeland@stericsson.com>
-Subject: Re: linux-next: Tree for May 26 (drivers/net/caif)
-Message-Id: <20110526120702.fac24de0.randy.dunlap@oracle.com>
-In-Reply-To: <20110526163941.7dfcad1a.sfr@canb.auug.org.au>
-References: <20110526163941.7dfcad1a.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 26 May 2011 15:15:30 -0400
+Subject: Re: [PATCH-v5 07/13] iscsi-target: Add iSCSI Login Negotiation +
+	Parameter logic
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Svec <martin.svec@zoner.cz>
+In-Reply-To: <1306428415.4048.22.camel@mulgrave.site>
+References: <1305862678-30150-1-git-send-email-nab@linux-iscsi.org>
+	 <1305862678-30150-8-git-send-email-nab@linux-iscsi.org>
+	 <1306428415.4048.22.camel@mulgrave.site>
+Content-Type: text/plain
+Date: Thu, 26 May 2011 12:07:12 -0700
+Message-Id: <1306436832.5807.127.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4DDEA4E0.005B:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 May 2011 16:39:41 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+On Thu, 2011-05-26 at 11:46 -0500, James Bottomley wrote:
+> On Thu, 2011-05-19 at 20:37 -0700, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > This patch adds the princple RFC-3720 compatiable iSCSI Login
+> > phase negotiation for iscsi_target_mod.  This also includes the
+> > target RX/TX thread queue logic which is called directly from iSCSI
+> > login associated code.
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org> 
 > 
-> [The kernel.org mirroring is being slow today]
+> I thought the upshot of the thread with Tomo was that we wouldn't be
+> doing all of this in-kernel.  Where's the userspace upcall for this?
+> 
+
+The technical reasons why I want to avoid this have not changed for the
+1) authentication disabled and 2) 'required-to-implement' CHAP
+authentication cases.  These where discussed at the bottom of the thread
+from March with Tomo-san here:
+
+http://marc.info/?l=linux-scsi&m=130108812405710&w=2
+
+As mentioned, I am open to adding a userspace upcall for authentication
+payloads post merge in order to support the 'optional-to-implement'
+authentication cases.  However, pushing the above two cases out to
+userspace really does add unnecessary complexity and limitiations that I
+want to avoid for the default iSCSI login cases.
+
+It also would break existing rtslib/rtsadmin-v2 userspace code, and
+require a userspace daemon be aware of the necessary initiator NodeACL
+information and keep the current configuration state in sync between
+kernel + userspace.  The current code avoids this type of mess all
+together for the default cases, and I still only see downsides and
+endless maintainability headaches and delays for going back to this type
+of design for a kernel-level iscsi-target.
+
+--nab
 
 
-(not new)
-
-drivers/net/caif/caif_serial.c:194: warning: 'return' with no value, in function returning non-void
-drivers/net/caif/caif_serial.c:202: warning: 'return' with no value, in function returning non-void
-
-
-I'm curious:  how do warnings like this get overlooked?
-too much noise in the build messages?  or it wasn't overlooked, just ignored?
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
