@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab1EZJA7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 05:00:59 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:26177 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab1EZJA5 (ORCPT
+	id S1757252Ab1EZJIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 05:08:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:52076 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751956Ab1EZJIv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 05:00:57 -0400
-Date: Thu, 26 May 2011 10:53:17 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Luciano Coelho <coelho@ti.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH][Trivial] mac80211: Remove duplicate linux/slab.h include
- from net/mac80211/scan.c
-Message-ID: <alpine.LNX.2.00.1105261048570.17400@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 26 May 2011 05:08:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,272,1304319600"; 
+   d="scan'208";a="9183016"
+Date: Thu, 26 May 2011 09:55:15 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Uwe =?ISO-8859-14?B?S2xlaW5lLUv2bmln?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] serial/pch: use global div helper instead of creating a
+ private one
+Message-ID: <20110526095515.147ec045@bob.linux.org.uk>
+In-Reply-To: <1306399277-17094-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1306399277-17094-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-14
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 79f460ca49d8d5700756ab7071c951311c7f29cc add a duplicate 
-linux/slab.h include to net/mac80211/scan.c - remove it.
+On Thu, 26 May 2011 10:41:17 +0200
+Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- scan.c |    1 -
- 1 file changed, 1 deletion(-)
-
- patch against current Linus' tree
-
-diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
-index 27af672..58ffa7d 100644
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -15,7 +15,6 @@
- #include <linux/if_arp.h>
- #include <linux/rtnetlink.h>
- #include <linux/pm_qos_params.h>
--#include <linux/slab.h>
- #include <net/sch_generic.h>
- #include <linux/slab.h>
- #include <net/mac80211.h>
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Acked-by: Alan Cox  <alan@linux.intel.com>
