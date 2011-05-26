@@ -1,132 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758110Ab1EZRbl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:31:41 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:57233 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757803Ab1EZRbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:31:39 -0400
-Date: Thu, 26 May 2011 10:31:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for May 26 (RCU stalls)
-Message-ID: <20110526173128.GE2386@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <BANLkTink15DRi6WJT2g07zd6-=MtW2hODw@mail.gmail.com>
+	id S1758139Ab1EZRcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:32:08 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:46829 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757725Ab1EZRcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 13:32:07 -0400
+Date: Thu, 26 May 2011 23:01:56 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
+Subject: Re: [RFC Patch 0/6] slimdump: Enable slimdump if crashing kernel
+ memory is not required
+Message-ID: <20110526173156.GC18295@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20110526170722.GB23266@in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTink15DRi6WJT2g07zd6-=MtW2hODw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110526170722.GB23266@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 05:48:32PM +0200, Sedat Dilek wrote:
-> On Thu, May 26, 2011 at 8:39 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Hi all,
-> >
-> > [The kernel.org mirroring is being slow today]
-> >
-> > Changes since 20110525:
-> >
-> > Linus' tree gained a build failure for which I applied a patch.
-> >
-> > The m68knommu tree lost its conflicts.
-> >
-> > The hwmon-staging lost its conflict.
-> >
-> > The wireless lost its conflict.
-> >
-> > The mmc lost its conflict.
-> >
-> > The dwmw2-iommu tree lost its conflict.
-> >
-> > The kvm tree still had its build failure so I used the version from
-> > next-20110524.
-> >
-> > The namespace lost its conflicts.
-> >
-> > ----------------------------------------------------------------------------
-> >
+On Thu, May 26, 2011 at 10:37:22PM +0530, K.Prasad wrote:
+> Hi All,
+
+A small correction related to patch description...
+
 > 
-> Hi,
+> Summary of the patches
+> ----
+> Patch 1, 2 - Patches from Andi Kleen's tree
+> git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git which
+> introduce an enhanced panic function - xpanic().
 > 
-> I see these call-traces on x86 UP machine:
-> 
-> [  240.268061] INFO: task rcun0:8 blocked for more than 120 seconds.
-> [  240.268069] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-> disables this message.
-> [  240.268072] rcun0           D 00000000     0     8      2 0x00000000
-> [  240.268079]  f6473fb8 00000046 013131b6 00000000 c1461ac0 00000000
-> 00000000 c1461ac0
-> [  240.268089]  00000000 00000000 f645dc70 f645bf60 00000003 f6473f78
-> c102a570 f6473f9c
-> [  240.268097]  c1021476 00000000 f645bf6c 00000001 00000000 00000286
-> f6473f9c c129b35a
-> [  240.268106] Call Trace:
-> [  240.268121]  [<c102a570>] ? default_wake_function+0xb/0xd
-> [  240.268127]  [<c1021476>] ? __wake_up_common+0x33/0x5b
-> [  240.268134]  [<c129b35a>] ? _raw_spin_unlock_irqrestore+0xe/0x10
-> [  240.268140]  [<c10234ed>] ? complete+0x34/0x3e
-> [  240.268147]  [<c1074d23>] ? cpumask_weight+0xc/0xc
-> [  240.268157]  [<c1044c97>] kthread+0x53/0x67
-> [  240.268162]  [<c1044c44>] ? kthread_worker_fn+0x111/0x111
-> [  240.268169]  [<c12a123e>] kernel_thread_helper+0x6/0xd
-> 
-> dmesg and kernel-config are attached.
 
-Hello, Sedat,
+Patch 3 - A small bugfix for patch 1,2
 
-Does the following patch clear things up?
+Patch 4 - Introduces a new PANIC_MCE flag to signal the need for slimdump
+for MCE initiated panic calls. Appends a new elf-note inside coredump
+containing MCE related registers.
 
-							Thanx, Paul
+Thanks,
+K.Prasad
 
-------------------------------------------------------------------------
-
-rcu: Start RCU kthreads in TASK_INTERRUPTIBLE state
-
-Upon creation, kthreads are in TASK_UNINTERRUPTIBLE state, which can
-result in softlockup warnings.  Because some of RCU's kthreads can
-legitimately be idle indefinitely, start them in TASK_INTERRUPTIBLE
-state in order to avoid those warnings.
-
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Yinghai Lu <yinghai@kernel.org>
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index a1a8bb6..40aab8d 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1647,6 +1647,7 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
- 	if (IS_ERR(t))
- 		return PTR_ERR(t);
- 	kthread_bind(t, cpu);
-+	set_task_state(t, TASK_INTERRUPTIBLE);
- 	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
- 	WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
- 	per_cpu(rcu_cpu_kthread_task, cpu) = t;
-@@ -1754,6 +1755,7 @@ static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
- 		if (IS_ERR(t))
- 			return PTR_ERR(t);
- 		raw_spin_lock_irqsave(&rnp->lock, flags);
-+		set_task_state(t, TASK_INTERRUPTIBLE);
- 		rnp->node_kthread_task = t;
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 		sp.sched_priority = 99;
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 049f278..a767b7d 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1295,6 +1295,7 @@ static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
- 	if (IS_ERR(t))
- 		return PTR_ERR(t);
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
-+	set_task_state(t, TASK_INTERRUPTIBLE);
- 	rnp->boost_kthread_task = t;
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 	sp.sched_priority = RCU_KTHREAD_PRIO;
