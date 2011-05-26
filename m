@@ -1,109 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab1EZBLW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 21:11:22 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:52651 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186Ab1EZBLU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 21:11:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=YGVTAWW4ngyQGXAt2BXVsMGhRvCV6GMgixD4/9qWjWlwKw+/8kHPHzx52EQ+jPIDZk
-         G2H7LEFrq+BNHh/b2467oRD2gYrbzwd/9RTbTACN6e2c5f6f8UYLtrl6NZPWWTbeeWUb
-         sy5IqbRuxgf7oGwILJyjLBDx2HZSKFloEAZiQ=
-MIME-Version: 1.0
-Reply-To: corey@kansanian.com
-In-Reply-To: <013c01cc1af9$361b00e0$a25102a0$@ytram.com>
-References: <BANLkTinG_qCtHQYRYFQUJ9oGv4H1cuznWg@mail.gmail.com>
-	<201105250711.17971.edt@aei.ca>
-	<20110525113614.GQ2480@null>
-	<201105250812.43246.edt@aei.ca>
-	<5B4B9A479BF6994B88EA975675EC5B79057A399D82@MES1OS2SXC003.mes1.tconet.net>
-	<BANLkTi=ec3bh24=2r8f3tmj2g0n0bMnq1Q@mail.gmail.com>
-	<5B4B9A479BF6994B88EA975675EC5B79057A60296D@MES1OS2SXC003.mes1.tconet.net>
-	<013c01cc1af9$361b00e0$a25102a0$@ytram.com>
-Date: Wed, 25 May 2011 21:11:19 -0400
-X-Google-Sender-Auth: Apbko3Bq-Zu-AEQBCJVNjHBbyJ4
-Message-ID: <BANLkTikxR3AZJK5Bhc5b=7dq6CbXd2iBtQ@mail.gmail.com>
-Subject: Re: Linux 2.6.39
-From: Corey Boyle <corey@kansanian.com>
-To: wyrles@ytram.com, Ville Tervo <ville.tervo@nokia.com>,
-        "Cufi, Carles" <carles.cufi@nordicsemi.no>
-Cc: Ed Tomlinson <edt@aei.ca>,
-        Bluettooth Linux <linux-bluetooth@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756663Ab1EZBM6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 21:12:58 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57446 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752574Ab1EZBM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 21:12:56 -0400
+Date: Thu, 26 May 2011 11:12:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>,
+        Anatolij Gustschin <agust@denx.de>
+Subject: linux-next: build failure in Linus' tree
+Message-Id: <20110526111251.75245cbf.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 12:31 PM, Tom Allebrandi <wyrles@ytram.com> wrote:
-> -----Original Message-----
-> From: linux-bluetooth-owner@vger.kernel.org
-> [mailto:linux-bluetooth-owner@vger.kernel.org] On Behalf Of Cufi, Carles
-> Sent: Wednesday, May 25, 2011 7:15 AM
-> To: corey@kansanian.com
-> Cc: Ed Tomlinson; Ville Tervo; Bluettooth Linux;
-> linux-kernel@vger.kernel.org
-> Subject: RE: Linux 2.6.39
->
-> (Snipping...)
-> On Wed, May 25, 2011 at 8:46 AM, Cufi, Carles <carles.cufi@nordicsemi.no>
-> wrote:
->> On Wednesday 25 May 2011 07:36:14 Ville Tervo wrote:
->>> On Wed, May 25, 2011 at 07:11:17AM -0400, ext Ed Tomlinson wrote:
->>> > On Wednesday 25 May 2011 06:54:54 Corey Boyle wrote:
->>> > > > On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
->>> > > > > On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
->>> > > > > > On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
-> ...
->>> > Read Local Version Information (0x04|0x0001) plen 0
->>> > > HCI Event: Command Complete (0x0e) plen 12
->>> >     Read Local Version Information (0x04|0x0001) ncmd 1
->>> >     status 0x00
->>> >     HCI Version: 1.1 (0x1) HCI Revision: 0x20d
-> *************************
->>> >     LMP Version: 1.1 (0x1) LMP Subversion: 0x20d
-> *************************
->>> >     Manufacturer: Cambridge Silicon Radio (10) < HCI Command: Set
->>> > Event Mask (0x03|0x0001) plen 8
->>> >     Mask: 0xfffffbff00000000
-> *************************
->>> > > HCI Event: Command Complete (0x0e) plen 4
->>> >     Set Event Mask (0x03|0x0001) ncmd 1
->>> >     status 0x12
->>> >     Error: Invalid HCI Command Parameters
->>
->>Set Event Mask has been in the Bluetooth Spec since day 1, so it must be
-> the bitmask, which has been extended with each new spec release to cover
-> newly >added events. Looking at the latest spec, and judging by the year
-> your chipset was released in (it probably is a 1.1 compliant chipset) I
-> believe that >0x000000008FFFFFFF is the highest event mask it would support
-> (up until and including Page Scan Repetition Mode Change Event), but since I
-> don't have the >old 1.1 spec around I may be one or two bits off.
->
-> The device appears to have identified itself as CSR firmware using Bluetooth
-> version 1.1.
->
-> I do happen to have the 1.1 spec lying around :-), for Set_Event_Mask it
-> says
->
-> 0x0000000100000000
-> To                                          Reserved for future use
-> 0x8000000000000000
->
-> 0x00000000FFFFFFFF      Default (All events enabled)
->
+Hi all,
 
-I am beginning to think that my adapter simply does not support this
-command.  I have tried with all the suggested bitmasks, all zeros, all
-ones, all combinations where a single bit is set, etc.  I'm not sure
-where to go from here other than add a flag which incidates that
-certain devices don't support this command so it can be skipped.
-Again, the only way I have gotten it to work is by not sending the
-command at all.  Thoughts?
+With Linus' tree, today's linux-next build (x86_64 allmodconfig) failed
+like this:
+
+drivers/video/mb862xx/mb862xx-i2c.c: In function 'mb862xx_i2c_wait_event':
+drivers/video/mb862xx/mb862xx-i2c.c:25: error: implicit declaration of function 'udelay'
+
+Caused by commit f8a6b1f44833 ("video: mb862xx: add support for
+controller's I2C bus adapter").
+
+See Rule 1 in Documentation/SubmitChecklist.
+
+I have applied the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 26 May 2011 11:09:10 +1000
+Subject: [PATCH] video: mb862xx: udelay need linux/delay.h
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/video/mb862xx/mb862xx-i2c.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/video/mb862xx/mb862xx-i2c.c b/drivers/video/mb862xx/mb862xx-i2c.c
+index cb77d3b..b953099 100644
+--- a/drivers/video/mb862xx/mb862xx-i2c.c
++++ b/drivers/video/mb862xx/mb862xx-i2c.c
+@@ -12,6 +12,7 @@
+ #include <linux/fb.h>
+ #include <linux/i2c.h>
+ #include <linux/io.h>
++#include <linux/delay.h>
+ 
+ #include "mb862xxfb.h"
+ #include "mb862xx_reg.h"
+-- 
+1.7.5.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
