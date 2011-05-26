@@ -1,124 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758174Ab1EZTkm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:40:42 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56058 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab1EZTkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:40:41 -0400
-Date: Thu, 26 May 2011 21:39:46 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@redhat.com, acme@redhat.com, eranian@google.com,
-        tzanussi@gmail.com, penberg@cs.helsinki.fi,
-        torvalds@linux-foundation.org, efault@gmx.de, peterz@infradead.org,
-        davej@redhat.com, davem@davemloft.net, fweisbec@gmail.com,
-        kees.cook@canonical.com, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf symbols: Handle
- /proc/sys/kernel/kptr_restrict
-Message-ID: <20110526193946.GA6363@elte.hu>
-References: <tip-mt512joaxxbhhp1odop04yit@git.kernel.org>
+	id S1758212Ab1EZTlo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:41:44 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:45771 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab1EZTlm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:41:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=p1lnTg+O+17Gc/2qhCEvNAodhpclHf9KcJXbKTIEoPor893ms8bRxngAXzLJ7mvuDp
+         nj//NisSwdPHpGv5XxszdEYnaHETfjyeFo2AAQPp/tBPqOkLd6AB64/tQJ2n2ok0b9x8
+         qDii2YK1k8GrdJ/Q79IfqG2CJdSJ+3jEkZ7I4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-mt512joaxxbhhp1odop04yit@git.kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110525124401.GB29300@elte.hu>
+References: <1305968203-14240-1-git-send-email-jim.cromie@gmail.com>
+ <1305968203-14240-3-git-send-email-jim.cromie@gmail.com> <20110521103315.GA23651@elte.hu>
+ <BANLkTikSMR7AyJi-LEr8iA2x9TxobJr9gA@mail.gmail.com> <20110525124401.GB29300@elte.hu>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Thu, 26 May 2011 13:41:12 -0600
+Message-ID: <BANLkTimJp9o5_P73eNn5rMJbfRC2sCRdJA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] dont commify big numbers by default, let -B do it
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        acme@ghostprotocols.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 25, 2011 at 6:44 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Jim Cromie <jim.cromie@gmail.com> wrote:
+>
+>> > Also, i think for automation we'd also like to have a 'simple
+>> > output' mode, would you like to add that?
+>>
+>> OK, heres 1st cut at it, adding option --simple, for review /
+>> feedback
+>>
+>> Its based upon the csv-output code mostly, with some vestiges of
+>> verbose..
+>
+> Ok, we can do something like this - but please see the comments on
+> the patch further below:
+>
+>> > Something a bit like what you can see in 'perf stat -v true':
+>> > Without the human output later on, and with elapsed time added as
+>> > well.
+>>
+>> for my part, Id like the moral equivalent of time(s)? output too,
+>> though I suspect thats a separate patch..
+>
+> yeah. No objection to that either: time is well known and the stddev
+> output by perf stat --repeat is well liked. Wanna combine the two?
 
-* tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+I think so, depending upon what exactly 'combining' means.
 
-> Commit-ID:  ec80fde746e3ccf93895d25ae1a7071c9af52585
-> Gitweb:     http://git.kernel.org/tip/ec80fde746e3ccf93895d25ae1a7071c9af52585
-> Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-> AuthorDate: Thu, 26 May 2011 09:53:51 -0300
-> Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-> CommitDate: Thu, 26 May 2011 11:15:25 -0300
-> 
-> perf symbols: Handle /proc/sys/kernel/kptr_restrict
+>>
+>> real  0m3.019s
+>> user  0m0.005s
+>> sys   0m0.012s
+>>
+>> are these timings already taken by perf-stat ?
+>> is it a simple matter of addition and printing ?
+>> If not, whats involved ?
+>
+> Do you mean the real/user/sys bits? Elapsed time is already measured,
+> but you'd have to extract the rusage bits to get to the stime/utime
+> values.
+>
 
-Ok, things are much better now with kptr_restrict turned on - but i 
-still see a few rough edges in practice.
+> We could also add those as explicit events.
 
-For example 'perf top' says:
+ISTM this makes sense - make them 1st class objects,
+rather than some crufty fiddling in builtin-stats.
+Can you give me a few hints re what/where to add ?
 
-  aldebaran:~/linux> perf top
-  [kernel.kallsyms] with build id 122214021a666675f6e5ff97d70a85ce7139c0e7 not found, continuing without symbols
-  The (null) file can't be used
+Also, is it sensible/practical to add self / +children flavors
 
-Now we've confused the user, havent we? :-)
+>
+>> Also, task-clock-msec doesnt quite match up with times' user number
+>> Whats going on here ?
+>
+> task-clock-msec is generally much more accurate than the 0.005
+> printed by 'time'.
+>
+> About the patch:
+> We *really* want something cleaner here: a print_ops vector of
+> function pointers which would contain a handful of helper functions
+> called by the higher level code?
 
-Also, if i run 'perf top' with the proper vmlinux in the cwd, i do 
-not get any warning messages - despite both module symbols not being 
-available and potetial relocations not being considered.
+added struct print_ops:
+0001-perf-stat-refactor-print-formatting-into-print-ops-f.patch
+0002-perf-stat-fix-nan-in-Aa-runs.patch
+0003-perf-stat-clean-up-no-count-handling-CPUx-prefixing.patch
 
-Secondly, even though i have the proper 'vmlinux' in cwd, i get half 
-a page long warnings on perf record warning me about the vmlinux:
+sending separately, will attempt to in-reply-to them here.
 
-  WARNING: Kernel address maps (/proc/{kallsyms,modules}) are restricted, check /proc/sys/kernel/kptr_restrict.
+> Also, instead of adding -s/--simple we really want a single
+> print-format option that knows about all the format 'drivers':
+>
+>  --print simple
+>  --print csv
+>  --print default
+>  --print verbose
+>
+> or so.
 
-  Samples in kernel functions may not be resolved if a suitable 
-  vmlinux file is not found in the buildid cache or in the vmlinux 
-  path.
-
-  ...
-
-But a vmlinux file *is* in the cwd.
-
-One detail i noticed in the patch:
-
->  	symbol__init();
->  
-> +	if (symbol_conf.kptr_restrict)
-> +		pr_warning("WARNING: Kernel address maps "
-> +			   "(/proc/{kallsyms,modules}) are restricted, "
-> +			   "check /proc/sys/kernel/kptr_restrict.\n\n"
-> +			   "Samples in kernel functions may not be resolved "
-> +			   "if a suitable vmlinux file is not found in the "
-> +			   "buildid cache or in the vmlinux path.\n\n"
-> +			   "Samples in kernel modules won't be resolved "
-> +			   "at all.\n\n"
-> +			   "If some relocation was applied (e.g. kexec) "
-> +			   "symbols may be misresolved even with a suitable "
-> +			   "vmlinux or kallsyms file.\n\n");
+I left it as -x <delim> , since simple is basically csv.
+in csv, "<not counted>" becomes "<not-counted>"
+since latter makes -x ' ' useful.
+also added -x '\t'  --> tab
 
 
-messages broken mid-line just to make it look better is really bad 
-and can break git grep searches for the string as seen on the screen, 
-such as:
+> Also, please run scripts/checkpatch.pl over your patches, the above
+> is i think not matching the coding style we use in the kernel (unless
+> webmail mangled your patch).
 
-   git grep="are restricted, check"
+emacs did it.  I didnt fuss to correct cuz patch wasnt for prime-time.
+Now corrected with .emacs additions from CodingStyle.
+and checkpatched.
 
-The solution i use in such cases is to deviate in a common-sense way 
-from the standard coding style:
+thanks
 
-	if (symbol_conf.kptr_restrict) {
-		pr_warning(
-"WARNING: Kernel address maps (/proc/{kallsyms,modules}) are restricted, check /proc/sys/kernel/kptr_restrict.\n\n"
-"Samples in kernel functions may not be resolved if a suitable vmlinux file is not found in the buildid cache or in the vmlinux path.\n\n"
-"Samples in kernel modules won't be resolved at all.\n\n"
-"If some relocation was applied (e.g. kexec) symbols may be misresolved even with a suitable vmlinux or kallsyms file.\n\n");
-	}
-
-This has the big advantage that you can check how the *user* will see 
-this message.
-
-Had you done this you'd have immediately noticed that the individual 
-lines are *way* too large to fit on even large terminals. Please 
-break such messages in a much shorter fashion - we want the error 
-messages we output to be readable even on relatively small (80col) 
-terminals.
-
-Thanks,
-
-	Ingo
+>
+> Thanks,
+>
+>        Ingo
+>
