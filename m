@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab1EZQpv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 12:45:51 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42780 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932347Ab1EZQpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 12:45:50 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201105261645.p4QGjjOv026256@stout.americas.sgi.com>
-Date: Thu, 26 May 2011 11:45:45 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update 2 for 2.6.40-rc1
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.5 7/5/10
+	id S932927Ab1EZQyQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 12:54:16 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52706 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932472Ab1EZQyP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 12:54:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
+References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
+ <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com> <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
+ <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu>
+ <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu>
+ <alpine.LFD.2.02.1105251836030.3078@ionos> <20110525180100.GY19633@outflux.net>
+ <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <20110525191152.GC19633@outflux.net>
+ <BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com> <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
+ <BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com> <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 26 May 2011 09:46:38 -0700
+Message-ID: <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
+To: Will Drewry <wad@chromium.org>
+Cc: Colin Walters <walters@verbum.org>, Kees Cook <kees.cook@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 4db70f73e56961b9bcdfd0c36c62847a18b7dbb5:
+On Thu, May 26, 2011 at 9:33 AM, Will Drewry <wad@chromium.org> wrote:
+>
+> FWIW, none of the patches deal with privilege escalation via setuid
+> files or file capabilities.
 
-  tmpfs: fix XATTR N overriding POSIX_ACL Y (2011-05-25 19:53:02 -0700)
+That is NOT AT ALL what I'm talking about.
 
-are available in the git repository at:
-  git://oss.sgi.com/xfs/xfs for-linus
+I'm talking about the "setuid()" system call (and all its cousins:
+setgit/setreuid etc). And the whole thread has been about filtering
+system calls, no?
 
-Christoph Hellwig (11):
-      xfs: add online discard support
-      xfs: do not discard alloc btree blocks
-      xfs: remove the unused XFS_BMAPI_RSVBLOCKS flag
-      xfs: remove if_lastex
-      xfs: do not use unchecked extent indices in xfs_bmap_add_extent_*
-      xfs: do not use unchecked extent indices in xfs_bmapi
-      xfs: do not use unchecked extent indices in xfs_bunmapi
-      xfs: do not do pointer arithmetic on extent records
-      xfs: fix up asserts in xfs_iflush_fork
-      xfs: check for valid indices in xfs_iext_get_ext and xfs_iext_idx_to_irec
-      xfs: correctly decrement the extent buffer index in xfs_bmap_del_extent
+Do a google code search for setuid.
 
- Documentation/filesystems/xfs.txt |    6 +
- fs/xfs/linux-2.6/xfs_discard.c    |   29 ++
- fs/xfs/linux-2.6/xfs_discard.h    |    2 +
- fs/xfs/linux-2.6/xfs_super.c      |   18 +-
- fs/xfs/xfs_ag.h                   |    3 +
- fs/xfs/xfs_alloc.c                |   35 ++-
- fs/xfs/xfs_alloc.h                |    5 +-
- fs/xfs/xfs_alloc_btree.c          |    3 +-
- fs/xfs/xfs_bmap.c                 |  549 +++++++++++++++++--------------------
- fs/xfs/xfs_bmap.h                 |    2 -
- fs/xfs/xfs_inode.c                |   15 +-
- fs/xfs/xfs_inode.h                |    1 -
- fs/xfs/xfs_log_cil.c              |   13 +-
- fs/xfs/xfs_mount.h                |    1 +
- fs/xfs/xfs_trans.c                |    2 +-
- 15 files changed, 366 insertions(+), 318 deletions(-)
+In good code, it will look something like
+
+  uid = getuid();
+
+  if (setuid(uid)) {
+    fprintf(stderr, "Unable to drop provileges\n");
+    exit(1);
+  }
+
+but I guarantee you that there are cases where people just blindly
+drop privileges. google code search found me at least the "heirloom"
+source code doing exactly that.
+
+And if you filter system calls, it's entirely possible that you can
+attack suid executables through such a vector. Your "limit system
+calls for security" security suddenly turned into "avoid the system
+call that made things secure"!
+
+See what I'm saying?
+
+                       Linus
