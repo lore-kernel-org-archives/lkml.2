@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933215Ab1EZUCV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:02:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42944 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758426Ab1EZUCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933142Ab1EZUCU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:02:20 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:43956 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755990Ab1EZUCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 May 2011 16:02:17 -0400
-Date: Thu, 26 May 2011 16:01:21 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
-        hpa@zytor.com, Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-Message-ID: <20110526200121.GG29496@redhat.com>
-References: <1306269105.21443.20.camel@dan>
+Date: Thu, 26 May 2011 22:02:07 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+Subject: Re: [PATCH v5 00/21] EVM
+Message-ID: <20110526200207.GB15959@elf.ucw.cz>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <20110518172552.6d482c7a.akpm@linux-foundation.org>
+ <20110526060842.GA13933@localhost.ucw.cz>
+ <4DDE80FE.7010005@schaufler-ca.com>
+ <1306433514.24986.26.camel@localhost.localdomain>
+ <20110526183849.GA4563@ucw.cz>
+ <4DDEAA3F.3030008@schaufler-ca.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306269105.21443.20.camel@dan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DDEAA3F.3030008@schaufler-ca.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 04:31:45PM -0400, Dan Rosenberg wrote:
+On Thu 2011-05-26 12:30:07, Casey Schaufler wrote:
+> On 5/26/2011 11:38 AM, Pavel Machek wrote:
+> > On Thu 2011-05-26 14:11:54, David Safford wrote:
+> >> On Thu, 2011-05-26 at 09:34 -0700, Casey Schaufler wrote:
+> >>> On 5/25/2011 11:08 PM, Pavel Machek wrote:
+> >>>> ...
+> >>>> Fourthly, is it likely to find its way to the next cellphone I buy,
+> >>>> and will it prevent me from rooting it?
+> >>> That will of course depend on the phone vendor. You are certainly
+> >>> going to be able to vote with your checkbook (digital wallet?) but
+> >>> odds are pretty good that should EVM prove effective it will be
+> >>> ubiquitous within the next five years on embedded devices.
+> > Hmm. But maybe it is more effective to vote with NAKs, now? It does
+> > not seem to have any non-evil uses.
+> >
+> > Phone vendors will play nasty tricks on us, but... why make it easy
+> > for them?
+> 
+> For one thing, it is probable that in the not-too-distant future
+> the phone will not be yours. Many service providers are moving in
+> the direction of zero-cost phones. The subscriber will pay the
 
-[..]
->  ==============================================================
->  
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 880fcb6..999ea82 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1548,8 +1548,8 @@ config PHYSICAL_START
->  	  If kernel is a not relocatable (CONFIG_RELOCATABLE=n) then
->  	  bzImage will decompress itself to above physical address and
->  	  run from there. Otherwise, bzImage will run from the address where
-> -	  it has been loaded by the boot loader and will ignore above physical
-> -	  address.
-> +	  it has been loaded by the boot loader, using the above physical
-> +	  address as a lower bound.
->  
->  	  In normal kdump cases one does not have to set/change this option
->  	  as now bzImage can be compiled as a completely relocatable image
-> @@ -1595,7 +1595,31 @@ config RELOCATABLE
->  
->  	  Note: If CONFIG_RELOCATABLE=y, then the kernel runs from the address
->  	  it has been loaded at and the compile time physical address
-> -	  (CONFIG_PHYSICAL_START) is ignored.
-> +	  (CONFIG_PHYSICAL_START) is solely used as a lower bound.
-> +
+Really? References?
 
-This does not sound too good. Overloading the definition of PHYSICAL_START
-with minimum address. The very definition of relocatable kernel is that
-it should be able to run from the physical address it has been loaded
-at (subjected to alignment constraints).
+No, I don't think this is going to happen, for variety of reasons. 1)
+prepaid cards, 2) phones are easily damaged, 3) phones are often stolen.
 
-So I don't think overloading CONFIG_PHYSICAL_START definition is a good
-idea. In fact there is no reason that why kdump kernels should not run
-and boot below 16MB. So limiting those kernels to not load and run
-below 16MB is does not sound like good option to me.
+> Most people will not notice the difference. Consider this a
+> nasty trick if you want to. I expect that the average consumer
 
-Also randomization of kernel load address at run time will probably have
-some issues with crashkernel=X@Y address syntax. So far user knew what
-address first kernel is booting from and user could speicy where to 
-reserve memory. Now it might happen that user specified some memory
-to reserve and kernel decided to occupy that space resulting in failed
-memory reservation for crash kernel.
+I _do_ consider it nasty trick...
 
-Thanks
-Vivek
+> Welcome to computers in the 21st century.
+
+...and I do not want to help people playing nasty tricks. Protection
+against offline attacks should not be merged.
+
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
