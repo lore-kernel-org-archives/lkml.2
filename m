@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932523Ab1EZTtV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:49:21 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50538 "EHLO e9.ny.us.ibm.com"
+	id S1758335Ab1EZTtv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:49:51 -0400
+Received: from mail.lang.hm ([64.81.33.126]:57121 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab1EZTtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:49:19 -0400
-Subject: Re: [PATCH v5 00/21] EVM
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: David Safford <safford@watson.ibm.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-In-Reply-To: <20110526183849.GA4563@ucw.cz>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <20110518172552.6d482c7a.akpm@linux-foundation.org>
-	 <20110526060842.GA13933@localhost.ucw.cz>
-	 <4DDE80FE.7010005@schaufler-ca.com>
-	 <1306433514.24986.26.camel@localhost.localdomain>
-	 <20110526183849.GA4563@ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 15:49:07 -0400
-Message-ID: <1306439347.3092.89.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1751980Ab1EZTtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:49:50 -0400
+Date: Thu, 26 May 2011 12:49:15 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Ingo Molnar <mingo@elte.hu>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Drewry <wad@chromium.org>, Colin Walters <walters@verbum.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
+ filtering
+In-Reply-To: <20110526194621.GB6363@elte.hu>
+Message-ID: <alpine.DEB.2.02.1105261247470.4413@asgard.lang.hm>
+References: <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com> <BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com> <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com> <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com> <BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
+ <BANLkTi=UFB6PLfsSTVpFEQbveMs-W4MjUg@mail.gmail.com> <BANLkTim44ziUsEbYVOjfLPvOLfhUgH9itw@mail.gmail.com> <BANLkTineHBZ-oHRsfc9R6bpcp_oyczL5pA@mail.gmail.com> <20110526184723.GA3177@elte.hu> <alpine.DEB.2.02.1105261204020.4413@asgard.lang.hm>
+ <20110526194621.GB6363@elte.hu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 20:38 +0200, Pavel Machek wrote:
-> On Thu 2011-05-26 14:11:54, David Safford wrote:
-> > On Thu, 2011-05-26 at 09:34 -0700, Casey Schaufler wrote:
-> > > On 5/25/2011 11:08 PM, Pavel Machek wrote:
-> > > > ...
-> > > > Fourthly, is it likely to find its way to the next cellphone I buy,
-> > > > and will it prevent me from rooting it?
-> > > 
-> > > That will of course depend on the phone vendor. You are certainly
-> > > going to be able to vote with your checkbook (digital wallet?) but
-> > > odds are pretty good that should EVM prove effective it will be
-> > > ubiquitous within the next five years on embedded devices.
-> 
-> Hmm. But maybe it is more effective to vote with NAKs, now? It does
-> not seem to have any non-evil uses.
-> 
-> Phone vendors will play nasty tricks on us, but... why make it easy
-> for them?
-> 
-> > um, not quite the right threat model...
-> > 
-> > Rooting is normally done through an exploit of the loader
-> > or the kernel, neither of which EVM can prevent. The phones
-> 
-> Androids are often rooted by exploiting kernel or userspace
-> security holes. G1 was rooted by shell that was left running on
-> console...
-> 
-> > Whether or not the phone is rooted, IMA-Appraisal, EVM, and 
-> > the Digital Signature Extensions help protect against remote
-> > software attacks, and offline hardware attacks on individual
-> > files, but not against rooting itself.
-> 
-> As far as I can tell, file signatures only prevent "offline hardware
-> attacks"; that is  user trying to "attack" (== root) his own computer.
-> 
-> 								Pavel
+On Thu, 26 May 2011, Ingo Molnar wrote:
 
-Since when is my being able to detect and prevent unauthorized/malicious
-files on my own system (eg. device - VM) from being read/executed deemed
-evil?!  Are you suggesting that we're better off not knowing the
-integrity or authenticity of a file?  I suggest you read Dave's
-Integrity Overview whitepaper?
+> * david@lang.hm <david@lang.hm> wrote:
+>
+>> On Thu, 26 May 2011, Ingo Molnar wrote:
+>>
+>>> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>>
+>>>> It also gets rid of all configuration - one of the things that
+>>>> makes most security frameworks (look at selinux, but also just
+>>>> ACL's etc) such a crazy rats nest is the whole "set up for other
+>>>> processes". If it's designed very much to be about just the "self"
+>>>> process (after initialization etc), then I think that avoids pretty
+>>>> much all the serious issues.
+>>>
+>>> That's how the event filters work currently: even when inherited they
+>>> get removed when exec-ing a setuid task, so they cannot leak into
+>>> privileged context and cannot modify execution there.
+>>>
+>>> Inheritance works when requested, covering only same-credential child
+>>> tasks, not privileged successors.
+>>
+>> this is a very reasonable default, but there should be some way of
+>> saying that you want the restrictions to carry over to the suid
+>> task (I really know what I'm doing switch)
+>
+> Unless you mean that root should be able to do it it's a security
+> hole both for events and for filters:
+>
+> - for example we dont want really finegrained events to be used to
+>   BTS hw-trace sshd and thus enable it to discover cryptographic
+>   properties of the private key sshd is using.
+>
+> - we do not want to *modify* the execution flow of a setuid program,
+>   that can lead to exploits: by pushing the privileged codepath into
+>   a condition that can never occur on a normal system - and thus can
+>   push it into doing something it was not intended to do.
+>
+>   data damage could be done as well: for example if the privileged
+>   code is logging into a system file then modifying execution can
+>   damage the log file.
+>
+> So it's not a good idea in general to allow unprivileged code to
+> modify the execution of privileged code. In fact it's not a good idea
+> to allow it to simply *observe* privileged code. It must remain a
+> black box with very few information leaking outwards.
 
-Becoming involved in designing when/how new EVM encrypted key(s) are
-made available, determining if we need separate keyrings for EVM keys
-and the keys for appraising files(IMA-appraisal signatures), or defining
-the authorization mechanism required to add such keys (eg. LSM, extend
-capabilities), would be welcomed.  Such discussions can take place on
-either the LSM or linux-ima mailing lists.
+I was thinking of the use case of the real sysadmin (i.e. root) wanting to 
+be able to constrain things. I can see why you would not want to allow 
+normal users to do this.
 
-thanks,
-
-Mimi
-
+David Lang
