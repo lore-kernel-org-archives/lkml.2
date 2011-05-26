@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab1EZV2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 17:28:42 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:49916 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779Ab1EZV2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 17:28:41 -0400
-Message-ID: <4DDEC606.4020504@msgid.tls.msk.ru>
-Date: Fri, 27 May 2011 01:28:38 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20110506 Icedove/3.0.11
-MIME-Version: 1.0
-To: Linux USB list <linux-usb@vger.kernel.org>
-CC: Linux-kernel <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?UGF3ZcWCIERyb2I=?= =?UTF-8?B?ZWs=?= 
-	<pawel.drobek@gmail.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: Re: option driver, ZTE MF_330 matches linux usb 2.0 root hub
-References: <4DDEC269.30808@msgid.tls.msk.ru>
-In-Reply-To: <4DDEC269.30808@msgid.tls.msk.ru>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1758537Ab1EZVa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 17:30:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45789 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998Ab1EZVa0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 17:30:26 -0400
+Date: Thu, 26 May 2011 14:30:06 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Sjur =?ISO-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>
+Cc: balbi@ti.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        netdev <netdev@vger.kernel.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
+Subject: Re: linux-next: Tree for May 26 (drivers/net/caif)
+Message-Id: <20110526143006.2d1ef9f7.randy.dunlap@oracle.com>
+In-Reply-To: <BANLkTikik8+f1D4D_Dv_rFK=QQjdce9rwg@mail.gmail.com>
+References: <20110526163941.7dfcad1a.sfr@canb.auug.org.au>
+	<20110526120702.fac24de0.randy.dunlap@oracle.com>
+	<BANLkTikik8+f1D4D_Dv_rFK=QQjdce9rwg@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DDEC669.00D9:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-27.05.2011 01:13, Michael Tokarev wrote:
-> I noticed that recently, all my systems started
-> loading option.ko driver even if I've no single
-> GSM modem anywhere around.
+On Thu, 26 May 2011 23:15:34 +0200 Sjur BrÊndeland wrote:
+
+> Hi Randy,
 > 
-> After some investigation I found this in option.c:
+> [Randy]
+> > (not new)
+> >
+> > drivers/net/caif/caif_serial.c:194: warning: 'return' with no value, in function returning non-void
+> > drivers/net/caif/caif_serial.c:202: warning: 'return' with no value, in function returning non-void
+> >
+> >
+> > I'm curious: †how do warnings like this get overlooked?
+> > too much noise in the build messages? †or it wasn't overlooked, just ignored?
 > 
-> /* ZTE PRODUCTS -- alternate vendor ID */
-> #define ZTE_VENDOR_ID2                          0x1d6b
-> #define ZTE_PRODUCT_MF_330                      0x0002
-> ...
->         { USB_DEVICE(ZTE_VENDOR_ID2, ZTE_PRODUCT_MF_330) },
-> 
-> 
-> But this matches... "Linux Foundation 2.0 root hub",
-> which has this module alias:
-> 
->   usb:v1D6Bp0002d0206dc09dsc00dp00ic09isc00ip00
+> The patch introducing this problem is "tty: make receive_buf()
+> return the amout of bytes received" by Felipe Balbi <balbi@ti.com>.
+> It seems that this patch has been posted to linux-serial and not to
+> the netdev list or the gits net-next-2.6 or net-2.6 that I follow.
+> It's probably no excuse, but this problem is news to me.
 
-Forgot to mention, and to add proper Cc.  The commit
-is this one:
+I see.  Thanks for the explanation.
 
- commit a559d2c8c1bf652ea2d0ecd6ab4a250fcdb37db8
- Author: Dominik Brodowski <linux@dominikbrodowski.net>
- Date:   Wed Apr 14 21:36:42 2010 +0200
+> Should I post a patch on linux-next anyway for this issue?
 
-    USB: option: add ID for ZTE MF 330
+You or Felipe should, but he recently sent this note to the USB
+mailing list:
 
-    Based on the information provided for by Pawe≈Ç Drobek, add
-    a second vendor ID and the correct product ID for ZTE MF 330.
+"I'll be away until 31st of May on a business travel. Don't expect me to
+look into patches during that period."
 
-    Reported-by: Pawe≈Ç Drobek <pawel.drobek@gmail.com>
-    Signed-off: Dominik Brodowski <linux@dominikbrodowski.net>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+so it looks like it would better for you to do it, please.
 
-Are the IDs really correct?  Maybe it's just a typo
-after all...
-
-It is interesting that no one noticed this so far.
-Or it's just because it's difficult to search for -
-"option" is really a bad search term ;)
-
-> What are options to fix this option now? :)
-> 
-> Thanks!
-> 
-> [Cc'ing linux-kernel due to interesting USB ID clash]
-
-/mjt
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
