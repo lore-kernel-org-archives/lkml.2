@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab1EZBY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 21:24:58 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:31875 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752500Ab1EZBY5 (ORCPT
+	id S1756741Ab1EZBaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 21:30:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58663 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752500Ab1EZBaO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 21:24:57 -0400
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Alexander Stein'" <alexander.stein@systec-electronic.com>
-Cc: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        <linux-kernel@vger.kernel.org>, <qi.wang@intel.com>,
-        <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>, <toshiharu-linux@dsn.okisemi.com>,
-        "'Fan, Yongning'" <yongning.fan@intel.com>
-References: <1304938729-10609-1-git-send-email-tomoya-linux@dsn.okisemi.com> <201105251409.47309.alexander.stein@systec-electronic.com>
-Subject: RE: pch_gpio: Support new device ML7223
-Date: Thu, 26 May 2011 10:24:55 +0900
-Message-ID: <F873CB63EEA24284982A8FA0F0B0F167@hacdom.okisemi.com>
+	Wed, 25 May 2011 21:30:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=jXDfSf6KJYhSfviK2s3O2dosa/k8kmqRKlivWLT2UgtsOAjWpuK9gS3j/OQrfVzQCo
+         YnjD4Uuemv6EXpjAeU8y4ohkphvY7TxJjxirVy+r0mVurMtU9wW2O/rV79zF5/ZxHdxO
+         Vs1dJvLekLWYlMj8YjtTfsEIClf4Gdc7YmY1A=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-Thread-Index: Acwa1KWQ8HqXg8uoQ/qPIGVFrpsyywAbS3tw
-In-Reply-To: <201105251409.47309.alexander.stein@systec-electronic.com>
+In-Reply-To: <20110506153344.GA16977@sgi.com>
+References: <20110506153344.GA16977@sgi.com>
+Date: Wed, 25 May 2011 18:30:13 -0700
+X-Google-Sender-Auth: _qkuAkp_RhFiVuEAeAh-MCwAvbo
+Message-ID: <BANLkTim=4+ppfJH45PL4vGALpQELWpQk8w@mail.gmail.com>
+Subject: Re: [PATCH] x86: poll waiting for I/OAT DMA channel status
+From: Dan Williams <dan.j.williams@intel.com>
+To: Dimitri Sivanich <sivanich@sgi.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Alexander Stein [mailto:alexander.stein@systec-electronic.com] 
-> Sent: Wednesday, May 25, 2011 9:10 PM 
+On Fri, May 6, 2011 at 8:33 AM, Dimitri Sivanich <sivanich@sgi.com> wrote:
+> For certain system configurations a 5 usec udelay before checking I/OAT DMA
+> channel status is sometimes not sufficient, resulting in a false failure
+> status and unnecessary freeing of channel resources.  Conversely, for many
+> configurations 5 usec is longer than necessary.
+>
+> Loop for up to 20 usec waiting for successful status before failing.
+>
+> Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+> ___
 
-> > #define pch_gpio_resume NULL  #endif
-> > 
-> > +#define PCI_VENDOR_ID_ROHM             0x10DB
-> 
-> Should this be moved to pci_ids.h?
-OK.
-I will move this to pci_ids.h.
+Applied, but for future reference fix your scripts to use "---"
+instead of "___" for the separator after the Signed-off-by otherwise
+the diffstat information gets included in the changelog when apply the
+patch with "git am".
 
-> 
-> >  static DEFINE_PCI_DEVICE_TABLE(pch_gpio_pcidev_id) = {
-> >  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8803) },
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8014) },
-> 
-> Likewise for the product ID. While at it, the ID for EG20T 
-> could also be moved in a separate patch.
-
-We have already upstreamed not only GPIO but also many device drivers(GBE, USBDEV,DMA,UART,SPI,I2C,CAN).
-Do you mean we must move these device definitions to pci_ids.h?
-
-Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
+--
+Dan
