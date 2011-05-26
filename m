@@ -1,126 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab1EZH30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 03:29:26 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51410 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab1EZH3Y convert rfc822-to-8bit (ORCPT
+	id S1755070Ab1EZHeo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 03:34:44 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:45118 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab1EZHen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 03:29:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KHU/Ix0cthYCTm6I2NuJg9l5LhTLuo1QrNGmDlp88MWtUw6gfcroWw1vaGwhzg3GDe
-         bVvDr+vOn8gnp7tyR8GKwWY0hgyq9HziPFCa/wQL3fqc4EDe0EZ/29trAYjOgCNKpMzt
-         ljPEGiuAD9UYJlqYtszAOfBxQVcBpPhFrL3b0=
-MIME-Version: 1.0
-In-Reply-To: <1306358128.21578.107.camel@twins>
-References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
-	<1306272750.2497.79.camel@laptop>
-	<1306343335.21578.65.camel@twins>
-	<1306358128.21578.107.camel@twins>
-Date: Thu, 26 May 2011 15:29:23 +0800
-Message-ID: <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
- locks up on ARM
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Frank Rowand <frank.rowand@am.sony.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 May 2011 03:34:43 -0400
+Date: Thu, 26 May 2011 09:33:10 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision v2
+Message-ID: <20110526093310.1e34ede5@endymion.delvare>
+In-Reply-To: <1306351948-23382-1-git-send-email-andi@firstfloor.org>
+References: <1306351948-23382-1-git-send-email-andi@firstfloor.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 5:15 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2011-05-25 at 19:08 +0200, Peter Zijlstra wrote:
->> Ooh, shiny, whilst typing this I got an NMI-watchdog error reporting me
->> that CPU1 got stuck in try_to_wake_up(), so it looks like I can indeed
->> reproduce some funnies.
->>
->> /me goes dig in.
->
-> Does the below make your ARM box happy again?
->
-> It restores the old ttwu behaviour for this case and seems to not mess
-> up my x86 with __ARCH_WANT_INTERRUPTS_ON_CTXSW.
->
-> Figuring out why the existing condition failed
+Hi Andi,
 
-Seems  'current' will change before/after switch_to since it's derived from
-sp register.
-So that means if interrupt come before we switch sp, 'p == current' will
-catch it, but if interrupt comes after we switch sp, we will lose a wake up.
+On Wed, 25 May 2011 12:32:26 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> I got a request to make it easier to determine the microcode update level
+> on Intel CPUs. This patch adds a new "cpu update" field to /proc/cpuinfo,
+> which I added at the end to minimize impact on parsers.
+> 
+> The update level is also outputed on fatal machine checks together
+> with the other CPUID model information.
+> 
+> I removed the respective code from the microcode update driver, it
+> just reads the field from cpu_data. Also when the microcode is updated
+> it fills in the new values too.
+> 
+> I had to add a memory barrier to native_cpuid to prevent it being
+> optimized away when the result is not used.
+> 
+> This turns out to clean up further code which already got this
+> information manually. This is done in followon patches.
+> 
+> v2:  Lots of updates based on feedback.
 
-Thanks,
-Yong
+Please run scripts/checkpatch.pl on your patches before your post them.
+This one adds trailing white space on 3 lines and leading spaces on 3
+lines as well. Please fix.
 
-> and writing a proper
-> changelog requires a mind that is slightly less deprived of sleep and I
-> shall attempt that tomorrow -- provided this does indeed work for you.
->
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 2d12893..6976eac 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2573,7 +2573,19 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
->        if (!next)
->                smp_send_reschedule(cpu);
->  }
-> -#endif
+>  arch/x86/include/asm/processor.h  |    5 ++++-
+>  arch/x86/kernel/cpu/intel.c       |   14 ++++++++++++++
+>  arch/x86/kernel/cpu/mcheck/mce.c  |    5 +++--
+>  arch/x86/kernel/cpu/proc.c        |    3 ++-
+>  arch/x86/kernel/microcode_intel.c |   14 +++++---------
+>  5 files changed, 28 insertions(+), 13 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index 4c25ab4..3d0f214 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -111,6 +111,8 @@ struct cpuinfo_x86 {
+>  	/* Index into per_cpu list: */
+>  	u16			cpu_index;
+>  #endif
+> +	/* CPU update signature */
+> +	u32			cpu_update;
+>  } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+>  
+>  #define X86_VENDOR_INTEL	0
+> @@ -179,7 +181,8 @@ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
+>  	      "=b" (*ebx),
+>  	      "=c" (*ecx),
+>  	      "=d" (*edx)
+> -	    : "0" (*eax), "2" (*ecx));
+> +	    : "0" (*eax), "2" (*ecx)
+> +	    : "memory");
+>  }
+>  
+>  static inline void load_cr3(pgd_t *pgdir)
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> index 1edf5ba..ba5ba17 100644
+> --- a/arch/x86/kernel/cpu/intel.c
+> +++ b/arch/x86/kernel/cpu/intel.c
+> @@ -364,6 +364,20 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
+>  
+>  	early_init_intel(c);
+>  
+> +	/* Determine CPU update level */
+> +	if (c->x86 >= 6 && !cpu_has(c, X86_FEATURE_IA64)) {	
+> +		unsigned lower_word;
 > +
-> +#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> +static void ttwu_activate_remote(struct task_struct *p, int wake_flags)
-> +{
-> +       struct rq *rq = __task_rq_lock(p);
-> +
-> +       ttwu_activate(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
-> +       ttwu_do_wakeup(rq, p, wake_flags);
-> +
-> +       __task_rq_unlock(rq);
-> +}
-> +#endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
-> +#endif /* CONFIG_SMP */
->
->  static void ttwu_queue(struct task_struct *p, int cpu)
->  {
-> @@ -2630,18 +2642,11 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
->         */
->        while (p->on_cpu) {
->  #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> -               /*
-> -                * If called from interrupt context we could have landed in the
-> -                * middle of schedule(), in this case we should take care not
-> -                * to spin on ->on_cpu if p is current, since that would
-> -                * deadlock.
-> -                */
-> -               if (p == current) {
-> -                       ttwu_queue(p, cpu);
-> -                       goto stat;
-> -               }
-> -#endif
-> +               ttwu_activate_remote(p, wake_flags);
-> +               goto stat;
-> +#else
->                cpu_relax();
-> +#endif
->        }
->        /*
->         * Pairs with the smp_wmb() in finish_lock_switch().
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> +		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+> +		/* The CPUID 1 fills in the MSR as documented in the SDM */
+> +		/* 
+> + 		 * Wrong comment from microcode_intel.c:
+> + 		 * see notes above for revision 1.07.  Apparent chip bug
+> + 		 */
 
+Why copy this comment if it is wrong? Plus "above" is meaningless now
+that you moved it. If anyone really needs the info, it's in the git
+history forever, no need to pollute the source code.
+
+> +		cpuid_eax(1);
+> +		rdmsr(MSR_IA32_UCODE_REV, lower_word, c->cpu_update);
+> +	}
+> +
+>  	intel_workarounds(c);
+>  
+>  	/*
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index ff1ae9b..1d3cf21 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -220,8 +220,9 @@ static void print_mce(struct mce *m)
+>  		pr_cont("MISC %llx ", m->misc);
+>  
+>  	pr_cont("\n");
+> -	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x\n",
+> -		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid);
+> +	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x CPU-UPDATE %u\n",
+> +		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid, 
+> +		cpu_data(m->extcpu).cpu_update);
+>  
+>  	/*
+>  	 * Print out human-readable details about the MCE error,
+> diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+> index 62ac8cb..f27d6e5 100644
+> --- a/arch/x86/kernel/cpu/proc.c
+> +++ b/arch/x86/kernel/cpu/proc.c
+> @@ -85,6 +85,8 @@ static int show_cpuinfo(struct seq_file *m, void *v)
+>  		seq_printf(m, "stepping\t: %d\n", c->x86_mask);
+>  	else
+>  		seq_printf(m, "stepping\t: unknown\n");
+> +	if (c->cpu_update)
+> +		seq_printf(m, "cpu update\t: %u\n", c->cpu_update);
+>  
+>  	if (cpu_has(c, X86_FEATURE_TSC)) {
+>  		unsigned int freq = cpufreq_quick_get(cpu);
+> @@ -132,7 +134,6 @@ static int show_cpuinfo(struct seq_file *m, void *v)
+>  				seq_printf(m, " [%d]", i);
+>  		}
+>  	}
+> -
+>  	seq_printf(m, "\n\n");
+>  
+>  	return 0;
+
+Please don't mix white space changes with real code changes.
+
+> diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
+> index 1a1b606..1efe9d4 100644
+> --- a/arch/x86/kernel/microcode_intel.c
+> +++ b/arch/x86/kernel/microcode_intel.c
+> @@ -161,12 +161,7 @@ static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
+>  		csig->pf = 1 << ((val[1] >> 18) & 7);
+>  	}
+>  
+> -	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+> -	/* see notes above for revision 1.07.  Apparent chip bug */
+> -	sync_core();
+> -	/* get the current revision from MSR 0x8B */
+> -	rdmsr(MSR_IA32_UCODE_REV, val[0], csig->rev);
+> -
+> +	csig->rev = c->cpu_update;
+>  	pr_info("CPU%d sig=0x%x, pf=0x%x, revision=0x%x\n",
+>  		cpu_num, csig->sig, csig->pf, csig->rev);
+>  
+> @@ -299,9 +294,9 @@ static int apply_microcode(int cpu)
+>  	struct microcode_intel *mc_intel;
+>  	struct ucode_cpu_info *uci;
+>  	unsigned int val[2];
+> -	int cpu_num;
+> +	int cpu_num = raw_smp_processor_id();
+> +	struct cpuinfo_x86 *c = &cpu_data(cpu_num);
+>  
+> -	cpu_num = raw_smp_processor_id();
+>  	uci = ucode_cpu_info + cpu;
+>  	mc_intel = uci->mc;
+>  
+> @@ -317,7 +312,7 @@ static int apply_microcode(int cpu)
+>  	      (unsigned long) mc_intel->bits >> 16 >> 16);
+>  	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+>  
+> -	/* see notes above for revision 1.07.  Apparent chip bug */
+> +	/* As documented in the SDM: Do a CPUID 1 here */
+>  	sync_core();
+>  
+>  	/* get the current revision from MSR 0x8B */
+> @@ -335,6 +330,7 @@ static int apply_microcode(int cpu)
+>  		(mc_intel->hdr.date >> 16) & 0xff);
+>  
+>  	uci->cpu_sig.rev = val[1];
+> +	c->cpu_update = val[1];
+>  
+>  	return 0;
+>  }
 
 
 -- 
-Only stand for myself
+Jean Delvare
