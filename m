@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758405Ab1EZVyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 17:54:19 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35311 "EHLO
+	id S1758590Ab1EZWBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 18:01:49 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35713 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754440Ab1EZVyS (ORCPT
+	with ESMTP id S1758576Ab1EZWBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 17:54:18 -0400
-Date: Thu, 26 May 2011 22:53:49 +0100
+	Thu, 26 May 2011 18:01:47 -0400
+Date: Thu, 26 May 2011 23:01:20 +0100
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Mika Westerberg <mika.westerberg@iki.fi>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "ryan@bluewatersys.com" <ryan@bluewatersys.com>,
-        spi mailing list <spi-devel-general@lists.sourceforge.net>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
-Message-ID: <20110526215349.GM24876@n2100.arm.linux.org.uk>
-References: <cover.1306082097.git.mika.westerberg@iki.fi> <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi> <BANLkTi=3z3kO5VEe2up8Mfm+bNXkY3baUw@mail.gmail.com> <20110525195413.GC2996@acer> <BANLkTin8Trn-44Op+GbxrgocFrnPuXUZ2w@mail.gmail.com> <20110526043344.GA2749@acer> <BANLkTikzrXRmdnv_v_nmJw7Nvsr6TY-5RQ@mail.gmail.com> <20110526183800.GE2957@acer> <0D753D10438DA54287A00B027084269764D3319EC4@AUSP01VMBX24.collaborationhost.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Xilinx: Adding zynq platform support
+Message-ID: <20110526220120.GN24876@n2100.arm.linux.org.uk>
+References: <BANLkTiknh4nCviohecbcJEiWnSW-JdMxDw@mail.gmail.com> <alpine.LFD.2.00.1105241435550.3207@xanadu.home> <BANLkTi=hCpCbNzi1ZiKmGnbhmCG2Ce=EkA@mail.gmail.com> <201105261559.41993.arnd@arndb.de> <20110526150655.GA26661@ponder.secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0D753D10438DA54287A00B027084269764D3319EC4@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <20110526150655.GA26661@ponder.secretlab.ca>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 01:48:12PM -0500, H Hartley Sweeten wrote:
-> I think the biggest hurdle with using the amba-pl022 driver is that the ep93xx
-> spi peripheral does not have the registers with the pid and cid id's.  Without
-> those I don't think the amba bus driver will be able to match the device to
-> the driver.
+On Thu, May 26, 2011 at 09:06:55AM -0600, Grant Likely wrote:
+> On Thu, May 26, 2011 at 03:59:41PM +0200, Arnd Bergmann wrote:
+> > On Wednesday 25 May 2011, Grant Likely wrote:
+> > > 
+> > > As per discussion attached below.  Please pull this tree adding device
+> > > tree support to ARM, plus some other minor device tree changes.
+> > 
+> > Hi Grant and Linus,
+> > 
+> > There is also the new Xilinx zynq subarchitecture pending that depends
+> > on this, see below. Should we also include that right away, in order
+> > to have an example for other platforms? I think the code is clean
+> > enough and it would be good to have.
+> > 
+> > 	Arnd
+> 
+> Yes, this one definitely should (as we discussed in Budapest 2 weeks back).
+> Its been in linux-next for a while now too.
+> 
+> I've picked it up into devicetree/arm-next and run through a few build
+> tests before I push it out and update the pull request.
 
-I've just committed Linus' patches to allow a provided ID to override
-what the bus code finds.
+Note that I've pulled the dt stuff into my tree a few days ago already.
