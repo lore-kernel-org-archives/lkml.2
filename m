@@ -1,101 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab1EZFXJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 01:23:09 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38561 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752032Ab1EZFXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 01:23:07 -0400
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 15:22:54 +1000
-Message-ID: <1306387374.7481.451.camel@pasglop>
+	id S1754477Ab1EZFaN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 01:30:13 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37057 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab1EZFaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 01:30:11 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 26 May 2011 14:23:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Ying Han <yinghan@google.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: [RFC][PATCH v3 5/10] memcg keep margin to limit in background
+Message-Id: <20110526142323.8e63941a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
 
-This is a bit more than I expected to send you that late in the merge
-window, but hopefully none of it should be problematic. A couple of
-patches were simply delayed due to misunderstandings as to which tree
-they should go through (4xx MSI and ftrace).
+Still magic numbers existing..but...
+==
+When memcg is used, applications can see latency of memory reclaim
+which is caused by the limit of memcg. In general, it's unavoidable
+and the user's setting is wrong.
 
-There's a generic patch to linux/smp.h which removes some definitions
-that as far as we can tell aren't used anywhere anymore (we just removed
-the last use in powerpc in my previous pull request).
+There are some class of application, which uses much Clean file caches
+and do some interactive jobs. With that applications, if the kernel
+can help memory reclaim in background, application latency can be
+hidden to some extent. (It depends on how applications sleep..)
 
-The rest is either good enough bug fixes (in large part regressions),
-with a couple more cleanups from Milton on top of his big series that
-I merged earlier.
+This patch adds a control knob to enable/disable a kernel help
+to keep marging to limit in background.
 
-Cheers,
-Ben.
+If a user writes
+  # echo 1 > /memory.async_control
 
-The following changes since commit 3f5785ec31adcb7cafa9135087297a38d9698cf8:
+The memcg tries to keep free space (called margin) to the limit in
+background. The size of margin is calculated in dynamic way. The
+value is determined to decrease opportunity for appliations to hit limit.
+(Now, just use a random_walk.)
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6 (2011-05-25 17:00:17 -0700)
 
-are available in the git repository at:
+Changelog v2 -> v3:
+  - totally reworked.
+    - calculate margin to the limit in dynamic way.
+    - divided user interface and internal flags.
+    - added comments.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git ..BRANCH.NOT.VERIFIED..
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ Documentation/cgroups/memory.txt |   44 ++++++++
+ mm/memcontrol.c                  |  192 ++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 234 insertions(+), 2 deletions(-)
 
-Brian King (1):
-      powerpc/pseries: Update MAX_HCALL_OPCODE to reflect page coalescing
-
-Eric B Munson (1):
-      powerpc/oprofile: Handle events that raise an exception without overflowing
-
-Ian Munsie (1):
-      powerpc/ftrace: Implement raw syscall tracepoints on PowerPC
-
-Milton Miller (8):
-      Remove unused MSG_ flags in linux/smp.h
-      powerpc/cell: Use common smp ipi actions
-      powerpc/cell: Rename ipi functions to match current abstractions
-      powerpc/irq: Remove stale and misleading comment
-      powerpc/irq: Always free duplicate IRQ_LEGACY hosts
-      powerpc/irq: Check desc in handle_one_irq and expand generic_handle_irq
-      powerpc/irq: Protect irq_radix_revmap_lookup against irq_free_virt
-      powerpc: Fix irq_free_virt by adjusting bounds before loop
-
-Rupjyoti Sarmah (1):
-      powerpc/4xx: Adding PCIe MSI support
-
- arch/powerpc/Kconfig                    |    1 +
- arch/powerpc/boot/dts/canyonlands.dts   |   18 ++
- arch/powerpc/boot/dts/katmai.dts        |   18 ++
- arch/powerpc/boot/dts/kilauea.dts       |   28 +++
- arch/powerpc/boot/dts/redwood.dts       |   20 +++
- arch/powerpc/include/asm/ftrace.h       |   14 ++
- arch/powerpc/include/asm/hvcall.h       |    2 +-
- arch/powerpc/include/asm/smp.h          |    2 -
- arch/powerpc/include/asm/syscall.h      |    5 +
- arch/powerpc/include/asm/thread_info.h  |    7 +-
- arch/powerpc/kernel/Makefile            |    1 +
- arch/powerpc/kernel/ftrace.c            |    8 +
- arch/powerpc/kernel/irq.c               |   46 +++---
- arch/powerpc/kernel/ptrace.c            |   10 +
- arch/powerpc/kernel/smp.c               |    2 +-
- arch/powerpc/oprofile/op_model_power4.c |   24 +++-
- arch/powerpc/platforms/40x/Kconfig      |    2 +
- arch/powerpc/platforms/44x/Kconfig      |    6 +
- arch/powerpc/platforms/cell/interrupt.c |   55 ++----
- arch/powerpc/platforms/cell/interrupt.h |    2 +-
- arch/powerpc/platforms/cell/smp.c       |    2 +-
- arch/powerpc/sysdev/Kconfig             |    7 +
- arch/powerpc/sysdev/Makefile            |    1 +
- arch/powerpc/sysdev/ppc4xx_msi.c        |  276 +++++++++++++++++++++++++++++++
- include/linux/smp.h                     |   10 -
- 25 files changed, 491 insertions(+), 76 deletions(-)
- create mode 100644 arch/powerpc/sysdev/ppc4xx_msi.c
-
+Index: memcg_async/mm/memcontrol.c
+===================================================================
+--- memcg_async.orig/mm/memcontrol.c
++++ memcg_async/mm/memcontrol.c
+@@ -115,10 +115,12 @@ enum mem_cgroup_events_index {
+ enum mem_cgroup_events_target {
+ 	MEM_CGROUP_TARGET_THRESH,
+ 	MEM_CGROUP_TARGET_SOFTLIMIT,
++	MEM_CGROUP_TARGET_KEEP_MARGIN,
+ 	MEM_CGROUP_NTARGETS,
+ };
+ #define THRESHOLDS_EVENTS_TARGET (128)
+ #define SOFTLIMIT_EVENTS_TARGET (1024)
++#define KEEP_MARGIN_EVENTS_TARGET (512)
+ 
+ struct mem_cgroup_stat_cpu {
+ 	long count[MEM_CGROUP_STAT_NSTATS];
+@@ -210,6 +212,10 @@ struct mem_cgroup_eventfd_list {
+ static void mem_cgroup_threshold(struct mem_cgroup *mem);
+ static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
+ 
++static void mem_cgroup_reset_margin_to_limit(struct mem_cgroup *mem);
++static void mem_cgroup_update_margin_to_limit(struct mem_cgroup *mem);
++static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem);
++
+ /*
+  * The memory controller data structure. The memory controller controls both
+  * page cache and RSS per cgroup. We would eventually like to provide
+@@ -278,6 +284,15 @@ struct mem_cgroup {
+ 	 */
+ 	unsigned long 	move_charge_at_immigrate;
+ 	/*
++ 	 * Checks for async reclaim.
++ 	 */
++	unsigned long	margin_to_limit_pages; /* margin to limit */
++	spinlock_t	update_margin_lock;
++	unsigned long	async_flags;
++#define AUTO_KEEP_MARGIN_ENABLED	(0) /* user enabled async reclaim */
++#define FAILED_TO_KEEP_MARGIN		(1) /* someone hit limit */
++
++	/*
+ 	 * percpu counter.
+ 	 */
+ 	struct mem_cgroup_stat_cpu *stat;
+@@ -713,6 +728,9 @@ static void __mem_cgroup_target_update(s
+ 	case MEM_CGROUP_TARGET_SOFTLIMIT:
+ 		next = val + SOFTLIMIT_EVENTS_TARGET;
+ 		break;
++	case MEM_CGROUP_TARGET_KEEP_MARGIN:
++		next = val + KEEP_MARGIN_EVENTS_TARGET;
++		break;
+ 	default:
+ 		return;
+ 	}
+@@ -736,6 +754,12 @@ static void memcg_check_events(struct me
+ 			__mem_cgroup_target_update(mem,
+ 				MEM_CGROUP_TARGET_SOFTLIMIT);
+ 		}
++		/* update margin-to-limit and run async reclaim if necessary */
++		if (__memcg_event_check(mem, MEM_CGROUP_TARGET_KEEP_MARGIN)) {
++			mem_cgroup_may_async_reclaim(mem);
++			__mem_cgroup_target_update(mem,
++				MEM_CGROUP_TARGET_KEEP_MARGIN);
++		}
+ 	}
+ }
+ 
+@@ -2267,8 +2291,10 @@ static int mem_cgroup_do_charge(struct m
+ 	 * of regular pages (CHARGE_BATCH), or a single regular page (1).
+ 	 *
+ 	 * Never reclaim on behalf of optional batching, retry with a
+-	 * single page instead.
++	 * single page instead. But mark we hit limit and give a hint
++	 * to auto_keep_margin.
+ 	 */
++	set_bit(FAILED_TO_KEEP_MARGIN, &mem->async_flags);
+ 	if (nr_pages == CHARGE_BATCH)
+ 		return CHARGE_RETRY;
+ 
+@@ -3552,6 +3578,7 @@ static int mem_cgroup_resize_limit(struc
+ 				memcg->memsw_is_minimum = true;
+ 			else
+ 				memcg->memsw_is_minimum = false;
++			mem_cgroup_reset_margin_to_limit(memcg);
+ 		}
+ 		mutex_unlock(&set_limit_mutex);
+ 
+@@ -3729,6 +3756,131 @@ unsigned long mem_cgroup_soft_limit_recl
+ 	return nr_reclaimed;
+ }
+ 
++
++/*
++ * Auto-keep-margin and Dynamic auto margin calculation.
++ *
++ * When an application hits memcg's limit, it need to scan LRU and reclaim
++ * memory. This means extra latency is added by setting limit of memcg. With
++ * some class of applications, a kernel help, freeing pages in background
++ * works good and can reduce their latency and stabilize their works.
++ *
++ * The porblem here is what amount of margin should be kept for keeping
++ * applications hit limit. In general, margin to the limit should be as small
++ * as possible because the user wants to use memory up to the limit, he defined.
++ * But small margin is just a small help.
++ * Below is a code for calculating margin to limit in dynamic way. The margin
++ * is determined by the size of limit and workload.
++ *
++ * At initial, margin is set to MIN_MARGIN_TO_LIMIT and the kernel tries to
++ * keep free bytes of it. If someone hit limit and failcnt increases, this
++ * margin is increase by twice. The kernel periodically checks the
++ * status. If it finds free space is enough, it decreases the margin
++ * LIMIT_MARGIN_STEP. This means the window of margin increases
++ * in exponential (to catch rapid workload) but decreased in linear way.
++ *
++ * This feature is enabled only when AUTO_KEEP_MARGIN_ENABLED is set.
++ */
++#define MIN_MARGIN_TO_LIMIT	((4*1024*1024) >> PAGE_SHIFT)
++#define MAX_MARGIN_TO_LIMIT	((64*1024*1024) >> PAGE_SHIFT)
++#define MAX_MARGIN_LIMIT_RATIO  (5)		/* 5% of limit */
++#define MARGIN_SHRINK_STEP	((256 * 1024) >>PAGE_SHIFT)
++
++enum {
++	MARGIN_RESET,	/* used when limit is set */
++	MARGIN_ENLARGE,	/* called when margin seems not enough */
++	MARGIN_SHRINK,	/* called when margin seems enough */
++};
++
++static void
++__mem_cgroup_update_limit_margin(struct mem_cgroup *mem, int action)
++{
++	u64 max_margin, limit;
++
++	/*
++ 	 * Note: this function is racy. But the race will be harmless.
++ 	 */
++
++	limit = res_counter_read_u64(&mem->res, RES_LIMIT) >> PAGE_SHIFT;
++
++	max_margin = min(limit * MAX_MARGIN_LIMIT_RATIO/100,
++			(u64) MAX_MARGIN_TO_LIMIT);
++
++	switch (action) {
++	case MARGIN_RESET:
++		mem->margin_to_limit_pages = MIN_MARGIN_TO_LIMIT;
++		if (mem->margin_to_limit_pages < max_margin)
++			mem->margin_to_limit_pages = max_margin;
++		break;
++	case MARGIN_ENLARGE:
++		if (mem->margin_to_limit_pages < max_margin)
++			mem->margin_to_limit_pages *= 2;
++		if (mem->margin_to_limit_pages > max_margin)
++			mem->margin_to_limit_pages = max_margin;
++		break;
++	case MARGIN_SHRINK:
++		if (mem->margin_to_limit_pages > MIN_MARGIN_TO_LIMIT)
++			mem->margin_to_limit_pages -= MARGIN_SHRINK_STEP;
++		if (mem->margin_to_limit_pages < MIN_MARGIN_TO_LIMIT)
++			mem->margin_to_limit_pages = MIN_MARGIN_TO_LIMIT;
++		break;
++	}
++	return;
++}
++
++/*
++ * Called by percpu event counter.
++ */
++static void mem_cgroup_update_margin_to_limit(struct mem_cgroup *mem)
++{
++	if (!test_bit(AUTO_KEEP_MARGIN_ENABLED, &mem->async_flags))
++		return;
++	/* If someone does update, we don't need to update */
++	if (!spin_trylock(&mem->update_margin_lock))
++		return;
++	/*
++	 * If someone hits limit, enlarge margin. If no one hits and
++	 * it seems there are minimum margin, shrink it.
++	 */
++	if (test_and_clear_bit(FAILED_TO_KEEP_MARGIN, &mem->async_flags))
++		__mem_cgroup_update_limit_margin(mem, MARGIN_ENLARGE);
++	else if (mem_cgroup_margin(mem) > MIN_MARGIN_TO_LIMIT)
++		__mem_cgroup_update_limit_margin(mem, MARGIN_SHRINK);
++
++	spin_unlock(&mem->update_margin_lock);
++	return;
++}
++
++/*
++ * Called when the limit changes.
++ */
++static void mem_cgroup_reset_margin_to_limit(struct mem_cgroup *mem)
++{
++	spin_lock(&mem->update_margin_lock);
++	__mem_cgroup_update_limit_margin(mem, MARGIN_RESET);
++	spin_unlock(&mem->update_margin_lock);
++}
++
++/*
++ * Run a asynchronous memory reclaim on the memcg.
++ */
++static void mem_cgroup_schedule_async_reclaim(struct mem_cgroup *mem)
++{
++}
++
++/*
++ * Check memcg's flag and if margin to limit is smaller than limit_margin,
++ * schedule asynchronous memory reclaim in background.
++ */
++static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem)
++{
++	if (!test_bit(AUTO_KEEP_MARGIN_ENABLED, &mem->async_flags))
++		return;
++	mem_cgroup_update_margin_to_limit(mem);
++	if (mem_cgroup_margin(mem) < mem->margin_to_limit_pages)
++		mem_cgroup_schedule_async_reclaim(mem);
++}
++
+ /*
+  * This routine traverse page_cgroup in given list and drop them all.
+  * *And* this routine doesn't reclaim page itself, just removes page_cgroup.
+@@ -4329,11 +4481,43 @@ static int mem_control_stat_show(struct 
+ 		cb->fill(cb, "recent_scanned_anon", recent_scanned[0]);
+ 		cb->fill(cb, "recent_scanned_file", recent_scanned[1]);
+ 	}
++	cb->fill(cb, "margin_to_limit",
++		(u64)mem_cont->margin_to_limit_pages << PAGE_SHIFT);
+ #endif
+ 
+ 	return 0;
+ }
+ 
++/*
++ * User flags for async_control is a subset of mem->async_flags. But
++ * this needs to be defined independently to hide implemation details.
++ */
++#define USER_AUTO_KEEP_MARGIN_ENABLE	(0)
++static int mem_cgroup_async_control_write(struct cgroup *cgrp,
++			struct cftype *cft, u64 val)
++{
++	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
++	unsigned long user_flag = val;
++
++	if (test_bit(USER_AUTO_KEEP_MARGIN_ENABLE, &user_flag))
++		set_bit(AUTO_KEEP_MARGIN_ENABLED, &mem->async_flags);
++	else
++		clear_bit(AUTO_KEEP_MARGIN_ENABLED, &mem->async_flags);
++	mem_cgroup_reset_margin_to_limit(mem);
++	return 0;
++}
++
++static u64 mem_cgroup_async_control_read(struct cgroup *cgrp,
++			struct cftype *cft)
++{
++	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
++	unsigned long val = 0;
++
++	if (test_bit(AUTO_KEEP_MARGIN_ENABLED, &mem->async_flags))
++		set_bit(USER_AUTO_KEEP_MARGIN_ENABLE, &val);
++	return (u64)val;
++}
++
+ static u64 mem_cgroup_swappiness_read(struct cgroup *cgrp, struct cftype *cft)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+@@ -4816,6 +5000,11 @@ static struct cftype memsw_cgroup_files[
+ 		.trigger = mem_cgroup_reset,
+ 		.read_u64 = mem_cgroup_read,
+ 	},
++	{
++		.name = "async_control",
++		.read_u64 = mem_cgroup_async_control_read,
++		.write_u64 = mem_cgroup_async_control_write,
++	},
+ };
+ 
+ static int register_memsw_files(struct cgroup *cont, struct cgroup_subsys *ss)
+@@ -5049,6 +5238,7 @@ mem_cgroup_create(struct cgroup_subsys *
+ 		mem->swappiness = mem_cgroup_swappiness(parent);
+ 	atomic_set(&mem->refcnt, 1);
+ 	mem->move_charge_at_immigrate = 0;
++	spin_lock_init(&mem->update_margin_lock);
+ 	mutex_init(&mem->thresholds_lock);
+ 	return &mem->css;
+ free_out:
+Index: memcg_async/Documentation/cgroups/memory.txt
+===================================================================
+--- memcg_async.orig/Documentation/cgroups/memory.txt
++++ memcg_async/Documentation/cgroups/memory.txt
+@@ -70,6 +70,7 @@ Brief summary of control files.
+ 				 (See sysctl's vm.swappiness)
+  memory.move_charge_at_immigrate # set/show controls of moving charges
+  memory.oom_control		 # set/show oom controls.
++ memory.async_control		 # set control for asynchronous memory reclaim
+ 
+ 1. History
+ 
+@@ -433,6 +434,7 @@ recent_rotated_anon	- VM internal parame
+ recent_rotated_file	- VM internal parameter. (see mm/vmscan.c)
+ recent_scanned_anon	- VM internal parameter. (see mm/vmscan.c)
+ recent_scanned_file	- VM internal parameter. (see mm/vmscan.c)
++margin_to_limit		- The margin to limit to be kept.
+ 
+ Memo:
+ 	recent_rotated means recent frequency of LRU rotation.
+@@ -664,7 +666,47 @@ At reading, current status of OOM is sho
+ 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
+ 				 be stopped.)
+ 
+-11. TODO
++11. Asynchronous memory reclaim
++
++Running some kind of applications which uses many file caches, once memory
++cgroup hit, it gets memory reclaim latency. By shrinking usage in background,
++this latency can be hidden with a kernel help if cpu is enough free.
++
++Memory cgroup provides a method for asynchronous memory reclaim for freeing
++memory before hitting limit. By this, some class of application can reduce
++latency effectively and show good/stable peformance. For example, if an
++application reads data from files bigger than limit, freeing memory in
++background will reduce latency of read.
++
++(*)please note, even if latency is hiddedn, the CPU is used in background.
++   So, asynchronous memory reclaim works effectively only when you have
++   extra unused CPU, or applications tend to sleep. On UP host, context-switch
++   by background job can just make perfomance worse.
++   So, if you see this feature doesn't help your application, please leave it
++   turned off.
++
++11.1 memory.async_control
++
++memory.async_control is a control for asynchronous memory reclaim and
++represented as bitmask of controls.
++
++ bit 0 ....user control of automatic keep margin to limit (see below)
++
++ bit 0:
++   Automatic keep margin to limit is a feature to keep free space to the
++   limit by freeing memory in background. The size of margin is calculated
++   by the kernel automatically and it can be changed with information of
++   jobs.
++
++   This feature can be enabled by
++
++   echo 1 > memory.async_control
++
++   Note: This feature is not propageted to childrens in automatic. This
++   may be conservative but required limitation to avoid using too much
++   cpus.
++
++12. TODO
+ 
+ 1. Add support for accounting huge pages (as a separate controller)
+ 2. Make per-cgroup scanner reclaim not-shared pages first
 
