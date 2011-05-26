@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab1EZSHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:07:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37156 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752443Ab1EZSHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:07:34 -0400
-Message-ID: <4DDE96B7.8030006@redhat.com>
-Date: Thu, 26 May 2011 21:06:47 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1758224Ab1EZSIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:08:13 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39526 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab1EZSIM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:08:12 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+In-Reply-To: <17077.1306431502@turing-police.cc.vt.edu>
+References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
+	<BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
+	<BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
+	<1306254027.18455.47.camel@twins>
+	<20110524195435.GC27634@elte.hu>
+	<alpine.LFD.2.02.1105242239230.3078@ionos>
+	<20110525150153.GE29179@elte.hu>
+	<alpine.LFD.2.02.1105251836030.3078@ionos>
+	<20110525180100.GY19633@outflux.net>
+	<BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
+	<20110525191152.GC19633@outflux.net>
+	<BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com>
+	<BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
+	<BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>
+	<BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
+	<BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
+	<BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
+	<17077.1306431502@turing-police.cc.vt.edu>
+Date: Thu, 26 May 2011 13:08:10 -0500
+Message-ID: <BANLkTimhcqSyQjwbXTn00Huu_5++3MczDw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
+From: Will Drewry <wad@chromium.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Walters <walters@verbum.org>,
         Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        gnatapov@redhat.com, Chris Wright <chrisw@sous-sol.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-References: <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu> <alpine.LFD.2.02.1105251836030.3078@ionos> <20110525180100.GY19633@outflux.net> <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org> <20110526082451.GB26775@elte.hu> <4DDE1419.3000708@redhat.com> <20110526093040.GB19536@elte.hu> <4DDE31D6.4070209@redhat.com> <20110526113842.GA27618@elte.hu>
-In-Reply-To: <20110526113842.GA27618@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2011 02:38 PM, Ingo Molnar wrote:
-> * Avi Kivity<avi@redhat.com>  wrote:
+On Thu, May 26, 2011 at 12:38 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Thu, 26 May 2011 12:02:45 CDT, Will Drewry said:
 >
-> >  >  The biggest amount of RAM is the guest RAM image - but if that is
-> >  >  mmap(SHARED) and mapped using hugepages then the pte overhead
-> >  >  from a process model is largely mitigated.
-> >
-> >  That doesn't work with memory hotplug.
+>> Absolutely - that was what I meant :/  The patches do not currently
+>> check creds at creation or again at use, which would lead to
+>> unprivileged filters being used in a privileged context.  Right now,
+>> though, if setuid() is not allowed by the seccomp-filter, the process
+>> will be immediately killed with do_exit(SIGKILL) on call -- thus
+>> avoiding a silent failure.
 >
-> Why not, if we do the sensible thing and restrict the size
-> granularity and alignment of plugged/unplugged memory regions to 2MB?
-
-Once forked, you cannot have new shared anonymous memory, can you?
-
-> We can fix guest Linux as well to not be stupid about the sizing of
-> memory hotplug requests. It does hotplug based on the memory map we
-> pass to it anyway.
+> How do you know you have the bounding set correct?
 >
-> Am i missing something obvious here?
-
-Yes, the new mmap() will be only visible in the calling process.
-
-> >  >  Maybe even the isolation and per device access control of
-> >  >  *same-class* devices from each other is possible: with careful
-> >  >  implementation of the subsystem shared data structures. (which
-> >  >  isnt much really)
-> >
-> >  Right, hardly at all in fact.  The problem comes from the side-band
-> >  issues like reset, interrupts, hotplug, and whatnot.
+> This has been a long-standing issue for SELinux policy writing - it's usually
+> easy to get 95% of the bounding box right (you need these rules for shared
+> libraries, you need these rules to access the user's home directory, you need
+> these other rules to talk TCP to the net, etc).  There's a nice tool that
+> converts any remaining rejection messages into rules you can add to the policy.
 >
-> Yeah. There are two good aspects here i think:
+> The problem is twofold: (a) that way you can never be sure you got *all* the
+> rules right and (b) the missing rules are almost always in squirrelly little
+> error-handling code that gets invoked once in a blue moon.  So in this case,
+> you end up with trying to debug the SIGKILL that happened when the process was
+> already in trouble for some other reason...
 >
->   - The sideband IPC overhead does not matter much, it's a side band.
+> "Wow. Who would have guessed that program only called gettimeofday() in
+> the error handler for when it was formatting its crash message?"
 >
->   - Spending the effort to isolate configuration details is worth it:
->     sideband code is a primary breeding ground for bugs and security
->     holes.
->
-> The main worry to me would be the maintainability difference: does it
-> result in much more complex code? As always i'm cautiously optimistic
-> about that: i think once we try it we can find a suitable model ...
-> It might even turn out to be more readable and more flexible in the
-> end.
+> Exactly.
 
-I also believe it will be more maintainable, especially if written in a 
-language that has explicit support for message passing (e.g. Erlang).  
-This is because it is more similar to how hardware actually works.  
-However it needs to be designed in, it's not just a matter of switching 
-a thread to a process.
+Depending on the need, there is work involved, and there are many ways
+to determine your bounding box.  It can be very tight -- where you
+analyze normal workloads (perf,strace,objdump) and accept the fact
+that pathological workloads may result in process death -- or it can
+be quite loose and enable most system calls, just not newer ones,
+let's say.  In practice, you might get bit a few times if you're
+overly zealous (I know I have), but it's the difference between
+failing open and failing closed.  There are some scenarios where you
+never, ever want to fail-open even at the cost of process death and
+lack of solid insight into a valid failure path.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+Hope that makes sense and isn't too general,
+will
