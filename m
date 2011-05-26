@@ -1,104 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab1EZItR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 04:49:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63706 "EHLO mx1.redhat.com"
+	id S1757051Ab1EZIur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 04:50:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15715 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755472Ab1EZItP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 04:49:15 -0400
-Date: Thu, 26 May 2011 11:49:16 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-Message-ID: <20110526084916.GA17928@redhat.com>
-References: <1305729507.32080.6.camel@localhost.localdomain>
- <20110518154746.GA21378@redhat.com>
- <1305734857.32080.53.camel@localhost.localdomain>
- <20110518163633.GB22001@redhat.com>
- <1305737140.32080.59.camel@localhost.localdomain>
- <20110518165138.GD22001@redhat.com>
- <1305738028.32080.66.camel@localhost.localdomain>
- <1305834169.32080.81.camel@localhost.localdomain>
- <20110519234154.GA13784@redhat.com>
- <1306363780.26270.44.camel@localhost.localdomain>
+	id S1756933Ab1EZIup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 04:50:45 -0400
+Message-ID: <4DDE1419.3000708@redhat.com>
+Date: Thu, 26 May 2011 11:49:29 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306363780.26270.44.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@elte.hu>
+CC: James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        gnatapov@redhat.com, Chris Wright <chrisw@sous-sol.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
+ filtering
+References: <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com> <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com> <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu> <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu> <alpine.LFD.2.02.1105251836030.3078@ionos> <20110525180100.GY19633@outflux.net> <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org> <20110526082451.GB26775@elte.hu>
+In-Reply-To: <20110526082451.GB26775@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 03:49:40PM -0700, Shirley Ma wrote:
-> On Fri, 2011-05-20 at 02:41 +0300, Michael S. Tsirkin wrote:
-> > So the requirements are
-> > - data must be released in a timely fashion (e.g. unlike virtio-net
-> >   tun or bridge)
-> The current patch doesn't enable tun zero-copy. tun will copy data It's
-> not an issue now.
-> We can disallow macvtap attach to bridge when
-> zero-copy is enabled.
+On 05/26/2011 11:24 AM, Ingo Molnar wrote:
+> So a simple object manager would simply use file label event
+> attributes and would define simple rules like:
+>
+> 	"(label&  tmp_t) || (label&  user_home_t)"
 
-Attach macvtap to a tun device though. Or e.g. veth device ...
-So there should be so generic way to disable zerocopy.
-It can either be a whitelist or a blacklist.
+Filtering by label vs. filtering by descriptor would solve qemu's 
+hotplug issue neatly.
 
-> 
-> > - SG support
-> > - HIGHDMA support (on arches where this makes sense)
-> 
-> This can be checked by device flags.
+> Note that tools/kvm/ would probably like to implement its own object
+> manager model as well in addition to access method restrictions: by
+> being virtual hardware it deals with many resources and object
+> hierarchies that are simply not known to the host OS's LSM.
+>
+> Unlike Qemu tools/kvm/ has a design that is very fit for MAC
+> concepts: it uses separate helper threads for separate resources
+> (this could in many cases even be changed to be separate processes
+> which only share access to the guest RAM image) - while Qemu is in
+> most parts a state machine, so in tools/kvm/ we can realistically
+> have a good object manager and keep an exploit in a networking
+> interface driver from being able to access disk driver state.
 
-OK, but pls note that SG can get turned off dynamically.
+You mean each thread will have a different security context?  I don't 
+see the point.  All threads share all of memory so it would be trivial 
+for one thread to exploit another and gain all of its privileges.
 
-> > - no filtering based on data (data is mapped in guest)
-> 
-> > - on fast path no calls to skb_copy, skb_clone, pskb_copy,
-> >   pskb_expand_head as these are slow
-> 
-> Any calls to skb_copy, skb_clone, pskb_copy, pskb_expand_head will do a
-> copy. The performance should be the same as none zero-copy case before.
+A multi process model works better but it has significant memory and 
+performance overhead.
 
-I'm guessing a copy is cheaper than get_user_pages+copy+put_page.
-But maybe not by much. Care checking that?
-
-> I have done/tested the patch V6, will send it out for review tomorrow.
-> 
-> I am looking at where there are some cases, skb remains the same for
-> filtering.
-
-To reliably filter on data I think we'll need to copy it first, otherwise
-guest can change it. Most filters only look at the header though.
-
-> > First 2 requirements are a must, all other requirements
-> > are just dependencies to make sure zero copy will be faster
-> > than non zero copy.
-> > Using a new feature bit is probably the simplest approach to
-> > this. macvtap on top of most physical NICs most likely works
-> > correctly so it seems a bit more work than it needs to be,
-> > but it's also the safest one I think ... 
-> 
-> For "macvtap/vhost zero-copy" we can use SG & HIGHDMA to enable it, it
-> looks safe to me once patching skb_copy, skb_clone, pskb_copy,
-> pskb_expand_head.
-> 
-> To extend zero-copy in other usages, we can have a new feature bit
-> later.
-> 
-> Is that reasonable?
-> 
-> Thanks
-> Shirley
-
-Is the problem is extra work needed to extend feature bits?
+(well the memory overhead is much smaller when using transparent huge 
+pages, but these only work for anonymous memory).
 
 -- 
-MST
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
