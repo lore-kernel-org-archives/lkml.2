@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758232Ab1EZSod (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:44:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24020 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758117Ab1EZSoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:44:32 -0400
-Date: Thu, 26 May 2011 14:43:50 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        anderson@redhat.com
-Subject: Re: [RFC Patch 4/6] PANIC_MCE: Introduce a new panic flag for fatal
- MCE, capture related information
-Message-ID: <20110526184350.GE29496@redhat.com>
-References: <20110526170722.GB23266@in.ibm.com>
- <20110526171521.GD17988@in.ibm.com>
+	id S1758267Ab1EZSoC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:44:02 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46854 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757756Ab1EZSoA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:44:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=V+5+rAbh1rrGtxt3luTyb1DL7sZNreu5YORhw/LHfE+loW/T4rLCxe8htc0aL6qDUZ
+         cWQNp32DmIOj7URLdC/gchkZXW603ZyCY3M2qRHEfhDGonxadyg+8JWYyaPT1S/NxCIV
+         qDf8Ke15ppPMbx8XiXi/OV05Y5vW19GcUY61g=
+Date: Thu, 26 May 2011 21:44:02 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, benh@kernel.crashing.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, hughd@google.com,
+        akpm@linux-foundation.org, dave@linux.vnet.ibm.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH] mm: don't access vm_flags as 'int'
+Message-ID: <20110526184402.GA2453@p183.telecom.by>
+References: <4DDE2873.7060409@jp.fujitsu.com>
+ <BANLkTi=znC18PAbpDfeVO+=Pat_EeXddjw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110526171521.GD17988@in.ibm.com>
+In-Reply-To: <BANLkTi=znC18PAbpDfeVO+=Pat_EeXddjw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 10:45:21PM +0530, K.Prasad wrote:
+On Thu, May 26, 2011 at 10:53:34AM -0700, Linus Torvalds wrote:
+> 2011/5/26 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
+> > The type of vma->vm_flags is 'unsigned long'. Neither 'int' nor
+> > 'unsigned int'. This patch fixes such misuse.
+> 
+> I applied this, except I also just made the executive decision to
+> replace things with "vm_flags_t" after all.
 
-[..]
-> Index: linux-2.6.slim_kdump/arch/x86/kernel/cpu/mcheck/mce.c
-> ===================================================================
-> --- linux-2.6.slim_kdump.orig/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ linux-2.6.slim_kdump/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -258,8 +258,7 @@ static void wait_for_panic(void)
->  	local_irq_enable();
->  	while (timeout-- > 0)
->  		udelay(1);
-> -	xpanic(PANIC_NO_KEXEC|PANIC_NO_BACKTRACE, 0,
-> -		"Panicing machine check CPU died");
-> +	xpanic(PANIC_MCE, 0, NULL, 0, "Panicing machine check CPU died");
->  }
->  
->  static void mce_panic(char *msg, struct mce *final, char *exp)
-> @@ -315,8 +314,8 @@ static void mce_panic(char *msg, struct
->  	if (exp)
->  		pr_emerg(HW_ERR "Machine check: %s\n", exp);
->  	if (!fake_panic) {
-> -		xpanic(PANIC_NO_KEXEC|PANIC_NO_BACKTRACE, mce_panic_timeout,
-> -			msg);
-> +		xpanic(PANIC_MCE, mce_panic_timeout, final,
-> +			sizeof(struct mce), msg);
->  	} else
->  		pr_emerg(HW_ERR "Fake kernel panic: %s\n", msg);
->  }
+Woo-hoo!
 
-In previous patches you introduce PANIC_NO_KEXEC and PANIC_NO_BACKTRACE. 
-Now in this patch you got rid of those. Are there any other users left
-of PANIC_NO_BACKTRACE and PANIC_NO_EXEC? If not, then why to introduce
-these to begin with.
-
-Thanks
-Vivek
+Why it is marked __nocast and not __bitwise__ like gfp_t?
