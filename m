@@ -1,159 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab1EZLik (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 07:38:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57288 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757371Ab1EZLh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 07:37:59 -0400
-From: GuanXuetao <gxt@mprc.pku.edu.cn>
-To: arnd@arndb.de
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, greg@kroah.com,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH 6/6] unicore32: using generic-y format for one line asm-generic files
-Date: Thu, 26 May 2011 11:36:58 +0000
-Message-Id: <48ec206f634cad2019c92eef7ba1a87566c743fe.1306408804.git.gxt@mprc.pku.edu.cn>
-X-Mailer: git-send-email 1.7.5.2
-In-Reply-To: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
-References: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
-In-Reply-To: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
-References: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 May 2011 11:37:49 +0000 (UTC)
+	id S1757483Ab1EZLiy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 07:38:54 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56119 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757220Ab1EZLii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 07:38:38 -0400
+X-AuditID: b753bd60-a1ec5ba000003bac-49-4dde3bbba0a3
+X-AuditID: b753bd60-a1ec5ba000003bac-49-4dde3bbba0a3
+Message-ID: <4DDE3BAD.2040207@hitachi.com>
+Date: Thu, 26 May 2011 20:38:21 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        yrl.pp-manager.tt@hitachi.com, Russell King <rmk@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH -tip ] [BUGFIX]tracing/kprobes: Fix kprobe-tracer to support
+ stack trace
+References: <20110512102255.2540.88867.stgit@ltc-x64-VirtualBox> <1306375622.1465.137.camel@gandalf.stny.rr.com>
+In-Reply-To: <1306375622.1465.137.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+(2011/05/26 11:07), Steven Rostedt wrote:
+> On Thu, 2011-05-12 at 19:22 +0900, Masami Hiramatsu wrote:
+>> Fix to support kernel stack trace correctly on kprobe-tracer.
+>> Since the execution path of kprobe-based dynamic events is different
+>> from other tracepoint-based events, normal ftrace_trace_stack() doesn't
+>> work correctly. To fix that, this introduces ftrace_trace_stack_regs()
+>> which traces stack via pt_regs instead of current stack register.
+>>
+> 
+> Hi Masami,
+> 
+> I'm working to get a "fix" patch set push out, and I included this
+> patch. But when I ran it on my arch test (compiling on other archs),
+> this patch broke the following:
+> 
+>  arm, blackfin, powerpc, s390.
+> 
+> (Note, due to other bugs, UML and mips does not build to test)
 
-see commit from Sam Ravnborg <d8ecc5cd8e227bc318513b5306ae88a474b8886d>
-  kbuild: asm-generic support
+Oh... I see. Perhaps, we can refer the systemtap backtrace
+implementation for some of them. As far as I know, it supports
+arm, ppc, and s390.
 
-Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
----
- arch/unicore32/Makefile           |   35 ----------------------
- arch/unicore32/include/asm/Kbuild |   59 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 59 insertions(+), 35 deletions(-)
+> 
+> The problem is that these archs do not implement a:
+> 
+>   save_stack_trace_regs() function.
+> 
+> I'm stripping this patch out of my next pull request, and it may need to
+> wait till 2.6.41/2.8.1/3.1.
 
-diff --git a/arch/unicore32/Makefile b/arch/unicore32/Makefile
-index 6555abb..6af4bc4 100644
---- a/arch/unicore32/Makefile
-+++ b/arch/unicore32/Makefile
-@@ -40,39 +40,6 @@ core-y			+= arch/unicore32/mm/
- 
- libs-y			+= arch/unicore32/lib/
- 
--ASM_GENERATED_DIR	:= $(srctree)/arch/unicore32/include/generated
--LINUXINCLUDE		+= -I$(ASM_GENERATED_DIR)
--
--ASM_GENERIC_HEADERS	:= atomic.h auxvec.h
--ASM_GENERIC_HEADERS	+= bitsperlong.h bug.h bugs.h
--ASM_GENERIC_HEADERS	+= cputime.h current.h
--ASM_GENERIC_HEADERS	+= device.h div64.h
--ASM_GENERIC_HEADERS	+= emergency-restart.h errno.h
--ASM_GENERIC_HEADERS	+= fb.h fcntl.h ftrace.h futex.h
--ASM_GENERIC_HEADERS	+= hardirq.h hw_irq.h
--ASM_GENERIC_HEADERS	+= ioctl.h ioctls.h ipcbuf.h irq_regs.h
--ASM_GENERIC_HEADERS	+= kdebug.h kmap_types.h
--ASM_GENERIC_HEADERS	+= local.h
--ASM_GENERIC_HEADERS	+= mman.h module.h msgbuf.h
--ASM_GENERIC_HEADERS	+= param.h parport.h percpu.h poll.h posix_types.h
--ASM_GENERIC_HEADERS	+= resource.h
--ASM_GENERIC_HEADERS	+= scatterlist.h sections.h segment.h sembuf.h serial.h
--ASM_GENERIC_HEADERS	+= setup.h shmbuf.h shmparam.h
--ASM_GENERIC_HEADERS	+= siginfo.h signal.h sizes.h
--ASM_GENERIC_HEADERS	+= socket.h sockios.h stat.h statfs.h swab.h syscalls.h
--ASM_GENERIC_HEADERS	+= termbits.h termios.h topology.h types.h
--ASM_GENERIC_HEADERS	+= ucontext.h unaligned.h user.h
--ASM_GENERIC_HEADERS	+= vga.h
--ASM_GENERIC_HEADERS	+= xor.h
--
--archprepare:
--ifneq ($(ASM_GENERATED_DIR), $(wildcard $(ASM_GENERATED_DIR)))
--	$(Q)mkdir -p $(ASM_GENERATED_DIR)/asm
--	$(Q)$(foreach a, $(ASM_GENERIC_HEADERS),	\
--		echo '#include <asm-generic/$a>'	\
--			> $(ASM_GENERATED_DIR)/asm/$a; )
--endif
--
- boot			:= arch/unicore32/boot
- 
- # Default defconfig and target when executing plain make
-@@ -84,8 +51,6 @@ all:	$(KBUILD_IMAGE)
- zImage Image uImage: vmlinux
- 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
- 
--MRPROPER_DIRS		+= $(ASM_GENERATED_DIR)
--
- archclean:
- 	$(Q)$(MAKE) $(clean)=$(boot)
- 
-diff --git a/arch/unicore32/include/asm/Kbuild b/arch/unicore32/include/asm/Kbuild
-index b200fda..ca113d6 100644
---- a/arch/unicore32/include/asm/Kbuild
-+++ b/arch/unicore32/include/asm/Kbuild
-@@ -1,2 +1,61 @@
- include include/asm-generic/Kbuild.asm
- 
-+generic-y += atomic.h
-+generic-y += auxvec.h
-+generic-y += bitsperlong.h
-+generic-y += bug.h
-+generic-y += bugs.h
-+generic-y += cputime.h
-+generic-y += current.h
-+generic-y += device.h
-+generic-y += div64.h
-+generic-y += emergency-restart.h
-+generic-y += errno.h
-+generic-y += fb.h
-+generic-y += fcntl.h
-+generic-y += ftrace.h
-+generic-y += futex.h
-+generic-y += hardirq.h
-+generic-y += hw_irq.h
-+generic-y += ioctl.h
-+generic-y += ioctls.h
-+generic-y += ipcbuf.h
-+generic-y += irq_regs.h
-+generic-y += kdebug.h
-+generic-y += kmap_types.h
-+generic-y += local.h
-+generic-y += mman.h
-+generic-y += module.h
-+generic-y += msgbuf.h
-+generic-y += param.h
-+generic-y += parport.h
-+generic-y += percpu.h
-+generic-y += poll.h
-+generic-y += posix_types.h
-+generic-y += resource.h
-+generic-y += scatterlist.h
-+generic-y += sections.h
-+generic-y += segment.h
-+generic-y += sembuf.h
-+generic-y += serial.h
-+generic-y += setup.h
-+generic-y += shmbuf.h
-+generic-y += shmparam.h
-+generic-y += siginfo.h
-+generic-y += signal.h
-+generic-y += sizes.h
-+generic-y += socket.h
-+generic-y += sockios.h
-+generic-y += stat.h
-+generic-y += statfs.h
-+generic-y += swab.h
-+generic-y += syscalls.h
-+generic-y += termbits.h
-+generic-y += termios.h
-+generic-y += topology.h
-+generic-y += types.h
-+generic-y += ucontext.h
-+generic-y += unaligned.h
-+generic-y += user.h
-+generic-y += vga.h
-+generic-y += xor.h
--- 
-1.7.5.2
+OK, thanks for the test!
+
+> 
+> -- Steve
+> 
+>> e.g.
+>>
+>>  # echo p schedule > /sys/kernel/debug/tracing/kprobe_events
+>>  # echo 1 > /sys/kernel/debug/tracing/options/stacktrace
+>>  # echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
+>>  # head -n 20 /sys/kernel/debug/tracing/trace
+>> # tracer: nop
+>> #
+>> #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+>> #              | |       |          |         |
+>>             sshd-1549  [001]   857.326335: p_schedule_0: (schedule+0x0/0x900)
+>>             sshd-1549  [001]   857.326337: <stack trace>
+>>  => schedule_hrtimeout_range
+>>  => poll_schedule_timeout
+>>  => do_select
+>>  => core_sys_select
+>>  => sys_select
+>>  => system_call_fastpath
+>>              tee-1751  [000]   857.326394: p_schedule_0: (schedule+0x0/0x900)
+>>              tee-1751  [000]   857.326395: <stack trace>
+>>  => do_group_exit
+>>  => sys_exit_group
+>>  => system_call_fastpath
+>>           <idle>-0     [001]   857.326406: p_schedule_0: (schedule+0x0/0x900)
+>>           <idle>-0     [001]   857.326407: <stack trace>
+>>  => start_secondary
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>  include/linux/ftrace_event.h |    4 ++++
+>>  kernel/trace/trace.c         |   35 ++++++++++++++++++++++++++++++-----
+>>  kernel/trace/trace.h         |    9 +++++++++
+>>  kernel/trace/trace_kprobe.c  |    6 ++++--
+>>  4 files changed, 47 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+>> index b5a550a..bca2499 100644
+>> --- a/include/linux/ftrace_event.h
+>> +++ b/include/linux/ftrace_event.h
+>> @@ -117,6 +117,10 @@ void trace_current_buffer_unlock_commit(struct ring_buffer *buffer,
+>>  void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
+>>  				       struct ring_buffer_event *event,
+>>  					unsigned long flags, int pc);
+>> +void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
+>> +					    struct ring_buffer_event *event,
+>> +					    unsigned long flags, int pc,
+>> +					    struct pt_regs *regs);
+>>  void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
+>>  					 struct ring_buffer_event *event);
+>>  
+>> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+>> index ee9c921..bf12209 100644
+>> --- a/kernel/trace/trace.c
+>> +++ b/kernel/trace/trace.c
+>> @@ -1191,6 +1191,18 @@ void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
+>>  }
+>>  EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit);
+>>  
+>> +void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
+>> +					    struct ring_buffer_event *event,
+>> +					    unsigned long flags, int pc,
+>> +					    struct pt_regs *regs)
+>> +{
+>> +	ring_buffer_unlock_commit(buffer, event);
+>> +
+>> +	ftrace_trace_stack_regs(buffer, flags, 0, pc, regs);
+>> +	ftrace_trace_userstack(buffer, flags, pc);
+>> +}
+>> +EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit_regs);
+>> +
+>>  void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
+>>  					 struct ring_buffer_event *event)
+>>  {
+>> @@ -1236,7 +1248,7 @@ ftrace(struct trace_array *tr, struct trace_array_cpu *data,
+>>  #ifdef CONFIG_STACKTRACE
+>>  static void __ftrace_trace_stack(struct ring_buffer *buffer,
+>>  				 unsigned long flags,
+>> -				 int skip, int pc)
+>> +				 int skip, int pc, struct pt_regs *regs)
+>>  {
+>>  	struct ftrace_event_call *call = &event_kernel_stack;
+>>  	struct ring_buffer_event *event;
+>> @@ -1255,24 +1267,36 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
+>>  	trace.skip		= skip;
+>>  	trace.entries		= entry->caller;
+>>  
+>> -	save_stack_trace(&trace);
+>> +	if (regs)
+>> +		save_stack_trace_regs(&trace, regs);
+>> +	else
+>> +		save_stack_trace(&trace);
+>>  	if (!filter_check_discard(call, entry, buffer, event))
+>>  		ring_buffer_unlock_commit(buffer, event);
+>>  }
+>>  
+>> +void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
+>> +			     int skip, int pc, struct pt_regs *regs)
+>> +{
+>> +	if (!(trace_flags & TRACE_ITER_STACKTRACE))
+>> +		return;
+>> +
+>> +	__ftrace_trace_stack(buffer, flags, skip, pc, regs);
+>> +}
+>> +
+>>  void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
+>>  			int skip, int pc)
+>>  {
+>>  	if (!(trace_flags & TRACE_ITER_STACKTRACE))
+>>  		return;
+>>  
+>> -	__ftrace_trace_stack(buffer, flags, skip, pc);
+>> +	__ftrace_trace_stack(buffer, flags, skip, pc, NULL);
+>>  }
+>>  
+>>  void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
+>>  		   int pc)
+>>  {
+>> -	__ftrace_trace_stack(tr->buffer, flags, skip, pc);
+>> +	__ftrace_trace_stack(tr->buffer, flags, skip, pc, NULL);
+>>  }
+>>  
+>>  /**
+>> @@ -1288,7 +1312,8 @@ void trace_dump_stack(void)
+>>  	local_save_flags(flags);
+>>  
+>>  	/* skipping 3 traces, seems to get us at the caller of this function */
+>> -	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
+>> +	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count(),
+>> +			     NULL);
+>>  }
+>>  
+>>  static DEFINE_PER_CPU(int, user_stack_count);
+>> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+>> index 5e9dfc6..cbce5e4 100644
+>> --- a/kernel/trace/trace.h
+>> +++ b/kernel/trace/trace.h
+>> @@ -389,6 +389,9 @@ void update_max_tr_single(struct trace_array *tr,
+>>  void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
+>>  			int skip, int pc);
+>>  
+>> +void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
+>> +			     int skip, int pc, struct pt_regs *regs);
+>> +
+>>  void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
+>>  			    int pc);
+>>  
+>> @@ -400,6 +403,12 @@ static inline void ftrace_trace_stack(struct ring_buffer *buffer,
+>>  {
+>>  }
+>>  
+>> +static inline void ftrace_trace_stack_regs(struct ring_buffer *buffer,
+>> +					   unsigned long flags, int skip,
+>> +					   int pc, struct pt_regs *regs)
+>> +{
+>> +}
+>> +
+>>  static inline void ftrace_trace_userstack(struct ring_buffer *buffer,
+>>  					  unsigned long flags, int pc)
+>>  {
+>> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+>> index f925c45..7053ef3 100644
+>> --- a/kernel/trace/trace_kprobe.c
+>> +++ b/kernel/trace/trace_kprobe.c
+>> @@ -1397,7 +1397,8 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
+>>  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+>>  
+>>  	if (!filter_current_check_discard(buffer, call, entry, event))
+>> -		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
+>> +		trace_nowake_buffer_unlock_commit_regs(buffer, event,
+>> +						       irq_flags, pc, regs);
+>>  }
+>>  
+>>  /* Kretprobe handler */
+>> @@ -1429,7 +1430,8 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
+>>  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+>>  
+>>  	if (!filter_current_check_discard(buffer, call, entry, event))
+>> -		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
+>> +		trace_nowake_buffer_unlock_commit_regs(buffer, event,
+>> +						       irq_flags, pc, regs);
+>>  }
+>>  
+>>  /* Event entry printers */
+> 
+> 
 
