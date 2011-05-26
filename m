@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab1EZGJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 02:09:26 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:46609 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757158Ab1EZGJZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 02:09:25 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-Subject: Re: pch_gpio: Support new device ML7223
-Date: Thu, 26 May 2011 08:09:15 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r2; KDE/4.6.2; x86_64; ; )
-Cc: "'Grant Likely'" <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        "'Fan, Yongning'" <yongning.fan@intel.com>
-References: <1304938729-10609-1-git-send-email-tomoya-linux@dsn.okisemi.com> <201105251409.47309.alexander.stein@systec-electronic.com> <F873CB63EEA24284982A8FA0F0B0F167@hacdom.okisemi.com>
-In-Reply-To: <F873CB63EEA24284982A8FA0F0B0F167@hacdom.okisemi.com>
+	id S1757103Ab1EZGOF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 02:14:05 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45636 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756940Ab1EZGOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 02:14:04 -0400
+Date: Thu, 26 May 2011 08:13:48 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de
+Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
+ on semi-formal proof"
+Message-ID: <20110526061348.GA26775@elte.hu>
+References: <4DDB093F.2060601@kernel.org>
+ <20110524013523.GO7428@linux.vnet.ibm.com>
+ <4DDC21E1.1070502@kernel.org>
+ <4DDC48E3.1060108@kernel.org>
+ <20110525045253.GB2262@linux.vnet.ibm.com>
+ <4DDD7F96.3090408@kernel.org>
+ <20110525223437.GO2341@linux.vnet.ibm.com>
+ <4DDD8775.1000501@kernel.org>
+ <20110526011310.GP2341@linux.vnet.ibm.com>
+ <20110526013029.GA28103@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105260809.19425.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526013029.GA28103@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 26 May 2011 03:24:55 Tomoya MORINAGA wrote:
-> > From: Alexander Stein [mailto:alexander.stein@systec-electronic.com]
-> > Sent: Wednesday, May 25, 2011 9:10 PM
-> > 
-> > > #define pch_gpio_resume NULL  #endif
-> > > 
-> > > +#define PCI_VENDOR_ID_ROHM             0x10DB
-> > 
-> > Should this be moved to pci_ids.h?
-> 
-> OK.
-> I will move this to pci_ids.h.
-> 
-> > >  static DEFINE_PCI_DEVICE_TABLE(pch_gpio_pcidev_id) = {
-> > >  
-> > >  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8803) },
-> > > 
-> > > +	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8014) },
-> > 
-> > Likewise for the product ID. While at it, the ID for EG20T
-> > could also be moved in a separate patch.
-> 
-> We have already upstreamed not only GPIO but also many device drivers(GBE,
-> USBDEV,DMA,UART,SPI,I2C,CAN). Do you mean we must move these device
-> definitions to pci_ids.h?
 
-I just meant to move 0x8803 from the line above into pci_ids.h. It is 
-unrelated to your patch.
-And if this _must_ be moved to pci_ids.h I'm the wrong person to decide.
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Regards,
-Alexander
+> rcu: Start RCU kthreads in TASK_INTERRUPTIBLE state
+> 
+> Upon creation, kthreads are in TASK_UNINTERRUPTIBLE state, which can
+> result in softlockup warnings.  Because some of RCU's kthreads can
+> legitimately be idle indefinitely, start them in TASK_INTERRUPTIBLE
+> state in order to avoid those warnings.
+> 
+> Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+this should also solve load average artifacts - do not 
+TASK_UNINTERRUPTIBLE tasks skew the load upwards?
+
+Thanks,
+
+	Ingo
