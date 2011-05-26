@@ -1,336 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758459Ab1EZUYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:24:14 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58939 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757985Ab1EZUYN (ORCPT
+	id S1758480Ab1EZUY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:24:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33495 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755990Ab1EZUYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 16:24:13 -0400
-Subject: Re: [PATCH V6 2/4 net-next] skbuff: Add userspace zero-copy
- buffers in skb
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, mst@redhat.com,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1306440247.2543.14.camel@edumazet-laptop>
-References: <1306438593.5180.33.camel@localhost.localdomain>
-	 <1306440247.2543.14.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 13:24:02 -0700
-Message-ID: <1306441442.5180.51.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
+	Thu, 26 May 2011 16:24:55 -0400
+Date: Thu, 26 May 2011 14:24:52 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Alan Cox <alan@linux.jf.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] langwell_gpio: add runtime pm support
+Message-ID: <20110526202452.GE29060@ponder.secretlab.ca>
+References: <20110510132318.31013.78989.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110510132318.31013.78989.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 22:04 +0200, Eric Dumazet wrote:
-> Le jeudi 26 mai 2011 à 12:36 -0700, Shirley Ma a écrit :
-> > This patch adds userspace buffers support in skb shared info. A new 
-> > struct skb_ubuf_info is needed to maintain the userspace buffers
-> > argument and index, a callback is used to notify userspace to
-> release
-> > the buffers once lower device has done DMA (Last reference to that
-> skb
-> > has gone).
-> > 
-> > If there is any userspace apps to reference these userspace buffers,
-> > then these userspaces buffers will be copied into kernel. This way
-> we
-> > can prevent userspace apps to hold these userspace buffers too long.
-> > 
-> > Signed-off-by: Shirley Ma <xma@us.ibm.com>
-> > ---
-> > 
-> >  include/linux/skbuff.h |   26 +++++++++++++++
-> >  net/core/skbuff.c      |   80
-> ++++++++++++++++++++++++++++++++++++++++++++++-
-> >  2 files changed, 104 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> > index d0ae90a..025de5c 100644
-> > --- a/include/linux/skbuff.h
-> > +++ b/include/linux/skbuff.h
-> > @@ -189,6 +189,18 @@ enum {
-> >       SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
-> >  };
-> >  
-> > +/*
-> > + * The callback notifies userspace to release buffers when skb DMA
-> is done in
-> > + * lower device, the skb last reference should be 0 when calling
-> this.
-> > + * The desc is used to track userspace buffer index.
-> > + */
-> > +struct skb_ubuf_info {
-> > +     /* support buffers allocation from userspace */
-> > +     void            (*callback)(struct sk_buff *);
-> > +     void            *arg;
-> > +     size_t          desc;
-> > +};
+On Tue, May 10, 2011 at 02:23:45PM +0100, Alan Cox wrote:
+> From: Kristen Carlson Accardi <kristen@linux.intel.com>
 > 
-> Thats 24 bytes on each skb...   desc for example is not used in this
-> patch (yes, its used later in patch 4/4)
+> While this is essentially a no-op for this driver, it has the
+> side effect of letting the PMU driver snoop D3 requests from
+> the PCI core for this driver.
 > 
-> But still... could you instead use one pointer only in skb ?
+> This is only for langwell, not for whitney point.
+> 
+> Signed-off-by: Kristen Carlson Accardi <kristen@linux.intel.com>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+> 
+> [This went me->Dirk->me->upstream before the signed off confuses]
 
-I could reduce callback pointer by moving it to *arg, but not desc, this
-indicates that which buffer DMA hasn't done yet in *arg.
+Applied, thanks
 
-> 
-> > +
-> >  /* This data is invariant across clones and lives at
-> >   * the end of the header data, ie. at skb->end.
-> >   */
-> > @@ -211,6 +223,10 @@ struct skb_shared_info {
-> >       /* Intermediate layers must ensure that destructor_arg
-> >        * remains valid until skb destructor */
-> >       void *          destructor_arg;
-> > +
-> > +     /* DMA mapping from/to userspace buffers */
-> > +     struct skb_ubuf_info ubuf;
-> > +
-> >       /* must be last field, see pskb_expand_head() */
-> >       skb_frag_t      frags[MAX_SKB_FRAGS];
-> >  };
-> > @@ -2261,5 +2277,15 @@ static inline void
-> skb_checksum_none_assert(struct sk_buff *skb)
-> >  }
-> >  
-> >  bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off);
-> > +
-> > +/*
-> > + *   skb_ubuf - is the buffer from userspace
-> > + *   @skb: buffer to check
-> > + */
-> > +static inline int skb_ubuf(const struct sk_buff *skb)
-> > +{
-> > +     return (skb_shinfo(skb)->ubuf.callback != NULL);
-> 
->         return skb_shinfo(skb)->ubuf.callback != NULL;
-> 
-> > +}
-> > +
-> >  #endif       /* __KERNEL__ */
-> >  #endif       /* _LINUX_SKBUFF_H */
-> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> > index 7ebeed0..890447c 100644
-> > --- a/net/core/skbuff.c
-> > +++ b/net/core/skbuff.c
-> > @@ -210,6 +210,8 @@ struct sk_buff *__alloc_skb(unsigned int size,
-> gfp_t gfp_mask,
-> >       shinfo = skb_shinfo(skb);
-> >       memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
-> >       atomic_set(&shinfo->dataref, 1);
-> > +     shinfo->ubuf.callback = NULL;
-> > +     shinfo->ubuf.arg = NULL;
-> 
-> if you put ubuf ptr before dataref, no need to add this (the memset()
-> clear all shared_info up to dataref)
+g.
 
-Ok, will remove it.
-
-> >       kmemcheck_annotate_variable(shinfo->destructor_arg);
-> >  
-> >       if (fclone) {
-> > @@ -328,6 +330,14 @@ static void skb_release_data(struct sk_buff
-> *skb)
-> >                               put_page(skb_shinfo(skb)->frags[i].page);
-> >               }
-> >  
-> > +             /*
-> > +              * if skb buf is from userspace, we need to notify the
-> caller
-> > +              * the lower device DMA has done;
-> > +              */
-> > +             if (skb_ubuf(skb)) {
-> > +                     skb_shinfo(skb)->ubuf.callback(skb);
-> > +                     skb_shinfo(skb)->ubuf.callback = NULL;
-> > +             }
-> >               if (skb_has_frag_list(skb))
-> >                       skb_drop_fraglist(skb);
-> >  
-> > @@ -480,6 +490,9 @@ bool skb_recycle_check(struct sk_buff *skb, int
-> skb_size)
-> >       if (irqs_disabled())
-> >               return false;
-> >  
-> > +     if (skb_ubuf(skb))
-> > +             return false;
-> > +
-> >       if (skb_is_nonlinear(skb) || skb->fclone !=
-> SKB_FCLONE_UNAVAILABLE)
-> >               return false;
-> >  
-> > @@ -572,6 +585,7 @@ static struct sk_buff *__skb_clone(struct
-> sk_buff *n, struct sk_buff *skb)
-> >       atomic_set(&n->users, 1);
-> >  
-> >       atomic_inc(&(skb_shinfo(skb)->dataref));
-> > +     skb_shinfo(skb)->ubuf.callback = NULL;
-> >       skb->cloned = 1;
-> >  
-> >       return n;
-> > @@ -595,6 +609,48 @@ struct sk_buff *skb_morph(struct sk_buff *dst,
-> struct sk_buff *src)
-> >  }
-> >  EXPORT_SYMBOL_GPL(skb_morph);
-> >  
-> > +/* skb frags copy userspace buffers to kernel */
-> > +static int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask)
-> > +{
-> > +     int i;
-> > +     int num_frags = skb_shinfo(skb)->nr_frags;
-> > +     struct page *page, *head = NULL;
-> > +
-> > +     for (i = 0; i < num_frags; i++) {
-> > +             u8 *vaddr;
-> > +             skb_frag_t *f = &skb_shinfo(skb)->frags[i];
-> > +
-> > +             page = alloc_page(GFP_ATOMIC);
-> > +             if (!page) {
-> > +                     while (head) {
-> > +                             put_page(head);
-> > +                             head = (struct page *)head->private;
-> > +                     }
-> > +                     return -ENOMEM;
-> > +             }
-> > +             vaddr = kmap_skb_frag(&skb_shinfo(skb)->frags[i]);
-> > +             memcpy(page_address(page), vaddr + f->page_offset,
-> f->size);
-> > +             kunmap_skb_frag(vaddr);
-> > +             page->private = (unsigned long)head;
-> > +             head = page;
-> > +     }
-> > +
-> > +     /* skb frags release userspace buffers */
-> > +     for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
-> > +             put_page(skb_shinfo(skb)->frags[i].page);
-> > +     skb_shinfo(skb)->ubuf.callback(skb);
-> > +     skb_shinfo(skb)->ubuf.callback = NULL;
-> > +
-> > +     /* skb frags point to kernel buffers */
-> > +     for (i = skb_shinfo(skb)->nr_frags; i > 0; i--) {
-> > +             skb_shinfo(skb)->frags[i - 1].page_offset = 0;
-> > +             skb_shinfo(skb)->frags[i - 1].page = head;
-> > +             head = (struct page *)head->private;
-> > +     }
-> > +     return 0;
-> > +}
-> > +
-> > +
-> >  /**
-> >   *   skb_clone       -       duplicate an sk_buff
-> >   *   @skb: buffer to clone
-> > @@ -613,6 +669,11 @@ struct sk_buff *skb_clone(struct sk_buff *skb,
-> gfp_t gfp_mask)
-> >  {
-> >       struct sk_buff *n;
-> >  
-> > +     if (skb_ubuf(skb)) {
-> > +             if (skb_copy_ubufs(skb, gfp_mask))
-> > +                     return NULL;
-> > +     }
-> > +
-> >       n = skb + 1;
-> >       if (skb->fclone == SKB_FCLONE_ORIG &&
-> >           n->fclone == SKB_FCLONE_UNAVAILABLE) {
-> > @@ -730,6 +791,12 @@ struct sk_buff *pskb_copy(struct sk_buff *skb,
-> gfp_t gfp_mask)
-> >       if (skb_shinfo(skb)->nr_frags) {
-> >               int i;
-> >  
-> > +             if (skb_ubuf(skb)) {
-> > +                     if (skb_copy_ubufs(skb, gfp_mask)) {
-> > +                             kfree(n);
-> > +                             goto out;
-> > +                     }
-> > +             }
-> >               for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-> >                       skb_shinfo(n)->frags[i] =
-> skb_shinfo(skb)->frags[i];
-> >                       get_page(skb_shinfo(n)->frags[i].page);
-> > @@ -743,6 +810,7 @@ struct sk_buff *pskb_copy(struct sk_buff *skb,
-> gfp_t gfp_mask)
-> >       }
-> >  
-> >       copy_skb_header(n, skb);
-> > +
+> ---
 > 
-> please dont add new lines like this in your patch
-
-checkpatch doesn't check this kind of line, will remove it.
-
-> >  out:
-> >       return n;
-> >  }
-> > @@ -787,7 +855,6 @@ int pskb_expand_head(struct sk_buff *skb, int
-> nhead, int ntail,
-> >               fastpath = true;
-> >       else {
-> >               int delta = skb->nohdr ? (1 << SKB_DATAREF_SHIFT) +
-> 1 : 1;
-> > -
+>  drivers/gpio/langwell_gpio.c |   65 ++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 65 insertions(+), 0 deletions(-)
 > 
-> and dont delete this one as well.
+> diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
+> index 560ab64..6f88e37 100644
+> --- a/drivers/gpio/langwell_gpio.c
+> +++ b/drivers/gpio/langwell_gpio.c
+> @@ -33,6 +33,7 @@
+>  #include <linux/io.h>
+>  #include <linux/gpio.h>
+>  #include <linux/slab.h>
+> +#include <linux/pm_runtime.h>
+>  
+>  /*
+>   * Langwell chip has 64 pins and thus there are 2 32bit registers to control
+> @@ -63,6 +64,7 @@ struct lnw_gpio {
+>  	void				*reg_base;
+>  	spinlock_t			lock;
+>  	unsigned			irq_base;
+> +	struct pci_dev			*pdev;
+>  };
+>  
+>  static void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
+> @@ -104,11 +106,18 @@ static int lnw_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+>  	u32 value;
+>  	unsigned long flags;
+>  
+> +	if (lnw->pdev)
+> +		pm_runtime_get(&lnw->pdev->dev);
+> +
+>  	spin_lock_irqsave(&lnw->lock, flags);
+>  	value = readl(gpdr);
+>  	value &= ~BIT(offset % 32);
+>  	writel(value, gpdr);
+>  	spin_unlock_irqrestore(&lnw->lock, flags);
+> +
+> +	if (lnw->pdev)
+> +		pm_runtime_put(&lnw->pdev->dev);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -120,11 +129,19 @@ static int lnw_gpio_direction_output(struct gpio_chip *chip,
+>  	unsigned long flags;
+>  
+>  	lnw_gpio_set(chip, offset, value);
+> +
+> +	if (lnw->pdev)
+> +		pm_runtime_get(&lnw->pdev->dev);
+> +
+>  	spin_lock_irqsave(&lnw->lock, flags);
+>  	value = readl(gpdr);
+>  	value |= BIT(offset % 32);;
+>  	writel(value, gpdr);
+>  	spin_unlock_irqrestore(&lnw->lock, flags);
+> +
+> +	if (lnw->pdev)
+> +		pm_runtime_put(&lnw->pdev->dev);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -145,6 +162,10 @@ static int lnw_irq_type(struct irq_data *d, unsigned type)
+>  
+>  	if (gpio >= lnw->chip.ngpio)
+>  		return -EINVAL;
+> +
+> +	if (lnw->pdev)
+> +		pm_runtime_get(&lnw->pdev->dev);
+> +
+>  	spin_lock_irqsave(&lnw->lock, flags);
+>  	if (type & IRQ_TYPE_EDGE_RISING)
+>  		value = readl(grer) | BIT(gpio % 32);
+> @@ -159,6 +180,9 @@ static int lnw_irq_type(struct irq_data *d, unsigned type)
+>  	writel(value, gfer);
+>  	spin_unlock_irqrestore(&lnw->lock, flags);
+>  
+> +	if (lnw->pdev)
+> +		pm_runtime_put(&lnw->pdev->dev);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -211,6 +235,39 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
+>  	chip->irq_eoi(data);
+>  }
+>  
+> +#ifdef CONFIG_PM
+> +static int lnw_gpio_runtime_resume(struct device *dev)
+> +{
+> +	return 0;
+> +}
+> +
+> +static int lnw_gpio_runtime_suspend(struct device *dev)
+> +{
+> +	return 0;
+> +}
+> +
+> +static int lnw_gpio_runtime_idle(struct device *dev)
+> +{
+> +	int err = pm_schedule_suspend(dev, 500);
+> +
+> +	if (!err)
+> +		return 0;
+> +
+> +	return -EBUSY;
+> +}
+> +
+> +#else
+> +#define lnw_gpio_runtime_suspend	NULL
+> +#define lnw_gpio_runtime_resume		NULL
+> +#define lnw_gpio_runtime_idle		NULL
+> +#endif
+> +
+> +static const struct dev_pm_ops lnw_gpio_pm_ops = {
+> +	.runtime_suspend = lnw_gpio_runtime_suspend,
+> +	.runtime_resume = lnw_gpio_runtime_resume,
+> +	.runtime_idle = lnw_gpio_runtime_idle,
+> +};
+> +
+>  static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
+>  			const struct pci_device_id *id)
+>  {
+> @@ -270,6 +327,7 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
+>  	lnw->chip.base = gpio_base;
+>  	lnw->chip.ngpio = id->driver_data;
+>  	lnw->chip.can_sleep = 0;
+> +	lnw->pdev = pdev;
+>  	pci_set_drvdata(pdev, lnw);
+>  	retval = gpiochip_add(&lnw->chip);
+>  	if (retval) {
+> @@ -285,6 +343,10 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
+>  	}
+>  
+>  	spin_lock_init(&lnw->lock);
+> +
+> +	pm_runtime_put_noidle(&pdev->dev);
+> +	pm_runtime_allow(&pdev->dev);
+> +
+>  	goto done;
+>  err5:
+>  	kfree(lnw);
+> @@ -302,6 +364,9 @@ static struct pci_driver lnw_gpio_driver = {
+>  	.name		= "langwell_gpio",
+>  	.id_table	= lnw_gpio_ids,
+>  	.probe		= lnw_gpio_probe,
+> +	.driver		= {
+> +		.pm	= &lnw_gpio_pm_ops,
+> +	},
+>  };
+>  
+>  
 > 
-> >               fastpath = atomic_read(&skb_shinfo(skb)->dataref) ==
-> delta;
-> >       }
-> >  
-> > @@ -818,14 +885,19 @@ int pskb_expand_head(struct sk_buff *skb, int
-> nhead, int ntail,
-> >       if (fastpath) {
-> >               kfree(skb->head);
-> >       } else {
-> > +             /* copy this zero copy skb frags */
-> > +             if (skb_ubuf(skb)) {
-> > +                     if (skb_copy_ubufs(skb, gfp_mask))
-> > +                             goto nofrags;
-> > +             }
-> >               for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
-> >                       get_page(skb_shinfo(skb)->frags[i].page);
-> > -
-> 
-> ditto
-> 
-> >               if (skb_has_frag_list(skb))
-> >                       skb_clone_fraglist(skb);
-> >  
-> >               skb_release_data(skb);
-> >       }
-> > +
-> 
-> ditto
-> 
-> >       off = (data + nhead) - skb->head;
-> >  
-> >       skb->head     = data;
-> > @@ -852,6 +924,8 @@ adjust_others:
-> >       atomic_set(&skb_shinfo(skb)->dataref, 1);
-> >       return 0;
-> >  
-> > +nofrags:
-> > +     kfree(data);
-> >  nodata:
-> >       return -ENOMEM;
-> >  }
-> > @@ -1353,6 +1427,8 @@ int skb_copy_bits(const struct sk_buff *skb,
-> int offset, void *to, int len)
-> >               }
-> >               start = end;
-> >       }
-> > +     skb_shinfo(skb)->ubuf.callback = NULL;
-> > +
-> >       if (!len)
-> >               return 0;
-> >  
-> > 
-> > 
-> 
-> 
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
