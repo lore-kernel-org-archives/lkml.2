@@ -1,122 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab1EZBae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 21:30:34 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:53954 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756762Ab1EZBad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 21:30:33 -0400
-Date: Wed, 25 May 2011 18:30:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage
- based on semi-formal proof"
-Message-ID: <20110526013029.GA28103@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110524011824.GL7428@linux.vnet.ibm.com>
- <4DDB093F.2060601@kernel.org>
- <20110524013523.GO7428@linux.vnet.ibm.com>
- <4DDC21E1.1070502@kernel.org>
- <4DDC48E3.1060108@kernel.org>
- <20110525045253.GB2262@linux.vnet.ibm.com>
- <4DDD7F96.3090408@kernel.org>
- <20110525223437.GO2341@linux.vnet.ibm.com>
- <4DDD8775.1000501@kernel.org>
- <20110526011310.GP2341@linux.vnet.ibm.com>
+	id S1757089Ab1EZBbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 21:31:23 -0400
+Received: from nm7.access.bullet.mail.sp2.yahoo.com ([98.139.44.134]:37940
+	"HELO nm7.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755053Ab1EZBbW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 21:31:22 -0400
+X-Yahoo-Newman-Id: 718443.10141.bm@omp1030.access.mail.sp2.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: p1bZczYVM1nHMCjngezzRA_0h_JoqBTskIY0.HrO_E6JcH1
+ mlVbBSvY5IFrMW0dUTgs7dFhbHdnX1vWaBiR_HBBB8LoTgsQNb5W4.riWhgK
+ 0QCC0tWiIUwUgpKlXYv5RZaIk2YDbdEmKNX2SVd_ZUMPcOWWrCRaSvy1C8YB
+ SvgcE0OiYOMiD5Upk6o8LKI.JUTtnTGpYNGVkJpvMQv98ttF0Vs..UBQfqGm
+ Bgj8Rh_bndSM8YjKewyWtn3cQ9cWXnogr7G9C4T241kGrAs3XZMMY7Xi.MTT
+ eToXUTD2fJv_MlCpLrOuB9muXeyF.QBJoUV.Yi0usYUIJU_cidqU7flXA1eh
+ s3aoVp8wnlp0LneqVZsbQ78gzUPb4L_FCWAO4laghm0C_bMF8o2o8qeNoWV0
+ Dg.XQmrY3vMdrU82.mMtMdjQYrrgk15tIL82LgOhPEBs16vjZ_wfEP5TKU4M
+ l0SGn2wII.jIjWGyRI8plAdX.aC8ZkTg8LgHoZTn7F4xYbnFftP4woJNW8mS
+ VG5QME71cgCbfAxkQF4Q3tOT9a.DPi2l1nqd3_od5_cPCDc0-
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Svec <martin.svec@zoner.cz>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH] iscsi-target: Fix SessionType=Discovery RX context conn->conn_logout_comp hang
+Date: Wed, 25 May 2011 18:31:12 -0700
+Message-Id: <1306373472-20573-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526011310.GP2341@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 06:13:10PM -0700, Paul E. McKenney wrote:
-> On Wed, May 25, 2011 at 03:49:25PM -0700, Yinghai Lu wrote:
-> > On 05/25/2011 03:34 PM, Paul E. McKenney wrote:
-> > > On Wed, May 25, 2011 at 03:15:50PM -0700, Yinghai Lu wrote:
-> > >>> There is a new branch yinghai.2011.05.24a on:
-> > >>>
-> > >>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> > >>>
-> > >>> Or will be as soon as kernel.org updates its mirrors.
-> > >>>
-> > >>> I am not sure I could call this "clean", but it does revert that commit
-> > >>> and 11 of the subsequent commits that depend on it.  It does build,
-> > >>> and I will test it once my currently running tests complete.
-> > >>
-> > >> yes, with those revert, there is no delay in 10 times booting.
-> > > 
-> > > Unfortunately, there are rcutorture test failures with the revert...
-> > 
-> > confused.
-> 
-> Given what I had to do to generate the revert, not exactly a surprise,
-> I am afraid.  Just means that the resulting RCU sometimes fails to
-> wait for all pre-existing readers, and rcutorture catches it.
-> 
-> > what is the next?
-> 
-> 1.	I send you a patch that I hope will fix the softlockup
-> 	you saw.  I am testing this.
-> 
-> 2.	I am working on more detailed instrumentation, and will
-> 	send a patch on that.
-> 
-> 3.	If time allows, break down the operations RCU is doing
-> 	and test them in isolation.
-> 
-> Other thoughts?
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-And here is patch #1.  Could you please try applying this on top of
-Peter Zijlstra's patch to see if it gets rid of the softlockups you saw?
+Hi James & Co.
 
-							Thanx, Paul
+Below is the one outstanding bugfix patch to apply on top of iscsi-target
+PATCH-v5 for an initial .40-rc1 / .2.8.0-rc1 merge into scsi-misc.
 
-------------------------------------------------------------------------
+Once again, thanks to Martin Svec for efficently tracking down this issue
+and getting this patch tested+verified the initial merge code on .39-rc..
 
-rcu: Start RCU kthreads in TASK_INTERRUPTIBLE state
+Thanks!
 
-Upon creation, kthreads are in TASK_UNINTERRUPTIBLE state, which can
-result in softlockup warnings.  Because some of RCU's kthreads can
-legitimately be idle indefinitely, start them in TASK_INTERRUPTIBLE
-state in order to avoid those warnings.
+--nab
 
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+----------------------------------------------------------------------------
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index a1a8bb6..40aab8d 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1647,6 +1647,7 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
- 	if (IS_ERR(t))
- 		return PTR_ERR(t);
- 	kthread_bind(t, cpu);
-+	set_task_state(t, TASK_INTERRUPTIBLE);
- 	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
- 	WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
- 	per_cpu(rcu_cpu_kthread_task, cpu) = t;
-@@ -1754,6 +1755,7 @@ static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
- 		if (IS_ERR(t))
- 			return PTR_ERR(t);
- 		raw_spin_lock_irqsave(&rnp->lock, flags);
-+		set_task_state(t, TASK_INTERRUPTIBLE);
- 		rnp->node_kthread_task = t;
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 		sp.sched_priority = 99;
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 049f278..a767b7d 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1295,6 +1295,7 @@ static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
- 	if (IS_ERR(t))
- 		return PTR_ERR(t);
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
-+	set_task_state(t, TASK_INTERRUPTIBLE);
- 	rnp->boost_kthread_task = t;
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 	sp.sched_priority = RCU_KTHREAD_PRIO;
+This patch fixes a bug in iscsi_target_rx_thread():ISCSI_OP_LOGOUT where
+conn->conn_logout_comp was sleeping definately on wait_for_completion with
+SessionType=Discovery.  This was occuring because the per connection NopIN
+timer is correctly not enabled for discovery sessions, and hence does not
+fire to trigger an connection failure event in iscsi_target_tx_thread() ->
+iscsit_close_connection() in order to wakeup the sleeping RX thread context.
+
+This patch changes the conn_logout_comp to use wait_for_completion_timeout()
+for both cases and defines a SECONDS_FOR_LOGOUT_COMP of 15 seconds.
+
+Reported-by & Tested-by: Martin Svec <martin.svec@zoner.cz>
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/iscsi/iscsi_target.c      |    3 ++-
+ drivers/target/iscsi/iscsi_target_core.h |    1 +
+ 2 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index 6bba5fd..964cadc 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -4292,7 +4292,8 @@ restart:
+ 		case ISCSI_OP_LOGOUT:
+ 			ret = iscsit_handle_logout_cmd(conn, buffer);
+ 			if (ret > 0) {
+-				wait_for_completion(&conn->conn_logout_comp);
++				wait_for_completion_timeout(&conn->conn_logout_comp,
++						SECONDS_FOR_LOGOUT_COMP * HZ);
+ 				goto transport_err;
+ 			} else if (ret < 0)
+ 				goto transport_err;
+diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
+index c7ca0a0..af24171 100644
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -15,6 +15,7 @@
+ #define ISCSI_RX_THREAD_TCP_TIMEOUT	2
+ #define SECONDS_FOR_ASYNC_LOGOUT	10
+ #define SECONDS_FOR_ASYNC_TEXT		10
++#define SECONDS_FOR_LOGOUT_COMP		15
+ #define WHITE_SPACE			" \t\v\f\n\r"
+ 
+ /* struct iscsi_node_attrib sanity values */
+-- 
+1.7.5.2
+
