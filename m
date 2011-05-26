@@ -1,236 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab1EZXga (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 19:36:30 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:45437 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820Ab1EZXg3 (ORCPT
+	id S1758527Ab1EZXfM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 19:35:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62958 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757296Ab1EZXfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 19:36:29 -0400
-Subject: Re: [PATCH-v5 07/13] iscsi-target: Add iSCSI Login Negotiation +
-	Parameter logic
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
-        hare@suse.de, agrover@redhat.com, michaelc@cs.wisc.edu,
-        bharrosh@panasas.com, akpm@linux-foundation.org, martin.svec@zoner.cz,
-        Jerome Martin <jxm@risingtidesystems.com>
-In-Reply-To: <1306451068.4048.69.camel@mulgrave.site>
-References: <1305862678-30150-8-git-send-email-nab@linux-iscsi.org>
-	 <1306428415.4048.22.camel@mulgrave.site>
-	 <1306436832.5807.127.camel@haakon2.linux-iscsi.org>
-	 <20110527042934U.fujita.tomonori@lab.ntt.co.jp>
-	 <1306439399.19113.22.camel@haakon2.linux-iscsi.org>
-	 <1306440882.4048.47.camel@mulgrave.site>
-	 <1306445587.23461.22.camel@haakon2.linux-iscsi.org>
-	 <1306451068.4048.69.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Thu, 26 May 2011 16:28:10 -0700
-Message-Id: <1306452490.23461.60.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 19:35:11 -0400
+Date: Thu, 26 May 2011 17:34:52 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, kgene.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/4] Samsung: Move Samsung SoCs GPIO drivers to
+ drivers/gpio
+Message-ID: <20110526233452.GB1384@ponder.secretlab.ca>
+References: <20110523082728.GA6192@july>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110523082728.GA6192@july>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 18:04 -0500, James Bottomley wrote:
-> On Thu, 2011-05-26 at 14:33 -0700, Nicholas A. Bellinger wrote:
-> > On Thu, 2011-05-26 at 15:14 -0500, James Bottomley wrote:
-> > > On Thu, 2011-05-26 at 12:49 -0700, Nicholas A. Bellinger wrote:
-> > > > On Fri, 2011-05-27 at 04:29 +0900, FUJITA Tomonori wrote:
-> > > > > On Thu, 26 May 2011 12:07:12 -0700
-> > > > > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > > > > 
-> > > > > > On Thu, 2011-05-26 at 11:46 -0500, James Bottomley wrote:
-> > > > > > > On Thu, 2011-05-19 at 20:37 -0700, Nicholas A. Bellinger wrote:
-> > > > > > > > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > > > > > > > 
-> > > > > > > > This patch adds the princple RFC-3720 compatiable iSCSI Login
-> > > > > > > > phase negotiation for iscsi_target_mod.  This also includes the
-> > > > > > > > target RX/TX thread queue logic which is called directly from iSCSI
-> > > > > > > > login associated code.
-> > > > > > > > 
-> > > > > > > > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org> 
-> > > > > > > 
-> > > > > > > I thought the upshot of the thread with Tomo was that we wouldn't be
-> > > > > > > doing all of this in-kernel.  Where's the userspace upcall for this?
-> > > > > > > 
-> > > > > > 
-> > > > > > The technical reasons why I want to avoid this have not changed for the
-> > > > > > 1) authentication disabled and 2) 'required-to-implement' CHAP
-> > > > > > authentication cases.  These where discussed at the bottom of the thread
-> > > > > > from March with Tomo-san here:
-> > > > > > 
-> > > > > > http://marc.info/?l=linux-scsi&m=130108812405710&w=2
-> > > > > > 
-> > > > > > As mentioned, I am open to adding a userspace upcall for authentication
-> > > > > > payloads post merge in order to support the 'optional-to-implement'
-> > > > > > authentication cases.  However, pushing the above two cases out to
-> > > > > 
-> > > > > We don't need such, passing payloads from kernel to user space. You do the pre
-> > > > > SCSI nexus operations in user space then kernel takes care of established
-> > > > > nexuses.
-> > > > > 
-> > > > 
-> > > > I understand what you have in mind, but I still think this the wrong
-> > > > approach for the default cases.  For an in-kernel iscsi-target capable
-> > > > of changing any aspect of the control plane on the fly, this type of
-> > > > split is problematic to support and maintain and does not actually buy
-> > > > us anything for the default cases.
-> > > 
-> > > Handling the default case separately from the less usual ones is
-> > > actually the bigger recipe for disaster because the less used path
-> > > becomes less well tested.
-> > > 
-> > > I don't really see how a kernel/user split is problematic.  After all,
-> > > it's what we use for a lot of things (udev being the most notable).
-> > > 
-> > 
-> > The fact is that none of the mainstream initiators support anything
-> > beyond CHAP at this point, so the default cases are realistically what
-> > everyone will be using for 2.8.0 and need to be rock solid for all
-> > cases.
+On Mon, May 23, 2011 at 05:27:28PM +0900, Kyungmin Park wrote:
+> The following changes since commit dcb4a1f0e0367efb813907e5083998bbb98b0456:
 > 
-> This doesn't impact the argument that we need to use the same path for
-> common and special auth cases.  We're not putting all the exotic RFC
-> auth cases in the kernel, so the common path needs to be out as well.
-> 
+>   Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6 (2011-05-21 12:25:07 -0700)
 
-It impacts what actually needs to be pushed into userspace, eg: the
-'optional-to-implement' authentication payloads.
+Applied whole series, thanks.
 
-Pushing the control plane for NodeACLs into userspace for real-time
-management of active login attempts for a kernel-level iscsi-target has
-always been, and always will be a bad idea when having to sychronize the
-aspects across 10,000 /sys/kernel/config/target/iscsi/$TARGET_IQN
-endpoints.
-
-As we have discussed at length over the years, the split needs to be all
-userspace or all kernelspace, and when implementations start doing
-things in-between they quickly get painful to debug, maintain and
-extend.  I have no interest in trying to evolve this further when LIO
-users are happy that things 'just-work' for the default case.
-
-This is why I want to limit the complexity of the userspace passthrough
-of authentication payloads for individual iSCSI target endpoints, and
-not the complete iSCSI login state machine for all possible iSCSI target
-endpoints.
-
-> > > > > > userspace really does add unnecessary complexity and limitiations that I
-> > > > > > want to avoid for the default iSCSI login cases.
-> > > > > > 
-> > > > > > It also would break existing rtslib/rtsadmin-v2 userspace code, and
-> > > > > 
-> > > > > I don't think breaking the existing code matters.
-> > > > 
-> > > > Sure it does.  It means the difference between if the
-> > > > 'required-to-implement' cases can be exposed via configfs to a native
-> > > > python object library and shell, or if we need to have an external
-> > > > daemon + configuration that has to be kept in sync between the two,
-> > > > parse external configuration files, et al.
-> > > 
-> > >      1. We can always handle this in an ABI shim in userspace
-> > >      2. The current *kernel* code doesn't exist, therefore it has no
-> > >         users.  Maintaining compatibility with the out of tree code is
-> > >         fine, but not at the expense of less optimal design decisions.
-> > > 
-> > > > With the current design, the NodeACLs + authentication are available
-> > > > directly as part of the rtslib python object library, and python code
-> > > > including rtslib can reference all aspects of the initiator
-> > > > configuration directly.  Breaking this up to an external daemon and
-> > > > configuration is a step backwards for the default cases from the
-> > > > perspective of rtslib, and making it work with an external
-> > > > configuration / daemon for the NodeACLs + default authentication case is
-> > > > an hack compared to how iscsi-target functionality is exposed to
-> > > > application level progammers via rtslib today.
-> > > 
-> > > I don't buy this.  It doesn't have to be a daemon (udev isn't).  And
-> > > udev certainly isn't a hack compared to what went before (which was
-> > > fully in-kernel).
-> > > 
-> > 
-> > To elaborate a bit more with an rtslib example (Jerome CC'ed).
-> > 
-> > Consider the following python code that uses rtslib to create a iSCSI
-> > target+tpgt, iSCSI Initiator NodeACL, and set+read authentication
-> > information for said NodeACL using native library objects:
-> > 
-> > #!/usr/bin/python
-> > 
-> > import rtslib
-> > 
-> > fabric = rtslib.FabricModule('iscsi')
-> > 
-> > print("Creating a new iqn.2003-01.org.linux-iscsi.rtslinux.foobar iscsi target")
-> > target = rtslib.Target(fabric, "iqn.2003-01.org.linux-iscsi.rtslinux.foobar")
-> > 
-> > print
-> > print("Creating a new iscsi TPG, TPG5 in that target")
-> > tpg = rtslib.TPG(target, 5)
-> > 
-> > print
-> > print("Creating a node ACL for initiator iqn.2003-01.org.linux-iscsi.rtslinux.initiator")
-> > node_acl = tpg.node_acl("iqn.2003-01.org.linux-iscsi.rtslinux.initiator")
-> > 
-> > print
-> > print("Setting the CHAP password and username to foo/bar for that initiator")
-> > node_acl.chap_username = "foo"
-> > node_acl.chap_password = "bar"
-> > 
-> > print
-> > print("Reading CHAP password and username for that initiator")
-> > print("Username: %s\n Password: %s" % (node_acl.chap_username, node_acl.chap_password))
-> > 
-> > print
-> > print("For fun, let's list all of our existing node ACLs paths, accross all fabric/targets/etc.")
-> > acls = [acl.path for acl in rtslib.RTSRoot().node_acls]
-> > print "\n".join(acls)
-> > 
-> > -----------------------------------------------------------------------
-> > 
-> > Being able to have access to the complete set of underlying iscsi-target
-> > features in native python library code is very important for target mode
-> > userspace, and the current kernel+user code is solving this elegantly
-> > for the two default iSCSI login cases.
-> 
-> This seems a bit orthogonal to the argument.  Whether the driver uses
-> userspace upcalls or not, the scripts still have access.
-> 
-
-scripts != library
-
-The python library drives the configuration of the kernel control plane
-for target core and $FABRIC_MOD, and currently we use configfs for this
-with the default two cases.  What rtsadmin does with rtslib is one thing
-to provide the complete set of iscsi-target functionality to an
-high-level end-user, but what application developers, test script
-writers and others do with rtslib on their own code is quite another
-question.  :)
-
-> > We are open to looking at how to extend the kernel+user code to support
-> > other 'optional-to-implement' iscsi authentication cases, but not at the
-> > expense making drastic changes to kernel code this late, or removing /
-> > breaking python library object functionality for the default
-> > 'required-to-implement' cases.
-> 
-> That's fine ... I can easily give you another release cycle to do this.
-> 
-
-Delaying the merging of this for the same reasons as .39 after all of
-this work would really an huge waste.  The code is ready to go for the
-real-time management cases that 99% of current users care about H/A, and
-slipping (again) for a case that we don't even have initiators to test
-with at this point and is IMHO an unnacceptable answer to the people who
-have put in the time to really make this all go.
-
-Again, I am open to addressing this as a next-merge-window item once we
-have access to a functioning initiator that supports something aside
-from the default two cases provided in their series, but lets please,
-please avoid slipping yet another window here when we still have >= 15K
-LOC in three other HW target mode fabric drivers in flight for the next
-round
-
---nab
+g.
 
