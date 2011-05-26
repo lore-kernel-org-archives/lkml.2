@@ -1,206 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758149Ab1EZRiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:38:22 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:54389 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757559Ab1EZRiV convert rfc822-to-8bit (ORCPT
+	id S1758168Ab1EZRjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:39:54 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:51973 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758005Ab1EZRjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:38:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mopXDDPnxHszWPEYK6YIYAjojyvMCysO10s9aahZXali85r9AVLS7dsWDbcb44H9OU
-         fLuQVCv5IhkImEWHbEy9bJUXUZKeOx7DlyXFgkdIDyZGQV+WQvME2S9FoN+rNjMvqmNB
-         hHfQLYNwepUOWoAy1Q2onb1AoLG7IL69GEGvw=
-MIME-Version: 1.0
-In-Reply-To: <20110526171209.GA17988@in.ibm.com>
-References: <20110526170722.GB23266@in.ibm.com>
-	<20110526171209.GA17988@in.ibm.com>
-Date: Thu, 26 May 2011 19:38:19 +0200
-Message-ID: <BANLkTi=ZrPkRwFSmdkAB60-MKS3fwZOjpg@mail.gmail.com>
-Subject: Re: [Patch 1/6] XPANIC: Add extended panic interface
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: prasad@linux.vnet.ibm.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 May 2011 13:39:52 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Will Drewry <wad@chromium.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Walters <walters@verbum.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
+In-Reply-To: Your message of "Thu, 26 May 2011 12:02:45 CDT."
+             <BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1305807728.11267.25.camel@gandalf.stny.rr.com> <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com> <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com> <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu> <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu> <alpine.LFD.2.02.1105251836030.3078@ionos> <20110525180100.GY19633@outflux.net> <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <20110525191152.GC19633@outflux.net> <BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com> <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com> <BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com> <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com> <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
+            <BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1306431502_8338P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 26 May 2011 13:38:22 -0400
+Message-ID: <17077.1306431502@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020202.4DDE9012.0195,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 7:12 PM, K.Prasad <prasad@linux.vnet.ibm.com> wrote:
->
-> commit e668fa1aea7844ac4c7ea09030a2f3e647a4adb1
-> Author: Andi Kleen <ak@linux.intel.com>
-> Date:   Fri Nov 19 18:36:44 2010 +0100
->
->    XPANIC: Add extended panic interface
->
->    One panic size doesn't fit all.
->
->    Machine check has some special requirements on panic, like:
->    - It wants to do a reboot timeout by default so that the machine
->    check event can be logged to disk after warm reboot.
->    - For memory errors it usually doesn't want to do crash dumps because
->    that can lead to crash loops (dumping corrupted memory would
->    lead to another machine check)
->    - It doesn't want to do backtraces because machine checks
->    are not a kernel bug.
->
->    In a earlier patch this was done with various adhoc hacks,
->    but it's cleaner to extend panic to a 'xpanic' that directly
->    gets a flag and timeout argument.
->
->    The only user right now will be x86 machine checks, but I consider
->    it likely that other users will switch to this too.
->
->    For example one obvious candidate would be the "no root
->    found" panic which doesn't really deserve a backtrace.
->
->    I exported a vpanic() interface too as a global. That's not
->    needed by the current user, but the interface has to exist
->    internally anyways and I could see how other code would
->    find a v* variant of panic useful.
->
->    Originally based on a suggestion by H. Peter Anvin.
->    Signed-off-by: Andi Kleen <ak@linux.intel.com>
->
-> ---
->  include/linux/kernel.h |   11 +++++++++++
->  kernel/panic.c         |   41 +++++++++++++++++++++++++++++++----------
->  2 files changed, 42 insertions(+), 10 deletions(-)
->
-> Index: linux-2.6.slim_kdump/include/linux/kernel.h
-> ===================================================================
-> --- linux-2.6.slim_kdump.orig/include/linux/kernel.h
-> +++ linux-2.6.slim_kdump/include/linux/kernel.h
-> @@ -175,10 +175,21 @@ static inline void might_fault(void)
->  }
->  #endif
->
-> +enum panic_flags {
-> +       PANIC_NO_KEXEC     = (1 << 0),
-> +       PANIC_NO_BACKTRACE = (1 << 1),
-> +};
-> +
->  extern struct atomic_notifier_head panic_notifier_list;
->  extern long (*panic_blink)(int state);
->  NORET_TYPE void panic(const char * fmt, ...)
->        __attribute__ ((NORET_AND format (printf, 1, 2))) __cold;
-> +NORET_TYPE void xpanic(enum panic_flags flags, int timeout,
-> +                      const char *fmt, ...)
-> +       __attribute__ ((NORET_AND format (printf, 3, 4))) __cold;
-> +NORET_TYPE void vpanic(enum panic_flags flags, int timeout,
-> +                      const char *fmt,
-> +                      va_list ap) __noreturn __cold;
->  extern void oops_enter(void);
->  extern void oops_exit(void);
->  void print_oops_end_marker(void);
-> Index: linux-2.6.slim_kdump/kernel/panic.c
-> ===================================================================
-> --- linux-2.6.slim_kdump.orig/kernel/panic.c
-> +++ linux-2.6.slim_kdump/kernel/panic.c
-> @@ -57,14 +57,37 @@ EXPORT_SYMBOL(panic_blink);
->  *
->  *     This function never returns.
->  */
-> -NORET_TYPE void panic(const char * fmt, ...)
-> +NORET_TYPE void panic(const char *fmt, ...)
-> +{
-> +       va_list ap;
-> +       va_start(ap, fmt);
-> +       vpanic(0, 0, fmt, ap);
-> +}
-> +EXPORT_SYMBOL(panic);
-> +
-> +NORET_TYPE void xpanic(enum panic_flags flags, int timeout,
-> +                       const char *fmt, ...)
-> +{
-> +       va_list ap;
-> +       va_start(ap, fmt);
-> +       xpanic(flags, timeout, fmt, ap);
+--==_Exmh_1306431502_8338P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Why are you calling xpanic() here again?
-I guess you meant vpanic().
+On Thu, 26 May 2011 12:02:45 CDT, Will Drewry said:
 
-> +}
-> +EXPORT_SYMBOL(xpanic);
-> +
-> +NORET_TYPE void vpanic(enum panic_flags flags, int timeout,
-> +                      const char * fmt, va_list args)
->  {
->        static char buf[1024];
-> -       va_list args;
->        long i, i_next = 0;
->        int state = 0;
->
->        /*
-> +        * Let user always override panic_timeout.
-> +        */
-> +       if (panic_timeout > 0)
-> +               timeout = panic_timeout;
-> +
-> +       /*
->         * It's possible to come here directly from a panic-assertion and
->         * not have preempt disabled. Some functions called from here want
->         * preempt to be disabled. No point enabling it later though...
-> @@ -73,12 +96,11 @@ NORET_TYPE void panic(const char * fmt,
->
->        console_verbose();
->        bust_spinlocks(1);
-> -       va_start(args, fmt);
->        vsnprintf(buf, sizeof(buf), fmt, args);
-> -       va_end(args);
->        printk(KERN_EMERG "Kernel panic - not syncing: %s\n",buf);
->  #ifdef CONFIG_DEBUG_BUGVERBOSE
-> -       dump_stack();
-> +       if (!(flags & PANIC_NO_BACKTRACE))
-> +               dump_stack();
->  #endif
->
->        /*
-> @@ -86,7 +108,8 @@ NORET_TYPE void panic(const char * fmt,
->         * everything else.
->         * Do we want to call this before we try to display a message?
->         */
-> -       crash_kexec(NULL);
-> +       if (!(flags & PANIC_NO_KEXEC))
-> +               crash_kexec(NULL);
->
->        kmsg_dump(KMSG_DUMP_PANIC);
->
-> @@ -104,7 +127,7 @@ NORET_TYPE void panic(const char * fmt,
->        if (!panic_blink)
->                panic_blink = no_blink;
->
-> -       if (panic_timeout > 0) {
-> +       if (timeout > 0) {
->                /*
->                 * Delay timeout seconds before rebooting the machine.
->                 * We can't use the "normal" timers since we just panicked.
-> @@ -152,9 +175,7 @@ NORET_TYPE void panic(const char * fmt,
->                mdelay(PANIC_TIMER_STEP);
->        }
->  }
-> -
-> -EXPORT_SYMBOL(panic);
-> -
-> +EXPORT_SYMBOL(vpanic);
->
->  struct tnt {
->        u8      bit;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> Absolutely - that was what I meant :/  The patches do not currently
+> check creds at creation or again at use, which would lead to
+> unprivileged filters being used in a privileged context.  Right now,
+> though, if setuid() is not allowed by the seccomp-filter, the process
+> will be immediately killed with do_exit(SIGKILL) on call -- thus
+> avoiding a silent failure.
 
--- 
-Thanks,
-//richard
+How do you know you have the bounding set correct?
+
+This has been a long-standing issue for SELinux policy writing - it's usu=
+ally
+easy to get 95% of the bounding box right (you need these rules for share=
+d
+libraries, you need these rules to access the user's home directory, you =
+need
+these other rules to talk TCP to the net, etc).  There's a nice tool that=
+
+converts any remaining rejection messages into rules you can add to the p=
+olicy.
+
+The problem is twofold: (a) that way you can never be sure you got *all* =
+the
+rules right and (b) the missing rules are almost always in squirrelly lit=
+tle
+error-handling code that gets invoked once in a blue moon.  So in this ca=
+se,
+you end up with trying to debug the SIGKILL that happened when the proces=
+s was
+already in trouble for some other reason...
+
+=22Wow. Who would have guessed that program only called gettimeofday() in=
+
+the error handler for when it was formatting its crash message?=22
+
+Exactly.
+
+
+--==_Exmh_1306431502_8338P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFN3pAOcC3lWbTT17ARArcQAKC5eiB9i2Z/MRiW4pNAPuhksCXrLACeOpjk
+Y2jUCxr9WAbWhihFLVEVZxw=
+=in7z
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1306431502_8338P--
+
