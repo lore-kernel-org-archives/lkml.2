@@ -1,85 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab1EZD3z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 23:29:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:58539 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053Ab1EZD3y (ORCPT
+	id S1756707Ab1EZDa1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 23:30:27 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:59500 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835Ab1EZDaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 23:29:54 -0400
-X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=vVy0PQ3ZQx8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=BSRpaT8CubRYMRhdPBkA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] trace: Add a free on close control mechanism for
- buffer_size_kb
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>
-In-Reply-To: <1304118968-6620-1-git-send-email-vnagarnaik@google.com>
-References: <1304106356-11277-1-git-send-email-vnagarnaik@google.com>
-	 <1304118968-6620-1-git-send-email-vnagarnaik@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 25 May 2011 23:29:51 -0400
-Message-ID: <1306380591.1465.140.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Wed, 25 May 2011 23:30:23 -0400
+X-Nat-Received: from [202.181.97.72]:65063 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1306380621.23150
+Message-Id: <201105260330.p4Q3ULQK073745@www262.sakura.ne.jp>
+Subject: [initramfs] unpack_to_rootfs() should print error messages upon OOM.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+Date: Thu, 26 May 2011 12:30:21 +0900
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 26052011 #5433493, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-29 at 16:16 -0700, Vaibhav Nagarnaik wrote:
+I tried to install Fedora-15-i386-DVD.iso (which uses a 2.6.38 kernel) on a VM
+with 512MB of RAM. The boot process stopped after printing
 
-> +static ssize_t tracing_resize_ring_buffer(unsigned long size)
-> +{
-> +	int cpu, ret = 0;
-> +
-> +	mutex_lock(&trace_types_lock);
-> +
-> +	tracing_stop();
-> +
-> +	/* disable all cpu buffers */
-> +	for_each_tracing_cpu(cpu) {
-> +		if (global_trace.data[cpu])
-> +			atomic_inc(&global_trace.data[cpu]->disabled);
-> +		if (max_tr.data[cpu])
-> +			atomic_inc(&max_tr.data[cpu]->disabled);
-> +	}
-> +
-> +	if (size != global_trace.entries)
-> +		ret = __tracing_resize_ring_buffer(size);
-> +
-> +	/* If check pages failed, return ENOMEM */
-> +	if (tracing_disabled)
-> +		ret = -ENOMEM;
+   Trying to unpack rootfs image as initramfs...
 
-This is incorrect. tracing_disabled is set from
-__tracing_resize_ring_buffer() if the max buffer can't become the same
-size as the global buffer.
+. The cause was RAM was not sufficient. It seems that Fedora 15 requires
+more than 640MB of RAM to unpack the initramfs.
 
-What you should do is just check if ret is less than zero here.
-
-	if (ret < 0)
-		ret = -ENOMEM;
-
--- Steve
-
-
-> +
-> +	for_each_tracing_cpu(cpu) {
-> +		if (global_trace.data[cpu])
-> +			atomic_dec(&global_trace.data[cpu]->disabled);
-> +		if (max_tr.data[cpu])
-> +			atomic_dec(&max_tr.data[cpu]->disabled);
-> +	}
-> +
-> +	tracing_start();
-> +	mutex_unlock(&trace_types_lock);
-> +
-> +	return ret;
-> +}
-> +
->  
-
+I think we should print error messages when unpacking the initramfs cannot be
+completed due to insufficient RAM.
