@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab1EZGVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 02:21:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49215 "EHLO mx1.suse.de"
+	id S1753256Ab1EZGWK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 02:22:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49260 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744Ab1EZGVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 02:21:49 -0400
-Date: Thu, 26 May 2011 08:21:48 +0200
-Message-ID: <s5h8vtu2d8j.wl%tiwai@suse.de>
+	id S1751521Ab1EZGWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 02:22:08 -0400
+Date: Thu, 26 May 2011 08:22:07 +0200
+Message-ID: <s5h7h9e2d80.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Dave Jones <davej@redhat.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: no sound in current -git
-In-Reply-To: <20110526051109.GA11870@redhat.com>
-References: <20110526013423.GA25226@redhat.com>
-	<4DDDD47C.5030504@gmail.com>
-	<20110526043337.GA11224@redhat.com>
-	<20110526051109.GA11870@redhat.com>
+To: Luca Tettamanti <kronos.it@gmail.com>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Jaroslav Kysela <perex@perex.cz>
+Subject: Re: [PATCH] sound core: remove unused variables.
+In-Reply-To: <20110525204327.GA24134@nb-core2.darkstar.lan>
+References: <20110525204327.GA24134@nb-core2.darkstar.lan>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,29 +24,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 26 May 2011 01:11:09 -0400,
-Dave Jones wrote:
+At Wed, 25 May 2011 22:43:27 +0200,
+Luca Tettamanti wrote:
 > 
-> On Thu, May 26, 2011 at 12:33:38AM -0400, Dave Jones wrote:
+> Drop a few variables that are never read.
 > 
->  >  > sound over here is out as well on a macbook pro. seems gnome shell 
->  >  > didn't like whats being merged with the current Mainline i.g. no sound 
->  >  > bluetooth applet missing. will bisect when I get a chance.
->  > 
->  > Maybe it was this that just got merged..  (building now)
->  > 
->  > commit 4db70f73e56961b9bcdfd0c36c62847a18b7dbb5
->  > Author: Eric Paris <eparis@redhat.com>
->  > Date:   Wed May 25 19:49:18 2011 -0700
->  > 
->  >     tmpfs: fix XATTR N overriding POSIX_ACL Y
-> 
-> Yep. That fixes sound for me.
-> Sorry for the false alarm Takashi!
+> Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
 
-No problem, good to hear you found out the culprit.
+Applied now.  Thanks.
 
-
-thanks,
 
 Takashi
+
+> ---
+>  sound/core/control.c       |    3 +--
+>  sound/core/init.c          |    3 ---
+>  sound/core/oss/linear.c    |    3 ---
+>  sound/core/pcm_native.c    |    8 --------
+>  sound/core/seq/seq_queue.c |    2 --
+>  5 files changed, 1 insertions(+), 18 deletions(-)
+> 
+> diff --git a/sound/core/control.c b/sound/core/control.c
+> index 5d98194..f8c5be4 100644
+> --- a/sound/core/control.c
+> +++ b/sound/core/control.c
+> @@ -704,13 +704,12 @@ static int snd_ctl_elem_list(struct snd_card *card,
+>  	struct snd_ctl_elem_list list;
+>  	struct snd_kcontrol *kctl;
+>  	struct snd_ctl_elem_id *dst, *id;
+> -	unsigned int offset, space, first, jidx;
+> +	unsigned int offset, space, jidx;
+>  	
+>  	if (copy_from_user(&list, _list, sizeof(list)))
+>  		return -EFAULT;
+>  	offset = list.offset;
+>  	space = list.space;
+> -	first = 0;
+>  	/* try limit maximum space */
+>  	if (space > 16384)
+>  		return -ENOMEM;
+> diff --git a/sound/core/init.c b/sound/core/init.c
+> index 30ecad4..2c041bb 100644
+> --- a/sound/core/init.c
+> +++ b/sound/core/init.c
+> @@ -342,7 +342,6 @@ static const struct file_operations snd_shutdown_f_ops =
+>  int snd_card_disconnect(struct snd_card *card)
+>  {
+>  	struct snd_monitor_file *mfile;
+> -	struct file *file;
+>  	int err;
+>  
+>  	if (!card)
+> @@ -366,8 +365,6 @@ int snd_card_disconnect(struct snd_card *card)
+>  	
+>  	spin_lock(&card->files_lock);
+>  	list_for_each_entry(mfile, &card->files_list, list) {
+> -		file = mfile->file;
+> -
+>  		/* it's critical part, use endless loop */
+>  		/* we have no room to fail */
+>  		mfile->disconnected_f_op = mfile->file->f_op;
+> diff --git a/sound/core/oss/linear.c b/sound/core/oss/linear.c
+> index 13b3f6f..2045697 100644
+> --- a/sound/core/oss/linear.c
+> +++ b/sound/core/oss/linear.c
+> @@ -90,11 +90,8 @@ static snd_pcm_sframes_t linear_transfer(struct snd_pcm_plugin *plugin,
+>  			       struct snd_pcm_plugin_channel *dst_channels,
+>  			       snd_pcm_uframes_t frames)
+>  {
+> -	struct linear_priv *data;
+> -
+>  	if (snd_BUG_ON(!plugin || !src_channels || !dst_channels))
+>  		return -ENXIO;
+> -	data = (struct linear_priv *)plugin->extra_data;
+>  	if (frames == 0)
+>  		return 0;
+>  #ifdef CONFIG_SND_DEBUG
+> diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
+> index 1a07750..3a5f86d 100644
+> --- a/sound/core/pcm_native.c
+> +++ b/sound/core/pcm_native.c
+> @@ -1518,13 +1518,11 @@ static int snd_pcm_drain(struct snd_pcm_substream *substream,
+>  static int snd_pcm_drop(struct snd_pcm_substream *substream)
+>  {
+>  	struct snd_pcm_runtime *runtime;
+> -	struct snd_card *card;
+>  	int result = 0;
+>  	
+>  	if (PCM_RUNTIME_CHECK(substream))
+>  		return -ENXIO;
+>  	runtime = substream->runtime;
+> -	card = substream->pcm->card;
+>  
+>  	if (runtime->status->state == SNDRV_PCM_STATE_OPEN ||
+>  	    runtime->status->state == SNDRV_PCM_STATE_DISCONNECTED ||
+> @@ -2056,7 +2054,6 @@ static int snd_pcm_open_file(struct file *file,
+>  {
+>  	struct snd_pcm_file *pcm_file;
+>  	struct snd_pcm_substream *substream;
+> -	struct snd_pcm_str *str;
+>  	int err;
+>  
+>  	if (rpcm_file)
+> @@ -2073,7 +2070,6 @@ static int snd_pcm_open_file(struct file *file,
+>  	}
+>  	pcm_file->substream = substream;
+>  	if (substream->ref_count == 1) {
+> -		str = substream->pstr;
+>  		substream->file = pcm_file;
+>  		substream->pcm_release = pcm_release_private;
+>  	}
+> @@ -3015,11 +3011,9 @@ static const struct vm_operations_struct snd_pcm_vm_ops_status =
+>  static int snd_pcm_mmap_status(struct snd_pcm_substream *substream, struct file *file,
+>  			       struct vm_area_struct *area)
+>  {
+> -	struct snd_pcm_runtime *runtime;
+>  	long size;
+>  	if (!(area->vm_flags & VM_READ))
+>  		return -EINVAL;
+> -	runtime = substream->runtime;
+>  	size = area->vm_end - area->vm_start;
+>  	if (size != PAGE_ALIGN(sizeof(struct snd_pcm_mmap_status)))
+>  		return -EINVAL;
+> @@ -3054,11 +3048,9 @@ static const struct vm_operations_struct snd_pcm_vm_ops_control =
+>  static int snd_pcm_mmap_control(struct snd_pcm_substream *substream, struct file *file,
+>  				struct vm_area_struct *area)
+>  {
+> -	struct snd_pcm_runtime *runtime;
+>  	long size;
+>  	if (!(area->vm_flags & VM_READ))
+>  		return -EINVAL;
+> -	runtime = substream->runtime;
+>  	size = area->vm_end - area->vm_start;
+>  	if (size != PAGE_ALIGN(sizeof(struct snd_pcm_mmap_control)))
+>  		return -EINVAL;
+> diff --git a/sound/core/seq/seq_queue.c b/sound/core/seq/seq_queue.c
+> index e7a8e9e..f907736 100644
+> --- a/sound/core/seq/seq_queue.c
+> +++ b/sound/core/seq/seq_queue.c
+> @@ -467,13 +467,11 @@ int snd_seq_queue_timer_open(int queueid)
+>  int snd_seq_queue_timer_close(int queueid)
+>  {
+>  	struct snd_seq_queue *queue;
+> -	struct snd_seq_timer *tmr;
+>  	int result = 0;
+>  
+>  	queue = queueptr(queueid);
+>  	if (queue == NULL)
+>  		return -EINVAL;
+> -	tmr = queue->timer;
+>  	snd_seq_timer_close(queue);
+>  	queuefree(queue);
+>  	return result;
+> -- 
+> 1.7.5.1
+> 
