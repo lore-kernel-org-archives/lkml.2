@@ -1,34 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab1EZDa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 23:30:27 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:59500 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754835Ab1EZDaX (ORCPT
+	id S1756136Ab1EZDeY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 23:34:24 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41880 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835Ab1EZDeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 23:30:23 -0400
-X-Nat-Received: from [202.181.97.72]:65063 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1306380621.23150
-Message-Id: <201105260330.p4Q3ULQK073745@www262.sakura.ne.jp>
-Subject: [initramfs] unpack_to_rootfs() should print error messages upon OOM.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
+	Wed, 25 May 2011 23:34:22 -0400
+Date: Wed, 25 May 2011 23:34:11 -0400 (EDT)
+Message-Id: <20110525.233411.1372538972166578285.davem@davemloft.net>
+To: msb@chromium.org
+Cc: linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] crypto: sha1: modify sha1_update to use SHA1_BLOCK_SIZE
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1306379477-24552-1-git-send-email-msb@chromium.org>
+References: <1306379477-24552-1-git-send-email-msb@chromium.org>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Date: Thu, 26 May 2011 12:30:21 +0900
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 26052011 #5433493, status: clean
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 25 May 2011 20:34:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried to install Fedora-15-i386-DVD.iso (which uses a 2.6.38 kernel) on a VM
-with 512MB of RAM. The boot process stopped after printing
+From: Mandeep Singh Baines <msb@chromium.org>
+Date: Wed, 25 May 2011 20:11:17 -0700
 
-   Trying to unpack rootfs image as initramfs...
+> Plus some other minor cleanup.
+> 
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 
-. The cause was RAM was not sufficient. It seems that Fedora 15 requires
-more than 640MB of RAM to unpack the initramfs.
+The temp[] buffer is explicitly places inside the inner most
+basic block so that the compiler doesn't allocate the stack
+space unless that code path is taken.
 
-I think we should print error messages when unpacking the initramfs cannot be
-completed due to insufficient RAM.
+Besides the use of the SHA_* macros, I think your changes
+actually make the code worse.
