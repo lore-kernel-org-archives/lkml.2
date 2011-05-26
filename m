@@ -1,74 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab1EZMjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 08:39:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55428 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab1EZMjk (ORCPT
+	id S1757539Ab1EZMke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 08:40:34 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53218 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757075Ab1EZMkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 08:39:40 -0400
-Date: Thu, 26 May 2011 08:39:21 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Greg KH <greg@kroah.com>, kevin.tian@intel.com, dkiper@net-space.pl
-Cc: Rzeszutek@dumpdata.com, Wilk@dumpdata.com, stable@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [stable] [PATCH] Xen bug-fixes for 2.6.39 (already in 2.6.40)
-Message-ID: <20110526123921.GB3386@dumpdata.com>
-References: <1306359456-3627-1-git-send-email-konrad.wilk@oracle.com>
- <20110526070239.GB29833@kroah.com>
+	Thu, 26 May 2011 08:40:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: GuanXuetao <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH 1/6] unicore32: move rtc-puv3.c to drivers/rtc directory
+Date: Thu, 26 May 2011 14:40:14 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-28-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, greg@kroah.com,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+References: <cover.1306408804.git.gxt@mprc.pku.edu.cn> <b30d22dd12bdba6360749aab88157bb0f2a0303d.1306408804.git.gxt@mprc.pku.edu.cn>
+In-Reply-To: <b30d22dd12bdba6360749aab88157bb0f2a0303d.1306408804.git.gxt@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526070239.GB29833@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DDE4A04.007C:SCFMA922111,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105261440.14960.arnd@arndb.de>
+X-Provags-ID: V02:K0:TQgXBw2bUjmHQ8LuTJ8zD4/sutG5t4d34PTdTKtcSbZ
+ If/d798mroQp9g7J5TWly2I4MuJ7YrWUL6QMc4lN7lbhKwX4+9
+ mfGuOac/ATMFWxH038xwCwaREwIhqOxFySlG5ua5ZdkKacY264
+ m8f+9g39THA8D8G3INWlCQ5Orm1DOl53gGpQCxmZxnB4bDADyv
+ MsrK+mqUBPbZC1//38hkg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 12:02:39AM -0700, Greg KH wrote:
-> On Wed, May 25, 2011 at 05:37:32PM -0400, Konrad@dumpdata.com wrote:
-> > Hey stable-tree maintainer(s).
-> > 
-> > The follow four patches are in the 2.6.40 tree and should be back-ported to 2.6.39 (only).
-> > I forgot to CC:stable on them, so manually doing it here.
-> > 
-> > The four patches in question have the following git commits:
-> > 
-> > 8c5950881c3b5e6e350e4b0438a8ccc513d90df9
-> >     xen/p2m: Create entries in the P2M_MFN trees's to track 1-1 mappings
-> > 0f16d0dfcdb5aab97d9e368f008b070b5b3ec6d3
-> >     xen/setup: Fix for incorrect xen_extra_mem_start initialization under 32-bit
-> > 15bfc094517db2ddf38ca7ed47f3a1c0ad24f7c4
-> >     xen/setup: Ignore E820_UNUSABLE when setting 1-1 mappings.
-> > 7899891c7d161752f29abcc9bc0a9c6c3a3af26c
-> >     xen mmu: fix a race window causing leave_mm BUG()
-> > 
-> > And are part of this email chain. Please apply them to 2.6.39.1 tree.
+On Thursday 26 May 2011, GuanXuetao wrote:
+> From: Guan Xuetao <gxt@mprc.pku.edu.cn>
 > 
-> I need an ack from the Xen maintainer and the original patch author
-> before I can accept these.  Please get them to provide this and I will
+> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
-OK
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-(who is the Xen maintainer)
-
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-(who is also the original patch author on some of the patches)
-
-Daniel and Kevin, can you guys Ack them please?
-
-> be glad to queue them up.
-> 
-> thanks,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+But next time you move files, please use the '-M' flag to git diff or
+git format-patch, to make it easier to review the changes.
