@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758257Ab1EZSpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:45:49 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:40047 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758117Ab1EZSps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:45:48 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Avi Kivity <avi@redhat.com>, James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        gnatapov@redhat.com, Chris Wright <chrisw@sous-sol.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
-In-Reply-To: Your message of "Thu, 26 May 2011 20:36:35 +0200."
-             <20110526183635.GA2490@elte.hu>
-From: Valdis.Kletnieks@vt.edu
-References: <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org> <20110526082451.GB26775@elte.hu> <4DDE1419.3000708@redhat.com> <20110526093040.GB19536@elte.hu> <4DDE31D6.4070209@redhat.com> <20110526113842.GA27618@elte.hu> <4DDE96B7.8030006@redhat.com> <20110526181554.GB3572@elte.hu> <4DDE99F6.4030804@redhat.com>
-            <20110526183635.GA2490@elte.hu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1306435422_8338P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 26 May 2011 14:43:42 -0400
-Message-ID: <20614.1306435422@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4DDE9F60.0091,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1758232Ab1EZSod (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:44:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24020 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758117Ab1EZSoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 14:44:32 -0400
+Date: Thu, 26 May 2011 14:43:50 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "K.Prasad" <prasad@linux.vnet.ibm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        anderson@redhat.com
+Subject: Re: [RFC Patch 4/6] PANIC_MCE: Introduce a new panic flag for fatal
+ MCE, capture related information
+Message-ID: <20110526184350.GE29496@redhat.com>
+References: <20110526170722.GB23266@in.ibm.com>
+ <20110526171521.GD17988@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526171521.GD17988@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1306435422_8338P
-Content-Type: text/plain; charset=us-ascii
+On Thu, May 26, 2011 at 10:45:21PM +0530, K.Prasad wrote:
 
-On Thu, 26 May 2011 20:36:35 +0200, Ingo Molnar said:
+[..]
+> Index: linux-2.6.slim_kdump/arch/x86/kernel/cpu/mcheck/mce.c
+> ===================================================================
+> --- linux-2.6.slim_kdump.orig/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ linux-2.6.slim_kdump/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -258,8 +258,7 @@ static void wait_for_panic(void)
+>  	local_irq_enable();
+>  	while (timeout-- > 0)
+>  		udelay(1);
+> -	xpanic(PANIC_NO_KEXEC|PANIC_NO_BACKTRACE, 0,
+> -		"Panicing machine check CPU died");
+> +	xpanic(PANIC_MCE, 0, NULL, 0, "Panicing machine check CPU died");
+>  }
+>  
+>  static void mce_panic(char *msg, struct mce *final, char *exp)
+> @@ -315,8 +314,8 @@ static void mce_panic(char *msg, struct
+>  	if (exp)
+>  		pr_emerg(HW_ERR "Machine check: %s\n", exp);
+>  	if (!fake_panic) {
+> -		xpanic(PANIC_NO_KEXEC|PANIC_NO_BACKTRACE, mce_panic_timeout,
+> -			msg);
+> +		xpanic(PANIC_MCE, mce_panic_timeout, final,
+> +			sizeof(struct mce), msg);
+>  	} else
+>  		pr_emerg(HW_ERR "Fake kernel panic: %s\n", msg);
+>  }
 
-> I suspect we are really offtopic here, but an initial rsync, then 
-> stopping the guest, final rsync + restart the guest at the target 
-> would work with minimal interruption.
+In previous patches you introduce PANIC_NO_KEXEC and PANIC_NO_BACKTRACE. 
+Now in this patch you got rid of those. Are there any other users left
+of PANIC_NO_BACKTRACE and PANIC_NO_EXEC? If not, then why to introduce
+these to begin with.
 
-Actually, after you kick off the migrate, you really want to be tracking in
-real time what pages get dirtied while you're doing the initial copy, so that
-the second rsync doesn't have to walk through the file finding the differences.
- But that requires some extra instrumentation.
-
-
---==_Exmh_1306435422_8338P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFN3p9ecC3lWbTT17ARAqEVAJwNve8j+tXaEfXOEy2EP+RCByBU6QCg+L9y
-tS46V2pR0cEoJpGc8PVoH3g=
-=fwI1
------END PGP SIGNATURE-----
-
---==_Exmh_1306435422_8338P--
-
+Thanks
+Vivek
