@@ -1,89 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757061Ab1EZLRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 07:17:01 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52690 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754763Ab1EZLQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 07:16:59 -0400
-Date: Thu, 26 May 2011 13:16:24 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        gnatapov@redhat.com, Chris Wright <chrisw@sous-sol.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-Message-ID: <20110526111624.GG1763@elte.hu>
-References: <20110525150153.GE29179@elte.hu>
- <alpine.LFD.2.02.1105251836030.3078@ionos>
- <20110525180100.GY19633@outflux.net>
- <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
- <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org>
- <20110526082451.GB26775@elte.hu>
- <4DDE1419.3000708@redhat.com>
- <20110526093040.GB19536@elte.hu>
- <20110526094806.GC19536@elte.hu>
- <4DDE333D.6020608@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DDE333D.6020608@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1757233Ab1EZLS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 07:18:56 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:31821 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab1EZLSy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 07:18:54 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+To: Dave Carroll <dtcarroll@gmail.com>
+From: Milton Miller <miltonm@bga.com>
+Cc: LPPC <linuxppc-dev@lists.ozlabs.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Carroll <dcarroll@astekcorp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH v7] powerpc: Force page alignment for initrd reserved memory
+Message-Id: <initrd-align-v7-reply@mdm.bga.com>
+In-Reply-To: <1306377162-7898-1-git-send-email-dcarroll@astekcorp.com>
+References: <initrd-align-v5-reply@mdm.bga.com>
+ <1306377162-7898-1-git-send-email-dcarroll@astekcorp.com>
+Date: Thu, 26 May 2011 06:18:46 -0500
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 25 May 2011 about 20:32:42 -0600, Dave Carroll wrote:
 
-* Avi Kivity <avi@redhat.com> wrote:
-
-> > It would be possible to further increase isolation there by also 
-> > passing the IO/MMIO decoding to the worker thread - but i'm not 
-> > sure that's truly needed. Most of the risk is where most of the 
-> > code is - and the code is in the worker task which interprets 
-> > on-disk data, protocols, etc.
+> When using 64K pages with a separate cpio rootfs, U-Boot will align
+> the rootfs on a 4K page boundary. When the memory is reserved, and
+> subsequent early memblock_alloc is called, it will allocate memory
+> between the 64K page alignment and reserved memory. When the reserved
+> memory is subsequently freed, it is done so by pages, causing the
+> early memblock_alloc requests to be re-used, which in my case, caused
+> the device-tree to be clobbered.
 > 
-> I've suggested in the past to add an "mmiofd" facility to kvm, 
-> similar to ioeventfd.  This is how it would work:
+> This patch forces the reserved memory for initrd to be kernel page
+> aligned, and will move the device tree if it overlaps with the range
+> extension of initrd. This patch will also consolidate the identical
+> function free_initrd_mem() from mm/init_32.c, init_64.c to mm/mem.c,
+> and adds the same range extension when freeing initrd.
 > 
-> - userspace configures kvm with an mmio range and a pipe
-> - guest writes to that range write a packet to the pipe describing the write
-> - guest reads from that range write a packet to the pipe describing
-> the read, then wait for a reply packet with the result
+> Many thanks to Milton Miller for his input on this patch.
 > 
-> The advantages would be
-> - avoid heavyweight exit; kvm can simply wake up a thread on another
-> core and resume processing
-> - writes can be pipelined, similar to how PCI writes are posted
-> - supports process separation
 
-Yes, that was my exact thought, a per transport channel fd.
+Thanks for the mailer update, it applied cleanly.
 
-> So far no one has posted an implementation but it should be pretty 
-> simple.
+> Signed-off-by: Dave Carroll <dcarroll@astekcorp.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> 
+> ---
+>  * The previous patch [v6] was the wrong copy, sorry ...
+>  
+>  arch/powerpc/kernel/prom.c |   21 ++++++++++++++++++---
+>  arch/powerpc/mm/init_32.c  |   15 ---------------
+>  arch/powerpc/mm/init_64.c  |   13 -------------
+>  arch/powerpc/mm/mem.c      |   19 +++++++++++++++++++
+>  4 files changed, 37 insertions(+), 31 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+> index 48aeb55..86966a0 100644
+> --- a/arch/powerpc/kernel/prom.c
+> +++ b/arch/powerpc/kernel/prom.c
+> @@ -81,12 +81,24 @@ static int __init early_parse_mem(char *p)
+>  	return 0;
+>  }
+>  early_param("mem", early_parse_mem);
+> +/**
+> + * overlaps_initrd - check for overlap with page aligned extension of
+> + * initrd.
+> + */
 
-tools/kvm/ could make quick use of it - and it's a performance 
-optimization mainly IMO, not primarily a security feature.
+1) Please place a blank line after the above early_param before
+the comment block.
 
-If you whip up a quick untested prototype for the KVM side we could 
-look into adding tooling support for it and could test it.
+2) /** says it is kernel doc format, so you need to follow the rules.
+The description should fit on one line (I might say: ... with the initrd,
+page aligned.)  and you have to document the parameters.  (Or just make
+it a simple comment block by removing the second *)
 
-As long as it's provided as an opt-in ioctl() which if fails (on 
-older kernels) we fall back to the vcpu-fd, it should be relatively 
-straightforward to support on the tooling side as well AFAICS.
+> +static inline int overlaps_initrd(unsigned long start, unsigned long size)
+> +{
+> +	if (!initrd_start)
+> +		return 0;
+>  
+> +	return	(start + size) > _ALIGN_DOWN(initrd_start, PAGE_SIZE) &&
+> +			start <= _ALIGN_UP(initrd_end, PAGE_SIZE);
+> +}
+>  /**
 
-Thanks,
+need a blank line after the function before this comment block too.
 
-	Ingo
+>   * move_device_tree - move tree to an unused area, if needed.
+>   *
+>   * The device tree may be allocated beyond our memory limit, or inside the
+> - * crash kernel region for kdump. If so, move it out of the way.
+> + * crash kernel region for kdump, or within the page aligned range of initrd.
+> + * If so, move it out of the way.
+
+of the initrd.
+
+>   */
+>  static void __init move_device_tree(void)
+>  {
+> @@ -99,7 +111,8 @@ static void __init move_device_tree(void)
+>  	size = be32_to_cpu(initial_boot_params->totalsize);
+>  
+>  	if ((memory_limit && (start + size) > PHYSICAL_START + memory_limit) ||
+> -			overlaps_crashkernel(start, size)) {
+> +			overlaps_crashkernel(start, size) ||
+> +			overlaps_initrd(start, size)) {
+>  		p = __va(memblock_alloc(size, PAGE_SIZE));
+>  		memcpy(p, initial_boot_params, size);
+>  		initial_boot_params = (struct boot_param_header *)p;
+> @@ -555,7 +568,9 @@ static void __init early_reserve_mem(void)
+>  #ifdef CONFIG_BLK_DEV_INITRD
+>  	/* then reserve the initrd, if any */
+>  	if (initrd_start && (initrd_end > initrd_start))
+> -		memblock_reserve(__pa(initrd_start), initrd_end - initrd_start);
+> +		memblock_reserve(_ALIGN_DOWN(__pa(initrd_start), PAGE_SIZE),
+> +			_ALIGN_UP(initrd_end, PAGE_SIZE) -
+> +			_ALIGN_DOWN(initrd_start, PAGE_SIZE));
+>  #endif /* CONFIG_BLK_DEV_INITRD */
+>  
+>  #ifdef CONFIG_PPC32
+> diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
+> index d65b591..5de0f25 100644
+> --- a/arch/powerpc/mm/init_32.c
+> +++ b/arch/powerpc/mm/init_32.c
+> @@ -223,21 +223,6 @@ void free_initmem(void)
+>  #undef FREESEC
+>  }
+>  
+> -#ifdef CONFIG_BLK_DEV_INITRD
+> -void free_initrd_mem(unsigned long start, unsigned long end)
+> -{
+> -	if (start < end)
+> -		printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
+> -	for (; start < end; start += PAGE_SIZE) {
+> -		ClearPageReserved(virt_to_page(start));
+> -		init_page_count(virt_to_page(start));
+> -		free_page(start);
+> -		totalram_pages++;
+> -	}
+> -}
+> -#endif
+> -
+> -
+>  #ifdef CONFIG_8xx /* No 8xx specific .c file to put that in ... */
+>  void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+>  				phys_addr_t first_memblock_size)
+> diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+> index 6374b21..7591a97 100644
+> --- a/arch/powerpc/mm/init_64.c
+> +++ b/arch/powerpc/mm/init_64.c
+> @@ -99,19 +99,6 @@ void free_initmem(void)
+>  		((unsigned long)__init_end - (unsigned long)__init_begin) >> 10);
+>  }
+>  
+> -#ifdef CONFIG_BLK_DEV_INITRD
+> -void free_initrd_mem(unsigned long start, unsigned long end)
+> -{
+> -	if (start < end)
+> -		printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
+> -	for (; start < end; start += PAGE_SIZE) {
+> -		ClearPageReserved(virt_to_page(start));
+> -		init_page_count(virt_to_page(start));
+> -		free_page(start);
+> -		totalram_pages++;
+> -	}
+> -}
+> -#endif
+>  
+>  static void pgd_ctor(void *addr)
+>  {
+> diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+> index 57e545b..f60e44e 100644
+> --- a/arch/powerpc/mm/mem.c
+> +++ b/arch/powerpc/mm/mem.c
+> @@ -160,6 +160,25 @@ walk_system_ram_range(unsigned long start_pfn, unsigned long nr_pages,
+>  }
+>  EXPORT_SYMBOL_GPL(walk_system_ram_range);
+>  
+> +#ifdef CONFIG_BLK_DEV_INITRD
+> +void free_initrd_mem(unsigned long start, unsigned long end)
+> +{
+> +	if (start >= end)
+> +		return;
+> +
+> +	start = _ALIGN_DOWN(start, PAGE_SIZE);
+> +	end = _ALIGN_UP(end, PAGE_SIZE);
+> +	printk(KERN_INFO "Freeing initrd memory: %ldk freed\n",
+> +			(end - start) >> 10);
+
+If you use pr_info then the above again fits on one line. 
+(this is what triggered my formatting and whitespace review).
+
+Although I would then add a blank line before the loop for readability.
+
+> +	for (; start < end; start += PAGE_SIZE) {
+> +		ClearPageReserved(virt_to_page(start));
+> +		init_page_count(virt_to_page(start));
+> +		free_page(start);
+> +		totalram_pages++;
+> +	}
+> +}
+> +#endif
+> +
+
+Nit: Looking at the whole file I would put this after mem_init
+because that puts it next to the other code that sets page counts,
+clears PageReerved, and hands pages to page_alloc.
+
+
+>  /*
+>   * Initialize the bootmem system and give it all the memory we
+>   * have available.  If we are using highmem, we only put the
+> -- 
+> 1.7.4
+> 
+
+milton
