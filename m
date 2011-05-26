@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758447Ab1EZVAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 17:00:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45074 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab1EZVAO (ORCPT
+	id S1758504Ab1EZVDl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 17:03:41 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:48477 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056Ab1EZVDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 17:00:14 -0400
-X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=Yc1t9-nblxEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=v1vRyZxt8XHty9geEIUA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] trace: Set oom_score_adj to maximum for ring buffer
- allocating process
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1105261328200.29812@chino.kir.corp.google.com>
-References: <1306439537-23706-1-git-send-email-vnagarnaik@google.com>
-	 <1306440288.3857.9.camel@gandalf.stny.rr.com>
-	 <BANLkTi=dEHG4zEZ2xRF7VEDdM6fsd9Hr=g@mail.gmail.com>
-	 <alpine.DEB.2.00.1105261328200.29812@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 26 May 2011 17:00:12 -0400
-Message-ID: <1306443612.3857.15.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 17:03:40 -0400
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_sdj8fG6qmHXatP4rxbgU1Q)"
+Date: Thu, 26 May 2011 17:03:39 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Will Deacon <will.deacon@arm.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        =?ISO-8859-15?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        linux-arm-kernel@lists.infradead.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, sam@ravnborg.org,
+        ak@linux.intel.com
+Subject: Re: [PATCH] ARM: Do not allow unaligned accesses when
+ CONFIG_ALIGNMENT_TRAP
+In-reply-to: <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
+Message-id: <alpine.LFD.2.00.1105261650330.3207@xanadu.home>
+References: <20110523111648.10474.78396.stgit@e102109-lin.cambridge.arm.com>
+ <20110523132124.GI17672@n2100.arm.linux.org.uk>
+ <1306229953.19557.14.camel@e102109-lin.cambridge.arm.com>
+ <yw1xipt0p4i9.fsf@unicorn.mansr.com>
+ <BANLkTi=xLE9gP5YOdr9dR0DfsY1Ymzxu+w@mail.gmail.com>
+ <20110524171331.GA2941@arm.com>
+ <20110525111405.GA12010@e102109-lin.cambridge.arm.com>
+ <20110525124348.GA2340@arm.com> <yw1xaaeanbxe.fsf@unicorn.mansr.com>
+ <BANLkTim2TOZgB-3Vkv5RcK572Qr07s3=CA@mail.gmail.com>
+ <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 13:33 -0700, David Rientjes wrote:
-> On Thu, 26 May 2011, Vaibhav Nagarnaik wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--Boundary_(ID_sdj8fG6qmHXatP4rxbgU1Q)
+Content-type: TEXT/PLAIN; charset=UTF-8
+Content-transfer-encoding: 8BIT
+
+On Thu, 26 May 2011, Will Deacon wrote:
+
+> This issue seems to be caused by passing -fconserve-stack to GCC. This
+> was added in 8f7f5c9f ("kbuild: set -fconserve-stack option for gcc
+> 4.5") and as you can see from the archive:
 > 
-
+> http://lkml.org/lkml/2009/9/20/39
 > 
-> Not sure that's true, this is allocating with kzalloc_node(GFP_KERNEL), 
-> correct?  If current is oom killed, it will have access to all memory 
-> reserves which will increase the liklihood that the allocation will 
-> succeed before handling the SIGKILL.
-
-Actually it uses get_free_page()
-
+> it was thought to only have an impact on inlining decisions. Looking at
+> the documentation for GCC 4.6:
 > 
-> > This API is now being used in other parts of kernel too, where it knows
-> > that the allocation could cause OOM.
-> > 
+> -fconserve-stack
+>           Attempt to minimize stack usage. The compiler will attempt to
+> use less stack space, even if that makes the program slower. This option
+> implies setting the ‘large-stack-frame’ parameter to 100 and the
+> ‘large-stack-frame-growth’ parameter to 400.
 > 
-> What's wrong with using __GFP_NORETRY to avoid oom killing entirely and 
+> So it sounds like we might not want to enable this blindly across all
+> architectures. Indeed, on ARM, it encourages the compiler to pack
+> variables on the stack which leads to the weird and wonderful alignment
+> situation that has been encountered in this thread.
+> 
+> Can we remove -fconserve-stack from the top-level Makefile (or at least
+> make it conditional by architecture)?
 
-I have no problem with NORETRY.
+I think this is an orthogonal issue.
 
-> then failing the ring buffer memory allocation?  Seems like a better 
-> solution than relying on the oom killer, since there may be other threads 
-> with a max oom_score_adj as well that would appear in the tasklist first 
-> and get killed unnecessarily.  Is there some ring buffer code that can't 
-> handle failing allocations appropriately?
+My opinion is that we should use -mno-unaligned-access by default on 
+ARM.  The reason is that we've been expecting the compiler not to cause 
+unaligned accesses for ages, and letting the compiler, for whatever 
+reasons including things like -fconserve-stack, produce unaligned 
+accesses behind our back is a change in behavior we might not always be 
+prepared for.  Unaligned accesses in the kernel should be rare anyway, 
+and allowing the compiler to generate them can be allowed for selected 
+files when proven beneficial.
 
-The ring buffer code can handle failed allocations just fine, and will
-free up the pages it allocated before a full success. It allocates the
-pages one at a time and adds it to a list. After all pages it wants to
-allocate has successfully been allocated, it then applies them to the
-ring buffer. If it fails an allocation, all pages are freed that were
-not added to the ring buffer yet.
-
-But the issue is, if the process increasing the size of the ring buffer
-causes the oom, it will not handle the SIGKILL until after the ring
-buffer has finished allocating. Now, if it failed to allocate, then we
-are fine, but if it does not fail, but now we start killing processes,
-then we may be in trouble.
-
-I like the NORETRY better. But then, would this mean that if we have a
-lot of cached filesystems, we wont be able to extend the ring buffer?
-
-I'm thinking the oom killer used here got lucky. As it killed this task,
-we were still out of memory, and the ring buffer failed to get the
-memory it needed and freed up everything that it previously allocated,
-and returned. Then the process calling this function would be killed by
-the OOM. Ideally, the process shouldn't be killed and the ring buffer
-just returned -ENOMEM to the user.
-
--- Steve
+It is possible that -fconserve-stack is still valuable on ARM given that 
+it is also used with -mno-unaligned-access for other things than 
+structure packing on the stack, and therefore its merits can be debated 
+independently from the alignment issue at hand.
 
 
+Nicolas
+
+--Boundary_(ID_sdj8fG6qmHXatP4rxbgU1Q)--
