@@ -1,269 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab1EZThL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:37:11 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35343 "EHLO e8.ny.us.ibm.com"
+	id S1758174Ab1EZTkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:40:42 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56058 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086Ab1EZThJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:37:09 -0400
-Subject: [PATCH V6 2/4 net-next] skbuff: Add userspace zero-copy buffers in
- skb
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>, mst@redhat.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 12:36:33 -0700
-Message-ID: <1306438593.5180.33.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1753168Ab1EZTkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:40:41 -0400
+Date: Thu, 26 May 2011 21:39:46 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, acme@redhat.com, eranian@google.com,
+        tzanussi@gmail.com, penberg@cs.helsinki.fi,
+        torvalds@linux-foundation.org, efault@gmx.de, peterz@infradead.org,
+        davej@redhat.com, davem@davemloft.net, fweisbec@gmail.com,
+        kees.cook@canonical.com, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf symbols: Handle
+ /proc/sys/kernel/kptr_restrict
+Message-ID: <20110526193946.GA6363@elte.hu>
+References: <tip-mt512joaxxbhhp1odop04yit@git.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-mt512joaxxbhhp1odop04yit@git.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds userspace buffers support in skb shared info. A new 
-struct skb_ubuf_info is needed to maintain the userspace buffers
-argument and index, a callback is used to notify userspace to release
-the buffers once lower device has done DMA (Last reference to that skb
-has gone).
 
-If there is any userspace apps to reference these userspace buffers,
-then these userspaces buffers will be copied into kernel. This way we
-can prevent userspace apps to hold these userspace buffers too long.
+* tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
 
-Signed-off-by: Shirley Ma <xma@us.ibm.com>
----
+> Commit-ID:  ec80fde746e3ccf93895d25ae1a7071c9af52585
+> Gitweb:     http://git.kernel.org/tip/ec80fde746e3ccf93895d25ae1a7071c9af52585
+> Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+> AuthorDate: Thu, 26 May 2011 09:53:51 -0300
+> Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+> CommitDate: Thu, 26 May 2011 11:15:25 -0300
+> 
+> perf symbols: Handle /proc/sys/kernel/kptr_restrict
 
- include/linux/skbuff.h |   26 +++++++++++++++
- net/core/skbuff.c      |   80 ++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 104 insertions(+), 2 deletions(-)
+Ok, things are much better now with kptr_restrict turned on - but i 
+still see a few rough edges in practice.
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index d0ae90a..025de5c 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -189,6 +189,18 @@ enum {
- 	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
- };
- 
-+/*
-+ * The callback notifies userspace to release buffers when skb DMA is done in
-+ * lower device, the skb last reference should be 0 when calling this.
-+ * The desc is used to track userspace buffer index.
-+ */
-+struct skb_ubuf_info {
-+	/* support buffers allocation from userspace */
-+	void		(*callback)(struct sk_buff *);
-+	void		*arg;
-+	size_t		desc;
-+};
-+
- /* This data is invariant across clones and lives at
-  * the end of the header data, ie. at skb->end.
-  */
-@@ -211,6 +223,10 @@ struct skb_shared_info {
- 	/* Intermediate layers must ensure that destructor_arg
- 	 * remains valid until skb destructor */
- 	void *		destructor_arg;
-+
-+	/* DMA mapping from/to userspace buffers */
-+	struct skb_ubuf_info ubuf;
-+
- 	/* must be last field, see pskb_expand_head() */
- 	skb_frag_t	frags[MAX_SKB_FRAGS];
- };
-@@ -2261,5 +2277,15 @@ static inline void skb_checksum_none_assert(struct sk_buff *skb)
- }
- 
- bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off);
-+
-+/*
-+ *	skb_ubuf - is the buffer from userspace
-+ *	@skb: buffer to check
-+ */
-+static inline int skb_ubuf(const struct sk_buff *skb)
-+{
-+	return (skb_shinfo(skb)->ubuf.callback != NULL);
-+}
-+
- #endif	/* __KERNEL__ */
- #endif	/* _LINUX_SKBUFF_H */
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 7ebeed0..890447c 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -210,6 +210,8 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	shinfo = skb_shinfo(skb);
- 	memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
- 	atomic_set(&shinfo->dataref, 1);
-+	shinfo->ubuf.callback = NULL;
-+	shinfo->ubuf.arg = NULL;
- 	kmemcheck_annotate_variable(shinfo->destructor_arg);
- 
- 	if (fclone) {
-@@ -328,6 +330,14 @@ static void skb_release_data(struct sk_buff *skb)
- 				put_page(skb_shinfo(skb)->frags[i].page);
- 		}
- 
-+		/*
-+		 * if skb buf is from userspace, we need to notify the caller
-+		 * the lower device DMA has done;
-+		 */
-+		if (skb_ubuf(skb)) {
-+			skb_shinfo(skb)->ubuf.callback(skb);
-+			skb_shinfo(skb)->ubuf.callback = NULL;
-+		}
- 		if (skb_has_frag_list(skb))
- 			skb_drop_fraglist(skb);
- 
-@@ -480,6 +490,9 @@ bool skb_recycle_check(struct sk_buff *skb, int skb_size)
- 	if (irqs_disabled())
- 		return false;
- 
-+	if (skb_ubuf(skb))
-+		return false;
-+
- 	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
- 		return false;
- 
-@@ -572,6 +585,7 @@ static struct sk_buff *__skb_clone(struct sk_buff *n, struct sk_buff *skb)
- 	atomic_set(&n->users, 1);
- 
- 	atomic_inc(&(skb_shinfo(skb)->dataref));
-+	skb_shinfo(skb)->ubuf.callback = NULL;
- 	skb->cloned = 1;
- 
- 	return n;
-@@ -595,6 +609,48 @@ struct sk_buff *skb_morph(struct sk_buff *dst, struct sk_buff *src)
- }
- EXPORT_SYMBOL_GPL(skb_morph);
- 
-+/* skb frags copy userspace buffers to kernel */
-+static int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask)
-+{
-+	int i;
-+	int num_frags = skb_shinfo(skb)->nr_frags;
-+	struct page *page, *head = NULL;
-+
-+	for (i = 0; i < num_frags; i++) {
-+		u8 *vaddr;
-+		skb_frag_t *f = &skb_shinfo(skb)->frags[i];
-+
-+		page = alloc_page(GFP_ATOMIC);
-+		if (!page) {
-+			while (head) {
-+				put_page(head);
-+				head = (struct page *)head->private;
-+			}
-+			return -ENOMEM;
-+		}
-+		vaddr = kmap_skb_frag(&skb_shinfo(skb)->frags[i]);
-+		memcpy(page_address(page), vaddr + f->page_offset, f->size);
-+		kunmap_skb_frag(vaddr);
-+		page->private = (unsigned long)head;
-+		head = page;
-+	}
-+
-+	/* skb frags release userspace buffers */
-+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
-+		put_page(skb_shinfo(skb)->frags[i].page);
-+	skb_shinfo(skb)->ubuf.callback(skb);
-+	skb_shinfo(skb)->ubuf.callback = NULL;
-+
-+	/* skb frags point to kernel buffers */
-+	for (i = skb_shinfo(skb)->nr_frags; i > 0; i--) {
-+		skb_shinfo(skb)->frags[i - 1].page_offset = 0;
-+		skb_shinfo(skb)->frags[i - 1].page = head;
-+		head = (struct page *)head->private;
-+	}
-+	return 0;
-+}
-+
-+
- /**
-  *	skb_clone	-	duplicate an sk_buff
-  *	@skb: buffer to clone
-@@ -613,6 +669,11 @@ struct sk_buff *skb_clone(struct sk_buff *skb, gfp_t gfp_mask)
- {
- 	struct sk_buff *n;
- 
-+	if (skb_ubuf(skb)) {
-+		if (skb_copy_ubufs(skb, gfp_mask))
-+			return NULL;
-+	}
-+
- 	n = skb + 1;
- 	if (skb->fclone == SKB_FCLONE_ORIG &&
- 	    n->fclone == SKB_FCLONE_UNAVAILABLE) {
-@@ -730,6 +791,12 @@ struct sk_buff *pskb_copy(struct sk_buff *skb, gfp_t gfp_mask)
- 	if (skb_shinfo(skb)->nr_frags) {
- 		int i;
- 
-+		if (skb_ubuf(skb)) {
-+			if (skb_copy_ubufs(skb, gfp_mask)) {
-+				kfree(n);
-+				goto out;
-+			}
-+		}
- 		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
- 			skb_shinfo(n)->frags[i] = skb_shinfo(skb)->frags[i];
- 			get_page(skb_shinfo(n)->frags[i].page);
-@@ -743,6 +810,7 @@ struct sk_buff *pskb_copy(struct sk_buff *skb, gfp_t gfp_mask)
- 	}
- 
- 	copy_skb_header(n, skb);
-+
- out:
- 	return n;
- }
-@@ -787,7 +855,6 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
- 		fastpath = true;
- 	else {
- 		int delta = skb->nohdr ? (1 << SKB_DATAREF_SHIFT) + 1 : 1;
--
- 		fastpath = atomic_read(&skb_shinfo(skb)->dataref) == delta;
- 	}
- 
-@@ -818,14 +885,19 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
- 	if (fastpath) {
- 		kfree(skb->head);
- 	} else {
-+		/* copy this zero copy skb frags */
-+		if (skb_ubuf(skb)) {
-+			if (skb_copy_ubufs(skb, gfp_mask))
-+				goto nofrags;
-+		}
- 		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
- 			get_page(skb_shinfo(skb)->frags[i].page);
--
- 		if (skb_has_frag_list(skb))
- 			skb_clone_fraglist(skb);
- 
- 		skb_release_data(skb);
- 	}
-+
- 	off = (data + nhead) - skb->head;
- 
- 	skb->head     = data;
-@@ -852,6 +924,8 @@ adjust_others:
- 	atomic_set(&skb_shinfo(skb)->dataref, 1);
- 	return 0;
- 
-+nofrags:
-+	kfree(data);
- nodata:
- 	return -ENOMEM;
- }
-@@ -1353,6 +1427,8 @@ int skb_copy_bits(const struct sk_buff *skb, int offset, void *to, int len)
- 		}
- 		start = end;
- 	}
-+	skb_shinfo(skb)->ubuf.callback = NULL;
-+
- 	if (!len)
- 		return 0;
- 
+For example 'perf top' says:
+
+  aldebaran:~/linux> perf top
+  [kernel.kallsyms] with build id 122214021a666675f6e5ff97d70a85ce7139c0e7 not found, continuing without symbols
+  The (null) file can't be used
+
+Now we've confused the user, havent we? :-)
+
+Also, if i run 'perf top' with the proper vmlinux in the cwd, i do 
+not get any warning messages - despite both module symbols not being 
+available and potetial relocations not being considered.
+
+Secondly, even though i have the proper 'vmlinux' in cwd, i get half 
+a page long warnings on perf record warning me about the vmlinux:
+
+  WARNING: Kernel address maps (/proc/{kallsyms,modules}) are restricted, check /proc/sys/kernel/kptr_restrict.
+
+  Samples in kernel functions may not be resolved if a suitable 
+  vmlinux file is not found in the buildid cache or in the vmlinux 
+  path.
+
+  ...
+
+But a vmlinux file *is* in the cwd.
+
+One detail i noticed in the patch:
+
+>  	symbol__init();
+>  
+> +	if (symbol_conf.kptr_restrict)
+> +		pr_warning("WARNING: Kernel address maps "
+> +			   "(/proc/{kallsyms,modules}) are restricted, "
+> +			   "check /proc/sys/kernel/kptr_restrict.\n\n"
+> +			   "Samples in kernel functions may not be resolved "
+> +			   "if a suitable vmlinux file is not found in the "
+> +			   "buildid cache or in the vmlinux path.\n\n"
+> +			   "Samples in kernel modules won't be resolved "
+> +			   "at all.\n\n"
+> +			   "If some relocation was applied (e.g. kexec) "
+> +			   "symbols may be misresolved even with a suitable "
+> +			   "vmlinux or kallsyms file.\n\n");
 
 
+messages broken mid-line just to make it look better is really bad 
+and can break git grep searches for the string as seen on the screen, 
+such as:
+
+   git grep="are restricted, check"
+
+The solution i use in such cases is to deviate in a common-sense way 
+from the standard coding style:
+
+	if (symbol_conf.kptr_restrict) {
+		pr_warning(
+"WARNING: Kernel address maps (/proc/{kallsyms,modules}) are restricted, check /proc/sys/kernel/kptr_restrict.\n\n"
+"Samples in kernel functions may not be resolved if a suitable vmlinux file is not found in the buildid cache or in the vmlinux path.\n\n"
+"Samples in kernel modules won't be resolved at all.\n\n"
+"If some relocation was applied (e.g. kexec) symbols may be misresolved even with a suitable vmlinux or kallsyms file.\n\n");
+	}
+
+This has the big advantage that you can check how the *user* will see 
+this message.
+
+Had you done this you'd have immediately noticed that the individual 
+lines are *way* too large to fit on even large terminals. Please 
+break such messages in a much shorter fashion - we want the error 
+messages we output to be readable even on relatively small (80col) 
+terminals.
+
+Thanks,
+
+	Ingo
