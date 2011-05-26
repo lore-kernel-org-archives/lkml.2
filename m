@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619Ab1EZNI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 09:08:59 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56241 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab1EZNI6 (ORCPT
+	id S932359Ab1EZNRs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 09:17:48 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:58796 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259Ab1EZNRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 09:08:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=hqluiq7y7LZGeyBRcGz7xE6DXs0A9lmPHEBA8RALbYjq2WydTxHz8P+51aat5uKYKP
-         e19uDr2f5r+dpeDy2IpiP7SRE60YWnRxutc3+afinx/7oN6tuAryD7TRHagBIeqXO2+m
-         KGZ+JoILJiFG2Dm/p73R7G2Hf7zXDZEPvk5w8=
-MIME-Version: 1.0
-Date: Thu, 26 May 2011 21:08:56 +0800
-Message-ID: <BANLkTin1QYAx7as41t78-n0giLSBWoToVA@mail.gmail.com>
-Subject: [PATCH] sched: remove noop in pre_schedule_rt()
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 26 May 2011 09:17:47 -0400
+Date: Thu, 26 May 2011 15:14:20 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Greg KH <greg@kroah.com>, kevin.tian@intel.com, dkiper@net-space.pl,
+        Rzeszutek@dumpdata.com, Wilk@dumpdata.com, stable@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [stable] [PATCH] Xen bug-fixes for 2.6.39 (already in 2.6.40)
+Message-ID: <20110526131420.GA20201@router-fw-old.local.net-space.pl>
+References: <1306359456-3627-1-git-send-email-konrad.wilk@oracle.com> <20110526070239.GB29833@kroah.com> <20110526123921.GB3386@dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526123921.GB3386@dumpdata.com>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checking task to be RT is removed since only RT task is served here.
+On Thu, May 26, 2011 at 08:39:21AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Thu, May 26, 2011 at 12:02:39AM -0700, Greg KH wrote:
+> > On Wed, May 25, 2011 at 05:37:32PM -0400, Konrad@dumpdata.com wrote:
+> > > Hey stable-tree maintainer(s).
+> > >
+> > > The follow four patches are in the 2.6.40 tree and should be back-ported to 2.6.39 (only).
+> > > I forgot to CC:stable on them, so manually doing it here.
+> > >
+> > > The four patches in question have the following git commits:
+> > >
+> > > 8c5950881c3b5e6e350e4b0438a8ccc513d90df9
+> > >     xen/p2m: Create entries in the P2M_MFN trees's to track 1-1 mappings
+> > > 0f16d0dfcdb5aab97d9e368f008b070b5b3ec6d3
+> > >     xen/setup: Fix for incorrect xen_extra_mem_start initialization under 32-bit
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+Acked-by: Daniel Kiper <dkiper@net-space.pl>
+(author of xen/setup: Fix for incorrect xen_extra_mem_start initialization under 32-bit patch)
 
---- tip-git/kernel/sched_rt.c	Sun May 22 20:12:01 2011
-+++ sched_rt.c	Thu May 26 21:11:19 2011
-@@ -1516,7 +1516,7 @@ skip:
- static void pre_schedule_rt(struct rq *rq, struct task_struct *prev)
- {
- 	/* Try to pull RT tasks here if we lower this rq's prio */
--	if (unlikely(rt_task(prev)) && rq->rt.highest_prio.curr > prev->prio)
-+	if (rq->rt.highest_prio.curr > prev->prio)
- 		pull_rt_task(rq);
- }
+Daniel
