@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab1E0BHh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 21:07:37 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41238
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752156Ab1E0BHg (ORCPT
+	id S932884Ab1EZUjX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:39:23 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:42129 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758238Ab1EZUjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 21:07:36 -0400
-X-Greylist: delayed 9730 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 May 2011 21:07:36 EDT
-Subject: Re: [PATCH] cpumask: convert cpumask_of_cpu() with cpumask_of()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20110427193419.D17F.A69D9226@jp.fujitsu.com>
-References: <1303814572.20212.249.camel@twins>
-	 <20110426203520.F3AE.A69D9226@jp.fujitsu.com>
-	 <20110427193419.D17F.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 22:38:47 +0200
-Message-ID: <1306442327.2497.108.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 16:39:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=yhVe+I3Nm9dZdA5fwQn5nHyyPuuwQPYPNN/lS9y8XN3LJruGNqqbxp5hHb7BdH8phi
+         SBfuQpGQUitRbWCBHmDw==
+MIME-Version: 1.0
+In-Reply-To: <BANLkTi=FTkPCVEMdKBgwg61hKDvgpJ6oRA@mail.gmail.com>
+References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
+ <sig.512079e334.4DD57D44.50009@radicalsystems.co.za> <BANLkTikHQNQdWoDS2dXUC9gTPWvtmUM=yA@mail.gmail.com>
+ <sig.51214cae32.4DD61B48.8010601@radicalsystems.co.za> <BANLkTi=jTKp9+_KDmTxYfGXe6Ln02GLmDA@mail.gmail.com>
+ <sig.6125c0d242.4DDB86FE.5090809@radicalsystems.co.za> <BANLkTi=FTkPCVEMdKBgwg61hKDvgpJ6oRA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 26 May 2011 14:38:55 -0600
+Message-ID: <BANLkTikm0fkii_SyoJ4W1j+nZD-ErS+o-A@mail.gmail.com>
+Subject: Re: PCI BAR1 Unassigned
+To: Jan Zwiegers <jan@radicalsystems.co.za>
+Cc: Xianghua Xiao <xiaoxianghua@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=000e0cd299a6c0217504a433d099
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-27 at 19:32 +0900, KOSAKI Motohiro wrote:
-> 
-> I've made concept proof patch today. The result is better than I expected.
-> 
-> <before>
->  Performance counter stats for 'hackbench 10 thread 1000' (10 runs):
-> 
->          1603777813  cache-references         #     56.987 M/sec   ( +-   1.824% )  (scaled from 25.36%)
->            13780381  cache-misses             #      0.490 M/sec   ( +-   1.360% )  (scaled from 25.55%)
->         24872032348  L1-dcache-loads          #    883.770 M/sec   ( +-   0.666% )  (scaled from 25.51%)
->           640394580  L1-dcache-load-misses    #     22.755 M/sec   ( +-   0.796% )  (scaled from 25.47%)
-> 
->        14.162411769  seconds time elapsed   ( +-   0.675% )
-> 
-> <after>
->  Performance counter stats for 'hackbench 10 thread 1000' (10 runs):
-> 
->          1416147603  cache-references         #     51.566 M/sec   ( +-   4.407% )  (scaled from 25.40%)
->            10920284  cache-misses             #      0.398 M/sec   ( +-   5.454% )  (scaled from 25.56%)
->         24666962632  L1-dcache-loads          #    898.196 M/sec   ( +-   1.747% )  (scaled from 25.54%)
->           598640329  L1-dcache-load-misses    #     21.798 M/sec   ( +-   2.504% )  (scaled from 25.50%)
-> 
->        13.812193312  seconds time elapsed   ( +-   1.696% )
-> 
->  * datail data is in result.txt
-> 
-> 
-> The trick is,
->  - Typical linux userland applications don't use mempolicy and/or cpusets
->    API at all.
->  - Then, 99.99% thread's  tsk->cpus_alloed have cpu_all_mask.
->  - cpu_all_mask case, every thread can share the same bitmap. It may help to
->    reduce L1 cache miss in scheduler.
-> 
-> What do you think? 
+--000e0cd299a6c0217504a433d099
+Content-Type: text/plain; charset=ISO-8859-1
 
-Nice!
+Jan, would you mind testing the attached patch?  This is against
+current upstream, but I think it will apply without much trouble to
+2.6.35; I don't think there have been many changes in that area.
+Thanks.
 
-If you finish the first patch (sort the TODOs) I'll take it.
+--000e0cd299a6c0217504a433d099
+Content-Type: application/octet-stream; name="patch.pci"
+Content-Disposition: attachment; filename="patch.pci"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_go65y64i0
 
-I'm unsure about the PF_THREAD_UNBOUND thing though, then again, the
-alternative is adding another struct cpumask * and have that point to
-the shared mask or the private mask.
-
-But yeah, looks quite feasible.
-
+Y29tbWl0IGZiZWVkOTQ2YmU4MjdiNDZmNjgwMTMzMmVmMGZkYzliMDA5MzllODEKQXV0aG9yOiBC
+am9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpEYXRlOiAgIFR1ZSBNYXkgMjQgMDY6
+NDg6MjIgMjAxMSAtMDYwMAoKICAgIFBDSTogcGFzcyBwY2lfZGV2IHRvIGRlY29kZV9iYXIoKSBm
+b3IgdXNlIGluIGRldl93YXJuKCkKICAgIAogICAgUGFzcyBpbiBwY2lfZGV2IHBvaW50ZXIgZm9y
+IGZ1dHVyZSB1c2UgaW4gd2FybmluZyBtZXNzYWdlcy4KICAgIAogICAgU2lnbmVkLW9mZi1ieTog
+Qmpvcm4gSGVsZ2FhcyA8YmhlbGdhYXNAZ29vZ2xlLmNvbT4KCmRpZmYgLS1naXQgYS9kcml2ZXJz
+L3BjaS9wcm9iZS5jIGIvZHJpdmVycy9wY2kvcHJvYmUuYwppbmRleCA0NGNiYmJhLi43NzBiNjMy
+IDEwMDY0NAotLS0gYS9kcml2ZXJzL3BjaS9wcm9iZS5jCisrKyBiL2RyaXZlcnMvcGNpL3Byb2Jl
+LmMKQEAgLTEzNiw3ICsxMzYsOCBAQCBzdGF0aWMgdTY0IHBjaV9zaXplKHU2NCBiYXNlLCB1NjQg
+bWF4YmFzZSwgdTY0IG1hc2spCiAJcmV0dXJuIHNpemU7CiB9CiAKLXN0YXRpYyBpbmxpbmUgZW51
+bSBwY2lfYmFyX3R5cGUgZGVjb2RlX2JhcihzdHJ1Y3QgcmVzb3VyY2UgKnJlcywgdTMyIGJhcikK
+K3N0YXRpYyBpbmxpbmUgZW51bSBwY2lfYmFyX3R5cGUgZGVjb2RlX2JhcihzdHJ1Y3QgcGNpX2Rl
+diAqZGV2LAorCQkJCQkgICBzdHJ1Y3QgcmVzb3VyY2UgKnJlcywgdTMyIGJhcikKIHsKIAlpZiAo
+KGJhciAmIFBDSV9CQVNFX0FERFJFU1NfU1BBQ0UpID09IFBDSV9CQVNFX0FERFJFU1NfU1BBQ0Vf
+SU8pIHsKIAkJcmVzLT5mbGFncyA9IGJhciAmIH5QQ0lfQkFTRV9BRERSRVNTX0lPX01BU0s7CkBA
+IC0yMDAsNyArMjAxLDcgQEAgaW50IF9fcGNpX3JlYWRfYmFzZShzdHJ1Y3QgcGNpX2RldiAqZGV2
+LCBlbnVtIHBjaV9iYXJfdHlwZSB0eXBlLAogCQlsID0gMDsKIAogCWlmICh0eXBlID09IHBjaV9i
+YXJfdW5rbm93bikgewotCQl0eXBlID0gZGVjb2RlX2JhcihyZXMsIGwpOworCQl0eXBlID0gZGVj
+b2RlX2JhcihkZXYsIHJlcywgbCk7CiAJCXJlcy0+ZmxhZ3MgfD0gcGNpX2NhbGNfcmVzb3VyY2Vf
+ZmxhZ3MobCkgfCBJT1JFU09VUkNFX1NJWkVBTElHTjsKIAkJaWYgKHR5cGUgPT0gcGNpX2Jhcl9p
+bykgewogCQkJbCAmPSBQQ0lfQkFTRV9BRERSRVNTX0lPX01BU0s7CmNvbW1pdCA1ZDIwZTJkMDQ2
+YmU2ODY3MTg4OTg2ZWVmNGI0Y2Q2ZWM5ZjI3ODgyCkF1dGhvcjogQmpvcm4gSGVsZ2FhcyA8Ymhl
+bGdhYXNAZ29vZ2xlLmNvbT4KRGF0ZTogICBGcmkgTWF5IDIwIDA4OjM2OjMwIDIwMTEgLTA2MDAK
+CiAgICBQQ0k6IGRvbid0IHRyZWF0IG1lbSBCQVIgdHlwZSAiMTEiIChyZXNlcnZlZCkgYXMgNjQt
+Yml0IEJBUgogICAgCiAgICBUaGUgbG93IGZvdXIgYml0cyBvZiBhIGEgbWVtb3J5IEJBUiBhcmUg
+InB0dDAiIHdoZXJlIHA9MSBmb3IgcHJlZmV0Y2hhYmxlCiAgICBCQVJzLCBhbmQgdHQgaXMgYXMg
+Zm9sbG93czoKICAgIAogICAgICAwMCAgMzItYml0IEJBUiwgYW55d2hlcmUgaW4gbG93ZXIgNEdC
+CiAgICAgIDAxICBhbnl3aGVyZSBiZWxvdyAxTUIgKHJlc2VydmVkIGFzIG9mIFBDSSAyLjIpCiAg
+ICAgIDEwICA2NC1iaXQgQkFSCiAgICAgIDExICByZXNlcnZlZAogICAgCiAgICBQcmlvciB0byBl
+MzU0NTk3Y2NlLCB3ZSB0cmVhdGVkICIwMTAwIiBhcyBhIDY0LWJpdCBCQVIgYW5kIGFsbCBvdGhl
+cnMgYXMKICAgIDMyLWJpdCBCQVJzLiAgVGhpcyB3YXMgb2J2aW91c2x5IHdyb25nIGJlY2F1c2Ug
+cHJlZmV0Y2hhYmxlIDY0LWJpdCBCQVJzCiAgICAoIjExMDAiKSB3ZXJlIHRyZWF0ZWQgYXMgMzIt
+Yml0IEJBUnMuCiAgICAKICAgIFRoZSBlMzU0NTk3Y2NlIGZpeCwgd2hpY2ggYXBwZWFyZWQgaW4g
+Mi42LjI4LCB3YXMgdG8gdHJlYXQgIngxeDAiIGFzIDY0LWJpdAogICAgQkFScywgYnV0IHRoaXMg
+dW5pbnRlbnRpb25hbGx5IGNoYW5nZWQgb3VyIGhhbmRsaW5nIG9mIHJlc2VydmVkIHR5cGUgIngx
+MTAiCiAgICBmcm9tIDMyLWJpdCB0byA2NC1iaXQuCiAgICAKICAgIEhhcmR3YXJlIHNob3VsZCBu
+b3QgYmUgdXNpbmcgdGhlICIxMSIgdHlwZSwgYnV0IGlmIGl0IGRpZCBoYXBwZW4gdG8gdXNlIGl0
+CiAgICBmb3IgYSAzMi1iaXQgQkFSLCBpdCB3b3JrZWQgYmVmb3JlIGUzNTQ1OTdjY2UgYW5kIGRp
+ZG4ndCB3b3JrIGFmdGVyd2FyZHMuCiAgICBKYW4gaGFzIGEgcGllY2Ugb2Ygc3VjaCBoYXJkd2Fy
+ZS4KICAgIAogICAgVGhpcyBwYXRjaCByZXR1cm5zIHRvIHRyZWF0aW5nIHRoZSByZXNlcnZlZCAi
+MTEiIHR5cGUgYXMgYSAzMi1iaXQgQkFSIGFuZAogICAgYWRkcyBhIHdhcm5pbmcgaWYgd2Ugc2Vl
+IGl0LgogICAgCiAgICBJdCBhbHNvIGxvZ3MgYSBub3RlIGlmIHdlIHNlZSBhIDFNIEJBUi4gIFRo
+aXMgaXMgbm90IGEgd2FybmluZywgYmVjYXVzZQogICAgc3VjaCBoYXJkd2FyZSBjb25mb3JtcyB0
+byBwcmUtUENJIDIuMiBzcGVjLCBidXQgSSB0aGluayBpdCdzIHdvcnRoIG5vdGluZwogICAgYmVj
+YXVzZSBMaW51eCBpZ25vcmVzIHRoZSAxTSByZXN0cmljdGlvbiBpZiBpdCBldmVyIGhhcyB0byBh
+c3NpZ24gdGhlIEJBUi4KICAgIAogICAgQ0M6IFBldGVyIENodWJiIDxwZXRlcmNAZ2VsYXRvLnVu
+c3cuZWR1LmF1PgogICAgQnVnemlsbGE6IGh0dHBzOi8vYnVnemlsbGEua2VybmVsLm9yZy9zaG93
+X2J1Zy5jZ2k/aWQ9MzU5NTIKICAgIFJlcG9ydGVkLWJ5OiBKYW4gWndpZWdlcnMgPGphbkByYWRp
+Y2Fsc3lzdGVtcy5jby56YT4KICAgIFNpZ25lZC1vZmYtYnk6IEJqb3JuIEhlbGdhYXMgPGJoZWxn
+YWFzQGdvb2dsZS5jb20+CgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9wY2kvcHJvYmUuYyBiL2RyaXZl
+cnMvcGNpL3Byb2JlLmMKaW5kZXggNzcwYjYzMi4uNjAyYjJjNCAxMDA2NDQKLS0tIGEvZHJpdmVy
+cy9wY2kvcHJvYmUuYworKysgYi9kcml2ZXJzL3BjaS9wcm9iZS5jCkBAIC0xMzksMTYgKzEzOSwz
+MSBAQCBzdGF0aWMgdTY0IHBjaV9zaXplKHU2NCBiYXNlLCB1NjQgbWF4YmFzZSwgdTY0IG1hc2sp
+CiBzdGF0aWMgaW5saW5lIGVudW0gcGNpX2Jhcl90eXBlIGRlY29kZV9iYXIoc3RydWN0IHBjaV9k
+ZXYgKmRldiwKIAkJCQkJICAgc3RydWN0IHJlc291cmNlICpyZXMsIHUzMiBiYXIpCiB7CisJdTMy
+IG1lbV90eXBlOworCiAJaWYgKChiYXIgJiBQQ0lfQkFTRV9BRERSRVNTX1NQQUNFKSA9PSBQQ0lf
+QkFTRV9BRERSRVNTX1NQQUNFX0lPKSB7CiAJCXJlcy0+ZmxhZ3MgPSBiYXIgJiB+UENJX0JBU0Vf
+QUREUkVTU19JT19NQVNLOwogCQlyZXR1cm4gcGNpX2Jhcl9pbzsKIAl9CiAKLQlyZXMtPmZsYWdz
+ID0gYmFyICYgflBDSV9CQVNFX0FERFJFU1NfTUVNX01BU0s7Ci0KLQlpZiAocmVzLT5mbGFncyAm
+IFBDSV9CQVNFX0FERFJFU1NfTUVNX1RZUEVfNjQpCisJcmVzLT5mbGFncyA9IGJhciAmIFBDSV9C
+QVNFX0FERFJFU1NfTUVNX1BSRUZFVENIOworCisJbWVtX3R5cGUgPSBiYXIgJiBQQ0lfQkFTRV9B
+RERSRVNTX01FTV9UWVBFX01BU0s7CisJc3dpdGNoIChtZW1fdHlwZSkgeworCWNhc2UgUENJX0JB
+U0VfQUREUkVTU19NRU1fVFlQRV8zMjoKKwkJcmV0dXJuIHBjaV9iYXJfbWVtMzI7CisJY2FzZSBQ
+Q0lfQkFTRV9BRERSRVNTX01FTV9UWVBFXzFNOgorCQlkZXZfaW5mbygmZGV2LT5kZXYsICIxTSBt
+ZW0gQkFSIHRyZWF0ZWQgYXMgMzItYml0IEJBUlxuIik7CisJCXJldHVybiBwY2lfYmFyX21lbTMy
+OworCWNhc2UgUENJX0JBU0VfQUREUkVTU19NRU1fVFlQRV82NDoKKwkJcmVzLT5mbGFncyB8PSBQ
+Q0lfQkFTRV9BRERSRVNTX01FTV9UWVBFXzY0OwogCQlyZXR1cm4gcGNpX2Jhcl9tZW02NDsKLQly
+ZXR1cm4gcGNpX2Jhcl9tZW0zMjsKKwlkZWZhdWx0OgorCQlkZXZfd2FybigmZGV2LT5kZXYsCisJ
+CQkgIm1lbSB1bmtub3duIHR5cGUgJXggdHJlYXRlZCBhcyAzMi1iaXQgQkFSXG4iLAorCQkJIG1l
+bV90eXBlKTsKKwkJcmV0dXJuIHBjaV9iYXJfbWVtMzI7CisJfQogfQogCiAvKioK
+--000e0cd299a6c0217504a433d099--
