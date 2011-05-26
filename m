@@ -1,283 +1,922 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab1EZIZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 04:25:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44936 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754177Ab1EZIZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 04:25:35 -0400
-Date: Thu, 26 May 2011 10:24:51 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: James Morris <jmorris@namei.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, gnatapov@redhat.com,
-        Chris Wright <chrisw@sous-sol.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-Message-ID: <20110526082451.GB26775@elte.hu>
-References: <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
- <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
- <1306254027.18455.47.camel@twins>
- <20110524195435.GC27634@elte.hu>
- <alpine.LFD.2.02.1105242239230.3078@ionos>
- <20110525150153.GE29179@elte.hu>
- <alpine.LFD.2.02.1105251836030.3078@ionos>
- <20110525180100.GY19633@outflux.net>
- <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
- <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org>
+	id S1755737Ab1EZIZO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 04:25:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34009 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754569Ab1EZIZJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 04:25:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=cHB5fMOb38Xkh3xlIhGUCghWI4W7kB2P1YMCbIflFybLaZnnIQPYfPcKbbNmF+vrl1
+         CfV/AGEz5dMqjbkkl/c95JNMlzQiS4L/qnBEqRg9uvEy3B4U37kiaX1BadxAQUUAbHkU
+         CFBD5o5eAO4TIpp1kgIog+lf/5IYNjRrvfSK8=
+Date: Thu, 26 May 2011 01:25:02 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Chris Hudson <chudson@kionix.com>
+Cc: linux-input@vger.kernel.org, jonathan.cameron@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] input: Add support for Kionix KXTJ9 accelerometer
+Message-ID: <20110526082502.GB1388@core.coreip.homeip.net>
+References: <>
+ <1306273877-28503-1-git-send-email-chudson@kionix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1306273877-28503-1-git-send-email-chudson@kionix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Chris,
 
-* James Morris <jmorris@namei.org> wrote:
+On Tue, May 24, 2011 at 05:51:17PM -0400, Chris Hudson wrote:
+> Many small changes and some larger ones in this version (thanks Jonathan!).
 
-> On Wed, 25 May 2011, Linus Torvalds wrote:
+Sorry for the late review.
+
 > 
-> > And per-system-call permissions are very dubious. What system 
-> > calls don't you want to succeed? That ioctl? You just made it 
-> > impossible to do a modern graphical application. Yet the kind of 
-> > thing where we would _want_ to help users is in making it easier 
-> > to sandbox something like the adobe flash player. But without 
-> > accelerated direct rendering, that's not going to fly, is it?
+> Note the custom i2c_read funtion is used to ensure block read functionality;
+> on my test hardware my function works but i2c_smbus_read_block_data does not
+> for some reason.
 > 
-> Going back to the initial idea proposed by Will, where seccomp is 
-> simply extended to filter all syscalls, there is potential benefit 
-> in being able to limit the attack surface of the syscall API.
+> I also have an RFC on linux-input regarding the usage of the delay sysfs
+> attribute.  Currently it accepts an integer in milliseconds, and uses this to
+> set the output data rate of the part and the new poll interval if applicable,
+> and I want to be sure that this is a reasonable implementation.
 
-If controlling the system call boundary is found to be useful then 
-the logical next logical step is to realize that limiting it to 
-*only* the syscall boundary is shortsighted.
+I'd probably either switch to input_polldev infrastructure when device
+is in polled mode or just emulated input_polldev sysfs knobs.
 
-Also, here's a short reminder of the complexity evolution of this 
-patch-set, which i've followed since it's been first posted in 2009:
+> There is also some discussion about the axis_map and negate platform data
+> variables.  Currently the system is set up so that the device manufacturer can
+> mount the sensor in any orientation within the host device, and still have the
+> driver output data relative to the device instead of the part itself.  The
+> current implementation also allows the device manufacturer to support their
+> chosen operating system's API requirements for axis direction (right-hand-rule
+> vs. left-hand-rule), but at 6 variables it could be a little confusing or
+> excessive.
+> 
+> Signed-off-by: Chris Hudson <chudson@kionix.com>
+> ---
+>  drivers/input/misc/Kconfig  |   10 +
+>  drivers/input/misc/Makefile |    1 +
+>  drivers/input/misc/kxtj9.c  |  635 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/input/kxtj9.h |   90 ++++++
+>  4 files changed, 736 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/input/misc/kxtj9.c
+>  create mode 100644 include/linux/input/kxtj9.h
+> 
+> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+> index f9cf088..567f3d2 100644
+> --- a/drivers/input/misc/Kconfig
+> +++ b/drivers/input/misc/Kconfig
+> @@ -467,4 +467,14 @@ config INPUT_XEN_KBDDEV_FRONTEND
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called xen-kbdfront.
+>  
+> +config INPUT_KXTJ9
+> +	tristate "Kionix KXTJ9 tri-axis digital accelerometer"
+> +	depends on I2C && SYSFS
+> +	help
+> +	  If you say yes here you get support for the Kionix KXTJ9 digital
+> +	  tri-axis accelerometer.
+> +
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called kxtj9.
+> +
+>  endif
+> diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+> index e3f7984..f2477ef 100644
+> --- a/drivers/input/misc/Makefile
+> +++ b/drivers/input/misc/Makefile
+> @@ -25,6 +25,7 @@ obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
+>  obj-$(CONFIG_HP_SDC_RTC)		+= hp_sdc_rtc.o
+>  obj-$(CONFIG_INPUT_IXP4XX_BEEPER)	+= ixp4xx-beeper.o
+>  obj-$(CONFIG_INPUT_KEYSPAN_REMOTE)	+= keyspan_remote.o
+> +obj-$(CONFIG_INPUT_KXTJ9)		+= kxtj9.o
+>  obj-$(CONFIG_INPUT_M68K_BEEP)		+= m68kspkr.o
+>  obj-$(CONFIG_INPUT_MAX8925_ONKEY)	+= max8925_onkey.o
+>  obj-$(CONFIG_INPUT_PCAP)		+= pcap_keys.o
+> diff --git a/drivers/input/misc/kxtj9.c b/drivers/input/misc/kxtj9.c
+> new file mode 100644
+> index 0000000..5f4cd66
+> --- /dev/null
+> +++ b/drivers/input/misc/kxtj9.c
+> @@ -0,0 +1,635 @@
+> +/*
+> + * Copyright (C) 2011 Kionix, Inc.
+> + * Written by Chris Hudson <chudson@kionix.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+> + * 02111-1307, USA
+> + */
+> +
+> +#include <linux/delay.h>
+> +#include <linux/i2c.h>
+> +#include <linux/input.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/slab.h>
+> +#include <linux/input/kxtj9.h>
+> +
+> +#define NAME			"kxtj9"
+> +#define G_MAX			8000
+> +/* OUTPUT REGISTERS */
+> +#define XOUT_L			0x06
+> +#define WHO_AM_I		0x0F
+> +/* CONTROL REGISTERS */
+> +#define INT_REL			0x1A
+> +#define CTRL_REG1		0x1B
+> +#define INT_CTRL1		0x1E
+> +#define DATA_CTRL		0x21
+> +/* CONTROL REGISTER 1 BITS */
+> +#define PC1_OFF			0x7F
+> +#define PC1_ON			0x80
+> +/* INPUT_ABS CONSTANTS */
+> +#define FUZZ			3
+> +#define FLAT			3
+> +/* RESUME STATE INDICES */
+> +#define RES_DATA_CTRL		0
+> +#define RES_CTRL_REG1		1
+> +#define RES_INT_CTRL1		2
+> +#define RESUME_ENTRIES		3
+> +
+> +/*
+> + * The following table lists the maximum appropriate poll interval for each
+> + * available output data rate.
+> + */
+> +static const struct {
+> +	unsigned int cutoff;
+> +	u8 mask;
+> +} kxtj9_odr_table[] = {
+> +	{
+> +	3,	ODR800F}, {
+> +	5,	ODR400F}, {
+> +	10,	ODR200F}, {
+> +	20,	ODR100F}, {
+> +	40,	ODR50F}, {
+> +	80,	ODR25F}, {
+> +	0,	ODR12_5F},
+> +};
+> +
+> +struct kxtj9_data {
+> +	struct i2c_client *client;
+> +	struct kxtj9_platform_data pdata;
+> +	struct mutex lock;
+> +	struct delayed_work input_work;
+> +	struct input_dev *input_dev;
+> +
+> +	bool hw_initialized;
+> +	atomic_t enabled;
+> +	u8 shift;
+> +	u8 resume[RESUME_ENTRIES];
+> +};
+> +
+> +static int kxtj9_i2c_read(struct kxtj9_data *tj9, u8 addr, u8 *data, int len)
+> +{
+> +	int err;
+> +
+> +	struct i2c_msg msgs[] = {
+> +		{
+> +		 .addr = tj9->client->addr,
+> +		 .flags = tj9->client->flags,
+> +		 .len = 1,
+> +		 .buf = &addr,
+> +		 },
+> +		{
+> +		 .addr = tj9->client->addr,
+> +		 .flags = tj9->client->flags | I2C_M_RD,
+> +		 .len = len,
+> +		 .buf = data,
+> +		 },
+> +	};
+> +	err = i2c_transfer(tj9->client->adapter, msgs, 2);
+> +
+> +	return err;
+> +}
+> +
+> +static int kxtj9_verify(struct kxtj9_data *tj9)
+> +{
+> +	int ret;
+> +
+> +	ret = i2c_smbus_read_byte_data(tj9->client, WHO_AM_I);
+> +	if (ret < 0)
+> +		dev_err(&tj9->client->dev, "read err int source\n");
+> +	if (ret != 0x06)
+> +		ret = -1;
 
-       bitmask (2009):  6 files changed,  194 insertions(+), 22 deletions(-)
- filter engine (2010): 18 files changed, 1100 insertions(+), 21 deletions(-)
- event filters (2011):  5 files changed,   82 insertions(+), 16 deletions(-)
+-EIO or -ENXIO;
 
-Interestingly, the events version is *by far* the most flexible one 
-in both the short and the long run, and it is also the smallest patch 
-...
+> +
+> +	return ret;
+> +}
+> +
+> +int kxtj9_update_g_range(struct kxtj9_data *tj9, u8 new_g_range)
+> +{
+> +	switch (new_g_range) {
+> +	case KXTJ9_G_2G:
+> +		tj9->shift = SHIFT_ADJ_2G;
+> +		break;
+> +	case KXTJ9_G_4G:
+> +		tj9->shift = SHIFT_ADJ_4G;
+> +		break;
+> +	case KXTJ9_G_8G:
+> +		tj9->shift = SHIFT_ADJ_8G;
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +	tj9->resume[RES_CTRL_REG1] = (tj9->resume[RES_CTRL_REG1] & 0xE7)
+> +								| new_g_range;
+> +
+> +	return 0;
+> +}
+> +
+> +int kxtj9_update_odr(struct kxtj9_data *tj9, int poll_interval)
 
-It's a perfect fit and that's not really surprising: system call 
-boundary hardening is about filtering various key parameters - while 
-event tracing is about filtering various key parameters as well.
+static
 
-But it goes further than that: SELinux security policies are in 
-essence primitive event filters as well, on an abstract level - see 
-below for more details.
+> +{
+> +	int err;
+> +	int i;
+> +	u8 config;
+> +	u8 temp = 0;
+> +
+> +	/* Use the lowest ODR that can support the requested poll interval */
+> +	for (i = 0; i < ARRAY_SIZE(kxtj9_odr_table); i++) {
+> +		config = kxtj9_odr_table[i].mask;
+> +		if (poll_interval < kxtj9_odr_table[i].cutoff)
+> +			break;
+> +	}
+> +
+> +	if (atomic_read(&tj9->enabled)) {
 
-And yes, the primitive, coarse, per syscall allow/disallow bitmask v1 
-version would not be too painful to the core kernel in terms of code 
-impact and interaction with other code (it does not interact at all) 
-- but it would still be sadly shortsighted to not explore the event 
-filters angle, now that we have actual working code.
+Locking with atomics is... completely not usable. What if tj9->enabled
+is changes right here after the check?
 
-It would not improve the LSM situation one tiny bit either - the 
-bitmask design would guarantee that the seccomp approach can never 
-seriously replace the sucky LSM concepts we have in the kernel today.
+> +		err = i2c_smbus_write_byte_data(tj9->client, CTRL_REG1, temp);
+> +		if (err < 0)
+> +			return err;
+> +		err = i2c_smbus_write_byte_data(tj9->client, DATA_CTRL, config);
+> +		if (err < 0)
+> +			return err;
+> +		temp = tj9->resume[RES_CTRL_REG1];
+> +		err = i2c_smbus_write_byte_data(tj9->client, CTRL_REG1, temp);
+> +		if (err < 0)
+> +			return err;
+> +		/* Valid input_dev indicates that input_init passed and this
+> +		 * workqueue is available */
+> +		if (tj9->input_dev) {
 
-> This is not security mediation in terms of interaction between 
-> things (e.g. "allow A to read B").  It's a _hardening_ feature 
-> which prevents a process from being able to invoke potentially 
-> hundreds of syscalls is has no need for.  It would allow us to 
-> usefully restrict some well-established attack modes, e.g. 
-> triggering bugs in kernel code via unneeded syscalls.
+How can it be NULL here? Ah I see, you call it in probe, before
+allocating input device. I'd move device allocation earlier.
 
-If you think about it then you'll see that this artificial 
-distinction between 'mediation' and 'hardening' is nonsense!
+> +			if (!tj9->pdata.drdy_enable) {
+> +				cancel_delayed_work_sync(&tj9->input_work);
+> +				schedule_delayed_work(&tj9->input_work,
+> +					msecs_to_jiffies(poll_interval));
 
-If we add the appropriate file label field to VFS tracing events 
-(which would be useful for many instrumentation reasons as well) then 
-the event filtering variant of Will's patch:
+This function is called in both IRQ and polling mode so we end up
+scheduling poll while in IRQ mode. Why?
 
-   _will be able to do object level security mediation too_
+Or is polling mode indicated by drdy_enable? Then kxtj9_probe should
+fail if client->irq is 0.
 
-What is at the core of every access control concept, be that DAC, 
-MAC, RBAC or ACL? Flexible task specific set of access vectors to 
-file and other labeled objects, which cannot be circumvented by that 
-task.
+> +			}
+> +		}
+> +	}
+> +	tj9->resume[RES_DATA_CTRL] = config;
+> +
+> +	return 0;
+> +}
+> +
+> +static int kxtj9_hw_init(struct kxtj9_data *tj9)
+> +{
+> +	int err;
+> +	u8 buf = 0;
+> +
+> +	err = i2c_smbus_write_byte_data(tj9->client, CTRL_REG1, buf);
+> +	if (err < 0)
+> +		return err;
+> +	err = i2c_smbus_write_byte_data(tj9->client, DATA_CTRL,
+> +						tj9->resume[RES_DATA_CTRL]);
+> +	if (err < 0)
+> +		return err;
+> +	err = i2c_smbus_write_byte_data(tj9->client, INT_CTRL1,
+> +						tj9->resume[RES_INT_CTRL1]);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	err = kxtj9_update_g_range(tj9, tj9->pdata.g_range);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	buf = (tj9->resume[RES_CTRL_REG1] | PC1_ON);
+> +	err = i2c_smbus_write_byte_data(tj9->client, CTRL_REG1, buf);
+> +	if (err < 0)
+> +		return err;
+> +	tj9->resume[RES_CTRL_REG1] = buf;
+> +
+> +	err = kxtj9_update_odr(tj9, tj9->pdata.poll_interval);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	tj9->hw_initialized = true;
+> +
+> +	return 0;
+> +}
+> +
+> +static void kxtj9_device_power_off(struct kxtj9_data *tj9)
+> +{
+> +	int err;
+> +	u8 buf;
+> +
+> +	buf = tj9->resume[RES_CTRL_REG1] & PC1_OFF;
+> +	err = i2c_smbus_write_byte_data(tj9->client, CTRL_REG1, buf);
+> +	if (err < 0)
+> +		dev_err(&tj9->client->dev, "soft power off failed\n");
+> +	if (tj9->pdata.power_off)
+> +		tj9->pdata.power_off();
+> +	tj9->resume[RES_CTRL_REG1] = buf;
+> +	tj9->hw_initialized = false;
+> +}
+> +
+> +static int kxtj9_device_power_on(struct kxtj9_data *tj9)
+> +{
+> +	int err;
+> +
+> +	if (tj9->pdata.power_on) {
+> +		err = tj9->pdata.power_on();
+> +		if (err < 0)
+> +			return err;
+> +	}
+> +	if (!tj9->hw_initialized) {
+> +		mdelay(40);
+> +		err = kxtj9_hw_init(tj9);
+> +		if (err < 0) {
+> +			kxtj9_device_power_off(tj9);
+> +			return err;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void kxtj9_report_values(struct kxtj9_data *tj9, s16 *xyz)
+> +{
+> +	input_report_abs(tj9->input_dev, ABS_X, (int) xyz[0]);
+> +	input_report_abs(tj9->input_dev, ABS_Y, (int) xyz[1]);
+> +	input_report_abs(tj9->input_dev, ABS_Z, (int) xyz[2]);
 
-How can we implement a user-space file object manager via Will's 
-event filters approach? It's actually pretty easy:
+input_sync();
 
- - a simple object manager wants to know 'who' does something, 'what'
-   it is trying to access, and then wants to generate an allow/deny
-   action as a function of the (who,what) parameters:
+I'd also fold it into kxtj9_get_acceleration_data().
 
-     - The 'who' is a given as the event filters are per
-       task, so different tasks with different roles can have
-       different event filters. This is the equivalent of the current
-       tasks's security context. [ Event filters installed by the
-       parent cannot be removed by child tasks (they cannot even read
-       them - it's transparent). ]
+> +}
+> +
+> +static int kxtj9_get_acceleration_data(struct kxtj9_data *tj9, s16 *xyz)
+> +{
+> +	int err;
+> +	/* Data bytes from hardware xL, xH, yL, yH, zL, zH */
+> +	s16 acc_data[3];
+> +
+> +	err = kxtj9_i2c_read(tj9, XOUT_L, (u8 *)acc_data, 6);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	acc_data[0] = le16_to_cpu(acc_data[0]);
+> +	acc_data[1] = le16_to_cpu(acc_data[1]);
+> +	acc_data[2] = le16_to_cpu(acc_data[2]);
+> +
+> +	acc_data[0] >>= tj9->shift;
+> +	acc_data[1] >>= tj9->shift;
+> +	acc_data[2] >>= tj9->shift;
+> +
+> +	xyz[0] = (tj9->pdata.negate_x) ? (-acc_data[tj9->pdata.axis_map_x])
+> +		  : (acc_data[tj9->pdata.axis_map_x]);
+> +	xyz[1] = (tj9->pdata.negate_y) ? (-acc_data[tj9->pdata.axis_map_y])
+> +		  : (acc_data[tj9->pdata.axis_map_y]);
+> +	xyz[2] = (tj9->pdata.negate_z) ? (-acc_data[tj9->pdata.axis_map_z])
+> +		  : (acc_data[tj9->pdata.axis_map_z]);
+> +
+> +	return err;
+> +}
+> +
+> +static irqreturn_t kxtj9_isr(int irq, void *dev)
+> +{
+> +	struct kxtj9_data *tj9 = dev;
+> +	int ret;
+> +	s16 xyz[3];
+> +
+> +	/* data ready is the only possible interrupt type */
+> +	if (kxtj9_get_acceleration_data(tj9, xyz) == 0)
+> +		kxtj9_report_values(tj9, xyz);
+> +
+> +	ret = i2c_smbus_read_byte_data(tj9->client, INT_REL);
+> +	if (ret < 0)
+> +		dev_err(&tj9->client->dev,
+> +				"error clearing interrupt status: %d\n", ret);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int kxtj9_enable(struct kxtj9_data *tj9)
+> +{
+> +	int err;
+> +
+> +	if (!atomic_cmpxchg(&tj9->enabled, 0, 1)) {
 
-     - The most finegrained representation of 'what' are inode
-       numbers. Because we do not want to generate rules for every
-       single object we want to group objects and want to define
-       access rules on different groups. This can be done by defining
-       an event that emits file labels.
+So what stops another thread from executing kxtj9_disable() right here.
 
-So a simple object manager would simply use file label event 
-attributes and would define simple rules like:
+> +		err = kxtj9_device_power_on(tj9);
+> +		if (err < 0) {
+> +			dev_err(&tj9->client->dev,
+> +					"error during power-on: %d\n", err);
+> +			atomic_set(&tj9->enabled, 0);
+> +			return err;
+> +		}
+> +		err = i2c_smbus_read_byte_data(tj9->client, INT_REL);
+> +		if (err < 0) {
+> +			dev_err(&tj9->client->dev,
+> +					"error clearing interrupt: %d\n", err);
+> +			atomic_set(&tj9->enabled, 0);
+> +			return err;
+> +		}
+> +		if (!tj9->pdata.drdy_enable)
+> +			schedule_delayed_work(&tj9->input_work,
+> +				msecs_to_jiffies(tj9->pdata.poll_interval));
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int kxtj9_disable(struct kxtj9_data *tj9)
+> +{
+> +	if (atomic_cmpxchg(&tj9->enabled, 1, 0)) {
+> +		if (!tj9->pdata.drdy_enable)
+> +			cancel_delayed_work_sync(&tj9->input_work);
+> +		kxtj9_device_power_off(tj9);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void kxtj9_input_work_func(struct work_struct *work)
+> +{
+> +	struct kxtj9_data *tj9 = container_of((struct delayed_work *)work,
+> +						struct kxtj9_data, input_work);
 
-	"(label & tmp_t) || (label & user_home_t)"
+Do not assume that delayed work can be cast to work_struct. Use 
 
-to allow access to /tmp and /home files. Filters allow us to define 
-arbitrary access vectors to objects in essence. The above filters get 
-passed to the kernel as an ASCII string by the object manager task, 
-where the filter engine parses it safely and creates atomic 
-predicates out of it, which can then be executed at the source of any 
-event.
+	tj9 = container_of(work, struct kxtj9_data, input_work.work);
 
-[ We could even implement a transparent AVC-cache equivalent for 
-  filters, should the complexity and popularity of them increase: 
-  ASCII filters lend themselves very well to hash based caches. ]
+> +	s16 xyz[3];
+> +	mutex_lock(&tj9->lock);
+> +
+> +	if (kxtj9_get_acceleration_data(tj9, xyz) == 0)
+> +		kxtj9_report_values(tj9, xyz);
+> +
+> +	schedule_delayed_work(&tj9->input_work,
+> +			msecs_to_jiffies(tj9->pdata.poll_interval));
+> +	mutex_unlock(&tj9->lock);
+> +}
+> +
+> +int kxtj9_input_open(struct input_dev *input)
+> +{
+> +	return kxtj9_enable(input_get_drvdata(input));
+> +}
+> +
+> +void kxtj9_input_close(struct input_dev *dev)
+> +{
+> +	kxtj9_disable(input_get_drvdata(dev));
+> +}
+> +
+> +static int kxtj9_input_init(struct kxtj9_data *tj9)
+> +{
+> +	int err;
+> +
+> +	INIT_DELAYED_WORK(&tj9->input_work, kxtj9_input_work_func);
+> +	tj9->input_dev = input_allocate_device();
+> +	if (!tj9->input_dev) {
+> +		err = -ENOMEM;
+> +		dev_err(&tj9->client->dev, "input device allocate failed\n");
+> +		goto err0;
+> +	}
+> +	tj9->input_dev->open = kxtj9_input_open;
+> +	tj9->input_dev->close = kxtj9_input_close;
+> +
+> +	input_set_drvdata(tj9->input_dev, tj9);
+> +
+> +	set_bit(EV_ABS, tj9->input_dev->evbit);
+> +	set_bit(EV_REL, tj9->input_dev->evbit);
 
-Similarly, support for other types of object tagging, network labels, 
-etc. can be added as well with little pain: they can be added without 
-any change to the basic ABI! Using events filters here makes it a 
-very extensible security concept.
+You do not send any REL_* events.
 
-It is capable to implement the functional equivalent of most MAC, 
-DAC, RBAC and other access control concepts, purely in user-space - 
-in addition to 'hardening' (which btw. is really access control too, 
-in disguise).
+> +
+> +	input_set_abs_params(tj9->input_dev, ABS_X, -G_MAX, G_MAX, FUZZ, FLAT);
+> +	input_set_abs_params(tj9->input_dev, ABS_Y, -G_MAX, G_MAX, FUZZ, FLAT);
+> +	input_set_abs_params(tj9->input_dev, ABS_Z, -G_MAX, G_MAX, FUZZ, FLAT);
+> +
+> +	tj9->input_dev->name = "kxtj9_accel";
 
-Obviously it is all layered: it is only allowed to control access to 
-objects all the other security concepts allow for it to access - i.e. 
-this is an unprivileged LSM, a per application security layer if you 
-will, that can further refine security policies.
+input_dev->id.bustype = BUS_I2C;
+input_dev->dev.parent = &client->dev;
 
-In terms of security models this event filters approach is 
-unconditional goodness in my opinion.
+> +
+> +	err = input_register_device(tj9->input_dev);
+> +	if (err) {
+> +		dev_err(&tj9->client->dev,
+> +			"unable to register input polled device %s: %d\n",
+> +			tj9->input_dev->name, err);
+> +		goto err1;
+> +	}
+> +
+> +	return 0;
+> +err1:
+> +	input_free_device(tj9->input_dev);
+> +err0:
+> +	return err;
+> +}
+> +
+> +static void kxtj9_input_cleanup(struct kxtj9_data *tj9)
+> +{
+> +	input_unregister_device(tj9->input_dev);
 
-> This is orthogonal to access control schemes (such as SELinux), 
-> which are about mediating security-relevant interactions between 
-> objects.
+Just call it directly.
 
-It's only 'orthogonal' because IMO you make two fundamental mistakes:
+> +}
+> +
+> +/* kxtj9_delay_show: returns the currently selected poll interval (in ms) */
+> +static ssize_t kxtj9_delay_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	struct kxtj9_data *tj9 = i2c_get_clientdata(to_i2c_client(dev));
+> +	return sprintf(buf, "%d\n", tj9->pdata.poll_interval);
+> +}
+> +
+> +/* kxtj9_delay_store: allows the user to select a new poll interval (in ms) */
+> +static ssize_t kxtj9_delay_store(struct device *dev,
+> +					struct device_attribute *attr,
+> +						const char *buf, size_t count)
+> +{
+> +	struct kxtj9_data *tj9 = i2c_get_clientdata(to_i2c_client(dev));
+> +	unsigned long val;
+> +	int ret = kstrtoul(buf, 10, &val);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	mutex_lock(&tj9->lock);
+> +	/* the selected interval is the greater of the minimum interval or
+> +	the requested interval */
+> +	tj9->pdata.poll_interval = max((int)val, tj9->pdata.min_interval);
+> +	kxtj9_update_odr(tj9, tj9->pdata.poll_interval);
+> +	mutex_unlock(&tj9->lock);
+> +
+> +	return count;
+> +}
+> +
+> +/* kxtj9_enable_show: returns the enable status of the part */
+> +static ssize_t kxtj9_enable_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	struct kxtj9_data *tj9 = i2c_get_clientdata(to_i2c_client(dev));
+> +	return sprintf(buf, "%d\n", atomic_read(&tj9->enabled));
+> +}
+> +
+> +/* kxtj9_enable_store: allows the user to enable or disable the part */
+> +static ssize_t kxtj9_enable_store(struct device *dev,
+> +					struct device_attribute *attr,
+> +						const char *buf, size_t count)
+> +{
+> +	struct kxtj9_data *tj9 = i2c_get_clientdata(to_i2c_client(dev));
+> +	unsigned long val;
+> +	int ret = kstrtoul(buf, 10, &val);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	mutex_lock(&tj9->lock);
+> +	if (val)	/* non-zero argument enables the part */
+> +		kxtj9_enable(tj9);
+> +	else		/* zero argument disables the part */
+> +		kxtj9_disable(tj9);
+> +	mutex_unlock(&tj9->lock);
+> +
 
- 1) You arbitrarily limit SELinux to object based security measures 
-    alone.
+I stopped accepting "enabled" attributes as I believe they should be
+handled at the device core level. Please remove.
 
-    Which is not even true btw: SELinux certainly has some hooks it
-    uses for pragmatic non-object hardening: for example all the
-    places where we fall back to capabilities are places where
-    there's a method based restriction not object based restriction.
+> +	return count;
+> +}
+> +
+> +static DEVICE_ATTR(delay, S_IRUGO|S_IWUSR, kxtj9_delay_show, kxtj9_delay_store);
+> +static DEVICE_ATTR(enable, S_IRUGO|S_IWUSR, kxtj9_enable_show,
+> +							kxtj9_enable_store);
+> +
+> +static struct attribute *kxtj9_attributes[] = {
+> +	&dev_attr_delay.attr,
+> +	&dev_attr_enable.attr,
+> +	NULL
+> +};
+> +
+> +static struct attribute_group kxtj9_attribute_group = {
+> +	.attrs = kxtj9_attributes
+> +};
+> +
+> +static int __devinit kxtj9_probe(struct i2c_client *client,
+> +						const struct i2c_device_id *id)
+> +{
+> +	int err = -1;
+> +	struct kxtj9_data *tj9 = kzalloc(sizeof(*tj9), GFP_KERNEL);
+> +	if (tj9 == NULL) {
+> +		dev_err(&client->dev,
+> +			"failed to allocate memory for module data\n");
+> +		err = -ENOMEM;
+> +		goto err0;
+> +	}
+> +	if (client->dev.platform_data == NULL) {
+> +		dev_err(&client->dev, "platform data is NULL; exiting\n");
+> +		err = -ENODEV;
+> +		goto err0;
+> +	}
+> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C |
+> +						I2C_FUNC_SMBUS_BYTE_DATA)) {
+> +		dev_err(&client->dev, "client not i2c capable\n");
+> +		err = -ENODEV;
+> +		goto err0;
+> +	}
+> +	mutex_init(&tj9->lock);
+> +	mutex_lock(&tj9->lock);
+> +	tj9->client = client;
+> +	i2c_set_clientdata(client, tj9);
+> +
+> +	memcpy(&tj9->pdata, client->dev.platform_data, sizeof(tj9->pdata));
+> +	if (tj9->pdata.init) {
+> +		err = tj9->pdata.init();
+> +		if (err < 0)
+> +			goto err1;
+> +	}
+> +
+> +	err = sysfs_create_group(&client->dev.kobj, &kxtj9_attribute_group);
+> +	if (err)
+> +		goto err2;
+> +
+> +	tj9->resume[RES_CTRL_REG1] = tj9->pdata.res_12bit | tj9->pdata.g_range |
+> +							tj9->pdata.drdy_enable;
+> +	tj9->resume[RES_INT_CTRL1] = tj9->pdata.int_response |
+> +						tj9->pdata.int_polarity |
+> +						tj9->pdata.int_enable;
+> +	tj9->resume[RES_DATA_CTRL] = tj9->pdata.data_odr_init;
+> +
+> +	err = kxtj9_device_power_on(tj9);
+> +	if (err < 0)
+> +		goto err3;
+> +	atomic_set(&tj9->enabled, 1);
+> +
+> +	err = kxtj9_verify(tj9);
+> +	if (err < 0) {
+> +		dev_err(&client->dev, "device not recognized\n");
+> +		goto err4;
+> +	}
+> +
+> +	err = kxtj9_input_init(tj9);
+> +	if (err < 0)
+> +		goto err4;
+> +
+> +	kxtj9_device_power_off(tj9);
+> +	atomic_set(&tj9->enabled, 0);
+> +
+> +	if (client->irq) {
+> +		err = request_threaded_irq(client->irq, NULL, kxtj9_isr,
+> +			IRQF_TRIGGER_RISING | IRQF_ONESHOT, "kxtj9-irq", tj9);
+> +		if (err < 0) {
+> +			pr_err("%s: request irq failed: %d\n", __func__, err);
+> +			goto err5;
+> +		}
+> +	}
+> +
+> +	mutex_unlock(&tj9->lock);
+> +
+> +	return 0;
+> +
+> +err5:
+> +	kxtj9_input_cleanup(tj9);
+> +err4:
+> +	kxtj9_device_power_off(tj9);
+> +err3:
+> +	sysfs_remove_group(&client->dev.kobj, &kxtj9_attribute_group);
+> +err2:
+> +	if (tj9->pdata.exit)
+> +		tj9->pdata.exit();
+> +err1:
+> +	mutex_unlock(&tj9->lock);
+> +err0:
+> +	kfree(tj9);
+> +	return err;
+> +}
+> +
+> +static int __devexit kxtj9_remove(struct i2c_client *client)
+> +{
+> +	struct kxtj9_data *tj9 = i2c_get_clientdata(client);
+> +
+> +	disable_irq_nosync(client->irq);
 
-    The KDSKBENT ioctl check for example in 
-    security/selinux/hooks.c::selinux_file_ioctl(), or 
-    selinux_vm_enough_memory(), or the CAP_MAC_ADMIN exception in
-    selinux_inode_getsecurity() all violate 'pure' DAC concepts but
-    obviously for pragmatic reasons SELinux is doing these ...
+1. Why?
+2. Why _nosync?
+3. What happens if client->irq == NULL?
 
-    mmap_min_addr is a borderline method restriction feature as well:
-    it does not really control access to the underlying object (RAM),
-    but controls one (of many) access methods to it by controlling
-    virtual memory ...
+> +	free_irq(client->irq, tj9);
+> +	kxtj9_input_cleanup(tj9);
+> +	kxtj9_device_power_off(tj9);
+> +	if (tj9->pdata.exit)
+> +		tj9->pdata.exit();
+> +	sysfs_remove_group(&client->dev.kobj, &kxtj9_attribute_group);
 
-    So SELinux, in a rather hypocritical fashion is already involved 
-    in hardening and in filtering, because obviously any practical 
-    and pragmatic security system *has to*.
+That should be done the very first thing; simplifies "device half gone"
+case handling.
 
- 2) You arbitrarily limit Will's patch to *not* be able to
-    implement object based security mechanisms. Why?
+> +	kfree(tj9);
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +static int kxtj9_resume(struct i2c_client *client)
+> +{
+> +	return kxtj9_enable(i2c_get_clientdata(client));
+> +}
+> +
+> +static int kxtj9_suspend(struct i2c_client *client, pm_message_t mesg)
+> +{
+> +	return kxtj9_disable(i2c_get_clientdata(client));
+> +}
+> +#endif
+> +
+> +static const struct i2c_device_id kxtj9_id[] = {
+> +	{NAME, 0},
+> +	{},
+> +};
+> +
+> +MODULE_DEVICE_TABLE(i2c, kxtj9_id);
+> +
+> +static struct i2c_driver kxtj9_driver = {
+> +	.driver = {
+> +		   .name = NAME,
 
-Syscall hardening and object based access rules are *deeply* 
-connected, conceptually they are subsets of one and the same thing: a 
-good, organic security model controlling different hierarchies of 
-physical and derived (virtual) resources, which allows flexible 
-control of both objects *and* methods.
+	.owner = THIS_MODULE?
 
-The 'methods' (the syscalls and other functionality) are *also* a 
-derived resource so it's entirely legitimate to control access to 
-them. Yes, because they are methods you can also try to use them to 
-restrict access to underlying objects - this is what AppArmour is 
-about mostly, and yes i agree that in the general case it's not a 
-particularly robust method.
+> +		   },
+> +	.probe = kxtj9_probe,
+> +	.remove = __devexit_p(kxtj9_remove),
+> +	.resume = kxtj9_resume,
+> +	.suspend = kxtj9_suspend,
 
-And yes, i fully submit that object access control has theoretical 
-advantages and it should often be the primary measure that gives a 
-robust, often provable backbone to a secure system.
+Convert ot dev_on_ops.
 
-But you'd be out of your mind to not recognize:
+> +	.id_table = kxtj9_id,
+> +};
+> +
+> +static int __init kxtj9_init(void)
+> +{
+> +	return i2c_add_driver(&kxtj9_driver);
+> +}
+> +
+> +static void __exit kxtj9_exit(void)
+> +{
+> +	i2c_del_driver(&kxtj9_driver);
+> +}
+> +
+> +module_init(kxtj9_init);
+> +module_exit(kxtj9_exit);
+> +
+> +MODULE_DESCRIPTION("KXTJ9 accelerometer driver");
+> +MODULE_AUTHOR("Chris Hudson <chudson@kionix.com>");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/input/kxtj9.h b/include/linux/input/kxtj9.h
+> new file mode 100644
+> index 0000000..55c4b57
+> --- /dev/null
+> +++ b/include/linux/input/kxtj9.h
+> @@ -0,0 +1,90 @@
+> +/*
+> + * Copyright (C) 2011 Kionix, Inc.
+> + * Written by Chris Hudson <chudson@kionix.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+> + * 02111-1307, USA
+> + */
+> +
+> +#ifndef __KXTJ9_H__
+> +#define __KXTJ9_H__
+> +
+> +#define KXTJ9_I2C_ADDR		0x0F
+> +
+> +/* These shift values are used to provide consistent output data */
+> +#define SHIFT_ADJ_2G		4
+> +#define SHIFT_ADJ_4G		3
+> +#define SHIFT_ADJ_8G		2
+> +
+> +#ifdef __KERNEL__
+> +struct kxtj9_platform_data {
+> +	int poll_interval;	/* current poll interval (in milli-seconds) */
+> +	int min_interval;	/* minimum poll interval (in milli-seconds) */
+> +
+> +	/* by default, x is axis 0, y is axis 1, z is axis 2; these can be
+> +	changed to account for sensor orientation within the host device */
+> +	u8 axis_map_x;
+> +	u8 axis_map_y;
+> +	u8 axis_map_z;
+> +
+> +	/* each axis can be negated to account for sensor orientation within
+> +	the host device; 1 = negate this axis; 0 = do not negate this axis */
+> +	u8 negate_x;
 
- - The utility of controlling access methods (as resources) as well, 
-   both to reduce the attack surface in the implementation of those 
-   methods, and to allow the easy summary control of objects where 
-   there's only a low number of (and often only a single!) access 
-   method.
+bool.
 
- - The utility of unprivileged security frameworks.
+> +	u8 negate_y;
+> +	u8 negate_z;
+> +
+> +	/* CTRL_REG1: set resolution, g-range, data ready enable */
+> +	/* Output resolution: 8-bit valid or 12-bit valid */
+> +	#define RES_8BIT		0
+> +	#define RES_12BIT		(1 << 6)
+> +	u8 res_12bit;
+> +	/* Output g-range: +/-2g, 4g, or 8g */
+> +	#define KXTJ9_G_2G		0
+> +	#define KXTJ9_G_4G		(1 << 3)
+> +	#define KXTJ9_G_8G		(1 << 4)
+> +	u8 g_range;
+> +	/* Data ready funtion enable bit */
+> +	#define DRDYE			(1 << 5)
+> +	u8 drdy_enable;
 
- - The utility of stackable security fetures. (defense in depth, 
-   anyone?)
+bool. Is there a better name?
 
-Will's astonishingly small patch:
+> +
+> +	/* INT_CTRL_REG1: set interrupt pin enable, polarity, and response */
+> +	/* Interrupt pin response: set = pulse mode; unset = latch mode */
+> +	#define KXTJ9_IEL		(1 << 3)
+> +	u8 int_response;
+> +	/* Interrupt pin polarity: set = active high; unset = active low */
+> +	#define KXTJ9_IEA		(1 << 4)
+> +	u8 int_polarity;
+> +	/* Interrupt pin enable: set = enable; unset = disable */
+> +	#define KXTJ9_IEN		(1 << 5)
+> +	u8 int_enable;
 
- event filters (2011):  5 files changed,   82 insertions(+), 16 deletions(-)
+We have int_enable, drdy_enable and client->irq all affecting
+poll/interrupt mode. What exactly are the rules?
 
-Gives us *all three* of those, while also allowing user-space 
-implemented MAC, DAC, RBAC as well.
+> +
+> +	/* DATA_CTRL_REG: controls the output data rate of the part */
+> +	#define ODR12_5F		0
+> +	#define ODR25F			1
+> +	#define ODR50F			2
+> +	#define ODR100F			3
+> +	#define ODR200F			4
+> +	#define ODR400F			5
+> +	#define ODR800F			6
+> +	u8 data_odr_init;
+> +
+> +	int (*init)(void);
+> +	void (*exit)(void);
+> +	int (*power_on)(void);
+> +	int (*power_off)(void);
+> +};
+> +#endif /* __KERNEL__ */
+> +
+> +#endif  /* __KXTJ9_H__ */
+> +
+> -- 
+> 1.5.4.3
+> 
 
-> One area of possible use is KVM/Qemu, where processes now contain 
-> entire operating systems, and the attack surface between them is 
-> now much broader e.g. a local unprivileged vulnerability is now 
-> effectively a 'remote' full system compromise.
+Thanks.
 
-Note that the main reason why Qemu needs access method hardening is 
-because it has a dominantly state machine based design which does not 
-lend itself very well to an object manager security design.
-
-Note that tools/kvm/ would probably like to implement its own object 
-manager model as well in addition to access method restrictions: by 
-being virtual hardware it deals with many resources and object 
-hierarchies that are simply not known to the host OS's LSM.
-
-Unlike Qemu tools/kvm/ has a design that is very fit for MAC 
-concepts: it uses separate helper threads for separate resources 
-(this could in many cases even be changed to be separate processes 
-which only share access to the guest RAM image) - while Qemu is in 
-most parts a state machine, so in tools/kvm/ we can realistically 
-have a good object manager and keep an exploit in a networking 
-interface driver from being able to access disk driver state.
-
-(I've Cc:-ed Pekka for tools/kvm/.)
-
-> There has been some discussion of this within the KVM project.  
-> Using the existing seccomp facility is problematic in that it 
-> requires significant reworking of Qemu to a privsep model, which 
-> would also then incur a likely unacceptable context switching 
-> overhead.  The generalized seccomp filter as proposed by Will would 
-> provide a significant reduction in exposed syscalls and thus 
-> guest->host attack surface.
-
-... and the event filter based method would *also* allow MAC to be 
-defined over physical resources, such as virtual network interfaces, 
-virtual disk devices, etc.
-
-You are seriously limiting the capabilities of this feature for no 
-good reason i can recognize.
-
-Thanks,
-
-	Ingo
+-- 
+Dmitry
