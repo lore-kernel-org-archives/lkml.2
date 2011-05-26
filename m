@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321Ab1EZUop (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:44:45 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:50083 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab1EZUoo (ORCPT
+	id S1758470Ab1EZUzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:55:33 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45223 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693Ab1EZUzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 16:44:44 -0400
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
-        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
-        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
-        penberg@kernel.org, hpa@zytor.com,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
-In-Reply-To: <20110526204030.GL29496@redhat.com>
-References: <1306269105.21443.20.camel@dan>
-	 <20110526203502.GK29496@redhat.com>  <20110526204030.GL29496@redhat.com>
+	Thu, 26 May 2011 16:55:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=iuQiDsEkGm/95b0j/osFLa8Gkp+TxB+1EhNQ+RlUAV9Q+WCZvZgnP1HlbekzS64rZH
+         jDC+O3k4txmp8wUNA0pnvLXFr8EDaYtiA+XA+n5stpF2Gr0BL4m/uMcahjoARNiTGLwJ
+         1MIqAsAg8gh/9Cku/Erl9LHfVGHxCYvw7MaqQ=
+Subject: Re: [PATCH V6 2/4 net-next] skbuff: Add userspace zero-copy
+ buffers in skb
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1306441442.5180.51.camel@localhost.localdomain>
+References: <1306438593.5180.33.camel@localhost.localdomain>
+	 <1306440247.2543.14.camel@edumazet-laptop>
+	 <1306441442.5180.51.camel@localhost.localdomain>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 16:44:34 -0400
-Message-ID: <1306442674.2279.29.camel@dan>
+Date: Thu, 26 May 2011 22:55:25 +0200
+Message-ID: <1306443325.2543.22.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 16:40 -0400, Vivek Goyal wrote:
-> On Thu, May 26, 2011 at 04:35:02PM -0400, Vivek Goyal wrote:
-> > On Tue, May 24, 2011 at 04:31:45PM -0400, Dan Rosenberg wrote:
-> > > This introduces CONFIG_RANDOMIZE_BASE, which randomizes the address at
-> > > which the kernel is decompressed at boot as a security feature that
-> > > deters exploit attempts relying on knowledge of the location of kernel
-> > > internals.  The default values of the kptr_restrict and dmesg_restrict
-> > > sysctls are set to (1) when this is enabled, since hiding kernel
-> > > pointers is necessary to preserve the secrecy of the randomized base
-> > > address.
-> > 
-> > What happens to /proc/iomem interface which gives us the physical memory
-> > location where kernel is loaded. kexec-tools relies on that interface
-> > heavily so we can not take it away. And if we can not take it away then
-> > I think somebody should be easibly be able to calculate this randomized
-> > base address.
+Le jeudi 26 mai 2011 à 13:24 -0700, Shirley Ma a écrit :
 
-Is it common to run kexec-tools as non-root?  It may be necessary to
-restrict this interface to root when randomization is used (keep in mind
-nobody's going to force you to turn this on by default, at least for the
-foreseeable future).
+> I could reduce callback pointer by moving it to *arg, but not desc, this
+> indicates that which buffer DMA hasn't done yet in *arg.
 
--Dan
 
-> 
-> Thanks
-> Vivek
+I guess you dont need to use skb itself to hold all your states ?
+
+I understand its convenient for you, but I believe its worth the pain to
+use only one pointer to a (small) object where you put all your stuff.
+
+Some machines alloc/free millions of skbs per second. 
+
+If/when most skb uses are for userspace zero-copy buffers we can embbed
+your small object in skb itself ;)
 
 
