@@ -1,75 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914Ab1EZRHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:07:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63731 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757825Ab1EZRHT (ORCPT
+	id S1757824Ab1EZRHp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:07:45 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57277 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab1EZRHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:07:19 -0400
-X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=zw1CKeOhDhoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=hK-pZKct-4YsXGPFf8kA:9 a=ZyUfxaRzCUF3CiHrBQsA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system
- call filtering
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Drewry <wad@chromium.org>, Colin Walters <walters@verbum.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        James Morris <jmorris@namei.org>
-In-Reply-To: <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
-References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
-	 <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
-	 <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
-	 <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu>
-	 <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu>
-	 <alpine.LFD.2.02.1105251836030.3078@ionos>
-	 <20110525180100.GY19633@outflux.net>
-	 <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
-	 <20110525191152.GC19633@outflux.net>
-	 <BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com>
-	 <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
-	 <BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>
-	 <BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
-	 <BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 26 May 2011 13:07:16 -0400
-Message-ID: <1306429636.3857.3.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 13:07:43 -0400
+Date: Thu, 26 May 2011 22:37:22 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
+Subject: [RFC Patch 0/6] slimdump: Enable slimdump if crashing kernel memory
+ is not required
+Message-ID: <20110526170722.GB23266@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 09:46 -0700, Linus Torvalds wrote:
+Hi All,
+	Please find a patchset that implements 'slimdump' - a new type
+of coredump (captured through kdump) which will retain only essential
+debugging information but will discard old kernel memory (which is mostly
+irrelevant) in case of system crashes triggered through fatal hardware errors.
 
-> And if you filter system calls, it's entirely possible that you can
-> attack suid executables through such a vector. Your "limit system
-> calls for security" security suddenly turned into "avoid the system
-> call that made things secure"!
-> 
-> See what I'm saying?
+When a system crashes due to an unrecoverable memory error, kdump would
+ordinarily attempt to read/capture the crashing kernel's memory which has
+the following undesirable consequences:
+- The old kernel memory is irrelevant for debugging crashes initiated due
+  to hardware errors (such as physical memory corruption causing fatal
+  machine check exceptions - MCE).
+- The kdump capture kernel might experience a second MCE when attempting
+  to read the corrupt memory area having fatal results (and failure to
+  capture the coredump).
 
-So you are not complaining about this implementation, but the use of
-syscall filtering?
+'slimdump' is particularly useful in avoiding the above hazards. It is a
+light-weight dump and increases the reliability of the system by avoiding
+unsafe operations.
 
-There may be some user that says, "oh I don't want my other apps to be
-able to call setuid" thinking it will secure their application even
-more. But because that application did the brain dead thing to not check
-the return code of setuid, and it just happened to be running
-privileged, it then execs off another application that can root the box.
+In essence slimdump enables light-weight coredumps and increases the
+reliability of the system by avoiding unsafe operations.
 
-Because, originally that setuid would have succeeded if the user did
-nothing special, but now with this filtering, and the user thinking that
-they could limit their app from doing harm, they just opened up a hole
-that caused their app to do the exact opposite and give the exec'd app
-full root privileges.
+Summary of the patches
+----
+Patch 1, 2 - Patches from Andi Kleen's tree
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git which
+introduce an enhanced panic function - xpanic().
 
-Did I get this right?
+Patch 3 - Introduces a new PANIC_MCE flag to signal the need for
+SlimDump for
+MCE initiated panic calls.
 
--- Steve
+Patch 4 - Append a new elf-note inside coredump containing MCE related
+registers
 
+Patch 5 - Create a SlimDump by discarding old kernel's memory
 
+Patch 6 - Patch for 'crash' tool
+(http://people.redhat.com/anderson/crash-5.1.5.tar.gz) to recognise the
+new
+elf-notes section.
+
+The patches have been tested from inside a VM and have been found to
+work fine. The user-space tool used for copying the coredump is 'cp'
+(makedumpfile testing will be done soon).
+
+Example
+--------
+Normal vmcore
+-----------
+# ls -lh /home/prasadkr/vmcore.usual
+-r-------- 1 root root 1.6G May 17 01:07 /home/prasadkr/vmcore.usual
+
+slimdump
+-----------
+# ls -lh /home/prasadkr/vmcore.SlimDump
+-r-------- 1 root root 1.8K May 18 23:28 /home/prasadkr/vmcore.SlimDump
+# ./crash vmlinux vmcore.SlimDump
+
+crash 5.1.5
+Copyright (C) 2002-2011  Red Hat, Inc.
+Copyright (C) 2004, 2005, 2006  IBM Corporation
+Copyright (C) 1999-2006  Hewlett-Packard Co
+Copyright (C) 2005, 2006  Fujitsu Limited
+Copyright (C) 2006, 2007  VA Linux Systems Japan K.K.
+Copyright (C) 2005  NEC Corporation
+Copyright (C) 1999, 2002, 2007  Silicon Graphics, Inc.
+Copyright (C) 1999, 2000, 2001, 2002  Mission Critical Linux, Inc.
+This program is free software, covered by the GNU General Public
+License,
+and you are welcome to change it and/or distribute copies of it under
+certain conditions.  Enter "help copying" to see the conditions.
+This program has absolutely no warranty.  Enter "help warranty" for
+details.
+
+"System crashed due to a hardware memory error. No coredump available."
+#
+#
+
+Thanks,
+K.Prasad
+_______________________________________________________
+ltcras mailing list ltcras@lists.linux.ibm.com
+To unsubscribe from the list, change your list options
+or if you have forgotten your list password visit:
+http://lists.linux.ibm.com/mailman/listinfo/ltcras
