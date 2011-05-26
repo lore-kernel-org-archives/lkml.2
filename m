@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932913Ab1EZQ0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 12:26:23 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49850 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172Ab1EZQ0U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 12:26:20 -0400
-In-Reply-To: <OFF9D0E604.B865A006-ON6525789C.00597010-6525789C.0059987A@LocalDomain>
-References: <cover.1305846412.git.mst@redhat.com> <OF0EFA7BA9.BB2C2860-ON6525789C.0053EE3A-6525789C.005513CC@in.ibm.com> <OFE30C8D78.526FF88D-ON8725789C.00563B8C-8825789C.0056469F@us.ibm.com> <OFF9D0E604.B865A006-ON6525789C.00597010-6525789C.0059987A@LocalDomain>
-Subject: Re: [PERF RESULTS] virtio and vhost-net performance enhancements
-X-KeepSent: 75734CC8:5E488020-6525789C:005A0CF6;
- type=4; name=$KeepSent
-To: Krishna Kumar2 <krkumar2@in.ibm.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux390@de.ibm.com,
-        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Steve Dobbelstein <steved@us.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
-X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
-Message-ID: <OF75734CC8.5E488020-ON6525789C.005A0CF6-6525789C.005A4B7B@in.ibm.com>
-From: Krishna Kumar2 <krkumar2@in.ibm.com>
-Date: Thu, 26 May 2011 21:59:10 +0530
-X-MIMETrack: Serialize by Router on d23ml172/23/M/IBM(Release 8.5.1FP5|September 29, 2010) at
- 26/05/2011 21:59:17
+	id S1757569Ab1EZQaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 12:30:16 -0400
+Received: from lucidpixels.com ([75.144.35.66]:36431 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755632Ab1EZQaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 12:30:14 -0400
+Date: Thu, 26 May 2011 12:30:14 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
+Subject: Re: 2.6.39: crash w/threadirqs option enabled
+In-Reply-To: <alpine.DEB.2.02.1105201210030.19553@p34.internal.lan>
+Message-ID: <alpine.DEB.2.02.1105261228570.8379@p34.internal.lan>
+References: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan> <alpine.LFD.2.02.1105201445300.3078@ionos> <alpine.DEB.2.02.1105200850080.19553@p34.internal.lan> <alpine.LFD.2.02.1105201528500.3078@ionos> <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
+ <alpine.LFD.2.02.1105201712501.3078@ionos> <alpine.DEB.2.02.1105201210030.19553@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krishna Kumar2/India/IBM wrote on 05/26/2011 09:51:32 PM:
 
-> > Could you please try TCP_RRs as well?
+
+On Fri, 20 May 2011, Justin Piszcz wrote:
+
 >
-> Right. Here's the result for TCP_RR:
+>
+> On Fri, 20 May 2011, Thomas Gleixner wrote:
+>
+>> On Fri, 20 May 2011, Justin Piszcz wrote:
+>>> On Fri, 20 May 2011, Thomas Gleixner wrote:
+>>>> Does it crash right away or just when doing something particular?
+>>> It crashed at 2100, this is when I run a few I/O intensive processes:
+>>> - backup (dump ext4 filesystem -> to a separate raid device)
+>>> - backup (dump ext4 on remote host -> to separate raid device)
+>>> - backup (dump xfs on remote host -> to separate raid device)
+>>> 
+>>> This looks like it is what caused it to crash.
+>> 
+>> That narrows it down somewhat, but does not give us a clue at all :(
+>> 
+>>>> Is the box fully dead after the crash ?
+>>> The host was online and I went away for awhile, when I came back the 
+>>> system
+>>> had rebooted on its own (as I lost all of my X windows/etc).
+>> 
+>> Hmm. Did you have panic_timeout set ?
+>
+> Hi,
+>
+> No, I do not use panic_timeout or any type of watchdog that would reboot
+> the system upon a lockup/crash.
+>
+> Justin.
+>
+>
 
-The actual transaction rate/second numbers are:
+Hi,
 
-_____________________________________________________________
-#     RR1      RR2 (%)          SD1        SD2 (%)
-_____________________________________________________________
-1     9476     9903 (4.5)       28.9       19.8 (-31.4)
-2     17337    18225 (5.1)      92.7       83.7 (-9.7)
-4     17385    27902 (60.4)     364.8      315.8 (-13.4)
-8     25560    42912 (67.8)     1428.1     1234.0 (-13.5)
-16    35898    55934 (55.8)     4391.6     4038.1 (-8.0)
-32    48048    80228 (66.9)     17391.4    14932.0 (-14.1)
-64    60412    88929 (47.2)     71087.7    54230.1 (-23.7)
-96    71263    92439 (29.7)     145434.1   128214.0 (-11.8)
-128   84208    91014 (8.0)      233668.2   238888.6 (2.2)
-_____________________________________________________________
-RR: 37.3%     SD: -6.7%
-_____________________________________________________________
+I like to be as accurate as possible, since this occurred, I've removed 
+threadirqs..
 
-Thanks,
+Please disregard this, I also updated the BIOS on the same day (BIOS 
+update + kernel update), I'm re-running w/thread irqs enabled again, and 
+I'll update you if there are any issues, thanks.
 
-- KK
+(I've set the bios to factory defaults -> tweaked), we'll see what 
+happens.
 
+Justin.
