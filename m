@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758378Ab1EZT7I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:59:08 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:51962 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758436Ab1EZT7G (ORCPT
+	id S1758372Ab1EZTuW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:50:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61822 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756699Ab1EZTuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:59:06 -0400
-Subject: Re: [PATCH-v5 07/13] iscsi-target: Add iSCSI Login Negotiation +
-	Parameter logic
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: James.Bottomley@HansenPartnership.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, hch@lst.de, hare@suse.de,
-        agrover@redhat.com, michaelc@cs.wisc.edu, bharrosh@panasas.com,
-        akpm@linux-foundation.org, martin.svec@zoner.cz
-In-Reply-To: <20110527042934U.fujita.tomonori@lab.ntt.co.jp>
-References: <1305862678-30150-8-git-send-email-nab@linux-iscsi.org>
-	 <1306428415.4048.22.camel@mulgrave.site>
-	 <1306436832.5807.127.camel@haakon2.linux-iscsi.org>
-	 <20110527042934U.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain
-Date: Thu, 26 May 2011 12:49:59 -0700
-Message-Id: <1306439399.19113.22.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 15:50:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=eg9jrKH4B/d7sUEKCwpME/vwt7zu/fHf7AteFijwkuqXiSWa9oCMW4lJWFTJNJgshB
+         KNrqGOxSO0IeMPpBtyafC0v0FGleL0YHb2oIOG+JGlbSzt6uDu+kbIEX23yGDSAOCJbY
+         FlyhG8VuPUJZkX6VlBDusF218IBJooqyq8nyM=
+From: Jim Cromie <jim.cromie@gmail.com>
+To: mingo@elte.hu
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] perf-stat: refactor print/formatting into print-ops
+Date: Thu, 26 May 2011 13:50:03 -0600
+Message-Id: <1306439406-18037-1-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <BANLkTimJp9o5_P73eNn5rMJbfRC2sCRdJA@mail.gmail.com>
+References: <BANLkTimJp9o5_P73eNn5rMJbfRC2sCRdJA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-27 at 04:29 +0900, FUJITA Tomonori wrote:
-> On Thu, 26 May 2011 12:07:12 -0700
-> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> > On Thu, 2011-05-26 at 11:46 -0500, James Bottomley wrote:
-> > > On Thu, 2011-05-19 at 20:37 -0700, Nicholas A. Bellinger wrote:
-> > > > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > > > 
-> > > > This patch adds the princple RFC-3720 compatiable iSCSI Login
-> > > > phase negotiation for iscsi_target_mod.  This also includes the
-> > > > target RX/TX thread queue logic which is called directly from iSCSI
-> > > > login associated code.
-> > > > 
-> > > > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org> 
-> > > 
-> > > I thought the upshot of the thread with Tomo was that we wouldn't be
-> > > doing all of this in-kernel.  Where's the userspace upcall for this?
-> > > 
-> > 
-> > The technical reasons why I want to avoid this have not changed for the
-> > 1) authentication disabled and 2) 'required-to-implement' CHAP
-> > authentication cases.  These where discussed at the bottom of the thread
-> > from March with Tomo-san here:
-> > 
-> > http://marc.info/?l=linux-scsi&m=130108812405710&w=2
-> > 
-> > As mentioned, I am open to adding a userspace upcall for authentication
-> > payloads post merge in order to support the 'optional-to-implement'
-> > authentication cases.  However, pushing the above two cases out to
-> 
-> We don't need such, passing payloads from kernel to user space. You do the pre
-> SCSI nexus operations in user space then kernel takes care of established
-> nexuses.
-> 
-
-I understand what you have in mind, but I still think this the wrong
-approach for the default cases.  For an in-kernel iscsi-target capable
-of changing any aspect of the control plane on the fly, this type of
-split is problematic to support and maintain and does not actually buy
-us anything for the default cases.
-
-> > userspace really does add unnecessary complexity and limitiations that I
-> > want to avoid for the default iSCSI login cases.
-> > 
-> > It also would break existing rtslib/rtsadmin-v2 userspace code, and
-> 
-> I don't think breaking the existing code matters.
-
-Sure it does.  It means the difference between if the
-'required-to-implement' cases can be exposed via configfs to a native
-python object library and shell, or if we need to have an external
-daemon + configuration that has to be kept in sync between the two,
-parse external configuration files, et al.
-
-With the current design, the NodeACLs + authentication are available
-directly as part of the rtslib python object library, and python code
-including rtslib can reference all aspects of the initiator
-configuration directly.  Breaking this up to an external daemon and
-configuration is a step backwards for the default cases from the
-perspective of rtslib, and making it work with an external
-configuration / daemon for the NodeACLs + default authentication case is
-an hack compared to how iscsi-target functionality is exposed to
-application level progammers via rtslib today.
-
---nab
+ [PATCH 1/3] perf-stat: refactor print/formatting into print-ops for
+ [PATCH 2/3] perf-stat: fix +- nan% in -Aa runs
+ [PATCH 3/3] perf-stat: clean up <no count> handling, CPUx prefixing
 
 
+
+[PATCH 1/3] perf-stat: refactor print/formatting into print-ops for
+
+produces output like this for csv-output:
+
+[jimc@harpo perf]$  sudo ./perf stat -Aa -x'\t' perl -e '$i++ for 1..100000'
+CPU0	task-clock-msecs	16.255272
+CPU0	context-switches	12
+CPU0	CPU-migrations	0
+CPU0	page-faults	445
+CPU0	cycles	27441481	67.07%
+CPU0	instructions	36775396	73.16%
+CPU0	branches	8836245	20.72%
+CPU0	branch-misses	21646	14.62%
+CPU0	cache-references	58221	12.31%
+CPU0	cache-misses	6815	12.28%
+seconds-time-elapsed	0.016211262
+
+This alters csv-output form by printing event-name in 1st column,
+swapping cols 1, 2 from previous table.  This may be problematic for
+some existing users, but is more "normal" and therefore better
+long-term.  The 3rd - 5th colums match those in pretty
+
+As before, csv-output is triggered by use of -x "sep", where sep can
+be any string, not just a char.  This patch adds special case for
+"\t", which is converted to a tab.
+
+[PATCH 2/3] perf-stat: fix +- nan% in -Aa runs
+
+without this patch, I get computations like this:
+
+[jimc@groucho perf]$ sudo ./perf stat -r3 -Aa  perl -e '$i++ for 1..100000'
+
+ Performance counter stats for 'perl -e $i++ for 1..100000' (3 runs):
+
+CPU0             12.391883 task-clock-msecs         #      0.966 CPUs    ( +-    -nan% )
+CPU1             12.446571 task-clock-msecs         #      0.970 CPUs    ( +-    -nan% )
+CPU2             12.408014 task-clock-msecs         #      0.967 CPUs    ( +-    -nan% )
+CPU3             12.422264 task-clock-msecs         #      0.968 CPUs    ( +-    -nan% )
+
+I couldnt see anything wrong in the caller, so fixed it in stddev_stats()
+
+[PATCH 3/3] perf-stat: clean up <no count> handling, CPUx prefixing
+
+push <no-count> printing into print-ops to hide some cruft, and fold
+away dynamic formats.  Refactor cpustr string prep into cpustr(int
+cpu), use it everywhere, and change fn-sigs accordingly.
+
+Also includes 1-line fixup for overlooked hack in earlier patch:
+  -       if (scaled == -1 && !csv_output) {
+  +       if (scaled == -1) {
 
