@@ -1,253 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab1EZFnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 01:43:24 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33006 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab1EZFnX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 01:43:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 26 May 2011 14:36:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ying Han <yinghan@google.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: [RFC][PATCH v3 10/10] memcg : reclaim statistics
-Message-Id: <20110526143631.adc2c911.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753575Ab1EYFuZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 01:50:25 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53352 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752443Ab1EYFuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 01:50:24 -0400
+Message-ID: <4DDDE9E6.7090303@cn.fujitsu.com>
+Date: Thu, 26 May 2011 01:49:26 -0400
+From: liubo <liubo2009@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [PATCH 1/2] tracing: add __print_symbolic_u64 to avoid warnings
+ on 32bit machine
+References: <4D9573DB.4010009@cn.fujitsu.com>	 <1301665762.2160.22.camel@gandalf.stny.rr.com>	 <4D9C2FF6.7090607@cn.fujitsu.com>	 <1303150309.7181.51.camel@gandalf.stny.rr.com>	 <4DACE6E0.7000507@cn.fujitsu.com>  <4DBA8C95.4000300@cn.fujitsu.com> <1304264124.25414.1079.camel@gandalf.stny.rr.com>
+In-Reply-To: <1304264124.25414.1079.camel@gandalf.stny.rr.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-25 13:50:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-25 13:50:23,
+	Serialize complete at 2011-05-25 13:50:23
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/01/2011 11:35 AM, Steven Rostedt wrote:
+> On Fri, 2011-04-29 at 18:01 +0800, liubo wrote:
+>> ping?
+> 
+> Sorry, I've been trying to get the new ftrace function tracer features
+> out ASAP. I plan on looking at this when I'm done.
+> 
+> Thanks,
+> 
 
-This patch adds a file memory.reclaim_stat.
+Hi, Steven,
 
-This file shows following.
-==
-recent_scan_success_ratio  12 # recent reclaim/scan ratio.
-limit_scan_pages 671	      # scan caused by hitting limit.
-limit_freed_pages 538	      # freed pages by limit_scan
-limit_elapsed_ns 518555076    # elapsed time in LRU scanning by limit.
-soft_scan_pages 0	      # scan caused by softlimit.
-soft_freed_pages 0	      # freed pages by soft_scan.
-soft_elapsed_ns 0	      # elapsed time in LRU scanning by softlimit.
-margin_scan_pages 16744221    # scan caused by auto-keep-margin
-margin_freed_pages 565943     # freed pages by auto-keep-margin.
-margin_elapsed_ns 5545388791  # elapsed time in LRU scanning by auto-keep-margin
+I've seen your latest git-pull, but these 2 patches are not included yet,
+so is there any problem with them?
 
-This patch adds a new file rather than adding more stats to memory.stat. By it,
-this support "reset" accounting by
+If it does, I can be helpful. :)
 
-  # echo 0 > .../memory.reclaim_stat
+thanks,
+liubo
 
-This is good for debug and tuning.
-
-TODO:
- - add Documentaion.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   87 ++++++++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 79 insertions(+), 8 deletions(-)
-
-Index: memcg_async/mm/memcontrol.c
-===================================================================
---- memcg_async.orig/mm/memcontrol.c
-+++ memcg_async/mm/memcontrol.c
-@@ -216,6 +216,13 @@ static void mem_cgroup_update_margin_to_
- static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem);
- static void mem_cgroup_reflesh_scan_ratio(struct mem_cgroup *mem);
- 
-+enum scan_type {
-+	LIMIT_SCAN,	/* scan memory because memcg hits limit */
-+	SOFT_SCAN,	/* scan memory because of soft limit */
-+	MARGIN_SCAN,	/* scan memory for making margin to limit */
-+	NR_SCAN_TYPES,
-+};
-+
- /*
-  * The memory controller data structure. The memory controller controls both
-  * page cache and RSS per cgroup. We would eventually like to provide
-@@ -300,6 +307,13 @@ struct mem_cgroup {
- 	unsigned long	scanned;
- 	unsigned long	reclaimed;
- 	unsigned long	next_scanratio_update;
-+	/* For statistics */
-+	struct {
-+		unsigned long nr_scanned_pages;
-+		unsigned long nr_reclaimed_pages;
-+		unsigned long elapsed_ns;
-+	} scan_stat[NR_SCAN_TYPES];
-+
- 	/*
- 	 * percpu counter.
- 	 */
-@@ -1426,7 +1440,9 @@ unsigned int mem_cgroup_swappiness(struc
- 
- static void __mem_cgroup_update_scan_ratio(struct mem_cgroup *mem,
- 				unsigned long scanned,
--				unsigned long reclaimed)
-+				unsigned long reclaimed,
-+				unsigned long elapsed,
-+				enum scan_type type)
- {
- 	unsigned long limit;
- 
-@@ -1439,6 +1455,9 @@ static void __mem_cgroup_update_scan_rat
- 		mem->scanned /= 2;
- 		mem->reclaimed /= 2;
- 	}
-+	mem->scan_stat[type].nr_scanned_pages += scanned;
-+	mem->scan_stat[type].nr_reclaimed_pages += reclaimed;
-+	mem->scan_stat[type].elapsed_ns += elapsed;
- 	spin_unlock(&mem->scan_stat_lock);
- }
- 
-@@ -1448,6 +1467,8 @@ static void __mem_cgroup_update_scan_rat
-  * @root : root memcg of hierarchy walk.
-  * @scanned : scanned pages
-  * @reclaimed: reclaimed pages.
-+ * @elapsed: used time for memory reclaim
-+ * @type : scan type as LIMIT_SCAN, SOFT_SCAN, MARGIN_SCAN.
-  *
-  * record scan/reclaim ratio to the memcg both to a child and it's root
-  * mem cgroup, which is a reclaim target. This value is used for
-@@ -1457,11 +1478,14 @@ static void __mem_cgroup_update_scan_rat
- static void mem_cgroup_update_scan_ratio(struct mem_cgroup *mem,
- 				  struct mem_cgroup *root,
- 				unsigned long scanned,
--				unsigned long reclaimed)
-+				unsigned long reclaimed,
-+				unsigned long elapsed,
-+				int type)
- {
--	__mem_cgroup_update_scan_ratio(mem, scanned, reclaimed);
-+	__mem_cgroup_update_scan_ratio(mem, scanned, reclaimed, elapsed, type);
- 	if (mem != root)
--		__mem_cgroup_update_scan_ratio(root, scanned, reclaimed);
-+		__mem_cgroup_update_scan_ratio(root, scanned, reclaimed,
-+					elapsed, type);
- 
- }
- 
-@@ -1906,6 +1930,7 @@ static int mem_cgroup_hierarchical_recla
- 	bool is_kswapd = false;
- 	unsigned long excess;
- 	unsigned long nr_scanned;
-+	unsigned long start, end, elapsed;
- 
- 	excess = res_counter_soft_limit_excess(&root_mem->res) >> PAGE_SHIFT;
- 
-@@ -1947,18 +1972,24 @@ static int mem_cgroup_hierarchical_recla
- 		}
- 		/* we use swappiness of local cgroup */
- 		if (check_soft) {
-+			start = sched_clock();
- 			ret = mem_cgroup_shrink_node_zone(victim, gfp_mask,
- 				noswap, zone, &nr_scanned);
-+			end = sched_clock();
-+			elapsed = end - start;
- 			*total_scanned += nr_scanned;
- 			mem_cgroup_soft_steal(victim, is_kswapd, ret);
- 			mem_cgroup_soft_scan(victim, is_kswapd, nr_scanned);
- 			mem_cgroup_update_scan_ratio(victim,
--					root_mem, nr_scanned, ret);
-+				root_mem, nr_scanned, ret, elapsed, SOFT_SCAN);
- 		} else {
-+			start = sched_clock();
- 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
- 					noswap, &nr_scanned);
-+			end = sched_clock();
-+			elapsed = end - start;
- 			mem_cgroup_update_scan_ratio(victim,
--					root_mem, nr_scanned, ret);
-+				root_mem, nr_scanned, ret, elapsed, LIMIT_SCAN);
- 		}
- 		css_put(&victim->css);
- 		/*
-@@ -4003,7 +4034,7 @@ static void mem_cgroup_async_shrink_work
- 	struct delayed_work *dw = to_delayed_work(work);
- 	struct mem_cgroup *mem, *victim;
- 	long nr_to_reclaim;
--	unsigned long nr_scanned, nr_reclaimed;
-+	unsigned long nr_scanned, nr_reclaimed, start, end;
- 	int delay = 0;
- 
- 	mem = container_of(dw, struct mem_cgroup, async_work);
-@@ -4022,9 +4053,12 @@ static void mem_cgroup_async_shrink_work
- 	if (!victim)
- 		goto finish_scan;
- 
-+	start = sched_clock();
- 	nr_reclaimed = mem_cgroup_shrink_rate_limited(victim, nr_to_reclaim,
- 					&nr_scanned);
--	mem_cgroup_update_scan_ratio(victim, mem, nr_scanned, nr_reclaimed);
-+	end = sched_clock();
-+	mem_cgroup_update_scan_ratio(victim, mem, nr_scanned, nr_reclaimed,
-+			end - start, MARGIN_SCAN);
- 	css_put(&victim->css);
- 
- 	/* If margin is enough big, stop */
-@@ -4680,6 +4714,38 @@ static int mem_control_stat_show(struct 
- 	return 0;
- }
- 
-+static int mem_cgroup_reclaim_stat_read(struct cgroup *cont, struct cftype *cft,
-+				 struct cgroup_map_cb *cb)
-+{
-+	struct mem_cgroup *mem = mem_cgroup_from_cont(cont);
-+	u64 val;
-+	int i; /* for indexing scan_stat[] */
-+
-+	val = mem->reclaimed * 100 / mem->scanned;
-+	cb->fill(cb, "recent_scan_success_ratio", val);
-+	i  = LIMIT_SCAN;
-+	cb->fill(cb, "limit_scan_pages", mem->scan_stat[i].nr_scanned_pages);
-+	cb->fill(cb, "limit_freed_pages", mem->scan_stat[i].nr_reclaimed_pages);
-+	cb->fill(cb, "limit_elapsed_ns", mem->scan_stat[i].elapsed_ns);
-+	i = SOFT_SCAN;
-+	cb->fill(cb, "soft_scan_pages", mem->scan_stat[i].nr_scanned_pages);
-+	cb->fill(cb, "soft_freed_pages", mem->scan_stat[i].nr_reclaimed_pages);
-+	cb->fill(cb, "soft_elapsed_ns", mem->scan_stat[i].elapsed_ns);
-+	i = MARGIN_SCAN;
-+	cb->fill(cb, "margin_scan_pages", mem->scan_stat[i].nr_scanned_pages);
-+	cb->fill(cb, "margin_freed_pages", mem->scan_stat[i].nr_reclaimed_pages);
-+	cb->fill(cb, "margin_elapsed_ns", mem->scan_stat[i].elapsed_ns);
-+	return 0;
-+}
-+
-+static int mem_cgroup_reclaim_stat_reset(struct cgroup *cgrp, unsigned int event)
-+{
-+	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
-+	memset(mem->scan_stat, 0, sizeof(mem->scan_stat));
-+	return 0;
-+}
-+
-+
- /*
-  * User flags for async_control is a subset of mem->async_flags. But
-  * this needs to be defined independently to hide implemation details.
-@@ -5163,6 +5229,11 @@ static struct cftype mem_cgroup_files[] 
- 		.open = mem_control_numa_stat_open,
- 	},
- #endif
-+	{
-+		.name = "reclaim_stat",
-+		.read_map = mem_cgroup_reclaim_stat_read,
-+		.trigger = mem_cgroup_reclaim_stat_reset,
-+	}
- };
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> -- Steve
+> 
+>> On 04/19/2011 09:35 AM, liubo wrote:
+>>> Filesystem, like Btrfs, has some "ULL" macros, and when these macros are passed
+>>> to tracepoints'__print_symbolic(), there will be 64->32 truncate WARNINGS during
+>>> compiling on 32bit box.
+>>>
+>>> Signed-off-by: Liu Bo <liubo2009@cn.fujitsu.com>
+>>> ---
+>>>  include/linux/ftrace_event.h |   12 ++++++++++++
+>>>  include/trace/ftrace.h       |   13 +++++++++++++
+>>>  kernel/trace/trace_output.c  |   27 +++++++++++++++++++++++++++
+>>>  3 files changed, 52 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+>>> index 47e3997..efb2330 100644
+>>> --- a/include/linux/ftrace_event.h
+>>> +++ b/include/linux/ftrace_event.h
+>>> @@ -16,6 +16,11 @@ struct trace_print_flags {
+>>>  	const char		*name;
+>>>  };
+>>>  
+>>> +struct trace_print_flags_u64 {
+>>> +	unsigned long long	mask;
+>>> +	const char		*name;
+>>> +};
+>>> +
+>>>  const char *ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
+>>>  				   unsigned long flags,
+>>>  				   const struct trace_print_flags *flag_array);
+>>> @@ -23,6 +28,13 @@ const char *ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
+>>>  const char *ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
+>>>  				     const struct trace_print_flags *symbol_array);
+>>>  
+>>> +#if BITS_PER_LONG == 32
+>>> +const char *ftrace_print_symbols_seq_u64(struct trace_seq *p,
+>>> +					 unsigned long long val,
+>>> +					 const struct trace_print_flags_u64
+>>> +								 *symbol_array);
+>>> +#endif
+>>> +
+>>>  const char *ftrace_print_hex_seq(struct trace_seq *p,
+>>>  				 const unsigned char *buf, int len);
+>>>  
+>>> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+>>> index 3e68366..533c49f 100644
+>>> --- a/include/trace/ftrace.h
+>>> +++ b/include/trace/ftrace.h
+>>> @@ -205,6 +205,19 @@
+>>>  		ftrace_print_symbols_seq(p, value, symbols);		\
+>>>  	})
+>>>  
+>>> +#undef __print_symbolic_u64
+>>> +#if BITS_PER_LONG == 32
+>>> +#define __print_symbolic_u64(value, symbol_array...)			\
+>>> +	({								\
+>>> +		static const struct trace_print_flags_u64 symbols[] =	\
+>>> +			{ symbol_array, { -1, NULL } };			\
+>>> +		ftrace_print_symbols_seq_u64(p, value, symbols);	\
+>>> +	})
+>>> +#else
+>>> +#define __print_symbolic_u64(value, symbol_array...)			\
+>>> +			__print_symbolic(value, symbol_array)
+>>> +#endif
+>>> +
+>>>  #undef __print_hex
+>>>  #define __print_hex(buf, buf_len) ftrace_print_hex_seq(p, buf, buf_len)
+>>>  
+>>> diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+>>> index 02272ba..b783504 100644
+>>> --- a/kernel/trace/trace_output.c
+>>> +++ b/kernel/trace/trace_output.c
+>>> @@ -353,6 +353,33 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
+>>>  }
+>>>  EXPORT_SYMBOL(ftrace_print_symbols_seq);
+>>>  
+>>> +#if BITS_PER_LONG == 32
+>>> +const char *
+>>> +ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
+>>> +			 const struct trace_print_flags_u64 *symbol_array)
+>>> +{
+>>> +	int i;
+>>> +	const char *ret = p->buffer + p->len;
+>>> +
+>>> +	for (i = 0;  symbol_array[i].name; i++) {
+>>> +
+>>> +		if (val != symbol_array[i].mask)
+>>> +			continue;
+>>> +
+>>> +		trace_seq_puts(p, symbol_array[i].name);
+>>> +		break;
+>>> +	}
+>>> +
+>>> +	if (!p->len)
+>>> +		trace_seq_printf(p, "0x%llx", val);
+>>> +
+>>> +	trace_seq_putc(p, 0);
+>>> +
+>>> +	return ret;
+>>> +}
+>>> +EXPORT_SYMBOL(ftrace_print_symbols_seq_u64);
+>>> +#endif
+>>> +
+>>>  const char *
+>>>  ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int buf_len)
+>>>  {
+> 
+> 
+> 
 
