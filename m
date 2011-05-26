@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab1EZPU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 11:20:59 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55447 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753203Ab1EZPU6 (ORCPT
+	id S932847Ab1EZP37 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 11:29:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:47819 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932540Ab1EZP35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 11:20:58 -0400
-From: Boris Ostrovsky <ostr@amd64.org>
-To: hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de
-Cc: borislav.petkov@amd.com, Hans.Rosenfeld@amd.com, Andreas.Herrmann3@amd.com,
-        cebbert@redhat.com, Boris.Ostrovsky@amd.com,
-        linux-kernel@vger.kernel.org, jvpeetz@web.de, stable@kernel.org,
-        x86@kernel.org
-Subject: [PATCH RESEND] x86, AMD: Do not enable ARAT feature on AMD processors below family 0x12
-Date: Thu, 26 May 2011 11:19:52 -0400
-Message-Id: <1306423192-19774-1-git-send-email-ostr@amd64.org>
-X-Mailer: git-send-email 1.7.5.2
+	Thu, 26 May 2011 11:29:57 -0400
+X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=PXiC56US2D0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=Wms0IY76dHe0iP-AmtkA:9 a=hBmTDBdwErt0MMM0absA:7 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110526152541.995963172@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 26 May 2011 11:25:42 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 00/12] [GIT PULL] tracing: fixes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit b87cf80af3ba4b4c008b4face3c68d604e1715c6 added support for
-ARAT (Always Running APIC timer) on AMD processors that are not
-affected by erratum 400. This erratum is present on certain processor
-families and prevents APIC timer from waking up the CPU when it
-is in a deep C state, including C1E state.
 
-Determining whether a processor is affected by this erratum may
-have some corner cases and handling these cases is somewhat
-complicated. In the interest of simplicity we won't claim ARAT
-support on processor families below 0x12 and will go back to
-broadcasting timer when going idle.
+Ingo,
 
-Signed-off-by: Boris Ostrovsky <ostr@amd64.org>
-Tested-by: Boris Petkov <borislav.petkov@amd.com>
-Cc: Hans Rosenfeld <Hans.Rosenfeld@amd.com>
-Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
-Cc: Chuck Ebbert <cebbert@redhat.com>
-Cc: stable@kernel.org # 32.x, 38.x, 39.x
----
- arch/x86/kernel/cpu/amd.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+This patch set contains all fixes. Some of the fixes are to get
+rid of warnings, but I think getting rid of warnings is a good thing
+during a merge window.
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 6f9d1f6..728b223 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -612,8 +612,11 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 	}
- #endif
- 
--	/* As a rule processors have APIC timer running in deep C states */
--	if (c->x86 > 0xf && !cpu_has_amd_erratum(amd_erratum_400))
-+	/*
-+	 * Family 0x12 and above processors have APIC timer
-+	 * running in deep C states.
-+	 */
-+	if (c->x86 > 0x11)
- 		set_cpu_cap(c, X86_FEATURE_ARAT);
- 
- 	/*
--- 
-1.7.3.4
+What's different about this and my last pull request:
 
+1) I removed the two patches that were not bug fixes and put them
+   in my queue for 2.6.41/3.1/2.8.1
+
+2) I added two patches, one that was a bug fix that caused a
+   triple fault when PROVE_RCU was set, and the other that caused
+   problems with truncating 64bit words in the trace events.
+
+3) I pulled out Masami's kprobe stack trace fix because it failed
+   on other archs. My last push request, I did compile test other
+   archs, but I only used the default config. This time, I enabled
+   tracing as well (doing it both with and without tracing enabled)
+   and when tracing was enabled, I detected the problem with the lack
+   of save_stack_trace_regs() in other archs.
+
+I tested this on x86_64 and x86_32 as well as compiled tested for
+the following archs, with and without tracing enabled:
+
+ alpha, arm, blackfin, ia64, parsic, ppc, ppc64, sparc
+
+The following had failures for other reason (failed without this
+patch set):
+
+  cris, cris32, m68k, mips64, mips32, parsic64, sh, xtensa, uml.
+
+
+Please pull the latest tip/perf/urgent tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/urgent
+
+
+Jiri Olsa (1):
+      jump_label: Check entries limit in __jump_label_update
+
+Rabin Vincent (1):
+      ftrace/recordmcount: Avoid STT_FUNC symbols as base on ARM
+
+Rakib Mullick (1):
+      x86/ftrace: Fix compiler warning in ftrace.c
+
+Steven Rostedt (7):
+      maccess,probe_kernel: Make write/read src const void *
+      scripts/tags.sh: Fix ctags for DEFINE_EVENT()
+      scripts/tags.sh: Add magic for trace-events for etags too
+      ftrace: Have ftrace_startup() return failure code
+      tracing: Have event with function tracer check error return
+      ftrace: Set ops->flag to enabled even on static function tracing
+      ftrace: Add internal recursive checks
+
+liubo (2):
+      tracing: Add __print_symbolic_u64 to avoid warnings on 32bit machine
+      tracing: Update btrfs's tracepoints to use u64 interface
+
+----
+ arch/blackfin/mm/maccess.c   |    4 ++--
+ arch/s390/mm/maccess.c       |    4 ++--
+ arch/x86/kernel/ftrace.c     |   12 ++++++------
+ include/linux/ftrace_event.h |   12 ++++++++++++
+ include/linux/sched.h        |    2 +-
+ include/linux/uaccess.h      |    8 ++++----
+ include/trace/events/btrfs.h |    4 ++--
+ include/trace/ftrace.h       |   13 +++++++++++++
+ kernel/jump_label.c          |   18 +++++++++++++-----
+ kernel/trace/ftrace.c        |   31 ++++++++++++++++++++++++-------
+ kernel/trace/ring_buffer.c   |   10 +++++-----
+ kernel/trace/trace.h         |   15 +++++++++++++++
+ kernel/trace/trace_events.c  |    7 ++++++-
+ kernel/trace/trace_output.c  |   27 +++++++++++++++++++++++++++
+ mm/maccess.c                 |    8 ++++----
+ scripts/recordmcount.h       |    8 ++++++++
+ scripts/tags.sh              |    6 ++++--
+ 17 files changed, 148 insertions(+), 41 deletions(-)
