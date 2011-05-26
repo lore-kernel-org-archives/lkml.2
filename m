@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757916Ab1EZPEU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 11:04:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43855 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757579Ab1EZPET (ORCPT
+	id S932363Ab1EZRFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:05:09 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:47607 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab1EZRFG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 11:04:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
-References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
- <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com> <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
- <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu>
- <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu>
- <alpine.LFD.2.02.1105251836030.3078@ionos> <20110525180100.GY19633@outflux.net>
- <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <20110525191152.GC19633@outflux.net>
- <BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com> <BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 26 May 2011 08:03:21 -0700
-Message-ID: <BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
-To: Colin Walters <walters@verbum.org>
-Cc: Kees Cook <kees.cook@canonical.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 May 2011 13:05:06 -0400
+Subject: Re: Kernel crash after using new Intel NIC (igb)
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Arun Sharma <asharma@fb.com>, Maximilian Engelhardt <maxi@daemonizer.de>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        StuStaNet Vorstand <vorstand@stusta.mhn.de>
+In-Reply-To: <1306305331.3305.22.camel@edumazet-laptop>
+References: <201104250033.03401.maxi@daemonizer.de>
+	 <1303878240.2699.41.camel@edumazet-laptop>
+	 <1303878771.2699.44.camel@edumazet-laptop>
+	 <201104271352.00601.maxi@daemonizer.de>
+	 <20110512211033.GA3468@dev1756.snc6.facebook.com>
+	 <1305234953.2831.2.camel@edumazet-laptop>
+	 <20110524213327.GA3917@dev1756.snc6.facebook.com>
+	 <1306291469.3305.11.camel@edumazet-laptop>
+	 <20110525060609.GA32244@dev1756.snc6.facebook.com>
+	 <1306305331.3305.22.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare
+Date: Thu, 26 May 2011 08:06:15 -0700
+Message-ID: <1306422375.17233.88.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 26 May 2011 17:05:05.0779 (UTC) FILETIME=[0F679430:01CC1BC7]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18160.004
+X-TM-AS-Result: No--26.141100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 7:37 AM, Colin Walters <walters@verbum.org> wrote:
->
-> I'm curious which features you feel are esoteric and cool but unused?
+On Wed, 2011-05-25 at 08:35 +0200, Eric Dumazet wrote:
+> Le mardi 24 mai 2011 à 23:06 -0700, Arun Sharma a écrit :
+> > On Wed, May 25, 2011 at 04:44:29AM +0200, Eric Dumazet wrote:
+> > > 
+> > > Hmm, thanks for the report. Are you running x86 or another arch ?
+> > > 
+> > 
+> > This was on x86.
+> > 
+> > > We probably need some sort of memory barrier.
+> > > 
+> > > However, locking this central lock makes the thing too slow, I'll try to
+> > > use an atomic_inc_return on p->refcnt instead. (and then lock
+> > > unused_peers.lock if we got a 0->1 transition)
+> > 
+> > Another possibility is to do the list_empty() check twice. Once without
+> > taking the lock and again with the spinlock held.
+> > 
+> 
+> Why ?
+> 
+> list_del_init(&p->unused); (done under lock of course) is safe, you can
+> call it twice, no problem.
+> 
+> No, the real problem is the  (!list_empty(&p->unused) test : It seems to
+> not always tell the truth if not done under lock.
 
-Just about anything linux-specific. Ranging from the totally new
-concepts (epoll/clone/splice/signalfd) to just simple cleanups and
-extensions of reasonably standard stuff (sync_file_range/sendpage).
+Of course not; list modification operations are not atomic.
 
-Sure, there's almost always *somebody* who uses them, but they are
-seldom actually worth it.
+Ben.
 
-The one thing that works well is when you expose it as a standard
-interface. So futexes are linux-specific, but they are exposed as the
-standard pthreads condition variables etc to apps - very few actually
-use them as futexes. But because glibc uses them for the pthreads
-synchronization, I think they ended up being used inside glibc for
-low-level stuff too, so I think futexes ended up being an unqualified
-success - much better than the standard interface.
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-The "it can be used in standard libraries" ends up being a very
-powerful thing. It doesn't have to be libc - if something like a glib
-or a big graphical interface uses them, they can get very popular. But
-if you have to have actual config options (autoconf or similar) to
-enable the feature on Linux, along with a compatibility case (because
-older kernels don't even support it, so it's not even "linux", it's
-"linux newer than xyz"), then very very few applications end up using
-it.
-
-And security issues in particular are often *very* subtle. For
-example, something like a system call filter sounds like an obviously
-safe thing: it can only limit what you do, right?
-
-Except no, not right at all. Imagine that you're limiting a suid
-application, and the one operation you limit is "setuid()". Imagine
-that the suid application explicitly drops privileges in order to run
-safely as the user. Imagine, further, that it doesn't even check the
-return value, because it *knows* that if it is root, it will succeed,
-and if it isn't root, then it wasn't suid to begin with and doesn't
-need to do anything about it.
-
-Unlikely? Hell no. That's standard practice. And if you allow filter
-setup that survives fork+exec, you just opened a HUGE security hole.
-
-Fixable? Yes, easily. And I haven't looked at the current patches, but
-I would not be AT ALL surprised if they had exactly the above huge
-security hole.
-
-My point being that (a) I'm very dubious about new non-standard
-features, because historically they seldom get used very widely and
-(b) I'm doubly dubious about security things because it turns out it's
-damn easy to get it wrong in all kinds of small subtle details.
-
-                            Linus
