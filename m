@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932631Ab1EZOZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 10:25:57 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:34674 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932563Ab1EZOZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 10:25:56 -0400
-Date: Thu, 26 May 2011 07:25:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de
-Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage
- based on semi-formal proof"
-Message-ID: <20110526142553.GA2386@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110524013523.GO7428@linux.vnet.ibm.com>
- <4DDC21E1.1070502@kernel.org>
- <4DDC48E3.1060108@kernel.org>
- <20110525045253.GB2262@linux.vnet.ibm.com>
- <4DDD7F96.3090408@kernel.org>
- <20110525223437.GO2341@linux.vnet.ibm.com>
- <4DDD8775.1000501@kernel.org>
- <20110526011310.GP2341@linux.vnet.ibm.com>
- <20110526013029.GA28103@linux.vnet.ibm.com>
- <20110526061348.GA26775@elte.hu>
+	id S1758011Ab1EZObu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 10:31:50 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:32979 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757992Ab1EZObs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 10:31:48 -0400
+Date: Thu, 26 May 2011 10:31:47 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tanya Brokhman <tlinder@codeaurora.org>
+cc: balbi@ti.com, "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>,
+        <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+In-Reply-To: <01fc01cc1b71$53e2d210$fba87630$@org>
+Message-ID: <Pine.LNX.4.44L0.1105261028040.1960-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526061348.GA26775@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 08:13:48AM +0200, Ingo Molnar wrote:
-> 
-> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > rcu: Start RCU kthreads in TASK_INTERRUPTIBLE state
-> > 
-> > Upon creation, kthreads are in TASK_UNINTERRUPTIBLE state, which can
-> > result in softlockup warnings.  Because some of RCU's kthreads can
-> > legitimately be idle indefinitely, start them in TASK_INTERRUPTIBLE
-> > state in order to avoid those warnings.
-> > 
-> > Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> this should also solve load average artifacts - do not 
-> TASK_UNINTERRUPTIBLE tasks skew the load upwards?
+On Thu, 26 May 2011, Tanya Brokhman wrote:
 
-Quite possibly -- in this case the artifacts would appear just after
-boot, and would disappear as soon as the RCU kthreads had something
-to do.
+> > > Right, but at this point there is no way of knowing what function
+> > drivers
+> > > will bind to it and what descriptors they will provide. Most of the
+> > > function drivers allocate their descriptors at bind() that occurs
+> > after
+> > > the UDC already registers.
+> > 
+> > Well, there must be an appropriate spot to do this.
+> 
+> Unfortunately in the current implementation there isn't.
 
-							Thanx, Paul
+Sure there is.  You describe a good possibility later on in your 
+email...
+
+> > It looks like you need to add a "max_speed" field to struct
+> > usb_composite_driver.  Each driver will initialize this to the highest
+> > speed it supports, and it must guarantee that the necessary descriptors
+> > are available.
+> 
+> I also thought of that. This can be done...
+> Just to make sure we're on the same page:
+> We can add a "max_sup_speed" field to struct usb_composite_driver. Each of
+> the Gadget drivers will set this field prior to calling
+> usb_composite_probe(). Then, in usb_composite_probe(), we'll update the
+> composite_driver.speed as follows:
+> 
+> 	composite_driver.speed = min(composite_driver.speed,
+> driver->max_sup_speed);
+
+Just call it max_speed.  You can mention in the kerneldoc that it is 
+the maximum speed supported by the driver.
+
+> Of course for SS we'll update the composite_driver.speed @ static struct
+> usb_gadget_driver composite_driver, as we agreed with Felipe.
+> 
+> How does that sound? Felipe - it seems to me that these should cover your
+> hesitations about updating the driver speed :)
+> 
+> Now that I think about it, the above will be true for HS as well. I mean the
+> current speed of composite_driver is set always to HS but if there is a
+> function driver that supports only FS then the above will update
+> composite_driver.speed to FS.
+
+That's right.  The same solution will work for both cases.
+
+Alan Stern
+
