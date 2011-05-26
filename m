@@ -1,537 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab1EZMUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 08:20:40 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:15796 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757430Ab1EZMUi (ORCPT
+	id S1757505Ab1EZMWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 08:22:34 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:33078 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757481Ab1EZMWd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 08:20:38 -0400
-X-SpamScore: -1
-X-BigFish: VPS-1(zz2176Mc8kzz1202hzz8275bhz32i2a8h668h839h65h)
-X-Spam-TCS-SCL: 4:0
-X-Forefront-Antispam-Report: CIP:220.225.38.51;KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-        Dajun Chen <Dajun.Chen@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Date: Thu, 26 May 2011 17:49:12 +0530
-Subject: [PATCHv3 6/11] HWMON: Support of fixed point conversion for bat
- temperature
-Thread-Topic: [PATCHv3 6/11] HWMON: Support of fixed point conversion for
- bat temperature
-Thread-Index: Acwbnx89fcwdHfV+ST2EdqMCQ7JD0g==
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BF303C2@KCINPUNHJCMS01.kpit.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+	Thu, 26 May 2011 08:22:33 -0400
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+From: Peter Zijlstra <peterz@infradead.org>
+To: Marc Zyngier <Marc.Zyngier@arm.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Frank Rowand <frank.rowand@am.sony.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <1306409575.1200.71.camel@twins>
+References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
+	 <1306272750.2497.79.camel@laptop> <1306343335.21578.65.camel@twins>
+	 <1306358128.21578.107.camel@twins>
+	 <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+	 <1306405979.1200.63.camel@twins>
+	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
+	 <1306409575.1200.71.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 26 May 2011 14:21:51 +0200
+Message-ID: <1306412511.1200.90.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4QCKknK013964
 
-Hi Guenter,
+On Thu, 2011-05-26 at 13:32 +0200, Peter Zijlstra wrote:
+> 
+> The bad news is of course that I've got a little more head-scratching to
+> do, will keep you informed. 
 
-Existing fixed point conversion logic is modified to support battery temperature. This modified logic was compiled, linked & tested successfully.
+OK, that wasn't too hard.. (/me crosses fingers and prays Marc doesn't
+find more funnies ;-).
 
-Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
---
-diff --git a/Documentation/hwmon/da9052 b/Documentation/hwmon/da9052
-new file mode 100755
-index 0000000..aab7318
---- /dev/null
-+++ b/Documentation/hwmon/da9052
-@@ -0,0 +1,61 @@
-+Kernel driver da9052-hwmon
-+==========================
-+
-+Supported chips:
-+  * Dialog Semiconductors DA9052 PMICs
-+    Prefix: 'da9052'
-+    Datasheet: Kindly visit www.dialog-semiconductor.com and request for the
-+               official datasheet.
-+
-+Authors: David Dajun Chen <dchen@diasemi.com>
-+
-+Description
-+-----------
-+
-+The DA9052 provides an Analogue to Digital Converter (ADC) with 10 bits
-+resolution and track and hold circuitry combined with an analogue input
-+multiplexer. The analogue input multiplexer will allow conversion of up to 10
-+different inputs. The track and hold circuit ensures stable input voltages at
-+the input of the ADC during the conversion.
-+
-+The ADC is used to measure the following inputs:
-+Channel 0: VDDOUT - measurement of the system voltage
-+Channel 1: ICH - internal battery charger current measurement
-+Channel 2: TBAT - output from the battery NTC
-+Channel 3: VBAT - measurement of the battery voltage
-+Channel 4: ADC_IN4 - high impedance input (0 - 2.5V)
-+Channel 5: ADC_IN5 - high impedance input (0 - 2.5V)
-+Channel 6: ADC_IN6 - high impedance input (0 - 2.5V)
-+Channel 7: XY - TSI interface to measure the X and Y voltage of the touch
-+screen resistive potentiometers
-+Channel 8: Internal Tjunc. - sense (internal temp. sensor)
-+Channel 9: VBBAT - measurement of the backup battery voltage
-+
-+By using sysfs attributes we can measure the system voltage VDDOUT, the battery
-+charging current ICH, battery temperature TBAT, battery junction temperature
-+TJUNC, battery voltage VBAT and the back up battery voltage VBBAT.
-+
-+Voltage Monitoring
-+------------------
-+
-+Voltages are sampled by a 10 bit ADC.  Voltages in millivolts are 1.465
-+times the ADC value.
-+
-+Temperature Monitoring
-+----------------------
-+
-+Temperatures are sampled by a 10 bit ADC.  Junction and battery temperatures
-+are monitored by the ADC channels.
-+
-+The junction temperature is calculated:
-+       Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
-+The junction temperature attribute is supported by the driver.
-+
-+The battery temperature is calculated:
-+       Degree Celcius = 1 / (t1 + 1/298)- 273
-+where t1 = (1/B)* ln(( ADCval * 2.5)/(R25*ITBAT*255))
-+Default values of R25, B, ITBAT are 10e3, 3380 and 50e-6 respectively.
-+As the battery temperature computation depends on floating point
-+computation and taking natural log the battery temperature attribute is
-+not supported by the driver.
-+
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 3236a45..da5ff6d 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -303,6 +303,16 @@ config SENSORS_DS1621
-          This driver can also be built as a module.  If so, the module
-          will be called ds1621.
+Does the below cure all woes?
 
-+config SENSORS_DA9052_ADC
-+        tristate "Dialog DA9052 HWMON"
-+        depends on PMIC_DA9052
-+        help
-+          Say y here to support the ADC found on
-+          Dialog Semiconductor DA9052 PMIC.
-+
-+          This driver can also be built as module. If so, the module
-+          will be called da9052-hwmon.
-+
- config SENSORS_I5K_AMB
-        tristate "FB-DIMM AMB temperature sensor on Intel 5000 series chipsets"
-        depends on PCI && EXPERIMENTAL
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index f7c0c28..88b81ca 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -42,6 +42,7 @@ obj-$(CONFIG_SENSORS_ASC7621) += asc7621.o
- obj-$(CONFIG_SENSORS_ATXP1)    += atxp1.o
- obj-$(CONFIG_SENSORS_CORETEMP) += coretemp.o
- obj-$(CONFIG_SENSORS_PKGTEMP)  += pkgtemp.o
-+obj-$(CONFIG_SENSORS_DA9052_ADC)       += da9052-hwmon.o
- obj-$(CONFIG_SENSORS_DME1737)  += dme1737.o
- obj-$(CONFIG_SENSORS_DS620)    += ds620.o
- obj-$(CONFIG_SENSORS_DS1621)   += ds1621.o
-diff --git a/drivers/hwmon/da9052-hwmon.c b/drivers/hwmon/da9052-hwmon.c
-new file mode 100755
-index 0000000..f961d0b
---- /dev/null
-+++ b/drivers/hwmon/da9052-hwmon.c
-@@ -0,0 +1,379 @@
-+/*
-+ * HWMON Driver for Dialog DA9052
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/log2.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/reg.h>
-+
-+struct da9052_hwmon {
-+       struct da9052   *da9052;
-+       struct device   *class_device;
-+       struct mutex    hwmon_lock;
-+};
-+static const char * const input_names[] = {
-+       [DA9052_ADC_VDDOUT]     =       "VDDOUT",
-+       [DA9052_ADC_ICH]        =       "CHARGING CURRENT",
-+       [DA9052_ADC_TBAT]       =       "BATTERY TEMP",
-+       [DA9052_ADC_VBAT]       =       "BATTERY VOLTAGE",
-+       [DA9052_ADC_IN4]        =       "ADC IN4",
-+       [DA9052_ADC_IN5]        =       "ADC IN5",
-+       [DA9052_ADC_IN6]        =       "ADC IN6",
-+       [DA9052_ADC_TJUNC]      =       "BATTERY JUNCTION TEMP",
-+       [DA9052_ADC_VBBAT]      =       "BACK-UP BATTERY VOLTAGE",
-+};
-+
-+static int da9052_enable_vddout_channel(struct da9052 *da9052)
-+{
-+       int ret;
-+
-+       ret = da9052_reg_read(da9052, DA9052_ADC_CONT_REG);
-+       if (ret < 0)
-+               return ret;
-+
-+       ret |= DA9052_ADCCONT_AUTOVDDEN;
-+       return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
-+}
-+
-+static int da9052_disable_vddout_channel(struct da9052 *da9052)
-+{
-+       int ret;
-+
-+       ret = da9052_reg_read(da9052, DA9052_ADC_CONT_REG);
-+       if (ret < 0)
-+               return ret;
-+
-+       ret &= ~DA9052_ADCCONT_AUTOVDDEN;
-+       return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
-+
-+}
-+
-+static ssize_t da9052_read_vddout(struct device *dev,
-+       struct device_attribute *devattr, char *buf)
-+{
-+       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+       int ret;
-+       int vdd = -1;
-+
-+       mutex_lock(&hwmon->hwmon_lock);
-+
-+       ret = da9052_enable_vddout_channel(hwmon->da9052);
-+       if (ret < 0)
-+               goto hwmon_err;
-+
-+       ret = da9052_reg_read(hwmon->da9052, DA9052_VDD_RES_REG);
-+       if (ret < 0)
-+               pr_err("failed to read VDD_RES_REG\n");
-+       else
-+               vdd = ret;
-+
-+       ret = da9052_disable_vddout_channel(hwmon->da9052);
-+       if (ret < 0)
-+               goto hwmon_err;
-+
-+       if (vdd) {
-+               mutex_unlock(&hwmon->hwmon_lock);
-+               return sprintf(buf, "%d\n", vdd);
-+       }
-+hwmon_err:
-+       mutex_unlock(&hwmon->hwmon_lock);
-+       return ret;
-+}
-+
-+static ssize_t da9052_read_ich(struct device *dev,
-+       struct device_attribute *devattr, char *buf)
-+{
-+       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+       int ret;
-+
-+       ret = da9052_reg_read(hwmon->da9052, DA9052_ICHG_AV_REG);
-+       if (ret < 0)
-+               return ret;
-+
-+       /* Equivalent to 3.9mA/bit in register ICHG_AV */
-+       ret = DIV_ROUND_CLOSEST(ret * 39, 10);
-+       return sprintf(buf, "%d\n", ret);
-+}
-+
-+#define BCONST         3
-+#define TBAT           3355705
-+#define CAL_LOG2(nr) ((int)((ilog2(nr) - ilog2(100)) * 693147181LL))
-+/*
-+       The battery temperature is calculated:
-+       Degree Celcius = 1 / (t1 + 1/298)- 273
-+       where t1 = (1/B)* ln((ADCval * 2.5)/(R25*ITBAT*255))
-+       And R25 = 10e3, B = 3380 and ITBAT = 50e-6
-+*/
-+static int cal_temperature(int adc_val)
-+{
-+
-+       int log_val;
-+       unsigned int temp, deg_celcius;
-+
-+       /* Formula 2.5/(R25*ITBAT*255) gets reduced to 0.02
-+        Convert float value to fixed point using a multiplier */
-+       log_val = adc_val * 2;
-+
-+       temp = BCONST * (CAL_LOG2(log_val) * 10000) + TBAT;
-+
-+       /* ln(x) = log2(x) * ln(2) = log2(x) * 0.693147181
-+       log2(float) is converted to fixed point as log2(nr) - log2(dr) */
-+       deg_celcius = ((1000000000/temp) - 273);
-+
-+       /* Battery temperature in degree celcius */
-+       return deg_celcius;
-+}
-+
-+static ssize_t da9052_read_tbat(struct device *dev,
-+                       struct device_attribute *devattr, char *buf)
-+{
-+       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+       int ret;
-+       int tbat;
-+
-+       ret = da9052_reg_read(hwmon->da9052, DA9052_TBAT_RES_REG);
-+       if (ret < 0)
-+               return ret;
-+
-+       tbat = cal_temperature(ret);
-+
-+       return sprintf(buf, "%d\n", (tbat*1000));
-+}
-+
-+static ssize_t da9052_read_vbat(struct device *dev,
-+       struct device_attribute *devattr, char *buf)
-+{
-+       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+       int ret;
-+
-+       ret = da9052_adc_manual_read(hwmon->da9052, DA9052_ADC_VBAT);
-+       if (ret < 0)
-+               return ret;
-+
-+       return sprintf(buf, "%d\n", ret);
-+}
-+
-+static ssize_t da9052_read_misc_channel(struct device *dev,
-+       struct device_attribute *devattr, char *buf)
-+{
-+       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+       int channel = to_sensor_dev_attr(devattr)->index;
-+       int ret;
-+
-+       ret = da9052_adc_manual_read(hwmon->da9052, channel);
-+       if (ret < 0)
-+               return ret;
-+
-+       return sprintf(buf, "%d\n", ret);
-+}
-+
-+static ssize_t da9052_read_tjunc(struct device *dev,
-+       struct device_attribute *devattr, char *buf)
-+{
-+       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+       int temp;
-+       int ret;
-+
-+       ret = da9052_reg_read(hwmon->da9052, DA9052_TJUNC_RES_REG);
-+       if (ret < 0)
-+               return ret;
-+
-+       temp = ret;
-+
-+       ret = da9052_reg_read(hwmon->da9052, DA9052_T_OFFSET_REG);
-+       if (ret < 0)
-+               return ret;
-+
-+       /* Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8 */
-+       ret = 1708 * (temp - ret) - 108800;
-+       return sprintf(buf, "%d\n", ret);
-+}
-+
-+static ssize_t da9052_read_vbbat(struct device *dev,
-+       struct device_attribute *devattr, char *buf)
-+{
-+       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+       int ret;
-+
-+       ret = da9052_adc_manual_read(hwmon->da9052, DA9052_ADC_VBBAT);
-+       if (ret < 0)
-+               return ret;
-+
-+       return sprintf(buf, "%d\n", ret);
-+
-+}
-+
-+static ssize_t da9052_hwmon_show_name(struct device *dev,
-+               struct device_attribute *devattr, char *buf)
-+{
-+       return sprintf(buf, "da9052-hwmon\n");
-+}
-+
-+static ssize_t show_label(struct device *dev,
-+                         struct device_attribute *devattr, char *buf)
-+{
-+       return sprintf(buf, "%s\n",
-+                       input_names[to_sensor_dev_attr(devattr)->index]);
-+}
-+
-+static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, da9052_read_vddout, NULL,
-+                               DA9052_ADC_ICH);
-+static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, show_label, NULL,
-+                               DA9052_ADC_ICH);
-+static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, da9052_read_vbat, NULL,
-+                               DA9052_ADC_VBAT);
-+static SENSOR_DEVICE_ATTR(in3_label, S_IRUGO, show_label, NULL,
-+                               DA9052_ADC_VBAT);
-+static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, da9052_read_misc_channel, NULL,
-+                               DA9052_ADC_IN4);
-+static SENSOR_DEVICE_ATTR(in4_label, S_IRUGO, show_label, NULL,
-+                               DA9052_ADC_IN4);
-+static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, da9052_read_misc_channel, NULL,
-+                               DA9052_ADC_IN5);
-+static SENSOR_DEVICE_ATTR(in5_label, S_IRUGO, show_label, NULL,
-+                               DA9052_ADC_IN5);
-+static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, da9052_read_misc_channel, NULL,
-+                               DA9052_ADC_IN6);
-+static SENSOR_DEVICE_ATTR(in6_label, S_IRUGO, show_label, NULL,
-+                               DA9052_ADC_IN6);
-+static SENSOR_DEVICE_ATTR(in9_input, S_IRUGO, da9052_read_vbbat, NULL,
-+                               DA9052_ADC_VBBAT);
-+static SENSOR_DEVICE_ATTR(in9_label, S_IRUGO, show_label, NULL,
-+                               DA9052_ADC_VBBAT);
-+static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, da9052_read_ich, NULL,
-+                               DA9052_ADC_ICH);
-+static SENSOR_DEVICE_ATTR(curr1_label, S_IRUGO, show_label, NULL,
-+                               DA9052_ADC_ICH);
-+
-+static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, da9052_read_tbat, NULL,
-+                               DA9052_ADC_TBAT);
-+static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, show_label, NULL,
-+                               DA9052_ADC_TBAT);
-+
-+static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, da9052_read_tjunc, NULL,
-+                               DA9052_ADC_TJUNC);
-+static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, show_label, NULL,
-+                               DA9052_ADC_TJUNC);
-+
-+static DEVICE_ATTR(name, S_IRUGO, da9052_hwmon_show_name, NULL);
-+
-+static struct attribute *da9052_attr[] = {
-+       &dev_attr_name.attr,
-+
-+       &sensor_dev_attr_in0_input.dev_attr.attr,
-+       &sensor_dev_attr_in0_label.dev_attr.attr,
-+       &sensor_dev_attr_curr1_input.dev_attr.attr,
-+       &sensor_dev_attr_curr1_label.dev_attr.attr,
-+       &sensor_dev_attr_temp1_input.dev_attr.attr,
-+       &sensor_dev_attr_temp1_label.dev_attr.attr,
-+       &sensor_dev_attr_in3_input.dev_attr.attr,
-+       &sensor_dev_attr_in3_label.dev_attr.attr,
-+       &sensor_dev_attr_in4_input.dev_attr.attr,
-+       &sensor_dev_attr_in4_label.dev_attr.attr,
-+       &sensor_dev_attr_in5_input.dev_attr.attr,
-+       &sensor_dev_attr_in5_label.dev_attr.attr,
-+       &sensor_dev_attr_in6_input.dev_attr.attr,
-+       &sensor_dev_attr_in6_label.dev_attr.attr,
-+       &sensor_dev_attr_temp1_input.dev_attr.attr,
-+       &sensor_dev_attr_temp1_label.dev_attr.attr,
-+       &sensor_dev_attr_temp2_input.dev_attr.attr,
-+       &sensor_dev_attr_temp2_label.dev_attr.attr,
-+       &sensor_dev_attr_in9_input.dev_attr.attr,
-+       &sensor_dev_attr_in9_label.dev_attr.attr,
-+       NULL
-+};
-+
-+static const struct attribute_group da9052_attr_group = {.attrs = da9052_attr};
-+
-+static int __init da9052_hwmon_probe(struct platform_device *pdev)
-+{
-+       struct da9052_hwmon *hwmon;
-+       int ret;
-+
-+       hwmon = kzalloc(sizeof(struct da9052_hwmon), GFP_KERNEL);
-+       if (!hwmon)
-+               return -ENOMEM;
-+
-+       mutex_init(&hwmon->hwmon_lock);
-+       hwmon->da9052 = dev_get_drvdata(pdev->dev.parent);
-+
-+       platform_set_drvdata(pdev, hwmon);
-+
-+       ret = sysfs_create_group(&pdev->dev.kobj, &da9052_attr_group);
-+       if (ret)
-+               goto err_mem;
-+
-+       hwmon->class_device = hwmon_device_register(&pdev->dev);
-+       if (IS_ERR(hwmon->class_device)) {
-+               ret = PTR_ERR(hwmon->class_device);
-+               sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
-+               goto err_mem;
-+       }
-+
-+       return 0;
-+
-+err_mem:
-+       kfree(hwmon);
-+       return ret;
-+}
-+
-+static int __devexit da9052_hwmon_remove(struct platform_device *pdev)
-+{
-+       struct da9052_hwmon *hwmon = platform_get_drvdata(pdev);
-+
-+       hwmon_device_unregister(hwmon->class_device);
-+       sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
-+       mutex_destroy(&hwmon->hwmon_lock);
-+       kfree(hwmon);
-+
-+       return 0;
-+}
-+
-+static struct platform_driver da9052_hwmon_driver = {
-+       .driver = {
-+               .name           = "da9052-hwmon",
-+               .owner  = THIS_MODULE,
-+       },
-+       .probe  = da9052_hwmon_probe,
-+       .remove = __devexit_p(da9052_hwmon_remove),
-+
-+};
-+
-+static int __init da9052_hwmon_init(void)
-+{
-+
-+       return platform_driver_register(&da9052_hwmon_driver);
-+}
-+module_init(da9052_hwmon_init);
-+
-+static void __exit da9052_hwmon_exit(void)
-+{
-+       platform_driver_unregister(&da9052_hwmon_driver);
-+}
-+module_exit(da9052_hwmon_exit);
-+
-+MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("DA9052 HWMON driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9052-hwmon");
+---
+Subject: sched: Fix ttwu() for __ARCH_WANT_INTERRUPTS_ON_CTXSW
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Thu May 26 14:21:33 CEST 2011
 
+Marc reported that e4a52bcb9 (sched: Remove rq->lock from the first
+half of ttwu()) broke his ARM-SMP machine. Now ARM is one of the few
+__ARCH_WANT_INTERRUPTS_ON_CTXSW users, so that exception in the ttwu()
+code was suspect.
 
-Regards,
-Ashish
+Yong found that the interrupt could hit hits after context_switch() changes
+current but before it clears p->on_cpu, if that interrupt were to
+attempt a wake-up of p we would indeed find ourselves spinning in IRQ
+context.
 
+Sort this by reverting to the old behaviour for this situation and
+perform a full remote wake-up.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Cc: Frank Rowand <frank.rowand@am.sony.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Marc Zyngier <Marc.Zyngier@arm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/sched.c |   37 ++++++++++++++++++++++++++++---------
+ 1 file changed, 28 insertions(+), 9 deletions(-)
+
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -2573,7 +2573,26 @@ static void ttwu_queue_remote(struct tas
+ 	if (!next)
+ 		smp_send_reschedule(cpu);
+ }
+-#endif
++
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++static int ttwu_activate_remote(struct task_struct *p, int wake_flags)
++{
++	struct rq *rq;
++	int ret = 0;
++
++	rq = __task_rq_lock(p);
++	if (p->on_cpu) {
++		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
++		ttwu_do_wakeup(rq, p, wake_flags);
++		ret = 1;
++	}
++	__task_rq_unlock(rq);
++
++	return ret;
++
++}
++#endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
++#endif /* CONFIG_SMP */
+ 
+ static void ttwu_queue(struct task_struct *p, int cpu)
+ {
+@@ -2631,17 +2650,17 @@ try_to_wake_up(struct task_struct *p, un
+ 	while (p->on_cpu) {
+ #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ 		/*
+-		 * If called from interrupt context we could have landed in the
+-		 * middle of schedule(), in this case we should take care not
+-		 * to spin on ->on_cpu if p is current, since that would
+-		 * deadlock.
++		 * In case the architecture enables interrupts in
++		 * context_switch(), we cannot busy wait, since that
++		 * would lead to live-locks when an interrupt hits and
++		 * tries to wake up @prev. So bail and do a complete
++		 * remote wakeup.
+ 		 */
+-		if (p == current) {
+-			ttwu_queue(p, cpu);
++		if (ttwu_activate_remote(p, wake_flags))
+ 			goto stat;
+-		}
+-#endif
++#else
+ 		cpu_relax();
++#endif
+ 	}
+ 	/*
+ 	 * Pairs with the smp_wmb() in finish_lock_switch().
+
