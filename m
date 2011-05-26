@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758368Ab1EZTNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:13:05 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58069 "EHLO mx3.mail.elte.hu"
+	id S932973Ab1EZTOY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:14:24 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:58720 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757985Ab1EZTND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:13:03 -0400
-Date: Thu, 26 May 2011 21:12:56 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, greearb@candelatech.com, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, arnd@arndb.de, netdev@vger.kernel.org
-Subject: Re: [patch] net/core/filter.c: Fix build error
-Message-ID: <20110526191256.GA4553@elte.hu>
-References: <efa062542c692c3f7743bf2d97b5987ab989e27e.1305999731.git.joe@perches.com>
- <20110526123153.GA16002@elte.hu>
- <1306423866.16087.10.camel@Joe-Laptop>
- <20110526.143843.205897228685761536.davem@davemloft.net>
- <20110526190939.GC3476@elte.hu>
+	id S1758357Ab1EZTOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:14:23 -0400
+X-ASG-Debug-ID: 1306437261-03d6a512a807780001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DDEA689.2090004@fusionio.com>
+Date: Thu, 26 May 2011 21:14:17 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526190939.GC3476@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Mike Snitzer <snitzer@redhat.com>, Mandeep Singh Baines <msb@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jrbarnette@chromium.org" <jrbarnette@chromium.org>,
+        Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>
+Subject: Re: dm: pass up rotational flag
+References: <1306356648-30730-1-git-send-email-msb@chromium.org>	<20110526182321.GA26219@redhat.com> <yq1zkm948oa.fsf@sermon.lab.mkp.net>
+X-ASG-Orig-Subj: Re: dm: pass up rotational flag
+In-Reply-To: <yq1zkm948oa.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1306437261
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64744
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2011-05-26 20:29, Martin K. Petersen wrote:
+>>>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
+> 
+>>> Allow the NONROT flag to be passed through to linear mappings if all
+>>> underlying device are non-rotational. Tools like ureadahead will
+>>> schedule IOs differently based on the rotational flag.
+> 
+> Mike> Thanks for doing this, looks good in general.
+> 
+> I'd rather we made the rotational property part of the topology instead
+> of having to special-case it in DM. I seem to recall posting a patch
+> that did that at some point but I can't seem to find it...
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Agree, would be a better idea.
 
-> So no, i don't think your patch is the real solution. [...]
+-- 
+Jens Axboe
 
-s/real/complete
-
-Note, your patch solves a real problem: the ratelimited WARN_ON()s 
-should not be in the generic bug.h header, that's just broken.
-
-I just don't think this is the only problem: the other problem was 
-what hid the bug in the first place, the spurious ratelimit.h 
-inclusion via net.h.
-
-Thanks,
-
-	Ingo
