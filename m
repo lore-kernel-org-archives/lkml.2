@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758504Ab1EZVDl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 17:03:41 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:48477 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056Ab1EZVDk (ORCPT
+	id S1758547Ab1EZVJf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 17:09:35 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49793 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758458Ab1EZVJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 17:03:40 -0400
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_sdj8fG6qmHXatP4rxbgU1Q)"
-Date: Thu, 26 May 2011 17:03:39 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        =?ISO-8859-15?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        linux-arm-kernel@lists.infradead.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, sam@ravnborg.org,
-        ak@linux.intel.com
-Subject: Re: [PATCH] ARM: Do not allow unaligned accesses when
- CONFIG_ALIGNMENT_TRAP
-In-reply-to: <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
-Message-id: <alpine.LFD.2.00.1105261650330.3207@xanadu.home>
-References: <20110523111648.10474.78396.stgit@e102109-lin.cambridge.arm.com>
- <20110523132124.GI17672@n2100.arm.linux.org.uk>
- <1306229953.19557.14.camel@e102109-lin.cambridge.arm.com>
- <yw1xipt0p4i9.fsf@unicorn.mansr.com>
- <BANLkTi=xLE9gP5YOdr9dR0DfsY1Ymzxu+w@mail.gmail.com>
- <20110524171331.GA2941@arm.com>
- <20110525111405.GA12010@e102109-lin.cambridge.arm.com>
- <20110525124348.GA2340@arm.com> <yw1xaaeanbxe.fsf@unicorn.mansr.com>
- <BANLkTim2TOZgB-3Vkv5RcK572Qr07s3=CA@mail.gmail.com>
- <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 26 May 2011 17:09:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:reply-to:references
+         :mime-version:content-type:content-disposition:in-reply-to:x-pgp-key
+         :user-agent;
+        b=o1vwjLmbhWu8KWsw8px+9WDXAFLlabkuvoIT6m2F4Qivi3NcEdLjGalvmOB1lPk+pQ
+         U7/oI1qp0PrimSRUmDjTJvjYK0/fmQqFAs+TfRySSoHesf59vT+HoQE5rQ48ZK5AsEH1
+         7vhyUPWTAusms68Zc7pEzv41oaEyFx9YZLNBM=
+Date: Thu, 26 May 2011 18:07:53 -0300
+From: Rafael Aquini <aquini@linux.com>
+To: Russ Anderson <rja@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH] [BUGFIX] mm: hugepages can cause negative commitlimit
+Message-ID: <20110526210751.GA14819@optiplex.tchesoft.com>
+Reply-To: aquini@linux.com
+References: <20110518153445.GA18127@sgi.com>
+ <BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com>
+ <20110519045630.GA22533@sgi.com>
+ <BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com>
+ <20110519221101.GC19648@sgi.com>
+ <20110520130411.d1e0baef.akpm@linux-foundation.org>
+ <20110520223032.GA15192@x61.tchesoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110520223032.GA15192@x61.tchesoft.com>
+X-PGP-Key: http://aquini.fedorapeople.org/AQUINI-GPG-KEY
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---Boundary_(ID_sdj8fG6qmHXatP4rxbgU1Q)
-Content-type: TEXT/PLAIN; charset=UTF-8
-Content-transfer-encoding: 8BIT
-
-On Thu, 26 May 2011, Will Deacon wrote:
-
-> This issue seems to be caused by passing -fconserve-stack to GCC. This
-> was added in 8f7f5c9f ("kbuild: set -fconserve-stack option for gcc
-> 4.5") and as you can see from the archive:
+On Fri, May 20, 2011 at 07:30:32PM -0300, Rafael Aquini wrote:
+> On Fri, May 20, 2011 at 01:04:11PM -0700, Andrew Morton wrote:
+> > On Thu, 19 May 2011 17:11:01 -0500
+> > Russ Anderson <rja@sgi.com> wrote:
+> > 
+> > > OK, I see your point.  The root problem is hugepages allocated at boot are
+> > > subtracted from totalram_pages but hugepages allocated at run time are not.
+> > > Correct me if I've mistate it or are other conditions.
+> > > 
+> > > By "allocated at run time" I mean "echo 1 > /proc/sys/vm/nr_hugepages".
+> > > That allocation will not change totalram_pages but will change
+> > > hugetlb_total_pages().
+> > > 
+> > > How best to fix this inconsistency?  Should totalram_pages include or exclude
+> > > hugepages?  What are the implications?
+> > 
+> > The problem is that hugetlb_total_pages() is trying to account for two
+> > different things, while totalram_pages accounts for only one of those
+> > things, yes?
+> > 
+> > One fix would be to stop accounting for huge pages in totalram_pages
+> > altogether.  That might break other things so careful checking would be
+> > needed.
+> > 
+> > Or we stop accounting for the boot-time allocated huge pages in
+> > hugetlb_total_pages().  Split the two things apart altogether and
+> > account for boot-time allocated and runtime-allocated pages separately.  This
+> > souds saner to me - it reflects what's actually happening in the kernel.
 > 
-> http://lkml.org/lkml/2009/9/20/39
+> Perhaps we can just reinstate the # of pages "stealed" at early boot allocation
+> later, when hugetlb_init() calls gather_bootmem_prealloc()
 > 
-> it was thought to only have an impact on inlining decisions. Looking at
-> the documentation for GCC 4.6:
-> 
-> -fconserve-stack
->           Attempt to minimize stack usage. The compiler will attempt to
-> use less stack space, even if that makes the program slower. This option
-> implies setting the ‘large-stack-frame’ parameter to 100 and the
-> ‘large-stack-frame-growth’ parameter to 400.
-> 
-> So it sounds like we might not want to enable this blindly across all
-> architectures. Indeed, on ARM, it encourages the compiler to pack
-> variables on the stack which leads to the weird and wonderful alignment
-> situation that has been encountered in this thread.
-> 
-> Can we remove -fconserve-stack from the top-level Makefile (or at least
-> make it conditional by architecture)?
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 8ee3bd8..d606c9c 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1111,6 +1111,7 @@ static void __init gather_bootmem_prealloc(void)
+>                 WARN_ON(page_count(page) != 1);
+>                 prep_compound_huge_page(page, h->order);
+>                 prep_new_huge_page(h, page, page_to_nid(page));
+> +               totalram_pages += 1 << h->order;
+>         }
+>  }
 
-I think this is an orthogonal issue.
+Howdy Russ,
 
-My opinion is that we should use -mno-unaligned-access by default on 
-ARM.  The reason is that we've been expecting the compiler not to cause 
-unaligned accesses for ages, and letting the compiler, for whatever 
-reasons including things like -fconserve-stack, produce unaligned 
-accesses behind our back is a change in behavior we might not always be 
-prepared for.  Unaligned accesses in the kernel should be rare anyway, 
-and allowing the compiler to generate them can be allowed for selected 
-files when proven beneficial.
+Were you able to confirm if that proposed change fix the issue you've reported?
 
-It is possible that -fconserve-stack is still valuable on ARM given that 
-it is also used with -mno-unaligned-access for other things than 
-structure packing on the stack, and therefore its merits can be debated 
-independently from the alignment issue at hand.
+Although I've tested it with usual size hugepages and it did not messed things up,
+I'm not able to test it with GB hugepages, as I do not have any proc with "pdpe1gb" flag available.
 
-
-Nicolas
-
---Boundary_(ID_sdj8fG6qmHXatP4rxbgU1Q)--
+Thanks in advance!
+Cheers!
+-- 
+Rafael Aquini <aquini@linux.com>
