@@ -1,117 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919Ab1EZGtm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 02:49:42 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:21755 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab1EZGtk (ORCPT
+	id S1753762Ab1EZGye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 02:54:34 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60368 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab1EZGyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 02:49:40 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6357"; a="93759511"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: "'Alan Stern'" <stern@rowland.harvard.edu>, <balbi@ti.com>
-Cc: "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, <greg@kroah.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
-References: <8ce4e30b4a406fadf08af2daff163984.squirrel@www.codeaurora.org> <Pine.LNX.4.44L0.1105251443040.1987-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1105251443040.1987-100000@iolanthe.rowland.org>
-Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
-Date: Thu, 26 May 2011 09:51:17 +0300
-Message-ID: <01fc01cc1b71$53e2d210$fba87630$@org>
+	Thu, 26 May 2011 02:54:32 -0400
+Date: Thu, 26 May 2011 08:54:29 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 2/4] clk: Implement clk_set_rate
+Message-ID: <20110526065429.GL20715@pengutronix.de>
+References: <1305876469.325655.313573683829.0.gpush@pororo>
+ <1305876469.326620.351525457111.2.gpush@pororo>
+ <20110525190347.GH22096@pengutronix.de>
+ <1306373867.2875.162.camel@pororo>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcwbDdZAAUNxedRMSrWtaK6R9FpGfgAX0Cgg
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306373867.2875.162.camel@pororo>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:29:02 up 5 days, 20:08, 19 users,  load average: 0.24, 0.27, 0.37
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan, Felipe,
+[put the lists back on cc]
 
-> >  composite_driver.speed to USB_SPEED_SUPER.
-> > >>
-> > >> Not sure how to verify this. I need to know whether the driver
-> that is
-> > >> registered with the UDC is SS or not. This is before the function
-> > >> drivers
-> > >> are binded to it. So how can I verify at that point that the
-> function
-> > >> drivers that will bind to this driver will provide SS descriptors?
-> > >> (I'm sorry, I don't have the ability to view the code at the
-> moment and
-> > >> due to the time differences between us I don't want to leave this
-> > >> question
-> > >> for tomorrow and loose another day...)
-> > >
-> > > I'm not sure about this either.  I have never used the composite
-> > > framework so I'm not familiar with its details.  This has to be
-> decided
-> > > before the composite gadget driver registers with the UDC driver
-> ...
-> > Right, but at this point there is no way of knowing what function
-> drivers
-> > will bind to it and what descriptors they will provide. Most of the
-> > function drivers allocate their descriptors at bind() that occurs
-> after
-> > the UDC already registers.
+On Thu, May 26, 2011 at 09:37:47AM +0800, Jeremy Kerr wrote:
+> Hi Sascha,
 > 
-> Well, there must be an appropriate spot to do this.
+> > > +
+> > > +propagate:
+> > > +	ret = clk->ops->set_rate(clk->hw, new_rate, &parent_rate);
+> > > +
+> > > +	if (ret < 0)
+> > > +		return ret;
+> > > +
+> > > +	/* ops->set_rate may require the parent's rate to change (to
+> > > +	 * parent_rate), we need to propagate the set_rate call to the
+> > > +	 * parent.
+> > > +	 */
+> > > +	if (ret == CLK_SET_RATE_PROPAGATE) {
+> > > +		new_rate = parent_rate;
+> > > +		clk = clk->parent;
+> > > +		goto propagate;
+> > > +	}
+> > 
+> > I'm unsure about this one. Every clock should have the ability to stop
+> > or continue the rate propagation to the parent. This suggests to leave
+> > the decision whether or not to propagate to the core and not to the
+> > individual clocks.
+> 
+> Maybe I'm not understanding you correctly, but that's exactly what this
+> code does. The decision to propagate is left up to the
+> implementation-specific set_rate callback - if it returns
+> CLK_SET_RATE_PROPAGATE (and populate the parent_rate argument with the
+> requested parent rate), then we propagate the rate change to the parent.
 
-Unfortunately in the current implementation there isn't. We must set the
-driver speed at usb_composite_probe(). 
-The (not full) call stack for composite driver registration is:
-1. usb_composite_probe()
-2. usb_gadget_probe_driver()
-3. composite_bind() - here the device descriptor is updated (fields such as
-bMaxPacketSize0, idVendor, etc)
-4. the gadgets "bind" function is called. For example for g_zero it's
-zero_bind(). Only at this point will the function driver register it's
-configurations and for each registered config - add the appropriate
-functions. 
-So as you can see, whether the gadget driver supports/or not SS can be
-determined only at the end of the registration sequence, whether as far as
-UDC is concerned, we need to set the correct driver speed at the very
-beginning - at usb_composite_probe().
+I understood how the code is meant to work. It's just that IMO the place
+where the propagation flag is stored is the wrong one, given that it's a
+flag that all clocks (can) have.
 
-Felipe - please correct me if I'm mistaken. Is there a way to find out at
-usb_composite_probe() if the registered function driver will support SS?
+> 
+> > Right now each mux/div/gate needs an individual propagate flag. By
+> > adding the flag to the core the building block implementations could be
+> > simpler and the knowledge about propagatability might become handy for
+> > the core later.
+> 
+> We could do this with a flag too, yes. But then there's no way of
+> altering the rate (which we need to do with a divider) as we propagate
+> it upwards. The current set_rate code lets us do that.
 
-> It looks like you need to add a "max_speed" field to struct
-> usb_composite_driver.  Each driver will initialize this to the highest
-> speed it supports, and it must guarantee that the necessary descriptors
-> are available.
+Hm, the core could pass a NULL pointer as the third argument to
+set_rate to indicate that the parent rate is not allowed to change.
+Then we could initialize &parent_rate to zero before calling set_rate.
+If the set_rate function does not change it, we don't have to propagate,
+otherwise yes. Or instead we could just use the CLK_SET_RATE_PROPAGATE
+return value like we do in the current version.
 
-I also thought of that. This can be done...
-Just to make sure we're on the same page:
-We can add a "max_sup_speed" field to struct usb_composite_driver. Each of
-the Gadget drivers will set this field prior to calling
-usb_composite_probe(). Then, in usb_composite_probe(), we'll update the
-composite_driver.speed as follows:
+Sascha
 
-	composite_driver.speed = min(composite_driver.speed,
-driver->max_sup_speed);
-
-Of course for SS we'll update the composite_driver.speed @ static struct
-usb_gadget_driver composite_driver, as we agreed with Felipe.
-
-How does that sound? Felipe - it seems to me that these should cover your
-hesitations about updating the driver speed :)
-
-Now that I think about it, the above will be true for HS as well. I mean the
-current speed of composite_driver is set always to HS but if there is a
-function driver that supports only FS then the above will update
-composite_driver.speed to FS.
-
-
-Best regards,
-Tanya Brokhman
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-
-
-
-
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
