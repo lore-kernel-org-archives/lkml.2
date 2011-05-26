@@ -1,117 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758120Ab1EZRPq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:15:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44267 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757898Ab1EZRPn (ORCPT
+	id S1757960Ab1EZRMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:12:24 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56101 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757659Ab1EZRMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:15:43 -0400
-Subject: Re: [PATCH] ARM: Do not allow unaligned accesses when
- CONFIG_ALIGNMENT_TRAP
-From: Will Deacon <will.deacon@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, sam@ravnborg.org, ak@linux.intel.com
-In-Reply-To: <BANLkTim2TOZgB-3Vkv5RcK572Qr07s3=CA@mail.gmail.com>
-References: <20110523111648.10474.78396.stgit@e102109-lin.cambridge.arm.com>
-	 <20110523132124.GI17672@n2100.arm.linux.org.uk>
-	 <1306229953.19557.14.camel@e102109-lin.cambridge.arm.com>
-	 <yw1xipt0p4i9.fsf@unicorn.mansr.com>
-	 <BANLkTi=xLE9gP5YOdr9dR0DfsY1Ymzxu+w@mail.gmail.com>
-	 <20110524171331.GA2941@arm.com>
-	 <20110525111405.GA12010@e102109-lin.cambridge.arm.com>
-	 <20110525124348.GA2340@arm.com>	<yw1xaaeanbxe.fsf@unicorn.mansr.com>
-	 <BANLkTim2TOZgB-3Vkv5RcK572Qr07s3=CA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 18:10:54 +0100
-Message-ID: <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+	Thu, 26 May 2011 13:12:22 -0400
+Date: Thu, 26 May 2011 22:42:09 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
+Subject: [Patch 1/6] XPANIC: Add extended panic interface
+Message-ID: <20110526171209.GA17988@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20110526170722.GB23266@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526170722.GB23266@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right... [adding bunch of people to CC],
 
+commit e668fa1aea7844ac4c7ea09030a2f3e647a4adb1
+Author: Andi Kleen <ak@linux.intel.com>
+Date:   Fri Nov 19 18:36:44 2010 +0100
 
-On Wed, 2011-05-25 at 15:50 +0100, Catalin Marinas wrote:
-> 2011/5/25 Måns Rullgård <mans@mansr.com>:
-> > Dave Martin <dave.martin@linaro.org> writes:
-> >
-> >> On Wed, May 25, 2011 at 12:14:08PM +0100, Catalin Marinas wrote:
-> >>> On Tue, May 24, 2011 at 06:13:31PM +0100, Dave Martin wrote:
-> >>> > On Tue, May 24, 2011 at 04:26:35PM +0100, Catalin Marinas wrote:
-> >>> > > BTW, are we sure that the code generated with unaligned accesses is
-> >>> > > better? AFAIK, while processors support unaligned accesses, they may
-> >>> > > not always be optimal.
-> >>> >
-> >>> > The code gcc generates to synthesise an unaligned access using aligned
-> >>> > accesses is pretty simplistic:
-> >>> ...
-> >>> > For code which natively needs to read unaligned fields from data structures,
-> >>> > I sincerely doubt that the CPU will not beat the above code for efficiency...
-> >>> >
-> >>> > So if there's code doing unaligned access to data structures for a good
-> >>> > reason, building with unaligned access support turned on in the compiler
-> >>> > seems a good idea, if that code might performance-critical for anything.
-> >>>
-> >>> gcc generates unaligned accesses in the the pcpu_dump_alloc_info()
-> >>> function. We have a local variable like below (9 bytes):
-> >>>
-> >>>      char empty_str[] = "--------";
-> >>>
-> >>> and it looks like other stack accesses are unaligned:
-> >>>
-> >>> c0082ba0 <pcpu_dump_alloc_info>:
-> >>> c0082ba0:   e92d4ff0    push    {r4, r5, r6, r7, r8, r9, sl, fp, lr}
-> >>> c0082ba4:   e3074118    movw    r4, #28952  ; 0x7118
-> >>> c0082ba8:   e24dd04c    sub sp, sp, #76 ; 0x4c
-> >>> c0082bac:   e34c402a    movt    r4, #49194  ; 0xc02a
-> >>> c0082bb0:   e58d1014    str r1, [sp, #20]
-> >>> c0082bb4:   e58d0020    str r0, [sp, #32]
-> >>> c0082bb8:   e8b40003    ldm r4!, {r0, r1}
-> >>> c0082bbc:   e58d003f    str r0, [sp, #63]   <----------- !!!!!
-> >>> c0082bc0:   e59d0014    ldr r0, [sp, #20]
-> >>> c0082bc4:   e5d43000    ldrb    r3, [r4]
-> >>>
-> >>> I haven't tried with -mno-unaligned-access, I suspect the variables on
-> >>> the stack would be aligned.
-> >>
-> >> So, it looks like empty_str may be misaligned on the stack, and the compiler
-> >> is doing a misaligned store when initialising it.
-> >
-> > empty_str has type char[] so there are no alignment requirements.
-> 
-> I think the local variables after char empty_str[] are unaligned (int
-> alloc). Changing the array size to 16 solves the issue.
-> 
-> The gcc guys here in ARM will have a look and I'll get back to you.
+    XPANIC: Add extended panic interface
+    
+    One panic size doesn't fit all.
+    
+    Machine check has some special requirements on panic, like:
+    - It wants to do a reboot timeout by default so that the machine
+    check event can be logged to disk after warm reboot.
+    - For memory errors it usually doesn't want to do crash dumps because
+    that can lead to crash loops (dumping corrupted memory would
+    lead to another machine check)
+    - It doesn't want to do backtraces because machine checks
+    are not a kernel bug.
+    
+    In a earlier patch this was done with various adhoc hacks,
+    but it's cleaner to extend panic to a 'xpanic' that directly
+    gets a flag and timeout argument.
+    
+    The only user right now will be x86 machine checks, but I consider
+    it likely that other users will switch to this too.
+    
+    For example one obvious candidate would be the "no root
+    found" panic which doesn't really deserve a backtrace.
+    
+    I exported a vpanic() interface too as a global. That's not
+    needed by the current user, but the interface has to exist
+    internally anyways and I could see how other code would
+    find a v* variant of panic useful.
+    
+    Originally based on a suggestion by H. Peter Anvin.
+    Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-This issue seems to be caused by passing -fconserve-stack to GCC. This
-was added in 8f7f5c9f ("kbuild: set -fconserve-stack option for gcc
-4.5") and as you can see from the archive:
+---
+ include/linux/kernel.h |   11 +++++++++++
+ kernel/panic.c         |   41 +++++++++++++++++++++++++++++++----------
+ 2 files changed, 42 insertions(+), 10 deletions(-)
 
-http://lkml.org/lkml/2009/9/20/39
-
-it was thought to only have an impact on inlining decisions. Looking at
-the documentation for GCC 4.6:
-
--fconserve-stack
-          Attempt to minimize stack usage. The compiler will attempt to
-use less stack space, even if that makes the program slower. This option
-implies setting the ‘large-stack-frame’ parameter to 100 and the
-‘large-stack-frame-growth’ parameter to 400.
-
-So it sounds like we might not want to enable this blindly across all
-architectures. Indeed, on ARM, it encourages the compiler to pack
-variables on the stack which leads to the weird and wonderful alignment
-situation that has been encountered in this thread.
-
-Can we remove -fconserve-stack from the top-level Makefile (or at least
-make it conditional by architecture)?
-
-Will
-
+Index: linux-2.6.slim_kdump/include/linux/kernel.h
+===================================================================
+--- linux-2.6.slim_kdump.orig/include/linux/kernel.h
++++ linux-2.6.slim_kdump/include/linux/kernel.h
+@@ -175,10 +175,21 @@ static inline void might_fault(void)
+ }
+ #endif
+ 
++enum panic_flags {
++	PANIC_NO_KEXEC     = (1 << 0),
++	PANIC_NO_BACKTRACE = (1 << 1),
++};
++
+ extern struct atomic_notifier_head panic_notifier_list;
+ extern long (*panic_blink)(int state);
+ NORET_TYPE void panic(const char * fmt, ...)
+ 	__attribute__ ((NORET_AND format (printf, 1, 2))) __cold;
++NORET_TYPE void xpanic(enum panic_flags flags, int timeout,
++		       const char *fmt, ...)
++	__attribute__ ((NORET_AND format (printf, 3, 4))) __cold;
++NORET_TYPE void vpanic(enum panic_flags flags, int timeout,
++		       const char *fmt,
++		       va_list ap) __noreturn __cold;
+ extern void oops_enter(void);
+ extern void oops_exit(void);
+ void print_oops_end_marker(void);
+Index: linux-2.6.slim_kdump/kernel/panic.c
+===================================================================
+--- linux-2.6.slim_kdump.orig/kernel/panic.c
++++ linux-2.6.slim_kdump/kernel/panic.c
+@@ -57,14 +57,37 @@ EXPORT_SYMBOL(panic_blink);
+  *
+  *	This function never returns.
+  */
+-NORET_TYPE void panic(const char * fmt, ...)
++NORET_TYPE void panic(const char *fmt, ...)
++{
++	va_list ap;
++	va_start(ap, fmt);
++	vpanic(0, 0, fmt, ap);
++}
++EXPORT_SYMBOL(panic);
++
++NORET_TYPE void xpanic(enum panic_flags flags, int timeout,
++                       const char *fmt, ...)
++{
++	va_list ap;
++	va_start(ap, fmt);
++	xpanic(flags, timeout, fmt, ap);
++}
++EXPORT_SYMBOL(xpanic);
++
++NORET_TYPE void vpanic(enum panic_flags flags, int timeout,
++		       const char * fmt, va_list args)
+ {
+ 	static char buf[1024];
+-	va_list args;
+ 	long i, i_next = 0;
+ 	int state = 0;
+ 
+ 	/*
++	 * Let user always override panic_timeout.
++	 */
++	if (panic_timeout > 0)
++		timeout = panic_timeout;
++
++	/*
+ 	 * It's possible to come here directly from a panic-assertion and
+ 	 * not have preempt disabled. Some functions called from here want
+ 	 * preempt to be disabled. No point enabling it later though...
+@@ -73,12 +96,11 @@ NORET_TYPE void panic(const char * fmt,
+ 
+ 	console_verbose();
+ 	bust_spinlocks(1);
+-	va_start(args, fmt);
+ 	vsnprintf(buf, sizeof(buf), fmt, args);
+-	va_end(args);
+ 	printk(KERN_EMERG "Kernel panic - not syncing: %s\n",buf);
+ #ifdef CONFIG_DEBUG_BUGVERBOSE
+-	dump_stack();
++	if (!(flags & PANIC_NO_BACKTRACE))
++		dump_stack();
+ #endif
+ 
+ 	/*
+@@ -86,7 +108,8 @@ NORET_TYPE void panic(const char * fmt,
+ 	 * everything else.
+ 	 * Do we want to call this before we try to display a message?
+ 	 */
+-	crash_kexec(NULL);
++	if (!(flags & PANIC_NO_KEXEC))
++		crash_kexec(NULL);
+ 
+ 	kmsg_dump(KMSG_DUMP_PANIC);
+ 
+@@ -104,7 +127,7 @@ NORET_TYPE void panic(const char * fmt,
+ 	if (!panic_blink)
+ 		panic_blink = no_blink;
+ 
+-	if (panic_timeout > 0) {
++	if (timeout > 0) {
+ 		/*
+ 		 * Delay timeout seconds before rebooting the machine.
+ 		 * We can't use the "normal" timers since we just panicked.
+@@ -152,9 +175,7 @@ NORET_TYPE void panic(const char * fmt,
+ 		mdelay(PANIC_TIMER_STEP);
+ 	}
+ }
+-
+-EXPORT_SYMBOL(panic);
+-
++EXPORT_SYMBOL(vpanic);
+ 
+ struct tnt {
+ 	u8	bit;
