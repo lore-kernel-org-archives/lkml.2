@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab1EZM7E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 08:59:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5658 "EHLO mga02.intel.com"
+	id S1757525Ab1EZM0m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 08:26:42 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42473 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753277Ab1EZM7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 08:59:02 -0400
-X-ExtLoop1: 1
-Subject: Re: [PATCH 2/2] dmaengine: add TODO items for future work on dma
- drivers
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Per Forlin <per.forlin@linaro.org>
-In-Reply-To: <20110526073620.GF24876@n2100.arm.linux.org.uk>
-References: <1306323570-11133-1-git-send-email-vinod.koul@intel.com>
-	 <1306323570-11133-3-git-send-email-vinod.koul@intel.com>
-	 <20110526073620.GF24876@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 17:55:30 +0530
-Message-ID: <1306412730.2230.0.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757492Ab1EZM0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 08:26:41 -0400
+Date: Thu, 26 May 2011 14:26:23 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>, Yong Zhang <yong.zhang0@gmail.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+Message-ID: <20110526122623.GA11875@elte.hu>
+References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
+ <1306272750.2497.79.camel@laptop>
+ <1306343335.21578.65.camel@twins>
+ <1306358128.21578.107.camel@twins>
+ <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+ <1306405979.1200.63.camel@twins>
+ <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
+ <1306409575.1200.71.camel@twins>
+ <1306412511.1200.90.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306412511.1200.90.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 13:06 +0530, Russell King - ARM Linux wrote:
-> On Wed, May 25, 2011 at 05:09:30PM +0530, Koul, Vinod wrote:
-> > +1. Move remaining drivers to use new slave interface
-> > +2. Remove old slave pointer machansim
-> > +3. Make issue_pending to start the transaction in below drivers
-> > +	- mpc512x_dma
-> > +	- imx-dma
-> > +	- imx-sdma
-> > +	- mxs-dma.c
-> > +	- dw_dmac
-> > +	- intel_mid_dma
-> > +	- ste_dma40
-> 
-> I'd suggest adding some more to this:
-> 
-> 4. Remove dma_slave_config's dma direction.
-> 
-> It's pointless that dma_slave_config carries the DMA direction (to/from
-> device) and the prepare function does too.  It leads to DMA engine drivers
-> having to verify that the two match, and DMA engine users having to issue
-> two calls every time they change direction.
-> 
-> Instead, lets specify that dma_slave_config carries the _device_ side
-> parameters, which are selected according to the direction given to the
-> prepare function.  The memory-side parameters should be selected by the
-> DMA engine driver according to its knowledge of the system.
-> 
-> This is sensible as M2M transfers don't allow configuration and therefore
-> already have to select these parameters internally.
-Sure, I am adding this as well and applying both patches
 
-Thanks
--- 
-~Vinod
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
+> Sort this by reverting to the old behaviour for this situation and 
+> perform a full remote wake-up.
+
+Btw., ARM should consider switching most of its subarchitectures to 
+!__ARCH_WANT_INTERRUPTS_ON_CTXSW - enabling irqs during context 
+switches is silly and now expensive as well.
+
+Thanks,
+
+	Ingo
