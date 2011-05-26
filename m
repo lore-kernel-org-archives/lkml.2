@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab1EZDwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 23:52:05 -0400
-Received: from mail.perches.com ([173.55.12.10]:2057 "EHLO mail.perches.com"
+	id S1750878Ab1EZEOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 00:14:11 -0400
+Received: from home.keithp.com ([63.227.221.253]:37299 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991Ab1EZDwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 23:52:03 -0400
-Subject: Re: [PATCH] crypto: sha1: modify sha1_update to use SHA1_BLOCK_SIZE
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: msb@chromium.org, linux-kernel@vger.kernel.org,
-        herbert@gondor.hengli.com.au, linux-crypto@vger.kernel.org
-In-Reply-To: <20110525.233411.1372538972166578285.davem@davemloft.net>
-References: <1306379477-24552-1-git-send-email-msb@chromium.org>
-	 <20110525.233411.1372538972166578285.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 20:52:01 -0700
-Message-ID: <1306381921.28839.17.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1750709Ab1EZEOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 00:14:10 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PULL] drm-intel-next
+In-Reply-To: <yuntycs7v7z.fsf@aiko.keithp.com>
+References: <yunr57z3b58.fsf@aiko.keithp.com> <yunfwodyom6.fsf@aiko.keithp.com> <yuntycs7v7z.fsf@aiko.keithp.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 25 May 2011 22:13:55 -0600
+Message-ID: <yun39k2gku4.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 23:34 -0400, David Miller wrote:
-> From: Mandeep Singh Baines <msb@chromium.org>
-> Date: Wed, 25 May 2011 20:11:17 -0700
-> > Plus some other minor cleanup.
-> > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> The temp[] buffer is explicitly places inside the inner most
-> basic block so that the compiler doesn't allocate the stack
-> space unless that code path is taken.
-
-Does any version of gcc manage to do that?
-
-Regardless, it's still a good idea to keep
-declarations in the use scope.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
 
+This fixes a simple typo in the Ivybridge code -- an extra semicolon.
+
+The following changes since commit 9e3c256d7d56a12a3242222945ce8e6347f93fa0:
+
+  drm/i915: initialize gen6 rps work queue on Sandy Bridge and Ivy Bridge (=
+2011-05-18 15:14:39 -0700)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6.git drm=
+-intel-next
+
+Dan Carpenter (1):
+      drm/i915: fix if statement in ivybridge irq handler
+
+ drivers/gpu/drm/i915/i915_irq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFN3dODQp8BWwlsTdMRAp0yAKC5Ws/B4Ab/8gCMxiMovtcvOtcLowCfd25w
+sOwWQQSdbSDo4ln13JdVeec=
+=Gk2q
+-----END PGP SIGNATURE-----
+--=-=-=--
