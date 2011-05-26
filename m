@@ -1,189 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab1EZN2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 09:28:40 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57564 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab1EZN2j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 09:28:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hCbLaKLPvxRo6E0bieRIXmCcF/eet1KBEXxJLoT8RlXTVk6z+ay5f5wJuUyh85B6R0
-         Muug/Dw01kZnDKi79WK0YlWjspqiEFUo91mS+MtCXeXQQhmsP19j9V7bRHMHL6+f4Zw6
-         3yVP3sjpLlbCNCtPfubgqb52sWN0yU2IPKAkc=
-Date: Thu, 26 May 2011 15:28:34 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        pp-manager@sdl.hitachi.co.jp, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH -tip v4 0/7] perf: Introduce branch sub commands
-Message-ID: <20110526132833.GC21815@nowhere>
-References: <20110526050246.30011.86048.stgit@localhost6.localdomain6>
+	id S1756752Ab1EZNcF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 09:32:05 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:40862 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752965Ab1EZNcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 09:32:04 -0400
+Date: Thu, 26 May 2011 09:31:55 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: "D. Jansen" <d.g.jansen@googlemail.com>
+Cc: Oliver Neukum <oneukum@suse.de>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+Message-ID: <20110526133155.GH9520@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	"D. Jansen" <d.g.jansen@googlemail.com>,
+	Oliver Neukum <oneukum@suse.de>, akpm@linux-foundation.org,
+	linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
+ <201105231012.06928.oneukum@suse.de>
+ <20110525000003.GJ32466@dastard>
+ <201105250850.12179.oneukum@suse.de>
+ <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
+ <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu>
+ <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110526050246.30011.86048.stgit@localhost6.localdomain6>
+In-Reply-To: <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding David Ahern in Cc)
+On Thu, May 26, 2011 at 01:16:45PM +0200, D. Jansen wrote:
+> 
+> exactly. so what now?
 
-Ok that's all good except this needs to use the "perf script" centralized
-dump.
+This needs to be solved at the application level.  So what we need is
+a coordinating daemon which sends a message to all applications
+saying, "ok, here's an opportunity to flush data to the disk; if you
+have dirty files, or databases that has data that needs to be flushed,
+send it now", and then a little while later, it sends a message to all
+applications, "ok, we're going to let the disk spin down now, hold
+your horses and don't send any data to the disk".
 
-Currently running "perf script" without an actual script dumps
-the events by default, whatever kind of event they are: hardware,
-software, tracepoints, ...
-So we want the branch output to be supported there, so we can reuse
-some code and interface.
+If an application has too much data buffered in memory, and either
+because (a) it's getting nervous that it doesn't want to lose a huge
+amount of critical user data, or (b) it's about to exit, so it really
+needs to save its state to disk, or (c) the buffered data is taking up
+too much space, so it needs to flush its in-memory buffers, then the
+application sends a message to the coordinating daemon, saying,
+"please give me permission to write", and then waits for the "ok, you
+can write to the disk" message.
 
-For example, "perf script -f branch:comm,tid,sym" would print the
-comm, tid and the sym for to and from addresses.
+That way, if you have multiple database-using applications active on
+the system at the same time, they can coordinate their access to the
+disk, and in a way such that when they stop writing, the data left in
+the application-level database is in a coherent state.
 
-That's better than creating a new set of options in a new command
-that people need to relearn while everybody could simply get
-familiarized with common perf script options.
+The kernel can't do this by arbitrarily stopping writes from going to
+the disk because the kernel doesn't know --- and can't possibly know
+--- when it is a safe time to cut off write access to the disk.  It
+can try and guess, by stopping write access after an fsync(), but it
+has to honor the fsync().  Consider what happens when an SMTP server
+sends back a 200 OK message --- that gives permission for its opposite
+number at the other end of the connection to delete the e-mail
+message, since the local SMTP server has promised that the e-mail has
+been saved to stable storage.  It can't make that promise if fsync()
+has been rigged to lie.  
 
-Of course we can still have a "perf branch" command, which could
-be a tiny shortcut that maps to perf record and perf script.
+That's why at the end of the day, in order for application level data
+coherency, the application has to be in control.  If you want to save
+power by coordinating access to the disk, that coordination has to
+happen at the application level.
 
-Like:
-
-	perf branch record
-	perf branch [trace] -f tid,sym,comm
-
-Would map to:
-
-	perf record branch:u
-	perf script -f branch:tid,sym,comm
-
-And may be if one day we can do something more tricky than a
-linear output for branches (like source code coloring/browsing),
-then it may be implemented inside perf branch and not rely on
-another subcommand. Until then we are only dealing with raw linear
-dump, and that's a core job for perf script where we want to
-centralize that kind of facility.
-
-Thanks.
-
-On Thu, May 26, 2011 at 02:02:46PM +0900, Akihiro Nagai wrote:
-> Hi,
-> 
-> This patch series provides the commands 'perf branch record' and
-> 'perf branch trace' version 4. These commands record and analyze
-> a BTS (Branch Trace Store) log. And, they provide the interface
-> to use BTS log for application developers.
-> 
-> BTS is a facility of Intel x86 processors, which records the address of
-> 'branch to/from' on every branch/jump instruction and interrupt.
-> This facility is very useful for developers to test their software,
-> for example, coverage test, execution path analysis, dynamic step count ...etc.
-> These test tools have a big advantage, which user doesn't have to modify target
-> executable binaries, because the BTS is a hardware feauture.
-> 
-> But, there are few applications using BTS. Reasons I guess are ...
->  - Few people know what BTS is.
->  - Few people know how to use BTS on Linux box.
->  - It's hard to analyze the BTS log because it includes just a series of
->    addresses.
-> 
-> So, I want to provide a user-friendly interface to BTS for application
-> developers.
-> 
-> 
->  About new sub commands
-> ========================
-> 'perf branch record' provides an easy way to record BTS log.
-> Usage is 'perf branch record <command>'.  This command is just an alias to
-> 'perf record -e branches:u -c 1 -d <command>'. But, new one is more simple
-> and more intuitive.
-> 
-> 'perf branch trace' can parse and analyze recorded BTS log and print various
-> information of execution path. This command can show address, pid, command name,
-> function+offset, file path of elf.
-> You can choose the printed information with option.
-> 
-> Example: 'perf branch trace'
-> 
-> function+offset
-> _start+0x3      => _dl_start+0x0
-> _dl_start+0x71  => _dl_start+0x93
-> _dl_start+0x97  => _dl_start+0x78
-> _dl_start+0x97  => _dl_start+0x78
-> _dl_start+0xa3  => _dl_start+0x3c0
-> _dl_start+0x3c8 => _dl_start+0x3e8
-> ...
-> 
-> This is the default behavior of 'perf branch trace'. It prints function+offset.
-> 
-> Example2: 'perf branch -cas trace'
-> command address            function+offset
-> ls      0x0000003e9b000b23 _start+0x3      => 0x0000003e9b004540 _dl_start+0x0
-> ls      0x0000003e9b0045b1 _dl_start+0x71  => 0x0000003e9b0045d3 _dl_start+0x93
-> ls      0x0000003e9b0045d7 _dl_start+0x97  => 0x0000003e9b0045b8 _dl_start+0x78
-> ls      0x0000003e9b0045d7 _dl_start+0x97  => 0x0000003e9b0045b8 _dl_start+0x78
-> ls      0x0000003e9b0045e3 _dl_start+0xa3  => 0x0000003e9b004900 _dl_start+0x3c0
-> ls      0x0000003e9b004908 _dl_start+0x3c8 => 0x0000003e9b004928 _dl_start+0x3e8
-> ...
-> 
-> In the future, I'd like to make this more informative. For example
->  - Show source file path
->  - Show line number
->  - Show inlined function name
->  - Draw call graph
->  - Browse source code and coloring
->  - Make BTS record fast
-> and more!
-> 
-> Changes in V4:
->  - Add kenel filter
->  - Print PID and command only once in a line
->  - Add output TSV mode
-> 
-> Changes in V3:
->  - Update to the latest -tip tree
->  - Rename to 'perf branch'
->  - Process only BTS records
->  - Fix bug of getting elf_filepath
->  - Fix return value of __cmd_trace
-> 
-> Changes in V2:
->  - Update to the latest -tip tree
->  - Add bts explanation to the subcommand list
->  - Remove the patch already merged (add OPT_CALLBACK_DEFAULT_NOOPT)
->  - Add comments
->  - Add new function to the todo list
-> 
-> Thanks,
-> 
-> ---
-> 
-> Akihiro Nagai (7):
->       perf branch trace: add kernel filter
->       perf branch trace: add print all option
->       perf branch trace: print function+offset
->       perf branch trace: print file path of the executed elf
->       perf branch trace: print pid and command
->       perf branch: Introduce new sub command 'perf branch trace'
->       perf: new subcommand perf branch record
-> 
-> 
->  tools/perf/Documentation/perf-branch.txt |   62 +++++
->  tools/perf/Makefile                      |    1 
->  tools/perf/builtin-branch.c              |  361 ++++++++++++++++++++++++++++++
->  tools/perf/builtin.h                     |    1 
->  tools/perf/command-list.txt              |    1 
->  tools/perf/perf.c                        |    1 
->  6 files changed, 427 insertions(+), 0 deletions(-)
->  create mode 100644 tools/perf/Documentation/perf-branch.txt
->  create mode 100644 tools/perf/builtin-branch.c
-> 
-> -- 
-> Akihiro Nagai (akihiro.nagai.hw@hitachi.com)
+						- Ted
