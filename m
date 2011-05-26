@@ -1,78 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933142Ab1EZUCU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:02:20 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:43956 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755990Ab1EZUCR (ORCPT
+	id S1758529Ab1EZULY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:11:24 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52724 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758494Ab1EZULW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 16:02:17 -0400
-Date: Thu, 26 May 2011 22:02:07 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-Subject: Re: [PATCH v5 00/21] EVM
-Message-ID: <20110526200207.GB15959@elf.ucw.cz>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
- <20110518172552.6d482c7a.akpm@linux-foundation.org>
- <20110526060842.GA13933@localhost.ucw.cz>
- <4DDE80FE.7010005@schaufler-ca.com>
- <1306433514.24986.26.camel@localhost.localdomain>
- <20110526183849.GA4563@ucw.cz>
- <4DDEAA3F.3030008@schaufler-ca.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DDEAA3F.3030008@schaufler-ca.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 26 May 2011 16:11:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=M63F2VlyAwJnBqGF9V9ODsQ6Eg5vf/LwP5rRUcB/69fjDOG5bXbcoxZTl5sxLgF3Jc
+         yq3Q9VoOX5CbzFVWxwQ/Z5J+btlNkzrdnrZdq2WKVWcwRifx77ZwEOXpQS37O4xo63Dt
+         /uM+jxKzHCMjzaltErWykATDOhYfnvxzgTyWI=
+Subject: Re: [PATCH V6 2/4 net-next] skbuff: Add userspace zero-copy
+ buffers in skb
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1306438593.5180.33.camel@localhost.localdomain>
+References: <1306438593.5180.33.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 22:04:07 +0200
+Message-ID: <1306440247.2543.14.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2011-05-26 12:30:07, Casey Schaufler wrote:
-> On 5/26/2011 11:38 AM, Pavel Machek wrote:
-> > On Thu 2011-05-26 14:11:54, David Safford wrote:
-> >> On Thu, 2011-05-26 at 09:34 -0700, Casey Schaufler wrote:
-> >>> On 5/25/2011 11:08 PM, Pavel Machek wrote:
-> >>>> ...
-> >>>> Fourthly, is it likely to find its way to the next cellphone I buy,
-> >>>> and will it prevent me from rooting it?
-> >>> That will of course depend on the phone vendor. You are certainly
-> >>> going to be able to vote with your checkbook (digital wallet?) but
-> >>> odds are pretty good that should EVM prove effective it will be
-> >>> ubiquitous within the next five years on embedded devices.
-> > Hmm. But maybe it is more effective to vote with NAKs, now? It does
-> > not seem to have any non-evil uses.
-> >
-> > Phone vendors will play nasty tricks on us, but... why make it easy
-> > for them?
+Le jeudi 26 mai 2011 à 12:36 -0700, Shirley Ma a écrit :
+> This patch adds userspace buffers support in skb shared info. A new 
+> struct skb_ubuf_info is needed to maintain the userspace buffers
+> argument and index, a callback is used to notify userspace to release
+> the buffers once lower device has done DMA (Last reference to that skb
+> has gone).
 > 
-> For one thing, it is probable that in the not-too-distant future
-> the phone will not be yours. Many service providers are moving in
-> the direction of zero-cost phones. The subscriber will pay the
+> If there is any userspace apps to reference these userspace buffers,
+> then these userspaces buffers will be copied into kernel. This way we
+> can prevent userspace apps to hold these userspace buffers too long.
+> 
+> Signed-off-by: Shirley Ma <xma@us.ibm.com>
+> ---
+> 
+>  include/linux/skbuff.h |   26 +++++++++++++++
+>  net/core/skbuff.c      |   80 ++++++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 104 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> index d0ae90a..025de5c 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -189,6 +189,18 @@ enum {
+>  	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
+>  };
+>  
+> +/*
+> + * The callback notifies userspace to release buffers when skb DMA is done in
+> + * lower device, the skb last reference should be 0 when calling this.
+> + * The desc is used to track userspace buffer index.
+> + */
+> +struct skb_ubuf_info {
+> +	/* support buffers allocation from userspace */
+> +	void		(*callback)(struct sk_buff *);
+> +	void		*arg;
+> +	size_t		desc;
+> +};
 
-Really? References?
+Thats 24 bytes on each skb...   desc for example is not used in this
+patch (yes, its used later in patch 4/4)
 
-No, I don't think this is going to happen, for variety of reasons. 1)
-prepaid cards, 2) phones are easily damaged, 3) phones are often stolen.
+But still... could you instead use one pointer only in skb ?
 
-> Most people will not notice the difference. Consider this a
-> nasty trick if you want to. I expect that the average consumer
 
-I _do_ consider it nasty trick...
 
-> Welcome to computers in the 21st century.
+> +
+>  /* This data is invariant across clones and lives at
+>   * the end of the header data, ie. at skb->end.
+>   */
+> @@ -211,6 +223,10 @@ struct skb_shared_info {
+>  	/* Intermediate layers must ensure that destructor_arg
+>  	 * remains valid until skb destructor */
+>  	void *		destructor_arg;
+> +
+> +	/* DMA mapping from/to userspace buffers */
+> +	struct skb_ubuf_info ubuf;
+> +
+>  	/* must be last field, see pskb_expand_head() */
+>  	skb_frag_t	frags[MAX_SKB_FRAGS];
+>  };
+> @@ -2261,5 +2277,15 @@ static inline void skb_checksum_none_assert(struct sk_buff *skb)
+>  }
+>  
+>  bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off);
+> +
+> +/*
+> + *	skb_ubuf - is the buffer from userspace
+> + *	@skb: buffer to check
+> + */
+> +static inline int skb_ubuf(const struct sk_buff *skb)
+> +{
+> +	return (skb_shinfo(skb)->ubuf.callback != NULL);
 
-...and I do not want to help people playing nasty tricks. Protection
-against offline attacks should not be merged.
+	return skb_shinfo(skb)->ubuf.callback != NULL;
 
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> +}
+> +
+>  #endif	/* __KERNEL__ */
+>  #endif	/* _LINUX_SKBUFF_H */
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 7ebeed0..890447c 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -210,6 +210,8 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+>  	shinfo = skb_shinfo(skb);
+>  	memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
+>  	atomic_set(&shinfo->dataref, 1);
+> +	shinfo->ubuf.callback = NULL;
+> +	shinfo->ubuf.arg = NULL;
+
+if you put ubuf ptr before dataref, no need to add this (the memset()
+clear all shared_info up to dataref)
+
+>  	kmemcheck_annotate_variable(shinfo->destructor_arg);
+>  
+>  	if (fclone) {
+> @@ -328,6 +330,14 @@ static void skb_release_data(struct sk_buff *skb)
+>  				put_page(skb_shinfo(skb)->frags[i].page);
+>  		}
+>  
+> +		/*
+> +		 * if skb buf is from userspace, we need to notify the caller
+> +		 * the lower device DMA has done;
+> +		 */
+> +		if (skb_ubuf(skb)) {
+> +			skb_shinfo(skb)->ubuf.callback(skb);
+> +			skb_shinfo(skb)->ubuf.callback = NULL;
+> +		}
+>  		if (skb_has_frag_list(skb))
+>  			skb_drop_fraglist(skb);
+>  
+> @@ -480,6 +490,9 @@ bool skb_recycle_check(struct sk_buff *skb, int skb_size)
+>  	if (irqs_disabled())
+>  		return false;
+>  
+> +	if (skb_ubuf(skb))
+> +		return false;
+> +
+>  	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
+>  		return false;
+>  
+> @@ -572,6 +585,7 @@ static struct sk_buff *__skb_clone(struct sk_buff *n, struct sk_buff *skb)
+>  	atomic_set(&n->users, 1);
+>  
+>  	atomic_inc(&(skb_shinfo(skb)->dataref));
+> +	skb_shinfo(skb)->ubuf.callback = NULL;
+>  	skb->cloned = 1;
+>  
+>  	return n;
+> @@ -595,6 +609,48 @@ struct sk_buff *skb_morph(struct sk_buff *dst, struct sk_buff *src)
+>  }
+>  EXPORT_SYMBOL_GPL(skb_morph);
+>  
+> +/* skb frags copy userspace buffers to kernel */
+> +static int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask)
+> +{
+> +	int i;
+> +	int num_frags = skb_shinfo(skb)->nr_frags;
+> +	struct page *page, *head = NULL;
+> +
+> +	for (i = 0; i < num_frags; i++) {
+> +		u8 *vaddr;
+> +		skb_frag_t *f = &skb_shinfo(skb)->frags[i];
+> +
+> +		page = alloc_page(GFP_ATOMIC);
+> +		if (!page) {
+> +			while (head) {
+> +				put_page(head);
+> +				head = (struct page *)head->private;
+> +			}
+> +			return -ENOMEM;
+> +		}
+> +		vaddr = kmap_skb_frag(&skb_shinfo(skb)->frags[i]);
+> +		memcpy(page_address(page), vaddr + f->page_offset, f->size);
+> +		kunmap_skb_frag(vaddr);
+> +		page->private = (unsigned long)head;
+> +		head = page;
+> +	}
+> +
+> +	/* skb frags release userspace buffers */
+> +	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+> +		put_page(skb_shinfo(skb)->frags[i].page);
+> +	skb_shinfo(skb)->ubuf.callback(skb);
+> +	skb_shinfo(skb)->ubuf.callback = NULL;
+> +
+> +	/* skb frags point to kernel buffers */
+> +	for (i = skb_shinfo(skb)->nr_frags; i > 0; i--) {
+> +		skb_shinfo(skb)->frags[i - 1].page_offset = 0;
+> +		skb_shinfo(skb)->frags[i - 1].page = head;
+> +		head = (struct page *)head->private;
+> +	}
+> +	return 0;
+> +}
+> +
+> +
+>  /**
+>   *	skb_clone	-	duplicate an sk_buff
+>   *	@skb: buffer to clone
+> @@ -613,6 +669,11 @@ struct sk_buff *skb_clone(struct sk_buff *skb, gfp_t gfp_mask)
+>  {
+>  	struct sk_buff *n;
+>  
+> +	if (skb_ubuf(skb)) {
+> +		if (skb_copy_ubufs(skb, gfp_mask))
+> +			return NULL;
+> +	}
+> +
+>  	n = skb + 1;
+>  	if (skb->fclone == SKB_FCLONE_ORIG &&
+>  	    n->fclone == SKB_FCLONE_UNAVAILABLE) {
+> @@ -730,6 +791,12 @@ struct sk_buff *pskb_copy(struct sk_buff *skb, gfp_t gfp_mask)
+>  	if (skb_shinfo(skb)->nr_frags) {
+>  		int i;
+>  
+> +		if (skb_ubuf(skb)) {
+> +			if (skb_copy_ubufs(skb, gfp_mask)) {
+> +				kfree(n);
+> +				goto out;
+> +			}
+> +		}
+>  		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+>  			skb_shinfo(n)->frags[i] = skb_shinfo(skb)->frags[i];
+>  			get_page(skb_shinfo(n)->frags[i].page);
+> @@ -743,6 +810,7 @@ struct sk_buff *pskb_copy(struct sk_buff *skb, gfp_t gfp_mask)
+>  	}
+>  
+>  	copy_skb_header(n, skb);
+> +
+
+please dont add new lines like this in your patch
+
+>  out:
+>  	return n;
+>  }
+> @@ -787,7 +855,6 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
+>  		fastpath = true;
+>  	else {
+>  		int delta = skb->nohdr ? (1 << SKB_DATAREF_SHIFT) + 1 : 1;
+> -
+
+and dont delete this one as well.
+
+>  		fastpath = atomic_read(&skb_shinfo(skb)->dataref) == delta;
+>  	}
+>  
+> @@ -818,14 +885,19 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
+>  	if (fastpath) {
+>  		kfree(skb->head);
+>  	} else {
+> +		/* copy this zero copy skb frags */
+> +		if (skb_ubuf(skb)) {
+> +			if (skb_copy_ubufs(skb, gfp_mask))
+> +				goto nofrags;
+> +		}
+>  		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+>  			get_page(skb_shinfo(skb)->frags[i].page);
+> -
+
+ditto
+
+>  		if (skb_has_frag_list(skb))
+>  			skb_clone_fraglist(skb);
+>  
+>  		skb_release_data(skb);
+>  	}
+> +
+
+ditto
+
+>  	off = (data + nhead) - skb->head;
+>  
+>  	skb->head     = data;
+> @@ -852,6 +924,8 @@ adjust_others:
+>  	atomic_set(&skb_shinfo(skb)->dataref, 1);
+>  	return 0;
+>  
+> +nofrags:
+> +	kfree(data);
+>  nodata:
+>  	return -ENOMEM;
+>  }
+> @@ -1353,6 +1427,8 @@ int skb_copy_bits(const struct sk_buff *skb, int offset, void *to, int len)
+>  		}
+>  		start = end;
+>  	}
+> +	skb_shinfo(skb)->ubuf.callback = NULL;
+> +
+>  	if (!len)
+>  		return 0;
+>  
+> 
+> 
+
+Thanks
+
+
