@@ -1,207 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab1EZRX3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:23:29 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42226 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab1EZRX2 (ORCPT
+	id S1758009Ab1EZRVe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:21:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58269 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757582Ab1EZRVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:23:28 -0400
-Date: Thu, 26 May 2011 22:53:05 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
-Subject: [RFC Patch 5/6] slimdump: Capture slimdump for fatal MCE generated
- crashes
-Message-ID: <20110526172305.GA18295@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20110526170722.GB23266@in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526170722.GB23266@in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 May 2011 13:21:33 -0400
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>, Yong Zhang <yong.zhang0@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Frank Rowand <frank.rowand@am.sony.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1306430264.2497.88.camel@laptop>
+References: <1306343335.21578.65.camel@twins>
+	 <1306358128.21578.107.camel@twins>
+	 <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+	 <1306405979.1200.63.camel@twins>
+	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
+	 <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins>
+	 <20110526154508.GA13788@redhat.com> <1306425584.2497.81.camel@laptop>
+	 <1306426148.2497.83.camel@laptop>  <20110526170422.GA18413@redhat.com>
+	 <1306430264.2497.88.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 19:23:53 +0200
+Message-ID: <1306430633.2497.91.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-05-26 at 19:17 +0200, Peter Zijlstra wrote:
+> On Thu, 2011-05-26 at 19:04 +0200, Oleg Nesterov wrote:
+> > On 05/26, Peter Zijlstra wrote:
+> > >
+> > > @@ -2636,7 +2636,8 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+> > >  		 * to spin on ->on_cpu if p is current, since that would
+> > >  		 * deadlock.
+> > >  		 */
+> > > -		if (p == current) {
+> > > +		if (cpu == smp_processor_id()) {
+> > > +			p->sched_contributes_to_load = 0;
+> > >  			ttwu_queue(p, cpu);
+> > 
+> > Btw. I do not pretend I really understand se->vruntime, but in this
+> > case we are doing enqueue_task() without ->task_waking(), however we
+> > pass ENQUEUE_WAKING. Is it correct?
+> 
+> No its not, that's the thing that I got wrong the first time and caused
+> these pauses.
 
-slimdump: Capture slimdump for fatal MCE generated crashes
+We'd end up with something like the below, which isn't too different
+from what I've now got queued.
 
-System crashes resulting from fatal hardware errors (such as MCE) don't need
-all the contents from crashing-kernel's memory. Generate a new 'slimdump' that
-retains only essential information while discarding the old memory.
+It has the extra cpu == smp_processor_id() check, but I'm not sure this
+whole case is worth the trouble. I could go stick some counters in to
+verify how often all this happens I guess.
 
-Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
 ---
- fs/proc/vmcore.c |  130 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 128 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/system.h |    2 ++
+ kernel/sched.c                |   14 +++++++++++---
+ kernel/sched_debug.c          |    7 +++++++
+ 3 files changed, 20 insertions(+), 3 deletions(-)
 
-Index: linux-2.6.slim_kdump/fs/proc/vmcore.c
-===================================================================
---- linux-2.6.slim_kdump.orig/fs/proc/vmcore.c
-+++ linux-2.6.slim_kdump/fs/proc/vmcore.c
-@@ -483,9 +483,60 @@ static void __init set_vmcore_list_offse
- 	}
- }
+diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
+index c2ff2a1..2c597e8 100644
+--- a/arch/x86/include/asm/system.h
++++ b/arch/x86/include/asm/system.h
+@@ -10,6 +10,8 @@
+ #include <linux/kernel.h>
+ #include <linux/irqflags.h>
  
-+/*
-+ * Check if the crash was due to a fatal Memory Check Exception
-+ */
-+static int is_mce_crash64(void)
-+{
-+	int i, j, len = 0, rc;
-+	Elf64_Ehdr *ehdr_ptr;
-+	Elf64_Phdr *phdr_ptr;
-+	Elf64_Nhdr *nhdr_ptr;
++#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
 +
-+	ehdr_ptr = (Elf64_Ehdr *)elfcorebuf;
-+	phdr_ptr = (Elf64_Phdr *)(elfcorebuf + sizeof(Elf64_Ehdr));
+ /* entries in ARCH_DLINFO: */
+ #if defined(CONFIG_IA32_EMULATION) || !defined(CONFIG_X86_64)
+ # define AT_VECTOR_SIZE_ARCH 2
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 2d12893..e4f7a9f 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2636,9 +2636,17 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 		 * to spin on ->on_cpu if p is current, since that would
+ 		 * deadlock.
+ 		 */
+-		if (p == current) {
+-			ttwu_queue(p, cpu);
+-			goto stat;
++		if (cpu == smp_processor_id()) {
++			struct rq *rq;
 +
-+	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
-+		void *notes_section;
-+		u64 offset, max_sz;
-+		if (phdr_ptr->p_type != PT_NOTE)
-+			continue;
-+		max_sz = phdr_ptr->p_memsz;
-+		offset = phdr_ptr->p_offset;
-+		notes_section = kmalloc(max_sz, GFP_KERNEL);
-+		if (!notes_section)
-+			return -ENOMEM;
-+		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-+		if (rc < 0) {
-+			kfree(notes_section);
-+			return rc;
-+		}
-+
-+		for (j = 0; j < phdr_ptr->p_filesz; j += len) {
-+			nhdr_ptr = notes_section + j;
-+			if (nhdr_ptr->n_type == NT_MCE)
-+			{
-+				kfree(notes_section);
-+				return 1;
++			rq = __task_rq_lock(p);
++			if (p->on_cpu) {
++				ttwu_activate(rq, p, ENQUEUE_WAKEUP);
++				ttwu_do_wakeup(rq, p, wake_flags);
++				__task_rq_unlock(rq);
++				goto stat;
 +			}
-+			/*
-+			 * The elf-64 standard specifies 8-byte alignment while
-+			 * append_elf_note function does only 4-byte roundup.
-+			 * Hence this code also does a 4-byte roundup.
-+			 */
-+			len = sizeof(Elf64_Nhdr);
-+			len = roundup(len + nhdr_ptr->n_namesz, 4);
-+			len = roundup(len + nhdr_ptr->n_descsz, 4);
-+		}
-+		kfree(notes_section);
-+	}
-+	return 0;
-+}
-+
- static int __init parse_crash_elf64_headers(void)
- {
--	int rc=0;
-+	int i, rc = 0;
-+	Elf64_Phdr *phdr_ptr;
- 	Elf64_Ehdr ehdr;
- 	u64 addr;
++			__task_rq_unlock(rq);
+ 		}
+ #endif
+ 		cpu_relax();
+diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
+index a6710a1..f0ff1de 100644
+--- a/kernel/sched_debug.c
++++ b/kernel/sched_debug.c
+@@ -332,6 +332,13 @@ static int sched_debug_show(struct seq_file *m, void *v)
+ 		(int)strcspn(init_utsname()->version, " "),
+ 		init_utsname()->version);
  
-@@ -523,6 +574,18 @@ static int __init parse_crash_elf64_head
- 		return rc;
- 	}
- 
-+	phdr_ptr = (Elf64_Phdr *)(elfcorebuf + sizeof(Elf64_Ehdr));
-+	if (is_mce_crash64() > 0) {
-+		/*
-+		 * If crash is due to Machine Check exception, don't populate
-+		 * sections other than elf-notes. Mark their sizes as zero.
-+		 */
-+		for (i = 0; i < ehdr.e_phnum; i++, phdr_ptr++) {
-+			if (phdr_ptr->p_type != PT_NOTE)
-+				phdr_ptr->p_memsz = phdr_ptr->p_filesz = 0;
-+		}
-+	}
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++	SEQ_printf(m, "__ARCH_WANT_INTERRUPTS_ON_CTXSW\n");
++#endif
++#ifdef __ARCH_WANT_UNLOCKED_CTXSW
++	SEQ_printf(m, "__ARCH_WANT_UNLOCKED_CTXSW\n");                                  
++#endif
 +
- 	/* Merge all PT_NOTE headers into one. */
- 	rc = merge_note_headers_elf64(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
- 	if (rc) {
-@@ -539,9 +602,60 @@ static int __init parse_crash_elf64_head
- 	return 0;
- }
- 
-+/*
-+ * Check if the crash was due to a fatal Memory Check Exception
-+ */
-+static int is_mce_crash32(void)
-+{
-+	int i, j, len = 0, rc;
-+	Elf32_Ehdr *ehdr_ptr;
-+	Elf32_Phdr *phdr_ptr;
-+	Elf32_Nhdr *nhdr_ptr;
-+
-+	ehdr_ptr = (Elf32_Ehdr *)elfcorebuf;
-+	phdr_ptr = (Elf32_Phdr *)(elfcorebuf + sizeof(Elf32_Ehdr));
-+
-+	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
-+		void *notes_section;
-+		u64 offset, max_sz;
-+		if (phdr_ptr->p_type != PT_NOTE)
-+			continue;
-+		max_sz = phdr_ptr->p_memsz;
-+		offset = phdr_ptr->p_offset;
-+		notes_section = kmalloc(max_sz, GFP_KERNEL);
-+		if (!notes_section)
-+			return -ENOMEM;
-+		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-+		if (rc < 0) {
-+			kfree(notes_section);
-+			return rc;
-+		}
-+
-+		for (j = 0; j < phdr_ptr->p_filesz; j += len) {
-+			nhdr_ptr = notes_section + j;
-+			if (nhdr_ptr->n_type == NT_MCE)
-+			{
-+				kfree(notes_section);
-+				return 1;
-+			}
-+			/*
-+			 * The elf-64 standard specifies 8-byte alignment while
-+			 * append_elf_note function does only 4-byte roundup.
-+			 * Hence this code also does a 4-byte roundup.
-+			 */
-+			len = sizeof(Elf64_Nhdr);
-+			len = roundup(len + nhdr_ptr->n_namesz, 4);
-+			len = roundup(len + nhdr_ptr->n_descsz, 4);
-+		}
-+		kfree(notes_section);
-+	}
-+	return 0;
-+}
-+
- static int __init parse_crash_elf32_headers(void)
- {
--	int rc=0;
-+	int i, rc = 0;
-+	Elf32_Phdr *phdr_ptr;
- 	Elf32_Ehdr ehdr;
- 	u64 addr;
- 
-@@ -579,6 +693,18 @@ static int __init parse_crash_elf32_head
- 		return rc;
- 	}
- 
-+	phdr_ptr = (Elf32_Phdr *)(elfcorebuf + sizeof(Elf32_Ehdr));
-+	if (is_mce_crash32() > 0) {
-+		/*
-+		 * If crash is due to Machine Check exception, don't populate
-+		 * sections other than elf-notes. Mark their sizes as zero.
-+		 */
-+		for (i = 0; i < ehdr.e_phnum; i++, phdr_ptr++) {
-+			if (phdr_ptr->p_type != PT_NOTE)
-+				phdr_ptr->p_memsz = phdr_ptr->p_filesz = 0;
-+		}
-+	}
-+
- 	/* Merge all PT_NOTE headers into one. */
- 	rc = merge_note_headers_elf32(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
- 	if (rc) {
+ #define P(x) \
+ 	SEQ_printf(m, "%-40s: %Ld\n", #x, (long long)(x))
+ #define PN(x) \
+
+
