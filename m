@@ -1,291 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab1EZB6G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 21:58:06 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46738 "EHLO
+	id S932781Ab1EZCSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 22:18:48 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:44457 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab1EZB6E (ORCPT
+	with ESMTP id S1757349Ab1EZCSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 21:58:04 -0400
+	Wed, 25 May 2011 22:18:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=HPH+fuqdLJVa2sMOL6pMIYaCdIwUrpRX5qcN7yWnOTHTFrmNOClLN8nONbK3oDNt3y
-         X5CNaa0JiMG5tbBpIvkj3LtydHwHY3hepUNwQu9wk6dxVtIgawQYGAoTVYYfw2xInjDc
-         KBwKu1SNaM5izJPYFHwGkE4qO7hslkWYgxeyM=
-Date: Wed, 25 May 2011 18:58:00 -0700
-From: mark gross <markgross@thegnar.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: markgross@thegnar.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: linux-next: build warning after merge of the suspend tree
-Message-ID: <20110526015800.GB27039@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20110523150636.ccd83777.sfr@canb.auug.org.au>
- <201105232154.52344.rjw@sisk.pl>
- <20110524063424.GC18075@gvim.org>
- <201105242330.09491.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105242330.09491.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=X4iuZM/0zLC40Vb+NuETXq8uBKiEAOlaq8ndcvCxSsIQjQmNFwLbdthC1S25yv7N2C
+         +tM6ee5TGvWhSnUF8q+d23zVgaNfBFg0Sg+pBQyCeRbBLzDxFsxcbDl0JHppP+BBQ0Qq
+         SwcfUmpOAY5q6n8hFeAqhyBiw61a2Ucr3IIGg=
+From: Dave Carroll <dtcarroll@gmail.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: LPPC <linuxppc-dev@lists.ozlabs.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Carroll <dcarroll@astekcorp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH v6] powerpc: Force page alignment for initrd reserved memory
+Date: Wed, 25 May 2011 20:00:14 -0600
+Message-Id: <1306375214-12007-1-git-send-email-dcarroll@astekcorp.com>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <initrd-align-v5-reply@mdm.bga.com>
+References: <initrd-align-v5-reply@mdm.bga.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 11:30:09PM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, May 24, 2011, mark gross wrote:
-> > On Mon, May 23, 2011 at 09:54:52PM +0200, Rafael J. Wysocki wrote:
-> > > On Monday, May 23, 2011, mark gross wrote:
-> > > > On Mon, May 23, 2011 at 03:06:36PM +1000, Stephen Rothwell wrote:
-> > > > > Hi Rafael,
-> > > > > 
-> > > > > After merging the suspend tree, today's linux-next build (i386 defconfig
-> > > > > among others) produced this warning:
-> > > > > 
-> > > > > kernel/pm_qos_params.c: In function 'pm_qos_power_write':
-> > > > > kernel/pm_qos_params.c:420: warning: passing argument 3 of 'kstrtol' from incompatible pointer type
-> > > > > include/linux/kernel.h:210: note: expected 'long int *' but argument is of type 's32 *'
-> > > > > 
-> > > > > Intreoduced by commit 365daa955e03 ("PM: Correct PM QOS's user mode
-> > > > > interface to work with ascii input per").
-> > > > 
-> > > > Gah!  I'm sorry about that.
-> > > > 
-> > > > attached is a fix.
-> > > > 
-> > > > 
-> > > > --mark
-> > > > 
-> > > > signed-off-by:markgross <markgross@thegnar.org>
-> > > > 
-> > > > 
-> > > > 
-> > > > From a8f0587b9ae598be5ca4c3cdda4e0ced6ca9baaf Mon Sep 17 00:00:00 2001
-> > > > From: mgross <mgross@cr48>
-> > > > Date: Mon, 23 May 2011 07:14:09 -0700
-> > > > Subject: [PATCH] clean up a compile time warning in the use of strict_strtol but that was
-> > > >  passing an s32 * when it should be passing a long *
-> > > > 
-> > > > ---
-> > > >  kernel/pm_qos_params.c |    6 ++++--
-> > > >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> > > > index d61ecf3..dd37c56 100644
-> > > > --- a/kernel/pm_qos_params.c
-> > > > +++ b/kernel/pm_qos_params.c
-> > > > @@ -405,6 +405,7 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> > > >  		size_t count, loff_t *f_pos)
-> > > >  {
-> > > >  	s32 value;
-> > > > +	long safe_int;
-> > > >  	int x;
-> > > >  	char ascii_value[11];
-> > > >  	struct pm_qos_request_list *pm_qos_req;
-> > > > @@ -417,10 +418,11 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> > > >  		ascii_value[count] = 0;
-> > > >  		if (copy_from_user(ascii_value, buf, count))
-> > > >  			return -EFAULT;
-> > > > -		if ((x=strict_strtol(ascii_value, 16, &value)) != 0){
-> > > > -			pr_debug("%s, 0x%x, 0x%x\n",ascii_value, value, x);
-> > > > +		if ((x=strict_strtol(ascii_value, 16, &safe_int)) != 0){
-> > > > +			pr_debug("%s, 0x%lx, 0x%x\n",ascii_value, safe_int, x);
-> > > >  			return -EINVAL;
-> > > >  		}
-> > > > +		value = (s32) safe_int;
-> > > 
-> > > Well, this doesn't seem quite right.
-> > > 
-> > > >  	} else
-> > > >  		return -EINVAL;
-> > > 
-> > > Besides, if count == 11, there we'll write beyond ascii_value[], right?
-> > 
-> > right. That is a bug.
-> > 
-> > > 
-> > > What about the appended patch instead of your original one?
-> > Thank you!
-> > 
-> > > Rafael
-> > > 
-> > > 
-> > > ---
-> > > From: mark gross <markgross@thegnar.org>
-> > > Subject: PM: Correct PM QOS's user mode interface to work with ascii input per
-> > > 
-> > > What is in the kernel docs.  Writing a string to the ABI from user mode
-> > > comes in 2 flavors.  One with and one without a '\n' at the end.  This
-> > > change accepts both.
-> > > 
-> > > # echo 0x12345678 > /dev/cpu_dma_latency
-> > > 
-> > > and
-> > > 
-> > > # echo -n 0x12345678 > /dev/cpu_dma_latency
-> > > 
-> > > now both work.
-> > > 
-> > > [rjw: Fixed up array bounds checking and type casting.]
-> > > 
-> > > Signed-off-by: mark gross <markgross@thegnar.org>
-> > > Acked-by: Simon Horman <horms@verge.net.au>
-> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > ---
-> > >  kernel/pm_qos_params.c |   25 ++++++++++++++++---------
-> > >  1 file changed, 16 insertions(+), 9 deletions(-)
-> > > 
-> > > Index: linux-2.6/kernel/pm_qos_params.c
-> > > ===================================================================
-> > > --- linux-2.6.orig/kernel/pm_qos_params.c
-> > > +++ linux-2.6/kernel/pm_qos_params.c
-> > > @@ -40,6 +40,7 @@
-> > >  #include <linux/string.h>
-> > >  #include <linux/platform_device.h>
-> > >  #include <linux/init.h>
-> > > +#include <linux/kernel.h>
-> > >  
-> > >  #include <linux/uaccess.h>
-> > >  
-> > > @@ -404,24 +405,30 @@ static ssize_t pm_qos_power_write(struct
-> > >  		size_t count, loff_t *f_pos)
-> > >  {
-> > >  	s32 value;
-> > > -	int x;
-> > >  	char ascii_value[11];
-> > >  	struct pm_qos_request_list *pm_qos_req;
-> > >  
-> > >  	if (count == sizeof(s32)) {
-> > >  		if (copy_from_user(&value, buf, sizeof(s32)))
-> > >  			return -EFAULT;
-> > > -	} else if (count == 11) { /* len('0x12345678/0') */
-> > > -		if (copy_from_user(ascii_value, buf, 11))
-> > > +	} else if (count >= 10) { /* '0x12345678' or '0x12345678\n'*/
-> > Did you mean <= 11 here?  I know that Alan Stern wanted to see the ABI
-> > adjusted to accept shorter hex string that the full 10 char string.
-> > 
-> > FWIW I'm ok with doing that.
-> > 
-> > > +		unsigned long int ulval;
-> > > +		int ret;
-> > > +
-> > > +		count = 10;
-> > 
-> > I kind of wanted to return an error to the user if they violate the
-> > documented format for the hex string.  With this code you get a silent
-> > truncation of the lower digits if the string is "0x123456789abcdef"
-> 
-> That's correct, but with the previous code there will be a truncation
-> is "echo -n 0x123456789".  If we don't want that, we should check if the
-> last character is a '\n'.
-> 
-> > > +		ascii_value[count] = 0;
-> > > +		if (copy_from_user(ascii_value, buf, count))
-> > >  			return -EFAULT;
-> > > -		if (strlen(ascii_value) != 10)
-> > > -			return -EINVAL;
-> > > -		x = sscanf(ascii_value, "%x", &value);
-> > > -		if (x != 1)
-> > > +
-> > > +		ret = strict_strtoul(ascii_value, 16, &ulval);
-> > > +		if (ret){
-> > > +			pr_debug("%s, 0x%lx, 0x%x\n", ascii_value, ulval, ret);
-> > >  			return -EINVAL;
-> > > -		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
-> > > -	} else
-> > > +		}
-> > > +		value = (s32)lower_32_bits(ulval);
-> > This shouldn't be needed if you are constrained to a hex format of
-> > "0x12345678" but this is more readable.  lower_32_bits is a good idea.
-> 
-> OK
-> 
-> Appended is another patch that adds the '\n' check and reworks the code
-> a bit (so that it will accept strings like "0x1" too).
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM: Fix PM QOS's user mode interface to work with ASCII input
-> 
-> Make pm_qos_power_write() accept values passed to it in the ASCII hex
-> format either with or without an ending newline.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  kernel/pm_qos_params.c |   33 +++++++++++++++++++++++----------
->  1 file changed, 23 insertions(+), 10 deletions(-)
-> 
-> Index: linux-2.6/kernel/pm_qos_params.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/pm_qos_params.c
-> +++ linux-2.6/kernel/pm_qos_params.c
-> @@ -40,6 +40,7 @@
->  #include <linux/string.h>
->  #include <linux/platform_device.h>
->  #include <linux/init.h>
-> +#include <linux/kernel.h>
->  
->  #include <linux/uaccess.h>
->  
-> @@ -404,24 +405,36 @@ static ssize_t pm_qos_power_write(struct
->  		size_t count, loff_t *f_pos)
->  {
->  	s32 value;
-> -	int x;
-> -	char ascii_value[11];
->  	struct pm_qos_request_list *pm_qos_req;
->  
->  	if (count == sizeof(s32)) {
->  		if (copy_from_user(&value, buf, sizeof(s32)))
->  			return -EFAULT;
-> -	} else if (count == 11) { /* len('0x12345678/0') */
-> -		if (copy_from_user(ascii_value, buf, 11))
-> +	} else if (count <= 11) { /* ASCII perhaps? */
-> +		char ascii_value[11];
-> +		unsigned long int ulval;
-> +		int ret;
-> +
-> +		if (copy_from_user(ascii_value, buf, count))
->  			return -EFAULT;
-> -		if (strlen(ascii_value) != 10)
-> -			return -EINVAL;
-> -		x = sscanf(ascii_value, "%x", &value);
-> -		if (x != 1)
-> +
-> +		if (count > 10) {
-> +			if (ascii_value[10] == '\n')
-> +				ascii_value[10] = '\0';
-> +			else
-> +				return -EINVAL;
-> +		} else {
-> +			ascii_value[count] = '\0';
-> +		}
-> +		ret = strict_strtoul(ascii_value, 16, &ulval);
-> +		if (ret) {
-> +			pr_debug("%s, 0x%lx, 0x%x\n", ascii_value, ulval, ret);
->  			return -EINVAL;
-> -		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
-> -	} else
-> +		}
-> +		value = (s32)lower_32_bits(ulval);
-> +	} else {
->  		return -EINVAL;
-> +	}
->  
->  	pm_qos_req = filp->private_data;
->  	pm_qos_update_request(pm_qos_req, value);
-looks good to me.
+From: Dave Carroll <dcarroll@astekcorp.com>
 
-Acked-by: markgross <markgross@thegnar.org>
+When using 64K pages with a separate cpio rootfs, U-Boot will align
+the rootfs on a 4K page boundary. When the memory is reserved, and
+subsequent early memblock_alloc is called, it will allocate memory
+between the 64K page alignment and reserved memory. When the reserved
+memory is subsequently freed, it is done so by pages, causing the
+early memblock_alloc requests to be re-used, which in my case, caused
+the device-tree to be clobbered.
+
+This patch forces the reserved memory for initrd to be kernel page
+aligned, and will move the device tree if it overlaps with the range
+extension of initrd. This patch will also consolidate the identical
+function free_initrd_mem() from mm/init_32.c, init_64.c to mm/mem.c,
+and adds the same range extension when freeing initrd.
+
+Many thanks to Milton Miller for his input on this patch.
+
+Signed-off-by: Dave Carroll <dcarroll@astekcorp.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+
+---
+ arch/powerpc/kernel/prom.c |   21 ++++++++++++++++++---
+ arch/powerpc/mm/init_32.c  |   15 ---------------
+ arch/powerpc/mm/init_64.c  |   13 -------------
+ arch/powerpc/mm/mem.c      |   19 +++++++++++++++++++
+ 4 files changed, 37 insertions(+), 31 deletions(-)
+
+diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+index 48aeb55..86966a0 100644
+--- a/arch/powerpc/kernel/prom.c
++++ b/arch/powerpc/kernel/prom.c
+@@ -81,12 +81,24 @@ static int __init early_parse_mem(char *p)
+ 	return 0;
+ }
+ early_param("mem", early_parse_mem);
++/**
++ * overlaps_initrd - check for overlap with page aligned extension of
++ * initrd.
++ */
++static inline int overlaps_initrd(unsigned long start, unsigned long end)
++{
++	if (!initrd_start)
++		return 0;
+ 
++	return	(start + size) > _ALIGN_DOWN(initrd_start, PAGE_SIZE) &&
++			start <= _ALIGN_UP(initrd_end, PAGE_SIZE);
++}
+ /**
+  * move_device_tree - move tree to an unused area, if needed.
+  *
+  * The device tree may be allocated beyond our memory limit, or inside the
+- * crash kernel region for kdump. If so, move it out of the way.
++ * crash kernel region for kdump, or within the page aligned range of initrd.
++ * If so, move it out of the way.
+  */
+ static void __init move_device_tree(void)
+ {
+@@ -99,7 +111,8 @@ static void __init move_device_tree(void)
+ 	size = be32_to_cpu(initial_boot_params->totalsize);
+ 
+ 	if ((memory_limit && (start + size) > PHYSICAL_START + memory_limit) ||
+-			overlaps_crashkernel(start, size)) {
++			overlaps_crashkernel(start, size) ||
++			overlaps_initrd(start, size) {
+ 		p = __va(memblock_alloc(size, PAGE_SIZE));
+ 		memcpy(p, initial_boot_params, size);
+ 		initial_boot_params = (struct boot_param_header *)p;
+@@ -555,7 +568,9 @@ static void __init early_reserve_mem(void)
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	/* then reserve the initrd, if any */
+ 	if (initrd_start && (initrd_end > initrd_start))
+-		memblock_reserve(__pa(initrd_start), initrd_end - initrd_start);
++		memblock_reserve(_ALIGN_DOWN(__pa(initrd_start), PAGE_SIZE),
++			_ALIGN_UP(initrd_end, PAGE_SIZE) -
++			_ALIGN_DOWN(initrd_start, PAGE_SIZE));
+ #endif /* CONFIG_BLK_DEV_INITRD */
+ 
+ #ifdef CONFIG_PPC32
+diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
+index d65b591..5de0f25 100644
+--- a/arch/powerpc/mm/init_32.c
++++ b/arch/powerpc/mm/init_32.c
+@@ -223,21 +223,6 @@ void free_initmem(void)
+ #undef FREESEC
+ }
+ 
+-#ifdef CONFIG_BLK_DEV_INITRD
+-void free_initrd_mem(unsigned long start, unsigned long end)
+-{
+-	if (start < end)
+-		printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
+-	for (; start < end; start += PAGE_SIZE) {
+-		ClearPageReserved(virt_to_page(start));
+-		init_page_count(virt_to_page(start));
+-		free_page(start);
+-		totalram_pages++;
+-	}
+-}
+-#endif
+-
+-
+ #ifdef CONFIG_8xx /* No 8xx specific .c file to put that in ... */
+ void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+ 				phys_addr_t first_memblock_size)
+diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+index 6374b21..7591a97 100644
+--- a/arch/powerpc/mm/init_64.c
++++ b/arch/powerpc/mm/init_64.c
+@@ -99,19 +99,6 @@ void free_initmem(void)
+ 		((unsigned long)__init_end - (unsigned long)__init_begin) >> 10);
+ }
+ 
+-#ifdef CONFIG_BLK_DEV_INITRD
+-void free_initrd_mem(unsigned long start, unsigned long end)
+-{
+-	if (start < end)
+-		printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
+-	for (; start < end; start += PAGE_SIZE) {
+-		ClearPageReserved(virt_to_page(start));
+-		init_page_count(virt_to_page(start));
+-		free_page(start);
+-		totalram_pages++;
+-	}
+-}
+-#endif
+ 
+ static void pgd_ctor(void *addr)
+ {
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 57e545b..f60e44e 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -160,6 +160,25 @@ walk_system_ram_range(unsigned long start_pfn, unsigned long nr_pages,
+ }
+ EXPORT_SYMBOL_GPL(walk_system_ram_range);
+ 
++#ifdef CONFIG_BLK_DEV_INITRD
++void free_initrd_mem(unsigned long start, unsigned long end)
++{
++	if (start >= end)
++		return;
++
++	start = _ALIGN_DOWN(start, PAGE_SIZE);
++	end = _ALIGN_UP(end, PAGE_SIZE);
++	printk(KERN_INFO "Freeing initrd memory: %ldk freed\n",
++			(end - start) >> 10);
++	for (; start < end; start += PAGE_SIZE) {
++		ClearPageReserved(virt_to_page(start));
++		init_page_count(virt_to_page(start));
++		free_page(start);
++		totalram_pages++;
++	}
++}
++#endif
++
+ /*
+  * Initialize the bootmem system and give it all the memory we
+  * have available.  If we are using highmem, we only put the
+-- 
+1.7.4
 
