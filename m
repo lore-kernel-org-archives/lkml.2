@@ -1,255 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab1EZCHH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 22:07:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46668 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756767Ab1EZCHF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 22:07:05 -0400
-X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=Tf6TZck48twA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=VwQbUJbxAAAA:8 a=1hwDVTDg-q6OXzzWFsEA:9 a=sEZrjTYXah8cx0XWIv4A:7 a=PUjeQqilurYA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH -tip ] [BUGFIX]tracing/kprobes: Fix kprobe-tracer to
- support stack trace
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        yrl.pp-manager.tt@hitachi.com, Russell King <rmk@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-In-Reply-To: <20110512102255.2540.88867.stgit@ltc-x64-VirtualBox>
-References: <20110512102255.2540.88867.stgit@ltc-x64-VirtualBox>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 25 May 2011 22:07:02 -0400
-Message-ID: <1306375622.1465.137.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1757342Ab1EZCHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 22:07:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46212 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755500Ab1EZCHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 22:07:15 -0400
+Date: Thu, 26 May 2011 02:07:06 GMT
+From: tip-bot for Matthew Garrett <mjg@redhat.com>
+Message-ID: <tip-916f676f8dc016103f983c7ec54c18ecdbb6e349@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, stable@kernel.org, tony.luck@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tglx@linutronix.de,
+        tony.luck@intel.com, hpa@linux.intel.com
+In-Reply-To: <1306331593-28715-1-git-send-email-mjg@redhat.com>
+References: <1306331593-28715-1-git-send-email-mjg@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, efi: Retain boot service code until after switching to virtual mode
+Git-Commit-ID: 916f676f8dc016103f983c7ec54c18ecdbb6e349
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 May 2011 02:07:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 19:22 +0900, Masami Hiramatsu wrote:
-> Fix to support kernel stack trace correctly on kprobe-tracer.
-> Since the execution path of kprobe-based dynamic events is different
-> from other tracepoint-based events, normal ftrace_trace_stack() doesn't
-> work correctly. To fix that, this introduces ftrace_trace_stack_regs()
-> which traces stack via pt_regs instead of current stack register.
-> 
+Commit-ID:  916f676f8dc016103f983c7ec54c18ecdbb6e349
+Gitweb:     http://git.kernel.org/tip/916f676f8dc016103f983c7ec54c18ecdbb6e349
+Author:     Matthew Garrett <mjg@redhat.com>
+AuthorDate: Wed, 25 May 2011 09:53:13 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 25 May 2011 17:03:53 -0700
 
-Hi Masami,
+x86, efi: Retain boot service code until after switching to virtual mode
 
-I'm working to get a "fix" patch set push out, and I included this
-patch. But when I ran it on my arch test (compiling on other archs),
-this patch broke the following:
+UEFI stands for "Unified Extensible Firmware Interface", where "Firmware"
+is an ancient African word meaning "Why do something right when you can
+do it so wrong that children will weep and brave adults will cower before
+you", and "UEI" is Celtic for "We missed DOS so we burned it into your
+ROMs". The UEFI specification provides for runtime services (ie, another
+way for the operating system to be forced to depend on the firmware) and
+we rely on these for certain trivial tasks such as setting up the
+bootloader. But some hardware fails to work if we attempt to use these
+runtime services from physical mode, and so we have to switch into virtual
+mode. So far so dreadful.
 
- arm, blackfin, powerpc, s390.
+The specification makes it clear that the operating system is free to do
+whatever it wants with boot services code after ExitBootServices() has been
+called. SetVirtualAddressMap() can't be called until ExitBootServices() has
+been. So, obviously, a whole bunch of EFI implementations call into boot
+services code when we do that. Since we've been charmingly naive and
+trusted that the specification may be somehow relevant to the real world,
+we've already stuffed a picture of a penguin or something in that address
+space. And just to make things more entertaining, we've also marked it
+non-executable.
 
-(Note, due to other bugs, UML and mips does not build to test)
+This patch allocates the boot services regions during EFI init and makes
+sure that they're executable. Then, after SetVirtualAddressMap(), it
+discards them and everyone lives happily ever after. Except for the ones
+who have to work on EFI, who live sad lives haunted by the knowledge that
+someone's eventually going to write yet another firmware specification.
 
-The problem is that these archs do not implement a:
+[ hpa: adding this to urgent with a stable tag since it fixes currently-broken
+  hardware.  However, I do not know what the dependencies are and so I do
+  not know which -stable versions this may be a candidate for. ]
 
-  save_stack_trace_regs() function.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Link: http://lkml.kernel.org/r/1306331593-28715-1-git-send-email-mjg@redhat.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: <stable@kernel.org>
+---
+ arch/x86/kernel/setup.c        |    7 ++++++
+ arch/x86/platform/efi/efi.c    |   45 +++++++++++++++++++++++++++++++++++++++-
+ arch/x86/platform/efi/efi_64.c |    5 ++-
+ include/linux/efi.h            |    1 +
+ 4 files changed, 55 insertions(+), 3 deletions(-)
 
-I'm stripping this patch out of my next pull request, and it may need to
-wait till 2.6.41/2.8.1/3.1.
-
--- Steve
-
-> e.g.
-> 
->  # echo p schedule > /sys/kernel/debug/tracing/kprobe_events
->  # echo 1 > /sys/kernel/debug/tracing/options/stacktrace
->  # echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
->  # head -n 20 /sys/kernel/debug/tracing/trace
-> # tracer: nop
-> #
-> #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-> #              | |       |          |         |
->             sshd-1549  [001]   857.326335: p_schedule_0: (schedule+0x0/0x900)
->             sshd-1549  [001]   857.326337: <stack trace>
->  => schedule_hrtimeout_range
->  => poll_schedule_timeout
->  => do_select
->  => core_sys_select
->  => sys_select
->  => system_call_fastpath
->              tee-1751  [000]   857.326394: p_schedule_0: (schedule+0x0/0x900)
->              tee-1751  [000]   857.326395: <stack trace>
->  => do_group_exit
->  => sys_exit_group
->  => system_call_fastpath
->           <idle>-0     [001]   857.326406: p_schedule_0: (schedule+0x0/0x900)
->           <idle>-0     [001]   857.326407: <stack trace>
->  => start_secondary
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  include/linux/ftrace_event.h |    4 ++++
->  kernel/trace/trace.c         |   35 ++++++++++++++++++++++++++++++-----
->  kernel/trace/trace.h         |    9 +++++++++
->  kernel/trace/trace_kprobe.c  |    6 ++++--
->  4 files changed, 47 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index b5a550a..bca2499 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -117,6 +117,10 @@ void trace_current_buffer_unlock_commit(struct ring_buffer *buffer,
->  void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
->  				       struct ring_buffer_event *event,
->  					unsigned long flags, int pc);
-> +void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
-> +					    struct ring_buffer_event *event,
-> +					    unsigned long flags, int pc,
-> +					    struct pt_regs *regs);
->  void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
->  					 struct ring_buffer_event *event);
->  
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index ee9c921..bf12209 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -1191,6 +1191,18 @@ void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
->  }
->  EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit);
->  
-> +void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
-> +					    struct ring_buffer_event *event,
-> +					    unsigned long flags, int pc,
-> +					    struct pt_regs *regs)
-> +{
-> +	ring_buffer_unlock_commit(buffer, event);
-> +
-> +	ftrace_trace_stack_regs(buffer, flags, 0, pc, regs);
-> +	ftrace_trace_userstack(buffer, flags, pc);
-> +}
-> +EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit_regs);
-> +
->  void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
->  					 struct ring_buffer_event *event)
->  {
-> @@ -1236,7 +1248,7 @@ ftrace(struct trace_array *tr, struct trace_array_cpu *data,
->  #ifdef CONFIG_STACKTRACE
->  static void __ftrace_trace_stack(struct ring_buffer *buffer,
->  				 unsigned long flags,
-> -				 int skip, int pc)
-> +				 int skip, int pc, struct pt_regs *regs)
->  {
->  	struct ftrace_event_call *call = &event_kernel_stack;
->  	struct ring_buffer_event *event;
-> @@ -1255,24 +1267,36 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
->  	trace.skip		= skip;
->  	trace.entries		= entry->caller;
->  
-> -	save_stack_trace(&trace);
-> +	if (regs)
-> +		save_stack_trace_regs(&trace, regs);
-> +	else
-> +		save_stack_trace(&trace);
->  	if (!filter_check_discard(call, entry, buffer, event))
->  		ring_buffer_unlock_commit(buffer, event);
->  }
->  
-> +void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
-> +			     int skip, int pc, struct pt_regs *regs)
-> +{
-> +	if (!(trace_flags & TRACE_ITER_STACKTRACE))
-> +		return;
-> +
-> +	__ftrace_trace_stack(buffer, flags, skip, pc, regs);
-> +}
-> +
->  void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
->  			int skip, int pc)
->  {
->  	if (!(trace_flags & TRACE_ITER_STACKTRACE))
->  		return;
->  
-> -	__ftrace_trace_stack(buffer, flags, skip, pc);
-> +	__ftrace_trace_stack(buffer, flags, skip, pc, NULL);
->  }
->  
->  void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
->  		   int pc)
->  {
-> -	__ftrace_trace_stack(tr->buffer, flags, skip, pc);
-> +	__ftrace_trace_stack(tr->buffer, flags, skip, pc, NULL);
->  }
->  
->  /**
-> @@ -1288,7 +1312,8 @@ void trace_dump_stack(void)
->  	local_save_flags(flags);
->  
->  	/* skipping 3 traces, seems to get us at the caller of this function */
-> -	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
-> +	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count(),
-> +			     NULL);
->  }
->  
->  static DEFINE_PER_CPU(int, user_stack_count);
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 5e9dfc6..cbce5e4 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -389,6 +389,9 @@ void update_max_tr_single(struct trace_array *tr,
->  void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
->  			int skip, int pc);
->  
-> +void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
-> +			     int skip, int pc, struct pt_regs *regs);
-> +
->  void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
->  			    int pc);
->  
-> @@ -400,6 +403,12 @@ static inline void ftrace_trace_stack(struct ring_buffer *buffer,
->  {
->  }
->  
-> +static inline void ftrace_trace_stack_regs(struct ring_buffer *buffer,
-> +					   unsigned long flags, int skip,
-> +					   int pc, struct pt_regs *regs)
-> +{
-> +}
-> +
->  static inline void ftrace_trace_userstack(struct ring_buffer *buffer,
->  					  unsigned long flags, int pc)
->  {
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index f925c45..7053ef3 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -1397,7 +1397,8 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
->  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
->  
->  	if (!filter_current_check_discard(buffer, call, entry, event))
-> -		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
-> +		trace_nowake_buffer_unlock_commit_regs(buffer, event,
-> +						       irq_flags, pc, regs);
->  }
->  
->  /* Kretprobe handler */
-> @@ -1429,7 +1430,8 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
->  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
->  
->  	if (!filter_current_check_discard(buffer, call, entry, event))
-> -		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
-> +		trace_nowake_buffer_unlock_commit_regs(buffer, event,
-> +						       irq_flags, pc, regs);
->  }
->  
->  /* Event entry printers */
-
-
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 605e5ae..b9ca498 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -910,6 +910,13 @@ void __init setup_arch(char **cmdline_p)
+ 	memblock.current_limit = get_max_mapped();
+ 	memblock_x86_fill();
+ 
++	/*
++	 * The EFI specification says that boot service code won't be called
++	 * after ExitBootServices(). This is, in fact, a lie.
++	 */
++	if (efi_enabled)
++		efi_reserve_boot_services();
++
+ 	/* preallocate 4k for mptable mpc */
+ 	early_reserve_e820_mpc_new();
+ 
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index b30aa26..0d3a4fa 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -304,6 +304,40 @@ static void __init print_efi_memmap(void)
+ }
+ #endif  /*  EFI_DEBUG  */
+ 
++void __init efi_reserve_boot_services(void)
++{
++	void *p;
++
++	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
++		efi_memory_desc_t *md = p;
++		unsigned long long start = md->phys_addr;
++		unsigned long long size = md->num_pages << EFI_PAGE_SHIFT;
++
++		if (md->type != EFI_BOOT_SERVICES_CODE &&
++		    md->type != EFI_BOOT_SERVICES_DATA)
++			continue;
++
++		memblock_x86_reserve_range(start, start + size, "EFI Boot");
++	}
++}
++
++static void __init efi_free_boot_services(void)
++{
++	void *p;
++
++	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
++		efi_memory_desc_t *md = p;
++		unsigned long long start = md->phys_addr;
++		unsigned long long size = md->num_pages << EFI_PAGE_SHIFT;
++
++		if (md->type != EFI_BOOT_SERVICES_CODE &&
++		    md->type != EFI_BOOT_SERVICES_DATA)
++			continue;
++
++		free_bootmem_late(start, size);
++	}
++}
++
+ void __init efi_init(void)
+ {
+ 	efi_config_table_t *config_tables;
+@@ -536,7 +570,9 @@ void __init efi_enter_virtual_mode(void)
+ 
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+-		if (!(md->attribute & EFI_MEMORY_RUNTIME))
++		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
++		    md->type != EFI_BOOT_SERVICES_CODE &&
++		    md->type != EFI_BOOT_SERVICES_DATA)
+ 			continue;
+ 
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
+@@ -593,6 +629,13 @@ void __init efi_enter_virtual_mode(void)
+ 	}
+ 
+ 	/*
++	 * Thankfully, it does seem that no runtime services other than
++	 * SetVirtualAddressMap() will touch boot services code, so we can
++	 * get rid of it all at this point
++	 */
++	efi_free_boot_services();
++
++	/*
+ 	 * Now that EFI is in virtual mode, update the function
+ 	 * pointers in the runtime service table to the new virtual addresses.
+ 	 *
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index 2649426..ac3aa54 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -49,10 +49,11 @@ static void __init early_code_mapping_set_exec(int executable)
+ 	if (!(__supported_pte_mask & _PAGE_NX))
+ 		return;
+ 
+-	/* Make EFI runtime service code area executable */
++	/* Make EFI service code area executable */
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+-		if (md->type == EFI_RUNTIME_SERVICES_CODE)
++		if (md->type == EFI_RUNTIME_SERVICES_CODE ||
++		    md->type == EFI_BOOT_SERVICES_CODE)
+ 			efi_set_executable(md, executable);
+ 	}
+ }
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 33fa120..e376270 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -299,6 +299,7 @@ extern void efi_initialize_iomem_resources(struct resource *code_resource,
+ 		struct resource *data_resource, struct resource *bss_resource);
+ extern unsigned long efi_get_time(void);
+ extern int efi_set_rtc_mmss(unsigned long nowtime);
++extern void efi_reserve_boot_services(void);
+ extern struct efi_memory_map memmap;
+ 
+ /**
