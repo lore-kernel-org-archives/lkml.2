@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab1EZLz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 07:55:29 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:57590 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932136Ab1EZLz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 07:55:28 -0400
-From: Stefan Bader <stefan.bader@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: [2.6.32+drm33-longterm] Linux 2.6.32.41+drm33.18
-Date: Thu, 26 May 2011 13:55:23 +0200
-Message-Id: <1306410923-5409-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1757436Ab1EZMBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 08:01:45 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41953 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755350Ab1EZMBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 08:01:43 -0400
+Date: Thu, 26 May 2011 12:01:17 GMT
+From: tip-bot for Jesper Juhl <jj@chaosbits.net>
+Message-ID: <tip-ea7659fb2b876337aee719d9d5ddb05531dfb334@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        tom.zanussi@linux.intel.com, jj@chaosbits.net, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, tom.zanussi@linux.intel.com, jj@chaosbits.net,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <alpine.LNX.2.00.1105261011290.17400@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1105261011290.17400@swampdragon.chaosbits.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: Remove duplicate headers
+Git-Commit-ID: ea7659fb2b876337aee719d9d5ddb05531dfb334
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 May 2011 12:01:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the 2.6.32.41+drm33.18 longterm tree.
+Commit-ID:  ea7659fb2b876337aee719d9d5ddb05531dfb334
+Gitweb:     http://git.kernel.org/tip/ea7659fb2b876337aee719d9d5ddb05531dfb334
+Author:     Jesper Juhl <jj@chaosbits.net>
+AuthorDate: Thu, 26 May 2011 10:21:05 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 26 May 2011 13:49:57 +0200
 
-This tree is based on 2.6.32 and generally has all of the stable updates
-applied. Except those to the DRM subsystem, which was based on 2.6.33 and
-took updates from that upstream stable as long as that existed. It will
-continue to add patches to the DRM subsystem as long as they are valid
-according to the stable update rules (Documentation/stable_kernel_rules.txt).
-DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
+perf: Remove duplicate headers
 
-This release updates the DRM subsystem only.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: trivial@kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1105261011290.17400@swampdragon.chaosbits.net
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ tools/perf/builtin-annotate.c |    2 --
+ tools/perf/builtin-script.c   |    1 -
+ 2 files changed, 0 insertions(+), 3 deletions(-)
 
-The updated 2.6.32.y-drm33.z tree can be found at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
-and can be browsed through git web via:
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
-
--Stefan
-
-------
-
-* drm/radeon/kms: fix bad shift in atom iio table parser
-* Linux 2.6.32.41+drm33.18
-
- Makefile                      |    2 +-
- drivers/gpu/drm/radeon/atom.c |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index f942779..183bd18 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .41+drm33.17
-+EXTRAVERSION = .41+drm33.18
- NAME = Man-Eating Seals of Antiquity
-
- # *DOCUMENTATION*
-diff --git a/drivers/gpu/drm/radeon/atom.c b/drivers/gpu/drm/radeon/atom.c
-index b1f929d..052312f 100644
---- a/drivers/gpu/drm/radeon/atom.c
-+++ b/drivers/gpu/drm/radeon/atom.c
-@@ -128,7 +128,7 @@ static uint32_t atom_iio_execute(struct atom_context *ctx, int base,
- 		case ATOM_IIO_MOVE_INDEX:
- 			temp &=
- 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
--			      CU8(base + 2));
-+			      CU8(base + 3));
- 			temp |=
- 			    ((index >> CU8(base + 2)) &
- 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
-@@ -138,7 +138,7 @@ static uint32_t atom_iio_execute(struct atom_context *ctx, int base,
- 		case ATOM_IIO_MOVE_DATA:
- 			temp &=
- 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
--			      CU8(base + 2));
-+			      CU8(base + 3));
- 			temp |=
- 			    ((data >> CU8(base + 2)) &
- 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
-@@ -148,7 +148,7 @@ static uint32_t atom_iio_execute(struct atom_context *ctx, int base,
- 		case ATOM_IIO_MOVE_ATTR:
- 			temp &=
- 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
--			      CU8(base + 2));
-+			      CU8(base + 3));
- 			temp |=
- 			    ((ctx->
- 			      io_attr >> CU8(base + 2)) & (0xFFFFFFFF >> (32 -
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index e18eb7e..7b139e1 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -8,8 +8,6 @@
+ #include "builtin.h"
+ 
+ #include "util/util.h"
+-
+-#include "util/util.h"
+ #include "util/color.h"
+ #include <linux/list.h>
+ #include "util/cache.h"
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 974f6d3..22747de 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -10,7 +10,6 @@
+ #include "util/symbol.h"
+ #include "util/thread.h"
+ #include "util/trace-event.h"
+-#include "util/parse-options.h"
+ #include "util/util.h"
+ #include "util/evlist.h"
+ #include "util/evsel.h"
