@@ -1,207 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab1EZHeo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 03:34:44 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:45118 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab1EZHen (ORCPT
+	id S1755327Ab1EZHgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 03:36:35 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56784 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753952Ab1EZHgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 03:34:43 -0400
-Date: Thu, 26 May 2011 09:33:10 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision v2
-Message-ID: <20110526093310.1e34ede5@endymion.delvare>
-In-Reply-To: <1306351948-23382-1-git-send-email-andi@firstfloor.org>
-References: <1306351948-23382-1-git-send-email-andi@firstfloor.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 03:36:33 -0400
+Date: Thu, 26 May 2011 08:36:20 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dan <dan.j.williams@intel.com>, Per Forlin <per.forlin@linaro.org>
+Subject: Re: [PATCH 2/2] dmaengine: add TODO items for future work on dma
+	drivers
+Message-ID: <20110526073620.GF24876@n2100.arm.linux.org.uk>
+References: <1306323570-11133-1-git-send-email-vinod.koul@intel.com> <1306323570-11133-3-git-send-email-vinod.koul@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306323570-11133-3-git-send-email-vinod.koul@intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+On Wed, May 25, 2011 at 05:09:30PM +0530, Koul, Vinod wrote:
+> +1. Move remaining drivers to use new slave interface
+> +2. Remove old slave pointer machansim
+> +3. Make issue_pending to start the transaction in below drivers
+> +	- mpc512x_dma
+> +	- imx-dma
+> +	- imx-sdma
+> +	- mxs-dma.c
+> +	- dw_dmac
+> +	- intel_mid_dma
+> +	- ste_dma40
 
-On Wed, 25 May 2011 12:32:26 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> I got a request to make it easier to determine the microcode update level
-> on Intel CPUs. This patch adds a new "cpu update" field to /proc/cpuinfo,
-> which I added at the end to minimize impact on parsers.
-> 
-> The update level is also outputed on fatal machine checks together
-> with the other CPUID model information.
-> 
-> I removed the respective code from the microcode update driver, it
-> just reads the field from cpu_data. Also when the microcode is updated
-> it fills in the new values too.
-> 
-> I had to add a memory barrier to native_cpuid to prevent it being
-> optimized away when the result is not used.
-> 
-> This turns out to clean up further code which already got this
-> information manually. This is done in followon patches.
-> 
-> v2:  Lots of updates based on feedback.
+I'd suggest adding some more to this:
 
-Please run scripts/checkpatch.pl on your patches before your post them.
-This one adds trailing white space on 3 lines and leading spaces on 3
-lines as well. Please fix.
+4. Remove dma_slave_config's dma direction.
 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/include/asm/processor.h  |    5 ++++-
->  arch/x86/kernel/cpu/intel.c       |   14 ++++++++++++++
->  arch/x86/kernel/cpu/mcheck/mce.c  |    5 +++--
->  arch/x86/kernel/cpu/proc.c        |    3 ++-
->  arch/x86/kernel/microcode_intel.c |   14 +++++---------
->  5 files changed, 28 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index 4c25ab4..3d0f214 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -111,6 +111,8 @@ struct cpuinfo_x86 {
->  	/* Index into per_cpu list: */
->  	u16			cpu_index;
->  #endif
-> +	/* CPU update signature */
-> +	u32			cpu_update;
->  } __attribute__((__aligned__(SMP_CACHE_BYTES)));
->  
->  #define X86_VENDOR_INTEL	0
-> @@ -179,7 +181,8 @@ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
->  	      "=b" (*ebx),
->  	      "=c" (*ecx),
->  	      "=d" (*edx)
-> -	    : "0" (*eax), "2" (*ecx));
-> +	    : "0" (*eax), "2" (*ecx)
-> +	    : "memory");
->  }
->  
->  static inline void load_cr3(pgd_t *pgdir)
-> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-> index 1edf5ba..ba5ba17 100644
-> --- a/arch/x86/kernel/cpu/intel.c
-> +++ b/arch/x86/kernel/cpu/intel.c
-> @@ -364,6 +364,20 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
->  
->  	early_init_intel(c);
->  
-> +	/* Determine CPU update level */
-> +	if (c->x86 >= 6 && !cpu_has(c, X86_FEATURE_IA64)) {	
-> +		unsigned lower_word;
-> +
-> +		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
-> +		/* The CPUID 1 fills in the MSR as documented in the SDM */
-> +		/* 
-> + 		 * Wrong comment from microcode_intel.c:
-> + 		 * see notes above for revision 1.07.  Apparent chip bug
-> + 		 */
+It's pointless that dma_slave_config carries the DMA direction (to/from
+device) and the prepare function does too.  It leads to DMA engine drivers
+having to verify that the two match, and DMA engine users having to issue
+two calls every time they change direction.
 
-Why copy this comment if it is wrong? Plus "above" is meaningless now
-that you moved it. If anyone really needs the info, it's in the git
-history forever, no need to pollute the source code.
+Instead, lets specify that dma_slave_config carries the _device_ side
+parameters, which are selected according to the direction given to the
+prepare function.  The memory-side parameters should be selected by the
+DMA engine driver according to its knowledge of the system.
 
-> +		cpuid_eax(1);
-> +		rdmsr(MSR_IA32_UCODE_REV, lower_word, c->cpu_update);
-> +	}
-> +
->  	intel_workarounds(c);
->  
->  	/*
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index ff1ae9b..1d3cf21 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -220,8 +220,9 @@ static void print_mce(struct mce *m)
->  		pr_cont("MISC %llx ", m->misc);
->  
->  	pr_cont("\n");
-> -	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x\n",
-> -		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid);
-> +	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x CPU-UPDATE %u\n",
-> +		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid, 
-> +		cpu_data(m->extcpu).cpu_update);
->  
->  	/*
->  	 * Print out human-readable details about the MCE error,
-> diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-> index 62ac8cb..f27d6e5 100644
-> --- a/arch/x86/kernel/cpu/proc.c
-> +++ b/arch/x86/kernel/cpu/proc.c
-> @@ -85,6 +85,8 @@ static int show_cpuinfo(struct seq_file *m, void *v)
->  		seq_printf(m, "stepping\t: %d\n", c->x86_mask);
->  	else
->  		seq_printf(m, "stepping\t: unknown\n");
-> +	if (c->cpu_update)
-> +		seq_printf(m, "cpu update\t: %u\n", c->cpu_update);
->  
->  	if (cpu_has(c, X86_FEATURE_TSC)) {
->  		unsigned int freq = cpufreq_quick_get(cpu);
-> @@ -132,7 +134,6 @@ static int show_cpuinfo(struct seq_file *m, void *v)
->  				seq_printf(m, " [%d]", i);
->  		}
->  	}
-> -
->  	seq_printf(m, "\n\n");
->  
->  	return 0;
-
-Please don't mix white space changes with real code changes.
-
-> diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
-> index 1a1b606..1efe9d4 100644
-> --- a/arch/x86/kernel/microcode_intel.c
-> +++ b/arch/x86/kernel/microcode_intel.c
-> @@ -161,12 +161,7 @@ static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
->  		csig->pf = 1 << ((val[1] >> 18) & 7);
->  	}
->  
-> -	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
-> -	/* see notes above for revision 1.07.  Apparent chip bug */
-> -	sync_core();
-> -	/* get the current revision from MSR 0x8B */
-> -	rdmsr(MSR_IA32_UCODE_REV, val[0], csig->rev);
-> -
-> +	csig->rev = c->cpu_update;
->  	pr_info("CPU%d sig=0x%x, pf=0x%x, revision=0x%x\n",
->  		cpu_num, csig->sig, csig->pf, csig->rev);
->  
-> @@ -299,9 +294,9 @@ static int apply_microcode(int cpu)
->  	struct microcode_intel *mc_intel;
->  	struct ucode_cpu_info *uci;
->  	unsigned int val[2];
-> -	int cpu_num;
-> +	int cpu_num = raw_smp_processor_id();
-> +	struct cpuinfo_x86 *c = &cpu_data(cpu_num);
->  
-> -	cpu_num = raw_smp_processor_id();
->  	uci = ucode_cpu_info + cpu;
->  	mc_intel = uci->mc;
->  
-> @@ -317,7 +312,7 @@ static int apply_microcode(int cpu)
->  	      (unsigned long) mc_intel->bits >> 16 >> 16);
->  	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
->  
-> -	/* see notes above for revision 1.07.  Apparent chip bug */
-> +	/* As documented in the SDM: Do a CPUID 1 here */
->  	sync_core();
->  
->  	/* get the current revision from MSR 0x8B */
-> @@ -335,6 +330,7 @@ static int apply_microcode(int cpu)
->  		(mc_intel->hdr.date >> 16) & 0xff);
->  
->  	uci->cpu_sig.rev = val[1];
-> +	c->cpu_update = val[1];
->  
->  	return 0;
->  }
-
-
--- 
-Jean Delvare
+This is sensible as M2M transfers don't allow configuration and therefore
+already have to select these parameters internally.
