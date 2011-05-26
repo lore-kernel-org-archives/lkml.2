@@ -1,85 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab1G0MRz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 08:17:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303Ab1G0MRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 08:17:53 -0400
-Date: Wed, 27 Jul 2011 14:17:34 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: rostedt@goodmis.org, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC 3/4] perf, ftrace: Add new perf ioctl for function trace
- filter
-Message-ID: <20110727121734.GB2605@jolsa.brq.redhat.com>
-References: <1310390576-8289-1-git-send-email-jolsa@redhat.com>
- <1310390576-8289-4-git-send-email-jolsa@redhat.com>
- <20110718151229.GA32167@somewhere>
- <20110719095727.GA3008@jolsa.brq.redhat.com>
- <20110726134327.GA1779@somewhere>
+	id S1752435Ab1G0MTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 08:19:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47367 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750937Ab1G0MTf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 08:19:35 -0400
+Date: Thu, 26 May 2011 09:18:14 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: (wm831x-dcdc) Remove unused variables
+Message-ID: <20110526081814.GA28573@opensource.wolfsonmicro.com>
+References: <1306393091-6036-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110726134327.GA1779@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1306393091-6036-1-git-send-email-linux@roeck-us.net>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 03:43:44PM +0200, Frederic Weisbecker wrote:
+On Wed, May 25, 2011 at 11:58:11PM -0700, Guenter Roeck wrote:
+> Remove unused variable wm831x from functions wm831x_buckv_remove() and
+> wm831x_buckp_remove().
 
-SNIP
-
-> Ideally, the filter engine should split expressions into a tree
-> of ops:
-> 
-> 	ip == func1 + func2 + func3 || ip == func4
-> 
-> should be parsed into:
-> 
->             ||
->             /\
->            /  \
->           /    \
->          /      \
->         ==       ==
->        /  \     /  \
->       /    \   ip   \
->      /      \       func4
->     ip       +       
->             / \
->            /   \
->           +     \
->          /  \   func3
->         /    \
->     func1   func2
-> 
-> And then pass that to ftrace that interprets that tree
-> by building set of functions on top of each node joined to
-> the other.
-> 
-> But that can be complicated to do, and perhaps a bit of
-> an overkill even for daily use of it.
-> 
-> Having a simple "ip == func + func2 + func3" expression support
-
-so the '+' is just shortcut for '||' ... like:
-
-"ip == x1 || ip == x1" AND "ip == x1 + x2" mean the same thing
-
-if we omit the '+' and keep just the whitespace we could use the function
-name parser as used in set_ftrace_filter interface with no change ;)
-but adding new separator should not be that hard..
-
-> should be enough I think. And we can reject expressions that don't
-> fit that pattern. Then if it becomes necessary one day to support
-> real expressions there, we can still switch to a real tree.
-> 
-> Does that look sane? 
-
-I'l make the change and send new version
-
-thanks,
-jirka
+Liam this is the third time someone's sent a fix for this, including one
+from me.  Can you please get this applied?
