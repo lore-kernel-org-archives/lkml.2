@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986Ab1EZStG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:49:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51090 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758196Ab1EZStE (ORCPT
+	id S933006Ab1EZStS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:49:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43284 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932693Ab1EZStP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:49:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTineHBZ-oHRsfc9R6bpcp_oyczL5pA@mail.gmail.com>
-References: <1305807728.11267.25.camel@gandalf.stny.rr.com>
-	<BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com>
-	<BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
-	<1306254027.18455.47.camel@twins>
-	<20110524195435.GC27634@elte.hu>
-	<alpine.LFD.2.02.1105242239230.3078@ionos>
-	<20110525150153.GE29179@elte.hu>
-	<alpine.LFD.2.02.1105251836030.3078@ionos>
-	<20110525180100.GY19633@outflux.net>
-	<BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
-	<20110525191152.GC19633@outflux.net>
-	<BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com>
-	<BANLkTinZYk8YPSxwhuRePo=TdmM45qkgKw@mail.gmail.com>
-	<BANLkTi=s09aAqiOzgAJByqZvhQLaCmEErQ@mail.gmail.com>
-	<BANLkTik0Np23G3SjgZw3NYBG5DCFdmH+Rw@mail.gmail.com>
-	<BANLkTi=VQEbB1CdS2w03q38d0YSc+_WYgg@mail.gmail.com>
-	<BANLkTimZjwdepwS2mjysRyHytfhd2P7vSA@mail.gmail.com>
-	<BANLkTi=UFB6PLfsSTVpFEQbveMs-W4MjUg@mail.gmail.com>
-	<BANLkTim44ziUsEbYVOjfLPvOLfhUgH9itw@mail.gmail.com>
-	<BANLkTineHBZ-oHRsfc9R6bpcp_oyczL5pA@mail.gmail.com>
-Date: Thu, 26 May 2011 13:49:01 -0500
-Message-ID: <BANLkTimNcag-ZmVTXjUoTyiuJm6jtW0DgA@mail.gmail.com>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
-From: Will Drewry <wad@chromium.org>
+	Thu, 26 May 2011 14:49:15 -0400
+Date: Thu, 26 May 2011 20:49:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Colin Walters <walters@verbum.org>, Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [GIT pull] irq fix for ...
+Message-ID: <alpine.LFD.2.02.1105262048340.3078@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 1:33 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, May 26, 2011 at 10:38 AM, Will Drewry <wad@chromium.org> wrote:
->>>
->>> One option is to just not ever allow execve() from inside a restricted
->>> environment.
->>
->> That'd certainly be fine with me.
->
-> So if it ends up being purely a "internal to the process" thing, then
-> I'm much happier about it - it not only limits the scope of things
-> sufficiently that I don't worry too much about security issues, but it
-> makes it very clear that it's about a process going into "lock-down"
-> mode on its own.
->
-> It also gets rid of all configuration - one of the things that makes
-> most security frameworks (look at selinux, but also just ACL's etc)
-> such a crazy rats nest is the whole "set up for other processes". If
-> it's designed very much to be about just the "self" process (after
-> initialization etc), then I think that avoids pretty much all the
-> serious issues.
->
-> A lot of server processes could probably use it as a way to say "Hey,
-> I guarantee that I will only open new files read-only, and will only
-> write to the socket that was already opened for me by the accept", and
-> explicitly limit their worker threads that way.
->
-> If that is really sufficient for some chrome sandboxing, then hey,
-> that's all fine.
+Linus,
 
-It adds some hoops, but less than exist today.
+Please pull the latest irq-fixes-for-linus git tree from:
 
-> Sometimes limiting yourself (rather than looking for some bigger
-> "generic" solution) is the right answer.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-fixes-for-linus
 
-I will very happily validate usage and repost with a self-limited
-patch series.  Doing so makes the change much more explicitly an
-expansion of seccomp, which keeps things sane.
+Thanks,
 
-Thanks!
-will
+	tglx
+
+------------------>
+Yinghai Lu (1):
+      irq: Remove smp_affinity_list when unregister irq proc
+
+
+ kernel/irq/proc.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
+index 64e3df6..4bd4faa 100644
+--- a/kernel/irq/proc.c
++++ b/kernel/irq/proc.c
+@@ -352,6 +352,7 @@ void unregister_irq_proc(unsigned int irq, struct irq_desc *desc)
+ #ifdef CONFIG_SMP
+ 	remove_proc_entry("smp_affinity", desc->dir);
+ 	remove_proc_entry("affinity_hint", desc->dir);
++	remove_proc_entry("smp_affinity_list", desc->dir);
+ 	remove_proc_entry("node", desc->dir);
+ #endif
+ 	remove_proc_entry("spurious", desc->dir);
