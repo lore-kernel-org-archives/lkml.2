@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757629Ab1EZO5u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 10:57:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21345 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757023Ab1EZO5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 10:57:49 -0400
-Date: Thu, 26 May 2011 16:55:45 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Pedro Alves <pedro@codesourcery.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Message-ID: <20110526145545.GC12525@redhat.com>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <201105241049.58921.pedro@codesourcery.com> <20110524120013.GD10334@htj.dyndns.org> <201105241336.04298.pedro@codesourcery.com> <20110524140215.GF10334@htj.dyndns.org> <20110525181856.GA16575@redhat.com> <20110526091041.GC9715@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526091041.GC9715@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757533Ab1EZOzo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 10:55:44 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:54574 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753168Ab1EZOzn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 10:55:43 -0400
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+From: Marc Zyngier <Marc.Zyngier@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Frank Rowand <frank.rowand@am.sony.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <1306412511.1200.90.camel@twins>
+References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
+	 <1306272750.2497.79.camel@laptop> <1306343335.21578.65.camel@twins>
+	 <1306358128.21578.107.camel@twins>
+	 <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+	 <1306405979.1200.63.camel@twins>
+	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
+	 <1306409575.1200.71.camel@twins>  <1306412511.1200.90.camel@twins>
+Organization: ARM Ltd
+Date: Thu, 26 May 2011 15:56:21 +0100
+Message-ID: <1306421781.27474.224.camel@e102391-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+X-OriginalArrivalTime: 26 May 2011 14:55:46.0772 (UTC) FILETIME=[FEAD1140:01CC1BB4]
+X-MC-Unique: 111052615553604001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26, Tejun Heo wrote:
->
-> This reminded me of another issue.  Currently we have two different
-> methods of reporting debug events.  One is direct ptrace event trap,
-> which ends up in ptrace_stop() from the event site and thus is
-> synchronous.  The other is sending SIGTRAP, literally.  Besides the
-> usual problems related with implicitly sending signals, this also
-> makes it difficult to determine which event is happening exactly and
-> makes the whole signal delivery/injection thing much worse.
->
-> I suspect that all ptrace traps probably started as actual SIGTRAPs
-> and so all the events were reported via signal delivery path and so
-> the signal "injection" worked; however, now we have synchronous traps
-> and some SIGTRAPs, which are confusing and unreliable.  I don't see
-> any reason why the events which are currently reported via SIGTRAPs
-> can't be reported via ptrace traps with unique PTRACE_EVENT_*.  I
-> don't think we can take synchronous traps directly but we can schedule
-> them, record relevant information in preallocated area and just set
-> TIF_SIGPENDING and let the signal delivery path report the trap.  This
-> will make all the events reliable and easily distinguishible and we
-> can fix the SIGTRAP signal problem.  What do you think?
+On Thu, 2011-05-26 at 14:21 +0200, Peter Zijlstra wrote:
+> On Thu, 2011-05-26 at 13:32 +0200, Peter Zijlstra wrote:
+> > 
+> > The bad news is of course that I've got a little more head-scratching to
+> > do, will keep you informed. 
+> 
+> OK, that wasn't too hard.. (/me crosses fingers and prays Marc doesn't
+> find more funnies ;-).
+> 
+> Does the below cure all woes?
 
-Agreed, it would be nice to avoid SIGTRAP's. Although right now it is
-not clear to me how we can do this. The problematic case is the
-single-stepping, afaics. Say, int3. Even if the task is ptraced, we
-can't know why do we hit this insn. It is possible that this task
-auto-debugs itself and thus we should send SIGTRAP. Even the
-X86_EFLAGS_TF case is not that simple although we can probably take
-TIF_SINGLESTEP into account. But again, the task can set X86_EFLAGS_TF
-itself.
+So far so good. The box just went through it's two first iterations of
+kernel building without a sweat, carried on, and still feels snappy
+enough.
 
-Oleg.
+Thanks for having fixed that quickly!
+
+> ---
+> Subject: sched: Fix ttwu() for __ARCH_WANT_INTERRUPTS_ON_CTXSW
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Thu May 26 14:21:33 CEST 2011
+> 
+> Marc reported that e4a52bcb9 (sched: Remove rq->lock from the first
+> half of ttwu()) broke his ARM-SMP machine. Now ARM is one of the few
+> __ARCH_WANT_INTERRUPTS_ON_CTXSW users, so that exception in the ttwu()
+> code was suspect.
+> 
+> Yong found that the interrupt could hit hits after context_switch() changes
+> current but before it clears p->on_cpu, if that interrupt were to
+> attempt a wake-up of p we would indeed find ourselves spinning in IRQ
+> context.
+> 
+> Sort this by reverting to the old behaviour for this situation and
+> perform a full remote wake-up.
+> 
+> Cc: Frank Rowand <frank.rowand@am.sony.com>
+> Cc: Yong Zhang <yong.zhang0@gmail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Reported-by: Marc Zyngier <Marc.Zyngier@arm.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+
+Tested-by: Marc Zyngier <marc.zyngier@arm.com>
+
+	M.
+-- 
+Reality is an implementation detail.
+
 
