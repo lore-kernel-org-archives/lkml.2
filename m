@@ -1,109 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab1EZJUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 05:20:35 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:26277 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757125Ab1EZJUe (ORCPT
+	id S1757184Ab1EZJOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 05:14:09 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59448 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703Ab1EZJOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 05:20:34 -0400
-Date: Thu, 26 May 2011 11:12:53 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: linux-watchdog@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        Robert Richter <robert.richter@amd.com>,
-        Donald Johnson <donald.k.johnson@intel.com>
-Subject: [PATCH] Intel SCU Watchdog: Fix build failure and duplicate
- include
-Message-ID: <alpine.LNX.2.00.1105261057130.17400@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 26 May 2011 05:14:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=pMjePpKpPgyBA/c6kaR4te2wcyyrMkbPRz2xEXbVidFybdxjb4FLf5ZI05dOn7zMIo
+         2AYwcudx5QxjY3i7VpIsY7ceSIjqGcvNv40gyUqa/yK9R7bxhH1TaFbeSHmL2tPbTxox
+         xii8ZTwTX/2sK6zUPydrJ8sTUuDzTSyJrY3K8=
+Date: Thu, 26 May 2011 11:14:01 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+Message-ID: <20110526091401.GD9715@htj.dyndns.org>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org>
+ <1305569849-10448-4-git-send-email-tj@kernel.org>
+ <201105180240.56754.vda.linux@googlemail.com>
+ <20110518095539.GU20624@htj.dyndns.org>
+ <20110523124314.GA7232@redhat.com>
+ <20110524102834.GC10334@htj.dyndns.org>
+ <20110525182919.GB16575@redhat.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1577101167-1306401173=:17400"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110525182919.GB16575@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hello,
 
---8323328-1577101167-1306401173=:17400
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+On Wed, May 25, 2011 at 08:29:19PM +0200, Oleg Nesterov wrote:
+> > > And. Currently there is no way to detach a zombie leader. Perhaps we
+> > > should change do_wait(), but it is not clear what should we do if the
+> > > tracer is the real parent (we already discussed this a bit).
+> >
+> > Hmmm... maybe just allow detaching zombie leader?
+> 
+> Yes, I think we should do this.
+> 
+> If we change PTRACE_DETACH (or add the new request) to allow this, then
+> I think it it should detach any zombie, leader or not.
 
-Trying to build the Intel SCU Watchdog fails for me with gcc 4.6.0 -
-$ gcc --version | head -n 1
-gcc (GCC) 4.6.0 20110513 (prerelease)
+I think we can just make PTRACE_DETACH to succeed for zombies.  No
+reason to add a new request for this.
 
-like this :
-  CC      drivers/watchdog/intel_scu_watchdog.o
-In file included from drivers/watchdog/intel_scu_watchdog.c:49:0:
-/home/jj/src/linux-2.6/arch/x86/include/asm/apb_timer.h: In function ¡apbt_time_init¢:
-/home/jj/src/linux-2.6/arch/x86/include/asm/apb_timer.h:65:42: warning: ¡return¢ with a value, in function returning void [enabled by default]
-drivers/watchdog/intel_scu_watchdog.c: In function ¡intel_scu_watchdog_init¢:
-drivers/watchdog/intel_scu_watchdog.c:468:2: error: implicit declaration of function ¡sfi_get_mtmr¢ [-Werror=implicit-function-declaration]
-drivers/watchdog/intel_scu_watchdog.c:468:32: warning: assignment makes pointer from integer without a cast [enabled by default]
-cc1: some warnings being treated as errors
+> Or we can change do_wait() to detach a zombie leader. In this case it
+> is not clear what should we do if the debugger is the real parent.
+> Perhaps do_wait() should do the same: detach a leader (but not reap).
+> When the last thread does, the real parent will be notified again.
+> IOW, wait(tgid) can succeed twice.
 
-make[1]: *** [drivers/watchdog/intel_scu_watchdog.o] Error 1
-make: *** [drivers/watchdog/intel_scu_watchdog.o] Error 2
+Just letting PTRACE_DETACH work for zombies sounds much simpler to me.
 
-Additionally, linux/types.h is needlessly being included twice in 
-drivers/watchdog/intel_scu_watchdog.c
+> > As it's guaranteed to be not running, we don't have problem with
+> > ptrace_disable.
+> 
+> Agreed. In fact it can be running, but it can't return to the user-space,
+> and I think this is enough.
+> 
+> ptrace_detach()->ptrace_disable() can race with SIGKILL anyway, this means
+> it should safe to call it if the tracee is exiting/exited.
 
-This patch fixes it all and I can now build the code.
+Yeap, unless userland gets to run again, I don't think there's any
+problem.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- arch/x86/include/asm/apb_timer.h      |    2 +-
- drivers/watchdog/intel_scu_watchdog.c |    1 -
- drivers/watchdog/intel_scu_watchdog.h |    2 +-
- 3 files changed, 2 insertions(+), 3 deletions(-)
-
- Patch has been compile tested only.
-
-diff --git a/arch/x86/include/asm/apb_timer.h b/arch/x86/include/asm/apb_timer.h
-index 2fefa50..af60d8a 100644
---- a/arch/x86/include/asm/apb_timer.h
-+++ b/arch/x86/include/asm/apb_timer.h
-@@ -62,7 +62,7 @@ extern int sfi_mtimer_num;
- #else /* CONFIG_APB_TIMER */
- 
- static inline unsigned long apbt_quick_calibrate(void) {return 0; }
--static inline void apbt_time_init(void) {return 0; }
-+static inline void apbt_time_init(void) { }
- 
- #endif
- #endif /* ASM_X86_APBT_H */
-diff --git a/drivers/watchdog/intel_scu_watchdog.c b/drivers/watchdog/intel_scu_watchdog.c
-index 919bdd1..ba43860 100644
---- a/drivers/watchdog/intel_scu_watchdog.c
-+++ b/drivers/watchdog/intel_scu_watchdog.c
-@@ -42,7 +42,6 @@
- #include <linux/sched.h>
- #include <linux/signal.h>
- #include <linux/sfi.h>
--#include <linux/types.h>
- #include <asm/irq.h>
- #include <asm/atomic.h>
- #include <asm/intel_scu_ipc.h>
-diff --git a/drivers/watchdog/intel_scu_watchdog.h b/drivers/watchdog/intel_scu_watchdog.h
-index d2b074a..a9ca0d7 100644
---- a/drivers/watchdog/intel_scu_watchdog.h
-+++ b/drivers/watchdog/intel_scu_watchdog.h
-@@ -62,5 +62,5 @@ struct intel_scu_watchdog_dev {
- 
- extern int sfi_mtimer_num;
- 
--/* extern struct sfi_timer_table_entry *sfi_get_mtmr(int hint); */
-+extern struct sfi_timer_table_entry *sfi_get_mtmr(int hint);
- #endif /* __INTEL_SCU_WATCHDOG_H */
-
+Thanks.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---8323328-1577101167-1306401173=:17400--
+tejun
