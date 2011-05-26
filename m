@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab1EZBGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 21:06:11 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44430 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754110Ab1EZBGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 21:06:09 -0400
-Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
- __elv_add_request OOPS]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Parag Warudkar <parag.lkml@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-In-Reply-To: <BANLkTi=YW91=mj6KVUia6ykgEJ8DNEmbUA@mail.gmail.com>
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar>
-	 <4DDB8BF6.2000304@fusionio.com>
-	 <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty>
-	 <4DDCB1C8.7040708@fusionio.com>
-	 <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty>
-	 <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
-	 <4DDD5240.2060308@fusionio.com>
-	 <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>
-	 <4DDD55D6.1080909@fusionio.com>
-	 <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty>
-	 <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com>
-	 <alpine.DEB.2.02.1105251613500.8972@ubuntu-natty>
-	 <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com>
-	 <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>
-	 <1306356735.1641.61.camel@mulgrave.site>
-	 <BANLkTimuomu=_JuMr7SWrMVvboMX4BX0fA@mail.gmail.com>
-	 <1306370123.1641.76.camel@mulgrave.site>
-	 <BANLkTi=YW91=mj6KVUia6ykgEJ8DNEmbUA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 May 2011 20:06:04 -0500
-Message-ID: <1306371965.1641.79.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	id S1754433Ab1EZBES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 21:04:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64033 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752574Ab1EZBEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 21:04:16 -0400
+Message-ID: <4DDDA7F5.9020001@cn.fujitsu.com>
+Date: Thu, 26 May 2011 09:08:05 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Randy Dunlap <randy.dunlap@oracle.com>, liubo <liubo2009@cn.fujitsu.com>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [PATCH 1/2] tracing: add __print_symbolic_u64 to avoid warnings
+ on 32bit machine
+References: <4D9573DB.4010009@cn.fujitsu.com>	 <1301665762.2160.22.camel@gandalf.stny.rr.com>	 <4D9C2FF6.7090607@cn.fujitsu.com>	 <1303150309.7181.51.camel@gandalf.stny.rr.com>	 <4DACE6E0.7000507@cn.fujitsu.com> <4DBA8C95.4000300@cn.fujitsu.com>	 <1304264124.25414.1079.camel@gandalf.stny.rr.com>	 <4DDDE9E6.7090303@cn.fujitsu.com>	 <1306326464.1465.85.camel@gandalf.stny.rr.com>	 <20110525091252.8899385e.randy.dunlap@oracle.com> <1306342064.1465.101.camel@gandalf.stny.rr.com>
+In-Reply-To: <1306342064.1465.101.camel@gandalf.stny.rr.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-26 09:04:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-26 09:04:11,
+	Serialize complete at 2011-05-26 09:04:11
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 18:01 -0700, Linus Torvalds wrote:
-> On Wed, May 25, 2011 at 5:35 PM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote: > > Jens, can you look
-> at this, please ... would you prefer a separate DEAD > test instead? 
-> Incidentally, this is in addition to the other DEAD test > you still
-> haven't applied ...
+Steven Rostedt wrote:
+> On Wed, 2011-05-25 at 09:12 -0700, Randy Dunlap wrote:
+>>  
+>>> But what I sent out previously is not going into 2.6.40 anyway. Ingo
+>>> feels that it's too late in the merge window to pull those changes and
+>>> wants to wait till the next merge window. Since there's some fixes in
+>>> that pull request, I'll need to cherry pick them out and rebase the rest
+>>> for the next window.
+>>
+>> Sorry to hear all of that.  This fix is needed in mainline.
+>>
 > 
-> Ugh.
+> Hmm, it is a warning fix. Well, I could add this to the cherry picking
+> I'm doing (fixes only).
 > 
-> Can you please just always set STOPPED at the same time you set DEAD?
+> I'm currently making a fix for a triple fault in the function tracer
+> caused by PROVE_RCU causing recursive tracing. When I get this fixed,
+> I'll be pushing the "fixes" next.
+> 
 
-Well, Jens wondered the same thing in this thread:
+Actually it's more than a compile warning fix.
 
-http://marc.info/?l=linux-scsi&m=130632292705404
-
-It's just an RFC patch to see if I can fix an oops ... how it's
-ultimately implemented will be up to Jens.
-
-James
-
-
+After a variable is cast from u64 to u32 and passed to __print_symbolic(),
+we'll see incorrect result in the trace output.
