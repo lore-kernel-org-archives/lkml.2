@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397Ab1EZJqs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 05:46:48 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54699 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab1EZJqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 05:46:47 -0400
-Date: Thu, 26 May 2011 02:46:33 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ocfs2 features for $next_version
-Message-ID: <20110526094632.GB8252@noexit.corp.google.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+	id S1755403Ab1EZJsZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 05:48:25 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47154 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750789Ab1EZJsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 05:48:23 -0400
+Date: Thu, 26 May 2011 11:48:06 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        gnatapov@redhat.com, Chris Wright <chrisw@sous-sol.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
+ filtering
+Message-ID: <20110526094806.GC19536@elte.hu>
+References: <20110524195435.GC27634@elte.hu>
+ <alpine.LFD.2.02.1105242239230.3078@ionos>
+ <20110525150153.GE29179@elte.hu>
+ <alpine.LFD.2.02.1105251836030.3078@ionos>
+ <20110525180100.GY19633@outflux.net>
+ <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
+ <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org>
+ <20110526082451.GB26775@elte.hu>
+ <4DDE1419.3000708@redhat.com>
+ <20110526093040.GB19536@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110526093040.GB19536@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus et al,
-	Here are the new ocfs2 changes for the $next_version merge
-window.  They include FITRIM support and the basics of online
-defragmentation.
-	Please pull.
 
-Joel
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-The following changes since commit 4db70f73e56961b9bcdfd0c36c62847a18b7dbb5:
+> You are missing the geniality of the tools/kvm/ thread pool! :-)
+> 
+> It could be switched to a worker *process* model rather easily. 
+> Guest RAM and (a limited amount of) global resources would be 
+> shared via mmap(SHARED), but otherwise each worker process would 
+> have its own stack, its own subsystem-specific state, etc.
 
-  tmpfs: fix XATTR N overriding POSIX_ACL Y (2011-05-25 19:53:02 -0700)
+We get VM exit events in the vcpu threads which after minimal 
+processing pass much of the work to the thread pool. Most of the 
+virtio work (which could be a source of vulnerability - ringbuffers 
+are hard) is done in the worker task context.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git linux-next
+It would be possible to further increase isolation there by also 
+passing the IO/MMIO decoding to the worker thread - but i'm not sure 
+that's truly needed. Most of the risk is where most of the code is - 
+and the code is in the worker task which interprets on-disk data, 
+protocols, etc.
 
-Amerigo Wang (1):
-      ocfs2: remove the /sys/o2cb symlink
+So we could not only isolate devices from each other, but we could 
+also protect the highly capable vcpu fd from exploits in devices - 
+worker threads generally do not need access to the vcpu fd IIRC.
 
-Joel Becker (1):
-      Merge branch 'move_extents' of git://oss.oracle.com/git/tye/linux-2.6 into ocfs2-merge-window
+Thanks,
 
-Robin Dong (1):
-      ocfs2: change incorrect 'extern' keyword to 'static' in dlmfs
-
-Sunil Mushran (3):
-      ocfs2/dlm: dlm_is_lockres_migrateable() returns boolean
-      ocfs2/dlm: Add new dlm message DLM_BEGIN_EXIT_DOMAIN_MSG
-      ocfs2/dlm: Do not migrate resource to a node that is leaving the domain
-
-Tao Ma (3):
-      ocfs2: Add ocfs2_trim_fs for SSD trim support.
-      ocfs2: Add FITRIM ioctl.
-      ocfs2: Add trace event for trim.
-
-Tiger Yang (1):
-      ocfs2: clean up mount option about atime in ocfs2.txt
-
-Tristan Ye (19):
-      Ocfs2: Using inline funcs to set/clear *FILLED* flags in info handler.
-      Ocfs2: Add a new code 'OCFS2_INFO_FREEINODE' for o2info ioctl.
-      Ocfs2: Add a new code 'OCFS2_INFO_FREEFRAG' for o2info ioctl.
-      Ocfs2/refcounttree: Publicize couple of funcs from refcounttree.c
-      Ocfs2/move_extents: Adding new ioctl code 'OCFS2_IOC_MOVE_EXT' to ocfs2.
-      Ocfs2/move_extents: Add basic framework and source files for extent moving.
-      Ocfs2/move_extents: lock allocators and reserve metadata blocks and data clusters for extents moving.
-      Ocfs2/move_extents: move a range of extent.
-      Ocfs2/move_extents: defrag a range of extent.
-      Ocfs2/move_extents: find the victim alloc group, where the given #blk fits.
-      Ocfs2/move_extents: helper to validate and adjust moving goal.
-      Ocfs2/move_extents: helper to probe a proper region to move in an alloc group.
-      Ocfs2/move_extents: helpers to update the group descriptor and global bitmap inode.
-      Ocfs2/move_extents: move entire/partial extent.
-      Ocfs2/move_extents: helper to calculate the defraging length in one run.
-      Ocfs2/move_extents: move/defrag extents within a certain range.
-      Ocfs2/move_extents: Let defrag handle partial extent moving.
-      Ocfs2/move_extents: Set several trivial constraints for threshold.
-      Ocfs2: Teach local-mounted ocfs2 to handle unwritten_extents correctly.
-
- Documentation/ABI/{obsolete => removed}/o2cb |    9 +-
- Documentation/feature-removal-schedule.txt   |   10 -
- Documentation/filesystems/ocfs2.txt          |    8 +-
- fs/ocfs2/Makefile                            |    1 +
- fs/ocfs2/alloc.c                             |  166 ++++
- fs/ocfs2/alloc.h                             |    1 +
- fs/ocfs2/cluster/sys.c                       |    9 -
- fs/ocfs2/dlm/dlmcommon.h                     |   14 +
- fs/ocfs2/dlm/dlmdebug.c                      |    6 +
- fs/ocfs2/dlm/dlmdomain.c                     |   94 ++-
- fs/ocfs2/dlm/dlmmaster.c                     |  255 ++----
- fs/ocfs2/dlm/dlmrecovery.c                   |    1 +
- fs/ocfs2/dlmfs/dlmfs.c                       |    2 +-
- fs/ocfs2/file.c                              |    1 +
- fs/ocfs2/ioctl.c                             |  492 +++++++++++-
- fs/ocfs2/move_extents.c                      | 1153 ++++++++++++++++++++++++++
- fs/ocfs2/move_extents.h                      |   22 +
- fs/ocfs2/ocfs2_ioctl.h                       |   68 ++
- fs/ocfs2/ocfs2_trace.h                       |   25 +
- fs/ocfs2/refcounttree.c                      |   58 +-
- fs/ocfs2/refcounttree.h                      |   11 +
- fs/ocfs2/super.c                             |    2 +-
- 22 files changed, 2146 insertions(+), 262 deletions(-)
- rename Documentation/ABI/{obsolete => removed}/o2cb (65%)
- create mode 100644 fs/ocfs2/move_extents.c
- create mode 100644 fs/ocfs2/move_extents.h
+	Ingo
