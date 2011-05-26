@@ -1,72 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758384Ab1EZUXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:23:43 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:49187 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756699Ab1EZUXm (ORCPT
+	id S1758459Ab1EZUYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:24:14 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58939 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757985Ab1EZUYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 16:23:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=rjqNmYC/8E807G9snbgeIjrlwHGfBaAggchLC4hw+0LMBGxqIcfHuoPdeGPHYMd8J/
-         cPsewgJmedcSYocSrqYA==
-MIME-Version: 1.0
-In-Reply-To: <1306440288.3857.9.camel@gandalf.stny.rr.com>
-References: <1306439537-23706-1-git-send-email-vnagarnaik@google.com> <1306440288.3857.9.camel@gandalf.stny.rr.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Thu, 26 May 2011 13:23:09 -0700
-Message-ID: <BANLkTi=dEHG4zEZ2xRF7VEDdM6fsd9Hr=g@mail.gmail.com>
-Subject: Re: [PATCH] trace: Set oom_score_adj to maximum for ring buffer
- allocating process
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+	Thu, 26 May 2011 16:24:13 -0400
+Subject: Re: [PATCH V6 2/4 net-next] skbuff: Add userspace zero-copy
+ buffers in skb
+From: Shirley Ma <mashirle@us.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+In-Reply-To: <1306440247.2543.14.camel@edumazet-laptop>
+References: <1306438593.5180.33.camel@localhost.localdomain>
+	 <1306440247.2543.14.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 13:24:02 -0700
+Message-ID: <1306441442.5180.51.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 1:04 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2011-05-26 at 12:52 -0700, Vaibhav Nagarnaik wrote:
->> The tracing ring buffer is allocated from kernel memory. While
->> allocating the memory, if OOM happens, the allocating process might not
->> be the one that gets killed, since the ring-buffer memory is not
->> allocated as process memory. Thus random processes might get killed
->> during the allocation.
->>
->> This patch makes sure that the allocating process is considered the most
->> likely oom-kill-able process while the allocating is going on. Thus if
->> oom-killer is invoked because of ring-buffer allocation, it is easier
->> for the ring buffer memory to be freed and save important system
->> processes from being killed.
->
-> Hmm, have you tried this in practice? Yes we may kill the "echo" command
-> but it doesn't stop the ring buffer from being allocated, and thus
-> killing the echo command may not be enough, and those critical processes
-> that you are trying to protect will be killed next.
->
+On Thu, 2011-05-26 at 22:04 +0200, Eric Dumazet wrote:
+> Le jeudi 26 mai 2011 à 12:36 -0700, Shirley Ma a écrit :
+> > This patch adds userspace buffers support in skb shared info. A new 
+> > struct skb_ubuf_info is needed to maintain the userspace buffers
+> > argument and index, a callback is used to notify userspace to
+> release
+> > the buffers once lower device has done DMA (Last reference to that
+> skb
+> > has gone).
+> > 
+> > If there is any userspace apps to reference these userspace buffers,
+> > then these userspaces buffers will be copied into kernel. This way
+> we
+> > can prevent userspace apps to hold these userspace buffers too long.
+> > 
+> > Signed-off-by: Shirley Ma <xma@us.ibm.com>
+> > ---
+> > 
+> >  include/linux/skbuff.h |   26 +++++++++++++++
+> >  net/core/skbuff.c      |   80
+> ++++++++++++++++++++++++++++++++++++++++++++++-
+> >  2 files changed, 104 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> > index d0ae90a..025de5c 100644
+> > --- a/include/linux/skbuff.h
+> > +++ b/include/linux/skbuff.h
+> > @@ -189,6 +189,18 @@ enum {
+> >       SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
+> >  };
+> >  
+> > +/*
+> > + * The callback notifies userspace to release buffers when skb DMA
+> is done in
+> > + * lower device, the skb last reference should be 0 when calling
+> this.
+> > + * The desc is used to track userspace buffer index.
+> > + */
+> > +struct skb_ubuf_info {
+> > +     /* support buffers allocation from userspace */
+> > +     void            (*callback)(struct sk_buff *);
+> > +     void            *arg;
+> > +     size_t          desc;
+> > +};
+> 
+> Thats 24 bytes on each skb...   desc for example is not used in this
+> patch (yes, its used later in patch 4/4)
+> 
+> But still... could you instead use one pointer only in skb ?
 
-Yes I did try this and found that it works as we intend it to. When
-oom-killer is invoked, it picks the process which has lowest
-oom_score_adj and kills it or one of its children. When the process is
-getting killed, any memory allocation from it would be returned -ENOMEM,
-which gets handled in our allocation process and we free up previously
-allocated memory.
+I could reduce callback pointer by moving it to *arg, but not desc, this
+indicates that which buffer DMA hasn't done yet in *arg.
 
-This API is now being used in other parts of kernel too, where it knows
-that the allocation could cause OOM.
+> 
+> > +
+> >  /* This data is invariant across clones and lives at
+> >   * the end of the header data, ie. at skb->end.
+> >   */
+> > @@ -211,6 +223,10 @@ struct skb_shared_info {
+> >       /* Intermediate layers must ensure that destructor_arg
+> >        * remains valid until skb destructor */
+> >       void *          destructor_arg;
+> > +
+> > +     /* DMA mapping from/to userspace buffers */
+> > +     struct skb_ubuf_info ubuf;
+> > +
+> >       /* must be last field, see pskb_expand_head() */
+> >       skb_frag_t      frags[MAX_SKB_FRAGS];
+> >  };
+> > @@ -2261,5 +2277,15 @@ static inline void
+> skb_checksum_none_assert(struct sk_buff *skb)
+> >  }
+> >  
+> >  bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off);
+> > +
+> > +/*
+> > + *   skb_ubuf - is the buffer from userspace
+> > + *   @skb: buffer to check
+> > + */
+> > +static inline int skb_ubuf(const struct sk_buff *skb)
+> > +{
+> > +     return (skb_shinfo(skb)->ubuf.callback != NULL);
+> 
+>         return skb_shinfo(skb)->ubuf.callback != NULL;
+> 
+> > +}
+> > +
+> >  #endif       /* __KERNEL__ */
+> >  #endif       /* _LINUX_SKBUFF_H */
+> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> > index 7ebeed0..890447c 100644
+> > --- a/net/core/skbuff.c
+> > +++ b/net/core/skbuff.c
+> > @@ -210,6 +210,8 @@ struct sk_buff *__alloc_skb(unsigned int size,
+> gfp_t gfp_mask,
+> >       shinfo = skb_shinfo(skb);
+> >       memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
+> >       atomic_set(&shinfo->dataref, 1);
+> > +     shinfo->ubuf.callback = NULL;
+> > +     shinfo->ubuf.arg = NULL;
+> 
+> if you put ubuf ptr before dataref, no need to add this (the memset()
+> clear all shared_info up to dataref)
 
-> Perhaps we should change the allocation of the ring buffer or detect OOM
-> triggering. Maybe make all the allocations ATOMIC, thus it will be
-> either available or not, and fail instead of trying to swap out other
-> memory for the allocation.
->
-> -- Steve
->
+Ok, will remove it.
 
-Vaibhav Nagarnaik
+> >       kmemcheck_annotate_variable(shinfo->destructor_arg);
+> >  
+> >       if (fclone) {
+> > @@ -328,6 +330,14 @@ static void skb_release_data(struct sk_buff
+> *skb)
+> >                               put_page(skb_shinfo(skb)->frags[i].page);
+> >               }
+> >  
+> > +             /*
+> > +              * if skb buf is from userspace, we need to notify the
+> caller
+> > +              * the lower device DMA has done;
+> > +              */
+> > +             if (skb_ubuf(skb)) {
+> > +                     skb_shinfo(skb)->ubuf.callback(skb);
+> > +                     skb_shinfo(skb)->ubuf.callback = NULL;
+> > +             }
+> >               if (skb_has_frag_list(skb))
+> >                       skb_drop_fraglist(skb);
+> >  
+> > @@ -480,6 +490,9 @@ bool skb_recycle_check(struct sk_buff *skb, int
+> skb_size)
+> >       if (irqs_disabled())
+> >               return false;
+> >  
+> > +     if (skb_ubuf(skb))
+> > +             return false;
+> > +
+> >       if (skb_is_nonlinear(skb) || skb->fclone !=
+> SKB_FCLONE_UNAVAILABLE)
+> >               return false;
+> >  
+> > @@ -572,6 +585,7 @@ static struct sk_buff *__skb_clone(struct
+> sk_buff *n, struct sk_buff *skb)
+> >       atomic_set(&n->users, 1);
+> >  
+> >       atomic_inc(&(skb_shinfo(skb)->dataref));
+> > +     skb_shinfo(skb)->ubuf.callback = NULL;
+> >       skb->cloned = 1;
+> >  
+> >       return n;
+> > @@ -595,6 +609,48 @@ struct sk_buff *skb_morph(struct sk_buff *dst,
+> struct sk_buff *src)
+> >  }
+> >  EXPORT_SYMBOL_GPL(skb_morph);
+> >  
+> > +/* skb frags copy userspace buffers to kernel */
+> > +static int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask)
+> > +{
+> > +     int i;
+> > +     int num_frags = skb_shinfo(skb)->nr_frags;
+> > +     struct page *page, *head = NULL;
+> > +
+> > +     for (i = 0; i < num_frags; i++) {
+> > +             u8 *vaddr;
+> > +             skb_frag_t *f = &skb_shinfo(skb)->frags[i];
+> > +
+> > +             page = alloc_page(GFP_ATOMIC);
+> > +             if (!page) {
+> > +                     while (head) {
+> > +                             put_page(head);
+> > +                             head = (struct page *)head->private;
+> > +                     }
+> > +                     return -ENOMEM;
+> > +             }
+> > +             vaddr = kmap_skb_frag(&skb_shinfo(skb)->frags[i]);
+> > +             memcpy(page_address(page), vaddr + f->page_offset,
+> f->size);
+> > +             kunmap_skb_frag(vaddr);
+> > +             page->private = (unsigned long)head;
+> > +             head = page;
+> > +     }
+> > +
+> > +     /* skb frags release userspace buffers */
+> > +     for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+> > +             put_page(skb_shinfo(skb)->frags[i].page);
+> > +     skb_shinfo(skb)->ubuf.callback(skb);
+> > +     skb_shinfo(skb)->ubuf.callback = NULL;
+> > +
+> > +     /* skb frags point to kernel buffers */
+> > +     for (i = skb_shinfo(skb)->nr_frags; i > 0; i--) {
+> > +             skb_shinfo(skb)->frags[i - 1].page_offset = 0;
+> > +             skb_shinfo(skb)->frags[i - 1].page = head;
+> > +             head = (struct page *)head->private;
+> > +     }
+> > +     return 0;
+> > +}
+> > +
+> > +
+> >  /**
+> >   *   skb_clone       -       duplicate an sk_buff
+> >   *   @skb: buffer to clone
+> > @@ -613,6 +669,11 @@ struct sk_buff *skb_clone(struct sk_buff *skb,
+> gfp_t gfp_mask)
+> >  {
+> >       struct sk_buff *n;
+> >  
+> > +     if (skb_ubuf(skb)) {
+> > +             if (skb_copy_ubufs(skb, gfp_mask))
+> > +                     return NULL;
+> > +     }
+> > +
+> >       n = skb + 1;
+> >       if (skb->fclone == SKB_FCLONE_ORIG &&
+> >           n->fclone == SKB_FCLONE_UNAVAILABLE) {
+> > @@ -730,6 +791,12 @@ struct sk_buff *pskb_copy(struct sk_buff *skb,
+> gfp_t gfp_mask)
+> >       if (skb_shinfo(skb)->nr_frags) {
+> >               int i;
+> >  
+> > +             if (skb_ubuf(skb)) {
+> > +                     if (skb_copy_ubufs(skb, gfp_mask)) {
+> > +                             kfree(n);
+> > +                             goto out;
+> > +                     }
+> > +             }
+> >               for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+> >                       skb_shinfo(n)->frags[i] =
+> skb_shinfo(skb)->frags[i];
+> >                       get_page(skb_shinfo(n)->frags[i].page);
+> > @@ -743,6 +810,7 @@ struct sk_buff *pskb_copy(struct sk_buff *skb,
+> gfp_t gfp_mask)
+> >       }
+> >  
+> >       copy_skb_header(n, skb);
+> > +
+> 
+> please dont add new lines like this in your patch
+
+checkpatch doesn't check this kind of line, will remove it.
+
+> >  out:
+> >       return n;
+> >  }
+> > @@ -787,7 +855,6 @@ int pskb_expand_head(struct sk_buff *skb, int
+> nhead, int ntail,
+> >               fastpath = true;
+> >       else {
+> >               int delta = skb->nohdr ? (1 << SKB_DATAREF_SHIFT) +
+> 1 : 1;
+> > -
+> 
+> and dont delete this one as well.
+> 
+> >               fastpath = atomic_read(&skb_shinfo(skb)->dataref) ==
+> delta;
+> >       }
+> >  
+> > @@ -818,14 +885,19 @@ int pskb_expand_head(struct sk_buff *skb, int
+> nhead, int ntail,
+> >       if (fastpath) {
+> >               kfree(skb->head);
+> >       } else {
+> > +             /* copy this zero copy skb frags */
+> > +             if (skb_ubuf(skb)) {
+> > +                     if (skb_copy_ubufs(skb, gfp_mask))
+> > +                             goto nofrags;
+> > +             }
+> >               for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+> >                       get_page(skb_shinfo(skb)->frags[i].page);
+> > -
+> 
+> ditto
+> 
+> >               if (skb_has_frag_list(skb))
+> >                       skb_clone_fraglist(skb);
+> >  
+> >               skb_release_data(skb);
+> >       }
+> > +
+> 
+> ditto
+> 
+> >       off = (data + nhead) - skb->head;
+> >  
+> >       skb->head     = data;
+> > @@ -852,6 +924,8 @@ adjust_others:
+> >       atomic_set(&skb_shinfo(skb)->dataref, 1);
+> >       return 0;
+> >  
+> > +nofrags:
+> > +     kfree(data);
+> >  nodata:
+> >       return -ENOMEM;
+> >  }
+> > @@ -1353,6 +1427,8 @@ int skb_copy_bits(const struct sk_buff *skb,
+> int offset, void *to, int len)
+> >               }
+> >               start = end;
+> >       }
+> > +     skb_shinfo(skb)->ubuf.callback = NULL;
+> > +
+> >       if (!len)
+> >               return 0;
+> >  
+> > 
+> > 
+> 
+> 
+
