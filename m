@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683Ab1EZQGK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 12:06:10 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62558 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754017Ab1EZQGG convert rfc822-to-8bit (ORCPT
+	id S1757992Ab1EZQEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 12:04:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55687 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab1EZQEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 12:06:06 -0400
-Subject: Re: [GIT PULL] omap updates for 2.6.40
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <20110526113905.GG27250@atomide.com>
-Date: Thu, 26 May 2011 18:06:01 +0200
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9741DC43-3197-4ECE-A377-FA865A3F6710@dominion.thruhere.net>
-References: <20110526113905.GG27250@atomide.com>
-To: Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1084)
+	Thu, 26 May 2011 12:04:32 -0400
+Subject: Re: [PATCH] sched_rt: RCU-protect for_each_domain() within
+ find_lowest_rq()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110526160137.GA5716@swordfish.minsk.epam.com>
+References: <20110526160137.GA5716@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 18:07:51 +0200
+Message-ID: <1306426071.2497.82.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-05-26 at 19:01 +0300, Sergey Senozhatsky wrote:
+> Protect for_each_domain() within find_lowest_rq() with RCU read-side critical 
+> section, suppressing suspicious rcu_dereference_check():
 
-Op 26 mei 2011, om 13:39 heeft Tony Lindgren het volgende geschreven:
+I just found:
+http://lkml.kernel.org/r/1303469634-11678-1-git-send-email-dfeng@redhat.com in my inbox and queued that.
 
-> Hi Linus,
-> 
-> Please pull omap updates for this merge window from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-for-linus
-> 
-> This contains clean-up to shrink down omap specific code a bit. Also included
-> are some fixes. But basically no new code at this point.
 
-What about updates to board files? Like adding support for the xM rev C to board-omap3beagle.c.
+
