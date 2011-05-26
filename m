@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab1EZI3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 04:29:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51266 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753952Ab1EZI3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 04:29:16 -0400
-Message-ID: <4DDE0F5F.9080303@suse.cz>
-Date: Thu, 26 May 2011 10:29:19 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1756802Ab1EZIkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 04:40:23 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26096 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731Ab1EZIkV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 04:40:21 -0400
+Date: Thu, 26 May 2011 10:32:41 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: [Patch][Trivial] sound, soc, codec, WM8915: Remove duplicate
+ linux/delay.h inclusion.
+Message-ID: <alpine.LNX.2.00.1105261028060.17400@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Armin Schindler <armin@melware.de>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 12/34] isdn/diva: Drop __TIME__ usage
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-13-git-send-email-mmarek@suse.cz> <alpine.DEB.2.00.1104051709040.7262@justus.melware.de> <4DDD68C3.7000004@suse.cz> <alpine.DEB.2.00.1105261012360.20696@justus.melware.de>
-In-Reply-To: <alpine.DEB.2.00.1105261012360.20696@justus.melware.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.5.2011 10:15, Armin Schindler wrote:
-> On Wed, 25 May 2011, Michal Marek wrote:
->> Dne 5.4.2011 17:10, Armin Schindler napsal(a):
->>> On Tue, 5 Apr 2011, Michal Marek wrote:
->>>> The kernel already prints its build timestamp during boot, no need to
->>>> repeat it in random drivers and produce different object files each
->>>> time.
->>>
->>> The module can be build separately from the kernel, therefore it can have
->>> an own build timestamp.
->>
->> So the module timestamp and kernel timestamp vary by a couple of
->> minutes. But is it really a problem?
-> 
-> It could be a lot more than minutes. But it isn't a problem.
-> I just tried to keep the sources in sync with out-of-tree version.
-> 
->> I don't think so. So is there an
->> objection against applying this patch?
-> 
-> No objection. Please go ahead with the patch.
+It's enough to include linux/delay.h just once in 
+sound/soc/codecs/wm8915.c, so remove the duplicate.
 
-OK, thanks. Applied to kbuild-2.6.git#trivial.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ wm8915.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-Michal
+ Patch against Linus' tree as of a few minutes ago.
+
+diff --git a/sound/soc/codecs/wm8915.c b/sound/soc/codecs/wm8915.c
+index ccc9bd8..a0b1a72 100644
+--- a/sound/soc/codecs/wm8915.c
++++ b/sound/soc/codecs/wm8915.c
+@@ -19,7 +19,6 @@
+ #include <linux/gcd.h>
+ #include <linux/gpio.h>
+ #include <linux/i2c.h>
+-#include <linux/delay.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
