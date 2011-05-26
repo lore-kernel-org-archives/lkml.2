@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab1EZLjS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 07:39:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33153 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757220Ab1EZLjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 07:39:09 -0400
-Message-ID: <4DDE3BE1.5030302@suse.cz>
-Date: Thu, 26 May 2011 13:39:13 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1757393Ab1EZLoO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 07:44:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33367 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754909Ab1EZLoM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 07:44:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=LVjeZ0z8ZEn/+eU+DtcgQefjCAKb0ZnfA+UZE5wrSpa+/PlECJuj2I27fmsQurJVoi
+         /0bww8zRI4LCIBfEPNUD+fRdmK+8iZHVeGx6lPgJVEkZRm4cuisHY2drxD73v1KnzjJ5
+         6P9eJt+3Kc/kUOsfIAwYH0E66hpQts2PwA42g=
+Date: Thu, 26 May 2011 13:44:06 +0200
+From: Tejun Heo <tj@kernel.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Ying Han <yinghan@google.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH v3 7/10] workqueue: add WQ_IDLEPRI
+Message-ID: <20110526114406.GG9715@htj.dyndns.org>
+References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110526143024.7f66e797.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110526093808.GE9715@htj.dyndns.org>
+ <20110526193018.12b3ddea.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110526195019.8af6d882.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Andy Whitcroft <apw@canonical.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 34/34] checkpatch: Warn about usage of __DATE__, __TIME__
- and __TIMESTAMP__
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-35-git-send-email-mmarek@suse.cz>
-In-Reply-To: <1302015561-21047-35-git-send-email-mmarek@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526195019.8af6d882.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5.4.2011 16:59, Michal Marek wrote:
-> The __TIME__ and __DATE__ macros are evil. Every C textbook mentions
-> them, but forgets to add the tiny detail that they make sure that your
-> code will never result in the same binary. __TIMESTAMP__ is a bit more
-> sane, but again produces noise as soon as you switch branches back and
-> forth, or apply a patch and revert it.
+Hello,
+
+On Thu, May 26, 2011 at 07:50:19PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 26 May 2011 19:30:18 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > In the next version, I'll try some like..
+> > ==
+> > 	process_one_work(...) {
+> > 		.....
+> > 		spin_unlock_irq(&gcwq->lock);
+> > 		.....
+> > 		if (cwq->wq->flags & WQ_IDLEPRI) {
+> > 			set_scheduler(...SCHED_IDLE...)
+> > 			cond_resched();
+> > 			scheduler_switched = true;
+> > 		}
+> > 		f(work) 
+> > 		if (scheduler_switched)
+> > 			set_scheduler(...SCHED_OTHER...)
+> > 		spin_lock_irq(&gcwq->lock);
+> > 	}
+> > ==
+> > Patch size will be much smaller. (Should I do this in memcg's code ??)
+> > 
 > 
-> Cc: Andy Whitcroft <apw@canonical.com>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
->  scripts/checkpatch.pl |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
+> BTW, my concern is that if f(work) is enough short,effect of SCHED_IDLE will never
+> be found because SCHED_OTHER -> SCHED_IDLE -> SCHED_OTHER switch is very fast.
+> Changed "weight" of CFQ never affects the next calculation of vruntime..of the
+> thread and the work will show the same behavior with SCHED_OTHER.
+> 
+> I'm sorry if I misunderstand CFQ and setscheduler().
 
-Hi Andy,
+Hmm... I'm not too familiar there either but,
 
-any comments about this patch?
+* If prio is lowered (you're gonna lower it too, right?),
+  prio_changed_fair() is called which in turn does resched_task() as
+  necessary.
 
-Thanks,
-Michal
+* More importantly, for short work items, it's likely to not matter at
+  all.  If you can determine beforehand that it's not gonna take very
+  long time, queueing on system_wq would be more efficient.
 
+Thanks.
 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 4c0383d..dbcdf04 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2804,6 +2804,11 @@ sub process {
->  			WARN("__func__ should be used instead of gcc specific __FUNCTION__\n"  . $herecurr);
->  		}
->  
-> +# check for pointless usage of __TIME__ and friends
-> +		if ($line =~ /\b__(TIME|DATE|TIMESTAMP)__\b/) {
-> +			WARN("Usage of __$1__ should be avoided to keep the build deterministic\n" . $herecurr);
-> +		}
-> +
->  # check for semaphores initialized locked
->  		if ($line =~ /^.\s*sema_init.+,\W?0\W?\)/) {
->  			WARN("consider using a completion\n" . $herecurr);
-
+-- 
+tejun
