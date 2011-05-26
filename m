@@ -1,118 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932674Ab1EZP1z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 11:27:55 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:39425 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932445Ab1EZP1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 11:27:54 -0400
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirqus@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110526084916.GA17928@redhat.com>
-References: <1305729507.32080.6.camel@localhost.localdomain>
-	 <20110518154746.GA21378@redhat.com>
-	 <1305734857.32080.53.camel@localhost.localdomain>
-	 <20110518163633.GB22001@redhat.com>
-	 <1305737140.32080.59.camel@localhost.localdomain>
-	 <20110518165138.GD22001@redhat.com>
-	 <1305738028.32080.66.camel@localhost.localdomain>
-	 <1305834169.32080.81.camel@localhost.localdomain>
-	 <20110519234154.GA13784@redhat.com>
-	 <1306363780.26270.44.camel@localhost.localdomain>
-	 <20110526084916.GA17928@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 08:27:46 -0700
-Message-ID: <1306423666.5180.8.camel@localhost.localdomain>
+	id S932625Ab1EZP2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 11:28:52 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:56393 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932505Ab1EZP2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 11:28:49 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Sl/za5zysB4kG2RkotdNTkGPmLbiJK+3iCufuw9q7TVgqsxXQG/dZookOflhi7/hGw4CjGLFYVo/b3aJ+CwWH9rnUIgn7swlEnchUtbNAmntzji0LJ6lYBzrE72pK7l8;
+Date: Thu, 26 May 2011 08:28:34 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "Arend van Spriel" <arend@broadcom.com>
+Cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "Dan Carpenter" <error27@gmail.com>
+Subject: Re: [RFC V1] lib: cordic: add library module for cordic angle
+ calculation
+Message-Id: <20110526082834.6ac25796.rdunlap@xenotime.net>
+In-Reply-To: <4DDE0AB4.5020102@broadcom.com>
+References: <1306352426-1899-1-git-send-email-arend@broadcom.com>
+	<20110525130438.c05605c7.rdunlap@xenotime.net>
+	<4DDE0AB4.5020102@broadcom.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 11:49 +0300, Michael S. Tsirkin wrote:
-> On Wed, May 25, 2011 at 03:49:40PM -0700, Shirley Ma wrote:
-> > On Fri, 2011-05-20 at 02:41 +0300, Michael S. Tsirkin wrote:
-> > > So the requirements are
-> > > - data must be released in a timely fashion (e.g. unlike
-> virtio-net
-> > >   tun or bridge)
-> > The current patch doesn't enable tun zero-copy. tun will copy data
-> It's
-> > not an issue now.
-> > We can disallow macvtap attach to bridge when
-> > zero-copy is enabled.
-> 
-> Attach macvtap to a tun device though. Or e.g. veth device ...
-> So there should be so generic way to disable zerocopy.
-> It can either be a whitelist or a blacklist.
-> > 
-> > > - SG support
-> > > - HIGHDMA support (on arches where this makes sense)
-> > 
-> > This can be checked by device flags.
-> 
-> OK, but pls note that SG can get turned off dynamically.
-> 
-> > > - no filtering based on data (data is mapped in guest)
-> > 
-> > > - on fast path no calls to skb_copy, skb_clone, pskb_copy,
-> > >   pskb_expand_head as these are slow
-> > 
-> > Any calls to skb_copy, skb_clone, pskb_copy, pskb_expand_head will
-> do a
-> > copy. The performance should be the same as none zero-copy case
-> before.
-> 
-> I'm guessing a copy is cheaper than get_user_pages+copy+put_page.
-> But maybe not by much. Care checking that?
+On Thu, 26 May 2011 10:09:24 +0200 Arend van Spriel wrote:
 
-That's I have done already. Patch is going out for review.
-
-> > I have done/tested the patch V6, will send it out for review
-> tomorrow.
-> > 
-> > I am looking at where there are some cases, skb remains the same for
-> > filtering.
+> On 05/25/2011 10:04 PM, Randy Dunlap wrote:
+> > On Wed, 25 May 2011 21:40:26 +0200 Arend van Spriel wrote:
+> >> +/**
+> >> + * struct - i/q coordinate.
+> >   * struct cordic_iq - i/q coordinate
 > 
-> To reliably filter on data I think we'll need to copy it first,
-> otherwise
-> guest can change it. Most filters only look at the header though.
-> 
-> > > First 2 requirements are a must, all other requirements
-> > > are just dependencies to make sure zero copy will be faster
-> > > than non zero copy.
-> > > Using a new feature bit is probably the simplest approach to
-> > > this. macvtap on top of most physical NICs most likely works
-> > > correctly so it seems a bit more work than it needs to be,
-> > > but it's also the safest one I think ... 
-> > 
-> > For "macvtap/vhost zero-copy" we can use SG & HIGHDMA to enable it,
-> it
-> > looks safe to me once patching skb_copy, skb_clone, pskb_copy,
-> > pskb_expand_head.
-> > 
-> > To extend zero-copy in other usages, we can have a new feature bit
-> > later.
-> > 
-> > Is that reasonable?
-> > 
-> > Thanks
-> > Shirley
-> 
-> Is the problem is extra work needed to extend feature bits?
+> The kernel-doc processing is pretty smart here. In the current form I 
+> get the html as attached. From that perspective your proposed change is 
+> not needed, but if your point is that it would be more clear to the mere 
+> mortal reading through the source code I can change it.
 
-There is no problem to use it, Mahesh is working on this patch. I just
-want to remove macvtap/vhost zero-copy patch dependency.
+Hm, I see.  scripts/kernel-doc gets the struct name from the source code
+in this case.  too smart ;)
 
-Thanks
-Shirley
+AFAIK, everywhere else we use
 
+/**
+ * struct structname - description
+
+and that's what Documentation/kernel-doc-nano-HOWTO.txt calls for, and
+yes, it would be more readable to us mortals also, so please change it.
+
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
