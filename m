@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab1EZKAt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 06:00:49 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37062 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472Ab1EZKAr (ORCPT
+	id S1757400Ab1EZKBr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 06:01:47 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:41435 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab1EZKBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 06:00:47 -0400
-Message-ID: <4DDE249D.9000000@ru.mvista.com>
-Date: Thu, 26 May 2011 13:59:57 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Thu, 26 May 2011 06:01:46 -0400
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+Date: Thu, 26 May 2011 11:01:42 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
+Cc: Oleg Nesterov <oleg@redhat.com>, Denys Vlasenko <vda.linux@googlemail.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
+        bdonlan@gmail.com
+References: <1305569849-10448-1-git-send-email-tj@kernel.org> <20110525181856.GA16575@redhat.com> <20110526091041.GC9715@htj.dyndns.org>
+In-Reply-To: <20110526091041.GC9715@htj.dyndns.org>
 MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-CC: Greg KH <greg@kroah.com>, David Brownell <dbrownell@users.sourceforge.net>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb-gadget: unlock data->lock mutex on error path in
- ep_write()
-References: <4DDDF3EA.6050501@ispras.ru>
-In-Reply-To: <4DDDF3EA.6050501@ispras.ru>
-Content-Type: text/plain; charset=windows-1251; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105261101.43237.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thursday 26 May 2011 10:10:41, Tejun Heo wrote:
+> > Btw. Speaking of SEIZE->execvd->INTERRUPT which makes the tracee see
+> > a SIGTRAP. 
 
-On 26-05-2011 10:32, Alexey Khoroshilov wrote:
+I was told before that when SEIZE was in effect, there's no magic
+SIGTRAP on exec.
 
-> ep_write() acquires data->lock mutex in get_ready_ep() and releases it on
-> all paths except for one: when usb_endpoint_xfer_isoc() failed. The
-> patch adds mutex_unlock(&data->lock) at that path.
+> > Stupid question. Perhaps PTRACE_SEIZE should set
+> > PT_TRACESYSGOOD | PT_TRACE_EXEC along with PT_SEIZED automatically?
+> > PT_SEIZED implies the new behaviour anyway.
+> 
+> Yeap, it makes sense to set them by default.  
 
-> It is similar to commit 00cc7a5faf25b3ba5cf30fcffc62249bdd152006 for ep_read(),
+SYSGOOD makes sense, it just enables a means to distinguish syscall
+SIGTRAPs from regular SIGTRAPs -- it doesn't cause child stops itself.
+TRACE_EXEC, I'm not so sure.  (and it appears to have been proposed
+on the premise that SEIZE would still report the SIGTRAP).
+Why would that make sense, and not TRACE_FORK, for example?  I can imagine
+a tracer only caring for syscall entry/exit, and not needing a special
+event on exec.  IMO, any kind of event that forces a child stop that
+would't happen if the child wasn't traced should have to be enabled
+explicitly.
 
-    Please specify that commit's summary in parens.
+Heck, GDB passes a subset of signals straight down to
+the child without informing the user (e.g., see "handle SIGALRM"
+command), and it would be an improvement in
+the tracer-affects-tracee's-scheduling department to have a means to
+let ptrace know a tracer isn't interested in such-and-such signals.
+Conversely, going with the non-intrusive tracing theme, it would
+even make sense for the tracer to have to request "let me know
+about signals (all or a subset) sent to tracee too"
 
-> it was not fixed at that time by accident.
-
-> Found by Linux Driver Verification project (linuxtesting.org).
-
-> Signed-off-by: Alexey Khoroshilov<khoroshilov@ispras.ru>
-
-WBR, Sergei
+-- 
+Pedro Alves
