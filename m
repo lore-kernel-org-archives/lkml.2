@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758357Ab1EZTrc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:47:32 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38356 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755482Ab1EZTrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:47:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=cKUK/6uPC441AFGe8WQbDauOjGRAjJllfcvNbyM/c+QWoCiCw+oXb4aP+sIiKZMOoj
-         843A3nAnUIqWWeWOu0x3uCiZUsIuQsdd9HUMhne1RHcYR+w6SclJXa89XAoUAvp4qwuO
-         rtVveDvGeWtin/pp97TISYHrqqbnpwmlQKZKM=
-Subject: Re: Kernel crash after using new Intel NIC (igb)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: Maximilian Engelhardt <maxi@daemonizer.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, StuStaNet Vorstand <vorstand@stusta.mhn.de>
-In-Reply-To: <4DDEAA3C.7020502@fb.com>
-References: <201104250033.03401.maxi@daemonizer.de>
-	 <1303878240.2699.41.camel@edumazet-laptop>
-	 <1303878771.2699.44.camel@edumazet-laptop>
-	 <201104271352.00601.maxi@daemonizer.de>
-	 <20110512211033.GA3468@dev1756.snc6.facebook.com>
-	 <1305234953.2831.2.camel@edumazet-laptop>
-	 <20110524213327.GA3917@dev1756.snc6.facebook.com>
-	 <1306291469.3305.11.camel@edumazet-laptop>
-	 <20110525060609.GA32244@dev1756.snc6.facebook.com>
-	 <1306305331.3305.22.camel@edumazet-laptop>  <4DDEAA3C.7020502@fb.com>
+	id S932523Ab1EZTtV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:49:21 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:50538 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751980Ab1EZTtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:49:19 -0400
+Subject: Re: [PATCH v5 00/21] EVM
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: David Safford <safford@watson.ibm.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+In-Reply-To: <20110526183849.GA4563@ucw.cz>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <20110518172552.6d482c7a.akpm@linux-foundation.org>
+	 <20110526060842.GA13933@localhost.ucw.cz>
+	 <4DDE80FE.7010005@schaufler-ca.com>
+	 <1306433514.24986.26.camel@localhost.localdomain>
+	 <20110526183849.GA4563@ucw.cz>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 21:47:26 +0200
-Message-ID: <1306439246.2543.10.camel@edumazet-laptop>
+Date: Thu, 26 May 2011 15:49:07 -0400
+Message-ID: <1306439347.3092.89.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 26 mai 2011 à 12:30 -0700, Arun Sharma a écrit :
-> On 5/24/11 11:35 PM, Eric Dumazet wrote:
+On Thu, 2011-05-26 at 20:38 +0200, Pavel Machek wrote:
+> On Thu 2011-05-26 14:11:54, David Safford wrote:
+> > On Thu, 2011-05-26 at 09:34 -0700, Casey Schaufler wrote:
+> > > On 5/25/2011 11:08 PM, Pavel Machek wrote:
+> > > > ...
+> > > > Fourthly, is it likely to find its way to the next cellphone I buy,
+> > > > and will it prevent me from rooting it?
+> > > 
+> > > That will of course depend on the phone vendor. You are certainly
+> > > going to be able to vote with your checkbook (digital wallet?) but
+> > > odds are pretty good that should EVM prove effective it will be
+> > > ubiquitous within the next five years on embedded devices.
 > 
-> >> Another possibility is to do the list_empty() check twice. Once without
-> >> taking the lock and again with the spinlock held.
-> >>
-> >
-> > Why ?
-> >
+> Hmm. But maybe it is more effective to vote with NAKs, now? It does
+> not seem to have any non-evil uses.
 > 
-> Part of the problem is that I don't have a precise understanding of the 
-> race condition that's causing the list to become corrupted.
+> Phone vendors will play nasty tricks on us, but... why make it easy
+> for them?
 > 
-> All I know is that doing it under the lock fixes it. If it's slowing 
-> things down, we do a check outside the lock (since it's cheap). But if 
-> we get the wrong answer, we verify it again under the lock.
+> > um, not quite the right threat model...
+> > 
+> > Rooting is normally done through an exploit of the loader
+> > or the kernel, neither of which EVM can prevent. The phones
 > 
-
-You dont get the problem. Problem is : We can do the empty() test only
-if protected by the lock.
-
-If not locked, result can be wrong. [ false positive or negative ]
-
-
-> > list_del_init(&p->unused); (done under lock of course) is safe, you can
-> > call it twice, no problem.
+> Androids are often rooted by exploiting kernel or userspace
+> security holes. G1 was rooted by shell that was left running on
+> console...
 > 
-> Doing it twice is not a problem. But doing it when we shouldn't be doing 
-> it could be the problem.
+> > Whether or not the phone is rooted, IMA-Appraisal, EVM, and 
+> > the Digital Signature Extensions help protect against remote
+> > software attacks, and offline hardware attacks on individual
+> > files, but not against rooting itself.
 > 
-> The list modification under unused_peers.lock looks generally safe. But 
-> the control flow (based on refcnt) done outside the lock might have races.
+> As far as I can tell, file signatures only prevent "offline hardware
+> attacks"; that is  user trying to "attack" (== root) his own computer.
 > 
+> 								Pavel
 
-"might" is not a good word when dealing with this ;)
+Since when is my being able to detect and prevent unauthorized/malicious
+files on my own system (eg. device - VM) from being read/executed deemed
+evil?!  Are you suggesting that we're better off not knowing the
+integrity or authenticity of a file?  I suggest you read Dave's
+Integrity Overview whitepaper?
 
-> Eg: inet_putpeer() might find the refcnt go to zero, but before it adds 
-> it to the unused list, another thread may be doing inet_getpeer() and 
-> set refcnt to 1. In the end, we end up with a node that's potentially in 
-> use, but ends up on the unused list.
-> 
+Becoming involved in designing when/how new EVM encrypted key(s) are
+made available, determining if we need separate keyrings for EVM keys
+and the keys for appraising files(IMA-appraisal signatures), or defining
+the authorization mechanism required to add such keys (eg. LSM, extend
+capabilities), would be welcomed.  Such discussions can take place on
+either the LSM or linux-ima mailing lists.
 
-Did you test my fix ?
+thanks,
 
-Its doing the right thing : Using refcnt as the only marker to say if
-the item must be removed from unused list (and lock the central lock
-protecting this list only when needed)
-
-Since we already must do an atomic operation on refcnt, using
-atomic_inc_return [ or similar full barrier op ] is enough to tell us
-the truth.
-
-
+Mimi
 
