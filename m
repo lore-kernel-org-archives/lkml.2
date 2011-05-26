@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab1EZMzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 08:55:37 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:60736 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751589Ab1EZMzg (ORCPT
+	id S1757615Ab1EZM4G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 08:56:06 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61452 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab1EZM4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 08:55:36 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Y/QXu6zAL7pKd4LhS4jU+
-Date: Thu, 26 May 2011 05:55:29 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Igor Grinberg <grinberg@compulab.co.il>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [GIT PULL] omap updates for 2.6.40
-Message-ID: <20110526125529.GC11352@atomide.com>
-References: <20110526113905.GG27250@atomide.com>
- <4DDE441C.2080808@compulab.co.il>
- <20110526122412.GB11352@atomide.com>
- <4DDE4D04.5070404@compulab.co.il>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DDE4D04.5070404@compulab.co.il>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 26 May 2011 08:56:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=qEWQLKpJFt6CB/yCoVA1aBfxFYaLhtnNvA55zYXu7ZaD1Liz2mqVG+2CINqk2YYzLl
+         CiYH7yqZmorG6ifLbmpYgpkwPOlCMc9Q50mj3c4E10FD45QxwMchSVR6NFn5hH4jxHDJ
+         FyKyGp6snqyUlIgmKnQSveV3CeQjrgWxde2w8=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>, Nick Piggin <npiggin@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] brd: partition handling fixes
+Date: Thu, 26 May 2011 21:55:52 +0900
+Message-Id: <1306414557-2441-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Igor Grinberg <grinberg@compulab.co.il> [110526 05:48]:
-> On 05/26/11 15:24, Tony Lindgren wrote:
-> 
-> > * Igor Grinberg <grinberg@compulab.co.il> [110526 05:10]:
-> >> What about this one: [PATCH v2] arm: omap2plus: move NAND_BLOCK_SIZE out of boards
-> >>
-> >> Why not include it? It is no new code, just generalize stuff and 11 lines off... not much but still.
-> > Sorry I must have missed it.. Let's see if we can queue it
-> > during the merge window as it's a trivial patch removing
-> > duplicate defines.
-> 
-> I'm failing to understand what do you mean by that...
-> According to Linus ("probably Sunday - I'll be on airplanes next Monday"),
-> the merge window will be closed soon.
-> 
-> Do you mean, you will send an updated pull request?
+Hello.
 
-Sorry I meant during the -rc cycle, I guess we're out of
-time for the merge window to make changes.
+This is a patch set for fixing bugs on partition handling code which
+was found when I read loop block device code as well as some cleanups.
 
-Regards,
+The patch 2/5 and 3/5 are real fixes and should go to the stable tree
+as Jens suggested on loop patches. Since partition managing code was
+introduced by commit d7853d1f8932 ("brd: modify ramdisk device to be
+able to manage partitions") all stable releases would need these fixes.
 
-Tony
+  $ git name-rev --tags d7853d1f8932
+  d7853d1f8932 tags/v2.6.26-rc1~122
+
+As always, any comments are welcomed.
+Thanks.
+
+
+Namhyung Kim (5):
+  brd: get rid of unused members from struct brd_device
+  brd: limit 'max_part' module param to DISK_MAX_PARTS
+  brd: handle on-demand devices correctly
+  brd: fix comment on initial device creation
+  brd: export module parameters
+
+ drivers/block/brd.c |   42 ++++++++++++++++++++++++++----------------
+ 1 files changed, 26 insertions(+), 16 deletions(-)
+
+--
+1.7.5.2
+
