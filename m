@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932917Ab1EZSiy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 14:38:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:23059 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab1EZSix convert rfc822-to-8bit (ORCPT
+	id S1758167Ab1EZSjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 14:39:08 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:38245 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753523Ab1EZSjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 14:38:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=asQpdgqKbg+0pj0SdeE7wIVSXldGR4POyCJoAjH4HP2UHP+yIODP+xPVLXPQdhBT3R
-         LHr+4LlTfoueIjaR98ZA==
+	Thu, 26 May 2011 14:39:04 -0400
+Date: Thu, 26 May 2011 20:38:50 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: David Safford <safford@watson.ibm.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+Subject: Re: [PATCH v5 00/21] EVM
+Message-ID: <20110526183849.GA4563@ucw.cz>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <20110518172552.6d482c7a.akpm@linux-foundation.org>
+ <20110526060842.GA13933@localhost.ucw.cz>
+ <4DDE80FE.7010005@schaufler-ca.com>
+ <1306433514.24986.26.camel@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <4DDDF0D0.6090805@gmail.com>
-References: <20110526013423.GA25226@redhat.com>
-	<4DDDD47C.5030504@gmail.com>
-	<20110526043337.GA11224@redhat.com>
-	<20110526051109.GA11870@redhat.com>
-	<4DDDF0D0.6090805@gmail.com>
-Date: Thu, 26 May 2011 11:38:50 -0700
-Message-ID: <BANLkTik5QWiW0Wm_oygnVSJNQXpZpdRB3w@mail.gmail.com>
-Subject: Re: no sound in current -git
-From: Hugh Dickins <hughd@google.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Takashi Iwai <tiwai@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306433514.24986.26.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 11:18 PM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> On 05/25/2011 10:11 PM, Dave Jones wrote:
->>
->> On Thu, May 26, 2011 at 12:33:38AM -0400, Dave Jones wrote:
->>
->>  >   >  sound over here is out as well on a macbook pro. seems gnome shell
->>  >   >  didn't like whats being merged with the current Mainline i.g. no
->> sound
->>  >   >  bluetooth applet missing. will bisect when I get a chance.
->>  >
->>  >  Maybe it was this that just got merged..  (building now)
->>  >
->>  >  commit 4db70f73e56961b9bcdfd0c36c62847a18b7dbb5
->>  >  Author: Eric Paris<eparis@redhat.com>
->>  >  Date:   Wed May 25 19:49:18 2011 -0700
->>  >
->>  >      tmpfs: fix XATTR N overriding POSIX_ACL Y
->>
->> Yep. That fixes sound for me.
->> Sorry for the false alarm Takashi!
->>
->>        Dave
->>
->>
->
-> hmm.. pulled and noticed the above with git log, then did git revert for the
-> above, built, but still no sound. will do a bisect in the morning or later
-> on.
+On Thu 2011-05-26 14:11:54, David Safford wrote:
+> On Thu, 2011-05-26 at 09:34 -0700, Casey Schaufler wrote:
+> > On 5/25/2011 11:08 PM, Pavel Machek wrote:
+> > > ...
+> > > Fourthly, is it likely to find its way to the next cellphone I buy,
+> > > and will it prevent me from rooting it?
+> > 
+> > That will of course depend on the phone vendor. You are certainly
+> > going to be able to vote with your checkbook (digital wallet?) but
+> > odds are pretty good that should EVM prove effective it will be
+> > ubiquitous within the next five years on embedded devices.
 
-That commit was the fix, not the origin of the bug, so reverting it
-was not the right thing to do!
+Hmm. But maybe it is more effective to vote with NAKs, now? It does
+not seem to have any non-evil uses.
 
-But it's only a fix if your .config has not yet been messed up (with
-CONFIG_TMPFS_XATTR and CONFIG_TMPFS_POSIX_ACL unset, though used
-somewhere for sound).
+Phone vendors will play nasty tricks on us, but... why make it easy
+for them?
 
-So, just delete the CONFIG_TMPFS_XATTR and CONFIG_TMPFS_POSIX_ACL
-lines from your .config (perhaps you don't even get an ACL line if the
-XATTR is not set, I forget) and run "make oldconfig", this time
-choosing Y.
+> um, not quite the right threat model...
+> 
+> Rooting is normally done through an exploit of the loader
+> or the kernel, neither of which EVM can prevent. The phones
 
-If this was your sound problem too, then the rebuilt kernel should fix it.
+Androids are often rooted by exploiting kernel or userspace
+security holes. G1 was rooted by shell that was left running on
+console...
 
-Apologies for inflicting this on people: Linus spotted it and got it
-fixed up a.s.a.p so it only would only affect those who pulled a tree
-yesterday.
+> Whether or not the phone is rooted, IMA-Appraisal, EVM, and 
+> the Digital Signature Extensions help protect against remote
+> software attacks, and offline hardware attacks on individual
+> files, but not against rooting itself.
 
-Hugh
+As far as I can tell, file signatures only prevent "offline hardware
+attacks"; that is  user trying to "attack" (== root) his own computer.
+
+								Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
