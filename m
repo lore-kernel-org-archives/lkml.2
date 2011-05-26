@@ -1,160 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab1EZOtQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 10:49:16 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:50913 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752693Ab1EZOtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 10:49:14 -0400
-Date: Thu, 26 May 2011 10:49:11 -0400
-Message-Id: <E1QPbs7-0000L8-ER@tytso-glaptop>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PUL] ext4 update for 2.6.40
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1755635Ab1EZOzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 10:55:08 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:43511 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab1EZOzG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 10:55:06 -0400
+From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+To: Tomas Henzl <thenzl@redhat.com>
+CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Date: Thu, 26 May 2011 14:53:46 +0000
+Subject: RE: [PATCH 01/16] hpsa: do readl after writel in main i/o path to
+ ensure commands don't get lost.
+Thread-Topic: [PATCH 01/16] hpsa: do readl after writel in main i/o path to
+ ensure commands don't get lost.
+Thread-Index: AcwbnmHkLN/EvZEhT4KkcY3RDPOWPAAFkFhg
+Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D52077155@GVW0547EXC.americas.hpqcorp.net>
+References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com>
+ <20110503195849.5478.13229.stgit@beardog.cce.hp.com>
+ <4DC13566.5070203@redhat.com> <20110504125212.GC5997@beardog.cce.hp.com>
+ <10639.1304530101@localhost> <20110504173735.GB22953@parisc-linux.org>
+ <11821.1304531662@localhost> <20110505183515.GA14193@beardog.cce.hp.com>
+ <4DDA46FD.904@redhat.com>
+ <0F5B06BAB751E047AB5C87D1F77A77887D5207690A@GVW0547EXC.americas.hpqcorp.net>
+ <4DDE43F4.9030607@redhat.com>
+In-Reply-To: <4DDE43F4.9030607@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: Hq7d a8Mc ecff etz9 rsne scCT seRT tJhB 6P1H 8MC3
+ ACFyTw== AClzVg== AEXZWA== AEbGNw== AE0l8Q==
+ AFGZyw==;7;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGEAeABiAG8AZQBAAGsAZQByAG4AZQBsAC4AZABrADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAHMAYwBzAGkAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHMAYwBhAG0AZQByAG8AbgBAAGIAZQBhAHIAZABvAGcALgBjAGMAZQAuAGgAcAAuAGMAbwBtADsAdABoAGUAbgB6AGwAQAByAGUAZABoAGEAdAAuAGMAbwBtADsAdgBhAGwAZABpAHMALgBrAGwAZQB0AG4AaQBlAGsAcwBAAHYAdAAuAGUAZAB1AA==;Sosha1_v1;7;{5506AD55-2F19-4C66-99F8-4FD30C538C31};bQBpAGsAZQAuAG0AaQBsAGwAZQByAEAAaABwAC4AYwBvAG0A;Thu,
+ 26 May 2011 14:53:46
+ GMT;UgBFADoAIABbAFAAQQBUAEMASAAgADAAMQAvADEANgBdACAAaABwAHMAYQA6ACAAZABvACAAcgBlAGEAZABsACAAYQBmAHQAZQByACAAdwByAGkAdABlAGwAIABpAG4AIABtAGEAaQBuACAAaQAvAG8AIABwAGEAdABoACAAdABvACAAZQBuAHMAdQByAGUAIABjAG8AbQBtAGEAbgBkAHMAIABkAG8AbgAnAHQAIABnAGUAdAAgAGwAbwBzAHQALgA=
+x-cr-puzzleid: {5506AD55-2F19-4C66-99F8-4FD30C538C31}
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull from:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
+> -----Original Message-----
+> From: Tomas Henzl [mailto:thenzl@redhat.com]
+> Sent: Thursday, May 26, 2011 7:14 AM
+> To: Miller, Mike (OS Dev)
+> Cc: Valdis.Kletnieks@vt.edu; scameron@beardog.cce.hp.com; Andrew Morton;
+> LKML; LKML-scsi; Jens Axboe
+> Subject: Re: [PATCH 01/16] hpsa: do readl after writel in main i/o path
+> to ensure commands don't get lost.
+> 
+> On 05/25/2011 05:20 PM, Miller, Mike (OS Dev) wrote:
+> > Tomas wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: Tomas Henzl [mailto:thenzl@redhat.com]
+> >> Sent: Monday, May 23, 2011 6:38 AM
+> >> To: Miller, Mike (OS Dev)
+> >> Cc: Valdis.Kletnieks@vt.edu; scameron@beardog.cce.hp.com; Andrew
+> Morton;
+> >> LKML; LKML-scsi; Jens Axboe
+> >> Subject: Re: [PATCH 01/16] hpsa: do readl after writel in main i/o
+> path
+> >> to ensure commands don't get lost.
+> >>
+> >> On 05/05/2011 08:35 PM, Mike Miller wrote:
+> >>
+> >>> On Wed, May 04, 2011 at 01:54:22PM -0400, Valdis.Kletnieks@vt.edu
+> >>>
+> >> wrote:
+> >>
+> >>>
+> >>>> On Wed, 04 May 2011 11:37:35 MDT, Matthew Wilcox said:
+> >>>>
+> >>>>
+> >>>>>> This probably needs a comment like
+> >>>>>> 	/* don't care - dummy read just to force write posting to
+> chipset
+> >>>>>>
+> >> */
+> >>
+> >>>>>> or similar.  I'm assuming it's just functioning as a barrier-type
+> >>>>>>
+> >> flush of some sort?
+> >>
+> >>>>>>
+> >>>>> It's a PCI write flush.  It's not clear to me why it's needed
+> here,
+> >>>>> though.  The write will eventually get to the device; why we need
+> to
+> >>>>> make the CPU wait around for it to actually get there doesn't make
+> >>>>>
+> >> sense.
+> >>
+> >>>>>
+> >>>> Exactly why I think it needs a one-liner comment. :)
+> >>>>
+> >>>>
+> >>>>
+> >>> So we're not exactly sure why it's needed either. We've had reports
+> of
+> >>> commands getting "lost" or "stuck" under some workloads. The extra
+> >>>
+> >> readl
+> >>
+> >>> works around the issue but certainly may have negative side effects.
+> >>>
+> >>> I'm not sure I understand how writel works.
+> >>>
+> >>> From linux-2.6/arch/x86/include/asm/io.h:
+> >>>
+> >>> #define build_mmio_write(name, size, type, reg, barrier) \
+> >>> static inline void name(type val, volatile void __iomem *addr) \
+> >>> { asm volatile("mov" size " %0,%1": :reg (val), \
+> >>> "m" (*(volatile type __force *)addr) barrier); }
+> >>>
+> >>> This implies (at least to me) that a barrier is part of writel. I
+> >>>
+> >> don't know
+> >>
+> >>> why a write operation needs a barrier but thats essentially what
+> we've
+> >>>
+> >> done
+> >>
+> >>> by adding the extra readl. Can someone confirm or deny that a
+> barrier
+> >>>
+> >> is
+> >>
+> >>> actually built into writel? Or used by writel? If so, does this
+> >>>
+> >> indicate
+> >>
+> >>> that barrier is broken?
+> >>>
+> >>> At this point we (the software guys) are pretty much at a loss as to
+> >>>
+> >> how to
+> >>
+> >>> continue debugging. We don't know what to trigger on for the PCIe
+> >>>
+> >> analyzer.
+> >>
+> >>> If we track outstanding commands then trigger on one that doesn't
+> >>>
+> >> complete in
+> >>
+> >>> some amount of time the problem could conceivably be far in the past
+> >>>
+> >> and
+> >>
+> >>> difficult to correlate to the data in the trace.
+> >>>
+> >>>
+> >> I'd look at the firmware part, you could check what happens for
+> example
+> >> when
+> >> the firmware gets send a command it doesn't understand.
+> >> You could also change the communication with the fw by adding a count
+> >> field, which can
+> >> be then checked for the !(next_value == previous_value + 1) and raise
+> an
+> >> event.
+> >> tomas
+> >>
+> > Tomas,
+> > We've tried something very similar to the counter idea in fw. It
+> doesn't help because the controller thinks he's done with the request.
+> We have a (pretty crude) counter in the driver but no timing mechanism.
+> We could add a timer. But what's a suitable timeout value? Is 2 seconds
+> too short, too long? Suggestions, please.
+> >
+> I know that a counter isn't a ground-breaking idea, just wanted to show
+> some interest :)
 
-to get the following updates for 2.6.40.
+:)
 
-Thanks!!
+> The command can be either eaten by the firmware or during the
+> communication in or out from the device.
+> I'd would start by the communication, by adding some fields to the
+> command to detect if a command in the row(s) isn't
+> missing - I know even that isn't easy. The same could be done
+> independently done for the other direction.
+> 
+> tomash
 
-						- Ted
+Thanks, Tomas.
 
-commits a6360dd37e..d183e11a4a:
+> 
+> > -- mikem
+> >
+> >
+> >
+> >>
+> >>
+> >>> If anyone has any thoughts, suggestions, or flames they would be
+> >>>
+> >> greatly
+> >>
+> >>> appreciated.
+> >>>
+> >>> -- mikem
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-
+> scsi"
+> >>>
+> >> in
+> >>
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>
+> >>>
+> >
 
-Aditya Kali (1):
-      ext4: reserve inodes and feature code for 'quota' feature
-
-Allison Henderson (7):
-      ext4: don't dereference null pointer when make_indexed_dir() fails
-      ext4: ext4_ext_convert_to_initialized bug found in extended FSX testing
-      ext4: add flag to ext4_has_free_blocks
-      ext4: add new function ext4_block_zero_page_range()
-      ext4: punch out extents
-      ext4: add "punch hole" flag to ext4_map_blocks()
-      ext4: enable "punch hole" functionality
-
-Amerigo Wang (1):
-      ext4: remove redundant #ifdef in super.c
-
-Amir Goldstein (6):
-      ext4: move ext4_add_groupblocks() to mballoc.c
-      ext4: implement ext4_add_groupblocks() by freeing blocks
-      ext4: synchronize ext4_mb_init_group() with buddy page lock
-      ext4: teach ext4_mb_init_cache() to skip uptodate buddy caches
-      ext4: remove alloc_semp
-      ext4: fix oops in ext4_quota_off()
-
-Curt Wohlgemuth (1):
-      ext4: don't set PageUptodate in ext4_end_bio()
-
-Darrick J. Wong (2):
-      ext4: clean up some wait_on_page_writeback calls
-      ext4: wait for writeback to complete while making pages writable
-
-Ding Dinghua (1):
-      jbd2: fix a potential leak of a journal_head on an error path
-
-Eric Gouriou (1):
-      ext4: fix unbalanced up_write() in ext4_ext_truncate() error path
-
-Eryu Guan (1):
-      jbd2: Fix comment to match the code in jbd2__journal_start()
-
-Jan Kara (7):
-      ext4: Fix fs corruption when make_indexed_dir() fails
-      ext4: fix deadlock in ext4_symlink() in ENOSPC conditions
-      jbd2: Fix forever sleeping process in do_get_write_access()
-      jbd2: fix sending of data flush on journal commit
-      jbd2: Add function jbd2_trans_will_send_data_barrier()
-      ext4: fix waiting and sending of a barrier in ext4_sync_file()
-      ext4: Convert ext4 to new truncate calling convention
-
-Johann Lombardi (1):
-      ext4: add support for multiple mount protection
-
-Kazuya Mio (1):
-      ext4: ensure f_bfree returned by ext4_statfs() is non-negative
-
-Lukas Czerner (6):
-      ext4: Use schedule_timeout_interruptible() for waiting in lazyinit thread
-      ext4: Remove unnecessary wait_event ext4_run_lazyinit_thread()
-      ext4: fix the mount option "init_itable=n" to work as expected for n=0
-      ext4: fix possible use-after-free in ext4_remove_li_request()
-      ext4: only load buddy bitmap in ext4_trim_fs() when it is needed
-      ext4: protect bb_first_free in ext4_trim_all_free() with group lock
-
-Shaohua Li (1):
-      ext4: remove dead code in ext4_has_free_blocks()
-
-Tao Ma (5):
-      ext4: use EXT4FS_DEBUG instead of EXT4_DEBUG in fsync.c
-      ext4: use s_inodes_per_block directly in __ext4_get_inode_loc
-      ext4: remove redundant check for first_not_zeroed in ext4_register_li_request
-      ext4: don't warn about mnt_count if it has been disabled
-      jbd2: Fix the wrong calculation of t_max_wait in update_t_max_wait
-
-Theodore Ts'o (10):
-      ext4: check for ext[23] file system features when mounting as ext[23]
-      ext4: ignore errors when issuing discards
-      ext4: remove obsolete mount options from ext4's documentation
-      jbd2: fix fsync() tid wraparound bug
-      ext4: set extents flag when migrating file to use extents
-      jbd2: only print the debugging information for tid wraparound once
-      ext4: remove unneeded ext4_journal_get_undo_access
-      ext4: don't show mount options in /proc/mounts if there is no journal
-      ext4: use truncate_setsize() unconditionally
-      jbd2: Add MAINTAINERS entry
-
-Vivek Haldar (2):
-      ext4: count hits/misses of extent cache and expose in sysfs
-      ext4: do not normalize block requests from fallocate()
-
-Yang Ruirui (1):
-      ext4: release page cache in ext4_mb_load_buddy error path
-
-Yongqiang Yang (6):
-      ext4: add a function merging extents right and left
-      ext4: add ext4_split_extent_at() and ext4_split_extent()
-      ext4: reimplement convert and split_unwritten
-      ext4: make ext4_split_extent() handle error correctly
-      ext4: fix ext4_ext_fiemap_cb() to handle blocks before request range correctly
-      ext4: teach ext4_ext_split to calculate extents efficiently
-
- Documentation/filesystems/ext4.txt |    4 -
- MAINTAINERS                        |   13 +-
- fs/ext4/Makefile                   |    3 +-
- fs/ext4/balloc.c                   |  146 +----
- fs/ext4/ext4.h                     |  127 +++-
- fs/ext4/ext4_jbd2.c                |   14 -
- fs/ext4/ext4_jbd2.h                |    5 -
- fs/ext4/extents.c                  | 1412 ++++++++++++++++++++++--------------
- fs/ext4/file.c                     |    1 -
- fs/ext4/fsync.c                    |   25 +-
- fs/ext4/inode.c                    |  114 +++-
- fs/ext4/mballoc.c                  |  459 +++++++-----
- fs/ext4/mballoc.h                  |    6 -
- fs/ext4/migrate.c                  |    2 +-
- fs/ext4/mmp.c                      |  351 +++++++++
- fs/ext4/move_extent.c              |    3 +-
- fs/ext4/namei.c                    |   82 ++-
- fs/ext4/page-io.c                  |   39 +-
- fs/ext4/super.c                    |  204 ++++--
- fs/ext4/xattr.c                    |    4 +-
- fs/jbd2/commit.c                   |   22 +-
- fs/jbd2/journal.c                  |   58 ++-
- fs/jbd2/transaction.c              |   22 +-
- include/linux/jbd2.h               |    8 +-
- 24 files changed, 2020 insertions(+), 1104 deletions(-)
