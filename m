@@ -1,79 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab1EZRSd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 13:18:33 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33314 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab1EZRSb convert rfc822-to-8bit (ORCPT
+	id S1757928Ab1EZRX3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 13:23:29 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42226 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab1EZRX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 13:18:31 -0400
+	Thu, 26 May 2011 13:23:28 -0400
+Date: Thu, 26 May 2011 22:53:05 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com
+Subject: [RFC Patch 5/6] slimdump: Capture slimdump for fatal MCE generated
+ crashes
+Message-ID: <20110526172305.GA18295@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20110526170722.GB23266@in.ibm.com>
 MIME-Version: 1.0
-Message-ID: <f6761efd-443c-44e0-bc40-9245a59cde63@default>
-Date: Thu, 26 May 2011 10:17:44 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, konrad.wilk@oracle.com
-Subject: [GIT PULL] mm/vfs/fs:cleancache for 2.6.40 merge window
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090205.4DDE8B49.00F4:SCFSTAT5015188,ss=1,fgs=0
+Content-Disposition: inline
+In-Reply-To: <20110526170722.GB23266@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus --
 
-Please pull
+slimdump: Capture slimdump for fatal MCE generated crashes
 
-git://git.kernel.org/pub/scm/linux/kernel/git/djm/tmem.git for-linus
+System crashes resulting from fatal hardware errors (such as MCE) don't need
+all the contents from crashing-kernel's memory. Generate a new 'slimdump' that
+retains only essential information while discarding the old memory.
 
-since git commit 61c4f2c81c61f73549928dfd9f3e8f26aa36a8cf
-Linus Torvalds (1):
+Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
+---
+ fs/proc/vmcore.c |  130 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 128 insertions(+), 2 deletions(-)
 
-	Linux 2.6.39
-
-This is version 9 of cleancache -- the only difference from version 8
-(which was previously posted to lkml) is that the config default has
-been corrected to "n".
-
-As with previous versions, this set of commits includes the Xen
-tmem commit as Jeremy Fitzhardinge requested.  The other user of
-cleancache, zcache, is in the drivers/staging tree as of 2.6.39
-and I continue to make progress on other cleancache users such
-as RAMster.
-
-Diffstat:
- Documentation/ABI/testing/sysfs-kernel-mm-cleancache |   11 +
- Documentation/vm/cleancache.txt                      |  278 ++++++++++
- arch/x86/include/asm/xen/hypercall.h                 |    7 +
- drivers/xen/Makefile                                 |    1 +
- drivers/xen/tmem.c                                   |  264 +++++++++
- fs/btrfs/extent_io.c                                 |    9 +
- fs/btrfs/super.c                                     |    2 +
- fs/buffer.c                                          |    5 +
- fs/ext3/super.c                                      |    2 +
- fs/ext4/super.c                                      |    2 +
- fs/mpage.c                                           |    7 +
- fs/ocfs2/super.c                                     |    2 +
- fs/super.c                                           |    3 +
- include/linux/cleancache.h                           |  122 ++++
- include/linux/fs.h                                   |    5 +
- include/xen/interface/xen.h                          |   22 +
- mm/Kconfig                                           |   23 +
- mm/Makefile                                          |    1 +
- mm/cleancache.c                                      |  244 ++++++++
- mm/filemap.c                                         |   11 +
- mm/truncate.c                                        |    6 +
- 21 files changed, 1027 insertions(+), 0 deletions(-)
-
-Apologies that this is late in the window... I have been on
-vacation.  Also apologies in advance for any protocol errors
-due to my newbieness.
-
-Thanks,
-Dan
-
+Index: linux-2.6.slim_kdump/fs/proc/vmcore.c
+===================================================================
+--- linux-2.6.slim_kdump.orig/fs/proc/vmcore.c
++++ linux-2.6.slim_kdump/fs/proc/vmcore.c
+@@ -483,9 +483,60 @@ static void __init set_vmcore_list_offse
+ 	}
+ }
+ 
++/*
++ * Check if the crash was due to a fatal Memory Check Exception
++ */
++static int is_mce_crash64(void)
++{
++	int i, j, len = 0, rc;
++	Elf64_Ehdr *ehdr_ptr;
++	Elf64_Phdr *phdr_ptr;
++	Elf64_Nhdr *nhdr_ptr;
++
++	ehdr_ptr = (Elf64_Ehdr *)elfcorebuf;
++	phdr_ptr = (Elf64_Phdr *)(elfcorebuf + sizeof(Elf64_Ehdr));
++
++	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
++		void *notes_section;
++		u64 offset, max_sz;
++		if (phdr_ptr->p_type != PT_NOTE)
++			continue;
++		max_sz = phdr_ptr->p_memsz;
++		offset = phdr_ptr->p_offset;
++		notes_section = kmalloc(max_sz, GFP_KERNEL);
++		if (!notes_section)
++			return -ENOMEM;
++		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
++		if (rc < 0) {
++			kfree(notes_section);
++			return rc;
++		}
++
++		for (j = 0; j < phdr_ptr->p_filesz; j += len) {
++			nhdr_ptr = notes_section + j;
++			if (nhdr_ptr->n_type == NT_MCE)
++			{
++				kfree(notes_section);
++				return 1;
++			}
++			/*
++			 * The elf-64 standard specifies 8-byte alignment while
++			 * append_elf_note function does only 4-byte roundup.
++			 * Hence this code also does a 4-byte roundup.
++			 */
++			len = sizeof(Elf64_Nhdr);
++			len = roundup(len + nhdr_ptr->n_namesz, 4);
++			len = roundup(len + nhdr_ptr->n_descsz, 4);
++		}
++		kfree(notes_section);
++	}
++	return 0;
++}
++
+ static int __init parse_crash_elf64_headers(void)
+ {
+-	int rc=0;
++	int i, rc = 0;
++	Elf64_Phdr *phdr_ptr;
+ 	Elf64_Ehdr ehdr;
+ 	u64 addr;
+ 
+@@ -523,6 +574,18 @@ static int __init parse_crash_elf64_head
+ 		return rc;
+ 	}
+ 
++	phdr_ptr = (Elf64_Phdr *)(elfcorebuf + sizeof(Elf64_Ehdr));
++	if (is_mce_crash64() > 0) {
++		/*
++		 * If crash is due to Machine Check exception, don't populate
++		 * sections other than elf-notes. Mark their sizes as zero.
++		 */
++		for (i = 0; i < ehdr.e_phnum; i++, phdr_ptr++) {
++			if (phdr_ptr->p_type != PT_NOTE)
++				phdr_ptr->p_memsz = phdr_ptr->p_filesz = 0;
++		}
++	}
++
+ 	/* Merge all PT_NOTE headers into one. */
+ 	rc = merge_note_headers_elf64(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
+ 	if (rc) {
+@@ -539,9 +602,60 @@ static int __init parse_crash_elf64_head
+ 	return 0;
+ }
+ 
++/*
++ * Check if the crash was due to a fatal Memory Check Exception
++ */
++static int is_mce_crash32(void)
++{
++	int i, j, len = 0, rc;
++	Elf32_Ehdr *ehdr_ptr;
++	Elf32_Phdr *phdr_ptr;
++	Elf32_Nhdr *nhdr_ptr;
++
++	ehdr_ptr = (Elf32_Ehdr *)elfcorebuf;
++	phdr_ptr = (Elf32_Phdr *)(elfcorebuf + sizeof(Elf32_Ehdr));
++
++	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
++		void *notes_section;
++		u64 offset, max_sz;
++		if (phdr_ptr->p_type != PT_NOTE)
++			continue;
++		max_sz = phdr_ptr->p_memsz;
++		offset = phdr_ptr->p_offset;
++		notes_section = kmalloc(max_sz, GFP_KERNEL);
++		if (!notes_section)
++			return -ENOMEM;
++		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
++		if (rc < 0) {
++			kfree(notes_section);
++			return rc;
++		}
++
++		for (j = 0; j < phdr_ptr->p_filesz; j += len) {
++			nhdr_ptr = notes_section + j;
++			if (nhdr_ptr->n_type == NT_MCE)
++			{
++				kfree(notes_section);
++				return 1;
++			}
++			/*
++			 * The elf-64 standard specifies 8-byte alignment while
++			 * append_elf_note function does only 4-byte roundup.
++			 * Hence this code also does a 4-byte roundup.
++			 */
++			len = sizeof(Elf64_Nhdr);
++			len = roundup(len + nhdr_ptr->n_namesz, 4);
++			len = roundup(len + nhdr_ptr->n_descsz, 4);
++		}
++		kfree(notes_section);
++	}
++	return 0;
++}
++
+ static int __init parse_crash_elf32_headers(void)
+ {
+-	int rc=0;
++	int i, rc = 0;
++	Elf32_Phdr *phdr_ptr;
+ 	Elf32_Ehdr ehdr;
+ 	u64 addr;
+ 
+@@ -579,6 +693,18 @@ static int __init parse_crash_elf32_head
+ 		return rc;
+ 	}
+ 
++	phdr_ptr = (Elf32_Phdr *)(elfcorebuf + sizeof(Elf32_Ehdr));
++	if (is_mce_crash32() > 0) {
++		/*
++		 * If crash is due to Machine Check exception, don't populate
++		 * sections other than elf-notes. Mark their sizes as zero.
++		 */
++		for (i = 0; i < ehdr.e_phnum; i++, phdr_ptr++) {
++			if (phdr_ptr->p_type != PT_NOTE)
++				phdr_ptr->p_memsz = phdr_ptr->p_filesz = 0;
++		}
++	}
++
+ 	/* Merge all PT_NOTE headers into one. */
+ 	rc = merge_note_headers_elf32(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
+ 	if (rc) {
