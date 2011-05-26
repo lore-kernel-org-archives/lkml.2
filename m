@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758388Ab1EZTaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:30:14 -0400
-Received: from smtp103.prem.mail.sp1.yahoo.com ([98.136.44.58]:47956 "HELO
-	smtp103.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754886Ab1EZTaM (ORCPT
+	id S1758500Ab1EZTb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:31:29 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:39501 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758438Ab1EZTb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:30:12 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: iT7ih2UVM1kfwPYSYbgjQbq3kp8AfNSSPwgAquATntebENj
- Sig62X40sXkofWJaNkXWFd1lkiN9N41xb5pZwV1QBu0kqScm8lCXY53QXx1S
- wGfpGMN0RSVIo71e6kblJPRQLtWik3okVIo4h7K23VXNi9oqj0zKt2wohqo8
- KTw_HsolhUljg6A7Ho58IBFNAqkyvY8Zp66aeEYh9gwIBpKXQKYbL.k1c7YD
- afkCgUoX.tlTEsdYs57GFCoaoRCZ2SrersDD7jjbLP8SB9eKeXaOH7uy_6g6
- wtb3ePowGimpEDcO1YTT7UfxZehnlPr9LrmO.UTjNbTWYSvoWP.gxGJA__tk
- 7wcig8bueeZvSARGGdLEvXUA4X1dErzKYRA--
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4DDEAA3F.3030008@schaufler-ca.com>
-Date: Thu, 26 May 2011 12:30:07 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Thu, 26 May 2011 15:31:28 -0400
+Date: Thu, 26 May 2011 20:31:11 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "D. Jansen" <d.g.jansen@googlemail.com>
+Cc: Oliver Neukum <oneukum@suse.de>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, tytso@mit.edu
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+Message-ID: <20110526193110.GA27504@srcf.ucam.org>
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
+ <201105231012.06928.oneukum@suse.de>
+ <20110525000003.GJ32466@dastard>
+ <201105250850.12179.oneukum@suse.de>
+ <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-Subject: Re: [PATCH v5 00/21] EVM
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com> <20110518172552.6d482c7a.akpm@linux-foundation.org> <20110526060842.GA13933@localhost.ucw.cz> <4DDE80FE.7010005@schaufler-ca.com> <1306433514.24986.26.camel@localhost.localdomain> <20110526183849.GA4563@ucw.cz>
-In-Reply-To: <20110526183849.GA4563@ucw.cz>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/26/2011 11:38 AM, Pavel Machek wrote:
-> On Thu 2011-05-26 14:11:54, David Safford wrote:
->> On Thu, 2011-05-26 at 09:34 -0700, Casey Schaufler wrote:
->>> On 5/25/2011 11:08 PM, Pavel Machek wrote:
->>>> ...
->>>> Fourthly, is it likely to find its way to the next cellphone I buy,
->>>> and will it prevent me from rooting it?
->>> That will of course depend on the phone vendor. You are certainly
->>> going to be able to vote with your checkbook (digital wallet?) but
->>> odds are pretty good that should EVM prove effective it will be
->>> ubiquitous within the next five years on embedded devices.
-> Hmm. But maybe it is more effective to vote with NAKs, now? It does
-> not seem to have any non-evil uses.
->
-> Phone vendors will play nasty tricks on us, but... why make it easy
-> for them?
+On Thu, May 26, 2011 at 09:01:49AM +0200, D. Jansen wrote:
 
-For one thing, it is probable that in the not-too-distant future
-the phone will not be yours. Many service providers are moving in
-the direction of zero-cost phones. The subscriber will pay the
-monthly charge and the phone (smart or dumb) will be included in
-the package. The difference between that and what is available
-today will be a teeny tiny paragraph in the contract that says
-that the free phone remains the property of the service provider.
-Most people will not notice the difference. Consider this a
-nasty trick if you want to. I expect that the average consumer
-will love it because they will be spending 5 dollars/euros/pounds
-a month less. Service providers will love it because the upgrade
-and control choice will be theirs.
+> Exactly. 0.5 Watts is a lot of energy on a modern system. And on some
+> systems with proper link power management in sata and pcie it will be
+> even higher (~1 Watt I think). Think not only of the work that will be
+> lost if the system crashes (unlikely), but also of the work that could
+> never be done because the battery was gone (a certainty).
 
-There is nothing evil about maintaining the owner's control over
-the device. The fact that the device is in a user's hand does
-not transfer ownership to the user.
+I don't think link power management is relevant. The hysteresis there is 
+sufficiently low that it's only going to make a difference during the 
+point where you're actually throwing data across the link.
 
-Welcome to computers in the 21st century.
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
