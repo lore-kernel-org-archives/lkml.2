@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758462Ab1EZULG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 16:11:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43708 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758389Ab1EZULE (ORCPT
+	id S1758443Ab1EZUON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 16:14:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40408 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757985Ab1EZUOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 16:11:04 -0400
-Date: Thu, 26 May 2011 13:10:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Americo Wang <xiyou.wangcong@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jarod Wilson <jwilson@redhat.com>
-Subject: Re: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about
- kdump_msg hook into crash_kexec())
-Message-Id: <20110526131028.7052a893.akpm@linux-foundation.org>
-In-Reply-To: <20110203135324.93BC.A69D9226@jp.fujitsu.com>
-References: <20110203095837.93A2.A69D9226@jp.fujitsu.com>
-	<20110203020703.GB21603@redhat.com>
-	<20110203135324.93BC.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 26 May 2011 16:14:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=THEqHZ4cJIrUpg3eHcKjaUbYqoBYh1dBmsZVnHzR0lvueTcroUWoUOXe0tlQGjG8D/
+         oE0O2clglUI9+eiuahWVqOIUyKIPcD0fpJr+UYdtuZfGhwvElYFq/0EPWCKcgNapEtPQ
+         eIo2fDYWsDzIFphAQdP/GJrI2VeTAlCFV7Kfw=
+Message-ID: <4DDEB484.8030801@gmail.com>
+Date: Thu, 26 May 2011 13:13:56 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: Re: no sound in current -git
+References: <20110526013423.GA25226@redhat.com>	<4DDDD47C.5030504@gmail.com>	<20110526043337.GA11224@redhat.com>	<20110526051109.GA11870@redhat.com>	<4DDDF0D0.6090805@gmail.com> <BANLkTik5QWiW0Wm_oygnVSJNQXpZpdRB3w@mail.gmail.com>
+In-Reply-To: <BANLkTik5QWiW0Wm_oygnVSJNQXpZpdRB3w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  3 Feb 2011 13:53:01 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On 05/26/2011 11:38 AM, Hugh Dickins wrote:
+> On Wed, May 25, 2011 at 11:18 PM, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>> On 05/25/2011 10:11 PM, Dave Jones wrote:
+>>>
+>>> On Thu, May 26, 2011 at 12:33:38AM -0400, Dave Jones wrote:
+>>>
+>>>   >     >    sound over here is out as well on a macbook pro. seems gnome shell
+>>>   >     >    didn't like whats being merged with the current Mainline i.g. no
+>>> sound
+>>>   >     >    bluetooth applet missing. will bisect when I get a chance.
+>>>   >
+>>>   >    Maybe it was this that just got merged..  (building now)
+>>>   >
+>>>   >    commit 4db70f73e56961b9bcdfd0c36c62847a18b7dbb5
+>>>   >    Author: Eric Paris<eparis@redhat.com>
+>>>   >    Date:   Wed May 25 19:49:18 2011 -0700
+>>>   >
+>>>   >        tmpfs: fix XATTR N overriding POSIX_ACL Y
+>>>
+>>> Yep. That fixes sound for me.
+>>> Sorry for the false alarm Takashi!
+>>>
+>>>         Dave
+>>>
+>>>
+>>
+>> hmm.. pulled and noticed the above with git log, then did git revert for the
+>> above, built, but still no sound. will do a bisect in the morning or later
+>> on.
+>
+> That commit was the fix, not the origin of the bug, so reverting it
+> was not the right thing to do!
+>
+> But it's only a fix if your .config has not yet been messed up (with
+> CONFIG_TMPFS_XATTR and CONFIG_TMPFS_POSIX_ACL unset, though used
+> somewhere for sound).
+>
+> So, just delete the CONFIG_TMPFS_XATTR and CONFIG_TMPFS_POSIX_ACL
+> lines from your .config (perhaps you don't even get an ACL line if the
+> XATTR is not set, I forget) and run "make oldconfig", this time
+> choosing Y.
+>
+> If this was your sound problem too, then the rebuilt kernel should fix it.
+>
+> Apologies for inflicting this on people: Linus spotted it and got it
+> fixed up a.s.a.p so it only would only affect those who pulled a tree
+> yesterday.
+>
+> Hugh
+>
 
-> > > I wrote why this is no good idea by another mail. Please see it.
-> > > Anyway you have a right to don't use this feature.
-> > > 
-> > 
-> > But you have not explained that why do you need to hook into crash_kexec()
-> > and you have also not explained why do you need to send out kdump_msg()
-> > notification if kdump is configured.
-> > 
-> > Some detailed explanation here would help.
-> 
-> Hi,
-> 
-> I send it you now :)
-> 
+probably why my bisect wasn't going anywhere..(luckily not to much time 
+spent doing so) will pull when I get a chance. Thanks for letting us 
+know, and Thanks to Linus for the ASAP change.
 
-What happened with this?  kexec-remove-kmsg_dump_kexec.patch has two acks
-and one unexplained nack :(
+Justin P. Mattock
