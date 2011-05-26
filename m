@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933047Ab1EZBAv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 21:00:51 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46951 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932960Ab1EZBAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 21:00:47 -0400
-Date: Thu, 26 May 2011 11:00:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: build warning in Linus' tree
-Message-Id: <20110526110035.fe9bac87.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__26_May_2011_11_00_35_+1000_F0xZmw49Usc2XcAN"
+	id S1757414Ab1EZBBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 May 2011 21:01:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56469 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933000Ab1EZBBh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 May 2011 21:01:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1306370123.1641.76.camel@mulgrave.site>
+References: <alpine.DEB.2.02.1105232329040.1910@natty-nar> <4DDB8BF6.2000304@fusionio.com>
+ <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty> <4DDCB1C8.7040708@fusionio.com>
+ <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty> <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
+ <4DDD5240.2060308@fusionio.com> <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>
+ <4DDD55D6.1080909@fusionio.com> <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty>
+ <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com> <alpine.DEB.2.02.1105251613500.8972@ubuntu-natty>
+ <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com> <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>
+ <1306356735.1641.61.camel@mulgrave.site> <BANLkTimuomu=_JuMr7SWrMVvboMX4BX0fA@mail.gmail.com>
+ <1306370123.1641.76.camel@mulgrave.site>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 25 May 2011 18:01:14 -0700
+Message-ID: <BANLkTi=YW91=mj6KVUia6ykgEJ8DNEmbUA@mail.gmail.com>
+Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
+ __elv_add_request OOPS]
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Parag Warudkar <parag.lkml@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__26_May_2011_11_00_35_+1000_F0xZmw49Usc2XcAN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 25, 2011 at 5:35 PM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+>
+> Jens, can you look at this, please ... would you prefer a separate DEAD
+> test instead?  Incidentally, this is in addition to the other DEAD test
+> you still haven't applied ...
 
-Hi all,
+Ugh.
 
-With Linus' tree, today's linux-next build (powerpc ppc64_defconfig)
-produced this warning:
+Can you please just always set STOPPED at the same time you set DEAD?
 
-mm/slub.c: In function '__slab_alloc':
-mm/slub.c:1834: warning: label 'unlock_out' defined but not used
-
-Introduced by commit a71ae47a2cbf ("slub: Fix double bit unlock in debug
-mode").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__26_May_2011_11_00_35_+1000_F0xZmw49Usc2XcAN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN3aYzAAoJEDMEi1NhKgbsqbcH/jX8KntNE6cmrh5xieKLosM1
-JxAnJD691fRtLTmhcrj2EUZa02M2A8nXd2z+tmlqDw4ln/2z+gP8BQs6uqtIApu6
-pr08zDQhpq9f0noG0nCZ5quhI4HC7tQa/IHr36CSEB/xy+MMWFbuGpc3TIVJccS0
-pai0ypSqOPZdCf3WZC27/RBj/NUYDpNIQpLe3/8LcrXCzszDoSe//PancIzHD538
-jwXs6JbArFxdM8846jHzAQOTBc1mqfKN9SCH4aowwS8CrAJdlajyU3LGtgt2H4tu
-LL6Jms+L/SUvKnyLwAaAXw1Y7K2NCmcTucvB2LHHQLjfKSJTEqm1ywyxiozln2M=
-=L4r8
------END PGP SIGNATURE-----
-
---Signature=_Thu__26_May_2011_11_00_35_+1000_F0xZmw49Usc2XcAN--
+                        Linus
