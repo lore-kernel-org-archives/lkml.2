@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab1EZW3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 18:29:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45856 "EHLO mga02.intel.com"
+	id S1758614Ab1EZWdj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 18:33:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38891 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758599Ab1EZW3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 18:29:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,276,1304319600"; 
-   d="scan'208";a="5575812"
-Message-ID: <4DDED44E.9070402@linux.intel.com>
-Date: Thu, 26 May 2011 15:29:34 -0700
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1754820Ab1EZWdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 18:33:38 -0400
+Message-ID: <4DDED4ED.7020806@zytor.com>
+Date: Thu, 26 May 2011 15:32:13 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Nicolas Pitre <nico@fluxnic.net>, Will Deacon <will.deacon@arm.com>,
-        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, sam@ravnborg.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: Do not allow unaligned accesses when	CONFIG_ALIGNMENT_TRAP
-References: <1306229953.19557.14.camel@e102109-lin.cambridge.arm.com> <yw1xipt0p4i9.fsf@unicorn.mansr.com> <BANLkTi=xLE9gP5YOdr9dR0DfsY1Ymzxu+w@mail.gmail.com> <20110524171331.GA2941@arm.com> <20110525111405.GA12010@e102109-lin.cambridge.arm.com> <20110525124348.GA2340@arm.com> <yw1xaaeanbxe.fsf@unicorn.mansr.com> <BANLkTim2TOZgB-3Vkv5RcK572Qr07s3=CA@mail.gmail.com> <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com> <alpine.LFD.2.00.1105261650330.3207@xanadu.home> <20110526215101.GL24876@n2100.arm.linux.org.uk>
-In-Reply-To: <20110526215101.GL24876@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Dan Rosenberg <drosenberg@vsecurity.com>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, davej@redhat.com,
+        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
+        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+References: <1306269105.21443.20.camel@dan> <201105270018.36835.rjw@sisk.pl>
+In-Reply-To: <201105270018.36835.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/26/2011 03:18 PM, Rafael J. Wysocki wrote:
+> 
+> Well, as far as I can tell, this feature is going to break hibernation on
+> both x86_32 and x86_64 at the moment, unless you can guarantee that the
+> randomized kernel location will be the same for both the boot and the target
+> kernels.
+> 
 
-> Catalin said in his mail "I haven't tried with -mno-unaligned-access, I
-> suspect the variables on the stack would be aligned.".  So I don't think
-> we know enough to say whether -mno-unaligned-access avoids the stack
-> packing.
+Obviously we can't and we don't.  I'm a bit surprised at that
+constraint... how can that constraint not break things like kernels of
+slightly different size?
 
-It won't, the arm gcc code just checks flag_conserve_stack.
-IMHO it's just a gcc bug. You should report it to 
-http://gcc.gnu.org/bugzilla
-
-As a temporary workaround you can disable it in the kernel too, but as soon
-as the compiler it's fixed I would recommend considering to reenable it.
-
--Andi
-
+	-hpa
