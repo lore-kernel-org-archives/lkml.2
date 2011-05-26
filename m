@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab1EZCRl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 May 2011 22:17:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51243 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab1EZCRj (ORCPT
+	id S1752247Ab1EZGrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 02:47:20 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:34886 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750886Ab1EZGrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 May 2011 22:17:39 -0400
-Date: Wed, 25 May 2011 19:17:06 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        driverdevel <devel@driverdev.osuosl.org>, gregkh <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>
-Subject: [PATCH] staging: fix olpc_dcon build, needs BACKLIGHT_CLASS_DEVICE
-Message-Id: <20110525191706.a6b0f357.randy.dunlap@oracle.com>
-In-Reply-To: <20110525135844.2a25f858.sfr@canb.auug.org.au>
-References: <20110525135844.2a25f858.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DDDB82E.0113:SCFMA922111,ss=1,fgs=0
+	Thu, 26 May 2011 02:47:18 -0400
+X-Sasl-enc: XmN2acTrQHSqrwXP8Fh+JmG5KbF9tdrynaaML/EpSqcp 1306392436
+Date: Wed, 25 May 2011 19:18:09 -0700
+From: Greg KH <greg@kroah.com>
+To: yxlraid@gmail.com
+Cc: James.Bottomley@suse.de, jslaby@suse.cz, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yuxiangl@marvell.com, jfeng@marvell.com
+Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
+ coalescing to device 	attributes in sysfs
+Message-ID: <20110526021809.GA22496@kroah.com>
+References: <mvsas-intr-coal>
+ <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, May 24, 2011 at 10:31:47PM +0800, yxlraid@gmail.com wrote:
+> From: Xiangliang Yu <yuxiangl@marvell.com>
+> 
+> -- Add support for driver version and interrupt coalescing device attributes.
 
-Fix olpc_dcon.c build by selecting the needed kconfig symbol
-BACKLIGHT_CLASS_DEVICE.
+When you add a sysfs file, you must also add a Documentation/ABI file as
+well.  Please do that here.
 
-olpc_dcon.c:(.text+0x11588b): undefined reference to `backlight_device_register'
+thanks,
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Andres Salomon <dilinger@queued.net>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: Jon Nettleton <jon.nettleton@gmail.com>
----
- drivers/staging/olpc_dcon/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-next-20110525.orig/drivers/staging/olpc_dcon/Kconfig
-+++ linux-next-20110525/drivers/staging/olpc_dcon/Kconfig
-@@ -2,6 +2,7 @@ config FB_OLPC_DCON
- 	tristate "One Laptop Per Child Display CONtroller support"
- 	depends on OLPC && FB
- 	select I2C
-+	select BACKLIGHT_CLASS_DEVICE
- 	---help---
- 	  Add support for the OLPC XO DCON controller.  This controller is
- 	  only available on OLPC platforms.   Unless you have one of these
+greg k-h
