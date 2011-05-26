@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283Ab1EZLdi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 07:33:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45405 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856Ab1EZLdh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 07:33:37 -0400
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
- locks up on ARM
-From: Peter Zijlstra <peterz@infradead.org>
-To: Marc Zyngier <Marc.Zyngier@arm.com>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Frank Rowand <frank.rowand@am.sony.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
-References: <1306260792.27474.133.camel@e102391-lin.cambridge.arm.com>
-	 <1306272750.2497.79.camel@laptop> <1306343335.21578.65.camel@twins>
-	 <1306358128.21578.107.camel@twins>
-	 <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
-	 <1306405979.1200.63.camel@twins>
-	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 26 May 2011 13:32:55 +0200
-Message-ID: <1306409575.1200.71.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1757325Ab1EZLhy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 07:37:54 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57273 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757084Ab1EZLhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 07:37:53 -0400
+From: GuanXuetao <gxt@mprc.pku.edu.cn>
+To: arnd@arndb.de
+Cc: GuanXuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, greg@kroah.com
+Subject: [PATCH 0/6] unicore32 subsystem: 6 patches for 2.6.39
+Date: Thu, 26 May 2011 11:36:52 +0000
+Message-Id: <cover.1306408804.git.gxt@mprc.pku.edu.cn>
+X-Mailer: git-send-email 1.7.5.2
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 26 May 2011 11:37:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 12:02 +0100, Marc Zyngier wrote:
+Two patches for PKUnity v3 SoC drivers:
+	add mac driver, and move rtc driver to appropriate place
+Two patches for new 2.6.39 updates:
+	using generic-y and modify PERCPU macro
+Other two patches are small fixes.
 
-> The box is currently building kernels in a loop (using -j64...). So far,
-> so good. Oh, and that fixed the load-average thing as well.
+---
+Guan Xuetao (6):
+  unicore32: move rtc-puv3.c to drivers/rtc directory
+  unicore32: add pkunity-v3 mac/net driver (umal)
+  unicore32: change zImage physical address, though it's PIC codes
+  unicore32: add KBUILD_DEFCONFIG with unicore32_defconfig (old
+    debug_defconfig)
+  unicore32: change PERCPU to PERCPU_SECTION
+  unicore32: using generic-y format for one line asm-generic files
 
-OK, great.
+ MAINTAINERS                                |    2 +
+ arch/unicore32/Kconfig                     |    4 -
+ arch/unicore32/Makefile                    |   38 +-
+ arch/unicore32/boot/compressed/Makefile    |    2 +-
+ arch/unicore32/configs/debug_defconfig     |  215 ---
+ arch/unicore32/configs/unicore32_defconfig |  215 +++
+ arch/unicore32/include/asm/Kbuild          |   59 +
+ arch/unicore32/kernel/Makefile             |    1 -
+ arch/unicore32/kernel/rtc.c                |  371 ------
+ arch/unicore32/kernel/vmlinux.lds.S        |    2 +-
+ drivers/net/Kconfig                        |    5 +
+ drivers/net/Makefile                       |    1 +
+ drivers/net/mac-puv3.c                     | 1942 ++++++++++++++++++++++++++++
+ drivers/rtc/Kconfig                        |    9 +
+ drivers/rtc/Makefile                       |    1 +
+ drivers/rtc/rtc-puv3.c                     |  359 +++++
+ 16 files changed, 2597 insertions(+), 629 deletions(-)
+ delete mode 100644 arch/unicore32/configs/debug_defconfig
+ create mode 100644 arch/unicore32/configs/unicore32_defconfig
+ delete mode 100644 arch/unicore32/kernel/rtc.c
+ create mode 100644 drivers/net/mac-puv3.c
+ create mode 100644 drivers/rtc/rtc-puv3.c
 
-> Oh wait (my turn...):
-> INFO: task gcc:10030 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> 
-> One of my ssh sessions is locking up periodically, and it generally
-> feels a bit sluggish.
+-- 
+1.7.5.2
 
-The good news is that I can indeed confirm that, I somehow failed to
-notice that last night. I simply put the machine to build kernels and
-walked off, only to come back 30 minutes or so later to see it was still
-happily chugging along.
-
-Further good news is that by disabling 
-__ARCH_WANT_INTERRUPTS_ON_CTXSW again it goes away, so it must be
-something funny with the relatively little code under that directive.
-
-The bad news is of course that I've got a little more head-scratching to
-do, will keep you informed.
