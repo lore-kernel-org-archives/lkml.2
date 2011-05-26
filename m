@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758500Ab1EZTb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 15:31:29 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:39501 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758438Ab1EZTb2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 15:31:28 -0400
-Date: Thu, 26 May 2011 20:31:11 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "D. Jansen" <d.g.jansen@googlemail.com>
-Cc: Oliver Neukum <oneukum@suse.de>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, tytso@mit.edu
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-Message-ID: <20110526193110.GA27504@srcf.ucam.org>
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
- <201105231012.06928.oneukum@suse.de>
- <20110525000003.GJ32466@dastard>
- <201105250850.12179.oneukum@suse.de>
- <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1758517Ab1EZTcx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 15:32:53 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:41218 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752321Ab1EZTcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 15:32:51 -0400
+Subject: [PATCH V6 1/4 net-next] sock.h: Add a new sock zero-copy flag
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 12:32:47 -0700
+Message-ID: <1306438367.5180.29.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 09:01:49AM +0200, D. Jansen wrote:
+Signed-off-by: Shirley Ma <xma@us.ibm.com>
+---
 
-> Exactly. 0.5 Watts is a lot of energy on a modern system. And on some
-> systems with proper link power management in sata and pcie it will be
-> even higher (~1 Watt I think). Think not only of the work that will be
-> lost if the system crashes (unlikely), but also of the work that could
-> never be done because the battery was gone (a certainty).
+ include/net/sock.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-I don't think link power management is relevant. The hysteresis there is 
-sufficiently low that it's only going to make a difference during the 
-point where you're actually throwing data across the link.
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 01810a3..ab09097 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -562,6 +562,7 @@ enum sock_flags {
+ 	SOCK_TIMESTAMPING_SYS_HARDWARE, /* %SOF_TIMESTAMPING_SYS_HARDWARE */
+ 	SOCK_FASYNC, /* fasync() active */
+ 	SOCK_RXQ_OVFL,
++	SOCK_ZEROCOPY, /* buffers from userspace */
+ };
+ 
+ static inline void sock_copy_flags(struct sock *nsk, struct sock *osk)
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+
