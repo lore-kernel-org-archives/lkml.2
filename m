@@ -1,176 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758794Ab1E0JT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 05:19:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:50080 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209Ab1E0JTx (ORCPT
+	id S1758799Ab1E0Jqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 05:46:37 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56231
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752600Ab1E0Jqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 05:19:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: GuanXuetao <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH 2/6] unicore32: add pkunity-v3 mac/net driver (umal)
-Date: Fri, 27 May 2011 11:19:41 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, greg@kroah.com,
-        netdev@vger.kernel.org
-References: <cover.1306408804.git.gxt@mprc.pku.edu.cn> <556924396ee34f4af94a2f03767973f1cec35e22.1306408804.git.gxt@mprc.pku.edu.cn>
-In-Reply-To: <556924396ee34f4af94a2f03767973f1cec35e22.1306408804.git.gxt@mprc.pku.edu.cn>
+	Fri, 27 May 2011 05:46:35 -0400
+X-Greylist: delayed 7968 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 May 2011 05:46:35 EDT
+Date: Fri, 27 May 2011 05:25:22 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Anton Salikhmetov <alexo@tuxera.com>, linux-kernel@vger.kernel.org
+Subject: Re: hfsplus mount regression in 2.6.38
+Message-ID: <20110527092522.GA11600@infradead.org>
+References: <20110525142521.GA32511@thinkpad-t410>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105271119.41323.arnd@arndb.de>
-X-Provags-ID: V02:K0:ilKHlnvaaq0acNS76bteAB2uX/1+nfMI1AVDycf4ztf
- F2oMmITZFtU6A4+Js8JqD/0Q2GiLMmw3tFLzXFn1bN+ofILGgA
- v57S5ZjgHQx1d5dZc+YyJdOa/DppqmEEMwPiKQxfGKlbfj1wSt
- MvKvWuio2hyl8hjTmVpgun3OY94gi4uOBP0VBVjANZsC1X9PGj
- 3tBtQcoAaeJ1uU7tNPwkA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110525142521.GA32511@thinkpad-t410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 26 May 2011, GuanXuetao wrote:
-> From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+On Wed, May 25, 2011 at 09:25:21AM -0500, Seth Forshee wrote:
+> Reverting commits 52399b1 (hfsplus: use raw bio access for the volume
+> headers) and 358f26d5 (hfsplus: use raw bio access for partition tables)
+> fixes the problems. It appears the problems are due to hfsplus
+> submitting 512 byte bios to a block device whose sector size is larger
+> than 512 byts (2 KB in the log above), and the block driver is quite
+> reasonably rejecting any requests without proper sector alignment.
 > 
-> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> ---
->  MAINTAINERS                            |    1 +
->  arch/unicore32/configs/debug_defconfig |    2 +-
->  drivers/net/Kconfig                    |    5 +
->  drivers/net/Makefile                   |    1 +
->  drivers/net/mac-puv3.c                 | 1942 ++++++++++++++++++++++++++++++++
->  5 files changed, 1950 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/net/mac-puv3.c
+> How would you suggest fixing this?  Most file systems are using
+> sb_bread() for this sort of thing, but since the offending patches are
+> intended to stop using buffer_heads I'm assuming that's not an option.
 
-I also have a few comments after looking through the driver.
+Basically all hardcoded uses of HFSPLUS_SECTOR_SIZE need to be replaced
+with a use of bdev_logical_block_size, or a per-sb variable derived from
+it, and the addressing needs to be accomodated to fit it.  I'd need to
+look into a bit more detail in what form the sectors we pass into it
+are in - we might have to convert them from 512byte to large units,
+or they might already be in it.  If they happen to be in 512 byte units
+we might have to do read-modify write cycles.
 
-> +
-> +/**********************************************************************
-> + *  Globals
-> + ********************************************************************* */
-
-Regular commenting style would be
-
-/*
- * Globals
- */
-
-> +/**********************************************************************
-> + *  Prototypes
-> + ********************************************************************* */
-> +static int umal_mii_reset(struct mii_bus *bus);
-> +static int umal_mii_read(struct mii_bus *bus, int phyaddr, int regidx);
-> +static int umal_mii_write(struct mii_bus *bus, int phyaddr, int regidx,
-> +		u16 val);
-> +static int umal_mii_probe(struct net_device *dev);
-> +
-> +static void umaldma_initctx(struct umaldma *d, struct umal_softc *s,
-> +		int rxtx, int maxdescr);
-> +static void umaldma_uninitctx(struct umaldma *d);
-> +static void umaldma_channel_start(struct umaldma *d, int rxtx);
-> +static void umaldma_channel_stop(struct umaldma *d);
-> +static int umaldma_add_rcvbuffer(struct umal_softc *sc, struct umaldma *d,
-> +		struct sk_buff *m);
-> +static int umaldma_add_txbuffer(struct umaldma *d, struct sk_buff *m);
-> +static void umaldma_emptyring(struct umaldma *d);
-> +static void umaldma_fillring(struct umal_softc *sc, struct umaldma *d);
-> +static int umaldma_rx_process(struct umal_softc *sc, struct umaldma *d,
-> +		int work_to_do, int poll);
-> +static void umaldma_tx_process(struct umal_softc *sc, struct umaldma *d,
-> +		int poll);
-> +
-> +static int umal_initctx(struct umal_softc *s);
-> +static void umal_uninitctx(struct umal_softc *s);
-> +static void umal_channel_start(struct umal_softc *s);
-> +static void umal_channel_stop(struct umal_softc *s);
-> +static enum umal_state umal_set_channel_state(struct umal_softc *,
-> +		enum umal_state);
-> +
-> +static int umal_init(struct platform_device *pldev, long long base);
-> +static int umal_open(struct net_device *dev);
-> +static int umal_close(struct net_device *dev);
-> +static int umal_mii_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
-> +static irqreturn_t umal_intr(int irq, void *dev_instance);
-> +static void umal_clr_intr(struct net_device *dev);
-> +static int umal_start_tx(struct sk_buff *skb, struct net_device *dev);
-> +static void umal_tx_timeout(struct net_device *dev);
-> +static void umal_set_rx_mode(struct net_device *dev);
-> +static void umal_promiscuous_mode(struct umal_softc *sc, int onoff);
-> +static void umal_setmulti(struct umal_softc *sc);
-> +static int umal_set_speed(struct umal_softc *s, enum umal_speed speed);
-> +static int umal_set_duplex(struct umal_softc *s, enum umal_duplex duplex,
-> +		enum umal_fc fc);
-> +static int umal_change_mtu(struct net_device *_dev, int new_mtu);
-> +static void umal_miipoll(struct net_device *dev);
-
-Best avoid all these prototypes. Instead, reorder the functions in the
-driver so you don't need them. That is the order in which reviewers expect
-them.
-
-> +/**********************************************************************
-> + *  UMAL_MII_RESET(bus)
-> + *
-> + *  Reset MII bus.
-> + *
-> + *  Input parameters:
-> + *	   bus     - MDIO bus handle
-> + *
-> + *  Return value:
-> + *	   0 if ok
-> + ********************************************************************* */
-
-For extended function documentation, use the kerneldoc style, e.g.
-
-/**
- * umal_mii_reset - reset MII bus
- *
- * @bus: MDIO bus handle
- *
- * Returns 0
- */
-
-See also Documentation/kernel-doc-nano-HOWTO.txt
-
-> +/**********************************************************************
-> + *  UMALDMA_RX_PROCESS(sc,d,work_to_do,poll)
-> + *
-> + *  Process "completed" receive buffers on the specified DMA channel.
-> + *
-> + *  Input parameters:
-> + *            sc - softc structure
-> + *	       d - DMA channel context
-> + *    work_to_do - no. of packets to process before enabling interrupt
-> + *                 again (for NAPI)
-> + *          poll - 1: using polling (for NAPI)
-> + *
-> + *  Return value:
-> + *	   nothing
-> + ********************************************************************* */
-> +static int umaldma_rx_process(struct umal_softc *sc, struct umaldma *d,
-> +		int work_to_do, int poll)
-
-It seems that you tried to convert the driver to NAPI but did not succeed,
-as this function is only called from the interrupt handler directly.
-
-There is usually a significant performance win from using NAPI, so you
-should better try again. If you had problems doing that, please ask
-on netdev.
-
-> +
-> +#ifdef CONFIG_CMDLINE_FORCE
-> +	eaddr[0] = 0x00;
-> +	eaddr[1] = 0x25;
-> +	eaddr[2] = 0x9b;
-> +	eaddr[3] = 0xff;
-> +	eaddr[4] = 0x00;
-> +	eaddr[5] = 0x00;
-> +#endif
-> +
-> +	for (i = 0; i < 6; i++)
-> +		dev->dev_addr[i] = eaddr[i];
-
-You can use random_ether_addr() to generate a working unique MAC address
-if the hardware does not provide one.
-
-	Arnd
+What large sector size device do you have, a CDROM?
