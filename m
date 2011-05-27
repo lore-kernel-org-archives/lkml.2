@@ -1,63 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab1E0JRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 05:17:49 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:53854 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab1E0JRs convert rfc822-to-8bit (ORCPT
+	id S1758794Ab1E0JT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 05:19:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:50080 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab1E0JTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 05:17:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=e279n1pfK0Q5Yt7GgfKDXtIbAmBdfBfUShAmZRHHgMx9UtarJfh3OgdVPcU/unEYfg
-         rFdNQgCLMX5X0+be5jjqXX4wqtTumu4IZ/1H313v7r+4I4etMmpeM/URyr44BKgbz3mV
-         8Ld/hoCgEUtopxkfi+6UC5xbV/7HhgI9arcNM=
+	Fri, 27 May 2011 05:19:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: GuanXuetao <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH 2/6] unicore32: add pkunity-v3 mac/net driver (umal)
+Date: Fri, 27 May 2011 11:19:41 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, greg@kroah.com,
+        netdev@vger.kernel.org
+References: <cover.1306408804.git.gxt@mprc.pku.edu.cn> <556924396ee34f4af94a2f03767973f1cec35e22.1306408804.git.gxt@mprc.pku.edu.cn>
+In-Reply-To: <556924396ee34f4af94a2f03767973f1cec35e22.1306408804.git.gxt@mprc.pku.edu.cn>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin1QYAx7as41t78-n0giLSBWoToVA@mail.gmail.com>
-References: <BANLkTin1QYAx7as41t78-n0giLSBWoToVA@mail.gmail.com>
-Date: Fri, 27 May 2011 17:17:47 +0800
-Message-ID: <BANLkTi=N8cm_9OKk8VCPVxPPn+Ejuhzq6w@mail.gmail.com>
-Subject: Re: [PATCH] sched: remove noop in pre_schedule_rt()
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105271119.41323.arnd@arndb.de>
+X-Provags-ID: V02:K0:ilKHlnvaaq0acNS76bteAB2uX/1+nfMI1AVDycf4ztf
+ F2oMmITZFtU6A4+Js8JqD/0Q2GiLMmw3tFLzXFn1bN+ofILGgA
+ v57S5ZjgHQx1d5dZc+YyJdOa/DppqmEEMwPiKQxfGKlbfj1wSt
+ MvKvWuio2hyl8hjTmVpgun3OY94gi4uOBP0VBVjANZsC1X9PGj
+ 3tBtQcoAaeJ1uU7tNPwkA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 9:08 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> Checking task to be RT is removed since only RT task is served here.
->
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-
-Actually this patch has been raised for two times:
-https://lkml.org/lkml/2010/12/13/622
-http://lkml.org/lkml/2010/2/9/139
-
-Thanks,
-Yong
-
+On Thursday 26 May 2011, GuanXuetao wrote:
+> From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> 
+> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 > ---
->
-> --- tip-git/kernel/sched_rt.c   Sun May 22 20:12:01 2011
-> +++ sched_rt.c  Thu May 26 21:11:19 2011
-> @@ -1516,7 +1516,7 @@ skip:
->  static void pre_schedule_rt(struct rq *rq, struct task_struct *prev)
->  {
->        /* Try to pull RT tasks here if we lower this rq's prio */
-> -       if (unlikely(rt_task(prev)) && rq->rt.highest_prio.curr > prev->prio)
-> +       if (rq->rt.highest_prio.curr > prev->prio)
->                pull_rt_task(rq);
->  }
->
+>  MAINTAINERS                            |    1 +
+>  arch/unicore32/configs/debug_defconfig |    2 +-
+>  drivers/net/Kconfig                    |    5 +
+>  drivers/net/Makefile                   |    1 +
+>  drivers/net/mac-puv3.c                 | 1942 ++++++++++++++++++++++++++++++++
+>  5 files changed, 1950 insertions(+), 1 deletions(-)
+>  create mode 100644 drivers/net/mac-puv3.c
 
+I also have a few comments after looking through the driver.
 
+> +
+> +/**********************************************************************
+> + *  Globals
+> + ********************************************************************* */
 
--- 
-Only stand for myself
+Regular commenting style would be
+
+/*
+ * Globals
+ */
+
+> +/**********************************************************************
+> + *  Prototypes
+> + ********************************************************************* */
+> +static int umal_mii_reset(struct mii_bus *bus);
+> +static int umal_mii_read(struct mii_bus *bus, int phyaddr, int regidx);
+> +static int umal_mii_write(struct mii_bus *bus, int phyaddr, int regidx,
+> +		u16 val);
+> +static int umal_mii_probe(struct net_device *dev);
+> +
+> +static void umaldma_initctx(struct umaldma *d, struct umal_softc *s,
+> +		int rxtx, int maxdescr);
+> +static void umaldma_uninitctx(struct umaldma *d);
+> +static void umaldma_channel_start(struct umaldma *d, int rxtx);
+> +static void umaldma_channel_stop(struct umaldma *d);
+> +static int umaldma_add_rcvbuffer(struct umal_softc *sc, struct umaldma *d,
+> +		struct sk_buff *m);
+> +static int umaldma_add_txbuffer(struct umaldma *d, struct sk_buff *m);
+> +static void umaldma_emptyring(struct umaldma *d);
+> +static void umaldma_fillring(struct umal_softc *sc, struct umaldma *d);
+> +static int umaldma_rx_process(struct umal_softc *sc, struct umaldma *d,
+> +		int work_to_do, int poll);
+> +static void umaldma_tx_process(struct umal_softc *sc, struct umaldma *d,
+> +		int poll);
+> +
+> +static int umal_initctx(struct umal_softc *s);
+> +static void umal_uninitctx(struct umal_softc *s);
+> +static void umal_channel_start(struct umal_softc *s);
+> +static void umal_channel_stop(struct umal_softc *s);
+> +static enum umal_state umal_set_channel_state(struct umal_softc *,
+> +		enum umal_state);
+> +
+> +static int umal_init(struct platform_device *pldev, long long base);
+> +static int umal_open(struct net_device *dev);
+> +static int umal_close(struct net_device *dev);
+> +static int umal_mii_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
+> +static irqreturn_t umal_intr(int irq, void *dev_instance);
+> +static void umal_clr_intr(struct net_device *dev);
+> +static int umal_start_tx(struct sk_buff *skb, struct net_device *dev);
+> +static void umal_tx_timeout(struct net_device *dev);
+> +static void umal_set_rx_mode(struct net_device *dev);
+> +static void umal_promiscuous_mode(struct umal_softc *sc, int onoff);
+> +static void umal_setmulti(struct umal_softc *sc);
+> +static int umal_set_speed(struct umal_softc *s, enum umal_speed speed);
+> +static int umal_set_duplex(struct umal_softc *s, enum umal_duplex duplex,
+> +		enum umal_fc fc);
+> +static int umal_change_mtu(struct net_device *_dev, int new_mtu);
+> +static void umal_miipoll(struct net_device *dev);
+
+Best avoid all these prototypes. Instead, reorder the functions in the
+driver so you don't need them. That is the order in which reviewers expect
+them.
+
+> +/**********************************************************************
+> + *  UMAL_MII_RESET(bus)
+> + *
+> + *  Reset MII bus.
+> + *
+> + *  Input parameters:
+> + *	   bus     - MDIO bus handle
+> + *
+> + *  Return value:
+> + *	   0 if ok
+> + ********************************************************************* */
+
+For extended function documentation, use the kerneldoc style, e.g.
+
+/**
+ * umal_mii_reset - reset MII bus
+ *
+ * @bus: MDIO bus handle
+ *
+ * Returns 0
+ */
+
+See also Documentation/kernel-doc-nano-HOWTO.txt
+
+> +/**********************************************************************
+> + *  UMALDMA_RX_PROCESS(sc,d,work_to_do,poll)
+> + *
+> + *  Process "completed" receive buffers on the specified DMA channel.
+> + *
+> + *  Input parameters:
+> + *            sc - softc structure
+> + *	       d - DMA channel context
+> + *    work_to_do - no. of packets to process before enabling interrupt
+> + *                 again (for NAPI)
+> + *          poll - 1: using polling (for NAPI)
+> + *
+> + *  Return value:
+> + *	   nothing
+> + ********************************************************************* */
+> +static int umaldma_rx_process(struct umal_softc *sc, struct umaldma *d,
+> +		int work_to_do, int poll)
+
+It seems that you tried to convert the driver to NAPI but did not succeed,
+as this function is only called from the interrupt handler directly.
+
+There is usually a significant performance win from using NAPI, so you
+should better try again. If you had problems doing that, please ask
+on netdev.
+
+> +
+> +#ifdef CONFIG_CMDLINE_FORCE
+> +	eaddr[0] = 0x00;
+> +	eaddr[1] = 0x25;
+> +	eaddr[2] = 0x9b;
+> +	eaddr[3] = 0xff;
+> +	eaddr[4] = 0x00;
+> +	eaddr[5] = 0x00;
+> +#endif
+> +
+> +	for (i = 0; i < 6; i++)
+> +		dev->dev_addr[i] = eaddr[i];
+
+You can use random_ether_addr() to generate a working unique MAC address
+if the hardware does not provide one.
+
+	Arnd
