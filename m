@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758789Ab1E0J1g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 05:27:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53966 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209Ab1E0J1f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 05:27:35 -0400
-Subject: Re: [PATCH] ipv4: fix fib metrics
-From: David Woodhouse <dwmw2@infradead.org>
-To: Alessandro Suardi <alessandro.suardi@gmail.com>,
-        Hiroyuki Kawakatsu <hkawakat@gmail.com>
-Cc: Kyle Moffett <kyle@moffetthome.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Fri, 27 May 2011 10:27:30 +0100
-In-Reply-To: <AANLkTinQq=BAVS1FrH80+VukTfAK1OKOkjEH4=gwZkv6@mail.gmail.com>
-References: <1301005107.2714.113.camel@edumazet-laptop>
-	 <AANLkTinv+XGBjbFoK6vpyiDW6gBEBKFjUef+mCAMJU9i@mail.gmail.com>
-	 <1301005946.2714.130.camel@edumazet-laptop>
-	 <20110324.153623.45921344.davem@davemloft.net>
-	 <1301006652.2714.145.camel@edumazet-laptop>
-	 <AANLkTi=Xb3KCBKoVCcaVD5iyCtMCAnYaGF_DTeFQ0ays@mail.gmail.com>
-	 <AANLkTinh9Li7DGgSqcZ+p9peS5XrHWomerSvKTYwHZ9-@mail.gmail.com>
-	 <AANLkTi=hgOcwO8ojQBtmqbROS1qrhm5HCmq7tRxesc=6@mail.gmail.com>
-	 <AANLkTinQq=BAVS1FrH80+VukTfAK1OKOkjEH4=gwZkv6@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1306488451.2029.107.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S932234Ab1E0JbD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 05:31:03 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:60828 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752867Ab1E0JbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 05:31:00 -0400
+Date: Fri, 27 May 2011 11:30:42 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Greg KH <greg@kroah.com>
+Cc: Mike Travis <travis@sgi.com>, David Woodhouse <dwmw2@infradead.org>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        iommu@lists.linux-foundation.org, Mike Habeck <habeck@sgi.com>,
+        stable@kernel.org
+Subject: Re: [stable] [PATCH 1/7] Intel pci: Check for identity mapping
+ candidate using system dma mask
+Message-ID: <20110527093042.GG21386@elte.hu>
+References: <20110527013221.231071058@gulag1.americas.sgi.com>
+ <20110527013221.405688800@gulag1.americas.sgi.com>
+ <20110527071838.GA16217@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110527071838.GA16217@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-25 at 02:25 +0100, Alessandro Suardi wrote:
+
+* Greg KH <greg@kroah.com> wrote:
+
+> <formletter>
 > 
-> ...which didn't take that long - one last bugging question and I'm happily
->  off to sleep; does ipid always come in the form of 0x followed by four
->  bytes representing hex values ? In a perhaps inelegant but working way
->  (I'm now writing through the VPN tunnel),
+> This is not the correct way to submit patches for inclusion in the 
+> stable kernel tree.  Please read 
+> Documentation/stable_kernel_rules.txt for how to do this properly.
 > 
->   sed 's/cache//;s/metric \?[0-9]\+ [0-9]\+//g;s/hoplimit
-> [0-9]\+//g;s/ipid 0x....//g'
+> </formletter>
 > 
->  appears to be Work For Me (TM).
+> I'll not send this out for the other 6 patches that also do not 
+> follow the proper format, as I'm sure you would get bored reading 
+> them.
 
-Please could I have a tested patch for vpnc-script?
+None of these patches exist upstream yet so it will take some time 
+until any of this can touch -stable. You can ignore it safely for 
+now.
 
-It now lives in its own repository at 
-git://,	http://git.infradead.org/users/dwmw2/vpnc-scripts.git because
-it's used by openconnect too, and has had various bug fixes for
-cross-platform support and IPv6 since it was forked from vpnc.
+Mike: please add proposed stable Cc: tags in the patch only, never 
+send it out to the stable email address itself!!
 
--- 
-dwmw2
+Thanks,
 
+	Ingo
