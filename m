@@ -1,44 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab1E0Ntx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 09:49:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49340 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab1E0Ntw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 09:49:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Josh Wu <josh.wu@atmel.com>
-Subject: Re: [PATCH v2] [media] at91: add Atmel Image Sensor Interface (ISI) support
-Date: Fri, 27 May 2011 15:49:45 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: mchehab@redhat.com, g.liakhovetski@gmx.de, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        lars.haring@atmel.com, ryan@bluewatersys.com, plagnioj@jcrosoft.com
-References: <1306496329-14535-1-git-send-email-josh.wu@atmel.com>
-In-Reply-To: <1306496329-14535-1-git-send-email-josh.wu@atmel.com>
+	id S1756045Ab1E0NvK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 09:51:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9035 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754404Ab1E0NvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 09:51:06 -0400
+Date: Fri, 27 May 2011 09:50:15 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
+        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
+        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
+        penberg@kernel.org, hpa@zytor.com,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+Message-ID: <20110527135015.GC8053@redhat.com>
+References: <1306269105.21443.20.camel@dan>
+ <20110526203502.GK29496@redhat.com>
+ <20110526204030.GL29496@redhat.com>
+ <1306442674.2279.29.camel@dan>
+ <20110527131313.GB8053@redhat.com>
+ <1306502492.3339.2.camel@dan>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105271549.46099.arnd@arndb.de>
-X-Provags-ID: V02:K0:RcVMuuTIWXPzHo30U3Fih/a5n6bR+4Dh6Shu568+/2f
- w55EZSa7jgR7JUjV6/EkmBDkCP2kcmk+lidxjIoIf9knuDpXmB
- 56nzSFnp+XSdff4UpHbwGmpSYKvnqqZz0FGS6aaPusWZS8yJsz
- csgYp8nCLr9Hc8ZlrukLiEJE8zscGUGBE5K15posHuMGm9Sf09
- 5b10fzh2mw1lDoRtc+ZOg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306502492.3339.2.camel@dan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 May 2011, Josh Wu wrote:
-> This patch is to enable Atmel Image Sensor Interface (ISI) driver support.
-> - Using soc-camera framework with videobuf2 dma-contig allocator
-> - Supporting video streaming of YUV packed format
-> - Tested on AT91SAM9M10G45-EK with OV2640
+On Fri, May 27, 2011 at 09:21:32AM -0400, Dan Rosenberg wrote:
+> On Fri, 2011-05-27 at 09:13 -0400, Vivek Goyal wrote:
+> > On Thu, May 26, 2011 at 04:44:34PM -0400, Dan Rosenberg wrote:
+> > > On Thu, 2011-05-26 at 16:40 -0400, Vivek Goyal wrote:
+> > > > On Thu, May 26, 2011 at 04:35:02PM -0400, Vivek Goyal wrote:
+> > > > > On Tue, May 24, 2011 at 04:31:45PM -0400, Dan Rosenberg wrote:
+> > > > > > This introduces CONFIG_RANDOMIZE_BASE, which randomizes the address at
+> > > > > > which the kernel is decompressed at boot as a security feature that
+> > > > > > deters exploit attempts relying on knowledge of the location of kernel
+> > > > > > internals.  The default values of the kptr_restrict and dmesg_restrict
+> > > > > > sysctls are set to (1) when this is enabled, since hiding kernel
+> > > > > > pointers is necessary to preserve the secrecy of the randomized base
+> > > > > > address.
+> > > > > 
+> > > > > What happens to /proc/iomem interface which gives us the physical memory
+> > > > > location where kernel is loaded. kexec-tools relies on that interface
+> > > > > heavily so we can not take it away. And if we can not take it away then
+> > > > > I think somebody should be easibly be able to calculate this randomized
+> > > > > base address.
+> > > 
+> > > Is it common to run kexec-tools as non-root?  It may be necessary to
+> > > restrict this interface to root when randomization is used (keep in mind
+> > > nobody's going to force you to turn this on by default, at least for the
+> > > foreseeable future).
+> > 
+> > Dan, 
+> > 
+> > I had a stupid question. /proc/kallsyms is also readable by root only. So
+> > if we are doing this so that non-root user can not know kernel virtual and
+> > physical address that should be already covered as non-root users can't
+> > read /proc/kallsysm or /boot/System.map.
+> > 
 > 
-> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> Not sure what system you're running, but /proc/kallsyms is 0444 on my
+> machine (and in mainline, afaik).  Likewise for /proc/iomem.
 
-Looks good to me now.
+Sorry. I read it wrong. Yes /proc/iomem and /proc/kallsyms are 0444.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> The problem is mainly with distribution kernels - it's trivial to just
+> grab an identical vmlinux to a target machine and then you instantly
+> know exactly where everything is.
+> 
+> > And if this randomization is also to protect information from root user
+> > then /proc/iomem exporting the physical address of kernel is still a
+> > valid question in that context.
+> > 
+> 
+> I think we can deal with unprivileged users first, and if we want to
+> truly prevent root from finding this out, we can introduce a separate
+> toggle that locks things down further.
+
+Ok, given the fact that /proc/iomem is 0444 and it carries the physical
+address of kernel, it think it should be easy to calcualte the randomized
+offset.  So I guess we shall have to do something about that too.
+
+Thanks
+Vivek
