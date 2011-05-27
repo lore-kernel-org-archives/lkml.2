@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab1E0BjP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 21:39:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58931 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab1E0BjN (ORCPT
+	id S1758668Ab1E0Bmm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 21:42:42 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:44488 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756684Ab1E0Bml convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 21:39:13 -0400
-Date: Thu, 26 May 2011 19:39:06 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: [git pull] gpio changes for $NEXT_KERNEL
-Message-ID: <20110527013906.GB5032@ponder.secretlab.ca>
-References: <BANLkTi=S2quduA7-8Emqw7vE0J1eto6bgA@mail.gmail.com>
- <20110527111449.c3255407.sfr@canb.auug.org.au>
+	Thu, 26 May 2011 21:42:41 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-131.messagelabs.com!1306460560!8348815!2
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.69]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "ryan@bluewatersys.com" <ryan@bluewatersys.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 26 May 2011 20:42:38 -0500
+Subject: RE: [PATCH 4/5] ep93xx: remove the old M2P DMA code
+Thread-Topic: [PATCH 4/5] ep93xx: remove the old M2P DMA code
+Thread-Index: AcwYoq66Q1wLW/jzRkWsAzXPslrTQADbEgyA
+Message-ID: <0D753D10438DA54287A00B027084269764D331A4B4@AUSP01VMBX24.collaborationhost.net>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+ <f4ecbf118a8478e4df2da7b8a5e9b4330892679b.1306082097.git.mika.westerberg@iki.fi>
+In-Reply-To: <f4ecbf118a8478e4df2da7b8a5e9b4330892679b.1306082097.git.mika.westerberg@iki.fi>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110527111449.c3255407.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 11:14:49AM +1000, Stephen Rothwell wrote:
-> Hi Grant,
-> 
-> On Thu, 26 May 2011 12:12:02 -0600 Grant Likely <grant.likely@secretlab.ca> wrote:
-> >
-> > Due to my own stupidity, this branch as /not/ been tested through
-> > linux-next.  I put it in a branch that I negelcted to ask Stephen to
-> > include.  :-(  I'm asking him to add it for tonight.  At the very
-> > least, it has been build tested on various x86, powerpc, mips, sparc
-> > and arm defconfigs.
-> > 
-> > You'll probably want to hold off on actually pulling this one, but I
-> > wanted to give you a heads up that I have it still pending.  If you've
-> > not picked it up, then I can resend the pull req tomorrow afternoon
-> > after confirming it hasn't messed up anything in linux-next.
-> > 
-> > There's nothing earth shattering here.  Just a bunch of driver updates
-> > and some faltering steps towards unifying a bunch of the mmio gpio
-> > logic.
-> > 
-> > g.
-> > 
-> > The following changes since commit 4db70f73e56961b9bcdfd0c36c62847a18b7dbb5:
-> > 
-> >   tmpfs: fix XATTR N overriding POSIX_ACL Y (2011-05-25 19:53:02 -0700)
-> > 
-> > are available in the git repository at:
-> >   git://git.secretlab.ca/git/linux-2.6 gpio/next
-> 
-> I have added this tree even though it looks like Linus took it - just in
-> case there is more stuff.
-> 
-> If you think it is unnecessary, let me know.
+On Sunday, May 22, 2011 10:03 AM, Mika Westerberg wrote:
+>
+> Since we have converted all existing users of the old DMA API to use the DMA
+> engine API the old code can be dropped.
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
+> ---
+>  arch/arm/mach-ep93xx/Makefile           |    2 +-
+>  arch/arm/mach-ep93xx/dma-m2p.c          |  411 -------------------------------
+>  arch/arm/mach-ep93xx/include/mach/dma.h |  143 -----------
+>  3 files changed, 1 insertions(+), 555 deletions(-)
+>  delete mode 100644 arch/arm/mach-ep93xx/dma-m2p.c
 
-Thanks Stephen.  It's not unnecessary.  I'll be adding more stuff to
-that branch for the next cycle.
+Other than my comment in patch 1/5 about the old driver being builtin...
 
-g.
-
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
