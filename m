@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab1E0GAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 02:00:10 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:38934 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab1E0GAJ (ORCPT
+	id S1755237Ab1E0GAO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 02:00:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38139 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab1E0GAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 02:00:09 -0400
+	Fri, 27 May 2011 02:00:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=eqKEryHaN2zzcEoTMqv6Basb2YsdXeQKh+PHluFxih8wRKvsKv3Dodc3JjYUWe9v0C
-         zfDewyDgfoBSzvIN1RfBIeDBi7+pFHIJjmafr3s85e9/LuukVUSyktg6PLb7Qnz873/8
-         zH3o7xWMidiPPyJPAOO5P88+sm3U5GTHEVdeM=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=h/WKziky71Rv1mLQrxLUcxLGkPg+BcRnlA9mATXXqhDQOE0btI9JYbqo3BqV0JG6Nn
+         TE0DhJVemjblsKIoKIV9kvAwEc4cRt+qgjF2mFS5fToPxo+ksNFatFimNBD1E5IUWiDo
+         cYhrEsBXuvv6Jnq5BENZxhOJmMAkJmdsZm1B8=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Paul Clements <Paul.Clements@steeleye.com>
-Subject: [PATCH 1/3] nbd: pass MSG_* flags to kernel_recvmsg()
-Date: Fri, 27 May 2011 15:00:01 +0900
-Message-Id: <1306476003-4624-1-git-send-email-namhyung@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Laurent Vivier <Laurent.Vivier@bull.net>,
+        Paul Clements <Paul.Clements@steeleye.com>, stable@kernel.org
+Subject: [PATCH 2/3] nbd: limit module parameters to a sane value
+Date: Fri, 27 May 2011 15:00:02 +0900
+Message-Id: <1306476003-4624-2-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.5.2
+In-Reply-To: <1306476003-4624-1-git-send-email-namhyung@gmail.com>
+References: <1306476003-4624-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike kernel_sendmsg(), kernel_recvmsg() requires passing flags explicitly
-via last parameter instead of struct msghdr.msg_flags. Therefore calls to
-sock_xmit(lo, 0, ..., MSG_WAITALL) have not been processed properly by tcp
-layer wrt. the flag. Fix it.
+The 'max_part' parameter controls the number of maximum partition
+a nbd device can have. However if a user specifies very large
+value it would exceed the limitation of device minor number and
+can cause a kernel oops (or, at least, produce invalid device
+nodes in some cases).
+
+In addition, specifying large 'nbds_max' value causes same
+problem for the same reason.
+
+On my desktop, following command results to the kernel bug:
+
+$ sudo modprobe nbd max_part=100000
+ kernel BUG at /media/Linux_Data/project/linux/fs/sysfs/group.c:65!
+ invalid opcode: 0000 [#1] SMP
+ last sysfs file: /sys/devices/virtual/block/nbd4/range
+ CPU 1
+ Modules linked in: nbd(+) bridge stp llc kvm_intel kvm asus_atk0110 sg sr_mod cdrom
+
+ Pid: 2522, comm: modprobe Tainted: G        W   2.6.39-leonard+ #159 System manufacturer System Product Name/P5G41TD-M PRO
+ RIP: 0010:[<ffffffff8115aa08>]  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
+ RSP: 0018:ffff8801009f1de8  EFLAGS: 00010246
+ RAX: 00000000ffffffef RBX: ffff880103920478 RCX: 00000000000a7bd3
+ RDX: ffffffff81a2dbe0 RSI: 0000000000000000 RDI: ffff880103920478
+ RBP: ffff8801009f1e38 R08: ffff880103920468 R09: ffff880103920478
+ R10: ffff8801009f1de8 R11: ffff88011eccbb68 R12: ffffffff81a2dbe0
+ R13: ffff880103920468 R14: 0000000000000000 R15: ffff880103920400
+ FS:  00007f3c49de9700(0000) GS:ffff88011f800000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 00007f3b7fe7c000 CR3: 00000000cd58d000 CR4: 00000000000406e0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process modprobe (pid: 2522, threadinfo ffff8801009f0000, task ffff8801009a93a0)
+ Stack:
+  ffff8801009f1e58 ffffffff812e8f6e ffff8801009f1e58 ffffffff812e7a80
+  ffff880000000010 ffff880103920400 ffff8801002fd0c0 ffff880103920468
+  0000000000000011 ffff880103920400 ffff8801009f1e48 ffffffff8115ab6a
+ Call Trace:
+  [<ffffffff812e8f6e>] ? device_add+0x4f1/0x5e4
+  [<ffffffff812e7a80>] ? dev_set_name+0x41/0x43
+  [<ffffffff8115ab6a>] sysfs_create_group+0x13/0x15
+  [<ffffffff810b857e>] blk_trace_init_sysfs+0x14/0x16
+  [<ffffffff811ee58b>] blk_register_queue+0x4c/0xfd
+  [<ffffffff811f3bdf>] add_disk+0xe4/0x29c
+  [<ffffffffa007e2ab>] nbd_init+0x2ab/0x30d [nbd]
+  [<ffffffffa007e000>] ? 0xffffffffa007dfff
+  [<ffffffff8100020f>] do_one_initcall+0x7f/0x13e
+  [<ffffffff8107ab0a>] sys_init_module+0xa1/0x1e3
+  [<ffffffff814f3542>] system_call_fastpath+0x16/0x1b
+ Code: 41 57 41 56 41 55 41 54 53 48 83 ec 28 0f 1f 44 00 00 48 89 fb 41 89 f6 49 89 d4 48 85 ff 74 0b 85 f6 75 0b 48 83
+  7f 30 00 75 14 <0f> 0b eb fe b9 ea ff ff ff 48 83 7f 30 00 0f 84 09 01 00 00 49
+ RIP  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
+  RSP <ffff8801009f1de8>
+ ---[ end trace 753285ffbf72c57c ]---
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Laurent Vivier <Laurent.Vivier@bull.net>
 Cc: Paul Clements <Paul.Clements@steeleye.com>
+Cc: stable@kernel.org
 ---
- drivers/block/nbd.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/block/nbd.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index e6fc716aca45..1df3bfe5225b 100644
+index 1df3bfe5225b..fdee7567fd15 100644
 --- a/drivers/block/nbd.c
 +++ b/drivers/block/nbd.c
-@@ -192,7 +192,8 @@ static int sock_xmit(struct nbd_device *lo, int send, void *buf, int size,
- 			if (lo->xmit_timeout)
- 				del_timer_sync(&ti);
- 		} else
--			result = kernel_recvmsg(sock, &msg, &iov, 1, size, 0);
-+			result = kernel_recvmsg(sock, &msg, &iov, 1, size,
-+						msg.msg_flags);
+@@ -757,6 +757,12 @@ static int __init nbd_init(void)
+ 	if (max_part > 0)
+ 		part_shift = fls(max_part);
  
- 		if (signal_pending(current)) {
- 			siginfo_t info;
++	if ((1UL << part_shift) > DISK_MAX_PARTS)
++		return -EINVAL;
++
++	if (nbds_max > 1UL << (MINORBITS - part_shift))
++		return -EINVAL;
++
+ 	for (i = 0; i < nbds_max; i++) {
+ 		struct gendisk *disk = alloc_disk(1 << part_shift);
+ 		if (!disk)
 -- 
 1.7.5.2
 
