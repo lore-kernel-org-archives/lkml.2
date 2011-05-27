@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab1E0Fdw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 01:33:52 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64275 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab1E0Fdu convert rfc822-to-8bit (ORCPT
+	id S1753213Ab1E0Ffv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 01:35:51 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:54477 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751306Ab1E0Ffu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 01:33:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:content-type:content-transfer-encoding;
-        b=paS33mrlKwAWz3zAtiK+S5WDlQmyMaIl/8nHeAunpe0lWngXPto43z0QG2To56sZzd
-         LB2Sxu6f5/oLFNqyAJd1+SuAQnmOKLjdWCkMnl1Njh/mMyC8y2XfZ1EkzVgkRZvFkCnM
-         O3KpHzrTZ+J+3Z/CTURkVypVv/dfyzPM3HeI8=
+	Fri, 27 May 2011 01:35:50 -0400
+Message-ID: <4DDF37DB.40606@st.com>
+Date: Fri, 27 May 2011 11:04:19 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Date: Fri, 27 May 2011 07:33:49 +0200
-X-Google-Sender-Auth: YSp57HXkZNGJOyMixw7E44E6w20
-Message-ID: <BANLkTi=3zsM-NUsFy-fe7sdoryTyqr+o7Q@mail.gmail.com>
-Subject: [-next] several files need to include <linux/bitops.h>?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux-Next <linux-next@vger.kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Barry Song <21cnbao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'Shiraz HASHIM'" <shiraz.hashim@st.com>,
+        deepak sikri <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        "'Rajeev KUMAR'" <rajeev-dlh.kumar@st.com>,
+        "Vipin KUMAR (vipin.kumar@st.com)" <vipin.kumar@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        Pratyush ANAND <pratyush.anand@st.com>, Amit VIRDI <amit.virdi@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>
+Subject: Re: [RFC] ARM Subarchitecture group maintainership
+References: <201105181047.17309.arnd@arndb.de>	<alpine.LFD.2.00.1105182234130.14430@xanadu.home>	<BANLkTinXQvrG3LeSEO9Lnam3Bvq3dDKOsw@mail.gmail.com> <201105191550.20129.arnd@arndb.de>
+In-Reply-To: <201105191550.20129.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/4194288/
+On 05/19/2011 07:20 PM, Arnd Bergmann wrote:
+>> > i asked this because we wanted to send the source codes of
+>> > CSR(http://www.csr.com) to upstream as i have told you in LDS. it
+>> > looks like we need to follow the below new changes to make our source
+>> > codes acceptable?
+>> > 1. arm device tree
+>> > 2. new pinmux framework from Linus Walleij
+>> > 3. move GPIO from plat/mach to drivers/gpio?
+> I would count at least the last two as mandatory, for the device tree,
+> it depends on how much work it would be for you to do the conversion
+> and at what time you submit the series. The longer you wait before
+> submitting the series, the stricter the requirements will get.
+> 
 
-mm/page_alloc.c:3311: error: implicit declaration of function 'ffz'
-make[2]: *** [mm/page_alloc.o] Error 1
-make[1]: *** [mm] Error 2
-block/blk-flush.c:111: error: implicit declaration of function 'ffz'
-make[2]: *** [block/blk-flush.o] Error 1
-make[1]: *** [block] Error 2
-include/linux/inetdevice.h:254: error: implicit declaration of function 'ffz'
-make[3]: *** [net/ipv4/route.o] Error 1
-kernel/signal.c:182: error: implicit declaration of function 'ffz'
-make[2]: *** [net/ipv4] Error 2
-make[2]: *** [kernel/signal.o] Error 1
-make[1]: *** [kernel] Error 2
-include/linux/inetdevice.h:254: error: implicit declaration of function 'ffz'
-make[3]: *** [net/core/dev.o] Error 1
-drivers/md/raid0.c:430: error: implicit declaration of function 'ffz'
-make[3]: *** [drivers/md/raid0.o] Error 1
-make[2]: *** [drivers/md] Error 2
-drivers/ide/ide-probe.c:1216: error: implicit declaration of function 'ffz'
-make[3]: *** [drivers/ide/ide-probe.o] Error 1
-crypto/lrw.c:125: error: implicit declaration of function 'ffz'
-make[2]: *** [crypto/lrw.o] Error 1
-drivers/input/keyboard/hilkbd.c:243: error: implicit declaration of
-function 'ffz'
-make[2]: *** [net/core] Error 2
-make[1]: *** [net] Error 2
-make[2]: *** [drivers/ide] Error 2
-lib/find_next_bit.c:226: error: implicit declaration of function 'ffz'
-make[2]: *** [lib/find_next_bit.o] Error 1
-make[4]: *** [drivers/input/keyboard/hilkbd.o] Error 1
-make[3]: *** [drivers/input/keyboard] Error 2
-make[1]: *** [crypto] Error 2
-make[2]: *** [drivers/input] Error 2
-make[1]: *** [drivers] Error 2
-make[1]: *** [lib] Error 2
-fs/minix/minix.h:135: error: implicit declaration of function 'ffz'
-fs/minix/minix.h:135: error: implicit declaration of function 'ffz'
-make[3]: *** [fs/minix/itree_v1.o] Error 1
-fs/minix/minix.h:135: error: implicit declaration of function 'ffz'
-make[3]: *** [fs/minix/itree_v2.o] Error 1
-make[3]: *** [fs/minix/bitmap.o] Error 1
-fs/minix/minix.h:135: error: implicit declaration of function 'ffz'
-make[3]: *** [fs/minix/namei.o] Error 1
-make[2]: *** [fs/minix] Error 2
-make[1]: *** [fs] Error 2
-make: *** [sub-make] Error 2
+Arnd,
+
+We also have few patchsets for ST's SPEAr SOC family. They were already
+reviewed, but never got pushed.
+
+We will update all those pacthsets for point 2 & 3, and leave point 1 for now.
+Also we will update them with our latest changes for SPEAr and will circulate
+them ASAP.
+
+Hope that's fine.
 
 -- 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+viresh
