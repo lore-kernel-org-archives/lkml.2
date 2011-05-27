@@ -1,93 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758750Ab1E0Imd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 04:42:33 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38118 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab1E0Imb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 04:42:31 -0400
-Date: Fri, 27 May 2011 10:42:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@redhat.com, eranian@google.com, tzanussi@gmail.com,
-        penberg@cs.helsinki.fi, torvalds@linux-foundation.org, efault@gmx.de,
-        peterz@infradead.org, davej@redhat.com, davem@davemloft.net,
-        fweisbec@gmail.com, kees.cook@canonical.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf symbols: Handle
- /proc/sys/kernel/kptr_restrict
-Message-ID: <20110527084218.GC21386@elte.hu>
-References: <tip-mt512joaxxbhhp1odop04yit@git.kernel.org>
- <20110526193946.GA6363@elte.hu>
- <20110526213058.GC30593@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526213058.GC30593@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1758772Ab1E0Ion (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 04:44:43 -0400
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:49357 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758682Ab1E0Iok (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 04:44:40 -0400
+From: matt mooney <mfm@muteddisk.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: usbip-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] staging: usbip: userspace: use memset instead of bzero
+Date: Fri, 27 May 2011 01:44:10 -0700
+Message-Id: <ec9a733eb388e3057d46ca451448e23ca24bd7e9.1306485772.git.mfm@muteddisk.com>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+bzero is and has been deprecated since POSIX.1-2001.
 
-* Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+---
+ drivers/staging/usbip/userspace/configure.ac       |    4 ++--
+ .../staging/usbip/userspace/libsrc/usbip_common.h  |    1 -
+ .../staging/usbip/userspace/libsrc/vhci_driver.c   |    2 +-
+ .../staging/usbip/userspace/src/usbip_network.c    |    4 ++--
+ drivers/staging/usbip/userspace/src/usbipd.c       |   14 +++++++-------
+ drivers/staging/usbip/userspace/src/utils.c        |    2 +-
+ 6 files changed, 13 insertions(+), 14 deletions(-)
 
-> Em Thu, May 26, 2011 at 09:39:46PM +0200, Ingo Molnar escreveu:
-> > 
-> > * tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> > 
-> > > Commit-ID:  ec80fde746e3ccf93895d25ae1a7071c9af52585
-> > > Gitweb:     http://git.kernel.org/tip/ec80fde746e3ccf93895d25ae1a7071c9af52585
-> > > Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-> > > AuthorDate: Thu, 26 May 2011 09:53:51 -0300
-> > > Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-> > > CommitDate: Thu, 26 May 2011 11:15:25 -0300
-> > > 
-> > > perf symbols: Handle /proc/sys/kernel/kptr_restrict
-> > 
-> > Ok, things are much better now with kptr_restrict turned on - but i 
-> > still see a few rough edges in practice.
-> > 
-> > For example 'perf top' says:
-> > 
-> >   aldebaran:~/linux> perf top
-> >   [kernel.kallsyms] with build id 122214021a666675f6e5ff97d70a85ce7139c0e7 not found, continuing without symbols
-> >   The (null) file can't be used
-> > 
-> > Now we've confused the user, havent we? :-)
-> 
-> The ones that do:
-> 
-> # echo -1 > /proc/sys/kernel/perf_event_paranoid
-> 
-> Right?
+diff --git a/drivers/staging/usbip/userspace/configure.ac b/drivers/staging/usbip/userspace/configure.ac
+index e7d801b..06fb95d 100644
+--- a/drivers/staging/usbip/userspace/configure.ac
++++ b/drivers/staging/usbip/userspace/configure.ac
+@@ -29,7 +29,7 @@ AC_PROG_MAKE_SET
+ AC_HEADER_DIRENT
+ AC_HEADER_STDC
+ AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h dnl
+-		  string.h strings.h sys/socket.h syslog.h unistd.h])
++		  string.h sys/socket.h syslog.h unistd.h])
+ 
+ # Checks for typedefs, structures, and compiler characteristics.
+ AC_TYPE_INT32_T
+@@ -41,7 +41,7 @@ AC_TYPE_UINT8_T
+ 
+ # Checks for library functions.
+ AC_FUNC_REALLOC
+-AC_CHECK_FUNCS([bzero memset mkdir regcomp socket strchr strerror strstr dnl
++AC_CHECK_FUNCS([memset mkdir regcomp socket strchr strerror strstr dnl
+ 		strtoul])
+ 
+ AC_CHECK_HEADER([sysfs/libsysfs.h],
+diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.h b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
+index 2c58af5..b38396f 100644
+--- a/drivers/staging/usbip/userspace/libsrc/usbip_common.h
++++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
+@@ -12,7 +12,6 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+-#include <strings.h>
+ 
+ #include <sysfs/libsysfs.h>
+ #include <netdb.h>
+diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
+index f2030b1..386f63b 100644
+--- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
++++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
+@@ -52,7 +52,7 @@ static int parse_status(char *value)
+ 
+ 
+ 	for (int i = 0; i < vhci_driver->nports; i++)
+-		bzero(&vhci_driver->idev[i], sizeof(struct usbip_imported_device));
++		memset(&vhci_driver->idev[i], 0, sizeof(vhci_driver->idev[i]));
+ 
+ 
+ 	/* skip a header line */
+diff --git a/drivers/staging/usbip/userspace/src/usbip_network.c b/drivers/staging/usbip/userspace/src/usbip_network.c
+index ef93b02..0e0de56 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_network.c
++++ b/drivers/staging/usbip/userspace/src/usbip_network.c
+@@ -100,7 +100,7 @@ int usbip_send_op_common(int sockfd, uint32_t code, uint32_t status)
+ 	int ret;
+ 	struct op_common op_common;
+ 
+-	bzero(&op_common, sizeof(op_common));
++	memset(&op_common, 0, sizeof(op_common));
+ 
+ 	op_common.version	= USBIP_VERSION;
+ 	op_common.code		= code;
+@@ -122,7 +122,7 @@ int usbip_recv_op_common(int sockfd, uint16_t *code)
+ 	int ret;
+ 	struct op_common op_common;
+ 
+-	bzero(&op_common, sizeof(op_common));
++	memset(&op_common, 0, sizeof(op_common));
+ 
+ 	ret = usbip_recv(sockfd, (void *) &op_common, sizeof(op_common));
+ 	if (ret < 0) {
+diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
+index ccc7dfd..12ff00b 100644
+--- a/drivers/staging/usbip/userspace/src/usbipd.c
++++ b/drivers/staging/usbip/userspace/src/usbipd.c
+@@ -10,7 +10,7 @@
+ #include <errno.h>
+ #include <unistd.h>
+ #include <netdb.h>
+-#include <strings.h>
++#include <string.h>
+ #include <stdlib.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -100,7 +100,7 @@ static int recv_request_devlist(int sockfd)
+ 	int ret;
+ 	struct op_devlist_request req;
+ 
+-	bzero(&req, sizeof(req));
++	memset(&req, 0, sizeof(req));
+ 
+ 	ret = usbip_recv(sockfd, (void *) &req, sizeof(req));
+ 	if (ret < 0) {
+@@ -127,8 +127,8 @@ static int recv_request_import(int sockfd)
+ 	int found = 0;
+ 	int error = 0;
+ 
+-	bzero(&req, sizeof(req));
+-	bzero(&reply, sizeof(reply));
++	memset(&req, 0, sizeof(req));
++	memset(&reply, 0, sizeof(reply));
+ 
+ 	ret = usbip_recv(sockfd, (void *) &req, sizeof(req));
+ 	if (ret < 0) {
+@@ -244,7 +244,7 @@ static struct addrinfo *my_getaddrinfo(char *host, int ai_family)
+ 	int ret;
+ 	struct addrinfo hints, *ai_head;
+ 
+-	bzero(&hints, sizeof(hints));
++	memset(&hints, 0, sizeof(hints));
+ 
+ 	hints.ai_family   = ai_family;
+ 	hints.ai_socktype = SOCK_STREAM;
+@@ -337,7 +337,7 @@ static int my_accept(int lsock)
+ 	char host[NI_MAXHOST], port[NI_MAXSERV];
+ 	int ret;
+ 
+-	bzero(&ss, sizeof(ss));
++	memset(&ss, 0, sizeof(ss));
+ 
+ 	csock = accept(lsock, (struct sockaddr *) &ss, &len);
+ 	if (csock < 0) {
+@@ -380,7 +380,7 @@ static void set_signal(void)
+ {
+ 	struct sigaction act;
+ 
+-	bzero(&act, sizeof(act));
++	memset(&act, 0, sizeof(act));
+ 	act.sa_handler = signal_handler;
+ 	sigemptyset(&act.sa_mask);
+ 	sigaction(SIGTERM, &act, NULL);
+diff --git a/drivers/staging/usbip/userspace/src/utils.c b/drivers/staging/usbip/userspace/src/utils.c
+index 6f91557..35b05e4 100644
+--- a/drivers/staging/usbip/userspace/src/utils.c
++++ b/drivers/staging/usbip/userspace/src/utils.c
+@@ -64,7 +64,7 @@ int read_integer(char *path)
+ 	int fd;
+ 	int ret = 0;
+ 
+-	bzero(buff, sizeof(buff));
++	memset(buff, 0, sizeof(buff));
+ 
+ 	fd = open(path, O_RDONLY);
+ 	if (fd < 0)
+-- 
+1.7.5.1
 
-Or the ones that do:
-
- aldebaran:~> ./loop_yield &
- [1] 7557
- aldebaran:~> 
- aldebaran:~> perf top -p 7557
- [kernel.kallsyms] with build id 44d9a989eabbd79e486bc079d6b743d397c204e0 not found, continuing without symbols
- The (null) file can't be used
-
-Also, we might eventually make perf events more widely available by 
-default, so even default 'perf top' might do something useful for 
-unprivileged users.
-
-> Trying that, not usually something I do :)
-
-i run all my perf workflow unprivileged - as root you can always typo 
-catastrophically :-)
-
-Thanks,
-
-	Ingo
