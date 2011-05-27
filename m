@@ -1,320 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751040Ab1E0EtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 00:49:17 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:4651 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab1E0EtQ convert rfc822-to-8bit (ORCPT
+	id S1751163Ab1E0Evz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 00:51:55 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:53835 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab1E0Evy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 00:49:16 -0400
+	Fri, 27 May 2011 00:51:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AMOEjTikDOAxJBsrtRKo64Q0bBOePjME/v7Yq0+Jok2v2MerqfpASiA76fp62QyKHh
-         15wJ6nWFvJiiCBDXd97g==
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=KYpwneDLGhItWZs51mTPSr7Hvf60WUpHbxt0rMrXI5bNiLB1ZC4H2cu4rPwUsQQTYY
+         6szri21dfgzJN/mOrWC4TYlk2nHUn5I4aIjzWUifgo9CAdgwmM5wDvph6flv636MXZ5J
+         2Vf0hnQ+P9bgRTxyuZJgCECO84d4M0KGxpff0=
+Date: Fri, 27 May 2011 07:51:56 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Young <hidave.darkstar@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: + sysctl-add-proc_dointvec_unsigned-handler.patch added to -mm
+ tree
+Message-ID: <20110527045156.GA2442@p183.telecom.by>
+References: <201103072305.p27N5hKT000474@imap1.linux-foundation.org>
+ <20110307232655.GA7234@p183.telecom.by>
+ <AANLkTi=-PcbpBjWZuno1fjwZD-tGmC+JMxrzMr1FNwu7@mail.gmail.com>
+ <AANLkTikxbAfpHCWzvLscdHccOju=Q1tN0pvcu_=jbeQ_@mail.gmail.com>
+ <20110308082409.GA4913@p183.telecom.by>
+ <AANLkTik2qpLnxUfD9NyPFSbO5PyYFeRv8cM=Nz1t=UOZ@mail.gmail.com>
+ <20110308090247.GA20281@p183.telecom.by>
+ <AANLkTi=Y32JLeuwagvAsuRg61VHEPQqpReot8ndcajrP@mail.gmail.com>
+ <20110526125918.ba161d6f.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20110527133431.471eefc2.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTikcdOGkJWxS0Sey8C1ereVk8ucvQQ@mail.gmail.com>
-	<20110527111639.22e3e257.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTi=Cw8HSTUjNfJzH8GhfwQhUua-h7w@mail.gmail.com>
-	<20110527133431.471eefc2.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 26 May 2011 21:49:13 -0700
-Message-ID: <BANLkTi=+XoxHca6accmpj9B-HFrmMTtxFA@mail.gmail.com>
-Subject: Re: [RFC][PATCH v3 0/10] memcg async reclaim
-From: Ying Han <yinghan@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526125918.ba161d6f.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 9:34 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Thu, 26 May 2011 21:33:32 -0700
-> Ying Han <yinghan@google.com> wrote:
->
->> On Thu, May 26, 2011 at 7:16 PM, KAMEZAWA Hiroyuki
->> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> > On Thu, 26 May 2011 18:49:26 -0700
->> > Ying Han <yinghan@google.com> wrote:
->> >
->> >> On Wed, May 25, 2011 at 10:10 PM, KAMEZAWA Hiroyuki
->> >> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> >> >
->> >> > It's now merge window...I just dump my patch queue to hear other's idea.
->> >> > I wonder I should wait until dirty_ratio for memcg is queued to mmotm...
->> >> > I'll be busy with LinuxCon Japan etc...in the next week.
->> >> >
->> >> > This patch is onto mmotm-May-11 + some patches queued in mmotm, as numa_stat.
->> >> >
->> >> > This is a patch for memcg to keep margin to the limit in background.
->> >> > By keeping some margin to the limit in background, application can
->> >> > avoid foreground memory reclaim at charge() and this will help latency.
->> >> >
->> >> > Main changes from v2 is.
->> >> >  - use SCHED_IDLE.
->> >> >  - removed most of heuristic codes. Now, code is very simple.
->> >> >
->> >> > By using SCHED_IDLE, async memory reclaim can only consume 0.3%? of cpu
->> >> > if the system is truely busy but can use much CPU if the cpu is idle.
->> >> > Because my purpose is for reducing latency without affecting other running
->> >> > applications, SCHED_IDLE fits this work.
->> >> >
->> >> > If application need to stop by some I/O or event, background memory reclaim
->> >> > will cull memory while the system is idle.
->> >> >
->> >> > Perforemce:
->> >> >  Running an httpd (apache) under 300M limit. And access 600MB working set
->> >> >  with normalized distribution access by apatch-bench.
->> >> >  apatch bench's concurrency was 4 and did 40960 accesses.
->> >> >
->> >> > Without async reclaim:
->> >> > Connection Times (ms)
->> >> >              min  mean[+/-sd] median   max
->> >> > Connect:        0    0   0.0      0       2
->> >> > Processing:    30   37  28.3     32    1793
->> >> > Waiting:       28   35  25.5     31    1792
->> >> > Total:         30   37  28.4     32    1793
->> >> >
->> >> > Percentage of the requests served within a certain time (ms)
->> >> >  50%     32
->> >> >  66%     32
->> >> >  75%     33
->> >> >  80%     34
->> >> >  90%     39
->> >> >  95%     60
->> >> >  98%    100
->> >> >  99%    133
->> >> >  100%   1793 (longest request)
->> >> >
->> >> > With async reclaim:
->> >> > Connection Times (ms)
->> >> >              min  mean[+/-sd] median   max
->> >> > Connect:        0    0   0.0      0       2
->> >> > Processing:    30   35  12.3     32     678
->> >> > Waiting:       28   34  12.0     31     658
->> >> > Total:         30   35  12.3     32     678
->> >> >
->> >> > Percentage of the requests served within a certain time (ms)
->> >> >  50%     32
->> >> >  66%     32
->> >> >  75%     33
->> >> >  80%     34
->> >> >  90%     39
->> >> >  95%     49
->> >> >  98%     71
->> >> >  99%     86
->> >> >  100%    678 (longest request)
->> >> >
->> >> >
->> >> > It seems latency is stabilized by hiding memory reclaim.
->> >> >
->> >> > The score for memory reclaim was following.
->> >> > See patch 10 for meaning of each member.
->> >> >
->> >> > == without async reclaim ==
->> >> > recent_scan_success_ratio 44
->> >> > limit_scan_pages 388463
->> >> > limit_freed_pages 162238
->> >> > limit_elapsed_ns 13852159231
->> >> > soft_scan_pages 0
->> >> > soft_freed_pages 0
->> >> > soft_elapsed_ns 0
->> >> > margin_scan_pages 0
->> >> > margin_freed_pages 0
->> >> > margin_elapsed_ns 0
->> >> >
->> >> > == with async reclaim ==
->> >> > recent_scan_success_ratio 6
->> >> > limit_scan_pages 0
->> >> > limit_freed_pages 0
->> >> > limit_elapsed_ns 0
->> >> > soft_scan_pages 0
->> >> > soft_freed_pages 0
->> >> > soft_elapsed_ns 0
->> >> > margin_scan_pages 1295556
->> >> > margin_freed_pages 122450
->> >> > margin_elapsed_ns 644881521
->> >> >
->> >> >
->> >> > For this case, SCHED_IDLE workqueue can reclaim enough memory to the httpd.
->> >> >
->> >> > I may need to dig why scan_success_ratio is far different in the both case.
->> >> > I guess the difference of epalsed_ns is because several threads enter
->> >> > memory reclaim when async reclaim doesn't run. But may not...
->> >> >
->> >>
->> >>
->> >> Hmm.. I noticed a very strange behavior on a simple test w/ the patch set.
->> >>
->> >> Test:
->> >> I created a 4g memcg and start doing cat. Then the memcg being OOM
->> >> killed as soon as it reaches its hard_limit. We shouldn't hit OOM even
->> >> w/o async-reclaim.
->> >>
->> >> Again, I will read through the patch. But like to post the test result first.
->> >>
->> >> $ echo $$ >/dev/cgroup/memory/A/tasks
->> >> $ cat /dev/cgroup/memory/A/memory.limit_in_bytes
->> >> 4294967296
->> >>
->> >> $ time cat /export/hdc3/dd_A/tf0 > /dev/zero
->> >> Killed
->> >>
->> >
->> > I did the same kind of test without any problem...but ok, I'll do more test
->> > later.
->> >
->> >
->> >
->> >> real  0m53.565s
->> >> user  0m0.061s
->> >> sys   0m4.814s
->> >>
->> >> Here is the OOM log:
->> >>
->> >> May 26 18:43:00  kernel: [  963.489112] cat invoked oom-killer:
->> >> gfp_mask=0xd0, order=0, oom_adj=0, oom_score_adj=0
->> >> May 26 18:43:00  kernel: [  963.489121] Pid: 9425, comm: cat Tainted:
->> >> G        W   2.6.39-mcg-DEV #131
->> >> May 26 18:43:00  kernel: [  963.489123] Call Trace:
->> >> May 26 18:43:00  kernel: [  963.489134]  [<ffffffff810e3512>]
->> >> dump_header+0x82/0x1af
->> >> May 26 18:43:00  kernel: [  963.489137]  [<ffffffff810e33ca>] ?
->> >> spin_lock+0xe/0x10
->> >> May 26 18:43:00  kernel: [  963.489140]  [<ffffffff810e33f9>] ?
->> >> find_lock_task_mm+0x2d/0x67
->> >> May 26 18:43:00  kernel: [  963.489143]  [<ffffffff810e38dd>]
->> >> oom_kill_process+0x50/0x27b
->> >> May 26 18:43:00  kernel: [  963.489155]  [<ffffffff810e3dc6>]
->> >> mem_cgroup_out_of_memory+0x9a/0xe4
->> >> May 26 18:43:00  kernel: [  963.489160]  [<ffffffff811153aa>]
->> >> mem_cgroup_handle_oom+0x134/0x1fe
->> >> May 26 18:43:00  kernel: [  963.489163]  [<ffffffff81114a72>] ?
->> >> __mem_cgroup_insert_exceeded+0x83/0x83
->> >> May 26 18:43:00  kernel: [  963.489176]  [<ffffffff811166e9>]
->> >> __mem_cgroup_try_charge.clone.3+0x368/0x43a
->> >> May 26 18:43:00  kernel: [  963.489179]  [<ffffffff81117586>]
->> >> mem_cgroup_cache_charge+0x95/0x123
->> >> May 26 18:43:00  kernel: [  963.489183]  [<ffffffff810e16d8>]
->> >> add_to_page_cache_locked+0x42/0x114
->> >> May 26 18:43:00  kernel: [  963.489185]  [<ffffffff810e17db>]
->> >> add_to_page_cache_lru+0x31/0x5f
->> >> May 26 18:43:00  kernel: [  963.489189]  [<ffffffff81145636>]
->> >> mpage_readpages+0xb6/0x132
->> >> May 26 18:43:00  kernel: [  963.489194]  [<ffffffff8119992f>] ?
->> >> noalloc_get_block_write+0x24/0x24
->> >> May 26 18:43:00  kernel: [  963.489197]  [<ffffffff8119992f>] ?
->> >> noalloc_get_block_write+0x24/0x24
->> >> May 26 18:43:00  kernel: [  963.489201]  [<ffffffff81036742>] ?
->> >> __switch_to+0x160/0x212
->> >> May 26 18:43:00  kernel: [  963.489205]  [<ffffffff811978b2>]
->> >> ext4_readpages+0x1d/0x1f
->> >> May 26 18:43:00  kernel: [  963.489209]  [<ffffffff810e8d4b>]
->> >> __do_page_cache_readahead+0x144/0x1e3
->> >> May 26 18:43:00  kernel: [  963.489212]  [<ffffffff810e8e0b>]
->> >> ra_submit+0x21/0x25
->> >> May 26 18:43:00  kernel: [  963.489215]  [<ffffffff810e9075>]
->> >> ondemand_readahead+0x18c/0x19f
->> >> May 26 18:43:00  kernel: [  963.489218]  [<ffffffff810e9105>]
->> >> page_cache_async_readahead+0x7d/0x86
->> >> May 26 18:43:00  kernel: [  963.489221]  [<ffffffff810e2b7e>]
->> >> generic_file_aio_read+0x2d8/0x5fe
->> >> May 26 18:43:00  kernel: [  963.489225]  [<ffffffff81119626>]
->> >> do_sync_read+0xcb/0x108
->> >> May 26 18:43:00  kernel: [  963.489230]  [<ffffffff811f168a>] ?
->> >> fsnotify_perm+0x66/0x72
->> >> May 26 18:43:00  kernel: [  963.489233]  [<ffffffff811f16f7>] ?
->> >> security_file_permission+0x2e/0x33
->> >> May 26 18:43:00  kernel: [  963.489236]  [<ffffffff8111a0c8>]
->> >> vfs_read+0xab/0x107
->> >> May 26 18:43:00  kernel: [  963.489239]  [<ffffffff8111a1e4>] sys_read+0x4a/0x6e
->> >> May 26 18:43:00  kernel: [  963.489244]  [<ffffffff8140f469>]
->> >> sysenter_dispatch+0x7/0x27
->> >> May 26 18:43:00  kernel: [  963.489248] Task in /A killed as a result
->> >> of limit of /A
->> >> May 26 18:43:00  kernel: [  963.489251] memory: usage 4194304kB, limit
->> >> 4194304kB, failcnt 26
->> >> May 26 18:43:00  kernel: [  963.489253] memory+swap: usage 0kB, limit
->> >> 9007199254740991kB, failcnt 0
->> >>
->> >
->> > Hmm, why memory+swap usage 0kb here...
->> >
->> > In this set, I used mem_cgroup_margin() rather than res_counter_margin().
->> > Hmm, do you disable swap accounting ? If so, I may miss some.
->>
->> Yes, I disabled the swap accounting in .config:
->> # CONFIG_CGROUP_MEM_RES_CTLR_SWAP is not set
->>
->>
->> Here is how i reproduce it:
->>
->> $ mkdir /dev/cgroup/memory/D
->> $ echo 4g >/dev/cgroup/memory/D/memory.limit_in_bytes
->>
->> $ cat /dev/cgroup/memory/D/memory.limit_in_bytes
->> 4294967296
->>
->> $ cat /dev/cgroup/memory/D/memory.
->> memory.async_control             memory.max_usage_in_bytes
->> memory.soft_limit_in_bytes       memory.use_hierarchy
->> memory.failcnt                   memory.move_charge_at_immigrate
->> memory.stat
->> memory.force_empty               memory.oom_control
->> memory.swappiness
->> memory.limit_in_bytes            memory.reclaim_stat
->> memory.usage_in_bytes
->>
->> $ cat /dev/cgroup/memory/D/memory.async_control
->> 0
->> $ echo 1 >/dev/cgroup/memory/D/memory.async_control
->> $ cat /dev/cgroup/memory/D/memory.async_control
->> 1
->>
->> $ echo $$ >/dev/cgroup/memory/D/tasks
->> $ cat /proc/4358/cgroup
->> 3:memory:/D
->>
->> $ time cat /export/hdc3/dd_A/tf0 > /dev/zero
->> Killed
->>
->
-> If you applied my patches collectly, async_control can be seen if
-> swap controller is configured because of BUG in patch.
+On Thu, May 26, 2011 at 12:59:18PM -0700, Andrew Morton wrote:
+> 
+> So... where did we end up with this discussion?
+> 
+> There are four patches involved:
 
-I noticed the BUG at the very beginning, so all my tests are having the fix.
+> http://userweb.kernel.org/~akpm/mmotm/broken-out/sysctl-add-proc_dointvec_unsigned-handler.patch
+> http://userweb.kernel.org/~akpm/mmotm/broken-out/sysctl-use-proc_dointvec_unsigned-where-appropriate.patch
 
->
-> I could cat 20G file under 4G limit without any problem with boot option
-> swapaccount=0. no problem if async_control == 0 ?
-
-$ cat /dev/cgroup/memory/D/memory.async_control
-1
-
-I have the .config
-# CONFIG_CGROUP_MEM_RES_CTLR_SWAP is not set
-
-Not sure if that makes difference. I will test next to turn that on.
-
---Ying
-
-
->
->
->
-> Thanks,
-> -Kame
->
->
->
->
+This still sucks:
+* .extra2 aka max is ignored(!)
+* even if not ignored, API can't be used on array, because min and max
+  boundaries should match wrt length.
