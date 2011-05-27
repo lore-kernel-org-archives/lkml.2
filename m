@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab1E0V3X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 17:29:23 -0400
-Received: from nm6-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.146]:38700 "HELO
-	nm6-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752499Ab1E0V3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 17:29:21 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 184695.8053.bm@omp1034.mail.bf1.yahoo.com
-Message-ID: <970888.68450.qm@web161917.mail.bf1.yahoo.com>
-X-YMail-OSG: JiyanlQVM1lquVk4Jcec1gtyjyw.fO98zQuOmHK5OYdDw84
- P2kATwKmRWKbBRMK5wqaqHCUjUxXopUTvSuj_43DQq1wX1b0.TsjX_IX_yVx
- 18MyrdLOiiSuXpdCXf50hQaGMR4b.2vmhvJb5WLz4klbUxOBpHr2diKt3rMZ
- bSJp12pvU_uULuGqv8cHgraSsfSBPhqTD8PRRoL4Fo3G6NZdGpaX2qew_nsu
- jgDDHgPf0snOWE65rPunJhSAsIAH8If1DnPLrHweIl1bDqYmoeE3hZmvPbV.
- n5ikZGrCZAZEceTKjpIoQPqkDy2PpH5r48s2BdANfvAb72tTOOgfS_e2G5mp
- TRFo9OJ0TwIqNpKkfVdUXYygedaBSeJ8fRIB4HS_WTXhRrxDbJbkttR2F3Us
- P5LV1RD5QGJRUM7mvUkQ04SEdirbESv24Q7MHzgTcykBc8gkf6vOrnT4x1WC
- F9Dp7CGCC7AhCRyULJTP7.09LzQUKmgbLn_bHS2gpQrsS6YHGo59m6ek4ghF
- ECjHpnzV5IrBNlM.uL9QatmYoLRjGr9E8O8_20brkNiBAHJVELQaqXu_LUdd
- PwiWQaR1hP2nhkxGZ54XdpL9rgqrzDrpCVXFJMG3fSgl7jCJmjIiWMPHtVQy
- RnSIUURqfM3FewonXTKm01PAcNTWek9DPCNzDl8LTyCnsQ01lwJR4aCs2gsP
- Vy0iIdwMJT7FWTmpxGtOWy.P9ft2f_wp2pewPdPYgjwOxNNKgGzSIDgu6yfh
- a8CfBJ5l_Iw0xRwdwa3DzSF0CuzI_gV6r.BoB529KUQhBffBKt3DOoVta855
- clprXkIo9n.9o3snZBhpxM_XDZDphPSjR_oMUIxI06YWJm0AWi03iuBQq5Gk
- Ky_E4lnMXFVSx3ZIueGnDPPpXG.FdqLeC8_kwH_bmMY_M9p6ZSxihL9hIWHr
- 8C_c_shvIcaPKQUWqGn4LwKOMhYqVb.5.VkKedOibS_ITpTb3DYkDTi5HCp6
- T7aWl_OPBRp2SR_fMR07wMhIHWKlbEA99FmTRtjF7cJPtT6ja.cZXb1WmeVL
- H
-X-RocketYMMF: assimama6
-X-Mailer: YahooMailClassic/14.0.1 YahooMailWebService/0.8.111.303096
-Date: Fri, 27 May 2011 14:29:19 -0700 (PDT)
-From: Mercy Lambert <mercylambert@hotmail.com>
-Reply-To: mercylambert@hotmail.com
-Subject: URGENT REPLY NEEDED
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755565Ab1E0VcI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 17:32:08 -0400
+Received: from xes-mad.com ([216.165.139.218]:37630 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752499Ab1E0VcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 17:32:05 -0400
+Subject: Re: [PATCH v6] gpio: Add support for Intel ICHx/3100/Series[56]
+ GPIO
+From: Peter Tyser <ptyser@xes-inc.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Syed S Azam <Syed.Azam@hp.com>,
+        Vincent Palatin <vpalatin@chromium.org>
+In-Reply-To: <20110527205526.GJ6645@ponder.secretlab.ca>
+References: <1299022100-14564-4-git-send-email-ptyser@xes-inc.com>
+	 <1303317354-18188-1-git-send-email-ptyser@xes-inc.com>
+	 <20110527064238.GA31271@ponder.secretlab.ca>
+	 <20110527110130.4b3448f2@endymion.delvare>
+	 <1306506402.22090.14872.camel@petert>
+	 <20110527205526.GJ6645@ponder.secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 May 2011 16:29:54 -0500
+Message-ID: <1306531794.10752.19.camel@ptyser-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+<snip>
 
-Dear Friend, 
+> > More importantly, the PCI device that contains the pointer to the GPIO
+> > IO space also has other uses that prevent it from being claimed.  Eg the
+> > drivers/mtd/maps/esb2rom.c driver uses the same PCI device to configure
+> > firmware hub registers.  The esb2rom.c driver isn't a PCI driver either,
+> > so it wouldn't cause a conflict, but it seemed to support the idea that
+> > we shouldn't be using a PCI driver.
+> > 
+> > The drivers/wdt/iTCO_wdt.c file also uses the same PCI device to get the
+> > ACPI base (similar to us getting the GPIO base), and it is implemented
+> > as a platform driver.
+> > 
+> > What determines if the driver should use the mfd or platform model?  Eg
+> > the iTCO_wdt.c that I used as an example doesn't use the mfd model
+> > despite using the PCI device the same as we are.
+> 
+> An mfd device is merely a bag of platform devices.  It's fine to use a
+> platform_device, but it should be registered in the context of the pci
+> probe hook, not from the context of the module_init() hook.
+> 
+> > My own (completely biased) preference would be to use my driver as a
+> > starting point, primarily because it supports newer chips that require
+> > different access methods, as well as the older-style chips Jean's
+> > supports.  Its also been hanging out for about 6 months without many
+> > complaints, a tested-by, etc.
+> 
+> I like the /structure/ of Jean's driver better, particularly that it doesn't
+> play games with the device model by registering devices at module load
+> time.
 
-My name is 2nd LT.Mercy Lambert , a member of the U.S. army Medical Team, which was deployed to Iraq at the beginning of the war in Iraq. 
+But the driver shouldn't be a PCI driver - that's worse in my opinion
+than a platform driver.  Multiple drivers currently use the same PCI
+device ID as Jean's - they can't all claim the PCI device, so why should
+Jean's GPIO driver?  It seems incorrect, and likely to break things in
+the future.  Mine has its warts too, but it doesn't have the possibility
+of negatively affect other drivers at least, as well as supports more
+hardware.
 
-I would hold back certain information for security reasons for now until you have found time to visit the BBC website stated below to enable you have an insight into what I intend sharing with you. 
+> If one device performs more than one function, then it should
+> register all the interfaces from a single probe, or go in the
+> direction of MFD devices and register a bunch of child
+> platform_devices.
 
-http://news.bbc.co.uk/2/hi/middle_east/2988455.stm 
+In this case its not really "one device performing more than one
+function", its one device specifying the location of other devices.  The
+device being claimed is used for FWH and IRQ configuration and happens
+to have a pointer to a GPIO device (among other things).  Claiming it
+for a GPIO device seems very wrong - it has very little to do with GPIO
+at all.
 
-Get back to me having visited the above website to enable us discuss in a more clarifying manner to the best of your understanding. 
+> I'm going to merge Jean's driver and leave this one out for now
+> (sorry), but I reserve the right to replace Jean's with your driver in
+> the next merge window.  This is pretty much an arbitrary decision, but
+> I may as well merge at least one of them now instead of kicking both
+> out for another cycle.  It really seams to me like there is still
+> a few architectural issues to sort out in both drivers and to make
+> sure that one driver will be useful for both of you.
 
-Thanks, 
+I disagree with the logic, and its a bit frustrating to have a patch
+hanging out for 6 months to be superseded by a more recent change that
+seems to be more likely to cause conflicts. 
 
-Best Regards 
+Best,
+Peter
 
-2nd Lt.Mercy Lambert.
