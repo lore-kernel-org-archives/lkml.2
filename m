@@ -1,30 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758719Ab1E0Bca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 21:32:30 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:37801 "EHLO relay.sgi.com"
+	id S1758690Ab1E0Bc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 21:32:27 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:37791 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756684Ab1E0BcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758579Ab1E0BcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 May 2011 21:32:25 -0400
-Message-Id: <20110527013221.231071058@gulag1.americas.sgi.com>
+Message-Id: <20110527013221.405688800@gulag1.americas.sgi.com>
+References: <20110527013221.231071058@gulag1.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Thu, 26 May 2011 20:32:21 -0500
+Date: Thu, 26 May 2011 20:32:22 -0500
 From: Mike Travis <travis@sgi.com>
 To: David Woodhouse <dwmw2@infradead.org>, Chris Wright <chrisw@sous-sol.org>,
         Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Mike Habeck <habeck@sgi.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
         stable@kernel.org, iommu@lists.linux-foundation.org,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/7] Intel pci: Fix various problems with Intel IOMMU code
+Subject: [PATCH 1/7] Intel pci: Check for identity mapping candidate using system dma mask
+Content-Disposition: inline; filename=check-against-reqd-mask.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+	The identity mapping code appears to make the assumption that
+	if the devices dma_mask is greater than 32bits the device can
+	use identity mapping.  But that is not true, take the case 
+	where we have a 40bit device in a 44bit architecture.  The
+	device can potentially receive a physical address that it
+	will truncate and cause incorrect addresses to be used.
 
-	Various problems exist in the Intel IOMMU PCI driver when
-	using DMA remapping in 1:1 identity mode on UV systems and
-	devices cannot address all of physical memory.
+	Instead check to see if the device's dma_mask is large enough
+	to address the system's dma_mask.
 
-	This patchset addresses those problems.
+From: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Mike Travis <travis@sgi.com>
+Reviewed-by: Mike Habeck <habeck@sgi.com>
+---
+ drivers/pci/intel-iommu.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+--- linux.orig/drivers/pci/intel-iommu.c
++++ linux/drivers/pci/intel-iommu.c
+@@ -2187,8 +2187,19 @@ static int iommu_should_identity_map(str
+ 	 * Assume that they will -- if they turn out not to be, then we can 
+ 	 * take them out of the 1:1 domain later.
+ 	 */
+-	if (!startup)
+-		return pdev->dma_mask > DMA_BIT_MASK(32);
++	if (!startup) {
++		/*
++		 * If the device's dma_mask is less than the system's memory
++		 * size then this is not a candidate for identity mapping.
++		 */
++		u64 dma_mask = pdev->dma_mask;
++
++		if (pdev->dev.coherent_dma_mask &&
++		    pdev->dev.coherent_dma_mask < dma_mask)
++			dma_mask = pdev->dev.coherent_dma_mask;
++
++		return dma_mask >= dma_get_required_mask(&pdev->dev);
++	}
+ 
+ 	return 1;
+ }
 
 -- 
