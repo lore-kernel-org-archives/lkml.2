@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab1E0PRh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 11:17:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60059 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751389Ab1E0PRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 11:17:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,280,1304319600"; 
-   d="scan'208";a="9979868"
-Date: Fri, 27 May 2011 23:17:32 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/18] writeback: sync expired inodes first in
- background writeback
-Message-ID: <20110527151732.GA13296@localhost>
-References: <20110524051411.924582719@intel.com>
- <20110524051858.972440561@intel.com>
- <20110524155205.GC5390@quack.suse.cz>
- <20110525143857.GA25536@localhost>
+	id S1754868Ab1E0PRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 11:17:49 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36382 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456Ab1E0PRr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 11:17:47 -0400
+Date: Fri, 27 May 2011 16:17:46 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Joachim Holst <jocke@holstenhof.se>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Question about MFD devices.
+Message-ID: <20110527151746.GB24011@sirena.org.uk>
+References: <f89af2756c3530c8b7c58a83885e5811.squirrel@oden.holstenhof.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110525143857.GA25536@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <f89af2756c3530c8b7c58a83885e5811.squirrel@oden.holstenhof.se>
+X-Cookie: Stay on the trail.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 10:38:57PM +0800, Wu Fengguang wrote:
-> On Tue, May 24, 2011 at 11:52:05PM +0800, Jan Kara wrote:
-[snip]
-> > and I was wondering: Assume there is one continuously redirtied file and
-> > untar starts in parallel. With the new logic, background writeback will
-> > never consider inodes that are not expired in this situation (we never
-> > switch to "all dirty inodes" phase - or even if we switched, we would just
-> > queue all inodes and then return back to queueing only expired inodes). So
-> > the net effect is that for 30 seconds we will be only continuously writing
-> > pages of the continuously dirtied file instead of (possibly older) pages of
-> > other files that are written. Is this really desirable? Wasn't the old
-> > behavior simpler and not worse than the new one?
-> 
-> Good question! Yes sadly in this case the new behavior could be worse
-> than the old one.
+On Thu, May 26, 2011 at 05:26:24PM +0200, Joachim Holst wrote:
 
-Andrew, it's desirable to delay this patch given that it has some
-negative behavior (it's fixable but the fix won't be trivial enough
-for immediate merge).
+> In the process, I've been trying to figure out when these MFD devices are
+> supposed to be used, but I don't see the logic behind them as of yet.
+> Currently it seems to me that "if a chip has more than one function, it's
+> an MFD" no matter what type of functions the chip supplies.
 
-You may simply drop this patch (06) and the last two patches (17, 18)
-and still be able to cleanly apply all other patches in this series.
+Yes.
 
-Thanks,
-Fengguang
+> To me, MFD seems to somewhat duplicate the standard kernel driver
+> structure, most implementations I've seen make it rather difficult to use
+> exported interfaces without integrating your driver into the structure.
+
+Right, and MFD driver is all about sharing the resources of a chip
+between the various subsystems in Linux that implement the functionality
+of the chip.  This means that the various subfunctions often know quite
+a bit about how the core works.
+
+> Personally, I really don't think that a simple driver that toggles a GPIO
+> X times based on an ADC value should be integrated into an MFD device
+> structure. A misc device seems a bit more appropriate for this.
+
+This doesn't seem like an MFD to me - an MFD is more about sharing the
+resources on a chip than pulling things together, that sounds like
+taking multiple resources on the chip and gluing them together into a
+single driver.
