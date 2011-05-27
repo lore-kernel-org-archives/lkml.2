@@ -1,139 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab1E0R7D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:59:03 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:46915 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab1E0R67 (ORCPT
+	id S1756395Ab1E0R7a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:59:30 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:49632 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920Ab1E0R7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 13:58:59 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=tHMWYmzeBs+NkxnAL3QaVVaMv6LZ4iBGYzfdK9q4PwiJVzuVNRkrk+DSHCCZAqhvR
-	OuZg1PrXdjJw1Y+M5I41w==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH] trace: Set oom_score_adj to maximum for ring buffer allocating process
-Date: Fri, 27 May 2011 10:58:45 -0700
-Message-Id: <1306519125-19301-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1306439537-23706-1-git-send-email-vnagarnaik@google.com>
-References: <1306439537-23706-1-git-send-email-vnagarnaik@google.com>
+	Fri, 27 May 2011 13:59:24 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: prasad@linux.vnet.ibm.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck\, Tony" <tony.luck@intel.com>,
+        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        anderson@redhat.com
+References: <20110526170722.GB23266@in.ibm.com>
+	<20110526171209.GA17988@in.ibm.com>
+Date: Fri, 27 May 2011 10:59:11 -0700
+In-Reply-To: <20110526171209.GA17988@in.ibm.com> (K. Prasad's message of "Thu,
+	26 May 2011 22:42:09 +0530")
+Message-ID: <m1tycg9g9c.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+9x55Ko1Zy/DbN6VxZlq5sWNicv5SPrag=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;prasad@linux.vnet.ibm.com
+X-Spam-Relay-Country: 
+Subject: Re: [Patch 1/6] XPANIC: Add extended panic interface
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tracing ring buffer is allocated from kernel memory. While
-allocating the memory, if OOM happens, the allocating process might not
-be the one that gets killed, since the ring-buffer memory is not
-allocated as process memory. Thus random processes might get killed
-during the allocation.
+"K.Prasad" <prasad@linux.vnet.ibm.com> writes:
 
-This patch makes sure that the allocating process is considered the most
-likely oom-kill-able process while the allocating is going on. Thus if
-oom-killer is invoked because of ring-buffer allocation, it is easier
-for the ring buffer memory to be freed and save important system
-processes from being killed.
+> commit e668fa1aea7844ac4c7ea09030a2f3e647a4adb1
+> Author: Andi Kleen <ak@linux.intel.com>
+> Date:   Fri Nov 19 18:36:44 2010 +0100
+>
+>     XPANIC: Add extended panic interface
+>     
+>     One panic size doesn't fit all.
+>     
+>     Machine check has some special requirements on panic, like:
+>     - It wants to do a reboot timeout by default so that the machine
+>     check event can be logged to disk after warm reboot.
 
-This patch also adds __GFP_NORETRY flag to the ring buffer allocation
-calls to make it fail more gracefully if the system will not be able to
-complete the allocation request.
+There is certainly not comment to that effect and I have not see a
+mechanism that does that.
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
----
- kernel/trace/ring_buffer.c |   15 ++++++++++-----
- kernel/trace/trace.c       |    9 +++++++++
- 2 files changed, 19 insertions(+), 5 deletions(-)
+>     - For memory errors it usually doesn't want to do crash dumps because
+>     that can lead to crash loops (dumping corrupted memory would
+>     lead to another machine check)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 02b7896..0339f95 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1005,7 +1005,8 @@ static int rb_allocate_pages(struct ring_buffer_per_cpu *cpu_buffer,
- 	for (i = 0; i < nr_pages; i++) {
- 		struct page *page;
- 		bpage = kzalloc_node(ALIGN(sizeof(*bpage), cache_line_size()),
--				    GFP_KERNEL, cpu_to_node(cpu_buffer->cpu));
-+				    GFP_KERNEL | __GFP_NORETRY,
-+				    cpu_to_node(cpu_buffer->cpu));
- 		if (!bpage)
- 			goto free_pages;
- 
-@@ -1014,7 +1015,7 @@ static int rb_allocate_pages(struct ring_buffer_per_cpu *cpu_buffer,
- 		list_add(&bpage->list, &pages);
- 
- 		page = alloc_pages_node(cpu_to_node(cpu_buffer->cpu),
--					GFP_KERNEL, 0);
-+					GFP_KERNEL | __GFP_NORETRY, 0);
- 		if (!page)
- 			goto free_pages;
- 		bpage->page = page_address(page);
-@@ -1378,11 +1379,13 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size)
- 			struct page *page;
- 			bpage = kzalloc_node(ALIGN(sizeof(*bpage),
- 						  cache_line_size()),
--					    GFP_KERNEL, cpu_to_node(cpu));
-+					    GFP_KERNEL | __GFP_NORETRY,
-+					    cpu_to_node(cpu));
- 			if (!bpage)
- 				goto free_pages;
- 			list_add(&bpage->list, &pages);
--			page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL,
-+			page = alloc_pages_node(cpu_to_node(cpu),
-+						GFP_KERNEL | __GFP_NORETRY,
- 						0);
- 			if (!page)
- 				goto free_pages;
-@@ -3737,7 +3740,9 @@ void *ring_buffer_alloc_read_page(struct ring_buffer *buffer, int cpu)
- 	struct buffer_data_page *bpage;
- 	struct page *page;
- 
--	page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
-+	page = alloc_pages_node(cpu_to_node(cpu),
-+				GFP_KERNEL | __GFP_NORETRY,
-+				0);
- 	if (!page)
- 		return NULL;
- 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index b926578..15a667a 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -37,6 +37,7 @@
- #include <linux/init.h>
- #include <linux/poll.h>
- #include <linux/fs.h>
-+#include <linux/oom.h>
- 
- #include "trace.h"
- #include "trace_output.h"
-@@ -3498,6 +3499,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	unsigned long val;
- 	char buf[64];
- 	int ret;
-+	int oom_score_adj;
- 
- 	if (cnt >= sizeof(buf))
- 		return -EINVAL;
-@@ -3518,7 +3520,14 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	/* value is in KB */
- 	val <<= 10;
- 
-+	/*
-+	 * make sure this process is picked over others to be killed in OOM
-+	 * condition
-+	 */
-+	oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
- 	ret = tracing_resize_ring_buffer(val);
-+	/* restore the original oom_score_adj value */
-+	test_set_oom_score_adj(oom_score_adj);
- 	if (ret < 0)
- 		return ret;
- 
--- 
-1.7.3.1
+It usually doesn't, and it would not lead to a crash loop just a failure
+to capture the cause of the crash.
 
+>     - It doesn't want to do backtraces because machine checks
+>     are not a kernel bug.
+
+But it sure is nice to know where it happened anyway, so you can guess
+the damage.  This sounds like more of the Andi thing where he doesn't
+want to hear about memory errors, because it is not a software problem.
+
+That is definitely not sufficient reason to turn off backtraces.
+
+>     In a earlier patch this was done with various adhoc hacks,
+>     but it's cleaner to extend panic to a 'xpanic' that directly
+>     gets a flag and timeout argument.
+>     
+>     The only user right now will be x86 machine checks, but I consider
+>     it likely that other users will switch to this too.
+>     
+>     For example one obvious candidate would be the "no root
+>     found" panic which doesn't really deserve a backtrace.
+
+That does seem like a good fit for that case.  However it doesn't seem
+like a good fit for your case.
+
+>     I exported a vpanic() interface too as a global. That's not
+>     needed by the current user, but the interface has to exist
+>     internally anyways and I could see how other code would
+>     find a v* variant of panic useful.
+>     
+>     Originally based on a suggestion by H. Peter Anvin.
+>     Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+
+This entire chunk of two patches appears to be complete non-sense.
+
+mce_panic_timeout is hard coded policy that userspace does not get
+to control, that overrides userspace policy.
+
+It looks to me like the right solution is just to delete the 
+mce_panic_timeout.
+
+As for the extra flags that you add the panic path.  They can
+only make the code more fragile.
+
+Eric
