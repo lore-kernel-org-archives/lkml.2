@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab1E0GTI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 02:19:08 -0400
-Received: from ozlabs.org ([203.10.76.45]:55210 "EHLO ozlabs.org"
+	id S1758641Ab1E0Dln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 23:41:43 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:41845 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243Ab1E0GTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 02:19:07 -0400
-Date: Fri, 27 May 2011 13:24:02 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v4 1/6] of: Allow scripts/dtc/libfdt to be used from
- kernel code
-Message-ID: <20110527032402.GD7793@yookeroo.fritz.box>
-Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
-	David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
-	ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
-	grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
-References: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com>
- <1305930343-31259-2-git-send-email-ddaney@caviumnetworks.com>
- <20110521063345.GB14828@yookeroo.fritz.box>
- <4DDA8FBC.1090904@caviumnetworks.com>
+	id S1753627Ab1E0Dl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 23:41:28 -0400
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        <greg@kroah.com>, "'Sam Ravnborg'" <sam@ravnborg.org>
+References: <cover.1306408804.git.gxt@mprc.pku.edu.cn> <48ec206f634cad2019c92eef7ba1a87566c743fe.1306408804.git.gxt@mprc.pku.edu.cn> <201105261445.01390.arnd@arndb.de>
+In-Reply-To: <201105261445.01390.arnd@arndb.de>
+Subject: RE: [PATCH 6/6] unicore32: using generic-y format for one line asm-generic files
+Date: Fri, 27 May 2011 11:24:03 +0800
+Message-ID: <005a01cc1c1d$88f727b0$9ae57710$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DDA8FBC.1090904@caviumnetworks.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIcsKU1gucno1VE3ekXHpcmNwpJlQKC24gMArSiI+iT1RnSwA==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 23, 2011 at 09:47:56AM -0700, David Daney wrote:
-> On 05/20/2011 11:33 PM, David Gibson wrote:
-> >On Fri, May 20, 2011 at 03:25:38PM -0700, David Daney wrote:
-> >>To use it you need to do this in your Kconfig:
-> >>
-> >>	select LIBFDT
-> >>
-> >>And in the Makefile of the code using libfdt something like:
-> >>
-> >>ccflags-y := -include linux/libfdt_env.h -I$(src)/../../../scripts/dtc/libfdt
-> >>
-> >>Signed-off-by: David Daney<ddaney@caviumnetworks.com>
-> >>---
-> >>  drivers/of/Kconfig          |    3 +++
-> >>  drivers/of/Makefile         |    2 ++
-> >>  drivers/of/libfdt/Makefile  |    3 +++
-> >>  drivers/of/libfdt/fdt.c     |    2 ++
-> >>  drivers/of/libfdt/fdt_ro.c  |    2 ++
-> >>  drivers/of/libfdt/fdt_wip.c |    2 ++
-> >
-> >No fdt_sw.c or fdt_rw.c?
-> >
-> 
-> I had no immediate need for them.  They could of course be added,
-> but that would potentially waste space.
-> 
-> Let's see if I can make it into an archive library.
 
-That would be preferable.  It's more or less designed to work that way
-so that everything is available without using unnecessary space in the
-binary.
 
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Thursday, May 26, 2011 8:45 PM
+> To: GuanXuetao
+> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; greg@kroah.com; Sam Ravnborg
+> Subject: Re: [PATCH 6/6] unicore32: using generic-y format for one line asm-generic files
+> 
+> On Thursday 26 May 2011, GuanXuetao wrote:
+> > From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> >
+> > see commit from Sam Ravnborg <d8ecc5cd8e227bc318513b5306ae88a474b8886d>
+> >   kbuild: asm-generic support
+> >
+> > Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> > ---
+> >  arch/unicore32/Makefile           |   35 ----------------------
+> >  arch/unicore32/include/asm/Kbuild |   59 +++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 59 insertions(+), 35 deletions(-)
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> This reminds me that I should do the same for ARM and maybe some others.
+
+There is a potential problem.
+When I add stat.h with generic-y method, a file is generated in arch/*/include/generated/asm/ dir.
+And then,  a patch for old-abi is applied, which will restore an old stat.h in arch/*/include/asm/ dir.
+Without removing the line in arch/*/include/asm/Kbuild, two files exist in the meantime.
+It works, depending on the order in LINUXINCLUDE, and (perhaps) the handling order in gcc.
+So, a check and warning mechanism should be provided to clear up the confusion.
+
+Guan Xuetao
+
