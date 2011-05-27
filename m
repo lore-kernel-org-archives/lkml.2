@@ -1,125 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab1E0MS3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 08:18:29 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:34937 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab1E0MS1 (ORCPT
+	id S1754416Ab1E0MWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 08:22:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33374 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab1E0MWH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 08:18:27 -0400
-X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 May 2011 08:18:26 EDT
-From: Jiri Slaby <jslaby@suse.cz>
-To: Andreas Bombe <aeb@debian.org>
-Cc: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org, greg@kroah.com,
-        arnd@arndb.de, jirislaby@gmail.com
-Subject: Re: tty_lock held during transmit wait in close: still unresolved
-Date: Fri, 27 May 2011 14:11:45 +0200
-Message-Id: <1306498305-5486-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.4.2
-In-Reply-To: <20110527004104.GB4369@amos.fritz.box>
-References: <20110527004104.GB4369@amos.fritz.box>
+	Fri, 27 May 2011 08:22:07 -0400
+Subject: Re: [GIT PULL] omap updates for 2.6.40
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <20110527110416.GG27962@atomide.com>
+Date: Fri, 27 May 2011 14:22:02 +0200
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F1227659-7B2E-4DAE-A160-9B64CE275FE6@dominion.thruhere.net>
+References: <20110526113905.GG27250@atomide.com> <9741DC43-3197-4ECE-A377-FA865A3F6710@dominion.thruhere.net> <20110527063304.GA27962@atomide.com> <20110527110416.GG27962@atomide.com>
+To: Tony Lindgren <tony@atomide.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > At any point you can show the code sleeps you can drop and retake the
-> > tty mutex either side of it, so you should be able to do that in the
-> > close timeout case. You may need to think about the order of locking with
-> > the port mutex but I suspect you can drop and retake both there.
->
-> #basically emulating the BKL semantics? Sounds more doable. I'll look
-> into it.
 
-Actually the best would be to get rid of tty_lock completely. Here I
-have a patch removing tty_lock from wait_until_sent path. I've been
-using a kernel with the patch applied for about month without any
-problems. But I have only 8250-based serial.
+Op 27 mei 2011, om 13:04 heeft Tony Lindgren het volgende geschreven:
 
-Why I ahven't sent it is that I need to re-investigate users whether
-this will hurt. (I already did, but stopped in the middle to do other
-things.) Mostly wait_until_sent hooks in uart drivers do simple reads
-from device.
+> * Tony Lindgren <tony@atomide.com> [110527 09:29]:
+>> * Koen Kooi <koen@dominion.thruhere.net> [110526 19:02]:
+>>> 
+>>> Op 26 mei 2011, om 13:39 heeft Tony Lindgren het volgende geschreven:
+>>> 
+>>>> Hi Linus,
+>>>> 
+>>>> Please pull omap updates for this merge window from:
+>>>> 
+>>>> git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-for-linus
+>>>> 
+>>>> This contains clean-up to shrink down omap specific code a bit. Also included
+>>>> are some fixes. But basically no new code at this point.
+>>> 
+>>> What about updates to board files? Like adding support for the xM rev C to board-omap3beagle.c.
+>> 
+>> Sorry we're doing only code coalescing and fixes for this merge window as
+>> discussed on LAKML. Otherwise it's hard to see the code coalescing in the
+>> diffstats, so new code will need to wait a bit.
+>> 
+>> I'll take a look and see if we can justify some fix like trivial patches
+>> like the revision detection patches during the -rc cycle.
+> 
+> Koen, the patch above needs to be refreshed to apply to current mainline
+> kernel. It also seems to contain some whitespace errors.
+> 
+> Care to refresh it and repost?
 
-The patch is only the first step. When this patch is OK and works, we
-can move the whole uart thing to use tty_port_open/close helpers.
+I'm refreshing it right now and will after testing.
 
-Does the patch below fix the issue?
+regards,
 
----
- drivers/tty/serial/serial_core.c |   30 +++++++-----------------------
- 1 files changed, 7 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index db7912c..2cbf1bd 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -57,7 +57,7 @@ static struct lock_class_key port_lock_key;
- 
- static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
- 					struct ktermios *old_termios);
--static void __uart_wait_until_sent(struct uart_port *port, int timeout);
-+static void uart_wait_until_sent(struct tty_struct *tty, int timeout);
- static void uart_change_pm(struct uart_state *state, int pm_state);
- 
- /*
-@@ -1304,16 +1304,8 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
- 	tty->closing = 1;
- 	spin_unlock_irqrestore(&port->lock, flags);
- 
--	if (port->closing_wait != ASYNC_CLOSING_WAIT_NONE) {
--		/*
--		 * hack: open-coded tty_wait_until_sent to avoid
--		 * recursive tty_lock
--		 */
--		long timeout = msecs_to_jiffies(port->closing_wait);
--		if (wait_event_interruptible_timeout(tty->write_wait,
--				!tty_chars_in_buffer(tty), timeout) >= 0)
--			__uart_wait_until_sent(uport, timeout);
--	}
-+	if (port->closing_wait != ASYNC_CLOSING_WAIT_NONE)
-+		tty_wait_until_sent(tty, msecs_to_jiffies(port->closing_wait));
- 
- 	/*
- 	 * At this point, we stop accepting input.  To do this, we
-@@ -1329,7 +1321,7 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
- 		 * has completely drained; this is especially
- 		 * important if there is a transmit FIFO!
- 		 */
--		__uart_wait_until_sent(uport, uport->timeout);
-+		uart_wait_until_sent(tty, uport->timeout);
- 	}
- 
- 	uart_shutdown(tty, state);
-@@ -1363,8 +1355,10 @@ done:
- 	mutex_unlock(&port->mutex);
- }
- 
--static void __uart_wait_until_sent(struct uart_port *port, int timeout)
-+static void uart_wait_until_sent(struct tty_struct *tty, int timeout)
- {
-+	struct uart_state *state = tty->driver_data;
-+	struct uart_port *port = state->uart_port;
- 	unsigned long char_time, expire;
- 
- 	if (port->type == PORT_UNKNOWN || port->fifosize == 0)
-@@ -1416,16 +1410,6 @@ static void __uart_wait_until_sent(struct uart_port *port, int timeout)
- 	}
- }
- 
--static void uart_wait_until_sent(struct tty_struct *tty, int timeout)
--{
--	struct uart_state *state = tty->driver_data;
--	struct uart_port *port = state->uart_port;
--
--	tty_lock();
--	__uart_wait_until_sent(port, timeout);
--	tty_unlock();
--}
--
- /*
-  * This is called with the BKL held in
-  *  linux/drivers/char/tty_io.c:do_tty_hangup()
--- 
-1.7.4.2
-
-
+Koen
