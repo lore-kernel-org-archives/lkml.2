@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab1E0IYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 04:24:39 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:13171 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab1E0IYh (ORCPT
+	id S1758763Ab1E0I27 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 04:28:59 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:41349 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab1E0I2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 04:24:37 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 27 May 2011 16:29:17 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, Shawn Guo <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <patches@linaro.org>,
-        <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>,
-        <kernel@pengutronix.de>
-Subject: Re: [PATCH 2/3] ARM: mxs: add gpio-mxs platform devices
-Message-ID: <20110527082916.GB30146@S2100-06.ap.freescale.net>
-References: <1305885446-27404-1-git-send-email-shawn.guo@linaro.org>
- <1305885446-27404-3-git-send-email-shawn.guo@linaro.org>
- <201105201223.00427.arnd@arndb.de>
+	Fri, 27 May 2011 04:28:39 -0400
+X-Auth-Info: L+CPdPPhgM8Mkz0fAjeZrQq5ukCL8lIFRSYMHUj48/I=
+Message-ID: <4DDF614E.7090905@grandegger.com>
+Date: Fri, 27 May 2011 10:31:10 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201105201223.00427.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+To: Oliver Hartkopp <socketcan@hartkopp.net>
+CC: Arnd Bergmann <arnd@arndb.de>, sachi@mistralsolutions.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Subhasish Ghosh <subhasish@mistralsolutions.com>, nsekhar@ti.com,
+        open list <linux-kernel@vger.kernel.org>,
+        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, Netdev@vger.kernel.org,
+        m-watkins@ti.com
+Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
+References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com>	<4DCB88A4.2010901@grandegger.com> <4DCBF1B6.6000104@hartkopp.net>	<201105221230.56243.arnd@arndb.de> <4DD9FCFC.10803@hartkopp.net>
+In-Reply-To: <4DD9FCFC.10803@hartkopp.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 12:23:00PM +0200, Arnd Bergmann wrote:
-[...]
-> > +#define mxs_gpio_data_entry_single(soc, _id)				\
-> > +	{								\
-> > +		.id = _id,						\
-> > +		.iobase = soc ## _PINCTRL ## _BASE_ADDR,		\
-> > +		.irq = soc ## _INT_GPIO ## _id,				\
-> > +	}
-> > +
-> > +#define mxs_gpio_data_entry(soc, _id)					\
-> > +	[_id] = mxs_gpio_data_entry_single(soc, _id)
-> > +
-> > +#ifdef CONFIG_SOC_IMX23
-> > +const struct mxs_gpio_data mx23_gpio_data[] __initconst = {
-> > +#define mx23_gpio_data_entry(_id)					\
-> > +	mxs_gpio_data_entry(MX23, _id)
-> 
-> I know it's tempting to use macros for these, but I think it obscures
-> the code a lot, especially when you use them to concatenate identifier
-> names. Why not just do:
-> 
-> 	struct platform_device *gpios;
-> 	gpios = platform_device_register_simple(mxs_host_bus, "mxs-gpio-master", 0, NULL, 0);
-> 
-platform_device_register_simple does not have parameter for 'parent',
-and it sets 'parent' NULL anyway.
+Hi Oliver,
 
--- 
-Regards,
-Shawn
+sorry for the late answer.
 
-> 	mxs_register_gpio(gpios, 0, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO_0);
-> 	mxs_register_gpio(gpios, 1, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO_1);
-> 	mxs_register_gpio(gpios, 2, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO_2);
-> 	mxs_register_gpio(gpios, 3, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO_3);
+On 05/23/2011 08:21 AM, Oliver Hartkopp wrote:
+> On 22.05.2011 12:30, Arnd Bergmann wrote:
+>> On Thursday 12 May 2011 16:41:58 Oliver Hartkopp wrote:
+>>> E.g. assume you need the CAN-IDs 0x100, 0x200 and 0x300 in your application
+>>> and for that reason you configure these IDs in the pruss CAN driver.
+>>>
+>>> What if someone generates a 100% CAN busload exactly on CAN-ID 0x100 then?
+>>>
+>>> Worst case (1MBit/s, DLC=0) you would need to handle about 21.000 irqs/s for
+>>> the correctly received CAN frames with the filtered CAN-ID 0x100 ...
+>>
+>> Then I guess the main thing that a "smart" CAN implementation like pruss
+>> should do is interrupt mitigation. When you have a constant flow of
+>> packets coming in, the hardware should be able to DMA a lot of
+>> them into kernel memory before the driver is required to pick them up,
+>> and only get into interrupt driven mode when the kernel has managed
+>> to process all outstanding packets.
+>>
+>>> This all depends heavily on Linux networking (skb handling, caching, etc) and
+>>> is pretty fast and optimized!! That was also the reason why it ran on the old
+>>> PowerPC that smoothly. The mostly seen effect if anything drops is when the
+>>> application (holding the socket) was not fast enough to handle the incoming
+>>> data. NB: For that reason we implemented a CAN content filter (CAN_BCM) that
+>>> is able to do content filtering and timeout monitoring in Kernelspace - all
+>>> performed in the SoftIRQ.
+>>
+>> Right, dropping packets that no process is waiting for should be done as
+>> early as possible. In pruss-can, the idea was to do it in hardware, which
+>> doesn't really work all that well for the reasons discussed before.
+>> Dropping the frames in the NAPI poll function (softirq time) seems like a
+>> logical choice.
 > 
-> This is actually shorter and it makes it possible to grep for the
-> macros you use.
+> In 'real world' CAN setups you'll never see 21.000 CAN frames per second (and
+> therefore 21.000 irqs/s) - you are usually designing CAN network traffic with
+> less than 60% busload. So interrupt rates somewhere below 1000 irqs/s can be
+> assumed.
 > 
-> > +struct platform_device *__init mxs_add_gpio(
-> > +		const struct mxs_gpio_data *data)
-> > +{
-> > +	struct resource res[] = {
-> > +		{
-> > +			.start = data->iobase,
-> > +			.end = data->iobase + SZ_8K - 1,
-> > +			.flags = IORESOURCE_MEM,
-> > +		}, {
-> > +			.start = data->irq,
-> > +			.end = data->irq,
-> > +			.flags = IORESOURCE_IRQ,
-> > +		},
-> > +	};
-> > +
-> > +	return mxs_add_platform_device("mxs-gpio", data->id,
-> > +					res, ARRAY_SIZE(res), NULL, 0);
-> > +}
-> 
-> mxs_add_platform_device doesn't set the parent pointer correctly, I think you
-> should either fix that or open-code the platform device creation to do it
-> right.
-> 
+>>From what i've seen so far a 3-4 messages rx FIFO and NAPI support just make it.
 
+I think you speak about the SJA100 which is able to buffer 64 byte
+corresponding to up to 4 messages. There are CAN controllers able to
+queue more or just one message and then NAPI adds overhead.
+
+> @Marc/Wolfgang: Would this be also your recommendation for a CAN controller
+> design that supports SocketCAN in the best way?
+
+Anyway, NAPI *always* useful as it helps with the infamous interrupt
+flooding.
+
+Wolfgang.
