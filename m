@@ -1,81 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab1E0SGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 14:06:03 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54441 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750922Ab1E0SGB (ORCPT
+	id S1755372Ab1E0SHA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 14:07:00 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46951 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab1E0SG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 14:06:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <4DDFE52D.4070308@zytor.com>
-References: <1306269105.21443.20.camel@dan> <201105270018.36835.rjw@sisk.pl>
- <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com> <20110527170045.GB4356@elte.hu>
- <1306516230.3339.17.camel@dan> <20110527171611.GE4356@elte.hu>
- <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com> <20110527174644.GG4356@elte.hu>
- <4DDFE52D.4070308@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 27 May 2011 11:05:07 -0700
-Message-ID: <BANLkTimVQbHvW8tCACAcC8zRkyY1KyU2ww@mail.gmail.com>
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        adobriyan@gmail.com, penberg@kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 27 May 2011 14:06:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ucaS56wgeSt5QBcVbuDefyTAtKISEATktoXEpRSs9oS0Y3hJaeszA6BcizMp5ppdQd
+         tPDC36j+SYkgKbSMQHEY+2G81eVina1Lt95G51x5GylVVNG0gToUugnLtpvT+PNjaiXM
+         utwGBIMKP/vAlUvpE3MaX+N5bJJgaAXuv2fN0=
+From: David Ahern <dsahern@gmail.com>
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH v2] perf stat: clarify unsupported events from uncounted events
+Date: Fri, 27 May 2011 12:06:54 -0600
+Message-Id: <1306519614-19463-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 10:53 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> That doesn't solve any problems with the memory map.
+perf stat continues running even if the event list contains
+counters that are not supported. The resulting output then
+contains <not counted> for those events which gets confusing
+as to which events are supported, but not counted and which
+are not supported.
 
-Actually, it does.
+Before:
 
-You can load the kernel at the same virtual address we always load it,
-and/or perhaps shift it up by just small amounts (ie "single pages"
-rather than "ten bits worth of pages")
+perf stat -ddd -- sleep 1
 
-And then rely on the fact that you mixed up symbols in other ways.
+ Performance counter stats for 'sleep 1':
 
-"Look ma, no need to worry about memory map". At least no more than we do now.
+          0.571283 task-clock                #    0.001 CPUs utilized
+                 1 context-switches          #    0.002 M/sec
+                 0 CPU-migrations            #    0.000 M/sec
+               157 page-faults               #    0.275 M/sec
+         1,037,707 cycles                    #    1.816 GHz
+     <not counted> stalled-cycles-frontend
+     <not counted> stalled-cycles-backend
+           654,499 instructions              #    0.63  insns per cycle
+           136,129 branches                  #  238.286 M/sec
+     <not counted> branch-misses
+     <not counted> L1-dcache-loads
+     <not counted> L1-dcache-load-misses
+     <not counted> LLC-loads
+     <not counted> LLC-load-misses
+     <not counted> L1-icache-loads
+     <not counted> L1-icache-load-misses
+     <not counted> dTLB-loads
+     <not counted> dTLB-load-misses
+     <not counted> iTLB-loads
+     <not counted> iTLB-load-misses
+     <not counted> L1-dcache-prefetches
+     <not counted> L1-dcache-prefetch-misses
 
-Put another way: think about our /proc/iomem right now:
+       1.001004836 seconds time elapsed
 
-  00100000-bdc6ffff : System RAM
-    01000000-016bdced : Kernel code
-    016bdcee-01ca8b7f : Kernel data
-    01d36000-01de2fff : Kernel bss
+After:
 
-with the "shift kernel up at load-time", the above information is
-suddenly very scary, because the "Kernel code" part is magically
-important.
+perf stat -ddd -- sleep 1
 
-In contrast, if your randomization depends on just relinking things a
-bit differently, you don't really give out any of the random
-information in /proc/iomem. Nor does it affect the load address and
-the e820 memory map.
+ Performance counter stats for 'sleep 1':
 
-And, in fact, it does give you way more bits of randomness to play
-around with the text addresses.
+          1.350326 task-clock                #    0.001 CPUs utilized
+                 2 context-switches          #    0.001 M/sec
+                 0 CPU-migrations            #    0.000 M/sec
+               157 page-faults               #    0.116 M/sec
+            11,986 cycles                    #    0.009 GHz
+   <not supported> stalled-cycles-frontend
+   <not supported> stalled-cycles-backend
+           496,986 instructions              #   41.46  insns per cycle
+           138,065 branches                  #  102.246 M/sec
+             7,245 branch-misses             #    5.25% of all branches         [97.60%]
+     <not counted> L1-dcache-loads
+     <not counted> L1-dcache-load-misses
+     <not counted> LLC-loads
+     <not counted> LLC-load-misses
+     <not counted> L1-icache-loads
+     <not counted> L1-icache-load-misses
+     <not counted> dTLB-loads
+     <not counted> dTLB-load-misses
+     <not counted> iTLB-loads
+     <not counted> iTLB-load-misses
+     <not counted> L1-dcache-prefetches
+   <not supported> L1-dcache-prefetch-misses
 
-With something like function-sections, it should be possible to do
-quite a serious job of relinking (and then keep some "function section
-to actual relinked address" mapping around so that you can do the
-/proc/kallsyms mappings).
+       1.002397333 seconds time elapsed
 
-But that's actually the "fancy" model. I don't think we should aim at
-that to begin with. Start off with something much less ambitious, like
-just shifting the kernel by a few pages. People have argued that even
-just a 50% chance of an oops is preferable to nothing. So we can start
-small and stupid.
+v1->v2:
+changed supported type from int to bool
 
-See?
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/builtin-stat.c |    9 +++++++--
+ tools/perf/util/evsel.h   |    1 +
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-                     Linus
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index a9f0671..784ed6d 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -61,6 +61,8 @@
+ #include <locale.h>
+ 
+ #define DEFAULT_SEPARATOR	" "
++#define CNTR_NOT_SUPPORTED	"<not supported>"
++#define CNTR_NOT_COUNTED	"<not counted>"
+ 
+ static struct perf_event_attr default_attrs[] = {
+ 
+@@ -448,6 +450,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 				if (verbose)
+ 					ui__warning("%s event is not supported by the kernel.\n",
+ 						    event_name(counter));
++				counter->supported = false;
+ 				continue;
+ 			}
+ 
+@@ -466,6 +469,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 			die("Not all events could be opened.\n");
+ 			return -1;
+ 		}
++		counter->supported = true;
+ 	}
+ 
+ 	if (perf_evlist__set_filters(evsel_list)) {
+@@ -861,7 +865,7 @@ static void print_counter_aggr(struct perf_evsel *counter)
+ 	if (scaled == -1) {
+ 		fprintf(stderr, "%*s%s%*s",
+ 			csv_output ? 0 : 18,
+-			"<not counted>",
++			counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
+ 			csv_sep,
+ 			csv_output ? 0 : -24,
+ 			event_name(counter));
+@@ -914,7 +918,8 @@ static void print_counter(struct perf_evsel *counter)
+ 				csv_output ? 0 : -4,
+ 				evsel_list->cpus->map[cpu], csv_sep,
+ 				csv_output ? 0 : 18,
+-				"<not counted>", csv_sep,
++				counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
++				csv_sep,
+ 				csv_output ? 0 : -24,
+ 				event_name(counter));
+ 
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index f79bb2c..77ea027 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -61,6 +61,7 @@ struct perf_evsel {
+ 		off_t		id_offset;
+ 	};
+ 	struct cgroup_sel	*cgrp;
++	bool supported;
+ };
+ 
+ struct cpu_map;
+-- 
+1.7.5.1
+
