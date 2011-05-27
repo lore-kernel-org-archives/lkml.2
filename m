@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661Ab1E0KyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 06:54:19 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64268 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab1E0KyR (ORCPT
+	id S1752247Ab1E0LE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 07:04:26 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:14764 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751511Ab1E0LEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 06:54:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :user-agent;
-        b=SWWEE6yOh5+ARmG6NlF/y58P1gPjXNgYx6kaffW5U43jDCfhmlFm2Ou+OYCYfr28RM
-         iddNbBA8fi9jPkIg9tPAjgEdZ8gUr1hp5MOkckcrKrqsiiRQcg2K8g44LALRgL4uQehE
-         Txv985MYksrXamjzLUDqOojhJm6UOVrqH3+hE=
-Date: Fri, 27 May 2011 14:54:07 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] battery-2.6.git
-Message-ID: <20110527105407.GA29529@oksana.dev.rtsoft.ru>
-Reply-To: cbouatmailru@gmail.com
+	Fri, 27 May 2011 07:04:25 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/crxpDjWr05auoRi5Z/yG7
+Date: Fri, 27 May 2011 14:04:19 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Koen Kooi <koen@dominion.thruhere.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [GIT PULL] omap updates for 2.6.40
+Message-ID: <20110527110416.GG27962@atomide.com>
+References: <20110526113905.GG27250@atomide.com>
+ <9741DC43-3197-4ECE-A377-FA865A3F6710@dominion.thruhere.net>
+ <20110527063304.GA27962@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110527063304.GA27962@atomide.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+* Tony Lindgren <tony@atomide.com> [110527 09:29]:
+> * Koen Kooi <koen@dominion.thruhere.net> [110526 19:02]:
+> > 
+> > Op 26 mei 2011, om 13:39 heeft Tony Lindgren het volgende geschreven:
+> > 
+> > > Hi Linus,
+> > > 
+> > > Please pull omap updates for this merge window from:
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-for-linus
+> > > 
+> > > This contains clean-up to shrink down omap specific code a bit. Also included
+> > > are some fixes. But basically no new code at this point.
+> > 
+> > What about updates to board files? Like adding support for the xM rev C to board-omap3beagle.c.
+> 
+> Sorry we're doing only code coalescing and fixes for this merge window as
+> discussed on LAKML. Otherwise it's hard to see the code coalescing in the
+> diffstats, so new code will need to wait a bit.
+> 
+> I'll take a look and see if we can justify some fix like trivial patches
+> like the revision detection patches during the -rc cycle.
 
-Please pull battery-2.6.git tree to receive changes prepared for
-2.6.40.
+Koen, the patch above needs to be refreshed to apply to current mainline
+kernel. It also seems to contain some whitespace errors.
 
-There are support for new hardware + some fixes here and there, the
-usual stuff. :-)
+Care to refresh it and repost?
 
-You may notice the power-related change for Nokia N900 board (the
-ARM commmit). I took that patch via battery git tree to not create
-cross-tree dependencies. And of course it has an appropriate ack
-from OMAP maintainer to go through that tree.
+Thanks,
 
-Thanks!
-
-The following changes since commit f0e615c3cb72b42191b558c130409335812621d8:
-
-  Linux 2.6.39-rc4 (2011-04-18 21:26:00 -0700)
-
-are available in the git repository at:
-  git://git.infradead.org/battery-2.6.git master
-
-Anton Vorontsov (1):
-      max8903_charger: Add GENERIC_HARDIRQS as a dependency (fixes S390 build)
-
-Benson Leung (1):
-      gpio-charger: Add gpio_charger_resume
-
-John Stultz (1):
-      power: Make test_power driver more dynamic.
-
-Kalle Jokiniemi (2):
-      isp1704_charger: Allow board specific powering routine
-      ARM: RX-51: Enable isp1704 power on/off
-
-Marek Vasut (1):
-      PXA: Use dev_pm_ops in z2_battery
-
-MyungJoo Ham (1):
-      power_supply: Add driver for MAX8903 charger
-
-Pali Rohár (1):
-      bq27x00_battery: Name of cycle count property
-
-Paul Parsons (2):
-      ds2760_battery: Fix indexing of the 4 active full EEPROM registers
-      ds2760_battery: Fix rated capacity of the hx4700 1800mAh battery
-
- arch/arm/mach-omap2/board-rx51-peripherals.c |   27 ++-
- drivers/power/Kconfig                        |    9 +
- drivers/power/Makefile                       |    1 +
- drivers/power/bq27x00_battery.c              |   11 +-
- drivers/power/ds2760_battery.c               |    6 +-
- drivers/power/gpio-charger.c                 |   15 +
- drivers/power/isp1704_charger.c              |   22 ++
- drivers/power/max8903_charger.c              |  391 ++++++++++++++++++++++++++
- drivers/power/test_power.c                   |  276 +++++++++++++++++-
- drivers/power/z2_battery.c                   |   20 +-
- include/linux/power/isp1704_charger.h        |   29 ++
- include/linux/power/max8903_charger.h        |   57 ++++
- 12 files changed, 840 insertions(+), 24 deletions(-)
- create mode 100644 drivers/power/max8903_charger.c
- create mode 100644 include/linux/power/isp1704_charger.h
- create mode 100644 include/linux/power/max8903_charger.h
+Tony
