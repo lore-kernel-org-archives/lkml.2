@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab1E0RqT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:46:19 -0400
-Received: from igw2.watson.ibm.com ([129.34.20.6]:47592 "EHLO
-	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab1E0RqR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 13:46:17 -0400
-Subject: Re: [PATCH v5 00/21] EVM
-From: David Safford <safford@watson.ibm.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-In-Reply-To: <20110526201725.GC15959@elf.ucw.cz>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <20110518172552.6d482c7a.akpm@linux-foundation.org>
-	 <20110526060842.GA13933@localhost.ucw.cz>
-	 <4DDE80FE.7010005@schaufler-ca.com>
-	 <1306433514.24986.26.camel@localhost.localdomain>
-	 <20110526183849.GA4563@ucw.cz>
-	 <1306439347.3092.89.camel@localhost.localdomain>
-	 <20110526201725.GC15959@elf.ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 27 May 2011 13:45:51 -0400
-Message-ID: <1306518351.24986.102.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+	id S1752780Ab1E0Rq7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:46:59 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52337 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750833Ab1E0Rq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 13:46:58 -0400
+Date: Fri, 27 May 2011 19:46:44 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, davej@redhat.com,
+        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
+        adobriyan@gmail.com, penberg@kernel.org, hpa@zytor.com,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+Message-ID: <20110527174644.GG4356@elte.hu>
+References: <1306269105.21443.20.camel@dan>
+ <201105270018.36835.rjw@sisk.pl>
+ <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com>
+ <20110527170045.GB4356@elte.hu>
+ <1306516230.3339.17.camel@dan>
+ <20110527171611.GE4356@elte.hu>
+ <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 22:17 +0200, Pavel Machek wrote:
 
-> I suggest you explain the patchset in the emails, then? Everyone here
-> seems to be confused... Attack it protects against, and what kind of
-> hardware is needed for the protection to be effective?
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-The white paper is over 15 pages, and it barely scratches the surface.
-Every customer has different security threat models and requirements.
-Discussing this in general on the mailing list is really hard.
-
-So let's try to simplify this just down to digital signatures in
-the cellphone environment, as you state:
-
-> Because AFAICT, file signatures, as proposed, are only useful for
-> locking down my cellphone against myself. (That's -- evil).
-
-The proposed digital signatures can enforce authenticity of a file's 
-data (IMA-Appraisal with Digital Signature), and of a file's metadata
-(EVM with Digital Signature). For most users, enforcing authenticity
-of files is a good thing - a user knows that they are running authentic
-software signed by their phone manufacturer, and not malicious files
-that they, or someone else installed. In this threat model, EVM is 
-mainly authenticating the meta-data of a file (owner, mode, LSM label...). 
-IMA-Appraisal and EVM are policy driven, so that the owner is free to 
-tailor them or turn them off. There are clearly many other use cases for 
-digitally signed data and metadata - authenticity is an important 
-kernel feature, one which should be done once, done correctly, and 
-upstreamed.
-
-You argue that EVM can be abused to lock down your phone against
-rooting, but
-
-1. EVM has no control over rooting through the loader, or rooting
-   through vulnerabilities in the kernel, or rooting through 
-   vulnerabilities in signed applications, or rooting through 
-   the adb shell, or rooting in any way I have seen.
-
-2. The real issue with phones is manufacturers who try to prevent you 
-   from running the kernel and software of your choice. Locked
-   bootloaders are not a technical problem - they are a market
-   problem that can only be addressed with market or regulatory
-   forces. In some countries, manufacturers are simply not allowed 
-   to do such locking.
-
-Blocking signature verification would serve only to punish Linux 
-users who care about the authenticity of their files, while doing 
-_nothing_ to stop manufacturers from locking their bootloaders.
-
-dave
+> On Fri, May 27, 2011 at 10:16 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > Well, 'fixing the info leaks' will obfuscate previously useful files
+> > such as /proc/kallsyms ...
 > 
-> 								Pavel
+> Guys, stop with the crazy already.
+> 
+> YOU HAVE TO DO THAT FOR THE LINK-TIME-OBFUSCATION TOO!
+>
+> > That's one of the advantages of randomization: it allows us to 
+> > expose RIPs without them being an instant information leak.
+> 
+> Except you clearly aren't thinking that through AT ALL.
+> 
+> The obfuscation of things like /proc/kallsyms is *exactly*the*same* 
+> whether you do the randomization at boot-time or install-time.
 
+Well, but two mails ago you said:
+
+> And load-time randomization has all these nasty problems with 
+> memory maps etc, because we obviously have to shift the whole 
+> kernel around by some fixed offset. But if there was some way to 
+> just re-link the distro kernel easily, then it could be done by the 
+> kernel install scripts, and it could potentially do more than just 
+> "shift up load address by some random number".
+
+If i understood you correctly you suggest randomizing the image by 
+shifting the symbols in it around. The boot loader would still load 
+an 'image' where it always loads it - just that image itself is 
+randomized internally somewhat, right?
+
+( because that's the only way we can avoid the problems with e820 
+  memory maps which you referred to, if don't actually change the 
+  load address. )
+
+Have i understood you correctly?
+
+Thanks,
+
+	Ingo
