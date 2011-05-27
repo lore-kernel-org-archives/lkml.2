@@ -1,91 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab1E0SSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 14:18:50 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:33697 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753034Ab1E0SSt (ORCPT
+	id S1755847Ab1E0SUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 14:20:53 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:44402 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab1E0SUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 14:18:49 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Dm3QdIgoT65E75ALyI6sgp/79QUOrR+NAzzMqzQsoerEiHOvUAYjvTusc0Qa8/Wxv4XYfgQ90Ijysygq991FpPg8jxQTiEalARN5agyCPoe+uon6Zox9Ut5ZjChTWSlb;
-Date: Fri, 27 May 2011 11:18:46 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: anish <anish198519851985@gmail.com>, joe@perches.com, davej@redhat.com,
-        apw@shadowen.org, akpm@linux-foundation.org, vapier@gentoo.org,
-        linux-kernel@vger.kernel.org, man.k1983@gmail.com
-Subject: Re: [patch v4] checkpatch: Signature format verification
-Message-Id: <20110527111846.eb41d093.rdunlap@xenotime.net>
-In-Reply-To: <1306520217.3857.31.camel@gandalf.stny.rr.com>
-References: <1306006721.1622.18.camel@anish-desktop>
-	<1306059528.2761.3.camel@anish-desktop>
-	<1306164094.2292.25.camel@anish-desktop>
-	<1306519311.1918.12.camel@anish-desktop>
-	<1306520217.3857.31.camel@gandalf.stny.rr.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 27 May 2011 14:20:52 -0400
+Date: Fri, 27 May 2011 23:50:41 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, thomas.abraham@linaro.org
+Subject: Re: [PATCH 01/10] mm: Introduce the memory regions data structure
+Message-ID: <20110527182041.GM5654@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+ <1306499498-14263-2-git-send-email-ankita@in.ibm.com>
+ <1306510203.22505.69.camel@nimitz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1306510203.22505.69.camel@nimitz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 May 2011 14:16:57 -0400 Steven Rostedt wrote:
+* Dave Hansen <dave@linux.vnet.ibm.com> [2011-05-27 08:30:03]:
 
-> On Fri, 2011-05-27 at 23:31 +0530, anish wrote:
-> > From: anish kumar <anish198519851985@gmail.com>
-> > 
+> On Fri, 2011-05-27 at 18:01 +0530, Ankita Garg wrote:
+> > +typedef struct mem_region_list_data {
+> > +       struct zone zones[MAX_NR_ZONES];
+> > +       int nr_zones;
+> > +
+> > +       int node;
+> > +       int region;
+> > +
+> > +       unsigned long start_pfn;
+> > +       unsigned long spanned_pages;
+> > +} mem_region_t;
+> > +
+> > +#define MAX_NR_REGIONS    16 
 > 
-> > +		my ($sign,$loop_brk);
-> > +		my @signs = ("Reviewed-by:","Acked-by:","Signed-off-by:","Tested-by:");
-> > +		foreach $sign (@signs) {
-> > +			$loop_brk=0;
-> > +			if ($line =~ /^\s*$sign/i) {
-> > +				# This is a signoff, if ugly, so do not double report.
-> > +				$signoff++;
-> > +				$loop_brk++;
-> > +				if (!($line =~ /^\s*$sign/)) {
-> > +					WARN("$sign is the preferred form\n" .
-> > +						$herecurr);
-> > +				}
-> > +				if ($line =~ /^\s*$sign(.*)/i) {
-> > +					if ($1 !~ /^\s+([a-zA-Z\s\"\.\-\'\,]*.*)/i) {
-> > +						WARN("Space required after $sign\n" .
-> > +							$herecurr);
-> > +					}
-> > +					if ($1 !~ /([\sa-zA-Z\"\.\-\'\,]*)\s<.*>/i) {
-> > +						WARN("Space required b/w Full Name & Mail-id:\n" .
+> Don't do the foo_t thing.  It's out of style and the pg_data_t is a
+> dinosaur.
 > 
-> What's "b/w" black and white?
+> I'm a bit surprised how little discussion of this there is in the patch
+> descriptions.  Why did you choose this structure?  What are the
+> downsides of doing it this way?  This effectively breaks up the zone's
+> LRU in to MAX_NR_REGIONS LRUs.  What effects does that have?
 
-I _think_ that it's "between", but I already requested that it
-be changed.  It's not good.  :(
+This data structure is one of the option, but definitely has
+overheads.  One alternative was to use fake-numa nodes that has more
+overhead and user visible quirks.
 
+The overheads is based on the number of regions actually defined in
+the platform. It may be 2-4 in smaller systems.  This split is what
+makes the allocations and reclaims work withing these boundaries using
+the zone's active, inactive lists on a per memory regions basis.
 
-> Also do we check for <>. As the above will trigger for missing <> and
-> give a warning about spaces.
-> 
-> I once had my quilt mail send crap to LKML because one of the Cc's in a
-> patch I pulled was missing the ending ">".
-> 
-> -- Steve
-> 
-> > +							$herecurr);
-> > +					}
-> > +				}
-> >  			}
-> > +			last if ($loop_brk == 1);
-> >  		}
-> > -
-> >  # Check for wrappage within a valid hunk of the file
-> >  		if ($realcnt != 0 && $line !~ m{^(?:\+|-| |\\ No newline|$)}) {
-> >  			ERROR("patch seems to be corrupt (line wrapped?)\n" .
+An external structure to just capture the boundaries would have less
+overheads, but does not provide enough hooks to influence the zone
+level allocators and reclaim operations.
 
+> How big _is_ a 'struct zone' these days?  This patch will increase their
+> effective size by 16x.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Yes, this is not good, we should to a runtime allocation for the exact
+number of regions that we need.  This can be optimized later once we
+design the data structure hierarchy with least overhead for the
+purpose.
+
+> Since one distro kernel basically gets run on *EVERYTHING*, what will
+> MAX_NR_REGIONS be in practice?  How many regions are there on the
+> largest systems that will need this?  We're going to be doing many
+> linear searches and iterations over it, so it's pretty darn important to
+> know.  What does this do to lmbench numbers sensitive to page
+> allocations?
+
+Yep, agreed, we are generally looking at 2-4 regions per-node for most
+purposes.  Also regions need not be of equal size, they can be large
+and small based on platform characteristics so that we need not
+fragment the zones below the level required.
+
+The overall idea is to have a VM data structure that can capture
+various boundaries of memory, and enable the allocations and reclaim
+logic to target certain areas based on the boundaries and properties
+required.  NUMA node and pgdat is the example of capturing memory
+distances.  The proposed memory regions should capture other
+orthogonal properties and boundaries of memory addresses similar to
+zone type.
+
+Thanks for the quick feedback.
+
+--Vaidy
+
