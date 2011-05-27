@@ -1,89 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab1E0Rj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:39:28 -0400
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:54167 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753667Ab1E0RjQ (ORCPT
+	id S1755706Ab1E0Rn4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:43:56 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40675 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab1E0Rnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 13:39:16 -0400
-X-AuditID: 1209190d-b7bdeae0000004f8-8a-4ddfe1859a9b
-From: Andy Lutomirski <luto@MIT.EDU>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH 5/5] x86-64: Map the HPET NX
-Date: Fri, 27 May 2011 13:38:42 -0400
-Message-Id: <33a9173b25eb5b688b0b078cc002dbbd343ae73c.1306517576.git.luto@mit.edu>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <cover.1306517576.git.luto@mit.edu>
-References: <cover.1306517576.git.luto@mit.edu>
-In-Reply-To: <cover.1306517576.git.luto@mit.edu>
-References: <cover.1306517576.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsUixG6notv68L6vwfeVGhZ9V46yW1zeNYfN
-	YsulZlaLzZumMlv82PCY1YHV41bbH2aPnbPusntsWtXJ5vHu3Dl2j8+b5AJYo7hsUlJzMstS
-	i/TtErgyZs6+zFbQKlTR+FWzgfEBfxcjJ4eEgInExLOtjBC2mMSFe+vZuhi5OIQE9jFKbLiy
-	hxHC2cAosX5RI1TmGZPE8ZVPmEFa2ARUJDqWPmACsUUE4iQaZv9mBbGZBRwkbj8+AjZWWEBH
-	4tTP22wgNouAqsTrn//YQWxegSCJE7uWs0KsVpC4cmUeC4jNKWAgcf3vDrAaIQF9ie8X17Hh
-	Ep/AKLCAkWEVo2xKbpVubmJmTnFqsm5xcmJeXmqRrpFebmaJXmpK6SZGUGhySvLuYHx3UOkQ
-	owAHoxIPr8XB+75CrIllxZW5hxglOZiURHn9HgCF+JLyUyozEosz4otKc1KLDzFKcDArifCa
-	7AfK8aYkVlalFuXDpKQ5WJTEeWdKqvsKCaQnlqRmp6YWpBbBZGU4OJQkeAWAMSgkWJSanlqR
-	lplTgpBm4uAEGc4DNNwTpIa3uCAxtzgzHSJ/ilGXo3HtjoOMQix5+XmpUuK8T0GuEwApyijN
-	g5sDSymvGMWB3hLmPQ5SxQNMR3CTXgEtYQJaovP7LsiSkkSElFQDI3PSTPUfpqbam+88NZu7
-	VPaPwBTdRxrqR9ufcRY5pRaeOfLVeM3tzUvt2cvcMvabuebavnqQsuSy99r7yy6fDLGys9vL
-	bKtzlD/9y+XXQq17Yn+vaM3gT9j4RL9uz86re7++skrLrbzZO3njrZTGm6Wupt/fi3wv2HZK
-	Mv84Y0Wuw8L21xZPzJRYijMSDbWYi4oTAW0zdREEAwAA
+	Fri, 27 May 2011 13:43:55 -0400
+Date: Fri, 27 May 2011 13:40:39 -0400 (EDT)
+Message-Id: <20110527.134039.1153162956919887129.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: asharma@fb.com, maxi@daemonizer.de, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, vorstand@stusta.mhn.de,
+        Yann.Dupont@univ-nantes.fr, denys@visp.net.lb
+Subject: Re: Kernel crash after using new Intel NIC (igb)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1306466831.2543.58.camel@edumazet-laptop>
+References: <1306447292.2543.32.camel@edumazet-laptop>
+	<4DDEEBC5.80804@fb.com>
+	<1306466831.2543.58.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 27 May 2011 10:40:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the HPET mapping is a user-accessible syscall instruction
-at a fixed address some of the time.  A sufficiently determined
-hacker might be able to guess when.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Fri, 27 May 2011 05:27:11 +0200
 
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
----
- arch/x86/include/asm/pgtable_types.h |    4 ++--
- arch/x86/kernel/hpet.c               |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+> Sure, here is a formal submission I cooked.
+> 
+> Thanks
+> 
+> [PATCH] inetpeer: fix race in unused_list manipulations
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 6a29aed6..013286a 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -107,8 +107,8 @@
- #define __PAGE_KERNEL_NOCACHE		(__PAGE_KERNEL | _PAGE_PCD | _PAGE_PWT)
- #define __PAGE_KERNEL_UC_MINUS		(__PAGE_KERNEL | _PAGE_PCD)
- #define __PAGE_KERNEL_VSYSCALL		(__PAGE_KERNEL_RX | _PAGE_USER)
--#define __PAGE_KERNEL_VSYSCALL_NOCACHE	(__PAGE_KERNEL_VSYSCALL | _PAGE_PCD | _PAGE_PWT)
- #define __PAGE_KERNEL_VVAR		(__PAGE_KERNEL_RO | _PAGE_USER)
-+#define __PAGE_KERNEL_VVAR_NOCACHE	(__PAGE_KERNEL_VVAR | _PAGE_PCD | _PAGE_PWT)
- #define __PAGE_KERNEL_LARGE		(__PAGE_KERNEL | _PAGE_PSE)
- #define __PAGE_KERNEL_LARGE_NOCACHE	(__PAGE_KERNEL | _PAGE_CACHE_UC | _PAGE_PSE)
- #define __PAGE_KERNEL_LARGE_EXEC	(__PAGE_KERNEL_EXEC | _PAGE_PSE)
-@@ -130,8 +130,8 @@
- #define PAGE_KERNEL_LARGE_NOCACHE	__pgprot(__PAGE_KERNEL_LARGE_NOCACHE)
- #define PAGE_KERNEL_LARGE_EXEC		__pgprot(__PAGE_KERNEL_LARGE_EXEC)
- #define PAGE_KERNEL_VSYSCALL		__pgprot(__PAGE_KERNEL_VSYSCALL)
--#define PAGE_KERNEL_VSYSCALL_NOCACHE	__pgprot(__PAGE_KERNEL_VSYSCALL_NOCACHE)
- #define PAGE_KERNEL_VVAR		__pgprot(__PAGE_KERNEL_VVAR)
-+#define PAGE_KERNEL_VVAR_NOCACHE	__pgprot(__PAGE_KERNEL_VVAR_NOCACHE)
- 
- #define PAGE_KERNEL_IO			__pgprot(__PAGE_KERNEL_IO)
- #define PAGE_KERNEL_IO_NOCACHE		__pgprot(__PAGE_KERNEL_IO_NOCACHE)
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index bfe8f72..bf71830 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -71,7 +71,7 @@ static inline void hpet_set_mapping(void)
- {
- 	hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
- #ifdef CONFIG_X86_64
--	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VSYSCALL_NOCACHE);
-+	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VVAR_NOCACHE);
- #endif
- }
- 
--- 
-1.7.5.1
-
+Applied, thanks Eric.
