@@ -1,105 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab1E0SJv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 14:09:51 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:38309 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab1E0SJt (ORCPT
+	id S1755707Ab1E0SKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 14:10:51 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48178 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725Ab1E0SKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 14:09:49 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: prasad@linux.vnet.ibm.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck\, Tony" <tony.luck@intel.com>,
-        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
-        anderson@redhat.com
-References: <20110526170722.GB23266@in.ibm.com>
-	<20110526171521.GD17988@in.ibm.com>
-Date: Fri, 27 May 2011 11:09:44 -0700
-In-Reply-To: <20110526171521.GD17988@in.ibm.com> (K. Prasad's message of "Thu,
-	26 May 2011 22:45:21 +0530")
-Message-ID: <m1vcww817b.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/VK4SbKWuSm9pve0k4MZGVQH4hcXkEhvs=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 XM_Sft_Co_L33T XM_Sft_Co_L33T
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;prasad@linux.vnet.ibm.com
-X-Spam-Relay-Country: 
-Subject: Re: [RFC Patch 4/6] PANIC_MCE: Introduce a new panic flag for fatal MCE, capture related information
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Fri, 27 May 2011 14:10:49 -0400
+Date: Fri, 27 May 2011 14:10:40 -0400 (EDT)
+Message-Id: <20110527.141040.977259448309758762.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 27 May 2011 11:10:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"K.Prasad" <prasad@linux.vnet.ibm.com> writes:
 
-> PANIC_MCE: Introduce a new panic flag for fatal MCE, capture related information
->
-> Fatal machine check exceptions (caused due to hardware memory errors) will now
-> result in a 'slim' coredump that captures vital information about the MCE. This
-> patch introduces a new panic flag, and new parameters to *panic functions
-> that can capture more information pertaining to the cause of crash.
->
-> Enable a new elf-notes section to store additional information about the crash.
-> For MCE, enable a new notes section that captures relevant register status
-> (struct mce) to be later read during coredump analysis.
->
-> Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
+Last networking pull request for this merge window:
 
-Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+1) Fix build regressions in some configurations due to the ratelimited
+   WARN interfaces, reported by Ingo.
 
+   And Ingo also pointed out the ugly ratelimit.h dependency that
+   linux/net.h has, get rid of that too.
 
-> -void crash_save_vmcoreinfo(void)
-> +void crash_save_vmcoreinfo(void *arch_info, size_t arch_info_size,
-> +						enum panic_flags flags)
->  {
->  	u32 *buf;
->  
-> @@ -1392,9 +1394,12 @@ void crash_save_vmcoreinfo(void)
->  
->  	buf = (u32 *)vmcoreinfo_note;
->  
-> -	buf = append_elf_note(buf, VMCOREINFO_NOTE_NAME, 0, vmcoreinfo_data,
-> -			      vmcoreinfo_size);
-> -
-> +	if (flags & PANIC_MCE)
-> +		buf = append_elf_note(buf, "PANIC_MCE", NT_MCE, arch_info,
-> +					arch_info_size);
+2) Fix races that cause ugly crashes in inetpeer cleanups, from Eric
+   Dumazet.
 
-Ok.  This is uglier than I thought.  You have this terribly generic
-interface than when you go to use it you assume it is an mce.  Ugh
-no.
+3) Namespace fix in IPVS from Hans Schillstrom.
 
-Furthermore you short circuit out other pieces of this code.
+4) ipset bug fixes from Jozsef Kadlecsik, mostly return code corrections
+   and fixing timeout comparisons with jiffies.
 
-This patch is a total hack that is massively over engineered.
+5) ->set_features vs. ->set_flags compatability would accidently truncate
+   flag values down to a bool, fix from Micha©© Miros©©aw.
 
-Saving NT_MCE is fine, in and of itself.  The rest of the information
-is totally nonsense.
+6) Missing %pK conversions in CAN socket layer from Oliver Hartkopp.
 
-Eric
+Please pull, thanks a lot!
 
+The following changes since commit a74b81b0aff4a01e0816df5915c854fb52c5e87f:
 
-> +	else
-> +		buf = append_elf_note(buf, VMCOREINFO_NOTE_NAME, 0,
-> +				vmcoreinfo_data, vmcoreinfo_size);
->  	final_note(buf);
->  }
->  
+  Merge branch 'linux-next' of git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2 (2011-05-26 10:55:15 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Andy Gospodarek (1):
+      bonding: cleanup module option descriptions
+
+Dan Williams (1):
+      atm: expose ATM device index in sysfs
+
+David Miller (1):
+      netfilter: Fix several warnings in compat_mtw_from_user().
+
+David S. Miller (5):
+      bug.h: Move ratelimit warn interfaces to ratelimit.h
+      Merge branch 'pablo/nf-2.6-updates' of git://1984.lsi.us.es/net-2.6
+      net: Kill ether_table[] declaration.
+      net: Add linux/sysctl.h includes where needed.
+      net: Kill ratelimit.h dependency in linux/net.h
+
+Eric Dumazet (1):
+      inetpeer: fix race in unused_list manipulations
+
+Hans Schillstrom (1):
+      IPVS: bug in ip_vs_ftp, same list heaad used in all netns.
+
+Johan Hovold (1):
+      net: davinci_emac: fix dev_err use at probe
+
+Jozsef Kadlecsik (3):
+      netfilter: ipset: Use proper timeout value to jiffies conversion
+      netfilter: ipset: remove unused variable from type_pf_tdel()
+      netfilter: ipset: fix ip_set_flush return code
+
+Justin Mattock (1):
+      net:8021q:vlan.c Fix pr_info to just give the vlan fullname and version.
+
+Micha©© Miros©©aw (1):
+      net: fix ETHTOOL_SFEATURES compatibility with old ethtool_ops.set_flags
+
+Oliver Hartkopp (1):
+      can: convert to %pK for kptr_restrict support
+
+ drivers/net/bonding/bond_main.c                |   34 ++++++++++++-------
+ drivers/net/davinci_emac.c                     |   22 ++++++------
+ include/asm-generic/bug.h                      |   40 ----------------------
+ include/linux/if_ether.h                       |    4 --
+ include/linux/net.h                            |    6 ---
+ include/linux/netfilter.h                      |    1 +
+ include/linux/netfilter/ipset/ip_set_ahash.h   |    4 +-
+ include/linux/netfilter/ipset/ip_set_timeout.h |   18 ++++++----
+ include/linux/ratelimit.h                      |   40 ++++++++++++++++++++++
+ include/net/ip_vs.h                            |    3 +-
+ include/net/net_namespace.h                    |    1 +
+ include/net/net_ratelimit.h                    |    8 ++++
+ net/8021q/vlan.c                               |    5 +--
+ net/atm/atm_sysfs.c                            |   10 ++++++
+ net/bridge/netfilter/ebtables.c                |    6 ++-
+ net/can/proc.c                                 |    7 ++--
+ net/core/ethtool.c                             |   25 +++++++++++++-
+ net/core/filter.c                              |    1 +
+ net/core/sysctl_net_core.c                     |    1 +
+ net/core/utils.c                               |    1 +
+ net/ipv4/inetpeer.c                            |   42 +++++++++++++++--------
+ net/netfilter/ipset/ip_set_core.c              |    2 +-
+ net/netfilter/ipvs/ip_vs_ftp.c                 |   27 +++++++++++----
+ 23 files changed, 189 insertions(+), 119 deletions(-)
+ create mode 100644 include/net/net_ratelimit.h
