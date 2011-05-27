@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab1E1IFy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 04:05:54 -0400
-Received: from cx109.justhost.com ([184.154.134.178]:51727 "EHLO
-	cx109.justhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab1E1IFv (ORCPT
+	id S1756775Ab1E0VmP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 17:42:15 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:44508 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752499Ab1E0VmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 04:05:51 -0400
-To: linux-kernel@vger.kernel.org
-Subject: Point of sale software for Restaurants
-From: My Free Harbortouch <jim@akfinancialonline.com>
-Reply-To: My Free Harbortouch <jim@akfinancialonline.com>
-MIME-Version: 1.0 
-X-Priority: 3 
-X-Originating-IP: [184.154.134.178] 
-X-Originating-Email: [jim@targetmarketingpros.com] 
-X-Mailer: Microsoft Outlook Express 6.00.2900.3028 
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3028 
-X-MSMail-Priority: Normal 
-X-Source: akfinancialonline.com 
-X-Source-Args: HTML 
-X-Source-Dir: akfinancialonline.com 
-Message-ID: <993085d45a6619bfb7287c21f275d2b6@akfinancialonline.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Date: Fri, 27 May 2011 15:30:26 -0500
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cx109.justhost.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [1278 32003] / [47 12]
-X-AntiAbuse: Sender Address Domain - targetmarketingpros.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Fri, 27 May 2011 17:42:14 -0400
+X-Sasl-enc: knWhjjiGC9HIfLQrX1uT5DZ1F5QrFLf0Ne+/06hIIdfK 1306532532
+Date: Sat, 28 May 2011 04:30:44 +0800
+From: Greg KH <greg@kroah.com>
+To: =?utf-8?B?UGF3ZcWC?= Drobek <pawel.drobek@gmail.com>
+Cc: Michael Tokarev <mjt@tls.msk.ru>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: option driver, ZTE MF_330 matches linux usb 2.0 root hub
+Message-ID: <20110527203044.GC15821@kroah.com>
+References: <4DDEC606.4020504@msgid.tls.msk.ru>
+ <20110527012022.GF24630@kroah.com>
+ <BANLkTikcjXTczV2FmGcQ7BY=m_t7ep54Sw@mail.gmail.com>
+ <4DDF427E.1030109@msgid.tls.msk.ru>
+ <BANLkTikodJ4cnjJ9Lxx=zsHd-dAgPzfDrA@mail.gmail.com>
+ <4DDF6917.9060004@msgid.tls.msk.ru>
+ <BANLkTi==1WyJNACmoOxcrS6RiJ3w8Ow1zw@mail.gmail.com>
+ <20110527100215.GC9272@kroah.com>
+ <4DDFA4F5.8060502@msgid.tls.msk.ru>
+ <BANLkTinAip5BswLBjxyJ1O_XPnUFq=FUjw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinAip5BswLBjxyJ1O_XPnUFq=FUjw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, 
-We are now placing our touch screen point of sale systems free of charge. I know it sound too good to be true but we do have a very valuable proposition for your
-business!
+On Fri, May 27, 2011 at 03:24:02PM +0200, Paweł Drobek wrote:
+> On weekend i could give you all data which you need to do more precisely
+> action. Just write all command should i give.
 
-Reply to:
-jim@myfreeharbortouch.com with questions or call Jim at 907-727-3556 or go to www.akfinancialonline.com for more info.
+The output of:
+	lsusb -v
+is all that we need.
 
-Reply with unsubscribe in the subject and we will remove you from our list.
+thanks,
 
-Thanks!
-
-
-
+greg k-h
