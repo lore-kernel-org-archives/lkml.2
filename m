@@ -1,55 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1E0MqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 08:46:00 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56925 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669Ab1E0Mp7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 08:45:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fDRcVFw0ymOqiRA6Y9BQkbCn08yvvw+lifqlqcsnkOMAkGVxJy4iT5bXpWy0Y7HBrH
-         mG4B02I0DaTOhtlvmO6DYC7rYrkv/KKtCE114o/nwFHsZ7QRlRUn7ZTfj1HAp1RgEC7R
-         KQgxGn4CT72jsoUTB7RtfbmZwhUnNwkW3jgCU=
-Date: Fri, 27 May 2011 16:45:54 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] battery-2.6.git
-Message-ID: <20110527124554.GA10149@oksana.dev.rtsoft.ru>
-References: <20110527105407.GA29529@oksana.dev.rtsoft.ru>
- <alpine.LFD.2.02.1105271200490.3164@localhost6.localdomain6>
+	id S1754558Ab1E0MqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 08:46:12 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49608 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754217Ab1E0MqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 08:46:10 -0400
+Date: Fri, 27 May 2011 14:46:03 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 00/12] [GIT PULL] tracing: fixes
+Message-ID: <20110527124603.GA3168@elte.hu>
+References: <20110526152541.995963172@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1105271200490.3164@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110526152541.995963172@goodmis.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 12:10:37PM +0100, David Woodhouse wrote:
-> On Fri, 27 May 2011, Anton Vorontsov wrote:
-> > 
-> > are available in the git repository at:
-> >   git://git.infradead.org/battery-2.6.git master
-> 
-> Please note that git.infraded.org moved to a new IP address yesterday. And 
-> I stupidly forgot to update one of the nameservers, so the DNS is still 
-> propagating and for the next few hours you might still get the old 
-> address.
-> 
-> IPv6 will be fine as it hasn't changed, but if you're stuck with Legacy IP 
-> and it doesn't work, make sure you have the new IP address 173.166.109.252
 
-Thanks for the heads up!
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+> 
+> Ingo,
+> 
+> This patch set contains all fixes. Some of the fixes are to get
+> rid of warnings, but I think getting rid of warnings is a good thing
+> during a merge window.
+> 
+> What's different about this and my last pull request:
+> 
+> 1) I removed the two patches that were not bug fixes and put them
+>    in my queue for 2.6.41/3.1/2.8.1
+> 
+> 2) I added two patches, one that was a bug fix that caused a
+>    triple fault when PROVE_RCU was set, and the other that caused
+>    problems with truncating 64bit words in the trace events.
+> 
+> 3) I pulled out Masami's kprobe stack trace fix because it failed
+>    on other archs. My last push request, I did compile test other
+>    archs, but I only used the default config. This time, I enabled
+>    tracing as well (doing it both with and without tracing enabled)
+>    and when tracing was enabled, I detected the problem with the lack
+>    of save_stack_trace_regs() in other archs.
+> 
+> I tested this on x86_64 and x86_32 as well as compiled tested for
+> the following archs, with and without tracing enabled:
+> 
+>  alpha, arm, blackfin, ia64, parsic, ppc, ppc64, sparc
+> 
+> The following had failures for other reason (failed without this
+> patch set):
+> 
+>   cris, cris32, m68k, mips64, mips32, parsic64, sh, xtensa, uml.
+> 
+> 
+> Please pull the latest tip/perf/urgent tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> tip/perf/urgent
+> 
+> 
+> Jiri Olsa (1):
+>       jump_label: Check entries limit in __jump_label_update
+> 
+> Rabin Vincent (1):
+>       ftrace/recordmcount: Avoid STT_FUNC symbols as base on ARM
+> 
+> Rakib Mullick (1):
+>       x86/ftrace: Fix compiler warning in ftrace.c
+> 
+> Steven Rostedt (7):
+>       maccess,probe_kernel: Make write/read src const void *
+>       scripts/tags.sh: Fix ctags for DEFINE_EVENT()
+>       scripts/tags.sh: Add magic for trace-events for etags too
+>       ftrace: Have ftrace_startup() return failure code
+>       tracing: Have event with function tracer check error return
+>       ftrace: Set ops->flag to enabled even on static function tracing
+>       ftrace: Add internal recursive checks
+> 
+> liubo (2):
+>       tracing: Add __print_symbolic_u64 to avoid warnings on 32bit machine
+>       tracing: Update btrfs's tracepoints to use u64 interface
+> 
+> ----
+>  arch/blackfin/mm/maccess.c   |    4 ++--
+>  arch/s390/mm/maccess.c       |    4 ++--
+>  arch/x86/kernel/ftrace.c     |   12 ++++++------
+>  include/linux/ftrace_event.h |   12 ++++++++++++
+>  include/linux/sched.h        |    2 +-
+>  include/linux/uaccess.h      |    8 ++++----
+>  include/trace/events/btrfs.h |    4 ++--
+>  include/trace/ftrace.h       |   13 +++++++++++++
+>  kernel/jump_label.c          |   18 +++++++++++++-----
+>  kernel/trace/ftrace.c        |   31 ++++++++++++++++++++++++-------
+>  kernel/trace/ring_buffer.c   |   10 +++++-----
+>  kernel/trace/trace.h         |   15 +++++++++++++++
+>  kernel/trace/trace_events.c  |    7 ++++++-
+>  kernel/trace/trace_output.c  |   27 +++++++++++++++++++++++++++
+>  mm/maccess.c                 |    8 ++++----
+>  scripts/recordmcount.h       |    8 ++++++++
+>  scripts/tags.sh              |    6 ++++--
+>  17 files changed, 148 insertions(+), 41 deletions(-)
+
+Pulled, thanks a lot Steve!
+
+	Ingo
