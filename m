@@ -1,168 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1E0SHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 14:07:00 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46951 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab1E0SG6 (ORCPT
+	id S1753554Ab1E0SJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 14:09:51 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:38309 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab1E0SJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 14:06:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ucaS56wgeSt5QBcVbuDefyTAtKISEATktoXEpRSs9oS0Y3hJaeszA6BcizMp5ppdQd
-         tPDC36j+SYkgKbSMQHEY+2G81eVina1Lt95G51x5GylVVNG0gToUugnLtpvT+PNjaiXM
-         utwGBIMKP/vAlUvpE3MaX+N5bJJgaAXuv2fN0=
-From: David Ahern <dsahern@gmail.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH v2] perf stat: clarify unsupported events from uncounted events
-Date: Fri, 27 May 2011 12:06:54 -0600
-Message-Id: <1306519614-19463-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.5.1
+	Fri, 27 May 2011 14:09:49 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: prasad@linux.vnet.ibm.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck\, Tony" <tony.luck@intel.com>,
+        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        anderson@redhat.com
+References: <20110526170722.GB23266@in.ibm.com>
+	<20110526171521.GD17988@in.ibm.com>
+Date: Fri, 27 May 2011 11:09:44 -0700
+In-Reply-To: <20110526171521.GD17988@in.ibm.com> (K. Prasad's message of "Thu,
+	26 May 2011 22:45:21 +0530")
+Message-ID: <m1vcww817b.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/VK4SbKWuSm9pve0k4MZGVQH4hcXkEhvs=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 XM_Sft_Co_L33T XM_Sft_Co_L33T
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;prasad@linux.vnet.ibm.com
+X-Spam-Relay-Country: 
+Subject: Re: [RFC Patch 4/6] PANIC_MCE: Introduce a new panic flag for fatal MCE, capture related information
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf stat continues running even if the event list contains
-counters that are not supported. The resulting output then
-contains <not counted> for those events which gets confusing
-as to which events are supported, but not counted and which
-are not supported.
+"K.Prasad" <prasad@linux.vnet.ibm.com> writes:
 
-Before:
+> PANIC_MCE: Introduce a new panic flag for fatal MCE, capture related information
+>
+> Fatal machine check exceptions (caused due to hardware memory errors) will now
+> result in a 'slim' coredump that captures vital information about the MCE. This
+> patch introduces a new panic flag, and new parameters to *panic functions
+> that can capture more information pertaining to the cause of crash.
+>
+> Enable a new elf-notes section to store additional information about the crash.
+> For MCE, enable a new notes section that captures relevant register status
+> (struct mce) to be later read during coredump analysis.
+>
+> Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
 
-perf stat -ddd -- sleep 1
+Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
- Performance counter stats for 'sleep 1':
 
-          0.571283 task-clock                #    0.001 CPUs utilized
-                 1 context-switches          #    0.002 M/sec
-                 0 CPU-migrations            #    0.000 M/sec
-               157 page-faults               #    0.275 M/sec
-         1,037,707 cycles                    #    1.816 GHz
-     <not counted> stalled-cycles-frontend
-     <not counted> stalled-cycles-backend
-           654,499 instructions              #    0.63  insns per cycle
-           136,129 branches                  #  238.286 M/sec
-     <not counted> branch-misses
-     <not counted> L1-dcache-loads
-     <not counted> L1-dcache-load-misses
-     <not counted> LLC-loads
-     <not counted> LLC-load-misses
-     <not counted> L1-icache-loads
-     <not counted> L1-icache-load-misses
-     <not counted> dTLB-loads
-     <not counted> dTLB-load-misses
-     <not counted> iTLB-loads
-     <not counted> iTLB-load-misses
-     <not counted> L1-dcache-prefetches
-     <not counted> L1-dcache-prefetch-misses
+> -void crash_save_vmcoreinfo(void)
+> +void crash_save_vmcoreinfo(void *arch_info, size_t arch_info_size,
+> +						enum panic_flags flags)
+>  {
+>  	u32 *buf;
+>  
+> @@ -1392,9 +1394,12 @@ void crash_save_vmcoreinfo(void)
+>  
+>  	buf = (u32 *)vmcoreinfo_note;
+>  
+> -	buf = append_elf_note(buf, VMCOREINFO_NOTE_NAME, 0, vmcoreinfo_data,
+> -			      vmcoreinfo_size);
+> -
+> +	if (flags & PANIC_MCE)
+> +		buf = append_elf_note(buf, "PANIC_MCE", NT_MCE, arch_info,
+> +					arch_info_size);
 
-       1.001004836 seconds time elapsed
+Ok.  This is uglier than I thought.  You have this terribly generic
+interface than when you go to use it you assume it is an mce.  Ugh
+no.
 
-After:
+Furthermore you short circuit out other pieces of this code.
 
-perf stat -ddd -- sleep 1
+This patch is a total hack that is massively over engineered.
 
- Performance counter stats for 'sleep 1':
+Saving NT_MCE is fine, in and of itself.  The rest of the information
+is totally nonsense.
 
-          1.350326 task-clock                #    0.001 CPUs utilized
-                 2 context-switches          #    0.001 M/sec
-                 0 CPU-migrations            #    0.000 M/sec
-               157 page-faults               #    0.116 M/sec
-            11,986 cycles                    #    0.009 GHz
-   <not supported> stalled-cycles-frontend
-   <not supported> stalled-cycles-backend
-           496,986 instructions              #   41.46  insns per cycle
-           138,065 branches                  #  102.246 M/sec
-             7,245 branch-misses             #    5.25% of all branches         [97.60%]
-     <not counted> L1-dcache-loads
-     <not counted> L1-dcache-load-misses
-     <not counted> LLC-loads
-     <not counted> LLC-load-misses
-     <not counted> L1-icache-loads
-     <not counted> L1-icache-load-misses
-     <not counted> dTLB-loads
-     <not counted> dTLB-load-misses
-     <not counted> iTLB-loads
-     <not counted> iTLB-load-misses
-     <not counted> L1-dcache-prefetches
-   <not supported> L1-dcache-prefetch-misses
+Eric
 
-       1.002397333 seconds time elapsed
 
-v1->v2:
-changed supported type from int to bool
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-stat.c |    9 +++++++--
- tools/perf/util/evsel.h   |    1 +
- 2 files changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index a9f0671..784ed6d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -61,6 +61,8 @@
- #include <locale.h>
- 
- #define DEFAULT_SEPARATOR	" "
-+#define CNTR_NOT_SUPPORTED	"<not supported>"
-+#define CNTR_NOT_COUNTED	"<not counted>"
- 
- static struct perf_event_attr default_attrs[] = {
- 
-@@ -448,6 +450,7 @@ static int run_perf_stat(int argc __used, const char **argv)
- 				if (verbose)
- 					ui__warning("%s event is not supported by the kernel.\n",
- 						    event_name(counter));
-+				counter->supported = false;
- 				continue;
- 			}
- 
-@@ -466,6 +469,7 @@ static int run_perf_stat(int argc __used, const char **argv)
- 			die("Not all events could be opened.\n");
- 			return -1;
- 		}
-+		counter->supported = true;
- 	}
- 
- 	if (perf_evlist__set_filters(evsel_list)) {
-@@ -861,7 +865,7 @@ static void print_counter_aggr(struct perf_evsel *counter)
- 	if (scaled == -1) {
- 		fprintf(stderr, "%*s%s%*s",
- 			csv_output ? 0 : 18,
--			"<not counted>",
-+			counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
- 			csv_sep,
- 			csv_output ? 0 : -24,
- 			event_name(counter));
-@@ -914,7 +918,8 @@ static void print_counter(struct perf_evsel *counter)
- 				csv_output ? 0 : -4,
- 				evsel_list->cpus->map[cpu], csv_sep,
- 				csv_output ? 0 : 18,
--				"<not counted>", csv_sep,
-+				counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
-+				csv_sep,
- 				csv_output ? 0 : -24,
- 				event_name(counter));
- 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index f79bb2c..77ea027 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -61,6 +61,7 @@ struct perf_evsel {
- 		off_t		id_offset;
- 	};
- 	struct cgroup_sel	*cgrp;
-+	bool supported;
- };
- 
- struct cpu_map;
--- 
-1.7.5.1
-
+> +	else
+> +		buf = append_elf_note(buf, VMCOREINFO_NOTE_NAME, 0,
+> +				vmcoreinfo_data, vmcoreinfo_size);
+>  	final_note(buf);
+>  }
+>  
