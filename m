@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab1E0Ri7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:38:59 -0400
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:60209 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752961Ab1E0Ri4 (ORCPT
+	id S1755784Ab1E0RjE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:39:04 -0400
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:44269 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755301Ab1E0RjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 13:38:56 -0400
-X-AuditID: 1209190d-b7bdeae0000004f8-44-4ddfe171a275
+	Fri, 27 May 2011 13:39:01 -0400
+X-AuditID: 12074423-b7babae000007c6b-cc-4ddfe1ab8f9e
 From: Andy Lutomirski <luto@MIT.EDU>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH 0/5] x86-64: Remove syscall instructions at fixed addresses
-Date: Fri, 27 May 2011 13:38:37 -0400
-Message-Id: <cover.1306517576.git.luto@mit.edu>
+Subject: [PATCH 1/5] x86-64: Fix alignment of jiffies variable
+Date: Fri, 27 May 2011 13:38:38 -0400
+Message-Id: <0ea062d74a64a11c587deeee4ca7e9c396a0244f.1306517576.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.5.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsUixCmqrVv48L6vwe5PUhZ9V46yW1zeNYfN
+In-Reply-To: <cover.1306517576.git.luto@mit.edu>
+References: <cover.1306517576.git.luto@mit.edu>
+In-Reply-To: <cover.1306517576.git.luto@mit.edu>
+References: <cover.1306517576.git.luto@mit.edu>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsUixCmqrLv64X1fg44TuhZ9V46yW1zeNYfN
 	YsulZlaLzZumMlv82PCY1YHV41bbH2aPnbPusntsWtXJ5vHu3Dl2j8+b5AJYo7hsUlJzMstS
-	i/TtErgyzs89zVLQxlex7dIB5gbGs1xdjJwcEgImEtOvH2WBsMUkLtxbz9bFyMUhJLCPUeL7
-	+dOMEM4GRol1iz9COc+YJJ6928UM0sImoCLRsfQBE4gtIhAn0TD7NyuIzSzgIHH78RFGEFtY
-	wFvi/uPTYCtYBFQlHjcsA6vhFdCX6Ho4iRVitYLElSvzWCYw8ixgZFjFKJuSW6Wbm5iZU5ya
-	rFucnJiXl1qka6SXm1mil5pSuokRHDySvDsY3x1UOsQowMGoxMNrcfC+rxBrYllxZe4hRkkO
-	JiVRXr8HQCG+pPyUyozE4oz4otKc1OJDjBIczEoivCb7gXK8KYmVValF+TApaQ4WJXHemZLq
-	vkIC6YklqdmpqQWpRTBZGQ4OJQne2SBDBYtS01Mr0jJzShDSTBycIMN5gIZPA6nhLS5IzC3O
-	TIfIn2LU5Whcu+MgoxBLXn5eqpQ4bxFIkQBIUUZpHtwcWNS/YhQHekuYtx+kigeYMOAmvQJa
-	wgS0ROf3XZAlJYkIKakGRnY/g5ZC67a9kc/4L6ywS5v6Y5Kg1Ir/X1fqRaza3uD1ZnlXvuY9
-	500ue3m2uWzmFK8p8T3B/PhypPmCwnVnXItLp211tFUVsrtT+7pORqYw1nZC1H6r2lVzZ9Yf
-	Ut0Qm7I2b2NMV87xIzwb+NfoLDv1+KffQvu5X+pLLOPrU6TqNaqUL58JVWIpzkg01GIuKk4E
-	AEA/LvnVAgAA
+	i/TtErgyPs9by1rwjrViwY129gbGPyxdjJwcEgImEq0357BD2GISF+6tZ+ti5OIQEtjHKLH8
+	+S0WCGcDo8SDSe2MEM4zJonX/xtZQVrYBFQkOpY+YAKxRQTiJBpm/waLMws4SNx+fIQRxBYW
+	sJNo77kDVsMioCrxsWcDWA2vQJDEu0nT2SBWK0hcuTIP7CROAQOJ6393gJ0kJKAv8f3iOjZc
+	4hMYBRYwMqxilE3JrdLNTczMKU5N1i1OTszLSy3SNdPLzSzRS00p3cQICk52F+UdjH8OKh1i
+	FOBgVOLh1Tp431eINbGsuDL3EKMkB5OSKK/fA6AQX1J+SmVGYnFGfFFpTmrxIUYJDmYlEV6T
+	/UA53pTEyqrUonyYlDQHi5I471xJdV8hgfTEktTs1NSC1CKYrAwHh5IE72yQoYJFqempFWmZ
+	OSUIaSYOTpDhPEDDp4HU8BYXJOYWZ6ZD5E8x6nI0rt1xkFGIJS8/L1VKnPcpSJEASFFGaR7c
+	HFhSecUoDvSWMO9xkCoeYEKCm/QKaAkT0BKd33dBlpQkIqSkGhgZs72YD938trrwvI/rk0s3
+	MzZcX/ho1aZnPyUNNmqVOopnS7B2JSy7L2ztoLJWsfOtZc8qmW3yRyIyk+19urY8UXFYqJ/5
+	6poTo7+n24PLmrte62zKWml8y/zDIrnW8yE9fc6KOtvFpOsX/e69URd8gr++MmtZYmDjNg/V
+	JZesPNY80/Gv1lFiKc5INNRiLipOBABb83keBQMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I lied about taking awhile to do this.
+It's declared __attribute__((aligned(16)) but it's explicitly not
+aligned.  This is probably harmless but it's a but embarrassing.
 
-There are a bunch of syscall instructions in kernel space at fixed
-addresses that user code can execute.
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+---
+ arch/x86/include/asm/vvar.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-One is a time() fallback.  Patch 3/5 removes it.
-
-Several are data that isn't marked NX.  Patch 2/5 makes vvars NX and
-5/5 makes the HPET NX.
-
-The last one is the gettimeofday fallback.  We need that, but it
-doesn't have to be a real syscall.  Patch 3/5 adds int 0xCC (callable
-only from the vsyscall page) that implements the gettimeofday fallback
-and nothing else.
-
-Patch 1/5 is just a dumb but harmless bug fix from the last vdso
-series.
-
-I've only tested this in KVM with a hacked-up initramfs, but Ingo
-wanted it for 2.6.40, so here it is.
-
-Andy Lutomirski (5):
-  x86-64: Fix alignment of jiffies variable
-  x86-64: Give vvars their own page
-  x86-64: Remove kernel.vsyscall64 sysctl
-  x86-64: Replace vsyscall gettimeofday fallback with int 0xcc
-  x86-64: Map the HPET NX
-
- arch/x86/include/asm/fixmap.h        |    1 +
- arch/x86/include/asm/pgtable_types.h |    6 ++-
- arch/x86/include/asm/traps.h         |    4 ++
- arch/x86/include/asm/vgtod.h         |    1 -
- arch/x86/include/asm/vsyscall.h      |    6 ++
- arch/x86/include/asm/vvar.h          |   24 ++++-----
- arch/x86/kernel/entry_64.S           |    2 +
- arch/x86/kernel/hpet.c               |    2 +-
- arch/x86/kernel/traps.c              |    4 ++
- arch/x86/kernel/vmlinux.lds.S        |   27 ++++++----
- arch/x86/kernel/vsyscall_64.c        |   86 ++++++++++++++++++---------------
- arch/x86/vdso/vclock_gettime.c       |   55 ++++++++-------------
- tools/power/x86/turbostat/turbostat  |  Bin 0 -> 29200 bytes
- 13 files changed, 117 insertions(+), 101 deletions(-)
- create mode 100755 tools/power/x86/turbostat/turbostat
-
+diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
+index 341b355..a4eaca4 100644
+--- a/arch/x86/include/asm/vvar.h
++++ b/arch/x86/include/asm/vvar.h
+@@ -45,7 +45,7 @@
+ /* DECLARE_VVAR(offset, type, name) */
+ 
+ DECLARE_VVAR(0, volatile unsigned long, jiffies)
+-DECLARE_VVAR(8, int, vgetcpu_mode)
++DECLARE_VVAR(16, int, vgetcpu_mode)
+ DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
+ 
+ #undef DECLARE_VVAR
 -- 
 1.7.5.1
 
