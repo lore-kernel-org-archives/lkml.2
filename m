@@ -1,77 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab1E0RDr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:03:47 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48014 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756183Ab1E0RDn (ORCPT
+	id S1751117Ab1E0RFi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:05:38 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:15204 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab1E0RFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 13:03:43 -0400
-Date: Fri, 27 May 2011 22:33:31 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        anderson@redhat.com
-Subject: Re: [RFC Patch 4/6] PANIC_MCE: Introduce a new panic flag for fatal
- MCE, capture related information
-Message-ID: <20110527170331.GD2384@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20110526170722.GB23266@in.ibm.com>
- <20110526171521.GD17988@in.ibm.com>
- <20110526184350.GE29496@redhat.com>
+	Fri, 27 May 2011 13:05:37 -0400
+Message-ID: <4DDFD9E0.2090701@caviumnetworks.com>
+Date: Fri, 27 May 2011 10:05:36 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526184350.GE29496@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 4/6] MIPS: Prune some target specific code out
+ of prom.c
+References: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com> <1305930343-31259-5-git-send-email-ddaney@caviumnetworks.com> <20110527015845.GD5032@ponder.secretlab.ca>
+In-Reply-To: <20110527015845.GD5032@ponder.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 May 2011 17:05:37.0102 (UTC) FILETIME=[4C7CD6E0:01CC1C90]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 02:43:50PM -0400, Vivek Goyal wrote:
-> On Thu, May 26, 2011 at 10:45:21PM +0530, K.Prasad wrote:
-> 
-> [..]
-> > Index: linux-2.6.slim_kdump/arch/x86/kernel/cpu/mcheck/mce.c
-> > ===================================================================
-> > --- linux-2.6.slim_kdump.orig/arch/x86/kernel/cpu/mcheck/mce.c
-> > +++ linux-2.6.slim_kdump/arch/x86/kernel/cpu/mcheck/mce.c
-> > @@ -258,8 +258,7 @@ static void wait_for_panic(void)
-> >  	local_irq_enable();
-> >  	while (timeout-- > 0)
-> >  		udelay(1);
-> > -	xpanic(PANIC_NO_KEXEC|PANIC_NO_BACKTRACE, 0,
-> > -		"Panicing machine check CPU died");
-> > +	xpanic(PANIC_MCE, 0, NULL, 0, "Panicing machine check CPU died");
-> >  }
-> >  
-> >  static void mce_panic(char *msg, struct mce *final, char *exp)
-> > @@ -315,8 +314,8 @@ static void mce_panic(char *msg, struct
-> >  	if (exp)
-> >  		pr_emerg(HW_ERR "Machine check: %s\n", exp);
-> >  	if (!fake_panic) {
-> > -		xpanic(PANIC_NO_KEXEC|PANIC_NO_BACKTRACE, mce_panic_timeout,
-> > -			msg);
-> > +		xpanic(PANIC_MCE, mce_panic_timeout, final,
-> > +			sizeof(struct mce), msg);
-> >  	} else
-> >  		pr_emerg(HW_ERR "Fake kernel panic: %s\n", msg);
-> >  }
-> 
-> In previous patches you introduce PANIC_NO_KEXEC and PANIC_NO_BACKTRACE. 
-> Now in this patch you got rid of those. Are there any other users left
-> of PANIC_NO_BACKTRACE and PANIC_NO_EXEC? If not, then why to introduce
-> these to begin with.
+On 05/26/2011 06:58 PM, Grant Likely wrote:
+> On Fri, May 20, 2011 at 03:25:41PM -0700, David Daney wrote:
+>> This code is not common enough to be in a shared file.  It is also not
+>> used by any existing boards, so just remove it.
+>>
+>> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
+>> ---
+>>   arch/mips/kernel/prom.c |   49 -----------------------------------------------
+>>   1 files changed, 0 insertions(+), 49 deletions(-)
+>>
+>> diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
+>> index a19811e9..a07b6f1 100644
+>> --- a/arch/mips/kernel/prom.c
+>> +++ b/arch/mips/kernel/prom.c
+>> @@ -59,52 +59,3 @@ void __init early_init_dt_setup_initrd_arch(unsigned long start,
+>>   	initrd_below_start_ok = 1;
+>>   }
+>>   #endif
+>> -
+>> -/*
+>> - * irq_create_of_mapping - Hook to resolve OF irq specifier into a Linux irq#
+>> - *
+>> - * Currently the mapping mechanism is trivial; simple flat hwirq numbers are
+>> - * mapped 1:1 onto Linux irq numbers.  Cascaded irq controllers are not
+>> - * supported.
+>> - */
+>> -unsigned int irq_create_of_mapping(struct device_node *controller,
+>> -				   const u32 *intspec, unsigned int intsize)
+>> -{
+>> -	return intspec[0];
+>> -}
+>> -EXPORT_SYMBOL_GPL(irq_create_of_mapping);
+>
+> In $NEXT_KERNEL+1 irq_create_of_mapping will be replaced by common
+> infrastructure code after irq_domain is merged, so this will become
+> irrelevant anyway.
+
+Yes, I saw your patch.  I will be tracking that as it gets merged.
+
+>
+>> -
+>> -void __init early_init_devtree(void *params)
+>> -{
+>> -	/* Setup flat device-tree pointer */
+>> -	initial_boot_params = params;
+>> -
+>> -	/* Retrieve various informations from the /chosen node of the
+>> -	 * device-tree, including the platform type, initrd location and
+>> -	 * size, and more ...
+>> -	 */
+>> -	of_scan_flat_dt(early_init_dt_scan_chosen, NULL);
+>> -
+>> -	/* Scan memory nodes */
+>> -	of_scan_flat_dt(early_init_dt_scan_root, NULL);
+>> -	of_scan_flat_dt(early_init_dt_scan_memory_arch, NULL);
+>> -}
+>> -
+>> -void __init device_tree_init(void)
+>> -{
+>> -	unsigned long base, size;
+>> -
+>> -	if (!initial_boot_params)
+>> -		return;
+>> -
+>> -	base = virt_to_phys((void *)initial_boot_params);
+>> -	size = be32_to_cpu(initial_boot_params->totalsize);
+>> -
+>> -	/* Before we do anything, lets reserve the dt blob */
+>> -	reserve_mem_mach(base, size);
+>> -
+>> -	unflatten_device_tree();
+>> -
+>> -	/* free the space reserved for the dt blob */
+>> -	free_mem_mach(base, size);
+>> -}
+>
+> I'm a little concerned that the MIPS platforms are not sharing the
+> same DT init code.  This isn't really something that should need to be
+> customized per-platform.
 >
 
-The previous patch also converts panic to xpanic and is taken from
-Andi's
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git tree.
-The changes are kept as two separate patches to identify their origin.
+For better or worse, the Octeon kernel is booted with a protocol 
+completely different than any other MIPS board.  So there has to be some 
+custom code to find and initialize the device tree.
 
-Thanks,
-K.Prasad
+For boards that boot with the u-boot 'bootm' protocol, I think we need 
+to pass the device tree in the environment like other architectures do. 
+  The bootm code could, I think, be made common to all MIPS ports.
 
- 
+David Daney
