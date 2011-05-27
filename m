@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab1E0RDl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:03:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46527 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755458Ab1E0RDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 13:03:38 -0400
-Message-ID: <4DDFD958.9090700@zytor.com>
-Date: Fri, 27 May 2011 10:03:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1756458Ab1E0RDr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:03:47 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48014 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756183Ab1E0RDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 13:03:43 -0400
+Date: Fri, 27 May 2011 22:33:31 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        anderson@redhat.com
+Subject: Re: [RFC Patch 4/6] PANIC_MCE: Introduce a new panic flag for fatal
+ MCE, capture related information
+Message-ID: <20110527170331.GD2384@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20110526170722.GB23266@in.ibm.com>
+ <20110526171521.GD17988@in.ibm.com>
+ <20110526184350.GE29496@redhat.com>
 MIME-Version: 1.0
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@elte.hu
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, asm: Clean up desc.h a bit
-References: <tip-incpt6y26yd8586idx65t9ll@git.kernel.org>
-In-Reply-To: <tip-incpt6y26yd8586idx65t9ll@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526184350.GE29496@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2011 01:39 AM, tip-bot for Ingo Molnar wrote:
-> Commit-ID:  9a3865b185e77d1a4ca2d8356e37c19b78168961
-> Gitweb:     http://git.kernel.org/tip/9a3865b185e77d1a4ca2d8356e37c19b78168961
-> Author:     Ingo Molnar <mingo@elte.hu>
-> AuthorDate: Fri, 27 May 2011 09:29:32 +0200
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Fri, 27 May 2011 09:30:50 +0200
+On Thu, May 26, 2011 at 02:43:50PM -0400, Vivek Goyal wrote:
+> On Thu, May 26, 2011 at 10:45:21PM +0530, K.Prasad wrote:
 > 
-> x86, asm: Clean up desc.h a bit
+> [..]
+> > Index: linux-2.6.slim_kdump/arch/x86/kernel/cpu/mcheck/mce.c
+> > ===================================================================
+> > --- linux-2.6.slim_kdump.orig/arch/x86/kernel/cpu/mcheck/mce.c
+> > +++ linux-2.6.slim_kdump/arch/x86/kernel/cpu/mcheck/mce.c
+> > @@ -258,8 +258,7 @@ static void wait_for_panic(void)
+> >  	local_irq_enable();
+> >  	while (timeout-- > 0)
+> >  		udelay(1);
+> > -	xpanic(PANIC_NO_KEXEC|PANIC_NO_BACKTRACE, 0,
+> > -		"Panicing machine check CPU died");
+> > +	xpanic(PANIC_MCE, 0, NULL, 0, "Panicing machine check CPU died");
+> >  }
+> >  
+> >  static void mce_panic(char *msg, struct mce *final, char *exp)
+> > @@ -315,8 +314,8 @@ static void mce_panic(char *msg, struct
+> >  	if (exp)
+> >  		pr_emerg(HW_ERR "Machine check: %s\n", exp);
+> >  	if (!fake_panic) {
+> > -		xpanic(PANIC_NO_KEXEC|PANIC_NO_BACKTRACE, mce_panic_timeout,
+> > -			msg);
+> > +		xpanic(PANIC_MCE, mce_panic_timeout, final,
+> > +			sizeof(struct mce), msg);
+> >  	} else
+> >  		pr_emerg(HW_ERR "Fake kernel panic: %s\n", msg);
+> >  }
 > 
-> I have looked at this file and found it rather ugly - improve
-> readability a bit. No change in functionality.
-> 
+> In previous patches you introduce PANIC_NO_KEXEC and PANIC_NO_BACKTRACE. 
+> Now in this patch you got rid of those. Are there any other users left
+> of PANIC_NO_BACKTRACE and PANIC_NO_EXEC? If not, then why to introduce
+> these to begin with.
+>
 
-It sure is, but let me also register for the record that I hate the
-bloody bitfield.  A lot of what the bitfield does is completely
-pointless (breaking down the type field, which really is nothing other
-than a magic constant as far as the kernel is anyway) and generates
-insanely bad code.
+The previous patch also converts panic to xpanic and is taken from
+Andi's
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git tree.
+The changes are kept as two separate patches to identify their origin.
 
-I honestly think if we used macros like GDT_ENTRY() and perhaps a few
-variants we would make the code simpler.
+Thanks,
+K.Prasad
 
-	-hpa
+ 
