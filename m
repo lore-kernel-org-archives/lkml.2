@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758748Ab1E0DXb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 23:23:31 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:56054 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753096Ab1E0DXa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 23:23:30 -0400
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: Greg KH <greg@kroah.com>
-CC: "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacky Feng <jfeng@marvell.com>
-Date: Thu, 26 May 2011 20:23:18 -0700
-Subject: RE: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
- coalescing to device 	attributes in sysfs
-Thread-Topic: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
- coalescing to device 	attributes in sysfs
-Thread-Index: Acwbr201/zF27zVTSSu7gjHhmrLlkQAbIGYg
-Message-ID: <F766E4F80769BD478052FB6533FA745D19FAD848FB@SC-VEXCH4.marvell.com>
-References: <mvsas-intr-coal>
- <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
- <20110526021809.GA22496@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
- <20110526141430.GD4164@kroah.com>
-In-Reply-To: <20110526141430.GD4164@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755697Ab1E0GTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 02:19:08 -0400
+Received: from ozlabs.org ([203.10.76.45]:55210 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753243Ab1E0GTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 02:19:07 -0400
+Date: Fri, 27 May 2011 13:24:02 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/6] of: Allow scripts/dtc/libfdt to be used from
+ kernel code
+Message-ID: <20110527032402.GD7793@yookeroo.fritz.box>
+Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
+	David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
+	ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
+	grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
+References: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com>
+ <1305930343-31259-2-git-send-email-ddaney@caviumnetworks.com>
+ <20110521063345.GB14828@yookeroo.fritz.box>
+ <4DDA8FBC.1090904@caviumnetworks.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DDA8FBC.1090904@caviumnetworks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt >>>coalescing to device attributes in sysfs
-
-> >>On Thu, May 26, 2011 at 02:00:21AM -0700, Xiangliang Yu wrote:
-> >
-> >Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt >coalescing to device attributes in sysfs
-> >> 
-> >> -- Add support for driver version and interrupt coalescing device attributes.
+On Mon, May 23, 2011 at 09:47:56AM -0700, David Daney wrote:
+> On 05/20/2011 11:33 PM, David Gibson wrote:
+> >On Fri, May 20, 2011 at 03:25:38PM -0700, David Daney wrote:
+> >>To use it you need to do this in your Kconfig:
 > >>
-> >>When you add a sysfs file, you must also add a Documentation/ABI file as
-> >>well.  Please do that here.
+> >>	select LIBFDT
+> >>
+> >>And in the Makefile of the code using libfdt something like:
+> >>
+> >>ccflags-y := -include linux/libfdt_env.h -I$(src)/../../../scripts/dtc/libfdt
+> >>
+> >>Signed-off-by: David Daney<ddaney@caviumnetworks.com>
+> >>---
+> >>  drivers/of/Kconfig          |    3 +++
+> >>  drivers/of/Makefile         |    2 ++
+> >>  drivers/of/libfdt/Makefile  |    3 +++
+> >>  drivers/of/libfdt/fdt.c     |    2 ++
+> >>  drivers/of/libfdt/fdt_ro.c  |    2 ++
+> >>  drivers/of/libfdt/fdt_wip.c |    2 ++
 > >
-> >These device attributes are sysft class properties for the scsi host,
->> and the sysfs files are within scsi host sysfs directory. so, do you
->> think I need add a ABI file?  and , I can't find anything about scsi
->> host sysfs file under directory Documentation/ABI.
+> >No fdt_sw.c or fdt_rw.c?
+> >
+> 
+> I had no immediate need for them.  They could of course be added,
+> but that would potentially waste space.
+> 
+> Let's see if I can make it into an archive library.
 
->Yes, again, if you add a sysfs file, you need to add documentation
->explaining exactly what it is there for and what it does.
->
->And if there isn't already a file for this device, then please add it.
-How about this:
+That would be preferable.  It's more or less designed to work that way
+so that everything is available without using unnecessary space in the
+binary.
 
-.../ABI/testing/sysfs-bus-pci-scsi-devices-mvsas   |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-pci-scsi-devices-mvsas
-
-diff --git a/Documentation/ABI/testing/sysfs-bus-pci-scsi-devices-mvsas b/Documentation/ABI/testing/sysfs-bus-pci-scsi
--devices-mvsas
-new file mode 100644
-index 0000000..45f597e
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-pci-scsi-devices-mvsas
-@@ -0,0 +1,13 @@
-+What:          /sys/devices/pci/<devices>/<dev>/host/scsi_host/host/driver_version
-+Date:          May 2011
-+Kernel Version:        2.6.39
-+Contact:       yuxiangl@marvell.com
-+Description:   Display the mvsas drivers version
-+
-+What:          /sys/devices/pci/<devices>/<dev>/host/scsi_host/host/interrupt_coalescing
-+Date:          May 2011
-+Kernel Version:        2.6.39
-+Contact:       yuxiangl@marvell.com
-+Description:   Determines the maximum time the 88SE94XX waits after the occurrence of a
-+               Command Done before generating an interrupt.The maximum number of the 
-+               variable is less than 0x10000.
+-- 
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
