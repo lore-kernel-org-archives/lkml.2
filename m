@@ -1,232 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab1E0RjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:39:23 -0400
-Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:50920 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755906Ab1E0RjJ (ORCPT
+	id S1756687Ab1E0RjS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:39:18 -0400
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:60470 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755990Ab1E0RjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 13:39:09 -0400
-X-AuditID: 12074422-b7b0eae000007f48-03-4ddfe1bec312
+	Fri, 27 May 2011 13:39:12 -0400
+X-AuditID: 12074424-b7bc6ae000005a77-1e-4ddfe1bf5ec0
 From: Andy Lutomirski <luto@MIT.EDU>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH 3/5] x86-64: Remove kernel.vsyscall64 sysctl
-Date: Fri, 27 May 2011 13:38:40 -0400
-Message-Id: <4f7ce93b87e24b2bc1ea9de4052ab0a497a2a6a3.1306517576.git.luto@mit.edu>
+Subject: [PATCH 4/5] x86-64: Replace vsyscall gettimeofday fallback with int 0xcc
+Date: Fri, 27 May 2011 13:38:41 -0400
+Message-Id: <452208dbdf79d4c821d701d5973621bf7546419a.1306517576.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1306517576.git.luto@mit.edu>
 References: <cover.1306517576.git.luto@mit.edu>
 In-Reply-To: <cover.1306517576.git.luto@mit.edu>
 References: <cover.1306517576.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsUixG6norvv4X1fg4s/hS36rhxlt7i8aw6b
-	xZZLzawWmzdNZbb4seExqwOrx622P8weO2fdZffYtKqTzePduXPsHp83yQWwRnHZpKTmZJal
-	FunbJXBlzNm8hrVgv0FF59np7A2Mr9W7GDk5JARMJFb//ssGYYtJXLi3Hsjm4hAS2Mcocelj
-	OyuEs4FR4tqRKywgVUICz5gk7h0qArHZBFQkOpY+YAKxRQTiJBpm/2YFsZkFHCRuPz7CCGIL
-	C9hIrDn/nR3EZhFQlZhx5T9YnFcgSGLioVZ2iM0KEleuzAObzylgIHH97w52iF36Et8vrmPD
-	JT6BUWABI8MqRtmU3Crd3MTMnOLUZN3i5MS8vNQiXVO93MwSvdSU0k2M4NB0UdrB+POg0iFG
-	AQ5GJR5e9YP3fYVYE8uKK3MPMUpyMCmJ8vo9AArxJeWnVGYkFmfEF5XmpBYfYpTgYFYS4TXZ
-	D5TjTUmsrEotyodJSXOwKInzzpFU9xUSSE8sSc1OTS1ILYLJynBwKEnwCgBjUEiwKDU9tSIt
-	M6cEIc3EwQkynAdouCdIDW9xQWJucWY6RP4Uoy5H49odBxmFWPLy81KlxHmNQIoEQIoySvPg
-	5sBSyitGcaC3hHntQKp4gOkIbtIroCVMQEt0ft8FWVKSiJCSamAUmLDrS+sfhqj1JTNP/187
-	t4Jbqbb05aoJl2I6FLqV5ugKsBS/0+GNLy1/eNd4+2eD8jrTAsZPYWu3bDdT6JV0vPlnHev2
-	Q/OrRUufxeYvXdV/dPtbkadFd+49uunqM3OlQvrtjzMPyx1d2+5laHP7IcvrmY93Xf/3y+nm
-	zuK1H00cuthFhQ3mKrEUZyQaajEXFScCAEL6mNYEAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsUixCmqrbv/4X1fg/YFRhZ9V46yW1zeNYfN
+	YsulZlaLzZumMlv82PCY1YHV41bbH2aPnbPusntsWtXJ5vHu3Dl2j8+b5AJYo7hsUlJzMstS
+	i/TtErgyXr3JKHirVbF36UHWBsbNyl2MnBwSAiYSO2+sYoSwxSQu3FvP1sXIxSEksI9R4vPu
+	pVDOBkaJq123WSCcZ0wSfSs+s4G0sAmoSHQsfcAEYosIxEk0zP7NCmIzCzhI3H58BGgsB4ew
+	QKDEt5clIGEWAVWJjdfvsYPYvAJBEs8mXWGB2KwgceXKPDCbU8BA4vrfHWA1QgL6Et8vrmPD
+	JT6BUWABI8MqRtmU3Crd3MTMnOLUZN3i5MS8vNQiXXO93MwSvdSU0k2MoMBkd1HZwdh8SOkQ
+	owAHoxIPr9rB+75CrIllxZW5hxglOZiURHn9HgCF+JLyUyozEosz4otKc1KLDzFKcDArifCa
+	7AfK8aYkVlalFuXDpKQ5WJTEeedJqvsKCaQnlqRmp6YWpBbBZGU4OJQkeGeDDBUsSk1PrUjL
+	zClBSDNxcIIM5wEaPg2khre4IDG3ODMdIn+KUZejce2Og4xCLHn5ealS4rxPQYoEQIoySvPg
+	5sASyitGcaC3hHmPg1TxAJMR3KRXQEuYgJbo/L4LsqQkESEl1cCY3mEusX3byv+V2UoPDTa4
+	ynaYei867cG8/nhWQVdYmt4tzgepbyL28D6v2ph28uYs76670td/WqzdrHp/F79ZCU/sLL7X
+	CYYvS2c+lj/yr5n9xI3MG0/kjVmvvMvb9nZF6i+WezIqk05PXKB0Wnvf+03TJbRO1UYcVf93
+	JM/u0M7GPomzDOrJSizFGYmGWsxFxYkABWn+oQMDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's unnecessary overhead in code that's supposed to be highly
-optimized.  Removing it allows us to remove one of the two syscall
-instructions in the vsyscall page.
-
-The only sensible use for it is for UML users, and it doesn't fully
-address inconsistent vsyscall results on UML.  The real fix for UML
-is to stop using vsyscalls entirely.
+Now the only way to issue a syscall with side effects through the
+vsyscall page is to call a misaligned instruction.  I haven't
+checked for that.
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/include/asm/vgtod.h   |    1 -
- arch/x86/kernel/vsyscall_64.c  |   34 +------------------------
- arch/x86/vdso/vclock_gettime.c |   55 +++++++++++++++------------------------
- 3 files changed, 22 insertions(+), 68 deletions(-)
+ arch/x86/include/asm/traps.h    |    4 +++
+ arch/x86/include/asm/vsyscall.h |    6 +++++
+ arch/x86/kernel/entry_64.S      |    2 +
+ arch/x86/kernel/traps.c         |    4 +++
+ arch/x86/kernel/vsyscall_64.c   |   47 ++++++++++++++++++++++++++++++++++-----
+ 5 files changed, 57 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
-index 646b4c1..aa5add8 100644
---- a/arch/x86/include/asm/vgtod.h
-+++ b/arch/x86/include/asm/vgtod.h
-@@ -11,7 +11,6 @@ struct vsyscall_gtod_data {
- 	time_t		wall_time_sec;
- 	u32		wall_time_nsec;
+diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+index 0310da6..7eae1e4 100644
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -1,6 +1,8 @@
+ #ifndef _ASM_X86_TRAPS_H
+ #define _ASM_X86_TRAPS_H
  
--	int		sysctl_enabled;
- 	struct timezone sys_tz;
- 	struct { /* extract of a clocksource struct */
- 		cycle_t (*vread)(void);
++#include <linux/kprobes.h>
++
+ #include <asm/debugreg.h>
+ #include <asm/siginfo.h>			/* TRAP_TRACE, ... */
+ 
+@@ -38,6 +40,7 @@ asmlinkage void alignment_check(void);
+ asmlinkage void machine_check(void);
+ #endif /* CONFIG_X86_MCE */
+ asmlinkage void simd_coprocessor_error(void);
++asmlinkage void intcc(void);
+ 
+ dotraplinkage void do_divide_error(struct pt_regs *, long);
+ dotraplinkage void do_debug(struct pt_regs *, long);
+@@ -64,6 +67,7 @@ dotraplinkage void do_alignment_check(struct pt_regs *, long);
+ dotraplinkage void do_machine_check(struct pt_regs *, long);
+ #endif
+ dotraplinkage void do_simd_coprocessor_error(struct pt_regs *, long);
++dotraplinkage void do_intcc(struct pt_regs *, long);
+ #ifdef CONFIG_X86_32
+ dotraplinkage void do_iret_error(struct pt_regs *, long);
+ #endif
+diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
+index d555973..293ae08 100644
+--- a/arch/x86/include/asm/vsyscall.h
++++ b/arch/x86/include/asm/vsyscall.h
+@@ -31,6 +31,12 @@ extern struct timezone sys_tz;
+ 
+ extern void map_vsyscall(void);
+ 
++/* Emulation */
++static inline bool in_vsyscall_page(unsigned long addr)
++{
++	return (addr & ~(PAGE_SIZE - 1)) == VSYSCALL_START;
++}
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_X86_VSYSCALL_H */
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 8a445a0..8e12f50 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1121,6 +1121,8 @@ zeroentry spurious_interrupt_bug do_spurious_interrupt_bug
+ zeroentry coprocessor_error do_coprocessor_error
+ errorentry alignment_check do_alignment_check
+ zeroentry simd_coprocessor_error do_simd_coprocessor_error
++zeroentry intcc do_intcc
++
+ 
+ 	/* Reload gs selector with exception handling */
+ 	/* edi:  new selector */
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index b9b6716..d34894e 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -872,6 +872,10 @@ void __init trap_init(void)
+ 	set_bit(SYSCALL_VECTOR, used_vectors);
+ #endif
+ 
++	set_system_intr_gate(0xCC, &intcc);
++	set_bit(0xCC, used_vectors);
++	printk(KERN_ERR "intcc gate isntalled\n");
++
+ 	/*
+ 	 * Should be a barrier for any external CPU state:
+ 	 */
 diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index ee22180..3e8dac7 100644
+index 3e8dac7..6135a28 100644
 --- a/arch/x86/kernel/vsyscall_64.c
 +++ b/arch/x86/kernel/vsyscall_64.c
-@@ -53,7 +53,6 @@ DEFINE_VVAR(int, vgetcpu_mode);
- DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
- {
- 	.lock = SEQLOCK_UNLOCKED,
--	.sysctl_enabled = 1,
- };
+@@ -32,6 +32,7 @@
+ #include <linux/cpu.h>
+ #include <linux/smp.h>
+ #include <linux/notifier.h>
++#include <linux/syscalls.h>
  
- void update_vsyscall_tz(void)
-@@ -103,15 +102,6 @@ static __always_inline int gettimeofday(struct timeval *tv, struct timezone *tz)
+ #include <asm/vsyscall.h>
+ #include <asm/pgtable.h>
+@@ -44,6 +45,7 @@
+ #include <asm/desc.h>
+ #include <asm/topology.h>
+ #include <asm/vgtod.h>
++#include <asm/traps.h>
+ 
+ #define __vsyscall(nr) \
+ 		__attribute__ ((unused, __section__(".vsyscall_" #nr))) notrace
+@@ -92,13 +94,11 @@ static __always_inline void do_get_tz(struct timezone * tz)
+ 	*tz = VVAR(vsyscall_gtod_data).sys_tz;
+ }
+ 
+-static __always_inline int gettimeofday(struct timeval *tv, struct timezone *tz)
++static __always_inline int fallback_gettimeofday(struct timeval *tv)
+ {
+ 	int ret;
+-	asm volatile("syscall"
+-		: "=a" (ret)
+-		: "0" (__NR_gettimeofday),"D" (tv),"S" (tz)
+-		: __syscall_clobber );
++	/* Invoke do_intcc. */
++	asm volatile("int $0xcc" : "=a" (ret) : "D" (tv));
  	return ret;
  }
  
--static __always_inline long time_syscall(long *t)
--{
--	long secs;
--	asm volatile("syscall"
--		: "=a" (secs)
--		: "0" (__NR_time),"D" (t) : __syscall_clobber);
--	return secs;
--}
--
- static __always_inline void do_vgettimeofday(struct timeval * tv)
- {
- 	cycle_t now, base, mask, cycle_delta;
-@@ -122,8 +112,7 @@ static __always_inline void do_vgettimeofday(struct timeval * tv)
- 		seq = read_seqbegin(&VVAR(vsyscall_gtod_data).lock);
+@@ -113,7 +113,7 @@ static __always_inline void do_vgettimeofday(struct timeval * tv)
  
  		vread = VVAR(vsyscall_gtod_data).clock.vread;
--		if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled ||
--			     !vread)) {
-+		if (unlikely(!vread)) {
- 			gettimeofday(tv,NULL);
+ 		if (unlikely(!vread)) {
+-			gettimeofday(tv,NULL);
++			fallback_gettimeofday(tv);
  			return;
  		}
-@@ -165,8 +154,6 @@ time_t __vsyscall(1) vtime(time_t *t)
- {
- 	unsigned seq;
- 	time_t result;
--	if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled))
--		return time_syscall(t);
  
- 	do {
- 		seq = read_seqbegin(&VVAR(vsyscall_gtod_data).lock);
-@@ -227,22 +214,6 @@ static long __vsyscall(3) venosys_1(void)
- 	return -ENOSYS;
+@@ -236,6 +236,41 @@ static void __cpuinit vsyscall_set_cpu(int cpu)
+ 	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
  }
  
--#ifdef CONFIG_SYSCTL
--static ctl_table kernel_table2[] = {
--	{ .procname = "vsyscall64",
--	  .data = &vsyscall_gtod_data.sysctl_enabled, .maxlen = sizeof(int),
--	  .mode = 0644,
--	  .proc_handler = proc_dointvec },
--	{}
--};
--
--static ctl_table kernel_root_table2[] = {
--	{ .procname = "kernel", .mode = 0555,
--	  .child = kernel_table2 },
--	{}
--};
--#endif
--
- /* Assume __initcall executes before all user space. Hopefully kmod
-    doesn't violate that. We'll find out if it does. */
- static void __cpuinit vsyscall_set_cpu(int cpu)
-@@ -301,9 +272,6 @@ static int __init vsyscall_init(void)
- 	BUG_ON((unsigned long) &vtime != VSYSCALL_ADDR(__NR_vtime));
- 	BUG_ON((VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE)));
- 	BUG_ON((unsigned long) &vgetcpu != VSYSCALL_ADDR(__NR_vgetcpu));
--#ifdef CONFIG_SYSCTL
--	register_sysctl_table(kernel_root_table2);
--#endif
- 	on_each_cpu(cpu_vsyscall_init, NULL, 1);
- 	/* notifier priority > KVM */
- 	hotcpu_notifier(cpu_vsyscall_notifier, 30);
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index a724905..cf54813 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -116,21 +116,21 @@ notrace static noinline int do_monotonic_coarse(struct timespec *ts)
- 
- notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
- {
--	if (likely(gtod->sysctl_enabled))
--		switch (clock) {
--		case CLOCK_REALTIME:
--			if (likely(gtod->clock.vread))
--				return do_realtime(ts);
--			break;
--		case CLOCK_MONOTONIC:
--			if (likely(gtod->clock.vread))
--				return do_monotonic(ts);
--			break;
--		case CLOCK_REALTIME_COARSE:
--			return do_realtime_coarse(ts);
--		case CLOCK_MONOTONIC_COARSE:
--			return do_monotonic_coarse(ts);
--		}
-+	switch (clock) {
-+	case CLOCK_REALTIME:
-+		if (likely(gtod->clock.vread))
-+			return do_realtime(ts);
-+		break;
-+	case CLOCK_MONOTONIC:
-+		if (likely(gtod->clock.vread))
-+			return do_monotonic(ts);
-+		break;
-+	case CLOCK_REALTIME_COARSE:
-+		return do_realtime_coarse(ts);
-+	case CLOCK_MONOTONIC_COARSE:
-+		return do_monotonic_coarse(ts);
++void dotraplinkage do_intcc(struct pt_regs *regs, long error_code)
++{
++	/* Kernel code must never get here. */
++	if (!user_mode(regs))
++		BUG();
++
++	local_irq_enable();
++
++	if (!in_vsyscall_page(regs->ip)) {
++		struct task_struct *tsk = current;
++		if (show_unhandled_signals && unhandled_signal(tsk, SIGSEGV) &&
++		    printk_ratelimit()) {
++			printk(KERN_INFO
++			       "%s[%d] illegal int $0xCC ip:%lx sp:%lx",
++			       tsk->comm, task_pid_nr(tsk),
++			       regs->ip, regs->sp);
++			print_vma_addr(" in ", regs->ip);
++			printk("\n");
++		}
++
++		force_sig(SIGSEGV, current);
++		return;
 +	}
 +
- 	return vdso_fallback_gettime(clock, ts);
- }
- int clock_gettime(clockid_t, struct timespec *)
-@@ -139,7 +139,7 @@ int clock_gettime(clockid_t, struct timespec *)
- notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
++	if (current->seccomp.mode) {
++		do_exit(SIGKILL);
++		return;
++	}
++
++	regs->ax = sys_gettimeofday((struct timeval __user *)regs->di, NULL);
++
++	local_irq_disable();
++	return;
++}
++
+ static void __cpuinit cpu_vsyscall_init(void *arg)
  {
- 	long ret;
--	if (likely(gtod->sysctl_enabled && gtod->clock.vread)) {
-+	if (likely(gtod->clock.vread)) {
- 		if (likely(tv != NULL)) {
- 			BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
- 				     offsetof(struct timespec, tv_nsec) ||
-@@ -161,27 +161,14 @@ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
- int gettimeofday(struct timeval *, struct timezone *)
- 	__attribute__((weak, alias("__vdso_gettimeofday")));
- 
--/* This will break when the xtime seconds get inaccurate, but that is
-- * unlikely */
--
--static __always_inline long time_syscall(long *t)
--{
--	long secs;
--	asm volatile("syscall"
--		     : "=a" (secs)
--		     : "0" (__NR_time), "D" (t) : "cc", "r11", "cx", "memory");
--	return secs;
--}
--
-+/*
-+ * This will break when the xtime seconds get inaccurate, but that is
-+ * unlikely
-+ */
- notrace time_t __vdso_time(time_t *t)
- {
--	time_t result;
--
--	if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled))
--		return time_syscall(t);
--
- 	/* This is atomic on x86_64 so we don't need any locks. */
--	result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
-+	time_t result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
- 
- 	if (t)
- 		*t = result;
+ 	/* preemption should be already off */
 -- 
 1.7.5.1
 
