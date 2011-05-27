@@ -1,134 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab1E0USa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 16:18:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33680 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab1E0US2 (ORCPT
+	id S1756581Ab1E0UTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 16:19:08 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39376 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752961Ab1E0UTG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 16:18:28 -0400
-X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=kJ--3F4o5PMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=h6K80ukqYzVPM5Oo16QA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [patch v4] checkpatch: Signature format verification
-From: Steven Rostedt <rostedt@goodmis.org>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Manish Kumar Singh <man.k1983@gmail.com>,
-        davej@redhat.com, apw@shadowen.org, akpm@linux-foundation.org,
-        vapier@gentoo.org, linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTi=dsYi3ViZdpGdagxzhzDRuRVL_+A@mail.gmail.com>
-References: <1306006721.1622.18.camel@anish-desktop>
-	 <1306059528.2761.3.camel@anish-desktop>
-	 <1306164094.2292.25.camel@anish-desktop>
-	 <1306519311.1918.12.camel@anish-desktop>
-	 <1306520991.31864.9.camel@Joe-Laptop>
-	 <BANLkTikfh_ABGomn-Lm9Ugc7MzeRodwiEQ@mail.gmail.com>
-	 <1306523288.31864.29.camel@Joe-Laptop>
-	 <BANLkTi=JK+XS2D0exj=unjpjGCsnVncCzQ@mail.gmail.com>
-	 <1306524822.31864.50.camel@Joe-Laptop>
-	 <BANLkTi=dsYi3ViZdpGdagxzhzDRuRVL_+A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 27 May 2011 16:18:26 -0400
-Message-ID: <1306527506.3857.41.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 27 May 2011 16:19:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=xtfx.me; s=google;
+        h=mime-version:x-originating-ip:in-reply-to:references:from:date
+         :message-id:subject:to:cc:content-type:content-transfer-encoding;
+        b=cm4bVG8WRs5Svk35g5hMtjJ7Yi5DpA9vo7lB5R6Oxjvk0g4IniHKnVuFlcuvDaBWrI
+         1iAvpf/BQ8019now3Be4M0PEhkAQXEpXGVbUVJObvpahtF9M4ui4UX96JyD+WYKUGol1
+         VfOq9bjWsUdV6LF3ek7RiSRWo17Q7xriZo0F8=
+MIME-Version: 1.0
+X-Originating-IP: [98.103.195.251]
+In-Reply-To: <m17h9e1h9e.fsf@fess.ebiederm.org>
+References: <m1wrhh3z62.fsf@fess.ebiederm.org> <BANLkTikW4vJbC8kcLSKuemUBbu36SO6hwg@mail.gmail.com>
+ <20110525213806.GA4590@mail.hallyn.com> <BANLkTinbw6pZjhMscfXFMArd=XU=VC=+eQ@mail.gmail.com>
+ <m17h9e1h9e.fsf@fess.ebiederm.org>
+From: C Anthony Risinger <anthony@xtfx.me>
+Date: Fri, 27 May 2011 15:18:45 -0500
+Message-ID: <BANLkTimXMaYe9OYNhqPCiNnG2CqaQOt-yw@mail.gmail.com>
+Subject: Re: [GIT PULL] Namespace file descriptors for 2.6.40
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-05-28 at 01:24 +0530, anish singh wrote:
-> 
+On Wed, May 25, 2011 at 6:40 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> C Anthony Risinger <anthony@xtfx.me> writes:
+>
+>> On Wed, May 25, 2011 at 4:38 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+>>> Quoting C Anthony Risinger (anthony@xtfx.me):
+>>>> On Mon, May 23, 2011 at 4:05 PM, Eric W. Biederman
+>>>> <ebiederm@xmission.com> wrote:
+>>>> >
+>>>> > This tree adds the files /proc/<pid>/ns/net, /proc/<pid>/ns/ipc,
+>>>> > /proc/<pid>/ns/uts that can be opened to refer to the namespaces of a
+>>>> > process at the time those files are opened, and can be bind mounted to
+>>>> > keep the specified namespace alive without a process.
+>>>> >
+>>>> > This tree adds the setns system call that can be used to change the
+>>>> > specified namespace of a process to the namespace specified by a system
+>>>> > call.
+>>>>
+>>>> i just have a quick question regarding these, apologies if wrong place
+>>>> to respond -- i trimmed to lists only.
+>>>>
+>>>> if i understand correctly, mount namespaces (for example), allow one
+>>>> to build such constructs as "private /tmp" and similar that even
+>>>> `root` cannot access ... and there are many reasons `root` does not
+>>>> deserve to completely know/interact with user processes (FUSE makes a
+>>>> good example ... just because i [user] have SSH access to a machine,
+>>>> why should `root`?)
+>>>>
+>>>> would these /proc additions break such guarantees?  IOW, would it now
+>>>> become possible for `root` to inject stuff into my private namespaces,
+>>>> and/or has these guarantees never existed and i am mistaken?  is there
+>>>> any kind of ACL mechanism that endows the origin process (or similar)
+>>>> with the ability to dictate who can hold and/or interact with these
+>>>> references?
+>>>
+>>> If for instance you have a file open in your private /tmp, then root
+>>> in another mounts ns can open the file through /proc/$$/fd/N anyway.
+>>> If it's a directory, he can now traverse the whole fs.
+>>
+>> aaah right :-( ... there's always another way isn't there ... curse
+>> you Linux for being so flexible! (just kidding baby i love you)
+>
+> Even more significant the access to the new files is guarded by the
+> ptrace access checks.  And if root can ptrace your process root
+> can remote control your process.
+>
+>> this seems like a more fundamental issue then?  or should i not expect
+>> to be able to achieve separation like this?  i ask in the context of
+>> OS virt via cgroups + namespaces, eg. LXC et al, because i'm about to
+>> perform a massive overhaul to our crusty sub-2.6.18 infrastructure and
+>> i've used/followed these technologies for couple years now ... and
+>> it's starting to feel like "the right time".
+>
+> I don't think anything really new is allowed, but we haven't designed
+> anything that radically reduces the power of root either.
+>
+> At some point we may have the user namespace done and that should
+> give you a root like user with vastly reduced powers, but we aren't
+> there yet.
 
->         
->         Anish, do you have a response to this?
-> Your approach is correct but i am trying to do in my own way.
+ok -- i knew there was some user namespace work still left for a
+namespaced root -- i was specifically thinking of the root user in the
+host.  i was under the impression that namespaces could achieve
+separation even from the host (save the kernel itself) ... but it
+seems i was mistaken ... still much to learn about Linux i suppose,
+even though i use it everyday for years and years :-)  it kind of
+makes sense i guess, since maybe the host needs supervisory powers
+over the guests?  could be some merit for real separation in the
+future (not only malevolent root host user, but say an attacker/script
+that manages to break thru container?), though how possible i dont
+know.  i wouldnt expect the root user to be prevented from killing/etc
+the container, but maybe only prevented from snooping, eg. the
+container looks like a black box that he may only resource control or
+kill completely.  either way, what we have is just fine for my (and
+likely many other's) uses.
 
-Why?? Correct is more important than individual preferences.
+anyways, thanks for all the answers and all the work on
+namespacing/cgroups ... very useful constructs for a wide array of
+problems.
 
->         
->         > I have replaced b/w with "between".
->         > And as Manish rightly exlained this patch is not meant for
->         > email validation.
->         
->         
->         Yet it does incorrectly anyway to nominally skip
->         name and find <.*>.  That's the problem.
->         
->         Look again at the patterns:
->         
->         +                               if ($line =~ /^\s*$sign(.*)/i)
->         {
->         +                                       if ($1 !~ /^\s
->         +([a-zA-Z\s\"\.\-\'\,]*.*)/i) {
+-- 
 
-Note, why the []? Because you basically have:
-
-	/^\s+([blahblah]*.*)/
-
-which is the same as:
-
-	/^\s+(.*)/
-
->         +                                               WARN("Space
->         required after $sign\n" .
->         +
->         $herecurr);
->         
->         +                                       }
->  
-> here i am trying to check space between sign & name.
-> In first if loop i am checking if sign is present in line or not.
-> If yes, enter into second if loop & check if $1 starts with space 
-> or not(which takes care of checking space between sign & name).
-> In this if loop again i am catching name & rest of the things in $1.
-> $1 will be used for checking space between name & mail-id.
-
-BTW, people hate perl for this very reason. This subtle changing of $1
-is very hard to follow if you are not a perl expert. I use perl all the
-time (recordmcount.pl and ktest.pl), but if you look at my code, you
-will see that I purposely avoid these subtle characteristics of perl,
-because that's the (very rightfully so) reason people complain that perl
-is a write once and never maintain language.
-
-I understood from the beginning what you were doing, but I had to think
-about it more than I should have.
-
->         
->         and
->         
->         +                                       if ($1 !~ /([\sa-zA-Z
->         \"\.\-\'\,]*)\s<.*>/i) {
->         +                                               WARN("Space
->         required b/w Full Name & Mail-id:\n" .
->         +
->         $herecurr);
->         
->         +                                       }
-
-
-You really need to get a new MUA.
->         
->         
->  
-> In this If loop i am using $1 (returned by earlier pattern)  to check
-> space 
-> between mail and <mail-id>.
-> If we print $1 after last if loop, we can get name appropriately.
-> So, i am not skipping name here to match <>.
->  
-> I will change <.*> to <.*?> (non-greedy match) for matching very first
-> enclosing bracket.
-
-Again, this doesn't explain the space warning when I have just his:
-
- Signed-off-by: <me@foo.bar>
-
-Because that will not match the above, because the $1 will be
-"<me@foo.bar>". With no space.
-
-
--- Steve
-
-
-
+C Anthony
