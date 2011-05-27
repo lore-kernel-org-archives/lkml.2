@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758695Ab1E0DlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 23:41:25 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:41845 "EHLO mprc.pku.edu.cn"
+	id S1758705Ab1E0DAB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 23:00:01 -0400
+Received: from void.printf.net ([89.145.121.20]:42928 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753627Ab1E0DlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 23:41:24 -0400
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <greg@kroah.com>
-References: <cover.1306408804.git.gxt@mprc.pku.edu.cn> <201105261450.01277.arnd@arndb.de>
-In-Reply-To: <201105261450.01277.arnd@arndb.de>
-Subject: RE: [PATCH 0/6] unicore32 subsystem: 6 patches for 2.6.39
-Date: Fri, 27 May 2011 10:58:59 +0800
-Message-ID: <005701cc1c1a$07d9e670$178db350$@mprc.pku.edu.cn>
+	id S1753085Ab1E0DAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 23:00:00 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org, philipl@overt.org,
+        w.sang@pengutronix.de
+Subject: Re: [PATCH] mmc: Enable MMC card reader for RICOH [1180:e823]
+References: <1306426745-3636-1-git-send-email-manoj.iyer@canonical.com>
+	<1306426745-3636-2-git-send-email-manoj.iyer@canonical.com>
+Date: Thu, 26 May 2011 23:01:04 -0400
+In-Reply-To: <1306426745-3636-2-git-send-email-manoj.iyer@canonical.com>
+	(Manoj Iyer's message of "Thu, 26 May 2011 11:19:05 -0500")
+Message-ID: <m3fwo0u9sf.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIcsKU1gucno1VE3ekXHpcmNwpJlQLp6SS/k+eCrtA=
-Content-Language: zh-cn
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Manoj,
 
+On Thu, May 26 2011, Manoj Iyer wrote:
+> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+> ---
+>  drivers/pci/quirks.c    |    2 ++
+>  include/linux/pci_ids.h |    1 +
+>  2 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index e8a1406..02145e9 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -2761,6 +2761,8 @@ static void ricoh_mmc_fixup_r5c832(struct pci_dev *dev)
+>  }
+>  DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+>  DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+> +DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
+> +DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
+>  #endif /*CONFIG_MMC_RICOH_MMC*/
+>  
+>  #if defined(CONFIG_DMAR) || defined(CONFIG_INTR_REMAP)
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> index 24787b7..2269dac 100644
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -1537,6 +1537,7 @@
+>  #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
+>  #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
+>  #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
+> +#define PCI_DEVICE_ID_RICOH_R5CE823	0xe823
+>  #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
+>  #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Thursday, May 26, 2011 8:50 PM
-> To: GuanXuetao
-> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; greg@kroah.com
-> Subject: Re: [PATCH 0/6] unicore32 subsystem: 6 patches for 2.6.39
-> 
-> On Thursday 26 May 2011, GuanXuetao wrote:
-> > Two patches for PKUnity v3 SoC drivers:
-> >         add mac driver, and move rtc driver to appropriate place
-> > Two patches for new 2.6.39 updates:
-> >         using generic-y and modify PERCPU macro
-> > Other two patches are small fixes.
-> >
-> > ---
-> > Guan Xuetao (6):
-> >   unicore32: move rtc-puv3.c to drivers/rtc directory
-> >   unicore32: add pkunity-v3 mac/net driver (umal)
-> >   unicore32: change zImage physical address, though it's PIC codes
-> >   unicore32: add KBUILD_DEFCONFIG with unicore32_defconfig (old
-> >     debug_defconfig)
-> >   unicore32: change PERCPU to PERCPU_SECTION
-> >   unicore32: using generic-y format for one line asm-generic files
-> >
-> 
-> The patches look basically ok, but two points to remember:
-> 
-> * The merge window is not the time to post patches for review, if you
->   want to collect Acked-by's from other people, do that in the
->   time between the merge windows, then put the patches in your git
->   tree with the Acked-by for linux-next. During the merge window, just
->   send stuff that was already in your tree to Linus.
-> 
->   Bug fixes should get sent to Linus at any time, but I think you already
->   did that, all of these were either new features or cleanups.
-> 
-> * Add a small text explaining why you do something to each patch. The
->   one-line summary that you always have is too short for this and only
->   serves to list what you change, not why.
-I see. Thanks for your explanation.
+Do you not need a corresponding entry in drivers/mmc/host/sdhci-pci.c's
+pci_device_id struct?
 
-> 
-> 	Arnd
+Thanks,
 
-Thanks & Regards.
-
-Guan Xuetao
-
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
