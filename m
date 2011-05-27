@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab1E0JbD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 05:31:03 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60828 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752867Ab1E0JbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 05:31:00 -0400
-Date: Fri, 27 May 2011 11:30:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Greg KH <greg@kroah.com>
-Cc: Mike Travis <travis@sgi.com>, David Woodhouse <dwmw2@infradead.org>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        iommu@lists.linux-foundation.org, Mike Habeck <habeck@sgi.com>,
-        stable@kernel.org
-Subject: Re: [stable] [PATCH 1/7] Intel pci: Check for identity mapping
- candidate using system dma mask
-Message-ID: <20110527093042.GG21386@elte.hu>
-References: <20110527013221.231071058@gulag1.americas.sgi.com>
- <20110527013221.405688800@gulag1.americas.sgi.com>
- <20110527071838.GA16217@kroah.com>
+	id S1758793Ab1E0JcO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 05:32:14 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39293 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757744Ab1E0JcN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 05:32:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=C5lQK1HDvpEumq18N2OAqonhPgqq4TNSAiLNIXtkbI5FfPo9ydYbr12QSA+ZZgSaKJ
+         2H6403cC/8gaUUnUPa8vnuZd6mfPZLwY+iKmtmLwPiFLIcXPPi4nMutBNngAdFKZzwJ7
+         cqIIa+VeCInD9U7RBstzfy6/rFqoNOZZnLzMo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110527071838.GA16217@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1306487816-9778-1-git-send-email-mchang@novell.com>
+References: <1306487816-9778-1-git-send-email-mchang@novell.com>
+Date: Fri, 27 May 2011 17:32:12 +0800
+X-Google-Sender-Auth: fZBK1X2UoXoQ3MH9gsYYQpEvsgM
+Message-ID: <BANLkTinSB8pqexEHe-hmqVy9K=NW_2oNHg@mail.gmail.com>
+Subject: Re: [PATCH] staging/gma500: get control from firmware framebuffer if conflicts
+From: Michael Chang <mchang@novell.com>
+To: gregkh@suse.de
+Cc: alan@linux.intel.com, error27@gmail.com, justinmattock@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Michael Chang <mchang@novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry the first patch is problematic, it may not work if you try to
+apply it, because it was sent from my gmail webmail. I have problem in
+setting the git send-email that time and now it just get fixed. I
+resend the patch again with git send-email.
 
-* Greg KH <greg@kroah.com> wrote:
+Please use new patch. Thanks.
 
-> <formletter>
-> 
-> This is not the correct way to submit patches for inclusion in the 
-> stable kernel tree.  Please read 
-> Documentation/stable_kernel_rules.txt for how to do this properly.
-> 
-> </formletter>
-> 
-> I'll not send this out for the other 6 patches that also do not 
-> follow the proper format, as I'm sure you would get bored reading 
-> them.
-
-None of these patches exist upstream yet so it will take some time 
-until any of this can touch -stable. You can ignore it safely for 
-now.
-
-Mike: please add proposed stable Cc: tags in the patch only, never 
-send it out to the stable email address itself!!
-
-Thanks,
-
-	Ingo
+Regards,
+Michael Chang
