@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab1E0XkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 19:40:12 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36404 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753884Ab1E0XkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 19:40:08 -0400
-Date: Sat, 28 May 2011 01:40:07 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
-        Robin Holt <holt@sgi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
-Subject: Re: [PATCH v2] cpusets: randomize node rotor used in
- cpuset_mem_spread_node()
-Message-ID: <20110527234007.GB4276@tiehlicka.suse.cz>
-References: <20110414065146.GA19685@tiehlicka.suse.cz>
- <20110414160145.0830.A69D9226@jp.fujitsu.com>
- <20110415161831.12F8.A69D9226@jp.fujitsu.com>
- <20110415082051.GB8828@tiehlicka.suse.cz>
- <20110526153319.b7e8c0b6.akpm@linux-foundation.org>
- <20110527124705.GB4067@tiehlicka.suse.cz>
- <alpine.DEB.2.00.1105271157350.2533@chino.kir.corp.google.com>
- <20110527231708.GB3214@tiehlicka.suse.cz>
- <alpine.DEB.2.00.1105271623410.9445@chino.kir.corp.google.com>
+	id S1757575Ab1E0Xuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 19:50:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39300 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757046Ab1E0Xud convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 19:50:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105271623410.9445@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5haae8jx7h.wl%tiwai@suse.de>
+References: <s5haae8jx7h.wl%tiwai@suse.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 27 May 2011 16:50:08 -0700
+Message-ID: <BANLkTi=SsE2RVoZW0mq6NdjsNeK1r_hx6Q@mail.gmail.com>
+Subject: Re: [GIT PULL] sound updates #2 for 2.6.40
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 27-05-11 16:27:34, David Rientjes wrote:
-> On Sat, 28 May 2011, Michal Hocko wrote:
-> 
-> > > CONFIG_NODES_SHIFT is used for UMA machines that are using DISCONTIGMEM 
-> > > usually because they have very large holes; such machines don't need 
-> > > things like mempolicies but do need the data structures that abstract 
-> > > ranges of memory in the physical address space.  This build breakage 
-> > > probably isn't restricted to only alpha, you could probably see it with at 
-> > > least ia64 and mips as well.
-> > 
-> > Hmmm. I just find strange that some UMA arch uses functions like
-> > {first,next}_online_node.
-> > 
-> 
-> They shouldn't, but they do use NUMA data structures like pg_data_t for 
-> DISCONTIGMEM.  The MAX_NUMNODES > 1 optimization in nodemask.h is to 
-> prevent doing things like node_weight() on a nodemask when we know that 
-> only one bit will ever be set, otherwise we could make it conditional on 
-> CONFIG_NEED_MULTIPLE_NODES.
+On Fri, May 27, 2011 at 2:42 AM, Takashi Iwai <tiwai@suse.de> wrote:
+>
+> please pull sound updates (part 2) for v2.6.40-rc1 from:
+>
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6.git for-linus
 
-Thanks for the explanation.
+Ok, I've bisected the sound problems on my machine to one of three.
+It's somewhere in this range:
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+  af4ccf4f86c0..9477c58e3308
+
+probably it's that last one ("ALSA: hda - Reorganize controller quriks
+with bit flags").
+
+I'll have it fully bisected soon enough.
+
+                     Linus
