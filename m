@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab1E0Wz1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 18:55:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63407 "EHLO mga09.intel.com"
+	id S1757471Ab1E0XTB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 19:19:01 -0400
+Received: from mx-3.enea.com ([192.36.1.72]:26737 "EHLO mx-3.enea.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757313Ab1E0WzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 18:55:01 -0400
-X-ExtLoop1: 1
-From: Andi Kleen <andi@firstfloor.org>
+	id S1757352Ab1E0XTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 19:19:00 -0400
+X-Greylist: delayed 849 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 May 2011 19:18:59 EDT
+Message-ID: <4DE02E11.5060007@enea.com>
+Date: Sat, 28 May 2011 01:04:49 +0200
+From: Arvid Brodin <arvid.brodin@enea.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        Andi Kleen <ak@linux.intel.com>, dchinner@redhat.com, aelder@sgi.com
-Subject: [PATCH 4/4] XFS: Set NOSEC flag early when inode has no xattrs.
-Date: Fri, 27 May 2011 15:54:05 -0700
-Message-Id: <1306536845-24162-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1306536845-24162-1-git-send-email-andi@firstfloor.org>
-References: <1306536845-24162-1-git-send-email-andi@firstfloor.org>
+CC: linux-usb@vger.kernel.org, Juergen Beisert <jbe@pengutronix.de>
+Subject: A standardized way of reporting kernel events to userspace
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 May 2011 23:04:12.0198 (UTC) FILETIME=[647BF460:01CC1CC2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hi,
 
-Set the S_NOSEC flag early if the inode has no xattrs for XFS.
-This avoids a single xattr lookup for the first write on every
-file, if the file has no xattrs.
+After I asked on linux-usb for a way for userspace to catch over-current events
+on the usb bus, it turned out that Juergen Beisert had had the need to do the
+exact same thing some time ago. He posted this patch using a uevent to notify
+userspace:
 
-Cc: dchinner@redhat.com
-Cc: aelder@sgi.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Juergen Beisert <jbe@pengutronix.de>
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
 ---
- fs/xfs/linux-2.6/xfs_iops.c |    3 +++
- fs/xfs/xfs_attr.c           |    2 +-
- fs/xfs/xfs_attr.h           |    1 +
- 3 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/usb/core/hub.c           |    4 ++++
+ 1 file changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
-index dd21784..4ed1e4c 100644
---- a/fs/xfs/linux-2.6/xfs_iops.c
-+++ b/fs/xfs/linux-2.6/xfs_iops.c
-@@ -763,6 +763,9 @@ xfs_setup_inode(
- 		break;
- 	}
- 
-+	if (!is_sgid(inode->i_mode) && !xfs_inode_hasattr(ip))
-+		inode->i_flags |= S_NOSEC;
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 84c18971..c615292 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3372,9 +3372,13 @@ static void hub_events(void)
+ 			}
+ 			
+ 			if (portchange & USB_PORT_STAT_C_OVERCURRENT) {
++				char event[] = "POWERFAIL=1";
++				char *envp[] = { event, NULL };
 +
- 	xfs_iflags_clear(ip, XFS_INEW);
- 	barrier();
- 
-diff --git a/fs/xfs/xfs_attr.c b/fs/xfs/xfs_attr.c
-index c863753..43140db 100644
---- a/fs/xfs/xfs_attr.c
-+++ b/fs/xfs/xfs_attr.c
-@@ -99,7 +99,7 @@ xfs_attr_name_to_xname(
- 	return 0;
- }
- 
--STATIC int
-+int
- xfs_inode_hasattr(
- 	struct xfs_inode	*ip)
- {
-diff --git a/fs/xfs/xfs_attr.h b/fs/xfs/xfs_attr.h
-index e920d68..20f4038 100644
---- a/fs/xfs/xfs_attr.h
-+++ b/fs/xfs/xfs_attr.h
-@@ -142,5 +142,6 @@ typedef struct xfs_attr_list_context {
- int xfs_attr_inactive(struct xfs_inode *dp);
- int xfs_attr_rmtval_get(struct xfs_da_args *args);
- int xfs_attr_list_int(struct xfs_attr_list_context *);
-+int xfs_inode_hasattr(struct xfs_inode *ip);
- 
- #endif	/* __XFS_ATTR_H__ */
--- 
-1.7.4.4
+ 				dev_err (hub_dev,
+ 					"over-current change on port %d\n",
+ 					i);
++				kobject_uevent_env(&hub->intfdev->kobj, KOBJ_CHANGE, envp);
+ 				clear_port_feature(hdev, i,
+ 					USB_PORT_FEAT_C_OVER_CURRENT);
+ 				hub_power_on(hub, true);
 
+
+Alan Stern noted that having a standardized, accepted way for the kernel to
+report important hardware or software events to userspace could be useful, and
+suggested we start a discussion about this here on lkml. He noted some
+things to consider:
+
+	The type of event (hardware failure, data structure corruption,
+	imminent data loss, imminent hardware destruction...).
+
+	Whether or not the user can do anything to fix the problem.
+
+	Whatever else you can think of.
+
+
+So, please feel free to comment on this, and perhaps with time some kind of
+consensus can be reached on how to report issues like this to userspace.
+
+(My initial email to linux-usb: http://www.spinics.net/lists/linux-usb/msg47088.html)
+
+-- 
+Arvid Brodin
+Enea Services Stockholm AB
