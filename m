@@ -1,75 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892Ab1E0GAW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 02:00:22 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53629 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056Ab1E0GAO (ORCPT
+	id S1753656Ab1E0GHt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 02:07:49 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:50639 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab1E0GHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 02:00:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=sJ8vBxqsOmw1x5fRlW66mRFCOhmFRVkzqny/WIr2BmRatjT8uy1KXTazIOVeAzInez
-         gzAZhJpkNmIh6kuB8M6rNBIXWFVpQJo+8rvP6tRgP8OQpejJlh0M6/R6fnaY87ljSjjG
-         iniWPElPQPQIsqkdetwhfJCRJDL/US3pO3nhg=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Laurent Vivier <Laurent.Vivier@bull.net>,
-        Paul Clements <Paul.Clements@steeleye.com>
-Subject: [PATCH 3/3] nbd: adjust 'max_part' according to part_shift
-Date: Fri, 27 May 2011 15:00:03 +0900
-Message-Id: <1306476003-4624-3-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
-In-Reply-To: <1306476003-4624-1-git-send-email-namhyung@gmail.com>
-References: <1306476003-4624-1-git-send-email-namhyung@gmail.com>
+	Fri, 27 May 2011 02:07:47 -0400
+X-AuditID: cbfee61a-b7ce2ae000001a8f-ce-4ddf3fb1ae88
+Date: Fri, 27 May 2011 15:07:08 +0900
+From: Donggeun Kim <dg77.kim@samsung.com>
+Subject: [PATCH] CPUFREQ/S5PV210,EXYNOS4: Move S5PV210 and EXYNOS4 CPUfreq
+ drivers into drivers/cpufreq
+To: davej@redhat.com, kgene.kim@samsung.com
+Cc: cpufreq@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com
+Message-id: <1306476428-24808-1-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 27 May 2011 06:07:43.0771 (UTC)
+ FILETIME=[648C86B0:01CC1C34]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'max_part' parameter determines how many partitions are supported
-on each nbd device. However the actual number can be changed to the
-power of 2 minus 1 form during the module initialization as
-alloc_disk() is called with (1 << part_shift) for some reason.
+This patch simply moves CPUfreq drivers for S5PV210 and EXYNOS4
+into drivers/cpufreq directoty. The driver codes were not modified.
 
-So adjust 'max_part' also at least for consistency with loop and brd.
-It is exported via sysfs already, and a user should check this value
-after module loading if [s]he wants to use that number correctly
-(i.e. fdisk or something).
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Laurent Vivier <Laurent.Vivier@bull.net>
-Cc: Paul Clements <Paul.Clements@steeleye.com>
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/block/nbd.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+ arch/arm/mach-exynos4/Makefile                     |    1 -
+ arch/arm/mach-s5pv210/Makefile                     |    1 -
+ drivers/cpufreq/Makefile                           |    3 +++
+ .../cpufreq.c => drivers/cpufreq/exynos4.c         |    3 +--
+ .../cpufreq.c => drivers/cpufreq/s5pv210.c         |    3 +--
+ 5 files changed, 5 insertions(+), 6 deletions(-)
+ rename arch/arm/mach-exynos4/cpufreq.c => drivers/cpufreq/exynos4.c (99%)
+ rename arch/arm/mach-s5pv210/cpufreq.c => drivers/cpufreq/s5pv210.c (99%)
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index fdee7567fd15..f533f3375e24 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -754,9 +754,20 @@ static int __init nbd_init(void)
- 		return -ENOMEM;
+diff --git a/arch/arm/mach-exynos4/Makefile b/arch/arm/mach-exynos4/Makefile
+index 9be104f..7bf1c01 100644
+--- a/arch/arm/mach-exynos4/Makefile
++++ b/arch/arm/mach-exynos4/Makefile
+@@ -15,7 +15,6 @@ obj-				:=
+ obj-$(CONFIG_CPU_EXYNOS4210)	+= cpu.o init.o clock.o irq-combiner.o
+ obj-$(CONFIG_CPU_EXYNOS4210)	+= setup-i2c0.o gpiolib.o irq-eint.o dma.o
+ obj-$(CONFIG_PM)		+= pm.o sleep.o
+-obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
  
- 	part_shift = 0;
--	if (max_part > 0)
-+	if (max_part > 0) {
- 		part_shift = fls(max_part);
+ obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
  
-+		/*
-+		 * Adjust max_part according to part_shift as it is exported
-+		 * to user space so that user can know the max number of
-+		 * partition kernel should be able to manage.
-+		 *
-+		 * Note that -1 is required because partition 0 is reserved
-+		 * for the whole disk.
-+		 */
-+		max_part = (1UL << part_shift) - 1;
-+	}
-+
- 	if ((1UL << part_shift) > DISK_MAX_PARTS)
- 		return -EINVAL;
+diff --git a/arch/arm/mach-s5pv210/Makefile b/arch/arm/mach-s5pv210/Makefile
+index 11f1790..435d23e 100644
+--- a/arch/arm/mach-s5pv210/Makefile
++++ b/arch/arm/mach-s5pv210/Makefile
+@@ -15,7 +15,6 @@ obj-				:=
+ obj-$(CONFIG_CPU_S5PV210)	+= cpu.o init.o clock.o dma.o gpiolib.o
+ obj-$(CONFIG_CPU_S5PV210)	+= setup-i2c0.o
+ obj-$(CONFIG_S5PV210_PM)	+= pm.o sleep.o
+-obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
  
+ # machine support
+ 
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index c7f1a6f..92f2222 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -39,3 +39,6 @@ obj-$(CONFIG_X86_CPUFREQ_NFORCE2)	+= cpufreq-nforce2.o
+ 
+ ##################################################################################d
+ 
++# ARM CPUfreq drivers
++obj-$(CONFIG_CPU_FREQ_S5PV210)		+= s5pv210.o
++obj-$(CONFIG_CPU_FREQ_EXYNOS4)		+= exynos4.o
+diff --git a/arch/arm/mach-exynos4/cpufreq.c b/drivers/cpufreq/exynos4.c
+similarity index 99%
+rename from arch/arm/mach-exynos4/cpufreq.c
+rename to drivers/cpufreq/exynos4.c
+index a1bd258..54025fc 100644
+--- a/arch/arm/mach-exynos4/cpufreq.c
++++ b/drivers/cpufreq/exynos4.c
+@@ -1,5 +1,4 @@
+-/* linux/arch/arm/mach-exynos4/cpufreq.c
+- *
++/*
+  * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+  *		http://www.samsung.com
+  *
+diff --git a/arch/arm/mach-s5pv210/cpufreq.c b/drivers/cpufreq/s5pv210.c
+similarity index 99%
+rename from arch/arm/mach-s5pv210/cpufreq.c
+rename to drivers/cpufreq/s5pv210.c
+index 22046e2..c482fc8 100644
+--- a/arch/arm/mach-s5pv210/cpufreq.c
++++ b/drivers/cpufreq/s5pv210.c
+@@ -1,5 +1,4 @@
+-/* linux/arch/arm/mach-s5pv210/cpufreq.c
+- *
++/*
+  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
+  *		http://www.samsung.com
+  *
 -- 
-1.7.5.2
+1.7.4.1
 
