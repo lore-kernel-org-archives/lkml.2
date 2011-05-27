@@ -1,157 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab1E0UVZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 16:21:25 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42005 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752287Ab1E0UVV (ORCPT
+	id S1754325Ab1E0UZP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 16:25:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35537 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab1E0UZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 16:21:21 -0400
-Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re: 
- __elv_add_request OOPS]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Parag Warudkar <parag.lkml@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-In-Reply-To: <4DDF3A07.7040106@fusionio.com>
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar>
-	 <4DDB8BF6.2000304@fusionio.com>
-	 <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty>
-	 <4DDCB1C8.7040708@fusionio.com>
-	 <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty>
-	 <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
-	 <4DDD5240.2060308@fusionio.com>
-	 <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>
-	 <4DDD55D6.1080909@fusionio.com>
-	 <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty>
-	 <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com>
-	 <alpine.DEB.2.02.1105251613500.8972@ubuntu-natty>
-	 <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com>
-	 <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>
-	 <1306356735.1641.61.camel@mulgrave.site>
-	 <1306468385.4048.73.camel@mulgrave.site>  <4DDF3A07.7040106@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 May 2011 15:21:17 -0500
-Message-ID: <1306527677.12244.2.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 27 May 2011 16:25:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vBjuv9rqz7+o/dOFAfI9JWN8QiZjujJ6+mFL1wOAmRYa4xmbYEI4QTmNGBhERCnZod
+         uLoUn6XWyRu5ncc5JCCE0w06f2YHkvthnJdlXo4AWx7nq3NkXR+Qr9TbLdD+5ek64hqa
+         ZHbp6pS+PDbhhjc7dMg12KEjwClbALnpv+49A=
+Date: Fri, 27 May 2011 22:25:03 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: early kernel crash when kmemleak is enabled
+Message-ID: <20110527202503.GA2769@joi.lan>
+References: <20110515105505.GA21631@joi.lan>
+ <20110519134218.GH627@htj.dyndns.org>
+ <1305812924.26710.41.camel@e102109-lin.cambridge.arm.com>
+ <20110519135425.GI627@htj.dyndns.org>
+ <1305814133.26710.69.camel@e102109-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305814133.26710.69.camel@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-27 at 07:43 +0200, Jens Axboe wrote: 
-> On 2011-05-27 05:53, James Bottomley wrote:
-> > On Wed, 2011-05-25 at 15:52 -0500, James Bottomley wrote:
-> >> On Wed, 2011-05-25 at 16:42 -0400, Parag Warudkar wrote:
-> >>> Yeah - that makes sense. By that logic, looks like we can only disallow 
-> >>> for SDEV_DEL (if we decide to do that check here).
-> >>
-> >> I don't think this is the root cause.  I think q is non-NULL but has
-> >> already been released, so we're just getting a NULL deref on the actual
-> >> list head.
-> >>
-> >> Does this fix it?  It adds the refcounting at approximately the correct
-> >> places.  Of course, we'll now be trying elevator operations on an extant
-> >> queue but one whose elevator functions have been destroyed, so there are
-> >> probably additional state guards to place.
-> >>
-> >> James
-> >>
-> >> ---
-> >>
-> >> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> >> index 58584dc..44e8ca3 100644
-> >> --- a/drivers/scsi/scsi_scan.c
-> >> +++ b/drivers/scsi/scsi_scan.c
-> >> @@ -297,7 +297,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
-> >>  		kfree(sdev);
-> >>  		goto out;
-> >>  	}
-> >> -
-> >> +	blk_get_queue(sdev->request_queue);
+On Thu, May 19, 2011 at 03:08:53PM +0100, Catalin Marinas wrote:
+> On Thu, 2011-05-19 at 14:54 +0100, Tejun Heo wrote:
+> > On Thu, May 19, 2011 at 02:48:44PM +0100, Catalin Marinas wrote:
+> > > Thanks for tracking this down. Untested (I can add a log afterwards):
+> > >
+> > > diff --git a/init/main.c b/init/main.c
+> > > index 4a9479e..48df882 100644
+> > > --- a/init/main.c
+> > > +++ b/init/main.c
+> > > @@ -580,8 +580,8 @@ asmlinkage void __init start_kernel(void)
+> > >  #endif
+> > >       page_cgroup_init();
+> > >       enable_debug_pagealloc();
+> > > -     kmemleak_init();
+> > >       debug_objects_mem_init();
+> > > +     kmemleak_init();
+> > >       setup_per_cpu_pageset();
+> > >       numa_policy_init();
+> > >       if (late_time_init)
 > > 
-> > Apparently we can't do this because blk_[put|get]_queue aren't exported
-> > for use in modules (and SCSI can be modular), so this caused a build
-> > failure in linux-next.
+> > Heh, that was swift.  Yeap, seems to work here.  Please feel free to
+> > add my Tested-by.
 > 
-> I'll just export them.
+> Thanks. I have two other minor kmemleak fixes, so I'll send Linus a pull
+> request in the next day or so.
+> 
 
-OK, if you're fine with that, how does this patch look?
+With this patch applied kernel didn't panic, but kmemleak did not work either:
 
-I can take it through my rc-fixes tree (with your ack), since I'm a bit
-late on the merge window now.
+kmemleak: Early log buffer exceeded, please increase DEBUG_KMEMLEAK_EARLY_LOG_SIZE
+kmemleak: Kernel memory leak detector disabled
 
-James
+I increased DEBUG_KMEMLEAK_EARLY_LOG_SIZE from 400 to 1000, and it crashed in
+exactly the same way:
 
----
+[    0.100045] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[    0.101303] IP: [<ffffffff810854d1>] __queue_work+0x29/0x41a
+[    0.102210] PGD 0
+[    0.102551] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[    0.103459] last sysfs file:
+[    0.103949] CPU 0
+[    0.104260] Modules linked in:
+[    0.104803]
+[    0.105052] Pid: 1, comm: swapper Not tainted 2.6.39-rc4-nv+ #721 Bochs Bochs
+[    0.106193] RIP: 0010:[<ffffffff810854d1>]  [<ffffffff810854d1>] __queue_work+0x29/0x41a
+[    0.107472] RSP: 0018:ffff880007c03c90  EFLAGS: 00010246
+[    0.108310] RAX: 0000000000000000 RBX: ffffffff81a4fa80 RCX: ffff880007c03bb0
+[    0.109423] RDX: 0000000000000003 RSI: ffffffff81e5ade8 RDI: 0000000000000001
+[    0.110000] RBP: ffff880007c03ce0 R08: ffffffff81e5ade0 R09: 000000000000005a
+[    0.110000] R10: ffffea0000000008 R11: 0000000000000000 R12: 0000000000000000
+[    0.110000] R13: 0000000000000000 R14: 0000000000000000 R15: ffff880007946480
+[    0.110000] FS:  0000000000000000(0000) GS:ffff880007c00000(0000) knlGS:0000000000000000
+[    0.110000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    0.110000] CR2: 0000000000000000 CR3: 0000000001a23000 CR4: 00000000000006f0
+[    0.110000] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[    0.110000] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[    0.110000] Process swapper (pid: 1, threadinfo ffff880007ac2000, task ffff880007ac8000)
+[    0.110000] Stack:
+[    0.110000]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+[    0.110000]  0000000000000000 0000000000000000 ffffffff81a4fa80 ffff880007946330
+[    0.110000]  0000000000000000 ffff880007946480 ffff880007c03cf0 ffffffff81085910
+[    0.110000] Call Trace:
+[    0.110000]  <IRQ>
+[    0.110000]  [<ffffffff81085910>] queue_work_on+0x16/0x1d
+[    0.110000]  [<ffffffff81085abc>] queue_work+0x29/0x55
+[    0.110000]  [<ffffffff81085afb>] schedule_work+0x13/0x15
+[    0.110000]  [<ffffffff81242de1>] free_object+0x90/0x95
+[    0.110000]  [<ffffffff81242f6d>] debug_check_no_obj_freed+0x187/0x1d3
+[    0.110000]  [<ffffffff814b6504>] ? _raw_spin_unlock_irqrestore+0x30/0x4d
+[    0.110000]  [<ffffffff8110bd14>] ? free_object_rcu+0x68/0x6d
+[    0.110000]  [<ffffffff8110890c>] kmem_cache_free+0x64/0x12c
+[    0.110000]  [<ffffffff8110bd14>] free_object_rcu+0x68/0x6d
+[    0.110000]  [<ffffffff810b58bc>] __rcu_process_callbacks+0x1b6/0x2d9
+[    0.110000]  [<ffffffff81095c9f>] ? tick_handle_periodic+0x1f/0x6c
+[    0.110000]  [<ffffffff810b5a5a>] rcu_process_callbacks+0x7b/0x83
+[    0.110000]  [<ffffffff810733b2>] __do_softirq+0x117/0x207
+[    0.110000]  [<ffffffff810b05d3>] ? handle_irq_event+0x47/0x5c
+[    0.110000]  [<ffffffff814bd0cc>] call_softirq+0x1c/0x30
+[    0.110000]  [<ffffffff81034bc4>] do_softirq+0x38/0x80
+[    0.110000]  [<ffffffff810730ed>] irq_exit+0x4e/0xa0
+[    0.110000]  [<ffffffff8103429a>] do_IRQ+0x97/0xae
+[    0.110000]  [<ffffffff814b6853>] common_interrupt+0x13/0x13
+[    0.110000]  <EOI>
+[    0.110000]  [<ffffffff8123d25f>] ? delay_tsc+0x48/0xcb
+[    0.110000]  [<ffffffff8123d32a>] __const_udelay+0x25/0x27
+[    0.110000]  [<ffffffff81aaae16>] timer_irq_works+0x3c/0x77
+[    0.110000]  [<ffffffff81aab422>] setup_IO_APIC+0x337/0x755
+[    0.110000]  [<ffffffff81aa956c>] native_smp_prepare_cpus+0x3a0/0x451
+[    0.110000]  [<ffffffff814b64b9>] ? _raw_spin_unlock_irq+0x19/0x34
+[    0.110000]  [<ffffffff81a9e52b>] kernel_init+0x4e/0x135
+[    0.110000]  [<ffffffff8123e0fe>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+[    0.110000]  [<ffffffff814bcfd4>] kernel_thread_helper+0x4/0x10
+[    0.110000]  [<ffffffff81063d70>] ? finish_task_switch+0x5a/0xcb
+[    0.110000]  [<ffffffff814b64b9>] ? _raw_spin_unlock_irq+0x19/0x34
+[    0.110000]  [<ffffffff814b68b1>] ? retint_restore_args+0xe/0xe
+[    0.110000]  [<ffffffff81a9e4dd>] ? parse_early_options+0x20/0x20
+[    0.110000]  [<ffffffff814bcfd0>] ? gs_change+0xb/0xb
+[    0.110000] Code: c9 c3 55 48 89 e5 41 57 41 56 41 55 49 89 f5 41 54 48 c7 c6 a0 b7 a3 81 53 41 89 fc 48 83 ec 28 48 89 d3 48 89 d7 e8 63 d7 1b 00
+[    0.110000]  f6 45 00 40 0f 84 6b 01 00 00 b8 09 00 00 00 83 3d 28 10 a0
+[    0.110000] RIP  [<ffffffff810854d1>] __queue_work+0x29/0x41a
+[    0.110000]  RSP <ffff880007c03c90>
+[    0.110000] CR2: 0000000000000000
+[    0.110005] ---[ end trace 4eaa2a86a8e2da22 ]---
+[    0.110766] Kernel panic - not syncing: Fatal exception in interrupt
 
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [PATCH] [SCSI] Fix oops caused by queue refcounting failure
 
-In certain circumstances, we can get an oops from a torn down device.
-Most notably this is from CD roms trying to call scsi_ioctl.  The root
-cause of the problem is the fact that after scsi_remove_device() has
-been called, the queue is fully torn down.  This is actually wrong
-since the queue can be used until the sdev release function is called.
-Therefore, we add an extra reference to the queue which is released in
-sdev->release, so the queue always exists.
+The problem is: debugobjects want to use workqueues (system_wq actually), but they
+are initialized much later in a boot process.
 
-Also export blk_queue_get/blk_queue_put for the refcounting.
-
-Reported-by: Parag Warudkar <parag.lkml@gmail.com>
-Signed-off-by: James Bottomley <jbottomley@parallels.com>
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 3fe00a1..1aa776c 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -345,6 +345,7 @@ void blk_put_queue(struct request_queue *q)
- {
- 	kobject_put(&q->kobj);
- }
-+EXPORT_SYMBOL_GPL(blk_put_queue);
- 
- /*
-  * Note: If a driver supplied the queue lock, it should not zap that lock
-@@ -566,6 +567,7 @@ int blk_get_queue(struct request_queue *q)
- 
- 	return 1;
- }
-+EXPORT_SYMBOL_GPL(blk_get_queue);
- 
- static inline void blk_free_request(struct request_queue *q, struct request *rq)
- {
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 58584dc..44e8ca3 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -297,7 +297,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
- 		kfree(sdev);
- 		goto out;
- 	}
--
-+	blk_get_queue(sdev->request_queue);
- 	sdev->request_queue->queuedata = sdev;
- 	scsi_adjust_queue_depth(sdev, 0, sdev->host->cmd_per_lun);
- 
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index e639125..e0bd3f7 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -322,6 +322,7 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
- 		kfree(evt);
- 	}
- 
-+	blk_put_queue(sdev->request_queue);
- 	/* NULL queue means the device can't be used */
- 	sdev->request_queue = NULL;
- 
+Attached patch fixes this issue for me.
 
 
-
-
+diff --git a/lib/debugobjects.c b/lib/debugobjects.c
+index 9d86e45..a78b7c6 100644
+--- a/lib/debugobjects.c
++++ b/lib/debugobjects.c
+@@ -198,7 +198,7 @@ static void free_object(struct debug_obj *obj)
+ 	 * initialized:
+ 	 */
+ 	if (obj_pool_free > ODEBUG_POOL_SIZE && obj_cache)
+-		sched = !work_pending(&debug_obj_work);
++		sched = keventd_up() && !work_pending(&debug_obj_work);
+ 	hlist_add_head(&obj->node, &obj_pool);
+ 	obj_pool_free++;
+ 	obj_pool_used--;
 
