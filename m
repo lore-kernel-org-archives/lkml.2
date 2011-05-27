@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab1E0U2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 16:28:06 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54181
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751277Ab1E0U2D (ORCPT
+	id S1756431Ab1E0U2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 16:28:50 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:51303 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab1E0U2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 16:28:03 -0400
-Date: Fri, 27 May 2011 16:27:47 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Namhyung Kim <namhyung@gmail.com>, Mike Snitzer <snitzer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/2] blktrace: treat flush as barrier
-Message-ID: <20110527202747.GA4803@infradead.org>
-References: <1306501883-23498-1-git-send-email-namhyung@gmail.com>
- <20110527131237.GA27647@infradead.org>
- <BANLkTi=8jQPdBNJYfM=geuXFsAXJJgfq=Q@mail.gmail.com>
- <1306509182.1351.1.camel@leonhard>
- <4DE006C5.4010906@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DE006C5.4010906@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 27 May 2011 16:28:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ftB/Qinw4j0V5zPaapapeKWqRaGJ4L1P8DuDKFJ7SBp7PMfN0V+YBvy1BWKAl3ntvN
+         lhZKRW21iAtEzbkuVZwprI8yN8WHdjKKyyD7YLc1gqKMQygl5xkYo+c2Bv14R580UMzq
+         f5Ji+32EqvDtPNUuI4Z9E6/9vEPbvbKHfjkpQ=
+From: David Ahern <dsahern@gmail.com>
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 0/2] perf script: split sym format option into ip, sym, dso
+Date: Fri, 27 May 2011 14:28:42 -0600
+Message-Id: <1306528124-25861-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 10:17:09PM +0200, Jens Axboe wrote:
-> Agree on Christophs comments, we should not pretend they are the same
-> (since they are not). Since flush is a request on its own, F works
-> nicely. For FUA it's associated with a write, so F should work there too
-> indicating Write Fua (and easily humanly parsed as that, or Write
-> Flush). WU would look confusing.
+The option to dump events with a custom field selection assumes "sym" means
+instruction pointer/callchain and the conversions to symbol and dso. This
+series adds "ip" to mean dump the instruction pointer/callchain and shifts
+the meaning of "sym" to symbol conversion of addresses. The "dso" option
+further splits the old "sym" format into symbols and the dso it comes
+from.
 
-REQ_FLUSH can also be set on a write bio, it only gets split at the
-request level.  And even there we're at least pondering allowing it
-to stay as part of the write for some paravirtualized storage protocols.
+David Ahern (2):
+  perf script: "sym" field really means show IP data
+  perf script: make printing of dso a separate field option
+
+ tools/perf/Documentation/perf-script.txt |   10 +++---
+ tools/perf/builtin-script.c              |   38 ++++++++++++++-----
+ tools/perf/util/session.c                |   57 +++++++++++++++++++-----------
+ tools/perf/util/session.h                |    5 ++-
+ 4 files changed, 72 insertions(+), 38 deletions(-)
+
+-- 
+1.7.5.1
 
