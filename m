@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758699Ab1E0DWr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 23:22:47 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:54389 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1E0DWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 23:22:46 -0400
-Date: Thu, 26 May 2011 21:22:43 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Kyungmin Park <kmpark@infradead.org>, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, kgene.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] Samsung: Move Samsung SoCs GPIO drivers to
- drivers/gpio
-Message-ID: <20110527032243.GJ5032@ponder.secretlab.ca>
-References: <20110520054441.GA9952@july>
- <20110520063128.GA21285@ponder.secretlab.ca>
- <20110521112102.GA11887@sirena.org.uk>
+	id S1758748Ab1E0DXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 23:23:31 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:56054 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753096Ab1E0DXa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 23:23:30 -0400
+From: Xiangliang Yu <yuxiangl@marvell.com>
+To: Greg KH <greg@kroah.com>
+CC: "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jacky Feng <jfeng@marvell.com>
+Date: Thu, 26 May 2011 20:23:18 -0700
+Subject: RE: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
+ coalescing to device 	attributes in sysfs
+Thread-Topic: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
+ coalescing to device 	attributes in sysfs
+Thread-Index: Acwbr201/zF27zVTSSu7gjHhmrLlkQAbIGYg
+Message-ID: <F766E4F80769BD478052FB6533FA745D19FAD848FB@SC-VEXCH4.marvell.com>
+References: <mvsas-intr-coal>
+ <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
+ <20110526021809.GA22496@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
+ <20110526141430.GD4164@kroah.com>
+In-Reply-To: <20110526141430.GD4164@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110521112102.GA11887@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 21, 2011 at 12:21:02PM +0100, Mark Brown wrote:
-> On Fri, May 20, 2011 at 12:31:28AM -0600, Grant Likely wrote:
-> > On Fri, May 20, 2011 at 02:44:41PM +0900, Kyungmin Park wrote:
-> > >  .../gpiolib.c => drivers/gpio/s5pc100-gpio.c       |    0
-> > >  .../gpiolib.c => drivers/gpio/s5pv210-gpio.c       |    0
-> > >  .../gpiolib.c => drivers/gpio/samsung-gpiolib.c    |    3 +-
-> 
-> > drivers/gpio/gpio-*.c please.  I'm starting to enforce some level of
-> > naming convention.
-> 
-> Hrm, looking at the current mainline drivers the existing tendency seems
-> to be mostly towards gpio/*-gpio.c...
+> >>Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt >>>coalescing to device attributes in sysfs
 
-However, drivers/i2c/busses is nicely organized with i2c-*.c, and a
-lot of the spi drivers are drivers/spi/spi* (although it is a mixed
-bag here).  I also personally prefer the drivers to have the type as
-a prefix instead of a suffix, and I hope to reorganize both
-drivers/spi and drivers/gpio to follow the i2c lead in the next
-cycle.
+> >>On Thu, May 26, 2011 at 02:00:21AM -0700, Xiangliang Yu wrote:
+> >
+> >Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt >coalescing to device attributes in sysfs
+> >> 
+> >> -- Add support for driver version and interrupt coalescing device attributes.
+> >>
+> >>When you add a sysfs file, you must also add a Documentation/ABI file as
+> >>well.  Please do that here.
+> >
+> >These device attributes are sysft class properties for the scsi host,
+>> and the sysfs files are within scsi host sysfs directory. so, do you
+>> think I need add a ABI file?  and , I can't find anything about scsi
+>> host sysfs file under directory Documentation/ABI.
 
-True, this does come down to personal taste, but unless someone has a
-really strong objection to it then I'll keep asking for new drivers to
-use gpio- as a prefix.
+>Yes, again, if you add a sysfs file, you need to add documentation
+>explaining exactly what it is there for and what it does.
+>
+>And if there isn't already a file for this device, then please add it.
+How about this:
 
-g.
+.../ABI/testing/sysfs-bus-pci-scsi-devices-mvsas   |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-pci-scsi-devices-mvsas
 
+diff --git a/Documentation/ABI/testing/sysfs-bus-pci-scsi-devices-mvsas b/Documentation/ABI/testing/sysfs-bus-pci-scsi
+-devices-mvsas
+new file mode 100644
+index 0000000..45f597e
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-pci-scsi-devices-mvsas
+@@ -0,0 +1,13 @@
++What:          /sys/devices/pci/<devices>/<dev>/host/scsi_host/host/driver_version
++Date:          May 2011
++Kernel Version:        2.6.39
++Contact:       yuxiangl@marvell.com
++Description:   Display the mvsas drivers version
++
++What:          /sys/devices/pci/<devices>/<dev>/host/scsi_host/host/interrupt_coalescing
++Date:          May 2011
++Kernel Version:        2.6.39
++Contact:       yuxiangl@marvell.com
++Description:   Determines the maximum time the 88SE94XX waits after the occurrence of a
++               Command Done before generating an interrupt.The maximum number of the 
++               variable is less than 0x10000.
