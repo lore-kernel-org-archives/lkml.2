@@ -1,140 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab1E0HBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 03:01:40 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59276 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab1E0HBi convert rfc822-to-8bit (ORCPT
+	id S1755979Ab1E0HEv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 03:04:51 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:37374 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab1E0HEu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 03:01:38 -0400
+	Fri, 27 May 2011 03:04:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Xz+18zZLtBkIWU53IAxldViNhAmW7yQaQ6lvcmKxqOKcK+c6La6k94v1Q+AB127hT6
-         +3GDEgFzHr5kSvLQ4ak0v8fv89n3TKSPtlagR8Wq0JJXbjKI6cyFC6/wkCO+ctC4oewC
-         s/02f0gk9uBvupM6NnjbSckcfPy0RUXv9s7Co=
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type:content-transfer-encoding;
+        b=A8Mx6jrY2kPfjyBxQQOPJ/HOip2LBVUYvQY+/LqjbxvVRip2/seStbi8q8BrsmPs6b
+         pHna66AMhHpJJUTcS8qWxSyQv3uEtH9lIuwly96k5L5B2NEr7jT0QDeAU69KVg7gFwZ8
+         4+W3dmjYsCDoUuGyxZiB0L2/dniogUJPKUex4=
 MIME-Version: 1.0
-In-Reply-To: <1306430633.2497.91.camel@laptop>
-References: <1306343335.21578.65.camel@twins>
-	<1306358128.21578.107.camel@twins>
-	<BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
-	<1306405979.1200.63.camel@twins>
-	<1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
-	<1306409575.1200.71.camel@twins>
-	<1306412511.1200.90.camel@twins>
-	<20110526154508.GA13788@redhat.com>
-	<1306425584.2497.81.camel@laptop>
-	<1306426148.2497.83.camel@laptop>
-	<20110526170422.GA18413@redhat.com>
-	<1306430264.2497.88.camel@laptop>
-	<1306430633.2497.91.camel@laptop>
-Date: Fri, 27 May 2011 15:01:38 +0800
-Message-ID: <BANLkTincaA75JR3V2Fd6MDCw6yMhUmDdWA@mail.gmail.com>
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
- locks up on ARM
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Ingo Molnar <mingo@elte.hu>, Frank Rowand <frank.rowand@am.sony.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Date: Fri, 27 May 2011 15:04:49 +0800
+X-Google-Sender-Auth: 0ZEes3phdMKPf-xhZEQteEYi_C0
+Message-ID: <BANLkTi=DYt-Y=151knsQBjBaEJfjqn4ciQ@mail.gmail.com>
+Subject: [PATCH] staging/gma500: get control from firmware framebuffer if conflicts
+From: Michael Chang <mchang@novell.com>
+To: Greg KH <gregkh@suse.de>
+Cc: alan@linux.intel.com, error27@gmail.com, justinmattock@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 1:23 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> We'd end up with something like the below, which isn't too different
-> from what I've now got queued.
->
-> It has the extra cpu == smp_processor_id() check, but I'm not sure this
-> whole case is worth the trouble. I could go stick some counters in to
-> verify how often all this happens I guess.
->
-> ---
->  arch/x86/include/asm/system.h |    2 ++
->  kernel/sched.c                |   14 +++++++++++---
->  kernel/sched_debug.c          |    7 +++++++
->  3 files changed, 20 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
-> index c2ff2a1..2c597e8 100644
-> --- a/arch/x86/include/asm/system.h
-> +++ b/arch/x86/include/asm/system.h
-> @@ -10,6 +10,8 @@
->  #include <linux/kernel.h>
->  #include <linux/irqflags.h>
->
-> +#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> +
->  /* entries in ARCH_DLINFO: */
->  #if defined(CONFIG_IA32_EMULATION) || !defined(CONFIG_X86_64)
->  # define AT_VECTOR_SIZE_ARCH 2
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 2d12893..e4f7a9f 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2636,9 +2636,17 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
->                 * to spin on ->on_cpu if p is current, since that would
->                 * deadlock.
->                 */
-> -               if (p == current) {
-> -                       ttwu_queue(p, cpu);
-> -                       goto stat;
-> +               if (cpu == smp_processor_id()) {
-> +                       struct rq *rq;
-> +
-> +                       rq = __task_rq_lock(p);
-> +                       if (p->on_cpu) {
+Many Linux distributions would enable vesafb in order to display
+early stage boot splash. In this case, we will get garbled X
+Window screen if running X fbdev on psbfb.
 
-As Oleg has said, I also think we don't need this check.
+This is because fb0 is occupied by vesafb while psbfb is on fb1.
+They tried to drive the same pieces of hardware at the same
+time. With unmodified X start-up, it would try to use default
+fb0 framebuffer device and unfortunately it is now broken
+becaues fb1 supersedes it.
 
-> +                               ttwu_activate(rq, p, ENQUEUE_WAKEUP);
-> +                               ttwu_do_wakeup(rq, p, wake_flags);
+We should let psbfb takeover framebuffer control from vesafb
+to get around this problem.
 
-And the difference with ttwu_queue() is ttwu_queue() calls
-ttwu_activate() with another flag ENQUEUE_WAKING, so if
-we call ->task_waking() before  ttwu_queue(), I guess it will work
-too.
-But I like this version, because we call ->task_waking() and
-ttwu_activate() on the local cpu, that means the calculations on
-vruntime in that two functions are accumulated into noop.
+See also commit : 4410f3910947dcea8672280b3adecd
+53cec4e85e
 
-Thanks,
-Yong
+Signed-off-by: Michael Chang <mchang@novell.com>
+---
+�drivers/staging/gma500/psb_fb.c | � �8 ++++++++
+�1 files changed, 8 insertions(+), 0 deletions(-)
 
-> +                               __task_rq_unlock(rq);
-> +                               goto stat;
-> +                       }
-> +                       __task_rq_unlock(rq);
->                }
->  #endif
->                cpu_relax();
-> diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
-> index a6710a1..f0ff1de 100644
-> --- a/kernel/sched_debug.c
-> +++ b/kernel/sched_debug.c
-> @@ -332,6 +332,13 @@ static int sched_debug_show(struct seq_file *m, void *v)
->                (int)strcspn(init_utsname()->version, " "),
->                init_utsname()->version);
->
-> +#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> +       SEQ_printf(m, "__ARCH_WANT_INTERRUPTS_ON_CTXSW\n");
-> +#endif
-> +#ifdef __ARCH_WANT_UNLOCKED_CTXSW
-> +       SEQ_printf(m, "__ARCH_WANT_UNLOCKED_CTXSW\n");
-> +#endif
-> +
->  #define P(x) \
->        SEQ_printf(m, "%-40s: %Ld\n", #x, (long long)(x))
->  #define PN(x) \
->
->
->
+diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
+index 99c03a2..259596c 100644
+--- a/drivers/staging/gma500/psb_fb.c
++++ b/drivers/staging/gma500/psb_fb.c
+@@ -441,6 +441,14 @@ static int psbfb_create(struct psb_fbdev *fbdev,
+� � � �info->screen_size = size;
+� � � �memset(info->screen_base, 0, size);
 
-
-
--- 
-Only stand for myself
++ � � � info->apertures = alloc_apertures(1);
++ � � � if (!info->apertures) {
++ � � � � � � � ret = -ENOMEM;
++ � � � � � � � goto out_err0;
++ � � � }
++ � � � info->apertures->ranges[0].base = dev->mode_config.fb_base;
++ � � � info->apertures->ranges[0].size = dev_priv->pg->stolen_size;
++
+� � � �drm_fb_helper_fill_fix(info, fb->pitch, fb->depth);
+� � � �drm_fb_helper_fill_var(info, &fbdev->psb_fb_helper,
+� � � � � � � � � � � � � � � �sizes->fb_width, sizes->fb_height);
+--
+1.7.3.4
