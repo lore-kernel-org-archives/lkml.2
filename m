@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab1E0Xi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 19:38:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58065 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757046Ab1E0Xi0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 19:38:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=t9MI019uMlqPkWCZuEeqKWRpahKGuTU4S0pawlam8yWfEcFpFB13oGUNcsV3YvZiTz
-         MsO2IkwZo12tBuErOfA/d3s/zOvm+8T6cQ1l7dV0EpJ9WwS0HMUiGC4b3oswh63wjqRL
-         WY74qdkOYcJW3DEH1S8Qox+/kLfPVWlyFUu8M=
-From: Ralf Thielow <ralf.thielow@googlemail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ralf Thielow <ralf.thielow@googlemail.com>
-Subject: [PATCH] staging: tty: fixed some whitespace coding style issues
-Date: Sat, 28 May 2011 01:38:18 +0200
-Message-Id: <1306539498-4606-1-git-send-email-ralf.thielow@googlemail.com>
-X-Mailer: git-send-email 1.7.5.1
+	id S1757628Ab1E0Xik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 19:38:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36371 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757046Ab1E0Xij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 19:38:39 -0400
+Date: Sat, 28 May 2011 01:38:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
+        Robin Holt <holt@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH v2] cpusets: randomize node rotor used in
+ cpuset_mem_spread_node()
+Message-ID: <20110527233834.GA4276@tiehlicka.suse.cz>
+References: <20110414065146.GA19685@tiehlicka.suse.cz>
+ <20110414160145.0830.A69D9226@jp.fujitsu.com>
+ <20110415161831.12F8.A69D9226@jp.fujitsu.com>
+ <20110415082051.GB8828@tiehlicka.suse.cz>
+ <20110526153319.b7e8c0b6.akpm@linux-foundation.org>
+ <20110527124705.GB4067@tiehlicka.suse.cz>
+ <20110527142051.d7ec3784.akpm@linux-foundation.org>
+ <20110527231700.GA3214@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1105271628430.9445@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1105271628430.9445@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some whitespace coding style issues.
+On Fri 27-05-11 16:30:33, David Rientjes wrote:
+> On Sat, 28 May 2011, Michal Hocko wrote:
+> 
+> > > --- a/include/linux/nodemask.h~cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node-fix-2
+> > > +++ a/include/linux/nodemask.h
+> > > @@ -433,8 +433,6 @@ static inline void node_set_offline(int 
+> > >  	nr_online_nodes = num_node_state(N_ONLINE);
+> > >  }
+> > >  
+> > > -extern int node_random(const nodemask_t *maskp);
+> > > -
+> > >  #else
+> > >  
+> > >  static inline int node_state(int node, enum node_states state)
+> > > @@ -466,7 +464,15 @@ static inline int num_node_state(enum no
+> > >  #define node_set_online(node)	   node_set_state((node), N_ONLINE)
+> > >  #define node_set_offline(node)	   node_clear_state((node), N_ONLINE)
+> > >  
+> > > -static inline int node_random(const nodemask_t *mask) { return 0; }
+> > > +#endif
+> > > +
+> > > +#if defined(CONFIG_NUMA) && (MAX_NUMNODES > 1)
+> > > +extern int node_random(const nodemask_t *maskp);
+> > > +#else
+> > > +static inline int node_random(const nodemask_t *mask)
+> > > +{
+> > > +	return 0;
+> > > +}
+> > >  #endif
+> > 
+> > I have to admit that I quite don't understand concept of several nodes
+> > with UMA archs but do we really want to provide the sane node all the
+> > time?
+> > 
+> 
+> They aren't nodes on UMA machines, they are memory regions for 
+> DISCONTIGMEM which are separated by large holes in the address space.  
+> These archs will never sanely use node_random(), so it doesn't really 
+> matter except for CONFIG_NUMA where MAX_NUMNODES > 1, since they won't be 
+> selecting random memory regions.
 
-Signed-off-by: Ralf Thielow <ralf.thielow@googlemail.com>
----
- drivers/staging/tty/cd1865.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+OK, I see. Then it makes much more sense. Thanks for clarification.
 
-diff --git a/drivers/staging/tty/cd1865.h b/drivers/staging/tty/cd1865.h
-index 8c2ad65..48df113 100644
---- a/drivers/staging/tty/cd1865.h
-+++ b/drivers/staging/tty/cd1865.h
-@@ -32,7 +32,7 @@
- #define SX_ID           0x10
- 
- /* Definitions for Cirrus Logic CL-CD186x 8-port async mux chip */
-- 
-+
- #define CD186x_NCH       8       /* Total number of channels                */
- #define CD186x_TPC       16      /* Ticks per character                     */
- #define CD186x_NFIFO	 8	 /* TX FIFO size                            */
-@@ -95,7 +95,7 @@
- 
- 
- /* Global Interrupt Channel Register (R/W) */
-- 
-+
- #define GICR_CHAN       0x1c    /* Channel Number Mask                     */
- #define GICR_CHAN_OFF   2       /* Channel Number shift                    */
- 
 -- 
-1.7.5.1
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
