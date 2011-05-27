@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab1E0PNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 11:13:12 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:32934 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab1E0PNJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 11:13:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=nTjW1Jj69AyUrf/nl5+4mzOVVgVIddXs7+37J4ZS8tiTVKelvnrO6mZ808KvyDY4kD
-         OCxLZP/b5wiU97kbThAe+eWirqXbLJ23QQvAFRkgq15hxlQcq19HPOY0oYFz0wbrQeLi
-         l8QtJfDV2M56UG2G8qdv4rhcMItKb5n9csgvo=
-Subject: Re: [PATCH 1/2] blktrace: treat flush as barrier
-From: Namhyung Kim <namhyung@gmail.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-In-Reply-To: <BANLkTi=8jQPdBNJYfM=geuXFsAXJJgfq=Q@mail.gmail.com>
-References: <1306501883-23498-1-git-send-email-namhyung@gmail.com>
-	 <20110527131237.GA27647@infradead.org>
-	 <BANLkTi=8jQPdBNJYfM=geuXFsAXJJgfq=Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 28 May 2011 00:13:02 +0900
-Message-ID: <1306509182.1351.1.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1754349Ab1E0PRh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 11:17:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60059 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751389Ab1E0PRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 11:17:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,280,1304319600"; 
+   d="scan'208";a="9979868"
+Date: Fri, 27 May 2011 23:17:32 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/18] writeback: sync expired inodes first in
+ background writeback
+Message-ID: <20110527151732.GA13296@localhost>
+References: <20110524051411.924582719@intel.com>
+ <20110524051858.972440561@intel.com>
+ <20110524155205.GC5390@quack.suse.cz>
+ <20110525143857.GA25536@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110525143857.GA25536@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011-05-27 (금), 09:57 -0400, Mike Snitzer:
-> On Fri, May 27, 2011 at 9:12 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> > On Fri, May 27, 2011 at 10:11:22PM +0900, Namhyung Kim wrote:
-> >> Since BARRIER requests have been converted to FLUSH/FUA, it would be
-> >> better for blktrace to recognize FLUSH requests as BARRIER for the
-> >> backward-compatibility IMHO.
-> >
-> > I'd rather see new flags for them.  F and U maybe?
+On Wed, May 25, 2011 at 10:38:57PM +0800, Wu Fengguang wrote:
+> On Tue, May 24, 2011 at 11:52:05PM +0800, Jan Kara wrote:
+[snip]
+> > and I was wondering: Assume there is one continuously redirtied file and
+> > untar starts in parallel. With the new logic, background writeback will
+> > never consider inodes that are not expired in this situation (we never
+> > switch to "all dirty inodes" phase - or even if we switched, we would just
+> > queue all inodes and then return back to queueing only expired inodes). So
+> > the net effect is that for 30 seconds we will be only continuously writing
+> > pages of the continuously dirtied file instead of (possibly older) pages of
+> > other files that are written. Is this really desirable? Wasn't the old
+> > behavior simpler and not worse than the new one?
 > 
-> Somehow I'm not surprised by your F and U suggestion -- appropriate on
-> multiple levels :)
+> Good question! Yes sadly in this case the new behavior could be worse
+> than the old one.
 
-OK. I'll work on that direction.
-Thanks.
+Andrew, it's desirable to delay this patch given that it has some
+negative behavior (it's fixable but the fix won't be trivial enough
+for immediate merge).
 
+You may simply drop this patch (06) and the last two patches (17, 18)
+and still be able to cleanly apply all other patches in this series.
 
--- 
-Regards,
-Namhyung Kim
-
-
+Thanks,
+Fengguang
