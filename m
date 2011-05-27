@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab1E0SCC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 14:02:02 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:59883 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab1E0SCA (ORCPT
+	id S1752458Ab1E0SEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 14:04:20 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:44366 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab1E0SES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 14:02:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=vQrNYARRLNtxf5fX7bmKZOxzI1kQfOnyOE6AZlDjexPusP8aLXDYaTtF7/novWo6xd
-         0Y1Y/rttTRyI6LXpnH7/n9x0dc476JJkWcqkIbE95o7qV4PHrxS1vS8a4d/PbhDaDdKb
-         nZ/oYp9CxMppue9ZCg1dptgLT8YNycWBZuFmg=
-Subject: [patch v4] checkpatch: Signature format verification
-From: anish <anish198519851985@gmail.com>
-To: joe@perches.com
-Cc: davej@redhat.com, rostedt@goodmis.org, apw@shadowen.org,
-        akpm@linux-foundation.org, vapier@gentoo.org,
-        linux-kernel@vger.kernel.org, man.k1983@gmail.com
-In-Reply-To: <1306164094.2292.25.camel@anish-desktop>
-References: <1306006721.1622.18.camel@anish-desktop>
-	 <1306059528.2761.3.camel@anish-desktop>
-	 <1306164094.2292.25.camel@anish-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 May 2011 23:31:51 +0530
-Message-ID: <1306519311.1918.12.camel@anish-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 27 May 2011 14:04:18 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: prasad@linux.vnet.ibm.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck\, Tony" <tony.luck@intel.com>,
+        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        anderson@redhat.com
+References: <20110526170722.GB23266@in.ibm.com>
+	<20110526171521.GD17988@in.ibm.com>
+Date: Fri, 27 May 2011 11:04:06 -0700
+In-Reply-To: <20110526171521.GD17988@in.ibm.com> (K. Prasad's message of "Thu,
+	26 May 2011 22:45:21 +0530")
+Message-ID: <m1fwo09g15.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19yz/KnYhbonLhuolzMlGvDX1DHsslqcpM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;prasad@linux.vnet.ibm.com
+X-Spam-Relay-Country: 
+Subject: Re: [RFC Patch 4/6] PANIC_MCE: Introduce a new panic flag for fatal MCE, capture related information
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: anish kumar <anish198519851985@gmail.com>
+"K.Prasad" <prasad@linux.vnet.ibm.com> writes:
 
-This patch generates warning when there is no space between
-the patch submitter and successive mail-id.
+> PANIC_MCE: Introduce a new panic flag for fatal MCE, capture related information
+>
+> Fatal machine check exceptions (caused due to hardware memory errors) will now
+> result in a 'slim' coredump that captures vital information about the MCE. This
+> patch introduces a new panic flag, and new parameters to *panic functions
+> that can capture more information pertaining to the cause of crash.
+>
+> Enable a new elf-notes section to store additional information about the crash.
+> For MCE, enable a new notes section that captures relevant register status
+> (struct mce) to be later read during coredump analysis.
 
-V2 Modification:Suggested by Joe Perches(joe@perches.com) that
-we can add this check for all signature types so added that
-change and added logic to remove the inefficent looping so
-that it can come out as soon as signature type is matched.
+There may be a reason to pass everything struct mce through 5 layers of
+code but right now it looks like it just makes everything uglier to no
+real purpose.
 
-V3 Modification:Moved the variable from global to local scope.
-
-v4 Suggested by Joe Perches(joe@perches.com) that names can
-have many forms.8 bit chars,commas,quotes,apostrphes,all sort
-of things.This is now taken care of.
-
-Signed-off-by: anish kumar <anish198519851985@gmail.com>
----
- scripts/checkpatch.pl |   36 ++++++++++++++++++++++++------------
- 1 files changed, 24 insertions(+), 12 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d867081..bf724c9 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1365,20 +1365,32 @@ sub process {
- 			}
- 		}
- 
--#check the patch for a signoff:
--		if ($line =~ /^\s*signed-off-by:/i) {
--			# This is a signoff, if ugly, so do not double report.
--			$signoff++;
--			if (!($line =~ /^\s*Signed-off-by:/)) {
--				WARN("Signed-off-by: is the preferred form\n" .
--					$herecurr);
--			}
--			if ($line =~ /^\s*signed-off-by:\S/i) {
--				WARN("space required after Signed-off-by:\n" .
--					$herecurr);
-+#check the patch for a signoff/Reviewed/Acked/Tested:
-+		my ($sign,$loop_brk);
-+		my @signs = ("Reviewed-by:","Acked-by:","Signed-off-by:","Tested-by:");
-+		foreach $sign (@signs) {
-+			$loop_brk=0;
-+			if ($line =~ /^\s*$sign/i) {
-+				# This is a signoff, if ugly, so do not double report.
-+				$signoff++;
-+				$loop_brk++;
-+				if (!($line =~ /^\s*$sign/)) {
-+					WARN("$sign is the preferred form\n" .
-+						$herecurr);
-+				}
-+				if ($line =~ /^\s*$sign(.*)/i) {
-+					if ($1 !~ /^\s+([a-zA-Z\s\"\.\-\'\,]*.*)/i) {
-+						WARN("Space required after $sign\n" .
-+							$herecurr);
-+					}
-+					if ($1 !~ /([\sa-zA-Z\"\.\-\'\,]*)\s<.*>/i) {
-+						WARN("Space required b/w Full Name & Mail-id:\n" .
-+							$herecurr);
-+					}
-+				}
- 			}
-+			last if ($loop_brk == 1);
- 		}
--
- # Check for wrappage within a valid hunk of the file
- 		if ($realcnt != 0 && $line !~ m{^(?:\+|-| |\\ No newline|$)}) {
- 			ERROR("patch seems to be corrupt (line wrapped?)\n" .
--- 
-1.7.0.4
-
-
+Eric
