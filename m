@@ -1,306 +1,437 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab1E0TuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 15:50:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54463 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756806Ab1E0TuF (ORCPT
+	id S1757118Ab1E0UBL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 16:01:11 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:57574 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab1E0UBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 15:50:05 -0400
-Date: Fri, 27 May 2011 12:49:25 -0700
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org, konrad.wilk@oracle.com,
-        JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, chris.mason@oracle.com, dan.magenheimer@oracle.com
-Subject: [PATCH V4 4/4] mm: frontswap: config and doc files
-Message-ID: <20110527194925.GA27229@ca-server1.us.oracle.com>
+	Fri, 27 May 2011 16:01:09 -0400
+Date: Fri, 27 May 2011 15:50:08 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2011-05-27
+Message-ID: <20110527195008.GA5092@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DE0004F.00C3:SCFMA922111,ss=1,fgs=0
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V4 4/4] mm: frontswap: config and doc files
+Dave,
 
-Add configuration and documentation files.
+This is a quick batch of fixes intended for 2.6.40.  They are all
+small(-ish), and several of them fix either build breakage or some
+sort of regression.  At least one fixes an uninitialized variable
+that could potentially cause a crash.
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Please let me know if there are problems!
 
-Diffstat:
- Documentation/ABI/testing/sysfs-kernel-mm-frontswap |   16 
- Documentation/vm/frontswap.txt                      |  210 ++++++++++
- mm/Kconfig                                          |   16 
- mm/Makefile                                         |    1 
- 4 files changed, 243 insertions(+)
+Thanks,
 
---- linux-2.6.39/mm/Makefile	2011-05-18 22:06:34.000000000 -0600
-+++ linux-2.6.39-frontswap/mm/Makefile	2011-05-26 15:37:25.262292918 -0600
-@@ -25,6 +25,7 @@ obj-$(CONFIG_HAVE_MEMBLOCK) += memblock.
+John
+
+---
+
+The following changes since commit c5c177b4aca83338781e72be2e6dd1601c560cb3:
+
+  net: Kill ratelimit.h dependency in linux/net.h (2011-05-27 13:41:33 -0400)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git for-davem
+
+Adrian Chadd (1):
+      ath9k: Fix AR9287 calibration
+
+Eliad Peller (1):
+      mac80211: clear local->ps_data on disassoc
+
+Jesper Juhl (1):
+      mac80211: Remove duplicate linux/slab.h include from net/mac80211/scan.c
+
+John W. Linville (1):
+      Merge git://git.kernel.org/.../linville/wireless-next-2.6 into for-davem
+
+Larry Finger (2):
+      rtlwifi: Fix kernel panic resulting from RX buffer allocation failure
+      rtlwifi: Use order 2 RX buffer allocation only if necessary
+
+Luciano Coelho (1):
+      nl80211: fix check for valid SSID size in scan operations
+
+Rafał Miłecki (1):
+      b43: N-PHY: initialize last var in calibration function
+
+Rajkumar Manoharan (4):
+      ath9k: Reset chip on baseband hang
+      ath9k_hw: disable phy restart on baseband panic caused by RXSM
+      ath9k: set 40 Mhz rate only if hw is configured in ht40
+      mac80211: stop queues before rate control updation
+
+Stanislaw Gruszka (1):
+      iwl4965: fix 5GHz operation
+
+Tao Ma (1):
+      wireless: Default to 'n' for 2 new added devices in Kconfig.
+
+Yogesh Ashok Powar (1):
+      mwifiex: correct event header length
+
+ drivers/net/wireless/ath/ath9k/Kconfig        |    1 -
+ drivers/net/wireless/ath/ath9k/ar9002_calib.c |    2 +-
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c   |   22 +++++++++++++++
+ drivers/net/wireless/ath/ath9k/hw.c           |    5 +++-
+ drivers/net/wireless/ath/ath9k/hw.h           |    2 +
+ drivers/net/wireless/ath/ath9k/main.c         |    4 ++-
+ drivers/net/wireless/ath/ath9k/rc.c           |    3 +-
+ drivers/net/wireless/b43/phy_n.c              |    2 +-
+ drivers/net/wireless/iwlegacy/iwl-4965-lib.c  |    4 +-
+ drivers/net/wireless/mwifiex/sdio.h           |    4 +-
+ drivers/net/wireless/rt2x00/Kconfig           |    1 -
+ drivers/net/wireless/rtlwifi/pci.c            |   35 +++++++++++++++---------
+ net/mac80211/mlme.c                           |    7 +++++
+ net/mac80211/scan.c                           |    1 -
+ net/wireless/nl80211.c                        |    4 +-
+ 15 files changed, 70 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/Kconfig b/drivers/net/wireless/ath/ath9k/Kconfig
+index d9ff841..d9c08c6 100644
+--- a/drivers/net/wireless/ath/ath9k/Kconfig
++++ b/drivers/net/wireless/ath/ath9k/Kconfig
+@@ -26,7 +26,6 @@ config ATH9K
+ config ATH9K_PCI
+ 	bool "Atheros ath9k PCI/PCIe bus support"
+ 	depends on ATH9K && PCI
+-	default PCI
+ 	---help---
+ 	  This option enables the PCI bus support in ath9k.
  
- obj-$(CONFIG_BOUNCE)	+= bounce.o
- obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
-+obj-$(CONFIG_FRONTSWAP)	+= frontswap.o
- obj-$(CONFIG_HAS_DMA)	+= dmapool.o
- obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
- obj-$(CONFIG_NUMA) 	+= mempolicy.o
---- linux-2.6.39/mm/Kconfig	2011-05-18 22:06:34.000000000 -0600
-+++ linux-2.6.39-frontswap/mm/Kconfig	2011-05-26 15:39:26.294884780 -0600
-@@ -347,3 +347,19 @@ config NEED_PER_CPU_KM
- 	depends on !SMP
- 	bool
- 	default y
+diff --git a/drivers/net/wireless/ath/ath9k/ar9002_calib.c b/drivers/net/wireless/ath/ath9k/ar9002_calib.c
+index 015d974..2d4c091 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9002_calib.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_calib.c
+@@ -829,7 +829,7 @@ static bool ar9002_hw_init_cal(struct ath_hw *ah, struct ath9k_channel *chan)
+ 	if (AR_SREV_9271(ah)) {
+ 		if (!ar9285_hw_cl_cal(ah, chan))
+ 			return false;
+-	} else if (AR_SREV_9285_12_OR_LATER(ah)) {
++	} else if (AR_SREV_9285(ah) && AR_SREV_9285_12_OR_LATER(ah)) {
+ 		if (!ar9285_hw_clc(ah, chan))
+ 			return false;
+ 	} else {
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_phy.c b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+index eee23ec..892c48b 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+@@ -1381,3 +1381,25 @@ void ar9003_hw_bb_watchdog_dbg_info(struct ath_hw *ah)
+ 		"==== BB update: done ====\n\n");
+ }
+ EXPORT_SYMBOL(ar9003_hw_bb_watchdog_dbg_info);
 +
-+config FRONTSWAP
-+	bool "Enable frontswap pseudo-RAM driver to cache swap pages"
-+	default y
-+	help
-+ 	  Frontswap is so named because it can be thought of as the opposite of
-+ 	  a "backing" store for a swap device.  The storage is assumed to be
-+ 	  a synchronous concurrency-safe page-oriented pseudo-RAM device (such
-+	  as Xen's Transcendent Memory, aka "tmem") which is not directly
-+	  accessible or addressable by the kernel and is of unknown (and
-+	  possibly time-varying) size.  When a pseudo-RAM device is available,
-+	  a signficant swap I/O reduction may be achieved.  When none is
-+	  available, all frontswap calls are reduced to a single pointer-
-+	  compare-against-NULL resulting in a negligible performance hit.
++void ar9003_hw_disable_phy_restart(struct ath_hw *ah)
++{
++	u32 val;
 +
-+	  If unsure, say Y to enable frontswap.
---- linux-2.6.39/Documentation/ABI/testing/sysfs-kernel-mm-frontswap	1969-12-31 17:00:00.000000000 -0700
-+++ linux-2.6.39-frontswap/Documentation/ABI/testing/sysfs-kernel-mm-frontswap	2011-05-26 15:37:25.135819879 -0600
-@@ -0,0 +1,16 @@
-+What:		/sys/kernel/mm/frontswap/
-+Date:		June 2010
-+Contact:	Dan Magenheimer <dan.magenheimer@oracle.com>
-+Description:
-+		/sys/kernel/mm/frontswap/ contains a number of files which
-+		record a count of various frontswap operations (sum across
-+		all swap devices):
-+			succ_puts
-+			failed_puts
-+			gets
-+			flushes
-+		In addition, reading the curr_pages file shows how many
-+		pages are currently contained in frontswap and writing this
-+		file with an integer performs a "partial swapoff", reducing
-+		the number of frontswap pages to that integer if memory
-+		constraints permit.
---- linux-2.6.39/Documentation/vm/frontswap.txt	1969-12-31 17:00:00.000000000 -0700
-+++ linux-2.6.39-frontswap/Documentation/vm/frontswap.txt	2011-05-27 12:16:26.888850337 -0600
-@@ -0,0 +1,210 @@
-+Frontswap provides a "transcendent memory" interface for swap pages.
-+In some environments, dramatic performance savings may be obtained because
-+swapped pages are saved in RAM (or a RAM-like device) instead of a swap disk.
++	/* While receiving unsupported rate frame rx state machine
++	 * gets into a state 0xb and if phy_restart happens in that
++	 * state, BB would go hang. If RXSM is in 0xb state after
++	 * first bb panic, ensure to disable the phy_restart.
++	 */
++	if (!((MS(ah->bb_watchdog_last_status,
++		  AR_PHY_WATCHDOG_RX_OFDM_SM) == 0xb) ||
++	    ah->bb_hang_rx_ofdm))
++		return;
 +
-+Frontswap is so named because it can be thought of as the opposite of
-+a "backing" store for a swap device.  The storage is assumed to be
-+a synchronous concurrency-safe page-oriented "pseudo-RAM device" conforming
-+to the requirements of transcendent memory (such as Xen's "tmem", or
-+in-kernel compressed memory, aka "zcache", or future RAM-like devices);
-+this pseudo-RAM device is not directly accessible or addressable by the
-+kernel and is of unknown and possibly time-varying size.  The "device"
-+links itself to frontswap by calling frontswap_register_ops to set the
-+frontswap_ops funcs appropriately and the functions it provides must
-+conform to certain policies as follows:
++	ah->bb_hang_rx_ofdm = true;
++	val = REG_READ(ah, AR_PHY_RESTART);
++	val &= ~AR_PHY_RESTART_ENA;
 +
-+An "init" prepares the device to receive frontswap pages associated
-+with the specified swap device number (aka "type").  A "put_page" will
-+copy the page to transcendent memory and associate it with the type and
-+offset associated with the page. A "get_page" will copy the page, if found,
-+from transcendent memory into kernel memory, but will NOT remove the page
-+from from transcendent memory.  A "flush_page" will remove the page from
-+transcendent memory and a "flush_area" will remove ALL pages associated
-+with the swap type (e.g., like swapoff) and notify the "device" to refuse
-+further puts with that swap type.
++	REG_WRITE(ah, AR_PHY_RESTART, val);
++}
++EXPORT_SYMBOL(ar9003_hw_disable_phy_restart);
+diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
+index 72543ce..1be7c8b 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -1555,9 +1555,12 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_channel *chan,
+ 	if (ah->btcoex_hw.enabled)
+ 		ath9k_hw_btcoex_enable(ah);
+ 
+-	if (AR_SREV_9300_20_OR_LATER(ah))
++	if (AR_SREV_9300_20_OR_LATER(ah)) {
+ 		ar9003_hw_bb_watchdog_config(ah);
+ 
++		ar9003_hw_disable_phy_restart(ah);
++	}
 +
-+Once a page is successfully put, a matching get on the page will always
-+succeed.  So when the kernel finds itself in a situation where it needs
-+to swap out a page, it first attempts to use frontswap.  If the put returns
-+non-zero, the data has been successfully saved to transcendent memory and
-+a disk write and, if the data is later read back, a disk read are avoided.
-+If a put returns zero, transcendent memory has rejected the data, and the
-+page can be written to swap as usual.
+ 	ath9k_hw_apply_gpio_override(ah);
+ 
+ 	return 0;
+diff --git a/drivers/net/wireless/ath/ath9k/hw.h b/drivers/net/wireless/ath/ath9k/hw.h
+index 57435ce..4b157c5 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -842,6 +842,7 @@ struct ath_hw {
+ 
+ 	u32 bb_watchdog_last_status;
+ 	u32 bb_watchdog_timeout_ms; /* in ms, 0 to disable */
++	u8 bb_hang_rx_ofdm; /* true if bb hang due to rx_ofdm */
+ 
+ 	unsigned int paprd_target_power;
+ 	unsigned int paprd_training_power;
+@@ -990,6 +991,7 @@ void ar9002_hw_enable_wep_aggregation(struct ath_hw *ah);
+ void ar9003_hw_bb_watchdog_config(struct ath_hw *ah);
+ void ar9003_hw_bb_watchdog_read(struct ath_hw *ah);
+ void ar9003_hw_bb_watchdog_dbg_info(struct ath_hw *ah);
++void ar9003_hw_disable_phy_restart(struct ath_hw *ah);
+ void ar9003_paprd_enable(struct ath_hw *ah, bool val);
+ void ar9003_paprd_populate_single_table(struct ath_hw *ah,
+ 					struct ath9k_hw_cal_data *caldata,
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index a198ee3..2ca351f 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -670,7 +670,8 @@ void ath9k_tasklet(unsigned long data)
+ 	u32 status = sc->intrstatus;
+ 	u32 rxmask;
+ 
+-	if (status & ATH9K_INT_FATAL) {
++	if ((status & ATH9K_INT_FATAL) ||
++	    (status & ATH9K_INT_BB_WATCHDOG)) {
+ 		ath_reset(sc, true);
+ 		return;
+ 	}
+@@ -737,6 +738,7 @@ irqreturn_t ath_isr(int irq, void *dev)
+ {
+ #define SCHED_INTR (				\
+ 		ATH9K_INT_FATAL |		\
++		ATH9K_INT_BB_WATCHDOG |		\
+ 		ATH9K_INT_RXORN |		\
+ 		ATH9K_INT_RXEOL |		\
+ 		ATH9K_INT_RX |			\
+diff --git a/drivers/net/wireless/ath/ath9k/rc.c b/drivers/net/wireless/ath/ath9k/rc.c
+index 1754221..ba7f36a 100644
+--- a/drivers/net/wireless/ath/ath9k/rc.c
++++ b/drivers/net/wireless/ath/ath9k/rc.c
+@@ -689,7 +689,8 @@ static void ath_rc_rate_set_series(const struct ath_rate_table *rate_table,
+ 
+ 	if (WLAN_RC_PHY_HT(rate_table->info[rix].phy)) {
+ 		rate->flags |= IEEE80211_TX_RC_MCS;
+-		if (WLAN_RC_PHY_40(rate_table->info[rix].phy))
++		if (WLAN_RC_PHY_40(rate_table->info[rix].phy) &&
++		    conf_is_ht40(&txrc->hw->conf))
+ 			rate->flags |= IEEE80211_TX_RC_40_MHZ_WIDTH;
+ 		if (WLAN_RC_PHY_SGI(rate_table->info[rix].phy))
+ 			rate->flags |= IEEE80211_TX_RC_SHORT_GI;
+diff --git a/drivers/net/wireless/b43/phy_n.c b/drivers/net/wireless/b43/phy_n.c
+index 9ed6515..05960dd 100644
+--- a/drivers/net/wireless/b43/phy_n.c
++++ b/drivers/net/wireless/b43/phy_n.c
+@@ -3093,7 +3093,7 @@ static int b43_nphy_cal_tx_iq_lo(struct b43_wldev *dev,
+ 	int freq;
+ 	bool avoid = false;
+ 	u8 length;
+-	u16 tmp, core, type, count, max, numb, last, cmd;
++	u16 tmp, core, type, count, max, numb, last = 0, cmd;
+ 	const u16 *table;
+ 	bool phy6or5x;
+ 
+diff --git a/drivers/net/wireless/iwlegacy/iwl-4965-lib.c b/drivers/net/wireless/iwlegacy/iwl-4965-lib.c
+index 7e5e85a..a7a4739 100644
+--- a/drivers/net/wireless/iwlegacy/iwl-4965-lib.c
++++ b/drivers/net/wireless/iwlegacy/iwl-4965-lib.c
+@@ -628,11 +628,11 @@ void iwl4965_rx_reply_rx(struct iwl_priv *priv,
+ 
+ 	/* rx_status carries information about the packet to mac80211 */
+ 	rx_status.mactime = le64_to_cpu(phy_res->timestamp);
++	rx_status.band = (phy_res->phy_flags & RX_RES_PHY_FLAGS_BAND_24_MSK) ?
++				IEEE80211_BAND_2GHZ : IEEE80211_BAND_5GHZ;
+ 	rx_status.freq =
+ 		ieee80211_channel_to_frequency(le16_to_cpu(phy_res->channel),
+ 							rx_status.band);
+-	rx_status.band = (phy_res->phy_flags & RX_RES_PHY_FLAGS_BAND_24_MSK) ?
+-				IEEE80211_BAND_2GHZ : IEEE80211_BAND_5GHZ;
+ 	rx_status.rate_idx =
+ 		iwl4965_hwrate_to_mac80211_idx(rate_n_flags, rx_status.band);
+ 	rx_status.flag = 0;
+diff --git a/drivers/net/wireless/mwifiex/sdio.h b/drivers/net/wireless/mwifiex/sdio.h
+index a0e9bc5..4e97e90 100644
+--- a/drivers/net/wireless/mwifiex/sdio.h
++++ b/drivers/net/wireless/mwifiex/sdio.h
+@@ -167,8 +167,8 @@
+ /* Rx unit register */
+ #define CARD_RX_UNIT_REG		0x63
+ 
+-/* Event header Len*/
+-#define MWIFIEX_EVENT_HEADER_LEN           8
++/* Event header len w/o 4 bytes of interface header */
++#define MWIFIEX_EVENT_HEADER_LEN           4
+ 
+ /* Max retry number of CMD53 write */
+ #define MAX_WRITE_IOMEM_RETRY		2
+diff --git a/drivers/net/wireless/rt2x00/Kconfig b/drivers/net/wireless/rt2x00/Kconfig
+index 9def1e5..b2f8b8f 100644
+--- a/drivers/net/wireless/rt2x00/Kconfig
++++ b/drivers/net/wireless/rt2x00/Kconfig
+@@ -166,7 +166,6 @@ config RT2800USB_RT35XX
+ config RT2800USB_RT53XX
+        bool "rt2800usb - Include support for rt53xx devices (EXPERIMENTAL)"
+        depends on EXPERIMENTAL
+-       default y
+        ---help---
+          This adds support for rt53xx wireless chipset family to the
+          rt2800pci driver.
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index a409528..89100e7 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -669,11 +669,6 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
+ 							 &rx_status,
+ 							 (u8 *) pdesc, skb);
+ 
+-			pci_unmap_single(rtlpci->pdev,
+-					 *((dma_addr_t *) skb->cb),
+-					 rtlpci->rxbuffersize,
+-					 PCI_DMA_FROMDEVICE);
+-
+ 			skb_put(skb, rtlpriv->cfg->ops->get_desc((u8 *) pdesc,
+ 							 false,
+ 							 HW_DESC_RXPKT_LEN));
+@@ -690,6 +685,21 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
+ 			hdr = rtl_get_hdr(skb);
+ 			fc = rtl_get_fc(skb);
+ 
++			/* try for new buffer - if allocation fails, drop
++			 * frame and reuse old buffer
++			 */
++			new_skb = dev_alloc_skb(rtlpci->rxbuffersize);
++			if (unlikely(!new_skb)) {
++				RT_TRACE(rtlpriv, (COMP_INTR | COMP_RECV),
++					 DBG_DMESG,
++					 ("can't alloc skb for rx\n"));
++				goto done;
++			}
++			pci_unmap_single(rtlpci->pdev,
++					 *((dma_addr_t *) skb->cb),
++					 rtlpci->rxbuffersize,
++					 PCI_DMA_FROMDEVICE);
 +
-+Note that if a page is put and the page already exists in transcendent memory
-+(a "duplicate" put), either the put succeeds and the data is overwritten,
-+or the put fails AND the page is flushed.  This ensures stale data may
-+never be obtained from psuedo-RAM.
+ 			if (!stats.crc || !stats.hwerror) {
+ 				memcpy(IEEE80211_SKB_RXCB(skb), &rx_status,
+ 				       sizeof(rx_status));
+@@ -758,15 +768,7 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
+ 				rtl_lps_leave(hw);
+ 			}
+ 
+-			new_skb = dev_alloc_skb(rtlpci->rxbuffersize);
+-			if (unlikely(!new_skb)) {
+-				RT_TRACE(rtlpriv, (COMP_INTR | COMP_RECV),
+-					 DBG_DMESG,
+-					 ("can't alloc skb for rx\n"));
+-				goto done;
+-			}
+ 			skb = new_skb;
+-			/*skb->dev = dev; */
+ 
+ 			rtlpci->rx_ring[rx_queue_idx].rx_buf[rtlpci->
+ 							     rx_ring
+@@ -1113,6 +1115,13 @@ static int _rtl_pci_init_rx_ring(struct ieee80211_hw *hw)
+ 
+ 		rtlpci->rx_ring[rx_queue_idx].idx = 0;
+ 
++		/* If amsdu_8k is disabled, set buffersize to 4096. This
++		 * change will reduce memory fragmentation.
++		 */
++		if (rtlpci->rxbuffersize > 4096 &&
++		    rtlpriv->rtlhal.disable_amsdu_8k)
++			rtlpci->rxbuffersize = 4096;
 +
-+Monitoring and control of frontswap is done by sysfs files in the
-+/sys/kernel/mm/frontswap directory.  The effectiveness of frontswap can
-+be measured (across all swap devices) with:
+ 		for (i = 0; i < rtlpci->rxringcount; i++) {
+ 			struct sk_buff *skb =
+ 			    dev_alloc_skb(rtlpci->rxbuffersize);
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index 4f6b267..456cccf 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -232,6 +232,9 @@ static u32 ieee80211_enable_ht(struct ieee80211_sub_if_data *sdata,
+ 		WARN_ON(!ieee80211_set_channel_type(local, sdata, channel_type));
+ 	}
+ 
++	ieee80211_stop_queues_by_reason(&sdata->local->hw,
++					IEEE80211_QUEUE_STOP_REASON_CSA);
 +
-+curr_pages	- number of pages currently contained in frontswap
-+failed_puts	- how many put attempts have failed
-+gets		- how many gets were attempted (all should succeed)
-+succ_puts	- how many put attempts have succeeded
-+flushes		- how many flushes were attempted
+ 	/* channel_type change automatically detected */
+ 	ieee80211_hw_config(local, 0);
+ 
+@@ -245,6 +248,9 @@ static u32 ieee80211_enable_ht(struct ieee80211_sub_if_data *sdata,
+ 		rcu_read_unlock();
+ 	}
+ 
++	ieee80211_wake_queues_by_reason(&sdata->local->hw,
++					IEEE80211_QUEUE_STOP_REASON_CSA);
 +
-+The number can be reduced by root by writing an integer target to curr_pages,
-+which results in a "partial swapoff", thus reducing the number of frontswap
-+pages to that target if memory constraints permit.
-+
-+FAQ
-+
-+1) Where's the value?
-+
-+When a workload starts swapping, performance falls through the floor.
-+Frontswap significantly increases performance in many such workloads by
-+providing a clean, dynamic interface to read and write swap pages to
-+"transcendent" memory that is otherwise not directly addressable to the kernel.
-+This interface is ideal when data is transformed to a different form
-+and size (such as with compression) or secretly moved (as might be
-+useful for write-balancing for some RAM-like devices).  Swap pages (and
-+evicted page-cache pages) are a great use for this kind of slower-than-RAM-
-+but-much-faster-than-disk "pseudo-RAM device" and the frontswap (and
-+cleancache) interface to transcendent memory provides a nice way to read
-+and write -- and indirectly "name" -- the pages.
-+
-+In the virtual case, the whole point of virtualization is to statistically
-+multiplex physical resources acrosst the varying demands of multiple
-+virtual machines.  This is really hard to do with RAM and efforts to do
-+it well with no kernel changes have essentially failed (except in some
-+well-publicized special-case workloads).  Frontswap -- and cleancache --
-+with a fairly small impact on the kernel, provides a huge amount
-+of flexibility for more dynamic, flexible RAM multiplexing.
-+Specifically, the Xen Transcendent Memory backend allows otherwise
-+"fallow" hypervisor-owned RAM to not only be "time-shared" between multiple
-+virtual machines, but the pages can be compressed and deduplicated to
-+optimize RAM utilization.  And when guest OS's are induced to surrender
-+underutilized RAM (e.g. with "self-ballooning"), sudden unexpected
-+memory pressure may result in swapping; frontswap allows those pages
-+to be swapped to and from hypervisor RAM if overall host system memory
-+conditions allow.
-+
-+2) Sure there may be performance advantages in some situations, but
-+   what's the space/time overhead of frontswap?
-+
-+If CONFIG_FRONTSWAP is disabled, every frontswap hook compiles into
-+nothingness and the only overhead is a few extra bytes per swapon'ed
-+swap device.  If CONFIG_FRONTSWAP is enabled but no frontswap "backend"
-+registers, there is one extra global variable compared to zero for
-+every swap page read or written.  If CONFIG_FRONTSWAP is enabled
-+AND a frontswap backend registers AND the backend fails every "put"
-+request (i.e. provides no memory despite claiming it might),
-+CPU overhead is still negligible -- and since every frontswap fail
-+precedes a swap page write-to-disk, the system is highly likely
-+to be I/O bound and using a small fraction of a percent of a CPU
-+will be irrelevant anyway.
-+
-+As for space, if CONFIG_FRONTSWAP is enabled AND a frontswap backend
-+registers, one bit is allocated for every swap page for every swap
-+device that is swapon'd.  This is added to the EIGHT bits (which
-+was sixteen until about 2.6.34) that the kernel already allocates
-+for every swap page for every swap device that is swapon'd.  (Hugh
-+Dickins has observed that frontswap could probably steal one of
-+the existing eight bits, but let's worry about that minor optimization
-+later.)  For very large swap disks (which are rare) on a standard
-+4K pagesize, this is 1MB per 32GB swap.
-+
-+3) OK, how about a quick overview of what this frontswap patch does
-+   in terms that a kernel hacker can grok?
-+
-+Let's assume that a frontswap "backend" has registered during
-+kernel initialization; this registration indicates that this
-+frontswap backend has access to some "memory" that is not directly
-+accessible by the kernel.  Exactly how much memory it provides is
-+entirely dynamic and random.
-+
-+Whenever a swap-device is swapon'd frontswap_init() is called,
-+passing the swap device number (aka "type") as a parameter.
-+This notifies frontswap to expect attempts to "put" swap pages
-+associated with that number.
-+
-+Whenever the swap subsystem is readying a page to write to a swap
-+device (c.f swap_writepage()), frontswap_put_page is called.  Frontswap
-+consults with the frontswap backend and if the backend says
-+it does NOT have room, frontswap_put_page returns 0 and the page is
-+swapped as normal.  Note that the response from the frontswap
-+backend is essentially random; it may choose to never accept a
-+page, it could accept every ninth page, or it might accept every
-+page.  But if the backend does accept a page, the data from the page
-+has already been copied and associated with the type and offset,
-+and the backend guarantees the persistence of the data.  In this case,
-+frontswap sets a bit in the "frontswap_map" for the swap device
-+corresponding to the page offset on the swap device to which it would
-+otherwise have written the data.
-+
-+When the swap subsystem needs to swap-in a page (swap_readpage()),
-+it first calls frontswap_get_page() which checks the frontswap_map to
-+see if the page was earlier accepted by the frontswap backend.  If
-+it was, the page of data is filled from the frontswap backend and
-+the swap-in is complete.  If not, the normal swap-in code is
-+executed to obtain the page of data from the real swap device.
-+
-+So every time the frontswap backend accepts a page, a swap device read
-+and (potentially) a swap device write are replaced by a "frontswap backend
-+put" and (possibly) a "frontswap backend get", which are presumably much
-+faster.
-+
-+4) Can't frontswap be configured as a "special" swap device that is
-+   just higher priority than any real swap device (e.g. like zswap)?
-+
-+No.  Recall that acceptance of any swap page by the frontswap
-+backend is entirely unpredictable. This is critical to the definition
-+of frontswap because it grants completely dynamic discretion to the
-+backend.  But since any "put" might fail, there must always be a real
-+slot on a real swap device to swap the page.  Thus frontswap must be
-+implemented as a "shadow" to every swapon'd device with the potential
-+capability of holding every page that the swap device might have held
-+and the possibility that it might hold no pages at all.
-+On the downside, this also means that frontswap cannot contain more
-+pages than the total of swapon'd swap devices.  For example, if NO
-+swap device is configured on some installation, frontswap is useless.
-+
-+Further, frontswap is entirely synchronous whereas a real swap
-+device is, by definition, asynchronous and uses block I/O.  The
-+block I/O layer is not only unnecessary, but may perform "optimizations"
-+that are inappropriate for a RAM-oriented device including delaying
-+the write of some pages for a significant amount of time.
-+Synchrony is required to ensure the dynamicity of the backend.
-+
-+In a virtualized environment, the dynamicity allows the hypervisor
-+(or host OS) to do "intelligent overcommit".  For example, it can
-+choose to accept pages only until host-swapping might be imminent,
-+then force guests to do their own swapping.
-+
-+5) Why this weird definition about "duplicate puts"?  If a page
-+   has been previously successfully put, can't it always be
-+   successfully overwritten?
-+
-+Nearly always it can, but no, sometimes it cannot.  Consider an example
-+where data is compressed and the original 4K page has been compressed
-+to 1K.  Now an attempt is made to overwrite the page with data that
-+is non-compressible and so would take the entire 4K.  But the backend
-+has no more space.  In this case, the put must be rejected.  Whenever
-+frontswap rejects a put that would overwrite, it also must flush
-+the old data and ensure that it is no longer accessible.  Since the
-+swap subsystem then writes the new data to the read swap device,
-+this is the correct course of action to ensure coherency.
-+
-+6) What is frontswap_shrink for?
-+
-+When the (non-frontswap) swap subsystem swaps out a page to a real
-+swap device, that page is only taking up low-value pre-allocated disk
-+space.  But if frontswap has placed a page in transcendent memory, that
-+page may be taking up valuable real estate.  The frontswap_shrink
-+routine allows a process outside of the swap subsystem (such as
-+a userland service via the sysfs interface, or a kernel thread)
-+to force pages out of the memory managed by frontswap and back into
-+kernel-addressable memory.
-+
-+7) Why does the frontswap patch create the new include file swapfile.h?
-+
-+The frontswap code depends on some swap-subsystem-internal data
-+structures that have, over the years, moved back and forth between
-+static and global.  This seemed a reasonable compromise:  Define
-+them as global but declare them in a new include file that isn't
-+included by the large number of source files that include swap.h.
-+
-+Dan Magenheimer, last updated May 27, 2011
+ 	ht_opmode = le16_to_cpu(hti->operation_mode);
+ 
+ 	/* if bss configuration changed store the new one */
+@@ -1089,6 +1095,7 @@ static void ieee80211_set_disassoc(struct ieee80211_sub_if_data *sdata,
+ 		local->hw.conf.flags &= ~IEEE80211_CONF_PS;
+ 		config_changed |= IEEE80211_CONF_CHANGE_PS;
+ 	}
++	local->ps_sdata = NULL;
+ 
+ 	ieee80211_hw_config(local, config_changed);
+ 
+diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
+index 27af672..58ffa7d 100644
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -15,7 +15,6 @@
+ #include <linux/if_arp.h>
+ #include <linux/rtnetlink.h>
+ #include <linux/pm_qos_params.h>
+-#include <linux/slab.h>
+ #include <net/sch_generic.h>
+ #include <linux/slab.h>
+ #include <net/mac80211.h>
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index ec83f41..88a565f 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -3406,12 +3406,12 @@ static int nl80211_trigger_scan(struct sk_buff *skb, struct genl_info *info)
+ 	i = 0;
+ 	if (info->attrs[NL80211_ATTR_SCAN_SSIDS]) {
+ 		nla_for_each_nested(attr, info->attrs[NL80211_ATTR_SCAN_SSIDS], tmp) {
++			request->ssids[i].ssid_len = nla_len(attr);
+ 			if (request->ssids[i].ssid_len > IEEE80211_MAX_SSID_LEN) {
+ 				err = -EINVAL;
+ 				goto out_free;
+ 			}
+ 			memcpy(request->ssids[i].ssid, nla_data(attr), nla_len(attr));
+-			request->ssids[i].ssid_len = nla_len(attr);
+ 			i++;
+ 		}
+ 	}
+@@ -3572,6 +3572,7 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
+ 	if (info->attrs[NL80211_ATTR_SCAN_SSIDS]) {
+ 		nla_for_each_nested(attr, info->attrs[NL80211_ATTR_SCAN_SSIDS],
+ 				    tmp) {
++			request->ssids[i].ssid_len = nla_len(attr);
+ 			if (request->ssids[i].ssid_len >
+ 			    IEEE80211_MAX_SSID_LEN) {
+ 				err = -EINVAL;
+@@ -3579,7 +3580,6 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
+ 			}
+ 			memcpy(request->ssids[i].ssid, nla_data(attr),
+ 			       nla_len(attr));
+-			request->ssids[i].ssid_len = nla_len(attr);
+ 			i++;
+ 		}
+ 	}
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
