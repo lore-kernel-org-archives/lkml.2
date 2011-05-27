@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab1E0Rw0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:52:26 -0400
-Received: from mail.lang.hm ([64.81.33.126]:38918 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456Ab1E0RwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 13:52:24 -0400
-Date: Fri, 27 May 2011 10:51:08 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Theodore Tso <tytso@MIT.EDU>
-cc: "D. Jansen" <d.g.jansen@googlemail.com>, Oliver Neukum <oneukum@suse.de>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-In-Reply-To: <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu>
-Message-ID: <alpine.DEB.2.02.1105271050160.30828@asgard.lang.hm>
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard> <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com> <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu>
- <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com> <20110526133155.GH9520@thunk.org> <BANLkTinTzNN2P45tgZAQ9FsL43CqyAJR3Q@mail.gmail.com> <20110526162138.GN9520@thunk.org> <BANLkTinPCcX9-gK7YnMngGUJKftRTmYXNw@mail.gmail.com>
- <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753436Ab1E0RwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:52:19 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:35667 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab1E0RwQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 13:52:16 -0400
+Date: Fri, 27 May 2011 12:51:54 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        ecryptfs@vger.kernel.org
+Subject: [GIT PULL] eCryptfs fixes
+Message-ID: <20110527175154.GA3623@boyd.l.tihix.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 May 2011, Theodore Tso wrote:
+Hi Linus,
 
-> If you are willing to rewrite the *entire* database to a completely new file each
-> time you want to write out some data, and only delete the old database
-> once the new database has been written out, then you're fine.   If the file is too
-> big you can delay the time period between a complete writeout of the
-> database.  But then if you drop your laptop and the battery slips out, you'll
-> lose more data.  Life is full of tradeoffs.
+Here are 2 bug fixes and an update to MAINTAINERS for the new
+eCryptfs mailing list.
 
-actually, even in this case don't you need a barrier or fsync to make sure 
-the new file is completely written before the old file goes away?
+The following changes since commit 61c4f2c81c61f73549928dfd9f3e8f26aa36a8cf:
 
-David Lang
+  Linux 2.6.39 (2011-05-18 21:06:34 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git for-linus
+
+Tyler Hicks (3):
+      eCryptfs: Clear i_nlink in rmdir
+      eCryptfs: Allow 2 scatterlist entries for encrypted filenames
+      MAINTAINERS: Update eCryptfs mailing list
+
+ MAINTAINERS            |    2 +-
+ fs/ecryptfs/inode.c    |    2 ++
+ fs/ecryptfs/keystore.c |   46 +++++++++++++++++++++-------------------------
+ 3 files changed, 24 insertions(+), 26 deletions(-)
