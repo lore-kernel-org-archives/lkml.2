@@ -1,109 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab1E0GHt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 02:07:49 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:50639 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab1E0GHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 02:07:47 -0400
-X-AuditID: cbfee61a-b7ce2ae000001a8f-ce-4ddf3fb1ae88
-Date: Fri, 27 May 2011 15:07:08 +0900
-From: Donggeun Kim <dg77.kim@samsung.com>
-Subject: [PATCH] CPUFREQ/S5PV210,EXYNOS4: Move S5PV210 and EXYNOS4 CPUfreq
- drivers into drivers/cpufreq
-To: davej@redhat.com, kgene.kim@samsung.com
-Cc: cpufreq@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com
-Message-id: <1306476428-24808-1-git-send-email-dg77.kim@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-Content-transfer-encoding: 7BIT
-X-OriginalArrivalTime: 27 May 2011 06:07:43.0771 (UTC)
- FILETIME=[648C86B0:01CC1C34]
-X-Brightmail-Tracker: AAAAAA==
+	id S1755976Ab1E0GI6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 02:08:58 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47981 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753243Ab1E0GI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 02:08:57 -0400
+Date: Fri, 27 May 2011 08:08:26 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        benh@kernel.crashing.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, hughd@google.com,
+        akpm@linux-foundation.org, dave@linux.vnet.ibm.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH] mm: don't access vm_flags as 'int'
+Message-ID: <20110527060826.GA9260@elte.hu>
+References: <4DDE2873.7060409@jp.fujitsu.com>
+ <BANLkTi=znC18PAbpDfeVO+=Pat_EeXddjw@mail.gmail.com>
+ <BANLkTikgXhmgzQYfSWKDoxVyNuCzSM7Qxw@mail.gmail.com>
+ <BANLkTin3vHzUu-p654jvkG4R1Td261b3Aw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTin3vHzUu-p654jvkG4R1Td261b3Aw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch simply moves CPUfreq drivers for S5PV210 and EXYNOS4
-into drivers/cpufreq directoty. The driver codes were not modified.
 
-Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/mach-exynos4/Makefile                     |    1 -
- arch/arm/mach-s5pv210/Makefile                     |    1 -
- drivers/cpufreq/Makefile                           |    3 +++
- .../cpufreq.c => drivers/cpufreq/exynos4.c         |    3 +--
- .../cpufreq.c => drivers/cpufreq/s5pv210.c         |    3 +--
- 5 files changed, 5 insertions(+), 6 deletions(-)
- rename arch/arm/mach-exynos4/cpufreq.c => drivers/cpufreq/exynos4.c (99%)
- rename arch/arm/mach-s5pv210/cpufreq.c => drivers/cpufreq/s5pv210.c (99%)
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-diff --git a/arch/arm/mach-exynos4/Makefile b/arch/arm/mach-exynos4/Makefile
-index 9be104f..7bf1c01 100644
---- a/arch/arm/mach-exynos4/Makefile
-+++ b/arch/arm/mach-exynos4/Makefile
-@@ -15,7 +15,6 @@ obj-				:=
- obj-$(CONFIG_CPU_EXYNOS4210)	+= cpu.o init.o clock.o irq-combiner.o
- obj-$(CONFIG_CPU_EXYNOS4210)	+= setup-i2c0.o gpiolib.o irq-eint.o dma.o
- obj-$(CONFIG_PM)		+= pm.o sleep.o
--obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
- 
- obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
- 
-diff --git a/arch/arm/mach-s5pv210/Makefile b/arch/arm/mach-s5pv210/Makefile
-index 11f1790..435d23e 100644
---- a/arch/arm/mach-s5pv210/Makefile
-+++ b/arch/arm/mach-s5pv210/Makefile
-@@ -15,7 +15,6 @@ obj-				:=
- obj-$(CONFIG_CPU_S5PV210)	+= cpu.o init.o clock.o dma.o gpiolib.o
- obj-$(CONFIG_CPU_S5PV210)	+= setup-i2c0.o
- obj-$(CONFIG_S5PV210_PM)	+= pm.o sleep.o
--obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
- 
- # machine support
- 
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index c7f1a6f..92f2222 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -39,3 +39,6 @@ obj-$(CONFIG_X86_CPUFREQ_NFORCE2)	+= cpufreq-nforce2.o
- 
- ##################################################################################d
- 
-+# ARM CPUfreq drivers
-+obj-$(CONFIG_CPU_FREQ_S5PV210)		+= s5pv210.o
-+obj-$(CONFIG_CPU_FREQ_EXYNOS4)		+= exynos4.o
-diff --git a/arch/arm/mach-exynos4/cpufreq.c b/drivers/cpufreq/exynos4.c
-similarity index 99%
-rename from arch/arm/mach-exynos4/cpufreq.c
-rename to drivers/cpufreq/exynos4.c
-index a1bd258..54025fc 100644
---- a/arch/arm/mach-exynos4/cpufreq.c
-+++ b/drivers/cpufreq/exynos4.c
-@@ -1,5 +1,4 @@
--/* linux/arch/arm/mach-exynos4/cpufreq.c
-- *
-+/*
-  * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
-  *		http://www.samsung.com
-  *
-diff --git a/arch/arm/mach-s5pv210/cpufreq.c b/drivers/cpufreq/s5pv210.c
-similarity index 99%
-rename from arch/arm/mach-s5pv210/cpufreq.c
-rename to drivers/cpufreq/s5pv210.c
-index 22046e2..c482fc8 100644
---- a/arch/arm/mach-s5pv210/cpufreq.c
-+++ b/drivers/cpufreq/s5pv210.c
-@@ -1,5 +1,4 @@
--/* linux/arch/arm/mach-s5pv210/cpufreq.c
-- *
-+/*
-  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
-  *		http://www.samsung.com
-  *
--- 
-1.7.4.1
+> On Thu, May 26, 2011 at 11:50 AM, richard -rw- weinberger
+> <richard.weinberger@gmail.com> wrote:
+> >
+> > This breaks kernel builds with CONFIG_HUGETLBFS=n. :-(
+> 
+> Grr. I did the "allyesconfig" build to find any problems, but that
+> obviously also sets HUGETLBFS.
+> 
+> But "allnoconfig" does find this.
 
+Yeah, my experience is that [all[yes|no|mod]|def]config covers about 
+95% of the build bugs and the remaining 5% are rarely showstopper 
+problems (they generally don't show up in configs that people use).
+
+Given how fast allnoconfig and defconfig builds i've got allnoconfig 
+and defconfig scripted to always execute together with allyesconfig.
+
+So if you go the trouble to build allyesconfig manually, it costs 
+almost no time to tack on the allnoconfig and defconfig as well (and 
+stick this all into a script), while it increases the efficiency of 
+the build test remarkably.
+
+Thanks,
+
+	Ingo
