@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab1E0Ri5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:38:57 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42659 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752956Ab1E0Ri4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755237Ab1E0Ri7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:38:59 -0400
+Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:60209 "EHLO
+	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752961Ab1E0Ri4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 May 2011 13:38:56 -0400
-Date: Fri, 27 May 2011 19:38:35 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        adobriyan@gmail.com, penberg@kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-Message-ID: <20110527173835.GF4356@elte.hu>
-References: <1306269105.21443.20.camel@dan>
- <201105270018.36835.rjw@sisk.pl>
- <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com>
- <20110527170045.GB4356@elte.hu>
- <1306516230.3339.17.camel@dan>
- <4DDFDBD2.2000904@zytor.com>
- <BANLkTin=VV_1rny+5EgwJXj1SQ45c2KKsw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTin=VV_1rny+5EgwJXj1SQ45c2KKsw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-AuditID: 1209190d-b7bdeae0000004f8-44-4ddfe171a275
+From: Andy Lutomirski <luto@MIT.EDU>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH 0/5] x86-64: Remove syscall instructions at fixed addresses
+Date: Fri, 27 May 2011 13:38:37 -0400
+Message-Id: <cover.1306517576.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.5.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsUixCmqrVv48L6vwe5PUhZ9V46yW1zeNYfN
+	YsulZlaLzZumMlv82PCY1YHV41bbH2aPnbPusntsWtXJ5vHu3Dl2j8+b5AJYo7hsUlJzMstS
+	i/TtErgyzs89zVLQxlex7dIB5gbGs1xdjJwcEgImEtOvH2WBsMUkLtxbz9bFyMUhJLCPUeL7
+	+dOMEM4GRol1iz9COc+YJJ6928UM0sImoCLRsfQBE4gtIhAn0TD7NyuIzSzgIHH78RFGEFtY
+	wFvi/uPTYCtYBFQlHjcsA6vhFdCX6Ho4iRVitYLElSvzWCYw8ixgZFjFKJuSW6Wbm5iZU5ya
+	rFucnJiXl1qka6SXm1mil5pSuokRHDySvDsY3x1UOsQowMGoxMNrcfC+rxBrYllxZe4hRkkO
+	JiVRXr8HQCG+pPyUyozE4oz4otKc1OJDjBIczEoivCb7gXK8KYmVValF+TApaQ4WJXHemZLq
+	vkIC6YklqdmpqQWpRTBZGQ4OJQne2SBDBYtS01Mr0jJzShDSTBycIMN5gIZPA6nhLS5IzC3O
+	TIfIn2LU5Whcu+MgoxBLXn5eqpQ4bxFIkQBIUUZpHtwcWNS/YhQHekuYtx+kigeYMOAmvQJa
+	wgS0ROf3XZAlJYkIKakGRnY/g5ZC67a9kc/4L6ywS5v6Y5Kg1Ir/X1fqRaza3uD1ZnlXvuY9
+	500ue3m2uWzmFK8p8T3B/PhypPmCwnVnXItLp211tFUVsrtT+7pORqYw1nZC1H6r2lVzZ9Yf
+	Ut0Qm7I2b2NMV87xIzwb+NfoLDv1+KffQvu5X+pLLOPrU6TqNaqUL58JVWIpzkg01GIuKk4E
+	AEA/LvnVAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I lied about taking awhile to do this.
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+There are a bunch of syscall instructions in kernel space at fixed
+addresses that user code can execute.
 
-> That's the _only_ difference, and it's trivial and irrelevant. Come 
-> up with something more real, please.
+One is a time() fallback.  Patch 3/5 removes it.
 
-The advantages of dynamic per boot kernel randomization, over static 
-per system randomization, as i see them, in order of descending 
-importance:
+Several are data that isn't marked NX.  Patch 2/5 makes vvars NX and
+5/5 makes the HPET NX.
 
- - A root exploit will still not give away the location of the
-   kernel (assuming module loading has been disabled after bootup),
-   so a rootkit cannot be installed 'silently' on the system, into
-   RAM only, evading most offline-storage-checking tools.
+The last one is the gettimeofday fallback.  We need that, but it
+doesn't have to be a real syscall.  Patch 3/5 adds int 0xCC (callable
+only from the vsyscall page) that implements the gettimeofday fallback
+and nothing else.
 
-   With static linking this is not possible: reading the kernel image
-   as root trivially exposes the kernel's location.
+Patch 1/5 is just a dumb but harmless bug fix from the last vdso
+series.
 
- - We can expose RIPs to unprivileged tools. Certain users could
-   still kernel-profile a busy server box while neither being root,
-   nor having access to the real location of the kernel.
+I've only tested this in KVM with a hacked-up initramfs, but Ingo
+wanted it for 2.6.40, so here it is.
 
-   With static linking this is not possible.
+Andy Lutomirski (5):
+  x86-64: Fix alignment of jiffies variable
+  x86-64: Give vvars their own page
+  x86-64: Remove kernel.vsyscall64 sysctl
+  x86-64: Replace vsyscall gettimeofday fallback with int 0xcc
+  x86-64: Map the HPET NX
 
- - Crash & reboot & retry brute force exploits get harder: if one
-   attempt at an exploit causes a crash and a reboot, the kernel
-   addresses are different after the reboot so the attempt has to be
-   retried without the advantage of any prior history.
+ arch/x86/include/asm/fixmap.h        |    1 +
+ arch/x86/include/asm/pgtable_types.h |    6 ++-
+ arch/x86/include/asm/traps.h         |    4 ++
+ arch/x86/include/asm/vgtod.h         |    1 -
+ arch/x86/include/asm/vsyscall.h      |    6 ++
+ arch/x86/include/asm/vvar.h          |   24 ++++-----
+ arch/x86/kernel/entry_64.S           |    2 +
+ arch/x86/kernel/hpet.c               |    2 +-
+ arch/x86/kernel/traps.c              |    4 ++
+ arch/x86/kernel/vmlinux.lds.S        |   27 ++++++----
+ arch/x86/kernel/vsyscall_64.c        |   86 ++++++++++++++++++---------------
+ arch/x86/vdso/vclock_gettime.c       |   55 ++++++++-------------
+ tools/power/x86/turbostat/turbostat  |  Bin 0 -> 29200 bytes
+ 13 files changed, 117 insertions(+), 101 deletions(-)
+ create mode 100755 tools/power/x86/turbostat/turbostat
 
-   With static linking this kind of exploit is somewhat easier: every
-   crash gives a permanent proof that the guessed RIP offet was
-   wrong, so history can be used on subsequent retries.
+-- 
+1.7.5.1
 
- - It gives a way to go one step further in secure server lockdown:
-   where even root with full access to all storage has no way to
-   break into the kernel. Reboots, module loading and kexec can be
-   controlled, ioperm() and iopl() can be restricted. If those are
-   taken away then even if a root exploit allows the attacker to
-   overwrite the kernel image, a reboot has to be waited for and if
-   reboots do sanity checks [based on immutable storage] of the
-   system then the exploit can be found.
-
-   With static linking this is not possible: reading the kernel image
-   as root trivially exposes the kernel's location.
-
-It's in order of importance: you probably stopped caring at item 2 or 
-3 but there's definitely people who'd like to go all the way to 4. So 
-if we can do dynamic randomization sanely then why not offer it as an 
-option?
-
-Thanks,
-
-	Ingo
