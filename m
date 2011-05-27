@@ -1,126 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085Ab1E0O25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 10:28:57 -0400
-Received: from xes-mad.com ([216.165.139.218]:59761 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab1E0O2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 10:28:54 -0400
-Subject: Re: [PATCH v6] gpio: Add support for Intel ICHx/3100/Series[56]
- GPIO
-From: Peter Tyser <ptyser@xes-inc.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Syed S Azam <Syed.Azam@hp.com>,
-        Vincent Palatin <vpalatin@chromium.org>
-In-Reply-To: <20110527110130.4b3448f2@endymion.delvare>
-References: <1299022100-14564-4-git-send-email-ptyser@xes-inc.com>
-	 <1303317354-18188-1-git-send-email-ptyser@xes-inc.com>
-	 <20110527064238.GA31271@ponder.secretlab.ca>
-	 <20110527110130.4b3448f2@endymion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 May 2011 09:26:42 -0500
-Message-ID: <1306506402.22090.14872.camel@petert>
+	id S1752332Ab1E0O3f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 10:29:35 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:36819 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044Ab1E0O3e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 10:29:34 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Keith Curtis <keithcu@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Zero bugs (was Re: (Short?) merge window reminder)
+In-Reply-To: Your message of "Thu, 26 May 2011 22:44:24 PDT."
+             <BANLkTinj1M_VSuvw1Sct8a6TLkUrEP_4uQ@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com> <20110523192056.GC23629@elte.hu> <BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com> <BANLkTinbrtzY66p+1NALP8BDfjXLx=Qp-A@mail.gmail.com> <4DDD0E5F.5080105@panasas.com> <BANLkTi=FAwzW+qR+Cbwmor90pgbgzfuw-g@mail.gmail.com> <4DDE81F4.8060800@panasas.com>
+            <BANLkTinj1M_VSuvw1Sct8a6TLkUrEP_4uQ@mail.gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; boundary="==_Exmh_1306506572_2736P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 27 May 2011 10:29:32 -0400
+Message-ID: <4265.1306506572@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020203.4DDFB54D.0181,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-27 at 11:01 +0200, Jean Delvare wrote:
-> Hi Grant,
-> 
-> On Fri, 27 May 2011 00:42:38 -0600, Grant Likely wrote:
-> > On Wed, Apr 20, 2011 at 11:35:54AM -0500, Peter Tyser wrote:
-> > > This driver works on many Intel chipsets, including the ICH6, ICH7,
-> > > ICH8, ICH9, ICH10, 3100, Series 5/3400 (Ibex Peak), Series 6/C200
-> > > (Cougar Point), and NM10 (Tiger Point).
-> > > 
-> > > Additional Intel chipsets should be easily supported if needed, eg the
-> > > ICH1-5, EP80579, etc.
-> > > 
-> > > Tested on a QM57 (Ibex Peak), 3100 (Whitmore Lake) , and
-> > > NM10 (Tiger Point).
-> > > 
-> > > Cc: Alek Du <alek.du@intel.com>
-> > > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > > Cc: Eric Miao <eric.y.miao@gmail.com>
-> > > Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > > Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > > Cc: Joe Perches <joe@perches.com>
-> > > Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> > > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > > Cc: Syed S Azam <Syed.Azam@hp.com>
-> > > Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
-> > > Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-> > > Tested-by: Vincent Palatin <vpalatin@chromium.org>
-> > 
-> > Hmmm, I merged a patch from Jean Delvare adding support for Intel
-> > 82801 gpio pins[1].  Does this driver support the same hardware?  I see
-> > the same PCI ids.
-> > 
-> > [1] https://lkml.org/lkml/2011/4/19/170
-> 
-> There is indeed a common range in the supported devices: ICH6 to ICH10.
-> My driver also supports older ICH chips (ICH to ICH5), while Peter's
-> support newer devices my driver does not (basically everything after
-> the ICH10).
-> 
-> Another key difference is that my driver is a simple PCI driver, while
-> Peter's is a platform driver. It makes some sense to have a platform
-> driver because the PCI device is a multifunction device so other
-> drivers may want to bind to it. However, I suspect that the other
-> functions (ACPI?) will never need a driver (not in the Linux device
-> driver binding model sense of the term at least) which is why I did not
-> bother. Peter, what was you reason to go for a platform driver? If you
-> really want to it go that route, you'll have to follow the standard MFD
-> model (see drivers/mfd/lpc_sch.c for an example.)
-> 
-> The only device I really care to see supported at the moment is the
-> ICH10, and it is supported by both drivers, so I don't care too much
-> which driver is picked.
+--==_Exmh_1306506572_2736P
+Content-Type: text/plain; charset=us-ascii
 
-I went with a platform driver because the PCI device IDs we're searching
-for don't contain the "GPIO registers" - they just have pointer to the
-GPIO registers which reside in IO space, in addition to other non-GPIO
-registers as Jean mentioned.  So conceptually a platform driver made
-more sense to me since we're not claiming or using the PCI device, we're
-just using it to get a pointer.
+On Thu, 26 May 2011 22:44:24 PDT, Keith Curtis said:
 
-More importantly, the PCI device that contains the pointer to the GPIO
-IO space also has other uses that prevent it from being claimed.  Eg the
-drivers/mtd/maps/esb2rom.c driver uses the same PCI device to configure
-firmware hub registers.  The esb2rom.c driver isn't a PCI driver either,
-so it wouldn't cause a conflict, but it seemed to support the idea that
-we shouldn't be using a PCI driver.
+> However, it is common in companies to make an effort to get towards
+> zero bugs. Zero bugs is impossible, and that is a philosophical
+> discussion. If you look through your current list of bugs, nearly
+> every one looks scary to me and important to someone. You currently
+> have 2,800 active bugs (http://bit.ly/LinuxBugs) The last time I
+> looked, I found the median age was 10 months. In general, bugs should
+> be fixed in the next release and so therefore 3 months.
 
-The drivers/wdt/iTCO_wdt.c file also uses the same PCI device to get the
-ACPI base (similar to us getting the GPIO base), and it is implemented
-as a platform driver.
+You may want to look at what percentage of those bugs were reported on
+one hardware platform by one reporter, and the reporter has since evaporated.
 
-What determines if the driver should use the mfd or platform model?  Eg
-the iTCO_wdt.c that I used as an example doesn't use the mfd model
-despite using the PCI device the same as we are.
+I myself started a thread back on April 26 regarding a wonky PS2->USB adapter.
+Within 24 hours I had a bunch of good suggestions for further debugging, none
+of which I've had a chance to actually follow up on (Hmm.. Monday is a holiday
+but nobody will be in the office, maybe I'll have a chance to get in the 4-5
+reboots it will take.. :)  So if I had opened a bug, how old is it, and who's fault
+is it that it's that old?
 
-My own (completely biased) preference would be to use my driver as a
-starting point, primarily because it supports newer chips that require
-different access methods, as well as the older-style chips Jean's
-supports.  Its also been hanging out for about 6 months without many
-complaints, a tested-by, etc.
+> Hitting zero, even for a minute, could be a newsworthy event, as another way
+> Linux is better than the others. It also shows leadership to user mode.
 
-Best,
-Peter
+Never happen, as at least one of those 2,800 bugs will involve testing a fix on
+hardware the reporter no longer has, or the reporter is no longer available, or
+similar issues.
 
-* The original work was done on an Intel 3100 with PCI device ID
-PCI_DEVICE_ID_INTEL_ESB2_0, datasheet at
-http://download.intel.com/design/intarch/datashts/31345803.pdf, see
-section 16.2.
+You also need to look at the *severity* of the bugs - my USB issue merely
+causes me literally 5 second's inconvenience every morning (part of why I
+haven't chased it further - it's hard to justify spending 45 minutes fixing a
+5-second issue).  If the reporter can't be bothered to help, what are we
+supposed to do?  Then there's the oops and panic reports that should count for
+a lot more.   How severe are most of those 2,800 bugs?
 
+Probably a lot more productive than "zero bugs" would be "swat the top 10
+entries in the kerneloops database", as we know by measurement that they're
+both pervasive and high-impact.
+
+
+
+--==_Exmh_1306506572_2736P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFN37VMcC3lWbTT17ARAquuAKDnK56B30s4NtwB0e+dsVPjlIet2wCg+LfK
+NbONx9snibaMrTm1LmHFiRU=
+=Up17
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1306506572_2736P--
 
