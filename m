@@ -1,126 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815Ab1E0VO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 17:14:27 -0400
-Received: from outmail003.snc4.facebook.com ([66.220.144.135]:61404 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754125Ab1E0VOY (ORCPT
+	id S1755542Ab1E0VT1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 17:19:27 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:9125 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab1E0VTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 17:14:24 -0400
-Date: Fri, 27 May 2011 14:14:19 -0700
-From: Arun Sharma <asharma@fb.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Arun Sharma <asharma@fb.com>, David Miller <davem@davemloft.net>,
-        Maximilian Engelhardt <maxi@daemonizer.de>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        StuStaNet Vorstand <vorstand@stusta.mhn.de>,
-        Yann Dupont <Yann.Dupont@univ-nantes.fr>,
-        Denys Fedoryshchenko <denys@visp.net.lb>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Kernel crash after using new Intel NIC (igb)
-Message-ID: <20110527211419.GA6793@dev1756.snc6.facebook.com>
-References: <20110525060609.GA32244@dev1756.snc6.facebook.com>
- <1306305331.3305.22.camel@edumazet-laptop>
- <4DDEAA3C.7020502@fb.com>
- <1306439246.2543.10.camel@edumazet-laptop>
- <4DDECA9B.8080206@fb.com>
- <1306447292.2543.32.camel@edumazet-laptop>
- <4DDEEBC5.80804@fb.com>
- <1306466831.2543.58.camel@edumazet-laptop>
- <4DDFE4D6.4010000@fb.com>
- <1306526219.2533.3.camel@edumazet-laptop>
+	Fri, 27 May 2011 17:19:25 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6358"; a="93986635"
+From: David Brown <davidb@codeaurora.org>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/7] Move Qualcomm gpio drivers into drivers dir
+References: <1305755453-31112-1-git-send-email-davidb@codeaurora.org>
+	<20110527031319.GH5032@ponder.secretlab.ca>
+	<8yad3j46r97.fsf@huya.qualcomm.com>
+	<8ya8vts6qzn.fsf@huya.qualcomm.com>
+	<alpine.LFD.2.00.1105271531200.3207@xanadu.home>
+Date: Fri, 27 May 2011 14:19:21 -0700
+In-Reply-To: <alpine.LFD.2.00.1105271531200.3207@xanadu.home> (Nicolas Pitre's
+	message of "Fri, 27 May 2011 15:31:47 -0400 (EDT)")
+Message-ID: <8yar57j6duu.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306526219.2533.3.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 09:56:59PM +0200, Eric Dumazet wrote:
-> > 
-> > This looks very similar to atomic_add_unless(). If we had a
-> > 
-> > __atomic_add_unless() that returned "old", we could then do:
-> > 
-> > atomic_add_unless() { return __atomic_add_unless() != u }
-> > atomic_add_unless_return() { return __atomic_add_unless() + a}
-> > 
-> 
-> Sure !
-> 
-> I preferred to not touch lot of files in kernel (atomic_add_unless() is
-> defined in several files) because its a stable candidate patch (2.6.36+)
-> 
-> So a cleanup patch for 2.6.40+ is certainly doable, do you want to do
-> this ?
+On Fri, May 27 2011, Nicolas Pitre wrote:
 
-The attached works for me for x86_64. Cc'ing Ingo/Thomas for comment.
+> On Fri, 27 May 2011, David Brown wrote:
+>> On Fri, May 27 2011, David Brown wrote:
+>> > On Thu, May 26 2011, Grant Likely wrote:
+>> >> On Wed, May 18, 2011 at 02:50:46PM -0700, David Brown wrote:
+>> >>> This patch series moves the Qualcomm MSM gpio device drivers into the
+>> >>> drivers/gpio directory.
+>> >>> 
+>> >>> The MSM's have two flavors of gpio driver.  The one for the newer
+>> >>> v7-based chips is a bit cleaner, and can just be moved.  The one for
+>> >>> the older v6-based chips took some cleanup to get rid of numerous
+>> >>> ifdefs based on the particular machine.  Both drivers can now be
+>> >>> selected and will be used on appropriate targets.
+>> >>> 
+>> >>> There is still a minor entanglement with the MSM-specific gpiomux
+>> >>> code.  This will be cleaned up as MSM moves to use pinmux.
+>> >>> 
+>> >>> David Brown (7):
+>> >>>   msm: gpio: Remove unsupported devices
+>> >>>   msm: Remove chip-ifdefs for GPIO io mappings
+>> >>>   msm: gpio: Remove chip-specific register definitions
+>> >>>   msm: gpio: Remove ifdefs on gpio chip registers
+>> >>>   msm: gpiomux: Move public API to public header
+>> >>>   gpio_msm: Move Qualcomm v6 MSM driver into drivers
+>> >>>   gpio_msm: Move Qualcomm MSM v2 gpio driver into drivers
+>> >>
+>> >> What's the status of this series.  I only got cc'd on the last two
+>> >> patches; did you want me to pick up the whole lot, or is it being
+>> >> merged via the msm tree?
+>> >
+>> > Let me send out an update, incorporating the suggestions.  I need to
+>> > rebase these changes off of the current MSM code, since the msm-next
+>> > tree contains changes that aren't going into the merge window because of
+>> > extra ARM scrutiny.
+>> >
+>> >> Alternately, if there is a git branch with these patches in it, then I
+>> >> can merge that instead of applying individually.
+>> >
+>> > I'll send you a pull request after I send out the updates.
+>> 
+>> Oh, and in case it isn't clear, I wasn't expecting these to make it into
+>> this merge window.
+>
+> Why not?
 
- -Arun
+They haven't been tested in linux-next for one, but more importantly, I
+have to redo them to not include the msm-core changes that aren't going
+to be going in.
 
-atomic: Refactor atomic_add_unless
+I'm probably not going to be able to get to this until next week.
 
-Commit 686a7e3 (inetpeer: fix race in unused_list manipulations)
-in net-2.6 added a atomic_add_unless_return() variant that tries
-to detect 0->1 transitions of an atomic reference count.
+David
 
-This sounds like a generic functionality that could be expressed
-in terms of an __atomic_add_unless() that returned the old value
-instead of a bool.
-
-Signed-off-by: Arun Sharma <asharma@fb.com>
----
- arch/x86/include/asm/atomic.h |   22 ++++++++++++++++++----
- 1 files changed, 18 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
-index 952a826..bbdbffe 100644
---- a/arch/x86/include/asm/atomic.h
-+++ b/arch/x86/include/asm/atomic.h
-@@ -221,15 +221,15 @@ static inline int atomic_xchg(atomic_t *v, int new)
- }
- 
- /**
-- * atomic_add_unless - add unless the number is already a given value
-+ * __atomic_add_unless - add unless the number is already a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as @v was not already @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of v
-  */
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -241,7 +241,21 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
-+}
-+
-+/**
-+ * atomic_add_unless - add unless the number is already a given value
-+ * @v: pointer of type atomic_t
-+ * @a: the amount to add to v...
-+ * @u: ...unless v is equal to u.
-+ *
-+ * Atomically adds @a to @v, so long as @v was not already @u.
-+ * Returns non-zero if @v was not @u, and zero otherwise.
-+ */
-+static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+{
-+	return __atomic_add_unless(v, a, u) != u;
- }
- 
- #define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
 -- 
-1.7.4
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
