@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758711Ab1E0DxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 23:53:10 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36765 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753627Ab1E0DxI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 23:53:08 -0400
-Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
- __elv_add_request OOPS]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-In-Reply-To: <1306356735.1641.61.camel@mulgrave.site>
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar>
-	 <4DDB8BF6.2000304@fusionio.com>
-	 <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty>
-	 <4DDCB1C8.7040708@fusionio.com>
-	 <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty>
-	 <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
-	 <4DDD5240.2060308@fusionio.com>
-	 <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>
-	 <4DDD55D6.1080909@fusionio.com>
-	 <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty>
-	 <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com>
-	 <alpine.DEB.2.02.1105251613500.8972@ubuntu-natty>
-	 <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com>
-	 <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>
-	 <1306356735.1641.61.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 22:53:04 -0500
-Message-ID: <1306468385.4048.73.camel@mulgrave.site>
+	id S1751000Ab1E0EAd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 00:00:33 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51877 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800Ab1E0EAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 00:00:31 -0400
+Date: Fri, 27 May 2011 14:00:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jamie Iles <jamie@jamieiles.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the mtd tree with Linus' tree
+Message-Id: <20110527140018.993fe260.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__27_May_2011_14_00_18_+1000_iitzuqMchArucSti"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 15:52 -0500, James Bottomley wrote:
-> On Wed, 2011-05-25 at 16:42 -0400, Parag Warudkar wrote:
-> > Yeah - that makes sense. By that logic, looks like we can only disallow 
-> > for SDEV_DEL (if we decide to do that check here).
-> 
-> I don't think this is the root cause.  I think q is non-NULL but has
-> already been released, so we're just getting a NULL deref on the actual
-> list head.
-> 
-> Does this fix it?  It adds the refcounting at approximately the correct
-> places.  Of course, we'll now be trying elevator operations on an extant
-> queue but one whose elevator functions have been destroyed, so there are
-> probably additional state guards to place.
-> 
-> James
-> 
-> ---
-> 
-> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> index 58584dc..44e8ca3 100644
-> --- a/drivers/scsi/scsi_scan.c
-> +++ b/drivers/scsi/scsi_scan.c
-> @@ -297,7 +297,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
->  		kfree(sdev);
->  		goto out;
->  	}
-> -
-> +	blk_get_queue(sdev->request_queue);
+--Signature=_Fri__27_May_2011_14_00_18_+1000_iitzuqMchArucSti
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Apparently we can't do this because blk_[put|get]_queue aren't exported
-for use in modules (and SCSI can be modular), so this caused a build
-failure in linux-next.
+Hi David,
 
-James
+Today's linux-next merge of the mtd tree got a conflict in
+drivers/mtd/maps/integrator-flash.c between commit adf0040096e4 ("ARM:
+6906/1: MTD: Remove integrator-flash") from Linus' tree and commit
+ee0e87b174bb ("mtd: convert remaining users to mtd_device_register()")
+from the mtd tree.
 
+The former removes the file updated by the latter, so I just removed it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Fri__27_May_2011_14_00_18_+1000_iitzuqMchArucSti
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN3yHSAAoJEDMEi1NhKgbsvNIIAJWfL5ItVP+aN0y6QxD7NUl9
+Ll5KVJR5WyRVV4bg9J9FZxKZ7VvodvzgrtS4UaHLCy7swuUmxVxqNnOvoyJBy9NI
+20Dd2OeI90PKAIcmSx4PlKokK5ROx7b2OW2Y0sEzA+aD+d2C5NOlQ5Tz0OWfbAtq
+r61Ety992vK0svB9UWyaWcxVq24f+CoVY8xk31mpmD62m57UH8JorX2UQNc+lkkZ
+ZDy3UyzE36ZADN4jzpeD6IkQqAYnMaFFU+SphwWXl2at/Bng1mEpjQuAOp+LSfiy
+8AMhfqNYwZIlMkC5gvHbqRX6I8c1MDqelkcNBNT5+HW8VPmZlOoYfpj7nzlZ0nI=
+=+y0V
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__27_May_2011_14_00_18_+1000_iitzuqMchArucSti--
