@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab1E0M76 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 08:59:58 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:56263 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab1E0M74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 08:59:56 -0400
-X-Greylist: delayed 558 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 May 2011 08:59:56 EDT
-From: Andreas Gruenbacher <agruen@kernel.org>
-To: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] vfs: Improve the bio_add_page() and bio_add_pc_page() descriptions
-Date: Fri, 27 May 2011 14:52:09 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.36-rc7+; KDE/4.3.5; i686; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105271452.09505.agruen@kernel.org>
+	id S1754617Ab1E0MzZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 08:55:25 -0400
+Received: from lo.gmane.org ([80.91.229.12]:47891 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753688Ab1E0MzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 08:55:24 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Niels <zorglub_olsen@hotmail.com>
+Subject: Problems with a docking station
+Date: Fri, 27 May 2011 14:55:09 +0200
+Message-ID: <iro6vf$r9f$1@dough.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 0x4dd52733.adsl.cybercity.dk
+User-Agent: KNode/0.10.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The descriptions of bio_add_page() and bio_add_pc_page() are slightly
-inconsistent; improve them.
+Hi people,
 
-Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
----
- fs/bio.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+I'm not quite sure were this problem belongs...
 
-diff --git a/fs/bio.c b/fs/bio.c
-index 840a0d7..9bfade8 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -638,10 +638,11 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
-  *	@offset: vec entry offset
-  *
-  *	Attempt to add a page to the bio_vec maplist. This can fail for a
-- *	number of reasons, such as the bio being full or target block
-- *	device limitations. The target block device must allow bio's
-- *      smaller than PAGE_SIZE, so it is always possible to add a single
-- *      page to an empty bio. This should only be used by REQ_PC bios.
-+ *	number of reasons, such as the bio being full or target block device
-+ *	limitations. The target block device must allow bio's up to PAGE_SIZE,
-+ *	so it is always possible to add a single page to an empty bio.
-+ *
-+ *	This should only be used by REQ_PC bios.
-  */
- int bio_add_pc_page(struct request_queue *q, struct bio *bio, struct page *page,
- 		    unsigned int len, unsigned int offset)
-@@ -659,10 +660,9 @@ EXPORT_SYMBOL(bio_add_pc_page);
-  *	@offset: vec entry offset
-  *
-  *	Attempt to add a page to the bio_vec maplist. This can fail for a
-- *	number of reasons, such as the bio being full or target block
-- *	device limitations. The target block device must allow bio's
-- *      smaller than PAGE_SIZE, so it is always possible to add a single
-- *      page to an empty bio.
-+ *	number of reasons, such as the bio being full or target block device
-+ *	limitations. The target block device must allow bio's up to PAGE_SIZE,
-+ *	so it is always possible to add a single page to an empty bio.
-  */
- int bio_add_page(struct bio *bio, struct page *page, unsigned int len,
- 		 unsigned int offset)
--- 
-1.7.1
+I have an AGK hard disk docking station, like this:
+
+http://www.agknordic.com/index.php?side_id=387
+
+It works fine, as in I can transfer files. The problem is that it apparently
+disconnects disks forcefully. If i put one disk in, it gets mounted fine
+as, say, sdg1. But if I then put in another disk, the first one is
+disconnected, and they are both discovered by the system, as sdg1 and sdh1.
+
+This is obviously not so good for the file systems.
+
+One time I got this:
+
+usb 2-2.2.5: USB disconnect, address 13
+EXT3-fs error (device sdg1): ext3_find_entry: reading directory #2 offset 0
+------------[ cut here ]------------
+WARNING: at fs/buffer.c:1159 mark_buffer_dirty+0x23/0x7d()
+Hardware name: P5Q SE
+Modules linked in: coretemp snd_seq_midi snd_seq_midi_event snd_seq
+vboxnetadp vboxnetflt vboxdrv snd_ice1712 snd_ice17xx_ak4xxx
+snd_ak4xxx_adda snd_cs8427 snd_ac97_codec snd_pcm nvidia(P) snd_timer
+snd_page_alloc ac97_bus snd_i2c snd_mpu401_uart snd_rawmidi pcspkr
+snd_seq_device snd
+Pid: 12456, comm: umount Tainted: P           2.6.34-gentoo-r11 #1
+Call Trace:
+ [<ffffffff8102e246>] ? warn_slowpath_common+0x76/0x8c
+ [<ffffffff810b9ce1>] ? mark_buffer_dirty+0x23/0x7d
+ [<ffffffff810f0176>] ? ext3_put_super+0x95/0x256
+ [<ffffffff8109de8b>] ? generic_shutdown_super+0x4f/0xea
+ [<ffffffff8109df46>] ? kill_block_super+0x20/0x35
+ [<ffffffff8109e377>] ? deactivate_super+0x43/0x5c
+ [<ffffffff810b032d>] ? sys_umount+0x2b7/0x2e2
+ [<ffffffff81001e6b>] ? system_call_fastpath+0x16/0x1b
+---[ end trace 701147f5a82f1cb9 ]---
+
+
+Yes, I know it's an old kernel. I've been having printer problems with 35
+and 36. Could the above problem possibly be solved in a newer release, or
+is this simply poor hardware design?
+
+
+Thanks,
+Niels
+
