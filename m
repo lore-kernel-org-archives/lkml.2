@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758625Ab1E0BT3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 21:19:29 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60098 "EHLO
+	id S1758639Ab1E0BVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 21:21:45 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53419 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab1E0BT2 (ORCPT
+	with ESMTP id S1752515Ab1E0BVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 21:19:28 -0400
+	Thu, 26 May 2011 21:21:44 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 27 May 2011 10:12:37 +0900
+Date: Fri, 27 May 2011 10:14:46 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Ying Han <yinghan@google.com>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
@@ -17,7 +17,7 @@ Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
         "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
 Subject: Re: [RFC][PATCH v3 10/10] memcg : reclaim statistics
-Message-Id: <20110527101237.30157c4a.kamezawa.hiroyu@jp.fujitsu.com>
+Message-Id: <20110527101446.73f2499a.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <BANLkTim+hj4Y5wUhB+BHoSOsXdaMYeKqbA@mail.gmail.com>
 References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
 	<20110526143631.adc2c911.kamezawa.hiroyu@jp.fujitsu.com>
@@ -64,10 +64,16 @@ Ying Han <yinghan@google.com> wrote:
 > I will debug it, but like to post here in case i missed some patches in between.
 > 
 
-maybe mem->scanned is 0. It must be mem->scanned +1. thank you for report.
+It must be mem->scanned is 0 and
+     mem->reclaimed * 100 /mem->scanned cause error.
+
+It must be mem->reclaimed * 100 / (mem->scanned +1).
+
+I'll fix. thank you for reporting.
 
 Thanks,
--kame
+-Kame
+
 
 > --Ying
 > 
