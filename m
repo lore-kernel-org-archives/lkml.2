@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab1E0M3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 08:29:38 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:32394 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab1E0M3d convert rfc822-to-8bit (ORCPT
+	id S1753915Ab1E0MbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 08:31:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35729 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab1E0MbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 08:29:33 -0400
-X-SpamScore: -14
-X-BigFish: VS-14(zz9371M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Subject: Re: [PATCH] drivers/misc: add Kbuild header file entry for Freescale hypervisor management driver
-MIME-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset="us-ascii"
-From: Kumar Gala <kumar.gala@freescale.com>
-In-Reply-To: <1306450501-29583-1-git-send-email-timur@freescale.com>
-Date: Fri, 27 May 2011 07:29:32 -0500
-CC: <akpm@linux-foundation.org>, <linuxppc-dev@ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-ID: <C2A71BA0-B229-4D44-8472-3ABEE6A54F21@freescale.com>
-References: <1306450501-29583-1-git-send-email-timur@freescale.com>
-To: Timur Tabi <timur@freescale.com>
-X-Mailer: Apple Mail (2.1084)
-X-OriginatorOrg: freescale.com
+	Fri, 27 May 2011 08:31:03 -0400
+X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=MbabkVIayccA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=D19gQVrFAAAA:8 a=VwQbUJbxAAAA:8 a=OHgYj2wvPM0udUonRTMA:9 a=PUjeQqilurYA:10 a=U62fhAwekXMA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] sched: remove noop in pre_schedule_rt()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <BANLkTi=N8cm_9OKk8VCPVxPPn+Ejuhzq6w@mail.gmail.com>
+References: <BANLkTin1QYAx7as41t78-n0giLSBWoToVA@mail.gmail.com>
+	 <BANLkTi=N8cm_9OKk8VCPVxPPn+Ejuhzq6w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 27 May 2011 08:31:00 -0400
+Message-ID: <1306499460.3857.21.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On May 26, 2011, at 5:55 PM, Timur Tabi wrote:
-
-> fsl_hypervisor.h includes an ioctl interface, so it should be made available
-> via "make headers_install".
+On Fri, 2011-05-27 at 17:17 +0800, Yong Zhang wrote:
+> On Thu, May 26, 2011 at 9:08 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> > Checking task to be RT is removed since only RT task is served here.
+> >
+> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
 > 
-> Signed-off-by: Timur Tabi <timur@freescale.com>
-> ---
+> Actually this patch has been raised for two times:
+> https://lkml.org/lkml/2010/12/13/622
+> http://lkml.org/lkml/2010/2/9/139
 > 
-> This adds one change that I forgot to include in my previous patch,
-> "drivers/misc: introduce Freescale hypervisor management driver".
-> 
-> Kumar, if at all possible, please squash this patch into that one.
-> 
-> include/linux/Kbuild |    1 +
-> 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Just repost the patch you want this merged in.
+Heh, and that's still sitting in my repo on kernel.org. Never been
+pulled. I'll ping Ingo about that for the next merge window.
 
-- k
+Thanks! I forgot about that pull request.
+
+-- Steve
+
+
+
