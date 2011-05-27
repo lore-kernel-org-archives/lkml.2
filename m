@@ -1,152 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab1E0T66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 15:58:58 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24974 "EHLO
+	id S1757214Ab1E0UDo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 16:03:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55718 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756912Ab1E0T6z (ORCPT
+	with ESMTP id S1756826Ab1E0UDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 15:58:55 -0400
-Date: Fri, 27 May 2011 12:58:30 -0700
+	Fri, 27 May 2011 16:03:42 -0400
+Date: Fri, 27 May 2011 13:03:21 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: linux-next: build failure after merge of the voltage tree
-Message-Id: <20110527125830.447abb79.randy.dunlap@oracle.com>
-In-Reply-To: <201105271759.p4RHxa2X008919@hera.kernel.org>
-References: <201105271759.p4RHxa2X008919@hera.kernel.org>
+To: driverdevel <devel@driverdev.osuosl.org>, gregkh@suse.de,
+        linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Cc: "Luis R. Rodriguez" <mcgrof@gmail.com>, Joe Perches <joe@perches.com>,
+        Naveen Singh <nsingh@atheros.com>
+Subject: [PATCH -next] staging: fix ath6kl build when CFG80211 is not
+ enabled
+Message-Id: <20110527130321.18a51d63.randy.dunlap@oracle.com>
 Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090204.4DE00277.010A:SCFSTAT5015188,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090205.4DE00395.0047:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 May 2011 17:59:36 GMT Linux Kernel Mailing List wrote:
-
-> Gitweb:     http://git.kernel.org/linus/c01e36dde4632e0a7474fddf0716f1e54f01f13e
-> Commit:     c01e36dde4632e0a7474fddf0716f1e54f01f13e
-> Parent:     327e15af15248563c896c16adad6fc6e04bb5a4d
-> Author:     Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-> AuthorDate: Wed May 11 01:43:02 2011 -0500
-> Committer:  Liam Girdwood <lrg@slimlogic.co.uk>
-> CommitDate: Fri May 27 10:49:09 2011 +0100
-> 
->     linux-next: build failure after merge of the voltage tree
->     
->     On May 10, 2011, at 9:27 PM, Stephen Rothwell wrote:
->     
->     > Hi Jorge,
->     >
->     > On Tue, 10 May 2011 12:30:36 -0500 Jorge Eduardo Candelaria <jedu@slimlogic.co.uk> wrote:
->     >>
->     >> On May 10, 2011, at 3:38 AM, Liam Girdwood wrote:
->     >>
->     >>> On Tue, 2011-05-10 at 12:44 +1000, Stephen Rothwell wrote:
->     >>>> Hi Liam,
->     >>>>
->     >>>> After merging the voltage tree, today's linux-next build (x86_64
->     >>>> allmodconfig) failed like this:
->     >>>>
->     >>>> ERROR: "tps65910_gpio_init" [drivers/mfd/tps65910.ko] undefined!
->     >>>> ERROR: "tps65910_irq_init" [drivers/mfd/tps65910.ko] undefined!
->     >>>> ERROR: "irq_modify_status" [drivers/mfd/tps65910-irq.ko] undefined!
->     >>>> ERROR: "irq_set_chip_and_handler_name" [drivers/mfd/tps65910-irq.ko] undefined!
->     >>>> ERROR: "handle_edge_irq" [drivers/mfd/tps65910-irq.ko] undefined!
->     >>>>
->     >>>> I have used the voltage tree from next-20110509 for today.
->     >>>
->     >>> Jorge, could you send a fix for this today.
->     >>
->     >> The following patch should solve this:
->     >>
->     >> From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
->     >> MFD: Fix TPS65910 build
->     >>
->     >> Support for tps65910 as a module is not available. The driver can
->     >> only be compiled as built-in. OTOH, the regulator driver can still
->     >> be built as module without breaking the compilation.
->     >>
->     >> Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
->     >
->     > Today (even with the above patch included) I got these errors from the
->     > x86_64 allmodconfig build:
->     >
->     > tps65910.c:(.text+0xf4140): undefined reference to `i2c_master_send'
->     > drivers/built-in.o: In function `tps65910_i2c_read':
->     > tps65910.c:(.text+0xf41d2): undefined reference to `i2c_transfer'
->     > drivers/built-in.o: In function `tps65910_i2c_init':
->     > tps65910.c:(.init.text+0xcb83): undefined reference to `i2c_register_driver'
->     > drivers/built-in.o: In function `tps65910_i2c_exit':
->     > tps65910.c:(.exit.text+0x6e0): undefined reference to `i2c_del_driver'
->     >
->     > I have used the voltage tree from next-20110509 again today.
->     
->     Following patch should fix the dependency problems. Please review:
->     
->     From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
->     [PATCH] MFD: TPS65910: Fix I2C dependency
->     
->     TPS65910 driver can only be compiled built-in, so the I2C driver
->     should be as well.
->     
->     Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
->     Signed-off-by: Liam Girdwood <lrg@slimlogic.co.uk>
-> ---
->  drivers/mfd/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 05f882f..4990a49 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -721,7 +721,7 @@ config MFD_PM8XXX_IRQ
->  
->  config MFD_TPS65910
->  	bool "TPS65910 Power Management chip"
-> -	depends on I2C && GPIOLIB
-> +	depends on I2C=y && GPIOLIB
->  	select MFD_CORE
->  	help
->  	  if you say yes here you get support for the TPS65910 series of
-> --
+This patch is still needed in linux-next:
 
 
-Hi,
+Begin forwarded message:
 
-Current mainline build fails when GPIO is not enabled:
+Date: Tue, 17 May 2011 15:15:19 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, driverdevel <devel@driverdev.osuosl.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: [PATCH -next] staging: fix ath6kl build when CFG80211 is not enabled
 
-warning: (MFD_TPS65910) selects GPIO_TPS65910 which has unmet direct dependencies (GPIOLIB && MFD_TPS65910)
 
-which causes:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-In file included from drivers/gpio/tps65910-gpio.c:21:
-include/linux/mfd/tps65910.h:774: error: field 'gpio' has incomplete type
-drivers/gpio/tps65910-gpio.c: In function 'tps65910_gpio_get':
-drivers/gpio/tps65910-gpio.c:25: warning: type defaults to 'int' in declaration of '__mptr'
-drivers/gpio/tps65910-gpio.c:25: warning: initialization from incompatible pointer type
-drivers/gpio/tps65910-gpio.c: In function 'tps65910_gpio_set':
-drivers/gpio/tps65910-gpio.c:39: warning: type defaults to 'int' in declaration of '__mptr'
-drivers/gpio/tps65910-gpio.c:39: warning: initialization from incompatible pointer type
-drivers/gpio/tps65910-gpio.c: In function 'tps65910_gpio_output':
-drivers/gpio/tps65910-gpio.c:52: warning: type defaults to 'int' in declaration of '__mptr'
-drivers/gpio/tps65910-gpio.c:52: warning: initialization from incompatible pointer type
-drivers/gpio/tps65910-gpio.c: In function 'tps65910_gpio_input':
-drivers/gpio/tps65910-gpio.c:63: warning: type defaults to 'int' in declaration of '__mptr'
-drivers/gpio/tps65910-gpio.c:63: warning: initialization from incompatible pointer type
-drivers/gpio/tps65910-gpio.c: In function 'tps65910_gpio_init':
-drivers/gpio/tps65910-gpio.c:96: error: implicit declaration of function 'gpiochip_add'
-make[3]: *** [drivers/gpio/tps65910-gpio.o] Error 1
-make[2]: *** [drivers/gpio] Error 2
-make[1]: *** [drivers] Error 2
+Fix build errors when CONFIG_CFG80211 is not enabled:
+
+drivers/built-in.o: In function `ar6k_cfg80211_deinit':
+(.text+0x189b71): undefined reference to `cfg80211_scan_done'
+drivers/built-in.o: In function `ar6k_cfg80211_deinit':
+(.text+0x189b86): undefined reference to `wiphy_unregister'
+drivers/built-in.o: In function `ar6k_cfg80211_deinit':
+(.text+0x189b8d): undefined reference to `wiphy_free'
+drivers/built-in.o: In function `ar6k_cfg80211_init':
+(.text+0x18add7): undefined reference to `wiphy_new'
+drivers/built-in.o: In function `ar6k_cfg80211_init':
+(.text+0x18ae48): undefined reference to `wiphy_register'
+drivers/built-in.o: In function `ar6k_cfg80211_tkip_micerr_event':
+(.text+0x18ae95): undefined reference to `cfg80211_michael_mic_failure'
+drivers/built-in.o: In function `ar6k_cfg80211_scan_node':
+(.text+0x18afb5): undefined reference to `__ieee80211_get_channel'
+drivers/built-in.o: In function `ar6k_cfg80211_scan_node':
+(.text+0x18afd2): undefined reference to `cfg80211_inform_bss_frame'
+drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
+(.text+0x18b046): undefined reference to `cfg80211_ibss_joined'
+drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
+(.text+0x18b176): undefined reference to `cfg80211_connect_result'
+drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
+(.text+0x18b190): undefined reference to `cfg80211_disconnected'
+drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
+(.text+0x18b291): undefined reference to `cfg80211_get_bss'
+drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
+(.text+0x18b457): undefined reference to `cfg80211_put_bss'
+drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
+(.text+0x18b4fa): undefined reference to `cfg80211_roamed'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Luis R. Rodriguez <mcgrof@gmail.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Naveen Singh <nsingh@atheros.com>
+---
+ drivers/staging/ath6kl/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20110517.orig/drivers/staging/ath6kl/Kconfig
++++ linux-next-20110517/drivers/staging/ath6kl/Kconfig
+@@ -1,6 +1,7 @@
+ config ATH6K_LEGACY
+ 	tristate "Atheros AR6003 support (non mac80211)"
+         depends on MMC && WLAN
++	depends on CFG80211
+         select WIRELESS_EXT
+         select WEXT_PRIV
+ 	help
 
 
 ---
