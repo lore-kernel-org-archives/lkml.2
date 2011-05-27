@@ -1,113 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab1E0Mqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 08:46:45 -0400
-Received: from unicorn.mansr.com ([78.86.181.103]:39287 "EHLO
-	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903Ab1E0Mql convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 08:46:41 -0400
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Will Deacon <Will.Deacon@arm.com>,
-        =?iso-8859-1?Q?M?= =?iso-8859-1?Q?=E5ns_Rullg=E5rd?= 
-	<mans@mansr.com>,
-        lkml <linux-kernel@vger.kernel.org>, ak@linux.intel.com,
-        Andrew Morton <akpm@linux-foundation.org>, sam@ravnborg.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: Do not allow unaligned accesses when CONFIG_ALIGNMENT_TRAP
-References: <20110524171331.GA2941@arm.com>
-	<20110525111405.GA12010@e102109-lin.cambridge.arm.com>
-	<20110525124348.GA2340@arm.com> <yw1xaaeanbxe.fsf@unicorn.mansr.com>
-	<BANLkTim2TOZgB-3Vkv5RcK572Qr07s3=CA@mail.gmail.com>
-	<1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
-	<alpine.LFD.2.00.1105261650330.3207@xanadu.home>
-	<20110526215101.GL24876@n2100.arm.linux.org.uk>
-	<20110527083806.GA21100@e102109-lin.cambridge.arm.com>
-	<20110527085414.GP24876@n2100.arm.linux.org.uk>
-	<20110527095111.GC21100@e102109-lin.cambridge.arm.com>
-Date: Fri, 27 May 2011 13:46:38 +0100
-In-Reply-To: <20110527095111.GC21100@e102109-lin.cambridge.arm.com> (Catalin
-	Marinas's message of "Fri, 27 May 2011 10:51:11 +0100")
-Message-ID: <yw1xlixse2fl.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755269Ab1E0MrL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 08:47:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49190 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753996Ab1E0MrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 08:47:08 -0400
+Date: Fri, 27 May 2011 14:47:05 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
+        Robin Holt <holt@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH v2] cpusets: randomize node rotor used in
+ cpuset_mem_spread_node()
+Message-ID: <20110527124705.GB4067@tiehlicka.suse.cz>
+References: <20110414065146.GA19685@tiehlicka.suse.cz>
+ <20110414160145.0830.A69D9226@jp.fujitsu.com>
+ <20110415161831.12F8.A69D9226@jp.fujitsu.com>
+ <20110415082051.GB8828@tiehlicka.suse.cz>
+ <20110526153319.b7e8c0b6.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526153319.b7e8c0b6.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Catalin Marinas <catalin.marinas@arm.com> writes:
+On Thu 26-05-11 15:33:19, Andrew Morton wrote:
+> On Fri, 15 Apr 2011 10:20:51 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > Some workloads that create a large number of small files tend to assign
+> > too many pages to node 0 (multi-node systems).  Part of the reason is that
+> > the rotor (in cpuset_mem_spread_node()) used to assign nodes starts at
+> > node 0 for newly created tasks.
+> > 
+> > This patch changes the rotor to be initialized to a random node number of
+> > the cpuset. We are initializating it lazily in cpuset_mem_spread_node
+> > resp. cpuset_slab_spread_node.
+> > 
+> >
+> > ...
+> >
+> > --- a/kernel/cpuset.c
+> > +++ b/kernel/cpuset.c
+> > @@ -2465,11 +2465,19 @@ static int cpuset_spread_node(int *rotor)
+> >  
+> >  int cpuset_mem_spread_node(void)
+> >  {
+> > +	if (current->cpuset_mem_spread_rotor == -1)
+> > +		current->cpuset_mem_spread_rotor =
+> > +			node_random(&current->mems_allowed);
+> > +
+> >  	return cpuset_spread_node(&current->cpuset_mem_spread_rotor);
+> >  }
+> >  
+> >  int cpuset_slab_spread_node(void)
+> >  {
+> > +	if (current->cpuset_slab_spread_rotor == -1)
+> > +		current->cpuset_slab_spread_rotor
+> > +			= node_random(&current->mems_allowed);
+> > +
+> >  	return cpuset_spread_node(&current->cpuset_slab_spread_rotor);
+> >  }
+> >  
+> 
+> alpha allmodconfig:
+> 
+> kernel/built-in.o: In function `cpuset_slab_spread_node':
+> (.text+0x67360): undefined reference to `node_random'
+> kernel/built-in.o: In function `cpuset_slab_spread_node':
+> (.text+0x67368): undefined reference to `node_random'
+> kernel/built-in.o: In function `cpuset_mem_spread_node':
+> (.text+0x673b8): undefined reference to `node_random'
+> kernel/built-in.o: In function `cpuset_mem_spread_node':
+> (.text+0x673c0): undefined reference to `node_random'
+> 
+> because it has CONFIG_NUMA=n, CONFIG_NODES_SHIFT=7.
 
-> On Fri, May 27, 2011 at 09:54:14AM +0100, Russell King - ARM Linux wrote:
->> 
->> Ok, we need to check one last thing, and that's what the behaviour is
->> with -mno-unaligned-access and packed structures (such as the ethernet
->> header).  If it makes no difference, then I suggest we always build
->> with -mno-unaligned-access.
->
-> I tried some simple code below:
->
-> struct test {
-> 	unsigned char a[6];
-> 	unsigned long b;
-> } __attribute__((packed));
->
-> void set(struct test *t, unsigned long v)
-> {
-> 	t->b = v;
-> }
->
-> int main(void)
-> {
-> 	struct test t;
-> 	
-> 	set(&t, 10);
->
-> 	return 0;
-> }
->
-> With -mno-unaligned-access in newer toolchains, the set() function looks
-> like this (compiled with -march=armv7):
->
-> 00000000 <set>:
->    0:   e7e7c451        ubfx    ip, r1, #8, #8
->    4:   e7e72851        ubfx    r2, r1, #16, #8
->    8:   e1a03c21        lsr     r3, r1, #24
->    c:   e5c01006        strb    r1, [r0, #6]
->   10:   e5c0c007        strb    ip, [r0, #7]
->   14:   e5c02008        strb    r2, [r0, #8]
->   18:   e5c03009        strb    r3, [r0, #9]
->   1c:   e12fff1e        bx      lr
->
-> If I don't pass -mno-unaligned-access later toolchains use unaligned
-> accesses by default and the set() function is more efficient:
->
-> 00000000 <set>:
->    0:   e5801006        str     r1, [r0, #6]
->    4:   e12fff1e        bx      lr
+non-NUMA with MAX_NUMA_NODES? Hmm, really weird and looks like a numa
+misuse.
 
-This is certainly something we should want.  Although some people
-expressed concerns over introducing unaligned accesses where there were
-previously none, I don't see how this could pose a problem as long as we
-make sure strict alignment checking is off.  Some basic testing of code
-paths known to use unaligned accesses should suffice IMO.
+> We use "#if MAX_NUMNODES > 1" in nodemask.h, but we use CONFIG_NUMA
+> when deciding to build mempolicy.o.  That's a bit odd - why didn't
+> nodemask.h use CONFIG_NUMA?
 
-> The problem is that in addition to that we also get unaligned stack
-> variables which are not really efficient. Either way we have a drawback
-> somewhere. We could argue that -fconserve-stack is badly implemented on
-> ARM.
+We have this since the kernel git age. I guess this is just for
+optimizations where some functions can be NOOP when there is only one
+node.
 
-Unless someone can demonstrate a clear win from -fconserve-stack, I
-think it's pretty obvious that this flag does more harm than good on
-ARM, especially in conjunction with unaligned accesses being allowed.
+I know that this is ugly but what if we just define node_random in the
+header?
+---
 
-If the stack packing could be disabled while retaining the other
-(presumably beneficial) effects of -fconserve-stack, it might be
-reconsidered.
+Define node_random directly in the mempolicy header
 
+Alpha allows a strange configuration CONFIG_NUMA=n and CONFIG_NODES_SHIFT=7
+which means that mempolicy.c is not compiled and linked while we still have
+MAX_NUMNODES>1 which means that node_random is not defined.
+
+Let's move node_random definition into the header. We will be consistent with
+other node_* functions.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Index: linus_tree/include/linux/nodemask.h
+===================================================================
+--- linus_tree.orig/include/linux/nodemask.h	2011-05-27 14:15:52.000000000 +0200
++++ linus_tree/include/linux/nodemask.h	2011-05-27 14:36:30.000000000 +0200
+@@ -433,7 +433,21 @@ static inline void node_set_offline(int
+ 	nr_online_nodes = num_node_state(N_ONLINE);
+ }
+ 
+-extern int node_random(const nodemask_t *maskp);
++unsigned int get_random_int(void );
++/*
++ * Return the bit number of a random bit set in the nodemask.
++ * (returns -1 if nodemask is empty)
++ */
++static inline int node_random(const nodemask_t *maskp)
++{
++	int w, bit = -1;
++
++	w = nodes_weight(*maskp);
++	if (w)
++		bit = bitmap_ord_to_pos(maskp->bits,
++			get_random_int() % w, MAX_NUMNODES);
++	return bit;
++}
+ 
+ #else
+ 
+Index: linus_tree/mm/mempolicy.c
+===================================================================
+--- linus_tree.orig/mm/mempolicy.c	2011-05-27 14:16:05.000000000 +0200
++++ linus_tree/mm/mempolicy.c	2011-05-27 14:16:34.000000000 +0200
+@@ -1650,21 +1650,6 @@ static inline unsigned interleave_nid(st
+ 		return interleave_nodes(pol);
+ }
+ 
+-/*
+- * Return the bit number of a random bit set in the nodemask.
+- * (returns -1 if nodemask is empty)
+- */
+-int node_random(const nodemask_t *maskp)
+-{
+-	int w, bit = -1;
+-
+-	w = nodes_weight(*maskp);
+-	if (w)
+-		bit = bitmap_ord_to_pos(maskp->bits,
+-			get_random_int() % w, MAX_NUMNODES);
+-	return bit;
+-}
+-
+ #ifdef CONFIG_HUGETLBFS
+ /*
+  * huge_zonelist(@vma, @addr, @gfp_flags, @mpol)
 -- 
-Måns Rullgård
-mans@mansr.com
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
