@@ -1,145 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758741Ab1E0Ks2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 06:48:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45775 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757178Ab1E0Ks0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 06:48:26 -0400
-Date: Fri, 27 May 2011 11:48:23 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Bertil Engelholm <bertil.engelholm@ericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: PROBLEM: zone_reclaim is hanging high priority real time user
- pthreads
-Message-ID: <20110527104823.GA5118@suse.de>
-References: <980E20D8E719A84BBF593FDE6AEC23DA0AEB3CFAA7@ESESSCMS0351.eemea.ericsson.se>
+	id S1752661Ab1E0KyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 06:54:19 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64268 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab1E0KyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 06:54:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :user-agent;
+        b=SWWEE6yOh5+ARmG6NlF/y58P1gPjXNgYx6kaffW5U43jDCfhmlFm2Ou+OYCYfr28RM
+         iddNbBA8fi9jPkIg9tPAjgEdZ8gUr1hp5MOkckcrKrqsiiRQcg2K8g44LALRgL4uQehE
+         Txv985MYksrXamjzLUDqOojhJm6UOVrqH3+hE=
+Date: Fri, 27 May 2011 14:54:07 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20110527105407.GA29529@oksana.dev.rtsoft.ru>
+Reply-To: cbouatmailru@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <980E20D8E719A84BBF593FDE6AEC23DA0AEB3CFAA7@ESESSCMS0351.eemea.ericsson.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 03:34:33PM +0200, Bertil Engelholm wrote:
-> 
-> Hi,
-> 
-> I have been investigating a problem for several weeks now and at last I 
-> beleave I'm on to something. So now I'm hoping that someone has the time to 
-> help me answer some questions.
-> The problem has been seen in kernel 2.6.16 and I now wonder if this is solved
-> in later kernels. I have looked in the 2.6.39 source code and there was a 
-> comment in that code indicating that this could still be a problem even though
-> it's not as serious as in 2.6.16.
-> 
-> The actual problem I have seen in 2.6.16 is that the zone_reclaim function can
-> execute on several CPU's in parallell in a multi core system.
+Hello Linus,
 
-In 2.6.16, there is a race allowing two or more processes to call
-zone_reclaim on a single node. Later kernels prevent this with a zone
-lock. This reduces excessive scanning and excessive reclaim within
-one node. As a side-effect, processes that contend on the lock will
-fall back to other nodes and stall less frequently.
+Please pull battery-2.6.git tree to receive changes prepared for
+2.6.40.
 
-> There is a check
-> for the reclaim_in_progress counter in zone_reclaim but it takes some time
-> until this counter is increased in shrink_zone so if several CPU's start
-> executing zone_reclaim at the same time they will continue executing
-> shrink_zone etc. in parallell. With a test program we have seen up to 4 CPU's
-> do this in parallell. I have seen two CPU's execute zone_reclaim in parallell 
-> in a panic dump that I triggered using sysrq-trigger when our pthread was 
-> "hanging". However, this is not a problem functionally wise, it looks like 
-> they all do what they are supposed to do. 
-> 
+There are support for new hardware + some fixes here and there, the
+usual stuff. :-)
 
-They would although that is not necessarily what you want either.
+You may notice the power-related change for Nokia N900 board (the
+ARM commmit). I took that patch via battery git tree to not create
+cross-tree dependencies. And of course it has an appropriate ack
+from OMAP maintainer to go through that tree.
 
-> The problem is that the execution time goes up quite a lot when several CPU's
-> execute zone_reclaim. Most likely I guess because they will compete for the
-> same locks etc. Since this is executed in the "context" of any user
-> process/pthread it can "hang" this process/pthread for several seconds while
-> other pthreads etc. continue to execute as normal. 
+Thanks!
 
-2.6.16 did not have multiple LRUs. This means that if teh system didn't
-have swap configured for example, it could have to scan excessively
-(possible all of the node twice) reclaiming a very small number of
-pages. In later kernels, it would be able to complete faster which
-would reduce stalls.
+The following changes since commit f0e615c3cb72b42191b558c130409335812621d8:
 
-> If you have enough allocated memory e.g. 40GB, we have seen hangings for 16 
-> seconds. And this is even though the pthread is a high priority real time 
-> scheduled pthread that is suppose to execute every 10 ms (testprogram). Even 
-> if you get rid of the parallell execution, I suppose zone_reclaim can still 
-> hang a user pthread for some time if you have many active pages and this is 
-> what I wonder if it's still valid.
-> 
-> In later versions of vmscan.c I can see that a lot has changed regarding this
-> code but in shrink_zone in 2.6.39 this comment can be found :
-> 
-> /*
-> * On large memory systems, scan >> priority can become
-> * really large. This is fine for the starting priority;
-> * we want to put equal scanning pressure on each zone.
-> * However, if the VM has a harder time of freeing pages,
-> * with multiple processes reclaiming pages, the total
-> * freeing target can get unreasonably large.
-> */
-> 
-> This indicates to me that the execution time for shrink_zone can still be
-> relativly long if you have a lot of pages. 
-> 
+  Linux 2.6.39-rc4 (2011-04-18 21:26:00 -0700)
 
-Yes.
+are available in the git repository at:
+  git://git.infradead.org/battery-2.6.git master
 
-> So the question is : Can todays kernel also "hang" high priority user pthreads
-> due to zone_reclaim if you have a large system with lots of allocated memory ? 
+Anton Vorontsov (1):
+      max8903_charger: Add GENERIC_HARDIRQS as a dependency (fixes S390 build)
 
-The stall should be significantly lower but still not desirable. If
-zone_reclaim is being used extensively, it can imply that there is a
-node imbalance where processes are reclaiming heavily in one node and
-ignoring others.
+Benson Leung (1):
+      gpio-charger: Add gpio_charger_resume
 
-> I.e. is this function still executed in a user pthread context risking to
-> hang it for some time ? 
-> If this has changed so it's executed in another way (background thread or
-> some other way), when was this changed (which kernel version) ? 
-> 
+John Stultz (1):
+      power: Make test_power driver more dynamic.
 
-Disable zone_reclaim. Processes will fall back to using remote nodes
-while waking kswapd to rebalance the current node. Processes take
-a hit by using remote nodes for memory accesses but this can be far
-lower than the time taken to run zone_reclaim.
+Kalle Jokiniemi (2):
+      isp1704_charger: Allow board specific powering routine
+      ARM: RX-51: Enable isp1704 power on/off
 
-> OK, that's it. I hope I have managed to make myself understandable.
-> As I started I have spent several weeks on this and I just want to make
-> shure that if we recommend a new kernel version to our users that the
-> problem is actually solved in that version. I have searched the internet
-> for many hours for this problem but not been able to find anything that
-> looks like this specific problem.
+Marek Vasut (1):
+      PXA: Use dev_pm_ops in z2_battery
 
-zone_reclaim is not studied very often and has a tendency to surprise
-people unfortunately.
+MyungJoo Ham (1):
+      power_supply: Add driver for MAX8903 charger
 
-> The reason we have such a problem is 
-> because the pthreads that are hanging is important supervision pthreads
-> (that's why they are high priority real time pthreads) so they must execute
-> at certain intervals otherwise other pthreads will think something is wrong
-> and trigger recovery actions. 
-> 
-> Since I'm not subscribing to this mailing list I would appreciate if you 
-> could CC me any response.
-> 
+Pali Rohár (1):
+      bq27x00_battery: Name of cycle count property
 
-If your workload is not tuned to size each process within a given node
-(very common), I'd suggest disabling zone_reclaim altogether. This sort
-of problem is typically reported as "all memory is not being used" when
-the target application is mostly serving files. It's rare people
-complain about stalls due to zone_reclaim which is probably why you
-couldn't find any reference in Google.
+Paul Parsons (2):
+      ds2760_battery: Fix indexing of the 4 active full EEPROM registers
+      ds2760_battery: Fix rated capacity of the hx4700 1800mAh battery
 
--- 
-Mel Gorman
-SUSE Labs
+ arch/arm/mach-omap2/board-rx51-peripherals.c |   27 ++-
+ drivers/power/Kconfig                        |    9 +
+ drivers/power/Makefile                       |    1 +
+ drivers/power/bq27x00_battery.c              |   11 +-
+ drivers/power/ds2760_battery.c               |    6 +-
+ drivers/power/gpio-charger.c                 |   15 +
+ drivers/power/isp1704_charger.c              |   22 ++
+ drivers/power/max8903_charger.c              |  391 ++++++++++++++++++++++++++
+ drivers/power/test_power.c                   |  276 +++++++++++++++++-
+ drivers/power/z2_battery.c                   |   20 +-
+ include/linux/power/isp1704_charger.h        |   29 ++
+ include/linux/power/max8903_charger.h        |   57 ++++
+ 12 files changed, 840 insertions(+), 24 deletions(-)
+ create mode 100644 drivers/power/max8903_charger.c
+ create mode 100644 include/linux/power/isp1704_charger.h
+ create mode 100644 include/linux/power/max8903_charger.h
