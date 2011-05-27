@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758721Ab1E0DMf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 23:12:35 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34138 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab1E0DMe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 23:12:34 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 27 May 2011 12:05:39 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Ying Han <yinghan@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH v3 0/10] memcg async reclaim
-Message-Id: <20110527120539.91778598.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110527114837.8fae7f00.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTikcdOGkJWxS0Sey8C1ereVk8ucvQQ@mail.gmail.com>
-	<20110527114837.8fae7f00.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758738Ab1E0Dl3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 23:41:29 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:41845 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758640Ab1E0DlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 23:41:25 -0400
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        <greg@kroah.com>, <netdev@vger.kernel.org>
+References: <cover.1306408804.git.gxt@mprc.pku.edu.cn> <556924396ee34f4af94a2f03767973f1cec35e22.1306408804.git.gxt@mprc.pku.edu.cn> <201105261443.06896.arnd@arndb.de>
+In-Reply-To: <201105261443.06896.arnd@arndb.de>
+Subject: RE: [PATCH 2/6] unicore32: add pkunity-v3 mac/net driver (umal)
+Date: Fri, 27 May 2011 11:08:57 +0800
+Message-ID: <005901cc1c1b$6b80ce40$42826ac0$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIcsKU1gucno1VE3ekXHpcmNwpJlQJbGgG/AZaWcWKT30bDIA==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 May 2011 11:48:37 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> On Thu, 26 May 2011 18:49:26 -0700
-> Ying Han <yinghan@google.com> wrote:
- 
-> > Hmm.. I noticed a very strange behavior on a simple test w/ the patch set.
-> > 
-> > Test:
-> > I created a 4g memcg and start doing cat. Then the memcg being OOM
-> > killed as soon as it reaches its hard_limit. We shouldn't hit OOM even
-> > w/o async-reclaim.
-> > 
-> > Again, I will read through the patch. But like to post the test result first.
-> > 
-> > $ echo $$ >/dev/cgroup/memory/A/tasks
-> > $ cat /dev/cgroup/memory/A/memory.limit_in_bytes
-> > 4294967296
-> > 
-> > $ time cat /export/hdc3/dd_A/tf0 > /dev/zero
-> > Killed
-> > 
-> > real	0m53.565s
-> > user	0m0.061s
-> > sys	0m4.814s
-> > 
+
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Thursday, May 26, 2011 8:43 PM
+> To: GuanXuetao
+> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; greg@kroah.com; netdev@vger.kernel.org
+> Subject: Re: [PATCH 2/6] unicore32: add pkunity-v3 mac/net driver (umal)
 > 
-> Hmm, what I see is
-> ==
-> root@bluextal kamezawa]# ls -l test/1G
-> -rw-rw-r--. 1 kamezawa kamezawa 1053261824 May 13 13:58 test/1G
-> [root@bluextal kamezawa]# mkdir /cgroup/memory/A
-> [root@bluextal kamezawa]# echo 0 > /cgroup/memory/A/tasks
-> [root@bluextal kamezawa]# echo 300M > /cgroup/memory/A/memory.limit_in_bytes
-> [root@bluextal kamezawa]# echo 1 > /cgroup/memory/A/memory.async_control
-> [root@bluextal kamezawa]# cat test/1G > /dev/null
-> [root@bluextal kamezawa]# cat /cgroup/memory/A/memory.reclaim_stat
-> recent_scan_success_ratio 83
-> limit_scan_pages 82
-> limit_freed_pages 49
-> limit_elapsed_ns 242507
-> soft_scan_pages 0
-> soft_freed_pages 0
-> soft_elapsed_ns 0
-> margin_scan_pages 218630
-> margin_freed_pages 181598
-> margin_elapsed_ns 117466604
-> [root@bluextal kamezawa]#
-> ==
+> On Thursday 26 May 2011, GuanXuetao wrote:
+> > From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> >
+> > Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 > 
-> I'll turn off swapaccount and try again.
-> 
+> No objections to this driver, just remember that network drivers should
+> go through the netdev tree, and if it wasn't in there before the merge
+> window, you missed your chance for this time.
+Yes.
+I hope someone could help me review the network driver.
+Perhaps it's  late for adding this driver during this merge window time.
 
-A bug found....I added memory.async_control file to memsw.....file set by mistake.
-Then, async_control cannot be enabled when swapaccount=0. I'll fix that.
-
-So, how do you enabled async_control ?
-
-Thanks,
--Kame
-
-
+Regards.
+Guan Xuetao
 
