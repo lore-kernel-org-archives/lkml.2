@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab1E0I23 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 04:28:29 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1307 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751525Ab1E0I22 (ORCPT
+	id S932195Ab1E0IYj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 04:24:39 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:13171 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab1E0IYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 04:28:28 -0400
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Grant Likely'" <grant.likely@secretlab.ca>
-Cc: <linux-kernel@vger.kernel.org>, <alexander.stein@systec-electronic.com>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>, <toshiharu-linux@dsn.okisemi.com>
-References: <1306472691-6055-1-git-send-email-tomoya-linux@dsn.okisemi.com> <1306472691-6055-3-git-send-email-tomoya-linux@dsn.okisemi.com> <20110527070833.GA31953@ponder.secretlab.ca>
-Subject: RE: [PATCH v2 3/3] pch_gpio: support interrupt function
-Date: Fri, 27 May 2011 17:28:25 +0900
-Message-ID: <1AE0D718B2974BCBA409AF045602867F@hacdom.okisemi.com>
+	Fri, 27 May 2011 04:24:37 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Fri, 27 May 2011 16:29:17 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, Shawn Guo <shawn.guo@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <patches@linaro.org>,
+        <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>,
+        <kernel@pengutronix.de>
+Subject: Re: [PATCH 2/3] ARM: mxs: add gpio-mxs platform devices
+Message-ID: <20110527082916.GB30146@S2100-06.ap.freescale.net>
+References: <1305885446-27404-1-git-send-email-shawn.guo@linaro.org>
+ <1305885446-27404-3-git-send-email-shawn.guo@linaro.org>
+ <201105201223.00427.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-Thread-Index: AcwcPOVyosqo6SUNR++MLrnk7wR24gACbbsw
-In-Reply-To: <20110527070833.GA31953@ponder.secretlab.ca>
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <201105201223.00427.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Fri, May 20, 2011 at 12:23:00PM +0200, Arnd Bergmann wrote:
+[...]
+> > +#define mxs_gpio_data_entry_single(soc, _id)				\
+> > +	{								\
+> > +		.id = _id,						\
+> > +		.iobase = soc ## _PINCTRL ## _BASE_ADDR,		\
+> > +		.irq = soc ## _INT_GPIO ## _id,				\
+> > +	}
+> > +
+> > +#define mxs_gpio_data_entry(soc, _id)					\
+> > +	[_id] = mxs_gpio_data_entry_single(soc, _id)
+> > +
+> > +#ifdef CONFIG_SOC_IMX23
+> > +const struct mxs_gpio_data mx23_gpio_data[] __initconst = {
+> > +#define mx23_gpio_data_entry(_id)					\
+> > +	mxs_gpio_data_entry(MX23, _id)
+> 
+> I know it's tempting to use macros for these, but I think it obscures
+> the code a lot, especially when you use them to concatenate identifier
+> names. Why not just do:
+> 
+> 	struct platform_device *gpios;
+> 	gpios = platform_device_register_simple(mxs_host_bus, "mxs-gpio-master", 0, NULL, 0);
+> 
+platform_device_register_simple does not have parameter for 'parent',
+and it sets 'parent' NULL anyway.
 
-On Friday, May 27, 2011 4:09 PM, Grant Likely wrote:
-> Take a look at the new irq_chip_generic infrastructure.  You 
-> don't need to implement a memory mapped irq controller from 
-> scratch anymore.
-> Most of the access functions can be taken directly from 
-> irq_chip_generic instead. 
+-- 
+Regards,
+Shawn
 
-Let me clarify your saying.
-  a) We shouldn't use request_irq( ) ?
-  b) Does Your  "irq_chip_generic" mean irq_set_handler_data( ) / irq_set_chained_handler( ) ?
-      If yes, Using these functions, I saw IRQ shared other function's interrupt becomes invalid.
-
-With Best Regards,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+> 	mxs_register_gpio(gpios, 0, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO_0);
+> 	mxs_register_gpio(gpios, 1, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO_1);
+> 	mxs_register_gpio(gpios, 2, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO_2);
+> 	mxs_register_gpio(gpios, 3, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO_3);
+> 
+> This is actually shorter and it makes it possible to grep for the
+> macros you use.
+> 
+> > +struct platform_device *__init mxs_add_gpio(
+> > +		const struct mxs_gpio_data *data)
+> > +{
+> > +	struct resource res[] = {
+> > +		{
+> > +			.start = data->iobase,
+> > +			.end = data->iobase + SZ_8K - 1,
+> > +			.flags = IORESOURCE_MEM,
+> > +		}, {
+> > +			.start = data->irq,
+> > +			.end = data->irq,
+> > +			.flags = IORESOURCE_IRQ,
+> > +		},
+> > +	};
+> > +
+> > +	return mxs_add_platform_device("mxs-gpio", data->id,
+> > +					res, ARRAY_SIZE(res), NULL, 0);
+> > +}
+> 
+> mxs_add_platform_device doesn't set the parent pointer correctly, I think you
+> should either fix that or open-code the platform device creation to do it
+> right.
+> 
 
