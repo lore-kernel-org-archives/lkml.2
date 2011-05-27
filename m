@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab1E0NKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 09:10:11 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60964
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753688Ab1E0NKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 09:10:08 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
-        v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Cc: Stephen Hemminger <shemminger@vyatta.com>
-Subject: [PATCH 2/2] staging: hv: use delayed_work for netvsc_send_garp()
-Date: Fri, 27 May 2011 06:21:55 -0700
-Message-Id: <1306502515-18961-2-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1306502515-18961-1-git-send-email-haiyangz@microsoft.com>
-References: <1306502515-18961-1-git-send-email-haiyangz@microsoft.com>
+	id S1754873Ab1E0NYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 09:24:08 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:53539 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab1E0NYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 09:24:05 -0400
+Date: Fri, 27 May 2011 08:23:56 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Anton Salikhmetov <alexo@tuxera.com>, linux-kernel@vger.kernel.org
+Subject: Re: hfsplus mount regression in 2.6.38
+Message-ID: <20110527132356.GA13908@thinkpad-t410>
+Mail-Followup-To: Christoph Hellwig <hch@infradead.org>,
+	Anton Salikhmetov <alexo@tuxera.com>, linux-kernel@vger.kernel.org
+References: <20110525142521.GA32511@thinkpad-t410>
+ <20110527092522.GA11600@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110527092522.GA11600@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of sleeping in a scheduled work, we now use delayed_work
-for netvsc_send_garp().
+On Fri, May 27, 2011 at 05:25:22AM -0400, Christoph Hellwig wrote:
+> On Wed, May 25, 2011 at 09:25:21AM -0500, Seth Forshee wrote:
+> > Reverting commits 52399b1 (hfsplus: use raw bio access for the volume
+> > headers) and 358f26d5 (hfsplus: use raw bio access for partition tables)
+> > fixes the problems. It appears the problems are due to hfsplus
+> > submitting 512 byte bios to a block device whose sector size is larger
+> > than 512 byts (2 KB in the log above), and the block driver is quite
+> > reasonably rejecting any requests without proper sector alignment.
+> > 
+> > How would you suggest fixing this?  Most file systems are using
+> > sb_bread() for this sort of thing, but since the offending patches are
+> > intended to stop using buffer_heads I'm assuming that's not an option.
+> 
+> Basically all hardcoded uses of HFSPLUS_SECTOR_SIZE need to be replaced
+> with a use of bdev_logical_block_size, or a per-sb variable derived from
+> it, and the addressing needs to be accomodated to fit it.  I'd need to
+> look into a bit more detail in what form the sectors we pass into it
+> are in - we might have to convert them from 512byte to large units,
+> or they might already be in it.  If they happen to be in 512 byte units
+> we might have to do read-modify write cycles.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
+It seems reasonable to use sb->s_blocksize for this, as it shouldn't get
+set to anything larger than the logical block size. That's what
+sb_bread() uses in fact.
 
----
- drivers/staging/hv/netvsc_drv.c |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
+> What large sector size device do you have, a CDROM?
 
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index f510959..33cab9c 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -46,7 +46,7 @@ struct net_device_context {
- 	/* point back to our device context */
- 	struct hv_device *device_ctx;
- 	unsigned long avail;
--	struct work_struct work;
-+	struct delayed_work dwork;
- };
- 
- 
-@@ -217,7 +217,7 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
- 		netif_wake_queue(net);
- 		netif_notify_peers(net);
- 		ndev_ctx = netdev_priv(net);
--		schedule_work(&ndev_ctx->work);
-+		schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
- 	} else {
- 		netif_carrier_off(net);
- 		netif_stop_queue(net);
-@@ -315,7 +315,7 @@ static const struct net_device_ops device_ops = {
-  * Send GARP packet to network peers after migrations.
-  * After Quick Migration, the network is not immediately operational in the
-  * current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, add
-- * another netif_notify_peers() into a scheduled work, otherwise GARP packet
-+ * another netif_notify_peers() into a delayed work, otherwise GARP packet
-  * will not be sent after quick migration, and cause network disconnection.
-  */
- static void netvsc_send_garp(struct work_struct *w)
-@@ -323,8 +323,7 @@ static void netvsc_send_garp(struct work_struct *w)
- 	struct net_device_context *ndev_ctx;
- 	struct net_device *net;
- 
--	msleep(20);
--	ndev_ctx = container_of(w, struct net_device_context, work);
-+	ndev_ctx = container_of(w, struct net_device_context, dwork.work);
- 	net = dev_get_drvdata(&ndev_ctx->device_ctx->device);
- 	netif_notify_peers(net);
- }
-@@ -348,7 +347,7 @@ static int netvsc_probe(struct hv_device *dev)
- 	net_device_ctx->device_ctx = dev;
- 	net_device_ctx->avail = ring_size;
- 	dev_set_drvdata(&dev->device, net);
--	INIT_WORK(&net_device_ctx->work, netvsc_send_garp);
-+	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_send_garp);
- 
- 	/* Notify the netvsc driver of the new device */
- 	device_info.ring_size = ring_size;
-@@ -387,12 +386,16 @@ static int netvsc_probe(struct hv_device *dev)
- static int netvsc_remove(struct hv_device *dev)
- {
- 	struct net_device *net = dev_get_drvdata(&dev->device);
-+	struct net_device_context *ndev_ctx;
- 
- 	if (net == NULL) {
- 		dev_err(&dev->device, "No net device to remove\n");
- 		return 0;
- 	}
- 
-+	ndev_ctx = netdev_priv(net);
-+	cancel_delayed_work_sync(&ndev_ctx->dwork);
-+
- 	/* Stop outbound asap */
- 	netif_stop_queue(net);
- 
--- 
-1.6.3.2
+I don't have any large-sector devices personally, these are reports
+coming in from users. Many of them are seeing this problem with iPods,
+and some have reported it with HDDs. As far as I know none of the
+reports have been with a CDROM. Here's a link to the bug.
 
+  http://bugs.launchpad.net/bugs/734883
