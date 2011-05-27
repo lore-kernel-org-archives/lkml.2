@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754Ab1E0FyG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 01:54:06 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:49201 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751189Ab1E0FyF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 01:54:05 -0400
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: "thomas@fjellstrom.ca" <thomas@fjellstrom.ca>,
-        "yxlraid@gmail.com" <yxlraid@gmail.com>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacky Feng <jfeng@marvell.com>
-Date: Thu, 26 May 2011 22:53:39 -0700
-Subject: RE: [PATCH 1/9] [SCSI] mvsas: Add support for Non specific NCQ
- error interrupt
-Thread-Topic: [PATCH 1/9] [SCSI] mvsas: Add support for Non specific NCQ
- error interrupt
-Thread-Index: AcwcMOVW3JBptyECQECDxlxbJlaWcAAAHFkg
-Message-ID: <F766E4F80769BD478052FB6533FA745D19FAD8493E@SC-VEXCH4.marvell.com>
-References: <mvsas-ncq> <1306247210-5888-1-git-send-email-yxlraid@gamil.com>
- <201105262342.33985.thomas@fjellstrom.ca>
-In-Reply-To: <201105262342.33985.thomas@fjellstrom.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753224Ab1E0F7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 01:59:46 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:39172 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751189Ab1E0F7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 01:59:45 -0400
+X-ASG-Debug-ID: 1306475983-01de280c1e05680001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DDF3DCD.40501@fusionio.com>
+Date: Fri, 27 May 2011 07:59:41 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laurent Vivier <Laurent.Vivier@bull.net>
+Subject: Re: [PATCH] loop: export module parameters
+References: <1306302242-7019-1-git-send-email-namhyung@gmail.com> <1306472258.2544.6.camel@leonhard>
+X-ASG-Orig-Subj: Re: [PATCH] loop: export module parameters
+In-Reply-To: <1306472258.2544.6.camel@leonhard>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1306475983
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64787
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> From: Xiangliang Yu <yuxiangl@marvell.com>
->> 
->> -- Add support for Non specific NCQ error interrupt.
->> 
+On 2011-05-27 06:57, Namhyung Kim wrote:
+> 2011-05-25 (수), 14:44 +0900, Namhyung Kim:
+>> Export 'max_loop' and 'max_part' parameters to sysfs so user can know
+>> that how many devices are allowed and how many partitions are supported.
+>>
+>> If 'max_loop' is 0, there is no restriction on the number of loop devices.
+>> User can create/use the devices as many as minor numbers available. If
+>> 'max_part' is 0, it means simply the device doesn't support partitioning.
+>>
+>> Also note that 'max_part' can be adjusted to power of 2 minus 1 form if
+>> needed. User should check this value after the module loading if he/she
+>> want to use that number correctly (i.e. fdisk, mknod, etc.).
+>>
+>> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+>> Cc: Laurent Vivier <Laurent.Vivier@bull.net>
+>> ---
+>>  drivers/block/loop.c |   17 ++++++++++++++---
+>>  1 files changed, 14 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+>> index c59a672a3de0..76c8da78212b 100644
+>> --- a/drivers/block/loop.c
+>> +++ b/drivers/block/loop.c
+>> @@ -1540,9 +1540,9 @@ static const struct block_device_operations lo_fops = {
+>>   * And now the modules code and kernel interface.
+>>   */
+>>  static int max_loop;
+>> -module_param(max_loop, int, 0);
+>> +module_param(max_loop, int, S_IRUGO);
+>>  MODULE_PARM_DESC(max_loop, "Maximum number of loop devices");
+>> -module_param(max_part, int, 0);
+>> +module_param(max_part, int, S_IRUGO);
+>>  MODULE_PARM_DESC(max_part, "Maximum number of partitions per loop device");
+>>  MODULE_LICENSE("GPL");
+>>  MODULE_ALIAS_BLOCKDEV_MAJOR(LOOP_MAJOR);
+>> @@ -1688,9 +1688,20 @@ static int __init loop_init(void)
+>>  	 */
+>>  
+>>  	part_shift = 0;
+>> -	if (max_part > 0)
+>> +	if (max_part > 0) {
+>>  		part_shift = fls(max_part);
+>>  
+>> +		/*
+>> +		 * Adjust max_part according to part_shift as it is exported
+>> +		 * to user space so that user can decide correct minor number
+>> +		 * if [s]he want to create more devices.
+>> +		 *
+>> +		 * Note that -1 is required because partition 0 is reserved
+>> +		 * for the whole disk.
+>> +		 */
+>> +		max_part = (1UL << part_shift) - 1;
+>> +	}
+>> +
+>>  	if ((1UL << part_shift) > DISK_MAX_PARTS)
+>>  		return -EINVAL;
+>>  
+> 
+> Hi Jens,
+> 
+> Could you please consider applying this in your tree too? It's exactly
+> the same thing what I did for brd series.
 
->I apologize if this has been covered, but do these changes or the ones made a
->month ago fix the issues people have been having with the mvsas driver on 64xx
->based cards like my AOC-SASLP-MV8 (based on a MV64460/64461/64462 Rev B)?
+Applied now, missed it yesterday. Thanks!
 
->I have a relatively recent 2.6.38 kernel running the box with the mvsas
->controller (with 7 SATA drives). I've noticed it doesn't panic when plugging
->in a drive which is nice, but I don't have the courage to attempt a hot
->unplug. I am still getting a significant number of device reset and libata
->invalid sector 0 errors.
+-- 
+Jens Axboe
 
->Example of such errors:
-
->[394488.800081] >/build/buildd-linux-2.6_2.6.38-4-amd64-eEW_ml/linux-2.6-2.6.38/debian/build>/source_amd64_none/drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
->[394491.008046] /build/buildd-linux-2.6_2.6.38-4-amd64-eEW_ml/linux-2.6-2.6.38/debian/build/>source_amd64_none/drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for >device[3]:rc= 0
->[394491.008070] ata12: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ >0xb/00/00
->[394491.008519] ata12.00: device reported invalid CHS sector 0
->[394491.008526] ata12: status=0x01 { Error }
->[394491.008532] ata12: error=0x04 { DriveStatusError }
-
->I get at least 10 of those a day. (it is better than it was)
-
-It need libsas SATA NCQ error handler, and I have committed a patch. The patch is: http://git.kernel.org/?p=linux/kernel/git/jejb/scsi-misc-2.6.git;a=commit;h=bb650a1bef73a8c1fd076fae4c4f0701cf3b5f25
-Please wait it to apply to kernel, and try again. Thanks!
