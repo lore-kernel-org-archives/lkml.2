@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab1E0IiZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 04:38:25 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:60679 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752470Ab1E0IiX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 04:38:23 -0400
-Date: Fri, 27 May 2011 09:38:08 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Will Deacon <Will.Deacon@arm.com>,
-        =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        lkml <linux-kernel@vger.kernel.org>, ak@linux.intel.com,
-        Andrew Morton <akpm@linux-foundation.org>, sam@ravnborg.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: Do not allow unaligned accesses when
- CONFIG_ALIGNMENT_TRAP
-Message-ID: <20110527083806.GA21100@e102109-lin.cambridge.arm.com>
-References: <yw1xipt0p4i9.fsf@unicorn.mansr.com>
- <BANLkTi=xLE9gP5YOdr9dR0DfsY1Ymzxu+w@mail.gmail.com>
- <20110524171331.GA2941@arm.com>
- <20110525111405.GA12010@e102109-lin.cambridge.arm.com>
- <20110525124348.GA2340@arm.com>
- <yw1xaaeanbxe.fsf@unicorn.mansr.com>
- <BANLkTim2TOZgB-3Vkv5RcK572Qr07s3=CA@mail.gmail.com>
- <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
- <alpine.LFD.2.00.1105261650330.3207@xanadu.home>
- <20110526215101.GL24876@n2100.arm.linux.org.uk>
+	id S1758762Ab1E0Iin (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 04:38:43 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:32988 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758726Ab1E0Iil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 04:38:41 -0400
+Date: Fri, 27 May 2011 10:38:21 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, eranian@google.com, tzanussi@gmail.com,
+        penberg@cs.helsinki.fi, torvalds@linux-foundation.org, efault@gmx.de,
+        peterz@infradead.org, davej@redhat.com, davem@davemloft.net,
+        fweisbec@gmail.com, kees.cook@canonical.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf symbols: Handle
+ /proc/sys/kernel/kptr_restrict
+Message-ID: <20110527083821.GB21386@elte.hu>
+References: <tip-mt512joaxxbhhp1odop04yit@git.kernel.org>
+ <20110526193946.GA6363@elte.hu>
+ <20110526212040.GA30593@ghostprotocols.net>
 MIME-Version: 1.0
-In-Reply-To: <20110526215101.GL24876@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 27 May 2011 08:38:32.0114 (UTC) FILETIME=[75C81920:01CC1C49]
-X-MC-Unique: 111052709381901201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110526212040.GA30593@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 10:51:01PM +0100, Russell King - ARM Linux wrote:
-> On Thu, May 26, 2011 at 05:03:39PM -0400, Nicolas Pitre wrote:
-> > It is possible that -fconserve-stack is still valuable on ARM given that
-> > it is also used with -mno-unaligned-access for other things than
-> > structure packing on the stack, and therefore its merits can be debated
-> > independently from the alignment issue at hand.
+
+* Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+
+> > Had you done this you'd have immediately noticed that the individual 
+> > lines are *way* too large to fit on even large terminals. Please 
+> > break such messages in a much shorter fashion - we want the error 
+> > messages we output to be readable even on relatively small (80col) 
+> > terminals.
 > 
-> Catalin said in his mail "I haven't tried with -mno-unaligned-access, I
-> suspect the variables on the stack would be aligned.".  So I don't think
-> we know enough to say whether -mno-unaligned-access avoids the stack
-> packing.
+> But it would reflow, no?
 
-OK, I tried this now:
+Not on all terminals. For example my terminal will just cut anything 
+beyond the col limit:
 
--fconserve-stack: we get unaligned accesses on the stack because the
-newer versions of gcc turned unaligned accesses on by default.
+ # perf report --stdio
+ No kallsyms or vmlinux with build-id 122214021a666675f6e5ff97d70a85ce7139c0e7 was found
+ [kernel.kallsyms] with build id 122214021a666675f6e5ff97d70a85ce7139c0e7 not found, continuing without s
+ Kernel address maps (/proc/{kallsyms,modules}) were restricted, check /proc/sys/kernel/kptr_restrict bef
 
--fconserve-stack -mno-unaligned-access: the stack variables are aligned.
-We probably get the benefit of -fconserve-stack as well.
+So we generally want to generate error messages to look good on col80 
+- it should not be hard here, right?
 
-So as per the initial post in this thread, we could have
--mno-unaligned-access on ARM always on (when CONFIG_ALIGNMENT_TRAP). As
-Nicolas suggested, we could compile some files with -munaligned-access
-(and maybe -fno-conserve-stack).
+Thanks,
 
-I raised this with the gcc guys so they are looking into it. But it
-really doesn't look like a gcc bug as long as -mno-unaligned-access is
-taken into account.
-
--- 
-Catalin
-
+	Ingo
