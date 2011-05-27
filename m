@@ -1,289 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758706Ab1E0CqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 22:46:04 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55750 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758633Ab1E0CqB (ORCPT
+	id S1758710Ab1E0CnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 22:43:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41643 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758689Ab1E0CnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 22:46:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 27 May 2011 11:39:07 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCHv4] memcg: reclaim memory from node in round-robin
-Message-Id: <20110527113907.8eafe906.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110527085440.71035539.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110427165120.a60c6609.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTinx+4zXaO3rhHRUzr3m-K-2_NMTQw@mail.gmail.com>
-	<20110428093513.5a6970c0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110428103705.a284df87.nishimura@mxp.nes.nec.co.jp>
-	<20110428104912.6f86b2ee.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110504142623.8aa3bddb.akpm@linux-foundation.org>
-	<20110506151302.a7256987.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110526125207.e02e5775.akpm@linux-foundation.org>
-	<20110527085440.71035539.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 22:43:13 -0400
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+To: jaxboe@fusionio.com
+Cc: snitzer@redhat.com, msb@chromium.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Subject: Re: dm: pass up rotational flag
+Date: Thu, 26 May 2011 22:42:46 -0400
+Message-Id: <1306464169-4291-1-git-send-email-martin.petersen@oracle.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <4DDEA689.2090004@fusionio.com>
+References: <4DDEA689.2090004@fusionio.com>
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090208.4DDF0FBF.0127:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 May 2011 08:54:40 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Here's a tentative patch set for transitioning the non_rotational,
+discard and secure discard queue flags to the topology information.
 
-> On Thu, 26 May 2011 12:52:07 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > On Fri, 6 May 2011 15:13:02 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > 
-> > > > It would be much better to work out the optimum time at which to rotate
-> > > > the index via some deterministic means.
-> > > > 
-> > > > If we can't think of a way of doing that then we should at least pace
-> > > > the rotation frequency via something saner than wall-time.  Such as
-> > > > number-of-pages-scanned.
-> > > > 
-> > > 
-> > > 
-> > > What I think now is using reclaim_stat or usigng some fairness based on
-> > > the ratio of inactive file caches. We can calculate the total sum of
-> > > recalaim_stat which gives us a scan_ratio for a whole memcg. And we can
-> > > calculate LRU rotate/scan ratio per node. If rotate/scan ratio is small,
-> > > it will be a good candidate of reclaim target. Hmm,
-> > > 
-> > >   - check which memory(anon or file) should be scanned.
-> > >     (If file is too small, rotate/scan ratio of file is meaningless.)
-> > >   - check rotate/scan ratio of each nodes.
-> > >   - calculate weights for each nodes (by some logic ?)
-> > >   - give a fair scan w.r.t node's weight.
-> > > 
-> > > Hmm, I'll have a study on this.
-> > 
-> > How's the study coming along ;)
-> > 
-> > I'll send this in to Linus today, but I'll feel grumpy while doing so. 
-> > We really should do something smarter here - the magic constant will
-> > basically always be suboptimal for everyone and we end up tweaking its
-> > value (if we don't, then the feature just wasn't valuable in the first
-> > place) and then we add a tunable and then people try to tweak the
-> > default setting of the tunable and then I deride them for not setting
-> > the tunable in initscripts and then we have to maintain the stupid
-> > tunable after we've changed the internal implementation and it's all
-> > basically screwed up.
-> > 
-> > How to we automatically determine the optimum time at which to rotate,
-> > at runtime?
-> > 
-> 
-> Ah, I think I should check it after dirty page accounting comes...because
-> ratio of dirty pages is an important information..
-> 
-> Ok, what I think now is just comparing the number of INACTIVE_FILE or the number
-> of FILE CACHES per node. 
-> 
-> I think we can periodically update per-node and total amount of file caches
-> and we can record per-node 
->    node-file-cache * 100/ total-file cache
-> information into memcg's per-node structure.
-> 
+The first patch introduces a new function for setting the default limits
+for stacking drivers like we discussed a few weeks ago.  Wrt. to naming
+I felt it was best to have a function that said "stacking".  That's why
+I introduced a new call instead of using blk_set_default_limits() even
+though that function was originally motivated by device mapper.
 
-Hmmm..something like this ?
-==
-This will not be able to be applied mmotm directly.
-This patch is made from tons of magic numbers....I need more study
-and will be able to write a simple one.
+The last two patches deal with non-rotational and the discard flags
+respectively.
 
-At first, mem_cgroup can reclaim memory from anywhere, it just checks
-amount of memory. Now, victim node to be reclaimed is just determined
-by round-robin.
+Let me know what you guys think...
 
-This patch adds a scheduler simliar to a weighted fair share scanning
-among nodes. Now, we periodically update mem->scan_nodes to know
-which node has evictable memory. This patch gathers more information.
-
-This patch caluculate "weight" of node as
-
-	(nr_inactive_file + nr_active_file/10) * (200-swappiness)
-        + (nr_inactive_anon) * (swappiness)
-	(see vmscan.c::get_scan_count() for meaning of swappiness)
-
-And select some nodes in a fair way proportional to the weight.
-selected nodes are cached into mem->victim_nodes, victime_nodes
-will be visited in round robin.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |  102 ++++++++++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 84 insertions(+), 18 deletions(-)
-
-Index: memcg_async/mm/memcontrol.c
-===================================================================
---- memcg_async.orig/mm/memcontrol.c
-+++ memcg_async/mm/memcontrol.c
-@@ -48,6 +48,7 @@
- #include <linux/page_cgroup.h>
- #include <linux/cpu.h>
- #include <linux/oom.h>
-+#include <linux/random.h>
- #include "internal.h"
- 
- #include <asm/uaccess.h>
-@@ -149,6 +150,7 @@ struct mem_cgroup_per_zone {
- #define MEM_CGROUP_ZSTAT(mz, idx)	((mz)->count[(idx)])
- 
- struct mem_cgroup_per_node {
-+	u64 scan_weight;
- 	struct mem_cgroup_per_zone zoneinfo[MAX_NR_ZONES];
- };
- 
-@@ -257,6 +259,7 @@ struct mem_cgroup {
- 	int last_scanned_node;
- #if MAX_NUMNODES > 1
- 	nodemask_t	scan_nodes;
-+	nodemask_t	victim_nodes;
- 	unsigned long   next_scan_node_update;
- #endif
- 	/*
-@@ -1732,9 +1735,21 @@ u64 mem_cgroup_get_limit(struct mem_cgro
-  * nodes based on the zonelist. So update the list loosely once per 10 secs.
-  *
-  */
-+
-+/*
-+ * This is for selecting a victim node with lottery proportional share
-+ * scheduling. This LOTTEY value can be arbitrary but must be higher
-+ * than max number of nodes.
-+ */
-+#define NODE_SCAN_LOTTERY	(1 << 15)
-+#define NODE_SCAN_LOTTERY_MASK	(NODE_SCAN_LOTTERY - 1)
-+
- static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem, bool force)
- {
- 	int nid;
-+	u64 total_weight;
-+	unsigned long swappiness;
-+	int nr_selection;
- 
- 	if (!force && time_after(mem->next_scan_node_update, jiffies))
- 		return;
-@@ -1742,18 +1757,77 @@ static void mem_cgroup_may_update_nodema
- 	mem->next_scan_node_update = jiffies + 10*HZ;
- 	/* make a nodemask where this memcg uses memory from */
- 	mem->scan_nodes = node_states[N_HIGH_MEMORY];
-+	nodes_clear(mem->victim_nodes);
-+
-+	swappiness = mem_cgroup_swappiness(mem);
-+	total_weight = 0;
- 
- 	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
-+		u64 val, file_weight, anon_weight, pages;
-+		int lru;
- 
--		if (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_FILE) ||
--		    mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_FILE))
--			continue;
-+		lru = LRU_INACTIVE_FILE;
-+		val = mem_cgroup_get_zonestat_node(mem, nid, lru);
-+		file_weight = val;
-+		pages = val;
- 
--		if (total_swap_pages &&
--		    (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_ANON) ||
--		     mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_ANON)))
--			continue;
--		node_clear(nid, mem->scan_nodes);
-+		lru = LRU_ACTIVE_FILE;
-+		val = mem_cgroup_get_zonestat_node(mem, nid, lru);
-+		/*
-+		 * This is a magic calculation. We add 10% of active file
-+		 * to weight. This should be tweaked..
-+		 */
-+		if (val)
-+			file_weight += val/10;
-+		pages += val;
-+
-+		if (total_swap_pages) {
-+			lru = LRU_INACTIVE_ANON;
-+			val = mem_cgroup_get_zonestat_node(mem, nid, lru);
-+			anon_weight = val;
-+			pages += val;
-+			lru = LRU_ACTIVE_ANON;
-+			val = mem_cgroup_get_zonestat_node(mem, nid, lru);
-+			/*
-+			 * Magic again. We don't want to active_anon take into
-+			 * account but cannot ignore....add +1.
-+			 */
-+			if (val)
-+				anon_weight += 1;
-+			pages += val;
-+		} else
-+			anon_weight = 0;
-+		mem->info.nodeinfo[nid]->scan_weight =
-+			file_weight * (200 - swappiness) +
-+			anon_weight * swappiness;
-+		if (!pages)
-+			node_clear(nid, mem->scan_nodes);
-+
-+		total_weight += mem->info.nodeinfo[nid]->scan_weight;
-+	}
-+	/* NORMALIZE weight information.*/
-+	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
-+
-+		mem->info.nodeinfo[nid]->scan_weight =
-+			mem->info.nodeinfo[nid]->scan_weight
-+				*  NODE_SCAN_LOTTERY/ total_weight;
-+	}
-+	/*
-+	 * because checking lottery at every scan is heavy. we cache
-+ 	 * some results. These victims will be used for the next 10sec.
-+ 	 * Even if scan_nodes is empty, the victim_nodes includes node 0
-+ 	 * at least.
-+ 	 */
-+	nr_selection = int_sqrt(nodes_weight(mem->scan_nodes)) + 1;
-+
-+	while (nr_selection >= 0) {
-+		int lottery = random32();
-+		for_each_node_mask(nid, mem->scan_nodes) {
-+			lottery -= mem->info.nodeinfo[nid]->scan_weight;
-+			if (lottery <= 0)
-+				break;
-+		}
-+		node_set(nid, mem->victim_nodes);
- 	}
- }
- 
-@@ -1776,17 +1850,9 @@ int mem_cgroup_select_victim_node(struct
- 	mem_cgroup_may_update_nodemask(mem, false);
- 	node = mem->last_scanned_node;
- 
--	node = next_node(node, mem->scan_nodes);
-+	node = next_node(node, mem->victim_nodes);
- 	if (node == MAX_NUMNODES)
--		node = first_node(mem->scan_nodes);
--	/*
--	 * We call this when we hit limit, not when pages are added to LRU.
--	 * No LRU may hold pages because all pages are UNEVICTABLE or
--	 * memcg is too small and all pages are not on LRU. In that case,
--	 * we use curret node.
--	 */
--	if (unlikely(node == MAX_NUMNODES))
--		node = numa_node_id();
-+		node = first_node(mem->victim_nodes);
- 
- 	mem->last_scanned_node = node;
- 	return node;
-
-
-
+-- 
+Martin K. Petersen	Oracle Linux Engineering
 
