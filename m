@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab1E0Qyp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 12:54:45 -0400
-Received: from fn.samba.org ([216.83.154.106]:56759 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754725Ab1E0Qyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 12:54:44 -0400
-X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 May 2011 12:54:44 EDT
-Date: Fri, 27 May 2011 09:47:02 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Steve French <smfrench@gmail.com>
-Cc: linux-cifs@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Big performance improvements seen with cifs async write
- patches even over localhost
-Message-ID: <20110527164702.GB28520@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <BANLkTinVOaFwkCf33iKNk8GjqiiBEF5N3w@mail.gmail.com>
+	id S1756219Ab1E0Qtk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 12:49:40 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:14626 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab1E0Qtj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 12:49:39 -0400
+Message-ID: <4DDFD622.1000102@caviumnetworks.com>
+Date: Fri, 27 May 2011 09:49:38 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinVOaFwkCf33iKNk8GjqiiBEF5N3w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Gibson <david@gibson.dropbear.id.au>,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca
+CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/6] of: Allow scripts/dtc/libfdt to be used from
+ kernel code
+References: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com> <1305930343-31259-2-git-send-email-ddaney@caviumnetworks.com> <20110521063345.GB14828@yookeroo.fritz.box> <4DDA8FBC.1090904@caviumnetworks.com> <20110527032402.GD7793@yookeroo.fritz.box>
+In-Reply-To: <20110527032402.GD7793@yookeroo.fritz.box>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 May 2011 16:49:39.0139 (UTC) FILETIME=[117F4930:01CC1C8E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 12:14:19AM -0500, Steve French wrote:
-> Did some informal testing of Jeff Layton's cifs async_write patch set
-> tonight (recent kernel). Copying 700MB sequentially was 20% faster
-> from cifs kernel client to Samba 3.6 with his patches - even mounted
-> over localhost (where network latency is a much smaller issue) and
-> with a slow laptop drive!
-> 
-> I was simply doing
-> 
-> time dd if=/dev/zero of=/mnt/null bs=1M count=700
-> 
-> repeated 4 times each way (with old module, and with same code with
-> Jeff's cifs async write code builtin), deleting the target file in
-> between each run.
-> 
-> I am looking forward to trying this over GigE tomorrow to servers with
-> faster disks.
+On 05/26/2011 08:24 PM, David Gibson wrote:
+> On Mon, May 23, 2011 at 09:47:56AM -0700, David Daney wrote:
+>> On 05/20/2011 11:33 PM, David Gibson wrote:
+>>> On Fri, May 20, 2011 at 03:25:38PM -0700, David Daney wrote:
+>>>> To use it you need to do this in your Kconfig:
+>>>>
+>>>> 	select LIBFDT
+>>>>
+>>>> And in the Makefile of the code using libfdt something like:
+>>>>
+>>>> ccflags-y := -include linux/libfdt_env.h -I$(src)/../../../scripts/dtc/libfdt
+>>>>
+>>>> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
+>>>> ---
+>>>>   drivers/of/Kconfig          |    3 +++
+>>>>   drivers/of/Makefile         |    2 ++
+>>>>   drivers/of/libfdt/Makefile  |    3 +++
+>>>>   drivers/of/libfdt/fdt.c     |    2 ++
+>>>>   drivers/of/libfdt/fdt_ro.c  |    2 ++
+>>>>   drivers/of/libfdt/fdt_wip.c |    2 ++
+>>>
+>>> No fdt_sw.c or fdt_rw.c?
+>>>
+>>
+>> I had no immediate need for them.  They could of course be added,
+>> but that would potentially waste space.
+>>
+>> Let's see if I can make it into an archive library.
+>
+> That would be preferable.  It's more or less designed to work that way
+> so that everything is available without using unnecessary space in the
+> binary.
+>
 
-Very nice ! Now where's my encrypted transport Steve ? :-) :-)
+Well, I was looking at this some more:
 
-Jeremy.
+Grant specifically requested that this go in drivers/of/libfdt, however 
+I am fairly sure that building archive libraries there will require 
+changes to the upper level Makefile infrastructure.
+
+If I go back to lib/libfdt, like my first version, I can easily achieve 
+archive library behavior, but then it is separated from from drivers/of.
+
+Personally I am starting to like the lib/libfdt home more than 
+drivers/of.  If Grant doesn't object, I think I will move it back there.
+
+What do you think?
+
+David Daney
+
