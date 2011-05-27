@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab1E0AlK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 20:41:10 -0400
-Received: from infernal.debian.net ([87.230.26.131]:50407 "EHLO
-	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757394Ab1E0AlI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 20:41:08 -0400
-Date: Fri, 27 May 2011 02:41:04 +0200
-From: Andreas Bombe <aeb@debian.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: tty_lock held during transmit wait in close: still unresolved
-Message-ID: <20110527004104.GB4369@amos.fritz.box>
-References: <20110525235920.GA5279@amos.fritz.box>
- <20110526091726.55edf6c3@lxorguk.ukuu.org.uk>
+	id S1758692Ab1E0A7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 20:59:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59420 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758668Ab1E0A7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 20:59:41 -0400
+Date: Fri, 27 May 2011 09:00:21 +0800
+From: Greg KH <gregkh@suse.de>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [GIT PATCH] TTY/serial driver patches for .40
+Message-ID: <20110527010021.GD23506@suse.de>
+References: <20110523190539.GA17519@kroah.com>
+ <Pine.LNX.4.64.1105261248060.9307@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110526091726.55edf6c3@lxorguk.ukuu.org.uk>
+In-Reply-To: <Pine.LNX.4.64.1105261248060.9307@axis700.grange>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 09:17:26AM +0100, Alan Cox wrote:
-> > A minimalist way to trigger this issue is with a serial port that has
-> > nothing attached:
-> > 
-> > stty -F /dev/ttyS0 crtscts
-> > echo >/dev/ttyS0
-> > 
-> > The echo triggers a 30 second timeout on close while the driver is
-> > trying to flush the newline. Another way is developing an USB device
-> > with a virtual serial port and having it stop (by debugger or
-> > crash/lockup)...
-> > 
-> > Any ideas on how to progress?
+On Thu, May 26, 2011 at 12:54:29PM +0200, Guennadi Liakhovetski wrote:
+> On Mon, 23 May 2011, Greg KH wrote:
 > 
-> Send patches.
-
-I would have, but I'm not exactly familiar with the tty code and I
-thought messing around with the locking is probably not the most
-promising way to start.
-
-However…
-
-> At any point you can show the code sleeps you can drop and retake the
-> tty mutex either side of it, so you should be able to do that in the
-> close timeout case. You may need to think about the order of locking with
-> the port mutex but I suspect you can drop and retake both there.
-
-…basically emulating the BKL semantics? Sounds more doable. I'll look
-into it.
-
-Of course that means it has to be done individually in all drivers.
-
-> Most use of the mutex (but not quite all) could also be moved to a tty
-> specific mutex fairly easily once someone has time, but that alone won't
-> entirely fix your case.
+> > Here's the big tty/serial merge for .40
 > 
-> Alan
+> /me confused: this patch
+> 
+> > Felipe Balbi (1):
+> >       tty: make receive_buf() return the amout of bytes received
+> 
+> is more than one year old, which I wouldn't care about, if it didn't 
+> introduce a regression on my mackerel 
+> (arch/arm/mach-shmobile/board-mackerel.c) board. With it in place printing 
+> a lot of text over ssh pauses the output multiple times for several 
+> seconds. With this patch reverted the behaviour is back to normal. To 
+> reproduce one can either cat a few largish files under /etc or just dmesg 
+> - if there have been enough messages accumulated.
 
--- 
-Andreas Bombe
+I think I'll be reverting this one.
+
+thanks,
+
+greg k-h
