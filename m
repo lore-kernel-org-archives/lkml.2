@@ -1,69 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758828Ab1E0Jw7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 05:52:59 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53101 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209Ab1E0Jw6 (ORCPT
+	id S1758824Ab1E0J4d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 05:56:33 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:49934 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752867Ab1E0J4c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 05:52:58 -0400
-Date: Fri, 27 May 2011 02:52:48 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ocfs2 important fix for $next_version-rc1
-Message-ID: <20110527095248.GD4966@noexit.corp.google.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-References: <20110526094632.GB8252@noexit.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110526094632.GB8252@noexit.corp.google.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 27 May 2011 05:56:32 -0400
+Subject: Re: [PATCH] ARM: Do not allow unaligned accesses when
+ CONFIG_ALIGNMENT_TRAP
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nico@fluxnic.net>, Will Deacon <Will.Deacon@arm.com>,
+        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        lkml <linux-kernel@vger.kernel.org>, ak@linux.intel.com,
+        Andrew Morton <akpm@linux-foundation.org>, sam@ravnborg.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20110527095111.GC21100@e102109-lin.cambridge.arm.com>
+References: <20110524171331.GA2941@arm.com>
+	 <20110525111405.GA12010@e102109-lin.cambridge.arm.com>
+	 <20110525124348.GA2340@arm.com> <yw1xaaeanbxe.fsf@unicorn.mansr.com>
+	 <BANLkTim2TOZgB-3Vkv5RcK572Qr07s3=CA@mail.gmail.com>
+	 <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
+	 <alpine.LFD.2.00.1105261650330.3207@xanadu.home>
+	 <20110526215101.GL24876@n2100.arm.linux.org.uk>
+	 <20110527083806.GA21100@e102109-lin.cambridge.arm.com>
+	 <20110527085414.GP24876@n2100.arm.linux.org.uk>
+	 <20110527095111.GC21100@e102109-lin.cambridge.arm.com>
+Organization: ARM Limited
+Date: Fri, 27 May 2011 10:56:20 +0100
+Message-ID: <1306490180.21096.2.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 27 May 2011 09:56:40.0650 (UTC) FILETIME=[605DEAA0:01CC1C54]
+X-MC-Unique: 111052710562705401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus et al,
-	Mea culpa.  The online defrag code in the ocfs2 feature pull had
-a naked 64-bit divide that I missed in eyeballing and we all missed in
-testing.  None of us managed to build the sucker on 32bit in the past
-two months.  That's on me.  Thank you to akpm for noticing.  Also
-included is a bugfix in the defrag location guessing.
-	I'd really like to get this in before -rc1 so that ocfs2 builds
-aren't broken there.  Please pull.
+On Fri, 2011-05-27 at 10:51 +0100, Catalin Marinas wrote:
+> On Fri, May 27, 2011 at 09:54:14AM +0100, Russell King - ARM Linux wrote:
+> > On Fri, May 27, 2011 at 09:38:08AM +0100, Catalin Marinas wrote:
+> > > OK, I tried this now:
+> > >
+> > > -fconserve-stack: we get unaligned accesses on the stack because the
+> > > newer versions of gcc turned unaligned accesses on by default.
+> > >
+> > > -fconserve-stack -mno-unaligned-access: the stack variables are aligned.
+> > > We probably get the benefit of -fconserve-stack as well.
+> > >
+> > > So as per the initial post in this thread, we could have
+> > > -mno-unaligned-access on ARM always on (when CONFIG_ALIGNMENT_TRAP). As
+> > > Nicolas suggested, we could compile some files with -munaligned-access
+> > > (and maybe -fno-conserve-stack).
+> > >
+> > > I raised this with the gcc guys so they are looking into it. But it
+> > > really doesn't look like a gcc bug as long as -mno-unaligned-access is
+> > > taken into account.
+> > 
+> > Ok, we need to check one last thing, and that's what the behaviour is
+> > with -mno-unaligned-access and packed structures (such as the ethernet
+> > header).  If it makes no difference, then I suggest we always build
+> > with -mno-unaligned-access.
+> 
+> I tried some simple code below:
+> 
+> struct test {
+> 	unsigned char a[6];
+> 	unsigned long b;
+> } __attribute__((packed));
+> 
+> void set(struct test *t, unsigned long v)
+> {
+> 	t->b = v;
+> }
+> 
+> int main(void)
+> {
+> 	struct test t;
+> 	
+> 	set(&t, 10);
+> 
+> 	return 0;
+> }
+> 
+> With -mno-unaligned-access in newer toolchains, the set() function looks
+> like this (compiled with -march=armv7):
+> 
+> 00000000 <set>:
+>    0:   e7e7c451        ubfx    ip, r1, #8, #8
+>    4:   e7e72851        ubfx    r2, r1, #16, #8
+>    8:   e1a03c21        lsr     r3, r1, #24
+>    c:   e5c01006        strb    r1, [r0, #6]
+>   10:   e5c0c007        strb    ip, [r0, #7]
+>   14:   e5c02008        strb    r2, [r0, #8]
+>   18:   e5c03009        strb    r3, [r0, #9]
+>   1c:   e12fff1e        bx      lr
+> 
+> If I don't pass -mno-unaligned-access later toolchains use unaligned
+> accesses by default and the set() function is more efficient:
+> 
+> 00000000 <set>:
+>    0:   e5801006        str     r1, [r0, #6]
+>    4:   e12fff1e        bx      lr
 
-Mr Egg-on-his-face (Joel)
+For completeness, I tried with "unsigned short b" in the structure above
+hoping that the compiler would notice that it is 16-bit aligned.
+Unfortunately, it doesn't. Code below with -mno-unaligned-access:
 
-The following changes since commit a74b81b0aff4a01e0816df5915c854fb52c5e87f:
-
-  Merge branch 'linux-next' of git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2 (2011-05-26 10:55:15 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git linux-next
-
-Joel Becker (1):
-      Merge branch 'move_extents' of git://oss.oracle.com/git/tye/linux-2.6 into ocfs2-merge-window
-
-Tristan Ye (2):
-      Ocfs2/move_extents: Avoid doing division in extent moving.
-      Ocfs2/move_extents: Validate moving goal after the adjustment.
-
- fs/ocfs2/move_extents.c |   41 ++++++++++++++++++++---------------------
- 1 files changed, 20 insertions(+), 21 deletions(-)
+00000000 <set>:
+   0:   e1a03421        lsr     r3, r1, #8
+   4:   e5c01006        strb    r1, [r0, #6]
+   8:   e5c03007        strb    r3, [r0, #7]
+   c:   e12fff1e        bx      lr
 
 -- 
+Catalin
 
-"Sometimes one pays most for the things one gets for nothing."
-        - Albert Einstein
 
-			http://www.jlbec.org/
-			jlbec@evilplan.org
