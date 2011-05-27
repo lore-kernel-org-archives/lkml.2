@@ -1,239 +1,922 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758688Ab1E0Btc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 21:49:32 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:15084 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756684Ab1E0Bta convert rfc822-to-8bit (ORCPT
+	id S1758626Ab1E0B4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 21:56:23 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:60186 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915Ab1E0B4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 21:49:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=n6QcY+JKhS8IhclbDDTO9qe2Qcro9TLcX367RHgv/wKPxog4f5Nf7iGYswNlnxu0D1
-         w6p0JzRjTB24pnr9zw/g==
+	Thu, 26 May 2011 21:56:22 -0400
+Date: Thu, 26 May 2011 19:56:18 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 3/6] MIPS: Octeon: Add device tree source files.
+Message-ID: <20110527015618.GC5032@ponder.secretlab.ca>
+References: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com>
+ <1305930343-31259-4-git-send-email-ddaney@caviumnetworks.com>
 MIME-Version: 1.0
-In-Reply-To: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 26 May 2011 18:49:26 -0700
-Message-ID: <BANLkTikcdOGkJWxS0Sey8C1ereVk8ucvQQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH v3 0/10] memcg async reclaim
-From: Ying Han <yinghan@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305930343-31259-4-git-send-email-ddaney@caviumnetworks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 10:10 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
->
-> It's now merge window...I just dump my patch queue to hear other's idea.
-> I wonder I should wait until dirty_ratio for memcg is queued to mmotm...
-> I'll be busy with LinuxCon Japan etc...in the next week.
->
-> This patch is onto mmotm-May-11 + some patches queued in mmotm, as numa_stat.
->
-> This is a patch for memcg to keep margin to the limit in background.
-> By keeping some margin to the limit in background, application can
-> avoid foreground memory reclaim at charge() and this will help latency.
->
-> Main changes from v2 is.
->  - use SCHED_IDLE.
->  - removed most of heuristic codes. Now, code is very simple.
->
-> By using SCHED_IDLE, async memory reclaim can only consume 0.3%? of cpu
-> if the system is truely busy but can use much CPU if the cpu is idle.
-> Because my purpose is for reducing latency without affecting other running
-> applications, SCHED_IDLE fits this work.
->
-> If application need to stop by some I/O or event, background memory reclaim
-> will cull memory while the system is idle.
->
-> Perforemce:
->  Running an httpd (apache) under 300M limit. And access 600MB working set
->  with normalized distribution access by apatch-bench.
->  apatch bench's concurrency was 4 and did 40960 accesses.
->
-> Without async reclaim:
-> Connection Times (ms)
->              min  mean[+/-sd] median   max
-> Connect:        0    0   0.0      0       2
-> Processing:    30   37  28.3     32    1793
-> Waiting:       28   35  25.5     31    1792
-> Total:         30   37  28.4     32    1793
->
-> Percentage of the requests served within a certain time (ms)
->  50%     32
->  66%     32
->  75%     33
->  80%     34
->  90%     39
->  95%     60
->  98%    100
->  99%    133
->  100%   1793 (longest request)
->
-> With async reclaim:
-> Connection Times (ms)
->              min  mean[+/-sd] median   max
-> Connect:        0    0   0.0      0       2
-> Processing:    30   35  12.3     32     678
-> Waiting:       28   34  12.0     31     658
-> Total:         30   35  12.3     32     678
->
-> Percentage of the requests served within a certain time (ms)
->  50%     32
->  66%     32
->  75%     33
->  80%     34
->  90%     39
->  95%     49
->  98%     71
->  99%     86
->  100%    678 (longest request)
->
->
-> It seems latency is stabilized by hiding memory reclaim.
->
-> The score for memory reclaim was following.
-> See patch 10 for meaning of each member.
->
-> == without async reclaim ==
-> recent_scan_success_ratio 44
-> limit_scan_pages 388463
-> limit_freed_pages 162238
-> limit_elapsed_ns 13852159231
-> soft_scan_pages 0
-> soft_freed_pages 0
-> soft_elapsed_ns 0
-> margin_scan_pages 0
-> margin_freed_pages 0
-> margin_elapsed_ns 0
->
-> == with async reclaim ==
-> recent_scan_success_ratio 6
-> limit_scan_pages 0
-> limit_freed_pages 0
-> limit_elapsed_ns 0
-> soft_scan_pages 0
-> soft_freed_pages 0
-> soft_elapsed_ns 0
-> margin_scan_pages 1295556
-> margin_freed_pages 122450
-> margin_elapsed_ns 644881521
->
->
-> For this case, SCHED_IDLE workqueue can reclaim enough memory to the httpd.
->
-> I may need to dig why scan_success_ratio is far different in the both case.
-> I guess the difference of epalsed_ns is because several threads enter
-> memory reclaim when async reclaim doesn't run. But may not...
->
+On Fri, May 20, 2011 at 03:25:40PM -0700, David Daney wrote:
+> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+> ---
+>  .../devicetree/bindings/mips/cavium/bootbus.txt    |   37 ++
+>  .../devicetree/bindings/mips/cavium/ciu.txt        |   26 ++
+>  .../devicetree/bindings/mips/cavium/gpio.txt       |   48 +++
+>  .../devicetree/bindings/mips/cavium/mdio.txt       |   27 ++
+>  .../devicetree/bindings/mips/cavium/mix.txt        |   40 ++
+>  .../devicetree/bindings/mips/cavium/pip.txt        |   98 +++++
+>  .../devicetree/bindings/mips/cavium/twsi.txt       |   34 ++
+>  .../devicetree/bindings/mips/cavium/uart.txt       |   19 +
+>  .../devicetree/bindings/mips/cavium/uctl.txt       |   47 +++
+>  arch/mips/cavium-octeon/.gitignore                 |    2 +
+>  arch/mips/cavium-octeon/Makefile                   |   13 +
+>  arch/mips/cavium-octeon/octeon_3xxx.dts            |  375 ++++++++++++++++++++
+>  12 files changed, 766 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mips/cavium/bootbus.txt
+>  create mode 100644 Documentation/devicetree/bindings/mips/cavium/ciu.txt
+>  create mode 100644 Documentation/devicetree/bindings/mips/cavium/gpio.txt
+>  create mode 100644 Documentation/devicetree/bindings/mips/cavium/mdio.txt
+>  create mode 100644 Documentation/devicetree/bindings/mips/cavium/mix.txt
+>  create mode 100644 Documentation/devicetree/bindings/mips/cavium/pip.txt
+>  create mode 100644 Documentation/devicetree/bindings/mips/cavium/twsi.txt
+>  create mode 100644 Documentation/devicetree/bindings/mips/cavium/uart.txt
+>  create mode 100644 Documentation/devicetree/bindings/mips/cavium/uctl.txt
+>  create mode 100644 arch/mips/cavium-octeon/.gitignore
+>  create mode 100644 arch/mips/cavium-octeon/octeon_3xxx.dts
 
+Looks pretty good to me.  A few comments below, but I'm okay with this
+one being picked up (Ralf, or if you prefer then I can merge it via my
+tree) as long as you follow it up with a fixup patch.
 
-Hmm.. I noticed a very strange behavior on a simple test w/ the patch set.
+g.
 
-Test:
-I created a 4g memcg and start doing cat. Then the memcg being OOM
-killed as soon as it reaches its hard_limit. We shouldn't hit OOM even
-w/o async-reclaim.
+> 
+> diff --git a/Documentation/devicetree/bindings/mips/cavium/bootbus.txt b/Documentation/devicetree/bindings/mips/cavium/bootbus.txt
+> new file mode 100644
+> index 0000000..221c118
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mips/cavium/bootbus.txt
+> @@ -0,0 +1,37 @@
+> +* Boot Bus
+> +
+> +Properties:
+> +- compatible: "cavium,octeon-3860-bootbus"
+> +
+> +  Compatibility with all cn3XXX, cn5XXX and cn6XXX SOCs.
+> +
+> +- reg: The base address of the CIU's register bank.
+> +
+> +- #address-cells: Must be <2>.  The first cell is the chip select
+> +   within the bootbus.  The second cell is the offset from the chip select.
+> +
+> +- #size-cells: Must be <1>.
+> +
+> +- ranges: There must be one one triplet of (child-bus-address,
+> +  parent-bus-address, length) for each active chip select.
+> +
+> +Example:
+> +	bootbus@1180000000000 {
+> +		compatible = "cavium,octeon-3860-bootbus";
+> +		reg = <0x11800 0x00000000 0x0 0x200>;
+> +		/* The chip select number and offset */
+> +		#address-cells = <2>;
+> +		/* The size of the chip select region */
+> +		#size-cells = <1>;
+> +		ranges = <0 0  0x0 0x1f400000  0x1000000>,
+> +			 <1 0  0x1 0x30000000  0x10000000>,
+> +			 <2 0  0x1 0x40000000  0x10000000>,
+> +			 <3 0  0x1 0x50000000  0x10000000>,
+> +			 <4 0  0x1 0x60000000  0x10000000>,
+> +			 <5 0  0x1 0x70000000  0x10000000>,
+> +			 <6 0  0x1 0x80000000  0x10000000>,
+> +			 <7 0  0x1 0x90000000  0x10000000>;
+> +		.
+> +		.
+> +		.
+> +	};
+> diff --git a/Documentation/devicetree/bindings/mips/cavium/ciu.txt b/Documentation/devicetree/bindings/mips/cavium/ciu.txt
+> new file mode 100644
+> index 0000000..c8ff212
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mips/cavium/ciu.txt
+> @@ -0,0 +1,26 @@
+> +* Central Interrupt Unit
+> +
+> +Properties:
+> +- compatible: "cavium,octeon-3860-ciu"
+> +
+> +  Compatibility with all cn3XXX, cn5XXX and cn63XX SOCs.
+> +
+> +- interrupt-controller:  This is an interrupt controller. 
+> +
+> +- reg: The base address of the CIU's register bank.
+> +
+> +- #interrupt-cells: Must be <2>.  The first cell is the bank within
+> +   the CIU and may have a value of 0 or 1.  The second cell is the bit
+> +   within the bank and may have a value between 0 and 63.
+> +
+> +Example:
+> +	interrupt-controller@1070000000000 {
+> +		compatible = "cavium,octeon-3860-ciu";
+> +		interrupt-controller;
+> +		/* Interrupts are specified by two parts:
+> +		 * 1) Controller register (0 or 1)
+> +		 * 2) Bit within the register (0..63)
+> +		 */
 
-Again, I will read through the patch. But like to post the test result first.
+Are there any configuration parameters for these irq inputs?  Edge vs.
+Level? Active high or active low?  If so, then you'll probably want to
+have a flags cell.
 
-$ echo $$ >/dev/cgroup/memory/A/tasks
-$ cat /dev/cgroup/memory/A/memory.limit_in_bytes
-4294967296
+Also, how are the irqs typically documented in the hardware reference
+manual?  Are they documented a irqs 0-63 in bank 1 and 0-63 in bank 2?
+Or are is a flat 0-127 number range?  If it is the later, then you may
+want to consider just using a single cell to specify the irq number,
+and handle the bank calculation in the irq driver.
 
-$ time cat /export/hdc3/dd_A/tf0 > /dev/zero
-Killed
+> +		#interrupt-cells = <2>;
+> +		reg = <0x10700 0x00000000 0x0 0x7000>;
+> +	};
+> diff --git a/Documentation/devicetree/bindings/mips/cavium/gpio.txt b/Documentation/devicetree/bindings/mips/cavium/gpio.txt
+> new file mode 100644
+> index 0000000..72853d4
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mips/cavium/gpio.txt
+> @@ -0,0 +1,48 @@
+> +* General Purpose Input Output (GPIO) bus.
+> +
+> +Properties:
+> +- compatible: "cavium,octeon-3860-gpio"
+> +
+> +  Compatibility with all cn3XXX, cn5XXX and cn6XXX SOCs.
+> +
+> +- reg: The base address of the GPIO unit's register bank.
+> +
+> +- gpio-controller: This is a GPIO controller.
+> +
+> +- #gpio-cells: Must be <2>.  The first cell is the GPIO pin.
+> +
+> +- interrupt-controller: The GPIO controller is also an interrupt
+> +  controller, any of its pins may be configured as an interrupt
+> +  source.
+> +
+> +- #interrupt-cells: Must be <2>.  The first cell is the GPIO pin
+> +   connected to the interrupt source.  The second cell is the interrupt
+> +   triggering protocol and may have one of four values:
+> +   0 - level triggered active high.
+> +   1 - level triggered active low
+> +   2 - edge triggered on the rising edge.
+> +   3 - edge triggered on the falling edge.
 
-real	0m53.565s
-user	0m0.061s
-sys	0m4.814s
+Since you're choosing arbitrary values here anyway, it's convenient to
+follow the lead of include/linux/irq.h and using 1->edge rising,
+2->edge falling, 4->level high, 8->level low.  In the past every irq
+controller kind of did it's own thing, but that's not very scalable.
 
-Here is the OOM log:
-
-May 26 18:43:00  kernel: [  963.489112] cat invoked oom-killer:
-gfp_mask=0xd0, order=0, oom_adj=0, oom_score_adj=0
-May 26 18:43:00  kernel: [  963.489121] Pid: 9425, comm: cat Tainted:
-G        W   2.6.39-mcg-DEV #131
-May 26 18:43:00  kernel: [  963.489123] Call Trace:
-May 26 18:43:00  kernel: [  963.489134]  [<ffffffff810e3512>]
-dump_header+0x82/0x1af
-May 26 18:43:00  kernel: [  963.489137]  [<ffffffff810e33ca>] ?
-spin_lock+0xe/0x10
-May 26 18:43:00  kernel: [  963.489140]  [<ffffffff810e33f9>] ?
-find_lock_task_mm+0x2d/0x67
-May 26 18:43:00  kernel: [  963.489143]  [<ffffffff810e38dd>]
-oom_kill_process+0x50/0x27b
-May 26 18:43:00  kernel: [  963.489155]  [<ffffffff810e3dc6>]
-mem_cgroup_out_of_memory+0x9a/0xe4
-May 26 18:43:00  kernel: [  963.489160]  [<ffffffff811153aa>]
-mem_cgroup_handle_oom+0x134/0x1fe
-May 26 18:43:00  kernel: [  963.489163]  [<ffffffff81114a72>] ?
-__mem_cgroup_insert_exceeded+0x83/0x83
-May 26 18:43:00  kernel: [  963.489176]  [<ffffffff811166e9>]
-__mem_cgroup_try_charge.clone.3+0x368/0x43a
-May 26 18:43:00  kernel: [  963.489179]  [<ffffffff81117586>]
-mem_cgroup_cache_charge+0x95/0x123
-May 26 18:43:00  kernel: [  963.489183]  [<ffffffff810e16d8>]
-add_to_page_cache_locked+0x42/0x114
-May 26 18:43:00  kernel: [  963.489185]  [<ffffffff810e17db>]
-add_to_page_cache_lru+0x31/0x5f
-May 26 18:43:00  kernel: [  963.489189]  [<ffffffff81145636>]
-mpage_readpages+0xb6/0x132
-May 26 18:43:00  kernel: [  963.489194]  [<ffffffff8119992f>] ?
-noalloc_get_block_write+0x24/0x24
-May 26 18:43:00  kernel: [  963.489197]  [<ffffffff8119992f>] ?
-noalloc_get_block_write+0x24/0x24
-May 26 18:43:00  kernel: [  963.489201]  [<ffffffff81036742>] ?
-__switch_to+0x160/0x212
-May 26 18:43:00  kernel: [  963.489205]  [<ffffffff811978b2>]
-ext4_readpages+0x1d/0x1f
-May 26 18:43:00  kernel: [  963.489209]  [<ffffffff810e8d4b>]
-__do_page_cache_readahead+0x144/0x1e3
-May 26 18:43:00  kernel: [  963.489212]  [<ffffffff810e8e0b>]
-ra_submit+0x21/0x25
-May 26 18:43:00  kernel: [  963.489215]  [<ffffffff810e9075>]
-ondemand_readahead+0x18c/0x19f
-May 26 18:43:00  kernel: [  963.489218]  [<ffffffff810e9105>]
-page_cache_async_readahead+0x7d/0x86
-May 26 18:43:00  kernel: [  963.489221]  [<ffffffff810e2b7e>]
-generic_file_aio_read+0x2d8/0x5fe
-May 26 18:43:00  kernel: [  963.489225]  [<ffffffff81119626>]
-do_sync_read+0xcb/0x108
-May 26 18:43:00  kernel: [  963.489230]  [<ffffffff811f168a>] ?
-fsnotify_perm+0x66/0x72
-May 26 18:43:00  kernel: [  963.489233]  [<ffffffff811f16f7>] ?
-security_file_permission+0x2e/0x33
-May 26 18:43:00  kernel: [  963.489236]  [<ffffffff8111a0c8>]
-vfs_read+0xab/0x107
-May 26 18:43:00  kernel: [  963.489239]  [<ffffffff8111a1e4>] sys_read+0x4a/0x6e
-May 26 18:43:00  kernel: [  963.489244]  [<ffffffff8140f469>]
-sysenter_dispatch+0x7/0x27
-May 26 18:43:00  kernel: [  963.489248] Task in /A killed as a result
-of limit of /A
-May 26 18:43:00  kernel: [  963.489251] memory: usage 4194304kB, limit
-4194304kB, failcnt 26
-May 26 18:43:00  kernel: [  963.489253] memory+swap: usage 0kB, limit
-9007199254740991kB, failcnt 0
-
---Ying
-
->
-> Thanks,
-> -Kame
->
->
->
->
->
+> +
+> +- interrupts: Interrupt routing for pin 0.  The remaining pins are
+> +  also routed, but in a manner that can be derived from the pin0
+> +  routing, so they are not specified.
+> +
+> +Example:
+> +
+> +	gpio-controller@1070000000800 {
+> +		#gpio-cells = <2>;
+> +		compatible = "cavium,octeon-3860-gpio";
+> +		reg = <0x10700 0x00000800 0x0 0x100>;
+> +		gpio-controller;
+> +		/* Interrupts are specified by two parts:
+> +		 * 1) GPIO pin number (0..15)
+> +		 * 2) Triggering (0 - level active high
+> +		 *		  1 - level active low
+> +		 *		  2 - edge rising
+> +		 *		  3 - edge falling
+> +		 */
+> +		interrupt-controller;
+> +		#interrupt-cells = <2>;
+> +		/* The GPIO pin connect to 16 consecutive CUI bits */
+> +		interrupts = <0 16>;
+> +	};
+> diff --git a/Documentation/devicetree/bindings/mips/cavium/mdio.txt b/Documentation/devicetree/bindings/mips/cavium/mdio.txt
+> new file mode 100644
+> index 0000000..6253c3b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mips/cavium/mdio.txt
+> @@ -0,0 +1,27 @@
+> +* System Management Interface (SMI) / MDIO
+> +
+> +Properties:
+> +- compatible: "cavium,octeon-3860-mdio"
+> +
+> +  Compatibility with all cn3XXX, cn5XXX and cn6XXX SOCs.
+> +
+> +- reg: The base address of the MDIO bus controller register bank.
+> +
+> +- #address-cells: Must be <1>.
+> +
+> +- #size-cells: Must be <0>.  MDIO addresses have no size component.
+> +
+> +Typically an MDIO bus might have several children. 
+> +
+> +Example:
+> +	mdio@1180000001800 {
+> +		compatible = "cavium,octeon-3860-mdio";
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		reg = <0x11800 0x00001800 0x0 0x40>;
+> +
+> +		ethernet-phy@0 {
+> +			...
+> +			reg = <0>;
+> +		};
+> +	};
+> diff --git a/Documentation/devicetree/bindings/mips/cavium/mix.txt b/Documentation/devicetree/bindings/mips/cavium/mix.txt
+> new file mode 100644
+> index 0000000..2a91a33
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mips/cavium/mix.txt
+> @@ -0,0 +1,40 @@
+> +* MIX Ethernet controller.
+> +
+> +Properties:
+> +- compatible: "cavium,octeon-5750-mix"
+> +
+> +  Compatibility with all cn5XXX and cn6XXX SOCs populated with MIX
+> +  devices.
+> +
+> +- reg: The base addresses of four seperate register banks.  The first
+> +  bank contains the MIX registers.  The second bank the corresponding
+> +  AGL registers.  The third bank are the AGL registers shared by all
+> +  MIX devices present.  The fourth bank is the AGL_PRT_CTL shared by
+> +  all MIX devices present.
+> +
+> +- cell-index: A single cell specifying which portion of the shared
+> +  register banks corresponds to this MIX device.
+> +
+> +- interrupts: Two interrupt specifiers.  The first is the MIX
+> +  interrupt routing and the second the routing for the AGL interrupts.
+> +
+> +- mac-address: Optional, the MAC address to assign to the device.
+> +
+> +- local-mac-address: Optional, the MAC address to assign to the device
+> +  if mac-address is not specified.
+> +
+> +- phy-handle: Optional, a phandle for the PHY device connected to this device.
+> +
+> +Example:
+> +	ethernet@1070000100800 {
+> +		compatible = "cavium,octeon-5750-mix";
+> +		reg = <0x10700 0x00100800 0x0 0x100>, /* MIX */
+> +		      <0x11800 0xE0000800 0x0 0x300>, /* AGL */
+> +		      <0x11800 0xE0000400 0x0 0x400>, /* AGL_SHARED  */
+> +		      <0x11800 0xE0002008 0x0 0x8>;   /* AGL_PRT_CTL */
+> +		cell-index = <1>;
+> +		interrupts = <1 18>, < 1 46>;
+> +		local-mac-address = [ 00 0f b7 10 63 54 ];
+> +		phy-handle = <&phy1>;
+> +	};
+> +
+> diff --git a/Documentation/devicetree/bindings/mips/cavium/pip.txt b/Documentation/devicetree/bindings/mips/cavium/pip.txt
+> new file mode 100644
+> index 0000000..d4c53ba
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mips/cavium/pip.txt
+> @@ -0,0 +1,98 @@
+> +* PIP Ethernet nexus.
+> +
+> +The PIP Ethernet nexus can control several data packet input/output
+> +devices.  The devices have a two level grouping scheme.  There may be
+> +several interfaces, and each interface may have several ports.  These
+> +ports might be an individual Ethernet PHY.
+> +
+> +
+> +Properties for the PIP nexus:
+> +- compatible: "cavium,octeon-3860-pip"
+> +
+> +  Compatibility with all cn3XXX, cn5XXX and cn6XXX SOCs.
+> +
+> +- reg: The base address of the PIP's register bank.
+> +
+> +- #address-cells: Must be <1>.
+> +
+> +- #size-cells: Must be <0>.
+> +
+> +Properties for PIP interfaces which is a child the PIP nexus:
+> +- compatible: "cavium,octeon-3860-pip-interface"
+> +
+> +  Compatibility with all cn3XXX, cn5XXX and cn6XXX SOCs.
+> +
+> +- reg: The interface number.
+> +
+> +- #address-cells: Must be <1>.
+> +
+> +- #size-cells: Must be <0>.
+> +
+> +Properties for PIP port which is a child the PIP interface:
+> +- compatible: "cavium,octeon-3860-pip-port"
+> +
+> +  Compatibility with all cn3XXX, cn5XXX and cn6XXX SOCs.
+> +
+> +- reg: The port number within the interface group.
+> +
+> +- mac-address: Optional, the MAC address to assign to the device.
+> +
+> +- local-mac-address: Optional, the MAC address to assign to the device
+> +  if mac-address is not specified.
+> +
+> +- phy-handle: Optional, a phandle for the PHY device connected to this device.
+> +
+> +Example:
+> +
+> +	pip@11800a0000000 {
+> +		compatible = "cavium,octeon-3860-pip";
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		reg = <0x11800 0xa0000000 0x0 0x2000>;
+> +
+> +		interface@0 {
+> +			compatible = "cavium,octeon-3860-pip-interface";
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			reg = <0>; /* interface */
+> +
+> +			ethernet@0 {
+> +				compatible = "cavium,octeon-3860-pip-port";
+> +				reg = <0x0>; /* Port */
+> +				local-mac-address = [ 00 0f b7 10 63 60 ];
+> +				phy-handle = <&phy2>;
+> +			};
+> +			ethernet@1 {
+> +				compatible = "cavium,octeon-3860-pip-port";
+> +				reg = <0x1>; /* Port */
+> +				local-mac-address = [ 00 0f b7 10 63 61 ];
+> +				phy-handle = <&phy3>;
+> +			};
+> +			ethernet@2 {
+> +				compatible = "cavium,octeon-3860-pip-port";
+> +				reg = <0x2>; /* Port */
+> +				local-mac-address = [ 00 0f b7 10 63 62 ];
+> +				phy-handle = <&phy4>;
+> +			};
+> +			ethernet@3 {
+> +				compatible = "cavium,octeon-3860-pip-port";
+> +				reg = <0x3>; /* Port */
+> +				local-mac-address = [ 00 0f b7 10 63 63 ];
+> +				phy-handle = <&phy5>;
+> +			};
+> +		};
+> +
+> +		interface@1 {
+> +			compatible = "cavium,octeon-3860-pip-interface";
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			reg = <1>; /* interface */
+> +
+> +			ethernet@0 {
+> +				compatible = "cavium,octeon-3860-pip-port";
+> +				reg = <0x0>; /* Port */
+> +				local-mac-address = [ 00 0f b7 10 63 64 ];
+> +				phy-handle = <&phy6>;
+> +			};
+> +		};
+> +	};
+> diff --git a/Documentation/devicetree/bindings/mips/cavium/twsi.txt b/Documentation/devicetree/bindings/mips/cavium/twsi.txt
+> new file mode 100644
+> index 0000000..6e57155
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mips/cavium/twsi.txt
+> @@ -0,0 +1,34 @@
+> +* Two Wire Serial Interface (TWSI) / I2C
+> +
+> +- compatible: "cavium,octeon-3860-twsi"
+> +
+> +  Compatibility with all cn3XXX, cn5XXX and cn6XXX SOCs.
+> +
+> +- reg: The base address of the TWSI/I2C bus controller register bank.
+> +
+> +- #address-cells: Must be <1>.
+> +
+> +- #size-cells: Must be <0>.  I2C addresses have no size component.
+> +
+> +- interrupts: A single interrupt specifier.
+> +
+> +- clock-rate: The I2C bus clock rate in Hz.
+> +
+> +Example:
+> +	twsi0: i2c@1180000001000 {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "cavium,octeon-3860-twsi";
+> +		reg = <0x11800 0x00001000 0x0 0x200>;
+> +		interrupts = <0 45>;
+> +		clock-rate = <100000>;
+> +
+> +		rtc@68 {
+> +			compatible = "dallas,ds1337";
+> +			reg = <0x68>;
+> +		};
+> +		tmp@4c {
+> +			compatible = "ti,tmp421";
+> +			reg = <0x4c>;
+> +		};
+> +	};
+> diff --git a/Documentation/devicetree/bindings/mips/cavium/uart.txt b/Documentation/devicetree/bindings/mips/cavium/uart.txt
+> new file mode 100644
+> index 0000000..87a6c37
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mips/cavium/uart.txt
+> @@ -0,0 +1,19 @@
+> +* Universal Asynchronous Receiver/Transmitter (UART)
+> +
+> +- compatible: "cavium,octeon-3860-uart"
+> +
+> +  Compatibility with all cn3XXX, cn5XXX and cn6XXX SOCs.
+> +
+> +- reg: The base address of the UART register bank.
+> +
+> +- interrupts: A single interrupt specifier.
+> +
+> +- current-speed: Optional, the current bit rate in bits per second.
+> +
+> +Example:
+> +	uart1: serial@1180000000c00 {
+> +		compatible = "cavium,octeon-3860-uart","ns16550";
+> +		reg = <0x11800 0x00000c00 0x0 0x400>;
+> +		current-speed = <115200>;
+> +		interrupts = <0 35>;
+> +	};
+> diff --git a/Documentation/devicetree/bindings/mips/cavium/uctl.txt b/Documentation/devicetree/bindings/mips/cavium/uctl.txt
+> new file mode 100644
+> index 0000000..5dabe02
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mips/cavium/uctl.txt
+> @@ -0,0 +1,47 @@
+> +* UCTL USB controller glue
+> +
+> +Properties:
+> +- compatible: "cavium,octeon-6335-uctl"
+> +
+> +  Compatibility with all cn6XXX SOCs.
+> +
+> +- reg: The base address of the UCTL register bank.
+> +
+> +- #address-cells: Must be <2>.
+> +
+> +- #size-cells: Must be <2>.
+> +
+> +- ranges: Empty to signify direct mapping of the children.
+> +
+> +- refclk-frequency: A single cell containing the reference clock
+> +  frequency in Hz.
+> +
+> +- refclk-type: A string describing the reference clock connection
+> +  either "crystal" or "external".
+> +
+> +Example:
+> +	uctl@118006f000000 {
+> +		compatible = "cavium,octeon-6335-uctl";
+> +		reg = <0x11800 0x6f000000 0x0 0x100>;
+> +		ranges; /* Direct mapping */
+> +		#address-cells = <2>;
+> +		#size-cells = <2>;
+> +		/* 12MHz, 24MHz and 48MHz allowed */
+> +		refclk-frequency = <24000000>;
+> +		/* Either "crystal" or "external" */
+> +		refclk-type = "crystal";
+> +
+> +		ehci@16f0000000000 {
+> +			compatible = "cavium,octeon-6335-ehci","usb-ehci";
+> +			reg = <0x16f00 0x00000000 0x0 0x100>;
+> +			interrupts = <0 56>;
+> +			big-endian-regs;
+> +		};
+> +		ohci@16f0000000400 {
+> +			compatible = "cavium,octeon-6335-ohci","usb-ohci";
+> +			reg = <0x16f00 0x00000400 0x0 0x100>;
+> +			interrupts = <0 56>;
+> +			big-endian-regs;
+> +		};
+> +	};
+> +
+> diff --git a/arch/mips/cavium-octeon/.gitignore b/arch/mips/cavium-octeon/.gitignore
+> new file mode 100644
+> index 0000000..39c9686
+> --- /dev/null
+> +++ b/arch/mips/cavium-octeon/.gitignore
+> @@ -0,0 +1,2 @@
+> +*.dtb.S
+> +*.dtb
+> diff --git a/arch/mips/cavium-octeon/Makefile b/arch/mips/cavium-octeon/Makefile
+> index 19eb043..b8d4f63 100644
+> --- a/arch/mips/cavium-octeon/Makefile
+> +++ b/arch/mips/cavium-octeon/Makefile
+> @@ -15,3 +15,16 @@ obj-y += octeon-memcpy.o
+>  obj-y += executive/
+>  
+>  obj-$(CONFIG_SMP)                     += smp.o
+> +
+> +DTS_FILES = octeon_3xxx.dts
+> +DTB_FILES = $(patsubst %.dts, %.dtb, $(DTS_FILES))
+> +
+> +obj-y += $(patsubst %.dts, %.dtb.o, $(DTS_FILES))
+> +
+> +$(obj)/%.dtb: $(src)/%.dts
+> +	$(call cmd,dtc)
+> +
+> +# Let's keep the .dtb files around in case we want to look at them.
+> +.SECONDARY:  $(addprefix $(obj)/, $(DTB_FILES))
+> +
+> +clean-files += $(DTB_FILES) $(patsubst %.dtb, %.dtb.S, $(DTB_FILES))
+> diff --git a/arch/mips/cavium-octeon/octeon_3xxx.dts b/arch/mips/cavium-octeon/octeon_3xxx.dts
+> new file mode 100644
+> index 0000000..2b371dc
+> --- /dev/null
+> +++ b/arch/mips/cavium-octeon/octeon_3xxx.dts
+> @@ -0,0 +1,375 @@
+> +/dts-v1/;
+> +/*
+> + * OCTEON 3XXX, 5XXX, 63XX device tree skeleton.
+> + *
+> + * This device tree is pruned and patched by early boot code before
+> + * use.  Because of this, it contains a super-set of the available
+> + * devices and properties.
+> + */
+> +/ {
+> +	compatible = "cavium,octeon-3860";
+> +	#address-cells = <2>;
+> +	#size-cells = <2>;
+> +	interrupt-parent = <&ciu>;
+> +
+> +	soc@0 {
+> +		compatible = "simple-bus";
+> +		#address-cells = <2>;
+> +		#size-cells = <2>;
+> +		ranges; /* Direct mapping */
+> +
+> +		ciu: interrupt-controller@1070000000000 {
+> +			compatible = "cavium,octeon-3860-ciu";
+> +			interrupt-controller;
+> +			/* Interrupts are specified by two parts:
+> +			 * 1) Controller register (0 or 1)
+> +			 * 2) Bit within the register (0..63)
+> +			 */
+> +			#interrupt-cells = <2>;
+> +			reg = <0x10700 0x00000000 0x0 0x7000>;
+> +		};
+> +
+> +		gpio: gpio-controller@1070000000800 {
+> +			#gpio-cells = <2>;
+> +			compatible = "cavium,octeon-3860-gpio";
+> +			reg = <0x10700 0x00000800 0x0 0x100>;
+> +			gpio-controller;
+> +			/* Interrupts are specified by two parts:
+> +			 * 1) GPIO pin number (0..15)
+> +			 * 2) Triggering (0 - level active high
+> +			 *		  1 - level active low
+> +			 *		  2 - edge rising
+> +			 *		  3 - edge falling
+> +			 */
+> +			interrupt-controller;
+> +			#interrupt-cells = <2>;
+> +			/* The GPIO pin connect to 16 consecutive CUI bits */
+> +			interrupts = <0 16>; /* <0 17> <0 18> <0 19>
+> +				     <0 20> <0 21> <0 22> <0 23>
+> +				     <0 24> <0 25> <0 26> <0 27>
+> +				     <0 28> <0 29> <0 30> <0 31>; */
+> +		};
+> +
+> +		smi0: mdio@1180000001800 {
+> +			compatible = "cavium,octeon-3860-mdio";
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			reg = <0x11800 0x00001800 0x0 0x40>;
+> +
+> +			phy0: ethernet-phy@0 {
+> +				compatible = "broadcom,bcm5241";
+> +				reg = <0>;
+> +			};
+> +
+> +			phy1: ethernet-phy@1 {
+> +				compatible = "broadcom,bcm5241";
+> +				reg = <1>;
+> +			};
+> +
+> +			phy2: ethernet-phy@2 {
+> +				reg = <2>;
+> +				compatible = "marvell,88e1149r";
+> +				marvell,reg-init = <3 0x10 0 0x5777>,
+> +					<3 0x11 0 0x00aa>,
+> +					<3 0x12 0 0x4105>,
+> +					<3 0x13 0 0x0a60>;
+> +				interrupt-parent = <&gpio>;
+> +				interrupts = <5 1>; /* Pin 5, active low */
+> +			};
+> +			phy3: ethernet-phy@3 {
+> +				reg = <3>;
+> +				compatible = "marvell,88e1149r";
+> +				marvell,reg-init = <3 0x10 0 0x5777>,
+> +					<3 0x11 0 0x00aa>,
+> +					<3 0x12 0 0x4105>,
+> +					<3 0x13 0 0x0a60>;
+> +				interrupt-parent = <&gpio>;
+> +				interrupts = <5 1>; /* Pin 5, active low */
+> +			};
+> +			phy4: ethernet-phy@4 {
+> +				reg = <4>;
+> +				compatible = "marvell,88e1149r";
+> +				marvell,reg-init = <3 0x10 0 0x5777>,
+> +					<3 0x11 0 0x00aa>,
+> +					<3 0x12 0 0x4105>,
+> +					<3 0x13 0 0x0a60>;
+> +				interrupt-parent = <&gpio>;
+> +				interrupts = <5 1>; /* Pin 5, active low */
+> +			};
+> +			phy5: ethernet-phy@5 {
+> +				reg = <5>;
+> +				compatible = "marvell,88e1149r";
+> +				marvell,reg-init = <3 0x10 0 0x5777>,
+> +					<3 0x11 0 0x00aa>,
+> +					<3 0x12 0 0x4105>,
+> +					<3 0x13 0 0x0a60>;
+> +				interrupt-parent = <&gpio>;
+> +				interrupts = <5 1>; /* Pin 5, active low */
+> +			};
+> +
+> +			phy6: ethernet-phy@6 {
+> +				reg = <6>;
+> +				compatible = "marvell,88e1149r";
+> +				marvell,reg-init = <3 0x10 0 0x5777>,
+> +					<3 0x11 0 0x00aa>,
+> +					<3 0x12 0 0x4105>,
+> +					<3 0x13 0 0x0a60>;
+> +			};
+> +			phy7: ethernet-phy@7 {
+> +				reg = <7>;
+> +				compatible = "marvell,88e1149r";
+> +				marvell,reg-init = <3 0x10 0 0x5777>,
+> +					<3 0x11 0 0x00aa>,
+> +					<3 0x12 0 0x4105>,
+> +					<3 0x13 0 0x0a60>;
+> +			};
+> +			phy8: ethernet-phy@8 {
+> +				reg = <8>;
+> +				compatible = "marvell,88e1149r";
+> +				marvell,reg-init = <3 0x10 0 0x5777>,
+> +					<3 0x11 0 0x00aa>,
+> +					<3 0x12 0 0x4105>,
+> +					<3 0x13 0 0x0a60>;
+> +			};
+> +			phy9: ethernet-phy@9 {
+> +				reg = <9>;
+> +				compatible = "marvell,88e1149r";
+> +				marvell,reg-init = <3 0x10 0 0x5777>,
+> +					<3 0x11 0 0x00aa>,
+> +					<3 0x12 0 0x4105>,
+> +					<3 0x13 0 0x0a60>;
+> +			};
+> +		};
+> +
+> +		smi1: mdio@1180000001900 {
+> +			compatible = "cavium,octeon-3860-mdio";
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			reg = <0x11800 0x00001900 0x0 0x40>;
+> +		};
+> +
+> +		mix0: ethernet@1070000100000 {
+> +			compatible = "cavium,octeon-5750-mix";
+> +			reg = <0x10700 0x00100000 0x0 0x100>, /* MIX */
+> +			      <0x11800 0xE0000000 0x0 0x300>, /* AGL */
+> +			      <0x11800 0xE0000400 0x0 0x400>, /* AGL_SHARED  */
+> +			      <0x11800 0xE0002000 0x0 0x8>;   /* AGL_PRT_CTL */
+> +			cell-index = <0>;
+> +			interrupts = <0 62>, <1 46>;
+> +			local-mac-address = [ 00 00 00 00 00 00 ];
+> +			phy-handle = <&phy0>;
+> +		};
+> +
+> +		mix1: ethernet@1070000100800 {
+> +			compatible = "cavium,octeon-5750-mix";
+> +			reg = <0x10700 0x00100800 0x0 0x100>, /* MIX */
+> +			      <0x11800 0xE0000800 0x0 0x300>, /* AGL */
+> +			      <0x11800 0xE0000400 0x0 0x400>, /* AGL_SHARED  */
+> +			      <0x11800 0xE0002008 0x0 0x8>;   /* AGL_PRT_CTL */
+> +			cell-index = <1>;
+> +			interrupts = <1 18>, < 1 46>;
+> +			local-mac-address = [ 00 00 00 00 00 00 ];
+> +			phy-handle = <&phy1>;
+> +		};
+> +
+> +		pip: pip@11800a0000000 {
+> +			compatible = "cavium,octeon-3860-pip";
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			reg = <0x11800 0xa0000000 0x0 0x2000>;
+> +
+> +			interface@0 {
+> +				compatible = "cavium,octeon-3860-pip-interface";
+> +				#address-cells = <1>;
+> +				#size-cells = <0>;
+> +				reg = <0>; /* interface */
+> +
+> +				ethernet@0 {
+> +					compatible = "cavium,octeon-3860-pip-port";
+> +					reg = <0x0>; /* Port */
+> +					local-mac-address = [ 00 00 00 00 00 00 ];
+> +					phy-handle = <&phy2>;
+> +				};
+> +				ethernet@1 {
+> +					compatible = "cavium,octeon-3860-pip-port";
+> +					reg = <0x1>; /* Port */
+> +					local-mac-address = [ 00 00 00 00 00 00 ];
+> +					phy-handle = <&phy3>;
+> +				};
+> +				ethernet@2 {
+> +					compatible = "cavium,octeon-3860-pip-port";
+> +					reg = <0x2>; /* Port */
+> +					local-mac-address = [ 00 00 00 00 00 00 ];
+> +					phy-handle = <&phy4>;
+> +				};
+> +				ethernet@3 {
+> +					compatible = "cavium,octeon-3860-pip-port";
+> +					reg = <0x3>; /* Port */
+> +					local-mac-address = [ 00 00 00 00 00 00 ];
+> +					phy-handle = <&phy5>;
+> +				};
+> +			};
+> +
+> +			interface@1 {
+> +				compatible = "cavium,octeon-3860-pip-interface";
+> +				#address-cells = <1>;
+> +				#size-cells = <0>;
+> +				reg = <1>; /* interface */
+> +
+> +				ethernet@0 {
+> +					compatible = "cavium,octeon-3860-pip-port";
+> +					reg = <0x0>; /* Port */
+> +					local-mac-address = [ 00 00 00 00 00 00 ];
+> +					phy-handle = <&phy6>;
+> +				};
+> +				ethernet@1 {
+> +					compatible = "cavium,octeon-3860-pip-port";
+> +					reg = <0x1>; /* Port */
+> +					local-mac-address = [ 00 00 00 00 00 00 ];
+> +					phy-handle = <&phy7>;
+> +				};
+> +				ethernet@2 {
+> +					compatible = "cavium,octeon-3860-pip-port";
+> +					reg = <0x2>; /* Port */
+> +					local-mac-address = [ 00 00 00 00 00 00 ];
+> +					phy-handle = <&phy8>;
+> +				};
+> +				ethernet@3 {
+> +					compatible = "cavium,octeon-3860-pip-port";
+> +					reg = <0x3>; /* Port */
+> +					local-mac-address = [ 00 00 00 00 00 00 ];
+> +					phy-handle = <&phy9>;
+> +				};
+> +			};
+> +		};
+> +
+> +		twsi0: i2c@1180000001000 {
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			compatible = "cavium,octeon-3860-twsi";
+> +			reg = <0x11800 0x00001000 0x0 0x200>;
+> +			interrupts = <0 45>;
+> +			clock-rate = <100000>;
+> +
+> +			rtc@68 {
+> +				compatible = "dallas,ds1337";
+> +				reg = <0x68>;
+> +			};
+> +			tmp@4c {
+> +				compatible = "ti,tmp421";
+> +				reg = <0x4c>;
+> +			};
+> +		};
+> +
+> +		twsi1: i2c@1180000001200 {
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			compatible = "cavium,octeon-3860-twsi";
+> +			reg = <0x11800 0x00001200 0x0 0x200>;
+> +			interrupts = <0 59>;
+> +			clock-rate = <100000>;
+> +		};
+> +
+> +		uart0: serial@1180000000800 {
+> +			compatible = "cavium,octeon-3860-uart","ns16550";
+> +			reg = <0x11800 0x00000800 0x0 0x400>;
+> +			clock-frequency = <0>;
+> +			current-speed = <115200>;
+> +			reg-shift = <3>;
+> +			interrupts = <0 34>;
+> +		};
+> +
+> +		uart1: serial@1180000000c00 {
+> +			compatible = "cavium,octeon-3860-uart","ns16550";
+> +			reg = <0x11800 0x00000c00 0x0 0x400>;
+> +			clock-frequency = <0>;
+> +			current-speed = <115200>;
+> +			reg-shift = <3>;
+> +			interrupts = <0 35>;
+> +		};
+> +
+> +		uart2: serial@1180000000400 {
+> +			compatible = "cavium,octeon-3860-uart","ns16550";
+> +			reg = <0x11800 0x00000400 0x0 0x400>;
+> +			clock-frequency = <0>;
+> +			current-speed = <115200>;
+> +			reg-shift = <3>;
+> +			interrupts = <1 16>;
+> +		};
+> +
+> +		bootbus: bootbus@1180000000000 {
+> +			compatible = "cavium,octeon-3860-bootbus";
+> +			reg = <0x11800 0x00000000 0x0 0x200>;
+> +			/* The chip select number and offset */
+> +			#address-cells = <2>;
+> +			/* The size of the chip select region */
+> +			#size-cells = <1>;
+> +			ranges = <0 0  0x0 0x1f400000  0x1000000>,
+> +				 <1 0  0x1 0x30000000  0x10000000>,
+> +				 <2 0  0x1 0x40000000  0x10000000>,
+> +				 <3 0  0x1 0x50000000  0x10000000>,
+> +				 <4 0  0x1 0x60000000  0x10000000>,
+> +				 <5 0  0x1 0x70000000  0x10000000>,
+> +				 <6 0  0x1 0x80000000  0x10000000>,
+> +				 <7 0  0x1 0x90000000  0x10000000>;
+> +
+> +			flash0: nor@0,0 {
+> +				compatible = "cfi-flash";
+> +				reg = <0 0 0x800000>;
+> +				#address-cells = <1>;
+> +				#size-cells = <1>;
+> +
+> +				partition@0 {
+> +					label = "firmware";
+> +					reg = <0x0 0x400000>;
+> +					read-only;
+> +				};
+> +
+> +				partition@400000 {
+> +					label = "data";
+> +					reg = <0x400000 0x400000>;
+> +					read-only;
+> +				};
+> +			};
+> +		};
+> +
+> +		uctl: uctl@118006f000000 {
+> +			compatible = "cavium,octeon-6335-uctl";
+> +			reg = <0x11800 0x6f000000 0x0 0x100>;
+> +			ranges; /* Direct mapping */
+> +			#address-cells = <2>;
+> +			#size-cells = <2>;
+> +			/* 12MHz, 24MHz and 48MHz allowed */
+> +			refclk-frequency = <24000000>;
+> +			/* Either "crystal" or "external" */
+> +			refclk-type = "crystal";
+> +
+> +			ehci@16f0000000000 {
+> +				compatible = "cavium,octeon-6335-ehci","usb-ehci";
+> +				reg = <0x16f00 0x00000000 0x0 0x100>;
+> +				interrupts = <0 56>;
+> +				big-endian-regs;
+> +			};
+> +			ohci@16f0000000400 {
+> +				compatible = "cavium,octeon-6335-ohci","usb-ohci";
+> +				reg = <0x16f00 0x00000400 0x0 0x100>;
+> +				interrupts = <0 56>;
+> +				big-endian-regs;
+> +			};
+> +		};
+> +	};
+> +
+> +	aliases {
+> +		mix0 = &mix0;
+> +		mix1 = &mix1;
+> +		pip = &pip;
+> +		smi0 = &smi0;
+> +		smi1 = &smi1;
+> +		twsi0 = &twsi0;
+> +		twsi1 = &twsi1;
+> +		uart0 = &uart0;
+> +		uart1 = &uart1;
+> +		uart2 = &uart2;
+> +		flash0 = &flash0;
+> +	};
+> + };
+> -- 
+> 1.7.2.3
+> 
