@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab1E0XTg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 19:19:36 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35717 "EHLO ogre.sisk.pl"
+	id S1757477Ab1E0XRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 19:17:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36034 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757352Ab1E0XTe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 19:19:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 0/5] PM: Support for generic I/O power domains (v4)
-Date: Sat, 28 May 2011 01:15:14 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        MyungJoo Ham <myungjoo.ham@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <201104290154.12966.rjw@sisk.pl> <201105082320.57185.rjw@sisk.pl> <201105160117.46927.rjw@sisk.pl>
-In-Reply-To: <201105160117.46927.rjw@sisk.pl>
+	id S1757352Ab1E0XRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 19:17:03 -0400
+Date: Sat, 28 May 2011 01:17:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
+        Robin Holt <holt@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH v2] cpusets: randomize node rotor used in
+ cpuset_mem_spread_node()
+Message-ID: <20110527231700.GA3214@tiehlicka.suse.cz>
+References: <20110414065146.GA19685@tiehlicka.suse.cz>
+ <20110414160145.0830.A69D9226@jp.fujitsu.com>
+ <20110415161831.12F8.A69D9226@jp.fujitsu.com>
+ <20110415082051.GB8828@tiehlicka.suse.cz>
+ <20110526153319.b7e8c0b6.akpm@linux-foundation.org>
+ <20110527124705.GB4067@tiehlicka.suse.cz>
+ <20110527142051.d7ec3784.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105280115.14556.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110527142051.d7ec3784.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri 27-05-11 14:20:51, Andrew Morton wrote:
+> On Fri, 27 May 2011 14:47:05 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > > We use "#if MAX_NUMNODES > 1" in nodemask.h, but we use CONFIG_NUMA
+> > > when deciding to build mempolicy.o.  That's a bit odd - why didn't
+> > > nodemask.h use CONFIG_NUMA?
+> > 
+> > We have this since the kernel git age. I guess this is just for
+> > optimizations where some functions can be NOOP when there is only one
+> > node.
+> > 
+> > I know that this is ugly but what if we just define node_random in the
+> > header?
+> 
+> I think I prefer this:
+> 
+> --- a/include/linux/nodemask.h~cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node-fix-2
+> +++ a/include/linux/nodemask.h
+> @@ -433,8 +433,6 @@ static inline void node_set_offline(int 
+>  	nr_online_nodes = num_node_state(N_ONLINE);
+>  }
+>  
+> -extern int node_random(const nodemask_t *maskp);
+> -
+>  #else
+>  
+>  static inline int node_state(int node, enum node_states state)
+> @@ -466,7 +464,15 @@ static inline int num_node_state(enum no
+>  #define node_set_online(node)	   node_set_state((node), N_ONLINE)
+>  #define node_set_offline(node)	   node_clear_state((node), N_ONLINE)
+>  
+> -static inline int node_random(const nodemask_t *mask) { return 0; }
+> +#endif
+> +
+> +#if defined(CONFIG_NUMA) && (MAX_NUMNODES > 1)
+> +extern int node_random(const nodemask_t *maskp);
+> +#else
+> +static inline int node_random(const nodemask_t *mask)
+> +{
+> +	return 0;
+> +}
+>  #endif
 
-This is the third update of the patchset adding support for generic I/O power
-domains. All patches were posted previously, but I needed to rebase shmobile
-patches on top of the current mainline kernel.
+I have to admit that I quite don't understand concept of several nodes
+with UMA archs but do we really want to provide the sane node all the
+time?
 
->From my perspective, the patches are ready for merging and I'm going put
-patches [1-4/5] into my power-domains branch for 2.6.41 (or whatever it turns
-out to be) after 2.6.40-rc1 (or whatever it is going to be called) is out.
-Patch [5/5] is optional.
-
-The entire patchset has been tested with an ARM shmobile Mackerel board.
-
-[1/5] - Support for generic I/O power domains (runtime PM part).
-[2/5] - Support for generic I/O power domains (system sleep part).
-[3/5] - Implementation of generic I/O power domains support for SH7372.
-[4/5] - [RFC] Support of multiple power domain states.
-[5/5] - Introduction of SH7372's A4MP power domain.
-
-Thanks,
-Rafael
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
