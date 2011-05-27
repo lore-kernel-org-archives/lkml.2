@@ -1,306 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab1E0FsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 01:48:01 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:52855 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab1E0Fr7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 01:47:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=EhH+V3wVJKb3ckgLlko//dnj4PSz1BooED5Mw6IPsKBxBYwnpDxyeh8k3b51Y162UN
-         QONLqg89gB3hLosVcDBg==
-MIME-Version: 1.0
-In-Reply-To: <20110526141529.53b70097.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110526141047.dc828124.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110526141529.53b70097.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 26 May 2011 22:47:55 -0700
-Message-ID: <BANLkTimq7Bd_OQDOPmkM3n38g1pUbT9uYw@mail.gmail.com>
-Subject: Re: [RFC][PATCH v3 1/10] check reclaimable in hierarchy walk
-From: Ying Han <yinghan@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1752408Ab1E0Fwq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 01:52:46 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46936 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab1E0Fwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 01:52:44 -0400
+Date: Fri, 27 May 2011 15:52:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for May 27
+Message-Id: <20110527155231.3a9925c0.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__27_May_2011_15_52_31_+1000_t_DacZNARFtnHq4U"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 10:15 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
->
-> I may post this patch as stand alone, later.
-> ==
-> Check memcg has reclaimable pages at select_victim().
->
-> Now, with help of bitmap as memcg->scan_node, we can check whether memcg has
-> reclaimable pages with easy test of node_empty(&mem->scan_nodes).
->
-> mem->scan_nodes is a bitmap to show whether memcg contains reclaimable
-> memory or not, which is updated periodically.
->
-> This patch makes use of scan_nodes and modify hierarchy walk at memory
-> shrinking in following way.
->
->  - check scan_nodes in mem_cgroup_select_victim()
->  - mem_cgroup_select_victim() returns NULL if no memcg is reclaimable.
->  - force update of scan_nodes.
->  - rename mem_cgroup_select_victim() to be mem_cgroup_select_get_victim()
->    to show refcnt is +1.
->
-> This will make hierarchy walk better.
->
-> And this allows to remove mem_cgroup_local_pages() check which was used for
-> the same purpose. But this function was wrong because it cannot handle
-> information of unevictable pages and tmpfs v.s. swapless information.
->
-> Changelog:
->  - added since v3.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |  165 +++++++++++++++++++++++++++++++++++++-------------------
->  1 file changed, 110 insertions(+), 55 deletions(-)
->
-> Index: memcg_async/mm/memcontrol.c
-> ===================================================================
-> --- memcg_async.orig/mm/memcontrol.c
-> +++ memcg_async/mm/memcontrol.c
-> @@ -584,15 +584,6 @@ static long mem_cgroup_read_stat(struct
->        return val;
->  }
->
-> -static long mem_cgroup_local_usage(struct mem_cgroup *mem)
-> -{
-> -       long ret;
-> -
-> -       ret = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_RSS);
-> -       ret += mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_CACHE);
-> -       return ret;
-> -}
-> -
->  static void mem_cgroup_swap_statistics(struct mem_cgroup *mem,
->                                         bool charge)
->  {
-> @@ -1555,43 +1546,6 @@ u64 mem_cgroup_get_limit(struct mem_cgro
->        return min(limit, memsw);
->  }
->
-> -/*
-> - * Visit the first child (need not be the first child as per the ordering
-> - * of the cgroup list, since we track last_scanned_child) of @mem and use
-> - * that to reclaim free pages from.
-> - */
-> -static struct mem_cgroup *
-> -mem_cgroup_select_victim(struct mem_cgroup *root_mem)
-> -{
-> -       struct mem_cgroup *ret = NULL;
-> -       struct cgroup_subsys_state *css;
-> -       int nextid, found;
-> -
-> -       if (!root_mem->use_hierarchy) {
-> -               css_get(&root_mem->css);
-> -               ret = root_mem;
-> -       }
-> -
-> -       while (!ret) {
-> -               rcu_read_lock();
-> -               nextid = root_mem->last_scanned_child + 1;
-> -               css = css_get_next(&mem_cgroup_subsys, nextid, &root_mem->css,
-> -                                  &found);
-> -               if (css && css_tryget(css))
-> -                       ret = container_of(css, struct mem_cgroup, css);
-> -
-> -               rcu_read_unlock();
-> -               /* Updates scanning parameter */
-> -               if (!css) {
-> -                       /* this means start scan from ID:1 */
-> -                       root_mem->last_scanned_child = 0;
-> -               } else
-> -                       root_mem->last_scanned_child = found;
-> -       }
-> -
-> -       return ret;
-> -}
-> -
->  #if MAX_NUMNODES > 1
->
->  /*
-> @@ -1600,11 +1554,11 @@ mem_cgroup_select_victim(struct mem_cgro
->  * nodes based on the zonelist. So update the list loosely once per 10 secs.
->  *
->  */
-> -static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
-> +static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem, bool force)
->  {
->        int nid;
->
-> -       if (time_after(mem->next_scan_node_update, jiffies))
-> +       if (!force && time_after(mem->next_scan_node_update, jiffies))
->                return;
->
->        mem->next_scan_node_update = jiffies + 10*HZ;
-> @@ -1641,7 +1595,7 @@ int mem_cgroup_select_victim_node(struct
->  {
->        int node;
->
-> -       mem_cgroup_may_update_nodemask(mem);
-> +       mem_cgroup_may_update_nodemask(mem, false);
->        node = mem->last_scanned_node;
->
->        node = next_node(node, mem->scan_nodes);
-> @@ -1660,13 +1614,117 @@ int mem_cgroup_select_victim_node(struct
->        return node;
->  }
->
-> +/**
-> + * mem_cgroup_has_reclaimable
-> + * @mem_cgroup : the mem_cgroup
-> + *
-> + * The caller can test whether the memcg has reclaimable pages.
-> + *
-> + * This function checks memcg has reclaimable pages or not with bitmap of
-> + * memcg->scan_nodes. This bitmap is updated periodically and indicates
-> + * which node has reclaimable memcg memory or not.
-> + * Although this is a rough test and result is not very precise but we don't
-> + * have to scan all nodes and don't have to use locks.
-> + *
-> + * For non-NUMA, this cheks reclaimable pages on zones because we don't
-> + * update scan_nodes.(see below)
-> + */
-> +static bool mem_cgroup_has_reclaimable(struct mem_cgroup *memcg)
-> +{
-> +       return !nodes_empty(memcg->scan_nodes);
-> +}
-> +
->  #else
-> +
-> +static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem, bool force)
-> +{
-> +}
-> +
->  int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
->  {
->        return 0;
->  }
-> +
-> +static bool mem_cgroup_has_reclaimable(struct mem_cgroup *memcg)
-> +{
-> +       unsigned long nr;
-> +       int zid;
-> +
-> +       for (zid = NODE_DATA(0)->nr_zones - 1; zid >= 0; zid--)
-> +               if (mem_cgroup_zone_reclaimable_pages(memcg, 0, zid))
-> +                       break;
-> +       if (zid < 0)
-> +               return false;
-> +       return true;
-> +}
->  #endif
+--Signature=_Fri__27_May_2011_15_52_31_+1000_t_DacZNARFtnHq4U
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-unused variable "nr".
+Hi all,
 
---Ying
->
-> +/**
-> + * mem_cgroup_select_get_victim
-> + * @root_mem: the root memcg of hierarchy which should be shrinked.
-> + *
-> + * Visit children of root_mem ony by one. If the routine finds a memcg
-> + * which contains reclaimable pages, returns it with refcnt +1. The
-> + * scan is done in round-robin and 'the next start point' is saved into
-> + * mem->last_scanned_child. If no reclaimable memcg are found, returns NULL.
-> + */
-> +static struct mem_cgroup *
-> +mem_cgroup_select_get_victim(struct mem_cgroup *root_mem)
-> +{
-> +       struct mem_cgroup *ret = NULL;
-> +       struct cgroup_subsys_state *css;
-> +       int nextid, found;
-> +       bool second_visit = false;
-> +
-> +       if (!root_mem->use_hierarchy)
-> +               goto return_root;
-> +
-> +       while (!ret) {
-> +               rcu_read_lock();
-> +               nextid = root_mem->last_scanned_child + 1;
-> +               css = css_get_next(&mem_cgroup_subsys, nextid, &root_mem->css,
-> +                                  &found);
-> +               if (css && css_tryget(css))
-> +                       ret = container_of(css, struct mem_cgroup, css);
-> +
-> +               rcu_read_unlock();
-> +               /* Updates scanning parameter */
-> +               if (!css) { /* Indicates we scanned the last node of tree */
-> +                       /*
-> +                        * If all memcg has no reclaimable pages, we may enter
-> +                        * an infinite loop. Exit here if we reached the end
-> +                        * of hierarchy tree twice.
-> +                        */
-> +                       if (second_visit)
-> +                               return NULL;
-> +                       /* this means start scan from ID:1 */
-> +                       root_mem->last_scanned_child = 0;
-> +                       second_visit = true;
-> +               } else
-> +                       root_mem->last_scanned_child = found;
-> +               if (css && ret) {
-> +                       /*
-> +                        * check memcg has reclaimable memory or not. Update
-> +                        * information carefully if we might fail with cached
-> +                        * bitmask information.
-> +                        */
-> +                       if (second_visit)
-> +                               mem_cgroup_may_update_nodemask(ret, true);
-> +
-> +                       if (!mem_cgroup_has_reclaimable(ret)) {
-> +                               css_put(css);
-> +                               ret = NULL;
-> +                       }
-> +               }
-> +       }
-> +
-> +       return ret;
-> +return_root:
-> +       css_get(&root_mem->css);
-> +       return root_mem;
-> +}
-> +
-> +
->  /*
->  * Scan the hierarchy if needed to reclaim memory. We remember the last child
->  * we reclaimed from, so that we don't end up penalizing one child extensively
-> @@ -1705,7 +1763,9 @@ static int mem_cgroup_hierarchical_recla
->                is_kswapd = true;
->
->        while (1) {
-> -               victim = mem_cgroup_select_victim(root_mem);
-> +               victim = mem_cgroup_select_get_victim(root_mem);
-> +               if (!victim)
-> +                       return total;
->                if (victim == root_mem) {
->                        loop++;
->                        if (loop >= 1)
-> @@ -1733,11 +1793,6 @@ static int mem_cgroup_hierarchical_recla
->                                }
->                        }
->                }
-> -               if (!mem_cgroup_local_usage(victim)) {
-> -                       /* this cgroup's local usage == 0 */
-> -                       css_put(&victim->css);
-> -                       continue;
-> -               }
->                /* we use swappiness of local cgroup */
->                if (check_soft) {
->                        ret = mem_cgroup_shrink_node_zone(victim, gfp_mask,
->
->
+Changes since 20110526:
+
+New tree: gpio
+
+Linus' tree lost its build failure but gained another for which I
+reverted a commit.
+
+The s5p tree lost its conflicts.
+
+The nfs tree gained a buiild failure do I used the version from
+next-20110526.
+
+The scsi tree gained a build failure so I used the version from
+next-20110526.
+
+The async_tx tree gained a conflict against Linus' tree.
+
+The mtd tree gained conflicts against Linus' tree.
+
+The kvm tree lost its build failure.
+
+The cleancache tree lost its conflict.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 191 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+CONFLICT (content): Merge conflict in arch/sparc/include/asm/smp_32.h
+CONFLICT (content): Merge conflict in arch/sparc/kernel/smp_32.c
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+CONFLICT (content): Merge conflict in drivers/rtc/Kconfig
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+$ git reset --hard HEAD^
+Merging refs/next/20110526/nfs
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+$ git reset --hard HEAD^
+Merging refs/next/20110526/scsi
+Merging async_tx/next
+CONFLICT (content): Merge conflict in drivers/dma/dw_dmac.c
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+CONFLICT (content): Merge conflict in net/bluetooth/l2cap_core.c
+Merging mtd/master
+CONFLICT (delete/modify): drivers/mtd/maps/integrator-flash.c deleted in HE=
+AD and modified in mtd/master. Version mtd/master of drivers/mtd/maps/integ=
+rator-flash.c left in tree.
+CONFLICT (content): Merge conflict in drivers/mtd/maps/physmap.c
+$ git rm -f drivers/mtd/maps/integrator-flash.c
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging cpufreq-move/move-drivers
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/Kconfig
+CONFLICT (content): Merge conflict in drivers/mfd/Makefile
+CONFLICT (content): Merge conflict in drivers/regulator/Makefile
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+CONFLICT (content): Merge conflict in drivers/platform/x86/Kconfig
+CONFLICT (content): Merge conflict in drivers/platform/x86/Makefile
+CONFLICT (content): Merge conflict in drivers/platform/x86/eeepc-laptop.c
+CONFLICT (content): Merge conflict in drivers/platform/x86/sony-laptop.c
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+[master dd05f4f] Revert "kgdbts: unify/generalize gdb breakpoint adjustment"
+
+--Signature=_Fri__27_May_2011_15_52_31_+1000_t_DacZNARFtnHq4U
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN3zwfAAoJEDMEi1NhKgbs3AsH/3hOAxBxdMG8RqGyk+roTDBz
+BjiESqP2BKDnrdynbwuFTOtSJBinWtN6O1rTUoDABFCObSJSVB6SRQd42mvbs6d/
+3c1+1hMq6JG4gV5o1AG/HB6jI/BOp/opIHxVyrfFP0hvl9frEBQpehuVfre+C0OY
+qqJLUDsFnTW2PihJj5ofxDQQ1Ng0uVllmOVvdujEnIb1pfgrC3yzyraB60mbFxbD
+8QYjZrK3nLr7tM3SXaVKvWEU4kRbpEGOsn++ckvLhQS2iKctB9R8WJ4ouzpNvAEH
+bB8ABp3/sP7McmVgMRMKfIIY8+MZWQVGDDyLkHrQ99FQ2bBhu1YAZZ7xQCUINjQ=
+=ixbC
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__27_May_2011_15_52_31_+1000_t_DacZNARFtnHq4U--
