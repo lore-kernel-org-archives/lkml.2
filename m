@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758612Ab1E0ABl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 20:01:41 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:41187 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758579Ab1E0ABi convert rfc822-to-8bit (ORCPT
+	id S1758450Ab1E0AEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 20:04:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64417 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754023Ab1E0AEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 20:01:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=UMfcTFKG9L6zBhEWSdJ7jXwPmEArepgt73clQjWXmbjcHNcJFXu/4Q7kquWQdhJ9Is
-         Q6m2dG2q9xeWSOQG8sIw5Er76bIb+Drt7lmYAej6wh5jcBWtDvFdlqBideIp5/CSnxPq
-         C0AuXTpLR1r6/npaFOUcno8N/TrZAOuJfRvgE=
+	Thu, 26 May 2011 20:04:32 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=wom5GMh1gUkA:10 a=tyV8ermOv9cA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=Z4Rwk6OoAAAA:8 a=hBqU3vQJAAAA:8 a=l09RzYvU5Unt_6K13oIA:9 a=CjuIK1q_8ugA:10 a=jbrJJM5MRmoA:10 a=4gZ4WExUoD4A:10 a=g3F5VGk0NOMZWSIEWMgijA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.158.191
+Date: Thu, 26 May 2011 19:04:31 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Robert =?utf-8?B?xZp3acSZY2tp?= <robert@swiecki.net>,
+        David Howells <dhowells@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>, stable@kernel.org
+Subject: Re: [PATCH] Set cred->user_ns in key_replace_session_keyring
+Message-ID: <20110527000431.GA13999@mail.hallyn.com>
+References: <20110526202505.GA6367@mail.hallyn.com>
+ <BANLkTi=dhwdPGj=yU=NRaSkK-BBTPQNKOA@mail.gmail.com>
+ <20110526203819.GA27529@mail.hallyn.com>
+ <BANLkTikjL9znUnsAKhJfThEMtJ2aevAF-A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <87k4ddiglp.fsf@ti.com>
-References: <201105181047.17309.arnd@arndb.de>
-	<87k4ddiglp.fsf@ti.com>
-Date: Fri, 27 May 2011 09:01:37 +0900
-X-Google-Sender-Auth: FvsvVrRpVpEvtPPx3NY0E7uN1zk
-Message-ID: <BANLkTinBZs_bQF-dYM8S=6HSr0o+aDsKKA@mail.gmail.com>
-Subject: Re: [RFC] ARM Subarchitecture group maintainership
-From: Kyungmin Park <kmpark@infradead.org>
-To: Kevin Hilman <khilman@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikjL9znUnsAKhJfThEMtJ2aevAF-A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Quoting Linus Torvalds (torvalds@linux-foundation.org):
+> On Thu, May 26, 2011 at 1:38 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> >
+> > Stable/whoever, should I re-send this patch separately, or does this suffice?
+> 
+> I'll add the Cc and update the description to point to the commit it
+> was introduced in, and it will all be fine. Then the stable team will
+> get it automatically when I push out.
+> 
+>                           Linus
 
-from Samsung Mobile & DMC codes
+Thanks very much.  (I see now)
 
-On Fri, May 27, 2011 at 1:14 AM, Kevin Hilman <khilman@ti.com> wrote:
-> Arnd Bergmann <arnd@arndb.de> writes:
->
->> This is the draft plan for maintaining the ARM subarchitectures in a common
->> tree, as a way to help coordinate the upstream merging of the
->> arch/arm/{plat,mach}-* changes into Linus' tree.
->
-> [...]
->
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->> Cc: Nicolas Pitre <nico@fluxnic.net>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linux-kernel@vger.kernel.org
->>
->> ---
->>
->> Maintainers: If you are happy with the layout of the process,
->> please ack this patch, otherwise please comment.
->
-> Acked-by: Kevin Hilman <khilman@ti.com>
->
-> for davinci and OMAP stuff I maintain.
->
-> Kevin
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+-serge
