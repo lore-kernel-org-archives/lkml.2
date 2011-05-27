@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab1E0ND6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 09:03:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34112 "EHLO mx1.redhat.com"
+	id S1754928Ab1E0NIp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 09:08:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16909 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839Ab1E0ND5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 09:03:57 -0400
-Date: Fri, 27 May 2011 09:03:48 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: jaxboe@fusionio.com, msb@chromium.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Subject: Re: [PATCH 1/3] block: Introduce blk_set_stacking_limits function
-Message-ID: <20110527130348.GB17219@redhat.com>
-References: <4DDEA689.2090004@fusionio.com>
- <1306464169-4291-1-git-send-email-martin.petersen@oracle.com>
- <1306464169-4291-2-git-send-email-martin.petersen@oracle.com>
+	id S1752032Ab1E0NIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 09:08:44 -0400
+Date: Fri, 27 May 2011 09:07:31 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, davej@redhat.com,
+        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
+        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
+        hpa@zytor.com, Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu, Eric Paris <eparis@redhat.com>
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+Message-ID: <20110527130731.GA8053@redhat.com>
+References: <1306269105.21443.20.camel@dan>
+ <20110526203502.GK29496@redhat.com>
+ <20110526204030.GL29496@redhat.com>
+ <1306442674.2279.29.camel@dan>
+ <20110526205549.GM29496@redhat.com>
+ <20110527093853.GI21386@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306464169-4291-2-git-send-email-martin.petersen@oracle.com>
+In-Reply-To: <20110527093853.GI21386@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26 2011 at 10:42pm -0400,
-Martin K. Petersen <martin.petersen@oracle.com> wrote:
+On Fri, May 27, 2011 at 11:38:53AM +0200, Ingo Molnar wrote:
+> 
+> * Vivek Goyal <vgoyal@redhat.com> wrote:
+> 
+> > > Is it common to run kexec-tools as non-root?  It may be necessary 
+> > > to restrict this interface to root when randomization is used 
+> > > (keep in mind nobody's going to force you to turn this on by 
+> > > default, at least for the foreseeable future).
+> > 
+> > kexec-tools runs as root. And I see that /proc/iomem permissions 
+> > are also for root only. So it probably is a non-issue.
+> 
+> it might be an issue to keep in mind for later projects that try to 
+> lock down root itself from being able to patch the kernel (other than 
+> rebooting the box), using signed modules, disabled direct-ioport 
+> access, and other hardened facilities.
 
-> Stacking driver queue limits are typically bounded exclusively by the
-> capabilities of the low level devices, not by the stacking driver
-> itself.
-> 
-> Stacking drivers are typically permissive. A feature is supported unless
-> an incompatible bottom device causes it to be disabled. Low-level
-> drivers on the other hand are restrictive and want features disabled by
-> default. Low-level drivers explicitly enable features as part of their
-> device discovery process.
-> 
-> This patch introduces blk_set_stacking_limits() which has more liberal
-> metrics than the default queue limits function. This allows us to
-> inherit topology parameters from bottom devices without manually
-> tweaking the default limits in each driver prior to calling the stacking
-> function.
-> 
-> Since there is now a clear distinction between stacking and low-level
-> devices, blk_set_default_limits() has been modified to carry the more
-> conservative values that we used to manually set in
-> blk_queue_make_request().
-> 
-> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+For such environments, Eric Paris had posted a patch to be able to 
+disable loading of kexec/kdump kernel, similar to disabling module loading.
 
-Acked-by: Mike Snitzer <snitzer@redhat.com>
+https://lkml.org/lkml/2011/1/19/412
+
+I don't see that in Linus's tree. So looks like it never got committed.
+
+Thanks
+Vivek
