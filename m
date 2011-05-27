@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab1E0Fnm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 01:43:42 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:60610 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab1E0Fnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 01:43:40 -0400
-X-ASG-Debug-ID: 1306475019-03d6a512ab0dbb0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DDF3A07.7040106@fusionio.com>
-Date: Fri, 27 May 2011 07:43:35 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754192Ab1E0Fo1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 01:44:27 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49902 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab1E0Fo0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 01:44:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=OTaeYNyl0hI0ZQMIykBoe7lv4Wq8BLp0hPW6nrB+nQyUjCJjDGSeAff0mPVVZ5Wa/F
+         1243f0Cs42tqpQ3fuBN3S7Y55q9Rokw53WrBc6NEEXQzRQEaFvO7YYPRscqL6QBiBRr4
+         oOzxMgR/JN1UH7hL7DxtfgXaMa9GGfrokIzeE=
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Parag Warudkar <parag.lkml@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:  __elv_add_request
- OOPS]
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar>	 <4DDB8BF6.2000304@fusionio.com>	 <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty>	 <4DDCB1C8.7040708@fusionio.com>	 <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty>	 <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>	 <4DDD5240.2060308@fusionio.com>	 <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>	 <4DDD55D6.1080909@fusionio.com>	 <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty>	 <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com>	 <alpine.DEB.2.02.1105251613500.8972@ubuntu-natty>	 <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com>	 <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>	 <1306356735.1641.61.camel@mulgrave.site> <1306468385.4048.73.camel@mulgrave.site>
-X-ASG-Orig-Subj: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:  __elv_add_request
- OOPS]
-In-Reply-To: <1306468385.4048.73.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1306475019
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64786
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <4DDE81F4.8060800@panasas.com>
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
+	<20110523192056.GC23629@elte.hu>
+	<BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+	<BANLkTinbrtzY66p+1NALP8BDfjXLx=Qp-A@mail.gmail.com>
+	<4DDD0E5F.5080105@panasas.com>
+	<BANLkTi=FAwzW+qR+Cbwmor90pgbgzfuw-g@mail.gmail.com>
+	<4DDE81F4.8060800@panasas.com>
+Date: Thu, 26 May 2011 22:44:24 -0700
+Message-ID: <BANLkTinj1M_VSuvw1Sct8a6TLkUrEP_4uQ@mail.gmail.com>
+Subject: Re: (Short?) merge window reminder
+From: Keith Curtis <keithcu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-27 05:53, James Bottomley wrote:
-> On Wed, 2011-05-25 at 15:52 -0500, James Bottomley wrote:
->> On Wed, 2011-05-25 at 16:42 -0400, Parag Warudkar wrote:
->>> Yeah - that makes sense. By that logic, looks like we can only disallow 
->>> for SDEV_DEL (if we decide to do that check here).
->>
->> I don't think this is the root cause.  I think q is non-NULL but has
->> already been released, so we're just getting a NULL deref on the actual
->> list head.
->>
->> Does this fix it?  It adds the refcounting at approximately the correct
->> places.  Of course, we'll now be trying elevator operations on an extant
->> queue but one whose elevator functions have been destroyed, so there are
->> probably additional state guards to place.
->>
->> James
->>
->> ---
->>
->> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
->> index 58584dc..44e8ca3 100644
->> --- a/drivers/scsi/scsi_scan.c
->> +++ b/drivers/scsi/scsi_scan.c
->> @@ -297,7 +297,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
->>  		kfree(sdev);
->>  		goto out;
->>  	}
->> -
->> +	blk_get_queue(sdev->request_queue);
-> 
-> Apparently we can't do this because blk_[put|get]_queue aren't exported
-> for use in modules (and SCSI can be modular), so this caused a build
-> failure in linux-next.
+Many interesting ideas on version numbering schemes. I like 2.11.X
+because it maps to years easily in people's mind, but I look forward
+to seeing what is chosen. You guys break many of the rules for
+software development, so why not going backwards in version numbers
+;-)
 
-I'll just export them.
+While you are talking about arbitrary numbers and new goals, I want to
+offer that you could consider a push towards zero bugs. In general, as
+long as your reliability monotonically increases (no regressions) that
+is an acceptable minimum approach because it means that you will never
+have a customer go from being happy to unhappy.
 
--- 
-Jens Axboe
+However, it is common in companies to make an effort to get towards
+zero bugs. Zero bugs is impossible, and that is a philosophical
+discussion. If you look through your current list of bugs, nearly
+every one looks scary to me and important to someone. You currently
+have 2,800 active bugs (http://bit.ly/LinuxBugs) The last time I
+looked, I found the median age was 10 months. In general, bugs should
+be fixed in the next release and so therefore 3 months.
 
+Zero bug bounces is hard for the others because they don't have
+sufficient resources. However, I believe you easily do. I can't say
+that anything magical technically will happen if you work on your bugs
+faster, but I can say that people I respect as much as you taught me
+this. My salary was based on my ability to promptly respond to my
+bugs, and zero was everyone's goal. Hitting zero, even for a minute,
+could be a newsworthy event, as another way Linux is better than the
+others. It also shows leadership to user mode. I sometimes get the
+feeling that many in the FOSS community look at bugs as something they
+could work on when they get bored of adding new features, instead of:
+"Holy poop, there is someone unhappy out there."
+
+Warm regards,
+
+-Keith
+http://keithcu.com/
