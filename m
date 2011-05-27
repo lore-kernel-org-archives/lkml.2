@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab1E0Tlx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 15:41:53 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:36699 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756487Ab1E0Tlu (ORCPT
+	id S1756893Ab1E0Tnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 15:43:55 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:22611 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756487Ab1E0Tnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 15:41:50 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Fri, 27 May 2011 15:41:49 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Frank Rowand <frank.rowand@am.sony.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()" locks
- up on ARM
-In-reply-to: <20110527120629.GA32617@elte.hu>
-Message-id: <alpine.LFD.2.00.1105271532060.3207@xanadu.home>
-References: <1306358128.21578.107.camel@twins>
- <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
- <1306405979.1200.63.camel@twins>
- <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
- <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins>
- <20110526122623.GA11875@elte.hu>
- <20110526123137.GG24876@n2100.arm.linux.org.uk>
- <20110526125007.GA27083@elte.hu>
- <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com>
- <20110527120629.GA32617@elte.hu>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 27 May 2011 15:43:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=QcEqHY4a8DVljfZarkid/+XCbP7e1XaDv2PREi4RlAUu8ki9DHNmNuJAPyJz+4g2I9
+         Q0he24S89QN+a5qvYI8Q==
+Date: Fri, 27 May 2011 12:43:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [slubllv6 08/17] slub: Pass kmem_cache struct to lock and freeze
+ slab
+In-Reply-To: <20110526181506.008690257@linux.com>
+Message-ID: <alpine.DEB.2.00.1105271243150.3972@chino.kir.corp.google.com>
+References: <20110526181442.789868308@linux.com> <20110526181506.008690257@linux.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 May 2011, Ingo Molnar wrote:
+On Thu, 26 May 2011, Christoph Lameter wrote:
 
-> I'd suggest doing this once modern ARM chips get so widespread that 
-> you can realistically induce a ~700 usecs irqs-off delays on old, 
-> virtual-cache ARM chips. Old chips would likely use old kernels 
-> anyway, right?
+> We need more information about the slab for the cmpxchg implementation.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Those "old" ARM chips are still largely produced and fitted in new 
-designs, and using latest kernels.  They are unlikely to fade away 
-before a couple years.
-
-
-Nicolas
+Acked-by: David Rientjes <rientjes@google.com>
