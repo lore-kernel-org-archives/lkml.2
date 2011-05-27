@@ -1,92 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab1E0VT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 17:19:27 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:9125 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab1E0VTZ (ORCPT
+	id S1756183Ab1E0VVT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 17:21:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45912 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752499Ab1E0VVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 17:19:25 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6358"; a="93986635"
-From: David Brown <davidb@codeaurora.org>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/7] Move Qualcomm gpio drivers into drivers dir
-References: <1305755453-31112-1-git-send-email-davidb@codeaurora.org>
-	<20110527031319.GH5032@ponder.secretlab.ca>
-	<8yad3j46r97.fsf@huya.qualcomm.com>
-	<8ya8vts6qzn.fsf@huya.qualcomm.com>
-	<alpine.LFD.2.00.1105271531200.3207@xanadu.home>
-Date: Fri, 27 May 2011 14:19:21 -0700
-In-Reply-To: <alpine.LFD.2.00.1105271531200.3207@xanadu.home> (Nicolas Pitre's
-	message of "Fri, 27 May 2011 15:31:47 -0400 (EDT)")
-Message-ID: <8yar57j6duu.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 27 May 2011 17:21:15 -0400
+Date: Fri, 27 May 2011 14:20:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
+        Robin Holt <holt@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH v2] cpusets: randomize node rotor used in
+ cpuset_mem_spread_node()
+Message-Id: <20110527142051.d7ec3784.akpm@linux-foundation.org>
+In-Reply-To: <20110527124705.GB4067@tiehlicka.suse.cz>
+References: <20110414065146.GA19685@tiehlicka.suse.cz>
+	<20110414160145.0830.A69D9226@jp.fujitsu.com>
+	<20110415161831.12F8.A69D9226@jp.fujitsu.com>
+	<20110415082051.GB8828@tiehlicka.suse.cz>
+	<20110526153319.b7e8c0b6.akpm@linux-foundation.org>
+	<20110527124705.GB4067@tiehlicka.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27 2011, Nicolas Pitre wrote:
+On Fri, 27 May 2011 14:47:05 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-> On Fri, 27 May 2011, David Brown wrote:
->> On Fri, May 27 2011, David Brown wrote:
->> > On Thu, May 26 2011, Grant Likely wrote:
->> >> On Wed, May 18, 2011 at 02:50:46PM -0700, David Brown wrote:
->> >>> This patch series moves the Qualcomm MSM gpio device drivers into the
->> >>> drivers/gpio directory.
->> >>> 
->> >>> The MSM's have two flavors of gpio driver.  The one for the newer
->> >>> v7-based chips is a bit cleaner, and can just be moved.  The one for
->> >>> the older v6-based chips took some cleanup to get rid of numerous
->> >>> ifdefs based on the particular machine.  Both drivers can now be
->> >>> selected and will be used on appropriate targets.
->> >>> 
->> >>> There is still a minor entanglement with the MSM-specific gpiomux
->> >>> code.  This will be cleaned up as MSM moves to use pinmux.
->> >>> 
->> >>> David Brown (7):
->> >>>   msm: gpio: Remove unsupported devices
->> >>>   msm: Remove chip-ifdefs for GPIO io mappings
->> >>>   msm: gpio: Remove chip-specific register definitions
->> >>>   msm: gpio: Remove ifdefs on gpio chip registers
->> >>>   msm: gpiomux: Move public API to public header
->> >>>   gpio_msm: Move Qualcomm v6 MSM driver into drivers
->> >>>   gpio_msm: Move Qualcomm MSM v2 gpio driver into drivers
->> >>
->> >> What's the status of this series.  I only got cc'd on the last two
->> >> patches; did you want me to pick up the whole lot, or is it being
->> >> merged via the msm tree?
->> >
->> > Let me send out an update, incorporating the suggestions.  I need to
->> > rebase these changes off of the current MSM code, since the msm-next
->> > tree contains changes that aren't going into the merge window because of
->> > extra ARM scrutiny.
->> >
->> >> Alternately, if there is a git branch with these patches in it, then I
->> >> can merge that instead of applying individually.
->> >
->> > I'll send you a pull request after I send out the updates.
->> 
->> Oh, and in case it isn't clear, I wasn't expecting these to make it into
->> this merge window.
->
-> Why not?
+> > We use "#if MAX_NUMNODES > 1" in nodemask.h, but we use CONFIG_NUMA
+> > when deciding to build mempolicy.o.  That's a bit odd - why didn't
+> > nodemask.h use CONFIG_NUMA?
+> 
+> We have this since the kernel git age. I guess this is just for
+> optimizations where some functions can be NOOP when there is only one
+> node.
+> 
+> I know that this is ugly but what if we just define node_random in the
+> header?
 
-They haven't been tested in linux-next for one, but more importantly, I
-have to redo them to not include the msm-core changes that aren't going
-to be going in.
+I think I prefer this:
 
-I'm probably not going to be able to get to this until next week.
+--- a/include/linux/nodemask.h~cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node-fix-2
++++ a/include/linux/nodemask.h
+@@ -433,8 +433,6 @@ static inline void node_set_offline(int 
+ 	nr_online_nodes = num_node_state(N_ONLINE);
+ }
+ 
+-extern int node_random(const nodemask_t *maskp);
+-
+ #else
+ 
+ static inline int node_state(int node, enum node_states state)
+@@ -466,7 +464,15 @@ static inline int num_node_state(enum no
+ #define node_set_online(node)	   node_set_state((node), N_ONLINE)
+ #define node_set_offline(node)	   node_clear_state((node), N_ONLINE)
+ 
+-static inline int node_random(const nodemask_t *mask) { return 0; }
++#endif
++
++#if defined(CONFIG_NUMA) && (MAX_NUMNODES > 1)
++extern int node_random(const nodemask_t *maskp);
++#else
++static inline int node_random(const nodemask_t *mask)
++{
++	return 0;
++}
+ #endif
+ 
+ #define node_online_map 	node_states[N_ONLINE]
 
-David
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+It's beyond weird that we implement node_random() if
+defined(CONFIG_NUMA) && (MAX_NUMNODES > 1), and only use it if
+defined(CONFIG_CPUSETS).
