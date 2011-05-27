@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583Ab1E0AJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 20:09:22 -0400
-Received: from outmail020.snc4.facebook.com ([66.220.144.152]:49646 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754023Ab1E0AJU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 20:09:20 -0400
-Message-ID: <4DDEEBC5.80804@fb.com>
-Date: Thu, 26 May 2011 17:09:41 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1758593Ab1E0APS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 20:15:18 -0400
+Received: from tundra.namei.org ([65.99.196.166]:59008 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757377Ab1E0APR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 20:15:17 -0400
+Date: Fri, 27 May 2011 10:12:37 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Will Drewry <wad@chromium.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        gnatapov@redhat.com, Chris Wright <chrisw@sous-sol.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
+ filtering
+In-Reply-To: <20110526183806.GB2490@elte.hu>
+Message-ID: <alpine.LRH.2.00.1105271010290.9616@tundra.namei.org>
+References: <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org> <20110526082451.GB26775@elte.hu> <4DDE1419.3000708@redhat.com> <20110526093040.GB19536@elte.hu> <4DDE31D6.4070209@redhat.com>
+ <20110526113842.GA27618@elte.hu> <4DDE96B7.8030006@redhat.com> <20110526181554.GB3572@elte.hu> <1306434167.2497.92.camel@laptop> <20110526183806.GB2490@elte.hu>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Maximilian Engelhardt <maxi@daemonizer.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, StuStaNet Vorstand <vorstand@stusta.mhn.de>
-Subject: Re: Kernel crash after using new Intel NIC (igb)
-References: <201104250033.03401.maxi@daemonizer.de>	 <1303878240.2699.41.camel@edumazet-laptop>	 <1303878771.2699.44.camel@edumazet-laptop>	 <201104271352.00601.maxi@daemonizer.de>	 <20110512211033.GA3468@dev1756.snc6.facebook.com>	 <1305234953.2831.2.camel@edumazet-laptop>	 <20110524213327.GA3917@dev1756.snc6.facebook.com>	 <1306291469.3305.11.camel@edumazet-laptop>	 <20110525060609.GA32244@dev1756.snc6.facebook.com>	 <1306305331.3305.22.camel@edumazet-laptop>  <4DDEAA3C.7020502@fb.com>	 <1306439246.2543.10.camel@edumazet-laptop>  <4DDECA9B.8080206@fb.com> <1306447292.2543.32.camel@edumazet-laptop>
-In-Reply-To: <1306447292.2543.32.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/26/11 3:01 PM, Eric Dumazet wrote:
+Btw, if anyone's going to be at Plumbers this year, we have a day set 
+aside for the security summit:
+
+https://security.wiki.kernel.org/index.php/LinuxSecuritySummit2011
+
+This may make a good discussion topic.
 
 
->> Yeah - using the refcnt seems better than list_empty(), but I'm not sure
->> that your patch addresses the race above.
->
-> It does.
-
-True. I can't find any holes in this method and it resolves the "failure 
-to unlink from unused" case.
-
-Perhaps wrap the while(1) loop into its own primitive in atomic.h or use 
-an existing primitive?
-
-  -Arun
-
+- James
+-- 
+James Morris
+<jmorris@namei.org>
