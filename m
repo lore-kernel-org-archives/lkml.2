@@ -1,82 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758848Ab1E0Kn7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 06:43:59 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:38574 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758831Ab1E0Kn6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 06:43:58 -0400
-Subject: Re: [PATCH 0/4] ARM: smp_twd: mpcore_wdt: Fix MPCORE watchdog setup
-From: Marc Zyngier <Marc.Zyngier@arm.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: vkuzmichev@mvista.com, linux@arm.linux.org.uk,
-        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110527082640.GC16394@infomag.iguana.be>
-References: <1286185540-19569-1-git-send-email-vkuzmichev@mvista.com>
-	 <20110527082640.GC16394@infomag.iguana.be>
-Organization: ARM Ltd
-Date: Fri, 27 May 2011 11:44:38 +0100
-Message-ID: <1306493078.27474.269.camel@e102391-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-X-OriginalArrivalTime: 27 May 2011 10:44:04.0484 (UTC) FILETIME=[FF6C8C40:01CC1C5A]
-X-MC-Unique: 111052711435304801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1758741Ab1E0Ks2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 06:48:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45775 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757178Ab1E0Ks0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 06:48:26 -0400
+Date: Fri, 27 May 2011 11:48:23 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Bertil Engelholm <bertil.engelholm@ericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: PROBLEM: zone_reclaim is hanging high priority real time user
+ pthreads
+Message-ID: <20110527104823.GA5118@suse.de>
+References: <980E20D8E719A84BBF593FDE6AEC23DA0AEB3CFAA7@ESESSCMS0351.eemea.ericsson.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <980E20D8E719A84BBF593FDE6AEC23DA0AEB3CFAA7@ESESSCMS0351.eemea.ericsson.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-27 at 10:26 +0200, Wim Van Sebroeck wrote:
-> Hi Vitaly,
+On Fri, May 20, 2011 at 03:34:33PM +0200, Bertil Engelholm wrote:
 > 
-> > From: Vitaly Kuzmichev <vkuzmichev@mvista.com>
-> > 
-> > The series of patches fixes various bugs in ARM MPCORE watchdog setup.
-> > They also introduce some changes in common SMP_TWD timer setup code.
-> > The PATCH 1/4 adds an exported function to obtain calibrated timer rate
-> > in mpcore_wdt. However, this solution might be unacceptable, so we may
-> > discuss another 2 variants:
-> >  1) use clock framework
-> >    This may require to fix all MPCORE boards clock implementations.
-> >  2) copy calibration loop to mpcore_wdt
-> >    However, this increases boot time.
-> > 
-> > 
-> > Vitaly Kuzmichev (4):
-> >   ARM: smp_twd: mpcore_wdt: Fix watchdog counter loading
-> >   ARM: smp_twd: Fix typo in twd_timer_rate printout
-> >   ARM: mpcore_wdt: Fix WDIOC_SETOPTIONS handling
-> >   ARM: mpcore_wdt: Fix timer mode setup
-> > 
-> >  arch/arm/include/asm/smp_twd.h |    7 +++++++
-> >  arch/arm/kernel/smp_twd.c      |    8 +++++++-
-> >  drivers/watchdog/mpcore_wdt.c  |   29 +++++++++++++++++++++--------
-> >  3 files changed, 35 insertions(+), 9 deletions(-)
+> Hi,
 > 
-> What's the status on this? I don't recall having seen any answers from ARM community.
+> I have been investigating a problem for several weeks now and at last I 
+> beleave I'm on to something. So now I'm hoping that someone has the time to 
+> help me answer some questions.
+> The problem has been seen in kernel 2.6.16 and I now wonder if this is solved
+> in later kernels. I have looked in the 2.6.39 source code and there was a 
+> comment in that code indicating that this could still be a problem even though
+> it's not as serious as in 2.6.16.
+> 
+> The actual problem I have seen in 2.6.16 is that the zone_reclaim function can
+> execute on several CPU's in parallell in a multi core system.
 
-Overall, I'm not too happy about patch #1. Exposing some "random"
-internal state of the timer doesn't seem the right thing to me.
+In 2.6.16, there is a race allowing two or more processes to call
+zone_reclaim on a single node. Later kernels prevent this with a zone
+lock. This reduces excessive scanning and excessive reclaim within
+one node. As a side-effect, processes that contend on the lock will
+fall back to other nodes and stall less frequently.
 
-Furthermore, the internal rate of the TWD changes with the CPU
-frequency. Blindly trusting the calibrated value at boot time is a nice
-way to see the watchdog kicking in unexpectedly when frequency is
-increased.
+> There is a check
+> for the reclaim_in_progress counter in zone_reclaim but it takes some time
+> until this counter is increased in shrink_zone so if several CPU's start
+> executing zone_reclaim at the same time they will continue executing
+> shrink_zone etc. in parallell. With a test program we have seen up to 4 CPU's
+> do this in parallell. I have seen two CPU's execute zone_reclaim in parallell 
+> in a panic dump that I triggered using sysrq-trigger when our pthread was 
+> "hanging". However, this is not a problem functionally wise, it looks like 
+> they all do what they are supposed to do. 
+> 
 
-I suggest you have a look at this patch:
-https://patchwork.kernel.org/patch/801472/
+They would although that is not necessarily what you want either.
 
-Together with a cpufreq notifier, this "smp_twd" clock looks like a much
-better option. Over time, all platform would be converted to that
-particular clock, and the problem would be solved in a much nicer way.
+> The problem is that the execution time goes up quite a lot when several CPU's
+> execute zone_reclaim. Most likely I guess because they will compete for the
+> same locks etc. Since this is executed in the "context" of any user
+> process/pthread it can "hang" this process/pthread for several seconds while
+> other pthreads etc. continue to execute as normal. 
 
-Cheers,
+2.6.16 did not have multiple LRUs. This means that if teh system didn't
+have swap configured for example, it could have to scan excessively
+(possible all of the node twice) reclaiming a very small number of
+pages. In later kernels, it would be able to complete faster which
+would reduce stalls.
 
-	M.
+> If you have enough allocated memory e.g. 40GB, we have seen hangings for 16 
+> seconds. And this is even though the pthread is a high priority real time 
+> scheduled pthread that is suppose to execute every 10 ms (testprogram). Even 
+> if you get rid of the parallell execution, I suppose zone_reclaim can still 
+> hang a user pthread for some time if you have many active pages and this is 
+> what I wonder if it's still valid.
+> 
+> In later versions of vmscan.c I can see that a lot has changed regarding this
+> code but in shrink_zone in 2.6.39 this comment can be found :
+> 
+> /*
+> * On large memory systems, scan >> priority can become
+> * really large. This is fine for the starting priority;
+> * we want to put equal scanning pressure on each zone.
+> * However, if the VM has a harder time of freeing pages,
+> * with multiple processes reclaiming pages, the total
+> * freeing target can get unreasonably large.
+> */
+> 
+> This indicates to me that the execution time for shrink_zone can still be
+> relativly long if you have a lot of pages. 
+> 
+
+Yes.
+
+> So the question is : Can todays kernel also "hang" high priority user pthreads
+> due to zone_reclaim if you have a large system with lots of allocated memory ? 
+
+The stall should be significantly lower but still not desirable. If
+zone_reclaim is being used extensively, it can imply that there is a
+node imbalance where processes are reclaiming heavily in one node and
+ignoring others.
+
+> I.e. is this function still executed in a user pthread context risking to
+> hang it for some time ? 
+> If this has changed so it's executed in another way (background thread or
+> some other way), when was this changed (which kernel version) ? 
+> 
+
+Disable zone_reclaim. Processes will fall back to using remote nodes
+while waking kswapd to rebalance the current node. Processes take
+a hit by using remote nodes for memory accesses but this can be far
+lower than the time taken to run zone_reclaim.
+
+> OK, that's it. I hope I have managed to make myself understandable.
+> As I started I have spent several weeks on this and I just want to make
+> shure that if we recommend a new kernel version to our users that the
+> problem is actually solved in that version. I have searched the internet
+> for many hours for this problem but not been able to find anything that
+> looks like this specific problem.
+
+zone_reclaim is not studied very often and has a tendency to surprise
+people unfortunately.
+
+> The reason we have such a problem is 
+> because the pthreads that are hanging is important supervision pthreads
+> (that's why they are high priority real time pthreads) so they must execute
+> at certain intervals otherwise other pthreads will think something is wrong
+> and trigger recovery actions. 
+> 
+> Since I'm not subscribing to this mailing list I would appreciate if you 
+> could CC me any response.
+> 
+
+If your workload is not tuned to size each process within a given node
+(very common), I'd suggest disabling zone_reclaim altogether. This sort
+of problem is typically reported as "all memory is not being used" when
+the target application is mostly serving files. It's rare people
+complain about stalls due to zone_reclaim which is probably why you
+couldn't find any reference in Google.
+
 -- 
-Reality is an implementation detail.
-
-
+Mel Gorman
+SUSE Labs
