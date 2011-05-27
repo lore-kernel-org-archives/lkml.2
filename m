@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab1E0MGt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 08:06:49 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:54791 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441Ab1E0MGr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753471Ab1E0MGr (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 27 May 2011 08:06:47 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46841 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753068Ab1E0MGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 08:06:44 -0400
+Date: Fri, 27 May 2011 14:06:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+Message-ID: <20110527120629.GA32617@elte.hu>
+References: <1306358128.21578.107.camel@twins>
+ <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+ <1306405979.1200.63.camel@twins>
+ <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
+ <1306409575.1200.71.camel@twins>
+ <1306412511.1200.90.camel@twins>
+ <20110526122623.GA11875@elte.hu>
+ <20110526123137.GG24876@n2100.arm.linux.org.uk>
+ <20110526125007.GA27083@elte.hu>
+ <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)support
-Date: Fri, 27 May 2011 20:06:26 +0800
-Message-ID: <4C79549CB6F772498162A641D92D532801CE4A21@penmb01.corp.atmel.com>
-In-Reply-To: <Pine.LNX.4.64.1105121131040.24486@axis700.grange>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)support
-Thread-Index: AcwQh6rMPZbYdkb/Q9yWoT2kG1x4+QL3Vqqw
-References: <1305186138-5656-1-git-send-email-josh.wu@atmel.com> <20110512074725.GA1356@n2100.arm.linux.org.uk> <4C79549CB6F772498162A641D92D532801AC28CD@penmb01.corp.atmel.com> <Pine.LNX.4.64.1105121131040.24486@axis700.grange>
-From: "Wu, Josh" <Josh.wu@atmel.com>
-To: "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>, <mchehab@redhat.com>,
-        <linux-media@vger.kernel.org>, "Haring, Lars" <Lars.Haring@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-X-OriginalArrivalTime: 27 May 2011 12:06:31.0001 (UTC) FILETIME=[83C72490:01CC1C66]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Guennadi
 
-Sorry to answer the question so later, 
+* Catalin Marinas <catalin.marinas@arm.com> wrote:
 
-From: Guennadi Liakhovetski Sent: Thursday, May 12, 2011 5:32 PM
-> On Thu, 12 May 2011, Wu, Josh wrote:
+> > How much time does that take on contemporary ARM hardware, 
+> > typically (and worst-case)?
+> 
+> On newer ARMv6 and ARMv7 hardware, we no longer flush the caches at 
+> context switch as we got VIPT (or PIPT-like) caches.
+> 
+> But modern ARM processors use something called ASID to tag the TLB 
+> entries and we are limited to 256. The switch_mm() code checks for 
+> whether we ran out of them to restart the counting. This ASID 
+> roll-over event needs to be broadcast to the other CPUs and issuing 
+> IPIs with the IRQs disabled isn't always safe. Of course, we could 
+> briefly re-enable them at the ASID roll-over time but I'm not sure 
+> what the expectations of the code calling switch_mm() are.
 
->> Hi, Russell
->> 
->> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk] Sent: Thursday, May 12, 2011 3:47 PM
->> > On Thu, May 12, 2011 at 03:42:18PM +0800, Josh Wu wrote:
->> >> +err_alloc_isi:
->> >> +	clk_disable(pclk);
->> > clk_put() ?
->> Ok, will be fixed in V2 patch. Thanks.
+The expectations are to have irqs off (we are holding the runqueue 
+lock if !__ARCH_WANT_INTERRUPTS_ON_CTXSW), so that's not workable i 
+suspect.
 
-> You might wait with v2 until I find time to review your patch. Will take a 
-> couple of days, I think. A general question, though: how compatible is 
-> this driver with the AVR32?
-Now from the information I got from AVR team, The AVR32 is not compatible with  ISI driver patch v2. Since AVR32 use the previous version of ISI IP core. (AT91SAM9M10 using ISI_V2 IP, which has different hardware registers from V1 IP core, such like dma control, etc)
-But I think in future we will add ISI V1 IP support since AT91SAM9263 also using ISI V1 IP core.
+But in theory we could drop the rq lock and restart the scheduler 
+task-pick and balancing sequence when the ARM TLB tag rolls over. So 
+instead of this fragile and assymetric method we'd have a 
+straightforward retry-in-rare-cases method.
 
-Best Regards,
-Josh Wu
+That means some modifications to switch_mm() but should be solvable.
+
+That would make ARM special only in so far that it's one of the few 
+architectures that signal 'retry task pickup' via switch_mm() - it 
+would use the stock scheduler otherwise and we could remove 
+__ARCH_WANT_INTERRUPTS_ON_CTXSW and perhaps even 
+__ARCH_WANT_UNLOCKED_CTXSW altogether.
+
+I'd suggest doing this once modern ARM chips get so widespread that 
+you can realistically induce a ~700 usecs irqs-off delays on old, 
+virtual-cache ARM chips. Old chips would likely use old kernels 
+anyway, right?
+
+Thanks,
+
+	Ingo
