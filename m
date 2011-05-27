@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757644Ab1E0XX2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 19:23:28 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41677 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757352Ab1E0XX1 (ORCPT
+	id S1757536Ab1E0X1l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 19:27:41 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:39131 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757414Ab1E0X1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 19:23:27 -0400
-Subject: Re: [PATCH-v5 07/13] iscsi-target: Add iSCSI Login Negotiation +
- Parameter logic
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
-        hare@suse.de, agrover@redhat.com, michaelc@cs.wisc.edu,
-        bharrosh@panasas.com, akpm@linux-foundation.org, martin.svec@zoner.cz,
-        jxm@risingtidesystems.com
-In-Reply-To: <1306454848.23461.77.camel@haakon2.linux-iscsi.org>
-References: <1306445587.23461.22.camel@haakon2.linux-iscsi.org>
-	 <1306451068.4048.69.camel@mulgrave.site>
-	 <1306452490.23461.60.camel@haakon2.linux-iscsi.org>
-	 <20110527084752T.fujita.tomonori@lab.ntt.co.jp>
-	 <1306454848.23461.77.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 May 2011 18:23:22 -0500
-Message-ID: <1306538602.12244.22.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 27 May 2011 19:27:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=woNEFWWyTuiB8/5cquOA+gFzn74q+wuFrYhVX3XqbqyUucGHvlIlmVDGuRvIXq7mgJ
+         BvkABo3b+5cnRslbmGGQ==
+Date: Fri, 27 May 2011 16:27:34 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
+        Robin Holt <holt@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH v2] cpusets: randomize node rotor used in
+ cpuset_mem_spread_node()
+In-Reply-To: <20110527231708.GB3214@tiehlicka.suse.cz>
+Message-ID: <alpine.DEB.2.00.1105271623410.9445@chino.kir.corp.google.com>
+References: <20110414065146.GA19685@tiehlicka.suse.cz> <20110414160145.0830.A69D9226@jp.fujitsu.com> <20110415161831.12F8.A69D9226@jp.fujitsu.com> <20110415082051.GB8828@tiehlicka.suse.cz> <20110526153319.b7e8c0b6.akpm@linux-foundation.org>
+ <20110527124705.GB4067@tiehlicka.suse.cz> <alpine.DEB.2.00.1105271157350.2533@chino.kir.corp.google.com> <20110527231708.GB3214@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 17:07 -0700, Nicholas A. Bellinger wrote:
-> On Fri, 2011-05-27 at 08:47 +0900, FUJITA Tomonori wrote:
-> > On Thu, 26 May 2011 16:28:10 -0700
-> > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > 
-> > > As we have discussed at length over the years, the split needs to be all
-> > > userspace or all kernelspace, and when implementations start doing
-> > > things in-between they quickly get painful to debug, maintain and
-> > > extend.  I have no interest in trying to evolve this further when LIO
-> > 
-> > Sorry, I disagree. As I explained, once user space passes established nexuses
-> > to kernel, kernel handles all. I don't think it's painful.
-> > 
-> > 
+On Sat, 28 May 2011, Michal Hocko wrote:
+
+> > CONFIG_NODES_SHIFT is used for UMA machines that are using DISCONTIGMEM 
+> > usually because they have very large holes; such machines don't need 
+> > things like mempolicies but do need the data structures that abstract 
+> > ranges of memory in the physical address space.  This build breakage 
+> > probably isn't restricted to only alpha, you could probably see it with at 
+> > least ia64 and mips as well.
 > 
-> Then we are going to have to agree to disgree on this for an individual
-> target endpoint context and being able to manage (via configfs) a
-> complete set of iscsi-target features with native python library code.
+> Hmmm. I just find strange that some UMA arch uses functions like
+> {first,next}_online_node.
 > 
-> As for moving the mainline iscsi-target efforts to a more complex
-> default direction is something that we (speaking as LIO maintainer and
-> on behalf of RisingTide userspace) do not have an interest for an
-> initial merge.  We owe our users a complete set of functional and stable
-> kernel and userspace library+shell, and not an untested design with
-> undetermined time-frame for deployment.
 
-OK, so I understand the commercial imperatives.  However, when a trusted
-reviewer raises issues, and I check and find myself agreeing, I need
-them addressed to make forward progress.
-
-The issue is simple:
-
-      * We can put all the auth mechanisms in the kernel, so we need a
-        userspace upcall anyway
-      * Since we have to have an upcall, it should be the default path
-        for everything (so it gets well tested).
-
-Just saying "everything has to be in the kernel because mixed
-user/kernel code is too complex" doesn't fly because we already have a
-growing list of counter examples, some of which were cited.
-
-James
-
-
+They shouldn't, but they do use NUMA data structures like pg_data_t for 
+DISCONTIGMEM.  The MAX_NUMNODES > 1 optimization in nodemask.h is to 
+prevent doing things like node_weight() on a nodemask when we know that 
+only one bit will ever be set, otherwise we could make it conditional on 
+CONFIG_NEED_MULTIPLE_NODES.
