@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab1E0Pwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 11:52:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52197 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750968Ab1E0Pwf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 11:52:35 -0400
+	id S1755553Ab1E0Pso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 11:48:44 -0400
+Received: from hyde.gogi.tv ([87.106.161.174]:48087 "EHLO hyde.gogi.tv"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751316Ab1E0Psl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 11:48:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110527083554.GA21386@elte.hu>
-References: <tip-mt512joaxxbhhp1odop04yit@git.kernel.org> <20110526193946.GA6363@elte.hu>
- <20110526212805.GB30593@ghostprotocols.net> <20110527083554.GA21386@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 27 May 2011 08:46:42 -0700
-Message-ID: <BANLkTikiF8qUZL7tiVUgTyhiih0M=sQkpA@mail.gmail.com>
-Subject: Re: [tip:perf/urgent] perf symbols: Handle /proc/sys/kernel/kptr_restrict
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org,
-        paulus@samba.org, hpa@zytor.com, mingo@redhat.com, eranian@google.com,
-        tzanussi@gmail.com, penberg@cs.helsinki.fi, efault@gmx.de,
-        peterz@infradead.org, davej@redhat.com, davem@davemloft.net,
-        fweisbec@gmail.com, kees.cook@canonical.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Fri, 27 May 2011 16:48:39 +0100
+From: Daniel Haid <d.haid@gogi.tv>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andi Kleen <andi@firstfloor.org>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: Question about iommu on =?UTF-8?Q?x=38=36=5F=36=34=20and=20ra?=
+ =?UTF-8?Q?deon=20driver=2E?=
+In-Reply-To: <20110525125752.GB3467@dumpdata.com>
+References: <6ac3f6faad655602b767aa14b355e982@admin.gogi.tv>
+ <20110523220536.GB11961@dumpdata.com>
+ <756073831c36e0404199a4e8239bcb70@admin.gogi.tv>
+ <m2wrhf4sw5.fsf@firstfloor.org>
+ <08370791664f069624d25c757ed101c0@admin.gogi.tv>
+ <20110525125752.GB3467@dumpdata.com>
+Message-ID: <dfd8bfd19ba1fb77d6448bff97123e13@admin.gogi.tv>
+User-Agent: Roundcube Webmail/0.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 1:35 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> I think the biggest problem is that it is yelling at us even when i'm
-> root - and root can access all the pointer values just fine:
+ I have looked again at the radeon driver and it seems that the
+ drm drivers use vmalloc_32 to allocate their dma memory and
+ that vmalloc_32 should allocate physical 32-bit addresses
+ (in 2.6.39)?
 
-Instead of looking at the kptr_restrict file, please just look at the
-addresses in the kallsyms file, and if they are all zero, you know
-that it's not a usable kallsyms file (and you can pretty much assume
-that it's due to kptr_restrict).
+ So why does it still not work?
 
-So I think the whole symbol__read_kptr_restrict() thing is just
-pointless. Don't do it.
 
-                     Linus
