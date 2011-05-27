@@ -1,119 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758781Ab1E0JSm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 05:18:42 -0400
-Received: from mail.issp.bas.bg ([195.96.236.10]:56608 "EHLO mail.issp.bas.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753209Ab1E0JSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 05:18:41 -0400
-X-Greylist: delayed 623 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 May 2011 05:18:41 EDT
-From: Marin Mitov <mitov@issp.bas.bg>
-To: linux-kernel@vger.kernel.org
-Subject: [regression] matrox drm/mga driver do not use interrupts
-Date: Fri, 27 May 2011 12:04:38 +0300
-User-Agent: KMail/1.9.10
+	id S1758795Ab1E0JKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 05:10:04 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:33150 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752369Ab1E0JKB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 05:10:01 -0400
+Date: Fri, 27 May 2011 10:09:49 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 00/19] ARM: Add support for the Large Physical
+ Address Extensions
+Message-ID: <20110527090948.GB21100@e102109-lin.cambridge.arm.com>
+References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
+ <20110523165412.GF15138@n2100.arm.linux.org.uk>
+ <1306231448.19557.23.camel@e102109-lin.cambridge.arm.com>
+ <BANLkTikjBm3tn4Q4T1r9qyB2ma88YydDZQ@mail.gmail.com>
+ <20110526214449.GK24876@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
+In-Reply-To: <20110526214449.GK24876@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 27 May 2011 09:10:08.0159 (UTC) FILETIME=[DFE99AF0:01CC1C4D]
+X-MC-Unique: 111052710095901601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Cc: David Airlie <airlied@linux.ie>
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105271204.38705.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, May 26, 2011 at 10:44:49PM +0100, Russell King - ARM Linux wrote:
+> On Thu, May 26, 2011 at 10:15:49PM +0100, Catalin Marinas wrote:
+> > On 24 May 2011 11:04, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > > On Mon, 2011-05-23 at 17:54 +0100, Russell King - ARM Linux wrote:
+> > >> FYI, I'm going to drop the pgt patch because the warnings are still there
+> >
+> > I'd like to fix those warning but I can't reproduce them (maybe
+> > different compiler versions?).
+> 
+> They're certainly not compiler version dependent (or if they are, your
+> compiler is broken).  It'll probably be because you're building for
+> SMP, in which case the affected code is not built:
 
-I observed that matrox drm/mga driver do not use interrupts in 2.6.39,
-while it uses it in 2.6.32.41 (different kernels, same userland, all 32 bits,
-IRQ assigned to VGA in BIOS).
+OK. Since the smp-on-up feature I don't check UP builds regularly.
 
-One finds in Xorg.0.log:
+> arch/arm/mm/ioremap.c: In function unmap_area_sections:
+> arch/arm/mm/ioremap.c:86: warning: passing argument 1 of pmd_offset from
+> incompatible pointer type
+> arch/arm/mm/ioremap.c: In function remap_area_sections:
+> arch/arm/mm/ioremap.c:136: warning: passing argument 1 of pmd_offset from
+> incompatible pointer type
+> arch/arm/mm/ioremap.c: In function remap_area_supersections:
+> arch/arm/mm/ioremap.c:173: warning: passing argument 1 of pmd_offset from
+> incompatible pointer type
 
-(II) MGA(0): [drm] failure adding irq handler, there is a device already using that irq
+The patch below fixes the warnings. Tested on VE in UP configuration.
 
-which is misleading, because no other device is using it. A small kernel module
-that simply request_irq()/free_irq() is getting the same IRQ without a problem.
+Later we can change the loops to walking the pmd using PMD_SIZE for
+consistency with the LPAE patches where we consider PMD to be the
+section in both cases. There is no functional change since the pmd is
+folded into pud which is folded into the pgd and PMD_SIZE == PGDIR_SIZE
+with the classic page tables.
 
-Debugging the drm/mga couple traced the problem to this operator:
-(in drivers/gpu/drm/drm_irq.c, drm_control() function)
 
-		if (dev->if_version < DRM_IF_VERSION(1, 2) &&
-		    ctl->irq != drm_dev_to_irq(dev))
-			return -EINVAL;
+diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+index ab50627..0da0091 100644
+--- a/arch/arm/mm/ioremap.c
++++ b/arch/arm/mm/ioremap.c
+@@ -83,7 +83,8 @@ static void unmap_area_sections(unsigned long virt, unsigned long size)
+ 	flush_cache_vunmap(addr, end);
+ 	pgd = pgd_offset_k(addr);
+ 	do {
+-		pmd_t pmd, *pmdp = pmd_offset(pgd, addr);
++		pud_t *pud = pud_offset(pgd, addr);
++		pmd_t pmd, *pmdp = pmd_offset(pud, addr);
+ 
+ 		pmd = *pmdp;
+ 		if (!pmd_none(pmd)) {
+@@ -133,7 +134,8 @@ remap_area_sections(unsigned long virt, unsigned long pfn,
+ 
+ 	pgd = pgd_offset_k(addr);
+ 	do {
+-		pmd_t *pmd = pmd_offset(pgd, addr);
++		pud_t *pud = pud_offset(pgd, addr);
++		pmd_t *pmd = pmd_offset(pud, addr);
+ 
+ 		pmd[0] = __pmd(__pfn_to_phys(pfn) | type->prot_sect);
+ 		pfn += SZ_1M >> PAGE_SHIFT;
+@@ -170,7 +172,8 @@ remap_area_supersections(unsigned long virt, unsigned long pfn,
+ 		super_pmd_val |= ((pfn >> (32 - PAGE_SHIFT)) & 0xf) << 20;
+ 
+ 		for (i = 0; i < 8; i++) {
+-			pmd_t *pmd = pmd_offset(pgd, addr);
++			pud_t *pud = pud_offset(pgd, addr);
++			pmd_t *pmd = pmd_offset(pud, addr);
+ 
+ 			pmd[0] = __pmd(super_pmd_val);
+ 			pmd[1] = __pmd(super_pmd_val);
 
-where:
 
-ctl->irq = -22, drm_dev_to_irq(dev) = 16 (the correct value), and
-return -EINVAL; is executed.
+-- 
+Catalin
 
-If I change ctl->irq = 16, just before the if operator, all is working OK.
-
-Just for info, almost the same hardware/chipsets/VGA(matrox) is
-working OK in  2.6.39/64 bits, but userland (64 bits too) is a newer version).
-
-I am ready for testing patches, I use 3 Matrox g450 AGP adapters on 2 - 32 bits
-systems and 1 - 64 bits system.
-
-Please, help in solving the problem.
-
-Marin Mitov
-
-P.S. Here is some logs:
-
-2.6.39
-==========================
-dmesg
-[drm] Initialized drm 1.1.0 20060810
-matrox_w1 0000:01:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[drm] No driver support for vblank timestamp query.
-[drm] Initialized mga 3.2.1 20051102 for 0000:01:00.0 on minor 0
-agpgart-amd64 0000:00:00.0: AGP 3.0 bridge
-agpgart-amd64 0000:00:00.0: bridge is in legacy mode, falling back to 2.x
-agpgart-amd64 0000:00:00.0: putting AGP V2 device into 4x mode
-matrox_w1 0000:01:00.0: putting AGP V2 device into 4x mode
-[drm] Initialized card for AGP DMA.
-
-cat /proc/interrupts
- 12:          2       3495   IO-APIC-edge      i8042
- 14:          1       4429   IO-APIC-edge      ide0
- 15:          1        584   IO-APIC-edge      ide1
- 17:          3       2422   IO-APIC-fasteoi   skge@pci:0000:00:0a.0
- 18:          0         30   IO-APIC-fasteoi   sata_promise
- 20:          6      18571   IO-APIC-fasteoi   sata_via
-
-grep MGA /var/log/Xorg.0.log
-(II) MGA(0): [DRI] installation complete
-(II) MGA(0): [drm] Mapped 128 DMA buffers
-(II) MGA(0): [drm] failure adding irq handler, there is a device already using that irq
-(II) MGA(0): Direct rendering enabled
-
-2.6.32.41
-=============================
-dmesg
-[drm] Initialized drm 1.1.0 20060810
-pci 0000:01:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[drm] Initialized mga 3.2.1 20051102 for 0000:01:00.0 on minor 0
-agpgart-amd64 0000:00:00.0: AGP 3.0 bridge
-agpgart-amd64 0000:00:00.0: bridge is in legacy mode, falling back to 2.x
-agpgart-amd64 0000:00:00.0: putting AGP V2 device into 4x mode
-matrox_w1 0000:01:00.0: putting AGP V2 device into 4x mode
-[drm] Initialized card for AGP DMA.
-platform mga_warp.0: firmware: using built-in firmware matrox/g400_warp.fw
-
-cat /proc/interrupts
- 12:         26      24183   IO-APIC-edge      i8042
- 14:          4       4452   IO-APIC-edge      ide0
- 15:          2       7128   IO-APIC-edge      ide1
- 16:          0          0   IO-APIC-fasteoi   mga@pci:0000:01:00.0
- 17:         43      56704   IO-APIC-fasteoi   skge@pci:0000:00:0a.0
- 18:          0        207   IO-APIC-fasteoi   sata_promise
- 20:         18      20682   IO-APIC-fasteoi   sata_via
-
-grep MGA /var/log/Xorg.0.log
-(II) MGA(0): [DRI] installation complete
-(II) MGA(0): [drm] Mapped 128 DMA buffers
-(II) MGA(0): [drm] dma control initialized, using IRQ 16
-(II) MGA(0): Direct rendering enabled
