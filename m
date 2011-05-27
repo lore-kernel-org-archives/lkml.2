@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab1E0Q37 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 12:29:59 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:62842 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab1E0Q35 (ORCPT
+	id S1756136Ab1E0QbO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 12:31:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55755 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754424Ab1E0QbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 12:29:57 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6358"; a="94115933"
-From: David Brown <davidb@codeaurora.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/7] Move Qualcomm gpio drivers into drivers dir
-References: <1305755453-31112-1-git-send-email-davidb@codeaurora.org>
-	<20110527031319.GH5032@ponder.secretlab.ca>
-Date: Fri, 27 May 2011 09:29:56 -0700
-In-Reply-To: <20110527031319.GH5032@ponder.secretlab.ca> (Grant Likely's
-	message of "Thu, 26 May 2011 21:13:19 -0600")
-Message-ID: <8yad3j46r97.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 27 May 2011 12:31:09 -0400
+Date: Fri, 27 May 2011 09:30:43 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 27 (ocfs2)
+Message-Id: <20110527093043.0840ac30.randy.dunlap@oracle.com>
+In-Reply-To: <20110527155231.3a9925c0.sfr@canb.auug.org.au>
+References: <20110527155231.3a9925c0.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090205.4DDFD1BF.00E7:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26 2011, Grant Likely wrote:
+On Fri, 27 May 2011 15:52:31 +1000 Stephen Rothwell wrote:
 
-> On Wed, May 18, 2011 at 02:50:46PM -0700, David Brown wrote:
->> This patch series moves the Qualcomm MSM gpio device drivers into the
->> drivers/gpio directory.
->> 
->> The MSM's have two flavors of gpio driver.  The one for the newer
->> v7-based chips is a bit cleaner, and can just be moved.  The one for
->> the older v6-based chips took some cleanup to get rid of numerous
->> ifdefs based on the particular machine.  Both drivers can now be
->> selected and will be used on appropriate targets.
->> 
->> There is still a minor entanglement with the MSM-specific gpiomux
->> code.  This will be cleaned up as MSM moves to use pinmux.
->> 
->> David Brown (7):
->>   msm: gpio: Remove unsupported devices
->>   msm: Remove chip-ifdefs for GPIO io mappings
->>   msm: gpio: Remove chip-specific register definitions
->>   msm: gpio: Remove ifdefs on gpio chip registers
->>   msm: gpiomux: Move public API to public header
->>   gpio_msm: Move Qualcomm v6 MSM driver into drivers
->>   gpio_msm: Move Qualcomm MSM v2 gpio driver into drivers
->
-> What's the status of this series.  I only got cc'd on the last two
-> patches; did you want me to pick up the whole lot, or is it being
-> merged via the msm tree?
+> Hi all,
+> 
+> Changes since 20110526:
 
-Let me send out an update, incorporating the suggestions.  I need to
-rebase these changes off of the current MSM code, since the msm-next
-tree contains changes that aren't going into the merge window because of
-extra ARM scrutiny.
+ocfs2 on i386 has build errors:
 
-> Alternately, if there is a git branch with these patches in it, then I
-> can merge that instead of applying individually.
+ERROR: "__udivdi3" [fs/ocfs2/ocfs2.ko] undefined!
+ERROR: "__umoddi3" [fs/ocfs2/ocfs2.ko] undefined!
 
-I'll send you a pull request after I send out the updates.
+or when builtin:
 
-Thanks,
-David
+fs/built-in.o: In function `ocfs2_find_victim_alloc_group.clone.0':
+move_extents.c:(.text+0x1fb01a): undefined reference to `__udivdi3'
+fs/built-in.o: In function `ocfs2_validate_and_adjust_move_goal':
+move_extents.c:(.text+0x1fb12e): undefined reference to `__umoddi3'
+move_extents.c:(.text+0x1fb15a): undefined reference to `__udivdi3'
+fs/built-in.o: In function `ocfs2_find_victim_alloc_group.clone.0':
+move_extents.c:(.text+0x1fb01a): undefined reference to `__udivdi3'
+fs/built-in.o: In function `ocfs2_validate_and_adjust_move_goal':
+move_extents.c:(.text+0x1fb12e): undefined reference to `__umoddi3'
+move_extents.c:(.text+0x1fb15a): undefined reference to `__udivdi3'
+fs/built-in.o: In function `ocfs2_find_victim_alloc_group.clone.0':
+move_extents.c:(.text+0x1fb01a): undefined reference to `__udivdi3'
+fs/built-in.o: In function `ocfs2_validate_and_adjust_move_goal':
+move_extents.c:(.text+0x1fb12e): undefined reference to `__umoddi3'
+move_extents.c:(.text+0x1fb15a): undefined reference to `__udivdi3'
 
-> g.
->
->> 
->>  arch/arm/mach-msm/Kconfig                       |    4 +
->>  arch/arm/mach-msm/Makefile                      |    8 -
->>  arch/arm/mach-msm/gpio-v2.c                     |  427 -----------------------
->>  arch/arm/mach-msm/gpio.c                        |  376 --------------------
->>  arch/arm/mach-msm/gpio_hw.h                     |  278 ---------------
->>  arch/arm/mach-msm/gpiomux.h                     |   17 +-
->>  arch/arm/mach-msm/include/mach/msm_iomap-7x00.h |   10 +-
->>  arch/arm/mach-msm/include/mach/msm_iomap-7x30.h |   10 +-
->>  arch/arm/mach-msm/include/mach/msm_iomap-8x50.h |   10 +-
->>  arch/arm/mach-msm/include/mach/msm_iomap.h      |    2 +
->>  arch/arm/mach-msm/io.c                          |   12 +-
->>  drivers/gpio/Kconfig                            |   16 +
->>  drivers/gpio/Makefile                           |    2 +
->>  drivers/gpio/msm_v1.c                           |  387 ++++++++++++++++++++
->>  drivers/gpio/msm_v1.h                           |  271 ++++++++++++++
->>  drivers/gpio/msm_v2.c                           |  427 +++++++++++++++++++++++
->>  include/linux/msm_gpiomux.h                     |   38 ++
->>  17 files changed, 1166 insertions(+), 1129 deletions(-)
->>  delete mode 100644 arch/arm/mach-msm/gpio-v2.c
->>  delete mode 100644 arch/arm/mach-msm/gpio.c
->>  delete mode 100644 arch/arm/mach-msm/gpio_hw.h
->>  create mode 100644 drivers/gpio/msm_v1.c
->>  create mode 100644 drivers/gpio/msm_v1.h
->>  create mode 100644 drivers/gpio/msm_v2.c
->>  create mode 100644 include/linux/msm_gpiomux.h
->> 
->> -- 
->> Sent by an employee of the Qualcomm Innovation Center, Inc.
->> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->> 
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
