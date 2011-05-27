@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758720Ab1E0Dn3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 23:43:29 -0400
-Received: from void.printf.net ([89.145.121.20]:39450 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753731Ab1E0Dn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 23:43:28 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Wanlong Gao <wanlong.gao@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:mmc:add the NO_IRQ define to of_mmc_spi.c
-References: <1306242202-9252-1-git-send-email-wanlong.gao@gmail.com>
-Date: Thu, 26 May 2011 23:44:38 -0400
-In-Reply-To: <1306242202-9252-1-git-send-email-wanlong.gao@gmail.com> (Wanlong
-	Gao's message of "Tue, 24 May 2011 21:03:22 +0800")
-Message-ID: <m34o4gu7rt.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758711Ab1E0DxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 23:53:10 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36765 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753627Ab1E0DxI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 23:53:08 -0400
+Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:
+ __elv_add_request OOPS]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>
+In-Reply-To: <1306356735.1641.61.camel@mulgrave.site>
+References: <alpine.DEB.2.02.1105232329040.1910@natty-nar>
+	 <4DDB8BF6.2000304@fusionio.com>
+	 <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty>
+	 <4DDCB1C8.7040708@fusionio.com>
+	 <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty>
+	 <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>
+	 <4DDD5240.2060308@fusionio.com>
+	 <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>
+	 <4DDD55D6.1080909@fusionio.com>
+	 <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty>
+	 <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com>
+	 <alpine.DEB.2.02.1105251613500.8972@ubuntu-natty>
+	 <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com>
+	 <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>
+	 <1306356735.1641.61.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 22:53:04 -0500
+Message-ID: <1306468385.4048.73.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, May 24 2011, Wanlong Gao wrote:
-> For archs that don't support NO_IRQ (such as mips),
-> provide a dummy value. Fix the build error for mips.
->
-> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+On Wed, 2011-05-25 at 15:52 -0500, James Bottomley wrote:
+> On Wed, 2011-05-25 at 16:42 -0400, Parag Warudkar wrote:
+> > Yeah - that makes sense. By that logic, looks like we can only disallow 
+> > for SDEV_DEL (if we decide to do that check here).
+> 
+> I don't think this is the root cause.  I think q is non-NULL but has
+> already been released, so we're just getting a NULL deref on the actual
+> list head.
+> 
+> Does this fix it?  It adds the refcounting at approximately the correct
+> places.  Of course, we'll now be trying elevator operations on an extant
+> queue but one whose elevator functions have been destroyed, so there are
+> probably additional state guards to place.
+> 
+> James
+> 
 > ---
->  drivers/mmc/host/of_mmc_spi.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mmc/host/of_mmc_spi.c b/drivers/mmc/host/of_mmc_spi.c
-> index e2aecb7..ab66f24 100644
-> --- a/drivers/mmc/host/of_mmc_spi.c
-> +++ b/drivers/mmc/host/of_mmc_spi.c
-> @@ -25,6 +25,11 @@
->  #include <linux/mmc/core.h>
->  #include <linux/mmc/host.h>
->  
-> +/* For archs that don't support NO_IRQ (such as mips), provide a dummy value */
-> +#ifndef NO_IRQ
-> +#define NO_IRQ 0
-> +#endif
-> +
->  MODULE_LICENSE("GPL");
->  
->  enum {
+> 
+> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+> index 58584dc..44e8ca3 100644
+> --- a/drivers/scsi/scsi_scan.c
+> +++ b/drivers/scsi/scsi_scan.c
+> @@ -297,7 +297,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
+>  		kfree(sdev);
+>  		goto out;
+>  	}
+> -
+> +	blk_get_queue(sdev->request_queue);
 
-Thanks, queued for Linus with Grant's ACK.
+Apparently we can't do this because blk_[put|get]_queue aren't exported
+for use in modules (and SCSI can be modular), so this caused a build
+failure in linux-next.
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+James
+
+
