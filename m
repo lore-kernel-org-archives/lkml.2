@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758770Ab1E0IsR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 04:48:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51820 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab1E0IsQ (ORCPT
+	id S1758782Ab1E0Ith (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 04:49:37 -0400
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:55267 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752456Ab1E0Itg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 04:48:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH 2/3] ARM: mxs: add gpio-mxs platform devices
-Date: Fri, 27 May 2011 10:48:00 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linus.walleij@linaro.org, grant.likely@secretlab.ca,
-        kernel@pengutronix.de
-References: <1305885446-27404-1-git-send-email-shawn.guo@linaro.org> <201105201223.00427.arnd@arndb.de> <20110527082916.GB30146@S2100-06.ap.freescale.net>
-In-Reply-To: <20110527082916.GB30146@S2100-06.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105271048.00692.arnd@arndb.de>
-X-Provags-ID: V02:K0:7Q7IglUdHptq08/mCD4v5KCfw6XQjMpbVE/wf50dtu0
- ClAbqxNXNl+cUoTW/g3zjaFfnLl/eYVz36aHDCkUyluq6MY93f
- ub/qFH0A612ef8dDO9aLiR7OqPoSMyn3ZZJw6b1ue+jZXZarXe
- 6eNTHz+fEasxSja9B9i5xksl1vF5HMhI4Z1v+C5PzrJFPmSXT6
- 3pHibmZrYq77kNaSQ9lRQ==
+	Fri, 27 May 2011 04:49:36 -0400
+From: matt mooney <mfm@muteddisk.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: usbip: stub_main.c: simplify busid_table initialization
+Date: Fri, 27 May 2011 01:49:24 -0700
+Message-Id: <8b7b3dd5fe3719c032f351fd2388b2f3feed142a.1306486060.git.mfm@muteddisk.com>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 May 2011, Shawn Guo wrote:
+Set the whole structure to zero instead of individually setting each
+member, which simplifies the for loop.
 
-> > I know it's tempting to use macros for these, but I think it obscures
-> > the code a lot, especially when you use them to concatenate identifier
-> > names. Why not just do:
-> > 
-> >       struct platform_device *gpios;
-> >       gpios = platform_device_register_simple(mxs_host_bus, "mxs-gpio-master", 0, NULL, 0);
-> > 
-> platform_device_register_simple does not have parameter for 'parent',
-> and it sets 'parent' NULL anyway.
-> 
+This was suggested by walter harms <wharms@bfs.de>.
 
-Oops, my mistake. just use platform_device_register_resndata directly then.
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+---
+ drivers/staging/usbip/stub_main.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-	Arnd
+diff --git a/drivers/staging/usbip/stub_main.c b/drivers/staging/usbip/stub_main.c
+index 45a0f5d..a34249a 100644
+--- a/drivers/staging/usbip/stub_main.c
++++ b/drivers/staging/usbip/stub_main.c
+@@ -39,13 +39,9 @@ static void init_busid_table(void)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < MAX_BUSID; i++) {
+-		memset(busid_table[i].name, 0, BUSID_SIZE);
++	memset(busid_table, 0, sizeof(busid_table));
++	for (i = 0; i < MAX_BUSID; i++)
+ 		busid_table[i].status = STUB_BUSID_OTHER;
+-		busid_table[i].interf_count = 0;
+-		busid_table[i].sdev = NULL;
+-		busid_table[i].shutdown_busid = 0;
+-	}
+ 
+ 	spin_lock_init(&busid_table_lock);
+ }
+-- 
+1.7.5.1
+
