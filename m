@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab1E0Rq7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:46:59 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52337 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833Ab1E0Rq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 13:46:58 -0400
-Date: Fri, 27 May 2011 19:46:44 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        adobriyan@gmail.com, penberg@kernel.org, hpa@zytor.com,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-Message-ID: <20110527174644.GG4356@elte.hu>
-References: <1306269105.21443.20.camel@dan>
- <201105270018.36835.rjw@sisk.pl>
- <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com>
- <20110527170045.GB4356@elte.hu>
- <1306516230.3339.17.camel@dan>
- <20110527171611.GE4356@elte.hu>
- <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com>
+	id S1753275Ab1E0Rrf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:47:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52857 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833Ab1E0Rrd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 13:47:33 -0400
+Message-ID: <4DDFE391.2030507@oracle.com>
+Date: Fri, 27 May 2011 10:46:57 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
+        Dmitry Artamonow <mad_soft@inbox.ru>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        Harald Welte <laforge@gnufiish.org>
+Subject: [PATCH] gpio: add GPIOF_ values regardless on kconfig settings
+References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au> <20110523134815.fb87933a.randy.dunlap@oracle.com> <20110523224659.GB19533@opensource.wolfsonmicro.com> <20110523155343.2e68c265.randy.dunlap@oracle.com> <20110524000837.GA30515@opensource.wolfsonmicro.com> <4DDB082F.3010107@oracle.com> <20110524014959.GA27710@opensource.wolfsonmicro.com> <4DDB3AFF.9030006@oracle.com> <20110524075248.GB19734@sirena.org.uk> <20110527074552.GA907@ponder.secretlab.ca>
+In-Reply-To: <20110527074552.GA907@ponder.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090207.4DDFE3A2.000A:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Make GPIOF_ defined values available even when GPIOLIB nor GENERIC_GPIO
+is enabled by moving them to <linux/gpio.h>.
 
-> On Fri, May 27, 2011 at 10:16 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > Well, 'fixing the info leaks' will obfuscate previously useful files
-> > such as /proc/kallsyms ...
-> 
-> Guys, stop with the crazy already.
-> 
-> YOU HAVE TO DO THAT FOR THE LINK-TIME-OBFUSCATION TOO!
->
-> > That's one of the advantages of randomization: it allows us to 
-> > expose RIPs without them being an instant information leak.
-> 
-> Except you clearly aren't thinking that through AT ALL.
-> 
-> The obfuscation of things like /proc/kallsyms is *exactly*the*same* 
-> whether you do the randomization at boot-time or install-time.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ include/asm-generic/gpio.h |   10 ----------
+ include/linux/gpio.h       |   11 +++++++++++
+ 2 files changed, 11 insertions(+), 10 deletions(-)
 
-Well, but two mails ago you said:
-
-> And load-time randomization has all these nasty problems with 
-> memory maps etc, because we obviously have to shift the whole 
-> kernel around by some fixed offset. But if there was some way to 
-> just re-link the distro kernel easily, then it could be done by the 
-> kernel install scripts, and it could potentially do more than just 
-> "shift up load address by some random number".
-
-If i understood you correctly you suggest randomizing the image by 
-shifting the symbols in it around. The boot loader would still load 
-an 'image' where it always loads it - just that image itself is 
-randomized internally somewhat, right?
-
-( because that's the only way we can avoid the problems with e820 
-  memory maps which you referred to, if don't actually change the 
-  load address. )
-
-Have i understood you correctly?
-
-Thanks,
-
-	Ingo
+--- linux-next-20110523.orig/include/asm-generic/gpio.h
++++ linux-next-20110523/include/asm-generic/gpio.h
+@@ -170,16 +170,6 @@ extern int __gpio_cansleep(unsigned gpio
+ 
+ extern int __gpio_to_irq(unsigned gpio);
+ 
+-#define GPIOF_DIR_OUT	(0 << 0)
+-#define GPIOF_DIR_IN	(1 << 0)
+-
+-#define GPIOF_INIT_LOW	(0 << 1)
+-#define GPIOF_INIT_HIGH	(1 << 1)
+-
+-#define GPIOF_IN		(GPIOF_DIR_IN)
+-#define GPIOF_OUT_INIT_LOW	(GPIOF_DIR_OUT | GPIOF_INIT_LOW)
+-#define GPIOF_OUT_INIT_HIGH	(GPIOF_DIR_OUT | GPIOF_INIT_HIGH)
+-
+ /**
+  * struct gpio - a structure describing a GPIO with configuration
+  * @gpio:	the GPIO number
+--- linux-next-20110523.orig/include/linux/gpio.h
++++ linux-next-20110523/include/linux/gpio.h
+@@ -3,6 +3,17 @@
+ 
+ /* see Documentation/gpio.txt */
+ 
++/* make these flag values available regardless of GPIO kconfig options */
++#define GPIOF_DIR_OUT	(0 << 0)
++#define GPIOF_DIR_IN	(1 << 0)
++
++#define GPIOF_INIT_LOW	(0 << 1)
++#define GPIOF_INIT_HIGH	(1 << 1)
++
++#define GPIOF_IN		(GPIOF_DIR_IN)
++#define GPIOF_OUT_INIT_LOW	(GPIOF_DIR_OUT | GPIOF_INIT_LOW)
++#define GPIOF_OUT_INIT_HIGH	(GPIOF_DIR_OUT | GPIOF_INIT_HIGH)
++
+ #ifdef CONFIG_GENERIC_GPIO
+ #include <asm/gpio.h>
+ 
