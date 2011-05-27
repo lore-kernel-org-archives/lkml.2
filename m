@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342Ab1E0EBE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 00:01:04 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38943 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab1E0EBC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 00:01:02 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DDF21DE.9040705@jp.fujitsu.com>
-Date: Fri, 27 May 2011 13:00:30 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 00/12] minor cleanups/fixes for MCE codes
-Content-Type: text/plain; charset=ISO-2022-JP
+	id S1751277Ab1E0EAn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 00:00:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37846 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089Ab1E0EAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 00:00:42 -0400
+Date: Fri, 27 May 2011 14:00:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jamie Iles <jamie@jamieiles.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the mtd tree with Linus' tree
+Message-Id: <20110527140039.9bce4a2d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a set of minor changes for MCE codes.
+Hi David,
 
-Though I know there are many people expecting new RAS architecture
-such as one that integrates RAS/EDAC with MCE, I hope these small
-steps will be a help for future works.
+Today's linux-next merge of the mtd tree got a conflict in
+drivers/mtd/maps/physmap.c between commit b7281ca2a4b0 ("ARM: 6904/1:
+MTD: Add integrator-flash feature to physmap") from Linus' tree and
+commit 984e6d8ec5ab ("mtd: physmap: convert to mtd_device_register()")
+from the mtd tree.
 
-Thanks,
-H.Seto
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 
- arch/x86/include/asm/entry_arch.h         |    4 -
- arch/x86/include/asm/hw_irq.h             |    1 -
- arch/x86/include/asm/irq_vectors.h        |    5 -
- arch/x86/include/asm/mce.h                |   19 ++-
- arch/x86/kernel/cpu/mcheck/mce-severity.c |  152 ++++++++++------
- arch/x86/kernel/cpu/mcheck/mce.c          |  276 +++++++++++++----------------
- arch/x86/kernel/cpu/mcheck/mce_amd.c      |   10 +-
- arch/x86/kernel/entry_64.S                |    5 -
- arch/x86/kernel/irqinit.c                 |    3 -
- 9 files changed, 241 insertions(+), 234 deletions(-)
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Hidetoshi Seto (11):
-      mce-severity: cleanup severity table, prep
-      mce-severity: cleanup severity table
-      mce-severity: trivial cleanups
-      x86, mce: replace MCE_SELF_VECTOR by irq_work
-      x86, mce: replace MCM_ to MCI_MISC_
-      x86, mce: introduce mce_gather_info()
-      x86, mce: check the result of ancient_init()
-      x86, mce: cleanup mce_create/remove_device
-      x86, mce: cleanup mce_read
-      x86, mce: use prefix mce_chrdev_ to group functions
-      x86, mce: use prefix mce_sysdev_ to group functions
-
-Tony Luck (1):
-      mce-severity: fixes for mce severity table
-
+diff --cc drivers/mtd/maps/physmap.c
+index 1a9b94f,d205926..0000000
+--- a/drivers/mtd/maps/physmap.c
++++ b/drivers/mtd/maps/physmap.c
+@@@ -92,10 -65,7 +81,8 @@@ static const char *rom_probe_types[] = 
+  					"qinfo_probe",
+  					"map_rom",
+  					NULL };
+- #ifdef CONFIG_MTD_PARTITIONS
+ -static const char *part_probe_types[] = { "cmdlinepart", "RedBoot", NULL };
+ +static const char *part_probe_types[] = { "cmdlinepart", "RedBoot", "afs",
+ +					  NULL };
+- #endif
+  
+  static int physmap_flash_probe(struct platform_device *dev)
+  {
