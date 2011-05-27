@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab1E0VmP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 17:42:15 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:44508 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752499Ab1E0VmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 17:42:14 -0400
-X-Sasl-enc: knWhjjiGC9HIfLQrX1uT5DZ1F5QrFLf0Ne+/06hIIdfK 1306532532
-Date: Sat, 28 May 2011 04:30:44 +0800
-From: Greg KH <greg@kroah.com>
-To: =?utf-8?B?UGF3ZcWC?= Drobek <pawel.drobek@gmail.com>
-Cc: Michael Tokarev <mjt@tls.msk.ru>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: Re: option driver, ZTE MF_330 matches linux usb 2.0 root hub
-Message-ID: <20110527203044.GC15821@kroah.com>
-References: <4DDEC606.4020504@msgid.tls.msk.ru>
- <20110527012022.GF24630@kroah.com>
- <BANLkTikcjXTczV2FmGcQ7BY=m_t7ep54Sw@mail.gmail.com>
- <4DDF427E.1030109@msgid.tls.msk.ru>
- <BANLkTikodJ4cnjJ9Lxx=zsHd-dAgPzfDrA@mail.gmail.com>
- <4DDF6917.9060004@msgid.tls.msk.ru>
- <BANLkTi==1WyJNACmoOxcrS6RiJ3w8Ow1zw@mail.gmail.com>
- <20110527100215.GC9272@kroah.com>
- <4DDFA4F5.8060502@msgid.tls.msk.ru>
- <BANLkTinAip5BswLBjxyJ1O_XPnUFq=FUjw@mail.gmail.com>
+	id S1756638Ab1E0UpU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 16:45:20 -0400
+Received: from mail.qboosh.pl ([217.73.31.61]:35477 "EHLO mail.qboosh.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753437Ab1E0UpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 16:45:17 -0400
+X-Greylist: delayed 630 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 May 2011 16:45:17 EDT
+Date: Fri, 27 May 2011 22:34:50 +0200
+From: Jakub Bogusz <qboosh@pld-linux.org>
+To: Miloslav Trmac <mitr@volny.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH] wistron_btns: FS AMILO Pro 8210 support
+Message-ID: <20110527203450.GQ3197@stranger.qboosh.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/mixed; boundary="at6+YcpfzWZg/htY"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinAip5BswLBjxyJ1O_XPnUFq=FUjw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 03:24:02PM +0200, Paweł Drobek wrote:
-> On weekend i could give you all data which you need to do more precisely
-> action. Just write all command should i give.
 
-The output of:
-	lsusb -v
-is all that we need.
+--at6+YcpfzWZg/htY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-thanks,
+Hello,
 
-greg k-h
+The attached patch adds Fujitsu-Siemens AMILO Pro 8210 support to
+wistron_btns driver.
+
+Functions are very similar to already supported AMILO Pro 3505, but 8210
+has WIFI led.
+
+
+-- 
+Jakub Bogusz    http://qboosh.pl/
+
+--at6+YcpfzWZg/htY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="linux-wistron-amilo8210.patch"
+
+--- linux-2.6.37/drivers/input/misc/wistron_btns.c.orig	2011-01-05 01:50:19.000000000 +0100
++++ linux-2.6.37/drivers/input/misc/wistron_btns.c	2011-02-19 07:51:36.000000000 +0100
+@@ -278,6 +278,16 @@
+ 	{ KE_END,       0 }
+ };
+ 
++static struct key_entry keymap_fs_amilo_pro_v8210[] __initdata = {
++	{ KE_KEY,       0x01, {KEY_HELP} },          /* Fn+F1 */
++	{ KE_KEY,       0x06, {KEY_DISPLAYTOGGLE} }, /* Fn+F4 */
++	{ KE_BLUETOOTH, 0x30 },                      /* Fn+F10 */
++	{ KE_KEY,       0x31, {KEY_MAIL} },          /* mail button */
++	{ KE_KEY,       0x36, {KEY_WWW} },           /* www button */
++	{ KE_WIFI,      0x78 },                      /* satelite dish button */
++	{ KE_END,       FE_WIFI_LED }
++};
++
+ static struct key_entry keymap_fujitsu_n3510[] __initdata = {
+ 	{ KE_KEY, 0x11, {KEY_PROG1} },
+ 	{ KE_KEY, 0x12, {KEY_PROG2} },
+@@ -655,6 +665,15 @@
+ 		.driver_data = keymap_fs_amilo_pro_v3505
+ 	},
+ 	{
++		/* Fujitsu-Siemens Amilo Pro Edition V8210 */
++		.callback = dmi_matched,
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "AMILO Pro Series V8210"),
++		},
++		.driver_data = keymap_fs_amilo_pro_v8210
++	},
++	{
+ 		/* Fujitsu-Siemens Amilo M7400 */
+ 		.callback = dmi_matched,
+ 		.matches = {
+
+--at6+YcpfzWZg/htY--
