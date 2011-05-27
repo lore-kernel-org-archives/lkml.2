@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab1E0Ms1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 08:48:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45023 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab1E0MsZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 08:48:25 -0400
-X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=Yc1t9-nblxEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=L9TwHIVpId0pzvzusysA:9 a=2ojl_tJ_yQ-8fXdStXMA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] trace: Set oom_score_adj to maximum for ring buffer
- allocating process
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mel@csn.ul.ie>, Rik Van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1105270220580.22108@chino.kir.corp.google.com>
-References: <1306439537-23706-1-git-send-email-vnagarnaik@google.com>
-	 <1306440288.3857.9.camel@gandalf.stny.rr.com>
-	 <BANLkTi=dEHG4zEZ2xRF7VEDdM6fsd9Hr=g@mail.gmail.com>
-	 <alpine.DEB.2.00.1105261328200.29812@chino.kir.corp.google.com>
-	 <1306443612.3857.15.camel@gandalf.stny.rr.com>
-	 <BANLkTimK44fQeJJFkNzT6rBuuz=FDJ8K0w@mail.gmail.com>
-	 <1306453118.3857.20.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1105270220580.22108@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 27 May 2011 08:48:22 -0400
-Message-ID: <1306500502.3857.26.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755363Ab1E0Msl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 08:48:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52029 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753996Ab1E0Msi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 08:48:38 -0400
+Date: Fri, 27 May 2011 12:48:30 GMT
+From: tip-bot for liubo <liubo2009@cn.fujitsu.com>
+Message-ID: <tip-7f34b746f79c1e1f8fd6d09799d133263ae7a504@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        liubo2009@cn.fujitsu.com, rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        liubo2009@cn.fujitsu.com, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <4DACE6E3.8080200@cn.fujitsu.com>
+References: <4DACE6E3.8080200@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] tracing: Update btrfs's tracepoints to use u64 interface
+Git-Commit-ID: 7f34b746f79c1e1f8fd6d09799d133263ae7a504
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 27 May 2011 12:48:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-27 at 02:43 -0700, David Rientjes wrote:
+Commit-ID:  7f34b746f79c1e1f8fd6d09799d133263ae7a504
+Gitweb:     http://git.kernel.org/tip/7f34b746f79c1e1f8fd6d09799d133263ae7a504
+Author:     liubo <liubo2009@cn.fujitsu.com>
+AuthorDate: Tue, 19 Apr 2011 09:35:31 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Wed, 25 May 2011 22:13:47 -0400
 
-> This problem isn't new, it's always been possible that an allocation that 
-> is higher order, using GFP_ATOMIC or GFP_NOWAIT, or utilizing 
-> __GFP_NORETRY as I suggested here, would deplete memory at the same time 
-> that a GFP_FS allocation on another cpu would invoke the oom killer.
-> 
-> If that happens between the time when tracing_resize_ring_buffer() goes 
-> oom and its nicely written error handling starts freeing memory, then it's 
-> possible that another task will be unfairly oom killed.  Note that the 
-> suggested solution of test_set_oom_score_adj(OOM_SCORE_ADJ_MAX) doesn't 
-> prevent that in all cases: it's possible that another thread on the system 
-> also has an oom_score_adj of OOM_SCORE_ADJ_MAX and it would be killed in 
-> its place just because it appeared in the tasklist first (which is 
-> guaranteed if this is simply an echo command).
-> 
-> Relying on the oom killer to kill this task for parallel blockable 
-> allocations doesn't seem like the best solution for the sole reason that 
-> the program that wrote to buffer_size_kb may count on its return value.  
-> It may be able to handle an -ENOMEM return value and, perhaps, try to 
-> write a smaller value?
-> 
-> I think what this patch really wants to do is utilize __GFP_NORETRY as 
-> previously suggested and, if we're really concerned about parallel 
-> allocations in this instance even though the same situation exists all 
-> over the kernel, also create an oom notifier with register_oom_notifier() 
-> that may be called in oom conditions that would free memory when 
-> buffer->record_disabled is non-zero and prevent the oom.  That would 
-> increase the size of the ring buffer as large as possible up until oom 
-> even though it may not be to what the user requested.
-> 
-> Otherwise, you'll just want to use oom_killer_disable() to preven the oom 
-> killer altogether.
+tracing: Update btrfs's tracepoints to use u64 interface
 
-Thanks for the detailed explanation. OK, I'm convinced. The proper
-solution looks to be both the use of __GFP_NORETRY and the use of
-test_set_oom_score_adj(). I don't think it is necessary to worry about
-multiple users of this score adj, as when we are in an OOM situation,
-things are just bad to begin with. But Google has to deal with bad
-situations more than others, so if it becomes an issue for you, then we
-can discuss those changes later.
+To avoid 64->32 truncating WARNING, update btrfs's tracepoints.
 
-Vaibhav, can you send an updated patch?
+Signed-off-by: Liu Bo <liubo2009@cn.fujitsu.com>
+Link: http://lkml.kernel.org/r/4DACE6E3.8080200@cn.fujitsu.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/events/btrfs.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-
--- Steve
-
-
+diff --git a/include/trace/events/btrfs.h b/include/trace/events/btrfs.h
+index f445cff..4114129 100644
+--- a/include/trace/events/btrfs.h
++++ b/include/trace/events/btrfs.h
+@@ -28,7 +28,7 @@ struct extent_buffer;
+ 		{ BTRFS_SHARED_DATA_REF_KEY, 	"SHARED_DATA_REF" })
+ 
+ #define __show_root_type(obj)						\
+-	__print_symbolic(obj,						\
++	__print_symbolic_u64(obj,					\
+ 		{ BTRFS_ROOT_TREE_OBJECTID, 	"ROOT_TREE"	},	\
+ 		{ BTRFS_EXTENT_TREE_OBJECTID, 	"EXTENT_TREE"	},	\
+ 		{ BTRFS_CHUNK_TREE_OBJECTID, 	"CHUNK_TREE"	},	\
+@@ -125,7 +125,7 @@ DEFINE_EVENT(btrfs__inode, btrfs_inode_evict,
+ );
+ 
+ #define __show_map_type(type)						\
+-	__print_symbolic(type,						\
++	__print_symbolic_u64(type,					\
+ 		{ EXTENT_MAP_LAST_BYTE, "LAST_BYTE" 	},		\
+ 		{ EXTENT_MAP_HOLE, 	"HOLE" 		},		\
+ 		{ EXTENT_MAP_INLINE, 	"INLINE" 	},		\
