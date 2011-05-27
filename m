@@ -1,202 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758531Ab1E0HNR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 03:13:17 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57668 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab1E0HNQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 03:13:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=K/zj0Pv0Czc8jElhQ7tjvD2CTBET/2pkXSWXGddwWetDDLWPXshRcKH4mPMKASUohq
-         k+dxR3n9ufIAQcuztnnN+naDSi/YIX4zms8z8GvOfjDDsrteUhCR86yqpF2dcsxnHi9u
-         LYLPLAkI9Ck7VXNW4iKKtRJbMHfU4J4jZSnz4=
+	id S1753897Ab1E0HPq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 03:15:46 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:51521 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751274Ab1E0HPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 03:15:45 -0400
+Date: Fri, 27 May 2011 09:15:19 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, davej@redhat.com,
+        torvalds@linux-foundation.org, adobriyan@gmail.com, eranian@google.com,
+        penberg@kernel.org, davem@davemloft.net,
+        Arjan van de Ven <arjan@infradead.org>, hpa@zytor.com,
+        Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
+        pageexec@freemail.hu, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+Message-ID: <20110527071519.GD9260@elte.hu>
+References: <1306269105.21443.20.camel@dan>
+ <1306442367.2279.25.camel@dan>
 MIME-Version: 1.0
-In-Reply-To: <20110526162138.GN9520@thunk.org>
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
- <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard>
- <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
- <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu> <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com>
- <20110526133155.GH9520@thunk.org> <BANLkTinTzNN2P45tgZAQ9FsL43CqyAJR3Q@mail.gmail.com>
- <20110526162138.GN9520@thunk.org>
-From: "D. Jansen" <d.g.jansen@googlemail.com>
-Date: Fri, 27 May 2011 09:12:34 +0200
-Message-ID: <BANLkTinPCcX9-gK7YnMngGUJKftRTmYXNw@mail.gmail.com>
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-To: "Ted Ts'o" <tytso@mit.edu>, "D. Jansen" <d.g.jansen@googlemail.com>,
-        Oliver Neukum <oneukum@suse.de>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        njs@pobox.com, bart@samwel.tk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306442367.2279.25.camel@dan>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 6:21 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Thu, May 26, 2011 at 06:05:43PM +0200, D. Jansen wrote:
->> Problem: any fsync call by any application spins up the hard disk any
->> time even in laptop_mode
->
-> What you call a problem, I call a feature.
 
-Problem: any fsync call by any application spins up the hard disk any
-time even in laptop_mode and there's nothing the user can do about it
-in user space - without risking that the application corrupts existing data if
-the kernel decides to commit the queued writes in non-FIFO order OR
-modifying every single application itself.
+* Dan Rosenberg <drosenberg@vsecurity.com> wrote:
 
->> Because though there is no possibility to destroy data that is on disk
->> due to non FIFO flushing of application writes queued in the kernel,
->> which seems to be the main kernel level problem, yet new problems come
->> up.
->
-> I'm not sure what you're talking about here.  Buffered data can always
-> be reordered in terms of when it is written to disk.  This is
-> considered good, and normal.  If you want to guarantee that
-> application writes are pushed out to disk, then either (a) use
-> O_DIRECT, or (b) use fsync().  Those are your two options.
+> 5. I'll be switching to per-cpu IDTs, basing my work on the 
+> following patch:
+> 
+> http://marc.info/?l=linux-kernel&m=112767117501231&w=2
+> 
+> Any review or comments on the above patch would be helpful.  I'm 
+> considering submitting this portion separately, as it may provide 
+> performance and scalability benefits regardless of randomization.
 
-That reordering is exactly what I'm talking about. It wasn't my idea.
-But if I understood it correctly, it's possible that the kernel
-commits writes of an application, _to one and the same file_, in a
-non-FIFO order, if the application does not fsync. And this _afaiu_
-could result in the loss not only of new data, but complete corruption
-of previously existing data in laptop mode without fsync.
+Yeah.
 
-But you're the expert. Is that really the case? If so, could it be
-avoided without the daemon and application patching?
+Note that you do not have to do the MSI thing in Zwane's patch, nor 
+do i think do you need to touch the boot IDT, but instead go for the 
+easiest route:
 
-> If we didn't (for example) reorder writes to avoid the hard disk head
-> from seeking all over the disk, that would actually cause more power
-> to be consumed!
+There are two main places that set up the IDT:
 
-Yes, probably. But I doubt if that happens only once in a commit
-window in laptop mode that the effect would destroy the gains. Also it
-is not always necessary. Only writes to one file should be committed
-in order. They could even be merged to one write - if they aren't
-already: It seems the ordering is only necessary when an fsync occurs.
+  trap_init();
+  init_IRQ()
 
-1) DDD_ (write D at 0)
-2) _HHH (write H at 1) (fsync)
-3) DHHH (result/merged write, in order)
+The IDT is fully set up at this point and i don't think we change it 
+later on. So all the fancy changes to set_intr_gate() et al in 
+Zwane's patch seem unnecessary to me.
 
-As long as we don't end up with:
-3) DDDH (out of order write, corrupt)
+Most of the complexity Zwane's patch has comes from the fact that he 
+tries to use per CPU IDTs to create *assymetric* IDTs between CPUs - 
+but we do not want nor need to do that with your patch, which 
+simplifies things enormously.
 
->> Now there is
-(in a special write queue and coordination daemon)
->> 1) special support needed on the application side.
->
-> Yep, because this is fundamentally an application-level problem, and
-> the kernel doesn't have enough semantic information to solve the
-> database coherency problem.
+Note that both of the above init functions execute only on the boot 
+CPU, well before SMP is initialized. So it is an easy environment to 
+work in from an IDT switcheroo POV and we should be able to switch to 
+the percpu IDT there without much fuss.
 
-Well if we know that fsyncs mean the application needs the data to be
-committed in order, couldn't we watch out for fsync calls and then (in
-laptop mode when this feature specially requested by the user) switch
-that application to fifo per file writes? (Disregarding the write
-performance in that case.) Or we let the userspace eatmydata library
-detect the same fsync and use a kernel api to switch that write to
-fifo instead of fsyncing. A fifo write call might actually be useful
-to other applications and scenarios as well. (trojan horse!)
-Or the last write before the fsync is committed last. If reordering is
-otherwise possible, this should avoid corruption and decrease
-performance less. (Though we're not talking about writing hundreds of
-MBs in laptop mode in my average use case scenario of office
-applications and maybe a browser running.)
->
->> 2) need for new out-of-kernel buffers.
->
-> Yes.  So?
+Note that setup_per_cpu_areas() is called well before trap_init(), so 
+at the end of init_IRQ() you can rely on percpu facilities such as 
+percpu_alloc() as well.
 
-Shouldn't we try to avoid replicating existing infrastructure when possible?
+I'd suggest these rough steps to implement it:
 
->
->> 3) need for inter-application write alignment nightmares. This sort of
->> structure could cause very uncomfortable bugs that prevent writes from
->> happening at all in cases that were not foreseen at all.
->
-> Huh?  I think you are talking about order that buffered writes happen,
-> and there's no problem here.  It's a feature that they can be
-> reordered.  See above.
+ - turn off CONFIG_SMP in the .config
 
-No, what I meant is that if there is a bug at any step of the
-coordination between the applications and the daemon: in the daemon,
-the software, their communication connection, etc., writes may not
-occur and we may lose data without need.
+ - first add the new init function call to the end of arch/x86/'s 
+   init_IRQ(), put the percpu_alloc() into that function, copy
+   the old IDT into the new IDT (but do not load it!) and boot test 
+   the patch.
 
->> 5) If the _application_, but not the kernel crashes, the data is safe.
->> In my experience this is the much more likely case than that the mail
->> server on my netbook optimized for battery time receives an email in
->> laptop mode, sends the other server "200" and then before the next
->> commit window my battery slips out and it's all gone.
->
-> Huh?  What's the problem that you're worried about here.
-Your scenario sounds like this:
-daemon announced when to flush data
-until then application buffers data in it's user space.
+   At this point you wont have any change to the IDT yet, but you
+   have tested all the boot CPU init order assumptions: is 
+   percpu_alloc() really available, did you do the copying right, 
+   etc. You might want to print-dump the new IDT in hexdump format
+   and check whether it looks like an IDT you'd like the CPU to load.
 
-This means if you save a file and the application crashes, e.g. segfaults
-and is killed, the data is still in its queue and thus lost.
+ - then add the one extra line that loads the new IDT into the CPU.
 
-Without the daemon, the data would be in kernel space already and thus
-safe from application crashes.
+   If the kernel does not crash then you will have a randomized UP
+   kernel that does not leak the randomization secret to user-space 
+   via the SIDT instructon. Test this in user-space, marvel at the
+   non-kernel-image address you get! :-)
 
-In my experience the kernel is very stable, applications are much less so.
+ - turn on CONFIG_SMP=y and boot the kernel.
 
-And I really don't see this entering many applications. They would
-probably say this is the task of the kernel itself or some other piece
-of layer in between, but not the task of every single app developer to
-reinvent write caching, coordination with the laptop writes daemon
-etc. In the end we might have one or two special "write in laptop
-mode" apps and as soon as I start a browser or any sqlite based app,
-the problem is back.
+   The kernel should not crash: you will have the boot CPU with
+   the percpu IDT, and all secondary CPUs with the bootup IDT
+   still referenced. Check via your user-space SIDT test-code
+   and:
 
->> I think the alternative of ensuring the application writes are
->> committed in order would make more sense:
->> e..g a _user space library_ disables fsync etc. in laptop_mode if the
->> user chooses to do so and kernel support for forced FIFO ordering or
->> writes.
->> This would fix 1) 2) 3) 4) 5) 6).
->
-> And if you do this to a mysql daemon, or to a firefox or chrome
-> process which uses sqllite, and you crash at a wrong time, the entire
-> database could be scrambled.
-Define crash at the wrong time. Because there is always a wrong time,
-whether with laptop mode or without, with fsync or without.
+             taskset 0 ./test-sidt
+             taskset 1 ./test-sidt
+             taskset 2 ./test-sidt
 
-> You can't fix this with your solution, because you want to make fsync()
-> lie to the database code.  And so all
-> of the extra work (and power) consumed by the database code to try to
-> make its database writes be safe, will be compromised by making
-> fsync() unreliable.
+   That indeed CPU#0 has a different IDT address from all the other
+   CPUs. Marvel at the incomplete but still fully working IDT setup! 
+   :-)
 
-Yes, I would like to have the liberty of extending the decrease of
-safety of new data in favor of the choice of creating more new data
-(due to longer run time) when in laptop mode.
+ - Figure out where a new secondary CPU loads the boot IDT. Figure 
+   out where it sets up its percpu area. Find the spot where both
+   facilities are available already and add the percpu_alloc()+copy 
+   routine to it. Do the hex printout and boot the kernel - do the 
+   dumped IDTs look sane visually?
 
-I still want and use that safety, just not when I'm in laptop mode.
->
->> So you've re-thought this "All that is necessary is a kernel patch to
->> allow laptop_mode to disable fsync() calls(...)"
->> (http://tytso.livejournal.com/2009/03/15/). That post had inspired my
->> patch.
->
-> I was thinking about things only from a file system perspective.  The
-> problem is that more and more people are running databases or other
-> binary files which are updated in place on their laptops, and from a
-> more holistic perspective, we have to worry about making sure that
-> application-level databases are coherent in the face of a system
-> crash.  (For example, you drop your mobile phone, or your tablet, or
-> your laptop, and the battery slips out.)
+ - If they looked fine then add the one extra line that loads the
+   new IDT into the secondary CPU(s). Boot and check the IDTs:
 
-Exactly. Great example! Again, I very much agree.("Even") I don't want
-to end up with
-corrupt data. But I accept old data. Is there really no way to get there without
-rewriting each and every application's fsync code?
+             taskset 0 ./test-sidt
+             taskset 1 ./test-sidt
+             taskset 2 ./test-sidt
 
-Thanks for your insights!
+   Now you should have different results on all different CPUs!
+   Marvel at having completed the patch!
+
+ - Please check whether the IDT has alignment requirements: we could 
+   actually benefit from coloring the percpu IDTs a bit, as each 
+   hyperthread (and core) has a separate IDT so we can spread out any 
+   cache and RAM accesses a bit better amongst the cache/memory 
+   ports.
+
+ - Please check how fast SIDT is, how many cycles does it take? If 
+   it's faster than CPUID then you have also created another nice 
+   scalability feature: a user-space instruction that emits the 
+   current CPU ID! [we could encode the CPU ID in the address - this 
+   will also give us the cache coloring.]
+
+Note that using the percpu area will also avoid the 4K mapping TLB 
+problem Linus referred to: the percpu area is mapped in a 2MB data 
+TLB.
+
+What this stage wont allow yet is a read-only IDT. That should be yet 
+another patch on top of this: the percpu IDT will already allow the 
+protection of the kernel image randomization secret.
+
+The read-only IDT will bring in the 4K TLB cost but maybe that's 
+acceptable (because the security advantages of a read-only IDT are 
+real). It will be a relatively easy patch on top of the percpu IDT 
+patch: where you load the percpu IDT into the CPU with the LIDT 
+instruction, you'd first fixmap it into a readonly page:
+
+	__set_fixmap(FIX_IDT, __pa(percpu_idt_ptr), PAGE_KERNEL_RO);
+
+And use __fix_to_virt(FIX_IDT) as the load_IDT() address.
+
+If you do it as two patches on top of each other i'll try to figure 
+out a way to measure the performance impact of the readonly IDT via 
+perf. It won't be easy as the expected effect is very, very small.
+
+Thanks,
+
+	Ingo
