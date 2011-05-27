@@ -1,79 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab1E0Qtk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 12:49:40 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:14626 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262Ab1E0Qtj (ORCPT
+	id S1756578Ab1E0Qvy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 12:51:54 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52249 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756016Ab1E0Qvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 12:49:39 -0400
-Message-ID: <4DDFD622.1000102@caviumnetworks.com>
-Date: Fri, 27 May 2011 09:49:38 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: David Gibson <david@gibson.dropbear.id.au>,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca
-CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v4 1/6] of: Allow scripts/dtc/libfdt to be used from
- kernel code
-References: <1305930343-31259-1-git-send-email-ddaney@caviumnetworks.com> <1305930343-31259-2-git-send-email-ddaney@caviumnetworks.com> <20110521063345.GB14828@yookeroo.fritz.box> <4DDA8FBC.1090904@caviumnetworks.com> <20110527032402.GD7793@yookeroo.fritz.box>
-In-Reply-To: <20110527032402.GD7793@yookeroo.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 May 2011 16:49:39.0139 (UTC) FILETIME=[117F4930:01CC1C8E]
+	Fri, 27 May 2011 12:51:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=boSX7R7ntfZBS/i5gcdQMTRDNIA4GPUnSwMzADnTnCI7vV2js2EmTVliD2xAAC8JTZ
+         0DmlwZWmVXWBcATw3oTrIOy1PZlM8+2yVZOQfnNOOwgcKqSg+6/n69LAvw1lp7ftH+JO
+         IzlASo/+A2EYpnkb1ZDiETB8KycdNuGqH/PKQ=
+From: David Ahern <dsahern@gmail.com>
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf stat: clarify unsupported events from uncounted events
+Date: Fri, 27 May 2011 10:51:46 -0600
+Message-Id: <1306515106-11967-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2011 08:24 PM, David Gibson wrote:
-> On Mon, May 23, 2011 at 09:47:56AM -0700, David Daney wrote:
->> On 05/20/2011 11:33 PM, David Gibson wrote:
->>> On Fri, May 20, 2011 at 03:25:38PM -0700, David Daney wrote:
->>>> To use it you need to do this in your Kconfig:
->>>>
->>>> 	select LIBFDT
->>>>
->>>> And in the Makefile of the code using libfdt something like:
->>>>
->>>> ccflags-y := -include linux/libfdt_env.h -I$(src)/../../../scripts/dtc/libfdt
->>>>
->>>> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
->>>> ---
->>>>   drivers/of/Kconfig          |    3 +++
->>>>   drivers/of/Makefile         |    2 ++
->>>>   drivers/of/libfdt/Makefile  |    3 +++
->>>>   drivers/of/libfdt/fdt.c     |    2 ++
->>>>   drivers/of/libfdt/fdt_ro.c  |    2 ++
->>>>   drivers/of/libfdt/fdt_wip.c |    2 ++
->>>
->>> No fdt_sw.c or fdt_rw.c?
->>>
->>
->> I had no immediate need for them.  They could of course be added,
->> but that would potentially waste space.
->>
->> Let's see if I can make it into an archive library.
->
-> That would be preferable.  It's more or less designed to work that way
-> so that everything is available without using unnecessary space in the
-> binary.
->
+perf stat continues running even if the event list contains
+counters that are not supported. The resulting output then
+contains <not counted> for those events which gets confusing
+as to which events are supported, but not counted and which
+are not supported.
 
-Well, I was looking at this some more:
+Before:
 
-Grant specifically requested that this go in drivers/of/libfdt, however 
-I am fairly sure that building archive libraries there will require 
-changes to the upper level Makefile infrastructure.
+perf stat -ddd -- sleep 1
 
-If I go back to lib/libfdt, like my first version, I can easily achieve 
-archive library behavior, but then it is separated from from drivers/of.
+ Performance counter stats for 'sleep 1':
 
-Personally I am starting to like the lib/libfdt home more than 
-drivers/of.  If Grant doesn't object, I think I will move it back there.
+          0.571283 task-clock                #    0.001 CPUs utilized          
+                 1 context-switches          #    0.002 M/sec                  
+                 0 CPU-migrations            #    0.000 M/sec                  
+               157 page-faults               #    0.275 M/sec                  
+         1,037,707 cycles                    #    1.816 GHz                    
+     <not counted> stalled-cycles-frontend 
+     <not counted> stalled-cycles-backend  
+           654,499 instructions              #    0.63  insns per cycle        
+           136,129 branches                  #  238.286 M/sec                  
+     <not counted> branch-misses           
+     <not counted> L1-dcache-loads         
+     <not counted> L1-dcache-load-misses   
+     <not counted> LLC-loads               
+     <not counted> LLC-load-misses         
+     <not counted> L1-icache-loads         
+     <not counted> L1-icache-load-misses   
+     <not counted> dTLB-loads              
+     <not counted> dTLB-load-misses        
+     <not counted> iTLB-loads              
+     <not counted> iTLB-load-misses        
+     <not counted> L1-dcache-prefetches    
+     <not counted> L1-dcache-prefetch-misses
 
-What do you think?
+       1.001004836 seconds time elapsed
 
-David Daney
+
+After:
+
+perf stat -ddd -- sleep 1
+
+ Performance counter stats for 'sleep 1':
+
+          1.350326 task-clock                #    0.001 CPUs utilized
+                 2 context-switches          #    0.001 M/sec
+                 0 CPU-migrations            #    0.000 M/sec
+               157 page-faults               #    0.116 M/sec
+            11,986 cycles                    #    0.009 GHz
+   <not supported> stalled-cycles-frontend
+   <not supported> stalled-cycles-backend
+           496,986 instructions              #   41.46  insns per cycle
+           138,065 branches                  #  102.246 M/sec
+             7,245 branch-misses             #    5.25% of all branches         [97.60%]
+     <not counted> L1-dcache-loads
+     <not counted> L1-dcache-load-misses
+     <not counted> LLC-loads
+     <not counted> LLC-load-misses
+     <not counted> L1-icache-loads
+     <not counted> L1-icache-load-misses
+     <not counted> dTLB-loads
+     <not counted> dTLB-load-misses
+     <not counted> iTLB-loads
+     <not counted> iTLB-load-misses
+     <not counted> L1-dcache-prefetches
+   <not supported> L1-dcache-prefetch-misses
+
+       1.002397333 seconds time elapsed
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/builtin-stat.c |    9 +++++++--
+ tools/perf/util/evsel.h   |    1 +
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index a9f0671..b6c9853 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -61,6 +61,8 @@
+ #include <locale.h>
+ 
+ #define DEFAULT_SEPARATOR	" "
++#define CNTR_NOT_SUPPORTED	"<not supported>"
++#define CNTR_NOT_COUNTED	"<not counted>"
+ 
+ static struct perf_event_attr default_attrs[] = {
+ 
+@@ -448,6 +450,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 				if (verbose)
+ 					ui__warning("%s event is not supported by the kernel.\n",
+ 						    event_name(counter));
++				counter->supported = 0;
+ 				continue;
+ 			}
+ 
+@@ -466,6 +469,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 			die("Not all events could be opened.\n");
+ 			return -1;
+ 		}
++		counter->supported = 1;
+ 	}
+ 
+ 	if (perf_evlist__set_filters(evsel_list)) {
+@@ -861,7 +865,7 @@ static void print_counter_aggr(struct perf_evsel *counter)
+ 	if (scaled == -1) {
+ 		fprintf(stderr, "%*s%s%*s",
+ 			csv_output ? 0 : 18,
+-			"<not counted>",
++			counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
+ 			csv_sep,
+ 			csv_output ? 0 : -24,
+ 			event_name(counter));
+@@ -914,7 +918,8 @@ static void print_counter(struct perf_evsel *counter)
+ 				csv_output ? 0 : -4,
+ 				evsel_list->cpus->map[cpu], csv_sep,
+ 				csv_output ? 0 : 18,
+-				"<not counted>", csv_sep,
++				counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
++				csv_sep,
+ 				csv_output ? 0 : -24,
+ 				event_name(counter));
+ 
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index f79bb2c..57eccf1 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -61,6 +61,7 @@ struct perf_evsel {
+ 		off_t		id_offset;
+ 	};
+ 	struct cgroup_sel	*cgrp;
++	int supported;
+ };
+ 
+ struct cpu_map;
+-- 
+1.7.5.1
 
