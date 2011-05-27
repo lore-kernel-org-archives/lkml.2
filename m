@@ -1,256 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758435Ab1E0Gqw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 02:46:52 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43076 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274Ab1E0Gqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 02:46:51 -0400
-Date: Fri, 27 May 2011 08:46:47 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH 03/12] mce-severity: cleanup severity table
-Message-ID: <20110527064647.GC16811@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-	linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Tony Luck <tony.luck@intel.com>
-References: <4DDF21DE.9040705@jp.fujitsu.com>
- <4DDF22FA.4020406@jp.fujitsu.com>
+	id S1758643Ab1E0Gsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 02:48:31 -0400
+Received: from mx0.init-ka.de ([62.153.77.47]:28695 "EHLO gateway13.init-ka.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751306Ab1E0Gs3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 02:48:29 -0400
+From: "Hornung, Michael" <mhornung@init-ka.de>
+To: "'Bjorn Helgaas'" <bhelgaas@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Date: Fri, 27 May 2011 08:48:24 +0200
+Subject: AW: Kernel > 2.6.30: PCI issue causes Kernel freeze at booting
+Thread-Topic: Kernel > 2.6.30: PCI issue causes Kernel freeze at booting
+Thread-Index: Acwa9D4fsf+vFlZLRL669fyo2vl66AAyAH0A
+Message-ID: <334319B2EBE0B144BAE1402B79D82DC5CE13B082@srvpegasus>
+References: <334319B2EBE0B144BAE1402B79D82DC5CE13B056@srvpegasus>
+ <BANLkTimNSe5JjM2+_-XzS7D8XPeZrPL0oA@mail.gmail.com>
+ <334319B2EBE0B144BAE1402B79D82DC5CE13B05A@srvpegasus>
+ <BANLkTimX1KG-BZ98LH_NweOUOaUbQtZirg@mail.gmail.com>
+ <BANLkTimrpnCdzRArjAn2NOZMu0Bhf6Pn8Q@mail.gmail.com>
+ <334319B2EBE0B144BAE1402B79D82DC5CE13B07E@srvpegasus>
+ <BANLkTikgg_4Xj2Z3q6pR+QJSxg6c6cQ32w@mail.gmail.com>
+In-Reply-To: <BANLkTikgg_4Xj2Z3q6pR+QJSxg6c6cQ32w@mail.gmail.com>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4DDF22FA.4020406@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 27 May 2011 06:48:26.0142 (UTC) FILETIME=[1450C3E0:01CC1C3A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 01:05:14PM +0900, Hidetoshi Seto wrote:
-> Current format of item in this table is:
->   condition(param, ..., level, message [, condition2 ...])
-> 
-> So we have to check both of head and tail of the item to know
-> conditions to match the item.
-> 
-> Make them in straight forward form:
->   item(level, message, condition [, condition2 ...])
-> 
-> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce-severity.c |  127 +++++++++++++----------------
->  1 files changed, 58 insertions(+), 69 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> index eaf5a43..b797913 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> @@ -43,116 +43,105 @@ static struct severity {
->  	unsigned char covered;
->  	char *msg;
->  } severities[] = {
-> -#define KERNEL .context = IN_KERNEL
-> -#define USER .context = IN_USER
-> -#define SER .ser = SER_REQUIRED
-> -#define NOSER .ser = NO_SER
-> -#define SEV(s) .sev = MCE_ ## s ## _SEVERITY
-> -#define BITCLR(x, s, m, r...) { .mask = x, .result = 0, SEV(s), .msg = m, ## r }
-> -#define BITSET(x, s, m, r...) { .mask = x, .result = x, SEV(s), .msg = m, ## r }
-> -#define MCGMASK(x, res, s, m, r...) \
-> -	{ .mcgmask = x, .mcgres = res, SEV(s), .msg = m, ## r }
-> -#define MASK(x, y, s, m, r...) \
-> -	{ .mask = x, .result = y, SEV(s), .msg = m, ## r }
-> +#define MCESEV(s, m, c...) { .sev = MCE_ ## s ## _SEVERITY, .msg = m, ## c }
-> +#define  KERNEL		.context = IN_KERNEL
-> +#define  USER		.context = IN_USER
-> +#define  SER		.ser = SER_REQUIRED
-> +#define  NOSER		.ser = NO_SER
-> +#define  BITCLR(x)	.mask = x, .result = 0
-> +#define  BITSET(x)	.mask = x, .result = x
-> +#define  MCGMASK(x, y)	.mcgmask = x, .mcgres = y
-> +#define  MASK(x, y)	.mask = x, .result = y
->  #define MCI_UC_S (MCI_STATUS_UC|MCI_STATUS_S)
->  #define MCI_UC_SAR (MCI_STATUS_UC|MCI_STATUS_S|MCI_STATUS_AR)
->  #define MCACOD 0xffff
->  
-> -	BITCLR(
-> -		MCI_STATUS_VAL,
-> -		NO, "Invalid"
-> +	MCESEV(
-> +		NO, "Invalid",
-> +		BITCLR(MCI_STATUS_VAL)
->  		),
-> -	BITCLR(
-> -		MCI_STATUS_EN,
-> -		NO, "Not enabled"
-> +	MCESEV(
-> +		NO, "Not enabled",
-> +		BITCLR(MCI_STATUS_EN)
->  		),
-> -	BITSET(
-> -		MCI_STATUS_PCC,
-> -		PANIC, "Processor context corrupt"
-> +	MCESEV(
-> +		PANIC, "Processor context corrupt",
-> +		BITSET(MCI_STATUS_PCC)
->  		),
+Hi Bjorn,
 
-I'm still wondering whether using the gcc struct assignment syntax could
-make those much more readable instead of changing the macro inclusion:
+>>> Hi Michael,
+>>>
+>>> Any update on this problem?  Did it make any difference to put the
+>>> UART in the ACPI namespace?
+>>
+>> thank you very much for your support. Unfortunately I'm not able to get it to work. I changed
+>> the BIOS and added PNP0500 device nodes for all 21 UARTS (all located in the FPGA, all connected
+>> via LPC, all located at addresses between 0x1900 and 0x19a7h and all using IRQ3), but the kernel does not care about
+>> that nodes. CONFIG_SERIAL_8250_PNP is set to "y" (see attached config.txt) but the kernel output does not show
+>> up any differences (2.6.38.6.log).
+>
+> Hmm, let's see...  It's been a while since I really worked in this area.
+>
+> I think there are two problems here: 
+>
+> 1) Something must be wrong with your PNP0500 devices because we only
+> found seven PNP/ACPI devices, the same as we found in the original
+> boot.Your most recent boot didn't have "debug" on the command line;
+> that should show us the PNP devices we did find.  Can you post the
+> DSDT?  Maybe it will have a clue about why we didn't find 28 (the
+> original 7 + the new 21 UARTs) devices.
 
-	{
-		.sev	= MCE_PANIC_SEVERITY,
-		.msg	= "Processor context corrupt",
-		.mask	= MCI_STATUS_PCC,
-		.result	= MCI_STATUS_PCC,
-	},
-	...
+The BIOS sources were a little bit confusing at that point, but finally
+I am able to add PNP device nodes.
 
-I dunno, I have to say, I can read those better instead of eyeballing
-the macros all the time to wonder which was it, was it a bitset or a
-bitclr, or a mcg mask...
+> 2) Even if the PNP0500 devices were all there, Linux has a
+> long-standing problem that we don't actually *do* anything with PNP
+> resources until a driver claims the device.  This PCI assignment is
+> happening before the serial driver would claim the devices, so I'm
+> afraid it won't help with the problem you're seeing.  Ugh.  I've been
+> wanting to fix this for years, but haven't had a chance to dig into
+> it.
 
->  	/* When MCIP is not set something is very confused */
-> -	MCGMASK(
-> -		MCG_STATUS_MCIP, 0,
-> -		PANIC, "MCIP not set in MCA handler"
-> +	MCESEV(
-> +		PANIC, "MCIP not set in MCA handler",
-> +		MCGMASK(MCG_STATUS_MCIP, 0)
->  		),
->  	/* Neither return not error IP -- no chance to recover -> PANIC */
-> -	MCGMASK(
-> -		MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0,
-> -		PANIC, "Neither restart nor error IP"
-> +	MCESEV(
-> +		PANIC, "Neither restart nor error IP",
-> +		MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0)
->  		),
-> -	MCGMASK(
-> -		MCG_STATUS_RIPV, 0,
-> +	MCESEV(
->  		PANIC, "In kernel and no restart IP",
-> -		KERNEL
-> +		KERNEL, MCGMASK(MCG_STATUS_RIPV, 0)
->  		),
-> -	BITCLR(
-> -		MCI_STATUS_UC,
-> +	MCESEV(
->  		KEEP, "Corrected error",
-> -		NOSER
-> +		NOSER, BITCLR(MCI_STATUS_UC)
->  		),
->  
->  	/* ignore OVER for UCNA */
-> -	MASK(
-> -		MCI_UC_SAR, MCI_STATUS_UC,
-> +	MCESEV(
->  		KEEP, "Uncorrected no action required",
-> -		SER
-> +		SER, MASK(MCI_UC_SAR, MCI_STATUS_UC)
->  		),
-> -	MASK(
-> -		MCI_STATUS_OVER|MCI_UC_SAR, MCI_STATUS_UC|MCI_STATUS_AR,
-> +	MCESEV(
->  		PANIC, "Illegal combination (UCNA with AR=1)",
-> -		SER
-> +		SER,
-> +		MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_STATUS_UC|MCI_STATUS_AR)
->  		),
-> -	MASK(
-> -		MCI_STATUS_S, 0,
-> +	MCESEV(
->  		KEEP, "Non signalled machine check",
-> -		SER
-> +		SER, MASK(MCI_STATUS_S, 0)
->  		),
->  
->  	/* AR add known MCACODs here */
-> -	MASK(
-> -		MCI_STATUS_OVER|MCI_UC_SAR, MCI_STATUS_OVER|MCI_UC_SAR,
-> +	MCESEV(
->  		PANIC, "Action required with lost events",
-> -		SER
-> +		SER,
-> +		MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_STATUS_OVER|MCI_UC_SAR)
->  		),
-> -	MASK(
-> -		MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_SAR,
-> +	MCESEV(
->  		PANIC, "Action required; unknown MCACOD",
-> -		SER
-> +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_SAR)
->  		),
->  
->  	/* known AO MCACODs: */
-> -	MASK(
-> -		MCI_UC_SAR|MCI_STATUS_OVER|0xfff0, MCI_UC_S|0xc0,
-> +	MCESEV(
->  		AO, "Action optional: memory scrubbing error",
-> -		SER
-> +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|0xfff0, MCI_UC_S|0xc0)
->  		),
-> -	MASK(
-> -		MCI_UC_SAR|MCI_STATUS_OVER|MCACOD, MCI_UC_S|0x17a,
-> +	MCESEV(
->  		AO, "Action optional: last level cache writeback error",
-> -		SER
-> +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCACOD, MCI_UC_S|0x17a)
->  		),
-> -
-> -	MASK(
-> -		MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_S,
-> +	MCESEV(
->  		SOME, "Action optional unknown MCACOD",
-> -		SER
-> +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_S)
->  		),
-> -	MASK(
-> -		MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_S|MCI_STATUS_OVER,
-> +	MCESEV(
->  		SOME, "Action optional with lost events",
-> -		SER
-> +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_S|MCI_STATUS_OVER)
->  		),
-> -	BITSET(
-> -		MCI_STATUS_UC|MCI_STATUS_OVER,
-> -		PANIC, "Overflowed uncorrected"
-> +
-> +	MCESEV(
-> +		PANIC, "Overflowed uncorrected",
-> +		BITSET(MCI_STATUS_OVER|MCI_STATUS_UC)
->  		),
-> -	BITSET(
-> -		MCI_STATUS_UC,
-> -		UC, "Uncorrected"
-> +	MCESEV(
-> +		UC, "Uncorrected",
-> +		BITSET(MCI_STATUS_UC)
->  		),
-> -	BITSET(
-> -		0,
-> -		SOME, "No match"
-> +	MCESEV(
-> +		SOME, "No match",
-> +		BITSET(0)
->  		)	/* always matches. keep at end */
->  };
->  
-> -- 
-> 1.7.1
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> It does seem unnecessary to assign I/O resources to the 00:1c.1 bridge
+> at all, since there's no device below the bridge that needs I/O
+> resources.  But changing that is a bigger project, too.
 
--- 
-Regards/Gruss,
-    Boris.
+> There *is* an exception to the "Linux ignores PNP resources" rule,
+> though -- maybe we could take advantage of that.  We do reserve
+> "motherboard" resources (PNP0C01 and PNP0C02 devices), and there's
+> even a comment in drivers/pnp/system.c about doing it early, before
+> PCI assigns resources.  So if you change your new PNP0500 devices to
+> PNP0C02 (and fix whatever is preventing PNPACPI from finding them),
+> that might fix the PCI bridge assignment.  Then you'd have to keep the
+> serial.h hack, since the serial driver wouldn't be able to claim the
+> UARTs.
+
+Thank you so much, that actually did the trick. I got it done to add a 
+PNP0C02 device with a memory region from 0x1900 to 0x1947 and that is 
+sufficient to get the kernel booting. 
+
+> Ugh.  I'm really sorry you're tripping over this ugliness in Linux.
+
+Don't mind, 21 UARTs, all starting at address 0x1900 is a little bit "special".
+
+> The way this is *supposed* to work is that first, ACPI tells us where
+> all the fixed hardware is.  The UARTs and PCI host bridges are
+> examples of this fixed hardware.  Then we're supposed to enumerate
+> things below the host bridges and assign unused space when necessary.
+> But Linux has always discovered PCI stuff first, mostly ignoring ACPI,
+> so keep tripping over problems like this.
+
+> Bjorn
+
+
+Again Bjorn, thank you very very much!
+
+With best regards
+
+Michael Hornung
+
+
+------------------------------------------------------------
+Michael Hornung
+Hardware
+Mobile Telematic and Fare Collection Systems
+
+Phone +49-(0)721-6100-305
+Fax +49-(0)721-6100-399
+E-Mail mhornung@init-ka.de
+
+INIT Innovative Informatikanwendungen
+in Transport-, Verkehrs- und Leitsystemen GmbH 
+Käppelestrasse 4-6
+76131 Karlsruhe
+Germany
+http://www.init-ka.de  
+ 
+Geschäftsführer:
+Dr.-Ing. Gottfried Greschner, Dipl.-Inform. Achim Becker, Dipl.-Ing. (FH) Wolfgang Degen, Dipl.-Kfm. Dr. Jürgen Greschner
+ 
+Amtsgericht Mannheim HRB 103679 . Internationale Registrierungen: 988055689MVA (Norwegen), FC027220 (UK)  
+ 
+Vertraulichkeitshinweis:
+Der Inhalt dieser E-Mail ist vertraulich zu behandeln. Das Schreiben ist nur zur Kenntnis des oben genannten Empfängers bestimmt. Wenn Sie nicht der richtige Adressat sind, informieren Sie bitte sofort den Absender und vernichten diese Nachricht. Unerlaubte Kopien sowie unbefugte Weitergabe sind nicht gestattet.
+Bitte beachten Sie, dass durch diese E-Mail keine rechtsverbindlichen Willenserklärungen abgegeben werden.
+ 
+Privacy Notice:
+Content of this e-mail must be treated as strictly confidential. This writing is intended only for the knowledge of the above-mentioned addressee. If you are not the correct recipient please inform the sender immediately and permanently erase this message. Illegal copies as well as unauthorized passing is not permitted and strictly forbidden.
+Please note that by sending this mail INIT does not make any commitment and is under no obligation.
