@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751000Ab1E0EAd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 00:00:33 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51877 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab1E0EAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 00:00:31 -0400
-Date: Fri, 27 May 2011 14:00:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jamie Iles <jamie@jamieiles.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the mtd tree with Linus' tree
-Message-Id: <20110527140018.993fe260.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__27_May_2011_14_00_18_+1000_iitzuqMchArucSti"
+	id S1751342Ab1E0EBE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 00:01:04 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38943 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab1E0EBC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 00:01:02 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DDF21DE.9040705@jp.fujitsu.com>
+Date: Fri, 27 May 2011 13:00:30 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 00/12] minor cleanups/fixes for MCE codes
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_May_2011_14_00_18_+1000_iitzuqMchArucSti
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a set of minor changes for MCE codes.
 
-Hi David,
+Though I know there are many people expecting new RAS architecture
+such as one that integrates RAS/EDAC with MCE, I hope these small
+steps will be a help for future works.
 
-Today's linux-next merge of the mtd tree got a conflict in
-drivers/mtd/maps/integrator-flash.c between commit adf0040096e4 ("ARM:
-6906/1: MTD: Remove integrator-flash") from Linus' tree and commit
-ee0e87b174bb ("mtd: convert remaining users to mtd_device_register()")
-from the mtd tree.
+Thanks,
+H.Seto
 
-The former removes the file updated by the latter, so I just removed it.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ arch/x86/include/asm/entry_arch.h         |    4 -
+ arch/x86/include/asm/hw_irq.h             |    1 -
+ arch/x86/include/asm/irq_vectors.h        |    5 -
+ arch/x86/include/asm/mce.h                |   19 ++-
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |  152 ++++++++++------
+ arch/x86/kernel/cpu/mcheck/mce.c          |  276 +++++++++++++----------------
+ arch/x86/kernel/cpu/mcheck/mce_amd.c      |   10 +-
+ arch/x86/kernel/entry_64.S                |    5 -
+ arch/x86/kernel/irqinit.c                 |    3 -
+ 9 files changed, 241 insertions(+), 234 deletions(-)
 
---Signature=_Fri__27_May_2011_14_00_18_+1000_iitzuqMchArucSti
-Content-Type: application/pgp-signature
+Hidetoshi Seto (11):
+      mce-severity: cleanup severity table, prep
+      mce-severity: cleanup severity table
+      mce-severity: trivial cleanups
+      x86, mce: replace MCE_SELF_VECTOR by irq_work
+      x86, mce: replace MCM_ to MCI_MISC_
+      x86, mce: introduce mce_gather_info()
+      x86, mce: check the result of ancient_init()
+      x86, mce: cleanup mce_create/remove_device
+      x86, mce: cleanup mce_read
+      x86, mce: use prefix mce_chrdev_ to group functions
+      x86, mce: use prefix mce_sysdev_ to group functions
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Tony Luck (1):
+      mce-severity: fixes for mce severity table
 
-iQEcBAEBAgAGBQJN3yHSAAoJEDMEi1NhKgbsvNIIAJWfL5ItVP+aN0y6QxD7NUl9
-Ll5KVJR5WyRVV4bg9J9FZxKZ7VvodvzgrtS4UaHLCy7swuUmxVxqNnOvoyJBy9NI
-20Dd2OeI90PKAIcmSx4PlKokK5ROx7b2OW2Y0sEzA+aD+d2C5NOlQ5Tz0OWfbAtq
-r61Ety992vK0svB9UWyaWcxVq24f+CoVY8xk31mpmD62m57UH8JorX2UQNc+lkkZ
-ZDy3UyzE36ZADN4jzpeD6IkQqAYnMaFFU+SphwWXl2at/Bng1mEpjQuAOp+LSfiy
-8AMhfqNYwZIlMkC5gvHbqRX6I8c1MDqelkcNBNT5+HW8VPmZlOoYfpj7nzlZ0nI=
-=+y0V
------END PGP SIGNATURE-----
-
---Signature=_Fri__27_May_2011_14_00_18_+1000_iitzuqMchArucSti--
