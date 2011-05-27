@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab1E0O7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 10:59:52 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64254 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab1E0O7t convert rfc822-to-8bit (ORCPT
+	id S1754288Ab1E0PB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 11:01:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49116 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab1E0PB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 10:59:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=M9BdN6198T9FGhyNy+OaMsyDpYB75EwLv2lDI0fkoPVl5PaxzR5qDG3ICkZgZNAWnX
-         8dGTznDd2UxGK6J6zhdtpmwhVxxKoc0yQHj8j9P/wPRYizRclzscLS6R7JKC8gz0jTSR
-         Guq4XcMnijqRrN59JG4mk3aVxlb0Ebln85IDM=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTik7H=HyjzzCf4pYK-K7rx23DGHh8g@mail.gmail.com>
-References: <alpine.LFD.2.02.1105262049180.3078@ionos>
-	<4DDEC589.3010201@mit.edu>
-	<20110527061208.GB9260@elte.hu>
-	<BANLkTinOQ_C_-Bix4FTQxHqP3aavmTRrzg@mail.gmail.com>
-	<BANLkTi=UEJqGxAs5p2tA=KzddNOrXCfXfQ@mail.gmail.com>
-	<BANLkTik7H=HyjzzCf4pYK-K7rx23DGHh8g@mail.gmail.com>
-Date: Fri, 27 May 2011 16:59:49 +0200
-Message-ID: <BANLkTindgVfP530GDGvonp7iXE=hW833gg@mail.gmail.com>
-Subject: Re: [GIT pull] x86 vdso updates
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 27 May 2011 11:01:26 -0400
+Subject: Re: [PATCH 7/7] Intel pci: Indicate 64-bit IOMMU passthrough
+ available
+From: David Woodhouse <dwmw2@infradead.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Chris Wright <chrisw@sous-sol.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Habeck <habeck@sgi.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        stable@kernel.org, iommu@lists.linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dimitri Sivanich <sivanich@sgi.com>
+Date: Fri, 27 May 2011 16:01:01 +0100
+In-Reply-To: <20110527013222.261166889@gulag1.americas.sgi.com>
+References: <20110527013221.231071058@gulag1.americas.sgi.com>
+	 <20110527013222.261166889@gulag1.americas.sgi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1306508463.2029.123.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 2:10 PM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Fri, May 27, 2011 at 7:59 AM, richard -rw- weinberger
-> <richard.weinberger@gmail.com> wrote:
->> On Fri, May 27, 2011 at 1:36 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->>> 2. Remove the vsyscall64 sysctl.  That will reduce the number of
->>> vsyscalls that require the kernel's help to one.  (This is a bit
->>> unfortunate for UML users, but I'm not sure what to do about that.
->>> UML vgetcpu is already terminally broken.)
->>
->> Can you please be a bit more precise on that?
->> When there is anything I can do, let me know...
->
-> glibc's implementation of time, sched_getcpu, and (for static
-> binaries) gettimeofday calls a fixed address in kernel space which
-> returns the answer.  On UML, that address is presumably in *host*
-> kernel space and the host will return what the host thinks the answer
-> is.
->
-> That's a bit unfortunate if the guest has a different idea of cpu
-> numbering or what time it is.  Right now, setting kernel.vsyscall64=0
-> will turn gettimeofday and time (but not sched_getcpu) into a real
-> syscall.  The problem is that I want to remove the vsyscall64 sysctl.
->
-> If this is considered enough of a regression, then I guess we can
-> leave vsyscall64 around for awhile, but it will require extra work in
-> the soon-to-be syscall emulation hack to make sure that UML can still
-> trap the syscall.
+On Thu, 2011-05-26 at 20:32 -0500, Mike Travis wrote:
+>     Prior to these IOMMU patches, the passthrough option
+>     could not be used because it would cause the kernel to
+>     panic. 
 
-As long the time within UML is synchronous with the host everything is
-fine, right?
-So, as _last_ choice we could disable the ability to change the time within UML.
+Could not be used on certain hardware? In certain configurations? It
+wasn't just *completely* broken (unless it got broken in a recent
+regression).
 
-IMHO it's not a big deal when getcpu() returns a wrong CPU layout on UML.
+>  Provide an indication that a kernel is capable
+>     of handling passthrough mode through the introduction
+>     of a specific variable name.  This allows automatic
+>     configuration utilities to set the "iommu=pt" kernel
+>     cmdline option safely. 
 
-> The real solution is to fix glibc to use the vDSO which should avoid
-> this problem entirely.
+That implies that there is a follow-up patch to somehow export this
+information to userspace? Where the information in question is just the
+fact that a certain set of bugs have been fixed?
 
-Is this "bug" known? And the biggest question, will Ulrich fix it some day?
+Since these *are* actually bugs, and not new features, I take it we're
+looking at merging them for 2.6.40? I was planning to ask Linus to pull
+my tree today, and I'm not entirely happy with merging them at the last
+minute.
+
+So I'll plan to merge them into my tree after the outstanding merge, and
+then perhaps ask Linus to take them *after* -rc1? Since they're actually
+bug fixes, I suspect that's the best way to proceed?
 
 -- 
-Thanks,
-//richard
+dwmw2
+
