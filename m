@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab1E0JJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 05:09:35 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:26465 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752369Ab1E0JJe (ORCPT
+	id S1758811Ab1E0JUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 05:20:00 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:63484 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab1E0JT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 05:09:34 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 27 May 2011 17:11:58 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, Shawn Guo <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <patches@linaro.org>,
-        <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>,
-        <kernel@pengutronix.de>
-Subject: Re: [PATCH 2/3] ARM: mxs: add gpio-mxs platform devices
-Message-ID: <20110527091158.GD30146@S2100-06.ap.freescale.net>
-References: <1305885446-27404-1-git-send-email-shawn.guo@linaro.org>
- <201105201223.00427.arnd@arndb.de>
- <20110520140316.GA27551@S2100-06.ap.freescale.net>
- <201105201623.40990.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201105201623.40990.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Fri, 27 May 2011 05:19:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=qBniRsXP/kXNB2ByePxdb9/nZN2WEZEFHJHcvAvwOAUb0uo/j0evAEz0+x/cuJyVcz
+         Z83DyJtZSPyYdhlEC9ScIs3CX25MdcGchViQsmZWqPpLcnYYrJfP6yES1XzryKe/61Bt
+         5HMvgj1JF4HpEpG4URZppmeGBD0zUfJ4cwaak=
+From: Michael Chang <mchang@novell.com>
+To: gregkh@suse.de
+Cc: alan@linux.intel.com, error27@gmail.com, justinmattock@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Michael Chang <mchang@novell.com>
+Subject: [PATCH] staging/gma500: get control from firmware framebuffer if conflicts
+Date: Fri, 27 May 2011 17:16:56 +0800
+Message-Id: <1306487816-9778-1-git-send-email-mchang@novell.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 04:23:40PM +0200, Arnd Bergmann wrote:
-[...]
-> No, this would put all gpio devices below the top-level /sys/devices/platform
-> directory, where they certainly don't belong. Please find a proper
-> place and put them there.
-> 
-To make it clear, which one is the best to have all gpio devices below?
+Many Linux distributions would enable vesafb in order to display
+early stage boot splash. In this case, we will get garbled X
+Window screen if running X fbdev on psbfb.
 
- * /sys/devices/platform/gpio-mxs
- * /sys/devices/platform/mxs
- * /sys/devices/platform/mxs/gpio
+This is because fb0 is occupied by vesafb while psbfb is on fb1.
+They tried to drive the same pieces of hardware at the same
+time. With unmodified X start-up, it would try to use default
+fb0 framebuffer device and unfortunately it is now broken
+becaues fb1 supersedes it.
 
+We should let psbfb takeover framebuffer control from vesafb
+to get around this problem.
+
+See also commit : 4410f3910947dcea8672280b3adecd53cec4e85e
+
+Signed-off-by: Michael Chang <mchang@novell.com>
+---
+ drivers/staging/gma500/psb_fb.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
+index 99c03a2..259596c 100644
+--- a/drivers/staging/gma500/psb_fb.c
++++ b/drivers/staging/gma500/psb_fb.c
+@@ -441,6 +441,14 @@ static int psbfb_create(struct psb_fbdev *fbdev,
+ 	info->screen_size = size;
+ 	memset(info->screen_base, 0, size);
+ 
++	info->apertures = alloc_apertures(1);
++	if (!info->apertures) {
++		ret = -ENOMEM;
++		goto out_err0;
++	}
++	info->apertures->ranges[0].base = dev->mode_config.fb_base;
++	info->apertures->ranges[0].size = dev_priv->pg->stolen_size;
++
+ 	drm_fb_helper_fill_fix(info, fb->pitch, fb->depth);
+ 	drm_fb_helper_fill_var(info, &fbdev->psb_fb_helper,
+ 				sizes->fb_width, sizes->fb_height);
 -- 
-Regards,
-Shawn
+1.7.3.4
 
