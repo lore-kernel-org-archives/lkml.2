@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab1E0VcY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 17:32:24 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:59136 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754148Ab1E0VcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 17:32:22 -0400
-Subject: Re: [PATCH 01/10] mm: Introduce the memory regions data structure
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: svaidy@linux.vnet.ibm.com
-Cc: Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, thomas.abraham@linaro.org
-In-Reply-To: <20110527182041.GM5654@dirshya.in.ibm.com>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
-	 <1306499498-14263-2-git-send-email-ankita@in.ibm.com>
-	 <1306510203.22505.69.camel@nimitz>
-	 <20110527182041.GM5654@dirshya.in.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 27 May 2011 14:31:52 -0700
-Message-ID: <1306531912.22505.84.camel@nimitz>
+	id S1756827Ab1E0Ves (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 17:34:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59992 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148Ab1E0Ver (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 17:34:47 -0400
+Date: Fri, 27 May 2011 14:34:08 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: [PATCH] mm: fix memory.c kernel-doc notation
+Message-Id: <20110527143408.891022e0.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090206.4DE018F4.0086:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-27 at 23:50 +0530, Vaidyanathan Srinivasan wrote:
-> The overall idea is to have a VM data structure that can capture
-> various boundaries of memory, and enable the allocations and reclaim
-> logic to target certain areas based on the boundaries and properties
-> required. 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-It's worth noting that we already do targeted reclaim on boundaries
-other than zones.  The lumpy reclaim and memory compaction logically do
-the same thing.  So, it's at least possible to do this without having
-the global LRU designed around the way you want to reclaim.
+Fix new kernel-doc warnings in mm/memory.c:
 
-Also, if you get _too_ dependent on the global LRU, what are you going
-to do if our cgroup buddies manage to get cgroup'd pages off the global
-LRU?  
+Warning(mm/memory.c:1327): No description found for parameter 'tlb'
+Warning(mm/memory.c:1327): Excess function parameter 'tlbp' description in 'unmap_vmas'
 
--- Dave
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ mm/memory.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+--- linux-2.6.39-git14.orig/mm/memory.c
++++ linux-2.6.39-git14/mm/memory.c
+@@ -1296,7 +1296,7 @@ static unsigned long unmap_page_range(st
+ 
+ /**
+  * unmap_vmas - unmap a range of memory covered by a list of vma's
+- * @tlbp: address of the caller's struct mmu_gather
++ * @tlb: address of the caller's struct mmu_gather
+  * @vma: the starting vma
+  * @start_addr: virtual address at which to start unmapping
+  * @end_addr: virtual address at which to end unmapping
