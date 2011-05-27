@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593Ab1E0APS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 20:15:18 -0400
-Received: from tundra.namei.org ([65.99.196.166]:59008 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757377Ab1E0APR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 20:15:17 -0400
-Date: Fri, 27 May 2011 10:12:37 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Ingo Molnar <mingo@elte.hu>
-cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Will Drewry <wad@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        gnatapov@redhat.com, Chris Wright <chrisw@sous-sol.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-In-Reply-To: <20110526183806.GB2490@elte.hu>
-Message-ID: <alpine.LRH.2.00.1105271010290.9616@tundra.namei.org>
-References: <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <alpine.LRH.2.00.1105261034200.29690@tundra.namei.org> <20110526082451.GB26775@elte.hu> <4DDE1419.3000708@redhat.com> <20110526093040.GB19536@elte.hu> <4DDE31D6.4070209@redhat.com>
- <20110526113842.GA27618@elte.hu> <4DDE96B7.8030006@redhat.com> <20110526181554.GB3572@elte.hu> <1306434167.2497.92.camel@laptop> <20110526183806.GB2490@elte.hu>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758600Ab1E0A0O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 20:26:14 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:63345 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757377Ab1E0A0N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 20:26:13 -0400
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, davej@redhat.com,
+        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
+        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
+In-Reply-To: <4DDED4ED.7020806@zytor.com>
+References: <1306269105.21443.20.camel@dan> <201105270018.36835.rjw@sisk.pl>
+	 <4DDED4ED.7020806@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 May 2011 20:26:03 -0400
+Message-ID: <1306455963.1984.5.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, if anyone's going to be at Plumbers this year, we have a day set 
-aside for the security summit:
+On Thu, 2011-05-26 at 15:32 -0700, H. Peter Anvin wrote:
+> On 05/26/2011 03:18 PM, Rafael J. Wysocki wrote:
+> > 
+> > Well, as far as I can tell, this feature is going to break hibernation on
+> > both x86_32 and x86_64 at the moment, unless you can guarantee that the
+> > randomized kernel location will be the same for both the boot and the target
+> > kernels.
+> > 
+> 
+> Obviously we can't and we don't.  I'm a bit surprised at that
+> constraint... how can that constraint not break things like kernels of
+> slightly different size?
+> 
+> 	-hpa
 
-https://security.wiki.kernel.org/index.php/LinuxSecuritySummit2011
+Am I understanding it correctly that hibernation is currently operating
+under a possibly false assumption?  If it's the case that hibernation
+should be saving the physical address at which the kernel was previously
+loaded and restoring it there regardless of randomization, it would
+certainly help me out if someone familiar with the code could take a
+stab at that.
 
-This may make a good discussion topic.
+Otherwise, any thoughts on a potential solution?
 
+Thanks,
+Dan
 
-- James
--- 
-James Morris
-<jmorris@namei.org>
