@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab1E0VVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 17:21:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45912 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752499Ab1E0VVP (ORCPT
+	id S1755822Ab1E0VW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 17:22:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28308 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab1E0VWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 17:21:15 -0400
-Date: Fri, 27 May 2011 14:20:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
-        Robin Holt <holt@sgi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
-Subject: Re: [PATCH v2] cpusets: randomize node rotor used in
- cpuset_mem_spread_node()
-Message-Id: <20110527142051.d7ec3784.akpm@linux-foundation.org>
-In-Reply-To: <20110527124705.GB4067@tiehlicka.suse.cz>
-References: <20110414065146.GA19685@tiehlicka.suse.cz>
-	<20110414160145.0830.A69D9226@jp.fujitsu.com>
-	<20110415161831.12F8.A69D9226@jp.fujitsu.com>
-	<20110415082051.GB8828@tiehlicka.suse.cz>
-	<20110526153319.b7e8c0b6.akpm@linux-foundation.org>
-	<20110527124705.GB4067@tiehlicka.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 27 May 2011 17:22:52 -0400
+Message-ID: <4DE015F0.7090601@oracle.com>
+Date: Fri, 27 May 2011 14:21:52 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Liam Girdwood <lrg@kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: linux-next: build failure after merge of the voltage tree
+References: <201105271759.p4RHxa2X008919@hera.kernel.org>	 <20110527125830.447abb79.randy.dunlap@oracle.com> <1306530788.3366.30.camel@odin>
+In-Reply-To: <1306530788.3366.30.camel@odin>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4DE015FB.0091:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 May 2011 14:47:05 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
-
-> > We use "#if MAX_NUMNODES > 1" in nodemask.h, but we use CONFIG_NUMA
-> > when deciding to build mempolicy.o.  That's a bit odd - why didn't
-> > nodemask.h use CONFIG_NUMA?
+> Hi,
 > 
-> We have this since the kernel git age. I guess this is just for
-> optimizations where some functions can be NOOP when there is only one
-> node.
+> gah, looks this was broken by moving the tps65910 gpio directory move.
 > 
-> I know that this is ugly but what if we just define node_random in the
-> header?
+> This should fix it though:-
 
-I think I prefer this:
+It does.  Thanks.
 
---- a/include/linux/nodemask.h~cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node-fix-2
-+++ a/include/linux/nodemask.h
-@@ -433,8 +433,6 @@ static inline void node_set_offline(int 
- 	nr_online_nodes = num_node_state(N_ONLINE);
- }
- 
--extern int node_random(const nodemask_t *maskp);
--
- #else
- 
- static inline int node_state(int node, enum node_states state)
-@@ -466,7 +464,15 @@ static inline int num_node_state(enum no
- #define node_set_online(node)	   node_set_state((node), N_ONLINE)
- #define node_set_offline(node)	   node_clear_state((node), N_ONLINE)
- 
--static inline int node_random(const nodemask_t *mask) { return 0; }
-+#endif
-+
-+#if defined(CONFIG_NUMA) && (MAX_NUMNODES > 1)
-+extern int node_random(const nodemask_t *maskp);
-+#else
-+static inline int node_random(const nodemask_t *mask)
-+{
-+	return 0;
-+}
- #endif
- 
- #define node_online_map 	node_states[N_ONLINE]
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
 
-It's beyond weird that we implement node_random() if
-defined(CONFIG_NUMA) && (MAX_NUMNODES > 1), and only use it if
-defined(CONFIG_CPUSETS).
+> From: Liam Girdwood <lrg@ti.com>
+> Date: Fri, 27 May 2011 22:06:52 +0100
+> Subject: [PATCH] mfd: tps65910 - fix build breakage caused by tps65910 gpio directory move.
+> 
+> Signed-off-by: Liam Girdwood <lrg@ti.com>
+> ---
+>  drivers/mfd/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index b6c2677..0f09c05 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -721,7 +721,7 @@ config MFD_PM8XXX_IRQ
+>  
+>  config MFD_TPS65910
+>  	bool "TPS65910 Power Management chip"
+> -	depends on I2C=y
+> +	depends on I2C=y && GPIOLIB
+>  	select MFD_CORE
+>  	select GPIO_TPS65910
+>  	help
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
