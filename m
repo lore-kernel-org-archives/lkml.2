@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab1E0SV2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 14:21:28 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:35171 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab1E0SV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 14:21:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DMByl8d+WuMrRhh+12HPTI3ysU+GC9G5f+8S3PvsoKpeWp1y8gS+HX3xQ/Oct4ffFW
-         VvNbI0s8y+EraVPDKWfuwvb7qQ0UJOo+LXKeGCsar01LdQx61CSyebeqtSV90oWM4Vxo
-         ifXBX/JiN4vJ2wSe5sFoLni88ywpeoEPff64U=
-Date: Fri, 27 May 2011 20:21:21 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Message-ID: <20110527182121.GA3212@mtj.dyndns.org>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org>
- <1305569849-10448-4-git-send-email-tj@kernel.org>
- <201105180240.56754.vda.linux@googlemail.com>
- <20110518095539.GU20624@htj.dyndns.org>
- <20110523124314.GA7232@redhat.com>
- <20110524102834.GC10334@htj.dyndns.org>
- <20110525182919.GB16575@redhat.com>
- <20110526091401.GD9715@htj.dyndns.org>
- <20110526150150.GD12525@redhat.com>
+	id S1755763Ab1E0SW0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 14:22:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1941 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751210Ab1E0SWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 14:22:25 -0400
+Date: Fri, 27 May 2011 14:22:10 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: prasad@linux.vnet.ibm.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        crash-utility@redhat.com, Andi Kleen <andi@firstfloor.org>,
+        "Luck, Tony" <tony.luck@intel.com>, kexec@lists.infradead.org,
+        anderson@redhat.com, Wang Chao <wang.chao@cn.fujitsu.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Mahesh Jagannath Salgaonkar <mahesh@linux.vnet.ibm.com>
+Subject: Re: [RFC Patch 6/6] Crash: Recognise slim coredumps and process new
+ elf-note sections
+Message-ID: <20110527182210.GH8053@redhat.com>
+References: <20110526170722.GB23266@in.ibm.com>
+ <20110526172618.GB18295@in.ibm.com>
+ <m11uzk80vx.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110526150150.GD12525@redhat.com>
+In-Reply-To: <m11uzk80vx.fsf@fess.ebiederm.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thu, May 26, 2011 at 05:01:50PM +0200, Oleg Nesterov wrote:
-> On 05/26, Tejun Heo wrote:
-> > > Or we can change do_wait() to detach a zombie leader. In this case it
-> > > is not clear what should we do if the debugger is the real parent.
-> > > Perhaps do_wait() should do the same: detach a leader (but not reap).
-> > > When the last thread does, the real parent will be notified again.
-> > > IOW, wait(tgid) can succeed twice.
-> >
-> > Just letting PTRACE_DETACH work for zombies sounds much simpler to me.
+On Fri, May 27, 2011 at 11:16:34AM -0700, Eric W. Biederman wrote:
+> "K.Prasad" <prasad@linux.vnet.ibm.com> writes:
 > 
-> Probably, but please note we have to modify do_wait() anyway. Otherwise
-> in general the tracer simply can not know the tracee has exited. IOW,
-> waitpid(zombie_leader_pid, WEXITED) should succeed without reaping if
-> delay_group_leader(), then the tracer can do PTRACE_DETACH. But this is
-> not symmetrical with sub-thread zombies.
+> > Crash: Recognise slim coredumps and process new elf-note sections
+> >
+> > The Linux kernel will begin to support SlimDump for certain types of crashes
+> > and the 'crash' tool needs to recognise them. For these types of coredumps, it
+> > need not lookout for usual elf-structures and start gdb. Also process new
+> > elf-note sections that contain additional information about the crash.
+> 
+> I suppose patching crash make sense.
+> 
+> Unfortunately crash doesn't work on  99% of the  kernels I run so, so I
+> stopped caring a while ago.
 
-Yes, complicated.  The task/process duality conflicts.  wait(2)
-already is different for group leader and succeeds twice for the
-ptracer and the real parent (when they're different).
+Are these patched kernels? Otherwise Dave Anderson is pretty good about
+keeping crash running across multiple kernels.
 
-If we relocate ptrace group leader zombie wait, as suggested, such
-that it waits for the task itself rather than the whole group, we
-would be taking away a feature - ptracer waiting for the whole process
-to exit and having access to group exit code, which might not mean
-much, I have no idea.
+For me it works just great. I recently analyzed a crash dump with
+2.6.39-rc7 kernel. Dave is generally takes patches for crash for latest
+upstream kernel changes.
 
-I think group leader wait becoming asymmetrical with sub-thread
-zombies is perfectly fine - it already is.  But would it be okay to
-change ptrace wait(2) on group leader to wait for the task itself
-rather than the whole group?
-
-Thanks.
-
--- 
-tejun
+Thanks
+Vivek
