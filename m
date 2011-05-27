@@ -1,35 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab1E0NNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 09:13:22 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56865
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753108Ab1E0NNV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 09:13:21 -0400
-Date: Fri, 27 May 2011 09:12:37 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/2] blktrace: treat flush as barrier
-Message-ID: <20110527131237.GA27647@infradead.org>
-References: <1306501883-23498-1-git-send-email-namhyung@gmail.com>
+	id S1755575Ab1E0NNl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 09:13:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32146 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753903Ab1E0NNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 09:13:39 -0400
+Date: Fri, 27 May 2011 09:13:13 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
+        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
+        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
+        penberg@kernel.org, hpa@zytor.com,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+Message-ID: <20110527131313.GB8053@redhat.com>
+References: <1306269105.21443.20.camel@dan>
+ <20110526203502.GK29496@redhat.com>
+ <20110526204030.GL29496@redhat.com>
+ <1306442674.2279.29.camel@dan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306501883-23498-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1306442674.2279.29.camel@dan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 10:11:22PM +0900, Namhyung Kim wrote:
-> Since BARRIER requests have been converted to FLUSH/FUA, it would be
-> better for blktrace to recognize FLUSH requests as BARRIER for the
-> backward-compatibility IMHO.
+On Thu, May 26, 2011 at 04:44:34PM -0400, Dan Rosenberg wrote:
+> On Thu, 2011-05-26 at 16:40 -0400, Vivek Goyal wrote:
+> > On Thu, May 26, 2011 at 04:35:02PM -0400, Vivek Goyal wrote:
+> > > On Tue, May 24, 2011 at 04:31:45PM -0400, Dan Rosenberg wrote:
+> > > > This introduces CONFIG_RANDOMIZE_BASE, which randomizes the address at
+> > > > which the kernel is decompressed at boot as a security feature that
+> > > > deters exploit attempts relying on knowledge of the location of kernel
+> > > > internals.  The default values of the kptr_restrict and dmesg_restrict
+> > > > sysctls are set to (1) when this is enabled, since hiding kernel
+> > > > pointers is necessary to preserve the secrecy of the randomized base
+> > > > address.
+> > > 
+> > > What happens to /proc/iomem interface which gives us the physical memory
+> > > location where kernel is loaded. kexec-tools relies on that interface
+> > > heavily so we can not take it away. And if we can not take it away then
+> > > I think somebody should be easibly be able to calculate this randomized
+> > > base address.
+> 
+> Is it common to run kexec-tools as non-root?  It may be necessary to
+> restrict this interface to root when randomization is used (keep in mind
+> nobody's going to force you to turn this on by default, at least for the
+> foreseeable future).
 
-I'd rather see new flags for them.  F and U maybe?
+Dan, 
 
+I had a stupid question. /proc/kallsyms is also readable by root only. So
+if we are doing this so that non-root user can not know kernel virtual and
+physical address that should be already covered as non-root users can't
+read /proc/kallsysm or /boot/System.map.
+
+And if this randomization is also to protect information from root user
+then /proc/iomem exporting the physical address of kernel is still a
+valid question in that context.
+
+Thanks
+Vivek
