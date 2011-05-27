@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab1E0Xik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 19:38:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36371 "EHLO mx1.suse.de"
+	id S932090Ab1E0XkM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 19:40:12 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36404 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757046Ab1E0Xij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 19:38:39 -0400
-Date: Sat, 28 May 2011 01:38:34 +0200
+	id S1753884Ab1E0XkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 19:40:08 -0400
+Date: Sat, 28 May 2011 01:40:07 +0200
 From: Michal Hocko <mhocko@suse.cz>
 To: David Rientjes <rientjes@google.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -19,67 +19,46 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
 Subject: Re: [PATCH v2] cpusets: randomize node rotor used in
  cpuset_mem_spread_node()
-Message-ID: <20110527233834.GA4276@tiehlicka.suse.cz>
+Message-ID: <20110527234007.GB4276@tiehlicka.suse.cz>
 References: <20110414065146.GA19685@tiehlicka.suse.cz>
  <20110414160145.0830.A69D9226@jp.fujitsu.com>
  <20110415161831.12F8.A69D9226@jp.fujitsu.com>
  <20110415082051.GB8828@tiehlicka.suse.cz>
  <20110526153319.b7e8c0b6.akpm@linux-foundation.org>
  <20110527124705.GB4067@tiehlicka.suse.cz>
- <20110527142051.d7ec3784.akpm@linux-foundation.org>
- <20110527231700.GA3214@tiehlicka.suse.cz>
- <alpine.DEB.2.00.1105271628430.9445@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1105271157350.2533@chino.kir.corp.google.com>
+ <20110527231708.GB3214@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1105271623410.9445@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105271628430.9445@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1105271623410.9445@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 27-05-11 16:30:33, David Rientjes wrote:
+On Fri 27-05-11 16:27:34, David Rientjes wrote:
 > On Sat, 28 May 2011, Michal Hocko wrote:
 > 
-> > > --- a/include/linux/nodemask.h~cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node-fix-2
-> > > +++ a/include/linux/nodemask.h
-> > > @@ -433,8 +433,6 @@ static inline void node_set_offline(int 
-> > >  	nr_online_nodes = num_node_state(N_ONLINE);
-> > >  }
-> > >  
-> > > -extern int node_random(const nodemask_t *maskp);
-> > > -
-> > >  #else
-> > >  
-> > >  static inline int node_state(int node, enum node_states state)
-> > > @@ -466,7 +464,15 @@ static inline int num_node_state(enum no
-> > >  #define node_set_online(node)	   node_set_state((node), N_ONLINE)
-> > >  #define node_set_offline(node)	   node_clear_state((node), N_ONLINE)
-> > >  
-> > > -static inline int node_random(const nodemask_t *mask) { return 0; }
-> > > +#endif
-> > > +
-> > > +#if defined(CONFIG_NUMA) && (MAX_NUMNODES > 1)
-> > > +extern int node_random(const nodemask_t *maskp);
-> > > +#else
-> > > +static inline int node_random(const nodemask_t *mask)
-> > > +{
-> > > +	return 0;
-> > > +}
-> > >  #endif
+> > > CONFIG_NODES_SHIFT is used for UMA machines that are using DISCONTIGMEM 
+> > > usually because they have very large holes; such machines don't need 
+> > > things like mempolicies but do need the data structures that abstract 
+> > > ranges of memory in the physical address space.  This build breakage 
+> > > probably isn't restricted to only alpha, you could probably see it with at 
+> > > least ia64 and mips as well.
 > > 
-> > I have to admit that I quite don't understand concept of several nodes
-> > with UMA archs but do we really want to provide the sane node all the
-> > time?
+> > Hmmm. I just find strange that some UMA arch uses functions like
+> > {first,next}_online_node.
 > > 
 > 
-> They aren't nodes on UMA machines, they are memory regions for 
-> DISCONTIGMEM which are separated by large holes in the address space.  
-> These archs will never sanely use node_random(), so it doesn't really 
-> matter except for CONFIG_NUMA where MAX_NUMNODES > 1, since they won't be 
-> selecting random memory regions.
+> They shouldn't, but they do use NUMA data structures like pg_data_t for 
+> DISCONTIGMEM.  The MAX_NUMNODES > 1 optimization in nodemask.h is to 
+> prevent doing things like node_weight() on a nodemask when we know that 
+> only one bit will ever be set, otherwise we could make it conditional on 
+> CONFIG_NEED_MULTIPLE_NODES.
 
-OK, I see. Then it makes much more sense. Thanks for clarification.
+Thanks for the explanation.
 
 -- 
 Michal Hocko
