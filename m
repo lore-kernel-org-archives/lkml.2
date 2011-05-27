@@ -1,79 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758496Ab1E0IFY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 04:05:24 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:56907 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092Ab1E0IFT (ORCPT
+	id S1758696Ab1E0IHy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 04:07:54 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34414 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752092Ab1E0IHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 04:05:19 -0400
-X-AuditID: cbfee61a-b7ce2ae000001a8f-61-4ddf5b3dc60a
-Date: Fri, 27 May 2011 17:04:49 +0900
-From: Donggeun Kim <dg77.kim@samsung.com>
-Subject: [PATCH] CPUFREQ/S5PV210,EXYNOS4: Add Kconfig options for S5PV210 and
- EXYNOS4 CPUfreq drivers
-In-reply-to: <1306476428-24808-1-git-send-email-dg77.kim@samsung.com>
-To: davej@redhat.com, kgene.kim@samsung.com
-Cc: cpufreq@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com
-Message-id: <1306483489-10432-1-git-send-email-dg77.kim@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-Content-transfer-encoding: 7BIT
-References: <1306476428-24808-1-git-send-email-dg77.kim@samsung.com>
-X-OriginalArrivalTime: 27 May 2011 08:05:15.0593 (UTC)
- FILETIME=[CFC32B90:01CC1C44]
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 27 May 2011 04:07:50 -0400
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Grant Likely'" <grant.likely@secretlab.ca>
+Cc: <linux-kernel@vger.kernel.org>, <qi.wang@intel.com>,
+        <yong.y.wang@intel.com>, <joel.clark@intel.com>,
+        <kok.howg.ewe@intel.com>, <toshiharu-linux@dsn.okisemi.com>
+References: <1304938729-10609-1-git-send-email-tomoya-linux@dsn.okisemi.com> <20110527070913.GB31953@ponder.secretlab.ca>
+Subject: RE: [PATCH] pch_gpio: Support new device ML7223
+Date: Fri, 27 May 2011 17:07:48 +0900
+Message-ID: <6DD36334C43840DDA7D18E6B8FFC6258@hacdom.okisemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Thread-Index: AcwcPP1JA2Zg7HC/Q8C5a0OEYaxvZgAB7dEQ
+In-Reply-To: <20110527070913.GB31953@ponder.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds CONFIG_CPU_FREQ_S5PV210 and CONFIG_CPU_FREQ_EXYNOS4
-to the machine Kconfig files.
+Hi Grant,
 
-Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/mach-exynos4/Kconfig |    7 +++++++
- arch/arm/mach-s5pv210/Kconfig |    7 +++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+Thanks.
 
-diff --git a/arch/arm/mach-exynos4/Kconfig b/arch/arm/mach-exynos4/Kconfig
-index e849f67..123e5e2 100644
---- a/arch/arm/mach-exynos4/Kconfig
-+++ b/arch/arm/mach-exynos4/Kconfig
-@@ -91,6 +91,13 @@ config EXYNOS4_SETUP_FIMC
- 	help
- 	  Common setup code for the camera interfaces.
- 
-+config CPU_FREQ_EXYNOS4
-+	bool
-+	depends on CPU_FREQ && ARCH_EXYNOS4
-+	default y
-+	help
-+	  This enabls the CPUfreq driver for EXYNOS4.
-+
- # machine support
- 
- menu "EXYNOS4 Machines"
-diff --git a/arch/arm/mach-s5pv210/Kconfig b/arch/arm/mach-s5pv210/Kconfig
-index 37b5a97..376e824 100644
---- a/arch/arm/mach-s5pv210/Kconfig
-+++ b/arch/arm/mach-s5pv210/Kconfig
-@@ -59,6 +59,13 @@ config S5PV210_SETUP_FIMC
- 	help
- 	  Common setup code for the camera interfaces.
- 
-+config CPU_FREQ_S5PV210
-+	bool
-+	depends on CPU_FREQ && CPU_S5PV210
-+	default y
-+	help
-+	  This enabls the CPUfreq driver for S5PV210.
-+
- menu "S5PC110 Machines"
- 
- config MACH_AQUILA
--- 
-1.7.4.1
+BTW, could you review our spi_topcliff_pch I sent before? 
+Or I post it again ?
+
+[PATCH v4 1/2] spi_topcliff_pch: support new device ML7213 IOH
+[PATCH 2/2] spi_topcliff_pch: DMA support
+
+With Best Regards,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
+
+> -----Original Message-----
+> From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of 
+> Grant Likely
+> Sent: Friday, May 27, 2011 4:09 PM
+> To: Tomoya MORINAGA
+> Cc: linux-kernel@vger.kernel.org; qi.wang@intel.com; 
+> yong.y.wang@intel.com; joel.clark@intel.com; 
+> kok.howg.ewe@intel.com; toshiharu-linux@dsn.okisemi.com
+> Subject: Re: [PATCH] pch_gpio: Support new device ML7223
+> 
+> On Mon, May 09, 2011 at 07:58:49PM +0900, Tomoya MORINAGA wrote:
+> > Support new device OKI SEMICONDUCTOR ML7223 IOH(Input/Output Hub).
+> > The ML7223 IOH is for MP(Media Phone) use.
+> > The ML7223 is companion chip for Intel Atom E6xx series.
+> > The ML7223 is completely compatible for Intel EG20T PCH.
+> > 
+> > Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> 
+> I merged this version.  Since the device ids are local only 
+> to this driver, there is no need to add them to pci_ids.h
+> 
+> Thanks,
+> g.
+> 
+> > ---
+> >  drivers/gpio/Kconfig    |    8 +++++++-
+> >  drivers/gpio/pch_gpio.c |    2 ++
+> >  2 files changed, 9 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig index 
+> > d3b2953..c0326da 100644
+> > --- a/drivers/gpio/Kconfig
+> > +++ b/drivers/gpio/Kconfig
+> > @@ -329,13 +329,19 @@ config GPIO_LANGWELL
+> >  	  Say Y here to support Intel Langwell/Penwell GPIO.
+> >  
+> >  config GPIO_PCH
+> > -	tristate "PCH GPIO of Intel Topcliff"
+> > +	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GPIO"
+> >  	depends on PCI && X86
+> >  	help
+> >  	  This driver is for PCH(Platform controller Hub) GPIO 
+> of Intel Topcliff
+> >  	  which is an IOH(Input/Output Hub) for x86 embedded processor.
+> >  	  This driver can access PCH GPIO device.
+> >  
+> > +	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
+> > +	  Output Hub), ML7223.
+> > +	  ML7223 IOH is for MP(Media Phone) use.
+> > +	  ML7223 is companion chip for Intel Atom E6xx series.
+> > +	  ML7223 is completely compatible for Intel EG20T PCH.
+> > +
+> >  config GPIO_ML_IOH
+> >  	tristate "OKI SEMICONDUCTOR ML7213 IOH GPIO support"
+> >  	depends on PCI
+> > diff --git a/drivers/gpio/pch_gpio.c 
+> b/drivers/gpio/pch_gpio.c index 
+> > f970a5f..36919e7 100644
+> > --- a/drivers/gpio/pch_gpio.c
+> > +++ b/drivers/gpio/pch_gpio.c
+> > @@ -283,8 +283,10 @@ static int pch_gpio_resume(struct 
+> pci_dev *pdev)  
+> > #define pch_gpio_resume NULL  #endif
+> >  
+> > +#define PCI_VENDOR_ID_ROHM             0x10DB
+> >  static DEFINE_PCI_DEVICE_TABLE(pch_gpio_pcidev_id) = {
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8803) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8014) },
+> >  	{ 0, }
+> >  };
+> >  MODULE_DEVICE_TABLE(pci, pch_gpio_pcidev_id);
+> > --
+> > 1.7.4
+> > 
+> 
 
