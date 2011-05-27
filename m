@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab1E0NNl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 09:13:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32146 "EHLO mx1.redhat.com"
+	id S1754447Ab1E0NTx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 09:19:53 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:60827 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753903Ab1E0NNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 09:13:39 -0400
-Date: Fri, 27 May 2011 09:13:13 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
-        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
-        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
-        penberg@kernel.org, hpa@zytor.com,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-Message-ID: <20110527131313.GB8053@redhat.com>
-References: <1306269105.21443.20.camel@dan>
- <20110526203502.GK29496@redhat.com>
- <20110526204030.GL29496@redhat.com>
- <1306442674.2279.29.camel@dan>
+	id S1752964Ab1E0NTu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 09:19:50 -0400
+Message-ID: <4DDFA4F5.8060502@msgid.tls.msk.ru>
+Date: Fri, 27 May 2011 17:19:49 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20110506 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306442674.2279.29.camel@dan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <greg@kroah.com>
+CC: =?UTF-8?B?UGF3ZcWCIERyb2Jlaw==?= <pawel.drobek@gmail.com>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: option driver, ZTE MF_330 matches linux usb 2.0 root hub
+References: <4DDEC269.30808@msgid.tls.msk.ru> <4DDEC606.4020504@msgid.tls.msk.ru> <20110527012022.GF24630@kroah.com> <BANLkTikcjXTczV2FmGcQ7BY=m_t7ep54Sw@mail.gmail.com> <4DDF427E.1030109@msgid.tls.msk.ru> <BANLkTikodJ4cnjJ9Lxx=zsHd-dAgPzfDrA@mail.gmail.com> <4DDF6917.9060004@msgid.tls.msk.ru> <BANLkTi==1WyJNACmoOxcrS6RiJ3w8Ow1zw@mail.gmail.com> <20110527100215.GC9272@kroah.com>
+In-Reply-To: <20110527100215.GC9272@kroah.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 04:44:34PM -0400, Dan Rosenberg wrote:
-> On Thu, 2011-05-26 at 16:40 -0400, Vivek Goyal wrote:
-> > On Thu, May 26, 2011 at 04:35:02PM -0400, Vivek Goyal wrote:
-> > > On Tue, May 24, 2011 at 04:31:45PM -0400, Dan Rosenberg wrote:
-> > > > This introduces CONFIG_RANDOMIZE_BASE, which randomizes the address at
-> > > > which the kernel is decompressed at boot as a security feature that
-> > > > deters exploit attempts relying on knowledge of the location of kernel
-> > > > internals.  The default values of the kptr_restrict and dmesg_restrict
-> > > > sysctls are set to (1) when this is enabled, since hiding kernel
-> > > > pointers is necessary to preserve the secrecy of the randomized base
-> > > > address.
-> > > 
-> > > What happens to /proc/iomem interface which gives us the physical memory
-> > > location where kernel is loaded. kexec-tools relies on that interface
-> > > heavily so we can not take it away. And if we can not take it away then
-> > > I think somebody should be easibly be able to calculate this randomized
-> > > base address.
+27.05.2011 14:02, Greg KH wrote:
+> On Fri, May 27, 2011 at 11:06:37AM +0200, Paweł Drobek wrote:
+>> dunno, zte mf330 is pcmcia card identified itself as usb device which need to
+>> get working pcmcia options from kernel.
 > 
-> Is it common to run kexec-tools as non-root?  It may be necessary to
-> restrict this interface to root when randomization is used (keep in mind
-> nobody's going to force you to turn this on by default, at least for the
-> foreseeable future).
+> Yes, older devices put a whole USB host controller device on the PCMCIA
+> card in order to talk to it properly without having to change their
+> hardware design of the modem chip.
 
-Dan, 
+So, what's our course of actions now?
 
-I had a stupid question. /proc/kallsyms is also readable by root only. So
-if we are doing this so that non-root user can not know kernel virtual and
-physical address that should be already covered as non-root users can't
-read /proc/kallsysm or /boot/System.map.
+I'd suggest to revert this change and deal with this device
+again (specifying the device IDs more precisely, like,
+including the device class or what it is called in USB
+world) when someone will have it for real.
 
-And if this randomization is also to protect information from root user
-then /proc/iomem exporting the physical address of kernel is still a
-valid question in that context.
+Thanks,
 
-Thanks
-Vivek
+/mjt
