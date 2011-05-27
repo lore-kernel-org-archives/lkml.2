@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab1E0Vpv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 17:45:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45726 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab1E0Vpp (ORCPT
+	id S1757319Ab1E0WbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 18:31:15 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55586
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757076Ab1E0WbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 17:45:45 -0400
+	Fri, 27 May 2011 18:31:02 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/5] perf events: initialize fd array to -1 instead of 0
-Date: Fri, 27 May 2011 18:45:33 -0300
-Message-Id: <1306532736-3790-3-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 3/5] perf top: Remove unused macro
+Date: Fri, 27 May 2011 18:45:34 -0300
+Message-Id: <1306532736-3790-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1306532736-3790-1-git-send-email-acme@infradead.org>
 References: <1306532736-3790-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
-
-perf_evsel__alloc_fd allocates an array of file descriptors with the
-memory initialized to 0. The array has dimensions for cpus and threads.
-
-Later, __perf_evsel__open calls sys_perf_event_open for each cpu and thread
-dimensions. If the open fails for any of the cpus or threads then the fd's
-for this event are closed and the fd entry in the array is set to -1. Now,
-if the first attempt fails for the event (e.g., the event is not supported)
-the remaining dimensions (cpu > 0 and thread > 0) are not touched and left
-at the initialized value of 0.
-
-builtin-stat catches ENOENT and ENOSYS failures and allows the command to
-continue. The end result is that stat attempts to read from an fd of 0 which
-of course is stdin and so the command hangs until you type ctrl-D.
-
-Resolve by initializing the array to -1 since an fd < 0 is already
-handled.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1306511914-8016-1-git-send-email-dsahern@gmail.com
-Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Link: http://lkml.kernel.org/n/tip-weqbs0tkk2u0qp1xxdxxosfg@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ tools/perf/builtin-top.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index ee0fe0d..cca29ed 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -35,7 +35,17 @@ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 2d7934e..375ed16 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -62,8 +62,6 @@
+ #include <linux/unistd.h>
+ #include <linux/types.h>
  
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
- {
-+	int cpu, thread;
- 	evsel->fd = xyarray__new(ncpus, nthreads, sizeof(int));
-+
-+	if (evsel->fd) {
-+		for (cpu = 0; cpu < ncpus; cpu++) {
-+			for (thread = 0; thread < nthreads; thread++) {
-+				FD(evsel, cpu, thread) = -1;
-+			}
-+		}
-+	}
-+
- 	return evsel->fd != NULL ? 0 : -ENOMEM;
- }
- 
+-#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+-
+ static struct perf_top top = {
+ 	.count_filter		= 5,
+ 	.delay_secs		= 2,
 -- 
 1.6.2.5
 
