@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758799Ab1E0Jqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 05:46:37 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56231
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752600Ab1E0Jqf (ORCPT
+	id S1758789Ab1E0J1g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 05:27:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53966 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab1E0J1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 05:46:35 -0400
-X-Greylist: delayed 7968 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 May 2011 05:46:35 EDT
-Date: Fri, 27 May 2011 05:25:22 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Anton Salikhmetov <alexo@tuxera.com>, linux-kernel@vger.kernel.org
-Subject: Re: hfsplus mount regression in 2.6.38
-Message-ID: <20110527092522.GA11600@infradead.org>
-References: <20110525142521.GA32511@thinkpad-t410>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110525142521.GA32511@thinkpad-t410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	Fri, 27 May 2011 05:27:35 -0400
+Subject: Re: [PATCH] ipv4: fix fib metrics
+From: David Woodhouse <dwmw2@infradead.org>
+To: Alessandro Suardi <alessandro.suardi@gmail.com>,
+        Hiroyuki Kawakatsu <hkawakat@gmail.com>
+Cc: Kyle Moffett <kyle@moffetthome.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Fri, 27 May 2011 10:27:30 +0100
+In-Reply-To: <AANLkTinQq=BAVS1FrH80+VukTfAK1OKOkjEH4=gwZkv6@mail.gmail.com>
+References: <1301005107.2714.113.camel@edumazet-laptop>
+	 <AANLkTinv+XGBjbFoK6vpyiDW6gBEBKFjUef+mCAMJU9i@mail.gmail.com>
+	 <1301005946.2714.130.camel@edumazet-laptop>
+	 <20110324.153623.45921344.davem@davemloft.net>
+	 <1301006652.2714.145.camel@edumazet-laptop>
+	 <AANLkTi=Xb3KCBKoVCcaVD5iyCtMCAnYaGF_DTeFQ0ays@mail.gmail.com>
+	 <AANLkTinh9Li7DGgSqcZ+p9peS5XrHWomerSvKTYwHZ9-@mail.gmail.com>
+	 <AANLkTi=hgOcwO8ojQBtmqbROS1qrhm5HCmq7tRxesc=6@mail.gmail.com>
+	 <AANLkTinQq=BAVS1FrH80+VukTfAK1OKOkjEH4=gwZkv6@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1306488451.2029.107.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 09:25:21AM -0500, Seth Forshee wrote:
-> Reverting commits 52399b1 (hfsplus: use raw bio access for the volume
-> headers) and 358f26d5 (hfsplus: use raw bio access for partition tables)
-> fixes the problems. It appears the problems are due to hfsplus
-> submitting 512 byte bios to a block device whose sector size is larger
-> than 512 byts (2 KB in the log above), and the block driver is quite
-> reasonably rejecting any requests without proper sector alignment.
+On Fri, 2011-03-25 at 02:25 +0100, Alessandro Suardi wrote:
 > 
-> How would you suggest fixing this?  Most file systems are using
-> sb_bread() for this sort of thing, but since the offending patches are
-> intended to stop using buffer_heads I'm assuming that's not an option.
+> ...which didn't take that long - one last bugging question and I'm happily
+>  off to sleep; does ipid always come in the form of 0x followed by four
+>  bytes representing hex values ? In a perhaps inelegant but working way
+>  (I'm now writing through the VPN tunnel),
+> 
+>   sed 's/cache//;s/metric \?[0-9]\+ [0-9]\+//g;s/hoplimit
+> [0-9]\+//g;s/ipid 0x....//g'
+> 
+>  appears to be Work For Me (TM).
 
-Basically all hardcoded uses of HFSPLUS_SECTOR_SIZE need to be replaced
-with a use of bdev_logical_block_size, or a per-sb variable derived from
-it, and the addressing needs to be accomodated to fit it.  I'd need to
-look into a bit more detail in what form the sectors we pass into it
-are in - we might have to convert them from 512byte to large units,
-or they might already be in it.  If they happen to be in 512 byte units
-we might have to do read-modify write cycles.
+Please could I have a tested patch for vpnc-script?
 
-What large sector size device do you have, a CDROM?
+It now lives in its own repository at 
+git://,	http://git.infradead.org/users/dwmw2/vpnc-scripts.git because
+it's used by openconnect too, and has had various bug fixes for
+cross-platform support and IPv6 since it was forked from vpnc.
+
+-- 
+dwmw2
+
