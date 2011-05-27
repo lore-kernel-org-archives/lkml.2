@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758830Ab1E0KDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 06:03:00 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:48115 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752590Ab1E0KC6 (ORCPT
+	id S1758808Ab1E0KFY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 06:05:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52204 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753260Ab1E0KFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 06:02:58 -0400
-X-Sasl-enc: kdUYUAve6Me7sKOn18j9KkTSeRyniz7mBt1M5ZkW2nRq 1306490576
-Date: Fri, 27 May 2011 18:02:15 +0800
-From: Greg KH <greg@kroah.com>
-To: =?utf-8?B?UGF3ZcWC?= Drobek <pawel.drobek@gmail.com>
-Cc: Michael Tokarev <mjt@tls.msk.ru>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: Re: option driver, ZTE MF_330 matches linux usb 2.0 root hub
-Message-ID: <20110527100215.GC9272@kroah.com>
-References: <4DDEC269.30808@msgid.tls.msk.ru>
- <4DDEC606.4020504@msgid.tls.msk.ru>
- <20110527012022.GF24630@kroah.com>
- <BANLkTikcjXTczV2FmGcQ7BY=m_t7ep54Sw@mail.gmail.com>
- <4DDF427E.1030109@msgid.tls.msk.ru>
- <BANLkTikodJ4cnjJ9Lxx=zsHd-dAgPzfDrA@mail.gmail.com>
- <4DDF6917.9060004@msgid.tls.msk.ru>
- <BANLkTi==1WyJNACmoOxcrS6RiJ3w8Ow1zw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi==1WyJNACmoOxcrS6RiJ3w8Ow1zw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 May 2011 06:05:23 -0400
+Subject: Re: [PATCH] ARM: Do not allow unaligned accesses when
+ CONFIG_ALIGNMENT_TRAP
+From: Will Deacon <will.deacon@arm.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        linux-arm-kernel@lists.infradead.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, sam@ravnborg.org
+In-Reply-To: <4DDEC1C0.20807@linux.intel.com>
+References: <20110523111648.10474.78396.stgit@e102109-lin.cambridge.arm.com>
+	 <20110523132124.GI17672@n2100.arm.linux.org.uk>
+	 <1306229953.19557.14.camel@e102109-lin.cambridge.arm.com>
+	 <yw1xipt0p4i9.fsf@unicorn.mansr.com>
+	 <BANLkTi=xLE9gP5YOdr9dR0DfsY1Ymzxu+w@mail.gmail.com>
+	 <20110524171331.GA2941@arm.com>
+	 <20110525111405.GA12010@e102109-lin.cambridge.arm.com>
+	 <20110525124348.GA2340@arm.com> <yw1xaaeanbxe.fsf@unicorn.mansr.com>
+	 <BANLkTim2TOZgB-3Vkv5RcK572Qr07s3=CA@mail.gmail.com>
+	 <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
+	 <alpine.LFD.2.00.1105261650330.3207@xanadu.home>
+	 <4DDEC1C0.20807@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 May 2011 11:05:09 +0100
+Message-ID: <1306490709.26257.4.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 11:06:37AM +0200, Paweł Drobek wrote:
-> dunno, zte mf330 is pcmcia card identified itself as usb device which need to
-> get working pcmcia options from kernel.
+Hi Andi,
 
-Yes, older devices put a whole USB host controller device on the PCMCIA
-card in order to talk to it properly without having to change their
-hardware design of the modem chip.
+On Thu, 2011-05-26 at 22:10 +0100, Andi Kleen wrote:
+> 
+> > It is possible that -fconserve-stack is still valuable on ARM given that
+> > it is also used with -mno-unaligned-access for other things than
+> > structure packing on the stack, and therefore its merits can be debated
+> > independently from the alignment issue at hand.
+> 
+> The big advantage of -fconserve-stack is that it throttles the inliner
+> if the inlining
+> would cause too much stack growth. This is something you likely want
+> on ARM too, especially as code gets more and more complex.
 
-Crazy but true.
+Do you have any concrete examples of -fconserve-stack giving an overall
+win that isn't in the noise? The fact that the GCC documentation
+explicitly states that enabling the option can lead to `making the
+program slower' does make me question why we're enabling it in the first
+place.
 
-greg k-h
+>From private conversation, the GCC guys don't seem to think this is a
+bug so I'm reluctant to open a bugzilla ticket.
+
+Will
+
