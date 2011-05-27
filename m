@@ -1,92 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758679Ab1E0BfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 21:35:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62032 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758651Ab1E0BfL (ORCPT
+	id S1758665Ab1E0Bio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 21:38:44 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:60255 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab1E0Bin convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 21:35:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=JnWfZ0GeR3jmxtGbu7O1+M4Oi0FMFCyxBDho0FEIpLbzWPE7ywjnLu2UiyAtDDMcp+
-         sFM2a+h411rv2If1PMYSx0UiNoc45jEyKl0sACUHGGErB80M6OQtNm9koQ2Q69DCW52w
-         3DkMlPJg3sFauzx3A79DvufKvVIqLg9EUcib8=
-Message-ID: <4DDEFFC0.2020001@gmail.com>
-Date: Thu, 26 May 2011 18:34:56 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	Thu, 26 May 2011 21:38:43 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-132.messagelabs.com!1306460322!26961040!1
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.99]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "ryan@bluewatersys.com" <ryan@bluewatersys.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Date: Thu, 26 May 2011 20:38:41 -0500
+Subject: RE: [PATCH 1/5] dmaengine: add ep93xx DMA support
+Thread-Topic: [PATCH 1/5] dmaengine: add ep93xx DMA support
+Thread-Index: AcwYonp9s0fvyNsfTcWp/tqLq1eAmQDajcGw
+Message-ID: <0D753D10438DA54287A00B027084269764D331A4B2@AUSP01VMBX24.collaborationhost.net>
+References: <cover.1306082097.git.mika.westerberg@iki.fi>
+ <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+In-Reply-To: <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: no sound in current -git
-References: <20110526013423.GA25226@redhat.com>	<4DDDD47C.5030504@gmail.com>	<20110526043337.GA11224@redhat.com>	<20110526051109.GA11870@redhat.com>	<4DDDF0D0.6090805@gmail.com> <BANLkTik5QWiW0Wm_oygnVSJNQXpZpdRB3w@mail.gmail.com>
-In-Reply-To: <BANLkTik5QWiW0Wm_oygnVSJNQXpZpdRB3w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2011 11:38 AM, Hugh Dickins wrote:
-> On Wed, May 25, 2011 at 11:18 PM, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->> On 05/25/2011 10:11 PM, Dave Jones wrote:
->>>
->>> On Thu, May 26, 2011 at 12:33:38AM -0400, Dave Jones wrote:
->>>
->>>   >     >    sound over here is out as well on a macbook pro. seems gnome shell
->>>   >     >    didn't like whats being merged with the current Mainline i.g. no
->>> sound
->>>   >     >    bluetooth applet missing. will bisect when I get a chance.
->>>   >
->>>   >    Maybe it was this that just got merged..  (building now)
->>>   >
->>>   >    commit 4db70f73e56961b9bcdfd0c36c62847a18b7dbb5
->>>   >    Author: Eric Paris<eparis@redhat.com>
->>>   >    Date:   Wed May 25 19:49:18 2011 -0700
->>>   >
->>>   >        tmpfs: fix XATTR N overriding POSIX_ACL Y
->>>
->>> Yep. That fixes sound for me.
->>> Sorry for the false alarm Takashi!
->>>
->>>         Dave
->>>
->>>
->>
->> hmm.. pulled and noticed the above with git log, then did git revert for the
->> above, built, but still no sound. will do a bisect in the morning or later
->> on.
+On Sunday, May 22, 2011 10:03 AM, Mika Westerberg wrote:
 >
-> That commit was the fix, not the origin of the bug, so reverting it
-> was not the right thing to do!
+> The ep93xx DMA controller has 10 independent memory to peripheral (M2P)
+> channels, and 2 dedicated memory to memory (M2M) channels. M2M channels can
+> also be used by SPI and IDE to perform DMA transfers to/from their memory
+> mapped FIFOs.
 >
-> But it's only a fix if your .config has not yet been messed up (with
-> CONFIG_TMPFS_XATTR and CONFIG_TMPFS_POSIX_ACL unset, though used
-> somewhere for sound).
+> This driver supports both M2P and M2M channels with DMA_SLAVE, DMA_CYCLIC and
+> DMA_MEMCPY (M2M only) capabilities.
 >
-> So, just delete the CONFIG_TMPFS_XATTR and CONFIG_TMPFS_POSIX_ACL
-> lines from your .config (perhaps you don't even get an ACL line if the
-> XATTR is not set, I forget) and run "make oldconfig", this time
-> choosing Y.
->
-> If this was your sound problem too, then the rebuilt kernel should fix it.
->
-> Apologies for inflicting this on people: Linus spotted it and got it
-> fixed up a.s.a.p so it only would only affect those who pulled a tree
-> yesterday.
->
-> Hugh
+> Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> ---
+>  arch/arm/mach-ep93xx/include/mach/dma.h |   87 ++
+>  drivers/dma/Kconfig                     |    7 +
+>  drivers/dma/Makefile                    |    1 +
+>  drivers/dma/ep93xx_dma.c                | 1356 +++++++++++++++++++++++++++++++
+>  4 files changed, 1451 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/dma/ep93xx_dma.c
 >
 
+[snip]
 
-alright.. sound is up and running over here with the latest. seems I 
-needed to do a git clean -fx and rebuild for this to work correctly.
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index a572600..614ce7b 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -235,6 +235,13 @@ config MXS_DMA
+>  	  Support the MXS DMA engine. This engine including APBH-DMA
+>  	  and APBX-DMA is integrated into Freescale i.MX23/28 chips.
+>  
+> +config EP93XX_DMA
+> +	bool "Cirrus Logic EP93xx DMA support"
+> +	depends on ARCH_EP93XX
+> +	select DMA_ENGINE
+> +	help
+> +	  Enable support for the Cirrus Logic EP93xx M2P/M2M DMA controller.
+> +
+>  config DMA_ENGINE
+>  	bool
 
-cheers,
+The old dma-m2p support was always builtin.  Should ARCH_EP93XX select
+EP93XX_DMA to keep this, or should it be added to the ep93xx_defconfig?
+Ryan, what do you think?
 
-Justin P, Mattock
+[snip]
+
+> diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+> new file mode 100644
+> index 0000000..7898e8c
+> --- /dev/null
+> +++ b/drivers/dma/ep93xx_dma.c
+> @@ -0,0 +1,1356 @@
+> +/*
+> + * Driver for the Cirrus Logic EP93xx DMA Controller
+> + *
+> + * Copyright (C) 2011 Mika Westerberg
+> + *
+> + * DMA M2P implementation is based on the original
+> + * arch/arm/mach-ep93xx/dma-m2p.c which has following copyrights:
+> + *
+> + *   Copyright (C) 2006 Lennert Buytenhek <buytenh@wantstofly.org>
+> + *   Copyright (C) 2006 Applied Data Systems
+> + *   Copyright (C) 2009 Ryan Mallon <ryan@bluewatersys.com>
+> + *
+> + * This driver is based on dw_dmac and amba-pl08x drivers.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/init.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/dmaengine.h>
+> +#include <linux/moduleparam.h>
+
+Unnecessary header.
+
+The reset looks fine to me.
+
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
