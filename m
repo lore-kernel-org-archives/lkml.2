@@ -1,32 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758801Ab1E0JjM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 05:39:12 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38730 "EHLO mx3.mail.elte.hu"
+	id S932519Ab1E0JlD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 05:41:03 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:39092 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752227Ab1E0JjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 05:39:10 -0400
-Date: Fri, 27 May 2011 11:38:53 +0200
+	id S1757391Ab1E0JlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 05:41:01 -0400
+Date: Fri, 27 May 2011 11:40:47 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
+To: Dave Jones <davej@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
         kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
         torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
-        hpa@zytor.com, Arjan van de Ven <arjan@infradead.org>,
+        Arjan van de Ven <arjan@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
         pageexec@freemail.hu
 Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-Message-ID: <20110527093853.GI21386@elte.hu>
+Message-ID: <20110527094047.GJ21386@elte.hu>
 References: <1306269105.21443.20.camel@dan>
- <20110526203502.GK29496@redhat.com>
- <20110526204030.GL29496@redhat.com>
- <1306442674.2279.29.camel@dan>
- <20110526205549.GM29496@redhat.com>
+ <201105270018.36835.rjw@sisk.pl>
+ <4DDED4ED.7020806@zytor.com>
+ <20110527024556.GA22396@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110526205549.GM29496@redhat.com>
+In-Reply-To: <20110527024556.GA22396@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -40,20 +40,28 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Vivek Goyal <vgoyal@redhat.com> wrote:
+* Dave Jones <davej@redhat.com> wrote:
 
-> > Is it common to run kexec-tools as non-root?  It may be necessary 
-> > to restrict this interface to root when randomization is used 
-> > (keep in mind nobody's going to force you to turn this on by 
-> > default, at least for the foreseeable future).
+> On Thu, May 26, 2011 at 03:32:13PM -0700, H. Peter Anvin wrote:
+>  > On 05/26/2011 03:18 PM, Rafael J. Wysocki wrote:
+>  > > 
+>  > > Well, as far as I can tell, this feature is going to break hibernation on
+>  > > both x86_32 and x86_64 at the moment, unless you can guarantee that the
+>  > > randomized kernel location will be the same for both the boot and the target
+>  > > kernels.
+>  > > 
+>  > 
+>  > Obviously we can't and we don't.  I'm a bit surprised at that
+>  > constraint... how can that constraint not break things like kernels of
+>  > slightly different size?
 > 
-> kexec-tools runs as root. And I see that /proc/iomem permissions 
-> are also for root only. So it probably is a non-issue.
+> In Fedora at least, we make sure the kernel you thaw from is the 
+> same one you booted by diddling with grub to force the right kernel 
+> to be booted.
 
-it might be an issue to keep in mind for later projects that try to 
-lock down root itself from being able to patch the kernel (other than 
-rebooting the box), using signed modules, disabled direct-ioport 
-access, and other hardened facilities.
+Btw., the hibernation code should save a signature and make sure that 
+the two kernels match! It's really broken if the code allows blind 
+thawing ...
 
 Thanks,
 
