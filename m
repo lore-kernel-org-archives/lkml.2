@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758823Ab1E0IpN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 04:45:13 -0400
-Received: from smarthost.idnet.net ([212.69.40.140]:54684 "EHLO
-	smarthost.idnet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758787Ab1E0IpK (ORCPT
+	id S1758722Ab1E0IN7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 04:13:59 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56046 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757391Ab1E0IN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 04:45:10 -0400
-X-Greylist: delayed 1919 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 May 2011 04:45:10 EDT
-Subject: Re: [ORLinux] [PATCH 1/1] Apply transparent_union attribute to
- union semun
-From: Jeremy Bennett <jeremy.bennett@embecosm.com>
-Reply-To: jeremy.bennett@embecosm.com
-To: jonas@southpole.se
-Cc: linux-kernel@vger.kernel.org, joern.rennecke@embecosm.com,
-        linux@openrisc.net
-In-Reply-To: <1306448865-3142-1-git-send-email-jonas@southpole.se>
-References: <1306448865-3142-1-git-send-email-jonas@southpole.se>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Embecosm
-Date: Fri, 27 May 2011 09:13:06 +0100
-Message-ID: <1306483986.9223.7.camel@thomas>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-AuthenticatedSender: jeremy.bennett.embecosm.com@idnet.net.uk
-X-Originating-IP: [91.135.5.64]
+	Fri, 27 May 2011 04:13:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=edw6x3AlrAeu+WI27KkGgs49PsmwFTVTM1iEouuYGaAtRQ0gRrzHQS6bv0r2bof9TM
+         HBc14HCRQwNsokLIvaMpbhWIu4Z5B++Pl+3BOtKF9RIJ4yu6lPWAcpQi3HFej8NZjKUx
+         hFogtHKjk0x5plVbnQDO9nGzix1DrgpJ76ELU=
+MIME-Version: 1.0
+Date: Fri, 27 May 2011 10:13:56 +0200
+Message-ID: <BANLkTinK1-COHC6CyM=o3+m-EdCxVBEzGg@mail.gmail.com>
+Subject: Question about 'virtual' device setup
+From: Francis Moreau <francis.moro@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-27 at 00:27 +0200, jonas@southpole.se wrote: 
-> From: Jonas Bonn <jonas@southpole.se>
-> 
-> The syscall handler for semctl is written under the assumption that the
-> toolchain will pass "small" unions as function parameters directly instead
-> of by reference.  The union semun is "small" and thus fits this description.
-> 
-> Since it is assumed that the union will be passed directly and not by
-> reference, it is safe to access the union members without going via
-> get_user.
-> 
-> The OpenRISC architecture, however, passes all unions by reference, thus
-> breaking the above assumption.
+Hello,
 
-Hi Jonas
+I'm wondering how a virtual device such as cpuid which can be found in
+'arch/x86/kernel/cpuid.c' should be installed in my linux system.
 
-Joern and I were discussing this - there is a case for changing the ABI.
-It would certainly fix a debugging issue.
+Since cpuid doesn't have a real device, there's no event for udev to
+create it a boot time.
 
-> The technically correct fix here is to mark the union as being transparent
-> so that the ABI of the union's first element determines the parameter
-> passing method and thus make explicit what's already implied in the function
-> definition.
-> 
-> Signed-off-by: Jonas Bonn <jonas@southpole.se>
-> ---
->  include/linux/sem.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/sem.h b/include/linux/sem.h
-> index f2961af..6985c7d 100644
-> --- a/include/linux/sem.h
-> +++ b/include/linux/sem.h
-> @@ -48,7 +48,7 @@ union semun {
->  	unsigned short __user *array;	/* array for GETALL & SETALL */
->  	struct seminfo __user *__buf;	/* buffer for IPC_INFO */
->  	void __user *__pad;
-> -};
-> +} __attribute__ ((transparent_union));
->  
->  struct  seminfo {
->  	int semmap;
+I can see only 2 ways to currently setup the beast:
 
-Excellent. Semaphore test now passes. I look forward to rerunning
-regression - we may be down to a single failure now!
+  1/ force udev to create the node at boot time. Since the module has
+no alias, the driver cannot be autoloaded when accessing the node so
+the applicatoin has to modprobe the driver manually.
 
-Best wishes,
+  2/ let the application see if the node /dev/cpui/0/cpuid exists. If
+not then modprobe cpuid and let udev creates the node
 
+Is there any others ways to do this because it seems to me hackish to
+let the application do the modprobe manually?
 
-Jeremy
-
+Thanks
 -- 
-Tel:      +44 (1590) 610184
-Cell:     +44 (7970) 676050
-SkypeID: jeremybennett
-Email:   jeremy.bennett@embecosm.com
-Web:     www.embecosm.com
-
+Francis
