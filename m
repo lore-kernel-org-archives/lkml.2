@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758717Ab1E0IBA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 04:01:00 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40673 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758681Ab1E0IA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 04:00:59 -0400
-Date: Fri, 27 May 2011 10:00:51 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 07/12] x86, mce: introduce mce_gather_info()
-Message-ID: <20110527080051.GB19300@elte.hu>
-References: <4DDF21DE.9040705@jp.fujitsu.com>
- <4DDF23F5.1090206@jp.fujitsu.com>
- <BANLkTinCRX3YOXwuphRTBS=OcHuC07a1jw@mail.gmail.com>
+	id S932527Ab1E0IBI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 04:01:08 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:65317 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195Ab1E0IBG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 04:01:06 -0400
+Date: Fri, 27 May 2011 02:01:00 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Peter Korsgaard <jacmet@sunsite.dk>
+Cc: simon@mungewell.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        OliverNeukumoliver@neukum.org
+Subject: Re: [PATCH] input: Add Nintendo extension controller driver
+Message-ID: <20110527080100.GB907@ponder.secretlab.ca>
+References: <20110516214608.17011.3075.stgit@ponder>
+ <87fwo5ywdh.fsf@macbook.be.48ers.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinCRX3YOXwuphRTBS=OcHuC07a1jw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <87fwo5ywdh.fsf@macbook.be.48ers.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Tony Luck <tony.luck@gmail.com> wrote:
-
-> 2011/5/26 Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>:
+On Mon, May 23, 2011 at 10:50:34PM +0200, Peter Korsgaard wrote:
+> >>>>> "Grant" == Grant Likely <grant.likely@secretlab.ca> writes:
 > 
-> > As the result the mce_get_rip() is integrated and unnecessary 
-> > zero-ing is removed.  This also fix an issue pointed by Tony Luck 
-> > that RIP is required to make some decision about error severity 
-> > (for SRAR errors) but it was retrieved later in the handler.
+>  Grant> This driver adds support for Nintendo Wiimote extension controllers
+>  Grant> directly attached to an i2c bus, such as when using an adaptor like
+>  Grant> the Wiichuck.
 > 
-> To keep the credit path accurate, that was one of the pieces I 
-> picked up from Andi.
+> 
+>  Grant> + * If the device is recognized, then the polling period is bumped up
+>  Grant> + * to 50ms, and the state machine enters into a loop alternating
+> 
+> <snip>
+> 
+>  Grant> +#else
+>  Grant> +#define WIICHUCK_CAPTURE_PERIOD (100)	/* 100 milliseconds */
+> 
+> 50 or 100ms?
 
-At minimum an explanation should be put into the code. Small, hidden 
-dependencies might be common job security moves in the closed source 
-world but this is open source ;-)
+Good catch.  It's 100ms.  Now fixed, thanks.
 
-Thanks,
+g.
 
-	Ingo
