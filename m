@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab1E0I27 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 04:28:59 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:41349 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab1E0I2j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 04:28:39 -0400
-X-Auth-Info: L+CPdPPhgM8Mkz0fAjeZrQq5ukCL8lIFRSYMHUj48/I=
-Message-ID: <4DDF614E.7090905@grandegger.com>
-Date: Fri, 27 May 2011 10:31:10 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1758713Ab1E0IgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 04:36:19 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43711 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751953Ab1E0IgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 04:36:17 -0400
+Date: Fri, 27 May 2011 10:35:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, eranian@google.com, tzanussi@gmail.com,
+        penberg@cs.helsinki.fi, torvalds@linux-foundation.org, efault@gmx.de,
+        peterz@infradead.org, davej@redhat.com, davem@davemloft.net,
+        fweisbec@gmail.com, kees.cook@canonical.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf symbols: Handle
+ /proc/sys/kernel/kptr_restrict
+Message-ID: <20110527083554.GA21386@elte.hu>
+References: <tip-mt512joaxxbhhp1odop04yit@git.kernel.org>
+ <20110526193946.GA6363@elte.hu>
+ <20110526212805.GB30593@ghostprotocols.net>
 MIME-Version: 1.0
-To: Oliver Hartkopp <socketcan@hartkopp.net>
-CC: Arnd Bergmann <arnd@arndb.de>, sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Subhasish Ghosh <subhasish@mistralsolutions.com>, nsekhar@ti.com,
-        open list <linux-kernel@vger.kernel.org>,
-        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, Netdev@vger.kernel.org,
-        m-watkins@ti.com
-Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
-References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com>	<4DCB88A4.2010901@grandegger.com> <4DCBF1B6.6000104@hartkopp.net>	<201105221230.56243.arnd@arndb.de> <4DD9FCFC.10803@hartkopp.net>
-In-Reply-To: <4DD9FCFC.10803@hartkopp.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526212805.GB30593@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oliver,
 
-sorry for the late answer.
+* Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
 
-On 05/23/2011 08:21 AM, Oliver Hartkopp wrote:
-> On 22.05.2011 12:30, Arnd Bergmann wrote:
->> On Thursday 12 May 2011 16:41:58 Oliver Hartkopp wrote:
->>> E.g. assume you need the CAN-IDs 0x100, 0x200 and 0x300 in your application
->>> and for that reason you configure these IDs in the pruss CAN driver.
->>>
->>> What if someone generates a 100% CAN busload exactly on CAN-ID 0x100 then?
->>>
->>> Worst case (1MBit/s, DLC=0) you would need to handle about 21.000 irqs/s for
->>> the correctly received CAN frames with the filtered CAN-ID 0x100 ...
->>
->> Then I guess the main thing that a "smart" CAN implementation like pruss
->> should do is interrupt mitigation. When you have a constant flow of
->> packets coming in, the hardware should be able to DMA a lot of
->> them into kernel memory before the driver is required to pick them up,
->> and only get into interrupt driven mode when the kernel has managed
->> to process all outstanding packets.
->>
->>> This all depends heavily on Linux networking (skb handling, caching, etc) and
->>> is pretty fast and optimized!! That was also the reason why it ran on the old
->>> PowerPC that smoothly. The mostly seen effect if anything drops is when the
->>> application (holding the socket) was not fast enough to handle the incoming
->>> data. NB: For that reason we implemented a CAN content filter (CAN_BCM) that
->>> is able to do content filtering and timeout monitoring in Kernelspace - all
->>> performed in the SoftIRQ.
->>
->> Right, dropping packets that no process is waiting for should be done as
->> early as possible. In pruss-can, the idea was to do it in hardware, which
->> doesn't really work all that well for the reasons discussed before.
->> Dropping the frames in the NAPI poll function (softirq time) seems like a
->> logical choice.
+> Em Thu, May 26, 2011 at 09:39:46PM +0200, Ingo Molnar escreveu:
+> > Secondly, even though i have the proper 'vmlinux' in cwd, i get half 
+> > a page long warnings on perf record warning me about the vmlinux:
+> > 
+> >   WARNING: Kernel address maps (/proc/{kallsyms,modules}) are restricted, check /proc/sys/kernel/kptr_restrict.
+> > 
+> >   Samples in kernel functions may not be resolved if a suitable 
+> >   vmlinux file is not found in the buildid cache or in the vmlinux 
+> >   path.
+> > 
+> >   ...
+> > 
+> > But a vmlinux file *is* in the cwd.
 > 
-> In 'real world' CAN setups you'll never see 21.000 CAN frames per second (and
-> therefore 21.000 irqs/s) - you are usually designing CAN network traffic with
-> less than 60% busload. So interrupt rates somewhere below 1000 irqs/s can be
-> assumed.
+> Well, there was no assumption that 'perf report' would run on the same
+> directory as 'perf record', the user may have moved to a different
+> directory or transferred the perf.data file to a different machine.
 > 
->>From what i've seen so far a 3-4 messages rx FIFO and NAPI support just make it.
+> Also it would have to check that the vmlinux on the path is suitable
+> (that build-id matches), currently it does that just at 'perf report'
+> time, that is when it will need to use it. At record time we just
+> collect the build-ids.
+> 
+> With that in mind, how do you think it should be phrased?
 
-I think you speak about the SJA100 which is able to buffer 64 byte
-corresponding to up to 4 messages. There are CAN controllers able to
-queue more or just one message and then NAPI adds overhead.
+I think the biggest problem is that it is yelling at us even when i'm 
+root - and root can access all the pointer values just fine:
 
-> @Marc/Wolfgang: Would this be also your recommendation for a CAN controller
-> design that supports SocketCAN in the best way?
+ # id
+ uid=0(root) gid=0(root) groups=0(root),1(bin),2(daemon),3(sys),4(adm),6(disk),10(wheel) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
 
-Anyway, NAPI *always* useful as it helps with the infamous interrupt
-flooding.
+ # perf report --stdio
+ No kallsyms or vmlinux with build-id 122214021a666675f6e5ff97d70a85ce7139c0e7 was found
+ [kernel.kallsyms] with build id 122214021a666675f6e5ff97d70a85ce7139c0e7 not found, continuing without s
+ Kernel address maps (/proc/{kallsyms,modules}) were restricted, check /proc/sys/kernel/kptr_restrict bef
 
-Wolfgang.
+ # tail -1 /proc/kallsyms 
+ ffffffffff600d00 D __vvar_vsyscall_gtod_data
+
+Thanks,
+
+	Ingo
