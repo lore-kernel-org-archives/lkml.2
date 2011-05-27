@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab1E0SEU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 14:04:20 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:44366 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab1E0SES (ORCPT
+	id S1754433Ab1E0SGD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 14:06:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54441 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750922Ab1E0SGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 14:04:18 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: prasad@linux.vnet.ibm.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck\, Tony" <tony.luck@intel.com>,
-        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
-        anderson@redhat.com
-References: <20110526170722.GB23266@in.ibm.com>
-	<20110526171521.GD17988@in.ibm.com>
-Date: Fri, 27 May 2011 11:04:06 -0700
-In-Reply-To: <20110526171521.GD17988@in.ibm.com> (K. Prasad's message of "Thu,
-	26 May 2011 22:45:21 +0530")
-Message-ID: <m1fwo09g15.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Fri, 27 May 2011 14:06:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19yz/KnYhbonLhuolzMlGvDX1DHsslqcpM=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;prasad@linux.vnet.ibm.com
-X-Spam-Relay-Country: 
-Subject: Re: [RFC Patch 4/6] PANIC_MCE: Introduce a new panic flag for fatal MCE, capture related information
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <4DDFE52D.4070308@zytor.com>
+References: <1306269105.21443.20.camel@dan> <201105270018.36835.rjw@sisk.pl>
+ <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com> <20110527170045.GB4356@elte.hu>
+ <1306516230.3339.17.camel@dan> <20110527171611.GE4356@elte.hu>
+ <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com> <20110527174644.GG4356@elte.hu>
+ <4DDFE52D.4070308@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 27 May 2011 11:05:07 -0700
+Message-ID: <BANLkTimVQbHvW8tCACAcC8zRkyY1KyU2ww@mail.gmail.com>
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Dan Rosenberg <drosenberg@vsecurity.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, davej@redhat.com,
+        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
+        adobriyan@gmail.com, penberg@kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"K.Prasad" <prasad@linux.vnet.ibm.com> writes:
-
-> PANIC_MCE: Introduce a new panic flag for fatal MCE, capture related information
+On Fri, May 27, 2011 at 10:53 AM, H. Peter Anvin <hpa@zytor.com> wrote:
 >
-> Fatal machine check exceptions (caused due to hardware memory errors) will now
-> result in a 'slim' coredump that captures vital information about the MCE. This
-> patch introduces a new panic flag, and new parameters to *panic functions
-> that can capture more information pertaining to the cause of crash.
->
-> Enable a new elf-notes section to store additional information about the crash.
-> For MCE, enable a new notes section that captures relevant register status
-> (struct mce) to be later read during coredump analysis.
+> That doesn't solve any problems with the memory map.
 
-There may be a reason to pass everything struct mce through 5 layers of
-code but right now it looks like it just makes everything uglier to no
-real purpose.
+Actually, it does.
 
-Eric
+You can load the kernel at the same virtual address we always load it,
+and/or perhaps shift it up by just small amounts (ie "single pages"
+rather than "ten bits worth of pages")
+
+And then rely on the fact that you mixed up symbols in other ways.
+
+"Look ma, no need to worry about memory map". At least no more than we do now.
+
+Put another way: think about our /proc/iomem right now:
+
+  00100000-bdc6ffff : System RAM
+    01000000-016bdced : Kernel code
+    016bdcee-01ca8b7f : Kernel data
+    01d36000-01de2fff : Kernel bss
+
+with the "shift kernel up at load-time", the above information is
+suddenly very scary, because the "Kernel code" part is magically
+important.
+
+In contrast, if your randomization depends on just relinking things a
+bit differently, you don't really give out any of the random
+information in /proc/iomem. Nor does it affect the load address and
+the e820 memory map.
+
+And, in fact, it does give you way more bits of randomness to play
+around with the text addresses.
+
+With something like function-sections, it should be possible to do
+quite a serious job of relinking (and then keep some "function section
+to actual relinked address" mapping around so that you can do the
+/proc/kallsyms mappings).
+
+But that's actually the "fancy" model. I don't think we should aim at
+that to begin with. Start off with something much less ambitious, like
+just shifting the kernel by a few pages. People have argued that even
+just a 50% chance of an oops is preferable to nothing. So we can start
+small and stupid.
+
+See?
+
+                     Linus
