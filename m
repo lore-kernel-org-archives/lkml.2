@@ -1,50 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757012Ab1E0WUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 18:20:13 -0400
-Received: from hyde.gogi.tv ([87.106.161.174]:50077 "EHLO hyde.gogi.tv"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754478Ab1E0WUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 18:20:11 -0400
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Fri, 27 May 2011 23:20:09 +0100
-From: Daniel Haid <d.haid@gogi.tv>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Andi Kleen <andi@firstfloor.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Question about iommu on =?UTF-8?Q?x=38=36=5F=36=34=20and=20ra?=
- =?UTF-8?Q?deon=20driver=2E?=
-In-Reply-To: <20110527155507.GB11273@dumpdata.com>
-References: <6ac3f6faad655602b767aa14b355e982@admin.gogi.tv>
- <20110523220536.GB11961@dumpdata.com>
- <756073831c36e0404199a4e8239bcb70@admin.gogi.tv>
- <m2wrhf4sw5.fsf@firstfloor.org>
- <08370791664f069624d25c757ed101c0@admin.gogi.tv>
- <20110525125752.GB3467@dumpdata.com>
- <dfd8bfd19ba1fb77d6448bff97123e13@admin.gogi.tv>
- <20110527155507.GB11273@dumpdata.com>
-Message-ID: <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
-User-Agent: Roundcube Webmail/0.4.2
+	id S1757129Ab1E0WW3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 18:22:29 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:43398 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753396Ab1E0WW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 18:22:28 -0400
+Date: Fri, 27 May 2011 17:22:25 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Rafael Aquini <aquini@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, rja@americas.sgi.com
+Subject: Re: [PATCH] [BUGFIX] mm: hugepages can cause negative commitlimit
+Message-ID: <20110527222225.GA8561@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20110518153445.GA18127@sgi.com> <BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com> <20110519045630.GA22533@sgi.com> <BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com> <20110519221101.GC19648@sgi.com> <20110520130411.d1e0baef.akpm@linux-foundation.org> <20110520223032.GA15192@x61.tchesoft.com> <20110526210751.GA14819@optiplex.tchesoft.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526210751.GA14819@optiplex.tchesoft.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The DRM code is not used anymore. It was used by XFree86 but nowadays
-> the TTM code is used instead.
+On Thu, May 26, 2011 at 06:07:53PM -0300, Rafael Aquini wrote:
+> On Fri, May 20, 2011 at 07:30:32PM -0300, Rafael Aquini wrote:
+> > On Fri, May 20, 2011 at 01:04:11PM -0700, Andrew Morton wrote:
+> > > On Thu, 19 May 2011 17:11:01 -0500
+> > > Russ Anderson <rja@sgi.com> wrote:
+> > > 
+> > > > OK, I see your point.  The root problem is hugepages allocated at boot are
+> > > > subtracted from totalram_pages but hugepages allocated at run time are not.
+> > > > Correct me if I've mistate it or are other conditions.
+> > > > 
+> > > > By "allocated at run time" I mean "echo 1 > /proc/sys/vm/nr_hugepages".
+> > > > That allocation will not change totalram_pages but will change
+> > > > hugetlb_total_pages().
+> > > > 
+> > > > How best to fix this inconsistency?  Should totalram_pages include or exclude
+> > > > hugepages?  What are the implications?
+> > > 
+> > > The problem is that hugetlb_total_pages() is trying to account for two
+> > > different things, while totalram_pages accounts for only one of those
+> > > things, yes?
+> > > 
+> > > One fix would be to stop accounting for huge pages in totalram_pages
+> > > altogether.  That might break other things so careful checking would be
+> > > needed.
+> > > 
+> > > Or we stop accounting for the boot-time allocated huge pages in
+> > > hugetlb_total_pages().  Split the two things apart altogether and
+> > > account for boot-time allocated and runtime-allocated pages separately.  This
+> > > souds saner to me - it reflects what's actually happening in the kernel.
+> > 
+> > Perhaps we can just reinstate the # of pages "stealed" at early boot allocation
+> > later, when hugetlb_init() calls gather_bootmem_prealloc()
+> > 
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 8ee3bd8..d606c9c 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -1111,6 +1111,7 @@ static void __init gather_bootmem_prealloc(void)
+> >                 WARN_ON(page_count(page) != 1);
+> >                 prep_compound_huge_page(page, h->order);
+> >                 prep_new_huge_page(h, page, page_to_nid(page));
+> > +               totalram_pages += 1 << h->order;
+> >         }
+> >  }
+> 
+> Howdy Russ,
+> 
+> Were you able to confirm if that proposed change fix the issue you've reported?
 
- I see
+Sorry, I have been distracted.  I will get to it shortly.
 
-> Ah, this would be a lengthy writeup.. so did you look at the
-> link I pointed you to?
+> Although I've tested it with usual size hugepages and it did not messed things up,
+> I'm not able to test it with GB hugepages, as I do not have any proc with "pdpe1gb" flag available.
+> 
+> Thanks in advance!
+> Cheers!
+> -- 
+> Rafael Aquini <aquini@linux.com>
 
- Yes I have started, but do not understand everything yet.
-
- What are MFNs? Is this something Xen-specific?
-
- An does your post imply that on bare metal with "swiotlb=force 
- iommu=soft"
- alloc_page with GFP_DMA32 does also not allocate under 4GB?
-
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
