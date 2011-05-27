@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab1E0LE0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 07:04:26 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:14764 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751511Ab1E0LEZ (ORCPT
+	id S1752652Ab1E0LKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 07:10:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64115 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424Ab1E0LKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 07:04:25 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/crxpDjWr05auoRi5Z/yG7
-Date: Fri, 27 May 2011 14:04:19 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Koen Kooi <koen@dominion.thruhere.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [GIT PULL] omap updates for 2.6.40
-Message-ID: <20110527110416.GG27962@atomide.com>
-References: <20110526113905.GG27250@atomide.com>
- <9741DC43-3197-4ECE-A377-FA865A3F6710@dominion.thruhere.net>
- <20110527063304.GA27962@atomide.com>
+	Fri, 27 May 2011 07:10:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH 2/3] ARM: mxs: add gpio-mxs platform devices
+Date: Fri, 27 May 2011 13:10:18 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linus.walleij@linaro.org, grant.likely@secretlab.ca,
+        kernel@pengutronix.de
+References: <1305885446-27404-1-git-send-email-shawn.guo@linaro.org> <201105201623.40990.arnd@arndb.de> <20110527091158.GD30146@S2100-06.ap.freescale.net>
+In-Reply-To: <20110527091158.GD30146@S2100-06.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110527063304.GA27962@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105271310.18450.arnd@arndb.de>
+X-Provags-ID: V02:K0:8EBIbYc0wRSmgB4nUuAYzciRLa5d77Cq6IxHzHjHxQq
+ TcGBgz5j91vctw55bFTOnn1m5vREQJs17PyfEo7acUzz/o9VlC
+ AY3lP1cg7YovJgUydCqVxIowzxRUubVc/LJzFO+4KJS6y//qFE
+ JvET2vwXZSBfy1Ws/FVnoM9+/aW6K8dPV7DoiPymWz4sIsPxzj
+ obffm9YOC1Cc8tOH9IRgA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [110527 09:29]:
-> * Koen Kooi <koen@dominion.thruhere.net> [110526 19:02]:
+On Friday 27 May 2011, Shawn Guo wrote:
+> On Fri, May 20, 2011 at 04:23:40PM +0200, Arnd Bergmann wrote:
+> [...]
+> > No, this would put all gpio devices below the top-level /sys/devices/platform
+> > directory, where they certainly don't belong. Please find a proper
+> > place and put them there.
 > > 
-> > Op 26 mei 2011, om 13:39 heeft Tony Lindgren het volgende geschreven:
-> > 
-> > > Hi Linus,
-> > > 
-> > > Please pull omap updates for this merge window from:
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-for-linus
-> > > 
-> > > This contains clean-up to shrink down omap specific code a bit. Also included
-> > > are some fixes. But basically no new code at this point.
-> > 
-> > What about updates to board files? Like adding support for the xM rev C to board-omap3beagle.c.
+> To make it clear, which one is the best to have all gpio devices below?
 > 
-> Sorry we're doing only code coalescing and fixes for this merge window as
-> discussed on LAKML. Otherwise it's hard to see the code coalescing in the
-> diffstats, so new code will need to wait a bit.
-> 
-> I'll take a look and see if we can justify some fix like trivial patches
-> like the revision detection patches during the -rc cycle.
+>  * /sys/devices/platform/gpio-mxs
+>  * /sys/devices/platform/mxs
+>  * /sys/devices/platform/mxs/gpio
 
-Koen, the patch above needs to be refreshed to apply to current mainline
-kernel. It also seems to contain some whitespace errors.
+I would say the third one is closes to how it should be.
 
-Care to refresh it and repost?
+The (sysfs) device tree, like the of device tree, should ideally be
+modeled after the high-level block diagram of the machine.
 
-Thanks,
+In case of i.MX23, that could look like
 
-Tony
+/sys/devices/system \
+  /ahb
+    /apbh
+       /gpio0
+       /gpio1
+       /gpmi
+    /usb0
+    /apbx
+       /i2c
+       /uart0
+       /pwm
+       /spi
+          /mmc
+          /ethernet
+       /usb
+       /rtc
+       /...
+
+
+You can argue on whether it makes sense to include the top level, or if you
+also want to model the various levels of ahb buses, so there is some freedom
+here.
+
+	Arnd
