@@ -1,87 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab1E0NVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 09:21:46 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:60505 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab1E0NVn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 09:21:43 -0400
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
-        davej@redhat.com, kees.cook@canonical.com, davem@davemloft.net,
-        eranian@google.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
-        penberg@kernel.org, hpa@zytor.com,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
-In-Reply-To: <20110527131313.GB8053@redhat.com>
-References: <1306269105.21443.20.camel@dan>
-	 <20110526203502.GK29496@redhat.com> <20110526204030.GL29496@redhat.com>
-	 <1306442674.2279.29.camel@dan>  <20110527131313.GB8053@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 May 2011 09:21:32 -0400
-Message-ID: <1306502492.3339.2.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755109Ab1E0NKH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 09:10:07 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60874
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753688Ab1E0NKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 09:10:05 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
+        v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Subject: [PATCH 1/2] staging: hv: convert DPRINT_DBG() to netdev_dbg() in dump_rndis_message()
+Date: Fri, 27 May 2011 06:21:54 -0700
+Message-Id: <1306502515-18961-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-27 at 09:13 -0400, Vivek Goyal wrote:
-> On Thu, May 26, 2011 at 04:44:34PM -0400, Dan Rosenberg wrote:
-> > On Thu, 2011-05-26 at 16:40 -0400, Vivek Goyal wrote:
-> > > On Thu, May 26, 2011 at 04:35:02PM -0400, Vivek Goyal wrote:
-> > > > On Tue, May 24, 2011 at 04:31:45PM -0400, Dan Rosenberg wrote:
-> > > > > This introduces CONFIG_RANDOMIZE_BASE, which randomizes the address at
-> > > > > which the kernel is decompressed at boot as a security feature that
-> > > > > deters exploit attempts relying on knowledge of the location of kernel
-> > > > > internals.  The default values of the kptr_restrict and dmesg_restrict
-> > > > > sysctls are set to (1) when this is enabled, since hiding kernel
-> > > > > pointers is necessary to preserve the secrecy of the randomized base
-> > > > > address.
-> > > > 
-> > > > What happens to /proc/iomem interface which gives us the physical memory
-> > > > location where kernel is loaded. kexec-tools relies on that interface
-> > > > heavily so we can not take it away. And if we can not take it away then
-> > > > I think somebody should be easibly be able to calculate this randomized
-> > > > base address.
-> > 
-> > Is it common to run kexec-tools as non-root?  It may be necessary to
-> > restrict this interface to root when randomization is used (keep in mind
-> > nobody's going to force you to turn this on by default, at least for the
-> > foreseeable future).
-> 
-> Dan, 
-> 
-> I had a stupid question. /proc/kallsyms is also readable by root only. So
-> if we are doing this so that non-root user can not know kernel virtual and
-> physical address that should be already covered as non-root users can't
-> read /proc/kallsysm or /boot/System.map.
-> 
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
 
-Not sure what system you're running, but /proc/kallsyms is 0444 on my
-machine (and in mainline, afaik).  Likewise for /proc/iomem.
+---
+ drivers/staging/hv/rndis_filter.c |   29 ++++++++++++++++-------------
+ 1 files changed, 16 insertions(+), 13 deletions(-)
 
-The problem is mainly with distribution kernels - it's trivial to just
-grab an identical vmlinux to a target machine and then you instantly
-know exactly where everything is.
-
-> And if this randomization is also to protect information from root user
-> then /proc/iomem exporting the physical address of kernel is still a
-> valid question in that context.
-> 
-
-I think we can deal with unprivileged users first, and if we want to
-truly prevent root from finding this out, we can introduce a separate
-toggle that locks things down further.
-
--Dan
-
-> Thanks
-> Vivek
-
+diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
+index 5a5bf64..5674a13 100644
+--- a/drivers/staging/hv/rndis_filter.c
++++ b/drivers/staging/hv/rndis_filter.c
+@@ -139,14 +139,17 @@ static void put_rndis_request(struct rndis_device *dev,
+ 	kfree(req);
+ }
+ 
+-static void dump_rndis_message(struct rndis_message *rndis_msg)
++static void dump_rndis_message(struct hv_device *hv_dev,
++			struct rndis_message *rndis_msg)
+ {
++	struct net_device *netdev = dev_get_drvdata(&hv_dev->device);
++
+ 	switch (rndis_msg->ndis_msg_type) {
+ 	case REMOTE_NDIS_PACKET_MSG:
+-		DPRINT_DBG(NETVSC, "REMOTE_NDIS_PACKET_MSG (len %u, "
++		netdev_dbg(netdev, "REMOTE_NDIS_PACKET_MSG (len %u, "
+ 			   "data offset %u data len %u, # oob %u, "
+ 			   "oob offset %u, oob len %u, pkt offset %u, "
+-			   "pkt len %u",
++			   "pkt len %u\n",
+ 			   rndis_msg->msg_len,
+ 			   rndis_msg->msg.pkt.data_offset,
+ 			   rndis_msg->msg.pkt.data_len,
+@@ -158,10 +161,10 @@ static void dump_rndis_message(struct rndis_message *rndis_msg)
+ 		break;
+ 
+ 	case REMOTE_NDIS_INITIALIZE_CMPLT:
+-		DPRINT_DBG(NETVSC, "REMOTE_NDIS_INITIALIZE_CMPLT "
++		netdev_dbg(netdev, "REMOTE_NDIS_INITIALIZE_CMPLT "
+ 			"(len %u, id 0x%x, status 0x%x, major %d, minor %d, "
+ 			"device flags %d, max xfer size 0x%x, max pkts %u, "
+-			"pkt aligned %u)",
++			"pkt aligned %u)\n",
+ 			rndis_msg->msg_len,
+ 			rndis_msg->msg.init_complete.req_id,
+ 			rndis_msg->msg.init_complete.status,
+@@ -176,9 +179,9 @@ static void dump_rndis_message(struct rndis_message *rndis_msg)
+ 		break;
+ 
+ 	case REMOTE_NDIS_QUERY_CMPLT:
+-		DPRINT_DBG(NETVSC, "REMOTE_NDIS_QUERY_CMPLT "
++		netdev_dbg(netdev, "REMOTE_NDIS_QUERY_CMPLT "
+ 			"(len %u, id 0x%x, status 0x%x, buf len %u, "
+-			"buf offset %u)",
++			"buf offset %u)\n",
+ 			rndis_msg->msg_len,
+ 			rndis_msg->msg.query_complete.req_id,
+ 			rndis_msg->msg.query_complete.status,
+@@ -189,16 +192,16 @@ static void dump_rndis_message(struct rndis_message *rndis_msg)
+ 		break;
+ 
+ 	case REMOTE_NDIS_SET_CMPLT:
+-		DPRINT_DBG(NETVSC,
+-			"REMOTE_NDIS_SET_CMPLT (len %u, id 0x%x, status 0x%x)",
++		netdev_dbg(netdev,
++			"REMOTE_NDIS_SET_CMPLT (len %u, id 0x%x, status 0x%x)\n",
+ 			rndis_msg->msg_len,
+ 			rndis_msg->msg.set_complete.req_id,
+ 			rndis_msg->msg.set_complete.status);
+ 		break;
+ 
+ 	case REMOTE_NDIS_INDICATE_STATUS_MSG:
+-		DPRINT_DBG(NETVSC, "REMOTE_NDIS_INDICATE_STATUS_MSG "
+-			"(len %u, status 0x%x, buf len %u, buf offset %u)",
++		netdev_dbg(netdev, "REMOTE_NDIS_INDICATE_STATUS_MSG "
++			"(len %u, status 0x%x, buf len %u, buf offset %u)\n",
+ 			rndis_msg->msg_len,
+ 			rndis_msg->msg.indicate_status.status,
+ 			rndis_msg->msg.indicate_status.status_buflen,
+@@ -206,7 +209,7 @@ static void dump_rndis_message(struct rndis_message *rndis_msg)
+ 		break;
+ 
+ 	default:
+-		DPRINT_DBG(NETVSC, "0x%x (len %u)",
++		netdev_dbg(netdev, "0x%x (len %u)\n",
+ 			rndis_msg->ndis_msg_type,
+ 			rndis_msg->msg_len);
+ 		break;
+@@ -387,7 +390,7 @@ int rndis_filter_receive(struct hv_device *dev,
+ 
+ 	kunmap_atomic(rndis_hdr - pkt->page_buf[0].offset, KM_IRQ0);
+ 
+-	dump_rndis_message(&rndis_msg);
++	dump_rndis_message(dev, &rndis_msg);
+ 
+ 	switch (rndis_msg.ndis_msg_type) {
+ 	case REMOTE_NDIS_PACKET_MSG:
+-- 
+1.6.3.2
 
