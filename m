@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab1E0HYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 03:24:12 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54702 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab1E0HYK (ORCPT
+	id S1758522Ab1E0Hgt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 03:36:49 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:57139 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752045Ab1E0Hgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 03:24:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: viresh kumar <viresh.kumar@st.com>
-Subject: Re: [RFC] ARM Subarchitecture group maintainership
-Date: Fri, 27 May 2011 09:24:00 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Barry Song <21cnbao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'Shiraz HASHIM'" <shiraz.hashim@st.com>,
-        deepak sikri <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        "'Rajeev KUMAR'" <rajeev-dlh.kumar@st.com>,
-        "Vipin KUMAR (vipin.kumar@st.com)" <vipin.kumar@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Pratyush ANAND <pratyush.anand@st.com>, Amit VIRDI <amit.virdi@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>
-References: <201105181047.17309.arnd@arndb.de> <201105191550.20129.arnd@arndb.de> <4DDF37DB.40606@st.com>
-In-Reply-To: <4DDF37DB.40606@st.com>
+	Fri, 27 May 2011 03:36:47 -0400
+X-Sasl-enc: xWWAC5VxOW7FbpwxwwmTcwSaUtLGv1I43rtjw1rI1URn 1306481805
+Date: Fri, 27 May 2011 15:33:02 +0800
+From: Greg KH <greg@kroah.com>
+To: Xiangliang Yu <yuxiangl@marvell.com>
+Cc: "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jacky Feng <jfeng@marvell.com>
+Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
+ coalescing to device 	attributes in sysfs
+Message-ID: <20110527073302.GA16178@kroah.com>
+References: <mvsas-intr-coal>
+ <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
+ <20110526021809.GA22496@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
+ <20110526141430.GD4164@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD848FB@SC-VEXCH4.marvell.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105270924.00881.arnd@arndb.de>
-X-Provags-ID: V02:K0:uJc8fbUXTM3AGzkKfXSrLiHkEgV+QlitmXsTeVf8ByO
- LXWPEkI6xTToYUp7FSPO3IDGEnAwScjTDViYLMOC1kiaa38ugi
- yxy3GaMlOTXCbwZDbcz8ksqXsy/Xaj+NTcksOMQbSVkJD7odPv
- f16fXXks5esbviTS4QcF4lM4NrYfF+Oua22cHdG0TMAX9NkyYl
- gKpB05aDO5mhdB4hl8RHw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAD848FB@SC-VEXCH4.marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 May 2011, viresh kumar wrote:
-> We also have few patchsets for ST's SPEAr SOC family. They were already
-> reviewed, but never got pushed.
+On Thu, May 26, 2011 at 08:23:18PM -0700, Xiangliang Yu wrote:
+> > >>Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt >>>coalescing to device attributes in sysfs
 > 
-> We will update all those pacthsets for point 2 & 3, and leave point 1 for now.
-> Also we will update them with our latest changes for SPEAr and will circulate
-> them ASAP.
+> > >>On Thu, May 26, 2011 at 02:00:21AM -0700, Xiangliang Yu wrote:
+> > >
+> > >Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt >coalescing to device attributes in sysfs
+> > >> 
+> > >> -- Add support for driver version and interrupt coalescing device attributes.
+> > >>
+> > >>When you add a sysfs file, you must also add a Documentation/ABI file as
+> > >>well.  Please do that here.
+> > >
+> > >These device attributes are sysft class properties for the scsi host,
+> >> and the sysfs files are within scsi host sysfs directory. so, do you
+> >> think I need add a ABI file?  and , I can't find anything about scsi
+> >> host sysfs file under directory Documentation/ABI.
 > 
-> Hope that's fine.
+> >Yes, again, if you add a sysfs file, you need to add documentation
+> >explaining exactly what it is there for and what it does.
+> >
+> >And if there isn't already a file for this device, then please add it.
+> How about this:
+> 
+> .../ABI/testing/sysfs-bus-pci-scsi-devices-mvsas   |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-bus-pci-scsi-devices-mvsas
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-bus-pci-scsi-devices-mvsas b/Documentation/ABI/testing/sysfs-bus-pci-scsi
+> -devices-mvsas
+> new file mode 100644
+> index 0000000..45f597e
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-bus-pci-scsi-devices-mvsas
+> @@ -0,0 +1,13 @@
+> +What:          /sys/devices/pci/<devices>/<dev>/host/scsi_host/host/driver_version
+> +Date:          May 2011
+> +Kernel Version:        2.6.39
+> +Contact:       yuxiangl@marvell.com
+> +Description:   Display the mvsas drivers version
 
-Sure, please do. Once we look at the patch sets, we can also discuss about
-how and when to change them over to device tree. Since the spear13xx patches
-you posted only have support for a single board, it should be fairly easy
-to replace the board file with a generic device tree based one.
+A driver version should never show up down here in sysfs, use the proper
+place for this like the rest of the kernel's drivers do (hint, look at
+MODULE_VERSION() and where that ends up, in your module's sysfs
+directory.)
 
-	Arnd
+> +What:          /sys/devices/pci/<devices>/<dev>/host/scsi_host/host/interrupt_coalescing
+> +Date:          May 2011
+> +Kernel Version:        2.6.39
+
+2.6.39 was released already, is this file in that release?
+
+> +Contact:       yuxiangl@marvell.com
+> +Description:   Determines the maximum time the 88SE94XX waits after the occurrence of a
+> +               Command Done before generating an interrupt.The maximum number of the 
+> +               variable is less than 0x10000.
+
+Why would a user, or anyone else, ever want to be able to change this?
+Why wouldn't this just be something that the driver handles
+automagically so the user never has to worry about it at all?
+
+You also don't specify the units involved here, which is not good.
+
+See, when you document things, it's easier to notice when you did
+something you didn't need to do (i.e. the driver version thing).  :)
+
+thanks,
+
+greg k-h
