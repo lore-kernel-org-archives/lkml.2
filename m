@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab1E0Ryv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 13:54:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60047 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922Ab1E0Ryt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 13:54:49 -0400
-Message-ID: <4DDFE52D.4070308@zytor.com>
-Date: Fri, 27 May 2011 10:53:49 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
+	id S1752656Ab1E0Rzd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 13:55:33 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37264 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab1E0Rzc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 13:55:32 -0400
+Date: Fri, 27 May 2011 18:55:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Ingo Molnar <mingo@elte.hu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        adobriyan@gmail.com, penberg@kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-References: <1306269105.21443.20.camel@dan> <201105270018.36835.rjw@sisk.pl> <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com> <20110527170045.GB4356@elte.hu> <1306516230.3339.17.camel@dan> <20110527171611.GE4356@elte.hu> <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com> <20110527174644.GG4356@elte.hu>
-In-Reply-To: <20110527174644.GG4356@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+	locks up on ARM
+Message-ID: <20110527175500.GQ24876@n2100.arm.linux.org.uk>
+References: <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com> <1306405979.1200.63.camel@twins> <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com> <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins> <20110526122623.GA11875@elte.hu> <20110526123137.GG24876@n2100.arm.linux.org.uk> <20110526125007.GA27083@elte.hu> <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com> <20110527120629.GA32617@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110527120629.GA32617@elte.hu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2011 10:46 AM, Ingo Molnar wrote:
-> 
-> If i understood you correctly you suggest randomizing the image by 
-> shifting the symbols in it around. The boot loader would still load 
-> an 'image' where it always loads it - just that image itself is 
-> randomized internally somewhat, right?
-> 
-> ( because that's the only way we can avoid the problems with e820 
->   memory maps which you referred to, if don't actually change the 
->   load address. )
-> 
+On Fri, May 27, 2011 at 02:06:29PM +0200, Ingo Molnar wrote:
+> I'd suggest doing this once modern ARM chips get so widespread that 
+> you can realistically induce a ~700 usecs irqs-off delays on old, 
+> virtual-cache ARM chips. Old chips would likely use old kernels 
+> anyway, right?
 
-That doesn't solve any problems with the memory map.
-	
-	-hpa
+Not necessarily.  I have rather a lot of legacy hardware (it outweighs
+the more modern stuff) and that legacy hardware is _loads_ more useful
+than the modern stuff in that it can actually do stuff like run a network
+(such as running kerberos servers, httpd, mtas, etc).  Modern ARM
+machines typically don't have ways to attach mass storage to them which
+make them hellishly limited for such applications.
+
+I'm planning to continue using my old machines, and continue to upgrade
+their kernels, especially in order to keep up to date with security
+issues.
