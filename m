@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758701Ab1E0DaK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 23:30:10 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34782 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753627Ab1E0DaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 23:30:08 -0400
-Date: Fri, 27 May 2011 13:30:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>,
-        Havard Skinnemoen <hskinnemoen@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Viresh Kumar <viresh.kumar@st.com>
-Subject: linux-next: manual merge of the async_tx tree with Linus' tree
-Message-Id: <20110527133003.8299b429.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758735Ab1E0DbE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 23:31:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59224 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627Ab1E0DbC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 May 2011 23:31:02 -0400
+Date: Thu, 26 May 2011 21:31:00 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Ben Dooks <ben@simtec.co.uk>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH] spi: tle620x: add missing device_remove_file()
+Message-ID: <20110527033100.GL5032@ponder.secretlab.ca>
+References: <1305117545.6324.3.camel@phoenix>
+ <4DCB9985.2050100@simtec.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DCB9985.2050100@simtec.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+On Thu, May 12, 2011 at 09:25:41AM +0100, Ben Dooks wrote:
+> On 11/05/11 13:39, Axel Lin wrote:
+> >This patch includes below fixes:
+> >1. Add missing device_remove_file for dev_attr_status_show in tle62x0_remove.
+> >2. Fix tle62x0_probe error handling:
+> >    Currently, if the error happens when ptr>  0, gpio_attrs[0] is not
+> >    properly remove.
+> >
+> >Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> Acked-by: Ben Dooks <ben-linux@fluff.org>
 
-Today's linux-next merge of the async_tx tree got a conflict in
-drivers/dma/dw_dmac.c between commit e05503ef1186 ("Haavard Skinnemoen
-has left Atmel") from Linus' tree and commit aecb7b64dd9e
-("dmaengine/dw_dmac: Update maintainer-ship") from the async_tx tree.
+Applied, thanks.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+g.
 
-diff --cc drivers/dma/dw_dmac.c
-index 2a2e2fa,efd836d..0000000
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@@ -1486,4 -1575,5 +1575,5 @@@ module_exit(dw_exit)
-  
-  MODULE_LICENSE("GPL v2");
-  MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller driver");
- -MODULE_AUTHOR("Haavard Skinnemoen <haavard.skinnemoen@atmel.com>");
- +MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
-+ MODULE_AUTHOR("Viresh Kumar <viresh.kumar@st.com>");
