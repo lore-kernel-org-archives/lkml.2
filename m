@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab1E0A0O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 May 2011 20:26:14 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:63345 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757377Ab1E0A0N (ORCPT
+	id S1758594Ab1E0A3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 May 2011 20:29:33 -0400
+Received: from infernal.debian.net ([87.230.26.131]:49449 "EHLO
+	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756503Ab1E0A3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 May 2011 20:26:13 -0400
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        torvalds@linux-foundation.org, adobriyan@gmail.com, penberg@kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        Ingo Molnar <mingo@elte.hu>, pageexec@freemail.hu
-In-Reply-To: <4DDED4ED.7020806@zytor.com>
-References: <1306269105.21443.20.camel@dan> <201105270018.36835.rjw@sisk.pl>
-	 <4DDED4ED.7020806@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 May 2011 20:26:03 -0400
-Message-ID: <1306455963.1984.5.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 26 May 2011 20:29:32 -0400
+Date: Fri, 27 May 2011 02:29:29 +0200
+From: Andreas Bombe <aeb@debian.org>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: tty_lock held during transmit wait in close: still unresolved
+Message-ID: <20110527002928.GA4369@amos.fritz.box>
+References: <20110525235920.GA5279@amos.fritz.box>
+ <20110526071104.GE29833@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110526071104.GE29833@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 15:32 -0700, H. Peter Anvin wrote:
-> On 05/26/2011 03:18 PM, Rafael J. Wysocki wrote:
+On Thu, May 26, 2011 at 12:11:04AM -0700, Greg KH wrote:
+> On Thu, May 26, 2011 at 01:59:22AM +0200, Andreas Bombe wrote:
+> > A minimalist way to trigger this issue is with a serial port that has
+> > nothing attached:
 > > 
-> > Well, as far as I can tell, this feature is going to break hibernation on
-> > both x86_32 and x86_64 at the moment, unless you can guarantee that the
-> > randomized kernel location will be the same for both the boot and the target
-> > kernels.
+> > stty -F /dev/ttyS0 crtscts
+> > echo >/dev/ttyS0
 > > 
+> > The echo triggers a 30 second timeout on close while the driver is
+> > trying to flush the newline. Another way is developing an USB device
+> > with a virtual serial port and having it stop (by debugger or
+> > crash/lockup)...
+> > 
+> > Any ideas on how to progress?
 > 
-> Obviously we can't and we don't.  I'm a bit surprised at that
-> constraint... how can that constraint not break things like kernels of
-> slightly different size?
-> 
-> 	-hpa
+> Can you try Linus's tree right now?  A number of changes went in during
+> this merge window that might help out here I think.
 
-Am I understanding it correctly that hibernation is currently operating
-under a possibly false assumption?  If it's the case that hibernation
-should be saving the physical address at which the kernel was previously
-loaded and restoring it there regardless of randomization, it would
-certainly help me out if someone familiar with the code could take a
-stab at that.
+I think I had those changes already in the last try (Wednesday's git)
+but I tried again with the very latest. No noticeable change.
 
-Otherwise, any thoughts on a potential solution?
-
-Thanks,
-Dan
-
+-- 
+Andreas Bombe
