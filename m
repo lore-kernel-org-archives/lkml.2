@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab1E1HkH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 03:40:07 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:47567 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab1E1HkF (ORCPT
+	id S1752644Ab1E1Hoz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 03:44:55 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:32837
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752170Ab1E1How (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 03:40:05 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sam Ravnborg <sam@ravnborg.org>, Daniel Hellstrom <daniel@gaisler.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] sparc: Do not select GENERIC_HARDIRQS_NO_DEPRECATED
-Date: Sat, 28 May 2011 09:39:56 +0200
-Message-Id: <1306568396-10438-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 28 May 2011 03:44:52 -0400
+Date: Sat, 28 May 2011 03:44:49 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <jaxboe@fusionio.com>,
+        Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/2] blktrace: treat flush as barrier
+Message-ID: <20110528074449.GB22382@infradead.org>
+References: <1306501883-23498-1-git-send-email-namhyung@gmail.com>
+ <20110527131237.GA27647@infradead.org>
+ <BANLkTi=8jQPdBNJYfM=geuXFsAXJJgfq=Q@mail.gmail.com>
+ <1306509182.1351.1.camel@leonhard>
+ <4DE006C5.4010906@fusionio.com>
+ <20110527202747.GA4803@infradead.org>
+ <1306548581.1679.12.camel@leonhard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306548581.1679.12.camel@leonhard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Config option GENERIC_HARDIRQS_NO_DEPRECATED was removed in commit
-78c89825649a9a5ed526c507603196f467d781a5 ("genirq: Remove the now obsolete
-config options and select statements"), but the select was accidentally
-reintroduced in commit 6baa9b20a68a88c2fd751cbe8d7652009379351b
-("sparc32: genirq support")
+On Sat, May 28, 2011 at 11:09:41AM +0900, Namhyung Kim wrote:
+> AFAIK FLUSH always precedes WRITE and then followed by FUA, so how about
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/sparc/Kconfig |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index af32e17..789e178 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -26,7 +26,6 @@ config SPARC
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_ARCH_JUMP_LABEL
- 	select HAVE_GENERIC_HARDIRQS
--	select GENERIC_HARDIRQS_NO_DEPRECATED
- 	select GENERIC_IRQ_SHOW
- 	select USE_GENERIC_SMP_HELPERS if SMP
- 
--- 
-1.7.0.4
+Right now most do because that's how the old barriers worked, but it's
+going to change.  For $NEXT + 1 I have a patch that for will make
+xfs sends FUA without flushes in a lot of cases, and afaik some device
+mapper code already does now.
 
