@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab1E1Rsf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 13:48:35 -0400
-Received: from s15407518.onlinehome-server.info ([82.165.136.167]:51210 "EHLO
-	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753550Ab1E1Rse (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 13:48:34 -0400
-From: Heiko =?iso-8859-15?q?St=FCbner?= <heiko@sntech.de>
-To: Joe Perches <joe@perches.com>
-Subject: Re: [TRIVIAL PATCH next 12/15] video: Convert vmalloc/memset to vzalloc
-Date: Sat, 28 May 2011 19:48:12 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37-2-686; KDE/4.4.5; i686; ; )
-Cc: Jaya Kumar <jayalk@intworks.biz>, Paul Mundt <lethal@linux-sh.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jiri Kosina <trivial@kernel.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-References: <cover.1306603968.git.joe@perches.com> <77538de911b8af99f68b7bcfbaaedce8e40db04f.1306603968.git.joe@perches.com>
-In-Reply-To: <77538de911b8af99f68b7bcfbaaedce8e40db04f.1306603968.git.joe@perches.com>
+	id S1755280Ab1E1R4W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 13:56:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53487 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754659Ab1E1R4T convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 13:56:19 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105281948.12941.heiko@sntech.de>
+In-Reply-To: <m1lixr4kz8.fsf@fess.ebiederm.org>
+References: <m1lixr4kz8.fsf@fess.ebiederm.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 28 May 2011 10:55:55 -0700
+Message-ID: <BANLkTi=-DHpvAm_9J9y+rOxB25e=4kCjYA@mail.gmail.com>
+Subject: Re: [PATCH] ns: Wire up the setns system call for 2.6.40-rc1 or whatever
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Daniel Lezcano <dlezcano@fr.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag 28 Mai 2011, 19:36:32 schrieb Joe Perches:
-> diff --git a/drivers/video/arcfb.c b/drivers/video/arcfb.c
-> index 3ec4923..86573e2 100644
-> --- a/drivers/video/arcfb.c
-> +++ b/drivers/video/arcfb.c
-> @@ -515,11 +515,10 @@ static int __devinit arcfb_probe(struct
-> platform_device *dev)
-> 
->  	/* We need a flat backing store for the Arc's
->  	   less-flat actual paged framebuffer */
-> -	if (!(videomemory = vmalloc(videomemorysize)))
-> +	videomemory = vmalloc(videomemorysize);
-> +	if (!videomemory)
->  		return retval;
-shouldn't this be vzalloc too?
+On Fri, May 27, 2011 at 7:28 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> 32bit and 64bit on x86 are tested and working.  The rest I have looked
+> at closely and I can't find any problems.
 
-> -	memset(videomemory, 0, videomemorysize);
-> -
->  	info = framebuffer_alloc(sizeof(struct arcfb_par), &dev->dev);
->  	if (!info)
->  		goto err;
+So I really don't think this was even worth it. I applied the patch,
+but I think that you should just have done the architecture you
+tested, and left it to arch maintainers to add it as they will.
 
+That's how we tend to do this, and it works. It also avoids surprises
+when people then invariably end up having clashes due to system calls
+being added. Even in just the 15 hours since you sent the email, I had
+merged more code from ARM, and the patch no longer applied to my tree.
+It's trivial to fix up, so that's not the problem, but the problem is
+with different people adding system calls resulting in re-numbering.
 
-Heiko
+In other words, it's simply better to strive to have *one* entity in
+charge of picking the system call number, rather than do it like this.
+Ergo: leave it to architecture maintainers to minimize the issue of
+system call renumbering.
+
+                        Linus
