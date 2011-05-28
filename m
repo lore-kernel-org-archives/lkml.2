@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab1E1OGi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 10:06:38 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:55848 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753480Ab1E1OGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 10:06:37 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: linux-kernel@vger.kernel.org
-Subject: [regression] Apple Magic Mouse stalls
-Date: Sat, 28 May 2011 10:06:33 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.39-crc+; KDE/4.6.3; x86_64; ; )
-Cc: chase.douglas@canonical.com, rydberg@euromail.se, jkosina@suse.cz,
-        linux-input@vger.kernel.org
+	id S1753607Ab1E1OP1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 10:15:27 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:54428 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753483Ab1E1OP0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 10:15:26 -0400
+Date: Sat, 28 May 2011 10:15:25 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Tanya Brokhman <tlinder@codeaurora.org>
+cc: balbi@ti.com, "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>,
+        <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+In-Reply-To: <003201cc1d27$39fe02e0$adfa08a0$@org>
+Message-ID: <Pine.LNX.4.44L0.1105280958490.16594-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105281006.33763.edt@aei.ca>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sat, 28 May 2011, Tanya Brokhman wrote:
 
-I've been having fun with bluetooth in .38-rc.  My adapter was old (bt 1.1) and the bluetooth stack was having 'fun' with it.
-Got tired of that a got asus doggle that supports 2.1+EDR.  Then I tried to use my magic mouse.  It works for a few
-minutes and then stalls.  The stalls seem to be related to touches.  If I am careful only to touch with one finger it
-seems to work.  It usually works with two fingers, with three it stalls.   Running hcidump sometimes lists a last 
-packet with a dlen of 35 when it stalls.  Powering it on an off reset things 
+> I was making the same change for SS and I think that if you're about to send
+> this patch to Greg, it might need a small addition:
+> At the moment dummy_hcd supports high_speed so I think if this option is no
+> longer configurable by user you should set this flag when dummy_hcd is
+> selected:
+> 
+> config USB_DUMMY_HCD
+> 	tristate
+> 	depends on USB_GADGET_DUMMY_HCD
+> 	default USB_GADGET
+> 	select USB_GADGET_SELECTED
+> 	select USB_GADGET_DUALSPEED
 
-> ACL data: handle 21 flags 0x02 dlen 27
-    L2CAP(d): cid 0x0041 len 23 [psm 0]
-> ACL data: handle 21 flags 0x02 dlen 27
-    L2CAP(d): cid 0x0041 len 23 [psm 0]
-> ACL data: handle 21 flags 0x02 dlen 27
-    L2CAP(d): cid 0x0041 len 23 [psm 0]
-> ACL data: handle 21 flags 0x02 dlen 35
-    L2CAP(d): cid 0x0041 len 31 [psm 0]
+Right now USB_GADGET_DUALSPEED is selected under USB_GADGET_DUMMY_HCD, 
+which is the right place for it, I think.  Same as all the other UDC 
+drivers.
 
-This was not a problem pre .38.  It started happening in .38-rc along with other bluetooth problems.  I figured the bt
-problem was the root cause - I was wrong.
+Alan Stern
 
-This ring any bells?
-
-TIA
-Ed Tomlinson
