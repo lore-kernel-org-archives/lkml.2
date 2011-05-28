@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab1E1Bnh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 21:43:37 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:56656 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab1E1Bnf (ORCPT
+	id S1757758Ab1E1BsL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 21:48:11 -0400
+Received: from antispam02.maxim-ic.com ([205.153.101.183]:40299 "EHLO
+	antispam02.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454Ab1E1BsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 21:43:35 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Americo Wang <xiyou.wangcong@gmail.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jarod Wilson <jwilson@redhat.com>
-References: <20110203095837.93A2.A69D9226@jp.fujitsu.com>
-	<20110203020703.GB21603@redhat.com>
-	<20110203135324.93BC.A69D9226@jp.fujitsu.com>
-	<20110526131028.7052a893.akpm@linux-foundation.org>
-Date: Fri, 27 May 2011 18:43:29 -0700
-In-Reply-To: <20110526131028.7052a893.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Thu, 26 May 2011 13:10:28 -0700")
-Message-ID: <m1k4db61mm.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Fri, 27 May 2011 21:48:07 -0400
+X-ASG-Debug-ID: 1306547283-02256b0a50385d8000a-xx1T2L
+X-Barracuda-Envelope-From: Peter.Hsiang@maxim-ic.com
+From: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Peter Hsiang <cdefgab1288@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Date: Fri, 27 May 2011 18:45:39 -0700
+Subject: RE: [PATCH] ASoC: Remove redundant freq assignment for
+ max98095->sysclk/max98088->sysclk
+Thread-Topic: [PATCH] ASoC: Remove redundant freq assignment for
+ max98095->sysclk/max98088->sysclk
+X-ASG-Orig-Subj: RE: [PATCH] ASoC: Remove redundant freq assignment for
+ max98095->sysclk/max98088->sysclk
+Thread-Index: AcwcgxWYXh3i+Z+FR6iZSGb9tGJKoQAVRyQw
+Message-ID: <B2150E1E4418E1438554A300EA5040E40DDE76600D@ITSVLEX06.it.maxim-ic.internal>
+References: <1306510253.19556.36.camel@phoenix>
+In-Reply-To: <1306510253.19556.36.camel@phoenix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/+n0WSIvGVKEUEQ7xXXblZtosDrjLghGw=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Andrew Morton <akpm@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about kdump_msg hook into crash_kexec())
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+X-Barracuda-Connect: maxdalex01.maxim-ic.internal[10.16.15.101]
+X-Barracuda-Start-Time: 1306547286
+X-Barracuda-URL: http://192.168.10.183:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.02
+X-Barracuda-Spam-Status: No, SCORE=0.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=THREAD_INDEX, THREAD_TOPIC
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64867
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.01 THREAD_INDEX           thread-index: AcO7Y8iR61tzADqsRmmc5wNiFHEOig==
+	0.01 THREAD_TOPIC           Thread-Topic: ...(Japanese Subject)...
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4S1mJ0q023564
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Fri, May 27, 2011, Alex Lin wrote:
+> Current implementation set max98095->sysclk/max98088->sysclk to freq twice.
+> Set it once is enough, this patch removes the first assignment in case
+> we may set invalid clock frequency to max98095->sysclk/max98088->sysclk.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> hi Peter,
+> I don't have this hardware handy. Can you help to test it?
+> Thanks,
+> Axel
+> 
 
-> On Thu,  3 Feb 2011 13:53:01 +0900 (JST)
-> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
->
->> > > I wrote why this is no good idea by another mail. Please see it.
->> > > Anyway you have a right to don't use this feature.
->> > > 
->> > 
->> > But you have not explained that why do you need to hook into crash_kexec()
->> > and you have also not explained why do you need to send out kdump_msg()
->> > notification if kdump is configured.
->> > 
->> > Some detailed explanation here would help.
->> 
->> Hi,
->> 
->> I send it you now :)
->> 
->
-> What happened with this?  kexec-remove-kmsg_dump_kexec.patch has two acks
-> and one unexplained nack :(
+Acked-by: Peter Hsiang <peter.hsiang@maxim-ic.com>
 
-As I recall the nack was based on a theoretical use case, and a cleanup
-of kmsg_dump to make it more robust which I don't believe has happened,
-instead of something real.
-
-My feel is that we should remove kmsg_dump and if a real use case comes
-up reconsider it at that time.
-
-I don't think anyone cares too strongly at the moment because the
-features are not expected to be used in conjunction with each other, nor
-even expected to be compiled into the same kernel.  However given that
-they are not used to be used in conjunction with each other a call into
-kmsg_dump from crash_kexec is really just cluttering the code for no
-benefit to anyone.
-
-I do believe kmsg_dump suffers from all of the same problems lkdtm
-suffered from long ago which is it only works in a working kernel,
-and it is unlikely to tell you anything on system failure.
-
-Eric
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
