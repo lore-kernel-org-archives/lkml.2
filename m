@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab1E1Ksn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 06:48:43 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62336 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab1E1Ksm (ORCPT
+	id S1752844Ab1E1LEL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 07:04:11 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:39493 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab1E1LEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 06:48:42 -0400
-Message-ID: <4DE0D303.8000106@landley.net>
-Date: Sat, 28 May 2011 05:48:35 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Sat, 28 May 2011 07:04:09 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6359"; a="94253001"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>
+Cc: <balbi@ti.com>, "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>,
+        <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1105251010580.1987-100000@iolanthe.rowland.org> <Pine.LNX.4.44L0.1105251033550.1987-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1105251033550.1987-100000@iolanthe.rowland.org>
+Subject: RE: [PATCH v12 7/8] usb: Adding SuperSpeed support to dummy_hcd
+Date: Sat, 28 May 2011 14:05:54 +0300
+Message-ID: <003201cc1d27$39fe02e0$adfa08a0$@org>
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: MIPS panic in 2.6.39 (bisected to 7eaceaccab5f)
-References: <4DDB5673.5060206@landley.net> <20110524143937.GB30117@linux-mips.org> <4DDCB1EB.4020707@landley.net> <20110527075512.GE30117@linux-mips.org> <20110527140011.GF30117@linux-mips.org>
-In-Reply-To: <20110527140011.GF30117@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Acwa6YDyYe1wY0csQBSvVWoSnfdFlACPShtA
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2011 09:00 AM, Ralf Baechle wrote:
-> On Fri, May 27, 2011 at 08:55:13AM +0100, Ralf Baechle wrote:
+Hi Alan,
+
+> This patch (as1468) changes the Kconfig definition for
+> USB_GADGET_DUALSPEED.  This option is determined entirely by which
+> device controller drivers are to be built, through Select statements;
+> it does not need to be (and should not be) configurable by the user.
 > 
->>> Have you guys been able to reproduce the problem?
->>
->> Staring at the disassembly was good enough, I think.  The commit you
->> bisected is restructuring some of the hardware probing code for Malta and
->> seems to result in gcmp_present being set without _gcmp_base having been
->> assigned, thus the null pointer dereference.
+> Also, the "default n" line is superfluous -- everything defaults to N.
 > 
-> Can you test below patch?  Thanks,
+> Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 > 
->   Ralf
+> ---
 > 
-> Since af3a1f6f4813907e143f87030cde67a9971db533 the Malta code does no
-> longer probe for presence of GCMP if CMP is not configured.  This means
-> that the variable gcmp_present well be left at its default value of -1
-> which normally is meant to indicate that GCMP has not yet been mmapped.
-> This non-zero value is now interpreted as GCMP being present resulting
-> in a write attempt to a GCMP register resulting in a crash.
+>  drivers/usb/gadget/Kconfig |    5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
 > 
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> Index: usb-2.6/drivers/usb/gadget/Kconfig
+> ===================================================================
+> --- usb-2.6.orig/drivers/usb/gadget/Kconfig
+> +++ usb-2.6/drivers/usb/gadget/Kconfig
+> @@ -597,13 +597,10 @@ config USB_DUMMY_HCD
+> 
+>  endchoice
+> 
+> +# Selected by UDC drivers that support high-speed operation.
+>  config USB_GADGET_DUALSPEED
+>  	bool
+>  	depends on USB_GADGET
+> -	default n
+> -	help
+> -	  Means that gadget drivers should include extra descriptors
+> -	  and code to handle dual-speed controllers.
+> 
+>  #
+>  # USB Gadget Drivers
+> 
 
-patch patch patch...
+I was making the same change for SS and I think that if you're about to send
+this patch to Greg, it might need a small addition:
+At the moment dummy_hcd supports high_speed so I think if this option is no
+longer configurable by user you should set this flag when dummy_hcd is
+selected:
 
-> diff --git a/arch/mips/mti-malta/malta-init.c b/arch/mips/mti-malta/malta-init.c
-> index 31180c3..4163d09e 100644
-> --- a/arch/mips/mti-malta/malta-init.c
-> +++ b/arch/mips/mti-malta/malta-init.c
+config USB_DUMMY_HCD
+	tristate
+	depends on USB_GADGET_DUMMY_HCD
+	default USB_GADGET
+	select USB_GADGET_SELECTED
+	select USB_GADGET_DUALSPEED
 
-Your missing hunk at the top of this file is:
 
-@@ -29,6 +29,7 @@
- #include <asm/system.h>
- #include <asm/cacheflush.h>
- #include <asm/traps.h>
-+#include <asm/smp-ops.h>
+Best regards,
+Tanya Brokhman
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
- #include <asm/gcmpregs.h>
- #include <asm/mips-boards/prom.h>
 
-And then the patch works!  Yay!  Thank you.
 
-Signed-off-by: Rob Landley <rob@landley.net>
 
-Rob
+
+
+
+
