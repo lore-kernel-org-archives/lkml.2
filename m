@@ -1,140 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab1E1Sbj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 14:31:39 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55804 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754683Ab1E1Sbh (ORCPT
+	id S1755807Ab1E1ScP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 14:32:15 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:36492 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754683Ab1E1ScN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 14:31:37 -0400
-Subject: Re: [PATCH-v5 07/13] iscsi-target: Add iSCSI Login Negotiation +
- Parameter logic
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
-        hare@suse.de, agrover@redhat.com, michaelc@cs.wisc.edu,
-        bharrosh@panasas.com, akpm@linux-foundation.org, martin.svec@zoner.cz,
-        jxm@risingtidesystems.com, "J.H." <warthog9@kernel.org>
-In-Reply-To: <1306543947.23461.313.camel@haakon2.linux-iscsi.org>
-References: <1306445587.23461.22.camel@haakon2.linux-iscsi.org>
-	 <1306451068.4048.69.camel@mulgrave.site>
-	 <1306452490.23461.60.camel@haakon2.linux-iscsi.org>
-	 <20110527084752T.fujita.tomonori@lab.ntt.co.jp>
-	 <1306454848.23461.77.camel@haakon2.linux-iscsi.org>
-	 <1306538602.12244.22.camel@mulgrave.site>
-	 <1306543947.23461.313.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 28 May 2011 13:31:31 -0500
-Message-ID: <1306607491.5630.45.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Sat, 28 May 2011 14:32:13 -0400
+Date: Sat, 28 May 2011 20:32:10 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux/m68k <linux-m68k@vger.kernel.org>
+cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: m68k: Convert to genirq (WIP)
+Message-ID: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-27 at 17:52 -0700, Nicholas A. Bellinger wrote:
-> On Fri, 2011-05-27 at 18:23 -0500, James Bottomley wrote:
-> > On Thu, 2011-05-26 at 17:07 -0700, Nicholas A. Bellinger wrote:
-> > > On Fri, 2011-05-27 at 08:47 +0900, FUJITA Tomonori wrote:
-> > > > On Thu, 26 May 2011 16:28:10 -0700
-> > > > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > > > 
-> > > > > As we have discussed at length over the years, the split needs to be all
-> > > > > userspace or all kernelspace, and when implementations start doing
-> > > > > things in-between they quickly get painful to debug, maintain and
-> > > > > extend.  I have no interest in trying to evolve this further when LIO
-> > > > 
-> > > > Sorry, I disagree. As I explained, once user space passes established nexuses
-> > > > to kernel, kernel handles all. I don't think it's painful.
-> > > > 
-> > > > 
-> > > 
-> > > Then we are going to have to agree to disgree on this for an individual
-> > > target endpoint context and being able to manage (via configfs) a
-> > > complete set of iscsi-target features with native python library code.
-> > > 
-> > > As for moving the mainline iscsi-target efforts to a more complex
-> > > default direction is something that we (speaking as LIO maintainer and
-> > > on behalf of RisingTide userspace) do not have an interest for an
-> > > initial merge.  We owe our users a complete set of functional and stable
-> > > kernel and userspace library+shell, and not an untested design with
-> > > undetermined time-frame for deployment.
-> > 
-> > OK, so I understand the commercial imperatives.  However, when a trusted
-> > reviewer raises issues, and I check and find myself agreeing, I need
-> > them addressed to make forward progress.
-> > 
-> 
-> It's more than that.  It's about the future maintainability of the
-> target kernel code.  Doing this reset to push the entire iSCSI login
-> into userspace for drivers/target/iscsi/ is technically the wrong
-> direction.
+	Hi all,
 
-You've stated this many times, but never actually given an explanation
-of why.
+Now sparc32 has beaten me, I pushed out my work in progress of converting m68k
+to use the generic hardirq framework:
 
->    We already have a userspace target, and going down this
-> direction (again) for iscsi-target is not making forward progress.
+git://git.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git m68k-genirq
+http://git.kernel.org/?p=linux/kernel/git/geert/linux-m68k.git;a=shortlog;h=refs/heads/m68k-genirq
 
-This isn't the correct way to look at it.  The choice isn't all in
-userspace or all in kernel space.  For performance, the key idea is to
-have all the fast paths in kernel space.  However, login is hardly a
-fast path.  It's done once at start of day, then occasionally on
-connection reset.
+It contains the following commits:
 
-Moving some code to userspace doesn't mean all has to move.
+  [1] ide-{cd,floppy,tape}, keyboard: Do not include <linux/irq.>
+  [2] m68k/irq: Rename irq_controller to irq_chip
+  [3] m68k/irq: Kill irq_node_t typedef, always use struct irq_node
+  [4] m68k/irq: Rename irq_node to irq_data
+  [5] m68k/irq: Switch irq_chip methods to "struct irq_data *data"
+  [6] m68k/irq: Rename setup_irq() to m68k_setup_irq() and make it static
+  [7] m68k/irq: Extract irq_set_chip()
+  [8] m68k/irq: Add genirq support
+  [9] m68k/atari: Convert Atari to genirq
 
-> > The issue is simple:
-> > 
-> >       * We can put all the auth mechanisms in the kernel, so we need a
-> >         userspace upcall anyway
-> >       * Since we have to have an upcall, it should be the default path
-> >         for everything (so it gets well tested).
-> > 
-> > Just saying "everything has to be in the kernel because mixed
-> > user/kernel code is too complex" doesn't fly because we already have a
-> > growing list of counter examples, some of which were cited.
-> > 
-> 
-> I am not saying that everything has to be in the kernel.  I am saying
-> that the main iSCSI login state machines that *do* *not* effect
-> authentication payloads of the iSCSI login process need to be in kernel
-> for a kernel-level iscsi-target stack in order to properly support the
-> real-time management of the /sys/kernel/config/target/iscsi/ control
-> plane.
+  [1] is a temporary(?) fix to avoid redefinitions during the remainder of
+      the series,
+  [2-7] refactor the current m68k irq framework to match the generic hardirq
+        framework more closely w.r.t. to its (platform) users,
+  [8] adds generic hardirq support to the core, which can be enabled through
+      a config option, so both legacy and generic hardirq can coexist at the
+      source level during the migration,
+  [9] converts Atari to use generic hardirqs.
 
-So what I hear you say is that the login process has to be in-kernel
-because otherwise we can't control it from configfs.
+It's working on ARAnyM[*], which means user (non-autovectored) interrupts are
+working.
 
-I don't think this to be true: you can still have a configfs based
-control plane and just do user space upcalls for the pieces that aren't
-in-kernel.  I agree with the goal of single control plane, but if
-configfs is causing us to be inflexible, I think configfs, rather than
-the design, needs to change.
+Next on my list is Amiga, which will cover autovectored and chained interrupts.
 
-> Being able to support the proper shutdown of all outstanding I/O across
-> N:M mapped iSCSI network portals <-> iSCSI TargetName
-> +TargetPortalGroupTag endpoints is already not trivial, and wanting to
-> move existing iscsi_target_login_thread() logic to (multi-threaded..?)
-> userspace where we now have to sychronize with everything going on in
-> the kernel is where there is a serious technical problem with what you
-> are suggesting that is now required for an initial iscsi-target merge.
+Hopefully I'll have enough confidence after that to blindly convert the other
+platforms I cannot test myself ;-)
+Of course any help is welcome, especially for Mac (with its maze of interrupt
+controllers) and Q40 (with its weird ISA interrupt mapping). The remainder of
+the platforms seems to be fairly standard and simple.
 
-I really don't see this.  The broad abstract state machine looks like
+Thanks!
 
+P.S. The branch m68k-genirq may be rebased in the future.
 
-|Target Configuration and initialisation|
-   |
-   |      +----------------------------- (relogin)
-   V      V                            |
-|Login (userspace)| ----> |Operation (Kernel)| -> |Termination|
+[*] There are 2 warnings during boot though:
 
-That's nicely separable and doesn't really involve state
-synchronisation.  Nothing really says that Termination has to be in
-userspace (or kernel space).
+| NR_IRQS:72
+| ------------[ cut here ]------------
+| WARNING: at linux/kernel/irq/chip.c:559 0x2a191a()
+| Modules linked in:
+| Call Trace: [<0002767e>] warn_slowpath_common+0x4c/0x64
+|  [<0004e81c>] irq_set_chip+0x0/0x66
+|  [<000276aa>] warn_slowpath_null+0x14/0x1a
+|  [<0004e728>] __irq_set_handler+0x11c/0x13c
+|  [<0004ec7e>] handle_level_irq+0x0/0x9c
+|  [<00003ef4>] m68k_setup_irq_controller+0x3c/0x50
+|  [<0004ec7e>] handle_level_irq+0x0/0x9c
+|  [<0004e81c>] irq_set_chip+0x0/0x66
+|  [<00027dc8>] printk+0x0/0x1a
+|  [<00322022>] __alloc_bootmem+0x0/0x1a
+|  [<0031dea4>] atari_init_IRQ+0x2a/0xe8
+|  [<0004ec7e>] handle_level_irq+0x0/0x9c
+|  [<0031c450>] init_IRQ+0x28/0x2e
+|  [<00027dc8>] printk+0x0/0x1a
+|  [<0031a012>] start_kernel+0x196/0x3b0
+|  [<0031931e>] _sinittext+0x31e/0x9c0
+| 
+| ---[ end trace 139ce121c98e96c9 ]---
 
-James
+and:
 
+| ------------[ cut here ]------------
+| WARNING: at linux/kernel/irq/handle.c:130 handle_irq_event_percpu+0xe6/0x148()
+| irq 3 handler nfeth_interrupt+0x0/0x126 enabled interrupts
+| Modules linked in:
+| Call Trace: [<00027670>] warn_slowpath_common+0x3e/0x64
+|  [<0002767e>] warn_slowpath_common+0x4c/0x64
+|  [<0002770c>] warn_slowpath_fmt+0x2a/0x32
+|  [<0004d01a>] handle_irq_event_percpu+0xe6/0x148
+|  [<0004d01a>] handle_irq_event_percpu+0xe6/0x148
+|  [<00009d64>] nfeth_interrupt+0x0/0x126
+|  [<00027dc8>] printk+0x0/0x1a
+|  [<0004d09c>] handle_irq_event+0x20/0x2c
+|  [<0004ecce>] handle_level_irq+0x50/0x9c
+|  [<002496b8>] schedule+0x0/0x31e
+|  [<00006782>] do_IRQ+0x2e/0x44
+|  [<00027dc8>] printk+0x0/0x1a
+|  [<00003eb4>] __m68k_handle_int+0xe/0x12
+|  [<000026e2>] auto_irqhandler_fixup+0x4/0x6
+|  [<00027dc8>] printk+0x0/0x1a
+|  [<00002c46>] default_idle+0x0/0xe
+|  [<00002b0c>] cpu_idle+0x16/0x22
+|  [<00002b18>] kernel_thread+0x0/0x4e
+|  [<00248610>] rest_init+0x5c/0x62
+|  [<0031a220>] start_kernel+0x3a4/0x3b0
+|  [<000106aa>] ssincos+0x27e/0x2ac
+|  [<000106aa>] ssincos+0x27e/0x2ac
+|  [<0031931e>] _sinittext+0x31e/0x9c0
+| 
+| ---[ end trace 139ce121c98e96cb ]---
 
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
